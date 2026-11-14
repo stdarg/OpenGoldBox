@@ -3,6 +3,7 @@
 
 #include "opengold/campaign_encounter.h"
 #include "opengold/campaign_party.h"
+#include "opengold/exploration_session.h"
 #include "opengold/original_combat.h"
 #include "opengold/rolf_tour.h"
 #include "opengold/ua_design.h"
@@ -22,7 +23,7 @@
 // (docs/games/ua.md, Playing a design). A design is not a DAX campaign: its
 // areas hold the kit's own event records, not scripts, so it has a session of
 // its own beside the DAX games' RolfTourSession. It speaks the same language
-// to the view: the same TourSnapshot (where the party stands, what is said,
+// to the view (ExplorationSession): the same TourSnapshot (where the party stands, what is said,
 // the choices), the same exploration commands and answers, a fight as a
 // CampaignEncounter for the original rules' combat, and the 3D view drawn by
 // the same renderer from the design's own wall sets.
@@ -98,7 +99,7 @@ struct DesignArea
 // The numbers a MONST record fights with under the original rules.
 [[nodiscard]] original::Combatant monster_combatant(const Monster &monster);
 
-class UaSession
+class UaSession final : public ExplorationSession
 {
   public:
     // The design's start: the game record's area and entry point. Throws
@@ -107,11 +108,57 @@ class UaSession
 
     // The party plays the design; its members' fights run through `party`'s
     // rules. The start square's event runs once the party is there.
-    void campaign_party(std::shared_ptr<CampaignParty> party);
+    void campaign_party(std::shared_ptr<CampaignParty> party) override;
 
-    [[nodiscard]] const por::TourSnapshot &snapshot() const noexcept
+    [[nodiscard]] const por::TourSnapshot &snapshot() const noexcept override
     {
         return snapshot_;
+    }
+
+    // The design from its start again, its flags cleared; campaign_party
+    // then runs the start square's event.
+    void restart() override;
+
+    // Nothing in a design moves by itself between the player's answers.
+    void advance(double) override
+    {
+    }
+
+    void set_searching(bool searching) override
+    {
+        snapshot_.searching = searching;
+    }
+
+    [[nodiscard]] bool can_leave() const override
+    {
+        return snapshot_.phase == por::TourPhase::completed;
+    }
+
+    [[nodiscard]] bool can_select_member() const override
+    {
+        return can_leave();
+    }
+
+    // No member turns on the party in a design yet.
+    [[nodiscard]] bool turns_on_party(MemberId) const override
+    {
+        return false;
+    }
+
+    // The 3D view in a dungeon; nothing on the overland, which is not drawn
+    // yet (docs/games/ua.md, What remains).
+    [[nodiscard]] std::optional<Image> view_picture() override;
+    // The area's name as the designer wrote it.
+    [[nodiscard]] std::string area_name() const override;
+
+    [[nodiscard]] por::RolfTourSession *dax() noexcept override
+    {
+        return nullptr;
+    }
+
+    [[nodiscard]] const por::RolfTourSession *dax() const noexcept override
+    {
+        return nullptr;
     }
 
     [[nodiscard]] const DesignArea &area() const noexcept
@@ -125,19 +172,22 @@ class UaSession
     }
 
     // A step, a turn or a look; false while an event waits or the way is shut.
-    bool explore(por::ExplorationCommand command);
+    bool explore(por::ExplorationCommand command) override;
     // Answers to what an event waits for, with the snapshot's ticket.
     bool continue_dialogue(std::uint64_t ticket);
-    bool choose(std::uint64_t ticket, std::size_t choice);
-    bool input(std::uint64_t ticket, std::string_view value);
+    bool choose(std::uint64_t ticket, std::size_t choice) override;
+    bool input(std::uint64_t ticket, std::string_view value) override;
 
     // The fight an event started, until resolve_combat takes its result.
-    [[nodiscard]] const std::optional<CampaignEncounter> &pending_encounter() const noexcept
+    [[nodiscard]] const std::optional<CampaignEncounter> &
+    pending_encounter() const noexcept override
     {
         return encounter_;
     }
 
-    bool resolve_combat(const rules::Snapshot &outcome);
+    bool resolve_combat(const rules::Snapshot &outcome) override;
+    // The fight could not be set up: the adventure stops there, saying why.
+    bool reject_combat(std::string diagnostic) override;
 
     // The 3D view where the party stands, from the area's wall sets.
     [[nodiscard]] Image observe_view();

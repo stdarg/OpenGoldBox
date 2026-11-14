@@ -4,6 +4,7 @@
 #include "opengold/difficulty.h"
 #include "opengold/encounter_budget.h"
 #include "opengold/game_census.h"
+#include "opengold/ua_design.h"
 #include "godot_path.h"
 #include <godot_cpp/classes/config_file.hpp>
 #include <godot_cpp/classes/dir_access.hpp>
@@ -27,6 +28,7 @@ opengold::GoldBoxGame current_game = opengold::GoldBoxGame::pool_of_radiance;
 GameRules current_rules = new_game_rules;
 settings::GameStart current_start;
 std::map<opengold::GoldBoxGame, String> confirmed_folders;
+std::optional<String> confirmed_design;
 // The loudness the games' samples and music played at before the volume
 // settings, and still play at with a volume slider at its top.
 constexpr double full_sound_volume = 0.125;
@@ -596,6 +598,34 @@ Validation validate_game_folder(const String &directory, opengold::GoldBoxGame g
         return result;
     }
     result.error = N_("Choose the folder that holds this game's files.");
+    return result;
+}
+
+String design_folder()
+{
+    return confirmed_design ? *confirmed_design : read("games", "UA_DESIGN");
+}
+
+bool save_design_folder(const String &directory)
+{
+    if (!save("games", "UA_DESIGN", directory))
+    {
+        return false;
+    }
+    confirmed_design = directory;
+    return true;
+}
+
+Validation validate_design_folder(const String &directory)
+{
+    Validation result;
+    if (directory.is_absolute_path() &&
+        opengold::ua::is_design_folder(presentation::path_from_godot(directory)))
+    {
+        result.usable = true;
+        return result;
+    }
+    result.error = N_("Choose a design's folder: its name ends in .DSN.");
     return result;
 }
 } // namespace settings

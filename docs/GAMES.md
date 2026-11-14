@@ -610,11 +610,17 @@ pictures, walls and script host, *Treasures* adding only what it changes.
    menus, questions, quests, flags, experience, time, chains and fights with
    the kit's monsters run. No design ships with the developer's copy, so
    the tests build one from the kit's templates; `opengold_ua_walk` walks
-   every square of its areas and plays every event and fight. Still to
-   come: the other event kinds (shops, temples, training, NPCs, encounters
-   and the rest), overland maps, locked doors, the kit's battlefields and
-   icons, treasure items, the rest of its rules, saves, and the game view
-   and startup menu playing a design.
+   every square of its areas and plays every event and fight. Since
+   2026-11-14 the game plays a design from the startup menu: *Unlimited
+   Adventures*' button asks for the kit's folder and then the design's
+   (`NAME.DSN`), Create new party makes characters under the kit's rules,
+   and the exploration screen plays the design through `ExplorationSession`,
+   the one view code path for a DAX campaign and a design; its fights open
+   on the combat screen with the design's monsters
+   (`opengold_godot_startup_menu_ua`). Still to come: the other event kinds
+   (shops, temples, training, NPCs, encounters and the rest), overland maps,
+   locked doors, the kit's battlefields and icons, treasure items, the rest
+   of its rules, camping, the overhead map, a default party, and saves.
 2. An updated construction kit for making new ones.
 
 ### 9. The SRD rules for the new games

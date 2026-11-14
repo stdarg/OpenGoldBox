@@ -27,11 +27,14 @@ struct GameRules
 
 // Where each set of rules finds what it plays with: the SRD's content pack
 // (game_rules_file()), and the folder of the game played, whose monster
-// records and item types its original rules read.
+// records and item types its original rules read. For Unlimited Adventures
+// that folder is the kit's, and `design` the design played, whose monsters
+// the original rules fight (ua::load_design_content).
 struct RulesFiles
 {
     std::filesystem::path srd_pack, original_game;
     opengold::GoldBoxGame game{opengold::GoldBoxGame::pool_of_radiance};
+    std::filesystem::path design;
 };
 
 // What the new game's question offers first: the SRD rules, until the

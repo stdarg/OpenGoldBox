@@ -163,7 +163,8 @@ with a recording of the original.
 Phase 8 step 1 ([GAMES.md](../GAMES.md)): OpenGoldBox plays an adventure made
 with the kit. Since 2026-11-14 a design loads, a party made under the kit's
 rules starts at its start, the 3D view draws its walls, and its events and
-fights run (`opengold_ua_session_tests`, `opengold_ua_walk`).
+fights run (`opengold_ua_session_tests`, `opengold_ua_walk`); the game
+plays it from the startup menu (`opengold_godot_startup_menu_ua`).
 
 ### The seam
 
@@ -185,13 +186,58 @@ machine. It speaks the view's language instead:
 
 The kit's own words (Yes, No, "The entire party is killed!") go in the
 snapshot's host dialogue and choices, which the view translates; the
-designer's texts are shown as they are. The game view (`rolf_tour_view`) is
-still bound to `RolfTourSession`; letting it drive either session is a later
-step.
+designer's texts are shown as they are.
+
+The game's exploration screen (`RolfTourView`) plays either session through
+one code path. `ExplorationSession` (`exploration_session.h`) is what the
+view asks of any adventure: the snapshot, the party, restart, time passing,
+steps, answers, Search mode, whether the party may leave or change its
+selected member, the pending fight and its result or refusal, the picture
+for the view's window (`view_picture`, nothing where there is nothing to
+draw yet) and the area's own name. `UaSession` implements it;
+`DaxExplorationSession` wraps a `RolfTourSession` for it, so the DAX
+session itself is unchanged. What only a DAX campaign has (shops and
+treasure piles, its script's variables, the overhead map, sprites and NPC
+portraits, temples, teleports and Word of Recall, close-ups, camping, the
+ending film, the difficulty and auto-equip settings, saving) the view
+reaches through `dax()`, which is null for a design, so the view leaves
+those out instead of drawing them wrong: Camp and Save are not offered, the
+map stays empty, and an overland area shows no 3D view.
 
 The code: `ua_design` (the files), `ua_view` (the 3D view), `ua_session`
 (start, movement, fights) and `ua_events` (the event loop and its kinds), in
 `src/OpenGold.Core`.
+
+### From the startup menu
+
+*Unlimited Adventures* is the fifth game on the startup menu's Pick game.
+Its folder is the kit's (`[games] UA`, or `OPENGOLD_GOLDBOX_DIR/UA`, checked
+for `CKIT.EXE` and `DISK1` to `DISK3`), asked once as the other games'
+folders are. Then the design is asked each time the game is chosen, the last
+one offered (`[games] UA_DESIGN`), since a player may have several: a folder
+whose name ends in `.DSN` ([CONFIGURATION.md](../CONFIGURATION.md)). The kit
+has no title pictures, so its menu follows at once. Play with default party
+is not offered (no default party is made for a design yet), nor Continue and
+Load (a design is not saved yet). The rules question offers only the
+original rules, as the SRD has none of a design's monsters; Create new party
+makes characters under the kit's rules
+(`original::character_rules(aging, GoldBoxGame::unlimited_adventures)`), and
+their fights run under the original rules with the design's Content
+(`ua::load_design_content`, chosen in `game_rules.cpp` by the design's
+folder). Explore plays the design from its start: its welcome, the 3D view
+and the area's name over it; a fight opens the combat screen with the
+design's monsters, and a fight that cannot be set up stops the adventure
+with its reason (`reject_combat`). In the in-game menu Save and Load are
+disabled for a design.
+
+`opengold_godot_startup_menu_ua` (`tests/startup_menu_tests.gd --ua`) clicks
+through it all on the test design, which `opengold_ua_session_tests` writes
+to `ua-fixtures/TEST.DSN` in the build folder as a CTest fixture
+(`OPENGOLD_UA_DESIGN_FIXTURE`): Unlimited Adventures on the menu, the kit's
+folder found, the kit's own folder refused as a design and the test design
+taken, a fighter made and taken exploring, the welcome naming her, the
+area's name and the 3D view, a step and a turn, and the kobolds' fight on
+the combat screen.
 
 ### A design's files
 
@@ -311,9 +357,11 @@ No design ships with the developer's copy of the kit (no `.DSN` folder;
 downloaded. So `tests/ua_session_tests.cpp` builds one from the kit's own
 templates, as its design menu does: two areas from GEO.GLB's dungeon
 template and the game record from GAME.GLB, written into a temporary
-`opengold_ua_test.dsn`.
+folder of each run's own (`opengold_ua_test.dsn`, `opengold_ua_walk.dsn`,
+`opengold_ua_seam.dsn`, as the runs go at once), and for the startup check
+into `ua-fixtures/TEST.DSN`.
 
-- **Area 5, the hall** (the start, entry point 1 at (2,2) facing east): a
+- **Area 5, the hall** ("THE TEST HALL", the start, entry point 1 at (2,2) facing east): a
   wall down the middle with a locked door and a door for the brass key, a
   pillar of the second wall set and an open doorway; a welcome naming the
   selected member chained to the brass key (a special item), a chest asked
@@ -347,5 +395,5 @@ playing each event and fight; it fails on any event the session cannot play.
   spares it for now.
 - A design's own starting experience, money and equipment; the kit's rules'
   remaining differences (above).
-- Saving a game; the game view driving a `UaSession`, and a design chosen
-  from the startup menu.
+- Saving and loading a game (Save, Load and Continue are not offered for a
+  design yet), a default party, camping, and the overhead map.

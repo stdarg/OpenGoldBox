@@ -19,6 +19,7 @@
 #include "vital_fixtures.h"
 #include "opengold/srd5.h"
 #include "opengold/scroll_key.h"
+#include "opengold/ua_session.h"
 #include "godot_path.h"
 #include "guarded_handlers.h"
 #include "godot_sound_output.h"
@@ -340,22 +341,30 @@ constexpr EclAddress curse_town_cell{0x4C9B};
     return N_("New Phlan");
 }
 
-// The name of the area the party is in, in the game being played; with no
-// session, the game's first area.
-[[nodiscard]] const char *place_name(const std::optional<RolfTourSession> &session)
+// The name of the area the party is in, in the game being played, in the
+// player's language; with no session, the game's first area. A design names
+// its areas itself, as its designer wrote them.
+[[nodiscard]] String place_name(const opengold::ExplorationSession *session)
 {
+    if (session && !session->dax())
+    {
+        const auto name = session->area_name();
+        return name.empty() ? i18n::text(N_("Unlimited Adventures")) : String::utf8(name.c_str());
+    }
     static const TourSnapshot none;
-    const TourSnapshot &s = session ? session->snapshot() : none;
+    const auto *campaign = session ? session->dax() : nullptr;
+    const TourSnapshot &s = campaign ? campaign->snapshot() : none;
     switch (settings::chosen_game())
     {
     case opengold::GoldBoxGame::pool_of_radiance:
-        return district_name(s.area_id);
+        return i18n::text(district_name(s.area_id));
     case opengold::GoldBoxGame::secret_of_the_silver_blades:
         return secret_area_name(s.area_id);
     case opengold::GoldBoxGame::gateway_to_the_savage_frontier:
         return gateway_area_name(s.area_id);
     default:
-        return session ? curse_area_name(s, *session) : N_("Curse of the Azure Bonds");
+        return i18n::text(campaign ? curse_area_name(s, *campaign)
+                                   : N_("Curse of the Azure Bonds"));
     }
 }
 
@@ -620,6 +629,16 @@ void RolfTourView::layout()
     required_node<Node>(*this, "MemberSheet/WindowLayout").call("fit", Vector2i(get_size()));
 }
 
+RolfTourSession &RolfTourView::dax_session() const
+{
+    auto *campaign = dax();
+    if (!campaign)
+    {
+        throw std::logic_error("No DAX campaign is being played");
+    }
+    return *campaign;
+}
+
 void RolfTourView::restart()
 {
     forget_monster_picture();
@@ -650,6 +669,16 @@ void RolfTourView::restart()
             session_->restart();
             session_->campaign_party(campaign_);
         }
+        else if (settings::chosen_game() == opengold::GoldBoxGame::unlimited_adventures)
+        {
+            // A design made with the kit, from the kit's folder and the
+            // design's (docs/games/ua.md, From the startup menu).
+            session_ = std::make_unique<opengold::ua::UaSession>(
+                opengold::ua::UaSession::start(opengold::ua::DesignFiles(
+                    presentation::path_from_godot(settings::game_folder(settings::chosen_game())),
+                    presentation::path_from_godot(settings::design_folder()))));
+            session_->campaign_party(campaign_);
+        }
         else
         {
             // The game chosen on the startup menu: Pool of Radiance's campaign
@@ -658,30 +687,33 @@ void RolfTourView::restart()
             const bool pool_of_radiance = game == opengold::GoldBoxGame::pool_of_radiance;
             if (pool_of_radiance)
             {
-                session_.emplace(opengold::load_campaign(
-                    presentation::path_from_godot(settings::game_path()), game,
-                    {&game_encounters(), &game_wall_art(), game_monsters()}));
+                session_ =
+                    std::make_unique<opengold::DaxExplorationSession>(opengold::load_campaign(
+                        presentation::path_from_godot(settings::game_path()), game,
+                        {&game_encounters(), &game_wall_art(), game_monsters()}));
             }
             else
             {
-                session_.emplace(opengold::load_campaign(
-                    presentation::path_from_godot(settings::game_folder(game)), game));
+                session_ =
+                    std::make_unique<opengold::DaxExplorationSession>(opengold::load_campaign(
+                        presentation::path_from_godot(settings::game_folder(game)), game));
             }
-            session_->encounter_challenge(settings::encounter_challenge());
-            session_->difficulty(settings::difficulty());
-            session_->set_auto_equip(auto_equip_setting());
+            auto &campaign = dax_session();
+            campaign.encounter_challenge(settings::encounter_challenge());
+            campaign.difficulty(settings::difficulty());
+            campaign.set_auto_equip(auto_equip_setting());
             if (pool_of_radiance)
             {
-                use_shop_data(*session_);
-                session_->companion_rules(campaign_->character_rules(), game_companions());
+                use_shop_data(campaign);
+                campaign.companion_rules(campaign_->character_rules(), game_companions());
             }
             if (campaign_)
             {
-                session_->campaign_party(campaign_);
+                campaign.campaign_party(campaign_);
             }
             for (unsigned i = 0; i < sprites_.size(); ++i)
             {
-                const auto &source = session_->sprites()[i];
+                const auto &source = campaign.sprites()[i];
                 // Only Rolf's tour has a guide to show (Curse's campaign has none).
                 if (source.width == 0 || source.height == 0)
                 {
@@ -723,7 +755,8 @@ void RolfTourView::next()
     {
         if (!selected.is_empty())
         {
-            session_->buy(s.continue_ticket, shop_rows_.at(static_cast<std::size_t>(selected[0])));
+            dax_session().buy(s.continue_ticket,
+                              shop_rows_.at(static_cast<std::size_t>(selected[0])));
         }
     }
     else if (s.phase == TourPhase::treasure)
@@ -886,11 +919,11 @@ std::optional<opengold::UnidentifiedMagic> RolfTourView::auto_equip_setting()
 
 void RolfTourView::apply_settings()
 {
-    if (session_)
+    if (auto *campaign = dax())
     {
-        session_->difficulty(settings::difficulty());
-        session_->encounter_challenge(settings::encounter_challenge());
-        session_->set_auto_equip(auto_equip_setting());
+        campaign->difficulty(settings::difficulty());
+        campaign->encounter_challenge(settings::encounter_challenge());
+        campaign->set_auto_equip(auto_equip_setting());
     }
 }
 
@@ -912,19 +945,19 @@ void RolfTourView::look()
 
 void RolfTourView::leave_shop()
 {
-    if (!session_)
+    if (!dax())
     {
         return;
     }
     const auto &s = session_->snapshot();
     if (s.phase != TourPhase::treasure)
     {
-        session_->leave_shop(s.continue_ticket);
+        dax_session().leave_shop(s.continue_ticket);
         refresh();
         return;
     }
     // As in the original, leaving with items in the pile asks first.
-    if (!session_->treasure_pile().empty() && !treasure_leave_warned_)
+    if (!dax_session().treasure_pile().empty() && !treasure_leave_warned_)
     {
         treasure_leave_warned_ = true;
         refresh();
@@ -932,22 +965,22 @@ void RolfTourView::leave_shop()
     }
     treasure_leave_warned_ = false;
     treasure_notice_ = String();
-    session_->leave_treasure(s.continue_ticket);
+    dax_session().leave_treasure(s.continue_ticket);
     refresh();
 }
 
 void RolfTourView::take_treasure(std::int64_t item)
 {
     const auto &s = session_->snapshot();
-    if (item < 0 || item >= static_cast<std::int64_t>(session_->treasure_pile().size()) ||
+    if (item < 0 || item >= static_cast<std::int64_t>(dax_session().treasure_pile().size()) ||
         !campaign_ || !campaign_->selected())
     {
         return;
     }
-    const auto label = String::utf8(session_->treasure_pile()[item].label().c_str());
+    const auto label = String::utf8(dax_session().treasure_pile()[item].label().c_str());
     const auto taker =
         String::utf8(campaign_->member(campaign_->selected()).character.sheet().name.c_str());
-    if (session_->take_treasure(s.continue_ticket, static_cast<std::size_t>(item)))
+    if (dax_session().take_treasure(s.continue_ticket, static_cast<std::size_t>(item)))
     {
         treasure_leave_warned_ = false;
         treasure_notice_ =
@@ -1170,7 +1203,12 @@ void RolfTourView::identify_item()
 
 opengold::SaleMarket RolfTourView::sale_market() const
 {
-    return {.shop = session_->shop_stock(), .town = session_->town_stock()};
+    // A design has no shops yet: an item sells for half its own value.
+    if (const auto *campaign = dax())
+    {
+        return {.shop = campaign->shop_stock(), .town = campaign->town_stock()};
+    }
+    return {};
 }
 
 void RolfTourView::give_up_item(bool sell)
@@ -1536,11 +1574,11 @@ void RolfTourView::use_inventory_item()
         }
         else if (item.definition_id == "wand_of_secrets")
         {
-            if (!session_)
+            if (!dax())
             {
                 throw std::runtime_error("The wand can be used only while exploring.");
             }
-            result = wand_of_secrets_notice(name, session_->point_wand_of_secrets(id, item.id));
+            result = wand_of_secrets_notice(name, dax_session().point_wand_of_secrets(id, item.id));
         }
         else
         {
@@ -1753,8 +1791,7 @@ void RolfTourView::expand_teleport(std::vector<opengold::rules::CampAction> &act
             labels.erase(labels.begin() + static_cast<std::ptrdiff_t>(n));
         }
     }
-    const auto destinations =
-        session_ ? session_->teleport_destinations() : std::vector<unsigned>{};
+    const auto destinations = dax() ? dax()->teleport_destinations() : std::vector<unsigned>{};
     for (std::size_t n = 0; n < destinations.size(); ++n)
     {
         auto entry = cheapest;
@@ -2570,8 +2607,8 @@ String event_dialogue(const std::string &resource, const TourSnapshot &s)
 
 void RolfTourView::sync_monster_picture()
 {
-    const auto *picture = session_ ? session_->scene_animation() : nullptr;
-    const bool fight_waits = session_ && session_->monster_picture();
+    const auto *picture = dax() ? dax()->scene_animation() : nullptr;
+    const bool fight_waits = dax() && dax()->monster_picture();
     if (picture == shown_monster_picture_)
     {
         fight_waits_on_picture_ = fight_waits;
@@ -2592,7 +2629,7 @@ void RolfTourView::sync_monster_picture()
     // New art drawn from the close-up's description replaces it, with its
     // timing, unless the 3D view shows the original's art; a folder that cannot
     // be used leaves the original, and the log names its file.
-    const auto source = session_->scene_animation_source();
+    const auto source = dax_session().scene_animation_source();
     const auto closeups = new_art_path("closeups");
     if (!source || original_walls_ || closeups.is_empty())
     {
@@ -2630,7 +2667,7 @@ std::size_t RolfTourView::current_monster_frame() const
 
 void RolfTourView::dismiss_monster_picture()
 {
-    if (session_ && session_->start_encounter())
+    if (dax() && dax()->start_encounter())
     {
         refresh();
     }
@@ -2640,7 +2677,7 @@ void RolfTourView::play_ending_film()
 {
     // A film is dropped in as endings/<the game's folder>.ogv (Theora) in the
     // game's files; without one the closing words stand alone.
-    const auto folder = opengold::game_folder(session_->game());
+    const auto folder = opengold::game_folder(dax_session().game());
     const String path =
         "res://endings/" + String::utf8(folder.data(), static_cast<int>(folder.size())) + ".ogv";
     if (!ResourceLoader::get_singleton()->exists(path))
@@ -2704,15 +2741,15 @@ void RolfTourView::refresh()
         }
     }
     sync_monster_picture();
-    if (session_)
+    if (auto *campaign = dax())
     {
-        session_->show_original_walls(original_walls_);
+        campaign->show_original_walls(original_walls_);
     }
-    if (session_ && rendered_sprite_id_ != session_->snapshot().sprite_id)
+    if (dax() && rendered_sprite_id_ != session_->snapshot().sprite_id)
     {
         for (unsigned n = 0; n < 3; ++n)
         {
-            const auto &source = session_->sprites()[n];
+            const auto &source = dax()->sprites()[n];
             // Only Rolf's tour has a guide to show (Curse's campaign has none).
             if (source.width == 0 || source.height == 0)
             {
@@ -2722,7 +2759,10 @@ void RolfTourView::refresh()
         }
         rendered_sprite_id_ = session_->snapshot().sprite_id;
     }
-    if (session_ && (session_->snapshot().visited.any() || session_->snapshot().overland) &&
+    // A design's view shows from its start; a DAX campaign's once the party
+    // has stood somewhere.
+    if (session_ &&
+        (!dax() || session_->snapshot().visited.any() || session_->snapshot().overland) &&
         (!rendered_pose_ || *rendered_pose_ != session_->snapshot().pose ||
          rendered_overland_ != std::array{session_->snapshot().overland_x,
                                           session_->snapshot().overland_y,
@@ -2732,17 +2772,25 @@ void RolfTourView::refresh()
         try
         {
             const auto pose = session_->snapshot().pose;
-            const auto source =
-                session_->picture() ? *session_->picture() : session_->observe_view();
-            const auto image = presentation::rgba_image(source);
-            wall_image_ = image;
-            if (wall_view_.is_null())
+            const auto source = session_->view_picture();
+            if (!source)
             {
-                wall_view_ = ImageTexture::create_from_image(image);
+                // Nothing to draw here yet (a design's overland): no 3D view.
+                wall_image_.unref();
+                wall_view_.unref();
             }
             else
             {
-                wall_view_->set_image(image);
+                const auto image = presentation::rgba_image(*source);
+                wall_image_ = image;
+                if (wall_view_.is_null())
+                {
+                    wall_view_ = ImageTexture::create_from_image(image);
+                }
+                else
+                {
+                    wall_view_->set_image(image);
+                }
             }
             rendered_pose_ = pose;
             rendered_overland_ = {session_->snapshot().overland_x, session_->snapshot().overland_y,
@@ -2756,7 +2804,7 @@ void RolfTourView::refresh()
             error_ = String::utf8(error.what());
         }
     }
-    const bool loaded = session_.has_value();
+    const bool loaded = session_ != nullptr;
     static const TourSnapshot none;
     const TourSnapshot &s = loaded ? session_->snapshot() : none;
     refresh_rest();
@@ -2775,10 +2823,10 @@ void RolfTourView::refresh()
     const bool shopping = loaded && (s.phase == TourPhase::shopping || treasure);
     const bool answer = loaded && s.phase == TourPhase::awaiting_input;
     const bool multiple = waiting && s.choices.size() > 1;
-    const String district = i18n::text(place_name(session_));
+    const String district = place_name(session_.get());
     // While a shopkeeper greets or serves the party, the shopkeeper's name
     // and the shop's type stand over the portrait.
-    const auto *shop = loaded ? opengold::phlan_shop_serving(s, session_->shops()) : nullptr;
+    const auto *shop = dax() ? opengold::phlan_shop_serving(s, dax()->shops()) : nullptr;
     required_node<Label>(*this, "%Location")
         .set_text(
             shop ? i18n::format(N_("{shopkeeper} - {type}"),
@@ -2804,10 +2852,10 @@ void RolfTourView::refresh()
     }
     required_node<Label>(*this, "%Coordinates").set_text(coordinates);
     required_node<Label>(*this, "%Speaker")
-        .set_text(i18n::text(faulted           ? N_("Unable to continue")
-                             : shopping        ? N_("Shop / select an item")
-                             : s.tour_finished ? place_name(session_)
-                                               : N_("Rolf  /  Council guide")));
+        .set_text(faulted           ? i18n::text(N_("Unable to continue"))
+                  : shopping        ? i18n::text(N_("Shop / select an item"))
+                  : s.tour_finished ? district
+                                    : i18n::text(N_("Rolf  /  Council guide")));
     if (treasure && campaign_ && campaign_->selected())
     {
         const auto &taker = campaign_->member(campaign_->selected());
@@ -2865,6 +2913,12 @@ void RolfTourView::refresh()
     {
         required_node<Button>(*this, name).set_disabled(!completed);
     }
+    // Camping runs a DAX campaign's own services; a design's camp is still to
+    // come (docs/games/ua.md, What remains).
+    if (!dax())
+    {
+        required_node<Button>(*this, "%Camp").set_disabled(true);
+    }
     // Pressed while Search mode is on, whether the button or S turned it on.
     required_node<Button>(*this, "%Search").set_pressed_no_signal(s.searching);
     const bool overland = s.overland;
@@ -2899,7 +2953,7 @@ void RolfTourView::refresh()
         choices->clear();
         if (treasure)
         {
-            for (const auto &item : session_->treasure_pile())
+            for (const auto &item : dax_session().treasure_pile())
             {
                 choices->add_item(i18n::text(item.label()));
             }
@@ -2909,7 +2963,7 @@ void RolfTourView::refresh()
             // The stock the filter passes, in alphabetical order of its names
             // as the player reads them, down each column.
             shop_rows_.clear();
-            const auto &stock = session_->shop_stock();
+            const auto &stock = dax_session().shop_stock();
             std::vector<String> names;
             for (std::size_t n = 0; n < stock.size(); ++n)
             {
@@ -2976,7 +3030,7 @@ void RolfTourView::refresh()
     {
         const auto chosen = campaign_->selected();
         const auto name = String::utf8(campaign_->member(chosen).character.sheet().name.c_str());
-        const auto &listed = treasure ? session_->treasure_pile() : session_->shop_stock();
+        const auto &listed = treasure ? dax_session().treasure_pile() : dax_session().shop_stock();
         const auto purse = campaign_->purse_gold();
         bool any_unusable = false, any_unaffordable = false, any_no_gain = false;
         for (int row = 0; row < choices->get_item_count() && row < static_cast<int>(listed.size());
@@ -3081,9 +3135,9 @@ void RolfTourView::refresh()
         required_node<RichTextLabel>(*this, "%Dialogue")
             .set_text(i18n::text(s.diagnostic) + "\n" + event_dialogue(resource + "/dialogue", s));
     }
-    if (loaded)
+    if (const auto *campaign = dax())
     {
-        const auto &p = session_->party();
+        const auto &p = campaign->party();
         required_node<Label>(*this, "%Party")
             .set_text(
                 i18n::format("Fighter / Level 1 / HP {current}/{maximum}\n{gold} gp / {items}",
@@ -3275,7 +3329,7 @@ Ref<Texture2D> RolfTourView::npc_portrait(std::string_view file)
 Dictionary RolfTourView::tour_visuals()
 {
     Dictionary data;
-    if (!session_ || wall_view_.is_null() || session_->snapshot().visited.none())
+    if (!session_ || wall_view_.is_null() || (dax() && session_->snapshot().visited.none()))
     {
         return data;
     }
@@ -3283,6 +3337,12 @@ Dictionary RolfTourView::tour_visuals()
     data["wall"] = wall_view_;
     // The image itself: a headless check cannot read a texture's pixels back.
     data["wall_image"] = wall_image_;
+    // A design has no portraits, sprites or overhead map yet (docs/games/ua.md).
+    const auto *campaign = dax();
+    if (!campaign)
+    {
+        return data;
+    }
     if (fight_waits_on_picture_ && !monster_frames_.empty())
     {
         data["picture"] = monster_frames_[current_monster_frame()];
@@ -3290,7 +3350,7 @@ Dictionary RolfTourView::tour_visuals()
     else
     {
         const auto portrait_file =
-            opengold::speaking_npc_portrait(state, session_->shops(), session_->temples());
+            opengold::speaking_npc_portrait(state, campaign->shops(), campaign->temples());
         const auto portrait =
             portrait_file.empty() ? Ref<Texture2D>() : npc_portrait(portrait_file);
         if (portrait.is_valid())
@@ -3303,7 +3363,7 @@ Dictionary RolfTourView::tour_visuals()
         }
         else if (state.sprite_frame >= 0 && sprites_[state.sprite_frame].is_valid())
         {
-            const auto &source = session_->sprites()[state.sprite_frame];
+            const auto &source = campaign->sprites()[state.sprite_frame];
             data["sprite"] = sprites_[state.sprite_frame];
             data["sprite_size"] = Vector2(source.width, source.height);
         }
@@ -3320,7 +3380,7 @@ Dictionary RolfTourView::tour_visuals()
                 cells[index] = -1;
                 continue;
             }
-            const auto &cell = session_->map().at(x, y);
+            const auto &cell = campaign->map().at(x, y);
             int flags = state.visited.test(index) ? 1 : 0;
             for (unsigned side = 0; side < 4; ++side)
             {
@@ -3517,11 +3577,11 @@ void RolfTourView::check_town()
     {
         return campaign_
                    ? campaign_->member(campaign_->selected()).character.inventory().items().size()
-                   : session_->party().inventory.size();
+                   : dax_session().party().inventory.size();
     };
     const auto gold = [&]
     {
-        return campaign_ ? campaign_->purse_gold() : gold_value(session_->party().wealth);
+        return campaign_ ? campaign_->purse_gold() : gold_value(dax_session().party().wealth);
     };
     if (check_prompts_ != 8)
     {
@@ -3529,7 +3589,7 @@ void RolfTourView::check_town()
     }
     if (shop_check_stage_ == 3 && s.phase == TourPhase::completed)
     {
-        if (inventory_size() != 1 || session_->script_variable(EclAddress{0x6BC1}) != gold())
+        if (inventory_size() != 1 || dax_session().script_variable(EclAddress{0x6BC1}) != gold())
         {
             throw std::runtime_error("Shop results did not persist after leaving");
         }
@@ -3596,7 +3656,7 @@ void RolfTourView::check_town()
                 std::ranges::find_if(shop_rows_,
                                      [&](std::size_t n)
                                      {
-                                         return session_->shop_stock()[n].label() == "Shield";
+                                         return dax_session().shop_stock()[n].label() == "Shield";
                                      });
             if (required_node<ItemList>(*this, "%Choices").get_item_count() != 55 ||
                 required_node<Button>(*this, "%Continue").is_disabled() ||
@@ -3604,7 +3664,7 @@ void RolfTourView::check_town()
             {
                 throw std::runtime_error("Arms shop list is not available in Godot");
             }
-            const auto price = session_->shop_stock()[*shield].stored.value;
+            const auto price = dax_session().shop_stock()[*shield].stored.value;
             required_node<ItemList>(*this, "%Choices")
                 .select(static_cast<std::int32_t>(shield - shop_rows_.begin()));
             required_node<Button>(*this, "%Continue").emit_signal("pressed");
@@ -3776,8 +3836,8 @@ void RolfTourView::check_walk_to(unsigned tx, unsigned ty)
             {
                 continue;
             }
-            const auto &a = session_->map().at(cell % 16, cell / 16);
-            const auto &b = session_->map().at(x, y);
+            const auto &a = dax_session().map().at(cell % 16, cell / 16);
+            const auto &b = dax_session().map().at(x, y);
             const int r = (d + 2) % 4;
             if (a.doors[d] > 1 || b.doors[r] > 1 || (a.walls[d] && !a.doors[d]) ||
                 (b.walls[r] && !b.doors[r]))
@@ -3829,7 +3889,7 @@ void RolfTourView::check_district_labels(const TourSnapshot &s)
     {
         return;
     }
-    const String district = i18n::text(place_name(session_));
+    const String district = place_name(session_.get());
     const String location = required_node<Label>(*this, "%Location").get_text();
     const String map_title = required_node<Label>(*this, "%MapTitle").get_text();
     const String speaker = required_node<Label>(*this, "%Speaker").get_text();
@@ -3861,9 +3921,9 @@ bool RolfTourView::check_expedition_step()
         throw std::runtime_error("Expedition session missing");
     }
     const auto &s = session_->snapshot();
-    if (!session_->script_diagnostics().empty())
+    if (!dax_session().script_diagnostics().empty())
     {
-        throw std::runtime_error(session_->script_diagnostics().back());
+        throw std::runtime_error(dax_session().script_diagnostics().back());
     }
     if (s.phase == TourPhase::faulted)
     {
@@ -3887,7 +3947,7 @@ bool RolfTourView::check_expedition_step()
     if (s.phase == TourPhase::treasure)
     {
         // The check takes the first item, then leaves the rest behind.
-        if (!session_->treasure_pile().empty() && treasure_notice_.is_empty())
+        if (!dax_session().treasure_pile().empty() && treasure_notice_.is_empty())
         {
             required_node<ItemList>(*this, "%Choices").select(0);
             required_node<Button>(*this, "%Continue").emit_signal("pressed");
@@ -3909,7 +3969,7 @@ bool RolfTourView::check_expedition_step()
     }
     if (s.area_id == 0)
     {
-        if (session_->script_variable(ecl_slums_orc_victory) == 255)
+        if (dax_session().script_variable(ecl_slums_orc_victory) == 255)
         {
             if (!slums_labels_checked_)
             {
@@ -3931,7 +3991,7 @@ bool RolfTourView::check_expedition_step()
         }
         return false;
     }
-    if (session_->script_variable(ecl_slums_orc_victory) == 255)
+    if (dax_session().script_variable(ecl_slums_orc_victory) == 255)
     {
         if (s.pose.x != 15 || s.pose.y != 4)
         {
@@ -3986,9 +4046,10 @@ void RolfTourView::check_recovery()
 {
     const auto &s = session_->snapshot();
     const auto id = campaign_->state().roster.at(0).id;
-    if (!session_->script_diagnostics().empty())
+    if (!dax_session().script_diagnostics().empty())
     {
-        throw std::runtime_error("Recovery route fault: " + session_->script_diagnostics().back());
+        throw std::runtime_error("Recovery route fault: " +
+                                 dax_session().script_diagnostics().back());
     }
     const auto choose = [&](std::size_t choice)
     {
@@ -4057,7 +4118,7 @@ void RolfTourView::check_recovery()
                 }
             }
         }
-        const auto event = session_->map().at(s.pose.x, s.pose.y).event_number();
+        const auto event = dax_session().map().at(s.pose.x, s.pose.y).event_number();
         // Temple cells can be transit cells: enter, then cancel the native service.
         // Answering NO makes the original script move the party back to its prior cell.
         if (((recovery_stage_ == 3 || recovery_stage_ == 5) && event == 6) ||
@@ -4140,7 +4201,7 @@ void RolfTourView::check_recovery()
     {
         const auto gold_before = coins(recovery_before_->wealth, Coin::gold);
         if (coins(campaign_->state().wealth, Coin::gold) != gold_before - 100 ||
-            member.vitals.hit_points <= 1 || session_->script_variable(ecl_temple_service) != 0)
+            member.vitals.hit_points <= 1 || dax_session().script_variable(ecl_temple_service) != 0)
         {
             throw std::runtime_error("Original temple must charge 100 gp, heal and resume ECL");
         }
@@ -4255,7 +4316,7 @@ void RolfTourView::check_recovery()
     {
         for (unsigned x = 0; x < 16; ++x)
         {
-            if (session_->map().at(x, y).event_number() == target_event)
+            if (dax_session().map().at(x, y).event_number() == target_event)
             {
                 check_walk_to(x, y);
                 return;

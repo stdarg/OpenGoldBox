@@ -136,4 +136,13 @@ bool is_kit_folder(const std::filesystem::path &folder)
     return true;
 }
 
+bool is_design_folder(const std::filesystem::path &folder)
+{
+    // "NAME.DSN/" names the same folder.
+    const auto named = folder.has_filename() ? folder : folder.parent_path();
+    std::error_code error;
+    return std::filesystem::is_directory(named, error) &&
+           por::detail::upper_ascii(path_text(named.extension())) == ".DSN";
+}
+
 } // namespace opengold::ua

@@ -59,6 +59,12 @@ folder too when it is not set ([GAMES.md](GAMES.md)). `--game=POOLRAD`, `--game=
 on the command line picks the game without the menu, as the packaged game's own checks
 do.
 
+*Unlimited Adventures*' folder (`[games] UA`) is the construction kit's, the
+one holding `CKIT.EXE` and `DISK1` to `DISK3`. Choosing it then asks each time
+for the design to play, a folder the kit names `NAME.DSN`, offering the last
+one, which `[games] UA_DESIGN` keeps; `--game=UA` plays that one without
+asking ([games/ua.md](games/ua.md), From the startup menu).
+
 `difficulty` is one of `easy`, `normal`, `hard`, `nightmare` and `infernal`,
 easiest first; the default, also used for an unknown value, is `normal`. On
 `hard` and above monsters use the potions, wands and scrolls they carry. Each level

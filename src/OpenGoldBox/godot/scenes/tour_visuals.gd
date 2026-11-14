@@ -52,6 +52,9 @@ func _draw_scene(view: Control, data: Dictionary) -> void:
 
 
 func _draw_map(view: Control, data: Dictionary) -> void:
+    # A design made with Unlimited Adventures' kit has no overhead map yet.
+    if not data.has("cells"):
+        return
     var bounds := _bounds(view, "MapBounds")
     var cell := bounds.size.x / 16.0
     var flags: Array = data["cells"]

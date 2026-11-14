@@ -79,8 +79,11 @@ void CharacterCreationView::open_game_menu()
     const bool exploring = town && town->is_visible();
     const bool idle = !exploring || town->can_leave();
     const bool party = campaign_ && campaign_->selected();
-    menu.open({.save = party && !fighting && idle && !campaign_defeated_,
-               .load = !fighting && (idle || campaign_defeated_),
+    // A design made with Unlimited Adventures' kit is not saved or loaded yet
+    // (docs/games/ua.md, What remains).
+    const bool saves = settings::chosen_game() != opengold::GoldBoxGame::unlimited_adventures;
+    menu.open({.save = saves && party && !fighting && idle && !campaign_defeated_,
+               .load = saves && !fighting && (idle || campaign_defeated_),
                .main_menu = exploring && !fighting && idle,
                .srd_rules = !campaign_ || game_rules_of(*campaign_).set == GameRules::Set::srd});
     // Nothing beneath moves or hears keys while the menu is open.
@@ -123,7 +126,9 @@ void CharacterCreationView::new_art_changed()
     {
         town->forget_portraits();
     }
-    if (campaign_ && !campaign_defeated_ && !campaign_->in_combat() && town && town->can_leave())
+    // A design, which cannot be saved yet, keeps its session and its walls.
+    if (campaign_ && !campaign_defeated_ && !campaign_->in_combat() && town && town->can_leave() &&
+        town->saved_session())
     {
         const bool exploring = town->is_visible();
         reload_in_memory();

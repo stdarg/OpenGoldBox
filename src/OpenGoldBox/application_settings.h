@@ -129,5 +129,10 @@ bool save_game_folder(opengold::GoldBoxGame game, const godot::String &directory
 // another game's must hold that game's files.
 [[nodiscard]] Validation validate_game_folder(const godot::String &directory,
                                               opengold::GoldBoxGame game);
+// The design an Unlimited Adventures game plays: a folder the construction
+// kit made (NAME.DSN), kept under [games] as UA_DESIGN (docs/games/ua.md).
+[[nodiscard]] godot::String design_folder();
+bool save_design_folder(const godot::String &directory);
+[[nodiscard]] Validation validate_design_folder(const godot::String &directory);
 } // namespace settings
 #endif

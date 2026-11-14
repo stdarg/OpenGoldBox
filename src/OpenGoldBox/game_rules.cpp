@@ -3,6 +3,7 @@
 #include "opengold/original_combat.h"
 #include "opengold/original_content.h"
 #include "opengold/srd5.h"
+#include "opengold/ua_session.h"
 #include <map>
 #include <mutex>
 #include <stdexcept>
@@ -16,12 +17,17 @@ const opengold::original::Content &original_content(const RulesFiles &files)
     static std::mutex guard;
     static std::map<std::filesystem::path, opengold::original::Content> loaded;
     const std::scoped_lock lock(guard);
-    const auto &folder = files.original_game;
+    // A design's monsters are its own: each design is read once.
+    const auto design = files.game == opengold::GoldBoxGame::unlimited_adventures;
+    const auto &folder = design ? files.design : files.original_game;
     if (const auto found = loaded.find(folder); found != loaded.end())
     {
         return found->second;
     }
-    return loaded.emplace(folder, opengold::load_original_content(folder, files.game))
+    return loaded
+        .emplace(folder, design ? opengold::ua::load_design_content(
+                                      opengold::ua::DesignFiles(files.original_game, files.design))
+                                : opengold::load_original_content(folder, files.game))
         .first->second;
 }
 

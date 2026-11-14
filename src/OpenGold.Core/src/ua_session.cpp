@@ -174,8 +174,16 @@ UaSession::UaSession(DesignFiles files, GameSettings game)
     const std::size_t at = header_spots + 4 * entry;
     move_party(std::min<unsigned>(header[at + 1], area_.area.columns - 1U),
                std::min<unsigned>(header[at], area_.area.rows - 1U), kit_facing(header[at + 2]));
+    // A design has no guided opening, as Pool of Radiance's Rolf gives.
+    snapshot_.tour_finished = true;
     snapshot_.phase = TourPhase::completed;
     refresh_snapshot();
+}
+
+void UaSession::restart()
+{
+    auto files = files_;
+    *this = start(std::move(files));
 }
 
 void UaSession::load_area(unsigned number)
@@ -398,6 +406,25 @@ Image UaSession::observe_view()
                        hour() < 6 || hour() >= 20);
 }
 
+std::optional<Image> UaSession::view_picture()
+{
+    if (area_.overland())
+    {
+        return std::nullopt;
+    }
+    return observe_view();
+}
+
+std::string UaSession::area_name() const
+{
+    // The header's name runs from +76h to the wandering monster at +106h.
+    constexpr std::size_t name_at = 0x76, name_end = 0x106;
+    const auto &header = area_.area.header;
+    const auto *first = header.data() + name_at;
+    const auto *last = std::find(first, header.data() + name_end, std::uint8_t{0});
+    return {first, last};
+}
+
 std::uint8_t UaSession::quest_flag(unsigned number) const
 {
     return quest_flags_.at(number);
@@ -615,6 +642,21 @@ void UaSession::begin_combat(const EventRecord &event, bool pick_one)
     snapshot_.phase = TourPhase::combat;
 }
 
+bool UaSession::reject_combat(std::string diagnostic)
+{
+    if (pending_.wait != Wait::combat || !encounter_ || (party_ && party_->in_combat()))
+    {
+        return false;
+    }
+    encounter_.reset();
+    pending_ = {};
+    running_ = false;
+    snapshot_.phase = TourPhase::faulted;
+    snapshot_.diagnostic = std::move(diagnostic);
+    refresh_snapshot();
+    return true;
+}
+
 bool UaSession::resolve_combat(const rules::Snapshot &outcome)
 {
     if (pending_.wait != Wait::combat || !encounter_ || !party_ ||
@@ -650,7 +692,9 @@ bool UaSession::resolve_combat(const rules::Snapshot &outcome)
 void UaSession::refresh_snapshot()
 {
     ++snapshot_.revision;
-    if (!running_ && pending_.wait == Wait::nothing && snapshot_.phase != TourPhase::defeated)
+    // A lost party and a refused fight end the adventure where it stands.
+    if (!running_ && pending_.wait == Wait::nothing && snapshot_.phase != TourPhase::defeated &&
+        snapshot_.phase != TourPhase::faulted)
     {
         snapshot_.phase = TourPhase::completed;
     }

@@ -636,6 +636,14 @@ if(OPENGOLD_BUILD_TESTS)
         "Startup menu passed: Secret" -DARGS=--secret)
     opengold_settings_check(startup_menu_gateway startup_menu_tests
         "Startup menu passed: Gateway" -DARGS=--gateway)
+    # Unlimited Adventures: the kit's folder, the test design's folder (written
+    # by opengold_ua_session_tests), a party made under the kit's rules and the
+    # design's start.
+    opengold_settings_check(startup_menu_ua startup_menu_tests
+        "Startup menu passed: Unlimited Adventures"
+        "-DARGS=--ua\;--ua-design=${OPENGOLD_UA_DESIGN_FIXTURE}")
+    set_property(TEST opengold_godot_startup_menu_ua APPEND PROPERTY
+        FIXTURES_REQUIRED ua_design_fixture)
     # Each game's save and load screens list its own saves, and a save of
     # another game starts that game. Skipped without Curse's files.
     opengold_settings_check(saves_by_game saves_by_game_tests "Saves by game passed")

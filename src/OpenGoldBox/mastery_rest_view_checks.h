@@ -116,9 +116,11 @@ void RolfTourView::check_mastery_rest_controls()
             auto resources = std::make_shared<opengold::por::PhlanResources>();
             resources->programs[0] = program;
             const opengold::Image placeholder{1, 1, 0, 0, {0, 0, 0, 255}};
-            session_.emplace(opengold::por::GeoMap{}, program,
-                             std::array<opengold::Image, 3>{placeholder, placeholder, placeholder},
-                             0x9914, opengold::por::WallArtSet{}, resources);
+            session_ =
+                std::make_unique<opengold::DaxExplorationSession>(opengold::por::RolfTourSession(
+                    opengold::por::GeoMap{}, program,
+                    std::array<opengold::Image, 3>{placeholder, placeholder, placeholder}, 0x9914,
+                    opengold::por::WallArtSet{}, resources));
             session_->campaign_party(campaign_);
             session_->advance(1);
             camp();

@@ -20,6 +20,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <set>
 #include <string>
 #include <string_view>
@@ -99,6 +100,13 @@ class AreaBuilder
         bytes_[at] = static_cast<std::uint8_t>(y);
         bytes_[at + 1] = static_cast<std::uint8_t>(x);
         bytes_[at + 2] = static_cast<std::uint8_t>(facing);
+    }
+
+    // The area's name, which the header holds at +76h.
+    void name(std::string_view text)
+    {
+        std::ranges::copy(text, bytes_.begin() + static_cast<std::ptrdiff_t>(header_at + 0x76));
+        bytes_[header_at + 0x76 + text.size()] = 0;
     }
 
     void side(unsigned x, unsigned y, MapDirection direction, std::uint8_t wall)
@@ -181,13 +189,11 @@ unsigned high(unsigned word)
 }
 
 // The test design: areas 5 (the hall) and 6 (the cellar), and a game record
-// that starts the party in the hall (docs/games/ua.md, The test design).
-// Each check builds its own, named for it, in the folder it runs in (its
-// build's), as the checks and the builds' suites run at once.
+// that starts the party in the hall (docs/games/ua.md, The test design),
+// written into `folder`.
 std::filesystem::path build_test_design(const std::filesystem::path &kit,
-                                        const std::string &check_name)
+                                        const std::filesystem::path &folder)
 {
-    const auto folder = std::filesystem::current_path() / ("opengold_ua_" + check_name + ".dsn");
     std::filesystem::remove_all(folder);
     std::filesystem::create_directories(folder);
     const ua::DesignFiles templates(kit, {});
@@ -195,6 +201,7 @@ std::filesystem::path build_test_design(const std::filesystem::path &kit,
     check(blank && blank->size() == 12962, "The kit has its dungeon template");
 
     AreaBuilder hall(*blank);
+    hall.name("THE TEST HALL");
     hall.entry(1, 2, 2, 2);
     hall.entry(2, 12, 11, 0);
     // A wall down the hall between columns 9 and 10, with a locked door at
@@ -287,6 +294,15 @@ std::filesystem::path build_test_design(const std::filesystem::path &kit,
     game[0x31] = 1;
     write(folder / "GAME001.DAT", game);
     return folder;
+}
+
+// Each run builds its design in a folder of its own, as the session test and
+// the walk run at once.
+// Each check builds its own design, named for it, in the folder it runs in
+// (its build's), as the checks and the builds' suites run at once.
+std::filesystem::path temporary_design(std::string_view name)
+{
+    return std::filesystem::current_path() / name;
 }
 
 std::optional<std::filesystem::path> kit_folder()
@@ -479,7 +495,7 @@ void a_character_follows_the_kits_rules()
 
 void the_design_loads_and_plays(const std::filesystem::path &kit)
 {
-    const auto design = build_test_design(kit, "session");
+    const auto design = build_test_design(kit, temporary_design("opengold_ua_test.dsn"));
     const ua::DesignFiles files(kit, design);
     const auto content = ua::load_design_content(files);
     check(content.bestiary.size() == 127 && content.bestiary.contains(ua::monster_key(1)),
@@ -574,12 +590,66 @@ void the_design_loads_and_plays(const std::filesystem::path &kit)
     check(session.diagnostics().empty(), "Every event of the test design is played");
 }
 
+// The game's exploration view plays a design through ExplorationSession, as
+// it plays a DAX campaign (docs/games/ua.md, The seam).
+void the_view_plays_it_through_the_seam(const std::filesystem::path &kit)
+{
+    const ua::DesignFiles files(kit,
+                                build_test_design(kit, temporary_design("opengold_ua_seam.dsn")));
+    const auto content = ua::load_design_content(files);
+    auto design = std::make_unique<ua::UaSession>(ua::UaSession::start(files));
+    opengold::ExplorationSession &session = *design;
+    // Return to every text, as the view's Continue gives it.
+    const auto read_on = [&session]
+    {
+        while (session.snapshot().phase == TourPhase::awaiting_continue)
+        {
+            check(session.choose(session.snapshot().continue_ticket, 0),
+                  "Return goes on from words");
+        }
+    };
+    check(ua::is_design_folder(files.design()) && !ua::is_design_folder(kit),
+          "A design's folder is named NAME.DSN");
+    check(session.dax() == nullptr, "A design has none of a DAX campaign's features");
+    check(session.snapshot().tour_finished, "A design has no guided opening");
+    check(session.area_name() == "THE TEST HALL",
+          "The area's name is the designer's: " + session.area_name());
+    const auto view = session.view_picture();
+    check(view && view->width == 88, "The window shows the dungeon's 3D view");
+    check(session.can_leave(), "Nothing waits before the party arrives");
+    const auto party = new_party(content);
+    session.campaign_party(party);
+    check(!session.can_leave() && session.snapshot().phase == TourPhase::awaiting_continue,
+          "The welcome waits for Return");
+    read_on();
+    // A fight the view cannot set up stops the adventure, saying why.
+    design->place(5, 8, 2, MapDirection::east);
+    design->look();
+    read_on();
+    check(session.snapshot().phase == TourPhase::combat && session.pending_encounter(),
+          "The kobolds attack");
+    check(session.reject_combat("No battlefield") &&
+              session.snapshot().phase == TourPhase::faulted &&
+              session.snapshot().diagnostic == "No battlefield" && !session.pending_encounter(),
+          "A refused fight stops the adventure with its reason");
+    // Restart: the design from its start, its welcome again.
+    session.restart();
+    session.campaign_party(party);
+    check(session.snapshot().pose.x == 2 && session.snapshot().pose.y == 2 &&
+              session.snapshot().dialogue.find("WELCOME TO THE TEST HALL") != std::string::npos,
+          "Restart begins the design again");
+    read_on();
+    // The overland areas have no 3D view yet: nothing to draw, nothing thrown.
+    design->place(1, 0, 0, MapDirection::north);
+    check(!session.view_picture(), "An overland area shows no 3D view yet");
+}
+
 // The walk (plan phase 8, step 1): every square of every area of the design,
 // stood on facing each way, its view drawn, its event played, and every
 // open step from it taken.
 bool walk_every_square(const std::filesystem::path &kit)
 {
-    const auto design = build_test_design(kit, "walk");
+    const auto design = build_test_design(kit, temporary_design("opengold_ua_walk.dsn"));
     const ua::DesignFiles files(kit, design);
     const auto content = ua::load_design_content(files);
     auto session = ua::UaSession::start(files);
@@ -664,6 +734,13 @@ int main(int argc, char **argv)
             return walk_every_square(*kit) ? 0 : 1;
         }
         the_design_loads_and_plays(*kit);
+        the_view_plays_it_through_the_seam(*kit);
+        // The game's startup check plays the test design from the menu (a
+        // CTest fixture): it is written where the check looks for it.
+        if (const char *fixture = std::getenv("OPENGOLD_UA_DESIGN_FIXTURE"))
+        {
+            build_test_design(*kit, fixture);
+        }
     }
     catch (const std::exception &error)
     {

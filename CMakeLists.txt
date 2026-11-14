@@ -359,6 +359,11 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_ua_walk COMMAND opengold_ua_session_tests --ua-walk)
     set_tests_properties(opengold_ua_session_tests opengold_ua_walk PROPERTIES
         SKIP_REGULAR_EXPRESSION "Skipped: ")
+    # It also writes the test design the game's startup check plays from the menu
+    # (opengold_godot_startup_menu_ua).
+    set(OPENGOLD_UA_DESIGN_FIXTURE "${CMAKE_BINARY_DIR}/ua-fixtures/TEST.DSN")
+    set_tests_properties(opengold_ua_session_tests PROPERTIES FIXTURES_SETUP ua_design_fixture
+        ENVIRONMENT "OPENGOLD_UA_DESIGN_FIXTURE=${OPENGOLD_UA_DESIGN_FIXTURE}")
 
     add_executable(opengold_concentration_tests tests/concentration_tests.cpp)
     target_include_directories(opengold_concentration_tests PRIVATE src/OpenGold.Rules.Srd5/src)

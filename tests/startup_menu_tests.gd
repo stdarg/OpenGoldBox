@@ -5,7 +5,8 @@ extends SceneTree
 # tests/settings_check.cmake; --menu-capture=DIR saves pictures of them.
 # Curse's button is checked when OPENGOLD_GOLDBOX_DIR holds its files, and
 # with --secret Secret of the Silver Blades' button, with --gateway Gateway
-# to the Savage Frontier's. A game other than Pool
+# to the Savage Frontier's, with --ua and --ua-design=FOLDER Unlimited
+# Adventures' with the test design in FOLDER. A game other than Pool
 # of Radiance first shows its own title pictures (TITLE.DAX), as its original
 # does when it starts, then its menu.
 
@@ -13,6 +14,8 @@ var captures := ""
 var exit_case := false
 var secret_case := false
 var gateway_case := false
+var ua_case := false
+var ua_design := ""
 
 func _initialize() -> void:
 	for arg in OS.get_cmdline_user_args():
@@ -20,6 +23,8 @@ func _initialize() -> void:
 		if arg == "--menu-exit": exit_case = true
 		if arg == "--secret": secret_case = true
 		if arg == "--gateway": gateway_case = true
+		if arg == "--ua": ua_case = true
+		if arg.begins_with("--ua-design="): ua_design = arg.trim_prefix("--ua-design=")
 	call_deferred("run_checks")
 
 func require(condition: bool, message: String) -> void:
@@ -173,6 +178,9 @@ func run_checks() -> void:
 		return
 	if gateway_case:
 		await check_gateway()
+		return
+	if ua_case:
+		await check_ua()
 		return
 	# Pool of Radiance's title is its new one, which a key passes; Options from
 	# its menu returns to its menu, and closing the question too.
@@ -369,3 +377,105 @@ func check_secret(menu: Window) -> void:
 		root.get_texture().get_image().save_png(captures.path_join("secret-exploration.png"))
 	print("Startup menu passed: Secret's folder found, a party made under the original rules, its vision and New Verdigris.")
 	quit(0)
+
+# Unlimited Adventures from the menu: the kit's folder found, its design asked
+# (a folder that is not a design refused), no title, no default party, the
+# original rules only, then a fighter made under the kit's rules plays the
+# design's start: its welcome, the 3D view drawn, and a step.
+func check_ua() -> void:
+	var kit := OS.get_environment("OPENGOLD_GOLDBOX_DIR").path_join("UA")
+	if OS.get_environment("OPENGOLD_GOLDBOX_DIR").is_empty() or not FileAccess.file_exists(kit.path_join("CKIT.EXE")) \
+			or not DirAccess.dir_exists_absolute(ua_design):
+		print("Skipped: the kit's files or the test design are not here.")
+		quit(0)
+		return
+	await pick("UA")
+	var dialog: Window = current_scene.get_node("PathDialog")
+	require(dialog.visible and dialog.get_node("Title").text == "Unlimited Adventures design",
+		"Unlimited Adventures asks for its design once the kit's folder is found")
+	var path: LineEdit = dialog.get_node("Path")
+	path.text = kit
+	dialog.get_node("Continue").pressed.emit()
+	await settle()
+	require(dialog.visible and not dialog.get_node("Status").text.is_empty(), "The kit's own folder is not a design")
+	path.text = ua_design
+	dialog.get_node("Continue").pressed.emit()
+	await settle()
+	require(not dialog.visible, "The test design is taken")
+	var game_menu: Window = current_scene.get_node("GameMenu")
+	require(game_menu.visible and game_menu.title == "Unlimited Adventures", "Unlimited Adventures' menu follows, with no title")
+	require(game_menu.get_node("Buttons/DefaultParty").disabled, "A design has no default party yet")
+	require(game_menu.get_node("Buttons/Load").disabled, "A design has no saves yet")
+	game_menu.get_node("Buttons/NewParty").pressed.emit()
+	await settle()
+	var rules: OptionButton = current_scene.get_node("RulesDialog/Rows/Rules")
+	require(rules.selected == 0 and rules.is_item_disabled(1), "A design plays by the original rules only")
+	await answer_rules(true)
+	require(current_scene != null and current_scene.name == "CharacterCreation", "Unlimited Adventures' button must lead on to the party")
+	var town: Control = await explore_with_a_fighter()
+	var welcome := ""
+	for wait in range(120):
+		await process_frame
+		var dialogue: String = town.find_child("Dialogue", true, false).get_parsed_text()
+		if dialogue.contains("WELCOME TO THE TEST HALL"):
+			welcome = dialogue
+			break
+	require(welcome.contains("WELCOME TO THE TEST HALL, Vala."), "The design's welcome names the selected member: " + welcome)
+	var location: String = town.get_node("%Location").text
+	require(location.begins_with("THE TEST HALL / "), "The screen names the design's area: " + location)
+	var visuals: Dictionary = town.tour_visuals()
+	require(visuals.has("wall_image") and (visuals["wall_image"] as Image).get_size() == Vector2i(88, 88),
+		"The design's 3D view is drawn")
+	for answer in range(10):
+		var continue_button: Button = town.get_node("%Continue")
+		if not continue_button.visible: break
+		continue_button.pressed.emit()
+		await settle()
+	require(not town.get_node("%Continue").visible, "The welcome's words end")
+	require(town.get_node("%Coordinates").text.begins_with("Party (2, 2)"), "The party stands on the design's start")
+	var forward: Button = town.get_node("%Forward")
+	require(not forward.disabled, "The party may step once the words end")
+	forward.pressed.emit()
+	await settle()
+	require(town.get_node("%Coordinates").text.begins_with("Party (3, 2)"), "A step takes the party east: " + town.get_node("%Coordinates").text)
+	# The hall looks the same a square on; turning north faces its wall.
+	var east_view: PackedByteArray = (town.tour_visuals()["wall_image"] as Image).get_data()
+	town.get_node("%Left").pressed.emit()
+	await settle()
+	require((town.tour_visuals()["wall_image"] as Image).get_data() != east_view, "Turning shows another view")
+	if not captures.is_empty():
+		RenderingServer.force_draw(false)
+		await process_frame
+		root.get_texture().get_image().save_png(captures.path_join("ua-exploration.png"))
+	# East again, past the chest (left shut), to the kobolds at (8, 2): their
+	# fight opens on the combat screen with the design's monsters.
+	town.get_node("%Right").pressed.emit()
+	await settle()
+	for step in range(5):
+		await answer_town(town, "No")
+		forward.pressed.emit()
+		await settle()
+	await answer_town(town, "No")
+	var fight: Node = null
+	for wait in range(120):
+		await process_frame
+		fight = current_scene.get_node_or_null("CampaignCombat")
+		if fight: break
+	var said: String = town.find_child("Dialogue", true, false).get_parsed_text()
+	require(fight != null, "The kobolds' fight opens on the combat screen: " + said)
+	print("Startup menu passed: Unlimited Adventures' kit and design, a party made under the kit's rules, the design's welcome, its 3D view, a step and its kobolds' fight.")
+	quit(0)
+
+# Goes on from what the exploration screen waits for: Return to words, and
+# `choice` where it offers choices.
+func answer_town(town: Control, choice: String) -> void:
+	for answer in range(10):
+		var continue_button: Button = town.get_node("%Continue")
+		if not continue_button.visible or continue_button.disabled: return
+		var choices: ItemList = town.get_node("%Choices")
+		if choices.visible:
+			for i in range(choices.item_count):
+				if choices.get_item_text(i) == choice:
+					choices.select(i)
+		continue_button.pressed.emit()
+		await settle()

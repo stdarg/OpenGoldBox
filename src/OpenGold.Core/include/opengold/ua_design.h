@@ -53,6 +53,8 @@ class DesignFiles
 
 // The kit's folder holds CKIT.EXE and DISK1 to DISK3.
 [[nodiscard]] bool is_kit_folder(const std::filesystem::path &folder);
+// A design's folder, as the kit names it: NAME.DSN.
+[[nodiscard]] bool is_design_folder(const std::filesystem::path &folder);
 
 } // namespace opengold::ua
 

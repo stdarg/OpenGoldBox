@@ -1,6 +1,7 @@
 #ifndef OPENGOLD_ROLF_TOUR_VIEW_H
 #define OPENGOLD_ROLF_TOUR_VIEW_H
 
+#include "opengold/exploration_session.h"
 #include "opengold/rolf_tour.h"
 #include "portrait_catalog.h"
 #include "opengold/sound_player.h"
@@ -48,9 +49,10 @@ class RolfTourView : public godot::Control
         refresh();
     }
 
+    // The DAX campaign a save keeps; null for a design, which is not saved yet.
     [[nodiscard]] const opengold::por::RolfTourSession *saved_session() const
     {
-        return session_ ? &*session_ : nullptr;
+        return dax();
     }
 
     [[nodiscard]] const std::optional<opengold::CampaignEncounter> &pending_encounter() const
@@ -128,7 +130,20 @@ class RolfTourView : public godot::Control
     std::function<void(const std::string &)> save_check_;
     void advance_frame(double delta);
     void respond_to_input(const godot::Ref<godot::InputEvent> &event);
-    std::optional<opengold::por::RolfTourSession> session_;
+    // The adventure played: a DAX game's campaign or an Unlimited Adventures
+    // design (docs/games/ua.md, The seam).
+    std::unique_ptr<opengold::ExplorationSession> session_;
+
+    // The DAX campaign played; null without one or while a design plays,
+    // whose screen leaves out what only a DAX campaign has.
+    [[nodiscard]] opengold::por::RolfTourSession *dax() const noexcept
+    {
+        return session_ ? session_->dax() : nullptr;
+    }
+
+    // A DAX campaign's session, where the view needs one (its checks and
+    // what only it shows); throws without one.
+    [[nodiscard]] opengold::por::RolfTourSession &dax_session() const;
     // Auto-equip as the Options screen sets it (EQUIP-1): nothing for off.
     [[nodiscard]] static std::optional<opengold::UnidentifiedMagic> auto_equip_setting();
     std::shared_ptr<opengold::CampaignParty> campaign_;
@@ -185,6 +200,7 @@ class RolfTourView : public godot::Control
     bool treasure_leave_warned_{};
     // What the last take at a treasure gave, shown under the pile.
     godot::String treasure_notice_;
+
     // In the inventory: Sell or Drop was pressed once for this item; the next
     // press of the same button gives it up (SELL-1).
     struct GiveUpWarning
@@ -192,18 +208,21 @@ class RolfTourView : public godot::Control
         std::uint64_t item{};
         bool sell{};
     };
+
     std::optional<GiveUpWarning> give_up_warned_;
     std::optional<opengold::PartyState> identify_check_retained_;
     std::uint64_t identify_check_sword_{};
     // The scroll whose spells the Cast menu offers (MAGIC-6); none while it
     // offers the member's own spells and features.
     std::optional<std::uint64_t> scroll_item_;
+
     // What the Cast menu offers: an action's id and whether it needs a target.
     struct CastOption
     {
         std::string id;
         bool whole_party{};
     };
+
     std::vector<CastOption> cast_options_;
     unsigned recovery_stage_{};
     bool save_cancel_checked_{}, save_cancel_pending_{};

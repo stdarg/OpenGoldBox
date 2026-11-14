@@ -84,12 +84,12 @@ struct MenuGame
 };
 
 // The games the startup menu offers, in release order (docs/GAMES.md).
-constexpr std::array<MenuGame, 4> playable_games{
+constexpr std::array<MenuGame, 5> playable_games{
     {{opengold::GoldBoxGame::pool_of_radiance, N_("Pool of Radiance")},
      {opengold::GoldBoxGame::curse_of_the_azure_bonds, N_("Curse of the Azure Bonds")},
      {opengold::GoldBoxGame::secret_of_the_silver_blades, N_("Secret of the Silver Blades")},
-     {opengold::GoldBoxGame::gateway_to_the_savage_frontier,
-      N_("Gateway to the Savage Frontier")}}};
+     {opengold::GoldBoxGame::gateway_to_the_savage_frontier, N_("Gateway to the Savage Frontier")},
+     {opengold::GoldBoxGame::unlimited_adventures, N_("Unlimited Adventures")}}};
 
 const char *menu_title(opengold::GoldBoxGame game)
 {
@@ -132,8 +132,8 @@ std::optional<std::pair<opengold::GoldBoxGame, std::filesystem::path>> newest_sa
     return newest;
 }
 
-// --game=POOLRAD (or CURSE, SECRET or GATEWAY): the game a check plays, without the
-// titles and the menus.
+// --game=POOLRAD (or CURSE, SECRET, GATEWAY or UA): the game a check plays, without
+// the titles and the menus.
 std::optional<opengold::GoldBoxGame> game_from_command_line()
 {
     auto *os = OS::get_singleton(); // borrowed engine singleton
@@ -309,11 +309,13 @@ void StartupView::game_chosen(std::int64_t chosen)
 }
 
 // The game's folder, and Pool of Radiance's: the party's portraits and
-// combat art still come from its files (docs/GAMES.md).
+// combat art still come from its files (docs/GAMES.md). Unlimited Adventures'
+// folder is the kit's, and then its design is asked.
 void StartupView::choose_folders(opengold::GoldBoxGame game, AfterFolders after)
 {
     after_folders_ = after;
     folders_needed_ = {game};
+    design_needed_ = game == opengold::GoldBoxGame::unlimited_adventures;
     if (game != opengold::GoldBoxGame::pool_of_radiance &&
         !settings::validate_game_path(settings::game_path()).usable)
     {
@@ -346,6 +348,7 @@ void StartupView::cancel_folders()
     required_node<Window>(*this, "ChecksumWarning").hide();
     save_pending_path_ = false;
     folders_needed_.clear();
+    design_needed_ = false;
     if (game_from_flag_)
     {
         exit_to_desktop();
@@ -389,6 +392,9 @@ void StartupView::show_game_menu()
     const bool saved = newest_campaign_save(game).has_value();
     required_node<Button>(*menu, "Buttons/Continue").set_disabled(!saved);
     required_node<Button>(*menu, "Buttons/Load").set_disabled(!saved);
+    // No default party is made for a design yet (docs/games/ua.md).
+    required_node<Button>(*menu, "Buttons/DefaultParty")
+        .set_disabled(game == opengold::GoldBoxGame::unlimited_adventures);
     menu->popup_centered();
     focus_first_enabled(required_node<Node>(*menu, "Buttons"));
 }
@@ -505,6 +511,11 @@ void StartupView::exit_to_desktop()
 // game; startup goes on once every folder is known.
 void StartupView::next_folder()
 {
+    if (asking_design())
+    {
+        ask_design();
+        return;
+    }
     if (folders_needed_.empty())
     {
         folders_ready();
@@ -518,6 +529,9 @@ void StartupView::next_folder()
             : i18n::format(N_("{game} game files"), {{"game", i18n::text(menu_title(game))}});
     dialog->set_title(heading);
     required_node<Label>(*dialog, "Title").set_text(heading);
+    required_node<Label>(*dialog, "Instructions")
+        .set_text(i18n::text(
+            N_("Choose the folder containing START.EXE and the original DAX game files.")));
     pending_path_ = settings::game_folder(game);
     if (game == opengold::GoldBoxGame::pool_of_radiance)
     {
@@ -539,6 +553,27 @@ void StartupView::next_folder()
         return;
     }
     check_path();
+}
+
+// The design is asked each time Unlimited Adventures is chosen, the last one
+// offered, as the player may have several; a check's --game=UA plays the
+// saved one.
+void StartupView::ask_design()
+{
+    auto *dialog = &required_node<Window>(*this, "PathDialog");
+    const auto heading = i18n::text(N_("Unlimited Adventures design"));
+    dialog->set_title(heading);
+    required_node<Label>(*dialog, "Title").set_text(heading);
+    required_node<Label>(*dialog, "Instructions")
+        .set_text(i18n::text(N_(
+            "Choose the folder of the design to play, which the construction kit names NAME.DSN.")));
+    pending_path_ = settings::design_folder();
+    if (game_from_flag_ && settings::validate_design_folder(pending_path_).usable)
+    {
+        check_path();
+        return;
+    }
+    show_path();
 }
 
 void StartupView::connect_path_dialogs()
@@ -643,7 +678,9 @@ void StartupView::accept_path()
 
 void StartupView::check_path()
 {
-    const auto result = settings::validate_game_folder(pending_path_, folders_needed_.front());
+    const auto result =
+        asking_design() ? settings::validate_design_folder(pending_path_)
+                        : settings::validate_game_folder(pending_path_, folders_needed_.front());
     if (!result.usable)
     {
         String message = result.error.is_empty() ? i18n::text("Missing or unreadable game files:")
@@ -675,7 +712,10 @@ void StartupView::check_path()
 void StartupView::continue_path()
 {
     required_node<Window>(*this, "ChecksumWarning").hide();
-    if (save_pending_path_ && !settings::save_game_folder(folders_needed_.front(), pending_path_))
+    const bool design = asking_design();
+    if (save_pending_path_ &&
+        !(design ? settings::save_design_folder(pending_path_)
+                 : settings::save_game_folder(folders_needed_.front(), pending_path_)))
     {
         show_path(i18n::text(
             "Cannot save settings. Check that settings.cfg in the game's user data folder can be written and is valid."));
@@ -683,7 +723,14 @@ void StartupView::continue_path()
     }
     save_pending_path_ = false;
     get_viewport()->set_input_as_handled();
-    folders_needed_.erase(folders_needed_.begin());
+    if (design)
+    {
+        design_needed_ = false;
+    }
+    else
+    {
+        folders_needed_.erase(folders_needed_.begin());
+    }
     next_folder();
 }
 
@@ -1066,6 +1113,14 @@ void StartupView::ask_rules()
         required_node<Button>(*dialog, "Rows/Begin")
             .connect("pressed", presentation::guarded(this, &StartupView::begin_game));
         connect_escape(*dialog, &StartupView::cancel_new_game);
+    }
+    // A design plays by the kit's own rules: the SRD has none of its monsters
+    // (docs/games/ua.md).
+    const bool design = settings::chosen_game() == opengold::GoldBoxGame::unlimited_adventures;
+    rules.set_item_disabled(1, design);
+    if (design)
+    {
+        rules.select(0);
     }
     show_rules_notes(0);
     dialog->popup_centered();

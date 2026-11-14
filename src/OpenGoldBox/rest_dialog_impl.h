@@ -81,7 +81,7 @@ void RolfTourView::setup_rest()
 
 void RolfTourView::camp()
 {
-    if (!campaign_ || !session_ || !session_->can_leave() || campaign_->in_combat())
+    if (!campaign_ || !dax() || !session_->can_leave() || campaign_->in_combat())
     {
         return;
     }
@@ -241,7 +241,7 @@ void RolfTourView::refresh_rest()
     presentation::required_node<Button>(*w, "Heal").set_visible(spending);
     presentation::required_node<Button>(*w, "Heal").set_disabled(!healable);
     presentation::required_node<Button>(*w, "Save")
-        .set_visible(embedded_party_ && session_->can_leave() && spending);
+        .set_visible(embedded_party_ && dax() && session_->can_leave() && spending);
     presentation::required_node<Button>(*w, "Finish")
         .set_text(rest_text(spending ? N_("Finish") : N_("Cancel")));
     if (spending && !w->is_visible() && !rest_save_open_ && is_visible_in_tree())
@@ -262,9 +262,9 @@ void RolfTourView::rest_start()
                 : opengold::RestKind::long_rest;
         w->hide();
         rest_result_ = String();
-        if (session_)
+        if (auto *campaign = dax())
         {
-            session_->camp(kind);
+            campaign->camp(kind);
         }
         refresh();
     }
@@ -436,19 +436,19 @@ std::optional<String> RolfTourView::use_outside_combat(opengold::MemberId user,
     };
     // Teleport takes the whole party to the place chosen; the camp ends with
     // the trip.
-    if (const auto at = id.find("@"); at >= 0 && id.begins_with("teleport") && session_)
+    if (const auto at = id.find("@"); at >= 0 && id.begins_with("teleport") && dax())
     {
-        session_->teleport(user, id.substr(0, at).utf8().get_data(),
-                           static_cast<unsigned>(id.substr(at + 1).to_int()));
+        dax()->teleport(user, id.substr(0, at).utf8().get_data(),
+                        static_cast<unsigned>(id.substr(at + 1).to_int()));
         leave_dialogs();
         refresh();
         return std::nullopt;
     }
     // Word of Recall prepares the sanctuary or takes the party to it; the
     // camp ends with the trip.
-    if (id.begins_with("word_of_recall") && session_)
+    if (id.begins_with("word_of_recall") && dax())
     {
-        session_->recall(user, id.utf8().get_data());
+        dax()->recall(user, id.utf8().get_data());
         leave_dialogs();
         refresh();
         return std::nullopt;
@@ -593,9 +593,9 @@ void RolfTourView::rest_finish()
         presentation::required_node<Window>(*this, "RestDialog").hide();
         rest_save_open_ = false;
         rest_result_ = String();
-        if (session_)
+        if (auto *campaign = dax())
         {
-            session_->decline_camp();
+            campaign->decline_camp();
         }
         refresh();
     }
@@ -608,7 +608,7 @@ void RolfTourView::rest_finish()
 
 void RolfTourView::rest_save()
 {
-    if (!embedded_party_ || !session_ || !session_->can_leave() || !campaign_ ||
+    if (!embedded_party_ || !dax() || !session_->can_leave() || !campaign_ ||
         campaign_->in_combat())
     {
         return;
@@ -682,9 +682,11 @@ void RolfTourView::check_rest_controls()
             auto resources = std::make_shared<opengold::por::PhlanResources>();
             resources->programs[0] = p;
             const opengold::Image placeholder{1, 1, 0, 0, {0, 0, 0, 255}};
-            session_.emplace(opengold::por::GeoMap{}, p,
-                             std::array<opengold::Image, 3>{placeholder, placeholder, placeholder},
-                             0x9914, opengold::por::WallArtSet{}, resources);
+            session_ =
+                std::make_unique<opengold::DaxExplorationSession>(opengold::por::RolfTourSession(
+                    opengold::por::GeoMap{}, p,
+                    std::array<opengold::Image, 3>{placeholder, placeholder, placeholder}, 0x9914,
+                    opengold::por::WallArtSet{}, resources));
             session_->campaign_party(campaign_);
             session_->advance(1);
             camp();
@@ -803,9 +805,10 @@ void RolfTourView::check_rest_controls()
             auto resources = std::make_shared<opengold::por::PhlanResources>();
             resources->programs[0] = program;
             const opengold::Image pixel{1, 1, 0, 0, {0, 0, 0, 255}};
-            session_.emplace(opengold::por::GeoMap{}, program,
-                             std::array<opengold::Image, 3>{pixel, pixel, pixel}, 0x9914,
-                             opengold::por::WallArtSet{}, resources);
+            session_ = std::make_unique<opengold::DaxExplorationSession>(
+                opengold::por::RolfTourSession(opengold::por::GeoMap{}, program,
+                                               std::array<opengold::Image, 3>{pixel, pixel, pixel},
+                                               0x9914, opengold::por::WallArtSet{}, resources));
             session_->campaign_party(campaign_);
             session_->advance(1);
             camp();
@@ -1355,7 +1358,7 @@ void RolfTourView::refresh_rest_training()
         presentation::required_node<Button>(*w, "Apply").set_disabled(true);
         presentation::required_node<Label>(*w, "Error").set_text(rest_text(e.what()));
     }
-    presentation::required_node<Button>(*w, "Save").set_visible(embedded_party_);
+    presentation::required_node<Button>(*w, "Save").set_visible(embedded_party_ && dax());
     presentation::required_node<Button>(*w, "Save")
         .set_disabled(!session_ || !session_->can_leave());
     if (!w->is_visible() && !rest_save_open_ && is_visible_in_tree())

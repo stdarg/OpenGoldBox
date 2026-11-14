@@ -307,17 +307,18 @@ void RolfTourView::restore_campaign(std::shared_ptr<CampaignParty> party,
     required_node<Window>(*this, "RestDialog").hide();
     session.attach_restored_party(party);
     campaign_ = std::move(party);
-    session_ = std::move(session);
+    session_ = std::make_unique<DaxExplorationSession>(std::move(session));
     forget_monster_picture();
-    session_->encounter_challenge(settings::encounter_challenge());
-    session_->difficulty(settings::difficulty());
-    session_->set_auto_equip(auto_equip_setting());
+    auto &campaign = dax_session();
+    campaign.encounter_challenge(settings::encounter_challenge());
+    campaign.difficulty(settings::difficulty());
+    campaign.set_auto_equip(auto_equip_setting());
     // OpenGoldBox's shops and companions are Pool of Radiance's, as a new
     // campaign's are.
     if (settings::chosen_game() == GoldBoxGame::pool_of_radiance)
     {
-        use_shop_data(*session_);
-        session_->companion_rules(campaign_->character_rules(), game_companions());
+        use_shop_data(campaign);
+        campaign.companion_rules(campaign_->character_rules(), game_companions());
     }
     shown_revision_ = 0;
     rendered_pose_.reset();
@@ -330,7 +331,8 @@ void RolfTourView::restore_campaign(std::shared_ptr<CampaignParty> party,
 
 void RolfTourView::request_save(bool saving)
 {
-    if (embedded_party_ && session_ && session_->can_leave())
+    // A design is not saved yet (docs/games/ua.md, What remains).
+    if (embedded_party_ && dax() && session_->can_leave())
     {
         emit_signal("save_requested", saving);
     }

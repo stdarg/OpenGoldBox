@@ -128,6 +128,16 @@ class StartupView : public godot::Control
     bool game_from_flag_{};
     // The games whose folders startup still needs, the first being asked now.
     std::vector<opengold::GoldBoxGame> folders_needed_;
+    // An Unlimited Adventures game asks for the design it plays after the
+    // folders (docs/games/ua.md, From the startup menu).
+    bool design_needed_{};
+    void ask_design();
+
+    [[nodiscard]] bool asking_design() const
+    {
+        return folders_needed_.empty() && design_needed_;
+    }
+
     void show_path(const godot::String &message = {});
     void browse_path();
     void picked_path(const godot::String &directory);
