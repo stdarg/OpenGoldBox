@@ -29,12 +29,14 @@
 #include "opengold/srd5.h"
 #include "test_support.h"
 
+#include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <iterator>
 #include <set>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -473,6 +475,12 @@ struct RouteBeat
     // test (its enemies dead, the party as it began), so the route goes on
     // through the story: a stand-in until its player wins it.
     bool test_wins = false;
+    // The party only passes by: it answers NO where it is asked a question
+    // (and the first choice elsewhere, fighting what it meets).
+    bool passing = false;
+    // Search mode on or off from this beat on, as a player's (S)earch, so
+    // a hidden trap is noticed on the way.
+    std::optional<bool> searching;
 };
 
 // Answers that train each of the route's members a level at a hall: its
@@ -952,6 +960,25 @@ void walk_ruins(
     }
 }
 
+// Steps through the passages of a map whose rooms its script joins (the
+// mine's levels, a level's two halves told apart by cell 4C6B), each from a
+// square the party walks to inside its room, as OPENGOLD_SECRET_FIND finds
+// them. The party fights what it meets on the way and answers NO to what it
+// is asked, so it only passes by.
+void walk_passages(
+    std::vector<RouteBeat> &beats, unsigned map,
+    std::initializer_list<std::tuple<unsigned, unsigned, opengold::por::MapDirection>> passages,
+    bool searching = false)
+{
+    for (const auto &[x, y, facing] : passages)
+    {
+        auto beat = step_beat(map, x, y, facing);
+        beat.passing = true;
+        beat.searching = searching;
+        beats.push_back(beat);
+    }
+}
+
 // Secret's story, beat by beat, as its cluebook tells it (plan phase 4, step
 // 4): from New Verdigris on.
 const std::vector<RouteBeat> &secret_route()
@@ -1046,6 +1073,210 @@ const std::vector<RouteBeat> &secret_route()
         // the party to the Well.
         route.push_back({34, 13, 13, D::south, {"GO FORWARD"}});
         route.push_back({34, 13, 14, D::south, {"ATTACK", "YES"}});
+        // Rested at the Well, out by its north-west corner again and through
+        // sectors 6 and 8 to the mine's entrance (location 12), unguarded now
+        // the Headquarters has fallen.
+        route.push_back(leave_well);
+        walk_ruins(route, {{2, 0, D::north},
+                           {6, 0, D::west},
+                           {1, 2, D::west},
+                           {1, 14, D::south},
+                           {7, 11, D::south},
+                           {2, 10, D::west},
+                           {1, 14, D::south}});
+        route.push_back({32, 3, 12, D::north, {"YES"}});
+        // The mine's temple level (script 51 on map 49): the passage south of
+        // the wheel lift, the minotaurs guarding the temple's doors, and the
+        // Temple of Tyr (map 50), where Derf Strongarm sets the test of
+        // Oswulf's staff and gives the Ring of Tyr (cell 4C85).
+        route.push_back(step_beat(49, 3, 6, D::south, {"ATTACK"}));
+        route.push_back(step_beat(49, 5, 15, D::south, {"ENTER"}));
+        auto derf = step_beat(50, 14, 3, D::north, {"TALK", "NO"});
+        derf.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C85, 1};
+        route.push_back(derf);
+        // Back out of the temple and through the passage to the wheel lift.
+        route.push_back(step_beat(50, 8, 0, D::north));
+        route.push_back(step_beat(49, 5, 12, D::north));
+        route.push_back({49, 3, 3, D::north, {"YES", "1"}});
+        // Level 1 (script 49 on map 48): west to the dead adventurer, whose
+        // piece of the staff the Ring of Tyr finds (cell 4C84).
+        walk_passages(
+            route, 48,
+            {{3, 3, D::west},    {2, 3, D::west},   {1, 3, D::west},    {4, 12, D::west},
+             {3, 12, D::south},  {3, 13, D::west},  {2, 13, D::south},  {2, 14, D::west},
+             {1, 14, D::south},  {1, 15, D::south}, {15, 8, D::south},  {15, 9, D::south},
+             {15, 10, D::west},  {14, 10, D::west}, {13, 10, D::north}, {13, 9, D::west},
+             {12, 9, D::west},   {11, 9, D::west},  {10, 0, D::west},   {9, 0, D::west},
+             {8, 0, D::west},    {7, 0, D::west},   {6, 0, D::west},    {5, 0, D::west},
+             {9, 7, D::west},    {8, 7, D::west},   {7, 7, D::west},    {6, 7, D::north},
+             {6, 6, D::north},   {1, 13, D::north}, {1, 12, D::north},  {1, 11, D::north},
+             {1, 10, D::north},  {1, 9, D::east},   {2, 9, D::east},    {3, 9, D::east},
+             {4, 9, D::east},    {2, 15, D::east},  {3, 15, D::north},  {3, 14, D::east},
+             {4, 14, D::north},  {4, 13, D::north}, {11, 8, D::east},   {12, 8, D::east},
+             {13, 8, D::north},  {13, 7, D::north}, {13, 6, D::west},   {12, 6, D::west},
+             {11, 6, D::west},   {10, 6, D::west},  {9, 6, D::west},    {8, 6, D::west},
+             {7, 6, D::west},    {15, 0, D::west},  {14, 0, D::west},   {13, 0, D::west},
+             {12, 0, D::west},   {11, 0, D::south}, {11, 1, D::west},   {10, 1, D::west},
+             {9, 1, D::west},    {8, 1, D::west},   {7, 1, D::west},    {6, 1, D::west},
+             {5, 1, D::west},    {7, 15, D::west},  {6, 15, D::north},  {6, 14, D::west},
+             {5, 14, D::north},  {5, 13, D::north}, {11, 13, D::north}, {11, 12, D::north},
+             {11, 11, D::north}, {0, 10, D::north}, {0, 9, D::north},   {0, 8, D::north},
+             {0, 7, D::north},   {0, 6, D::north},  {0, 5, D::north}});
+        // Back to the lift, and down to level 2.
+        walk_passages(
+            route, 48,
+            {{1, 1, D::south},   {0, 5, D::south},   {0, 6, D::south},  {0, 7, D::south},
+             {0, 8, D::south},   {0, 9, D::south},   {0, 10, D::south}, {11, 11, D::south},
+             {11, 12, D::south}, {11, 13, D::south}, {5, 13, D::south}, {5, 14, D::east},
+             {6, 14, D::south},  {6, 15, D::east},   {7, 15, D::east},  {5, 1, D::east},
+             {6, 1, D::east},    {7, 1, D::east},    {8, 1, D::east},   {9, 1, D::east},
+             {10, 1, D::east},   {11, 1, D::north},  {11, 0, D::east},  {12, 0, D::east},
+             {13, 0, D::east},   {14, 0, D::east},   {15, 0, D::east},  {7, 6, D::east},
+             {8, 6, D::east},    {9, 6, D::east},    {10, 6, D::east},  {11, 6, D::east},
+             {12, 6, D::east},   {13, 6, D::south},  {13, 7, D::south}, {13, 8, D::west},
+             {12, 8, D::west},   {11, 8, D::south},  {4, 13, D::south}, {4, 14, D::south},
+             {4, 15, D::west},   {3, 15, D::west},   {2, 15, D::west},  {4, 9, D::west},
+             {3, 9, D::west},    {2, 9, D::west},    {1, 9, D::south},  {1, 10, D::south},
+             {1, 11, D::south},  {1, 12, D::south},  {1, 13, D::south}, {6, 6, D::south},
+             {6, 7, D::east},    {7, 7, D::east},    {8, 7, D::east},   {9, 7, D::east},
+             {5, 0, D::east},    {6, 0, D::east},    {7, 0, D::east},   {8, 0, D::east},
+             {9, 0, D::east},    {10, 0, D::east},   {11, 9, D::east},  {12, 9, D::east},
+             {13, 9, D::south},  {13, 10, D::east},  {14, 10, D::east}, {15, 10, D::north},
+             {15, 9, D::north},  {15, 8, D::north},  {1, 15, D::north}, {1, 14, D::east},
+             {2, 14, D::north},  {2, 13, D::east},   {3, 13, D::north}, {3, 12, D::east},
+             {4, 12, D::east},   {1, 3, D::east},    {2, 3, D::east}});
+        route.push_back({48, 3, 3, D::north, {"YES", "2"}, true});
+        // Level 2, searching (a trapdoor is in the way): to the miners' barracks, whose trapped
+        // chest (disarmed or not) holds the second piece.
+        walk_passages(route, 48,
+                      {{3, 3, D::west},   {2, 3, D::west},   {1, 3, D::west},   {15, 0, D::west},
+                       {14, 0, D::west},  {13, 0, D::west},  {12, 0, D::west},  {11, 0, D::south},
+                       {11, 1, D::west},  {10, 1, D::west},  {9, 1, D::west},   {8, 1, D::west},
+                       {7, 1, D::west},   {6, 1, D::west},   {5, 1, D::west},   {14, 6, D::west},
+                       {13, 6, D::north}, {13, 5, D::west},  {12, 5, D::north}, {8, 15, D::north},
+                       {8, 14, D::west},  {7, 14, D::north}, {7, 13, D::west},  {6, 13, D::north},
+                       {6, 12, D::west},  {5, 12, D::west},  {5, 15, D::west},  {4, 15, D::north},
+                       {4, 14, D::north}, {4, 13, D::north}, {14, 9, D::north}, {14, 8, D::north},
+                       {14, 7, D::east},  {15, 7, D::north}, {15, 6, D::north}, {15, 5, D::west},
+                       {14, 5, D::north}, {14, 4, D::north}, {14, 3, D::north}, {0, 3, D::north},
+                       {0, 2, D::east},   {1, 2, D::east},   {2, 2, D::north},  {2, 1, D::north},
+                       {2, 0, D::east},   {3, 0, D::east},   {4, 0, D::south},  {4, 1, D::south},
+                       {4, 2, D::east},   {5, 2, D::east},   {6, 2, D::east},   {7, 2, D::east},
+                       {8, 2, D::east},   {9, 2, D::east}},
+                      true);
+        route.push_back({48, 10, 2, D::north, {"SEARCH", "YES"}});
+        // Back to the lift, and down to level 3.
+        walk_passages(route, 48,
+                      {{10, 2, D::west},  {9, 2, D::west},   {8, 2, D::west},   {7, 2, D::west},
+                       {6, 2, D::west},   {5, 2, D::west},   {4, 2, D::north},  {4, 1, D::north},
+                       {4, 0, D::west},   {3, 0, D::west},   {2, 0, D::south},  {2, 1, D::south},
+                       {2, 2, D::west},   {1, 2, D::west},   {0, 2, D::south},  {0, 3, D::south},
+                       {14, 3, D::south}, {14, 4, D::south}, {14, 5, D::east},  {15, 5, D::south},
+                       {15, 6, D::south}, {15, 7, D::west},  {14, 7, D::south}, {14, 8, D::south},
+                       {14, 9, D::south}, {4, 13, D::south}, {4, 14, D::south}, {4, 15, D::east},
+                       {5, 15, D::east},  {5, 12, D::east},  {6, 12, D::south}, {6, 13, D::east},
+                       {7, 13, D::south}, {7, 14, D::east},  {8, 14, D::south}, {8, 15, D::south},
+                       {12, 5, D::east},  {13, 5, D::south}, {13, 6, D::east},  {14, 6, D::east},
+                       {5, 1, D::east},   {6, 1, D::east},   {7, 1, D::east},   {8, 1, D::east},
+                       {9, 1, D::east},   {10, 1, D::east},  {11, 1, D::north}, {11, 0, D::east},
+                       {12, 0, D::east},  {13, 0, D::east},  {14, 0, D::east},  {15, 0, D::east},
+                       {1, 3, D::east},   {2, 3, D::east}},
+                      true);
+        route.push_back({48, 3, 3, D::north, {"YES", "3"}, true});
+        // Level 3: the wyverns' lair, whose cache holds the third piece.
+        walk_passages(route, 48,
+                      {{3, 3, D::north},   {3, 2, D::north},   {3, 1, D::north},  {14, 9, D::north},
+                       {14, 8, D::north},  {14, 7, D::east},   {15, 7, D::north}, {15, 6, D::north},
+                       {15, 5, D::west},   {14, 5, D::north},  {14, 4, D::north}, {14, 3, D::north},
+                       {11, 13, D::north}, {11, 12, D::north}, {11, 11, D::east}, {12, 11, D::east},
+                       {13, 11, D::east},  {5, 1, D::east},    {6, 1, D::east},   {7, 1, D::east},
+                       {8, 1, D::east},    {9, 1, D::east},    {10, 1, D::east},  {11, 1, D::north},
+                       {11, 0, D::east},   {12, 0, D::east},   {13, 0, D::east},  {14, 0, D::east},
+                       {15, 0, D::east},   {7, 6, D::east},    {8, 6, D::east},   {9, 6, D::east},
+                       {10, 6, D::east},   {11, 6, D::east},   {12, 6, D::east},  {13, 6, D::east},
+                       {14, 6, D::east},   {2, 10, D::east},   {3, 10, D::east},  {4, 10, D::east},
+                       {5, 10, D::east},   {6, 10, D::east}},
+                      true);
+        // Back to the lift, and down to level 4.
+        walk_passages(
+            route, 48,
+            {{7, 10, D::west},  {6, 10, D::west},   {5, 10, D::west},   {4, 10, D::west},
+             {3, 10, D::west},  {2, 10, D::west},   {14, 6, D::west},   {13, 6, D::west},
+             {12, 6, D::west},  {11, 6, D::west},   {10, 6, D::west},   {9, 6, D::west},
+             {8, 6, D::west},   {7, 6, D::west},    {15, 0, D::west},   {14, 0, D::west},
+             {13, 0, D::west},  {12, 0, D::west},   {11, 0, D::south},  {11, 1, D::west},
+             {10, 1, D::west},  {9, 1, D::west},    {8, 1, D::west},    {7, 1, D::west},
+             {6, 1, D::west},   {5, 1, D::west},    {13, 11, D::west},  {12, 11, D::south},
+             {12, 12, D::west}, {11, 12, D::south}, {11, 13, D::south}, {14, 3, D::south},
+             {14, 4, D::south}, {14, 5, D::east},   {15, 5, D::south},  {15, 6, D::south},
+             {15, 7, D::west},  {14, 7, D::south},  {14, 8, D::south},  {14, 9, D::south},
+             {3, 1, D::south},  {3, 2, D::south}},
+            true);
+        route.push_back({48, 3, 3, D::north, {"YES", "4"}, true});
+        // Level 4: a pouch on the ground holds the fourth piece.
+        walk_passages(route, 48,
+                      {{3, 3, D::south},  {3, 4, D::south},  {3, 5, D::south},  {1, 5, D::south},
+                       {1, 6, D::south},  {1, 7, D::south},  {1, 8, D::east},   {2, 8, D::east},
+                       {3, 8, D::east},   {4, 8, D::east},   {5, 8, D::south},  {5, 9, D::south},
+                       {10, 7, D::south}, {10, 8, D::west},  {9, 8, D::west},   {8, 8, D::west},
+                       {7, 8, D::west},   {6, 8, D::south},  {6, 9, D::south},  {1, 5, D::south},
+                       {1, 6, D::south},  {1, 7, D::south},  {1, 8, D::east},   {2, 8, D::east},
+                       {3, 8, D::east},   {4, 8, D::east},   {5, 8, D::south},  {5, 9, D::south},
+                       {11, 11, D::east}, {12, 11, D::east}, {13, 11, D::east}, {5, 0, D::east},
+                       {6, 0, D::east},   {7, 0, D::east},   {8, 0, D::east},   {9, 0, D::east},
+                       {10, 0, D::east}},
+                      true);
+        // Back to the lift, and down to level 5.
+        walk_passages(route, 48,
+                      {{8, 11, D::west},  {10, 0, D::west},   {9, 0, D::west},  {8, 0, D::west},
+                       {7, 0, D::west},   {6, 0, D::west},    {5, 0, D::west},  {13, 11, D::west},
+                       {12, 11, D::west}, {11, 11, D::north}, {5, 9, D::north}, {5, 8, D::west},
+                       {4, 8, D::west},   {3, 8, D::west},    {2, 8, D::west},  {1, 8, D::north},
+                       {1, 7, D::north},  {1, 6, D::north},   {1, 5, D::north}, {6, 9, D::north},
+                       {6, 8, D::east},   {7, 8, D::east},    {8, 8, D::east},  {9, 8, D::east},
+                       {10, 8, D::north}, {10, 7, D::north},  {5, 9, D::north}, {5, 8, D::west},
+                       {4, 8, D::west},   {3, 8, D::west},    {2, 8, D::west},  {1, 8, D::north},
+                       {1, 7, D::north},  {1, 6, D::north},   {1, 5, D::north}, {3, 5, D::north},
+                       {3, 4, D::north}},
+                      true);
+        route.push_back({48, 3, 3, D::north, {"YES", "5"}, true});
+        // Level 5 (script 50): the fifth piece.
+        walk_passages(
+            route, 48,
+            {{3, 3, D::north},   {3, 2, D::north},   {3, 1, D::north},   {8, 15, D::north},
+             {8, 14, D::west},   {7, 14, D::north},  {7, 13, D::west},   {6, 13, D::north},
+             {6, 12, D::west},   {5, 12, D::west},   {10, 5, D::west},   {9, 5, D::west},
+             {8, 5, D::west},    {9, 7, D::west},    {8, 7, D::west},    {7, 7, D::west},
+             {6, 7, D::north},   {6, 6, D::north},   {10, 13, D::north}, {10, 12, D::north},
+             {10, 11, D::west},  {9, 11, D::west},   {8, 11, D::west},   {15, 0, D::west},
+             {14, 0, D::west},   {13, 0, D::west},   {12, 0, D::west},   {11, 0, D::south},
+             {11, 1, D::west},   {10, 1, D::west},   {9, 1, D::west},    {8, 1, D::west},
+             {7, 1, D::west},    {6, 1, D::west},    {5, 1, D::west},    {9, 7, D::west},
+             {8, 7, D::west},    {7, 7, D::west},    {6, 7, D::north},   {6, 6, D::north},
+             {11, 13, D::north}, {11, 12, D::north}, {11, 11, D::north}, {1, 15, D::north},
+             {1, 14, D::east},   {2, 14, D::north},  {2, 13, D::east},   {3, 13, D::north},
+             {3, 12, D::east},   {4, 12, D::east},   {11, 14, D::east},  {12, 14, D::north},
+             {12, 13, D::east},  {13, 13, D::north}, {13, 12, D::east}},
+            true);
+        // Back to the lift, and down to level 6.
+        walk_passages(
+            route, 48,
+            {{14, 12, D::west},  {13, 12, D::south}, {13, 13, D::west},  {12, 13, D::south},
+             {12, 14, D::west},  {11, 14, D::west},  {4, 12, D::west},   {3, 12, D::south},
+             {3, 13, D::west},   {2, 13, D::south},  {2, 14, D::west},   {1, 14, D::south},
+             {1, 15, D::south},  {11, 11, D::south}, {11, 12, D::south}, {11, 13, D::south},
+             {6, 6, D::south},   {6, 7, D::east},    {7, 7, D::east},    {8, 7, D::east},
+             {9, 7, D::east},    {5, 1, D::east},    {6, 1, D::east},    {7, 1, D::east},
+             {8, 1, D::east},    {9, 1, D::east},    {10, 1, D::east},   {11, 1, D::north},
+             {11, 0, D::east},   {12, 0, D::east},   {13, 0, D::east},   {14, 0, D::east},
+             {15, 0, D::east},   {8, 11, D::east},   {9, 11, D::east},   {10, 11, D::south},
+             {10, 12, D::south}, {10, 13, D::south}, {6, 6, D::south},   {6, 7, D::east},
+             {7, 7, D::east},    {8, 7, D::east},    {9, 7, D::east},    {8, 5, D::east},
+             {9, 5, D::east},    {10, 5, D::east},   {5, 12, D::east},   {6, 12, D::south},
+             {6, 13, D::east},   {7, 13, D::south},  {7, 14, D::east},   {8, 14, D::south},
+             {8, 15, D::south},  {3, 1, D::south},   {3, 2, D::south}},
+            true);
+        route.push_back({48, 3, 3, D::north, {"YES", "6"}, true});
         return route;
     }();
     return beats;
@@ -1351,7 +1582,7 @@ bool walk_census(GoldBoxGame game, bool route)
     session.campaign_party(party);
     std::map<std::string, std::vector<std::string>> needs;
     std::map<std::string, unsigned> phases;
-    const bool trace = route || std::getenv("OPENGOLD_CURSE_TRACE");
+    bool trace = route || std::getenv("OPENGOLD_CURSE_TRACE");
     // One play of the pending fight with these dice; the party ends as it left it.
     // A player's own choice for a member's turn, where it has one, as the
     // cluebook fights the Pit of Moander: the Wand of Defoliation (its power,
@@ -1499,6 +1730,8 @@ bool walk_census(GoldBoxGame game, bool route)
     // The beat being played lets the test win a fight its player loses
     // (RouteBeat::test_wins).
     bool test_winning = false;
+    // A planning aid (OPENGOLD_SECRET_FIND) wins every fight at once.
+    bool planning = false;
     const auto fight = [&]
     {
         const auto before = party->state();
@@ -1522,9 +1755,9 @@ bool walk_census(GoldBoxGame game, bool route)
             return fight_once(7 + t / 3, t % 3);
         };
         unsigned last = 0, best_try = 0;
-        auto result = play_try(0);
-        auto best = score(result);
-        while (route && best > 0 && ++last < 120)
+        auto result = planning ? opengold::rules::Snapshot{} : play_try(0);
+        auto best = planning ? 1 : score(result);
+        while (route && !planning && best > 0 && ++last < 120)
         {
             party->restore(before);
             result = play_try(last);
@@ -1534,12 +1767,12 @@ bool walk_census(GoldBoxGame game, bool route)
                 best_try = last;
             }
         }
-        if (last != best_try && route)
+        if (last != best_try && route && !planning)
         {
             party->restore(before);
             result = play_try(best_try);
         }
-        if (test_winning && result.outcome != opengold::rules::Outcome::victory)
+        if ((test_winning || planning) && result.outcome != opengold::rules::Outcome::victory)
         {
             party->restore(before);
             opengold::CombatDemo won(opengold::original::rules_module(content));
@@ -1557,7 +1790,10 @@ bool walk_census(GoldBoxGame game, bool route)
                     unit.status = "dead";
                 }
             }
-            std::cout << "  the test wins the fight\n";
+            if (!planning)
+            {
+                std::cout << "  the test wins the fight\n";
+            }
         }
         // OPENGOLD_FIGHT_LOG prints the kept play's log, to see why a fight goes
         // as it does.
@@ -1580,6 +1816,8 @@ bool walk_census(GoldBoxGame game, bool route)
     bool taking_wand = false;
     // Whether the closing words of a won game were shown (game_won).
     bool game_won_shown = false;
+    // The beat being played only passes by (RouteBeat::passing).
+    bool passing = false;
     const auto play = [&](const std::string &where)
     {
         const auto attribute = [&]
@@ -1632,6 +1870,14 @@ bool walk_census(GoldBoxGame game, bool route)
                 std::size_t pick = (++shown[s.dialogue] > 2 || declining) && !s.choices.empty()
                                        ? s.choices.size() - 1
                                        : 0;
+                // The planning aid takes on what it meets but declines a
+                // question (NO), so it fights its way on but stays put.
+                if ((planning || passing) && shown[s.dialogue] <= 2)
+                {
+                    const auto no = std::ranges::find(s.choices, "NO");
+                    pick = no == s.choices.end() ? 0
+                                                 : static_cast<std::size_t>(no - s.choices.begin());
+                }
                 // A magic-user learns the spell a player would take.
                 if (s.dialogue.starts_with("Choose a spell for"))
                 {
@@ -1970,6 +2216,11 @@ bool walk_census(GoldBoxGame game, bool route)
                 {
                     answers = beat.answers;
                     taking_wand = beat.take_wand;
+                    passing = beat.passing;
+                    if (beat.searching)
+                    {
+                        session.set_searching(*beat.searching);
+                    }
                     test_winning = beat.test_wins;
                     if (beat.waiting)
                     {
@@ -2160,6 +2411,151 @@ bool walk_census(GoldBoxGame game, bool route)
                     }
                 }
             }
+        }
+        // OPENGOLD_SECRET_FIND=X,Y[,MAP] searches, from where the route ends,
+        // the steps that reach that square, each step played as the game
+        // plays it (passages, their scripts' moves, arrivals' events with
+        // every offer declined and every fight won at once): it prints the
+        // steps, those that are not a plain step to the next square marked.
+        // OPENGOLD_SECRET_KEYS=CELL,... (hex) tells squares apart by those
+        // cells too (a mine level's half, the ruins' sector), and
+        // OPENGOLD_SECRET_GOAL=CELL=VALUE,... asks the goal to hold them.
+        if (const char *find = std::getenv("OPENGOLD_SECRET_FIND"); find && session.can_leave())
+        {
+            unsigned goal_x = 0, goal_y = 0, goal_map = end.area_id;
+            (void)std::sscanf(find, "%u,%u,%u", &goal_x, &goal_y, &goal_map);
+            // FIND=* asks for the goal's cells anywhere.
+            const bool anywhere = find[0] == '*';
+            const auto hex_list = [](const char *text)
+            {
+                std::vector<std::pair<std::uint16_t, std::uint16_t>> cells;
+                std::stringstream stream(text ? text : "");
+                std::string item;
+                while (std::getline(stream, item, ','))
+                {
+                    const auto equals = item.find('=');
+                    cells.emplace_back(
+                        static_cast<std::uint16_t>(std::stoul(item.substr(0, equals), nullptr, 16)),
+                        equals == std::string::npos
+                            ? 0
+                            : static_cast<std::uint16_t>(std::stoul(item.substr(equals + 1))));
+                }
+                return cells;
+            };
+            const auto keys = hex_list(std::getenv("OPENGOLD_SECRET_KEYS"));
+            const auto goal_cells = hex_list(std::getenv("OPENGOLD_SECRET_GOAL"));
+            const auto cell_of = [](const opengold::por::RolfTourSession &at, std::uint16_t address)
+            {
+                return opengold::test::TourAccess::machine(at).variable(
+                    opengold::por::EclAddress{address});
+            };
+            const auto cells_of = [&](const opengold::por::RolfTourSession &at)
+            {
+                std::string values;
+                for (const auto &[address, value] : keys)
+                {
+                    values += " " + std::to_string(cell_of(at, address));
+                }
+                return values;
+            };
+            const auto key_of = [&](const opengold::por::RolfTourSession &at)
+            {
+                const auto &s = at.snapshot();
+                return std::to_string(s.area_id) + " " + std::to_string(s.pose.x) + "," +
+                       std::to_string(s.pose.y) + cells_of(at);
+            };
+
+            struct Node
+            {
+                opengold::por::RolfTourSession session;
+                std::remove_cvref_t<decltype(party->state())> party_state;
+                std::size_t parent;
+                std::string move;
+            };
+
+            auto main_session = std::move(session);
+            const auto main_party = party->state();
+            std::vector<Node> nodes;
+            nodes.push_back({main_session.detached_copy(), main_party, 0, "start"});
+            // OPENGOLD_SECRET_SEARCHING walks in search mode.
+            nodes.back().session.set_searching(std::getenv("OPENGOLD_SECRET_SEARCHING") != nullptr);
+            std::set<std::string> seen{key_of(main_session)};
+            planning = true;
+            declining = true;
+            trace = false;
+            std::optional<std::size_t> found;
+            for (std::size_t i = 0; i < nodes.size() && i < 8000 && !found; ++i)
+            {
+                for (unsigned f = 0; f < 4 && !found; ++f)
+                {
+                    session = nodes[i].session.detached_copy();
+                    party->restore(nodes[i].party_state);
+                    session.attach_restored_party(party);
+                    const auto from = session.snapshot().pose;
+                    const auto facing = static_cast<opengold::por::MapDirection>(f);
+                    opengold::test::TourAccess::place(session, {from.x, from.y, facing});
+                    (void)session.explore(opengold::por::ExplorationCommand::forward);
+                    play("find");
+                    if (!session.can_leave())
+                    {
+                        continue;
+                    }
+                    const auto key = key_of(session);
+                    if (!seen.insert(key).second)
+                    {
+                        continue;
+                    }
+                    const auto &to = session.snapshot().pose;
+                    const bool plain =
+                        session.snapshot().area_id == nodes[i].session.snapshot().area_id &&
+                        std::abs(static_cast<int>(to.x) - static_cast<int>(from.x)) +
+                                std::abs(static_cast<int>(to.y) - static_cast<int>(from.y)) ==
+                            1 &&
+                        cells_of(session) == cells_of(nodes[i].session);
+                    nodes.push_back({session.detached_copy(), party->state(), i,
+                                     std::string(plain ? "  " : "* ") + std::to_string(from.x) +
+                                         "," + std::to_string(from.y) + " f" + std::to_string(f) +
+                                         " -> " + key});
+                    const bool at_goal =
+                        (anywhere || (session.snapshot().area_id == goal_map && to.x == goal_x &&
+                                      to.y == goal_y)) &&
+                        std::ranges::all_of(goal_cells,
+                                            [&](const auto &cell)
+                                            {
+                                                return cell_of(session, cell.first) == cell.second;
+                                            });
+                    if (at_goal)
+                    {
+                        found = nodes.size() - 1;
+                    }
+                }
+            }
+            if (found)
+            {
+                std::vector<std::string> path;
+                for (auto at = *found; at != 0; at = nodes[at].parent)
+                {
+                    path.push_back(nodes[at].move);
+                }
+                std::cout << "find: from " << key_of(main_session) << "\n";
+                for (auto step = path.rbegin(); step != path.rend(); ++step)
+                {
+                    std::cout << "find: " << *step << "\n";
+                }
+            }
+            else
+            {
+                std::cout << "find: not reached in " << nodes.size() << " squares:\n";
+                for (const auto &node : nodes)
+                {
+                    std::cout << "find: " << node.move << "\n";
+                }
+            }
+            session = std::move(main_session);
+            party->restore(main_party);
+            session.attach_restored_party(party);
+            planning = false;
+            declining = false;
         }
         // The route's last beat wins the game: Tyranthraxus falls, and the
         // ending is told.
