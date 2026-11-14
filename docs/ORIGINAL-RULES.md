@@ -442,6 +442,42 @@ whole list):
   tables, initiative ties, its critical hits on a natural 17 or more, its
   difficulty levels and its experience bonus for single classes.
 
+## Next
+
+The work asked for next (2026-11-14), in order, with what each needs:
+
+1. **Scribing a scroll's spell into a magic-user's book** (`CampScribeMenu`,
+   `CampSpellPrepTime`). The campaign's copying (`CampaignParty::
+   copyable_spells`, `copy_scroll_spell`, `keep_scroll_spells`) reads the
+   SRD's scroll keys and magic ink. It needs rules hooks: the copyable
+   entries of an original scroll (its record's effect codes, readable and of
+   a level the member has slots for), the scroll's key with an entry spent,
+   and the original module's `train_at_hall("boon:scroll:<spell>")` adding
+   the spell to the book; scribing takes a rest's preparation time.
+2. **An age that changes after creation:** a character keeps its starting
+   age (scores are worked out from it), so the years added since need their
+   own entry in the level history. Then Youth (Secret's item power 63,
+   `SpellYouth`: 1d4+1 years younger, not below 18) and the year Haste ages
+   a creature (`EffHasted`, the first time), applied after the fight through
+   `lasting_changes`.
+3. **Readying items mid-fight** (the View menu; `RecalcStats`,
+   `RecalcAttacksLeft`, the AI's `EquipWeaponAndArmor`): a fight holds only a
+   member's Combatant. It needs, through the rules seam, the member's record
+   and its carried items, so the session can work its numbers out again as
+   an item is readied or put away.
+4. **Time between rests:** the walking time the campaign's clock counts, so
+   a disease wastes (a point of Strength an hour, a Hit Point every ten
+   minutes) and camp spells, Slow Poison and the paladin's week run down as
+   the original counts time; today they change only at a day's rest.
+5. The other "Still to come" items above that are no one game's campaign or
+   route work, in their order in this file: the AI's caution near clouds and
+   a giant-bane weapon (effect 75) in *Secret*; the party's facing, the
+   terrain heights for sight and PARTY_MOVE_MODIFIER (step 7); Spiritual
+   Hammer's hammer (step 8b-2); the original's rest of any length and its
+   preparation time (step 5); the training hall's fee and the classes each
+   hall trains (step 3); Restoration's giving back of drained levels (step
+   6); and the original rules' difficulty levels (step 7).
+
 ## What the original rules cover
 
 These are the parts of the reconstructed source that hold rules, about 8,000
