@@ -187,6 +187,10 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/map_catalog.cpp
     src/OpenGold.Core/src/game_census.cpp
     src/OpenGold.Core/src/ua_census.cpp
+    src/OpenGold.Core/src/ua_design.cpp
+    src/OpenGold.Core/src/ua_view.cpp
+    src/OpenGold.Core/src/ua_session.cpp
+    src/OpenGold.Core/src/ua_events.cpp
     src/OpenGold.Core/src/ecl_address.cpp
     src/OpenGold.Core/src/area_loading.cpp
     src/OpenGold.Core/src/campaign_session.cpp
@@ -323,6 +327,14 @@ if(OPENGOLD_BUILD_TESTS)
     add_executable(opengold_ua_census_tests tests/ua_census_tests.cpp)
     target_link_libraries(opengold_ua_census_tests PRIVATE opengold_core)
     add_test(NAME opengold_ua_census_tests COMMAND opengold_ua_census_tests)
+    # Playing a design made with Unlimited Adventures' kit (docs/games/ua.md).
+    add_executable(opengold_ua_session_tests tests/ua_session_tests.cpp)
+    target_link_libraries(opengold_ua_session_tests PRIVATE opengold_core)
+    add_test(NAME opengold_ua_session_tests COMMAND opengold_ua_session_tests)
+    # Every square of every area of the test design walked, each event and fight played.
+    add_test(NAME opengold_ua_walk COMMAND opengold_ua_session_tests --ua-walk)
+    set_tests_properties(opengold_ua_session_tests opengold_ua_walk PROPERTIES
+        SKIP_REGULAR_EXPRESSION "Skipped: ")
 
     add_executable(opengold_concentration_tests tests/concentration_tests.cpp)
     target_include_directories(opengold_concentration_tests PRIVATE src/OpenGold.Rules.Srd5/src)

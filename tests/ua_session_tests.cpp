@@ -1,0 +1,672 @@
+// Unlimited Adventures: playing a design made with the construction kit
+// (docs/games/ua.md, Playing a design; docs/GAMES.md, phase 8 step 1). No
+// design ships with the kit, so the tests build one from the kit's own area
+// templates (GEO.GLB) and game record (GAME.GLB), as the kit's design menu
+// does: two dungeon areas with walls, doors and events of the kinds the
+// session plays. The kit is read from OPENGOLD_GOLDBOX_DIR/UA. Run with
+// --ua-walk to walk every square of every area and play every event and fight.
+#include "opengold/campaign_party.h"
+#include "opengold/character_creator.h"
+#include "opengold/coin_purse.h"
+#include "opengold/combat_demo.h"
+#include "opengold/original.h"
+#include "opengold/original_combat.h"
+#include "opengold/ua_design.h"
+#include "opengold/ua_session.h"
+#include "test_support.h"
+
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <map>
+#include <set>
+#include <string>
+#include <string_view>
+#include <vector>
+
+namespace
+{
+using opengold::GoldBoxGame;
+using opengold::por::ExplorationCommand;
+using opengold::por::MapDirection;
+using opengold::por::TourPhase;
+using opengold::test::check;
+namespace ua = opengold::ua;
+using Bytes = std::vector<std::uint8_t>;
+
+// Where an area's chunks' data lie in the kit's 12,962-byte area record:
+// FORM, AMOD, then HDR (290 bytes), MAP (576 squares of 6), ENCR (100 events
+// of 20) and STRG (the text pool).
+constexpr std::size_t header_at = 24, map_at = 322, events_at = 3786, texts_at = 5794;
+constexpr std::size_t text_slots = 400;
+
+// Six-bit text: letters 1 to 26, space to '?' as themselves, 0 the end.
+Bytes pack_text(std::string_view text)
+{
+    std::vector<unsigned> codes;
+    for (const char c : text)
+    {
+        codes.push_back(c >= 0x40 ? static_cast<unsigned>(c - 0x40) : static_cast<unsigned>(c));
+    }
+    codes.push_back(0);
+    Bytes packed;
+    std::uint32_t bits = 0;
+    unsigned held = 0;
+    for (const auto code : codes)
+    {
+        bits = bits << 6 | code;
+        held += 6;
+        while (held >= 8)
+        {
+            held -= 8;
+            packed.push_back(static_cast<std::uint8_t>(bits >> held));
+        }
+    }
+    if (held > 0)
+    {
+        packed.push_back(static_cast<std::uint8_t>(bits << (8 - held)));
+    }
+    return packed;
+}
+
+// An area of the test design, made from the kit's template as the area
+// editor makes one.
+class AreaBuilder
+{
+  public:
+    explicit AreaBuilder(Bytes area) : bytes_(std::move(area))
+    {
+        rows_ = bytes_[header_at + 2];
+        columns_ = bytes_[header_at + 3];
+        // Every edge is a blocked wall of the first set's first graphic.
+        for (unsigned n = 0; n < columns_; ++n)
+        {
+            side(n, 0, MapDirection::north, 0xE1);
+            side(n, rows_ - 1, MapDirection::south, 0xE1);
+        }
+        for (unsigned n = 0; n < rows_; ++n)
+        {
+            side(0, n, MapDirection::west, 0xE1);
+            side(columns_ - 1, n, MapDirection::east, 0xE1);
+        }
+    }
+
+    // Entry point `entry` (1 to 8) at (x, y), facing 0, 2, 4 or 6.
+    void entry(unsigned entry, unsigned x, unsigned y, unsigned facing)
+    {
+        const auto at = header_at + 0xE + 4 * (entry - 1);
+        bytes_[at] = static_cast<std::uint8_t>(y);
+        bytes_[at + 1] = static_cast<std::uint8_t>(x);
+        bytes_[at + 2] = static_cast<std::uint8_t>(facing);
+    }
+
+    void side(unsigned x, unsigned y, MapDirection direction, std::uint8_t wall)
+    {
+        bytes_[map_at + (y * columns_ + x) * 6 + opengold::por::index(direction)] = wall;
+    }
+
+    // A wall seen from both of its squares.
+    void wall(unsigned x, unsigned y, MapDirection direction, std::uint8_t wall)
+    {
+        side(x, y, direction, wall);
+        side(static_cast<unsigned>(static_cast<int>(x) + opengold::por::step_x(direction)),
+             static_cast<unsigned>(static_cast<int>(y) + opengold::por::step_y(direction)),
+             opengold::por::reversed(direction), wall);
+    }
+
+    // Event `number` (1 to 100) on square (x, y), its 20 bytes given from
+    // byte 0 on (the rest 0).
+    void event(unsigned number, std::vector<unsigned> record,
+               std::optional<std::pair<unsigned, unsigned>> square = {})
+    {
+        record.resize(20);
+        for (std::size_t n = 0; n < 20; ++n)
+        {
+            bytes_[events_at + (number - 1) * 20 + n] = static_cast<std::uint8_t>(record[n]);
+        }
+        if (square)
+        {
+            bytes_[map_at + (square->second * columns_ + square->first) * 6 + 4] =
+                static_cast<std::uint8_t>(number);
+        }
+    }
+
+    // A text of the area's pool; its slot (1-based).
+    unsigned text(std::string words)
+    {
+        texts_.push_back(std::move(words));
+        return static_cast<unsigned>(texts_.size());
+    }
+
+    [[nodiscard]] Bytes finish() const
+    {
+        auto bytes = bytes_;
+        Bytes packed;
+        for (std::size_t slot = 0; slot < text_slots; ++slot)
+        {
+            Bytes text = slot < texts_.size() ? pack_text(texts_[slot]) : Bytes{};
+            bytes[texts_at + 6 + slot] = static_cast<std::uint8_t>(text.size());
+            packed.insert(packed.end(), text.begin(), text.end());
+        }
+        std::copy(packed.begin(), packed.end(), bytes.begin() + texts_at + 6 + text_slots);
+        bytes[texts_at + 4] = static_cast<std::uint8_t>(packed.size() & 0xFF);
+        bytes[texts_at + 5] = static_cast<std::uint8_t>(packed.size() >> 8);
+        return bytes;
+    }
+
+  private:
+    Bytes bytes_;
+    unsigned rows_{}, columns_{};
+    std::vector<std::string> texts_;
+};
+
+void write(const std::filesystem::path &path, const Bytes &bytes)
+{
+    std::ofstream file(path, std::ios::binary);
+    file.write(reinterpret_cast<const char *>(bytes.data()),
+               static_cast<std::streamsize>(bytes.size()));
+    check(file.good(), "The test design's file is written");
+}
+
+// Words of an event record: a text slot's two bytes, low first.
+unsigned low(unsigned word)
+{
+    return word & 0xFF;
+}
+
+unsigned high(unsigned word)
+{
+    return word >> 8;
+}
+
+// The test design: areas 5 (the hall) and 6 (the cellar), and a game record
+// that starts the party in the hall (docs/games/ua.md, The test design).
+std::filesystem::path build_test_design(const std::filesystem::path &kit)
+{
+    const auto folder = std::filesystem::temp_directory_path() / "opengold_ua_test.dsn";
+    std::filesystem::remove_all(folder);
+    std::filesystem::create_directories(folder);
+    const ua::DesignFiles templates(kit, {});
+    const auto blank = templates.data("GEO", 5);
+    check(blank && blank->size() == 12962, "The kit has its dungeon template");
+
+    AreaBuilder hall(*blank);
+    hall.entry(1, 2, 2, 2);
+    hall.entry(2, 12, 11, 0);
+    // A wall down the hall between columns 9 and 10, with a locked door at
+    // row 5 and a door for the brass key (key 1) at row 12.
+    for (unsigned y = 0; y < 16; ++y)
+    {
+        const std::uint8_t wall = y == 5 ? 0x23 : y == 12 ? 0x63 : 0xE2;
+        hall.wall(9, y, MapDirection::east, wall);
+    }
+    // A pillar of the second set's walls, and an open doorway of the first.
+    for (const auto direction :
+         {MapDirection::north, MapDirection::east, MapDirection::south, MapDirection::west})
+    {
+        hall.wall(5, 8, direction, 0x06);
+    }
+    hall.wall(3, 12, MapDirection::north, 0x03);
+    const auto welcome = hall.text("WELCOME TO THE TEST HALL, ^.");
+    const auto key = hall.text("YOU FIND A BRASS KEY.");
+    const auto chest = hall.text("OPEN THE CHEST?");
+    const auto kobolds = hall.text("KOBOLDS ATTACK!");
+    const auto fountain = hall.text("A FOUNTAIN.");
+    const auto fountain_menu = hall.text("^DRINK ^LEAVE");
+    const auto wiser = hall.text("YOU FEEL WISER.");
+    const auto dart = hall.text("A DART TRAP!");
+    const auto mayor = hall.text("WILL YOU HELP THE MAYOR?");
+    const auto thanks = hall.text("THE MAYOR THANKS YOU.");
+    const auto elsewhere = hall.text("YOU ARE ELSEWHERE.");
+    const auto stairs = hall.text("GO DOWN THE STAIRS?");
+    // 1: text, paused (bit 0 of byte 4), chained (byte 3) to 2.
+    hall.event(1, {2, 0, 0, 2, 1, 0, 0, 0, low(welcome), high(welcome)}, {{2, 2}});
+    // 2: a special item: quest flag 0 (the brass key) set.
+    hall.event(2, {38, 0, 0, 0, low(key), high(key), 0, 0, 0});
+    // 3: a yes/no question; yes runs 4, a treasure of 50 platinum and 3 gems.
+    hall.event(3, {36, 0, 0, 0, low(chest), high(chest), 0, 0, 4, 0}, {{5, 2}});
+    hall.event(4, {3, 0, 0, 0, 50, 0, 0, 0, 3, 0});
+    // 5: once only, three kobolds (MONST 1).
+    hall.event(5, {1, 1, 0, 0, low(kobolds), high(kobolds), 0, 100, 3, 1}, {{8, 2}});
+    // 6: a menu of two buttons: DRINK runs 7 (500 experience), LEAVE nothing.
+    hall.event(6,
+               {10, 0, 0, 0, low(fountain), high(fountain), 0, 0, low(fountain_menu),
+                high(fountain_menu), 7, 0},
+               {{2, 5}});
+    hall.event(7, {26, 0, 0, 0, low(wiser), high(wiser), 0, 0, 0xF4, 0x01});
+    // 8: a dart for one member at random, 1d4, half on a save.
+    hall.event(8, {4, 0, 0, 0, low(dart), high(dart), 0, 0x18, 1, 1, 4, 0, 0, 0x40}, {{5, 5}});
+    // 9: a quest's first stage (flag 1 at 0), accepted with Yes: 10 sets flag 2 to 7.
+    hall.event(9, {35, 0, 0, 0, low(mayor), high(mayor), 0, 1 << 3, 1, 0, 10, 0}, {{8, 5}});
+    hall.event(10, {16, 0, 0, 0, 1, 2, 7});
+    // 11: once flag 2 is set (condition 1 on flag 2), the mayor's thanks.
+    hall.event(11, {2, (1 << 3) | 1, 2, 0, 0, 0, 0, 0, low(thanks), high(thanks)}, {{4, 10}});
+    // 12: a teleporter to (7, 13) facing south, with words on arrival.
+    hall.event(12, {34, 0, 0, 0, 0, 0, 0, 0x08, 13, 7, low(elsewhere), high(elsewhere)}, {{2, 8}});
+    // 13: a chain to 14, which passes an hour.
+    hall.event(13, {23, 0, 0, 0, 0, 0, 0, 0, 14}, {{11, 2}});
+    hall.event(14, {27, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0});
+    // 15: the stairs: asked, to the cellar's entry point 1.
+    hall.event(15, {11, 0, 0, 0, low(stairs), high(stairs), 0, 0x20, 0, 0, 0, 0, 1, 1, 6},
+               {{12, 12}});
+    // 16: one group of two, goblins (MONST 2) or orcs (3), picked at random.
+    hall.event(16, {33, 0, 0, 0, 0, 0, 0, 100, 2, 2, 2, 3}, {{13, 8}});
+    write(folder / "GEO005.DAT", hall.finish());
+
+    AreaBuilder cellar(*blank);
+    cellar.entry(1, 1, 1, 2);
+    const auto damp = cellar.text("THE CELLAR IS DAMP.");
+    const auto statue = cellar.text("A STATUE.");
+    const auto statue_menu = cellar.text("^TOUCH IT ^PRAY ^LEAVE");
+    const auto zap = cellar.text("IT BURNS!");
+    // 1: words that need no Return.
+    cellar.event(1, {2, 0, 0, 0, 0, 0, 0, 0, low(damp), high(damp)}, {{1, 1}});
+    // 2: back up the stairs to the hall's entry point 2.
+    cellar.event(2, {11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 5}, {{6, 6}});
+    // 3: a list: TOUCH IT burns everyone for 1d2; PRAY gives the selected
+    // member 100 experience; LEAVE nothing.
+    cellar.event(3,
+                 {21, 0, 0, 0, low(statue), high(statue), 0, 0, low(statue_menu), high(statue_menu),
+                  4, 5, 0},
+                 {{3, 3}});
+    cellar.event(4, {4, 0, 0, 0, low(zap), high(zap), 0, 0, 1, 1, 2});
+    cellar.event(5, {26, 0, 0, 0, 0, 0, 0, 4, 100});
+    write(folder / "GEO006.DAT", cellar.finish());
+
+    const auto settings = templates.data("GAME", 1);
+    check(settings && settings->size() == 388, "The kit has its game record");
+    auto game = *settings;
+    const std::string_view title = "Test Design";
+    std::fill_n(game.begin(), 0x20, 0);
+    std::copy(title.begin(), title.end(), game.begin());
+    game[0x30] = 5;
+    game[0x31] = 1;
+    write(folder / "GAME001.DAT", game);
+    return folder;
+}
+
+std::optional<std::filesystem::path> kit_folder()
+{
+    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
+    if (!games)
+    {
+        return std::nullopt;
+    }
+    const auto folder = std::filesystem::path(games) / "UA";
+    return ua::is_kit_folder(folder) ? std::optional(folder) : std::nullopt;
+}
+
+// Six human fighters made under Unlimited Adventures' rules.
+std::shared_ptr<opengold::CampaignParty> new_party(const opengold::original::Content &content)
+{
+    std::shared_ptr<const opengold::rules::CharacterRules> creation =
+        opengold::original::character_rules(opengold::original::default_aging,
+                                            GoldBoxGame::unlimited_adventures);
+    auto party = std::make_shared<opengold::CampaignParty>(
+        opengold::original::rules_module(content), creation);
+    for (unsigned n = 0; n < 6; ++n)
+    {
+        opengold::CharacterCreator creator(creation, 90 + n);
+        creator.select(opengold::rules::CreationField::race, "human");
+        creator.select(opengold::rules::CreationField::character_class, "fighter");
+        creator.name("FIGHTER " + std::to_string(n + 1));
+        for (const bool roll : {false, false, false, true, false, false})
+        {
+            if (roll)
+            {
+                creator.roll();
+            }
+            creator.next();
+        }
+        (void)party->add_pc(creator.create_character());
+    }
+    party->select(opengold::PartySlot{0});
+    return party;
+}
+
+// The pending fight played to its end, every turn the computer's.
+opengold::rules::Snapshot fight(const ua::UaSession &session,
+                                const std::shared_ptr<opengold::CampaignParty> &party,
+                                const opengold::original::Content &content)
+{
+    opengold::CombatDemo combat(opengold::original::rules_module(content));
+    combat.campaign_party(party);
+    combat.encounter(*session.pending_encounter(), 7);
+    for (int command = 0;
+         command < 3000 && combat.combat().snapshot().outcome == opengold::rules::Outcome::ongoing;
+         ++command)
+    {
+        const auto &state = combat.combat();
+        const auto snapshot = state.snapshot();
+        const auto actor = std::ranges::find(snapshot.combatants, snapshot.actor,
+                                             &opengold::rules::CombatantView::id);
+        const bool member =
+            actor != snapshot.combatants.end() && actor->side == opengold::rules::Side::party;
+        const auto chosen =
+            member ? opengold::choose_quick_command(state, false, opengold::Searching::everyone)
+                   : opengold::choose_demo_command(state, opengold::Searching::everyone);
+        if (!combat.submit(chosen))
+        {
+            break;
+        }
+    }
+    return combat.combat().snapshot();
+}
+
+// Plays what the square's events ask until they end: the answer named in
+// `answers` where one fits, else the first choice (the last after a menu
+// came back twice), and every fight.
+struct Player
+{
+    ua::UaSession &session;
+    std::shared_ptr<opengold::CampaignParty> party;
+    const opengold::original::Content &content;
+    std::vector<std::string> answers;
+    std::vector<std::string> said;
+    unsigned fights{}, victories{};
+
+    void play()
+    {
+        std::map<std::string, unsigned> shown;
+        for (int step = 0; step < 200; ++step)
+        {
+            const auto &s = session.snapshot();
+            if (!s.dialogue.empty() && (said.empty() || said.back() != s.dialogue))
+            {
+                said.push_back(s.dialogue);
+            }
+            switch (s.phase)
+            {
+            case TourPhase::awaiting_continue:
+            {
+                std::size_t pick =
+                    ++shown[s.dialogue] > 2 && !s.choices.empty() ? s.choices.size() - 1 : 0;
+                if (!answers.empty())
+                {
+                    const auto found = std::ranges::find(s.choices, answers.front());
+                    if (found != s.choices.end())
+                    {
+                        pick = static_cast<std::size_t>(found - s.choices.begin());
+                        answers.erase(answers.begin());
+                    }
+                }
+                check(session.choose(s.continue_ticket, pick), "The answer is taken");
+                continue;
+            }
+            case TourPhase::awaiting_input:
+                check(session.input(s.continue_ticket, "0"), "The typed answer is taken");
+                continue;
+            case TourPhase::combat:
+            {
+                ++fights;
+                const auto result = fight(session, party, content);
+                victories += result.outcome == opengold::rules::Outcome::victory ? 1 : 0;
+                check(session.resolve_combat(result), "The fight's result is taken");
+                continue;
+            }
+            default:
+                return;
+            }
+        }
+        check(false, "An event never ends");
+    }
+
+    [[nodiscard]] bool heard(std::string_view words) const
+    {
+        return std::ranges::any_of(said,
+                                   [&](const std::string &line)
+                                   {
+                                       return line.find(words) != std::string::npos;
+                                   });
+    }
+};
+
+std::size_t colours(const opengold::Image &image)
+{
+    std::set<std::uint32_t> seen;
+    for (std::size_t p = 0; p + 3 < image.rgba.size(); p += 4)
+    {
+        seen.insert(image.rgba[p] << 16 | image.rgba[p + 1] << 8 | image.rgba[p + 2]);
+    }
+    return seen.size();
+}
+
+void a_character_follows_the_kits_rules()
+{
+    std::shared_ptr<const opengold::rules::CharacterRules> creation =
+        opengold::original::character_rules(opengold::original::default_aging,
+                                            GoldBoxGame::unlimited_adventures);
+    const auto races = creation->choices(opengold::rules::CreationField::race);
+    check(std::ranges::none_of(races,
+                               [](const auto &choice)
+                               {
+                                   return choice.id == "half_orc";
+                               }),
+          "The kit has no half-orcs");
+    const auto classes = creation->choices(opengold::rules::CreationField::character_class);
+    check(std::ranges::any_of(classes,
+                              [](const auto &choice)
+                              {
+                                  return choice.id == "paladin";
+                              }) &&
+              std::ranges::none_of(classes,
+                                   [](const auto &choice)
+                                   {
+                                       return choice.id == "druid";
+                                   }),
+          "Humans may be paladins; no one is a druid");
+    opengold::CharacterCreator creator(creation, 5);
+    creator.select(opengold::rules::CreationField::race, "human");
+    creator.select(opengold::rules::CreationField::character_class, "fighter");
+    creator.name("TESTER");
+    for (const bool roll : {false, false, false, true, false, false})
+    {
+        if (roll)
+        {
+            creator.roll();
+        }
+        creator.next();
+    }
+    const auto sheet = creator.create_character().sheet();
+    check(sheet.original && sheet.original->experience == 40001 && sheet.original->platinum == 200,
+          "A new character starts with the kit's 40,001 experience and 200 platinum");
+    check(sheet.level > 1, "It is trained to the levels its experience reaches");
+}
+
+void the_design_loads_and_plays(const std::filesystem::path &kit)
+{
+    const auto design = build_test_design(kit);
+    const ua::DesignFiles files(kit, design);
+    const auto content = ua::load_design_content(files);
+    check(content.bestiary.size() == 127 && content.bestiary.contains(ua::monster_key(1)),
+          "The kit's 127 monsters fight under the original rules");
+    const auto &kobold = content.bestiary.at(ua::monster_key(1));
+    check(kobold.thac0 == 20 && kobold.armor_class == 7 && kobold.max_hit_points == 3,
+          "A kobold has THAC0 20, Armor Class 7 and 3 Hit Points");
+    auto session = ua::UaSession::start(files);
+    check(session.area().number == 5, "The design starts in its start area");
+    check(session.snapshot().pose.x == 2 && session.snapshot().pose.y == 2 &&
+              session.snapshot().pose.facing == MapDirection::east,
+          "The party stands on the start area's first entry point");
+    // The 3D view: the hall's walls over its backdrop.
+    const auto view = session.observe_view();
+    check(view.width == 88 && view.height == 88 && colours(view) > 8, "The 3D view draws walls");
+    auto party = new_party(content);
+    session.campaign_party(party);
+    Player player{session, party, content};
+    check(session.snapshot().dialogue.find("WELCOME TO THE TEST HALL, FIGHTER 1.") !=
+              std::string::npos,
+          "The start square's words name the selected member: " + session.snapshot().dialogue);
+    player.play();
+    check(player.heard("YOU FIND A BRASS KEY.") && session.quest_flag(0) == 1,
+          "The chained event gives the brass key");
+    check(session.explore(ExplorationCommand::turn_left), "The party turns");
+    check(session.observe_view().rgba != view.rgba, "Turning shows another view");
+    check(session.explore(ExplorationCommand::turn_right), "The party turns back");
+    // Walls stop the party: north of the start is the hall's edge.
+    session.place(5, 2, 0, MapDirection::north);
+    check(!session.explore(ExplorationCommand::forward), "The edge's wall stops a step");
+    // The chest: Yes opens it.
+    const auto before = party->state().wealth;
+    session.place(5, 4, 2, MapDirection::east);
+    check(session.explore(ExplorationCommand::forward), "The party steps to the chest");
+    player.answers = {"Yes"};
+    player.play();
+    check(party->state().wealth[4] == before[4] + 50 && party->state().wealth[5] == before[5] + 3,
+          "The chest's 50 platinum and 3 gems go to the party");
+    // The kobolds.
+    const auto experience = party->member(party->state().slots[0]).experience;
+    session.place(5, 8, 2, MapDirection::east);
+    session.look();
+    player.play();
+    check(player.fights == 1 && player.victories == 1, "The party beats the kobolds");
+    check(party->member(party->state().slots[0]).experience > experience,
+          "The kobolds' experience is shared");
+    session.look();
+    player.play();
+    check(player.fights == 1, "A once-only fight does not come back");
+    // The quest: help the mayor; the thanks follow only then.
+    session.place(5, 4, 10, MapDirection::north);
+    session.look();
+    player.play();
+    check(!player.heard("THE MAYOR THANKS YOU."), "No thanks before the quest");
+    session.place(5, 8, 5, MapDirection::north);
+    player.answers = {"Yes"};
+    session.look();
+    player.play();
+    check(session.quest_flag(1) == 1 && session.quest_flag(2) == 7,
+          "The quest moves on and its event sets a flag");
+    session.place(5, 4, 10, MapDirection::north);
+    session.look();
+    player.play();
+    check(player.heard("THE MAYOR THANKS YOU."), "The thanks come once the flag is set");
+    // The teleporter.
+    session.place(5, 2, 8, MapDirection::north);
+    session.look();
+    player.play();
+    check(session.snapshot().pose.x == 7 && session.snapshot().pose.y == 13 &&
+              session.snapshot().pose.facing == MapDirection::south &&
+              player.heard("YOU ARE ELSEWHERE."),
+          "The teleporter moves the party within the area");
+    // The key's door opens with the brass key; the locked door stays shut.
+    session.place(5, 9, 12, MapDirection::east);
+    check(session.can_step(MapDirection::east), "The brass key opens its door");
+    session.place(5, 9, 5, MapDirection::east);
+    check(!session.can_step(MapDirection::east), "A locked door stays shut");
+    // Down the stairs to the cellar, and back.
+    session.place(5, 12, 12, MapDirection::north);
+    player.answers = {"Yes"};
+    session.look();
+    player.play();
+    check(session.area().number == 6 && session.snapshot().pose.x == 1 &&
+              session.snapshot().pose.y == 1,
+          "The stairs take the party to the cellar's entry point");
+    session.place(6, 6, 6, MapDirection::north);
+    session.look();
+    player.play();
+    check(session.area().number == 5 && session.snapshot().pose.x == 12 &&
+              session.snapshot().pose.y == 11,
+          "The cellar's stairs take it back to the hall's second entry point");
+    check(session.diagnostics().empty(), "Every event of the test design is played");
+}
+
+// The walk (plan phase 8, step 1): every square of every area of the design,
+// stood on facing each way, its view drawn, its event played, and every
+// open step from it taken.
+bool walk_every_square(const std::filesystem::path &kit)
+{
+    const auto design = build_test_design(kit);
+    const ua::DesignFiles files(kit, design);
+    const auto content = ua::load_design_content(files);
+    auto session = ua::UaSession::start(files);
+    auto party = new_party(content);
+    session.campaign_party(party);
+    Player player{session, party, content};
+    player.play();
+    std::vector<unsigned> areas;
+    for (const auto &entry : std::filesystem::directory_iterator(design))
+    {
+        const auto name = entry.path().filename().string();
+        if (name.starts_with("GEO") && name.ends_with(".DAT"))
+        {
+            areas.push_back(static_cast<unsigned>(std::stoul(name.substr(3, 3))));
+        }
+    }
+    std::ranges::sort(areas);
+    unsigned squares = 0, steps = 0;
+    for (const auto area : areas)
+    {
+        session.place(area, 0, 0, MapDirection::north);
+        const unsigned rows = session.area().area.rows, columns = session.area().area.columns;
+        for (unsigned y = 0; y < rows; ++y)
+        {
+            for (unsigned x = 0; x < columns; ++x)
+            {
+                ++squares;
+                for (const auto facing : {MapDirection::north, MapDirection::east,
+                                          MapDirection::south, MapDirection::west})
+                {
+                    session.place(area, x, y, facing);
+                    check(colours(session.observe_view()) > 2, "The view draws");
+                    if (facing == MapDirection::north)
+                    {
+                        session.look();
+                        player.play();
+                        session.place(area, x, y, facing);
+                    }
+                    if (session.can_step(facing))
+                    {
+                        ++steps;
+                        check(session.explore(ExplorationCommand::forward),
+                              "An open step is taken");
+                        player.play();
+                    }
+                    if (session.snapshot().phase == TourPhase::defeated)
+                    {
+                        std::cout << "The party was lost at area " << area << ", " << x << "," << y
+                                  << '\n';
+                        return false;
+                    }
+                    (void)party->rest();
+                }
+            }
+        }
+    }
+    std::cout << "Walked " << squares << " squares of " << areas.size() << " areas, took " << steps
+              << " steps, played " << player.fights << " fights (" << player.victories
+              << " won).\n";
+    for (const auto &need : session.diagnostics())
+    {
+        std::cout << "  needs: " << need << '\n';
+    }
+    return session.diagnostics().empty() && player.fights > 0;
+}
+
+} // namespace
+
+int main(int argc, char **argv)
+{
+    try
+    {
+        a_character_follows_the_kits_rules();
+        const auto kit = kit_folder();
+        if (!kit)
+        {
+            std::cout << "Skipped: the kit's files are not in OPENGOLD_GOLDBOX_DIR/UA.\n";
+            return 0;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--ua-walk")
+        {
+            return walk_every_square(*kit) ? 0 : 1;
+        }
+        the_design_loads_and_plays(*kit);
+    }
+    catch (const std::exception &error)
+    {
+        std::cerr << "FAIL: " << error.what() << '\n';
+        return 1;
+    }
+    std::cout << "Unlimited Adventures' design plays.\n";
+    return 0;
+}

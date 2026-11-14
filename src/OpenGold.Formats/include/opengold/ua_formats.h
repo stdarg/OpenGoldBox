@@ -196,12 +196,19 @@ struct Label
 
 [[nodiscard]] std::optional<std::vector<Label>> decode_labels(std::span<const std::uint8_t> item);
 
-// GAME.GLB's record: the design's title, the eight keys' and twelve special
-// items' names, and its password.
+// GAME.GLB's record: the design's title, how a new party starts, the eight
+// keys' and twelve special items' names, and its password.
 struct GameSettings
 {
     std::array<std::uint8_t, 388> raw{};
     std::string title;
+    // A new character's experience (shared among its classes, then trained
+    // to the levels it reaches) and money.
+    std::uint32_t start_experience{};
+    std::uint32_t start_platinum{}, start_gems{}, start_jewelry{};
+    // The area the party starts in and its entry point (1-based), and the
+    // starting equipment (1 to 8).
+    std::uint8_t start_area{}, start_entry{}, start_equipment{};
     std::array<std::string, 8> key_names;
     std::array<std::string, 12> special_item_names;
     std::string password;

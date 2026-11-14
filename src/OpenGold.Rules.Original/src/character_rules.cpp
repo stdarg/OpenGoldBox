@@ -529,7 +529,16 @@ class OriginalCharacterRules final : public rules::CharacterRules
         switch (field)
         {
         case CreationField::race:
-            return listed(races);
+        {
+            // The races that may take some class in this game.
+            auto offered = listed(races);
+            std::erase_if(offered,
+                          [this](const CreationChoice &choice)
+                          {
+                              return professions_for(*find_id(races, choice.id), game_).empty();
+                          });
+            return offered;
+        }
         case CreationField::gender:
             return listed(genders);
         case CreationField::character_class:
@@ -595,7 +604,10 @@ class OriginalCharacterRules final : public rules::CharacterRules
         switch (field)
         {
         case CreationField::race:
-            return find_id(races, id).has_value();
+        {
+            const auto race = find_id(races, id);
+            return race && !professions_for(*race, game_).empty();
+        }
         case CreationField::gender:
             return find_id(genders, id).has_value();
         case CreationField::character_class:
@@ -912,6 +924,7 @@ constexpr std::string_view pool_edition = "pool-of-radiance-1.3";
 constexpr std::string_view curse_edition = "curse-of-the-azure-bonds";
 constexpr std::string_view secret_edition = "secret-of-the-silver-blades";
 constexpr std::string_view gateway_edition = "gateway-to-the-savage-frontier";
+constexpr std::string_view ua_edition = "unlimited-adventures";
 } // namespace
 
 rules::Identity identity(GoldBoxGame game)
@@ -919,6 +932,7 @@ rules::Identity identity(GoldBoxGame game)
     const auto edition = game == GoldBoxGame::curse_of_the_azure_bonds         ? curse_edition
                          : game == GoldBoxGame::secret_of_the_silver_blades    ? secret_edition
                          : game == GoldBoxGame::gateway_to_the_savage_frontier ? gateway_edition
+                         : game == GoldBoxGame::unlimited_adventures           ? ua_edition
                                                                                : pool_edition;
     return {"opengold.original", "0.1.0", std::string(edition)};
 }
@@ -932,6 +946,10 @@ GoldBoxGame game_of(const rules::Identity &identity)
     if (identity.content == gateway_edition)
     {
         return GoldBoxGame::gateway_to_the_savage_frontier;
+    }
+    if (identity.content == ua_edition)
+    {
+        return GoldBoxGame::unlimited_adventures;
     }
     return identity.content == secret_edition ? GoldBoxGame::secret_of_the_silver_blades
                                               : GoldBoxGame::pool_of_radiance;

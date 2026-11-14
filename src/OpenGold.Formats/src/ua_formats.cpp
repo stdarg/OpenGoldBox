@@ -780,6 +780,13 @@ std::optional<GameSettings> decode_game_settings(std::span<const std::uint8_t> i
     GameSettings settings;
     std::copy(item.begin(), item.end(), settings.raw.begin());
     settings.title = text_at(item.first(title_size));
+    settings.start_experience = read_u32(item, 0x20);
+    settings.start_platinum = read_u32(item, 0x24);
+    settings.start_gems = read_u32(item, 0x28);
+    settings.start_jewelry = read_u32(item, 0x2C);
+    settings.start_area = item[0x30];
+    settings.start_entry = item[0x31];
+    settings.start_equipment = item[0x32];
     auto name_at = [item](std::size_t name)
     {
         return text_at(item.subspan(game_names_offset + name * game_name_size, game_name_size));

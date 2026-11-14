@@ -579,6 +579,11 @@ std::span<const Profession> professions_for(Race race, GoldBoxGame game)
         return curse ? std::span<const Profession>(curse_half_elf_professions)
                      : std::span<const Profession>(half_elf_professions);
     case Race::half_orc:
+        // Unlimited Adventures has no half-orcs (docs/games/ua.md).
+        if (game == GoldBoxGame::unlimited_adventures)
+        {
+            return {};
+        }
         return half_orc_professions;
     case Race::human:
         return curse ? std::span<const Profession>(curse_human_professions)
@@ -758,6 +763,10 @@ int starting_experience(Profession profession, GoldBoxGame game)
     case GoldBoxGame::secret_of_the_silver_blades:
         // Its creation rounds a three-class character's share up.
         return classes == 3 ? 66667 : 200000 / classes;
+    case GoldBoxGame::unlimited_adventures:
+        // The kit's game record starts a new character with 40,001
+        // experience, shared among its classes (docs/games/ua.md).
+        return 40001 / classes;
     default:
         return 0;
     }
@@ -786,6 +795,8 @@ int starting_platinum(GoldBoxGame game)
         return 300;
     case GoldBoxGame::gateway_to_the_savage_frontier:
         return 35;
+    case GoldBoxGame::unlimited_adventures:
+        return 200;
     default:
         return 0;
     }
