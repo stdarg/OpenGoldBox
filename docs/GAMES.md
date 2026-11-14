@@ -338,8 +338,9 @@ The steps of *Curse*'s phase 3, with *Secret*'s differences
    asks for its folder (`SECRET`) and the rules, and the party screen's party
    plays the vision on to New Verdigris, every area named as the cluebook's
    maps name it ([secret.md](games/secret.md), Area names;
-   `opengold_godot_startup_menu_secret` checks it on screen). Still to come:
-   the title pictures and saves by game.
+   `opengold_godot_startup_menu_secret` checks it on screen), after
+   *Secret*'s title pictures; its saves are kept apart as each game's are
+   (*Curse*'s step 1.7).
 3. Making a party under *Secret*'s rules: 200,000 experience for a single
    class (100,000 dual, 66,667 triple) trained up at once, its classes,
    level limits and 117 spells; bringing a *Curse* party across.
