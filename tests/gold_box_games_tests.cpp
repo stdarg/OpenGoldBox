@@ -1277,6 +1277,164 @@ const std::vector<RouteBeat> &secret_route()
              {8, 15, D::south},  {3, 1, D::south},   {3, 2, D::south}},
             true);
         route.push_back({48, 3, 3, D::north, {"YES", "6"}, true});
+        // Level 6: the sixth piece.
+        walk_passages(route, 48,
+                      {{3, 3, D::west},   {2, 3, D::west},   {1, 3, D::west},   {10, 0, D::west},
+                       {9, 0, D::west},   {8, 0, D::west},   {7, 0, D::west},   {6, 0, D::west},
+                       {5, 0, D::west},   {5, 15, D::west},  {4, 15, D::west},  {3, 15, D::west},
+                       {2, 15, D::west},  {15, 0, D::west},  {14, 0, D::west},  {13, 0, D::west},
+                       {12, 0, D::west},  {11, 0, D::south}, {11, 1, D::west},  {10, 1, D::west},
+                       {9, 1, D::west},   {8, 1, D::west},   {7, 1, D::west},   {6, 1, D::west},
+                       {12, 7, D::west},  {11, 7, D::west},  {10, 7, D::south}, {10, 8, D::west},
+                       {9, 8, D::west},   {8, 8, D::west},   {7, 8, D::west},   {6, 8, D::south},
+                       {6, 9, D::south},  {14, 3, D::south}, {14, 4, D::south}, {14, 5, D::east},
+                       {15, 5, D::south}, {15, 6, D::south}, {15, 7, D::west},  {14, 7, D::south},
+                       {14, 8, D::south}, {14, 9, D::south}, {5, 13, D::south}, {5, 14, D::east},
+                       {6, 14, D::south}, {6, 15, D::east},  {7, 15, D::east},  {9, 15, D::east},
+                       {10, 15, D::east}, {11, 15, D::east}, {12, 15, D::east}, {13, 15, D::north},
+                       {13, 14, D::east}},
+                      true);
+        // Back to the lift, and down to level 7.
+        walk_passages(route, 48,
+                      {{14, 14, D::west}, {13, 14, D::south}, {13, 15, D::west}, {12, 15, D::west},
+                       {11, 15, D::west}, {10, 15, D::west},  {9, 15, D::west},  {7, 15, D::west},
+                       {6, 15, D::north}, {6, 14, D::west},   {5, 14, D::north}, {5, 13, D::north},
+                       {14, 9, D::north}, {14, 8, D::north},  {14, 7, D::east},  {15, 7, D::north},
+                       {15, 6, D::north}, {15, 5, D::west},   {14, 5, D::north}, {14, 4, D::north},
+                       {14, 3, D::north}, {6, 9, D::north},   {6, 8, D::east},   {7, 8, D::east},
+                       {8, 8, D::east},   {9, 8, D::east},    {10, 8, D::north}, {10, 7, D::east},
+                       {11, 7, D::east},  {12, 7, D::east},   {5, 1, D::east},   {6, 1, D::east},
+                       {7, 1, D::east},   {8, 1, D::east},    {9, 1, D::east},   {10, 1, D::east},
+                       {11, 1, D::north}, {11, 0, D::east},   {12, 0, D::east},  {13, 0, D::east},
+                       {14, 0, D::east},  {15, 0, D::east},   {2, 15, D::east},  {3, 15, D::east},
+                       {4, 15, D::east},  {5, 15, D::east},   {5, 0, D::east},   {6, 0, D::east},
+                       {7, 0, D::east},   {8, 0, D::east},    {9, 0, D::east},   {10, 0, D::east},
+                       {1, 3, D::east},   {2, 3, D::east}},
+                      true);
+        route.push_back({48, 3, 3, D::north, {"YES", "7"}, true});
+        // Level 7: the seventh piece.
+        walk_passages(
+            route, 48,
+            {{3, 3, D::south},   {3, 4, D::south},   {3, 5, D::south},   {10, 7, D::south},
+             {10, 8, D::south},  {10, 9, D::south},  {10, 10, D::east},  {11, 10, D::east},
+             {12, 10, D::east},  {5, 12, D::east},   {6, 12, D::south},  {6, 13, D::east},
+             {7, 13, D::south},  {7, 14, D::east},   {8, 14, D::south},  {8, 15, D::south},
+             {11, 11, D::south}, {11, 12, D::south}, {11, 13, D::south}, {0, 5, D::south},
+             {0, 6, D::south},   {0, 7, D::south},   {0, 8, D::south},   {0, 9, D::south},
+             {0, 10, D::south},  {9, 3, D::south},   {9, 4, D::south},   {9, 5, D::west},
+             {8, 5, D::west},    {4, 12, D::west},   {3, 12, D::south},  {3, 13, D::west},
+             {2, 13, D::south},  {2, 14, D::west},   {1, 14, D::south},  {1, 15, D::south},
+             {15, 8, D::south},  {15, 9, D::south},  {15, 10, D::west},  {14, 10, D::west},
+             {13, 10, D::north}, {13, 9, D::west},   {12, 9, D::west},   {11, 9, D::west},
+             {9, 7, D::west},    {8, 7, D::west},    {7, 7, D::west},    {6, 7, D::north},
+             {6, 6, D::north},   {15, 4, D::north},  {15, 3, D::north},  {15, 2, D::west},
+             {14, 2, D::west}},
+            true);
+        // Back to the lift, and down to level 8.
+        walk_passages(
+            route, 48,
+            {{13, 2, D::east},   {14, 2, D::east},   {15, 2, D::south}, {15, 3, D::south},
+             {15, 4, D::south},  {6, 6, D::south},   {6, 7, D::east},   {7, 7, D::east},
+             {8, 7, D::east},    {9, 7, D::east},    {11, 9, D::east},  {12, 9, D::east},
+             {13, 9, D::south},  {13, 10, D::east},  {14, 10, D::east}, {15, 10, D::north},
+             {15, 9, D::north},  {15, 8, D::north},  {1, 15, D::north}, {1, 14, D::east},
+             {2, 14, D::north},  {2, 13, D::east},   {3, 13, D::north}, {3, 12, D::east},
+             {4, 12, D::east},   {8, 5, D::east},    {9, 5, D::north},  {9, 4, D::north},
+             {9, 3, D::north},   {0, 10, D::north},  {0, 9, D::north},  {0, 8, D::north},
+             {0, 7, D::north},   {0, 6, D::north},   {0, 5, D::north},  {11, 13, D::north},
+             {11, 12, D::north}, {11, 11, D::north}, {8, 15, D::north}, {8, 14, D::west},
+             {7, 14, D::north},  {7, 13, D::west},   {6, 13, D::north}, {6, 12, D::west},
+             {5, 12, D::west},   {12, 10, D::west},  {11, 10, D::west}, {10, 10, D::north},
+             {10, 9, D::north},  {10, 8, D::north},  {10, 7, D::north}, {3, 5, D::north},
+             {3, 4, D::north}},
+            true);
+        route.push_back({48, 3, 3, D::north, {"YES", "8"}, true});
+        // Level 8: the Tomb of Oswulf, which the Ring of Tyr opens, holds the last piece.
+        walk_passages(route, 48,
+                      {{3, 3, D::south},  {3, 4, D::south},  {3, 5, D::south},  {14, 3, D::south},
+                       {14, 4, D::south}, {14, 5, D::east},  {15, 5, D::south}, {15, 6, D::south},
+                       {15, 7, D::west},  {14, 7, D::south}, {14, 8, D::south}, {14, 9, D::south},
+                       {9, 3, D::south},  {9, 4, D::south},  {9, 5, D::west},   {8, 5, D::west},
+                       {4, 12, D::west},  {3, 12, D::south}, {3, 13, D::west},  {2, 13, D::south},
+                       {2, 14, D::west},  {1, 14, D::south}, {1, 15, D::south}, {0, 11, D::south},
+                       {0, 12, D::south}, {0, 13, D::south}, {0, 14, D::south}, {0, 15, D::south},
+                       {10, 7, D::south}, {10, 8, D::south}, {10, 9, D::south}, {10, 10, D::east},
+                       {11, 10, D::east}, {12, 10, D::east}, {12, 1, D::east},  {13, 1, D::east},
+                       {14, 1, D::east},  {15, 1, D::east},  {12, 1, D::east},  {13, 1, D::east},
+                       {14, 1, D::east},  {15, 1, D::east},  {2, 10, D::east},  {3, 10, D::east},
+                       {4, 10, D::east},  {5, 10, D::east},  {6, 10, D::east}},
+                      true);
+        // Back to the lift, and up to the temple level.
+        walk_passages(route, 48,
+                      {{7, 10, D::west},   {6, 10, D::west},  {5, 10, D::west},  {4, 10, D::west},
+                       {3, 10, D::west},   {2, 10, D::west},  {15, 1, D::west},  {14, 1, D::west},
+                       {13, 1, D::west},   {12, 1, D::west},  {15, 1, D::west},  {14, 1, D::west},
+                       {13, 1, D::west},   {12, 1, D::west},  {12, 10, D::west}, {11, 10, D::west},
+                       {10, 10, D::north}, {10, 9, D::north}, {10, 8, D::north}, {10, 7, D::north},
+                       {0, 15, D::north},  {0, 14, D::north}, {0, 13, D::north}, {0, 12, D::north},
+                       {0, 11, D::north},  {1, 15, D::north}, {1, 14, D::east},  {2, 14, D::north},
+                       {2, 13, D::east},   {3, 13, D::north}, {3, 12, D::east},  {4, 12, D::east},
+                       {8, 5, D::east},    {9, 5, D::north},  {9, 4, D::north},  {9, 3, D::north},
+                       {14, 9, D::north},  {14, 8, D::north}, {14, 7, D::east},  {15, 7, D::north},
+                       {15, 6, D::north},  {15, 5, D::west},  {14, 5, D::north}, {14, 4, D::north},
+                       {14, 3, D::north},  {3, 5, D::north},  {3, 4, D::north}},
+                      true);
+        route.push_back({48, 3, 3, D::north, {"YES", "TEMPLE"}, true});
+        // The temple level again: Derf mends the staff from its eight pieces
+        // (cell 4C86); then back to the lift and down to level 8.
+        route.push_back(step_beat(49, 3, 6, D::south));
+        route.push_back(step_beat(49, 5, 15, D::south, {"ENTER"}));
+        auto staff = step_beat(50, 14, 3, D::north);
+        staff.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C86, 1};
+        route.push_back(staff);
+        route.push_back(step_beat(50, 8, 0, D::north));
+        route.push_back(step_beat(49, 5, 12, D::north));
+        route.push_back({49, 3, 3, D::north, {"YES", "8"}, true});
+        // Level 8's malfunctioning teleporter, which hurts the party and drops it on level 9 among
+        // umber hulks.
+        walk_passages(route, 48,
+                      {{3, 3, D::north},   {3, 2, D::north},  {3, 1, D::north},  {11, 8, D::east},
+                       {12, 8, D::east},   {13, 8, D::north}, {13, 7, D::north}, {13, 6, D::west},
+                       {12, 6, D::west},   {11, 6, D::west},  {10, 6, D::west},  {9, 6, D::west},
+                       {8, 6, D::west},    {7, 6, D::west},   {12, 10, D::west}, {11, 10, D::west},
+                       {10, 10, D::north}, {10, 9, D::north}, {10, 8, D::west},  {9, 8, D::west},
+                       {8, 8, D::west},    {7, 8, D::west},   {6, 8, D::south},  {6, 9, D::south},
+                       {6, 3, D::south},   {6, 4, D::west},   {5, 4, D::west},   {4, 4, D::south},
+                       {4, 5, D::south},   {4, 6, D::west},   {3, 6, D::west},   {2, 6, D::north},
+                       {2, 5, D::north},   {2, 4, D::west},   {1, 4, D::west},   {0, 4, D::west},
+                       {10, 0, D::west},   {9, 0, D::west},   {8, 0, D::west},   {7, 0, D::west},
+                       {6, 0, D::west},    {5, 0, D::west},   {7, 15, D::west},  {6, 15, D::north},
+                       {6, 14, D::west},   {5, 14, D::north}, {5, 13, D::north}, {0, 10, D::north},
+                       {0, 9, D::north},   {0, 8, D::north},  {0, 7, D::north},  {0, 6, D::north},
+                       {0, 5, D::north},   {0, 15, D::north}, {0, 14, D::north}, {0, 13, D::north},
+                       {0, 12, D::north},  {0, 11, D::north}, {0, 3, D::north},  {0, 2, D::east},
+                       {1, 2, D::east},    {2, 2, D::north},  {2, 1, D::north},  {2, 0, D::east},
+                       {3, 0, D::east},    {4, 0, D::south},  {4, 1, D::south},  {4, 2, D::east},
+                       {5, 2, D::east},    {6, 2, D::east},   {7, 2, D::east},   {8, 2, D::east},
+                       {9, 2, D::east}},
+                      true);
+        // Level 9 (script 51): the Black Circle's force wall across the lift's shaft is taken down
+        // (cell 4C70). Rested before the teleporter, whose hulks give no time to recover.
+        route.back().rest_first = true;
+        // Rested first, its dead raised: the teleporter and the hulks hurt.
+        const auto level_9 = route.size();
+        walk_passages(
+            route, 49,
+            {{13, 3, D::south},  {13, 4, D::west},  {12, 4, D::west},   {11, 4, D::west},
+             {10, 4, D::west},   {6, 4, D::west},   {5, 4, D::west},    {4, 4, D::south},
+             {4, 5, D::south},   {4, 6, D::south},  {13, 12, D::south}, {13, 13, D::west},
+             {12, 13, D::south}, {12, 14, D::west}, {11, 14, D::west},  {10, 0, D::west},
+             {9, 0, D::west},    {8, 0, D::west},   {7, 0, D::west},    {6, 0, D::west},
+             {5, 0, D::west},    {4, 0, D::south},  {4, 1, D::south},   {4, 2, D::east},
+             {5, 2, D::east},    {6, 2, D::east},   {7, 9, D::east},    {8, 9, D::east},
+             {9, 9, D::east},    {10, 9, D::east},  {11, 9, D::south},  {11, 10, D::south},
+             {11, 11, D::south}, {0, 5, D::south},  {0, 6, D::south},   {0, 7, D::south},
+             {0, 8, D::south},   {0, 9, D::south},  {0, 10, D::south}},
+            true);
+        route[level_9].rest_first = true;
+        // To the lift, and down to level 10.
+        walk_passages(route, 49, {{3, 0, D::south}, {3, 1, D::south}, {3, 2, D::south}}, true);
+        route.push_back({49, 3, 3, D::north, {"YES", "B"}, true});
         return route;
     }();
     return beats;
@@ -2426,6 +2584,12 @@ bool walk_census(GoldBoxGame game, bool route)
             (void)std::sscanf(find, "%u,%u,%u", &goal_x, &goal_y, &goal_map);
             // FIND=* asks for the goal's cells anywhere.
             const bool anywhere = find[0] == '*';
+            // FIND=map:N asks for any square of map N.
+            const bool any_square = std::string_view(find).starts_with("map:");
+            if (any_square)
+            {
+                goal_map = static_cast<unsigned>(std::stoul(find + 4));
+            }
             const auto hex_list = [](const char *text)
             {
                 std::vector<std::pair<std::uint16_t, std::uint16_t>> cells;
@@ -2517,8 +2681,8 @@ bool walk_census(GoldBoxGame game, bool route)
                                          "," + std::to_string(from.y) + " f" + std::to_string(f) +
                                          " -> " + key});
                     const bool at_goal =
-                        (anywhere || (session.snapshot().area_id == goal_map && to.x == goal_x &&
-                                      to.y == goal_y)) &&
+                        (anywhere || (session.snapshot().area_id == goal_map &&
+                                      (any_square || (to.x == goal_x && to.y == goal_y)))) &&
                         std::ranges::all_of(goal_cells,
                                             [&](const auto &cell)
                                             {
