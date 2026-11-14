@@ -390,8 +390,15 @@ new decoders.
    inn's room at (1,10) facing north (`opengold_gateway_tests`, 2026-11-14).
    Its files without a disk number are read first, its pictures in the VGA
    mode's colors, its item words from `GAME.EXE`, and CALL 880Ah and 880Dh
-   ask for Enter and for Yes or No. Still to come: CALL 8810h, the overland
-   and fights out of doors, the startup menu, and walking every map.
+   ask for Enter and for Yes or No.
+3. Walking every map and playing every event and fight (the walk). *The
+   walk passes (2026-11-14):* `opengold_gateway_walk` walks every square of
+   every map with six fighters made under Gateway's rules. Its fights load
+   Gateway's own combat icons; the overland (script 21, maps 21 to 26 by the
+   cell 4C24h) loads its symbol sets alone and is drawn from above with the
+   party's arrow, and its fights are on grass with a river, trees and
+   features from `GAME.EXE`'s terrain table ([gateway.md](games/gateway.md),
+   The overland). Still to come: CALL 8810h, the startup menu and the route.
 
 ### 8. *Unlimited Adventures*
 

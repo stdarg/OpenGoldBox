@@ -153,10 +153,52 @@ changes there:
   and No as 1 in 7F79h and compares the answer with 1.
 
 Not yet played: CALL 8810h, which changes the current character's coins up
-into larger ones; the overland (script 21 on disk 6), which loads its maps by
-cells with `IN_DUNGEON` 0 and draws a symbol set of `8X8D6` alone; and fights
-out of doors, which lay a river, trees and scattered features over grass with
-`WILDCOM`'s tiles rather than *Curse*'s tables of places.
+into larger ones (no script calls it by number).
+
+## The overland
+
+The overland is script 21 of disk 6. It clears the in-dungeon cell (4BE6h)
+and loads the map its cell 4C24h names, one of maps 21 to 26 of `GEO6`; the
+script that leads out sets it (Yartar's sets 22), and the script itself
+changes it as the party walks off an edge. No script names these maps in a
+LOAD FILES, so the loader gives every map no script names to the scripts of
+its disk that load maps by cells. Its LOAD PIECES names the symbol sets 18,
+twice the map and 8, and twice the map and 9 (`8X8D6`'s sets of 70); outside
+a dungeon the original loads them alone, with no walls (view3d's
+LoadWallSet). Each square's north-and-east wall byte is the number of a
+symbol of the three sets, and the view shows the 11 by 11 squares around the
+party from above with its arrow (`8X8D1`'s set 202, by facing), as its
+DrawOverlandView does (`render_symbol_map`).
+
+What else the overland changes, as the original has it:
+
+- Every new script starts in a dungeon (its EclInit sets the cell to 1, as
+  NEW ECL and entering a map do here) and clears 4C00h to 4C1Fh and 7F79h to
+  7F82h.
+- The scripts read the barrier ahead in 4CF6h: the side's barrier where it
+  has a wall or on the overland, else open (1).
+- On the overland a step passes only an open way (barrier 1), with a wall or
+  without; monsters stand 2 squares off, and Parley replaces Advance.
+- Fights there are on grass (its BuildWildernessArena): a river with fords
+  by chance on rough ground, trees one or two squares tall, and scattered
+  features, by the class bits of the ground (cell 4CA1h, which nothing sets,
+  so class 0). The terrains (each one's movement cost and `WILDCOM` tile) and
+  the 32 grounds' classes are read from the unpacked `GAME.EXE`
+  (`gateway_wilderness`); movement costs above 1 are open ground, as in
+  *Curse*'s fields.
+
+## The walk
+
+`opengold_gateway_walk` (`opengold_gold_box_games_tests --gateway-walk`)
+walks every square of every map, the overland's too, with six fighters made
+under Gateway's rules and runs each event and fight. Entering a map directly,
+it sets cell 4C24h as the way there would: the overland map entered, else
+Yartar's (22). What the walk needed:
+
+- Combat icons are pictures of Gateway's format, drawn as its LoadIconAnim
+  draws them: the VGA mode's colors, black transparent and dark gray shown
+  black (`gateway::decode_combat_icon`).
+- The overland and its fights, above.
 
 ## Sound effects
 
