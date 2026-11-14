@@ -3880,6 +3880,14 @@ const std::vector<RouteBeat> &treasure_route()
                        {14, 2, D::east},
                        {15, 2, D::north}});
         route.push_back(step_beat(22, 15, 1, D::north, {"YES"}));
+        // A camp on the overland (maps 51 to 57) draws its wandering
+        // monsters night after night: the party walks on between towns
+        // instead, as a player hurries to the next inn.
+        constexpr unsigned first_overland = 51, last_overland = 57;
+        for (auto &beat : route)
+        {
+            beat.camp_broken = beat.map >= first_overland && beat.map <= last_overland;
+        }
         return route;
     }();
     return beats;
