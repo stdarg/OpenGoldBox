@@ -2046,6 +2046,31 @@ const std::vector<RouteBeat> &darkness_route()
         RouteBeat to_priam{17, 0, 0, D::north, {"YES"}};
         to_priam.area_steps = {C::southwest, C::southwest, C::southwest, C::west, C::west, C::west};
         route.push_back(to_priam);
+        // In the entrance hall (3,7) a guard sprints upstairs as the party
+        // comes into the meeting room (3,5): the party pursues at once, so it
+        // surprises the vampire priest and his marauders in the office.
+        route.push_back(step_beat(50, 3, 7, D::north));
+        route.push_back(step_beat(50, 3, 6, D::north, {"PURSUE"}));
+        // From the office (11,1) back to the stairs (8,5) and down to the
+        // worship area.
+        walk_passages(route, 50,
+                      {{11, 1, D::west},
+                       {10, 1, D::south},
+                       {10, 2, D::south},
+                       {10, 3, D::south},
+                       {10, 4, D::south},
+                       {10, 5, D::south},
+                       {10, 6, D::west},
+                       {9, 6, D::west},
+                       {8, 6, D::north}});
+        route.push_back(step_beat(50, 8, 5, D::east, {"YES"}));
+        // North to Tyr's high altar (3,1): with the vampire priest dead the
+        // party scrubs the black hand off it and earns Tyr's blessing.
+        walk_passages(route, 50,
+                      {{2, 5, D::north}, {2, 4, D::north}, {2, 3, D::north}, {2, 2, D::east}});
+        auto altar = step_beat(50, 3, 2, D::north, {"SCRUB PAINT"});
+        altar.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x17F, 2};
+        route.push_back(altar);
         return route;
     }();
     return beats;

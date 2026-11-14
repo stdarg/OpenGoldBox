@@ -548,7 +548,7 @@ new decoders.
    *Stand-ins:* the test wins the fight with the Vaasans who get through
    Vala's breach (their mages hold the party with Hold Monster). Until the
    route reaches the win it passes when it plays every beat to the Temple of
-   Tyr (map 50). *Where it stops (2026-11-14):* in the temple with Priam;
+   Tyr (map 50). *Where it stops (2026-11-14):* at Tyr's altar, blessed;
    next, the temple's own events, then counter-clockwise round the area map
    to Dark Phlan. *The area map is drawn (2026-11-14):* the big picture with
    the party's marker, as the original draws it. Still to come: spell levels 8 and 9

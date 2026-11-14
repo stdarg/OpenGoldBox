@@ -446,8 +446,14 @@ by what it is offered:
   the fortified chamber (14,8); Vala charges into the breach and the party
   beats the Vaasans who got through (cell 1ABh 128). It leaves by the
   entrance (0,8).
-- **The Temple of Tyr (map 50):** at Melvaunt's crater (21,5) Priam joins
-  the party and leads it in.
+- **The Temple of Tyr (map 50, script 50):** at Melvaunt's crater (21,5)
+  Priam joins the party and leads it in (3,7). A guard sprints upstairs as
+  the party reaches the meeting room (3,5); it pursues at once, so the chase
+  (the script moves the party) surprises the vampire priest and his
+  marauders in the office (11,1), and the party finds journal entry 11, the
+  ritual. Down the stairs (8,5, the wall of type 7 ahead) to the worship
+  area, it scrubs the black hand off Tyr's altar (3,1), the priest's ward
+  gone, and earns Tyr's blessing (cell 17Fh bit 1).
 
 One stand-in: the Vaasans who get through, seven mages and twelve
 warriors, hold the party with Hold Monster before it acts and slay the held
@@ -462,11 +468,22 @@ party won or came through and "not equal" when it fled. Until 2026-11-14
 OpenGoldBox left the flags as they were, so a won fight could read as lost
 and move the party back a square (the walk passed all the same).
 
-Where it stops: inside the Temple of Tyr (map 50, 3,7) with Priam. Next,
-the cluebook's Temple of Tyr: the marauders, the vampire priest, the
-braziers and the bells, Brimwulf's tests and the armory, Laurellin in the
-belfry; then west and counter-clockwise round the area map, the
-mini-adventures on the way, to Gothmenes in Dark Phlan.
+Where it stops (2026-11-14): at Tyr's altar (map 50, 3,1), blessed, with
+Priam. Next, in the cluebook's order: rest in the scribe's office (the only
+safe room until the temple is freed; the camp entry allows it on event
+133, cell 181h set lifts the rest), Laurellin's journal entry 74 in the
+small rooms, then the stairs down from (6,5) (wall type 7, the party at
+x 6) to the catacombs (NEW ECL 54): the neo-otyughs, Brimwulf's tomb and
+his tests (do not kill him), the ritual at the altar by journal entry 11's
+third way, the earth and fire elementals for the Vessel of Purity and the
+Spirit Flame, the Lamp of Vigilance in the armory; then back up to light
+the braziers in the four corner towers (event 4 at (8,0), (15,0), (8,7),
+(15,7)) and ring the bells (event 7). Leave the plunder (event 9) alone:
+taking it earns the Curse of Tyr. Then west and counter-clockwise round the
+area map, the mini-adventures on the way, to Gothmenes in Dark Phlan.
+`OPENGOLD_ROUTE_BEATS` and `OPENGOLD_SECRET_FIND` plan each step: the
+planning aid answers NO, so it never takes stairs a question offers; find
+the stairs' squares by their walls of type 7 and step them in a beat.
 
 ### Creatures
 
