@@ -3875,6 +3875,130 @@ void secret_spells_stun_hide_and_burn()
           "Charm Person or Mammal charms a mammal and no other monster");
 }
 
+// Pools of Darkness's new spells in fights (its reconstruction's magic.pas):
+// the power words by Hit Points, Destruction and Energy Drain, Blade Barrier's
+// blades, Otto's Irresistible Dance, Meteor Swarm and a summons no one answers.
+void darkness_spells_fight()
+{
+    using original::ClassSlot;
+    constexpr auto darkness = GoldBoxGame::pools_of_darkness;
+    const auto arrange_darkness = [](const std::vector<Placed> &placed, std::uint64_t seed)
+    {
+        return arrange(placed, seed, {}, 100, darkness);
+    };
+    auto words = arrange_darkness(
+        {{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 20, {325, 325, 323})},
+         {"Ogre", rules::Side::opposition, {5, 3}, victim(100)},
+         {"Kobold", rules::Side::opposition, {5, 4}, victim(8)},
+         {"Goblin", rules::Side::opposition, {6, 4}, victim(9)},
+         {"Orc", rules::Side::opposition, {2, 6}, victim(40)},
+         {"Troll", rules::Side::opposition, {7, 7}, victim(30)},
+         {"Gnoll", rules::Side::opposition, {6, 7}, victim(30)},
+         {"Giant", rules::Side::opposition, {7, 6}, victim(50)}},
+        301);
+    auto &session = *words.session;
+    cast_now(session, "Mage", 325,
+             [&]
+             {
+                 return aim_at_cell(session, {5, 3});
+             });
+    check(logged(session, "{name} is slain.") == 2 &&
+              view_of(session.snapshot(), "Ogre").hit_points == 100,
+          "Power Word Kill slays those of 10 Hit Points or fewer past a stronger first target");
+    cast_now(session, "Mage", 325,
+             [&]
+             {
+                 return aim_at_cell(session, {2, 6});
+             });
+    check(logged(session, "{name} is slain.") == 3, "or its first target of 11 to 60");
+    cast_now(session, "Mage", 323,
+             [&]
+             {
+                 return aim_at_cell(session, {7, 7});
+             });
+    check(logged(session, "{name} is affected by {spell}.") == 2,
+          "Power Word Blind blinds up to 100 Hit Points of them");
+
+    auto priest = arrange_darkness(
+        {{"Priest", rules::Side::party, {0, 3}, caster(ClassSlot::cleric, 18, {304, 303, 301})},
+         {"Wight", rules::Side::opposition, {1, 3}, victim(60)},
+         {"Fighter", rules::Side::opposition, {0, 4}, caster(ClassSlot::fighter, 9, {})},
+         {"Hobgoblin", rules::Side::opposition, {3, 4}, victim(200)}},
+        303);
+    auto &holy = *priest.session;
+    cast_now(holy, "Priest", 304,
+             [&]
+             {
+                 return aim_at(holy, "Wight");
+             });
+    check(logged(holy, "{name} is destroyed.") == 1, "Destruction destroys");
+    cast_now(holy, "Priest", 303,
+             [&]
+             {
+                 return aim_at(holy, "Fighter");
+             });
+    check(logged(holy, "{name} is drained a level.") == 1, "Energy Drain drains a level");
+    cast_now(holy, "Priest", 301,
+             [&]
+             {
+                 return aim_at_cell(holy, {3, 4});
+             });
+    const int cut = 200 - view_of(holy.snapshot(), "Hobgoblin").hit_points;
+    check(logged(holy, "{name} is cut by the blades.") == 1 && cut >= 8 && cut <= 64,
+          "Blade Barrier cuts one in it for 8d8");
+
+    auto dance = arrange_darkness(
+        {{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 20, {321, 324, 326})},
+         {"Dancer", rules::Side::opposition, {1, 3}, creature(200)},
+         {"Far", rules::Side::opposition, {6, 6}, creature(200)}},
+        307);
+    auto &ball = *dance.session;
+    cast_now(ball, "Mage", 321,
+             [&]
+             {
+                 return aim_at(ball, "Dancer");
+             });
+    check(logged(ball, "{name} is affected by {spell}.") == 1, "Otto's dance takes its target");
+    cast_now(ball, "Mage", 324,
+             [&]
+             {
+                 return aim_at_cell(ball, {6, 6});
+             });
+    const int burned = 200 - view_of(ball.snapshot(), "Far").hit_points;
+    check(burned >= 20, "Meteor Swarm's four meteors burst around its aim");
+    until_turn_of(ball, "Mage");
+    check(ball.submit(*cast_command(ball, 326)), "Monster Summoning is cast");
+    play_until(
+        ball,
+        [&](const std::string &)
+        {
+            return order(ball, "end");
+        },
+        [&]
+        {
+            return logged(ball, "{name}'s summons is not answered.") > 0;
+        });
+    check(logged(ball, "{name}'s summons is not answered.") == 1,
+          "Monster Summoning finds no one waiting");
+
+    // Mass Charm charms enemies, but not one Mind Blank shields.
+    auto blank = victim(30);
+    blank.effects = {{523, 0, 0, false}};
+    auto charm = arrange_darkness(
+        {{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 16, {320})},
+         {"Orc", rules::Side::opposition, {4, 3}, victim(30)},
+         {"Shielded", rules::Side::opposition, {4, 4}, blank}},
+        311);
+    cast_now(*charm.session, "Mage", 320,
+             [&]
+             {
+                 return aim_at_cell(*charm.session, {4, 3});
+             });
+    check(view_of(charm.session->snapshot(), "Orc").side == rules::Side::party &&
+              view_of(charm.session->snapshot(), "Shielded").side == rules::Side::opposition,
+          "Mass Charm charms an enemy; Mind Blank turns it away");
+}
+
 // Gateway's changed rows (its spellTable): Prayer on up to four creatures the
 // caster touches, Invisibility 10' Radius aimed beside the caster and
 // reaching 6 squares around, Blink and Strength cast in and out of fights.
@@ -4462,6 +4586,7 @@ int main()
         the_kits_monsters_act_as_the_kit_has_them();
         the_kits_monsters_breathe();
         the_kits_rangers_know_their_foes();
+        darkness_spells_fight();
         std::cout << "Original-rules combat passed.\n";
     }
     catch (const std::exception &error)

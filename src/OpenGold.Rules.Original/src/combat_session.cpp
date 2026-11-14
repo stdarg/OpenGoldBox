@@ -111,6 +111,11 @@ constexpr int spell_proof = 640, disease_proof = 676, halved_below_plus_three = 
 // into, for the campaign to keep: past the kit's last effect (228), so no
 // record of the kit's names it.
 constexpr int armor_eaten = kit_effect_offset + 250;
+// Pools of Darkness's own (its 118 to 123, plus secret_effect_offset): a
+// dance, the druid's Protection from Fire, Fire Touch, Iron Skin and Mind
+// Blank; and the caster's Blade Barrier, which no game's effect numbers.
+constexpr int dancing = 518, druid_fire_protection = 519, fire_touch = 521, iron_skin = 522,
+              mind_blank = 523, blade_barrier = 601;
 } // namespace effect
 
 // What a hit carries, by the attacker's effects, in the original's order: a
@@ -632,7 +637,9 @@ bool spell_built(int number)
         158, 166, 168, 169, 170, 171, 172, 173, 174, 176, 177, 178, 179, 180, 181, 182, 183, 184,
         185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200,
         // Secret's (spells.cpp, secret_spells).
-        236, 256, 290, 296, 298, 310, 311, 312, 313, 314, 315, 316, 317};
+        236, 256, 290, 296, 298, 310, 311, 312, 313, 314, 315, 316, 317,
+        // Pools of Darkness's that are cast in fights (spells.cpp, darkness_spells).
+        301, 303, 304, 308, 309, 318, 319, 320, 321, 322, 323, 324, 325, 326};
     return std::find(built.begin(), built.end(), number) != built.end();
 }
 
@@ -687,7 +694,10 @@ struct LineWalk
 enum class CloudKind
 {
     stinking,
-    deadly
+    deadly,
+    // Pools of Darkness's Blade Barrier, on a stinking cloud's four squares
+    // (its SpellStinkingCloud).
+    blades
 };
 
 struct Cloud
@@ -700,7 +710,7 @@ struct Cloud
 
     [[nodiscard]] std::vector<Cell> squares() const
     {
-        if (kind == CloudKind::stinking)
+        if (kind != CloudKind::deadly)
         {
             return {corner, Cell{corner.x + 1, corner.y}, Cell{corner.x + 1, corner.y + 1},
                     Cell{corner.x, corner.y + 1}};
@@ -928,6 +938,13 @@ class Session final : public rules::CombatSession
     void cast_strength_spell(Fighter &caster, int number, int level,
                              const std::vector<EntityId> &targets);
     void cast_death_spell(const std::vector<EntityId> &targets);
+    void cast_darkness_spell(Fighter &caster, int number, int level,
+                             const std::vector<EntityId> &targets, Cell aim);
+    void cast_mass_charm(Fighter &caster, int level, const std::vector<EntityId> &targets);
+    void cast_power_word_blind(const std::vector<EntityId> &targets);
+    void cast_meteor_swarm(Fighter &caster, int level, Cell aim);
+    void cast_power_word_kill(const std::vector<EntityId> &targets);
+    void cut_by_blades(Fighter &f, bool may_save);
     [[nodiscard]] bool turns_aside_slaying(Fighter &target);
     void secret_poison(Fighter &victim, int modifier);
     void swallow_whole(Fighter &swallower, Fighter &victim);
@@ -1165,7 +1182,9 @@ void Session::next_actor()
             // helpless effects at TURN_START).
             // So does a stunned one's in Secret (Power Word Stun's 106, EffHelpless
             // at its ACTION_START), though it is not helpless.
-            if (best->helpless() || best->has(effect::stunned))
+            // And a dancing one's in Pools of Darkness (Otto's Irresistible
+            // Dance's lost turn, EffClearGuard at TURN_START).
+            if (best->helpless() || best->has(effect::stunned) || best->has(effect::dancing))
             {
                 end_actions(*best);
                 continue;
@@ -1295,7 +1314,11 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
     // coughing leaves the rear one 2 worse, no worse than 10, and the front as
     // bad (EffCoughing).
     // Faerie Fire leaves both 2 worse (Curse made them better, docs/ORIGINAL-RULES.md, Bugs).
-    const int blind = (defender.has(effect::blind) ? 4 : 0) + (defender.has(207) ? 2 : 0);
+    // Pools of Darkness's dance leaves both 4 worse and Iron Skin 4 better
+    // (effhndlr.pas, EffDancing, EffIronSkin).
+    const int blind = (defender.has(effect::blind) ? 4 : 0) + (defender.has(207) ? 2 : 0) +
+                      (defender.has(effect::dancing) ? 4 : 0) -
+                      (defender.has(effect::iron_skin) ? 4 : 0);
     const bool coughs = defender.has(effect::coughing);
     const int rear = coughs ? std::max(std::min(defender.numbers.rear_armor_class + 2, 10),
                                        defender.numbers.rear_armor_class)
@@ -1385,6 +1408,15 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
             if (defender.able() && (damage > 0 || !secret()))
             {
                 on_hit(attacker, defender, phase, primary_hits, natural);
+            }
+            // Fire Touch burns what its bearer hits for 2d6, halved by a save
+            // (effhndlr.pas, EffFireTouch).
+            if (const auto *touch = attacker.find_effect(effect::fire_touch);
+                touch && defender.able())
+            {
+                const bool saved = saving_throw(defender, 4, 0, &attacker, 9);
+                nonweapon_damage(defender, roll(6) + roll(6), 2, saved, 9, touch->strength, 318,
+                                 false);
             }
         }
     }
@@ -2868,6 +2900,23 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
     case 263:
         make_younger(caster);
         break;
+    case 301:
+    case 303:
+    case 304:
+    case 308:
+    case 309:
+    case 320:
+    case 321:
+    case 323:
+    case 324:
+    case 325:
+    case 326:
+        cast_darkness_spell(caster, number, level, targets, aim);
+        break;
+    case 322:
+        // Mind Blank lasts a day (magic.pas, CalcSpellDuration).
+        cast_generic(caster, number, level, targets, 0, 0, 0, 1440);
+        break;
     default:
         cast_generic(caster, number, level, targets, 0, 0);
         break;
@@ -3909,6 +3958,262 @@ void Session::cast_death_spell(const std::vector<EntityId> &targets)
     }
 }
 
+// Pools of Darkness's own spells in a fight (magic.pas, in its
+// reconstruction), by the rules' numbers (canonical_spell).
+void Session::cast_darkness_spell(Fighter &caster, int number, int level,
+                                  const std::vector<EntityId> &targets, Cell aim)
+{
+    constexpr int blade_barrier = 301, energy_drain = 303, destruction = 304, hold_animal = 308,
+                  protection_from_fire = 309, mass_charm = 320, irresistible_dance = 321,
+                  power_word_blind = 323, meteor_swarm = 324, power_word_kill = 325,
+                  monster_summoning = 326;
+    const auto &known = *game_spell(number);
+    switch (number)
+    {
+    case blade_barrier:
+        lay_cloud(caster, level, aim, CloudKind::blades);
+        break;
+    case energy_drain:
+        for (const auto id : targets)
+        {
+            drain_levels(*find(id), 1);
+        }
+        break;
+    case destruction:
+        // Gone for good, unless magic resistance turns it away (SpellDestruction).
+        for (const auto id : targets)
+        {
+            auto &target = *find(id);
+            if (turns_aside_slaying(target) ||
+                (resists_magic_at_all(target) && magic_resists(target, level, roll(100))))
+            {
+                log({"{name} is unaffected.", {{"name", target.name}}});
+                continue;
+            }
+            target.condition = Condition::gone;
+            target.hit_points = 0;
+            target.initiative = 0;
+            log({"{name} is destroyed.", {{"name", target.name}}});
+            end_effects_at_zero(target);
+            went_down(target);
+        }
+        break;
+    case hold_animal:
+    {
+        // The fewer it holds, the harder they save: -4 for one, -2 for two,
+        // -1 for three (SpellHoldAnimal).
+        const auto count = targets.size();
+        const int modifier = count == 1 ? -4 : count == 2 ? -2 : count == 3 ? -1 : 0;
+        cast_generic(caster, number, level, targets, 0, 0, modifier);
+        break;
+    }
+    case protection_from_fire:
+        // A ranger gets the druid's protection, until it has taken 12 points
+        // of fire a caster level; anyone else Resist Fire, with no end
+        // (SpellProtectionFromFire).
+        for (const auto id : targets)
+        {
+            auto &target = *find(id);
+            const bool ranger =
+                target.numbers.class_levels[static_cast<std::size_t>(ClassSlot::ranger)] > 0;
+            (void)add_with_message(target,
+                                   ranger ? Effect{effect::druid_fire_protection, 0, level, false}
+                                          : Effect{effect::resist_fire, 0, 0, false},
+                                   false, false, 0, level, &known);
+        }
+        break;
+    case mass_charm:
+        cast_mass_charm(caster, level, targets);
+        break;
+    case irresistible_dance:
+        // A touch that must hit; the dance lasts 1d4+1 rounds
+        // (SpellIrresistibleDance, CalcSpellDuration).
+        for (const auto id : targets)
+        {
+            auto &target = *find(id);
+            if (!attack_hits(roll(20), caster.numbers.thac0, target.numbers.armor_class,
+                             attack_modifier(caster, target, game_of(identity_))))
+            {
+                log({"{attacker} misses {name}.",
+                     {{"attacker", caster.name}, {"name", target.name}}});
+                continue;
+            }
+            (void)add_with_message(target, {effect::dancing, roll(4) + 1, level, false}, false,
+                                   false, 0, level, &known);
+        }
+        break;
+    case power_word_blind:
+        cast_power_word_blind(targets);
+        break;
+    case meteor_swarm:
+        cast_meteor_swarm(caster, level, aim);
+        break;
+    case power_word_kill:
+        cast_power_word_kill(targets);
+        break;
+    case monster_summoning:
+        // It gates in creatures that wait off the field for it, which no
+        // fight of OpenGoldBox's keeps (SpellMonsterSummoning).
+        log({"{name}'s summons is not answered.", {{"name", caster.name}}});
+        break;
+    default:
+        break;
+    }
+}
+
+// Mass Charm charms enemies of up to twice the caster's level in Hit Dice,
+// each saving at -2; it passes over a large creature and the caster's side
+// (SpellMassCharm).
+void Session::cast_mass_charm(Fighter &caster, int level, const std::vector<EntityId> &targets)
+{
+    const auto &known = *game_spell(320);
+    const int limit = 2 * level;
+    int total = 0;
+    for (const auto id : targets)
+    {
+        if (total == limit)
+        {
+            break;
+        }
+        auto &target = *find(id);
+        if (target.numbers.large || target.side == caster.side)
+        {
+            log({"{name} is unaffected.", {{"name", target.name}}});
+            continue;
+        }
+        const int cost = target.numbers.level;
+        if (total + cost > limit)
+        {
+            continue;
+        }
+        total += cost;
+        const bool saved = saving_throw(target, 4, -2, &caster);
+        const int strength = (caster.side == Side::opposition ? 128 : 0) + level;
+        if (add_with_message(target, {effect::charm, 0, strength, true}, true, saved, 0, level,
+                             &known))
+        {
+            charm(target, caster.side);
+        }
+    }
+}
+
+// Power Word Blind blinds those within reach, the nearest first, up to 100
+// Hit Points of them in all: for 1d4+1 rounds, ten times as long when they
+// have fewer than 51 between them (SpellPowerWordBlind, which worked the time
+// out and then blinded them for good, docs/ORIGINAL-RULES.md, Bugs).
+void Session::cast_power_word_blind(const std::vector<EntityId> &targets)
+{
+    const auto &known = *game_spell(323);
+    std::vector<EntityId> blinded;
+    int total = 0;
+    for (const auto id : targets)
+    {
+        const int hit_points = find(id)->numbers.max_hit_points;
+        if (total > 100)
+        {
+            break;
+        }
+        if (total + hit_points <= 100)
+        {
+            total += hit_points;
+            blinded.push_back(id);
+        }
+    }
+    const int rounds = (roll(4) + 1) * (total < 51 ? 10 : 1);
+    for (const auto id : blinded)
+    {
+        (void)add_with_message(*find(id), {effect::blind, rounds, 0, false}, false, false, 0, 0,
+                               &known);
+    }
+}
+
+// Meteor Swarm: four meteors land on the squares diagonal to the aim, or on
+// it where the caster cannot see them; each strikes all on its way for 10d4
+// and bursts on all within a square of where it lands for 10d4, halved by a
+// save (SpellMeteorSwarm).
+void Session::cast_meteor_swarm(Fighter &caster, int level, Cell aim)
+{
+    constexpr std::array<Cell, 4> landings{{{-1, -1}, {1, -1}, {-1, 1}, {1, 1}}};
+    constexpr int fire_and_magic = 9;
+    const auto ten_d4 = [this]
+    {
+        int total = 0;
+        for (int die = 0; die < 10; ++die)
+        {
+            total += roll(4);
+        }
+        return total;
+    };
+    for (const auto offset : landings)
+    {
+        Cell landing{aim.x + offset.x, aim.y + offset.y};
+        if (!board_.contains(landing) || !rules::has_line_of_sight(board_, caster.cell, landing))
+        {
+            landing = aim;
+        }
+        std::vector<EntityId> struck;
+        LineWalk path(caster.cell, landing);
+        while (path.next())
+        {
+            const auto id = standing_at(path.at);
+            if (id && id != caster.id && path.at != landing &&
+                std::ranges::find(struck, id) == struck.end())
+            {
+                struck.push_back(id);
+            }
+        }
+        for (const auto id : struck)
+        {
+            auto &target = *find(id);
+            if (target.able())
+            {
+                nonweapon_damage(target, ten_d4(), 0, false, fire_and_magic, level, 324, false);
+            }
+        }
+        for (const auto id : within(landing, 1))
+        {
+            auto &target = *find(id);
+            if (target.able())
+            {
+                const bool saved = saving_throw(target, 4, 0, &caster, fire_and_magic);
+                nonweapon_damage(target, ten_d4(), 2, saved, fire_and_magic, level, 324, false);
+            }
+        }
+    }
+}
+
+// Power Word Kill slays its first target of 11 to 60 most Hit Points, or
+// else every one of 10 or fewer (SpellPowerWordKill).
+void Session::cast_power_word_kill(const std::vector<EntityId> &targets)
+{
+    if (targets.empty())
+    {
+        return;
+    }
+    const auto slay = [this](Fighter &target)
+    {
+        if (!turns_aside_slaying(target))
+        {
+            kill(target, "{name} is slain.");
+        }
+    };
+    auto &first = *find(targets.front());
+    const int most = first.numbers.max_hit_points;
+    if (most > 10 && most <= 60)
+    {
+        slay(first);
+        return;
+    }
+    for (const auto id : targets)
+    {
+        auto &target = *find(id);
+        if (target.numbers.max_hit_points <= 10)
+        {
+            slay(target);
+        }
+    }
+}
+
 // Whether a spell that slays or petrifies outright is turned aside before
 // its save (Secret's condition 9): an iron golem takes no spell, and an
 // image takes it for its caster. Magic resistance does not turn it, as the
@@ -3962,6 +4267,10 @@ bool Session::add_with_message(Fighter &target, Effect added, bool negates, bool
     immune = immune ||
              (target.has(effect::globe_of_invulnerability) && spell_effect && known->level <= 4);
     immune = immune || (target.has(effect::fearless) && is({effect::fear}));
+    // Pools of Darkness's Mind Blank turns charm, confusion, holding,
+    // feeblemind and fear away (effhndlr.pas, EffMindBlank).
+    immune = immune || (target.has(effect::mind_blank) &&
+                        is({effect::charm, 235, effect::paralysis, 268, effect::fear}));
     immune = immune || target.has(effect::iron_golem);
     // The kit's (effects.c): a spell below the eighth level takes no hold
     // (40), nor does disease on an otyugh (76).
@@ -4015,6 +4324,19 @@ void Session::nonweapon_damage(Fighter &target, int damage, int save_result, boo
     if ((element & 1) && target.has(effect::resist_fire))
     {
         damage /= 2;
+    }
+    // The druid's Protection from Fire takes 12 points of fire a level of its
+    // strength, and ends once it has taken them all (effhndlr.pas,
+    // EffResistFireDruid).
+    if (auto *soak = target.find_effect(effect::druid_fire_protection); soak && (element & 1))
+    {
+        const int taken = std::min(damage, 12 * soak->strength);
+        damage -= taken;
+        soak->strength -= (taken + 11) / 12;
+        if (soak->strength <= 0 || damage > 0)
+        {
+            target.remove(effect::druid_fire_protection);
+        }
     }
     // Secret's resistance turns a spell's damage only when the spell carries
     // an effect too, so a Fireball's goes through (fxengine.pas,
@@ -4363,6 +4685,22 @@ void Session::lay_cloud(Fighter &caster, int level, Cell aim, CloudKind kind)
             board_.contains(squares[n]) && board_.at(squares[n]) != rules::Terrain::obstacle;
     }
     clouds_.push_back(cloud);
+    if (kind == CloudKind::blades)
+    {
+        // The blades whirl three rounds a caster level, and those in them as
+        // they rise may save (fxengine.pas, ConsiderTerrainEffects).
+        caster.numbers.effects.push_back(
+            {effect::blade_barrier, 3 * level, level + index * 16, true});
+        log({"{name} raises a barrier of whirling blades.", {{"name", caster.name}}});
+        for (const auto square : squares)
+        {
+            if (const auto id = standing_at(square))
+            {
+                cut_by_blades(*find(id), true);
+            }
+        }
+        return;
+    }
     const bool stinking = kind == CloudKind::stinking;
     caster.numbers.effects.push_back(
         {stinking ? effect::stinking_cloud : effect::cloudkill, level, level + index * 16, true});
@@ -4412,6 +4750,41 @@ void Session::breathe_cloud(Fighter &f)
 {
     breathe_stinking_cloud(f);
     breathe_cloudkill(f);
+    cut_by_blades(f, false);
+}
+
+// Pools of Darkness's Blade Barrier cuts one in it for 8d8, which magic
+// resistance may turn away; only as the blades rise may it save
+// (fxengine.pas, ConsiderTerrainEffects).
+void Session::cut_by_blades(Fighter &f, bool may_save)
+{
+    if (!f.able() || !in_cloud(f, CloudKind::blades))
+    {
+        return;
+    }
+    const auto blades = std::find_if(clouds_.begin(), clouds_.end(),
+                                     [](const Cloud &c)
+                                     {
+                                         return c.kind == CloudKind::blades;
+                                     });
+    const auto *caster = find(blades->caster);
+    const int level = caster ? caster_level(*caster, *game_spell(301), game_of(identity_)) : 12;
+    if (resists_magic_at_all(f) && magic_resists(f, level, roll(100)))
+    {
+        log({"{name} is unaffected.", {{"name", f.name}}});
+        return;
+    }
+    if (may_save && saving_throw(f, 4, 0, caster))
+    {
+        return;
+    }
+    log({"{name} is cut by the blades.", {{"name", f.name}}});
+    int damage = 0;
+    for (int die = 0; die < 8; ++die)
+    {
+        damage += roll(8);
+    }
+    nonweapon_damage(f, damage, 0, false, 0, level, 301, false);
 }
 
 // Cloudkill kills one of level 0 to 4 outright with its poison; one of level
@@ -6287,10 +6660,13 @@ void Session::expire(Fighter &f, const Effect &ended)
         break;
     case effect::stinking_cloud:
     case effect::cloudkill:
+    case effect::blade_barrier:
     {
         // The caster's cloud of this kind and number clears (effhndlr.pas,
         // EffClearStinkingCloud; Curse's EffClearCloudkill).
-        const auto kind = ended.code == effect::cloudkill ? CloudKind::deadly : CloudKind::stinking;
+        const auto kind = ended.code == effect::cloudkill       ? CloudKind::deadly
+                          : ended.code == effect::blade_barrier ? CloudKind::blades
+                                                                : CloudKind::stinking;
         const auto cloud = std::find_if(clouds_.begin(), clouds_.end(),
                                         [&](const Cloud &c)
                                         {
@@ -6768,7 +7144,8 @@ bool Session::eat_armor(const Fighter &pudding, Fighter &target)
 bool Session::saving_throw(const Fighter &f, int save, int modifier, const Fighter *caster,
                            int element)
 {
-    const int natural = roll(20);
+    // A dancer's roll is always a 1 (fxengine.pas, RollSavingThrow).
+    const int natural = f.has(effect::dancing) ? 1 : roll(20);
     if (natural == 1 || natural == 20)
     {
         return natural == 20;
@@ -7794,7 +8171,7 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
         cloud.index = in.as<int>();
         cloud.corner = {in.as<int>(), in.as<int>()};
         const auto kind = in.as<unsigned>();
-        if (kind > static_cast<unsigned>(CloudKind::deadly))
+        if (kind > static_cast<unsigned>(CloudKind::blades))
         {
             throw std::runtime_error("Invalid original-rules combat checkpoint");
         }
