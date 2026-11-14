@@ -254,7 +254,9 @@ por::CharacterRecord character_record(const CharacterSheet &sheet)
         if (const auto number = spell_number(id))
         {
             // As the game's own record holds it (canonical_spell undone).
-            const int own = *number > curse_spell_offset ? *number - curse_spell_offset : *number;
+            const int own = *number > secret_spell_offset  ? *number - secret_spell_offset
+                            : *number > curse_spell_offset ? *number - curse_spell_offset
+                                                           : *number;
             record.memorized_spells.push_back(static_cast<std::uint8_t>(own));
         }
     }

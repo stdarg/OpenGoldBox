@@ -765,6 +765,27 @@ int starting_platinum(GoldBoxGame game)
 
 namespace
 {
+// The magic-user spells Secret's creation teaches at levels 6 to 9 (its
+// TrainingMenu, newCharTraining), by canonical numbers. Its level 6 set also
+// names Cure Light Wounds, a cleric's spell no magic-user can cast; it is
+// left out (docs/ORIGINAL-RULES.md, Bugs).
+[[nodiscard]] std::vector<int> secret_starting_spells(int magic_user_level)
+{
+    switch (magic_user_level)
+    {
+    case 6:
+        return {12, 15, 30, 34, 47, 51, 54};
+    case 7:
+        return {14, 16, 29, 35, 45, 48, 181};
+    case 8:
+        return {10, 9, 32, 55, 185};
+    case 9:
+        return {50, 52, 182, 188, 194};
+    default:
+        return {};
+    }
+}
+
 // The magic-user spells Curse's creation teaches at each level it trains to
 // (ovr018 train_player, silent training): Magic Missile at 2; Stinking Cloud
 // and Protection from Evil at 3; Knock at 4; Fireball at 5.
@@ -818,7 +839,10 @@ StartingTraining starting_training(Race race, Profession profession,
                 rolled.training_hit_dice.at(first_die[n] + static_cast<std::size_t>(level - 2));
             if (slot == C::magic_user)
             {
-                for (const int spell : curse_starting_spells(level))
+                const auto learned = game == GoldBoxGame::secret_of_the_silver_blades
+                                         ? secret_starting_spells(level)
+                                         : curse_starting_spells(level);
+                for (const int spell : learned)
                 {
                     trained.learned_spells.push_back(spell);
                 }

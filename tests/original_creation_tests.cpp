@@ -627,6 +627,15 @@ void secret_characters_start_trained()
     check(mage.class_levels[5] == 9 && mage.thac0 == 19 &&
               mage.saving_throws == std::array<int, 5>{13, 11, 9, 13, 10},
           "A magic-user reaches level 9, with THAC0 19 and a level 9 magic-user's saves");
+    const auto knows = [&mage](int number)
+    {
+        return std::ranges::find(mage.known_spells, number) != mage.known_spells.end();
+    };
+    // Training to level 9 teaches its four sets: Fireball at 6, Charm
+    // Monsters at 7, Fire Shield at 8, Hold Monster at 9; and Shield from the
+    // start. Its level 6 set's Cure Light Wounds is left out.
+    check(knows(19) && knows(47) && knows(181) && knows(185) && knows(194) && !knows(3),
+          "A magic-user learns Secret's creation spells");
     check(original::experience_for_level(original::ClassSlot::thief, 18,
                                          GoldBoxGame::secret_of_the_silver_blades) == 1760001 &&
               !original::experience_for_level(original::ClassSlot::fighter, 16,

@@ -59,6 +59,10 @@ struct Spell
 // Curse's spells beyond Pool of Radiance's are numbered this much higher than
 // in Curse's own table, so one table holds both games' (canonical_spell).
 inline constexpr int curse_spell_offset = 100;
+// Secret of the Silver Blades' own spells and powers (Heal, Harm, Youth,
+// Barkskin, Charm Person or Mammal, the druid's Cure Light Wounds and its
+// numbers 101 to 117) are this much higher than in Secret's table.
+inline constexpr int secret_spell_offset = 200;
 
 // The spell or item power of this number (1 to 67, and Curse's 158 and 166
 // to 200), or nothing.

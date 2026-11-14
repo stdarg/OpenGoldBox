@@ -172,9 +172,18 @@ constexpr std::array<int, 30> curse_castable{158, 166, 167, 168, 169, 170, 171, 
 
 int canonical_spell(int number, GoldBoxGame game) noexcept
 {
+    if (game == GoldBoxGame::secret_of_the_silver_blades)
+    {
+        // Secret keeps Curse's numbers but where its own spells took them.
+        constexpr std::array<int, 6> own{36, 56, 63, 90, 96, 98};
+        if (std::ranges::find(own, number) != own.end() || number > 100)
+        {
+            return number + secret_spell_offset;
+        }
+    }
     const bool curse_only = number == 58 || number >= 66;
-    return game == GoldBoxGame::curse_of_the_azure_bonds && curse_only ? number + curse_spell_offset
-                                                                       : number;
+    return game != GoldBoxGame::pool_of_radiance && curse_only ? number + curse_spell_offset
+                                                               : number;
 }
 
 std::vector<int> castable_spells(GoldBoxGame game)
@@ -184,7 +193,8 @@ std::vector<int> castable_spells(GoldBoxGame game)
     {
         numbers.push_back(number);
     }
-    if (game == GoldBoxGame::curse_of_the_azure_bonds)
+    // Secret keeps Curse's; its own come with their table entries.
+    if (game != GoldBoxGame::pool_of_radiance)
     {
         numbers.insert(numbers.end(), curse_castable.begin(), curse_castable.end());
     }

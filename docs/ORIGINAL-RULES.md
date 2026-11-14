@@ -183,10 +183,20 @@ chosen by the game as *Curse*'s are. In progress (2026-11-13):
   level 18 (`saveTbl`), with the paladin's faults fixed as *Curse*'s (Bugs);
   thief skills to level 18, Read Languages 5 below *Curse*'s at 11 and 12.
 - **Training** past a class's Hit Dice adds *Curse*'s fixed amounts (Bugs).
-- **Still to come:** spells (117, to seventh level, and slots to class level
-  15), the creation spells a magic-user learns at levels 6 to 9, training
-  without a fee and of every ready class at once, attacks per round past
-  level 12, and *Secret*'s combat.
+  It costs nothing, and every class that is ready trains at once.
+- **Spells at creation:** a magic-user knows Detect Magic, Read Magic,
+  Shield and Sleep, and learns fixed sets as creation trains it: at level 6
+  Enlarge, Magic Missile, Invisibility, Stinking Cloud, Fireball, Lightning
+  Bolt and Protection from Normal Missiles; at 7 Friends, Protection from
+  Evil, Detect Invisibility, Strength, Blink, Haste and Charm Monsters; at 8
+  Charm Person, Burning Hands, Mirror Image, Slow and Fire Shield; at 9
+  Invisibility 10' Radius, Protection from Evil 10' Radius, Confusion, Minor
+  Globe of Invulnerability and Hold Monster.
+- **Spell numbers:** *Secret* keeps *Curse*'s, but its own spells (Heal 36,
+  Harm 56, Youth 63, Barkskin 90, Charm Person or Mammal 96, the druid's Cure
+  Light Wounds 98, and 101 to 117) are numbered 200 higher in the rules.
+- **Still to come:** *Secret*'s own spells and slots to seventh-level spells
+  and class level 15, attacks per round past level 12, and *Secret*'s combat.
 
 ## What the original rules cover
 
@@ -771,6 +781,7 @@ tuned with the AI lab once the original rules play.
 | *Curse* and *Secret:* the paladin's saving throws, otherwise 2 better than a fighter's, are 1 worse against petrification at levels 5 and 6 and against death at level 8 than that (`ovr026`, `SaveThrowValues`) | 2 better throughout |
 | *Curse:* its starting-age table has no row for a half-elf ranger, which starts aged 0 (`Gbl.cs`, `halfelf_ages` in its reconstruction) | A half-elf fighter's age |
 | *Secret:* its thief skill adjustments give humans the half-orc's (−5 Pick Pockets, −10 Read Languages and the rest), so a human thief starts worse than in the earlier games (`raceAdj` in its reconstruction) | No adjustment for humans, as before |
+| *Secret:* the spells a magic-user learns while trained at creation include, at level 6, Cure Light Wounds, a cleric's spell (`chargen.pas`, TrainingMenu) | Left out |
 | *Curse:* Hold Monster holds only what Hold Person can, as the spell its resolver exempts from the creature-type rule is Dimension Door (0x53) and not Hold Monster (0x5E) (`ovr023`, `MultiTargetedSpell`) | Any creature |
 | *Curse:* Ice Storm and Cone of Cold deal acid damage, so resisting cold does not lessen them (`ovr023`, `SpellIceStorm`, `SpellConeOfCold`) | Cold |
 | *Curse:* a shambling mound struck by electricity rolls 1d8, throws the roll away and gains 8 Hit Points (`ovr013`, its absorbing of lightning) | It gains the 1d8 |
