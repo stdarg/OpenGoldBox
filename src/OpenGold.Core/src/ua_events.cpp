@@ -384,21 +384,20 @@ void UaSession::ask(std::vector<std::string> choices, std::function<void(std::si
     };
     snapshot_.phase = TourPhase::awaiting_continue;
     snapshot_.choices = std::move(choices);
+    snapshot_.host_choices.clear();
     snapshot_.continue_ticket = next_ticket_++;
     ++snapshot_.prompts;
 }
 
-void UaSession::ask_typed(std::function<void(std::string_view)> then)
+// The kit's own Yes and No, which the view translates.
+void UaSession::ask_yes_no(std::function<void(bool)> then)
 {
-    pending_.wait = Wait::typing;
-    pending_.resume = [then = std::move(then)](std::size_t, std::string_view typed)
-    {
-        then(typed);
-    };
-    snapshot_.phase = TourPhase::awaiting_input;
-    snapshot_.choices.clear();
-    snapshot_.continue_ticket = next_ticket_++;
-    ++snapshot_.prompts;
+    ask({"Yes", "No"},
+        [then = std::move(then)](std::size_t choice)
+        {
+            then(choice == 0);
+        });
+    snapshot_.host_choices = {{"Yes", {}}, {"No", {}}};
 }
 
 bool UaSession::answer(std::uint64_t ticket, Wait wait, std::size_t choice, std::string_view typed)
@@ -416,6 +415,7 @@ bool UaSession::answer(std::uint64_t ticket, Wait wait, std::size_t choice, std:
     snapshot_.phase = TourPhase::running;
     snapshot_.dialogue.clear();
     snapshot_.choices.clear();
+    snapshot_.host_choices.clear();
     resume(choice, typed);
     pump();
     return true;
@@ -520,6 +520,7 @@ void UaSession::damage_event(const EventRecord &event)
                         }
                         if (party_lost_)
                         {
+                            snapshot_.host_dialogue = {{"The entire party is killed!", {}}};
                             say("The entire party is killed!");
                         }
                     });
@@ -584,10 +585,10 @@ void UaSession::transfer_event(const EventRecord &event, EventKind kind)
     {
         say(text(word_at(event, 4)));
         const bool on_no = (event[7] & 0x40) != 0;
-        ask({"Yes", "No"},
-            [go_on, on_no](std::size_t choice)
+        ask_yes_no(
+            [go_on, on_no](bool yes)
             {
-                go_on((choice == 0) != on_no);
+                go_on(yes != on_no);
             });
         return;
     }
@@ -750,10 +751,9 @@ void UaSession::quest_event(const EventRecord &event)
     const unsigned mode = (event[7] >> 3) & 7;
     if (mode <= 3)
     {
-        ask({"Yes", "No"},
-            [settle, mode](std::size_t choice)
+        ask_yes_no(
+            [settle, mode](bool yes)
             {
-                const bool yes = choice == 0;
                 settle(mode == 1 ? yes : mode == 2 ? !yes : mode == 3);
             });
         return;
@@ -775,10 +775,9 @@ void UaSession::quest_event(const EventRecord &event)
 void UaSession::yes_no_event(unsigned n, const EventRecord &event)
 {
     say(text(word_at(event, 4)));
-    ask({"Yes", "No"},
-        [this, n, event](std::size_t choice)
+    ask_yes_no(
+        [this, n, event](bool yes)
         {
-            const bool yes = choice == 0;
             const auto then = [this, n, event, yes]
             {
                 if (event[7] & (yes ? 4 : 8))

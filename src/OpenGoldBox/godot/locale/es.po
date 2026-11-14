@@ -7403,6 +7403,10 @@ msgstr "Huida ágil: Destrabarse"
 msgid "Nimble Escape: Hide"
 msgstr "Huida ágil: Esconderse"
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "No"
+msgstr "No"
+
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:284
 msgid "No Bonus Actions or Reactions, and a d10 decides what it does each turn. A Wisdom save at the end of each of its turns ends it."
 msgstr "Sin acciones adicionales ni reacciones, y un d10 decide lo que hace cada turno. Una salvación de Sabiduría al final de cada uno de sus turnos lo termina."
@@ -11196,6 +11200,10 @@ msgstr "La puerta se abre."
 msgid "The door stays locked."
 msgstr "La puerta sigue cerrada."
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "The entire party is killed!"
+msgstr "¡Todo el grupo ha muerto!"
+
 #: src/OpenGoldBox/startup_view.cpp:1017
 msgid "The fifth edition's System Reference Document, with the original's adventures."
 msgstr "El System Reference Document de la quinta edición, con las aventuras del original."
@@ -12684,6 +12692,10 @@ msgstr "Amarillo"
 #: src/OpenGoldBox/rolf_tour_view.cpp:2952
 msgid "Yellow: the party cannot afford it."
 msgstr "En amarillo: el grupo no puede pagarlo."
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Yes"
+msgstr "Sí"
 
 #: src/OpenGoldBox/combat_view.cpp:3498
 msgid "You are hit. Cast Shield (+5 AC) or decline."

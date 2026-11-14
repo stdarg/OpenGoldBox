@@ -7403,6 +7403,10 @@ msgstr ""
 msgid "Nimble Escape: Hide"
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "No"
+msgstr ""
+
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:284
 msgid "No Bonus Actions or Reactions, and a d10 decides what it does each turn. A Wisdom save at the end of each of its turns ends it."
 msgstr ""
@@ -11196,6 +11200,10 @@ msgstr ""
 msgid "The door stays locked."
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "The entire party is killed!"
+msgstr ""
+
 #: src/OpenGoldBox/startup_view.cpp:1017
 msgid "The fifth edition's System Reference Document, with the original's adventures."
 msgstr ""
@@ -12683,6 +12691,10 @@ msgstr ""
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:2952
 msgid "Yellow: the party cannot afford it."
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Yes"
 msgstr ""
 
 #: src/OpenGoldBox/combat_view.cpp:3498

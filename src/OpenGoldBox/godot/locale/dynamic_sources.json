@@ -1782,5 +1782,8 @@
   "Paladin",
   "Ranger",
   "Monk",
-  "{spell}"
+  "{spell}",
+  "Yes",
+  "No",
+  "The entire party is killed!"
 ]

@@ -7403,6 +7403,10 @@ msgstr "Nimble Escape: Disengage"
 msgid "Nimble Escape: Hide"
 msgstr "Nimble Escape: Hide"
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "No"
+msgstr "No"
+
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:284
 msgid "No Bonus Actions or Reactions, and a d10 decides what it does each turn. A Wisdom save at the end of each of its turns ends it."
 msgstr "No Bonus Actions or Reactions, and a d10 decides what it does each turn. A Wisdom save at the end of each of its turns ends it."
@@ -11196,6 +11200,10 @@ msgstr "The door opens."
 msgid "The door stays locked."
 msgstr "The door stays locked."
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "The entire party is killed!"
+msgstr "The entire party is killed!"
+
 #: src/OpenGoldBox/startup_view.cpp:1017
 msgid "The fifth edition's System Reference Document, with the original's adventures."
 msgstr "The fifth edition's System Reference Document, with the original's adventures."
@@ -12684,6 +12692,10 @@ msgstr "Yellow"
 #: src/OpenGoldBox/rolf_tour_view.cpp:2952
 msgid "Yellow: the party cannot afford it."
 msgstr "Yellow: the party cannot afford it."
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Yes"
+msgstr "Yes"
 
 #: src/OpenGoldBox/combat_view.cpp:3498
 msgid "You are hit. Cast Shield (+5 AC) or decline."

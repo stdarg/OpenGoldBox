@@ -185,7 +185,7 @@ class UaSession
     [[nodiscard]] EventRecord record(unsigned number) const;
     [[nodiscard]] unsigned square_event(unsigned x, unsigned y) const;
     // Text pool slot `slot` (1-based; 0 is none), its first two carets the
-    // selected member's name unless `plain`.
+    // selected member's name unless `names` is false.
     [[nodiscard]] std::string text(unsigned slot, bool names = true) const;
 
     // The event loop (the kit's events_run): event `n` and its chain, until
@@ -209,7 +209,7 @@ class UaSession
     void say(std::string words);
     void wait_for_return(std::function<void()> then);
     void ask(std::vector<std::string> choices, std::function<void(std::size_t)> then);
-    void ask_typed(std::function<void(std::string_view)> then);
+    void ask_yes_no(std::function<void(bool)> then);
     void show_event_text(const EventRecord &event, std::function<void()> then);
     void unsupported(EventKind kind);
 
