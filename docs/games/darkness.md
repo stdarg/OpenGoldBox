@@ -454,6 +454,20 @@ by what it is offered:
   ritual. Down the stairs (8,5, the wall of type 7 ahead) to the worship
   area, it scrubs the black hand off Tyr's altar (3,1), the priest's ward
   gone, and earns Tyr's blessing (cell 17Fh bit 1).
+- **The catacombs (map 50's lower half, script 54).** Down the stairs east
+  of (6,5) to (7,13); west through the cells, past the marauders fleeing
+  Brimwulf (3,8), to the stairs at (0,8), which lead down to the east half
+  (8,9). Brimwulf's tomb (13,13), entered facing north: the party opens the
+  coffin, stands away from his wrath and agrees to be tested (cell ABh 1).
+  Through the secret door beyond, the small altar (12,10): the ritual by
+  journal entry 11's third way, "light incense, then sip from bowl" (cell
+  17Fh bit 0), so a single elemental guards each test. The earth elemental
+  (10,10) leaves the Vessel of Purity (bit 3); the fire elemental at
+  Ilmater's symbol (12,8) the Spirit Flame (bit 4); in the armory (14,10)
+  the flame lights the Lamp of Vigilance, Brimwulf gives his charge, and the
+  party takes it (bit 5) and steps on to the shelves of arms. Back up the
+  stairs at (8,9) to the west half and (7,13) to the temple, where the Red
+  Plume warriors rejoin it at (6,5).
 
 One stand-in: the Vaasans who get through, seven mages and twelve
 warriors, hold the party with Hold Monster before it acts and slay the held
@@ -468,20 +482,18 @@ party won or came through and "not equal" when it fled. Until 2026-11-14
 OpenGoldBox left the flags as they were, so a won fight could read as lost
 and move the party back a square (the walk passed all the same).
 
-Where it stops (2026-11-14): at Tyr's altar (map 50, 3,1), blessed, with
-Priam. Next, in the cluebook's order: rest in the scribe's office (the only
-safe room until the temple is freed; the camp entry allows it on event
-133, cell 181h set lifts the rest), Laurellin's journal entry 74 in the
-small rooms, then the stairs down from (6,5) (wall type 7, the party at
-x 6) to the catacombs (NEW ECL 54): the neo-otyughs, Brimwulf's tomb and
-his tests (do not kill him), the ritual at the altar by journal entry 11's
-third way, the earth and fire elementals for the Vessel of Purity and the
-Spirit Flame, the Lamp of Vigilance in the armory; then back up to light
-the braziers in the four corner towers (event 4 at (8,0), (15,0), (8,7),
-(15,7)) and ring the bells (event 7). Leave the plunder (event 9) alone:
-taking it earns the Curse of Tyr. Then west and counter-clockwise round the
-area map, the mini-adventures on the way, to Gothmenes in Dark Phlan.
-`OPENGOLD_ROUTE_BEATS` and `OPENGOLD_SECRET_FIND` plan each step: the
+Where it stops (2026-11-14): back in the temple (map 50, 6,5) with the
+Lamp of Vigilance. Next: up the stairs west of (1,5) to (8,5), light the four braziers in the corner towers (event 4 at (8,0),
+(15,0), (8,7), (15,7), answer LIGHT BRAZIER; cell 17Dh gets a bit each),
+then the bell tower (event 9 at (11,3), (12,3), (11,4), (12,4), script 50
+from 90A6h): ring the bells, and with journal entry 74 (the high priest's
+journal, event 7 at (15,2), (15,5), and Laurellin's book in the acolyte's
+cell, event 10 in the catacombs, found by searching) reunite Laurellin with
+Brimwulf rather than kill her. Leave the plunder in the dining hall
+(event 11 in the catacombs) alone: taking it earns the Curse of Tyr. Then
+leave by the entrance (the step south from the hall, "DO YOU WISH TO
+LEAVE?") and go west and counter-clockwise round the area map, the
+mini-adventures on the way, to Gothmenes in Dark Phlan. `OPENGOLD_ROUTE_BEATS` and `OPENGOLD_SECRET_FIND` plan each step: the
 planning aid answers NO, so it never takes stairs a question offers; find
 the stairs' squares by their walls of type 7 and step them in a beat.
 

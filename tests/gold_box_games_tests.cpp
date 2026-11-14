@@ -2071,6 +2071,102 @@ const std::vector<RouteBeat> &darkness_route()
         auto altar = step_beat(50, 3, 2, D::north, {"SCRUB PAINT"});
         altar.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x17F, 2};
         route.push_back(altar);
+        // East and south to the stairs down (6,5), the wall of type 7 east of
+        // it, and down into the catacombs (script 54, the map's lower half),
+        // where the party arrives at (7,13).
+        walk_passages(route, 50,
+                      {{3, 1, D::east},
+                       {4, 1, D::east},
+                       {5, 1, D::south},
+                       {5, 2, D::south},
+                       {5, 3, D::south},
+                       {5, 4, D::south},
+                       {5, 5, D::east}});
+        route.push_back(step_beat(50, 6, 5, D::east, {"YES"}));
+        // West through the cells and north to the burial preparation room,
+        // where the party falls on the marauders fleeing Brimwulf (3,8), to
+        // the stairs down at (0,8), which lead to the catacombs' east half
+        // (8,9).
+        walk_passages(route, 50,
+                      {{7, 13, D::south}, {7, 14, D::west},  {6, 14, D::west},  {5, 14, D::west},
+                       {4, 14, D::west},  {3, 14, D::west},  {2, 14, D::west},  {1, 14, D::north},
+                       {1, 13, D::north}, {1, 12, D::north}, {1, 11, D::north}, {1, 10, D::east},
+                       {2, 10, D::east},  {3, 10, D::east},  {4, 10, D::north}, {4, 9, D::north},
+                       {4, 8, D::west},   {3, 8, D::west},   {2, 8, D::west},   {1, 8, D::west}});
+        route.push_back(step_beat(50, 0, 8, D::south, {"YES"}));
+        // South and east to Brimwulf's tomb (13,13), entered facing north:
+        // the party opens the coffin, stands away from the spectre's wrath
+        // and agrees to be tested (cell ABh 1), so he lets it pass.
+        walk_passages(route, 50,
+                      {{8, 10, D::south},
+                       {8, 11, D::south},
+                       {8, 12, D::south},
+                       {8, 13, D::south},
+                       {8, 14, D::east},
+                       {9, 14, D::east},
+                       {10, 14, D::north},
+                       {10, 13, D::east},
+                       {11, 13, D::east},
+                       {12, 13, D::south},
+                       {12, 14, D::east}});
+        auto brimwulf = step_beat(50, 13, 14, D::north, {"OPEN COFFIN", "STAND AWAY", "YES"});
+        brimwulf.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0xAB, 1};
+        route.push_back(brimwulf);
+        // Through the secret door beyond him to the small altar (12,10): the
+        // ritual journal entry 11 gives, its third way (cell 17Fh bit 0),
+        // so fewer elementals guard the tests.
+        walk_passages(route, 50, {{13, 13, D::north}, {13, 12, D::north}, {13, 11, D::west}});
+        auto ritual = step_beat(50, 12, 11, D::north, {"LIGHT INCENSE"});
+        ritual.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x17F, 3};
+        route.push_back(ritual);
+        // The earth rises at (10,10); beaten, it leaves the Vessel of Purity,
+        // which the party takes (cell 17Fh bit 3).
+        walk_passages(route, 50, {{12, 10, D::south}, {12, 11, D::west}, {11, 11, D::west}});
+        auto vessel = step_beat(50, 10, 11, D::north, {"TAKE BOWL"});
+        vessel.rest_first = true;
+        vessel.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x17F, 11};
+        route.push_back(vessel);
+        // Ilmater's symbol (12,8) ignites; the fire elemental's dying flame
+        // passes into the bowl, the Spirit Flame (cell 17Fh bit 4).
+        walk_passages(route, 50,
+                      {{10, 10, D::north},
+                       {10, 9, D::west},
+                       {9, 9, D::north},
+                       {9, 8, D::east},
+                       {10, 8, D::east}});
+        auto flame = step_beat(50, 11, 8, D::east);
+        flame.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x17F, 27};
+        route.push_back(flame);
+        // The armory (14,10): the flame lights the Lamp of Vigilance,
+        // Brimwulf tells the party to rekindle the four braziers and ring the
+        // bells, and the party takes the lamp (cell 17Fh bit 5); a step on,
+        // the shelves of arms Priam sought.
+        walk_passages(route, 50, {{12, 8, D::east}, {13, 8, D::south}, {13, 9, D::south}});
+        auto lamp = step_beat(50, 13, 10, D::east, {"YES"});
+        lamp.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x17F, 59};
+        route.push_back(lamp);
+        route.push_back(step_beat(50, 14, 10, D::east));
+        // Back west and up the stairs at (8,9) to the catacombs' west half
+        // (0,8), across it to the stairs at (7,13), and up into the temple.
+        walk_passages(route, 50,
+                      {{15, 10, D::west},
+                       {14, 10, D::west},
+                       {13, 10, D::north},
+                       {13, 9, D::north},
+                       {13, 8, D::west},
+                       {12, 8, D::west},
+                       {11, 8, D::west},
+                       {10, 8, D::west},
+                       {9, 8, D::south},
+                       {9, 9, D::west}});
+        route.push_back(step_beat(50, 8, 9, D::north, {"YES"}));
+        walk_passages(route, 50,
+                      {{0, 8, D::east},   {1, 8, D::east},   {2, 8, D::east},   {3, 8, D::east},
+                       {4, 8, D::south},  {4, 9, D::south},  {4, 10, D::west},  {3, 10, D::west},
+                       {2, 10, D::west},  {1, 10, D::south}, {1, 11, D::south}, {1, 12, D::south},
+                       {1, 13, D::south}, {1, 14, D::east},  {2, 14, D::east},  {3, 14, D::east},
+                       {4, 14, D::east},  {5, 14, D::east},  {6, 14, D::east},  {7, 14, D::north}});
+        route.push_back(step_beat(50, 7, 13, D::west, {"YES"}));
         return route;
     }();
     return beats;
