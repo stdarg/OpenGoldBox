@@ -1004,6 +1004,23 @@ void walk_passages(
     }
 }
 
+// Steps through a map as walk_passages does, but without stopping to rest
+// and taking the first choice where no answer is given: Secret's castle,
+// whose guards break every camp, which a hurt party crosses to a gateway to
+// the Well, where it can rest. The test wins the fights its player loses.
+void walk_unrested(
+    std::vector<RouteBeat> &beats, unsigned map,
+    std::initializer_list<std::tuple<unsigned, unsigned, opengold::por::MapDirection>> passages,
+    const std::vector<std::string> &answers)
+{
+    for (const auto &[x, y, facing] : passages)
+    {
+        auto beat = step_beat(map, x, y, facing, answers);
+        beat.test_wins = true;
+        beats.push_back(beat);
+    }
+}
+
 // Steps across Gateway's overland (maps 21 to 26), as walk_passages walks a
 // map, fleeing the wandering monsters it meets where it can.
 void walk_overland(
@@ -1018,10 +1035,11 @@ void walk_overland(
     }
 }
 
-// Secret's route plays to the game's end once this is true; until then it
-// stops on this map, the Castle Entrance (docs/GAMES.md, phase 4 step 4).
-constexpr bool secret_route_ends_the_game = false;
-constexpr unsigned secret_route_stops_on_map = 96;
+// Secret's route plays to the game's end, the soul gem shattered (since
+// 2026-11-14; docs/GAMES.md, phase 4 step 4); were this false, it would stop
+// on this map.
+constexpr bool secret_route_ends_the_game = true;
+constexpr unsigned secret_route_stops_on_map = 98;
 
 // Secret's story, beat by beat, as its cluebook tells it (plan phase 4, step
 // 4): from New Verdigris on.
@@ -1837,6 +1855,138 @@ const std::vector<RouteBeat> &secret_route()
              {15, 14, D::north}, {15, 13, D::north}, {15, 12, D::north}},
             true, true);
         route.push_back(step_beat(82, 15, 11, D::east, {"YES"}));
+        // The Castle Entrance (script 96), where the castle's guards break
+        // every camp: hurt from the crevasses, the party does not rest there
+        // but walks along the great hall, through the rotating alcove at 5,9
+        // into the room south of it, to the gateway at 6,9 (location 22),
+        // which takes it to the Well's gate 13. Sargatha, the castellan, may
+        // stop the party on the way with a scroll to sign: it attacks her at
+        // once, as the cluebook advises (signing sends it robbed to the
+        // Dungeon's tenth level).
+        walk_unrested(route, 96,
+                      {{0, 8, D::east},
+                       {1, 8, D::east},
+                       {2, 8, D::east},
+                       {3, 8, D::east},
+                       {4, 8, D::east},
+                       {5, 8, D::south},
+                       {5, 10, D::south},
+                       {5, 11, D::east},
+                       {6, 11, D::north}},
+                      {"ATTACK MEDUSA"});
+        route.push_back(step_beat(96, 6, 10, D::north, {"YES"}));
+        // Rested at the Well, and back by its gate 13 to the castle's gateway.
+        route.push_back({33, 1, 14, D::north, {"YES"}, true});
+        // The alcove turns back only once the room's lever is pulled (at
+        // 5,15; cell 4C05): back to the great hall, along it into the
+        // rotating alcove at 8,9, which turns the party into the room south
+        // of it, and east from 8,15 onto the flagstone that sends it to 13,0,
+        // by the stairway up.
+        walk_passages(route, 96,
+                      {{6, 9, D::south},  {6, 10, D::south}, {6, 11, D::south}, {6, 12, D::west},
+                       {5, 12, D::south}, {5, 13, D::south}, {5, 14, D::south}, {5, 15, D::north},
+                       {5, 14, D::north}, {5, 13, D::north}, {5, 12, D::north}, {5, 11, D::north},
+                       {5, 9, D::north},  {5, 8, D::east},   {6, 8, D::east},   {7, 8, D::east},
+                       {8, 8, D::south},  {8, 10, D::south}, {8, 11, D::south}, {8, 12, D::south},
+                       {8, 13, D::west},  {7, 13, D::south}, {7, 14, D::south}, {7, 15, D::east},
+                       {8, 15, D::east},  {13, 0, D::east},  {14, 0, D::east}},
+                      false, true, false, {"YES", "ATTACK MEDUSA"});
+        // The stairway up to the Middle Level of the Castle (script 97).
+        route.push_back(step_beat(96, 15, 0, D::east, {"YES"}));
+        // The Middle Level's maze (script 97), from 15,0 to the stairway up
+        // at 0,15; its iron golems are given the password STEELEYE.
+        walk_passages(route, 97,
+                      {{15, 0, D::west},  {14, 0, D::west},  {13, 0, D::west}, {12, 0, D::west},
+                       {11, 0, D::south}, {11, 1, D::south}, {11, 2, D::west}, {10, 2, D::west},
+                       {9, 2, D::south},  {9, 3, D::south},  {9, 4, D::west},  {8, 4, D::west},
+                       {7, 4, D::west},   {6, 4, D::west},   {5, 4, D::west},  {4, 4, D::south},
+                       {4, 5, D::east},   {5, 5, D::east},   {6, 5, D::east},  {7, 5, D::east},
+                       {8, 5, D::south},  {8, 6, D::south},  {8, 7, D::west},  {7, 7, D::north},
+                       {7, 6, D::west},   {6, 6, D::south},  {6, 7, D::south}, {6, 8, D::west},
+                       {5, 8, D::north},  {5, 7, D::north},  {5, 6, D::west},  {4, 6, D::west},
+                       {3, 6, D::north},  {3, 5, D::west},   {2, 5, D::west},  {1, 5, D::west},
+                       {0, 5, D::south},  {0, 6, D::south},  {0, 7, D::south}, {0, 8, D::south},
+                       {0, 9, D::south},  {0, 10, D::south}, {0, 11, D::east}, {1, 11, D::south},
+                       {1, 12, D::west},  {0, 12, D::south}, {0, 13, D::east}, {1, 13, D::south},
+                       {1, 14, D::west},  {0, 14, D::south}},
+                      false, true);
+        // The stairway up to the Dreadlord's Sanctum (script 98).
+        route.push_back(step_beat(97, 0, 15, D::west, {"YES"}));
+        // The Dreadlord's Sanctum (script 98), as the cluebook tells it: the
+        // illusion of the Dreadlord at 9,15 is let to attack first, which
+        // ends it. Hurt from the maze, the party walks on to the gateway at
+        // 12,11 (location 7), to rest at the Well and come back by its gate 6.
+        walk_unrested(route, 98,
+                      {{0, 15, D::east},   {1, 15, D::east},   {2, 15, D::east},  {3, 15, D::north},
+                       {3, 14, D::north},  {3, 13, D::north},  {3, 12, D::east},  {4, 12, D::east},
+                       {5, 12, D::east},   {6, 12, D::east},   {7, 12, D::east},  {8, 12, D::south},
+                       {8, 13, D::south},  {8, 14, D::south},  {8, 15, D::east},  {9, 15, D::east},
+                       {10, 15, D::north}, {10, 14, D::east},  {11, 14, D::east}, {12, 14, D::east},
+                       {13, 14, D::north}, {13, 13, D::north}, {13, 12, D::north}},
+                      {"LET LICH ATTACK FIRST"});
+        route.push_back(step_beat(98, 13, 11, D::west, {"YES"}));
+        route.push_back({33, 12, 3, D::north, {"YES"}, true});
+        // The lightning across the door at 13,9 is an illusion a member
+        // bashes through, and the door at 12,0 takes the Silver Key.
+        walk_passages(route, 98,
+                      {{12, 11, D::east},
+                       {13, 11, D::north},
+                       {13, 10, D::north},
+                       {13, 9, D::north},
+                       {13, 8, D::north},
+                       {13, 7, D::west},
+                       {12, 7, D::north},
+                       {12, 6, D::north},
+                       {12, 5, D::north},
+                       {12, 4, D::north},
+                       {12, 3, D::north},
+                       {12, 2, D::east},
+                       {13, 2, D::east},
+                       {14, 2, D::east},
+                       {15, 2, D::north},
+                       {15, 1, D::north},
+                       {15, 0, D::west},
+                       {14, 0, D::west},
+                       {13, 0, D::west}},
+                      false, true, false, {"BASH", "YES", "SILVER"});
+        // Down the corridor beyond to the door that asks for the Dreadlord's
+        // brother (8,9: OSWULF), past Sargatha's ambush at 2,10, to the door
+        // at 2,9, which takes the Gold Key.
+        walk_passages(route, 98,
+                      {{12, 0, D::west},  {11, 0, D::south}, {11, 1, D::south}, {11, 2, D::south},
+                       {11, 3, D::south}, {11, 4, D::south}, {11, 5, D::south}, {11, 6, D::south},
+                       {11, 7, D::south}, {11, 8, D::south}, {11, 9, D::west},  {10, 9, D::west},
+                       {9, 9, D::west},   {8, 9, D::west},   {7, 9, D::south},  {7, 10, D::west},
+                       {6, 10, D::west},  {5, 10, D::west},  {4, 10, D::west},  {3, 10, D::west},
+                       {2, 10, D::north}},
+                      false, true, false, {"YES", "GOLD"});
+        // North to the warrior in golden armor at 7,1, who bars the door at
+        // 6,1; it takes the Brass Key and opens west onto the Dreadlord's
+        // own rooms (script 99, on the Sanctum's map): the hydras at 5,1,
+        // the Dreadlord himself at 2,4, and at 1,3 a secret door, which the
+        // party searches for until it finds it (cell 4CDC's bit 128).
+        walk_passages(route, 98,
+                      {{2, 9, D::north}, {2, 8, D::north}, {2, 7, D::north}, {2, 6, D::east},
+                       {3, 6, D::east},  {4, 6, D::east},  {5, 6, D::east},  {6, 6, D::east},
+                       {7, 6, D::east},  {8, 6, D::north}, {8, 5, D::north}, {8, 4, D::north},
+                       {8, 3, D::north}, {8, 2, D::north}, {8, 1, D::west},  {7, 1, D::west},
+                       {6, 1, D::west},  {5, 1, D::south}, {5, 2, D::west},  {4, 2, D::south},
+                       {4, 3, D::south}, {4, 4, D::west},  {3, 4, D::west},  {2, 4, D::north},
+                       {2, 3, D::west}},
+                      true, true, false, {"YES", "BRASS"});
+        RouteBeat secret_door{98, 1, 3, D::north, {}};
+        secret_door.repeat_in_place = true;
+        secret_door.repeat_until_at_least = std::pair<std::uint16_t, std::uint16_t>{0x4CDC, 128};
+        secret_door.test_wins = true;
+        route.push_back(secret_door);
+        // Through it, the chamber of the Dreadlord's soul: the party explores
+        // it, beats the iron golems and medusae about the gem, and the gem is
+        // shattered (cell 4CD9 set to 1): Eldamar's soul is free, and the
+        // game is won.
+        RouteBeat soul_gem = step_beat(98, 1, 3, D::north, {"EXPLORE ROOM"});
+        soul_gem.test_wins = true;
+        soul_gem.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CD9, 1};
+        route.push_back(soul_gem);
         return route;
     }();
     return beats;
@@ -3545,7 +3695,7 @@ bool walk_census(GoldBoxGame game, bool route)
                 std::string typed = "0";
                 // Secret's dungeon spirit's riddles and the secret word, as
                 // its cluebook answers them.
-                constexpr std::array<std::pair<std::string_view, std::string_view>, 11> riddles{
+                constexpr std::array<std::pair<std::string_view, std::string_view>, 12> riddles{
                     {{"YOU FEEL IT, YOU NEVER SAW IT", "YOUR HEART"},
                      {"YOU MUST KEEP IT AFTER GIVING IT", "YOUR WORD"},
                      {"LIGHT AS A FEATHER", "YOUR BREATH"},
@@ -3555,9 +3705,11 @@ bool walk_census(GoldBoxGame game, bool route)
                      {"PASSES BEFORE THE SUN", "WIND"},
                      {"YOU FEED IT, IT LIVES", "FIRE"},
                      {"WHAT IS THE SECRET WORD?", "NACACIA"},
-                     // The castle's: the iron golems' password, and the
+                     // The castle's: the iron golems' password (where a
+                     // magic mouth names a false one too), and the
                      // Dreadlord's door, which asks for his brother.
                      {"IRON GOLEMS APPEARS", "STEELEYE"},
+                     {"THE PASSWORD HERE IS FOOL", "STEELEYE"},
                      {"FRATERNAL BONDS", "OSWULF"}}};
                 for (const auto &[riddle, answer] : riddles)
                 {
@@ -3885,20 +4037,42 @@ bool walk_census(GoldBoxGame game, bool route)
             }
         };
         play("opening");
+        // Planning aids, so a search can start where the route ends without
+        // replaying it: OPENGOLD_ROUTE_BEATS=N plays only the route's first N
+        // beats, OPENGOLD_ROUTE_SAVE=FILE saves the game where the beats end
+        // (with their count), and OPENGOLD_ROUTE_RESUME=FILE loads such a save
+        // and plays on from the beat after it.
+        const char *beats_to_play = std::getenv("OPENGOLD_ROUTE_BEATS");
+        const std::size_t beat_limit = beats_to_play ? std::stoul(beats_to_play) : SIZE_MAX;
+        constexpr std::string_view assets = "route-checkpoint";
+        std::size_t beats_resumed = 0;
+        if (const char *resume = std::getenv("OPENGOLD_ROUTE_RESUME"))
+        {
+            std::ifstream file(resume, std::ios::binary);
+            file >> beats_resumed;
+            file.get();
+            const std::string bytes{std::istreambuf_iterator<char>(file), {}};
+            auto saved = opengold::decode_campaign(
+                bytes, *creation, *opengold::original::rules_module(content), assets, &session);
+            party->restore(saved.party);
+            session = std::move(*saved.town);
+            session.attach_restored_party(party);
+        }
         std::size_t beat_number = 0;
         // A beat that throws ends the route, named with the beat it was in.
         std::string current_beat = "the route's start";
         try
         {
-            // OPENGOLD_ROUTE_BEATS=N plays only the route's first N beats, so
-            // the planning aids can look from a point short of its end.
-            const char *beat_limit = std::getenv("OPENGOLD_ROUTE_BEATS");
             for (const auto &beat : route_for(game))
             {
-                ++beat_number;
-                if (beat_limit && beat_number > std::stoul(beat_limit))
+                if (beat_number == beat_limit)
                 {
                     break;
+                }
+                ++beat_number;
+                if (beat_number <= beats_resumed)
+                {
+                    continue;
                 }
                 const auto where = "beat " + std::to_string(beat.map) + " " +
                                    std::to_string(beat.x) + "," + std::to_string(beat.y);
@@ -4066,6 +4240,12 @@ bool walk_census(GoldBoxGame game, bool route)
         catch (const std::exception &error)
         {
             needs[error.what()].push_back(current_beat);
+        }
+        if (const char *save = std::getenv("OPENGOLD_ROUTE_SAVE"); save && session.can_leave())
+        {
+            std::ofstream file(save, std::ios::binary);
+            file << beat_number << '\n'
+                 << opengold::encode_campaign(*party, &session, assets, game);
         }
 
         for (const auto &[phase, count] : phases)
