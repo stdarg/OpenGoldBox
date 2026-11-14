@@ -1027,7 +1027,7 @@ gear.
      `CalcWeaponPriority`) and readies another weapon when an enemy is next
      to its bow. The fight reports the items readied and what is left of
      each, which the inventory keeps; a save mid-fight keeps them (combat
-     checkpoint 20). Secret's and the later records' item limits (their class
+     checkpoint 21). Secret's and the later records' item limits (their class
      bits) are read from them.
    - Still to come: the party's facing, the original's terrain heights for
      sight and PARTY_MOVE_MODIFIER. Out of doors a fireball

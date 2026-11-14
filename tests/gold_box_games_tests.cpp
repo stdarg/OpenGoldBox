@@ -3262,7 +3262,16 @@ const std::vector<RouteBeat> &gateway_route()
                        {10, 6, D::north},
                        {10, 4, D::east},
                        {11, 3, D::east}});
-        route.push_back(step_beat(24, 12, 1, D::east, {"YES"}));
+        // The way down into Ascore is taken by day: at night the cliff's edge is
+        // too dark to explore (script 21), and a player camps until morning,
+        // the test passing the time. The fights before it run long or short
+        // as the original's monsters ready their weapons and the party's
+        // conditions run down on the road.
+        {
+            auto descent = step_beat(24, 12, 1, D::east, {"YES"});
+            descent.wait_until_minute = 8 * 60;
+            route.push_back(descent);
+        }
         // Ascore: east through the ruins to Vaalgamon's gate, which the four
         // statuettes open past its giant spiders. The party rests on the
         // gate's square, where Ascore's camp script lets it sleep (its events

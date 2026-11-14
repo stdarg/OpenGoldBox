@@ -32,7 +32,7 @@ using rules::Side;
 
 // The original counts movement in half-moves: 2 a straight step, 3 a diagonal one.
 constexpr rules::StepCosts half_moves{2, 3, 2, 4, 0};
-constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 20";
+constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 21";
 
 enum class Condition : unsigned
 {

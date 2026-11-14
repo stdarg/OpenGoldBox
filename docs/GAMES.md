@@ -527,10 +527,13 @@ new decoders.
    the route's check asks for ([gateway.md](games/gateway.md), The ending).
    The ships sail at 0800 and 0900: the test passes the time to the sailing,
    a stand-in for a player's wait in camp, which OpenGoldBox's camp has no
-   hours for. Every walk is played step by step as the planning aid
+   hours for; so it does to morning at the clifftop over Ascore, whose way
+   down a night hides (script 21), the fights before it running long or
+   short as the original's monsters ready their weapons. Every walk is played step by step as the planning aid
    (`OPENGOLD_SECRET_FIND`, with `OPENGOLD_FIND_YES` for the questions it must
    answer Yes) finds it. The stand-ins are the test experience and gold, the
-   gear and the waits for the ships; no fight is won by the test. It rests on
+   gear and the waits for the ships and the morning; no fight is won by the
+   test. It rests on
    the gate's square before the maze: Ascore's camp script (ECL6:20 0x818D)
    lets a party sleep only on squares of events 4 and 107 on (but 121), and
    breaks every other camp with undead, the rooms just east of the gate too,
