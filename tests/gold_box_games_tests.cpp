@@ -2009,7 +2009,7 @@ const std::vector<RouteBeat> &secret_route()
 // Pools of Darkness's route plays to the game's end once this is true; until
 // then it stops on this map (docs/GAMES.md, Pools of Darkness, step 5).
 constexpr bool darkness_route_ends_the_game = false;
-constexpr unsigned darkness_route_stops_on_map = 35;
+constexpr unsigned darkness_route_stops_on_map = 68;
 
 // Pools of Darkness's story, beat by beat, as its cluebook tells it: from New
 // Phlan's docks, where Rolf has walked the party out.
@@ -2839,6 +2839,43 @@ const std::vector<RouteBeat> &darkness_route()
         route.push_back(step_beat(48, 5, 10, D::north));
         walk_passages(route, 48, {{5, 8, D::west}, {4, 8, D::west}});
         route.push_back(step_beat(48, 3, 8, D::west, {"YES"}));
+        // Down in the drow stronghold under the tower (map 35, the Descent to the
+        // Depths) the party makes its way, as the planning aid finds it, to the
+        // ladders into the long hall (7,14) and the drow temple's halls (map 68).
+        walk_passages(route, 35,
+                      {{0, 2, D::east},
+                       {1, 2, D::south},
+                       {1, 3, D::east},
+                       {2, 3, D::south},
+                       {2, 4, D::south},
+                       {2, 5, D::east}});
+        route.push_back(step_beat(35, 3, 5, D::east, {"YES"}));
+        walk_passages(
+            route, 35,
+            {{2, 11, D::south},  {2, 12, D::east},   {3, 12, D::north},  {3, 11, D::east},
+             {4, 11, D::north},  {4, 10, D::east},   {5, 10, D::east},   {6, 10, D::south},
+             {6, 11, D::south},  {6, 12, D::east},   {7, 12, D::south},  {7, 13, D::east},
+             {8, 13, D::north},  {8, 12, D::east},   {9, 12, D::east},   {10, 12, D::east},
+             {11, 12, D::south}, {11, 13, D::south}, {11, 14, D::west},  {10, 14, D::west},
+             {9, 14, D::south},  {9, 15, D::east},   {10, 15, D::east},  {11, 15, D::east},
+             {12, 15, D::north}, {12, 14, D::north}, {12, 13, D::north}, {12, 12, D::north},
+             {12, 11, D::north}, {12, 10, D::east},  {13, 10, D::east},  {14, 10, D::east},
+             {15, 10, D::south}, {15, 11, D::south}, {15, 12, D::south}, {15, 13, D::west},
+             {14, 13, D::west},  {13, 13, D::south}, {13, 14, D::south}, {13, 15, D::east},
+             {14, 15, D::east}});
+        route.push_back(step_beat(35, 15, 15, D::east, {"YES"}));
+        walk_passages(route, 35,
+                      {{0, 15, D::north},
+                       {0, 14, D::north},
+                       {0, 13, D::east},
+                       {1, 13, D::east},
+                       {2, 13, D::east},
+                       {3, 13, D::south},
+                       {3, 14, D::east},
+                       {4, 14, D::east},
+                       {5, 14, D::east},
+                       {6, 14, D::east}});
+        route.push_back(step_beat(35, 7, 14, D::east, {"YES"}));
         return route;
     }();
     return beats;
