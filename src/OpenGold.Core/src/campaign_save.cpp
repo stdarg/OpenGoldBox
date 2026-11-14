@@ -1130,6 +1130,8 @@ CampaignRules saved_campaign_rules(std::string_view bytes)
     {
         unsigned game_number{};
         in.field(game_number);
+        require(game_number < gold_box_games.size(), "Unknown campaign game");
+        saved.game = gold_box_games[game_number];
     }
     if (version >= rules_setting_format)
     {

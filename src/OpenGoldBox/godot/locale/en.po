@@ -16268,3 +16268,8 @@ msgstr "◀ Body"
 #: src/OpenGoldBox/godot/scenes/original_portrait_parts.tscn:10
 msgid "◀ Head"
 msgstr "◀ Head"
+
+#: src/OpenGoldBox/campaign_save_view.cpp:173
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "This save belongs to {game}, whose game files are not set."
+msgstr "This save belongs to {game}, whose game files are not set."

@@ -14,6 +14,7 @@
 #include "combat_view.h"
 #include "save_slots.h"
 #include "opengold/campaign_save.h"
+#include "opengold/campaign_session.h"
 #include "game_rules.h"
 #include "godot_path.h"
 #include "guarded_handlers.h"
@@ -38,11 +39,50 @@ using presentation::required_node;
 
 namespace
 {
-std::filesystem::path game_directory()
+std::filesystem::path game_directory(GoldBoxGame game)
 {
-    const auto dir = settings::game_path();
-    return presentation::path_from_godot(dir);
+    return presentation::path_from_godot(settings::game_folder(game));
 }
+
+// The campaign as a save of the game being played records it, with that
+// game's files.
+std::string encoded_campaign(const CampaignParty &party, const RolfTourView *town)
+{
+    const auto game = settings::chosen_game();
+    return encode_campaign(party, town ? town->saved_session() : nullptr,
+                           campaign_asset_identity(game_directory(game)), game);
+}
+
+// Plays a save's game while the save loads: a load that fails goes back to the
+// game being played, however it ends (Effective C++ Item 13).
+class SavedGameChoice
+{
+  public:
+    explicit SavedGameChoice(GoldBoxGame game) : playing_(settings::chosen_game())
+    {
+        settings::choose_game(game);
+    }
+
+    SavedGameChoice(const SavedGameChoice &) = delete;
+    SavedGameChoice &operator=(const SavedGameChoice &) = delete;
+
+    ~SavedGameChoice()
+    {
+        if (!kept_)
+        {
+            settings::choose_game(playing_);
+        }
+    }
+
+    void keep() noexcept
+    {
+        kept_ = true;
+    }
+
+  private:
+    GoldBoxGame playing_;
+    bool kept_{};
+};
 } // namespace
 
 void CharacterCreationView::setup_saves()
@@ -95,9 +135,7 @@ void CharacterCreationView::save_campaign(const std::filesystem::path &path)
         throw std::runtime_error("Load a saved game after defeat");
     }
     const auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown"));
-    const auto bytes = encode_campaign(*campaign_, town ? town->saved_session() : nullptr,
-                                       campaign_asset_identity(game_directory()));
-    write_campaign_file(path, bytes);
+    write_campaign_file(path, encoded_campaign(*campaign_, town));
     error_ = i18n::text("Campaign saved.");
     refresh_party();
 }
@@ -107,8 +145,7 @@ void CharacterCreationView::save_campaign(const std::filesystem::path &path)
 void CharacterCreationView::reload_in_memory()
 {
     const auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown"));
-    load_campaign_bytes(encode_campaign(*campaign_, town ? town->saved_session() : nullptr,
-                                        campaign_asset_identity(game_directory())));
+    load_campaign_bytes(encoded_campaign(*campaign_, town));
 }
 
 void CharacterCreationView::load_campaign(const std::filesystem::path &path)
@@ -127,7 +164,19 @@ void CharacterCreationView::load_campaign_bytes(const std::string &bytes)
     {
         throw std::runtime_error("Finish the current event before loading");
     }
-    const auto directory = game_directory();
+    // A save starts its own game, whichever game is being played.
+    const auto game = saved_campaign_rules(bytes).game;
+    const bool other_game = game != settings::chosen_game();
+    if (other_game && !settings::validate_game_folder(settings::game_folder(game), game).usable)
+    {
+        throw std::runtime_error(
+            i18n::format(N_("This save belongs to {game}, whose game files are not set."),
+                         {{"game", i18n::text(game_title(game).data())}})
+                .utf8()
+                .get_data());
+    }
+    const auto directory = game_directory(game);
+    SavedGameChoice choice(game);
     const auto &new_wall_art = game_wall_art();
     const auto monsters = game_monsters();
     // The save's own rules, which may not be the current game's.
@@ -135,7 +184,11 @@ void CharacterCreationView::load_campaign_bytes(const std::string &bytes)
         bytes, game_rules_files(), campaign_asset_identity(directory),
         [&]
         {
-            return por::RolfTourSession::load(directory, game_encounters(), new_wall_art, monsters);
+            return opengold::load_campaign(
+                directory, game,
+                game == GoldBoxGame::pool_of_radiance
+                    ? CampaignData{&game_encounters(), &new_wall_art, monsters}
+                    : CampaignData{});
         });
     // The restart check compares what it loads with the file, dice and all.
     if (!save_read_check_)
@@ -162,6 +215,13 @@ void CharacterCreationView::load_campaign_bytes(const std::string &bytes)
     {
         art_->validate(m.character.appearance());
         (void)replacement->profile(m.id);
+    }
+    // Another game's exploration screen is not this one's: the save's game
+    // opens its own.
+    if (other_game && town)
+    {
+        presentation::detach_child(*this, *town).reset();
+        town = nullptr;
     }
     presentation::NodeOwner<Node> owned;
     if (saved.town && !town)
@@ -190,8 +250,9 @@ void CharacterCreationView::load_campaign_bytes(const std::string &bytes)
     }
     // All decoding, resource loading and character validation completed above.
     end_reincarnation();
-    // A game under other rules makes its characters under them.
-    if (game_rules_of(*replacement) != game_rules_of(*campaign_))
+    // A game under other rules, or of another game, makes its characters
+    // under its own.
+    if (other_game || game_rules_of(*replacement) != game_rules_of(*campaign_))
     {
         creator_ = std::make_unique<CharacterCreator>(
             replacement->character_rules(),
@@ -199,6 +260,7 @@ void CharacterCreationView::load_campaign_bytes(const std::string &bytes)
                 std::chrono::high_resolution_clock::now().time_since_epoch().count()));
     }
     campaign_ = std::move(replacement);
+    choice.keep();
     campaign_defeated_ = false;
     required_node<Window>(*this, "Defeat").hide();
     if (auto *fight = Object::cast_to<CombatView>(get_node_or_null("CampaignCombat")))
@@ -250,8 +312,13 @@ void RolfTourView::restore_campaign(std::shared_ptr<CampaignParty> party,
     session_->encounter_challenge(settings::encounter_challenge());
     session_->difficulty(settings::difficulty());
     session_->set_auto_equip(auto_equip_setting());
-    use_shop_data(*session_);
-    session_->companion_rules(campaign_->character_rules(), game_companions());
+    // OpenGoldBox's shops and companions are Pool of Radiance's, as a new
+    // campaign's are.
+    if (settings::chosen_game() == GoldBoxGame::pool_of_radiance)
+    {
+        use_shop_data(*session_);
+        session_->companion_rules(campaign_->character_rules(), game_companions());
+    }
     shown_revision_ = 0;
     rendered_pose_.reset();
     rendered_sprite_id_ = 999;
@@ -298,7 +365,6 @@ void CharacterCreationView::load_checkpoint_check()
 {
     auto directory = presentation::path_from_godot(
         ProjectSettings::get_singleton()->globalize_path("user://checks/save-check"));
-    const auto assets = campaign_asset_identity(game_directory());
     for (const char *name :
          {"advancement", "interrupted-rest", "cancelled-service", "temple-payment", "inn-rest",
           "rejected-service", "denied-rest", "short-rest-spending", "final"})
@@ -306,7 +372,7 @@ void CharacterCreationView::load_checkpoint_check()
         auto path = directory / (std::string(name) + ".ogs");
         load_campaign(path);
         auto *town = &required_node<RolfTourView>(*this, "CampaignTown");
-        const auto before = encode_campaign(*campaign_, town->saved_session(), assets);
+        const auto before = encoded_campaign(*campaign_, town);
         if (before != read_campaign_file(path))
         {
             throw std::runtime_error(std::string("State changed across process restart: ") + name);
@@ -315,7 +381,7 @@ void CharacterCreationView::load_checkpoint_check()
         {
             campaign_->award_experience(300, "check:bandit:v1");
         }
-        if (encode_campaign(*campaign_, town->saved_session(), assets) != before)
+        if (encoded_campaign(*campaign_, town) != before)
         {
             throw std::runtime_error("Reward duplicated after restart");
         }
@@ -339,7 +405,7 @@ void CharacterCreationView::load_checkpoint_check()
         {
             rejected = true;
         }
-        if (!rejected || encode_campaign(*campaign_, town->saved_session(), assets) != before)
+        if (!rejected || encoded_campaign(*campaign_, town) != before)
         {
             throw std::runtime_error("Rejected load changed live campaign");
         }
@@ -361,7 +427,7 @@ void CharacterCreationView::load_checkpoint_check()
                 .emit_signal("pressed");
             required_node<Button>(*town, "%Camp").emit_signal("pressed");
             required_node<Button>(*rest, "Heal").emit_signal("pressed");
-            if (encode_campaign(*campaign_, town->saved_session(), assets) == before)
+            if (encoded_campaign(*campaign_, town) == before)
             {
                 throw std::runtime_error("Reloaded rest could not heal with its Hit Dice");
             }

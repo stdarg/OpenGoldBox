@@ -7,9 +7,13 @@
 #include <string>
 #include <vector>
 
-// The folder the game keeps campaign saves in, and the name a player gave a
-// save file there (empty for a file that is not one).
-[[nodiscard]] std::filesystem::path campaign_save_directory();
+#include "opengold/gold_box_game.h"
+
+// The folder the game keeps a game's campaign saves in, and the name a player
+// gave a save file there (empty for a file that is not one). Each game has its
+// own, as each original had its SAVE folder; Pool of Radiance's stays where
+// its saves always were.
+[[nodiscard]] std::filesystem::path campaign_save_directory(opengold::GoldBoxGame game);
 [[nodiscard]] std::string campaign_save_name(const std::filesystem::path &file);
 
 // Scene-owned shared save UI. Callbacks remain in the campaign host.
@@ -18,6 +22,7 @@ class SaveSlots : public godot::Window
     GDCLASS(SaveSlots, godot::Window)
   public:
     void _ready() override;
+    // Lists the saves of the game being played, or the review characters.
     void open(bool saving);
     // Shows a failed handler's error; called by presentation::run_guarded.
     void report_failure(const std::exception &failure);

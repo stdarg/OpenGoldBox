@@ -203,8 +203,20 @@ In small steps, each with its check:
       asks for its folder, and the exploration screen plays *Curse*'s
       campaign, its first map named Tilverton (`opengold_godot_startup_menu`
       checks it on screen). Since 2026-11-14 every area of *Curse* has its
-      name ([curse.md](games/curse.md), Area names). Still to come: the title
-      pictures of each game and saves by game.
+      name ([curse.md](games/curse.md), Area names). *Title pictures and saves by game done
+      2026-11-14:* choosing a game shows its own title pictures from its
+      TITLE.DAX, as its original's Intro shows them before its menu
+      (`load_title_screens`): *Pool of Radiance*'s pictures 1 and 2 for 5
+      seconds each; *Curse*'s picture 1 for 5, its name (3) over picture 2
+      for 10, and picture 4 with its sound for 10; *Secret*'s 1, 2, 3 over 2
+      and 4 over 2 again for 15, 50, 50 and 60. A key or click passes a
+      screen, in *Secret* the whole title; the new game's question follows.
+      The credits screens after the pictures and *Pool of Radiance*'s
+      flashing of its second picture wait for the user's decision. Each game
+      keeps its saves in its own folder (*Pool of Radiance*'s where they always
+      were, the others' in `saves/CURSE` and so on), its save and load screens
+      list only its own, a save records its game's files, and loading a save
+      of another game starts that game (`opengold_godot_saves_by_game`).
 2. Walking the maps, with walls, doors and events. *In progress
    (2026-11-12):* every script and map of *Curse* loads with its disk, and
    LOAD PIECES loads the view's walls as the original does. Tilverton's

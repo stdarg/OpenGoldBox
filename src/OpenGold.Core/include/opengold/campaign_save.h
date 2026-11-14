@@ -20,14 +20,17 @@ struct SavedCampaign
 
 // The rules a save was made under: their module and the setting the game chose
 // for them (CharacterRules::game_setting), which the game must load it with.
+// The game the save belongs to comes with them, so loading it can start that
+// game.
 struct CampaignRules
 {
     rules::Identity identity;
     std::string setting;
+    GoldBoxGame game{GoldBoxGame::pool_of_radiance};
 };
 
-// Reads only the save's header and rules; throws as decode_campaign does on a
-// save that is not a campaign or is too old.
+// Reads only the save's header, its rules and game; throws as decode_campaign
+// does on a save that is not a campaign or is too old.
 [[nodiscard]] CampaignRules saved_campaign_rules(std::string_view);
 template <bool Reading> struct SaveCodec;
 [[nodiscard]] std::string campaign_asset_identity(const std::filesystem::path &directory);

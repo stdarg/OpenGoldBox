@@ -133,7 +133,7 @@ void PoolOfRadianceDialog::open()
     saves_.clear();
     members_.clear();
     brought_.clear();
-    const auto directory = campaign_save_directory();
+    const auto directory = campaign_save_directory(pool_of_radiance);
     if (std::filesystem::exists(directory))
     {
         for (const auto &entry : std::filesystem::directory_iterator(directory))

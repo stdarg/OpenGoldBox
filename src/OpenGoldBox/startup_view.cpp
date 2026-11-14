@@ -592,6 +592,8 @@ void StartupView::finish()
 void StartupView::show_game_title()
 {
     const auto game = settings::chosen_game();
+    // The sounds of a game chosen before, whose question was closed.
+    title_sound_.reset();
     if (!game_from_flag_ && !settings::flag("--combat-demo"))
     {
         try
@@ -657,7 +659,12 @@ void StartupView::_process(double delta)
     presentation::run_guarded(*this,
                               [&]
                               {
-                                  if (game_title_ && (title_seconds_left_ -= delta) <= 0)
+                                  if (!game_title_)
+                                  {
+                                      return;
+                                  }
+                                  title_seconds_left_ -= delta;
+                                  if (title_seconds_left_ <= 0)
                                   {
                                       next_title_screen();
                                   }

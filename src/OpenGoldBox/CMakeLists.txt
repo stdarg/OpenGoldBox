@@ -626,6 +626,9 @@ if(OPENGOLD_BUILD_TESTS)
         "Startup menu passed: Exit to desktop" -DARGS=--menu-exit)
     opengold_settings_check(startup_menu_secret startup_menu_tests
         "Startup menu passed: Secret" -DARGS=--secret)
+    # Each game's save and load screens list its own saves, and a save of
+    # another game starts that game. Skipped without Curse's files.
+    opengold_settings_check(saves_by_game saves_by_game_tests "Saves by game passed")
     # Curse's party screen brings characters from a Pool of Radiance save;
     # Pool of Radiance's does not offer it. Skipped without Curse's files.
     foreach(case curse pool)

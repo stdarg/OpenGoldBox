@@ -721,6 +721,11 @@ void original_rules_saves_keep_their_aging()
     const auto saved_rules = saved_campaign_rules(saved);
     check(saved_rules.identity == original::identity() && saved_rules.setting == "add",
           "An original-rules save names its rules and their aging");
+    check(saved_rules.game == GoldBoxGame::pool_of_radiance &&
+              saved_campaign_rules(encode_campaign(*party, nullptr, "fixture-v1",
+                                                   GoldBoxGame::curse_of_the_azure_bonds))
+                      .game == GoldBoxGame::curse_of_the_azure_bonds,
+          "A save's header names its game, so loading it can start that game");
     const auto module = original::rules_module();
     const auto loaded = decode_campaign(saved, *original::character_rules(Aging::add), *module,
                                         "fixture-v1", nullptr);

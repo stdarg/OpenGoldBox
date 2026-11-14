@@ -1,6 +1,7 @@
 #include "godot_nodes.h"
 #include "opengold/diagnostic_log.h"
 #include "opengold/path_text.h"
+#include "application_settings.h"
 #include "localization.h"
 #include "save_slots.h"
 #include "godot_path.h"
@@ -56,10 +57,12 @@ std::string decoded(std::string_view stem)
 }
 } // namespace
 
-std::filesystem::path campaign_save_directory()
+std::filesystem::path campaign_save_directory(opengold::GoldBoxGame game)
 {
-    return presentation::path_from_godot(
+    const auto saves = presentation::path_from_godot(
         ProjectSettings::get_singleton()->globalize_path("user://saves"));
+    return game == opengold::GoldBoxGame::pool_of_radiance ? saves
+                                                           : saves / opengold::game_folder(game);
 }
 
 std::string campaign_save_name(const std::filesystem::path &file)
@@ -103,7 +106,6 @@ void SaveSlots::prepare_dialog()
         .connect("pressed", presentation::guarded(this, &SaveSlots::close));
     connect("close_requested", presentation::guarded(this, &SaveSlots::close));
     hide();
-    directory_ = campaign_save_directory();
 }
 
 void SaveSlots::connect_host(FileAction save, FileAction load)
@@ -135,6 +137,10 @@ void SaveSlots::open(bool saving)
 {
     saving_ = saving;
     confirmed_ = false;
+    if (!character_saves_)
+    {
+        directory_ = campaign_save_directory(settings::chosen_game());
+    }
     pending_.clear();
     paths_.clear();
     set_title(i18n::text(character_saves_ ? (saving ? N_("Save character") : N_("Load character"))
