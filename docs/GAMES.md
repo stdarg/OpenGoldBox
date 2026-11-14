@@ -580,7 +580,13 @@ new decoders.
    lit, the bells rung so Laurellin and Brimwulf are reunited, the plunder
    left alone; then the Hill Giant Steading, where it wins its way to the
    inner steading for Kardal, rescues him and beats the Hill Giant Shaman,
-   and goes through into the Fire Giant Cave. The win is
+   and goes through into the Fire Giant Cave; there it breaks the endless
+   corridor's spell with the ring in the skull, beats Ungleow and the dragons
+   guarding the way, takes the Dragons' Aerie's four keys and beats
+   Modthryth's dracoliches, rests and trains with Elminster in Limbo, beats
+   Thorne and brings back the Horn of Doom, pays its way into Zhentil Keep,
+   answers Manshoon's clerics truly and goes down through the drow
+   stronghold to the temple's halls. The win is
    PROGRAM 1 after Gothmenes falls (darkness.md, The win and the route).
    *Stand-ins:* the test wins the fight with the Vaasans who get through
    Vala's breach (their mages hold the party with Hold Monster), also where
@@ -588,14 +594,14 @@ new decoders.
    monsters afresh, as the original's does (cells 97h to C8h, 2026-11-14), so
    the route meets more of them; in the Temple of Tyr, whose patrols break
    every camp until the bells ring (cell 181h), a hurt party walks on rather
-   than rest. Until the
-   route reaches the win it passes when it plays every beat to the Fire
-   Giant Cave (map 32). *Where it stops (2026-11-14):* at the Fire Giant
-   Cave's entrance (map 32, 3,15); next, the cave (Ungleow's endless
-   corridor and the ring in the skull, darkness.md), the Dragons' Aerie,
-   Thorne's cave, then counter-clockwise round the area map to Dark Phlan. *The area map is drawn (2026-11-14):* the big picture with
-   the party's marker, as the original draws it. Still to come: spell levels 8 and 9
-   and the new spells, starting equipment, skies, combat ground tiles, sound
+   than rest. The route's party
+   carries the game's own starting equipment. Until the route reaches the
+   win it passes when it plays every beat to the drow temple's halls (map
+   68). *Where it stops (2026-11-14):* in the drow temple's halls (map 68,
+   7,15); next, train and rest in Zhentil Keep, then the door at (15,1) to
+   Kalistes' temple, the Web Dimension and on round the area map to Dark
+   Phlan (darkness.md, Where it stops). *The area map is drawn (2026-11-14):* the big picture with
+   the party's marker, as the original draws it. Still to come: Restoration, skies, combat ground tiles, sound
    and music.
 6. *From the startup menu (2026-11-14):* the menu offers *Pools of
    Darkness*, asks for its folder (`DARKNESS`) and the rules, and plays the

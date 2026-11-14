@@ -12835,6 +12835,10 @@ msgid "Who is to be cured?"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Who will train?"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Wholeness of Body"
 msgstr ""
 

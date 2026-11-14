@@ -509,6 +509,54 @@ by what it is offered:
   18 or Knock), so the party leaves it; the door in the north wall at (15,0)
   leads to the Fire Giant Cave (script 32, map 32), where it arrives at
   (3,15).
+- **The Fire Giant Cave (map 32).** Ungleow's bribe (5,12) is left where it
+  lies. The endless corridor along the south wall is script 32's entry
+  before a step (809Ah, the original's vmRun[1], which runs on the square
+  the party stands on before it moves) for event 6, the squares (8,15) and
+  (11,15): unless cell 132h bit 0 is set, the step east from (11,15) puts
+  the party back on (9,15) and west from (8,15) on (10,15), holds the step
+  (cell 3h) and counts in cell 9Eh. OpenGoldBox ran it as the original
+  does already; the earlier tries counted nothing because each beat placed
+  the party on (9,15) and stepped onto (11,15), which only arrives there.
+  The route steps east from (11,15) until the count reaches 12, when the
+  crushed skull asks "DO YOU WANT TO STOP AND COLLECT YOUR THOUGHTS?" (YES)
+  and "DO YOU PICK IT UP?" (YES), and THROW IT AWAY breaks the spell. East
+  and north past the fire giants (13,12), through the room that teleports
+  the party (7,6) and over the rotating floor (12,7), round by the mage's
+  guards (10,4) and the assassin (2,3), it attacks Ungleow in her room
+  (2,5; cell 134h bit 0), beats the red, black and green dragons at (0,2)
+  (cell 133h bit 1) and follows the dragons west from (0,1): the tunnel
+  seals and the party is on the area map at (7,1).
+- **The Dragons' Aerie (map 33, script 33),** north-west at (6,0). The four
+  keys come from the nests in the order the planning aid finds them (cell
+  144h, a bit each): the copper key from the green dragons (12,15), the
+  iron key from the black dragons, attacked (12,1), the silver key from
+  the white dragons Modthryth recruits (3,1) and the steel key from the
+  blue dragons (3,14). USE KEYS at the doors (7,2, facing north; cell 144h
+  FFh), then Modthryth's dracoliches (cell 141h FFh) and the gate (7,0,
+  entered facing west) to Limbo.
+- **Limbo (script 18).** Elminster's REST is PROGRAM 9, which in the
+  original camps and goes on with the script (its EclProgram ends the
+  script only on the area map); here it rests a night and the script goes
+  on, the route choosing REST until the party is whole, its spells chosen
+  after each night. TRAIN opens the hall, which in Darkness names no price
+  ("Who will train?"). MOVE ON, THORNE.
+- **Thorne's cave (map 34),** before the Horn of Doom's third blast: the
+  shortest way the planning aid finds to Thorne (3,7), whom the party will
+  not leave (YES); beaten (cell 152h FFh), he leaves the Horn of Doom. Back
+  to the gate (0,13, westward), and from Limbo (REALMS) Elminster returns
+  the party to the Aerie's gate, the script it came from (cell 9Ah). It
+  walks out by the Aerie's entrance (8,15), declining the cave again.
+- **Zhentil Keep (map 19, script 19),** south-west at (0,4): the party pays
+  the drow's tax and walks north to the courtyard gate (8,7), into the halls
+  of Manshoon's tower (map 48, script 48). The seven clerics (12,12) ask
+  whether it goes on, has entered Zhentil Keep before and how often (once:
+  "1"), and whether it bears Thorne's gift (YES): it passes. The original
+  never lets a true count pass (ORIGINAL-RULES.md, Bugs; fixed). The ten
+  liches find the horn and are beaten, the tax is paid, and the path at
+  (3,8) descends to the drow stronghold.
+- **The Descent to the Depths (map 35, script 35)** to the path down at
+  (7,14) into the drow temple's halls (map 68, script 68), where it stops.
 
 A step's event that sets cell 3h to FFh (stairs, the steading's barred door
 and its gate) holds back the step that ran it, as the original's movement
@@ -520,8 +568,17 @@ One stand-in: the Vaasans who get through, seven mages and twelve
 warriors, hold the party with Hold Monster before it acts and slay the held
 with every dice the route tries, so the test wins that fight. A player
 would gear the party with the cave's treasure and ward it first; the
-route's player takes no treasure but wands. Until the route reaches the win
-it passes when it plays every beat to the Fire Giant Cave (map 32).
+route's player takes no treasure but wands. The route's party carries the
+game's own starting equipment (ORIGINAL-RULES.md, *Pools of Darkness*).
+Until the route reaches the win it passes when it plays every beat to the
+drow temple's halls (map 68).
+
+What the route needed besides (2026-11-14): a Darkness party saves and
+loads, its levels to 40, on the area map (whose script, 17, does not load
+the map the party left) and after a level drain (a character's spell
+choices, training and hall entries replay in the order they were made, as
+a drain may bring it back to a level it has left); a restored machine
+leaves ACTION MENU to the machine, as a new one does.
 
 A fight's result reaches Darkness's scripts as compare flags: they test
 it with IF right after COMBAT, which its PostCombat sets to "equal" when the
@@ -529,29 +586,23 @@ party won or came through and "not equal" when it fled. Until 2026-11-14
 OpenGoldBox left the flags as they were, so a won fight could read as lost
 and move the party back a square (the walk passed all the same).
 
-Where it stops (2026-11-14): at the Fire Giant Cave's entrance (map 32,
-3,15). Next, the cave as the cluebook gives it: Ungleow's bribe (5,12; the
-Ring of Vulnerability in it is not to be worn), the endless corridor (script 32 from 8393h, reached from its entry at
-809Ah for event 6, the squares (8,15) and (11,15)): unless cell 132h bit 0
-is set, a step onto either square sends the party back between (9,15) and
-(10,15) and counts in cell 9Eh; at 12 the crushed skull asks "DO YOU WANT
-TO STOP AND COLLECT YOUR THOUGHTS?" (YES), then "DO YOU PICK IT UP?" (YES),
-and THROW IT AWAY breaks the spell (cell 132h bit 0). Cell 134h is not the
-spell: its bit 0 is set when the party beats Ungleow and her guards in her
-room (event 15, (0,5) and (2,5); script 32 from 9408h, where SIT DOWN and
-agreeing to kill Manshoon set bit 2 instead), and from then on the cave's
-step entry rolls wandering monsters on the higher events. The rest of the
-cave: the two hill giants' cave-in plan, the teleporting rooms (7,7) and
-(15,8), the rotating floors (event 3: travel east once they stop), and the
-red, black and green dragons (0,2) guarding the passage to the Dragons'
-Aerie ("YOU SEE DRAGONS FLYING OFF TO THE NORTHWEST. DO YOU FOLLOW THEM?").
-A first try (2026-11-14) stepped east from (9,15) twelve times and only
-reached (10,15); the steps that count are those onto (11,15) or (8,15). In
-the planning aid a step from (10,15) onto (11,15) stayed there, so check
-that OpenGoldBox runs the entry at 809Ah after each step, as the corridor
-needs. Then the Aerie's four keys, Thorne's cave, and on
-counter-clockwise round the area map (its sites listed by
-`OPENGOLD_DARKNESS_SITES`) to Gothmenes in Dark Phlan.
+Where it stops (2026-11-14): in the drow temple's halls (map 68), arrived at
+(7,15). Next, the door at the map's east edge (15,1), which asks "THE DOOR
+OPENS ONTO A CORRIDOR. DO YOU ENTER?" and leads to script 69: the way there
+runs past the iron golem's room (12,1, event 23, "DO YOU ENTER THE ROOM?")
+and the drow with their grown spider (13,1, event 11). A first try
+(2026-11-14) lost to a band of drow sorcerers, champions and a drider at
+(7,9), the party untrained since Limbo (about 1,900,000 experience, enough
+for a level each) and not rested; Zhentil Keep's training hall (10 gems)
+and the tavern (rest) come first, and the cluebook's Traned and Silk help
+below. Then Kalistes' temple and the Web Dimension, the Drow Testing
+Ground and Kalistes' Parlor, Myth Drannor and the Red Tower (scripts 66,
+70, 67), Moander (52, 53, 55), Mulmaster and the beholders' cave, Dark
+Phlan (64) and the Palace of Gothmenes (65, 74, 73), whose win (75) is in
+place. Scripts and the scripts they go on to (`opengold_scripts --inspect
+DARKNESS ECL1.DAX N`, NEW ECL): 19 to 48; 48 to 35 and 49; 35 to 41, 68,
+69; 68 to 69 and 71; 69 to 72 and 18; 66 and 70 from the area map; 70 to
+67 and 76; 67 to 75 and 77; 64 to 65 and 74; 65 to 73, 74, 75.
 `OPENGOLD_ROUTE_BEATS` and `OPENGOLD_SECRET_FIND` plan each step: the
 planning aid answers NO, so it never takes stairs a question offers; find
 the stairs' squares by their walls of type 7 and step them in a beat. A
