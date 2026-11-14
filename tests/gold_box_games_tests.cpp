@@ -3254,7 +3254,9 @@ const std::vector<RouteBeat> &gateway_route()
         route.push_back(step_beat(24, 12, 1, D::east, {"YES"}));
         // Ascore: east through the ruins to Vaalgamon's gate, which the four
         // statuettes open past its giant spiders, and on to the passage where
-        // Vaalgamon waits.
+        // Vaalgamon waits. The party does not rest there: OpenGoldBox's camps
+        // just inside the gate are broken by its undead night after night,
+        // where the cluebook calls them safe once the spiders are dead.
         walk_passages(
             route, 20,
             {{0, 7, D::east},    {1, 7, D::east},    {2, 7, D::north},   {2, 6, D::east},
@@ -3266,8 +3268,8 @@ const std::vector<RouteBeat> &gateway_route()
              {10, 15, D::east}},
             true);
         {
-            // Rested first, the party takes Vaalgamon's challenge, through the
-            // maze of fights, each left as soon as a member runs off its north
+            // The party takes Vaalgamon's challenge, through the maze of
+            // fights, each left as soon as a member runs off its north
             // side (or won outright, which leaves the party facing north as it
             // came, so the same way), the fourth past
             // Vaalgamon's own room, out to the plaza of the pyramids, where the
@@ -3275,7 +3277,6 @@ const std::vector<RouteBeat> &gateway_route()
             // the route stops on its closing words.
             auto finale = step_beat(20, 11, 15, D::east, {"MOVE AHEAD", "stop:Continue"});
             finale.maze_exits = {0, 0, 0, 0};
-            finale.rest_first = true;
             route.push_back(finale);
         }
         return route;
