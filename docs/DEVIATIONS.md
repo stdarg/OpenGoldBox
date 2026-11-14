@@ -463,6 +463,15 @@ in the game: answering YES at a hall lists its services in the dialogue
   won." is shown (the win, with its film when one is there) until the player
   goes on, and the game then goes on as the original's does
   ([secret.md](games/secret.md), The ending).
+- **Treasures of the Savage Frontier has a win** (2026-11-14, as *Secret*'s).
+  The original has no ending of its own: script 38 tells of Freezefire's
+  fall in its lair (it sets cell 25Ch to 1), the dwarves carrying the party to
+  Icewolf, the feast, Luskan's withdrawal and Waterdeep's honors, and the game
+  goes on, on the overland outside Waterdeep. OpenGoldBox wins the game as
+  that event ends: its own closing words are followed by "You have won." (the
+  win, with its film when one is there) until the player goes on, and the game
+  then goes on as the original's does ([treasure.md](games/treasure.md), The
+  ending).
 - **Startup has menus, and every title takes a click** (2026-11-14, the
   user's design). The originals start with their title pictures and go
   straight to their party creation menu; *Pool of Radiance* and *Curse* take

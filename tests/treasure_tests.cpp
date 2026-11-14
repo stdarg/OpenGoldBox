@@ -134,6 +134,27 @@ void the_opening_reaches_the_fortress()
     check(colours(view) > 8, "The 3D view shows the fortress's walls");
     check(session.explore(ExplorationCommand::turn_left), "The party turns");
     check(session.observe_view().rgba != view.rgba, "Turning shows another view");
+
+    // Treasures has no ending of its own: the event in which Freezefire dies
+    // (script 38 sets cell 25Ch to 1) wins the game as it ends. Here the cell
+    // is set and a look around the fortress taken as that event.
+    using opengold::test::TourAccess;
+    TourAccess::set_variable(session, opengold::por::EclAddress{0x25C}, 1);
+    check(session.explore(ExplorationCommand::look), "The party looks around");
+    TourAccess::soul_freed_in_event(session);
+    settle();
+    for (int screen = 0; screen < 6 && session.snapshot().phase == TourPhase::awaiting_continue &&
+                         !session.snapshot().game_won;
+         ++screen)
+    {
+        check(session.choose(session.snapshot().continue_ticket, 0), "The words go on");
+        settle();
+    }
+    check(session.snapshot().game_won && session.snapshot().dialogue == "You have won.",
+          "Freezefire's fall wins the game: " + session.snapshot().dialogue);
+    check(session.continue_dialogue(session.snapshot().continue_ticket) &&
+              !session.snapshot().game_won,
+          "The game goes on after its win");
 }
 
 // The overland: script 51 sets the overland cell (40h) and loads the map its

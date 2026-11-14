@@ -201,3 +201,14 @@ Still to come: the records that only set colors for the picture shown, the overl
 cycling, the music and sounds other than the footstep, PROGRAM 3 to 5
 (the luck readings, the Fix menu, the party's repair), the romances, and the
 route.
+
+## The ending
+
+*Treasures* has no ending of its own. In Freezefire's lair (script 38, Ice
+Peak's fourth stage) the party fights the black-robed men and the dragon
+Freezefire; as the dragon dies the script sets cell 25Ch to 1, tells of the
+dwarves carrying the party to Icewolf, the feast, Luskan's withdrawal and
+Waterdeep's honors, and leaves the party on the overland outside Waterdeep
+(map 54), where the game goes on. OpenGoldBox wins the game as that event
+ends: "You have won." follows the script's closing words (`game_won`) until
+the player goes on ([DEVIATIONS.md](../DEVIATIONS.md)).

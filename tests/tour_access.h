@@ -26,7 +26,7 @@ struct TourAccess
     // set while the party is idle, and this forgets it was set before.
     static void soul_freed_in_event(por::RolfTourSession &town)
     {
-        town.soul_at_event_start_ = 0;
+        town.won_cell_at_event_start_ = 0;
     }
 
     // Sets a script string, such as the training hall's class word.

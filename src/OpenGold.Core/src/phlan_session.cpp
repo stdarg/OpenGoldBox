@@ -271,6 +271,25 @@ constexpr EclAddress cadorna_box{0x4AC8}, cadorna_payment{0x4AB8};
 // as the gem holding the soul shatters; New Verdigris's mayor sets it to 255
 // once he has thanked the party (a cell of Secret's own, not translated).
 constexpr EclAddress secret_soul_freed{0x4CD9};
+// Treasures of the Savage Frontier's cell for Freezefire: script 38 sets it
+// to 1 as the dragon dies in its lair, before the party is carried to
+// Icewolf and honored in Waterdeep.
+constexpr EclAddress treasures_freezefire_slain{0x25C};
+
+// The cell whose change from 0 to 1 wins a game with no ending of its own
+// (docs/DEVIATIONS.md): the event that sets it wins the game as it ends.
+std::optional<EclAddress> game_won_cell(GoldBoxGame game)
+{
+    switch (game)
+    {
+    case GoldBoxGame::secret_of_the_silver_blades:
+        return secret_soul_freed;
+    case GoldBoxGame::treasures_of_the_savage_frontier:
+        return treasures_freezefire_slain;
+    default:
+        return std::nullopt;
+    }
+}
 
 // The minute of the day on the campaign clock, which starts at noon.
 std::uint64_t clock_minute_of_day(std::uint64_t minutes)
@@ -912,9 +931,9 @@ bool RolfTourSession::move_party(ExplorationCommand command)
 
 void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_t> entry)
 {
-    if (game() == GoldBoxGame::secret_of_the_silver_blades)
+    if (const auto won = game_won_cell(game()))
     {
-        soul_at_event_start_ = machine_.variable(secret_soul_freed);
+        won_cell_at_event_start_ = machine_.variable(*won);
     }
     // Loot left unclaimed until the party had room is named with this event.
     snapshot_.loot_taken.clear();
@@ -2102,16 +2121,18 @@ void RolfTourSession::finish_event()
         }
         return;
     }
-    // Secret has no ending of its own: the scripts tell of the soul's
-    // freeing and the game goes on. The event that frees Eldamar's soul wins
-    // the game as it ends (docs/DEVIATIONS.md), and the win is shown until the
-    // player goes on.
-    if (game() == GoldBoxGame::secret_of_the_silver_blades && soul_at_event_start_ == 0 &&
-        machine_.variable(secret_soul_freed) == 1)
+    // Secret and Treasures have no ending of their own: the scripts tell of
+    // the soul's freeing or of Freezefire's fall and the game goes on. The
+    // event that does it wins the game as it ends (docs/DEVIATIONS.md), and the
+    // win is shown until the player goes on.
+    if (const auto won = game_won_cell(game());
+        won && won_cell_at_event_start_ == 0 && machine_.variable(*won) == 1)
     {
-        soul_at_event_start_ = 1;
+        won_cell_at_event_start_ = 1;
         snapshot_.game_won = true;
-        notice("Eldamar's soul is free, and the Dreadlord is no more. You have won.");
+        notice(game() == GoldBoxGame::secret_of_the_silver_blades
+                   ? "Eldamar's soul is free, and the Dreadlord is no more. You have won."
+                   : "You have won.");
         return;
     }
     snapshot_.phase = TourPhase::completed;
