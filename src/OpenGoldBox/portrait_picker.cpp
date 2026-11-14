@@ -123,7 +123,8 @@ void CharacterCreationView::refresh_portraits()
         if (p.filename == current)
         {
             required_node<Control>(*this, "PortraitPreview")
-                .call("show_portrait", portraits_->file_path(p.filename), caption(p));
+                .call("show_portrait", portraits_->file_path(p.filename), caption(p),
+                      portraits_->texture(creator_->appearance(), creator_->draft()));
         }
         if (!matches("PortraitGender", p.gender) || !matches("PortraitClass", p.klass) ||
             !matches("PortraitRace", p.race))

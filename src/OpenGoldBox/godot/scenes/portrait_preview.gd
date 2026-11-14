@@ -5,12 +5,12 @@ var _file := ""
 var _caption := ""
 
 
-func show_portrait(file: String, caption: String) -> void:
+# The portrait catalog's picture of the file, which it has already read: the
+# large source file is not read a second time.
+func show_portrait(file: String, caption: String, picture: Texture2D) -> void:
     _file = file
     _caption = caption
-    # A file in the new art's folder, read as it is rather than imported.
-    var image := Image.load_from_file(file)
-    texture = null if image == null else ImageTexture.create_from_image(image)
+    texture = picture
 
 
 # A picture without a file to zoom into: an original head-and-body portrait.

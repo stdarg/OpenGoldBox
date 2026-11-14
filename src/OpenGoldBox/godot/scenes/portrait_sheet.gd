@@ -10,8 +10,8 @@ var enabled := true
 var _files := PackedStringArray()
 var _captions := PackedStringArray()
 var _selected := -1
+# A file's thumbnail, or null for a file that cannot be read.
 var _thumbnails := {}
-var _pending: Array[String] = []
 
 
 func show_portraits(files: PackedStringArray, captions: PackedStringArray, selected: int,
@@ -20,10 +20,6 @@ func show_portraits(files: PackedStringArray, captions: PackedStringArray, selec
     _captions = captions
     _selected = selected
     enabled = choosable
-    _pending.clear()
-    for file in files:
-        if not _thumbnails.has(file):
-            _pending.append(file)
     _fit_height()
     _reveal.call_deferred()
     queue_redraw()
@@ -67,22 +63,38 @@ func _notification(what: int) -> void:
         grab_focus.call_deferred()
 
 
-# Source portraits are large, so thumbnails are made a few per frame, and
-# only while the sheet is shown: the other creation pages would lag.
+# Source portraits are large, so thumbnails are made a few per frame, only
+# for the rows in view and only while the sheet is shown: reading every one of
+# a thousand portraits would keep the game busy for a minute.
 func _process(_delta: float) -> void:
-    if _pending.is_empty() or not is_visible_in_tree():
+    if not is_visible_in_tree():
         return
-    for made in 8:
-        if _pending.is_empty():
-            break
-        var file: String = _pending.pop_front()
+    var made := 0
+    for index in _shown_indices():
+        var file := _files[index]
+        if _thumbnails.has(file):
+            continue
         # A file in the new art's folder, read as it is rather than imported.
         var image := Image.load_from_file(file)
-        if image == null:
-            continue
-        image.resize(_cell(), _cell(), Image.INTERPOLATE_LANCZOS)
-        _thumbnails[file] = ImageTexture.create_from_image(image)
-    queue_redraw()
+        if image != null:
+            image.resize(_cell(), _cell(), Image.INTERPOLATE_LANCZOS)
+        _thumbnails[file] = null if image == null else ImageTexture.create_from_image(image)
+        made += 1
+        if made == 8:
+            break
+    if made > 0:
+        queue_redraw()
+
+
+# The portraits on the rows the enclosing scroll container shows.
+func _shown_indices() -> Array:
+    var scroll := get_parent() as ScrollContainer
+    var top := 0.0 if scroll == null else float(scroll.scroll_vertical)
+    var height := size.y if scroll == null else scroll.size.y
+    var step := _cell() + _gap()
+    var first_row := int(top / step)
+    var last_row := int((top + height) / step)
+    return range(first_row * _columns(), mini(_files.size(), (last_row + 1) * _columns()))
 
 
 func _rect(index: int) -> Rect2:

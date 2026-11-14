@@ -4,6 +4,7 @@
 #include "opengold/character_rules.h"
 #include <godot_cpp/classes/image_texture.hpp>
 #include <cstdint>
+#include <list>
 #include <map>
 #include <optional>
 #include <set>
@@ -18,6 +19,14 @@
 class PortraitCatalog
 {
   public:
+    PortraitCatalog() = default;
+    // Move-only: the kept textures point into the catalog's own use order.
+    PortraitCatalog(const PortraitCatalog &) = delete;
+    PortraitCatalog &operator=(const PortraitCatalog &) = delete;
+    PortraitCatalog(PortraitCatalog &&) noexcept = default;
+    PortraitCatalog &operator=(PortraitCatalog &&) noexcept = default;
+    ~PortraitCatalog() = default;
+
     struct Portrait
     {
         std::string filename, gender, klass, race;
@@ -58,7 +67,8 @@ class PortraitCatalog
     // the catalog lacks it.
     [[nodiscard]] std::string shown_file(const opengold::por::CharacterAppearance &appearance,
                                          const opengold::rules::CharacterDraft &draft) const;
-    // The portrait the character shows. Each texture is loaded once and kept.
+    // The portrait the character shows. The most recently used textures are
+    // kept, so a picture shown again is not read again.
     [[nodiscard]] godot::Ref<godot::ImageTexture>
     texture(const opengold::por::CharacterAppearance &appearance,
             const opengold::rules::CharacterDraft &draft);
@@ -72,10 +82,23 @@ class PortraitCatalog
   private:
     // The new portrait's texture; null, and logged once, when it cannot load.
     [[nodiscard]] godot::Ref<godot::ImageTexture> new_texture(const std::string &filename);
+    // A kept texture, now the most recently used; null when it is not kept.
+    [[nodiscard]] godot::Ref<godot::ImageTexture> kept(const std::string &name);
+    // Keeps a texture, forgetting the least recently used beyond the limit:
+    // a new portrait is a large picture, and a player may look at hundreds.
+    void keep(const std::string &name, const godot::Ref<godot::ImageTexture> &texture);
+
+    struct KeptTexture
+    {
+        godot::Ref<godot::ImageTexture> texture;
+        std::list<std::string>::iterator use;
+    };
 
     godot::String folder_;
     std::vector<Portrait> portraits_;
-    std::map<std::string, godot::Ref<godot::ImageTexture>> textures_;
+    std::map<std::string, KeptTexture> textures_;
+    // The kept textures' names, the most recently used first.
+    std::list<std::string> recent_uses_;
     std::set<std::string> unloadable_;
     std::optional<opengold::por::CharacterArt> original_art_;
 };

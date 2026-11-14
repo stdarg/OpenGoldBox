@@ -189,9 +189,9 @@ Ref<ImageTexture> PortraitCatalog::texture(const opengold::por::CharacterAppeara
 
 Ref<ImageTexture> PortraitCatalog::new_texture(const std::string &filename)
 {
-    if (const auto found = textures_.find(filename); found != textures_.end())
+    if (auto texture = kept(filename); texture.is_valid())
     {
-        return found->second;
+        return texture;
     }
     if (unloadable_.contains(filename))
     {
@@ -208,7 +208,7 @@ Ref<ImageTexture> PortraitCatalog::new_texture(const std::string &filename)
     auto result = ImageTexture::create_from_image(image);
     // Named for its file, so a check can tell which portrait a page draws.
     result->set_name(gs(filename));
-    textures_.emplace(filename, result);
+    keep(filename, result);
     return result;
 }
 
@@ -239,12 +239,36 @@ Ref<ImageTexture> PortraitCatalog::original(const opengold::por::CharacterAppear
     }
     const auto name = "original-head-" + std::to_string(shown.portrait_head) + "-body-" +
                       std::to_string(shown.portrait_body);
-    if (const auto found = textures_.find(name); found != textures_.end())
+    if (auto texture = kept(name); texture.is_valid())
     {
-        return found->second;
+        return texture;
     }
     auto result = presentation::image_texture(art.portrait(shown));
     result->set_name(gs(name));
-    textures_.emplace(name, result);
+    keep(name, result);
     return result;
+}
+
+Ref<ImageTexture> PortraitCatalog::kept(const std::string &name)
+{
+    const auto found = textures_.find(name);
+    if (found == textures_.end())
+    {
+        return {};
+    }
+    recent_uses_.splice(recent_uses_.begin(), recent_uses_, found->second.use);
+    return found->second.texture;
+}
+
+void PortraitCatalog::keep(const std::string &name, const Ref<ImageTexture> &texture)
+{
+    // Enough for a party of eight, the pool's page and the creation preview.
+    constexpr std::size_t kept_limit = 24;
+    recent_uses_.push_front(name);
+    textures_.insert_or_assign(name, KeptTexture{texture, recent_uses_.begin()});
+    if (recent_uses_.size() > kept_limit)
+    {
+        textures_.erase(recent_uses_.back());
+        recent_uses_.pop_back();
+    }
 }
