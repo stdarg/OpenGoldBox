@@ -3,15 +3,18 @@ extends SceneTree
 # The startup menu (the user's design, 2026-11-12): after the language, a modal
 # dialog with Options, a button for each game and Exit to desktop. Run by
 # tests/settings_check.cmake; --menu-capture=DIR saves a picture of it.
-# Curse's button is checked when OPENGOLD_GOLDBOX_DIR holds its files.
+# Curse's button is checked when OPENGOLD_GOLDBOX_DIR holds its files, and
+# with --secret Secret of the Silver Blades' button.
 
 var captures := ""
 var exit_case := false
+var secret_case := false
 
 func _initialize() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--menu-capture="): captures = arg.trim_prefix("--menu-capture=")
 		if arg == "--menu-exit": exit_case = true
+		if arg == "--secret": secret_case = true
 	call_deferred("run_checks")
 
 func require(condition: bool, message: String) -> void:
@@ -77,7 +80,7 @@ func run_checks() -> void:
 		if child is Button: labels.append(child.text)
 		else:
 			for game in child.get_children(): labels.append(game.text)
-	require(labels == ["Options", "Pool of Radiance", "Curse of the Azure Bonds", "Exit to desktop"],
+	require(labels == ["Options", "Pool of Radiance", "Curse of the Azure Bonds", "Secret of the Silver Blades", "Exit to desktop"],
 		"The menu offers Options, each game and Exit to desktop: " + str(labels))
 	await capture("startup")
 	if exit_case:
@@ -96,6 +99,9 @@ func run_checks() -> void:
 	options.get_node("Options/Close").pressed.emit()
 	await settle()
 	require(menu.visible and current_scene.get_node_or_null("Options") == null, "Closing Options returns to the menu")
+	if secret_case:
+		await check_secret(menu)
+		return
 	var curse := OS.get_environment("OPENGOLD_GOLDBOX_DIR").path_join("CURSE")
 	if OS.get_environment("OPENGOLD_GOLDBOX_DIR").is_empty() or not FileAccess.file_exists(curse.path_join("TILES.DAX")):
 		print("Startup menu passed: Options and back (Curse's files are not here).")
@@ -134,9 +140,61 @@ func run_checks() -> void:
 		var shown: RichTextLabel = current_scene.find_child("Dialogue", true, false)
 		print("Exploration shows: ", shown.get_parsed_text() if shown else "no dialogue", " in ", current_scene.name if current_scene else "no scene")
 	require(dialogue.contains("YOU AWAKEN IN A SMALL ROOM"), "Curse's opening must play on the exploration screen")
+	var location: String = current_scene.get_node("%Location").text
+	require(location.begins_with("Tilverton / "), "The exploration screen names Curse's first map: " + location)
 	if not captures.is_empty():
 		RenderingServer.force_draw(false)
 		await process_frame
 		root.get_texture().get_image().save_png(captures.path_join("curse-exploration.png"))
 	print("Startup menu passed: Options and back, Curse's folder found, the party screen and Curse's opening.")
+	quit(0)
+
+# Secret of the Silver Blades from the menu: its folder found, a fighter made
+# under the original rules and taken exploring, and the opening vision played
+# on to New Verdigris, whose name the exploration screen shows.
+func check_secret(menu: Window) -> void:
+	var secret := OS.get_environment("OPENGOLD_GOLDBOX_DIR").path_join("SECRET")
+	if OS.get_environment("OPENGOLD_GOLDBOX_DIR").is_empty() or not FileAccess.file_exists(secret.path_join("GEO1.DAX")):
+		print("Skipped: Secret's files are not here.")
+		quit(0)
+		return
+	menu.get_node("Buttons/Games/SECRET").pressed.emit()
+	await settle()
+	await answer_rules(true)
+	require(current_scene != null and current_scene.name == "CharacterCreation", "Secret's button must lead on to the party")
+	var name: LineEdit = current_scene.get_node("Name")
+	name.text = "Vala"
+	name.text_changed.emit(name.text)
+	await settle()
+	await choose("Human")
+	await press("Next")
+	await choose("Fighter")
+	await press("Next")
+	await choose("Lawful Good")
+	await press("Next")
+	await press("Roll")
+	for page in range(3): await press("Next")
+	await press("AddParty")
+	require(current_scene.get_node("PartyPanel/Roster").item_count == 1, "The fighter joins the party")
+	await press("PartyPanel/ActionRow2/Explore")
+	var town: Control = current_scene.get_node("CampaignTown")
+	var vision := ""
+	var location := ""
+	for wait in range(600):
+		await process_frame
+		var dialogue: String = town.find_child("Dialogue", true, false).get_parsed_text()
+		if dialogue.contains("GLACIER"): vision = dialogue
+		location = town.get_node("%Location").text
+		if location.begins_with("New Verdigris / "): break
+		var continue_button: Button = town.get_node("%Continue")
+		if continue_button.visible and not continue_button.disabled:
+			continue_button.pressed.emit()
+			await settle()
+	require(not vision.is_empty(), "Secret's opening vision must play on the exploration screen")
+	require(location.begins_with("New Verdigris / "), "The vision ends in New Verdigris, named on the screen: " + location)
+	if not captures.is_empty():
+		RenderingServer.force_draw(false)
+		await process_frame
+		root.get_texture().get_image().save_png(captures.path_join("secret-exploration.png"))
+	print("Startup menu passed: Secret's folder found, a party made under the original rules, its vision and New Verdigris.")
 	quit(0)

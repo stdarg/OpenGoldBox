@@ -70,15 +70,113 @@ constexpr unsigned original_fireball_sound = 11;
 constexpr std::array<const char *, 4> direction_name{N_("North"), N_("East"), N_("South"),
                                                      N_("West")};
 
-// A Curse of the Azure Bonds area's name: map 1 is Tilverton, as its
-// innkeeper says; an area not named yet shows the game's title.
-[[nodiscard]] const char *curse_area_name(unsigned area_id)
+// Curse's wilderness scripts keep the town the party is at in this cell; the
+// dungeon and the ruins that several towns share read it to tell them apart.
+constexpr EclAddress curse_town_cell{0x4C9B};
+
+// Which town's dungeon map 53 is: Shadowdale's (town 1), Ashabenford's (2) or
+// Essembra's (8), as its script's opening tells them apart.
+[[nodiscard]] const char *curse_town_dungeon(std::uint16_t town)
 {
-    if (area_id == 1)
+    if (town < 2)
     {
-        return N_("Tilverton");
+        return N_("Shadowdale Dungeon");
     }
-    return N_("Curse of the Azure Bonds");
+    return town == 2 ? N_("Ashabenford Dungeon") : N_("Essembra Dungeon");
+}
+
+// A Curse of the Azure Bonds area's name, as the cluebook's maps and the
+// scripts' own words name it. Area 0 is the wilderness, which has no map. A
+// map that holds two places is named by the script that plays it, and a map
+// several towns share by the town.
+[[nodiscard]] const char *curse_area_name(const TourSnapshot &s, const RolfTourSession &session)
+{
+    switch (s.area_id)
+    {
+    case 0:
+        return N_("Overland");
+    case 1:
+        return s.script_id == 2 ? N_("Tilverton Thieves' Guild") : N_("Tilverton");
+    case 3:
+        return N_("Tilverton Sewers");
+    case 4:
+        return N_("Fire Knife Hideout");
+    case 16:
+        return N_("Yulash");
+    case 17:
+        return N_("Pit of Moander");
+    case 21:
+        return session.script_variable(curse_town_cell) == 5 ? N_("Voonlar Ruins")
+                                                             : N_("Phlan Ruins");
+    case 32:
+        return s.script_id == 33 ? N_("Shrine of Bane") : N_("Zhentil Keep");
+    case 33:
+        return N_("Cave of the Beholder");
+    case 37:
+        return N_("Oxam's Tower");
+    case 50:
+        return s.script_id == 50 ? N_("Cave of the Dracolich") : N_("Village of Haptooth");
+    case 51:
+        return N_("Wizard's Tower");
+    case 53:
+        return curse_town_dungeon(session.script_variable(curse_town_cell));
+    case 64:
+        return N_("Burial Glen");
+    case 66:
+        return N_("Ruins of Myth Drannor");
+    case 67:
+        return N_("Grand Ruined Temple");
+    case 69:
+        return session.script_variable(curse_town_cell) == 7 ? N_("Teshwave Ruins")
+                                                             : N_("Hillsfar Ruins");
+    default:
+        return N_("Curse of the Azure Bonds");
+    }
+}
+
+// A Secret of the Silver Blades area's name, as the cluebook's maps and the
+// scripts' own words name it. Area 0 is the opening vision, which has no map.
+[[nodiscard]] const char *secret_area_name(unsigned area_id)
+{
+    switch (area_id)
+    {
+    case 16:
+        return N_("New Verdigris");
+    case 32:
+        return N_("Ruins of Old Verdigris");
+    case 33:
+        return N_("Well of Knowledge");
+    case 34:
+        return N_("Black Circle Headquarters");
+    // Mine levels 1 to 8, then levels 9 and 10 with the way to the temple.
+    case 48:
+    case 49:
+        return N_("Mines of Verdigris");
+    case 50:
+        return N_("Temple of Tyr");
+    case 64:
+        return N_("Dungeon, levels 10 to 7");
+    case 65:
+        return N_("Dungeon, levels 6 to 3");
+    case 66:
+        return N_("Dungeon, levels 2 and 1");
+    case 68:
+        return N_("Drider Base");
+    case 80:
+        return N_("Western Crevasses");
+    case 81:
+        return N_("Frost Giant Village");
+    case 82:
+        return N_("Eastern Crevasses");
+    case 96:
+        return N_("Castle Entrance");
+    case 97:
+        return N_("Middle Level of the Castle");
+    case 98:
+        return N_("Dreadlord's Sanctum");
+    default:
+        return N_("Secret of the Silver Blades");
+    }
 }
 
 // The areas the session can enter: the town (0), the Slums (20), Kuto's
@@ -169,12 +267,21 @@ constexpr std::array<const char *, 4> direction_name{N_("North"), N_("East"), N_
     return N_("New Phlan");
 }
 
-// The name of an area of the game being played.
-[[nodiscard]] const char *place_name(unsigned area_id)
+// The name of the area the party is in, in the game being played; with no
+// session, the game's first area.
+[[nodiscard]] const char *place_name(const std::optional<RolfTourSession> &session)
 {
-    return settings::chosen_game() == opengold::GoldBoxGame::pool_of_radiance
-               ? district_name(area_id)
-               : curse_area_name(area_id);
+    static const TourSnapshot none;
+    const TourSnapshot &s = session ? session->snapshot() : none;
+    switch (settings::chosen_game())
+    {
+    case opengold::GoldBoxGame::pool_of_radiance:
+        return district_name(s.area_id);
+    case opengold::GoldBoxGame::secret_of_the_silver_blades:
+        return secret_area_name(s.area_id);
+    default:
+        return session ? curse_area_name(s, *session) : N_("Curse of the Azure Bonds");
+    }
 }
 
 // A Teleport destination's name: its place, and which of the place's maps.
@@ -2503,7 +2610,7 @@ void RolfTourView::refresh()
     const bool shopping = loaded && (s.phase == TourPhase::shopping || treasure);
     const bool answer = loaded && s.phase == TourPhase::awaiting_input;
     const bool multiple = waiting && s.choices.size() > 1;
-    const String district = i18n::text(place_name(s.area_id));
+    const String district = i18n::text(place_name(session_));
     // While a shopkeeper greets or serves the party, the shopkeeper's name
     // and the shop's type stand over the portrait.
     const auto *shop = loaded ? opengold::phlan_shop_serving(s, session_->shops()) : nullptr;
@@ -2534,7 +2641,7 @@ void RolfTourView::refresh()
     required_node<Label>(*this, "%Speaker")
         .set_text(i18n::text(faulted           ? N_("Unable to continue")
                              : shopping        ? N_("Shop / select an item")
-                             : s.tour_finished ? place_name(s.area_id)
+                             : s.tour_finished ? place_name(session_)
                                                : N_("Rolf  /  Council guide")));
     if (treasure && campaign_ && campaign_->selected())
     {
@@ -3557,7 +3664,7 @@ void RolfTourView::check_district_labels(const TourSnapshot &s)
     {
         return;
     }
-    const String district = i18n::text(place_name(s.area_id));
+    const String district = i18n::text(place_name(session_));
     const String location = required_node<Label>(*this, "%Location").get_text();
     const String map_title = required_node<Label>(*this, "%MapTitle").get_text();
     const String speaker = required_node<Label>(*this, "%Speaker").get_text();

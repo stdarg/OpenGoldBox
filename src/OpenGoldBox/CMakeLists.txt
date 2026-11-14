@@ -624,6 +624,8 @@ if(OPENGOLD_BUILD_TESTS)
     opengold_settings_check(startup_menu startup_menu_tests "Startup menu passed: Options")
     opengold_settings_check(startup_menu_exit startup_menu_tests
         "Startup menu passed: Exit to desktop" -DARGS=--menu-exit)
+    opengold_settings_check(startup_menu_secret startup_menu_tests
+        "Startup menu passed: Secret" -DARGS=--secret)
     # Curse's party screen brings characters from a Pool of Radiance save;
     # Pool of Radiance's does not offer it. Skipped without Curse's files.
     foreach(case curse pool)

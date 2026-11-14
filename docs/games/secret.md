@@ -160,6 +160,26 @@ What *Secret*'s scripts need beyond *Curse*'s (found by walking every map):
 - The colour-selector cells C059h and C05Fh (and C05Ah, which the original
   ignores) are stored with no effect yet.
 
+## Area names
+
+As in *Curse*, the game shows no area's name, and the exploration screen
+names each map as the cluebook's maps and the scripts' words do. Area 0, the
+vision, which has no map, shows the game's title. The mine's wheel lift
+(script 48) plays levels 1 to 4 with script 49 and 5 to 8 with script 50, both
+on map 48, and levels 9 and 10 and the way to the temple with script 51 on
+map 49, so both maps are the Mines of Verdigris.
+
+| Map | Name | Map | Name |
+|---|---|---|---|
+| 16 | New Verdigris | 66 | Dungeon, levels 2 and 1 |
+| 32 | Ruins of Old Verdigris | 68 | Drider Base |
+| 33 | Well of Knowledge | 80 | Western Crevasses |
+| 34 | Black Circle Headquarters | 81 | Frost Giant Village |
+| 48, 49 | Mines of Verdigris | 82 | Eastern Crevasses |
+| 50 | Temple of Tyr | 96 | Castle Entrance |
+| 64 | Dungeon, levels 10 to 7 | 97 | Middle Level of the Castle |
+| 65 | Dungeon, levels 6 to 3 | 98 | Dreadlord's Sanctum |
+
 ## Sound effects
 
 The PC speaker's driver is *Curse*'s, found the same way, with 13 songs. Its

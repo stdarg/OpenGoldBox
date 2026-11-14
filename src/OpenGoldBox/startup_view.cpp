@@ -74,9 +74,10 @@ struct MenuGame
 };
 
 // The games the startup menu offers, in release order (docs/GAMES.md).
-constexpr std::array<MenuGame, 2> playable_games{
+constexpr std::array<MenuGame, 3> playable_games{
     {{opengold::GoldBoxGame::pool_of_radiance, N_("Pool of Radiance")},
-     {opengold::GoldBoxGame::curse_of_the_azure_bonds, N_("Curse of the Azure Bonds")}}};
+     {opengold::GoldBoxGame::curse_of_the_azure_bonds, N_("Curse of the Azure Bonds")},
+     {opengold::GoldBoxGame::secret_of_the_silver_blades, N_("Secret of the Silver Blades")}}};
 
 const char *menu_title(opengold::GoldBoxGame game)
 {
@@ -120,7 +121,7 @@ void StartupView::show_game_menu()
             games->add_child(button);
         }
     }
-    // --game=POOLRAD (or CURSE) picks the game without the menu, for the
+    // --game=POOLRAD (or CURSE, or SECRET) picks the game without the menu, for the
     // packaged game's own checks.
     auto *os = OS::get_singleton(); // borrowed engine singleton
     for (const auto &arguments : {os->get_cmdline_args(), os->get_cmdline_user_args()})

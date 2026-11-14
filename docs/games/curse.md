@@ -168,6 +168,31 @@ takes banks 1, 2 and 3 for script 1, and 1, 2 and 4 for script 2).
 `campaign_session.cpp` reads every script's LOAD FILES and LOAD PIECES, loads
 each map it names and every wall set, and LOAD PIECES switches between them.
 
+## Area names
+
+The game shows no area's name; the exploration screen names each map as the
+cluebook's maps and the scripts' own words do. Area 0, which has no map, is
+the Overland. Two maps hold two places each, told apart by the script that
+plays them: map 1 is Tilverton, or its Thieves' Guild for script 2, and map 32
+Zhentil Keep, or the Shrine of Bane for script 33. Map 50 is the Village of
+Haptooth, or the Cave of the Dracolich for script 50. Three maps serve several
+towns: the wilderness scripts keep the town the party is at in cell 4C9Bh,
+and the maps' scripts branch on it, as the screen does: map 21 is Voonlar's
+ruins (town 5) or Phlan's, map 69 Teshwave's (town 7) or Hillsfar's, and map
+53 the dungeon of Shadowdale (town 1), Ashabenford (2) or Essembra (8).
+
+| Map | Name | Map | Name |
+|---|---|---|---|
+| 1 | Tilverton, Thieves' Guild | 33 | Cave of the Beholder |
+| 3 | Tilverton Sewers | 37 | Oxam's Tower |
+| 4 | Fire Knife Hideout | 50 | Village of Haptooth, Cave of the Dracolich |
+| 16 | Yulash | 51 | Wizard's Tower |
+| 17 | Pit of Moander | 53 | Shadowdale, Ashabenford or Essembra Dungeon |
+| 21 | Voonlar or Phlan Ruins | 64 | Burial Glen |
+| 32 | Zhentil Keep, Shrine of Bane | 66 | Ruins of Myth Drannor |
+| | | 67 | Grand Ruined Temple |
+| | | 69 | Teshwave or Hillsfar Ruins |
+
 ## The ending
 
 When Tyranthraxus falls the script runs PROGRAM 8. *Curse*'s WinGame tells

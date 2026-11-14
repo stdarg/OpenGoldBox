@@ -202,8 +202,9 @@ In small steps, each with its check:
       Options, a button for each game and Exit to desktop. Choosing *Curse*
       asks for its folder, and the exploration screen plays *Curse*'s
       campaign, its first map named Tilverton (`opengold_godot_startup_menu`
-      checks it on screen). Still to come: the title pictures of each game,
-      the names of *Curse*'s other areas, and saves by game.
+      checks it on screen). Since 2026-11-14 every area of *Curse* has its
+      name ([curse.md](games/curse.md), Area names). Still to come: the title
+      pictures of each game and saves by game.
 2. Walking the maps, with walls, doors and events. *In progress
    (2026-11-12):* every script and map of *Curse* loads with its disk, and
    LOAD PIECES loads the view's walls as the original does. Tilverton's
@@ -320,7 +321,13 @@ The steps of *Curse*'s phase 3, with *Secret*'s differences
    Verdigris (map 16) with its walls drawn, where a party made under
    *Secret*'s rules hears the mayor and is given the town's equipment
    (`opengold_gold_box_games_tests`, 2026-11-13). The walls of every game are now drawn as the original draws
-   them, from one space of symbols for the three slots.
+   them, from one space of symbols for the three slots. *From the startup
+   menu* (*Curse*'s step 1.7), since 2026-11-14: the menu offers *Secret*,
+   asks for its folder (`SECRET`) and the rules, and the party screen's party
+   plays the vision on to New Verdigris, every area named as the cluebook's
+   maps name it ([secret.md](games/secret.md), Area names;
+   `opengold_godot_startup_menu_secret` checks it on screen). Still to come:
+   the title pictures and saves by game.
 3. Making a party under *Secret*'s rules: 200,000 experience for a single
    class (100,000 dual, 66,667 triple) trained up at once, its classes,
    level limits and 117 spells; bringing a *Curse* party across.
