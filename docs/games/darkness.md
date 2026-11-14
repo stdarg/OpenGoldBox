@@ -407,14 +407,57 @@ on the area map at (26,6), where it takes a step west. It walks north-west
 across the Lands of Thar, beating the ogre patrols it meets, to the stockade
 of Taydome's Keep (19,1), goes in (map 22), waits while the giants lock the
 gate, and beats Kimarr and his monsters in the keep's hall (6,4), rested
-first. It has no stand-ins yet. Until it reaches the win it passes when it
-plays every beat to the keep (map 22).
+first.
 
-Where it stops: the keep's end, Quil's secret passages, Bostell freed in
-the meeting room, the final confrontation with Kimarr ("the great spell is
-broken and Sasha is safe", script 22), depends on cells the route has yet to
-trace; then Vala and the Vaasans, the Temple of Tyr and the rest of the
-cluebook's order to Gothmenes.
+From the hall it walks square by square, as the planning aid
+(`OPENGOLD_SECRET_FIND`) finds the way, fighting what it meets and passing
+by what it is offered:
+
+- **Taydome's Keep (map 22, script 22).** South to the meeting room (5,10):
+  it beats the ogres and breaks Bostell's chains (cell 128h set to 1). North
+  and east past Kimarr's study (11,6) to the room where his giants hold Quil
+  (9,5), event 20: the party stays, Bostell rushes in (one ally, three more
+  when the front gate was left open, cell C1h 0), and Kimarr, a blue dragon,
+  falls with his monsters (cell 123h set to 1). Quil has broken the great
+  spell; the party goes with him to Sasha (12,2), who sends it out to the
+  area map. Nothing else opens the room: the keep's other events (Ruoln at
+  (7,11), the notes, the drow, the cupboard) only tell the story or change
+  who fights beside the party. A note at (13,3) teleports the party to
+  (11,6) and marks Kimarr's room as found (cell 126h bit 0), so he meets it
+  there without his speech.
+- **Vala's cave (map 37, script 37),** east on the area map at (27,2). The
+  party tells the hill giants it has come to see the Silver Lady (1,8),
+  meets Vala in her office (2,6), and she joins it. With her it takes the
+  four items in the cluebook's order (cell 1ADh, a bit each): the Worldstone
+  from the giants at (9,0), the Crucible of Flame from its fire elementals
+  at (11,4), the Lindenwood Staff from the coffins at (4,12), searched
+  facing west, and the Oakroot Staff at (7,14), found only in search mode.
+  It rests in a quiet room (1,13), where the digging lets it (the camp
+  entry allows a rest only on events 3 and 25 up), then uses the staves in
+  the fortified chamber (14,8); Vala charges into the breach and the party
+  beats the Vaasans who got through (cell 1ABh 128). It leaves by the
+  entrance (0,8).
+- **The Temple of Tyr (map 50):** at Melvaunt's crater (21,5) Priam joins
+  the party and leads it in.
+
+One stand-in: the Vaasans who get through, seven mages and twelve
+warriors, hold the party with Hold Monster before it acts and slay the held
+with every dice the route tries, so the test wins that fight. A player
+would gear the party with the cave's treasure and ward it first; the
+route's player takes no treasure but wands. Until the route reaches the win
+it passes when it plays every beat to the Temple of Tyr (map 50).
+
+A fight's result reaches Darkness's scripts as compare flags: they test
+it with IF right after COMBAT, which its PostCombat sets to "equal" when the
+party won or came through and "not equal" when it fled. Until 2026-11-14
+OpenGoldBox left the flags as they were, so a won fight could read as lost
+and move the party back a square (the walk passed all the same).
+
+Where it stops: inside the Temple of Tyr (map 50, 3,7) with Priam. Next,
+the cluebook's Temple of Tyr: the marauders, the vampire priest, the
+braziers and the bells, Brimwulf's tests and the armory, Laurellin in the
+belfry; then west and counter-clockwise round the area map, the
+mini-adventures on the way, to Gothmenes in Dark Phlan.
 
 ### Creatures
 

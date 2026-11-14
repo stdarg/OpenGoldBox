@@ -1845,7 +1845,7 @@ const std::vector<RouteBeat> &secret_route()
 // Pools of Darkness's route plays to the game's end once this is true; until
 // then it stops on this map (docs/GAMES.md, Pools of Darkness, step 5).
 constexpr bool darkness_route_ends_the_game = false;
-constexpr unsigned darkness_route_stops_on_map = 22;
+constexpr unsigned darkness_route_stops_on_map = 50;
 
 // Pools of Darkness's story, beat by beat, as its cluebook tells it: from New
 // Phlan's docks, where Rolf has walked the party out.
@@ -1882,6 +1882,170 @@ const std::vector<RouteBeat> &darkness_route()
         RouteBeat kimarr{22, 6, 4, D::north, {}};
         kimarr.rest_first = true;
         route.push_back(kimarr);
+        // South through the waiting rooms to the meeting room (5,10), where
+        // the party beats the ogres and breaks Bostell's chains (cell 128h),
+        // so he aids it against Kimarr.
+        walk_passages(route, 22,
+                      {{6, 4, D::south},
+                       {6, 5, D::south},
+                       {6, 6, D::west},
+                       {5, 6, D::west},
+                       {4, 6, D::south},
+                       {4, 7, D::south},
+                       {4, 8, D::south},
+                       {4, 9, D::south},
+                       {4, 10, D::south},
+                       {4, 11, D::east}});
+        auto bostell = step_beat(22, 5, 11, D::north, {"BREAK CHAINS"});
+        bostell.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x128, 1};
+        route.push_back(bostell);
+        // Back north and east through the halls, past the study where Kimarr
+        // plots (11,6), to the room where his giants hold Quil (9,5): the
+        // party stays, Bostell rushes in, and Kimarr, a blue dragon, falls
+        // with his monsters (cell 123h). Quil has broken the great spell; the
+        // party goes with him to Sasha, who sends it out to the area map.
+        walk_passages(route, 22,
+                      {{5, 10, D::south}, {5, 11, D::west},  {4, 11, D::north}, {4, 10, D::north},
+                       {4, 9, D::north},  {4, 8, D::north},  {4, 7, D::north},  {4, 6, D::east},
+                       {5, 6, D::east},   {6, 6, D::north},  {6, 5, D::north},  {6, 4, D::east},
+                       {7, 4, D::east},   {8, 4, D::north},  {8, 3, D::east},   {9, 3, D::east},
+                       {10, 3, D::east},  {11, 3, D::south}, {11, 4, D::south}, {11, 5, D::south},
+                       {11, 6, D::west},  {10, 6, D::west}});
+        auto quil = step_beat(22, 9, 6, D::north, {"NO", "YES", "NO"});
+        quil.rest_first = true;
+        quil.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x123, 1};
+        route.push_back(quil);
+        // East along the mountains to the Silver Blades' cave (27,2), where
+        // Vala digs for the four items that rule the elementals.
+        RouteBeat to_vala{17, 0, 0, D::north, {"YES"}};
+        to_vala.area_steps = {C::east, C::east, C::east, C::east,
+                              C::east, C::east, C::east, C::southeast};
+        route.push_back(to_vala);
+        // In the cave (map 37) the party tells the hill giants it has come to
+        // see the Silver Lady (1,8), and through the north door Vala greets
+        // it in her office (2,6) and joins it.
+        route.push_back(step_beat(37, 0, 8, D::east, {"YES"}));
+        route.push_back(step_beat(37, 1, 8, D::east));
+        route.push_back(step_beat(37, 2, 8, D::north));
+        route.push_back(step_beat(37, 2, 7, D::north, {"YES"}));
+        // Rested in her office, the party goes with Vala for the four items
+        // in the cluebook's order. The Worldstone (9,0): the giants fighting
+        // over it will not hand it over, and are beaten (cell 1ADh bit 1).
+        const auto worldstone_way = route.size();
+        walk_passages(route, 37,
+                      {{2, 6, D::north},
+                       {2, 5, D::north},
+                       {2, 4, D::north},
+                       {2, 3, D::north},
+                       {2, 2, D::east},
+                       {3, 2, D::east},
+                       {4, 2, D::east},
+                       {5, 2, D::east},
+                       {6, 2, D::east},
+                       {7, 2, D::north},
+                       {7, 1, D::east},
+                       {8, 1, D::east},
+                       {9, 1, D::north}});
+        route[worldstone_way].rest_first = true;
+        // The Crucible of Flame (11,4), past the room where Vala tells of it
+        // (10,2): its fire elementals are beaten and the party takes it.
+        walk_passages(route, 37,
+                      {{9, 0, D::south},
+                       {9, 1, D::east},
+                       {10, 1, D::south},
+                       {10, 2, D::south},
+                       {10, 3, D::south}});
+        route.push_back(step_beat(37, 10, 4, D::east, {"YES"}));
+        // The Lindenwood Staff (4,12), past the Vaasans plotting with the drow
+        // (5,3): the party searches the coffins, facing west, and beats the
+        // dead that rise.
+        walk_passages(route, 37,
+                      {{11, 4, D::west},  {10, 4, D::north}, {10, 3, D::north}, {10, 2, D::north},
+                       {10, 1, D::west},  {9, 1, D::west},   {8, 1, D::west},   {7, 1, D::south},
+                       {7, 2, D::west},   {6, 2, D::west},   {5, 2, D::south},  {5, 3, D::east},
+                       {6, 3, D::south},  {6, 4, D::south},  {6, 5, D::south},  {6, 6, D::south},
+                       {6, 7, D::south},  {6, 8, D::south},  {6, 9, D::south},  {6, 10, D::south},
+                       {6, 11, D::south}, {6, 12, D::west}});
+        auto lindenwood = step_beat(37, 5, 12, D::west, {"YES"});
+        lindenwood.rest_first = true;
+        route.push_back(lindenwood);
+        // The Oakroot Staff (7,14), found only by searching among the roots:
+        // the party searches its way there, takes it and beats the earth
+        // elementals the rocks become.
+        walk_passages(route, 37,
+                      {{4, 12, D::east}, {5, 12, D::east}, {6, 12, D::east}, {7, 12, D::south}},
+                      true);
+        auto oakroot = step_beat(37, 7, 13, D::south, {"YES"});
+        oakroot.searching = true;
+        route.push_back(oakroot);
+        // West to the quiet room (1,13), the nearest where the digging lets
+        // the party rest (the cluebook's 12).
+        walk_passages(route, 37,
+                      {{7, 14, D::north},
+                       {7, 13, D::north},
+                       {7, 12, D::west},
+                       {6, 12, D::west},
+                       {5, 12, D::west},
+                       {4, 12, D::south},
+                       {4, 13, D::west},
+                       {3, 13, D::west},
+                       {2, 13, D::west}},
+                      false);
+        // Rested, east with the four items to the chamber the giants fortify
+        // (14,8): the party uses the staves, the elementals seal the breaches,
+        // Vala charges after the Vaasan army, and the party beats the Vaasans
+        // who got through (cell 1ABh 128). Their seven mages hold the party
+        // with Hold Monster before it can act and twelve warriors slay the
+        // held, with every dice the route tries: there the test wins the fight
+        // (a stand-in, until the route's player gears and wards the party as a
+        // player would, with the cave's treasure and its own protections).
+        const auto to_breach = route.size();
+        walk_passages(route, 37,
+                      {{1, 13, D::east},
+                       {2, 13, D::east},
+                       {3, 13, D::east},
+                       {4, 13, D::north},
+                       {4, 12, D::east},
+                       {5, 12, D::east},
+                       {6, 12, D::north},
+                       {6, 11, D::north},
+                       {6, 10, D::north},
+                       {6, 9, D::north},
+                       {6, 8, D::east},
+                       {7, 8, D::east},
+                       {8, 8, D::east},
+                       {9, 8, D::east},
+                       {10, 8, D::east},
+                       {11, 8, D::east},
+                       {12, 8, D::east}});
+        route[to_breach].rest_first = true;
+        auto vaasans = step_beat(37, 13, 8, D::east, {"YES"});
+        vaasans.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x1AB, 128};
+        vaasans.test_wins = true;
+        route.push_back(vaasans);
+        // Back west along the passage and out of the cave (0,8), onto the
+        // area map by its door (27,2).
+        walk_passages(route, 37,
+                      {{14, 8, D::west},
+                       {13, 8, D::west},
+                       {12, 8, D::west},
+                       {11, 8, D::west},
+                       {10, 8, D::west},
+                       {9, 8, D::west},
+                       {8, 8, D::west},
+                       {7, 8, D::west},
+                       {6, 8, D::west},
+                       {5, 8, D::west},
+                       {4, 8, D::west},
+                       {3, 8, D::west},
+                       {2, 8, D::west},
+                       {1, 8, D::west}});
+        route.push_back(step_beat(37, 0, 8, D::west, {"YES", "NO"}));
+        // South-west to the army camped by Melvaunt's crater (21,5): Priam
+        // joins the party and leads it to the Temple of Tyr (script 50).
+        RouteBeat to_priam{17, 0, 0, D::north, {"YES"}};
+        to_priam.area_steps = {C::southwest, C::southwest, C::southwest, C::west, C::west, C::west};
+        route.push_back(to_priam);
         return route;
     }();
     return beats;
@@ -3605,9 +3769,16 @@ bool walk_census(GoldBoxGame game, bool route)
         std::string current_beat = "the route's start";
         try
         {
+            // OPENGOLD_ROUTE_BEATS=N plays only the route's first N beats, so
+            // the planning aids can look from a point short of its end.
+            const char *beat_limit = std::getenv("OPENGOLD_ROUTE_BEATS");
             for (const auto &beat : route_for(game))
             {
                 ++beat_number;
+                if (beat_limit && beat_number > std::stoul(beat_limit))
+                {
+                    break;
+                }
                 const auto where = "beat " + std::to_string(beat.map) + " " +
                                    std::to_string(beat.x) + "," + std::to_string(beat.y);
                 current_beat = where + " (beat " + std::to_string(beat_number) + ")";

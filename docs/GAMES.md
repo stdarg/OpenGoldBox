@@ -540,12 +540,19 @@ new decoders.
    duty at West Phlan's gate, the storm that takes Phlan, Elminster in Limbo,
    and steps on the area map, where the party moves on a 38 by 15 grid
    (darkness.md, The area map), across the Lands of Thar to Taydome's Keep,
-   where it beats Kimarr's first attack in the hall. The win is PROGRAM 1
-   after Gothmenes falls (darkness.md, The win and the route). No stand-ins
-   yet; until the route reaches the win it passes when it plays every beat to
-   the keep (map 22). Still to come: drawing the area map, spell levels 8 and
-   9 and the new spells, starting equipment, skies, combat ground tiles,
-   sound and music.
+   where it beats Kimarr's first attack in the hall, frees Bostell and
+   beats Kimarr in his chambers, so Quil breaks the great spell and Sasha is
+   safe; then Vala's cave, where it takes the four items with Vala and turns
+   back the Vaasans; then Priam leads it into the Temple of Tyr. The win is
+   PROGRAM 1 after Gothmenes falls (darkness.md, The win and the route).
+   *Stand-ins:* the test wins the fight with the Vaasans who get through
+   Vala's breach (their mages hold the party with Hold Monster). Until the
+   route reaches the win it passes when it plays every beat to the Temple of
+   Tyr (map 50). *Where it stops (2026-11-14):* in the temple with Priam;
+   next, the temple's own events, then counter-clockwise round the area map
+   to Dark Phlan. Still to come: drawing the area map, spell levels 8 and 9
+   and the new spells, starting equipment, skies, combat ground tiles, sound
+   and music.
 
 *Treasures of the Savage Frontier* ([treasure.md](games/treasure.md)) runs on
 the engine of *Pools of Darkness*, and OpenGoldBox plays both with one code

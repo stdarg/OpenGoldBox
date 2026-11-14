@@ -907,6 +907,8 @@ class RolfTourSession
     std::vector<Equipment> treasure_pile_;
     std::uint64_t treasure_request_{};
     std::vector<EclMemoryWrite> treasure_writes_;
+    // The compare flags the script hears with them (Pools of Darkness's COMBAT).
+    std::optional<EclConditions> treasure_conditions_;
     void stage_treasure(const EclRequest &request);
     void award_staged_treasure();
     [[nodiscard]] std::string treasure_identity(std::uint16_t address) const;
