@@ -935,7 +935,38 @@ const std::vector<RouteBeat> &curse_route()
 // 4): from New Verdigris on.
 const std::vector<RouteBeat> &secret_route()
 {
-    static const std::vector<RouteBeat> beats{};
+    using D = opengold::por::MapDirection;
+    static const std::vector<RouteBeat> beats{
+        // The teleporter in the mayor's house's northmost room, to the Well
+        // of Knowledge.
+        {16, 3, 0, D::north, {"YES"}},
+        // The Ancient Red Dragon coiled about the Well; with it dead the Well
+        // is safe and asks for gems, which the party keeps.
+        {33, 7, 7, D::north, {"NO"}, true},
+        // The portal home, and Marcus's house: his welcome mat and his pets.
+        {33, 1, 1, D::north, {"YES"}},
+        {16, 15, 10, D::north, {}, true},
+        // The Temple of Gond heals the party for nothing.
+        {16, 10, 9, D::north, {"YES",       "Heal",     "paladin 1",    "Pay",      "Heal",
+                               "paladin 2", "Pay",      "Heal",         "ranger 3", "Pay",
+                               "Heal",      "cleric 4", "Pay",          "Heal",     "cleric 5",
+                               "Pay",       "Heal",     "magic_user 6", "Pay",      "Leave"}},
+        // Out by the town's east gate, into the ruins.
+        {16,
+         15,
+         8,
+         D::east,
+         {"YES"},
+         false,
+         false,
+         false,
+         std::nullopt,
+         0,
+         0,
+         std::nullopt,
+         false,
+         true},
+    };
     return beats;
 }
 

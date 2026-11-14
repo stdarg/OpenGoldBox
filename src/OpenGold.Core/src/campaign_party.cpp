@@ -3898,6 +3898,13 @@ void CampaignParty::begin_combat()
 // monsters' (a monster or ally never has a member's ID).
 bool CampaignParty::fights_for_party(const rules::CombatantView &actor) const
 {
+    // A creature charmed to the party's side fights for it but is not one of
+    // it: the original frees it when the fight ends. Its definition names its
+    // record (por::CreatureId::key, "MON1CHA.DAX:33").
+    if (actor.definition.find("CHA.DAX:") != std::string::npos)
+    {
+        return false;
+    }
     return !is_ally(actor.id) &&
            (actor.side == rules::Side::party || std::ranges::any_of(state_.roster,
                                                                     [&actor](const PartyMember &m)
@@ -3970,7 +3977,7 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
                     {
                         if (!changed->character.advance(*rules_, lasting, change))
                         {
-                            throw std::runtime_error("Combat party identity mismatch");
+                            throw std::runtime_error("A fight's lasting change cannot be kept");
                         }
                     }
                 }

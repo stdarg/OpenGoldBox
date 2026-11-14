@@ -181,6 +181,11 @@ map 49, so both maps are the Mines of Verdigris.
 | 64 | Dungeon, levels 10 to 7 | 97 | Middle Level of the Castle |
 | 65 | Dungeon, levels 6 to 3 | 98 | Dreadlord's Sanctum |
 
+## The temple
+
+New Verdigris's Temple of Gond heals the town's champions for nothing: its
+HealMenu takes no money, so every service costs 0.
+
 ## Sound effects
 
 The PC speaker's driver is *Curse*'s, found the same way, with 13 songs. Its

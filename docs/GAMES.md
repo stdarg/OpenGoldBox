@@ -352,8 +352,11 @@ The steps of *Curse*'s phase 3, with *Secret*'s differences
    host answers AWARD EXPERIENCE, *Secret*'s ADD NPC (one creature file, no
    one added to a full party), DAMAGE's "hurt even on a save", CHECK PARTY's
    race, Charisma and class levels, and SPELL's Dispel Magic. The fights
-   still use *Curse*'s combat rules; *Secret*'s effects, creature flags,
-   spells and combat changes come next.
+   use *Secret*'s combat rules (its effects, creature flags and magic
+   resistance, 2026-11-14). *The route (started 2026-11-14):* the party takes
+   the mayor's teleporter to the Well of Knowledge, kills the Ancient Red
+   Dragon, returns, survives Marcus's welcome and his pets, is healed at the
+   Temple of Gond, and leaves town by its east gate (15,8) into the ruins.
 
 ### 5 to 7. The other campaigns
 

@@ -4824,6 +4824,15 @@ void RolfTourSession::open_temple(std::uint64_t request)
                              (offering.service == opengold::rules::TempleService::resurrection &&
                               difficulty_ > opengold::Difficulty::normal);
                   });
+    // Secret's temple heals the town's champions for nothing (its HealMenu
+    // takes no money).
+    if (game() == GoldBoxGame::secret_of_the_silver_blades)
+    {
+        for (auto &offering : offerings)
+        {
+            offering.price_gp = 0;
+        }
+    }
     temple_visit_ = TempleVisit{request, std::move(offerings), {}, 0, {}};
     show_temple({});
 }

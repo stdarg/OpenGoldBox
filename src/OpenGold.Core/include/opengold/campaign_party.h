@@ -614,7 +614,7 @@ class CampaignParty
 
   private:
     // A member of the party in a fight's result, on its side or charmed onto
-    // the monsters'.
+    // the monsters'; never a creature charmed onto the party's side.
     [[nodiscard]] bool fights_for_party(const rules::CombatantView &actor) const;
     // The member's next level, or 0 at its rules cap or the Training Hall's
     // limit (LEVELS-2).
