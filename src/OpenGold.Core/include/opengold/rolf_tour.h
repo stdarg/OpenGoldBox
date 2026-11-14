@@ -1013,6 +1013,11 @@ class RolfTourSession
     void begin_event(EventTrigger trigger, std::optional<std::size_t> entry = std::nullopt);
     void finish_event();
     bool handle_town_host(const EclRequest &request);
+    // Pools of Darkness's LOAD FILES: a map (below 7Fh, indoors only) and a
+    // wall set (255 keeps the current one); darkness_host.cpp.
+    [[nodiscard]] EclHostReply darkness_load_files(unsigned map, unsigned walls);
+    // Its PLAY SOUND: a sound effect, or music from 80h up.
+    void darkness_play_sound(unsigned sound);
     // Scripts change coins relative to the view they were given, so the script
     // must receive a fresh character_reply after every read before it continues.
     void read_character();

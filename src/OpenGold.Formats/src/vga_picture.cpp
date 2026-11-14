@@ -227,4 +227,46 @@ std::optional<VgaAnimation> decode_vga_animation(std::span<const std::uint8_t> r
     return animation;
 }
 
+VgaColorTable vga_color_table(const VgaPaletteRange &colors)
+{
+    VgaColorTable table{};
+    constexpr std::size_t ega_colors = 16;
+    for (std::size_t index = 0; index < ega_colors; ++index)
+    {
+        const auto rgb = ega_rgb(static_cast<std::uint8_t>(index));
+        for (std::size_t channel = 0; channel < 3; ++channel)
+        {
+            table[index][channel] = static_cast<std::uint8_t>(rgb[channel] * 63 / 255);
+        }
+    }
+    for (std::size_t n = 0; n < colors.colors.size() && colors.first + n < table.size(); ++n)
+    {
+        table[colors.first + n] = colors.colors[n];
+    }
+    return table;
+}
+
+Image vga_rgba(const VgaImage &image, const VgaColorTable &colors,
+               std::optional<std::uint8_t> see_through)
+{
+    Image result;
+    result.width = image.width;
+    result.height = image.height;
+    result.rgba.resize(image.pixels.size() * 4);
+    for (std::size_t pixel = 0; pixel < image.pixels.size(); ++pixel)
+    {
+        const auto index = image.pixels[pixel];
+        auto *rgba = result.rgba.data() + pixel * 4;
+        for (std::size_t channel = 0; channel < 3; ++channel)
+        {
+            // Six bits a channel, the high two repeated below as the VGA's
+            // digital-to-analog converter spreads them.
+            const auto level = colors[index][channel] & 63;
+            rgba[channel] = static_cast<std::uint8_t>(level << 2 | level >> 4);
+        }
+        rgba[3] = see_through && index == *see_through ? 0 : 255;
+    }
+    return result;
+}
+
 } // namespace opengold

@@ -153,6 +153,16 @@ void validate_string(EclAddress address, std::string_view value)
     }
     (void)indexed_address(address, value.size());
 }
+
+// Pools of Darkness's commands the machine runs itself (docs/games/darkness.md).
+constexpr std::uint8_t darkness_wait_key = 0x1D, darkness_journal_entry = 0x1F,
+                       darkness_yes_no = 0x22, darkness_clear_and_exit = 0x23,
+                       darkness_unused = 0x29, darkness_action_menu = 0x31;
+// Its host commands whose operands differ from the other games': TREASURE's
+// coins are words, FIND NPC names a member and the cell for its place, and
+// STORE (3Ch, PROTECTION elsewhere) reads its shop's number.
+constexpr std::uint8_t darkness_treasure = 0x27, darkness_find_npc = 0x37;
+
 } // namespace
 
 EclMachine::EclMachine(std::shared_ptr<const EclProgram> program)
@@ -498,6 +508,10 @@ void EclMachine::execute(const EclInstruction &i)
     {
         throw EclError("Unsupported execution: " + std::string(spec.name));
     }
+    if (program_->game() == GoldBoxGame::pools_of_darkness && execute_darkness_command(i))
+    {
+        return;
+    }
     const auto &a = i.operands;
     // These are explicit no-ops in PoR PC, unlike later games. Never call a DOS pointer.
     // A host may still answer SPELL (Kovel Mansion's Knock, KOVEL-1).
@@ -711,6 +725,9 @@ void EclMachine::execute(const EclInstruction &i)
     case 21:
     case 43:
     case 44:
+    // Pools of Darkness's ACTION MENU, a horizontal menu that asks first; in
+    // the other games 31h is a host command and never comes here.
+    case darkness_action_menu:
     {
         const auto dest = destination(a[i.opcode == 44 ? 5 : 0]);
         const auto count = i.opcode == 44 ? 5 : a[spec.operands - 1].value;
@@ -724,6 +741,10 @@ void EclMachine::execute(const EclInstruction &i)
         if (request.vertical)
         {
             request.text = text(a[1]);
+        }
+        if (i.opcode == darkness_action_menu)
+        {
+            request.text = "WHAT DO YOU DO?";
         }
         std::vector<std::uint16_t> results;
         if (i.opcode == 44)
@@ -858,6 +879,55 @@ void EclMachine::request_engine_prompt(const EclInstruction &i, bool yes_or_no)
     state_ = EclState::waiting;
 }
 
+bool EclMachine::execute_darkness_command(const EclInstruction &i)
+{
+    switch (i.opcode)
+    {
+    case darkness_wait_key:
+        request_engine_prompt(i, false);
+        break;
+    case darkness_journal_entry:
+        // The entry's number is told, and the player goes on (its
+        // EclJournalEntry).
+        request_engine_prompt(i, false);
+        pending_->text = "THIS IS RECORDED AS JOURNAL ENTRY " +
+                         std::to_string(value(i.operands.at(0)) & 255) + ".";
+        pending_->clear = true;
+        break;
+    case darkness_yes_no:
+    {
+        // The answer only sets the comparison (resume); no cell keeps it.
+        EclRequest request;
+        request.kind = EclRequestKind::menu;
+        request.instruction = i;
+        request.id = next_request_++;
+        request.choices = {"YES", "NO"};
+        menu_values_ = {0, 1};
+        pending_ = std::move(request);
+        state_ = EclState::waiting;
+        break;
+    }
+    case darkness_clear_and_exit:
+    {
+        // The text box is cleared, then the script ends (resume).
+        EclRequest request;
+        request.kind = EclRequestKind::text;
+        request.clear = true;
+        request.instruction = i;
+        request.id = next_request_++;
+        pending_ = std::move(request);
+        state_ = EclState::waiting;
+        break;
+    }
+    case darkness_unused:
+        break;
+    default:
+        return false;
+    }
+    pc_ = i.next;
+    return true;
+}
+
 void EclMachine::request_host(const EclInstruction &i)
 {
     if (!host_opcodes_.contains(i.opcode))
@@ -872,12 +942,16 @@ void EclMachine::request_host(const EclInstruction &i)
     {
         const auto &operand = i.operands[n];
         const auto op = i.opcode;
-        const bool output =
-            (op == 29 && n == 0) || (op == 30 && n >= 2) || op == 34 || (op == 41 && n == 3) ||
-            (op == 59 && n >= 1);
-        const bool address =
-            output || (op == 30 && n == 0) || (op == 35 && n < 2) || op == 45 || op == 60;
-        const bool is_text = op == 57 || (op == 41 && n >= 9 && n <= 11);
+        const bool darkness = program_->game() == GoldBoxGame::pools_of_darkness;
+        const bool output = darkness
+                                ? (op == 30 && n >= 2) || (op == darkness_find_npc && n == 1) ||
+                                      (op == 59 && n >= 1)
+                                : (op == 29 && n == 0) || (op == 30 && n >= 2) || op == 34 ||
+                                      (op == 41 && n == 3) || (op == 59 && n >= 1);
+        const bool address = output || (op == 30 && n == 0) || op == 45 ||
+                             (!darkness && ((op == 35 && n < 2) || op == 60));
+        const bool is_text = op == 57 || (!darkness && op == 41 && n >= 9 && n <= 11) ||
+                             (darkness && op == darkness_find_npc && n == 0);
         if (address)
         {
             request.arguments.emplace_back(output ? destination(operand)
@@ -892,7 +966,8 @@ void EclMachine::request_host(const EclInstruction &i)
         else
         {
             std::uint16_t number = value(operand);
-            if (op != 39 || n == 7)
+            const bool word = darkness ? op == darkness_treasure && n < 3 : op == 39 && n != 7;
+            if (!word)
             {
                 number &= 255;
             }
@@ -963,12 +1038,26 @@ bool EclMachine::resume(std::uint64_t id, std::optional<std::size_t> choice)
         {
             conditions_ = relation(chosen < 1 ? -1 : chosen > 1 ? 1 : 0);
         }
+        // Pools of Darkness's YES NO: yes sets the equal flag, no the not-equal.
+        if (pending_->instruction && program_->game() == GoldBoxGame::pools_of_darkness &&
+            pending_->instruction->opcode == darkness_yes_no)
+        {
+            conditions_ = equality(*choice == 0);
+        }
     }
     else if (pending_->kind != EclRequestKind::text || choice)
     {
         return false;
     }
+    const bool ends_script = program_->game() == GoldBoxGame::pools_of_darkness &&
+                             pending_->instruction &&
+                             pending_->instruction->opcode == darkness_clear_and_exit;
     finish_request();
+    if (ends_script)
+    {
+        state_ = EclState::completed;
+        stack_.clear();
+    }
     return true;
 }
 

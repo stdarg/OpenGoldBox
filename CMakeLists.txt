@@ -199,6 +199,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/por_effects.cpp
     src/OpenGold.Core/src/rolf_tour.cpp
     src/OpenGold.Core/src/phlan_session.cpp
+    src/OpenGold.Core/src/darkness_host.cpp
     src/OpenGold.Core/src/random_treasure.cpp
     src/OpenGold.Core/src/magic_item_catalog.cpp
     src/OpenGold.Core/src/encounter_budget.cpp
@@ -281,6 +282,11 @@ if(OPENGOLD_BUILD_TESTS)
     target_link_libraries(opengold_gateway_tests PRIVATE opengold_core opengold_rules_srd5
         opengold_rules_original)
     add_test(NAME opengold_gateway_tests COMMAND opengold_gateway_tests)
+    # Pools of Darkness's campaign, played on the real files.
+    add_executable(opengold_darkness_tests tests/darkness_tests.cpp)
+    target_link_libraries(opengold_darkness_tests PRIVATE opengold_core opengold_rules_srd5
+        opengold_rules_original)
+    add_test(NAME opengold_darkness_tests COMMAND opengold_darkness_tests)
     # Every map of Curse walked with an original-rules party: each event runs.
     add_test(NAME opengold_curse_walk COMMAND opengold_gold_box_games_tests --curse-walk)
     # Every map of Secret of the Silver Blades walked the same way.

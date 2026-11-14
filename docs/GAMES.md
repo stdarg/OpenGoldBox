@@ -29,7 +29,7 @@ The user decided these on 2026-11-12:
 | 2 | *Curse of the Azure Bonds* | 1989 | `CURSE` | Played to its end by the route test, with stand-ins ([curse.md](games/curse.md)) |
 | 3 | *Secret of the Silver Blades* | 1990 | `SECRET` | Every file decodes ([secret.md](games/secret.md)) |
 | 4 | *Gateway to the Savage Frontier* | 1991 | `GATEWAY` | Every file decodes ([gateway.md](games/gateway.md)) |
-| 5 | *Pools of Darkness* | 1991 | `DARKNESS` | Every file decodes ([darkness.md](games/darkness.md)) |
+| 5 | *Pools of Darkness* | 1991 | `DARKNESS` | Its opening plays ([darkness.md](games/darkness.md)) |
 | 6 | *Treasures of the Savage Frontier* | 1992 | `TREASURE` | Every file decodes ([treasure.md](games/treasure.md)) |
 | 7 | *Forgotten Realms: Unlimited Adventures* | 1993 | `UA` | A design made with the kit plays: its walls, events and fights ([ua.md](games/ua.md)) |
 
@@ -448,6 +448,16 @@ new decoders.
    with its title music from the second, as its Intro does; the party
    screen's party plays the opening on to Yartar
    (`opengold_godot_startup_menu_gateway`).
+
+*Pools of Darkness* ([darkness.md](games/darkness.md)):
+
+1. The census: every file decodes (2026-11-13).
+2. The opening: `load_campaign` plays script 16, New Phlan's docks (map 16,
+   wall set 1), where Rolf the portmaster offers a tour over picture 148;
+   declined, he walks the party out to (11,2) facing south, the docks' walls
+   drawn in their own 256 colors (`opengold_darkness_tests`, 2026-11-14). Its
+   script memory is its own (darkness.md, Script memory), and the machine runs
+   its new commands.
 
 ### 8. *Unlimited Adventures*
 

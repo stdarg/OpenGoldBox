@@ -83,10 +83,14 @@ inline constexpr std::array<GoldBoxGame, 7> gold_box_games{
 }
 
 // The program that holds the game's item words: Gateway to the Savage
-// Frontier keeps them in its GAME.EXE, the earlier games in START.EXE.
+// Frontier and Pools of Darkness keep them in their GAME.EXE, the earlier
+// games in START.EXE.
 [[nodiscard]] constexpr std::string_view item_words_program(GoldBoxGame game) noexcept
 {
-    return game == GoldBoxGame::gateway_to_the_savage_frontier ? "GAME.EXE" : "START.EXE";
+    return game == GoldBoxGame::gateway_to_the_savage_frontier ||
+                   game == GoldBoxGame::pools_of_darkness
+               ? "GAME.EXE"
+               : "START.EXE";
 }
 
 // The disk numbers a game's files carry, as in MON3CHA.DAX or HEAD2.DAX.

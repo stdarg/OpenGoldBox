@@ -48,6 +48,10 @@ LaterCampaign later_campaign(GoldBoxGame game)
         // A new game runs script 1 of disk 2 (Yartar); the overland's script
         // is on disk 6.
         return {1, 2, 6, false};
+    case GoldBoxGame::pools_of_darkness:
+        // One disk: a new game runs script 16, New Phlan's docks (its
+        // GameLoop).
+        return {16, 1, 1, false};
     default:
         throw std::invalid_argument(std::string(game_title(game)) + " cannot be played yet");
     }
@@ -66,7 +70,33 @@ struct ScriptLoads
     bool maps_by_cell{};
 };
 
-std::map<unsigned, ScriptLoads> script_loads(const por::EclCatalog &catalog)
+// Pools of Darkness's LOAD FILES names a map (below 7Fh) and one wall set
+// (FFh keeps the current one); a set fills the view's walls alone, kept as
+// its first slot.
+void add_darkness_loads(const por::EclInstruction &i, ScriptLoads &script)
+{
+    constexpr unsigned keep_walls = 255, first_non_map = 0x7F;
+    if (i.opcode != load_files || i.operands.size() != 2)
+    {
+        return;
+    }
+    const auto &map = i.operands[0];
+    const auto &walls = i.operands[1];
+    if (map.tag != 0)
+    {
+        script.maps_by_cell = true;
+    }
+    else if (map.value < first_non_map)
+    {
+        script.maps.push_back(map.value);
+    }
+    if (walls.tag == 0 && walls.value != keep_walls)
+    {
+        script.walls.push_back({walls.value, por::detail::no_wall_bank, por::detail::no_wall_bank});
+    }
+}
+
+std::map<unsigned, ScriptLoads> script_loads(const por::EclCatalog &catalog, GoldBoxGame game)
 {
     std::map<unsigned, ScriptLoads> loads;
     for (const auto &[id, program] : catalog.all())
@@ -75,6 +105,11 @@ std::map<unsigned, ScriptLoads> script_loads(const por::EclCatalog &catalog)
         script.disk = static_cast<unsigned>(std::stoul(id.archive.substr(3)));
         for (const auto &i : por::walk_reachable(*program).instructions)
         {
+            if (game == GoldBoxGame::pools_of_darkness)
+            {
+                add_darkness_loads(i, script);
+                continue;
+            }
             if (i.opcode == load_files && !i.operands.empty() && i.operands[0].tag != 0)
             {
                 script.maps_by_cell = true;
@@ -284,7 +319,11 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
     root->opening_script = campaign.opening_script;
     root->encounter_creatures = disk_creatures(campaign.root_disk);
     root->map = por::GeoMap{};
-    root->treasure = files.item_lists("ITEM" + root_disk + ".DAX");
+    // Pools of Darkness's TREASURE names its items itself: it has no lists.
+    if (game != GoldBoxGame::pools_of_darkness)
+    {
+        root->treasure = files.item_lists("ITEM" + root_disk + ".DAX");
+    }
     // Gateway has no sprite files.
     if (game != GoldBoxGame::gateway_to_the_savage_frontier)
     {
@@ -306,7 +345,7 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
     {
         add_gateway_wilderness(folder, program_image, *root);
     }
-    const auto loads = script_loads(catalog);
+    const auto loads = script_loads(catalog, game);
     for (const auto &[id, program] : catalog.all())
     {
         root->programs.emplace(id.record, program);
@@ -325,8 +364,10 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
             const auto key = std::make_pair(load.disk, walls);
             if (!root->wall_sets.contains(key))
             {
-                root->wall_sets.emplace(key,
-                                        por::detail::load_wall_art(files, load.disk, walls, {}));
+                root->wall_sets.emplace(
+                    key, game == GoldBoxGame::pools_of_darkness
+                             ? por::detail::load_vga_wall_art(files, walls.front())
+                             : por::detail::load_wall_art(files, load.disk, walls, {}));
             }
         }
     }
@@ -428,6 +469,7 @@ por::RolfTourSession load_campaign(const std::filesystem::path &folder, GoldBoxG
     case GoldBoxGame::curse_of_the_azure_bonds:
     case GoldBoxGame::secret_of_the_silver_blades:
     case GoldBoxGame::gateway_to_the_savage_frontier:
+    case GoldBoxGame::pools_of_darkness:
         return load_later_campaign(folder, game);
     default:
         throw std::invalid_argument(std::string(game_title(game)) + " cannot be played yet");

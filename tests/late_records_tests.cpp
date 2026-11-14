@@ -182,8 +182,8 @@ void scripts_decode_with_the_changed_commands()
     check(walk.errors.empty() && walk.instructions.size() == 3,
           "CLEAR AND EXIT ends the script, and the data after it is not read");
     check(opengold::por::ecl_opcode(0x23, darkness).name == "CLEAR AND EXIT" &&
-              !opengold::por::ecl_opcode(0x2C, darkness).executable,
-          "Pools of Darkness' commands are decoded, not run");
+              opengold::por::ecl_opcode(0x2C, darkness).requires_host,
+          "Pools of Darkness' commands run, PLAY SOUND by the host");
     rejects(
         [&]
         {

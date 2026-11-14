@@ -807,6 +807,11 @@ void RolfTourSession::reset_run()
     machine_.bind_variable(game_cell(ecl_clock_hour), 12); // Research fixture: midday.
     for (const std::uint8_t opcode : std::initializer_list<std::uint8_t>{12, 13, 14, 45, 49, 58})
     {
+        // Pools of Darkness's 31h is ACTION MENU, which the machine runs.
+        if (opcode == 49 && game() == GoldBoxGame::pools_of_darkness)
+        {
+            continue;
+        }
         machine_.enable_host(opcode);
     }
     if (town_)
@@ -1258,6 +1263,13 @@ void RolfTourSession::advance(double seconds)
                 if (request.vertical && !request.text.empty())
                 {
                     snapshot_.dialogue += "\n" + request.text;
+                }
+                // Pools of Darkness's journal entries and action menus say
+                // their words first; a journal entry clears the box for them.
+                else if (game() == GoldBoxGame::pools_of_darkness && !request.text.empty())
+                {
+                    snapshot_.dialogue =
+                        request.clear ? request.text : snapshot_.dialogue + "\n" + request.text;
                 }
                 if (request.instruction && request.instruction->opcode == 44)
                 {

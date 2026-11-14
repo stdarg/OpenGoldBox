@@ -251,9 +251,79 @@ replaced and four take other operands:
 Data may follow CLEAR AND EXIT, as after EXIT, so the census's walk stops
 there. TREASURE's items are numbers in `ITEM0`'s definitions; FFh is a scroll
 of three random magic-user spells. One script (49) holds a 29h, which the
-original skips. The census decodes the scripts; what the new commands do, the
-memory cells and CALL's engine routines belong to step 3, and OpenGoldBox's
-script machine does not run them yet.
+original skips.
+
+The machine runs WAIT KEY, JOURNAL ENTRY (it tells the entry's number and
+waits), YES NO (yes sets the equal flag, no the not-equal flag; no cell keeps
+the answer), CLEAR AND EXIT (it clears the text box and ends the script),
+ACTION MENU (a horizontal menu after "What do you do?") and 29h (nothing). The
+script host answers the others. CALL names three engine routines by number,
+not by address: 1 redraws the view, 2 steps the party forward and 3 shows a
+portrait's next frame; any other number does nothing.
+
+### Script memory
+
+The script memory is laid out anew. Cells 1h to 400h are the game's state,
+one byte each (two for a word), and 401h to 800h are the current character's
+record, byte for byte (Creatures, below): 401h is its name, 401h + 508 its hit
+points. A script's own image is 8000h to 9DFFh. Any other address reads 0 and
+keeps nothing. The cells the engine itself reads or writes:
+
+| Cell | What it holds |
+|---|---|
+| 5h–Bh | The clock: ticks, minute ones and tens, hour, day, month, year |
+| 11h | The party's facing, 0 to 3 (north, east, south, west) |
+| 13h | The map LOAD FILES loaded |
+| 14h | 1: the temple opens at the next COMBAT |
+| 15h | Monsters defeated |
+| 16h | The area's script (0 at a new game) |
+| 17h, 18h | The party's square before its last step |
+| 19h | Searching (bit 0) and looking (bit 1) |
+| 20h | The party's size |
+| 22h | 1 in a dungeon (the 3D view), 0 on the area map |
+| 23h | The facing as the compass's 0 to 7 |
+| 2Bh, 2Ch | Camp: the rest period and the chance of an interruption |
+| 2Dh | The event of the party's square |
+| 2Eh | Surprise: 1 the party, 2 the monsters |
+| 32h | The wall ahead |
+| 34h, 35h | The party's square |
+| 36h | 1 when a member attacked its own side |
+| 39h | The color of PRINT's text |
+| 3Ah | The tile set and picture of the area map |
+
+OpenGoldBox's engine names the cells by *Pool of Radiance*'s addresses, and
+`game_address` gives each its Darkness cell; a *Pool of Radiance* cell
+Darkness has no place for is kept where no Darkness script reads it.
+
+## The opening
+
+A new game runs script 16, its load entry only, as the original's game loop
+does when the area's script cell (16h) is 0. It loads map 16, New Phlan's
+docks, with wall set 1, and puts the party at (15,0) facing west over picture
+148, where Rolf, New Phlan's portmaster, offers the party a tour of the city.
+Declined, he walks it two squares west and on through the gate's street to
+(11,2), facing south, a footstep a square (PLAY SOUND 10). Accepted, he shows
+the council chambers, the Cloister of Tyr, the training hall and the rest
+before he leaves the party.
+
+`load_campaign(folder, GoldBoxGame::pools_of_darkness)` plays it with the
+loader of the later games (`campaign_session.cpp`). What Darkness changes
+there:
+
+- One file of each kind, numbered 1; LOAD FILES names a map and one wall set,
+  and FIND NPC, not LOAD PIECES, is 37h.
+- A wall set is `WALLDEF1` record n drawn from `8X8D1` record n's tiles in the
+  colors that record sets, over the 16 EGA colors, with color 13 see-through
+  (`load_vga_wall_art`). The maps name its appearances from 1.
+- `PIC1` holds animations and `BIGPIC1` still pictures, each drawn in the
+  colors it sets (`vga_color_table`, `vga_rgba`).
+- TREASURE names its items in `ITEM0`'s definitions: there are no item lists.
+- The item words are in `GAME.EXE`: 125 slots of 21 bytes, "Battle Axe" first.
+- The view's sky and floor keep the colors the other games' views draw them
+  in; the original draws `SKYGRND` and `BACK1` there.
+
+`opengold_darkness_tests` plays the opening on the real files, declining the
+tour.
 
 ### Creatures
 

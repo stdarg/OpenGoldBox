@@ -1,6 +1,8 @@
 #ifndef OPENGOLD_VGA_PICTURE_H
 #define OPENGOLD_VGA_PICTURE_H
 
+#include "opengold/formats.h"
+
 #include <array>
 #include <cstdint>
 #include <optional>
@@ -70,6 +72,16 @@ struct VgaAnimation
 // does not unpack to the picture's size or the sizes do not add up.
 [[nodiscard]] std::optional<VgaAnimation>
 decode_vga_animation(std::span<const std::uint8_t> record);
+
+// The color table a picture is shown with: the 16 EGA colors the games set
+// first, then the run the picture sets over them; the rest black.
+using VgaColorTable = std::array<VgaColor, 256>;
+[[nodiscard]] VgaColorTable vga_color_table(const VgaPaletteRange &colors);
+
+// A picture's pixels in the colors of the table, each 0 to 63 scaled to 0 to
+// 255; pixels of the see-through color, if one is given, are left clear.
+[[nodiscard]] Image vga_rgba(const VgaImage &image, const VgaColorTable &colors,
+                             std::optional<std::uint8_t> see_through = std::nullopt);
 
 } // namespace opengold
 

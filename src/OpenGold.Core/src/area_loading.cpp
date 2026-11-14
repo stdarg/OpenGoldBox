@@ -5,6 +5,7 @@
 #include "opengold/gateway_formats.h"
 #include "opengold/magic_item_catalog.h"
 #include "opengold/path_text.h"
+#include "opengold/vga_picture.h"
 
 #include <utility>
 
@@ -154,6 +155,17 @@ void AreaFiles::pictures(const std::string &name, std::map<unsigned, Image> &des
 {
     for (const auto &record : archive(name).records)
     {
+        if (game_ == GoldBoxGame::pools_of_darkness)
+        {
+            // A big picture is drawn whole, in the colors it sets.
+            if (const auto picture = decode_vga_picture(record.bytes);
+                picture && !picture->frames.empty())
+            {
+                destination.emplace(record.id, vga_rgba(picture->frames.front(),
+                                                        vga_color_table(picture->palette)));
+            }
+            continue;
+        }
         if (game_ == GoldBoxGame::gateway_to_the_savage_frontier)
         {
             // A record of colors alone has no frame to show.
@@ -177,6 +189,20 @@ void AreaFiles::animations(const std::string &name,
 {
     for (const auto &record : archive(name).records)
     {
+        if (game_ == GoldBoxGame::pools_of_darkness)
+        {
+            if (const auto animation = decode_vga_animation(record.bytes))
+            {
+                const auto colors = vga_color_table(animation->palette);
+                std::vector<AnimationFrame> frames;
+                for (const auto &frame : animation->frames)
+                {
+                    frames.push_back({frame.delay, vga_rgba(frame.image, colors)});
+                }
+                destination.emplace(record.id, std::move(frames));
+            }
+            continue;
+        }
         if (game_ == GoldBoxGame::gateway_to_the_savage_frontier)
         {
             if (const auto animation = gateway::decode_animation(record.bytes))
@@ -362,6 +388,32 @@ WallArtSet load_wall_art(const AreaFiles &files, unsigned disk,
     return walls;
 }
 
+WallArtSet load_vga_wall_art(const AreaFiles &files, unsigned set)
+{
+    // The original draws its tiles through color 13 (its Load8x8Set).
+    constexpr std::uint8_t see_through = 13;
+    const auto tiles = decode_vga_picture(files.record("8X8D1.DAX", set));
+    const auto views =
+        tiles ? decode_vga_wall_art(files.record("WALLDEF1.DAX", set), *tiles) : std::nullopt;
+    if (!views)
+    {
+        throw EclError("Invalid wall set " + std::to_string(set));
+    }
+    const auto colors = vga_color_table(tiles->palette);
+    WallArtSet walls;
+    for (const auto &appearance : *views)
+    {
+        std::array<Image, 10> images;
+        for (std::size_t view = 0; view < images.size(); ++view)
+        {
+            images[view] = vga_rgba(appearance[view], colors, see_through);
+        }
+        walls.appearances.push_back(std::move(images));
+    }
+    walls.originals.resize(walls.appearances.size());
+    return walls;
+}
+
 std::shared_ptr<PhlanResources> load_district(const AreaFiles &files, const MapCatalog &maps,
                                               const AreaSource &area, const DistrictMap &geo,
                                               const WallArtReplacements &new_wall_art,
@@ -379,8 +431,14 @@ std::shared_ptr<PhlanResources> load_district(const AreaFiles &files, const MapC
     district->shared_with = geo.shared_with;
     district->bank = area.bank;
     district->pieces = geo.pieces;
-    district->treasure = files.item_lists("ITEM" + bank + ".DAX");
-    district->wall_art = load_wall_art(files, area.bank, geo.pieces, new_wall_art);
+    // Pools of Darkness's TREASURE names its items itself: it has no lists.
+    const bool darkness = files.game() == GoldBoxGame::pools_of_darkness;
+    if (!darkness)
+    {
+        district->treasure = files.item_lists("ITEM" + bank + ".DAX");
+    }
+    district->wall_art = darkness ? load_vga_wall_art(files, geo.pieces.front())
+                                  : load_wall_art(files, area.bank, geo.pieces, new_wall_art);
     // Gateway to the Savage Frontier has no sprite files.
     if (files.game() != GoldBoxGame::gateway_to_the_savage_frontier)
     {

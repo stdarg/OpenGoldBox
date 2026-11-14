@@ -19,6 +19,9 @@ namespace opengold::por
 constexpr int hidden_archer_attack_bonus = 4;
 // The time a step takes, which ECL CLOCK also counts in.
 constexpr std::chrono::seconds step_time{6};
+// Pools of Darkness's PLAY SOUND, a host command only there
+// (docs/games/darkness.md, Scripts).
+constexpr std::uint8_t darkness_play_sound_command = 0x2C;
 
 const PhlanResources &RolfTourSession::area_resources() const
 {
@@ -92,9 +95,16 @@ void RolfTourSession::change_area(unsigned id)
 // ITEMS (64), Secret AWARD EXPERIENCE (65).
 void RolfTourSession::enable_party_commands()
 {
+    const bool darkness = game() == GoldBoxGame::pools_of_darkness;
     for (const std::uint8_t op :
          std::initializer_list<std::uint8_t>{11, 29, 30, 34, 35, 41, 46, 52, 54, 59})
     {
+        // Pools of Darkness's 1Dh, 22h, 23h and 29h are commands the machine
+        // runs itself (WAIT KEY, YES NO, CLEAR AND EXIT, unused).
+        if (darkness && (op == 29 || op == 34 || op == 35 || op == 41))
+        {
+            continue;
+        }
         machine_.enable_host(op);
     }
     if (game() != GoldBoxGame::pool_of_radiance)
@@ -102,7 +112,7 @@ void RolfTourSession::enable_party_commands()
         machine_.enable_host(62);
         machine_.enable_host(64);
     }
-    if (game() == GoldBoxGame::secret_of_the_silver_blades)
+    if (game() == GoldBoxGame::secret_of_the_silver_blades || darkness)
     {
         machine_.enable_host(65);
     }
@@ -452,14 +462,13 @@ void RolfTourSession::configure_town()
     // The Cadorna Textile House's well searches 0x4900-0x497F for a falling
     // charm on the climber (ECL4:2 0xACF5); no script writes there, so it
     // finds none.
-    // Each zone where the campaign's game keeps it (game_address).
+    // Each cell where the campaign's game keeps it (game_address): Pools of
+    // Darkness keeps its named cells apart, not in runs.
     const auto bind_range = [this](std::uint16_t first, std::uint16_t last)
     {
-        const auto from = game_cell(EclAddress{first}).location,
-                   to = game_cell(EclAddress{last}).location;
-        for (auto a = from; a <= to; ++a)
+        for (auto a = first; a <= last; ++a)
         {
-            machine_.bind_variable(EclAddress{a}, 0);
+            machine_.bind_variable(game_cell(EclAddress{a}), 0);
         }
     };
     const bool pool_of_radiance = game() == GoldBoxGame::pool_of_radiance;
@@ -469,6 +478,16 @@ void RolfTourSession::configure_town()
     bind_range(0x6B00, 0x6C1C);
     bind_range(0x6DA8, 0x6EFF);
     bind_range(0x9800, 0x98FF);
+    // Pools of Darkness's own memory: its game cells and the current
+    // character's record (docs/games/darkness.md, Script memory).
+    if (game() == GoldBoxGame::pools_of_darkness)
+    {
+        constexpr std::uint16_t first_cell = 0x0001, last_cell = 0x0800;
+        for (auto a = first_cell; a <= last_cell; ++a)
+        {
+            machine_.bind_variable(EclAddress{a}, 0);
+        }
+    }
     machine_.bind_variable(game_cell(EclAddress{0xB8}), 0);
     machine_.bind_variable(game_cell(EclAddress{0xB9}), 0);
     machine_.bind_variable(game_cell(ecl_clock_hour), 12);
@@ -507,6 +526,10 @@ void RolfTourSession::configure_town()
          std::initializer_list<std::uint8_t>{10, 28, 32, 33, 36, 39, 40, 50, 55, 56, 57, 60})
     {
         machine_.enable_host(op);
+    }
+    if (game() == GoldBoxGame::pools_of_darkness)
+    {
+        machine_.enable_host(darkness_play_sound_command);
     }
     // When the Pyramid falls the Central Wilderness's script patches the
     // original's colours of 36 wilderness tiles in two buffers (ECL7:26
@@ -3847,8 +3870,16 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         }
         break;
     }
+    case darkness_play_sound_command:
+        darkness_play_sound(arg(0));
+        break;
     case 33:
     {
+        if (game() == GoldBoxGame::pools_of_darkness)
+        {
+            reply = darkness_load_files(arg(0), arg(1));
+            break;
+        }
         // Original gate transition refresh before NEW ECL selects its district.
         if (arg(0) == 255 && arg(1) == 255 && arg(2) == 127)
         {

@@ -97,40 +97,41 @@ std::vector<EclOpcode> secret_opcodes()
 }
 
 // Pools of Darkness keeps Secret's numbering but replaces nine commands and
-// changes the operands of four (docs/games/darkness.md). Its scripts are only
-// decoded so far, not run.
+// changes the operands of four (docs/games/darkness.md). The machine runs WAIT
+// KEY, JOURNAL ENTRY, YES NO, CLEAR AND EXIT, ACTION MENU and the unused 29h;
+// the host the rest of the new ones.
 std::vector<EclOpcode> darkness_opcodes()
 {
     auto opcodes = secret_opcodes();
     opcodes.at(0x0C).operands = 4; // SETUP MONSTER gains the fight's directions.
-    opcodes.at(0x1D) = {"WAIT KEY", 0};
-    opcodes.at(0x1F) = {"JOURNAL ENTRY", 1};
+    opcodes.at(0x1D) = {"WAIT KEY", 0, false, true};
+    opcodes.at(0x1F) = {"JOURNAL ENTRY", 1, false, true};
     opcodes.at(0x21).operands = 2; // LOAD FILES: a map and one wall set.
-    opcodes.at(0x22) = {"YES NO", 0};
-    opcodes.at(0x23) = {"CLEAR AND EXIT", 0};
+    opcodes.at(0x22) = {"YES NO", 0, false, true};
+    opcodes.at(0x23) = {"CLEAR AND EXIT", 0, false, true};
     opcodes.at(0x27).operands = 4; // TREASURE: three kinds of wealth, then a list of items.
     opcodes.at(0x27).variable_list = true;
-    opcodes.at(0x29) = {"UNUSED 29", 0};
-    opcodes.at(0x2C) = {"PLAY SOUND", 1};
-    opcodes.at(0x31) = {"ACTION MENU", 2, true};
-    opcodes.at(0x37) = {"FIND NPC", 2};
-    opcodes.at(0x3C) = {"STORE", 1};
-    for (auto &opcode : opcodes)
-    {
-        opcode.executable = false;
-        opcode.requires_host = false;
-    }
+    opcodes.at(0x29) = {"UNUSED 29", 0, false, true};
+    opcodes.at(0x2C) = {"PLAY SOUND", 1, false, true, true};
+    opcodes.at(0x31) = {"ACTION MENU", 2, true, true};
+    opcodes.at(0x37) = {"FIND NPC", 2, false, true, true};
+    opcodes.at(0x3C) = {"STORE", 1, false, true, true};
     return opcodes;
 }
 
 // Treasures of the Savage Frontier adds three commands to Pools of Darkness'
-// (docs/games/treasure.md).
+// (docs/games/treasure.md). Its scripts are only decoded so far, not run.
 std::vector<EclOpcode> treasures_opcodes()
 {
     auto opcodes = darkness_opcodes();
     opcodes.push_back({"LOAD WALL SETS", 4});
     opcodes.push_back({"FIND NAMED ITEM", 4});
     opcodes.push_back({"TAKE NAMED ITEM", 4});
+    for (auto &opcode : opcodes)
+    {
+        opcode.executable = false;
+        opcode.requires_host = false;
+    }
     return opcodes;
 }
 
@@ -213,6 +214,10 @@ EclEngineRoutines ecl_engine_routines(GoldBoxGame game)
         // routines are in docs/games/gateway.md; 8810h, which changes coins
         // up, is not run yet.
         return {0x2E10, 0xC01A, 0xC01E, 0x8001, 0x8000, 0xB200, 0x6803, 0x0809, 0x080C};
+    case GoldBoxGame::pools_of_darkness:
+        // Its CALL names three routines by number: 1 redraws the view, 2 steps
+        // forward, 3 shows the portrait's next frame (its EclCall).
+        return {1, 0, 2, 0, 0, 0, 3};
     default:
         throw EclError("The scripts of " + std::string(game_title(game)) + " are not decoded yet");
     }

@@ -128,6 +128,11 @@ class AreaFiles
                                        const std::array<unsigned, 3> &pieces,
                                        const WallArtReplacements &new_wall_art);
 
+// Pools of Darkness's walls: one set at a time, WALLDEF1 record `set` drawn
+// from the tiles of 8X8D1 record `set` in the colors they set; the maps name
+// its appearances from 1 (docs/games/darkness.md, Walls).
+[[nodiscard]] WallArtSet load_vga_wall_art(const AreaFiles &files, unsigned set);
+
 // One map of an area, without its creatures: the campaign adds those.
 [[nodiscard]] std::shared_ptr<PhlanResources>
 load_district(const AreaFiles &files, const MapCatalog &maps, const AreaSource &area,

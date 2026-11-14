@@ -1,8 +1,10 @@
 #include "opengold/ecl_address.h"
 #include "opengold/ecl.h"
 
+#include <algorithm>
 #include <array>
 #include <string>
+#include <utility>
 
 namespace opengold::por
 {
@@ -36,10 +38,107 @@ ZoneStarts zone_starts(GoldBoxGame game)
     }
 }
 
+// Pools of Darkness keeps its script memory its own way (docs/games/darkness.md,
+// "Script memory"): its cells 1h to 400h are the game's state, each named cell
+// at its own place, and 401h to 800h are the current character's record, byte
+// for byte. Each Pool of Radiance cell the engine names has its Darkness cell
+// here.
+using CellPair = std::pair<std::uint16_t, std::uint16_t>;
+constexpr std::uint16_t darkness_record = 0x401;
+constexpr std::array<CellPair, 31> darkness_cells{{
+    {0x49C5, 0x0013}, // The map LOAD FILES loaded.
+    // The clock: minute ones and tens, hour, day, month and year.
+    {0x49C7, 0x0006},
+    {0x49C8, 0x0007},
+    {0x49C9, 0x0008},
+    {0x49CA, 0x0009},
+    {0x49CB, 0x000A},
+    {0x49CC, 0x000B},
+    {0x49E6, 0x0022}, // In a dungeon (the 3D view), else on the area map.
+    {0x49F0, 0x0017}, // The party's square before its last step.
+    {0x49F1, 0x0018},
+    {0x49F2, 0x0016}, // The area's script.
+    // The current character: its name, its platinum, gems and jewelry (two
+    // bytes each), its status, side and hit points.
+    {0x6B00, darkness_record},
+    {0x6BC3, darkness_record + 331},
+    {0x6BC5, darkness_record + 333},
+    {0x6BC7, darkness_record + 335},
+    {0x6C00, darkness_record + 493},
+    {0x6C0C, darkness_record + 495},
+    {0x6C19, darkness_record + 508},
+    {0x6DC8, 0x0015}, // Monsters defeated.
+    {0x6DCA, 0x0019}, // Searching (bit 0) and looking (bit 1).
+    {0x6DCB, 0x002E}, // Surprise: 1 the party, 2 the monsters.
+    {0x6DD2, 0x002B}, // Camp's rest period and its chance of an interruption.
+    {0x6DD3, 0x002C},
+    {0x6DE2, 0x0014}, // The temple opens at the next COMBAT.
+    {0x6E33, 0x0036}, // A member attacked its own side.
+    {0x6E3E, 0x0020}, // The party's size.
+    {0xC04B, 0x0034}, // The party's square, facing, wall ahead and cell's event.
+    {0xC04C, 0x0035},
+    {0xC04D, 0x0011},
+    {0xC04E, 0x0032},
+    {0xC04F, 0x002D},
+}};
+
+// Darkness's memory: its game cells, its character's record and its script.
+[[nodiscard]] constexpr bool darkness_memory(std::uint16_t cell) noexcept
+{
+    return (cell >= 0x0001 && cell <= 0x0800) || (cell >= 0x8000 && cell <= 0x9DFF);
+}
+
+constexpr std::uint16_t low_spare = 0xF000, script_spare = 0x2000;
+
+// A Pool of Radiance cell Darkness has no place for keeps a place of its own
+// that no Darkness script reads: its own address, or, where that is Darkness's
+// memory, the same cell moved up (low cells by F000h, strings by 2000h).
+[[nodiscard]] constexpr std::uint16_t darkness_spare(std::uint16_t cell) noexcept
+{
+    if (!darkness_memory(cell))
+    {
+        return cell;
+    }
+    return static_cast<std::uint16_t>(cell <= 0x0800 ? cell + low_spare : cell + script_spare);
+}
+
+EclAddress darkness_address(EclAddress cell)
+{
+    const auto named = std::ranges::find(darkness_cells, cell.location, &CellPair::first);
+    return EclAddress(named != darkness_cells.end() ? named->second
+                                                    : darkness_spare(cell.location));
+}
+
+EclAddress darkness_pool_of_radiance_address(EclAddress cell)
+{
+    const auto named = std::ranges::find(darkness_cells, cell.location, &CellPair::second);
+    if (named != darkness_cells.end())
+    {
+        return EclAddress(named->first);
+    }
+    const auto moved_from = [&cell](std::uint16_t spare, std::uint16_t first, std::uint16_t last)
+    {
+        return cell.location >= first + spare && cell.location <= last + spare;
+    };
+    if (moved_from(low_spare, 0x0001, 0x0800))
+    {
+        return EclAddress(static_cast<std::uint16_t>(cell.location - low_spare));
+    }
+    if (moved_from(script_spare, 0x8000, 0x9DFF))
+    {
+        return EclAddress(static_cast<std::uint16_t>(cell.location - script_spare));
+    }
+    return cell;
+}
+
 } // namespace
 
 EclAddress game_address(EclAddress cell, GoldBoxGame game)
 {
+    if (game == GoldBoxGame::pools_of_darkness)
+    {
+        return darkness_address(cell);
+    }
     const auto starts = zone_starts(game);
     for (std::size_t zone = 0; zone < pool_of_radiance_zones.size(); ++zone)
     {
@@ -54,6 +153,10 @@ EclAddress game_address(EclAddress cell, GoldBoxGame game)
 
 EclAddress pool_of_radiance_address(EclAddress cell, GoldBoxGame game)
 {
+    if (game == GoldBoxGame::pools_of_darkness)
+    {
+        return darkness_pool_of_radiance_address(cell);
+    }
     const auto starts = zone_starts(game);
     for (std::size_t zone = 0; zone < pool_of_radiance_zones.size(); ++zone)
     {
