@@ -195,6 +195,24 @@ void EclMachine::ignore_cells(EclAddress first, EclAddress last)
     ignored_cells_.emplace_back(first.location, last.location);
 }
 
+void EclMachine::alias_cell(EclAddress alias, EclAddress cell)
+{
+    require_configurable();
+    aliases_.emplace_back(alias.location, cell.location);
+}
+
+EclAddress EclMachine::named(EclAddress address) const
+{
+    for (const auto &[alias, cell] : aliases_)
+    {
+        if (address.location == alias)
+        {
+            return EclAddress{cell};
+        }
+    }
+    return address;
+}
+
 void EclMachine::bind_variable(EclAddress address, std::uint16_t v)
 {
     require_configurable();
@@ -237,8 +255,9 @@ void EclMachine::bind_string(EclAddress address, std::string_view v)
     }
 }
 
-std::uint16_t EclMachine::variable(EclAddress address) const
+std::uint16_t EclMachine::variable(EclAddress cell) const
 {
+    const auto address = named(cell);
     if (program_address(*program_, address))
     {
         const auto offset = address.location - program_->memory().origin + 2;
@@ -285,11 +304,12 @@ std::string EclMachine::string(EclAddress address) const
 
 bool EclMachine::consume_script_write(EclAddress address)
 {
-    return script_writes_.erase(address) > 0;
+    return script_writes_.erase(named(address)) > 0;
 }
 
-void EclMachine::write(EclAddress address, std::uint16_t v)
+void EclMachine::write(EclAddress cell, std::uint16_t v)
 {
+    const auto address = named(cell);
     if (std::any_of(ignored_cells_.begin(), ignored_cells_.end(),
                     [&](const auto &range)
                     {

@@ -1070,10 +1070,12 @@ bool walk_census(GoldBoxGame game, bool route)
 {
     using opengold::por::TourPhase;
     const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    const auto folder =
-        games ? std::filesystem::path(games) /
-                    (game == GoldBoxGame::secret_of_the_silver_blades ? "SECRET" : "CURSE")
-              : std::filesystem::path();
+    const auto folder = games
+                            ? std::filesystem::path(games) /
+                                  (game == GoldBoxGame::secret_of_the_silver_blades      ? "SECRET"
+                                   : game == GoldBoxGame::gateway_to_the_savage_frontier ? "GATEWAY"
+                                                                                         : "CURSE")
+                            : std::filesystem::path();
     if (!games || opengold::identify_game(folder) != game)
     {
         std::cout << game_title(game) << "'s files are not here.\n";
@@ -2110,6 +2112,10 @@ int main(int argc, char **argv)
         if (argc == 2 && std::string_view(argv[1]) == "--secret-walk")
         {
             return walk_census(GoldBoxGame::secret_of_the_silver_blades, false) ? 0 : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--gateway-walk")
+        {
+            return walk_census(GoldBoxGame::gateway_to_the_savage_frontier, false) ? 0 : 1;
         }
         if (argc == 2 && std::string_view(argv[1]) == "--secret-route")
         {

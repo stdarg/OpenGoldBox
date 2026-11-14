@@ -480,6 +480,12 @@ void RolfTourSession::configure_town()
     machine_.bind_variable(game_cell(EclAddress{0xC059}), 0);
     machine_.bind_variable(game_cell(EclAddress{0xC05A}), 0);
     machine_.bind_variable(game_cell(EclAddress{0xC05F}), 0);
+    // Gateway's scripts also name the party's facing 3B2h (its ReadGbvm and
+    // WriteGbvm).
+    if (game() == GoldBoxGame::gateway_to_the_savage_frontier)
+    {
+        machine_.alias_cell(EclAddress{0x3B2}, game_cell(ecl_party_facing));
+    }
     for (const auto address : {ecl_overland_direction, ecl_overland_target_x,
                                ecl_overland_target_y, ecl_overland_terrain, ecl_overland_tile})
     {
@@ -3046,6 +3052,27 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             throw EclError("Unsupported encounter distance");
         }
         encounter_distance_ = std::min<unsigned>(arg(1), open_squares_ahead(map_, snapshot_.pose));
+        // Gateway's monsters have no distance sprites (255; it has no SPRIT
+        // files): only the close-up shows, face to face (its DisplayMonster).
+        constexpr unsigned no_sprite = 255;
+        if (arg(0) == no_sprite)
+        {
+            sprites_ = {};
+            snapshot_.sprite_frame = -1;
+            snapshot_.sprite_id = arg(0);
+            picture_animation_id_.reset();
+            picture_.reset();
+            if (arg(2) == no_sprite)
+            {
+                monster_picture_id_.reset();
+            }
+            else
+            {
+                monster_picture_id_ = arg(2);
+            }
+            ++snapshot_.picture_revision;
+            break;
+        }
         // The Pitt's buccaneer names sprite 19, which SPRIT1 lacks: met face
         // to face, the original shows the head (0x6DE1) and body portrait.
         const auto head_id = machine_.variable(game_cell(EclAddress{0x6DE1}));

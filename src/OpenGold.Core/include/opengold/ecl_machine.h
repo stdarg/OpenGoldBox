@@ -149,6 +149,10 @@ class EclMachine
     // dropped and reads give 0, such as the original's tile colours a script
     // patches when the Pyramid falls.
     void ignore_cells(EclAddress first, EclAddress last);
+    // A second name for a bound cell: the script's reads and writes of
+    // `alias` go to `cell` (Gateway names the party's facing 3B2h as well as
+    // C04Dh).
+    void alias_cell(EclAddress alias, EclAddress cell);
     [[nodiscard]] std::uint16_t variable(EclAddress address) const;
     // Whether a script instruction (not a host reply or binding) wrote the
     // cell since the last call for it, such as a script setting the clock.
@@ -206,6 +210,8 @@ class EclMachine
     std::mt19937 random_{5489U}; // Reproducible OpenGoldBox RNG, not the DOS RNG sequence.
     std::set<std::uint8_t> host_opcodes_;
     std::vector<std::pair<std::uint16_t, std::uint16_t>> ignored_cells_;
+    std::vector<std::pair<std::uint16_t, std::uint16_t>> aliases_;
+    [[nodiscard]] EclAddress named(EclAddress address) const;
     // Cells script instructions wrote, and whether one is executing now.
     std::set<EclAddress> script_writes_;
     bool executing_{};
