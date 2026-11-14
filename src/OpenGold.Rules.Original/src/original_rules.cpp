@@ -204,6 +204,33 @@ constexpr std::array<std::array<int, 19>, class_slot_count> secret_stored_thac0{
      {40, 40, 40, 40, 40, 41, 41, 41, 41, 44, 44, 44, 44, 46, 46, 46, 46, 48, 48},
      {40, 40, 40, 40, 42, 42, 42, 44, 44, 44, 46, 46, 46, 48, 48, 48, 50, 50, 50}}};
 
+// Pools of Darkness's THAC0, level 0 to 21 (its baseToHitTbl): warriors
+// improve every second level to 56 (THAC0 4) at 17; a magic-user's is 20 from
+// level 1 and improves at 6, 11, 16 and 21; clerics and thieves keep Secret's
+// to level 18. It has no monks; their row is a cleric's.
+constexpr std::array<std::array<int, 22>, class_slot_count> darkness_stored_thac0 = []
+{
+    constexpr std::array<int, 22> fighter{39, 40, 40, 42, 42, 44, 44, 46, 46, 48, 48,
+                                          50, 50, 52, 52, 54, 54, 56, 56, 56, 56, 56};
+    constexpr std::array<int, 22> magic_user{39, 40, 40, 40, 40, 40, 41, 41, 41, 41, 41,
+                                             44, 44, 44, 44, 44, 47, 47, 47, 47, 47, 49};
+    constexpr std::array<int, 3> cleric_from_19{51, 51, 51}, thief_from_19{48, 48, 50};
+    std::array<std::array<int, 22>, class_slot_count> table{};
+    const auto secret_then = [](std::size_t slot, const std::array<int, 3> &from_19)
+    {
+        std::array<int, 22> row{};
+        std::copy(secret_stored_thac0[slot].begin(), secret_stored_thac0[slot].end(), row.begin());
+        std::copy(from_19.begin(), from_19.end(), row.begin() + 19);
+        return row;
+    };
+    table[0] = table[1] = table[7] = secret_then(0, cleric_from_19);
+    table[2] = table[3] = table[4] = fighter;
+    table[3][0] = table[4][0] = 40;
+    table[5] = magic_user;
+    table[6] = secret_then(6, thief_from_19);
+    return table;
+}();
+
 // The original stores 60 minus THAC0, by class slot and level 0 to 10.
 constexpr std::array<std::array<int, 11>, class_slot_count> stored_thac0{
     {{40, 40, 40, 40, 42, 42, 42, 44, 44, 44, 46},
@@ -282,6 +309,20 @@ constexpr std::array<std::array<SaveRow, 18>, class_slot_count> secret_saves = [
     return table;
 }();
 
+// Pools of Darkness's saving throws at levels 19 to 21 (its saveTbl); to 18
+// they are Secret's. Its cleric and thief rows at 19 repeat level 18's, a
+// level early; they are given level 20's here (docs/ORIGINAL-RULES.md, Bugs).
+constexpr std::array<std::array<SaveRow, 3>, class_slot_count> darkness_high_saves{{
+    {{{2, 5, 6, 8, 7}, {2, 5, 6, 8, 7}, {2, 5, 6, 8, 7}}},
+    {{{4, 7, 8, 10, 9}, {4, 7, 8, 10, 9}, {4, 7, 8, 10, 9}}},
+    {{{3, 4, 5, 4, 6}, {3, 4, 5, 4, 6}, {3, 4, 5, 4, 6}}},
+    {{{1, 2, 3, 2, 4}, {1, 2, 3, 2, 4}, {1, 2, 3, 2, 4}}},
+    {{{3, 4, 5, 4, 6}, {3, 4, 5, 4, 6}, {3, 4, 5, 4, 6}}},
+    {{{10, 7, 5, 9, 6}, {10, 7, 5, 9, 6}, {8, 5, 3, 7, 4}}},
+    {{{9, 8, 6, 12, 7}, {9, 8, 6, 12, 7}, {8, 7, 4, 11, 5}}},
+    {{{9, 8, 6, 12, 7}, {9, 8, 6, 12, 7}, {8, 7, 4, 11, 5}}},
+}};
+
 // A class's saving throws at a level from 1 to 12: clerics, druids and monks
 // improve every three levels, fighters, paladins and rangers every two,
 // magic-users at levels 6 and 11, thieves at 5 and 9.
@@ -346,6 +387,15 @@ constexpr std::array<std::array<int, 17>, class_slot_count> experience_table_sec
       1100001, 1320001, 1540001, 1760001},
      {}}};
 
+// Pools of Darkness's experience from level 11 to 40 (its XpForLevel): level
+// 11's, then so much more a level. Its paladins and rangers need 1 less than
+// Secret's at 11.
+constexpr std::array<int, class_slot_count> darkness_level_11{675001, 0,      750001, 1050000,
+                                                              650000, 375001, 220001, 0};
+constexpr std::array<int, class_slot_count> darkness_per_level{225000, 0,      250000, 350000,
+                                                               325000, 375000, 220000, 0};
+constexpr int darkness_highest_level = 40;
+
 // Curse rolls a class's Hit Die at each level below this one, and adds a
 // fixed amount from it on (curse_fixed_hit_points).
 constexpr std::array<int, class_slot_count> curse_hit_dice_levels{10, 15, 10, 10, 11, 12, 11, 13};
@@ -394,6 +444,38 @@ constexpr std::array<SlotRow, 14> magic_user_slots{{{2, 0, 0, 0, 0, 0, 0},
                                                     {5, 5, 5, 4, 4, 2, 0},
                                                     {5, 5, 5, 4, 4, 2, 1},
                                                     {5, 5, 5, 5, 5, 2, 1}}};
+
+// Pools of Darkness's slots of spell levels 1 to 7 for class levels 16 to 29
+// (its spell table; to 15 they are Secret's). Its magic-users' eighth- and
+// ninth-level slots are not kept yet.
+constexpr std::array<SlotRow, 14> darkness_cleric_slots{{{7, 7, 7, 6, 5, 3, 1},
+                                                         {8, 8, 8, 6, 5, 3, 1},
+                                                         {8, 8, 8, 7, 6, 4, 1},
+                                                         {9, 9, 9, 7, 6, 4, 2},
+                                                         {9, 9, 9, 8, 7, 5, 2},
+                                                         {9, 9, 9, 9, 8, 6, 2},
+                                                         {9, 9, 9, 9, 9, 6, 3},
+                                                         {9, 9, 9, 9, 9, 7, 3},
+                                                         {9, 9, 9, 9, 9, 8, 3},
+                                                         {9, 9, 9, 9, 9, 8, 4},
+                                                         {9, 9, 9, 9, 9, 9, 4},
+                                                         {9, 9, 9, 9, 9, 9, 5},
+                                                         {9, 9, 9, 9, 9, 9, 6},
+                                                         {9, 9, 9, 9, 9, 9, 7}}};
+constexpr std::array<SlotRow, 14> darkness_magic_user_slots{{{5, 5, 5, 5, 5, 3, 2},
+                                                             {5, 5, 5, 5, 5, 3, 3},
+                                                             {5, 5, 5, 5, 5, 3, 3},
+                                                             {5, 5, 5, 5, 5, 3, 3},
+                                                             {5, 5, 5, 5, 5, 4, 3},
+                                                             {5, 5, 5, 5, 5, 4, 4},
+                                                             {5, 5, 5, 5, 5, 5, 4},
+                                                             {5, 5, 5, 5, 5, 5, 5},
+                                                             {5, 5, 5, 5, 5, 5, 5},
+                                                             {5, 5, 5, 5, 5, 5, 5},
+                                                             {6, 6, 6, 6, 5, 5, 5},
+                                                             {6, 6, 6, 6, 6, 6, 6},
+                                                             {6, 6, 6, 6, 6, 6, 6},
+                                                             {7, 7, 7, 7, 6, 6, 6}}};
 
 using SkillRow = std::array<int, 8>;
 // A thief's chances by thief level 1 to 9.
@@ -518,6 +600,15 @@ constexpr std::array<std::array<int, 5>, 11> thief_dexterity_adjustments{{{-15, 
         score = std::max(score, 13);
     }
     return score;
+}
+
+// Secret of the Silver Blades and Pools of Darkness divide a level's rolled
+// Hit Points and its Constitution bonus among the classes apart, and count the
+// bonus once for each die.
+[[nodiscard]] constexpr bool secret_hit_points(GoldBoxGame game) noexcept
+{
+    return game == GoldBoxGame::secret_of_the_silver_blades ||
+           game == GoldBoxGame::pools_of_darkness;
 }
 
 [[nodiscard]] int divided_among_classes(int total, int bonus, int class_count)
@@ -710,7 +801,7 @@ RolledCharacter roll_character(Race race, Profession profession, GoldBoxGame gam
     // first level's Hit Dice the better of two.
     const bool curse = game != GoldBoxGame::pool_of_radiance;
     RolledCharacter rolled;
-    rolled.starting_age = starting_age(race, profession, random);
+    rolled.starting_age = starting_age(race, profession, random, game);
     for (const auto ability : original_ability_order)
     {
         rolled.rolls[ability] =
@@ -719,8 +810,12 @@ RolledCharacter roll_character(Race race, Profession profession, GoldBoxGame gam
     rolled.strength_percentile = roll_die(random, 100);
     const auto classes = classes_of(profession);
     // Curse's characters start with platinum (starting_platinum) instead; in
-    // Secret only a thief brings gold, 2d6.
-    if (game == GoldBoxGame::secret_of_the_silver_blades)
+    // Secret only a thief brings gold, 2d6, and in Pools of Darkness no one.
+    if (game == GoldBoxGame::pools_of_darkness)
+    {
+        rolled.gold = 0;
+    }
+    else if (game == GoldBoxGame::secret_of_the_silver_blades)
     {
         rolled.gold =
             std::ranges::find(classes, C::thief) != classes.end() ? roll_dice(random, {2, 6}) : 0;
@@ -767,6 +862,9 @@ int starting_experience(Profession profession, GoldBoxGame game)
         // The kit's game record starts a new character with 40,001
         // experience, shared among its classes (docs/games/ua.md).
         return 40001 / classes;
+    case GoldBoxGame::pools_of_darkness:
+        // Its creation gives each count its own amount (CreateCharacterMenu).
+        return classes == 1 ? 1500001 : classes == 2 ? 750000 : 500000;
     default:
         return 0;
     }
@@ -796,6 +894,7 @@ int starting_platinum(GoldBoxGame game)
     case GoldBoxGame::gateway_to_the_savage_frontier:
         return 35;
     case GoldBoxGame::unlimited_adventures:
+    case GoldBoxGame::pools_of_darkness:
         return 200;
     default:
         return 0;
@@ -823,6 +922,36 @@ namespace
     default:
         return {};
     }
+}
+
+// The magic-user spells Pools of Darkness's creation teaches once trained
+// (its InitKnownSpells), by its own numbers: every spell of levels 1 to 3,
+// then a set for each higher level the magic-user has slots of, and every
+// spell with ninth-level slots, which OpenGoldBox does not keep yet.
+[[nodiscard]] std::vector<int> darkness_starting_spells(const SlotRow &slots)
+{
+    std::vector<int> learned;
+    for (const int number : castable_spells(GoldBoxGame::pools_of_darkness))
+    {
+        const auto *known = spell(number);
+        if (known->caster_class == SpellClass::magic_user && known->level <= 3)
+        {
+            learned.push_back(number);
+        }
+    }
+    const std::array<std::vector<int>, 4> sets{
+        {{81, 82, 83, 84, 85, 87, 88}, {91, 92, 118, 119}, {111, 112, 113, 114}, {115, 117}}};
+    for (std::size_t level = 4; level <= 7; ++level)
+    {
+        if (slots[level - 1] > 0)
+        {
+            for (const int own : sets[level - 4])
+            {
+                learned.push_back(canonical_spell(own, GoldBoxGame::pools_of_darkness));
+            }
+        }
+    }
+    return learned;
 }
 
 // The magic-user spells Curse's creation teaches at each level it trains to
@@ -866,6 +995,12 @@ StartingTraining starting_training(Race race, Profession profession,
         const auto ready = classes_ready_to_train(race, trained.levels, scores, experience, game);
         if (ready.empty())
         {
+            if (game == GoldBoxGame::pools_of_darkness && level_in(trained.levels, C::magic_user))
+            {
+                trained.learned_spells = darkness_starting_spells(
+                    spell_slots(C::magic_user, level_in(trained.levels, C::magic_user),
+                                scores[Ability::wisdom], scores[Ability::intelligence], game));
+            }
             return trained;
         }
         int rolled_dice = 0;
@@ -876,7 +1011,7 @@ StartingTraining starting_training(Race race, Profession profession,
                 static_cast<std::size_t>(std::ranges::find(classes, slot) - classes.begin());
             rolled_dice +=
                 rolled.training_hit_dice.at(first_die[n] + static_cast<std::size_t>(level - 2));
-            if (slot == C::magic_user)
+            if (slot == C::magic_user && game != GoldBoxGame::pools_of_darkness)
             {
                 const auto learned = game == GoldBoxGame::secret_of_the_silver_blades
                                          ? secret_starting_spells(level)
@@ -939,7 +1074,7 @@ int first_level_hit_points(Profession profession, const RolledCharacter &rolled,
     }
     const int bonus = constitution_hit_point_bonus(profession, constitution, game, true);
     const int classes = static_cast<int>(class_count);
-    if (game == GoldBoxGame::secret_of_the_silver_blades)
+    if (secret_hit_points(game))
     {
         return std::max(1, total / classes) + bonus / classes;
     }
@@ -957,7 +1092,7 @@ int first_level_rolled_hit_points(Profession profession, const RolledCharacter &
     return total / static_cast<int>(class_count);
 }
 
-int starting_age(Race race, Profession profession, RandomState &random)
+int starting_age(Race race, Profession profession, RandomState &random, GoldBoxGame game)
 {
     const auto &ages = starting_ages[index(race)];
     const auto classes = classes_of(profession);
@@ -967,11 +1102,18 @@ int starting_age(Race race, Profession profession, RandomState &random)
         {
             throw std::invalid_argument("The original has no starting age for a monk");
         }
+        const bool darkness = game == GoldBoxGame::pools_of_darkness;
         // Curse's table has no half-elf ranger, which it starts aged 0
-        // (docs/ORIGINAL-RULES.md, Bugs): a warrior's row stands in.
+        // (docs/ORIGINAL-RULES.md, Bugs): a warrior's row stands in. Pools of
+        // Darkness's has one, 22 years and no dice.
         const auto &row = ages[index(classes.front())];
-        const auto dice = row.base > 0 ? row : ages[index(C::fighter)];
-        return dice.base + roll_dice(random, {dice.count, dice.sides});
+        const auto dice = row.base > 0 ? row
+                          : darkness   ? AgeDice{22, 0, 0}
+                                       : ages[index(C::fighter)];
+        // Pools of Darkness makes a single class ten years older (its
+        // CreateCharacterMenu).
+        const int older = darkness ? 10 : 0;
+        return dice.base + roll_dice(random, {dice.count, dice.sides}) + older;
     }
     // A multi-class character is as old as one of its classes allows at most:
     // its cleric's, else its magic-user's, else its fighter's.
@@ -1010,11 +1152,14 @@ int constitution_hit_point_bonus(Profession profession, int constitution, GoldBo
     int bonus = 0;
     for (const auto slot : classes)
     {
-        if (game == GoldBoxGame::secret_of_the_silver_blades)
+        if (secret_hit_points(game))
         {
             // Each class's own bonus, once for each of the level's dice: a
-            // cleric's and a ranger's first level roll two.
-            const int dice = first_level && (slot == C::cleric || slot == C::ranger) ? 2 : 1;
+            // ranger's first level rolls two, and in Secret a cleric's.
+            const bool two_dice =
+                slot == C::ranger ||
+                (slot == C::cleric && game == GoldBoxGame::secret_of_the_silver_blades);
+            const int dice = first_level && two_dice ? 2 : 1;
             bonus += (per_class + (warrior(slot) ? warrior_extra : 0)) * dice;
             continue;
         }
@@ -1127,6 +1272,13 @@ int thac0(const ClassLevels &levels, GoldBoxGame game)
                 secret_stored_thac0[slot][static_cast<std::size_t>(std::min(levels[slot], 18))]);
             continue;
         }
+        if (game == GoldBoxGame::pools_of_darkness)
+        {
+            best = std::max(
+                best,
+                darkness_stored_thac0[slot][static_cast<std::size_t>(std::min(levels[slot], 21))]);
+            continue;
+        }
         const auto level = static_cast<std::size_t>(std::min(levels[slot], curse ? 12 : 10));
         best = std::max(best, curse ? curse_stored_thac0[slot][level] : stored_thac0[slot][level]);
     }
@@ -1143,7 +1295,19 @@ std::array<int, 5> saving_throws(const ClassLevels &levels, GoldBoxGame game)
         {
             continue;
         }
-        if (game == GoldBoxGame::secret_of_the_silver_blades)
+        if (game == GoldBoxGame::pools_of_darkness && levels[slot] > 18)
+        {
+            const auto &row =
+                darkness_high_saves[slot]
+                                   [static_cast<std::size_t>(std::min(levels[slot], 21) - 19)];
+            for (std::size_t save = 0; save < best.size(); ++save)
+            {
+                best[save] = std::min(best[save], row[save]);
+            }
+            continue;
+        }
+        if (game == GoldBoxGame::secret_of_the_silver_blades ||
+            game == GoldBoxGame::pools_of_darkness)
         {
             const auto &row =
                 secret_saves[slot][static_cast<std::size_t>(std::min(levels[slot], 18) - 1)];
@@ -1171,7 +1335,16 @@ std::optional<int> experience_for_level(ClassSlot slot, int level, GoldBoxGame g
     {
         return 0;
     }
-    if (game == GoldBoxGame::secret_of_the_silver_blades)
+    if (game == GoldBoxGame::pools_of_darkness && level >= 11)
+    {
+        const auto at = index(slot);
+        if (level > darkness_highest_level || darkness_level_11[at] == 0)
+        {
+            return std::nullopt;
+        }
+        return darkness_level_11[at] + (level - 11) * darkness_per_level[at];
+    }
+    if (game == GoldBoxGame::secret_of_the_silver_blades || game == GoldBoxGame::pools_of_darkness)
     {
         if (level < 2 || level > 18)
         {
@@ -1200,7 +1373,9 @@ std::vector<int> known_spells(const ClassLevels &levels, int wisdom, std::span<c
         spell_slots(ClassSlot::cleric, level_in(levels, ClassSlot::cleric), wisdom, 9, game);
     // Detect Magic, Read Magic, Sleep, and Shield (Pool of Radiance) or
     // Enlarge (Curse).
-    const std::array<int, 4> first_magic_user_spells{11, curse_tables(game) ? 12 : 19, 18, 21};
+    // Pools of Darkness's too knows Enlarge.
+    const bool enlarge = curse_tables(game) || game == GoldBoxGame::pools_of_darkness;
+    const std::array<int, 4> first_magic_user_spells{11, enlarge ? 12 : 19, 18, 21};
     const bool magic_user = level_in(levels, ClassSlot::magic_user) > 0;
     std::vector<int> known;
     for (const int number : castable_spells(game))
@@ -1289,7 +1464,7 @@ int training_hit_points(Profession profession, int rolled, int constitution, Gol
 {
     const int classes = static_cast<int>(classes_of(profession).size());
     const int bonus = constitution_hit_point_bonus(profession, constitution, game);
-    if (game == GoldBoxGame::secret_of_the_silver_blades)
+    if (secret_hit_points(game))
     {
         return std::max(1, rolled / classes) + bonus / classes;
     }
@@ -1358,8 +1533,10 @@ int experience_share(Profession profession, const AbilityArray<int> &scores, int
     switch (profession)
     {
     case P::cleric:
-        // Secret's cleric gains it from Wisdom 15.
-        return game == GoldBoxGame::secret_of_the_silver_blades && scores[Ability::wisdom] == 15
+        // Secret's and Pools of Darkness's cleric gains it from Wisdom 15.
+        return (game == GoldBoxGame::secret_of_the_silver_blades ||
+                game == GoldBoxGame::pools_of_darkness) &&
+                       scores[Ability::wisdom] == 15
                    ? award + award / 10
                    : bonus_above_15(Ability::wisdom);
     case P::paladin:
@@ -1449,10 +1626,14 @@ SpellSlots spell_slots(ClassSlot slot, int level, int wisdom, int intelligence, 
     {
         return {};
     }
-    const bool secret = game == GoldBoxGame::secret_of_the_silver_blades;
+    const bool darkness = game == GoldBoxGame::pools_of_darkness;
+    const bool secret = game == GoldBoxGame::secret_of_the_silver_blades || darkness;
     const auto &table = slot == C::cleric ? cleric_slots : magic_user_slots;
-    SlotRow slots = level == 1
-                        ? SlotRow{1, 0, 0, 0, 0, 0, 0}
+    const auto &darkness_table =
+        slot == C::cleric ? darkness_cleric_slots : darkness_magic_user_slots;
+    SlotRow slots = level == 1 ? SlotRow{1, 0, 0, 0, 0, 0, 0}
+                    : darkness && level > 15
+                        ? darkness_table[static_cast<std::size_t>(std::min(level, 29) - 16)]
                         : table[static_cast<std::size_t>(std::min(level, secret ? 15 : 12) - 2)];
     if (!secret)
     {

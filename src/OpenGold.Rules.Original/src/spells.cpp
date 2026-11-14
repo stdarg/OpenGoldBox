@@ -172,7 +172,9 @@ constexpr std::array<int, 30> curse_castable{158, 166, 167, 168, 169, 170, 171, 
 
 int canonical_spell(int number, GoldBoxGame game) noexcept
 {
-    if (game == GoldBoxGame::secret_of_the_silver_blades)
+    // Pools of Darkness numbers its spells as Secret does, and its new ones
+    // (101 to 109, 118 to 126) take numbers Secret leaves free.
+    if (game == GoldBoxGame::secret_of_the_silver_blades || game == GoldBoxGame::pools_of_darkness)
     {
         // Secret keeps Curse's numbers but where its own spells took them.
         constexpr std::array<int, 6> own{36, 56, 63, 90, 96, 98};

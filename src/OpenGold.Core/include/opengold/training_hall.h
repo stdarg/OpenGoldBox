@@ -64,11 +64,14 @@ enum class TrainingDenial
 [[nodiscard]] std::vector<std::string_view> original_hall_classes(TrainingHall hall);
 
 // What the original's training costs (chargen.pas, TrainingMenu): 1,000
-// gold, and nothing in Secret of the Silver Blades, whose TrainingMenu takes
-// no money.
+// gold, and nothing in Secret of the Silver Blades and Pools of Darkness,
+// whose TrainingMenu takes no money.
 [[nodiscard]] constexpr std::uint32_t original_training_fee(GoldBoxGame game) noexcept
 {
-    return game == GoldBoxGame::secret_of_the_silver_blades ? 0 : 1000;
+    return game == GoldBoxGame::secret_of_the_silver_blades ||
+                   game == GoldBoxGame::pools_of_darkness
+               ? 0
+               : 1000;
 }
 
 // One member's experience session: its fee, the experience it grants and

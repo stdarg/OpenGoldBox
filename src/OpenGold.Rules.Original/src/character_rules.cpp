@@ -925,6 +925,7 @@ constexpr std::string_view curse_edition = "curse-of-the-azure-bonds";
 constexpr std::string_view secret_edition = "secret-of-the-silver-blades";
 constexpr std::string_view gateway_edition = "gateway-to-the-savage-frontier";
 constexpr std::string_view ua_edition = "unlimited-adventures";
+constexpr std::string_view darkness_edition = "pools-of-darkness";
 } // namespace
 
 rules::Identity identity(GoldBoxGame game)
@@ -933,6 +934,7 @@ rules::Identity identity(GoldBoxGame game)
                          : game == GoldBoxGame::secret_of_the_silver_blades    ? secret_edition
                          : game == GoldBoxGame::gateway_to_the_savage_frontier ? gateway_edition
                          : game == GoldBoxGame::unlimited_adventures           ? ua_edition
+                         : game == GoldBoxGame::pools_of_darkness              ? darkness_edition
                                                                                : pool_edition;
     return {"opengold.original", "0.1.0", std::string(edition)};
 }
@@ -950,6 +952,10 @@ GoldBoxGame game_of(const rules::Identity &identity)
     if (identity.content == ua_edition)
     {
         return GoldBoxGame::unlimited_adventures;
+    }
+    if (identity.content == darkness_edition)
+    {
+        return GoldBoxGame::pools_of_darkness;
     }
     return identity.content == secret_edition ? GoldBoxGame::secret_of_the_silver_blades
                                               : GoldBoxGame::pool_of_radiance;

@@ -741,6 +741,66 @@ void gateway_characters_start_low_and_stop_at_caps()
           "A fighter/thief trains only one class on one visit");
 }
 
+// Pools of Darkness starts a single class at 1,500,001 experience, trained
+// up at once, with 200 platinum, and reads its own tables to level 40
+// (docs/ORIGINAL-RULES.md, Pools of Darkness).
+void darkness_characters_start_high()
+{
+    const auto darkness = GoldBoxGame::pools_of_darkness;
+    std::shared_ptr<const rules::CharacterRules> creation =
+        original::character_rules(original::default_aging, darkness);
+    const auto made = [&](std::string profession)
+    {
+        rules::CharacterDraft draft;
+        draft.race = "human";
+        draft.gender = "male";
+        draft.alignment = profession == "paladin" ? "lawful_good" : "neutral_good";
+        draft.character_class = std::move(profession);
+        draft.name = "Vala";
+        RandomState random{23};
+        creation->roll_in_place(draft, random);
+        return creation->evaluate(draft, rules::NameRequirement::required);
+    };
+    const auto fighter = made("fighter");
+    const auto &warrior = *fighter.original;
+    check(warrior.experience == 1500001 && warrior.class_levels[2] == 14 &&
+              warrior.platinum == 200 && warrior.gold == 0,
+          "A fighter starts with 1,500,001 experience at level 14 and 200 platinum");
+    check(warrior.thac0 == 8, "A level 14 fighter's THAC0 is 8, from Darkness's table");
+    check(warrior.saving_throws == std::array<int, 5>{5, 6, 7, 5, 8},
+          "and it saves as a level 14 fighter");
+    const auto magic_user = made("magic_user");
+    const auto &mage = *magic_user.original;
+    check(mage.class_levels[5] == 14 && mage.thac0 == 16,
+          "A magic-user reaches level 14, with THAC0 16");
+    const auto knows = [&mage](int number)
+    {
+        return std::ranges::find(mage.known_spells, number) != mage.known_spells.end();
+    };
+    // Every spell of levels 1 to 3 (Fireball, 47), the fourth level's set
+    // (Charm Monsters, its 81) and the fifth's (Cloudkill, its 91).
+    check(knows(19) && knows(47) && knows(181) && knows(191),
+          "A magic-user learns Darkness's creation spells: " +
+              std::to_string(mage.known_spells.size()));
+    check(made("thief").original->class_levels[6] == 16 &&
+              made("paladin").original->class_levels[3] == 12,
+          "A thief reaches level 16, a paladin 12");
+    check(original::experience_for_level(original::ClassSlot::paladin, 12, darkness) == 1400000 &&
+              original::experience_for_level(original::ClassSlot::fighter, 40, darkness) ==
+                  8000001 &&
+              !original::experience_for_level(original::ClassSlot::fighter, 41, darkness),
+          "Levels rise to 40, a paladin's twelfth at 1,400,000");
+
+    // Its training takes no money.
+    original::Content content;
+    content.game = darkness;
+    CampaignParty party(original::rules_module(content), creation);
+    const auto id = party.add_pc(made_fighter(creation));
+    party.award_experience(300'000, "test:darkness");
+    check(party.hall_training(id, TrainingHall::fighters).denial == TrainingDenial::none,
+          "A Darkness hall trains a party with no gold");
+}
+
 void curse_paladins_and_rangers()
 {
     const auto module = original::rules_module();
@@ -1051,6 +1111,7 @@ int main()
         curse_paladins_and_rangers();
         secret_characters_start_trained();
         gateway_characters_start_low_and_stop_at_caps();
+        darkness_characters_start_high();
         std::cout << "Original creation tests passed\n";
         return 0;
     }

@@ -252,7 +252,8 @@ por::CharacterRecord character_record(const CharacterSheet &sheet)
         const bool warrior = std::max(fighter, level_in(l, ClassSlot::paladin)) > 6;
         attacks = warrior || level_in(l, ClassSlot::ranger) > 7 ? 3 : 2;
     }
-    if (game == GoldBoxGame::secret_of_the_silver_blades)
+    // Pools of Darkness's are Secret's.
+    if (game == GoldBoxGame::secret_of_the_silver_blades || game == GoldBoxGame::pools_of_darkness)
     {
         const auto warrior = std::max(fighter, level_in(l, ClassSlot::paladin));
         const auto ranger = level_in(l, ClassSlot::ranger);
@@ -675,10 +676,13 @@ namespace
 constexpr std::array<std::uint8_t, class_slot_count> usability_bits{1 << 1, 1 << 4, 1 << 3, 1 << 6,
                                                                     1 << 7, 1 << 0, 1 << 2, 1 << 5};
 
-// Secret's items mark rangers with the paladin's bit (its classMaskTbl).
+// Secret's and Pools of Darkness's items mark rangers with the paladin's bit
+// (their classMaskTbl).
 std::uint8_t usability(const CharacterSheet &sheet)
 {
-    const bool secret = game_of(sheet.identity) == GoldBoxGame::secret_of_the_silver_blades;
+    const auto game = game_of(sheet.identity);
+    const bool secret =
+        game == GoldBoxGame::secret_of_the_silver_blades || game == GoldBoxGame::pools_of_darkness;
     std::uint8_t bits = 0;
     const auto &levels = original_numbers(sheet).class_levels;
     for (std::size_t at = 0; at < class_slot_count; ++at)

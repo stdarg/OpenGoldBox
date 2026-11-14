@@ -458,6 +458,12 @@ new decoders.
    drawn in their own 256 colors (`opengold_darkness_tests`, 2026-11-14). Its
    script memory is its own (darkness.md, Script memory), and the machine runs
    its new commands.
+3. Making a party under *Pools of Darkness*'s rules (ORIGINAL-RULES.md,
+   *Pools of Darkness*): 1,500,001 experience a single class (750,000 dual,
+   500,000 triple) trained up at once, 200 platinum, its tables to level 40
+   and its creation spells (2026-11-14, `opengold_original_creation_tests`).
+   Bringing a *Secret* party across, which the original offers, is still to
+   come.
 
 ### 8. *Unlimited Adventures*
 

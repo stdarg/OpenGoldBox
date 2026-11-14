@@ -236,7 +236,8 @@ struct StartingTraining
 [[nodiscard]] int first_level_rolled_hit_points(Profession profession,
                                                 const RolledCharacter &rolled);
 
-[[nodiscard]] int starting_age(Race race, Profession profession, RandomState &random);
+[[nodiscard]] int starting_age(Race race, Profession profession, RandomState &random,
+                               GoldBoxGame game = GoldBoxGame::pool_of_radiance);
 // The Hit Points every level of every class adds for this Constitution, before
 // a multi-class character's total is divided among its classes (ConHpBonus).
 // Curse and Secret give fighters, paladins and rangers more from 17 up;

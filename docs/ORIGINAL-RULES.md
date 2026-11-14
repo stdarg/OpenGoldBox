@@ -297,6 +297,53 @@ reconstruction), with these differences (2026-11-14):
   reach), its temple's poison rules, and a half-elf ranger's starting age.
   Training takes one class a visit, as in *Curse*.
 
+## Pools of Darkness
+
+*Pools of Darkness* plays *Secret*'s rules with tables that run to level 40
+(its reconstruction, checked against the manual and the Adventurer's
+Journal), chosen by the game as the others' are (2026-11-14):
+
+- **Creation:** a character starts with 1,500,001 experience a single class,
+  750,000 a dual-class and 500,000 a triple-class one, trained at once: a
+  human fighter, cleric or magic-user reaches level 14, a paladin 12, a ranger
+  13, a thief 16. Each starts with 200 platinum and no gold. A first-level
+  cleric rolls one die again; only a ranger rolls two. A single-class
+  character is ten years older than in *Secret*, and a half-elf ranger starts
+  at 32. Races, classes, alignments, ability limits and level limits are
+  *Secret*'s.
+- **Hit Points** are reckoned as *Secret*'s, the Constitution bonus once for
+  each of a level's dice.
+- **Experience:** *Secret*'s to level 10; from 11 a level costs a fixed amount
+  more (cleric 225,000, fighter 250,000, paladin 350,000, ranger 325,000,
+  magic-user 375,000, thief 220,000) up to level 40. A paladin's level 11
+  needs 1,050,000 and a ranger's 650,000, 1 less than in *Secret*.
+- **THAC0** to level 21 (its `baseToHitTbl`): a fighter, paladin or ranger
+  improves by 2 every second level to THAC0 4 at level 17; a magic-user's is
+  20 from level 1 and improves at 6, 11, 16 and 21; clerics' and thieves' are
+  *Secret*'s to level 18, then a cleric's 9 and a thief's 12, 12 and 10.
+- **Saving throws:** *Secret*'s to level 18, then to level 21 its own rows:
+  a cleric's and a thief's improve at 19 (Bugs), a fighter's, paladin's and
+  ranger's stay, a magic-user's improves at 21.
+- **Spell slots** of spell levels 1 to 7 go on to class level 29, with
+  *Secret*'s Wisdom and Intelligence gates.
+- **Spells at creation:** once trained, a magic-user knows every spell of
+  levels 1 to 3, and with fourth-level slots Charm Monsters, Confusion,
+  Dimension Door, Fear, Fire Shield, Ice Storm and Minor Globe of
+  Invulnerability (its 81 to 85, 87 and 88), with fifth-level slots Cloudkill
+  and Cone of Cold (its 91 and 92), and the higher levels' sets. A
+  dual-class magic-user knows Enlarge, as in *Curse*.
+- **Spell numbers** are *Secret*'s; its new spells, 101 to 109 and 118 to
+  126, are numbered 200 higher too.
+- **Training** costs nothing; attacks, thief skills and the experience
+  bonuses are *Secret*'s.
+- **Still to come:** spell levels 8 and 9 (its magic-users' slots from level
+  16 and its spells 120 to 126), its other new spells (Blade Barrier,
+  Restoration, Energy Drain, Destruction, Resurrection, the ranger's druid
+  spells 106 to 109, Fire Touch and Iron Skin), a Charisma of at least 6 for
+  every class, Exceptional Strength for paladins and rangers, its starting
+  equipment, and bringing a *Secret* party across (its LoadChar), which the
+  original offers.
+
 ## Unlimited Adventures
 
 *Unlimited Adventures* is SSI's C rewrite, not the Pascal engine, but its
@@ -913,4 +960,5 @@ tuned with the AI lab once the original rules play.
 | *Curse:* Faerie Fire improves its target's Armor Class by 2, and sets any of 2 or better to 0, instead of making it easier to hit (`ovr013`, `FaerieFire`) | 2 worse |
 | *Curse:* Charm Monsters, like Hold Monster, takes only what Charm Person can (`ovr023`, `MultiTargetedSpell`) | Any creature |
 | *Curse:* the dracolich's shield against fear, enfeeblement and feeblemind is looked at only once those have landed, so it does almost nothing (`ovr013`, `AffectDracolichA`) | It is immune to them |
+| *Pools of Darkness:* its saving-throw table gives a cleric and a thief at level 19 the row of levels 16 to 18 and 13 to 16, though the rows on either side follow the classes' steps of three and four levels (`saveTbl` in its reconstruction) | Level 20's row from 19 |
 | *Curse:* the wilderness script (ECL1 80) marks a camp with a cell Tilverton's sage and Kybor's library also set for themselves (0x4C13), so a party that paid the sage reaches the wilderness as if back from camp: it skips loading the roads from Tilverton, and the first journey goes where stale cells say | Arriving from another script, the party is not back from camp |
