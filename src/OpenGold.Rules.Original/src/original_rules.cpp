@@ -1445,11 +1445,13 @@ std::vector<int> known_spells(const ClassLevels &levels, int wisdom, std::span<c
                                   known_spell->level <= 7 && slots.cleric[at] > 0;
         const bool druid_spell = known_spell->caster_class == SpellClass::druid &&
                                  known_spell->level <= 7 && slots.druid[at] > 0;
+        // A spell learned or scribed stays known, a ranger's too (Curse's
+        // ranger knows only those it scribes).
         const bool magic_user_spell =
             known_spell->caster_class == SpellClass::magic_user &&
-            ((magic_user && (std::ranges::find(first_magic_user_spells, number) !=
-                                 first_magic_user_spells.end() ||
-                             std::ranges::find(learned, number) != learned.end())) ||
+            ((magic_user && std::ranges::find(first_magic_user_spells, number) !=
+                                first_magic_user_spells.end()) ||
+             std::ranges::find(learned, number) != learned.end() ||
              (secret && known_spell->level <= 7 && ranger_slots.magic_user[at] > 0));
         if (cleric_spell || druid_spell || magic_user_spell)
         {

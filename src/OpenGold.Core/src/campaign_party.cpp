@@ -62,6 +62,54 @@ void keep_scroll_spells(PartyMember &member, std::uint64_t id, unsigned kept)
     member.character.replace_inventory(std::move(inventory));
 }
 
+// Whether the member's item is an original scroll under the original rules:
+// a record keyed as its own, of an equip slot of 11 to 13 (magic.pas,
+// ItemReadable).
+bool original_scroll(const PartyMember &member, std::uint64_t id)
+{
+    const auto item = member.character.inventory().find(id);
+    const auto source = member.item_sources.find(id);
+    if (!item || source == member.item_sources.end() ||
+        !por::item_of_original_key(item->get().definition_id))
+    {
+        return false;
+    }
+    const int slot = source->second.base.worn_location;
+    return slot > 10 && slot < 14;
+}
+
+// Erases the spells read or scribed from an original scroll, keeping the
+// record's spell bytes whose bits are set in `kept`; a scroll with none left
+// is gone (magic.pas, RemoveSpellFromScroll).
+void keep_original_scroll_spells(PartyMember &member, std::uint64_t id, unsigned kept)
+{
+    auto &raw = member.item_sources.at(id).stored;
+    for (std::size_t n = 0; n < raw.effect_codes.size(); ++n)
+    {
+        if (!(kept & (1U << n)))
+        {
+            raw.effect_codes[n] = 0;
+            raw.raw[60 + n] = 0;
+        }
+    }
+    auto inventory = member.character.inventory();
+    if (std::ranges::any_of(raw.effect_codes,
+                            [](auto code)
+                            {
+                                return code != 0;
+                            }))
+    {
+        inventory.redefine(id, por::original_item_key(raw));
+    }
+    else
+    {
+        inventory.remove(id, 1);
+        std::erase(member.equipped, id);
+        member.item_sources.erase(id);
+    }
+    member.character.replace_inventory(std::move(inventory));
+}
+
 // Spends the member's lowest bottle of Magic Ink that writes a spell of
 // `level` (MAGIC-6).
 void spend_magic_ink(PartyMember &member, unsigned level)
@@ -127,10 +175,16 @@ void keep_thrown_gear(PartyMember &member, const std::string &definition, unsign
 void keep_item_uses(PartyMember &member, std::uint64_t id, unsigned left)
 {
     const auto item = member.character.inventory().find(id);
-    // A scroll reports the spells still on it (MAGIC-6).
+    // A scroll reports the spells still on it (MAGIC-6), an original scroll
+    // by its record's spell bytes.
     if (item && rules::parse_scroll_key(item->get().definition_id))
     {
         keep_scroll_spells(member, id, left);
+        return;
+    }
+    if (item && original_scroll(member, id))
+    {
+        keep_original_scroll_spells(member, id, left);
         return;
     }
     // Combat reports the uses left after every action, so an item an earlier
@@ -769,6 +823,11 @@ bool identify_item(PartyMember &member, std::uint64_t item)
     source->second.identify();
     auto inventory = member.character.inventory();
     inventory.rename(item, source->second.label());
+    // An item the original rules key by its record is known in its key too.
+    if (por::item_of_original_key(inventory.find(item)->get().definition_id))
+    {
+        inventory.redefine(item, por::original_item_key(source->second.stored));
+    }
     member.character.replace_inventory(std::move(inventory));
     return true;
 }
@@ -3421,6 +3480,10 @@ std::vector<CampaignParty::ScrollCopy> CampaignParty::copyable_spells(MemberId i
     const auto carried = wizard.character.inventory().find(item);
     // The parsed key's spell names point into `key`.
     const auto key = carried ? rules_definition(wizard, carried->get()) : std::string{};
+    if (rules_->plays_original_records())
+    {
+        return rules_->scroll_copies(wizard.character.sheet(), wizard.vitals, key);
+    }
     const auto scroll = rules::parse_scroll_key(key);
     if (!scroll || scroll->unidentified || !scroll->arcane || wizard.vitals.dead)
     {
@@ -3463,14 +3526,26 @@ void CampaignParty::copy_scroll_spell(MemberId id, std::uint64_t item, unsigned 
     }
     auto next = state_;
     auto &wizard = member_in(next, id);
-    spend_magic_ink(wizard, copy->level);
+    // The original's scribing takes no ink (camp.pas, CampScribeMenu).
+    const bool original = rules_->plays_original_records();
+    if (!original)
+    {
+        spend_magic_ink(wizard, copy->level);
+    }
     // Recorded with the hall training, so a save rebuilds the spellbook.
     wizard.character.train_at_hall(*rules_, "boon:scroll:" + copy->spell);
-    const auto spells =
-        rules::parse_scroll_key(wizard.character.inventory().find(item)->get().definition_id)
-            ->spells.size();
-    keep_scroll_spells(wizard, item, ((1U << spells) - 1) & ~(1U << entry));
-    elapse(next, std::chrono::hours{2 * copy->level});
+    if (original)
+    {
+        keep_original_scroll_spells(wizard, item, ~(1U << entry));
+    }
+    else
+    {
+        const auto spells =
+            rules::parse_scroll_key(wizard.character.inventory().find(item)->get().definition_id)
+                ->spells.size();
+        keep_scroll_spells(wizard, item, ((1U << spells) - 1) & ~(1U << entry));
+    }
+    elapse(next, rules_->copying_time(copy->level));
     state_ = std::move(next);
 }
 

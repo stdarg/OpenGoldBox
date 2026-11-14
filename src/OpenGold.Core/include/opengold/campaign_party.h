@@ -529,17 +529,13 @@ class CampaignParty
                      std::string_view action);
     // A spell on a scroll the member can copy into its spellbook now: its place
     // on the scroll and its level.
-    struct ScrollCopy
-    {
-        unsigned entry{};
-        std::string spell;
-        unsigned level{};
-    };
+    using ScrollCopy = rules::ScrollCopy;
     [[nodiscard]] std::vector<ScrollCopy> copyable_spells(MemberId id, std::uint64_t item) const;
     // Copies a spell from a scroll the member carries into its spellbook
     // (MAGIC-6): it takes a bottle of Magic Ink of the spell's level or higher
     // the member carries and two hours for each spell level, and the spell
-    // leaves the scroll.
+    // leaves the scroll. Under the original rules it takes no ink and a
+    // rest's preparation time (camp.pas, CampScribeMenu).
     void copy_scroll_spell(MemberId id, std::uint64_t item, unsigned entry);
     // The spells the member can write on a scroll now (MAGIC-6), with a
     // bottle of Magic Ink it carries.

@@ -888,9 +888,12 @@ class OriginalCharacterRules final : public rules::CharacterRules
         numbers.cleric_slots = slots.cleric;
         numbers.druid_slots = slots.druid;
         numbers.magic_user_slots = slots.magic_user;
-        // A magic-user's book: the record's known-spell flags, by number.
+        // A magic-user's or ranger's book: the record's known-spell flags, by
+        // number.
+        const bool keeps_book =
+            level_in(levels, ClassSlot::magic_user) > 0 || level_in(levels, ClassSlot::ranger) > 0;
         std::vector<int> learned;
-        for (std::size_t n = 0; n < record.spell_book.size(); ++n)
+        for (std::size_t n = 0; keeps_book && n < record.spell_book.size(); ++n)
         {
             if (record.spell_book[n] != 0)
             {

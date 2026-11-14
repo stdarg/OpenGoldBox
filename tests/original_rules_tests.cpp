@@ -495,6 +495,9 @@ void paladins_and_rangers_cast()
     const auto curse_ranger = known_spells(only(ClassSlot::ranger, 9), 18, {}, curse);
     check(knows(curse_ranger, 178) && knows(curse_ranger, 180) && !knows(curse_ranger, 15),
           "Curse's ranger knows the druid's spells, and no magic-user spell unscribed");
+    const std::array<int, 1> scribed{15};
+    check(knows(known_spells(only(ClassSlot::ranger, 9), 18, scribed, curse), 15),
+          "Curse's ranger knows a magic-user spell it scribed");
     const auto secret_ranger = known_spells(only(ClassSlot::ranger, 9), 18, {}, secret);
     check(knows(secret_ranger, 178) && !knows(secret_ranger, 296) && knows(secret_ranger, 15) &&
               !knows(secret_ranger, 29),

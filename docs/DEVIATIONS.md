@@ -254,6 +254,12 @@ Departures from the original game's own rules, when OpenGoldBox plays by them
   missile's target harder to hit with distance, and for a weapon of range 3 or
   less it counted every target as far, even next to the shooter. A target
   within the weapon's range has no distance penalty.
+- **Scribing at once** (2026-11-14). The original marks the spells to scribe
+  and scribes them as the party next rests, the rest as long as the longest
+  preparation: four hours (six with a spell above the second level) shared by
+  every spell scribed or memorized, and a quarter hour a spell level. As
+  OpenGoldBox memorizes after the rest, it scribes each spell at once, and
+  each takes its own four (or six) hours and quarter hours.
 - **Bandaging** (the user, 2026-11-12). The original's Bandage saved the first
   dying party member anywhere on the field. The one who bandages must stand
   next to the dying member.

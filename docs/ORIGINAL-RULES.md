@@ -156,7 +156,7 @@ and a save each know which tables they use.
   (first-level at 9 and 11, second-level at 13 and 15), knows every druid
   spell of a level it has slots for and casts them at its level less 7, and
   its magic-user spells at its level less 8. *Curse*'s ranger knows no
-  magic-user spell but those it scribes (scribing is still to come);
+  magic-user spell but those it scribes;
   *Secret*'s knows every one of the levels it has slots for. A character
   with no cleric or magic-user levels that is no paladin above 8 nor ranger
   above 7 casts at level 6, as a monster does. The sheet shows the druid's
@@ -494,30 +494,22 @@ whole list):
 
 The work asked for next (2026-11-14), in order, with what each needs:
 
-1. **Scribing a scroll's spell into a magic-user's book** (`CampScribeMenu`,
-   `CampSpellPrepTime`). The campaign's copying (`CampaignParty::
-   copyable_spells`, `copy_scroll_spell`, `keep_scroll_spells`) reads the
-   SRD's scroll keys and magic ink. It needs rules hooks: the copyable
-   entries of an original scroll (its record's effect codes, readable and of
-   a level the member has slots for), the scroll's key with an entry spent,
-   and the original module's `train_at_hall("boon:scroll:<spell>")` adding
-   the spell to the book; scribing takes a rest's preparation time.
-2. **An age that changes after creation:** a character keeps its starting
+1. **An age that changes after creation:** a character keeps its starting
    age (scores are worked out from it), so the years added since need their
    own entry in the level history. Then Youth (Secret's item power 63,
    `SpellYouth`: 1d4+1 years younger, not below 18) and the year Haste ages
    a creature (`EffHasted`, the first time), applied after the fight through
    `lasting_changes`.
-3. **Readying items mid-fight** (the View menu; `RecalcStats`,
+2. **Readying items mid-fight** (the View menu; `RecalcStats`,
    `RecalcAttacksLeft`, the AI's `EquipWeaponAndArmor`): a fight holds only a
    member's Combatant. It needs, through the rules seam, the member's record
    and its carried items, so the session can work its numbers out again as
    an item is readied or put away.
-4. **Time between rests:** the walking time the campaign's clock counts, so
+3. **Time between rests:** the walking time the campaign's clock counts, so
    a disease wastes (a point of Strength an hour, a Hit Point every ten
    minutes) and camp spells, Slow Poison and the paladin's week run down as
    the original counts time; today they change only at a day's rest.
-5. The other "Still to come" items above that are no one game's campaign or
+4. The other "Still to come" items above that are no one game's campaign or
    route work, in their order in this file: the AI's caution near clouds and
    a giant-bane weapon (effect 75) in *Secret*; the party's facing, the
    terrain heights for sight and PARTY_MOVE_MODIFIER (step 7); Spiritual
@@ -652,9 +644,20 @@ lines in all:
      where the game's table allows (Gateway's), cast in camp, carry their
      effects into the next fight by their minutes, and through a day's rest
      as their minutes allow; the time between is not counted.
-   - Still to come: scribing a scroll's spell into a
-     magic-user's book (`CampScribeMenu`); the original's rest of any length
-     and its preparation time (`CampSpellPrepTime`).
+   - **Scribing** (2026-11-14; `CampScribeMenu`, `CheckScribeDone`): a
+     member awake and alive scribes a spell from a scroll it carries and can
+     read (known, or by Read Magic, or a cleric's scroll for a cleric) into
+     its book, when the spell is not in the book and the member has slots of
+     its class and level (a *Curse* ranger its magic-user spells so). It
+     takes no ink, and a rest's preparation time (`CampSpellPrepTime`): four
+     hours, six for a spell above the second level, and a quarter hour a
+     spell level. The spell leaves the scroll, which is gone with its last;
+     the book keeps it through saves and drained levels. Read Magic is cast
+     in camp on its caster and lasts into the next fight. A spell read from a
+     scroll in a fight leaves the scroll's others on it. The inventory's Use
+     offers the scroll's spells to scribe.
+   - Still to come: the original's rest of any length and its preparation
+     time for memorizing (`CampSpellPrepTime`).
    - **The Strength spells** (2026-11-14; `magic.pas`, `SpellEnlarge`,
      `SpellReduce`, `SpellStrength`, `SpellGiantStrength`; `fxengine.pas`,
      `RecalcAbility`): Enlarge gives 18/00, 18/01, 18/51, 18/76, 18/91 and
@@ -1167,6 +1170,7 @@ tuned with the AI lab once the original rules play.
 | *Secret:* a paladin with no cleric or magic-user levels casts its spells at level 6 whatever its own, as its check for a caster leaves the paladin out where *Curse*'s has it (`charhlp.pas`, `GetCasterLevel`) | At its paladin level, as *Secret* reckons a paladin's spells otherwise |
 | *Secret:* the spells a magic-user learns while trained at creation include, at level 6, Cure Light Wounds, a cleric's spell (`chargen.pas`, TrainingMenu) | Left out |
 | *Gateway:* Neutralize Poison at the temple stands up any member at 0 Hit Points or dead, poisoned or not, once the player pays for it anyway (`temple.pas`, `NeutralizePoison`) | Only one that is poisoned |
+| Scribing marks the first byte equal to the spell's number on any item the character carries, readable or not: when a wand or potion comes first, its byte (charges or power) is changed and the scroll's spell is never scribed (`camp.pas`, `CampScribeMenu`) | Only a spell on a scroll the character can read |
 | Enlarge cast above level 6 in *Pool of Radiance*, or above 11 in *Curse*, gives whatever Strength the last Enlarge left, as no table row sets it (`magic.pas`, `SpellEnlarge`) | The most the table gives |
 | *Pool of Radiance:* Strength cast on a creature of no class it names, and in *Curse* on a paladin or ranger, adds a die never rolled (`magic.pas`, `SpellStrength`) | A d4, and a warrior's d8 |
 | *Curse:* Entangle's hold lasts as long as the spell table's row past its end says, an unset value (`magic.pas`, `SpellEntangle`, its duration taken for spell 136) | Entangle's own 10 rounds |

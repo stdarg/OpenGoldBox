@@ -520,6 +520,9 @@ class OriginalModule final : public RulesModule
                                         RandomState &random_state) const override;
     [[nodiscard]] std::optional<unsigned>
     copyable_spell_level(const CharacterSheet &, std::string_view spell) const override;
+    [[nodiscard]] std::vector<ScrollCopy> scroll_copies(const CharacterSheet &, const VitalState &,
+                                                        std::string_view scroll) const override;
+    [[nodiscard]] std::chrono::minutes copying_time(unsigned level) const override;
     [[nodiscard]] std::vector<ScrollWriting> writable_spells(const CharacterSheet &) const override;
     [[nodiscard]] bool can_cast_exploration_spell(const CharacterSheet &, const VitalState &,
                                                   std::string_view) const override;
@@ -1051,9 +1054,28 @@ TrainingChoiceGroup OriginalModule::hall_training_options(const CharacterSheet &
     throw unavailable("hall_training_options");
 }
 
-void OriginalModule::train_at_hall(CharacterSheet &, std::string_view) const
+// A spell scribed from a scroll into the book (camp.pas, CampScribeMenu):
+// "boon:scroll:" and the spell's id, of a class and level the character has
+// slots for. A spell already in the book stays, as a level the character
+// comes back to after a drain replays it.
+void OriginalModule::train_at_hall(CharacterSheet &sheet, std::string_view grant) const
 {
-    throw unavailable("train_at_hall");
+    constexpr std::string_view scribed = "boon:scroll:";
+    const auto number =
+        grant.starts_with(scribed) ? spell_number(grant.substr(scribed.size())) : std::nullopt;
+    const auto *known = number ? spell(*number, game_of(sheet.identity)) : nullptr;
+    if (!known || !sheet.original || slots_for(*sheet.original, *known) == 0)
+    {
+        throw std::invalid_argument("That spell cannot be scribed");
+    }
+    auto next = sheet;
+    auto &book = next.original->known_spells;
+    if (std::ranges::find(book, *number) == book.end())
+    {
+        book.push_back(*number);
+        recount_levels(next);
+    }
+    sheet = std::move(next);
 }
 
 // Training is the original's level-up: every class with the experience rises
@@ -1432,8 +1454,8 @@ void strengthen_in_camp(const CharacterSheet &caster, const CharacterSheet &targ
 
 // The spells cast in camp for their effects, which carry into the next fight
 // (lasting_condition); the party is camp target 4.
-constexpr std::array<int, 19> camp_effect_spells{1,  6,  7,  8,  16, 17, 19, 24, 29, 30,
-                                                 32, 42, 45, 48, 50, 52, 53, 54, 169};
+constexpr std::array<int, 20> camp_effect_spells{1,  6,  7,  8,  16, 17, 18, 19, 24, 29,
+                                                 30, 32, 42, 45, 48, 50, 52, 53, 54, 169};
 constexpr int party_target = 4;
 
 // A camp spell's effect on its target (magic.pas, ResolveSpell): its minutes
@@ -2301,6 +2323,60 @@ std::optional<unsigned> OriginalModule::copyable_spell_level(const CharacterShee
                                                              std::string_view) const
 {
     return std::nullopt;
+}
+
+// The spells a member may scribe from a scroll it carries (camp.pas,
+// CampScribeMenu; magic.pas, AddScrollSpells): one awake and alive, a scroll
+// it can read (known, or by Read Magic, or a cleric's scroll for a cleric),
+// and each spell on it not in its book whose class and level it has slots
+// for.
+std::vector<ScrollCopy> OriginalModule::scroll_copies(const CharacterSheet &sheet,
+                                                      const VitalState &state,
+                                                      std::string_view scroll) const
+{
+    const auto record = por::item_of_original_key(scroll);
+    if (!sheet.original || !record || record->type >= content_.item_types.size() || state.dead ||
+        state.hit_points <= 0)
+    {
+        return {};
+    }
+    constexpr int read_magic = 16, cleric_scroll = 12;
+    const int slot = content_.item_types[record->type].worn_location;
+    const auto &numbers = *sheet.original;
+    const bool cleric = level_in(numbers.class_levels, ClassSlot::cleric) > 0;
+    const bool readable = record->hidden_name_words == 0 ||
+                          condition(conditions_of(sheet, state), read_magic) ||
+                          (cleric && slot == cleric_scroll);
+    if (slot < 11 || slot > 13 || !readable)
+    {
+        return {};
+    }
+    const auto game = game_of(sheet.identity);
+    std::vector<ScrollCopy> copies;
+    for (std::size_t at = 0; at < record->effect_codes.size(); ++at)
+    {
+        const int number = canonical_spell(record->effect_codes[at] & 0x7F, game);
+        const auto *known = spell(number, game);
+        const auto id = spell_id(number);
+        const bool in_book =
+            std::ranges::find(numbers.known_spells, number) != numbers.known_spells.end();
+        const bool listed = std::ranges::find(copies, id, &ScrollCopy::spell) != copies.end();
+        if (!known || id.empty() || in_book || listed || slots_for(numbers, *known) == 0)
+        {
+            continue;
+        }
+        copies.push_back({static_cast<unsigned>(at), id, static_cast<unsigned>(known->level),
+                          std::string(known->name)});
+    }
+    return copies;
+}
+
+// A scribing's preparation (camp.pas, CampSpellPrepTime): four hours, six for
+// a spell above the second level, and a quarter hour a spell level.
+std::chrono::minutes OriginalModule::copying_time(unsigned level) const
+{
+    const auto base = std::chrono::hours{level > 2 ? 6 : 4};
+    return base + std::chrono::minutes{15 * level};
 }
 
 std::vector<ScrollWriting> OriginalModule::writable_spells(const CharacterSheet &) const

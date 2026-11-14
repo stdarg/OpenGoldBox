@@ -1096,8 +1096,8 @@ void RolfTourView::inventory_selected(std::int64_t index)
     required_node<Button>(*this, "InventoryPanel/%UseItem")
         .set_visible(
             campaign_->rule_module().usable_outside_combat(item.definition_id) ||
-            (scroll && (!campaign_->scroll_actions(campaign_->selected(), item.id).empty() ||
-                        !campaign_->copyable_spells(campaign_->selected(), item.id).empty())));
+            !campaign_->copyable_spells(campaign_->selected(), item.id).empty() ||
+            (scroll && !campaign_->scroll_actions(campaign_->selected(), item.id).empty()));
     try
     {
         required_node<Label>(*this, "InventoryPanel/%Status")
@@ -1554,8 +1554,10 @@ void RolfTourView::use_inventory_item()
         }
         const auto item = items[selection[0]];
         const auto name = String::utf8(campaign_->member(id).character.sheet().name.c_str());
-        // A scroll's spells are read, or copied, from the Cast menu (MAGIC-6).
-        if (opengold::rules::parse_scroll_key(item.definition_id))
+        // A scroll's spells are read, or copied, from the Cast menu (MAGIC-6);
+        // an original scroll's are scribed.
+        if (opengold::rules::parse_scroll_key(item.definition_id) ||
+            !campaign_->copyable_spells(id, item.id).empty())
         {
             scroll_item_ = item.id;
             required_node<Control>(*this, "InventoryPanel").hide();
@@ -1720,9 +1722,21 @@ void RolfTourView::refresh_cast()
             add(i18n::render(offered.label), offered.id, offered.whole_party);
         }
         // Copying takes a bottle of Magic Ink of the spell's level or higher
-        // and two hours a spell level.
+        // and two hours a spell level; the original's scribing takes no ink
+        // and a rest's preparation time.
+        const bool original = campaign_->rule_module().plays_original_records();
         for (const auto &copy : campaign_->copyable_spells(caster, *scroll_item_))
         {
+            if (original)
+            {
+                const auto minutes = campaign_->rule_module().copying_time(copy.level).count();
+                add(i18n::format(N_("Scribe {spell} into the spellbook ({hours} h {minutes} min)"),
+                                 {{"spell", i18n::text(copy.name)},
+                                  {"hours", static_cast<int>(minutes / 60)},
+                                  {"minutes", static_cast<int>(minutes % 60)}}),
+                    "copy:" + std::to_string(copy.entry), true);
+                continue;
+            }
             add(i18n::format(
                     N_("Copy {spell} into the spellbook (Magic Ink of level {level} or higher, {hours} hours)"),
                     {{"spell", i18n::text(opengold::srd5::spell_label(copy.spell))},

@@ -506,6 +506,17 @@ struct ScrollWriting
     bool arcane{};
 };
 
+// A spell on a scroll a member can copy into its spellbook: its place on the
+// scroll, its id and its level, and its name when the rules name it (the
+// original rules'); the game names an SRD spell by its id.
+struct ScrollCopy
+{
+    unsigned entry{};
+    std::string spell;
+    unsigned level{};
+    std::string name;
+};
+
 // A party member a whole-party camp action may affect: its sheet is read and
 // its state changed. References, so neither can be null, and the action takes
 // a non-const span, so the call shows that party state changes (Effective C++
@@ -1405,8 +1416,25 @@ class RulesModule
                                   std::string_view action, RandomState &random_state) const = 0;
     // The spell's level when the member can copy it into a spellbook (MAGIC-6):
     // a Wizard spell of a level the Wizard can prepare, not yet in its book.
-    [[nodiscard]] virtual std::optional<unsigned> copyable_spell_level(const CharacterSheet &,
-                                                                       std::string_view spell) const = 0;
+    [[nodiscard]] virtual std::optional<unsigned>
+    copyable_spell_level(const CharacterSheet &, std::string_view spell) const = 0;
+
+    // The spells the member can copy into its spellbook from an original
+    // scroll (`scroll`, a record's key), for rules that play the original
+    // records: each by the record's spell byte it is on. Empty for rules that
+    // read the campaign's scroll keys (copyable_spell_level).
+    [[nodiscard]] virtual std::vector<ScrollCopy>
+    scroll_copies(const CharacterSheet &, const VitalState &, std::string_view /*scroll*/) const
+    {
+        return {};
+    }
+
+    // How long copying a spell of `level` into a spellbook takes: two hours a
+    // spell level (MAGIC-6).
+    [[nodiscard]] virtual std::chrono::minutes copying_time(unsigned level) const
+    {
+        return std::chrono::hours{2 * level};
+    }
     // The spells the member can write on a scroll (MAGIC-6): those on its
     // class's list it can cast, with a slot of the spell's level or a Mystic
     // Arcanum. No cantrip; writing spends no slot.

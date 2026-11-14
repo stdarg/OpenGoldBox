@@ -481,6 +481,137 @@ void a_magic_user_memorizes_and_learns()
     check(std::ranges::find(after, 15) != after.end(), "It learns Magic Missile");
 }
 
+// A magic-user's scroll of three spells, its name words hidden or known.
+por::Equipment magic_user_scroll(const std::vector<por::ItemTemplate> &types,
+                                 std::array<std::uint8_t, 3> spells, bool identified)
+{
+    constexpr std::uint8_t scroll_type = 61;
+    auto scroll = original_item(types, scroll_type, 5);
+    scroll.stored.raw[0] = 1;
+    scroll.stored.raw[53] = identified ? 0 : 4;
+    for (std::size_t at = 0; at < spells.size(); ++at)
+    {
+        scroll.stored.raw[60 + at] = spells[at];
+    }
+    scroll.stored = por::decode_items(scroll.stored.raw)->front();
+    return scroll;
+}
+
+// Scribing (camp.pas, CampScribeMenu; gametime.pas, CheckScribeDone): a
+// magic-user copies a spell it can read on a scroll, of a level it has slots
+// for and not in its book, taking no ink and a rest's preparation time
+// (CampSpellPrepTime: four hours and a quarter hour a spell level); the spell
+// leaves the scroll, which is gone with its last. Read Magic cast in camp
+// reads an unknown scroll. A fight's reading leaves the scroll's other spells.
+void a_magic_user_scribes_a_scroll()
+{
+    std::vector<por::ItemTemplate> types(256);
+    types[61].worn_location = 11;
+    types[61].class_restrictions = 0xFF;
+    const original::Content content{{}, types};
+    std::shared_ptr<const rules::CharacterRules> creation = original::character_rules();
+    CampaignParty party(original::rules_module(content), creation);
+    const auto mage = member_with(party, creation, "magic_user", "Mira");
+    constexpr std::uint8_t magic_missile = 15, sleep = 21, fireball = 47;
+    const auto known_scroll =
+        carried(party, mage, magic_user_scroll(types, {magic_missile, sleep, fireball}, true));
+    const auto copies = party.copyable_spells(mage, known_scroll);
+    check(copies.size() == 1 && copies.front().entry == 0 &&
+              copies.front().spell == "magic_user:magic_missile" && copies.front().level == 1,
+          "Only Magic Missile is scribed: Sleep is known and Fireball beyond the slots");
+
+    const auto minutes = party.state().time_minutes;
+    party.copy_scroll_spell(mage, known_scroll, 0);
+    const auto &book = party.member(mage).character.sheet().original->known_spells;
+    check(std::ranges::find(book, magic_missile) != book.end(), "Magic Missile is in the book");
+    check(party.state().time_minutes == minutes + 4 * 60 + 15,
+          "A first-level spell takes four hours and a quarter");
+    const auto &left = party.member(mage).character.inventory().find(known_scroll)->get();
+    const auto record = por::item_of_original_key(left.definition_id);
+    check(record && record->effect_codes == std::array<std::uint8_t, 3>{0, sleep, fireball} &&
+              party.copyable_spells(mage, known_scroll).empty(),
+          "The scribed spell leaves the scroll, which keeps the others");
+    check(throws(
+              [&]
+              {
+                  party.copy_scroll_spell(mage, known_scroll, 1);
+              }),
+          "A known spell is not scribed");
+
+    const auto saved = encode_campaign(party, nullptr, "scribe-check");
+    const auto module = original::rules_module(content);
+    const auto loaded = decode_campaign(saved, *creation, *module, "scribe-check", nullptr);
+    const auto &loaded_book = loaded.party.roster.front().character.sheet().original->known_spells;
+    check(std::ranges::find(loaded_book, magic_missile) != loaded_book.end(),
+          "A save keeps the scribed spell");
+
+    // An unknown scroll is read once Read Magic is cast in camp.
+    const auto hidden = carried(party, mage, magic_user_scroll(types, {12, 0, 0}, false));
+    check(party.copyable_spells(mage, hidden).empty(), "An unknown scroll cannot be scribed");
+    check(party.rest(), "The party rests a day");
+    party.choose_spells(mage, {{}, std::vector<std::string>{"magic_user:read_magic"}});
+    party.use_camp_action(mage, mage, "cast:magic_user:read_magic");
+    const auto read = party.copyable_spells(mage, hidden);
+    check(read.size() == 1 && read.front().spell == "magic_user:enlarge",
+          "Read Magic reads the scroll's Enlarge");
+    party.copy_scroll_spell(mage, hidden, 0);
+    check(!party.member(mage).character.inventory().find(hidden),
+          "A scroll whose last spell is scribed is gone");
+
+    // A fight reads Sleep from the scroll; Fireball stays on it.
+    party.equip(mage, known_scroll, rules::EquipmentOperation::equip);
+    por::CharacterRecord kobold;
+    kobold.name = "KOBOLD";
+    kobold.max_hit_points = 4;
+    kobold.base_thac0 = 20;
+    kobold.base_armor_class = 7;
+    original::Content fight_content = content;
+    fight_content.bestiary.emplace("MON2CHA.DAX:0", original::combatant_from_record(kobold));
+    rules::Encounter encounter;
+    encounter.battlefield = {8, 4, std::vector<rules::Terrain>(32, rules::Terrain::open)};
+    encounter.participants = party.participants();
+    rules::Participant foe;
+    foe.id = 1000;
+    foe.definition = "MON2CHA.DAX:0";
+    foe.name = "Kobold";
+    foe.side = rules::Side::opposition;
+    foe.cell = {6, 2};
+    encounter.participants.push_back(foe);
+    party.begin_combat();
+    auto session = original::rules_module(fight_content)->create(encounter, 7);
+    bool used = false;
+    for (int step = 0;
+         step < 100 && !used && session->snapshot().outcome == rules::Outcome::ongoing; ++step)
+    {
+        const auto commands = session->legal_commands();
+        const auto use = std::ranges::find_if(commands,
+                                              [&](const rules::Command &command)
+                                              {
+                                                  return command.actor == mage &&
+                                                         command.verb == "use" &&
+                                                         command.label == "Sleep";
+                                              });
+        const auto end = std::ranges::find(commands, std::string("end"), &rules::Command::verb);
+        used = use != commands.end();
+        check(session->submit(used ? *use : *end), "The fight goes on");
+    }
+    check(used, "The magic-user reads Sleep from the scroll");
+    const auto commands = session->legal_commands();
+    const auto aim = std::ranges::find_if(commands,
+                                          [](const rules::Command &command)
+                                          {
+                                              return command.verb == "aim" &&
+                                                     command.destination == rules::Cell{6, 2};
+                                          });
+    check(aim != commands.end() && session->submit(*aim), "Sleep is aimed at the kobold");
+    party.apply_combat(session->snapshot());
+    party.end_combat();
+    const auto after_fight = por::item_of_original_key(
+        party.member(mage).character.inventory().find(known_scroll)->get().definition_id);
+    check(after_fight && after_fight->effect_codes == std::array<std::uint8_t, 3>{0, 0, fireball},
+          "A spell read in a fight leaves the scroll, and Fireball stays");
+}
+
 // A cleric's Cure Light Wounds in camp heals a member 1d8, up to its Hit
 // Points, and spends the memorized copy.
 void a_cleric_cures_in_camp()
@@ -1649,6 +1780,7 @@ int main()
         the_pool_offers_original_characters();
         arrows_spent_leave_the_inventory();
         a_magic_user_memorizes_and_learns();
+        a_magic_user_scribes_a_scroll();
         a_cleric_cures_in_camp();
         the_temple_heals_and_raises();
         conditions_outlast_fights();

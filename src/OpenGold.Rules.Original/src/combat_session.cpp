@@ -6300,6 +6300,23 @@ rules::MovementGrid Session::grid_for(const Fighter &mover) const
                                half_moves);
 }
 
+namespace
+{
+// A scroll's spells not yet read, a bit for each of its record's spell bytes.
+int unread_spells(const UsableItem &scroll)
+{
+    int bits = 0;
+    for (std::size_t at = 0; at < scroll.spells.size(); ++at)
+    {
+        if (scroll.spells[at] != 0)
+        {
+            bits |= 1 << at;
+        }
+    }
+    return bits;
+}
+} // namespace
+
 rules::Snapshot Session::snapshot() const
 {
     rules::Snapshot state;
@@ -6361,12 +6378,14 @@ rules::Snapshot Session::snapshot() const
                            f->condition == Condition::stoned ? std::string(stoned_description)
                                                              : std::string()};
         // What is left of a party member's items, for the game to trim its
-        // inventory to: an item gone is 0.
+        // inventory to: an item gone is 0, a scroll the bits of its spells
+        // not read.
         for (const auto &[ordinal, id] : f->item_ids)
         {
             const auto &items = f->numbers.items;
             const auto usable = std::ranges::find(items, ordinal, &UsableItem::ordinal);
             const int left = usable == items.end() ? 0
+                             : usable->scroll      ? unread_spells(*usable)
                              : usable->charges > 0 ? usable->charges
                                                    : std::max(usable->quantity, 1);
             view.item_uses_left.emplace_back(id, static_cast<unsigned>(left));

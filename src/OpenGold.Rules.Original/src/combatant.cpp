@@ -818,10 +818,10 @@ bool elf_weapon(std::uint8_t type, GoldBoxGame game) noexcept
 
 bool lasting_condition(const Effect &effect, GoldBoxGame game) noexcept
 {
-    constexpr std::array<int, 29> lasting{
+    constexpr std::array<int, 30> lasting{
         33, 34, 43, 44, 55, 15, 22, 36, 268, 340, 341, 12, 38, strength_wasted,
         // The spells cast in camp before a fight (camp.pas, NoncombatCastMenu).
-        1, 8, 9, 10, 17, 20, 24, 25, 28, 37, 39, 41, 45, 46, 49};
+        1, 8, 9, 10, 16, 17, 20, 24, 25, 28, 37, 39, 41, 45, 46, 49};
     constexpr int rot = 50, mummy_rot = 57, helpless = 31;
     const int code = effect.code;
     const bool pool_rot =
