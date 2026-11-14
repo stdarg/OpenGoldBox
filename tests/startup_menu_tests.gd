@@ -463,7 +463,25 @@ func check_ua() -> void:
 		if fight: break
 	var said: String = town.find_child("Dialogue", true, false).get_parsed_text()
 	require(fight != null, "The kobolds' fight opens on the combat screen: " + said)
-	print("Startup menu passed: Unlimited Adventures' kit and design, a party made under the kit's rules, the design's welcome, its 3D view, a step and its kobolds' fight.")
+	# The field is the hall's walls in the kit's DUNGCOM tiles, and each kobold
+	# stands in its CPIC icon.
+	var widths: Array = []
+	for wait in range(120):
+		await process_frame
+		widths = fight.enemy_sprite_widths()
+		if not widths.is_empty(): break
+	var field: Dictionary = fight.battlefield_visuals()
+	var tiled := 0
+	for texture in field.get("terrain_textures", []):
+		if texture != null: tiled += 1
+	require(tiled == 50 * 25, "Every square of the field has its tile: %d" % tiled)
+	require(widths.size() == 3 and widths.all(func(width): return width > 0),
+		"Each kobold has its combat icon: " + str(widths))
+	if not captures.is_empty():
+		RenderingServer.force_draw(false)
+		await process_frame
+		root.get_texture().get_image().save_png(captures.path_join("ua-combat.png"))
+	print("Startup menu passed: Unlimited Adventures' kit and design, a party made under the kit's rules, the design's welcome, its 3D view, a step and its kobolds' fight on the kit's field with their icons.")
 	quit(0)
 
 # Goes on from what the exploration screen waits for: Return to words, and
