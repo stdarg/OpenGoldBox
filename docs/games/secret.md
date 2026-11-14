@@ -48,8 +48,8 @@ step forward keep *Curse*'s, and the duels are gone.
 
 The record grew from 422 to 439 bytes. A character now knows up to 117 spells,
 holds 75 memorized ones and has spell slots for seven spell levels; there are
-seven classes (no monks), and type flags take the place of the type and
-undead level. Byte offsets:
+seven classes (no monks), and type flags and a magic resistance take the
+place of the type. Byte offsets:
 
 | Offset | Field |
 |---|---|
@@ -68,7 +68,8 @@ undead level. Byte offsets:
 | 232–236 | Five saving throws |
 | 237 | Movement |
 | 238–241 | Highest level, level at the change of class, drained levels, drained hit points |
-| 242–250 | Thief skills |
+| 242 | Undead level, as in *Curse* (0 for every creature in `MON1CHA`) |
+| 243–250 | Thief skills |
 | 255 | NPC flag |
 | 257 | The class a dual-class character left |
 | 259–272 | Coins: copper, silver, electrum, gold, platinum, gems, jewelry (two bytes each) |

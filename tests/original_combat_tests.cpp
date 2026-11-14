@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <filesystem>
 #include <functional>
 #include <iostream>
 #include <map>
@@ -372,9 +373,12 @@ original::Combatant creature(int hit_points, int level = 1)
 }
 
 Fight arrange(const std::vector<Placed> &placed, std::uint64_t seed,
-              const std::vector<rules::Cell> &walls = {}, unsigned morale = 100)
+              const std::vector<rules::Cell> &walls = {}, unsigned morale = 100,
+              GoldBoxGame game = GoldBoxGame::pool_of_radiance)
 {
-    Fight fight{original::rules_module(), nullptr};
+    original::Content content;
+    content.game = game;
+    Fight fight{original::rules_module(std::move(content)), nullptr};
     rules::Encounter encounter;
     encounter.morale = morale;
     encounter.battlefield = {8, 8, std::vector<rules::Terrain>(64, rules::Terrain::open)};
@@ -1143,11 +1147,11 @@ original::Combatant victim(int hit_points = 500)
 // own, until the condition holds or 20 rounds pass.
 Fight attack_until(const original::Combatant &attacker, const original::Combatant &target,
                    const std::function<bool(const rules::CombatSession &)> &done,
-                   std::uint64_t seed = 47)
+                   std::uint64_t seed = 47, GoldBoxGame game = GoldBoxGame::pool_of_radiance)
 {
     auto fight = arrange({{"Victim", rules::Side::party, {3, 3}, target},
                           {"Monster", rules::Side::opposition, {4, 3}, attacker}},
-                         seed);
+                         seed, {}, 100, game);
     auto &session = *fight.session;
     play_until(
         session,
@@ -2970,6 +2974,512 @@ void curse_conditions_take_hold()
           "An animal cannot single out one invisible to animals");
 }
 
+constexpr auto secret_game = GoldBoxGame::secret_of_the_silver_blades;
+
+Fight arrange_secret(const std::vector<Placed> &placed, std::uint64_t seed)
+{
+    return arrange(placed, seed, {}, 100, secret_game);
+}
+
+// The named creature plays its turns by the original's AI and the others end
+// theirs, until the condition holds or the rounds pass.
+void ai_plays(rules::CombatSession &session, std::string_view name,
+              const std::function<bool()> &done, unsigned rounds)
+{
+    play_until(
+        session,
+        [&](const std::string &actor)
+        {
+            return order(session, actor == name ? "quick" : "end");
+        },
+        [&]
+        {
+            return done() || session.snapshot().round > rounds;
+        },
+        400);
+}
+
+// Secret's effects by the fight's numbers (canonical_effect): Curse's below
+// 57 but for five, the earlier games' where a moved one works as theirs, the
+// rest 400 up.
+void secret_effects_take_their_own_numbers()
+{
+    const auto mapped = [](int code)
+    {
+        return original::canonical_effect(code, secret_game);
+    };
+    check(mapped(4) == 204 && mapped(37) == 237 && mapped(55) == 55 && mapped(6) == 335 &&
+              mapped(7) == 18 && mapped(18) == 124 && mapped(32) == 345,
+          "Below 57 Secret's effects are Curse's, but for five");
+    check(mapped(24) == 24 && mapped(56) == 56 && mapped(59) == 127 && mapped(73) == 273 &&
+              mapped(89) == 89 && mapped(93) == 112 && mapped(96) == 108 && mapped(98) == 310 &&
+              mapped(99) == 111 && mapped(103) == 119 && mapped(111) == 342,
+          "A moved effect takes the earlier games' number that works as it does");
+    check(mapped(58) == 458 && mapped(60) == 460 && mapped(64) == 464 && mapped(79) == 479 &&
+              mapped(86) == 486 && mapped(88) == 488 && mapped(104) == 504,
+          "Secret's own move 400 up");
+}
+
+// Secret's creatures as its files make them (OPENGOLD_GOLDBOX_DIR): their
+// type and target flags, magic resistance and races, and a fight with them
+// that ends.
+void secret_records_fight()
+{
+    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
+    if (!games)
+    {
+        std::cout << "Secret of the Silver Blades' files are not here; its records are not "
+                     "checked.\n";
+        return;
+    }
+    auto content = load_original_content(std::filesystem::path(games) / "SECRET", secret_game);
+    for (const auto &[key, numbers] : content.bestiary)
+    {
+        check(original::Combatant::decode(numbers.encode()) == numbers,
+              key + " survives its profile's encoding");
+    }
+    const auto creature_at = [&content](int record) -> const original::Combatant &
+    {
+        return content.bestiary.at("MON1CHA.DAX:" + std::to_string(record));
+    };
+    const auto has = [](const original::Combatant &c, int code)
+    {
+        return std::ranges::any_of(c.effects,
+                                   [code](const original::Effect &e)
+                                   {
+                                       return e.code == code;
+                                   });
+    };
+    const auto &golem = creature_at(17);
+    check(has(golem, 460) && has(golem, 479) && (golem.traits & original::trait::unliving) &&
+              golem.race == 0,
+          "The iron golem needs +3 weapons, takes no magic and is no living monster");
+    check(creature_at(9).magic_resistance == 15 && creature_at(29).magic_resistance == 20,
+          "The drider and the lizard king resist magic");
+    const auto &giant = creature_at(12);
+    check((giant.kin & original::kin::giant) && (giant.kin & original::kin::bugbear) &&
+              (giant.traits & original::trait::ranger_foe) &&
+              (giant.traits & original::trait::giant_bane),
+          "A cloud giant is a giant to dwarves, gnomes, rangers and giant-bane weapons");
+    const auto &bugbear = creature_at(49);
+    check((bugbear.kin & original::kin::gnome_foe) && (bugbear.kin & original::kin::bugbear) &&
+              !(bugbear.kin & original::kin::giant),
+          "A gnome strikes a bugbear better and it strikes a gnome worse");
+    check((creature_at(20).traits & original::trait::dispel_evil) && has(creature_at(20), 480),
+          "A hell hound breathes fire and Dispel Evil sends it away");
+    check(has(creature_at(33), 458) && has(creature_at(33), 127) && has(creature_at(33), 464),
+          "A medusa's gaze stones, a mirror turns it back, and her bite poisons");
+    check(creature_at(50).race == 7 && creature_at(43).traits == original::trait::snake,
+          "Sieglinda is human, and a giant snake a snake");
+
+    const auto module = original::rules_module(std::move(content));
+    rules::Encounter encounter;
+    encounter.battlefield = {10, 8, std::vector<rules::Terrain>(80, rules::Terrain::open)};
+    auto champion = monster({4, 2, 8, 30}, {0, 0, 0, 0}, {});
+    champion.morale = 0;
+    rules::Participant member;
+    member.id = 1;
+    member.name = "Champion";
+    member.definition = "member";
+    member.cell = {1, 3};
+    member.character_profile = champion.encode();
+    encounter.participants.push_back(member);
+    for (const auto &[n, record] : {std::pair{0, 20}, std::pair{1, 33}, std::pair{2, 42}})
+    {
+        rules::Participant monster;
+        monster.id = 2 + static_cast<rules::EntityId>(n);
+        monster.name = "Monster " + std::to_string(n);
+        monster.definition = "MON1CHA.DAX:" + std::to_string(record);
+        monster.side = rules::Side::opposition;
+        monster.cell = {8, 1 + n * 3};
+        encounter.participants.push_back(monster);
+    }
+    auto session = module->create(std::move(encounter), 13);
+    all_quick(
+        *session,
+        [&]
+        {
+            return session->snapshot().outcome != rules::Outcome::ongoing;
+        },
+        100);
+    check(session->snapshot().outcome != rules::Outcome::ongoing,
+          "A fight with a hell hound, a medusa and a giant slug, played by the AI, ends");
+}
+
+// An iron golem takes harm only from a weapon of +3 or better; magical fire
+// heals it and electricity slows it (effhndlr.pas, EffNeedMagicWeapon and
+// EffIronGolem, in Secret's reconstruction).
+void an_iron_golem_shrugs_off_harm()
+{
+    using original::ClassSlot;
+    auto golem = victim(100);
+    golem.effects = {{460, 0, 0, false}, {479, 0, 0, false}};
+    const auto hit = [](const rules::CombatSession &session)
+    {
+        return logged(session, "{attacker} hits {name} for {damage}.", "Monster") > 0;
+    };
+    const auto fists = monster({2, 1, 6, 10}, {0, 0, 0, 0}, {});
+    auto plain = attack_until(fists, golem, hit, 47, secret_game);
+    check(hit(*plain.session) && view_of(plain.session->snapshot(), "Victim").hit_points == 100,
+          "Fists do the iron golem no harm");
+    auto sword = fists;
+    sword.striker = original::StrikingItem{3, false, 0};
+    auto magic = attack_until(sword, golem, hit, 47, secret_game);
+    check(view_of(magic.session->snapshot(), "Victim").hit_points < 100, "A +3 sword does");
+
+    auto hurt = golem;
+    hurt.hit_points = 40;
+    auto fire = arrange_secret(
+        {{"Mage", rules::Side::party, {0, 0}, caster(ClassSlot::magic_user, 5, {47})},
+         {"Golem", rules::Side::opposition, {6, 5}, hurt}},
+        103);
+    cast_now(*fire.session, "Mage", 47,
+             [&]
+             {
+                 return aim_at_cell(*fire.session, {6, 5});
+             });
+    check(view_of(fire.session->snapshot(), "Golem").hit_points > 40, "A Fireball heals it");
+    auto bolt = arrange_secret(
+        {{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 5, {51})},
+         {"Golem", rules::Side::opposition, {2, 3}, golem}},
+        127);
+    cast_now(*bolt.session, "Mage", 51,
+             [&]
+             {
+                 return aim_at_cell(*bolt.session, {2, 3});
+             });
+    check(logged(*bolt.session, "{name} is slowed.") > 0 &&
+              view_of(bolt.session->snapshot(), "Golem").hit_points == 100,
+          "Lightning only slows it");
+}
+
+// Secret's touches (fxengine.pas, its conditions 2 and 3): a cockatrice's
+// stones, a drider's holds and a centipede's poisons with its only attack; a
+// blow that does no damage carries nothing; a remorhaz swallows its victim
+// whole on a natural 20.
+void secret_touches()
+{
+    const auto status_is = [](std::string_view status)
+    {
+        return [status](const rules::CombatSession &session)
+        {
+            return view_of(session.snapshot(), "Victim").status == status;
+        };
+    };
+    const auto cockatrice = monster({2, 1, 1, 0}, {0, 0, 0, 0}, {{465, 0, 0, false}});
+    auto stone = attack_until(cockatrice, victim(), status_is("stoned"), 47, secret_game);
+    check(status_is("stoned")(*stone.session), "A cockatrice's touch turns to stone");
+    const auto drider = monster({0, 0, 0, 0}, {2, 1, 1, 0}, {{488, 0, 0, false}});
+    auto held = attack_until(drider, victim(), status_is("helpless"), 47, secret_game);
+    check(status_is("helpless")(*held.session), "A drider's touch paralyzes");
+
+    const auto poisoned = [](const rules::CombatSession &session)
+    {
+        return logged(session, "{name} is poisoned.") > 0;
+    };
+    const auto centipede = monster({2, 1, 1, 0}, {0, 0, 0, 0}, {{464, 0, 0, false}});
+    auto bitten = attack_until(centipede, victim(), poisoned, 47, secret_game);
+    check(poisoned(*bitten.session) && view_of(bitten.session->snapshot(), "Victim").dead,
+          "A centipede's only attack poisons");
+    const auto toothless = monster({2, 0, 0, 0}, {0, 0, 0, 0}, {{464, 0, 0, false}});
+    auto grazed = attack_until(
+        toothless, victim(),
+        [](const rules::CombatSession &session)
+        {
+            return session.snapshot().round > 5;
+        },
+        47, secret_game);
+    check(!poisoned(*grazed.session), "A blow that does no damage does not poison");
+
+    const auto remorhaz = monster({10, 1, 1, 0}, {0, 0, 0, 0}, {{466, 0, 0, false}});
+    auto swallowed = attack_until(
+        remorhaz, victim(),
+        [](const rules::CombatSession &session)
+        {
+            return logged(session, "{name} is swallowed whole.") > 0;
+        },
+        47, secret_game);
+    check(logged(*swallowed.session, "{name} is swallowed whole.") == 1 &&
+              view_of(swallowed.session->snapshot(), "Victim").dead,
+          "A remorhaz swallows its victim whole");
+}
+
+// Secret's monsters' powers at their turns (fxengine.pas, its condition 14):
+// a pyrohydra's fire from the second round, a hell hound's at once, the umber
+// hulk's confusing gaze, a giant slug's acid, the petrifying gaze within 6
+// squares, and a dragon's breath, three a fight and never through its own.
+void secret_monsters_breathe()
+{
+    auto hydra = special({{467, 0, 0, false}}, 300);
+    hydra.attacks[0] = {24, 1, 1, 0};
+    auto heads = arrange_secret({{"Fighter", rules::Side::party, {3, 3}, victim(500)},
+                                 {"Hydra", rules::Side::opposition, {4, 3}, hydra}},
+                                241);
+    ai_plays(
+        *heads.session, "Hydra",
+        []
+        {
+            return false;
+        },
+        1);
+    check(logged(*heads.session, "{name} breathes fire.") == 0, "No fire in the first round");
+    ai_plays(
+        *heads.session, "Hydra",
+        []
+        {
+            return false;
+        },
+        2);
+    check(logged(*heads.session, "{name} breathes fire.") > 0, "Fire in the second");
+
+    auto hound =
+        arrange_secret({{"Fighter", rules::Side::party, {3, 3}, victim(500)},
+                        {"Hound", rules::Side::opposition, {4, 3}, special({{480, 0, 0, false}})}},
+                       243);
+    until_turn_of(*hound.session, "Hound");
+    hound.session->submit(order(*hound.session, "quick"));
+    check(logged(*hound.session, "{name} breathes fire.") == 1 &&
+              view_of(hound.session->snapshot(), "Fighter").hit_points < 500,
+          "A hell hound breathes fire at its first turn");
+
+    auto hulk =
+        arrange_secret({{"Fighter", rules::Side::party, {3, 3}, victim(500)},
+                        {"Hulk", rules::Side::opposition, {4, 3}, special({{470, 0, 0, false}})}},
+                       245);
+    until_turn_of(*hulk.session, "Hulk");
+    hulk.session->submit(order(*hulk.session, "quick"));
+    check(logged(*hulk.session, "{name} gazes.") == 1 &&
+              logged(*hulk.session, "{name} is affected by {spell}.") == 1,
+          "The umber hulk's gaze confuses one beside it");
+
+    auto slug = arrange_secret(
+        {{"Fighter", rules::Side::party, {1, 3}, victim(500)},
+         {"Slug", rules::Side::opposition, {5, 3}, special({{481, 0, 0, false}}, 300)}},
+        247);
+    ai_plays(
+        *slug.session, "Slug",
+        []
+        {
+            return false;
+        },
+        3);
+    check(logged(*slug.session, "{name} spits acid.") +
+                  logged(*slug.session, "{name} spits acid and misses.") >=
+              3,
+          "A giant slug spits at every turn");
+    auto slimy = victim(100);
+    slimy.effects = {{490, 0, 0, false}};
+    auto club = monster({2, 1, 6, 10}, {0, 0, 0, 0}, {});
+    club.striker = original::StrikingItem{0, false, 0x80};
+    auto clubbed = attack_until(
+        club, slimy,
+        [](const rules::CombatSession &session)
+        {
+            return logged(session, "{attacker} hits {name} for {damage}.", "Monster") > 0;
+        },
+        47, secret_game);
+    check(view_of(clubbed.session->snapshot(), "Victim").hit_points == 100,
+          "A club does a giant slug no harm");
+
+    const auto gaze_at = [](rules::Cell fighter, const original::Combatant &numbers)
+    {
+        auto basilisk = special({{458, 0, 0, false}, {127, 0, 0, false}});
+        basilisk.saving_throws = {21, 21, 21, 21, 21};
+        auto fight = arrange_secret({{"Fighter", rules::Side::party, fighter, numbers},
+                                     {"Basilisk", rules::Side::opposition, {6, 3}, basilisk}},
+                                    249);
+        until_turn_of(*fight.session, "Basilisk");
+        fight.session->submit(order(*fight.session, "quick"));
+        return fight;
+    };
+    auto near = gaze_at({0, 3}, victim());
+    check(view_of(near.session->snapshot(), "Fighter").status == "stoned",
+          "A gaze 6 squares away stones");
+    auto mirrored = victim();
+    mirrored.mirror = true;
+    auto turned = gaze_at({0, 3}, mirrored);
+    check(view_of(turned.session->snapshot(), "Basilisk").status == "stoned",
+          "A mirror turns it back");
+    auto far = gaze_at({0, 7}, victim());
+    check(logged(*far.session, "{name} gazes.") == 0, "Farther away it does not gaze");
+
+    const auto dragon = special({{504, 0, 0, false}}, 40);
+    auto red = arrange_secret({{"Fighter", rules::Side::party, {2, 3}, victim(500)},
+                               {"Dragon", rules::Side::opposition, {5, 3}, dragon}},
+                              251);
+    ai_plays(
+        *red.session, "Dragon",
+        []
+        {
+            return false;
+        },
+        8);
+    check(logged(*red.session, "{name} breathes.") == 3,
+          "A red dragon breathes three times a fight");
+    auto shielded = arrange_secret({{"Fighter", rules::Side::party, {2, 3}, victim(500)},
+                                    {"Kobold", rules::Side::opposition, {3, 3}, victim(500)},
+                                    {"Dragon", rules::Side::opposition, {5, 3}, dragon}},
+                                   253);
+    until_turn_of(*shielded.session, "Dragon");
+    shielded.session->submit(order(*shielded.session, "quick"));
+    check(logged(*shielded.session, "{name} breathes.") == 0,
+          "It does not breathe through its own side");
+}
+
+// Secret judges by a creature's race and flags (magic.pas and effhndlr.pas,
+// in its reconstruction): Charm Person takes the player's races and monsters
+// its flags call persons, Hold Person no monster, Slay Living none unliving,
+// and magic resistance the record's percent; Dispel Evil sends away what its
+// flags call evil; a ranger strikes its flagged foes harder from beside them.
+void secret_flags_decide()
+{
+    using original::ClassSlot;
+    const auto charmed = [](const original::Combatant &target)
+    {
+        auto fight = arrange_secret(
+            {{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 5, {10})},
+             {"Target", rules::Side::opposition, {4, 3}, target},
+             {"Guard", rules::Side::opposition, {7, 7}, victim(100)}},
+            83);
+        until_turn_of(*fight.session, "Mage");
+        fight.session->submit(*cast_command(*fight.session, 10));
+        fight.session->submit(*aim_at(*fight.session, "Target"));
+        return view_of(fight.session->snapshot(), "Target").side == rules::Side::party;
+    };
+    auto man = victim(20);
+    man.race = 7;
+    auto person = victim(20);
+    person.traits = original::trait::person;
+    auto warded = man;
+    warded.magic_resistance = 100;
+    check(charmed(man) && charmed(person) && !charmed(victim(20)) && !charmed(warded),
+          "Charm Person takes a man or a monster flagged a person, unless it resists magic");
+
+    auto fight = arrange_secret(
+        {{"Cleric", rules::Side::party, {0, 3}, caster(ClassSlot::cleric, 9, {23, 23, 176})},
+         {"Man", rules::Side::opposition, {4, 3}, man},
+         {"Brute", rules::Side::opposition, {4, 5}, victim(20)},
+         {"Golem",
+          rules::Side::opposition,
+          {2, 3},
+          []
+          {
+              auto golem = victim(20);
+              golem.traits = original::trait::unliving;
+              return golem;
+          }()}},
+        101);
+    auto &session = *fight.session;
+    check(!offered(session, "turn"), "Secret has no turning undead");
+    for (const auto *name : {"Man", "Brute"})
+    {
+        cast_now(session, "Cleric", 23,
+                 [&]
+                 {
+                     return aim_at(session, name);
+                 });
+        session.submit(order(session, "aim_done"));
+    }
+    check(view_of(session.snapshot(), "Man").status == "helpless" &&
+              view_of(session.snapshot(), "Brute").status.empty(),
+          "Hold Person holds a man but no monster");
+    cast_now(session, "Cleric", 176,
+             [&]
+             {
+                 return aim_at(session, "Golem");
+             });
+    check(!view_of(session.snapshot(), "Golem").dead &&
+              view_of(session.snapshot(), "Golem").hit_points == 20,
+          "Slay Living cannot slay the unliving");
+
+    auto paladin = monster({2, 1, 1, 0}, {0, 0, 0, 0}, {{204, 0, 0, false}, {345, 0, 0, false}});
+    const auto dispelled = [&paladin](const original::Combatant &foe)
+    {
+        auto touch = arrange_secret({{"Paladin", rules::Side::party, {3, 3}, paladin},
+                                     {"Foe", rules::Side::opposition, {4, 3}, foe},
+                                     {"Guard", rules::Side::opposition, {7, 7}, victim(100)}},
+                                    257);
+        play_until(
+            *touch.session,
+            [&](const std::string &actor)
+            {
+                const auto melee = offered(*touch.session, "melee", "Foe");
+                return actor == "Paladin" && melee ? *melee : order(*touch.session, "end");
+            },
+            [&]
+            {
+                return touch.session->snapshot().round > 4;
+            },
+            200);
+        return logged(*touch.session, "{name} is dispelled.") > 0;
+    };
+    auto hound = victim(500);
+    hound.traits = original::trait::dispel_evil;
+    auto villain = victim(500);
+    villain.alignment = 8;
+    check(dispelled(hound) && !dispelled(villain),
+          "Dispel Evil sends away what Secret flags evil, not the evil-aligned");
+
+    auto ranger = monster({2, 1, 1, 0}, {0, 0, 0, 0}, {{334, 0, 0, false}});
+    ranger.class_levels[static_cast<std::size_t>(ClassSlot::ranger)] = 10;
+    auto ogre = victim(500);
+    ogre.traits = original::trait::ranger_foe;
+    auto struck = attack_until(
+        ranger, ogre,
+        [](const rules::CombatSession &session)
+        {
+            return logged(session, "{attacker} hits {name} for {damage}.", "Monster") > 0;
+        },
+        47, secret_game);
+    check(view_of(struck.session->snapshot(), "Victim").hit_points == 489,
+          "A ranger adds its level to a blow at a foe beside it");
+}
+
+// Secret's rounds (combat.pas, in its reconstruction): one ordered at the
+// round's start, a delay going to the end; a ring of invisibility hides its
+// wearer from the start; a dragon's fear sends the weaker of its foes running.
+void secret_rounds()
+{
+    auto swift = creature(50);
+    swift.initiative_bonus = 12;
+    auto steady = creature(50);
+    steady.initiative_bonus = 6;
+    auto fight = arrange_secret({{"Swift", rules::Side::party, {0, 1}, swift},
+                                 {"Steady", rules::Side::party, {0, 3}, steady},
+                                 {"Slow", rules::Side::opposition, {7, 5}, creature(50)}},
+                                259);
+    auto &session = *fight.session;
+    check(actor_name(session) == "Swift", "The highest initiative acts first");
+    session.submit(order(session, "delay"));
+    std::vector<std::string> acted;
+    for (int turn = 0; turn < 3; ++turn)
+    {
+        acted.push_back(actor_name(session));
+        session.submit(order(session, "end"));
+    }
+    check(acted == std::vector<std::string>{"Steady", "Slow", "Swift"},
+          "One that delays acts last of all");
+
+    auto ringed = special({{56, 0, 0, false}});
+    auto hidden = arrange_secret({{"Fighter", rules::Side::party, {3, 3}, creature(50)},
+                                  {"Dreadlord", rules::Side::opposition, {4, 3}, ringed}},
+                                 261);
+    until_turn_of(*hidden.session, "Fighter");
+    check(!offered(*hidden.session, "melee", "Dreadlord"),
+          "A ring of invisibility hides its wearer from the fight's start");
+
+    auto knight = creature(50, 5);
+    auto feared = arrange_secret(
+        {{"Squire", rules::Side::party, {1, 3}, creature(50, 1)},
+         {"Knight", rules::Side::party, {1, 5}, knight},
+         {"Dragon", rules::Side::opposition, {6, 3}, special({{482, 0, 0, false}}, 60)}},
+        263);
+    check(logged(*feared.session, "{name} is affected by {spell}.") == 1,
+          "A dragon's fear grips only the weaker");
+    until_turn_of(*feared.session, "Squire");
+    check(view_of(feared.session->snapshot(), "Squire").panicked, "The squire runs");
+}
+
 } // namespace
 
 int main()
@@ -3050,6 +3560,13 @@ int main()
         a_dragon_breathes();
         an_ankheg_spits_once();
         real_records_fight();
+        secret_effects_take_their_own_numbers();
+        secret_records_fight();
+        an_iron_golem_shrugs_off_harm();
+        secret_touches();
+        secret_monsters_breathe();
+        secret_flags_decide();
+        secret_rounds();
         std::cout << "Original-rules combat passed.\n";
     }
     catch (const std::exception &error)

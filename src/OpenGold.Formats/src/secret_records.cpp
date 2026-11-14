@@ -2,6 +2,7 @@
 #include "little_endian.h"
 
 #include <algorithm>
+#include <array>
 
 namespace opengold::secret
 {
@@ -36,6 +37,16 @@ por::DamageDice attack_damage(std::span<const std::uint8_t> bytes, std::size_t c
             signed_byte(bytes[counts + 4 + attack])};
 }
 
+// Secret numbers its races elf 1, half-elf 2, dwarf 3, gnome 4, halfling 5,
+// human 6 and monster 7 (0 is unused); the shared fields keep the earlier
+// games' numbers, monster 0 and dwarf, elf, gnome, half-elf, halfling,
+// half-orc and human 1 to 7.
+std::uint8_t shared_race(std::uint8_t race)
+{
+    constexpr std::array<std::uint8_t, 8> shared{0, 2, 4, 1, 3, 5, 7, 0};
+    return race < shared.size() ? shared[race] : 0;
+}
+
 } // namespace
 
 std::optional<por::CharacterRecord> decode_creature(std::span<const std::uint8_t> b)
@@ -62,7 +73,7 @@ std::optional<por::CharacterRecord> decode_creature(std::span<const std::uint8_t
     c.memorized_spells.assign(b.begin() + 30, b.begin() + 30 + 75);
     c.spell_byte_44_raw = b[105];
     c.base_thac0 = 60 - b[106];
-    c.race = b[107];
+    c.race = shared_race(b[107]);
     c.character_class = b[108];
     c.age = format::read_u16(b, 110);
     c.max_hit_points = b[112];
@@ -74,7 +85,9 @@ std::optional<por::CharacterRecord> decode_creature(std::span<const std::uint8_t
     c.highest_level_raw = b[238];
     c.drained_levels = b[240];
     c.drained_hit_points = b[241];
-    std::copy_n(b.begin() + 242, c.thief_skills.size(), c.thief_skills.begin());
+    // The undead level, as in Curse, then the eight thief skills.
+    c.undead_level = b[242];
+    std::copy_n(b.begin() + 243, c.thief_skills.size(), c.thief_skills.begin());
     c.npc_flag = b[255];
     for (std::size_t i = 0; i < c.wealth.size(); ++i)
     {
@@ -100,10 +113,13 @@ std::optional<por::CharacterRecord> decode_creature(std::span<const std::uint8_t
     }
     c.base_xp_award = format::read_u16(b, 334);
     c.xp_per_hit_point = b[336];
+    c.creature_type_flags = b[349];
+    c.target_flags = b[350];
     c.item_count = b[352];
     c.hands_equipped = b[409];
     c.save_bonus = signed_byte(b[410]);
     c.encumbrance = format::read_u16(b, 411);
+    c.magic_resistance = b[421];
     c.status = b[422];
     c.enabled = b[423];
     c.hostile = b[424];

@@ -76,12 +76,17 @@ struct StrikingItem
 // Curse's effects that Pool of Radiance has under no number are numbered
 // this much higher than Curse's own (canonical_effect).
 inline constexpr int curse_effect_offset = 200;
+// Secret of the Silver Blades' effects that neither earlier game has are
+// numbered this much higher than Secret's own.
+inline constexpr int secret_effect_offset = 400;
 
 // The number the fight knows a game's own effect by (its records', items'
 // and spells'): Pool of Radiance's as they are; Curse's that work as Pool of
 // Radiance's of the same number as they are, its fumbling as Pool of
 // Radiance's helplessness (31), and the rest curse_effect_offset higher
-// (docs/ORIGINAL-RULES.md, Curse of the Azure Bonds).
+// (docs/ORIGINAL-RULES.md, Curse of the Azure Bonds); Secret's as the earlier
+// game's effect that works as it does, and the rest secret_effect_offset
+// higher (Secret of the Silver Blades).
 [[nodiscard]] int canonical_effect(int code, GoldBoxGame game) noexcept;
 
 struct Effect
@@ -163,6 +168,12 @@ struct Combatant
     // The kind of foe it is to the races that know it (Combatant::kin bits):
     // a dwarf's or a gnome's sworn foe, a giant, a bugbear or gnoll.
     int kin{};
+    // What Secret of the Silver Blades' effects and spells take it for, by
+    // its record's flags (trait bits); none in the earlier games.
+    int traits{};
+    // Its magic resistance in percent, read from its record in Secret of the
+    // Silver Blades; the earlier games give it by effects.
+    int magic_resistance{};
     // The spells it has memorized, by number (original_spells.h), a copy each.
     std::vector<int> spells;
     // The items it can use in a fight.
@@ -179,7 +190,8 @@ struct Combatant
     int weapon_type{-1};
     // A readied mirror or wooden holy symbol, which a gazing monster cannot
     // look upon (effhndlr.pas, EffGazeBlock); and a readied mirror, which turns
-    // a petrifying gaze back (EffPetrifyingGaze).
+    // a petrifying gaze back (EffPetrifyingGaze); in Secret, a readied item or
+    // a record that has the effect of one (72).
     bool wards_gaze{};
     bool mirror{};
     // Its effects: a monster's from its record (MONnSPC), and those the fight
@@ -197,6 +209,27 @@ namespace kin
 {
 inline constexpr int dwarf_foe = 1, gnome_foe = 2, giant = 4, bugbear = 8;
 } // namespace kin
+
+// What Secret of the Silver Blades' effects and spells take a creature for
+// (Combatant::traits), from its record's type and target flags
+// (secret_records.h).
+namespace trait
+{
+// Dispel Evil keeps it 7 worse off and sends it away.
+inline constexpr int dispel_evil = 1;
+// Charm Person or Mammal may charm it.
+inline constexpr int mammal = 2;
+// A ranger next to it adds its level to its blows.
+inline constexpr int ranger_foe = 4;
+// Snake Charm may take it.
+inline constexpr int snake = 8;
+// A giant-bane weapon strikes it for 6d6.
+inline constexpr int giant_bane = 16;
+// Charm Person may charm it though it is a monster.
+inline constexpr int person = 32;
+// It breathes a stinking cloud unharmed; Slay Living and Death Spell cannot slay it.
+inline constexpr int unliving = 64;
+} // namespace trait
 
 // An item a creature carries, with its type (ITEMS); it fights with those it
 // has readied (por::ItemRecord::readied).

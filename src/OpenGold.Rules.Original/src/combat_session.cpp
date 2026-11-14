@@ -32,7 +32,7 @@ using rules::Side;
 
 // The original counts movement in half-moves: 2 a straight step, 3 a diagonal one.
 constexpr rules::StepCosts half_moves{2, 3, 2, 4, 0};
-constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 16";
+constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 17";
 
 enum class Condition : unsigned
 {
@@ -82,15 +82,32 @@ constexpr int bite_hold = 74, blood_drain = 75, rot = 50, poisoned = 55, mummy_r
               read_magic = 16, dust = 71;
 // Displacement keeps whether it has turned an attack aside in this bit of its strength.
 constexpr int displaced = 0x10;
+// A ring of invisibility's renewal (Pool of Radiance's 56, Secret's too), a
+// gaze a mirror turns back (Pool of Radiance's 127) and Curse's fear (342).
+constexpr int renew_invisibility = 56, reflectable_gaze = 127, fear = 342;
+// Secret of the Silver Blades' own (canonical_effect, its code plus
+// secret_effect_offset).
+constexpr int globe_of_invulnerability = 457, petrifying_gaze = 458, needs_plus_three = 460,
+              poison_touch = 464, stone_touch = 465, swallows_whole = 466, fire_beside = 467,
+              confusing_gaze = 470, luck = 478, iron_golem = 479, fire_at_target = 480,
+              spits_acid = 481, dragon_fear = 482, cold_breath = 483, strong_poison_touch = 486,
+              ghoul_touch = 488, bashing_proof = 490, fearless = 492, hardy = 494,
+              fire_breath = 504, stunned = 506;
 } // namespace effect
 
 // What a hit carries, by the attacker's effects, in the original's order: a
 // primary attack's hit and a secondary one's (effhndlr.pas, HIT_PHASE_1 and
 // HIT_PHASE_2).
-constexpr std::array<int, 14> primary_hit_effects{85, 86, 87, 68, 79, 80, 76, 73, 77,
-                                                  // Curse's (canonical_effect).
-                                                  257, 296, 322, 323, 345};
-constexpr std::array<int, 11> secondary_hit_effects{64, 65, 66, 67, 68, 69, 70, 79, 85, 86, 87};
+constexpr std::array<int, 18> primary_hit_effects{
+    85, 86, 87, 68, 79, 80, 76, 73, 77,
+    // Curse's (canonical_effect).
+    257, 296, 322, 323, 345,
+    // Secret's (fxengine.pas, its conditions 2 and 3, in its reconstruction).
+    effect::poison_touch, effect::stone_touch, effect::strong_poison_touch, effect::ghoul_touch};
+constexpr std::array<int, 15> secondary_hit_effects{
+    64, 65, 66, 67, 68, 69, 70, 79, 85, 86, 87,
+    // Secret's.
+    effect::poison_touch, effect::stone_touch, effect::strong_poison_touch, effect::ghoul_touch};
 
 struct Fighter
 {
@@ -447,7 +464,20 @@ class Reader
     }
 };
 
-int attack_modifier(const Fighter &attacker, const Fighter &defender);
+int attack_modifier(const Fighter &attacker, const Fighter &defender, GoldBoxGame game);
+
+// Whether Dispel Evil takes a creature for evil: by its alignment in Curse,
+// by its record's flag in Secret (effhndlr.pas, EffDispelEvil and
+// EffDispelEvilTouch, in its reconstruction).
+bool dispel_evil_takes(const Fighter &f, GoldBoxGame game)
+{
+    if (game == GoldBoxGame::secret_of_the_silver_blades)
+    {
+        return (f.numbers.traits & trait::dispel_evil) != 0;
+    }
+    const int alignment = f.numbers.alignment;
+    return alignment == 2 || alignment == 5 || alignment == 8;
+}
 
 // Haste doubles a creature's rates of movement and attacks and Slow halves
 // them; together they cancel (effhndlr.pas, EffHasted, EffSlowed).
@@ -631,6 +661,16 @@ class Session final : public rules::CombatSession
     // The opposition's Hit Points left of its whole, in steps of 5, as of the
     // round's start (cbtacts.pas, UpdateHostileHpPercent).
     int hostile_hit_points_percent_{100};
+    // Secret of the Silver Blades orders the round once as it begins: those
+    // yet to act this round, first first (combat.pas, OrderCreatures, in its
+    // reconstruction). Empty in the earlier games, which pick the highest
+    // initiative left each time.
+    std::vector<EntityId> turn_order_;
+
+    [[nodiscard]] bool secret() const
+    {
+        return game_of(identity_) == GoldBoxGame::secret_of_the_silver_blades;
+    }
 
     int roll(int sides)
     {
@@ -705,6 +745,19 @@ class Session final : public rules::CombatSession
                         int save = 4);
     void monster_specials(Fighter &f);
     void curse_specials(Fighter &f);
+    void secret_specials(Fighter &f);
+    void petrifying_gaze(Fighter &gazer);
+    bool secret_breath(Fighter &dragon, int code, int length, int element);
+    [[nodiscard]] Fighter *secret_target(Fighter &f, int range, bool skip_helpless);
+    void turn_to_stone(Fighter &victim);
+    void secret_poison(Fighter &victim, int modifier);
+    void swallow_whole(Fighter &swallower, Fighter &victim);
+    void iron_golem_absorbs(Fighter &golem, int damage, int element);
+    void dragon_fear(const Fighter &dragon);
+    void order_turns();
+    void reorder_after_cast(Fighter &caster);
+    [[nodiscard]] bool breathes_clouds_freely(const Fighter &f) const;
+    [[nodiscard]] bool refuses_spell(const Fighter &target, int number) const;
     void beholder_rays(Fighter &f);
     [[nodiscard]] int uses(Fighter &f, int code);
     void spend_use(Fighter &f, int code);
@@ -823,10 +876,55 @@ void Session::begin_round()
             }
         }
     }
+    if (secret())
+    {
+        order_turns();
+    }
+}
+
+// Secret's order for the round: each creature in turn goes before the first
+// already placed whose initiative is lower, or the same on a d2 of 1
+// (combat.pas, OrderCreatures, in its reconstruction).
+void Session::order_turns()
+{
+    turn_order_.clear();
+    for (const auto &f : fighters_)
+    {
+        auto place = turn_order_.begin();
+        while (place != turn_order_.end())
+        {
+            const int other = find(*place)->initiative;
+            if (f.initiative > other || (f.initiative == other && roll(2) == 1))
+            {
+                break;
+            }
+            ++place;
+        }
+        turn_order_.insert(place, f.id);
+    }
+}
+
+// A Secret caster who begins a spell moves back among those yet to act, past
+// each whose initiative is higher than its own, or the same on a d2 of 1
+// (cbtacts.pas, CastSpellCombat, in its reconstruction).
+void Session::reorder_after_cast(Fighter &caster)
+{
+    auto place = turn_order_.begin();
+    while (place != turn_order_.end())
+    {
+        const int other = find(*place)->initiative;
+        if (other < caster.initiative || (other == caster.initiative && roll(2) != 1))
+        {
+            break;
+        }
+        ++place;
+    }
+    turn_order_.insert(place, caster.id);
 }
 
 // The highest initiative left acts next; a tie goes to the higher of fresh
-// d100 rolls (combat.pas, NextCreature). With none left the round ends.
+// d100 rolls (combat.pas, NextCreature). In Secret the next in the round's
+// order still able to act does. With none left the round ends.
 void Session::next_actor()
 {
     actor_ = 0;
@@ -834,9 +932,19 @@ void Session::next_actor()
     {
         Fighter *best = nullptr;
         int best_tiebreak = 0;
+        while (secret() && !best && !turn_order_.empty())
+        {
+            auto *first = find(turn_order_.front());
+            turn_order_.erase(turn_order_.begin());
+            if (first->able() && first->initiative > 0)
+            {
+                best = first;
+            }
+        }
         for (auto &f : fighters_)
         {
-            if (!f.able() || f.initiative <= 0)
+            // Secret's order has picked already.
+            if (secret() || !f.able() || f.initiative <= 0)
             {
                 continue;
             }
@@ -864,7 +972,9 @@ void Session::next_actor()
             best->guarding = false;
             // A helpless creature's turn ends as it starts (effhndlr.pas, the
             // helpless effects at TURN_START).
-            if (best->helpless())
+            // So does a stunned one's in Secret (Power Word Stun's 106, EffHelpless
+            // at its ACTION_START), though it is not helpless.
+            if (best->helpless() || best->has(effect::stunned))
             {
                 end_actions(*best);
                 continue;
@@ -980,7 +1090,11 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
     const bool behind_its_back =
         defender.flank_count > 1 &&
         direction_toward(attacker.cell, defender.cell) == defender.direction;
-    const bool backstab = attacker.numbers.backstabs && behind_its_back;
+    // Secret's thief backstabs only a defender of one square next to it
+    // (cbtacts.pas, IsBackstab, in its reconstruction).
+    const bool one_square = defender.footprint.width == 1 && defender.footprint.height == 1;
+    const bool backstab = attacker.numbers.backstabs && behind_its_back &&
+                          (!secret() || (one_square && adjacent(attacker, defender)));
     const bool behind = from_behind || (behind_its_back && defender.flank_spread > 4);
     // Shield keeps the front Armor Class at 3 or better (effhndlr.pas, EffShield).
     const int front = defender.has(effect::shield) ? std::min(defender.numbers.armor_class, 3)
@@ -994,7 +1108,13 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
     const int rear = coughs ? std::max(std::min(defender.numbers.rear_armor_class + 2, 10),
                                        defender.numbers.rear_armor_class)
                             : defender.numbers.rear_armor_class;
-    const int armor_class = (backstab ? rear + 2 : behind ? rear : coughs ? rear : front) + blind;
+    // Secret takes 4 from the Armor Class from behind for a backstab (RollAttacks).
+    const int backstab_armor_class = rear + (secret() ? 4 : 2);
+    const int armor_class = (backstab ? backstab_armor_class
+                             : behind ? rear
+                             : coughs ? rear
+                                      : front) +
+                            blind;
     if (defender.helpless())
     {
         slay_helpless(attacker, defender);
@@ -1026,7 +1146,8 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
             {
                 attacker.remove(effect::invisible);
             }
-            const int modifier = attack_modifier(attacker, defender) + prayer_bonus(attacker) -
+            const int modifier = attack_modifier(attacker, defender, game_of(identity_)) +
+                                 prayer_bonus(attacker) -
                                  (aura_protects(attacker, defender) ? 2 : 0);
             // One made helpless partway through is hit by the rest (cbtacts.pas, RollAttacks).
             const bool aside = natural > 1 && turned_aside(defender);
@@ -1037,24 +1158,39 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
                      {{"attacker", attacker.name}, {"name", defender.name}}});
                 continue;
             }
+            // A Secret creature that swallows whole does so on a natural 20,
+            // before the blow lands (EffSwallowWhole, at its damage).
+            if (attacker.has(effect::swallows_whole) && natural == 20)
+            {
+                swallow_whole(attacker, defender);
+                continue;
+            }
             int dice = 0;
             for (int die = 0; die < attack.dice; ++die)
             {
                 dice += roll(std::max(attack.sides, 1));
             }
             auto damage = hit_damage(dice, attack.modifier);
-            if (backstab)
+            // Secret multiplies a backstab after the effects on the blow, so the
+            // multiple covers a ranger's bonus too (CalcWeaponDamage), with
+            // (level - 1) div 4 + 2.
+            if (backstab && !secret())
             {
                 damage *= attacker.numbers.thief_level / 4 + 2;
             }
             damage = weapon_damage_defenses(attacker, defender, damage, phase, primary_hits);
+            if (backstab && secret())
+            {
+                damage *= (attacker.numbers.thief_level - 1) / 4 + 2;
+            }
             log({"{attacker} hits {name} for {damage}.",
                  {{"attacker", attacker.name},
                   {"name", defender.name},
                   {"damage", std::to_string(damage)}}});
             primary_hits += phase == 0 ? 1 : 0;
             inflict(defender, damage);
-            if (defender.able())
+            // In Secret only a blow that did damage carries anything (RollAttacks).
+            if (defender.able() && (damage > 0 || !secret()))
             {
                 on_hit(attacker, defender, phase, primary_hits, natural);
             }
@@ -1072,7 +1208,7 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
 // harder, and a protected one 2 harder for an attacker of the alignment it is
 // protected from. The original lost that 2 to a roll made after it (an
 // obvious bug, fixed).
-int attack_modifier(const Fighter &attacker, const Fighter &defender)
+int attack_modifier(const Fighter &attacker, const Fighter &defender, GoldBoxGame game)
 {
     int modifier = (attacker.has(effect::bless) ? 1 : 0) - (attacker.has(effect::curse) ? 1 : 0);
     // Blindness and Bestow Curse take 4 from the attacker's rolls (effhndlr.pas, 33, 36).
@@ -1100,7 +1236,7 @@ int attack_modifier(const Fighter &attacker, const Fighter &defender)
         modifier -= 2;
     }
     // Dispel Evil keeps the evil 7 worse off at its bearer (Curse, DispelEvil).
-    modifier -= evil && defender.has(204) ? 7 : 0;
+    modifier -= dispel_evil_takes(attacker, game) && defender.has(204) ? 7 : 0;
     return modifier;
 }
 
@@ -1419,6 +1555,30 @@ void Session::on_hit(Fighter &attacker, Fighter &defender, int phase, int primar
         case 64:
             poison(defender, 0);
             break;
+        case effect::poison_touch:
+            // Secret's poison rides the second attack form. A creature with
+            // none (a centipede, a giant snake or spider, a medusa) would never
+            // poison, so its first form carries it (an obvious bug, fixed).
+            if (phase == 0 && attacker.numbers.attacks[1].rate_per_two_rounds > 0)
+            {
+                break;
+            }
+            secret_poison(defender, 0);
+            break;
+        case effect::strong_poison_touch:
+            secret_poison(defender, -2);
+            break;
+        case effect::stone_touch:
+            // A cockatrice's touch, saved against as petrification (EffFleshToStone).
+            if (!saving_throw(defender, 1, 0, &attacker))
+            {
+                turn_to_stone(defender);
+            }
+            break;
+        case effect::ghoul_touch:
+            // Held 10 rounds unless saved against (EffGhoulPara).
+            paralyze(defender, 10, 0);
+            break;
         case 65:
             poison(defender, 4);
             break;
@@ -1485,8 +1645,7 @@ void Session::on_hit(Fighter &attacker, Fighter &defender, int phase, int primar
         {
             // Dispel Evil: an evil creature it strikes that fails its save is
             // sent away, and the spell ends (Curse, sp_dispel_evil).
-            const int alignment = defender.numbers.alignment;
-            if (alignment != 2 && alignment != 5 && alignment != 8)
+            if (!dispel_evil_takes(defender, game_of(identity_)))
             {
                 break;
             }
@@ -1580,6 +1739,43 @@ void Session::paralyze(Fighter &victim, int minutes, int modifier)
     victim.numbers.effects.push_back({effect::paralysis, minutes, 12, false});
 }
 
+// Secret's poisoned blow (effhndlr.pas, PoisonTarget, in its reconstruction):
+// a victim poisonous itself saves better by its own poison's strength
+// against plain poison, and with no penalty against strong poison.
+void Session::secret_poison(Fighter &victim, int modifier)
+{
+    if (const auto *own = victim.find_effect(effect::poison_touch))
+    {
+        modifier = modifier < 0 ? 0 : modifier + own->strength;
+    }
+    poison(victim, modifier);
+}
+
+// Turned to stone: out of the fight for good.
+void Session::turn_to_stone(Fighter &victim)
+{
+    victim.condition = Condition::stoned;
+    victim.hit_points = 0;
+    victim.initiative = 0;
+    log({"{name} is stoned.", {{"name", victim.name}}});
+    end_effects_at_zero(victim);
+    went_down(victim);
+}
+
+// A Secret remorhaz swallows its victim whole: dead at once (effhndlr.pas,
+// EffSwallowWhole, in its reconstruction).
+void Session::swallow_whole(Fighter &swallower, Fighter &victim)
+{
+    log({"{name} is swallowed whole.", {{"name", victim.name}}});
+    victim.condition = Condition::dead;
+    victim.hit_points = 0;
+    victim.initiative = 0;
+    end_effects_at_zero(victim);
+    went_down(victim);
+    log({roll(100) <= 50 ? "{name} belches in satisfaction." : "{victim} is digested instantly.",
+         {{"name", swallower.name}, {"victim", victim.name}}});
+}
+
 // A level drain, no save (effhndlr.pas, EffDrainOne and EffDrainTwo). Each
 // level takes the Hit Points of a level (its maximum over its levels) from
 // its maximum and its current; one below level 2 is dead forever. Otherwise
@@ -1669,6 +1865,10 @@ void Session::begin_cast(Fighter &caster, int spell_number)
          {{"name", caster.name}, {"spell", std::string(known.name), true}}});
     caster.pending_spell = spell_number;
     caster.initiative = std::max(caster.initiative - delay, 1);
+    if (secret())
+    {
+        reorder_after_cast(caster);
+    }
     actor_ = 0;
 }
 
@@ -1864,6 +2064,17 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         }
         return total;
     };
+    std::erase_if(targets,
+                  [&](EntityId id)
+                  {
+                      const auto &target = *find(id);
+                      if (!refuses_spell(target, number))
+                      {
+                          return false;
+                      }
+                      log({"{name} is unaffected.", {{"name", target.name}}});
+                      return true;
+                  });
     std::vector<EntityId> kept;
     switch (number)
     {
@@ -1917,11 +2128,12 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         break;
     case 10:
         // Charm Person cannot take a creature of type above 1 or a large one
-        // (magic.pas, the charm).
+        // (magic.pas, the charm); Secret judges by race and flags instead
+        // (refuses_spell).
         for (const auto id : targets)
         {
             auto &f = *find(id);
-            if (f.numbers.creature_type > 1 || f.numbers.large)
+            if (!secret() && (f.numbers.creature_type > 1 || f.numbers.large))
             {
                 log({"{name} is unaffected.", {{"name", f.name}}});
                 continue;
@@ -1950,13 +2162,16 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
     {
         // Hold Person: the fewer held, the harder to save, each in turn from
         // the last picked; a creature of type above 1 or a large one is not
-        // held (magic.pas, the hold).
+        // held (magic.pas, the hold). In Secret a monster is never held,
+        // whatever its size (magic.pas, its multi-target resolver).
         const int count = static_cast<int>(targets.size());
         const int modifier = count == 1 ? (number == 23 ? -2 : -3) : count == 2 ? -1 : 0;
         for (auto id = targets.rbegin(); id != targets.rend(); ++id)
         {
             auto &f = *find(*id);
-            if (f.numbers.creature_type > 1 || f.numbers.large)
+            const bool held_off =
+                secret() ? f.numbers.race == 0 : f.numbers.creature_type > 1 || f.numbers.large;
+            if (held_off)
             {
                 log({"{name} is unaffected.", {{"name", f.name}}});
                 continue;
@@ -2018,11 +2233,16 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
     case 27:
     {
         // Snake Charm: every snake on the field, either side, whose Hit Points
-        // the caster's own can pay for (magic.pas, the snake charm).
+        // the caster's own can pay for (magic.pas, the snake charm). Secret
+        // knows a snake by its flags and passes over one charmed already
+        // (SpellSnakeCharm).
         int pool = caster.hit_points;
         for (auto &f : fighters_)
         {
-            if (!f.able() || f.numbers.creature_type != 14 || f.hit_points > pool)
+            const bool snake =
+                secret() ? (f.numbers.traits & trait::snake) && !f.has(effect::snake_charm)
+                         : f.numbers.creature_type == 14;
+            if (!f.able() || !snake || f.hit_points > pool)
             {
                 continue;
             }
@@ -2505,7 +2725,7 @@ void Session::cast_generic(Fighter &caster, int number, int level,
         {
             const int natural = roll(20);
             if (!attack_hits(natural, caster.numbers.thac0, target.numbers.armor_class,
-                             attack_modifier(caster, target)))
+                             attack_modifier(caster, target, game_of(identity_))))
             {
                 log({"{attacker} misses {name}.",
                      {{"attacker", caster.name}, {"name", target.name}}});
@@ -2562,13 +2782,47 @@ bool magic_resists(const Fighter &target, int caster_level, int roll_100)
             return true;
         }
     }
-    return false;
+    // Secret's lessens as Curse's do, from the percent its record holds
+    // (fxengine.pas, CheckSpellResistance, in its reconstruction).
+    const int percent = target.numbers.magic_resistance;
+    return percent > 0 && roll_100 <= percent + (11 - caster_level) * 5;
 }
 
-// Whether a creature resists magic, by Pool of Radiance's or Curse's numbers.
+// Secret's spells a creature's race or flags refuse (magic.pas, in its
+// reconstruction): Charm Person takes one of the player's races, or a monster
+// its flags call a person; Charm Person or Mammal one they call a mammal; Slay
+// Living and Death Spell cannot slay the unliving. Secret's own spells are
+// numbered 200 higher in the rules (canonical_spell).
+bool Session::refuses_spell(const Fighter &target, int number) const
+{
+    constexpr int charm_person = 10, slay_living = 176, charm_person_or_mammal = 296,
+                  death_spell = 310;
+    if (!secret())
+    {
+        return false;
+    }
+    const bool monster = target.numbers.race == 0;
+    const int traits = target.numbers.traits;
+    switch (number)
+    {
+    case charm_person:
+        return monster && (traits & trait::person) == 0;
+    case charm_person_or_mammal:
+        return monster && (traits & trait::mammal) == 0;
+    case slay_living:
+    case death_spell:
+        return (traits & trait::unliving) != 0;
+    default:
+        return false;
+    }
+}
+
+// Whether a creature resists magic, by Pool of Radiance's or Curse's numbers
+// or by its record in Secret.
 bool resists_magic_at_all(const Fighter &target)
 {
-    return target.has(105) || target.has(106) || target.has(305) || target.has(306);
+    return target.has(105) || target.has(106) || target.has(305) || target.has(306) ||
+           target.numbers.magic_resistance > 0;
 }
 
 // An effect added as a spell adds it (fxengine.pas, AddEffectWithMessage): the
@@ -2603,6 +2857,13 @@ bool Session::add_with_message(Fighter &target, Effect added, bool negates, bool
     immune = immune || (target.has(263) && spell_effect && known->level < 4);
     immune = immune || (target.has(310) && (element & 2));
     immune = immune || (target.has(335) && (element & 4));
+    // Secret's (effhndlr.pas, its condition 9): the Globe of Invulnerability
+    // stops a spell's to the fourth level, the fearless are never afraid, and
+    // an iron golem takes no effect at all.
+    immune = immune ||
+             (target.has(effect::globe_of_invulnerability) && spell_effect && known->level <= 4);
+    immune = immune || (target.has(effect::fearless) && is({effect::fear}));
+    immune = immune || target.has(effect::iron_golem);
     if (immune || (negates && saved))
     {
         log({"{name} is unaffected.", {{"name", target.name}}});
@@ -2629,6 +2890,11 @@ bool Session::add_with_message(Fighter &target, Effect added, bool negates, bool
 void Session::nonweapon_damage(Fighter &target, int damage, int save_result, bool saved,
                                int element, int caster_level, int spell_number, bool single_target)
 {
+    if (target.has(effect::iron_golem))
+    {
+        iron_golem_absorbs(target, damage, element);
+        return;
+    }
     // Mirror images take a single target's spell (effhndlr.pas, EffMirrorImage).
     if (single_target && mirror_absorbs(target))
     {
@@ -2646,18 +2912,25 @@ void Session::nonweapon_damage(Fighter &target, int damage, int save_result, boo
     {
         damage /= 2;
     }
-    if ((element & 8) && resists_magic_at_all(target) &&
+    // Secret's resistance turns a spell's damage only when the spell carries
+    // an effect too, so a Fireball's goes through (fxengine.pas,
+    // CheckSpellResistance, in its reconstruction).
+    const auto *cast = spell(spell_number);
+    const bool resistible = target.numbers.magic_resistance == 0 || (cast && cast->effect != 0);
+    if ((element & 8) && resistible && resists_magic_at_all(target) &&
         magic_resists(target, caster_level, roll(100)))
     {
         damage = 0;
     }
     // Curse's protections (ovr013): cold for one immune to it (310), dragon
     // breath (273), magic (329), electricity (335), and a spell below the
-    // fourth level for a Minor Globe of Invulnerability (263).
-    const auto *cast = spell(spell_number);
+    // fourth level for a Minor Globe of Invulnerability (263), and Secret's
+    // Globe of Invulnerability, to the fourth.
+    const bool spell_cast = cast && cast->caster_class != SpellClass::item;
     if (((element & 2) && target.has(310)) || ((element & 0x20) && target.has(273)) ||
         ((element & 8) && target.has(329)) || ((element & 4) && target.has(335)) ||
-        (target.has(263) && cast && cast->caster_class != SpellClass::item && cast->level < 4))
+        (target.has(263) && spell_cast && cast->level < 4) ||
+        (target.has(effect::globe_of_invulnerability) && spell_cast && cast->level <= 4))
     {
         log({"{name} is unaffected.", {{"name", target.name}}});
         damage = 0;
@@ -2720,6 +2993,27 @@ void Session::nonweapon_damage(Fighter &target, int damage, int save_result, boo
     }
     log({"{name} takes {damage}.", {{"name", target.name}, {"damage", std::to_string(damage)}}});
     inflict(target, damage);
+}
+
+// Secret's iron golem takes no damage but a weapon's (effhndlr.pas,
+// EffIronGolem, in its reconstruction): magical fire heals it by the damage,
+// up to its maximum, before any save; electricity slows it for 3 rounds.
+void Session::iron_golem_absorbs(Fighter &golem, int damage, int element)
+{
+    if ((element & 1) && (element & 8))
+    {
+        golem.hit_points = std::min(golem.hit_points + damage, golem.numbers.max_hit_points);
+        log({"{name} is healed.", {{"name", golem.name}}});
+    }
+    else if (element & 4)
+    {
+        golem.numbers.effects.push_back({effect::slowed, 3, 255, false});
+        log({"{name} is slowed.", {{"name", golem.name}}});
+    }
+    else
+    {
+        log({"{name} is unaffected.", {{"name", golem.name}}});
+    }
 }
 
 // A charmed creature fights for its charmer (effhndlr.pas, the charm).
@@ -2980,6 +3274,13 @@ bool Session::in_cloud(const Fighter &f) const
                        });
 }
 
+// In Secret the undead and the unliving (its record's flag) breathe a stinking
+// cloud unharmed (fxengine.pas, ConsiderTerrainEffects, in its reconstruction).
+bool Session::breathes_clouds_freely(const Fighter &f) const
+{
+    return secret() && (f.numbers.undead_level > 0 || (f.numbers.traits & trait::unliving) != 0);
+}
+
 // One in a cloud saves against paralysis: saved, it coughs for the round;
 // failed, nausea leaves it helpless for 1d4+1 rounds. One coughing, nauseous,
 // animated or immune to poison breathes it unharmed (fxengine.pas,
@@ -2987,7 +3288,7 @@ bool Session::in_cloud(const Fighter &f) const
 void Session::breathe_cloud(Fighter &f)
 {
     if (!f.able() || !in_cloud(f) || f.has(effect::coughing) || f.has(effect::nausea) ||
-        f.has(effect::animated) || f.has(111) || f.has(125))
+        f.has(effect::animated) || f.has(111) || f.has(125) || breathes_clouds_freely(f))
     {
         return;
     }
@@ -3162,7 +3463,7 @@ void Session::ai_turn(Fighter &f, bool magic)
                                                         sees(board_, f, o);
                                              });
     if (f.numbers.class_levels[static_cast<std::size_t>(ClassSlot::cleric)] > 0 &&
-        !f.tried_turning && undead_in_sight)
+        !f.tried_turning && undead_in_sight && !secret())
     {
         turn_undead(f);
         return;
@@ -3475,6 +3776,191 @@ void Session::monster_specials(Fighter &f)
         f.remove(80);
     }
     curse_specials(f);
+    secret_specials(f);
+}
+
+// The target a Secret monster's power picks, as its AI aims a spell
+// (cbtacts.pas, SelectSpellTarget, in its reconstruction): a new lock on an
+// enemy it sees within range, in one try. A power aimed as a paralyzing spell
+// is (its picker's spell 61) passes a helpless one over.
+Fighter *Session::secret_target(Fighter &f, int range, bool skip_helpless)
+{
+    if (!acquire_target(f, range, false, true))
+    {
+        return nullptr;
+    }
+    auto *target = find(f.lock);
+    return skip_helpless && target->helpless() ? nullptr : target;
+}
+
+// Secret's monsters' powers as each of their AI's turns starts (fxengine.pas,
+// its condition 14, in its reconstruction), in its order: the petrifying gaze,
+// a pyrohydra's fire, the umber hulk's confusing gaze, a hell hound's fire, a
+// giant slug's acid and a dragon's breath. Only the breath ends its turn.
+void Session::secret_specials(Fighter &f)
+{
+    if (f.has(effect::petrifying_gaze) && f.able())
+    {
+        petrifying_gaze(f);
+    }
+    // A pyrohydra breathes 8 of fire at its lock beside it, from the second
+    // round for as many rounds as its first attack's rate (EffBreatheFireAdjacent).
+    auto *lock = find(f.lock);
+    const bool fire_round =
+        round_ > 1 && static_cast<int>(round_) - 1 <= f.numbers.attacks[0].rate_per_two_rounds;
+    if (f.has(effect::fire_beside) && f.able() && fire_round && lock && lock->able() &&
+        distance(f, *lock) < 2)
+    {
+        log({"{name} breathes fire.", {{"name", f.name}}});
+        nonweapon_damage(*lock, 8, 2, saving_throw(*lock, 3, 0, &f, 0x21), 0x21, 12, 0, false);
+    }
+    // The umber hulk's gaze confuses one beside it for 1d10+2 rounds unless
+    // it saves against spells (EffReflectSpell).
+    if (f.has(effect::confusing_gaze) && f.able())
+    {
+        if (auto *target = secret_target(f, 1, false))
+        {
+            log({"{name} gazes.", {{"name", f.name}}});
+            if (!saving_throw(*target, 4, 0, &f))
+            {
+                (void)add_with_message(*target, {235, roll(10) + 2, f.numbers.level, true}, true,
+                                       false, 0, f.numbers.level, spell(182));
+            }
+        }
+    }
+    // A hell hound breathes 7 of fire at one beside it, every turn
+    // (EffBreatheFireAtTarget).
+    if (f.has(effect::fire_at_target) && f.able())
+    {
+        if (auto *target = secret_target(f, 1, false))
+        {
+            log({"{name} breathes fire.", {{"name", f.name}}});
+            nonweapon_damage(*target, 7, 2, saving_throw(*target, 3, 0, &f, 0x21), 0x21, 12, 0,
+                             false);
+        }
+    }
+    // A giant slug spits 4d8 of acid at one within 6 squares: 1 time in 10 in
+    // the first round, then 1 in 10 for each square nearer than 11 (EffSpitAtTarget).
+    if (f.has(effect::spits_acid) && f.able())
+    {
+        if (auto *target = secret_target(f, 6, true))
+        {
+            const int chance = round_ == 1 ? 10 : (11 - distance(f, *target)) * 10;
+            if (roll(100) <= chance)
+            {
+                log({"{name} spits acid.", {{"name", f.name}}});
+                int damage = 0;
+                for (int die = 0; die < 4; ++die)
+                {
+                    damage += roll(8);
+                }
+                nonweapon_damage(*target, damage, 2, saving_throw(*target, 3, 0, &f, 16), 16, 12, 0,
+                                 false);
+            }
+            else
+            {
+                log({"{name} spits acid and misses.", {{"name", f.name}}});
+            }
+        }
+    }
+    // A white dragon breathes cold 7 squares long, a red one fire 9 long
+    // (magic.pas, EffDragonBreath).
+    if (f.has(effect::cold_breath) && f.able() && f.initiative > 0)
+    {
+        (void)secret_breath(f, effect::cold_breath, 7, 0x22);
+    }
+    if (f.has(effect::fire_breath) && f.able() && f.initiative > 0)
+    {
+        (void)secret_breath(f, effect::fire_breath, 9, 0x21);
+    }
+}
+
+// A Secret gaze that turns to stone (effhndlr.pas, EffPetrifyingGaze, in its
+// reconstruction): at an enemy within 6 squares that is not helpless, saved
+// against as petrification. A target with a mirror turns a gaze that can be
+// reflected back on the gazer.
+void Session::petrifying_gaze(Fighter &gazer)
+{
+    auto *target = secret_target(gazer, 6, true);
+    if (!target)
+    {
+        return;
+    }
+    log({"{name} gazes.", {{"name", gazer.name}}});
+    Fighter *victim = target;
+    if (gazer.has(effect::reflectable_gaze) && target->numbers.mirror)
+    {
+        log({"{name} reflects it.", {{"name", target->name}}});
+        victim = &gazer;
+    }
+    if (!saving_throw(*victim, 1, 0, &gazer))
+    {
+        turn_to_stone(*victim);
+    }
+}
+
+// A Secret dragon's breath (magic.pas, EffDragonBreath, in its reconstruction):
+// three a fight, the effect's strength counting them down from the first
+// round; aimed at an enemy within 6 squares that is not helpless, along a
+// path of the length three wide, never while any creature of its own side
+// stands in it; its maximum Hit Points to each, half on a save against
+// breath. A breath ends its turn.
+bool Session::secret_breath(Fighter &dragon, int code, int length, int element)
+{
+    auto *breath = dragon.find_effect(code);
+    if (round_ == 1 || breath->strength > 3)
+    {
+        breath->strength = 3;
+    }
+    if (breath->strength <= 0)
+    {
+        return false;
+    }
+    const auto *target = secret_target(dragon, 6, true);
+    if (!target)
+    {
+        return false;
+    }
+    const auto targets = path_area(dragon, target->cell, length, 3);
+    const bool spares_friends = std::ranges::none_of(targets,
+                                                     [&](EntityId id)
+                                                     {
+                                                         return find(id)->side == dragon.side;
+                                                     });
+    if (targets.empty() || !spares_friends)
+    {
+        return false;
+    }
+    --breath->strength;
+    log({"{name} breathes.", {{"name", dragon.name}}});
+    for (const auto id : targets)
+    {
+        auto &victim = *find(id);
+        nonweapon_damage(victim, dragon.numbers.max_hit_points, 2,
+                         saving_throw(victim, 3, 0, &dragon, element), element, 12, 0, false);
+    }
+    end_actions(dragon);
+    return true;
+}
+
+// A Secret dragon's fear as a fight starts (effhndlr.pas, EffDragonFear, in
+// its reconstruction): each enemy below level 5 that is not fearless and not
+// afraid already is terrified and runs for the rest of the fight.
+void Session::dragon_fear(const Fighter &dragon)
+{
+    for (auto &f : fighters_)
+    {
+        if (f.side == dragon.side || !f.able() || f.has(effect::fearless) || f.has(effect::fear) ||
+            f.numbers.level >= 5)
+        {
+            continue;
+        }
+        if (add_with_message(f, {effect::fear, 0, 255, true}, true, false, 0, dragon.numbers.level,
+                             spell(184)))
+        {
+            f.turned = true;
+        }
+    }
 }
 
 // How many times a creature has used a power this fight, kept on it as an
@@ -3728,8 +4214,8 @@ bool Session::can_step(const Fighter &f, int direction, bool &edge) const
     {
         return false;
     }
-    const bool breathes_freely =
-        f.has(effect::animated) || f.has(effect::coughing) || f.has(111) || f.has(125);
+    const bool breathes_freely = f.has(effect::animated) || f.has(effect::coughing) || f.has(111) ||
+                                 f.has(125) || breathes_clouds_freely(f);
     return breathes_freely || !in_cloud(moved);
 }
 
@@ -4546,7 +5032,7 @@ void Session::expire(Fighter &f, const Effect &ended)
 
 // At a fight's start (combatst.pas, COMBAT_START): one that fights on while
 // down may stand; a mummy's fear grips its enemies once; displacement is
-// ready; camouflage hides.
+// ready; camouflage and a ring of invisibility hide; a dragon frightens.
 void Session::combat_start()
 {
     bool feared = false;
@@ -4602,12 +5088,23 @@ void Session::combat_start()
         {
             f.numbers.effects.push_back({effect::invisible, 1, 12, false});
         }
+        // A ring of invisibility hides its wearer for the round (effhndlr.pas,
+        // EffRenewInvisibility): Secret's Dreadlord starts every fight unseen.
+        if (f.has(effect::renew_invisibility))
+        {
+            f.numbers.effects.push_back({effect::invisible, 1, 12, false});
+        }
+        // A Secret dragon's fear grips the weaker of its enemies (EffDragonFear).
+        if (f.has(effect::dragon_fear) && f.able())
+        {
+            dragon_fear(f);
+        }
     }
 }
 
 // At a round's end, after effects age (combat.pas, EndOfRound): regeneration
-// heals 3; camouflage hides again, 95 times in 100; displacement is ready for
-// the next round.
+// heals 3; camouflage hides again, 95 times in 100, and a ring of invisibility
+// every time; displacement is ready for the next round.
 void Session::round_end_effects()
 {
     for (auto &f : fighters_)
@@ -4617,6 +5114,10 @@ void Session::round_end_effects()
             f.hit_points = std::min(f.hit_points + 3, f.numbers.max_hit_points);
         }
         if (f.has(effect::camouflage) && roll(100) <= 95)
+        {
+            f.numbers.effects.push_back({effect::invisible, 1, 12, false});
+        }
+        if (f.has(effect::renew_invisibility))
         {
             f.numbers.effects.push_back({effect::invisible, 1, 12, false});
         }
@@ -4810,6 +5311,17 @@ int Session::weapon_damage_defenses(const Fighter &attacker, Fighter &defender, 
     {
         damage = 0;
     }
+    // Secret's: an iron golem takes harm only from a weapon of +3 or better,
+    // and a giant slug none from a bludgeoning one (effhndlr.pas,
+    // EffNeedMagicWeapon and EffHalfBash, in its reconstruction).
+    if (defender.has(effect::needs_plus_three) && (!striker || plus < 3))
+    {
+        damage = 0;
+    }
+    if (defender.has(effect::bashing_proof) && striker && bludgeoning)
+    {
+        damage = 0;
+    }
     if (defender.has(123))
     {
         damage = plus > 0 ? damage : silver ? damage / 2 : 0;
@@ -4836,8 +5348,13 @@ int Session::weapon_damage_defenses(const Fighter &attacker, Fighter &defender, 
     {
         damage = std::min(damage, 1);
     }
-    // A ranger adds its level against giants (Curse, AffectRangerVsGiant).
-    if (attacker.has(334) && (defender.numbers.kin & kin::giant) && damage > 0)
+    // A ranger adds its level against giants (Curse, AffectRangerVsGiant); in
+    // Secret against the creatures its flags name, from next to them
+    // (EffRangerDamageBonus).
+    const bool ranger_foe =
+        secret() ? (defender.numbers.traits & trait::ranger_foe) && adjacent(attacker, defender)
+                 : (defender.numbers.kin & kin::giant) != 0;
+    if (attacker.has(334) && ranger_foe && damage > 0)
     {
         damage += attacker.numbers.class_levels[static_cast<std::size_t>(ClassSlot::ranger)];
     }
@@ -4888,10 +5405,15 @@ bool Session::saving_throw(const Fighter &f, int save, int modifier, const Fight
                           : constitution <= 17 ? 4
                           : constitution <= 20 ? 5
                                                : 0;
-    if ((f.has(90) && save == 0) || (f.has(97) && (save == 4 || save == 2)))
+    // Secret's 94 counts Constitution against all three (EffConPsnSave).
+    const bool poison_spell_or_wand = save == 0 || save == 2 || save == 4;
+    if ((f.has(90) && save == 0) || (f.has(97) && (save == 4 || save == 2)) ||
+        (f.has(effect::hardy) && poison_spell_or_wand))
     {
         modifier += hardiness;
     }
+    // Secret's luckstone saves 1 better (EffSaveBonus).
+    modifier += f.has(effect::luck) ? 1 : 0;
     modifier += f.has(effect::shield) ? 1 : 0;
     modifier -= f.has(effect::blind) ? 4 : 0;
     modifier -= f.has(effect::bestow_curse) ? 4 : 0;
@@ -5347,8 +5869,9 @@ std::vector<rules::Command> Session::legal_commands() const
         offer("quick_magic");
     }
     // Turn, once a fight for one with cleric levels (combat.pas, CombatMenu).
+    // Secret has no turning (its CombatMenu offers none).
     if (actor->numbers.class_levels[static_cast<std::size_t>(ClassSlot::cleric)] > 0 &&
-        !actor->tried_turning)
+        !actor->tried_turning && !secret())
     {
         offer("turn");
     }
@@ -5513,8 +6036,13 @@ bool Session::submit(const rules::Command &command)
     }
     else if (command.verb == "delay")
     {
-        // It acts again later this round, at initiative 1.
+        // It acts again later this round, at initiative 1; in Secret, last of
+        // all (combat.pas, ManualControl, in its reconstruction).
         actor.initiative = 1;
+        if (secret())
+        {
+            turn_order_.push_back(actor.id);
+        }
         actor_ = 0;
     }
     else if (command.verb == "bandage")
@@ -5570,6 +6098,11 @@ std::string Session::save() const
     {
         out(cloud.caster, cloud.index, cloud.corner.x, cloud.corner.y, cloud.covers[0],
             cloud.covers[1], cloud.covers[2], cloud.covers[3]);
+    }
+    out(turn_order_.size());
+    for (const auto id : turn_order_)
+    {
+        out(id);
     }
     out(fighters_.size());
     for (const auto &f : fighters_)
@@ -5658,6 +6191,15 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
             covers = in.as<bool>();
         }
         session->clouds_.push_back(cloud);
+    }
+    const auto ordered = in.as<std::size_t>();
+    if (ordered > 256)
+    {
+        throw std::runtime_error("Invalid original-rules combat checkpoint");
+    }
+    for (std::size_t n = 0; n < ordered; ++n)
+    {
+        session->turn_order_.push_back(in.as<EntityId>());
     }
     if (session->morale_threshold_ > 100 || session->hostile_hit_points_percent_ < 0 ||
         session->hostile_hit_points_percent_ > 100)
@@ -5762,7 +6304,12 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
         }
         session->log_.push_back({english(message), std::move(message)});
     }
-    if (!in.finished())
+    const bool order_known = std::ranges::all_of(session->turn_order_,
+                                                 [&session](EntityId id)
+                                                 {
+                                                     return session->find(id) != nullptr;
+                                                 });
+    if (!in.finished() || !order_known)
     {
         throw std::runtime_error("Invalid original-rules combat checkpoint");
     }

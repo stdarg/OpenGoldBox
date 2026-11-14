@@ -1,6 +1,7 @@
 #include "opengold/original_combat.h"
 #include "opengold/original_rules.h"
 #include "opengold/original_spells.h"
+#include "opengold/secret_records.h"
 
 #include <algorithm>
 #include <charconv>
@@ -12,7 +13,7 @@ namespace opengold::original
 namespace
 {
 
-constexpr std::string_view profile_format = "combatant12";
+constexpr std::string_view profile_format = "combatant13";
 
 std::vector<int> numbers_of(const Combatant &c)
 {
@@ -40,10 +41,10 @@ std::vector<int> numbers_of(const Combatant &c)
     numbers.insert(numbers.end(), c.class_levels.begin(), c.class_levels.end());
     numbers.insert(numbers.end(),
                    {c.strength, c.undead_level, c.constitution, c.alignment, c.creature_type, c.kin,
-                    c.race, c.striker ? 1 : 0, c.striker ? c.striker->plus : 0,
-                    c.striker && c.striker->silver ? 1 : 0, c.striker ? c.striker->weapon_class : 0,
-                    c.weapon_type, c.wards_gaze ? 1 : 0, c.mirror ? 1 : 0, c.save_bonus,
-                    static_cast<int>(c.effects.size())});
+                    c.traits, c.magic_resistance, c.race, c.striker ? 1 : 0,
+                    c.striker ? c.striker->plus : 0, c.striker && c.striker->silver ? 1 : 0,
+                    c.striker ? c.striker->weapon_class : 0, c.weapon_type, c.wards_gaze ? 1 : 0,
+                    c.mirror ? 1 : 0, c.save_bonus, static_cast<int>(c.effects.size())});
     for (const auto &effect : c.effects)
     {
         numbers.insert(numbers.end(),
@@ -177,6 +178,8 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
     c.alignment = *next++;
     c.creature_type = *next++;
     c.kin = *next++;
+    c.traits = *next++;
+    c.magic_resistance = *next++;
     c.race = *next++;
     if (*next++ != 0)
     {
@@ -190,8 +193,8 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
     const auto effect_count = *next++;
     for (int n = 0; n < effect_count; ++n, next += 4)
     {
-        // Curse's own effects run past 255 (canonical_effect).
-        if (next[0] < 1 || next[0] > 255 + curse_effect_offset || next[1] < 0 || next[2] < 0)
+        // Curse's and Secret's own effects run past 255 (canonical_effect).
+        if (next[0] < 1 || next[0] > 255 + secret_effect_offset || next[1] < 0 || next[2] < 0)
         {
             return std::nullopt;
         }
@@ -422,14 +425,66 @@ int kin_of(const por::CharacterRecord &record)
     return kinds;
 }
 
+// A Secret of the Silver Blades creature's kinds of foe and traits, from its
+// record's type and target flags (effhndlr.pas and magic.pas in its
+// reconstruction): the bits its effects and spells test.
+int secret_kin(const por::CharacterRecord &record)
+{
+    namespace type = secret::creature_type;
+    const auto flags = record.creature_type_flags;
+    int kinds = 0;
+    kinds |= (flags & type::dwarf_foe) ? kin::dwarf_foe : 0;
+    kinds |= (record.target_flags & secret::target::gnome_foe) ? kin::gnome_foe : 0;
+    kinds |= (flags & type::dwarf_defends) ? kin::giant : 0;
+    kinds |= (flags & type::gnome_defends) ? kin::bugbear : 0;
+    return kinds;
+}
+
+int secret_traits(const por::CharacterRecord &record)
+{
+    namespace type = secret::creature_type;
+    namespace target = secret::target;
+    const auto flags = record.creature_type_flags, targets = record.target_flags;
+    int traits = 0;
+    traits |= (flags & type::dispel_evil) ? trait::dispel_evil : 0;
+    traits |= (flags & type::mammal) ? trait::mammal : 0;
+    traits |= (flags & type::ranger_foe) ? trait::ranger_foe : 0;
+    traits |= (flags & type::snake) ? trait::snake : 0;
+    traits |= (targets & target::giant_bane) ? trait::giant_bane : 0;
+    traits |= (targets & target::person) ? trait::person : 0;
+    traits |= (targets & target::unliving) ? trait::unliving : 0;
+    return traits;
+}
+
+// Secret's effect that turns a gaze back on the gazer (EffPetrifyingGaze in
+// its reconstruction), which an item gives while it is readied: the item's
+// effect byte names it, and its special byte's 0x80 with no other bit says it
+// is an effect (viewchar.pas, ToggleItemEffect).
+constexpr int secret_reflection = 72;
+
+bool reflects_gazes(const CarriedItem &carried)
+{
+    const auto &bytes = carried.item.effect_codes;
+    return carried.item.readied() && bytes[1] == secret_reflection && bytes[2] == 0x80;
+}
+
+// A thief backstabs with no weapon, a club or a dagger (item types 3 and 4)
+// or a broad, long or short sword (17 to 19) in any armor (cbtacts.pas,
+// IsBackstab, in Secret's reconstruction).
+bool secret_backstab_weapon(const CarriedItem *weapon)
+{
+    const int type = weapon ? weapon->item.type : 0;
+    return !weapon || type == 3 || type == 4 || (type >= 17 && type <= 19);
+}
+
 // The items a creature can use: a scroll (an item whose type sits in slots
 // 11 to 13) with a spell, or another item with a spell or power. In Pool of
 // Radiance numbers above 56 are item powers 23 down (viewchar.pas, UseItem;
-// magic.pas, ItemReadable); Curse names the spell itself (ovr020,
+// magic.pas, ItemReadable); Curse and Secret name the spell itself (ovr020,
 // UseMagicItem).
 std::vector<UsableItem> usable_items(std::span<const CarriedItem> carried, GoldBoxGame game)
 {
-    const bool curse = game == GoldBoxGame::curse_of_the_azure_bonds;
+    const bool names_spells = game != GoldBoxGame::pool_of_radiance;
     std::vector<UsableItem> items;
     for (std::size_t n = 0; n < carried.size(); ++n)
     {
@@ -457,7 +512,7 @@ std::vector<UsableItem> usable_items(std::span<const CarriedItem> carried, GoldB
         }
         else if (bytes[1] > 0 && bytes[2] < 0x80)
         {
-            usable.spells[0] = curse           ? canonical_spell(bytes[1] & 0x7F, game)
+            usable.spells[0] = names_spells    ? canonical_spell(bytes[1] & 0x7F, game)
                                : bytes[1] > 56 ? bytes[1] - 23
                                                : bytes[1];
             usable.charges = bytes[0];
@@ -473,8 +528,43 @@ std::vector<UsableItem> usable_items(std::span<const CarriedItem> carried, GoldB
 
 } // namespace
 
+namespace
+{
+
+// Secret's effects by the fight's numbers (effhndlr.pas in its reconstruction,
+// judged by what each does, not by its name). Below 57 Secret keeps Curse's
+// effects but for five: immunity to electricity (6, Curse's 135), a gnome's
+// blow at its foes (7, Pool of Radiance's 18), Barkskin (13), the half-elf's
+// resistance (18, Pool of Radiance's 124) and Dispel Evil's touch (32,
+// Curse's 145). From 57 its effects are new or moved.
+int secret_canonical_effect(int code) noexcept
+{
+    constexpr std::array<std::pair<int, int>, 27> moved{{
+        {6, 335},   {7, 18},    {18, 124},  {32, 345},  {59, 127},  {61, 61},   {63, 263},
+        {68, 268},  {69, 269},  {71, 207},  {73, 273},  {77, 277},  {89, 89},   {91, 291},
+        {93, 112},  {95, 107},  {96, 108},  {97, 97},   {98, 310},  {99, 111},  {103, 119},
+        {105, 334}, {107, 337}, {108, 338}, {110, 341}, {111, 342}, {112, 343},
+    }};
+    const auto found = std::ranges::find(moved, code, &std::pair<int, int>::first);
+    if (found != moved.end())
+    {
+        return found->second;
+    }
+    if (code < 57 && code != 13)
+    {
+        return canonical_effect(code, GoldBoxGame::curse_of_the_azure_bonds);
+    }
+    return code + secret_effect_offset;
+}
+
+} // namespace
+
 int canonical_effect(int code, GoldBoxGame game) noexcept
 {
+    if (game == GoldBoxGame::secret_of_the_silver_blades && code != 0)
+    {
+        return secret_canonical_effect(code);
+    }
     if (game != GoldBoxGame::curse_of_the_azure_bonds || code == 0)
     {
         return code;
@@ -622,6 +712,11 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
     c.backstabs = l.thief > 0 && (!armor || armor->item.type == 50) &&
                   (!weapon || weapon_type == 7 || weapon_type == 8 ||
                    (weapon_type >= 35 && weapon_type <= 37));
+    const bool secret = record.game == GoldBoxGame::secret_of_the_silver_blades;
+    if (secret)
+    {
+        c.backstabs = l.thief > 0 && secret_backstab_weapon(weapon);
+    }
     // The combat icon's size: above 0x80, or a size above 1 (cbtacts.pas, RollAttacks).
     c.large = record.icon_size_raw > 0x80 || (record.icon_size_raw & 7) > 1;
     if (weapon && weapon->type.range > 1)
@@ -633,7 +728,9 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
     c.constitution = record.current_abilities.constitution;
     c.alignment = record.alignment;
     c.creature_type = record.type;
-    c.kin = kin_of(record);
+    c.kin = secret ? secret_kin(record) : kin_of(record);
+    c.traits = secret ? secret_traits(record) : 0;
+    c.magic_resistance = record.magic_resistance;
     c.items = usable_items(carried, record.game);
     // Memorized spells; those still being learned (bit 0x80) are not ready.
     for (const auto memorized : record.memorized_spells)
@@ -658,6 +755,15 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
                                return item.item.readied() &&
                                       std::find(words.begin(), words.end(), 118) != words.end();
                            });
+    if (secret)
+    {
+        c.mirror = std::ranges::any_of(carried, reflects_gazes) ||
+                   std::ranges::any_of(effects,
+                                       [](const por::EffectRecord &effect)
+                                       {
+                                           return effect.code == secret_reflection;
+                                       });
+    }
     // Code 0 is no effect: the original dispatches none for it.
     for (const auto &effect : effects)
     {

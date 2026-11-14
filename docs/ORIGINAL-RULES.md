@@ -203,8 +203,77 @@ chosen by the game as *Curse*'s are. In progress (2026-11-13):
 - **Attacks:** a fighter or paladin strikes three times in two rounds above
   level 6 and four above 12; a ranger three above 7 and four above 14.
 - **Still to come:** *Secret*'s own spells (Heal, Harm, Death Spell,
-  Disintegrate and the rest), the paladin's and ranger's spells (in *Curse*
-  too), and *Secret*'s combat.
+  Disintegrate and the rest), and the paladin's and ranger's spells (in
+  *Curse* too).
+
+### *Secret*'s combat
+
+*Secret* fights as *Curse* does, with these differences (its reconstruction's
+`effhndlr.pas`, `fxengine.pas`, `magic.pas`, `combat.pas` and `cbtacts.pas`):
+
+- **Creatures:** a record's type and target flags (bytes 349 and 350) take the
+  place of its creature type: a dwarf strikes those flagged its foes 1 better
+  and a gnome its own, giants strike a dwarf 4 worse and giants, ogres and
+  bugbears a gnome; a ranger next to one flagged its foe (giants, ogres,
+  ettins, bugbears) adds its level to a blow; Dispel Evil keeps one flagged
+  evil (the hell hound) 7 worse off and sends it away, whatever its alignment;
+  one flagged unliving (the iron golem, the Dreadlord, the otyughs) breathes a
+  stinking cloud unharmed and cannot be slain by Slay Living or Death Spell.
+  Its magic resistance is the record's percent (byte 421: the drider 15, the
+  lizard king 20), lessening with a higher caster's level as *Curse*'s does;
+  it turns a spell's damage only when the spell carries an effect too, so a
+  Fireball goes through. Byte 242 is the undead level, as in *Curse*, and 0
+  for every creature. *Secret* numbers its races differently (elf 1 to human
+  6, monster 7); its records are read into the earlier games' numbers.
+- **Spells by flags:** Charm Person takes one of the player's races or a
+  monster flagged a person, Charm Person or Mammal one flagged a mammal; Hold
+  Person never holds a monster, whatever its size; Snake Charm takes those
+  flagged snakes, but not one charmed already.
+- **Effects** are read by the fight's numbers (`canonical_effect`): below 57
+  as *Curse*'s but for five (immunity to electricity, a gnome's blow at its
+  foes, Barkskin, the half-elf's resistance and Dispel Evil's touch), the moved
+  ones as the earlier games' that work alike (the immunities to fire, cold,
+  breath, sleep and charm, paralysis and poison; resisting normal weapons as
+  AD&D has it, from the player's races or below level 4; displacement, a ring
+  of invisibility, blinking once it has acted), and *Secret*'s own 400 higher.
+- **Touches**, from a blow that did damage only: strong poison at −2, a
+  cockatrice's stone and a drider's paralysis for 10 rounds on either attack;
+  poison on the second attack, or on the first of a creature with only one
+  (Bugs); a victim poisonous itself saves better. A remorhaz swallows its
+  victim whole on a natural 20.
+- **Defenses:** an iron golem takes harm only from a weapon of +3 or better
+  and no spell's effect at all; magical fire heals it and electricity slows it
+  for 3 rounds. A giant slug takes none from a bludgeoning weapon. The Globe of
+  Invulnerability stops spells to the fourth level, the fearless are never
+  afraid, a luckstone saves 1 better, and Constitution adds to saves against
+  poison, spells and wands.
+- **Powers at the AI's turn**, each aimed as the AI aims a spell, at an enemy
+  it sees: a petrifying gaze at one within 6 squares that is not helpless,
+  turned back by a mirror if the gazer's can be; a pyrohydra's 8 of fire at its foe beside it from the second round;
+  the umber hulk's gaze confusing one beside it for 1d10+2 rounds unless it
+  saves against spells; a hell hound's 7 of fire at one beside it; a giant
+  slug's 4d8 of acid at one within 6 squares (1 time in 10 in the first
+  round, then 1 in 10 for each square nearer than 11); a white dragon's cold 7 squares long and a red one's
+  fire 9 long, three wide (along a path as *Curse*'s breaths are), aimed at
+  one within 6 squares, three a fight, never through its own side, for its
+  Hit Points (half on a save) and ending its turn. Only the breath ends it.
+- **At the fight's start:** a ring of invisibility (the Dreadlord's) hides its
+  wearer, again at each round's end; a dragon's fear sends each enemy below
+  level 5 that is not fearless running for the rest of the fight.
+- **Rounds:** each round is ordered once as it starts, by initiative, a tie
+  on a d2; one that delays acts last of all, and one that begins a spell moves
+  back among those yet to act. There is no turning undead.
+- **Backstab:** only a defender of one square next to the thief, with no
+  weapon, a club, a dagger or a broad, long or short sword (item types 3, 4
+  and 17 to 19) in any armor, against its Armor Class from behind less 4, for
+  (level − 1) div 4 + 2 times the damage, multiplied after the blow's other
+  effects.
+- **Still to come:** *Secret*'s item numbers for arrows, quarrels and an
+  elf's weapons; the AI's caution near clouds; a giant-bane weapon (effect 75);
+  the races' innate effects as *Secret* gives them (a gnome lacks the defense
+  against giants, and none saves better against poison); and the hit points
+  LOAD MONSTER scales by difficulty (the original rules have no difficulty
+  yet, Difficulty).
 
 ## What the original rules cover
 
@@ -788,6 +857,11 @@ tuned with the AI lab once the original rules play.
 | *Curse* and *Secret:* past a class's Hit Dice, training's fixed Hit Points (3 a fighter or paladin, 2 a cleric, ranger or thief, 1 a magic-user) replace the other classes' rolls instead of adding to them (`ovr018`, `sub_509E0`) | Added to them |
 | *Curse* and *Secret:* the paladin's saving throws, otherwise 2 better than a fighter's, are 1 worse against petrification at levels 5 and 6 and against death at level 8 than that (`ovr026`, `SaveThrowValues`) | 2 better throughout |
 | *Curse:* its starting-age table has no row for a half-elf ranger, which starts aged 0 (`Gbl.cs`, `halfelf_ages` in its reconstruction) | A half-elf fighter's age |
+| *Secret:* poison rides only a creature's second attack, so the centipede, the giant snake and spider, the medusa and the Sargatha, which attack only with their first, never poison (`fxengine.pas`, its conditions 2 and 3) | A creature with no second attack poisons with its first |
+| *Secret* and *Curse:* magic resistance's chance is kept in a byte, so a caster above level 11 plus a fifth of the resistance wraps it and is always resisted: the drider is proof against casters of level 15 and up (`fxengine.pas`, `CheckSpellResistance`) | The chance only lessens with the caster's level |
+| *Secret:* cold vulnerability doubles cold damage by whether the game was saved, not whether the creature saved (`effhndlr.pas`, `EffColdVulnerable`) | Doubled unless the creature saved |
+| *Secret:* the Constitution bonus to saves adds an unset value at Constitution 3 and from 21 up (`effhndlr.pas`, `EffConPsnSave`, `EffConSpellSave`) | No bonus there |
+| *Secret:* a giant slug with no enemy in reach still spits and misses, at whichever creature was aimed at last (`effhndlr.pas`, `EffSpitAtTarget`) | It does not spit |
 | *Secret:* its thief skill adjustments give humans the half-orc's (−5 Pick Pockets, −10 Read Languages and the rest), so a human thief starts worse than in the earlier games (`raceAdj` in its reconstruction) | No adjustment for humans, as before |
 | *Secret:* the spells a magic-user learns while trained at creation include, at level 6, Cure Light Wounds, a cleric's spell (`chargen.pas`, TrainingMenu) | Left out |
 | *Curse:* Hold Monster holds only what Hold Person can, as the spell its resolver exempts from the creature-type rule is Dimension Door (0x53) and not Hold Monster (0x5E) (`ovr023`, `MultiTargetedSpell`) | Any creature |

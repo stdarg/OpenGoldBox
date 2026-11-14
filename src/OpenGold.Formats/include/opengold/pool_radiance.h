@@ -78,6 +78,8 @@ struct CharacterRecord
     ClassLevels levels_before_class_change;
     // The NPC byte; for a monster, from 0x80 up, its morale (creature_art.cpp).
     std::uint8_t npc_flag{};
+    // The race by Pool of Radiance's numbers (0 a monster, 1 to 7 dwarf, elf,
+    // gnome, half-elf, halfling, half-orc and human), Secret's translated.
     std::uint8_t race{}, character_class{}, gender{}, alignment{}, type{};
     // The combat icon's size: 2 one by two squares, 3 two by one, 4 two by two.
     std::uint8_t icon_size_raw{};
@@ -85,6 +87,12 @@ struct CharacterRecord
     std::uint8_t attack_level{}, highest_level_raw{}, drained_levels{}, drained_hit_points{},
         undead_level{};
     std::array<std::uint8_t, 8> thief_skills{};
+    // Secret of the Silver Blades judges a creature by flag bits where the
+    // earlier games read its type (docs/games/secret.md): what kind of
+    // creature it is to effects and spells (secret::creature_type bits), what
+    // its foes' weapons and spells may do to it (secret::target bits), and its
+    // magic resistance in percent. Zero in the other games.
+    std::uint8_t creature_type_flags{}, target_flags{}, magic_resistance{};
     // Byte values are retained: known-spell flags/counters and memorized spell IDs.
     std::vector<std::uint8_t> spell_book, memorized_spells;
     // Spell slots by list (cleric, druid, magic-user) and spell level from 1.
