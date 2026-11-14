@@ -492,6 +492,10 @@ struct RouteBeat
     // waits in camp for a ship's sailing: the test passes the time, for
     // OpenGoldBox's camp rests only a night.
     std::optional<unsigned> wait_until_minute;
+    // Every enemy of the beat's fights must fall, none flee: at the Kraken
+    // headquarters a guard who gets away sounds the alarm (the cluebook's
+    // Alarms), as a player keeps one from escaping.
+    bool holding_foes = false;
     // The rounds of repeat_until_at_least stay on the beat's square, as a
     // player tries a climb again.
     bool repeat_in_place = false;
@@ -1968,6 +1972,7 @@ const std::vector<RouteBeat> &gateway_route()
         {
             auto boat = step_beat(12, 10, 7, D::west);
             boat.rest_first = true;
+            boat.holding_foes = true;
             route.push_back(boat);
         }
         return route;
@@ -2566,12 +2571,14 @@ bool walk_census(GoldBoxGame game, bool route)
     // The beat being played lets the test win a fight its player loses
     // (RouteBeat::test_wins).
     bool test_winning = false;
+    // The beat being played keeps every enemy from fleeing (RouteBeat::holding_foes).
+    bool holding_foes = false;
     // A planning aid (OPENGOLD_SECRET_FIND) wins every fight at once.
     bool planning = false;
     const auto fight = [&]
     {
         const auto before = party->state();
-        const auto score = [](const opengold::rules::Snapshot &result)
+        const auto score = [&](const opengold::rules::Snapshot &result)
         {
             int lost = result.outcome == opengold::rules::Outcome::victory ? 0 : 1'000'000;
             for (const auto &unit : result.combatants)
@@ -2581,6 +2588,12 @@ bool walk_census(GoldBoxGame game, bool route)
                     // A member turned to stone is as lost as a dead one.
                     lost += (unit.dead || unit.status == "stoned" ? 1000 : 0) +
                             unit.max_hit_points - std::max(unit.hit_points, 0);
+                }
+                // An enemy that got away is a fight lost where its flight
+                // raises the alarm.
+                if (holding_foes && unit.side == opengold::rules::Side::opposition && unit.fled)
+                {
+                    lost += 1'000'000;
                 }
             }
             return lost;
@@ -3112,6 +3125,7 @@ bool walk_census(GoldBoxGame game, bool route)
                         session.set_searching(*beat.searching);
                     }
                     test_winning = beat.test_wins;
+                    holding_foes = beat.holding_foes;
                     if (beat.waiting)
                     {
                         play(where);
