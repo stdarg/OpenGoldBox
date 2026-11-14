@@ -420,7 +420,11 @@ Journal), chosen by the game as the others' are (2026-11-14):
 - **Still to come:** spell levels 8 and 9 (its magic-users' slots from level
   16 and its spells 120 to 126), its other new spells (Blade Barrier,
   Restoration, Energy Drain, Destruction, Resurrection, the ranger's druid
-  spells 106 to 109, Fire Touch and Iron Skin), its starting equipment, and
+  spells 106 to 109, Fire Touch and Iron Skin), its starting equipment (up
+  to six of `ITEM0`'s definitions by class family, fighter types, thieves,
+  clerics and the rest, each readied but the fourth, a fighter's fifth and
+  a magic-user's fourth 50 strong; the original then counts three items
+  whatever it gave, a bug to fix), and
   bringing a *Secret* party across (its LoadChar), which the original
   offers.
 

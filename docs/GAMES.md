@@ -555,16 +555,20 @@ new decoders.
    where it beats Kimarr's first attack in the hall, frees Bostell and
    beats Kimarr in his chambers, so Quil breaks the great spell and Sasha is
    safe; then Vala's cave, where it takes the four items with Vala and turns
-   back the Vaasans; then Priam leads it into the Temple of Tyr. The win is
+   back the Vaasans; then Priam leads it into the Temple of Tyr, which it
+   frees: the catacombs' tests and the Lamp of Vigilance, the four braziers
+   lit, the bells rung so Laurellin and Brimwulf are reunited, the plunder
+   left alone; then the Hill Giant Steading, where it wins its way to the
+   inner steading for Kardal, rescues him and beats the Hill Giant Shaman,
+   and goes through into the Fire Giant Cave. The win is
    PROGRAM 1 after Gothmenes falls (darkness.md, The win and the route).
    *Stand-ins:* the test wins the fight with the Vaasans who get through
    Vala's breach (their mages hold the party with Hold Monster). Until the
-   route reaches the win it passes when it plays every beat to the Temple of
-   Tyr (map 50). *Where it stops (2026-11-14):* back in the temple with the Lamp of
-   Vigilance, its catacombs done (Brimwulf, the ritual, the Vessel of Purity
-   and the Spirit Flame);
-   next, the temple's own events, then counter-clockwise round the area map
-   to Dark Phlan. *The area map is drawn (2026-11-14):* the big picture with
+   route reaches the win it passes when it plays every beat to the Fire
+   Giant Cave (map 32). *Where it stops (2026-11-14):* at the Fire Giant
+   Cave's entrance (map 32, 3,15); next, the cave (Ungleow's endless
+   corridor and the ring in the skull, darkness.md), the Dragons' Aerie,
+   Thorne's cave, then counter-clockwise round the area map to Dark Phlan. *The area map is drawn (2026-11-14):* the big picture with
    the party's marker, as the original draws it. Still to come: spell levels 8 and 9
    and the new spells, starting equipment, skies, combat ground tiles, sound
    and music.

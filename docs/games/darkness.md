@@ -469,13 +469,49 @@ by what it is offered:
   party takes it (bit 5) and steps on to the shelves of arms. Back up the
   stairs at (8,9) to the west half and (7,13) to the temple, where the Red
   Plume warriors rejoin it at (6,5).
+- **The temple freed (map 50).** Up the stairs west of (1,5) to the upper
+  floor (8,5), and round its corner towers, lighting each iron brazier from
+  the lamp (LIGHT BRAZIER; cell 17Dh gets bits 10h to 80h): (8,0), (15,0),
+  (15,7) and (8,7), where the darkness is swept from the temple. In the bell
+  tower (12,3) it pulls the ropes: with the lamp carried and every brazier
+  lit the bells ring clear, and as neither Laurellin nor Brimwulf was slain
+  their shades are reunited (cell 181h 1; journal entry 74 tells their
+  story, but the script asks only that neither died). Down the stairs (8,5)
+  and out through the entrance hall (3,7), the plunder in the dining hall
+  left alone (taking it earns the Curse of Tyr): Priam stays with his army.
+- **The Hill Giant Steading (map 21, script 21),** reached on the area map
+  north-west then west along row 4 and north-west twice to (9,2). The party
+  talks its way past the gate's giants as would-be mercenaries (TALK; cell
+  115h bit 7), and walks north through the courtyard (the insulting giants,
+  the ogres' and ettins' brawl) to the Twisted Horn (9,8), entered facing
+  east, where Kardal tells it to kill the cloud giants in the private room to
+  the south (journal entry 31; cell 114h bit 1). Beaten at their gaming table
+  (9,10), they win it promotion (bit 2): the hill giants pull it through the
+  inner steading's barred door (7,8, facing north) and send it to the
+  shaman (bit 3). Kardal's dagger lies in the hall (8,3, bit 4); the party
+  rescues him from his captors (6,4, RESCUE HIM; journal entry 49, bit 5).
+  The rear guard at (3,6) is met from the north: a paladin challenges their
+  authority (his Charisma at least 17), the giants turn on the ogres and the
+  party beats the winners (bit 7). West and north round the dragons' hoard
+  (3,2), it attacks the giants making a stand (5,0), then beats the white and
+  black dragons in the antechamber (11,1) and the Hill Giant Shaman (13,1;
+  cell 116h FFh). His vault (12,0) is locked and no one forces it (Strength
+  18 or Knock), so the party leaves it; the door in the north wall at (15,0)
+  leads to the Fire Giant Cave (script 32, map 32), where it arrives at
+  (3,15).
+
+A step's event that sets cell 3h to FFh (stairs, the steading's barred door
+and its gate) holds back the step that ran it, as the original's movement
+state does (Script memory, above). Until 2026-11-14 OpenGoldBox stepped on
+anyway, so stairs landed a square beyond their landing and a held step could
+wrap round the map's edge.
 
 One stand-in: the Vaasans who get through, seven mages and twelve
 warriors, hold the party with Hold Monster before it acts and slay the held
 with every dice the route tries, so the test wins that fight. A player
 would gear the party with the cave's treasure and ward it first; the
 route's player takes no treasure but wands. Until the route reaches the win
-it passes when it plays every beat to the Temple of Tyr (map 50).
+it passes when it plays every beat to the Fire Giant Cave (map 32).
 
 A fight's result reaches Darkness's scripts as compare flags: they test
 it with IF right after COMBAT, which its PostCombat sets to "equal" when the
@@ -483,20 +519,29 @@ party won or came through and "not equal" when it fled. Until 2026-11-14
 OpenGoldBox left the flags as they were, so a won fight could read as lost
 and move the party back a square (the walk passed all the same).
 
-Where it stops (2026-11-14): back in the temple (map 50, 6,5) with the
-Lamp of Vigilance. Next: up the stairs west of (1,5) to (8,5), light the four braziers in the corner towers (event 4 at (8,0),
-(15,0), (8,7), (15,7), answer LIGHT BRAZIER; cell 17Dh gets a bit each),
-then the bell tower (event 9 at (11,3), (12,3), (11,4), (12,4), script 50
-from 90A6h): ring the bells, and with journal entry 74 (the high priest's
-journal, event 7 at (15,2), (15,5), and Laurellin's book in the acolyte's
-cell, event 10 in the catacombs, found by searching) reunite Laurellin with
-Brimwulf rather than kill her. Leave the plunder in the dining hall
-(event 11 in the catacombs) alone: taking it earns the Curse of Tyr. Then
-leave by the entrance (the step south from the hall, "DO YOU WISH TO
-LEAVE?") and go west and counter-clockwise round the area map, the
-mini-adventures on the way, to Gothmenes in Dark Phlan. `OPENGOLD_ROUTE_BEATS` and `OPENGOLD_SECRET_FIND` plan each step: the
+Where it stops (2026-11-14): at the Fire Giant Cave's entrance (map 32,
+3,15). Next, the cave as the cluebook gives it: Ungleow's bribe (5,12; the
+Ring of Vulnerability in it is not to be worn), the endless corridor, whose
+spell breaks when the party, sitting down to clear its head, finds the ring
+in the skull and throws it down the corridor (script 32 from 8393h: with
+cell 134h bit 0 set, steps there return the party and count in cell 9Eh; at
+12 the skull's question comes; THROW IT AWAY sets cell 132h bit 0), the two
+hill giants' cave-in plan, the teleporting rooms (7,7) and (15,8), the
+rotating floors (event 3: travel east once they stop), Ungleow's guards and
+Ungleow herself, and the red, black and green dragons (0,2) guarding the
+passage to the Dragons' Aerie ("YOU SEE DRAGONS FLYING OFF TO THE
+NORTHWEST. DO YOU FOLLOW THEM?"). A first try at the corridor (2026-11-14)
+found the party could walk from the entrance only to (11,15): the next
+agent should find what sets cell 134h and what holds the party between
+(8,15) and (11,15). Then the Aerie's four keys, Thorne's cave, and on
+counter-clockwise round the area map (its sites listed by
+`OPENGOLD_DARKNESS_SITES`) to Gothmenes in Dark Phlan.
+`OPENGOLD_ROUTE_BEATS` and `OPENGOLD_SECRET_FIND` plan each step: the
 planning aid answers NO, so it never takes stairs a question offers; find
-the stairs' squares by their walls of type 7 and step them in a beat.
+the stairs' squares by their walls of type 7 and step them in a beat. A
+script's events are found by its step entry's ON GOTO on cell 2Dh's low six
+bits: event e runs the target at index e, counted from 0
+(`opengold_scripts --inspect DARKNESS ECL1.DAX N`).
 
 ### Creatures
 
