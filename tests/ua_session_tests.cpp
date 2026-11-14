@@ -272,6 +272,9 @@ std::filesystem::path build_test_design(const std::filesystem::path &kit,
     // 0Ch's bit 80h) where the party cannot die (40h).
     hall.event(19, {1, 0, 0, 0, 0, 0, 0, 100, 1, 84}, {{11, 5}});
     hall.event(20, {1, 0, 0, 0, 0, 0, 0, 100, 1, 84, 0, 0, 0xC0}, {{11, 7}});
+    // 21: two kobolds starting north and south of the party (byte 10h's
+    // bits 20h and 80h), a square away.
+    hall.event(21, {1, 0, 0, 0, 0, 0, 0, 100, 2, 1, 0, 0, 0, 0, 0x20, 0, 0xA0}, {{7, 14}});
     // A wall a square west of it, which cuts the distance short that way.
     hall.wall(2, 14, MapDirection::west, 0xE1);
     write(folder / "GEO005.DAT", hall.finish());
@@ -873,6 +876,28 @@ void the_kits_fights_look_as_the_kit_draws_them(const std::filesystem::path &kit
     check(allied.distance == 2, "The monsters stand the event's two squares away");
     check(hall_fight(files, content, 3, 14, MapDirection::west).distance == 1,
           "A wall a square ahead brings them within one");
+
+    // Enemies in two quarters: dealt from the east, south first, then north;
+    // on the field one stands above the party, one below.
+    const auto flanked = hall_fight(files, content, 7, 14, MapDirection::east);
+    check(flanked.enemy_quarters ==
+              std::vector<MapDirection>{MapDirection::south, MapDirection::north},
+          "The kobolds start in the south and north quarters");
+    {
+        auto party = new_party(content);
+        opengold::CombatDemo combat(opengold::original::rules_module(content));
+        combat.campaign_party(party);
+        combat.encounter(flanked, 7);
+        const auto start = combat.combat().snapshot();
+        const auto cell_of = [&](opengold::rules::EntityId id)
+        {
+            return std::ranges::find(start.combatants, id, &opengold::rules::CombatantView::id)
+                ->cell;
+        };
+        const int party_row = cell_of(party->state().slots[0]).y;
+        check(cell_of(1000).y > party_row && cell_of(1001).y < party_row,
+              "One kobold stands south of the party, the other north");
+    }
 
     // Every monster of the kit has its icon, a square or more.
     const auto colors =

@@ -26,6 +26,14 @@ struct EncounterFormation
                                                      MapDirection facing, unsigned distance,
                                                      std::size_t party_size,
                                                      std::span<const rules::Footprint> enemies);
+// The same with each enemy in the group of its quarter: `distance` squares
+// from the party that way (at least one beside or behind it), facing the
+// party (Unlimited Adventures' starting quarters, cmbsetup.c's place_all).
+[[nodiscard]] EncounterFormation encounter_formation(const DungeonBattlefield &field,
+                                                     MapDirection facing, unsigned distance,
+                                                     std::size_t party_size,
+                                                     std::span<const rules::Footprint> enemies,
+                                                     std::span<const MapDirection> quarters);
 // The same with `enemy_count` enemies of one square each.
 [[nodiscard]] EncounterFormation encounter_formation(const DungeonBattlefield &field,
                                                      MapDirection facing, unsigned distance,

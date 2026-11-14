@@ -203,8 +203,12 @@ void place_as_original(CampaignEncounter &encounter, std::vector<Participant> &p
     {
         footprints.push_back(enemy.footprint);
     }
-    const auto formation = encounter_formation(encounter.field, encounter.facing,
-                                               encounter.distance, party.size(), footprints);
+    const auto formation =
+        encounter.enemy_quarters.empty()
+            ? encounter_formation(encounter.field, encounter.facing, encounter.distance,
+                                  party.size(), footprints)
+            : encounter_formation(encounter.field, encounter.facing, encounter.distance,
+                                  party.size(), footprints, encounter.enemy_quarters);
     const auto claim =
         [&](std::span<Participant> side, const std::vector<std::optional<Cell>> &starts)
     {

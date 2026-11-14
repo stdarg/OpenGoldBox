@@ -970,6 +970,19 @@ void UaSession::begin_combat(const EventRecord &event, bool pick_one)
             fielded_monsters_.emplace(id, group.number);
         }
     }
+    // The quarters the enemies start in (bits 0 to 2 north, east and south
+    // from byte 10h's top bits, 3 west from byte 12h's bit 20h), dealt in
+    // turn from the east; none, ahead of the party (cmbsetup.c, place_all).
+    const unsigned quarters = (event[0x12] & 0x20U) >> 2 | (event[0x10] & 0xE0U) >> 5;
+    for (unsigned quarter = 0;
+         quarters != 0 && encounter.enemy_quarters.size() < encounter.enemies.size();)
+    {
+        do
+        {
+            quarter = (quarter + 1) % 4;
+        } while ((quarters & 1U << quarter) == 0);
+        encounter.enemy_quarters.push_back(static_cast<por::MapDirection>(quarter));
+    }
     party_can_lose_ = (event[12] & 0x40) == 0;
     monsters_keep_treasure_ = (event[12] & 0x80) != 0;
     encounter_ = std::move(encounter);

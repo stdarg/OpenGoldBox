@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <array>
 #include <set>
+#include <stdexcept>
 
 // The rules below were read from the Gold Box engine as Simeon Pilgrim's Curse
 // of the Azure Bonds reimplementation (coab) documents it; Pool of Radiance's
@@ -233,16 +234,54 @@ EncounterFormation encounter_formation(const DungeonBattlefield &field, MapDirec
                                        unsigned distance, std::size_t party_size,
                                        std::span<const rules::Footprint> enemy_footprints)
 {
-    const int ahead = static_cast<int>(distance);
-    const Side party{{0, 0}, facing, party_size, true, {}};
-    const Side enemies{{step_x(facing) * ahead, step_y(facing) * ahead},
-                       reversed(facing),
-                       enemy_footprints.size(),
-                       false,
-                       enemy_footprints};
+    const std::vector<MapDirection> ahead(enemy_footprints.size(), facing);
+    return encounter_formation(field, facing, distance, party_size, enemy_footprints, ahead);
+}
+
+EncounterFormation encounter_formation(const DungeonBattlefield &field, MapDirection facing,
+                                       unsigned distance, std::size_t party_size,
+                                       std::span<const rules::Footprint> enemy_footprints,
+                                       std::span<const MapDirection> quarters)
+{
+    if (quarters.size() != enemy_footprints.size())
+    {
+        throw std::invalid_argument("Each enemy needs its quarter");
+    }
     std::set<Cell> occupied;
-    auto placed_party = place(field, party, occupied);
-    return {std::move(placed_party), place(field, enemies, occupied)};
+    EncounterFormation result{place(field, {{0, 0}, facing, party_size, true, {}}, occupied),
+                              std::vector<std::optional<Cell>>(enemy_footprints.size())};
+    std::vector<MapDirection> placed_quarters;
+    for (const auto quarter : quarters)
+    {
+        if (std::ranges::find(placed_quarters, quarter) != placed_quarters.end())
+        {
+            continue;
+        }
+        placed_quarters.push_back(quarter);
+        std::vector<std::size_t> members;
+        std::vector<rules::Footprint> footprints;
+        for (std::size_t n = 0; n < quarters.size(); ++n)
+        {
+            if (quarters[n] == quarter)
+            {
+                members.push_back(n);
+                footprints.push_back(enemy_footprints[n]);
+            }
+        }
+        // A group beside or behind the party stands at least a square off.
+        const int away = static_cast<int>(distance == 0 && quarter != facing ? 1 : distance);
+        const Side group{{step_x(quarter) * away, step_y(quarter) * away},
+                         reversed(quarter),
+                         members.size(),
+                         false,
+                         footprints};
+        const auto starts = place(field, group, occupied);
+        for (std::size_t n = 0; n < members.size(); ++n)
+        {
+            result.enemies[members[n]] = starts[n];
+        }
+    }
+    return result;
 }
 
 EncounterFormation encounter_formation(const DungeonBattlefield &field, MapDirection facing,
