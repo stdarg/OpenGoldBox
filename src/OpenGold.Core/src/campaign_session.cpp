@@ -230,6 +230,41 @@ void add_gateway_wilderness(const std::filesystem::path &folder,
     add_wilderness_art(folder, root);
 }
 
+// Pools of Darkness's eleven stores, as its program lists them (its EclShop):
+// each store's first and last slot, eleven of each, then the slots' item
+// definitions. They are found in the player's GAME.EXE by their shape, the
+// first store starting at slot 1 and each one after the last; FFh is a scroll
+// made at random.
+std::vector<std::vector<std::uint8_t>> darkness_stores(std::span<const std::uint8_t> game_image)
+{
+    constexpr std::size_t store_count = 11;
+    for (std::size_t at = 0; at + 2 * store_count < game_image.size(); ++at)
+    {
+        const auto first = game_image.subspan(at, store_count);
+        const auto last = game_image.subspan(at + store_count, store_count);
+        bool shaped = first[0] == 1;
+        for (std::size_t n = 0; shaped && n < store_count; ++n)
+        {
+            shaped = last[n] >= first[n] && (n + 1 == store_count || first[n + 1] == last[n] + 1);
+        }
+        const std::size_t slots = last[store_count - 1];
+        const auto items_at = at + 2 * store_count;
+        if (!shaped || items_at + slots > game_image.size())
+        {
+            continue;
+        }
+        std::vector<std::vector<std::uint8_t>> stores;
+        for (std::size_t n = 0; n < store_count; ++n)
+        {
+            const auto from =
+                game_image.begin() + static_cast<std::ptrdiff_t>(items_at + first[n] - 1);
+            stores.emplace_back(from, from + (last[n] - first[n] + 1));
+        }
+        return stores;
+    }
+    return {};
+}
+
 // Every set of symbols in the files a disk's LOAD PIECES reads, the file
 // without a disk number first, as the original looks there first.
 void add_symbol_sets(const por::detail::AreaFiles &files, unsigned disk, por::PhlanResources &root)
@@ -319,8 +354,20 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
     root->opening_script = campaign.opening_script;
     root->encounter_creatures = disk_creatures(campaign.root_disk);
     root->map = por::GeoMap{};
-    // Pools of Darkness's TREASURE names its items itself: it has no lists.
-    if (game != GoldBoxGame::pools_of_darkness)
+    // Pools of Darkness's TREASURE and STORE name ITEM0's definitions: it has
+    // no lists.
+    if (game == GoldBoxGame::pools_of_darkness)
+    {
+        constexpr auto definitions = "ITEM0.DAX";
+        root->item_definitions =
+            files.item_definitions(definitions, files.archive(definitions).records.at(0).id);
+        root->stores = darkness_stores(program_image);
+        if (root->stores.empty())
+        {
+            throw EclError("Pools of Darkness's GAME.EXE has no store lists");
+        }
+    }
+    else
     {
         root->treasure = files.item_lists("ITEM" + root_disk + ".DAX");
     }

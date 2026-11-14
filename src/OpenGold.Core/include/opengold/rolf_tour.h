@@ -106,6 +106,11 @@ struct PhlanResources
     // own (the dragon's cave).
     std::map<unsigned, unsigned> script_banks;
     std::map<unsigned, std::vector<Equipment>> treasure;
+    // Pools of Darkness's item definitions (ITEM0), by number from 1, which
+    // its TREASURE and STORE name; and each of its stores' definitions, as
+    // its program lists them (docs/games/darkness.md, Shops and treasure).
+    std::map<unsigned, Equipment> item_definitions;
+    std::vector<std::vector<std::uint8_t>> stores;
     // ITEMS templates, indexed by original item type, for generated treasure.
     std::vector<ItemTemplate> item_templates;
     std::vector<std::uint8_t> sprite_archive;
@@ -1018,6 +1023,21 @@ class RolfTourSession
     [[nodiscard]] EclHostReply darkness_load_files(unsigned map, unsigned walls);
     // Its PLAY SOUND: a sound effect, or music from 80h up.
     void darkness_play_sound(unsigned sound);
+    // Its scripts read the current character's record byte for byte from
+    // 401h (docs/games/darkness.md, Script memory): the record's fields, last
+    // in the reply so that they stand.
+    void add_darkness_record(PartySlot slot, EclHostReply &reply) const;
+    // Its item definition of this number, or for FFh a scroll of three
+    // random magic-user spells drawn on the request's dice; nothing for an
+    // empty definition.
+    [[nodiscard]] std::optional<Equipment> darkness_item(unsigned number, std::uint64_t request);
+    // Its TREASURE: platinum, gems, jewelry and item definitions, handed out
+    // as the other games' treasure is.
+    void stage_darkness_treasure(const EclRequest &request);
+    // Its STORE: one of the program's eleven stores opens with its goods.
+    void open_darkness_store(const EclRequest &request);
+    // Its FIND NPC: the named companion's place in the party into `place`.
+    [[nodiscard]] EclHostReply darkness_find_npc(const std::string &name, EclAddress place) const;
     // Scripts change coins relative to the view they were given, so the script
     // must receive a fresh character_reply after every read before it continues.
     void read_character();

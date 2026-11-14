@@ -1622,12 +1622,8 @@ bool walk_census(GoldBoxGame game, bool route)
 {
     using opengold::por::TourPhase;
     const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    const auto folder = games
-                            ? std::filesystem::path(games) /
-                                  (game == GoldBoxGame::secret_of_the_silver_blades      ? "SECRET"
-                                   : game == GoldBoxGame::gateway_to_the_savage_frontier ? "GATEWAY"
-                                                                                         : "CURSE")
-                            : std::filesystem::path();
+    const auto folder = games ? std::filesystem::path(games) / std::string(game_folder(game))
+                              : std::filesystem::path();
     if (!games || opengold::identify_game(folder) != game)
     {
         std::cout << game_title(game) << "'s files are not here.\n";
@@ -1782,9 +1778,11 @@ bool walk_census(GoldBoxGame game, bool route)
             }
             const auto id = party->add_pc(creator.create_character());
             // A long sword, plate mail and a shield of the game's own item
-            // types; a cleric's mace; a magic-user's dagger. Secret numbers
-            // its types as Pool of Radiance does, not as Curse.
-            const bool secret = game == GoldBoxGame::secret_of_the_silver_blades;
+            // types; a cleric's mace; a magic-user's dagger. Secret and Pools
+            // of Darkness number their types as Pool of Radiance does, not as
+            // Curse.
+            const bool secret = game == GoldBoxGame::secret_of_the_silver_blades ||
+                                game == GoldBoxGame::pools_of_darkness;
             const std::uint8_t sword = secret ? 18 : 36, plate = secret ? 36 : 55,
                                shield = secret ? 37 : 59, mace = secret ? 8 : 23,
                                dagger = secret ? 4 : 8;
@@ -2940,6 +2938,10 @@ int main(int argc, char **argv)
         if (argc == 2 && std::string_view(argv[1]) == "--gateway-walk")
         {
             return walk_census(GoldBoxGame::gateway_to_the_savage_frontier, false) ? 0 : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--darkness-walk")
+        {
+            return walk_census(GoldBoxGame::pools_of_darkness, false) ? 0 : 1;
         }
         if (argc == 2 && std::string_view(argv[1]) == "--secret-route")
         {

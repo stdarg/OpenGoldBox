@@ -104,6 +104,10 @@ class AreaFiles
     // An archive's fixed item lists (shop stock in town, script treasure in areas).
     [[nodiscard]] std::map<unsigned, std::vector<Equipment>>
     item_lists(const std::string &name) const;
+    // A record of item definitions numbered from 1 (Pools of Darkness's
+    // ITEM0), without the empty ones (type FFh).
+    [[nodiscard]] std::map<unsigned, Equipment> item_definitions(const std::string &name,
+                                                                 unsigned record) const;
     // The archive's pictures (not its animations), by record, in the colors
     // the game shows them: Gateway to the Savage Frontier's in its VGA mode's.
     // A record already in destination is kept.

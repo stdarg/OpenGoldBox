@@ -2,6 +2,10 @@
 // mean other commands in the other games (docs/games/darkness.md, Scripts).
 #include "opengold/rolf_tour.h"
 #include "area_loading.h"
+#include "opengold/original_spells.h"
+
+#include <algorithm>
+#include <cctype>
 
 namespace opengold::por
 {
@@ -14,7 +18,232 @@ constexpr unsigned first_non_map = 0x7F, keep_walls = 255;
 // PLAY SOUND's footstep, and its music from 80h up.
 constexpr unsigned footstep_sound = 10;
 
+// The current character's record, from 401h: the bytes of its fields the
+// scripts read (docs/games/darkness.md, Creatures).
+constexpr std::uint16_t record_cell = 0x401;
+constexpr std::size_t record_size = 510;
+
+namespace field
+{
+constexpr std::size_t name = 0, abilities = 16, exceptional_strength = 28, race = 173,
+                      character_class = 174, age = 176, maximum_hit_points = 178,
+                      thief_skills = 315, npc = 327, coins = 331, class_levels = 337, gender = 358,
+                      alignment = 359, status = 493, in_play = 494, side = 495, hit_points = 508;
+} // namespace field
+
+// Its races' numbers (C_Race): elf 0, half-elf 1, dwarf 2, gnome 3, halfling
+// 4, human 5, by the original rules' races (dwarf, elf, gnome, half-elf,
+// halfling, half-orc, human). It has no half-orcs: one counts as human.
+constexpr std::array<std::uint16_t, 7> race_numbers{2, 0, 3, 1, 4, 5, 5};
+// Its statuses: 0 okay, 6 dead.
+constexpr std::uint16_t okay = 0, dead = 6;
+
 } // namespace
+
+std::optional<Equipment> RolfTourSession::darkness_item(unsigned number, std::uint64_t request)
+{
+    constexpr unsigned random_scroll = 0xFF;
+    if (number != random_scroll)
+    {
+        const auto found = town_->item_definitions.find(number);
+        return found == town_->item_definitions.end() ? std::nullopt : std::optional{found->second};
+    }
+    // A scroll of three magic-user spells drawn at random from its 126 (its
+    // EclBuildRandomScroll): a scroll's type and words, worth 3,000.
+    constexpr std::uint8_t scroll_type = 39;
+    constexpr int spell_count = 126, first_new_magic_user_spell = 118;
+    ItemRecord scroll;
+    scroll.type = scroll_type;
+    scroll.name_components = {102, 39, 40};
+    scroll.magic_bonus = 1;
+    scroll.weight = 1;
+    scroll.value = 3000;
+    for (auto &held : scroll.effect_codes)
+    {
+        while (true)
+        {
+            const auto roll = static_cast<int>(machine_.host_random(request, spell_count)) + 1;
+            // Its spells past Secret's, 118 to 126, are all magic-user spells.
+            const auto *known =
+                opengold::original::spell(opengold::original::canonical_spell(roll, game()));
+            if ((known && known->caster_class == opengold::original::SpellClass::magic_user) ||
+                roll >= first_new_magic_user_spell)
+            {
+                held = static_cast<std::uint8_t>(roll);
+                break;
+            }
+        }
+    }
+    Equipment item;
+    if (scroll.type < town_->item_templates.size())
+    {
+        item.base = town_->item_templates[scroll.type];
+    }
+    item.bonuses = equipment_bonuses(scroll, item.base);
+    item.stored = std::move(scroll);
+    return item;
+}
+
+void RolfTourSession::stage_darkness_treasure(const EclRequest &request)
+{
+    if (!campaign_)
+    {
+        throw EclError("Treasure awards require a campaign party");
+    }
+    // Operands: platinum, gems, jewelry, the number of items, then the items.
+    const auto number = [&request](std::size_t n)
+    {
+        return request.arguments.at(n).number();
+    };
+    PendingLoot loot;
+    constexpr std::size_t platinum = 4;
+    for (std::size_t n = 0; n < 3; ++n)
+    {
+        loot.wealth[platinum + n] = number(n);
+    }
+    loot.reward_id = treasure_identity(request.instruction->address);
+    loot.include_items = false;
+    for (std::size_t n = 0; n < number(3); ++n)
+    {
+        if (auto item = darkness_item(number(4 + n), request.id))
+        {
+            item->index = loot.items.size();
+            loot.items.push_back(std::move(*item));
+        }
+    }
+    staged_treasure_ = std::move(loot);
+}
+
+void RolfTourSession::open_darkness_store(const EclRequest &request)
+{
+    // Stores 1 to 11; any other number opens the first (its EclShop).
+    auto store = request.arguments.at(0).number();
+    if (store < 1 || store > town_->stores.size())
+    {
+        store = 1;
+    }
+    treasure_.clear();
+    for (const auto number : town_->stores.at(store - 1))
+    {
+        if (auto item = darkness_item(number, request.id))
+        {
+            // A store's goods are known for what they are.
+            item->identify();
+            item->index = treasure_.size();
+            treasure_.push_back(std::move(*item));
+        }
+    }
+    choose_shopper();
+    read_character();
+    shop_request_ = request.id;
+    snapshot_.phase = TourPhase::shopping;
+    snapshot_.continue_ticket = ++next_ticket_;
+    snapshot_.choices.clear();
+    snapshot_.diagnostic.clear();
+    ++snapshot_.revision;
+}
+
+EclHostReply RolfTourSession::darkness_find_npc(const std::string &name, EclAddress place) const
+{
+    // The member's place in the party, 80h more when it is out of play, or
+    // FFh when no companion has that name (its EclFindNpc).
+    constexpr std::uint16_t nobody = 0xFF, out_of_play = 0x80;
+    std::uint16_t found = nobody;
+    const auto &slots = campaign_->state().slots;
+    for (std::size_t n = 0; n < slots.size() && found == nobody; ++n)
+    {
+        if (!slots[n] || campaign_->member(slots[n]).npc_source.empty())
+        {
+            continue;
+        }
+        const auto &member = campaign_->member(slots[n]);
+        auto member_name = member.character.sheet().name;
+        std::ranges::transform(member_name, member_name.begin(),
+                               [](unsigned char c)
+                               {
+                                   return static_cast<char>(std::toupper(c));
+                               });
+        if (member_name == name)
+        {
+            found = static_cast<std::uint16_t>(n | (member.vitals.dead ? out_of_play : 0));
+        }
+    }
+    EclHostReply reply;
+    reply.writes = {{place, found}};
+    return reply;
+}
+
+void RolfTourSession::add_darkness_record(PartySlot slot, EclHostReply &reply) const
+{
+    std::array<std::uint16_t, record_size> record{};
+    const auto id = slot.index < 8 ? campaign_->state().slots[slot.index] : MemberId{};
+    if (id)
+    {
+        const auto &member = campaign_->member(id);
+        const auto &sheet = member.character.sheet();
+        for (std::size_t n = 0; n < sheet.name.size() && n < 15; ++n)
+        {
+            record[field::name + n] =
+                static_cast<std::uint16_t>(std::toupper(static_cast<unsigned char>(sheet.name[n])));
+        }
+        // Each ability's permanent and current score, in the original's order.
+        using rules::Ability;
+        const std::array<Ability, 6> abilities{Ability::strength,     Ability::intelligence,
+                                               Ability::wisdom,       Ability::dexterity,
+                                               Ability::constitution, Ability::charisma};
+        for (std::size_t n = 0; n < abilities.size(); ++n)
+        {
+            const auto score = static_cast<std::uint16_t>(sheet.scores[abilities[n]]);
+            record[field::abilities + 2 * n] = record[field::abilities + 2 * n + 1] = score;
+        }
+        record[field::maximum_hit_points] = static_cast<std::uint16_t>(sheet.hit_points);
+        if (const auto &original = sheet.original)
+        {
+            record[field::exceptional_strength] = record[field::exceptional_strength + 1] =
+                static_cast<std::uint16_t>(original->exceptional_strength);
+            record[field::race] = race_numbers.at(static_cast<std::size_t>(original->race));
+            // Its classes are numbered as the original rules' professions.
+            record[field::character_class] = static_cast<std::uint16_t>(original->profession);
+            record[field::age] = static_cast<std::uint16_t>(original->age);
+            for (std::size_t n = 0; n < 7; ++n)
+            {
+                record[field::class_levels + n] =
+                    static_cast<std::uint16_t>(original->class_levels[n]);
+                record[field::thief_skills + n] =
+                    static_cast<std::uint16_t>(original->thief_skills[n]);
+            }
+            record[field::thief_skills + 7] = static_cast<std::uint16_t>(original->thief_skills[7]);
+            record[field::alignment] = static_cast<std::uint16_t>(original->alignment);
+        }
+        record[field::gender] = member.character.creation_data().gender == "female" ? 1 : 0;
+        record[field::npc] = member.npc_source.empty() ? 0 : 0x80;
+        // Every member shows the party's platinum, gems and jewelry: the party
+        // owns them all.
+        const auto coins = script_coins(campaign_->state().wealth, campaign_->coin_rates());
+        constexpr std::size_t platinum = 4;
+        for (std::size_t n = 0; n < 3; ++n)
+        {
+            record[field::coins + 2 * n] = static_cast<std::uint16_t>(coins[platinum + n]);
+        }
+        record[field::status] = member.vitals.dead ? dead : okay;
+        record[field::in_play] = member.vitals.dead ? 0 : 1;
+        record[field::side] = turncoat(id) ? 1 : 0;
+        record[field::hit_points] = static_cast<std::uint16_t>(member.vitals.hit_points);
+    }
+    // The record's cells the other games' fields were given are given again
+    // here, once each: a reply names a cell only once.
+    std::erase_if(reply.writes,
+                  [](const EclMemoryWrite &write)
+                  {
+                      return write.address.location >= record_cell &&
+                             write.address.location < record_cell + record_size;
+                  });
+    for (std::size_t n = 0; n < record.size(); ++n)
+    {
+        reply.writes.push_back(
+            {EclAddress(static_cast<std::uint16_t>(record_cell + n)), record[n]});
+    }
+}
 
 EclHostReply RolfTourSession::darkness_load_files(unsigned map, unsigned walls)
 {

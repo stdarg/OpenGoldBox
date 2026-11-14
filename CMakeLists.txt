@@ -293,6 +293,8 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_secret_walk COMMAND opengold_gold_box_games_tests --secret-walk)
     # And every map of Gateway to the Savage Frontier, its overland too.
     add_test(NAME opengold_gateway_walk COMMAND opengold_gold_box_games_tests --gateway-walk)
+    # And every map of Pools of Darkness.
+    add_test(NAME opengold_darkness_walk COMMAND opengold_gold_box_games_tests --darkness-walk)
     # Curse's story, beat by beat, with a party made for it (plan step 7).
     add_test(NAME opengold_curse_route COMMAND opengold_gold_box_games_tests --curse-route)
     # Secret of the Silver Blades' story the same way (plan phase 4, step 4).

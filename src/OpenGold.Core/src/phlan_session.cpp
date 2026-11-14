@@ -682,6 +682,10 @@ EclHostReply RolfTourSession::character_reply(PartySlot slot) const
                               &EclMemoryWrite::address)
                 ->value = 0x81;
         }
+        if (game() == GoldBoxGame::pools_of_darkness)
+        {
+            add_darkness_record(slot, reply);
+        }
         return reply;
     }
     EclHostReply reply;
@@ -3551,6 +3555,11 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     }
     case 39:
     {
+        if (game() == GoldBoxGame::pools_of_darkness)
+        {
+            stage_darkness_treasure(request);
+            break;
+        }
         bool money = false;
         for (unsigned n = 0; n < 7; ++n)
         {
@@ -4018,6 +4027,11 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     }
     case 60:
     {
+        if (game() == GoldBoxGame::pools_of_darkness)
+        {
+            open_darkness_store(request);
+            return true;
+        }
         // PROTECTION: a line of rune glyphs at the operand's address, which the
         // original's code wheel translated; shown translated (SOKAL-1).
         const auto line = rune_text(machine_, address_arg(0));
@@ -4027,6 +4041,11 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     }
     case 55:
     {
+        if (game() == GoldBoxGame::pools_of_darkness)
+        {
+            reply = darkness_find_npc(request.arguments.at(0).text(), address_arg(1));
+            break;
+        }
         // The wilderness's sites reset the wall banks (127) before NEW ECL.
         const std::array<unsigned, 3> banks{arg(0), arg(1), arg(2)};
         if (banks == std::array<unsigned, 3>{127, 127, 127})

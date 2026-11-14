@@ -151,6 +151,41 @@ std::map<unsigned, std::vector<Equipment>> AreaFiles::item_lists(const std::stri
     return lists;
 }
 
+std::map<unsigned, Equipment> AreaFiles::item_definitions(const std::string &name,
+                                                          unsigned record_id) const
+{
+    constexpr std::uint8_t empty = 0xFF;
+    const auto items = decode_items(record(name, record_id), game_);
+    if (!items)
+    {
+        throw EclError("Invalid item definitions in " + name);
+    }
+    std::map<unsigned, Equipment> definitions;
+    for (std::size_t n = 0; n < items->size(); ++n)
+    {
+        const auto &item = (*items)[n];
+        if (item.type == empty)
+        {
+            continue;
+        }
+        if (item.type >= templates_.size())
+        {
+            throw EclError("Invalid item type in " + name);
+        }
+        Equipment equipment;
+        equipment.stored = item;
+        equipment.base = templates_[item.type];
+        equipment.bonuses = equipment_bonuses(item, equipment.base);
+        if (is_magic(item) && !item_words_.empty())
+        {
+            equipment.decoded_name = item_name(item, item_words_);
+            equipment.unidentified_name = item_name(item, item_words_, item.hidden_name_words);
+        }
+        definitions.emplace(static_cast<unsigned>(n + 1), std::move(equipment));
+    }
+    return definitions;
+}
+
 void AreaFiles::pictures(const std::string &name, std::map<unsigned, Image> &destination) const
 {
     for (const auto &record : archive(name).records)
