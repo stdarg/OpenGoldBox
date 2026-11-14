@@ -484,7 +484,7 @@ new decoders.
    with its title music from the second, as its Intro does; the party
    screen's party plays the opening on to Yartar
    (`opengold_godot_startup_menu_gateway`).
-5. The cluebook's route to the end. *Started 2026-11-14:*
+5. The cluebook's route to the end. *Plays to the win (2026-11-14):*
    `opengold_gateway_route` plays the game with the cluebook's party (two
    paladins, a ranger, two clerics and a magic-user, made under Gateway's
    rules at 3,000 experience), carrying +2 weapons and +1 armor (a stand-in,
@@ -505,23 +505,36 @@ new decoders.
    Tuern and on to Gundarlun, trains twice more there on test experience
    (25,000 each a visit, to level 6, the stand-in again), has its dead
    raised, and takes Gundbarg's ship, which the kraken wrecks on the Purple
-   Rocks; it crosses to the Kraken headquarters (map 13). The ships sail at
-   0800 and 0900: the test passes the time to the sailing, a stand-in for a
-   player's wait in camp, which OpenGoldBox's camp has no hours for. Every
-   walk is played step by step as the planning aid (`OPENGOLD_SECRET_FIND`,
-   with `OPENGOLD_FIND_YES` for the questions it must answer Yes) finds it.
-   *Where it stops:* on the Kraken headquarters' beach (map 13). The guards
-   there sound the alarm when one flees the fight, and the Pearl Chest's
-   guards, with the alarm sounded, kill the party with every dice the route
-   tries (eight Kraken guards and eight otyughs). The next steps: a fight
-   that keeps every guard from fleeing, then the race to the Pearl Chest
-   (the statuette of the West), Neverwinter, Secomber, Loudwater, Llorkh
-   and its arena (the North), the Star Mounts (the South), Sundabar and
-   Ascore. Until the route reaches the end its check passes when it plays
-   every beat to map 13 (`gateway_route_stops_on_map`). The win itself is in
-   place: script 28, which Ascore's last fight leads to, ends with the
-   closing words of the player's `GAME.OVR` and "You have won." as a win
-   (`opengold_gateway_tests`; [gateway.md](games/gateway.md), The ending).
+   Rocks; it crosses to the Kraken headquarters. There it races south through
+   the fortress out of search mode, its guards held from fleeing, to the
+   Pearl Chest's room and looks about (ten minutes a Look) until the chest's
+   guards come 30 minutes after the landing: the statuette of the West (bit
+   2). The hidden boat takes it to Neverwinter, where it beats the Zhentarim
+   ambush, and it walks overland to Secomber and on to Llorkh, whose tavern
+   drops it into the arena; it wins the arena's three fights, rests in its
+   cell, Krevish snatches the jailer's keys, Muthtur joins, and it fights
+   through the barracks to the commander's room: the statuette of the North
+   (bit 3) and the others back. Rested in Llorkh, it walks to the foot of the
+   Star Mounts, saves the aarakocra from the giant snakes and shambling
+   mounds, is flown to Ceptienne's aerie and through its maze to her chamber:
+   the statuette of the South (bit 4). Flown down, it walks to Sundabar and
+   from its west gate overland round the mountains to Ascore, opens
+   Vaalgamon's gate with the four statuettes past its spiders, and takes his
+   challenge: in his maze of fights it wins the first outright and runs north
+   out of the next three, the last his own room, to the plaza, where the
+   statuettes are set in the altar. Script 28 ends with the closing words of
+   the player's `GAME.OVR` and "You have won." as a win (`game_won`), which
+   the route's check asks for ([gateway.md](games/gateway.md), The ending).
+   The ships sail at 0800 and 0900: the test passes the time to the sailing,
+   a stand-in for a player's wait in camp, which OpenGoldBox's camp has no
+   hours for. Every walk is played step by step as the planning aid
+   (`OPENGOLD_SECRET_FIND`, with `OPENGOLD_FIND_YES` for the questions it must
+   answer Yes) finds it. The stand-ins are the test experience and gold, the
+   gear and the waits for the ships; no fight is won by the test. What the
+   route needed of the engine is in [gateway.md](games/gateway.md), What the
+   route needed: the square's event read after a map's load entry, Look's ten
+   minutes, effect 84 a charming gaze in Pool of Radiance only, and the maze
+   fights that one member's escape ends.
 
 *Pools of Darkness* ([darkness.md](games/darkness.md)):
 
