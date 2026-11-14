@@ -968,6 +968,61 @@ int starting_platinum(GoldBoxGame game)
     }
 }
 
+std::vector<StartingItem> starting_items(const ClassLevels &levels, GoldBoxGame game)
+{
+    if (game != GoldBoxGame::pools_of_darkness)
+    {
+        return {};
+    }
+
+    // Its ITEM0 definitions by class family, as GAME.EXE lists them: a
+    // fighter's long sword, plate mail, shield, long bow and arrows; a thief's
+    // bracers, ring, long sword and sling; a cleric's mace, plate mail,
+    // shield, staff sling and two scrolls; the rest's bracers, ring,
+    // quarterstaff and darts.
+    enum Family : std::size_t
+    {
+        fighters,
+        thieves,
+        clerics,
+        the_rest
+    };
+
+    static constexpr std::array<std::array<unsigned, 6>, 4> definitions{{
+        {126, 135, 108, 83, 80},
+        {211, 226, 126, 93},
+        {120, 135, 108, 95, 250, 250},
+        {211, 226, 124, 86},
+    }};
+    const bool fights = level_in(levels, ClassSlot::fighter) > 0 ||
+                        level_in(levels, ClassSlot::ranger) > 0 ||
+                        level_in(levels, ClassSlot::paladin) > 0;
+    const auto family = fights                                    ? fighters
+                        : level_in(levels, ClassSlot::thief) > 0  ? thieves
+                        : level_in(levels, ClassSlot::cleric) > 0 ? clerics
+                                                                  : the_rest;
+    // The fourth item is carried, not readied; a fighter's arrows (the fifth)
+    // and the rest's darts (the fourth) come 50 to the bundle.
+    constexpr std::size_t carried_only = 3;
+    const auto bundled = [family](std::size_t at)
+    {
+        return (family == fighters && at == 4) || (family == the_rest && at == 3);
+    };
+    constexpr int bundle_count = 50;
+    std::vector<StartingItem> items;
+    for (std::size_t at = 0; at < definitions[family].size(); ++at)
+    {
+        const auto definition = definitions[family][at];
+        if (definition == 0)
+        {
+            continue;
+        }
+        items.push_back({definition, bundled(at) ? std::optional{bundle_count} : std::nullopt,
+                         at != carried_only});
+    }
+    return items;
+}
+
 namespace
 {
 // The magic-user spells Secret's creation teaches at levels 6 to 9 (its

@@ -62,6 +62,13 @@ void outfit_for_game(opengold::CampaignParty &party, opengold::MemberId id, cons
         opengold::ua::outfit_new_character(
             party, id, opengold::ua::DesignFiles(files.original_game, files.design));
     }
+    // Pools of Darkness gives its characters their equipment at creation.
+    if (files.game == opengold::GoldBoxGame::pools_of_darkness &&
+        game_rules_of(party).set == GameRules::Set::original)
+    {
+        opengold::outfit_original_character(
+            party, id, opengold::load_item_definitions(files.original_game, files.game));
+    }
 }
 
 std::unique_ptr<opengold::rules::RulesModule> make_rules_module(const GameRules &rules,

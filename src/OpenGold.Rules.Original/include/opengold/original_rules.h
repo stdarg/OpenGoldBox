@@ -207,6 +207,24 @@ struct RolledCharacter
 // The platinum a new character starts with besides its gold: Curse's 300.
 [[nodiscard]] int starting_platinum(GoldBoxGame game);
 
+// One item of a new character's starting equipment: a definition of the
+// game's (Pools of Darkness's ITEM0, numbered from 1), how many of it (none
+// keeps the definition's count), and whether the character readies it.
+struct StartingItem
+{
+    unsigned definition{};
+    std::optional<int> count;
+    bool readied{};
+
+    bool operator==(const StartingItem &) const = default;
+};
+
+// The items a new character of these levels starts with, by its class
+// family (Pools of Darkness's CreateStartingItems): fighters, paladins and
+// rangers first, then thieves, then clerics, then the rest. None in the
+// games that give none at creation.
+[[nodiscard]] std::vector<StartingItem> starting_items(const ClassLevels &levels, GoldBoxGame game);
+
 // A new character trained to its starting experience at creation (Curse's
 // SilentTrainPlayer): every class that can rises, training after training,
 // each training's Hit Points rolled at creation, and a magic-user learns the

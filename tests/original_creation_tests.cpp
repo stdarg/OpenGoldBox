@@ -6,6 +6,7 @@
 #include "opengold/training_hall.h"
 #include "opengold/original_combat.h"
 #include "opengold/original.h"
+#include "opengold/original_content.h"
 #include "test_support.h"
 #include <cstdlib>
 #include <fstream>
@@ -1016,6 +1017,81 @@ void darkness_characters_start_high()
     party.award_experience(300'000, "test:darkness");
     check(party.hall_training(id, TrainingHall::fighters).denial == TrainingDenial::none,
           "A Darkness hall trains a party with no gold");
+}
+
+// Pools of Darkness gives a new character up to six of its ITEM0 definitions
+// by class family (its CreateStartingItems): each readied but the fourth, a
+// fighter's arrows and the rest's darts 50 to the bundle, and the character
+// counts what it carries, not the original's three.
+void darkness_characters_start_equipped()
+{
+    const auto darkness = GoldBoxGame::pools_of_darkness;
+    using original::StartingItem;
+    original::ClassLevels levels{};
+    level_in(levels, original::ClassSlot::fighter) = 14;
+    check(original::starting_items(levels, darkness) ==
+              std::vector<StartingItem>{{126, std::nullopt, true},
+                                        {135, std::nullopt, true},
+                                        {108, std::nullopt, true},
+                                        {83, std::nullopt, false},
+                                        {80, 50, true}},
+          "A fighter's kit: ITEM0's 126, 135, 108, the bow 83 carried, 50 of the arrows 80");
+    check(original::starting_items(levels, GoldBoxGame::secret_of_the_silver_blades).empty(),
+          "Secret gives no equipment at creation");
+    original::ClassLevels mage{};
+    level_in(mage, original::ClassSlot::magic_user) = 14;
+    check(original::starting_items(mage, darkness) ==
+              std::vector<StartingItem>{{211, std::nullopt, true},
+                                        {226, std::nullopt, true},
+                                        {124, std::nullopt, true},
+                                        {86, 50, false}},
+          "The rest's kit: ITEM0's 211, 226, 124 and 50 of the darts 86, carried");
+    original::ClassLevels cleric_thief{};
+    level_in(cleric_thief, original::ClassSlot::cleric) = 9;
+    level_in(cleric_thief, original::ClassSlot::thief) = 9;
+    check(original::starting_items(cleric_thief, darkness).front().definition == 211,
+          "A cleric/thief takes a thief's kit, the family named first");
+
+    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
+    const auto folder =
+        games ? std::filesystem::path(games) / game_folder(darkness) : std::filesystem::path();
+    if (!games || !std::filesystem::exists(folder / "ITEM0.DAX"))
+    {
+        std::cout << "Pools of Darkness's files are not here; its starting equipment is not "
+                     "checked.\n";
+        return;
+    }
+    const auto definitions = load_item_definitions(folder, darkness);
+    std::shared_ptr<const rules::CharacterRules> creation =
+        original::character_rules(original::default_aging, darkness);
+    CampaignParty party(original::rules_module(load_original_content(folder, darkness)), creation);
+    const auto fighter = member_with(party, creation, "fighter", "Vala");
+    const auto unarmed = party.profile(fighter);
+    outfit_original_character(party, fighter, definitions);
+    const auto &warrior = party.member(fighter);
+    const auto &carried = warrior.character.inventory().items();
+    check(carried.size() == 5 && carried.front().name == "Long Sword +3" &&
+              carried.back().quantity == 50,
+          "A fighter carries five items, known for what they are, 50 arrows among them: " +
+              carried.front().name);
+    check(warrior.equipped.size() == 4 &&
+              std::ranges::find(warrior.equipped, carried[3].id) == warrior.equipped.end(),
+          "It readies all but the bow");
+    check(party.profile(fighter).armor_class < unarmed.armor_class - 8,
+          "Plate mail +3 and a shield +2 make its Armor Class far better");
+
+    const auto cleric = member_with(party, creation, "cleric", "Ilsa");
+    outfit_original_character(party, cleric, definitions);
+    check(party.member(cleric).character.inventory().items().size() == 6 &&
+              party.member(cleric).equipped.size() == 5,
+          "A cleric carries six items and readies all but the staff sling");
+
+    const auto magic_user = member_with(party, creation, "magic_user", "Mira");
+    outfit_original_character(party, magic_user, definitions);
+    const auto &mage_items = party.member(magic_user).character.inventory().items();
+    check(mage_items.size() == 4 && mage_items.back().quantity == 50 &&
+              party.member(magic_user).equipped.size() == 3,
+          "A magic-user readies its bracers, ring and quarterstaff and carries 50 darts");
 }
 
 // Treasures of the Savage Frontier: a new character starts with 22,600
@@ -2169,6 +2245,7 @@ int main()
         secret_characters_start_trained();
         gateway_characters_start_low_and_stop_at_caps();
         darkness_characters_start_high();
+        darkness_characters_start_equipped();
         treasures_characters_start_with_their_experience();
         std::cout << "Original creation tests passed\n";
         return 0;

@@ -87,6 +87,54 @@ void a_save_loads_under_its_own_rules()
               }),
           "An original-rules save with an unknown aging is refused");
 }
+
+// The creation screen outfits a new Pools of Darkness character under the
+// original rules with the game's starting equipment, and under the SRD's
+// with none (OPENGOLD_GOLDBOX_DIR, docs/GAMES.md).
+void darkness_characters_are_outfitted_at_creation()
+{
+    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
+    const auto darkness = opengold::GoldBoxGame::pools_of_darkness;
+    const auto folder = games ? std::filesystem::path(games) / opengold::game_folder(darkness)
+                              : std::filesystem::path{};
+    if (!games || !std::filesystem::exists(folder / "ITEM0.DAX"))
+    {
+        std::cout << "Pools of Darkness's files are not here; its outfitting is not checked.\n";
+        return;
+    }
+    const RulesFiles darkness_files{files.srd_pack, folder, darkness};
+    const auto made = [&](const GameRules &rules)
+    {
+        const auto party = new_campaign_party(rules, darkness_files);
+        opengold::rules::CharacterDraft draft;
+        draft.name = "Vala";
+        draft.gender = "male";
+        draft.race = "human";
+        draft.character_class = "fighter";
+        draft.alignment = "neutral_good";
+        if (rules.set == GameRules::Set::srd)
+        {
+            draft.background = "soldier";
+            draft.rolled = true;
+            for (auto &roll : draft.rolls)
+            {
+                roll = {{6, 5, 4, 1}, 3};
+            }
+        }
+        else
+        {
+            draft = rolled(*party, draft);
+        }
+        const auto id = party->add_pc(opengold::Character(*party->character_rules(), draft, {}));
+        outfit_for_game(*party, id, darkness_files);
+        return party->member(id);
+    };
+    const auto original = made(original_add);
+    check(original.character.inventory().items().size() == 5 && original.equipped.size() == 4,
+          "A Darkness fighter under the original rules starts with five items, four readied");
+    check(made(GameRules{}).character.inventory().items().empty(),
+          "Under the SRD rules it starts with none of them");
+}
 } // namespace
 
 int main()
@@ -95,6 +143,7 @@ int main()
     {
         a_new_game_plays_by_its_rules();
         a_save_loads_under_its_own_rules();
+        darkness_characters_are_outfitted_at_creation();
         std::cout << "Game rules tests passed\n";
         return 0;
     }
