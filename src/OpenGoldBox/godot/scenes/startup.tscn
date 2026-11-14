@@ -241,11 +241,106 @@ offset_right = 736.0
 offset_bottom = 508.0
 text = "Continue"
 
+[node name="MainMenu" type="Window" parent="."]
+title = "OpenGoldBox"
+initial_position = 1
+size = Vector2i(480, 340)
+min_size = Vector2i(480, 340)
+visible = false
+unresizable = true
+transient = true
+exclusive = true
+auto_translate_mode = 2
+
+[node name="Background" type="Panel" parent="MainMenu"]
+theme_type_variation = &"StartupDialogSurface"
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Buttons" type="VBoxContainer" parent="MainMenu"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 32.0
+offset_top = 28.0
+offset_right = -32.0
+offset_bottom = -28.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="Continue" type="Button" parent="MainMenu/Buttons"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+text = "Continue"
+
+[node name="PickGame" type="Button" parent="MainMenu/Buttons"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+text = "Pick game"
+
+[node name="Options" type="Button" parent="MainMenu/Buttons"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+text = "Options"
+
+[node name="Exit" type="Button" parent="MainMenu/Buttons"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+text = "Exit to desktop"
+
+[node name="GamePicker" type="Window" parent="."]
+title = "Pick game"
+initial_position = 1
+size = Vector2i(480, 340)
+min_size = Vector2i(480, 340)
+visible = false
+unresizable = true
+transient = true
+exclusive = true
+auto_translate_mode = 2
+
+[node name="Background" type="Panel" parent="GamePicker"]
+theme_type_variation = &"StartupDialogSurface"
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Buttons" type="VBoxContainer" parent="GamePicker"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 32.0
+offset_top = 28.0
+offset_right = -32.0
+offset_bottom = -28.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="Games" type="VBoxContainer" parent="GamePicker/Buttons"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Back" type="Button" parent="GamePicker/Buttons"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+text = "Back"
+
 [node name="GameMenu" type="Window" parent="."]
 title = "OpenGoldBox"
 initial_position = 1
-size = Vector2i(480, 420)
-min_size = Vector2i(480, 420)
+size = Vector2i(480, 540)
+min_size = Vector2i(480, 540)
 visible = false
 unresizable = true
 transient = true
@@ -274,14 +369,35 @@ grow_vertical = 2
 theme_override_constants/separation = 14
 alignment = 1
 
+[node name="Continue" type="Button" parent="GameMenu/Buttons"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+text = "Continue"
+
+[node name="Load" type="Button" parent="GameMenu/Buttons"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+text = "Load game"
+
 [node name="Options" type="Button" parent="GameMenu/Buttons"]
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 text = "Options"
 
-[node name="Games" type="VBoxContainer" parent="GameMenu/Buttons"]
+[node name="DefaultParty" type="Button" parent="GameMenu/Buttons"]
+custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
-theme_override_constants/separation = 14
+text = "Play with default party"
+
+[node name="NewParty" type="Button" parent="GameMenu/Buttons"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+text = "Create new party"
+
+[node name="MainMenu" type="Button" parent="GameMenu/Buttons"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+text = "Main menu"
 
 [node name="Exit" type="Button" parent="GameMenu/Buttons"]
 custom_minimum_size = Vector2(0, 52)

@@ -21,16 +21,36 @@ func require(condition: bool, message: String) -> void:
 func settle() -> void:
 	for frame in range(6): await process_frame
 
-# The chosen game's own title pictures (TITLE.DAX): a key passes each.
+# A title on screen, OpenGoldBox's, Pool of Radiance's new one or a game's own
+# pictures (TITLE.DAX): a key passes each.
 func pass_title() -> void:
 	for screen in range(8):
-		var title: Control = current_scene.get_node_or_null("GameTitle") if current_scene else null
-		if title == null or not title.visible: return
+		var scene := current_scene
+		if scene == null or scene.name != "Startup": return
+		var lettering: TextureRect = scene.get_node("ImageFit/Image/Text")
+		if not scene.get_node("GameTitle").visible and not (lettering.visible and lettering.texture != null): return
 		var event := InputEventKey.new()
 		event.keycode = KEY_SPACE
 		event.pressed = true
 		Input.parse_input_event(event)
 		for frame in range(6): await process_frame
+
+# Startup's menus to the new game's question for the game (the user's design,
+# 2026-11-14): OpenGoldBox's title, Pick game, the game's button, its title and
+# its menu's Create new party.
+func pick_game(folder := "POOLRAD") -> void:
+	await pass_title()
+	var menu: Window = current_scene.get_node("MainMenu")
+	require(menu.visible and menu.exclusive, "The main menu must show")
+	menu.get_node("Buttons/PickGame").pressed.emit()
+	await settle()
+	current_scene.get_node("GamePicker/Buttons/Games/" + folder).pressed.emit()
+	await settle()
+	await pass_title()
+	var game_menu: Window = current_scene.get_node_or_null("GameMenu")
+	if game_menu and game_menu.visible:
+		game_menu.get_node("Buttons/NewParty").pressed.emit()
+		await settle()
 
 # The new game's first question (docs/ORIGINAL-RULES.md): the rules it plays
 # by, the SRD's offered first for now; Begin starts the game with them.
@@ -64,14 +84,6 @@ func capture(viewport: Viewport, name: String) -> void:
 	await RenderingServer.frame_post_draw
 	require(viewport.get_texture().get_image().save_png(capture_dir.path_join(name + ".png")) == OK, "Cannot capture language dialog")
 
-# The startup menu after the language: its Pool of Radiance button, or the
-# named game's (the user's design, 2026-11-12).
-func pick_game(folder := "POOLRAD") -> void:
-	var menu: Window = current_scene.get_node("GameMenu")
-	require(menu.visible and menu.exclusive, "The startup menu must offer the games")
-	menu.get_node("Buttons/Games/" + folder).pressed.emit()
-	await settle()
-
 func run_checks() -> void:
 	if args.has("--language-restore"):
 		require(TranslationServer.get_locale() == "es", "Saved Spanish preference did not survive process restart")
@@ -79,7 +91,7 @@ func run_checks() -> void:
 		await settle()
 		await pick_game()
 		await answer_rules()
-		require(current_scene.name == "CharacterCreation", "No-flag startup should skip the language dialog and splashes")
+		require(current_scene.name == "CharacterCreation", "A saved language skips the language dialog")
 		require(current_scene.get_node("PageTitle").text == "Nombre, raza y género", "Restored language did not reach character creation")
 		print("Language restore passed across process restart.")
 		quit(0)
@@ -127,30 +139,6 @@ func run_checks() -> void:
 	var config := ConfigFile.new()
 	require(config.load(settings_path) == OK and config.get_value("interface", "language") == "es", "Spanish preference was not saved")
 	await pick_game()
-	if args.has("--splash"):
-		require(current_scene.name == "Startup" and not dialog.visible, "Language selection should continue to splash")
-		var background: Texture2D = current_scene.get_node("ImageFit/Image").texture
-		require(current_scene.get_node("ImageFit/Image/Text").texture.resource_path.ends_with("OpenGoldBoxEngineLettering.es.png"), "Confirmation key skipped the first Spanish splash")
-		await create_timer(0.65).timeout
-		await capture(root, "spanish-engine-splash")
-		current_scene.get_node("ImageFit/Image/Text").hide()
-		await settle()
-		var pixels: PackedByteArray
-		if not capture_dir.is_empty():
-			await RenderingServer.frame_post_draw
-			pixels = root.get_texture().get_image().get_data()
-		current_scene.get_node("ImageFit/Image/Text").show()
-		await key(root, KEY_SPACE)
-		require(current_scene.get_node("ImageFit/Image/Text").texture.resource_path.ends_with("OpenGoldBoxGameLettering.es.png"), "Second Spanish splash lettering is wrong")
-		require(current_scene.get_node("ImageFit/Image").texture == background, "Language flow changed the shared background")
-		await create_timer(0.65).timeout
-		await capture(root, "spanish-game-splash")
-		if not capture_dir.is_empty():
-			current_scene.get_node("ImageFit/Image/Text").hide()
-			await settle()
-			await RenderingServer.frame_post_draw
-			require(root.get_texture().get_image().get_data() == pixels, "Spanish splash backgrounds are not pixel-identical")
-		await key(root, KEY_SPACE)
 	await answer_rules()
 	require(current_scene.name == "CharacterCreation" and current_scene.get_node("PageTitle").text == "Nombre, raza y género", "Selection did not reach Spanish character creation")
 	# Reopen the actual startup dialog, select English using the controls, and use

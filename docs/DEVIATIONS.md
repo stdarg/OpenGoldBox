@@ -439,6 +439,17 @@ in the game: answering YES at a hall lists its services in the dialogue
 
 ## Interface and saves
 
+- **Startup has menus, and every title takes a click** (2026-11-14, the
+  user's design). The originals start with their title pictures and go
+  straight to their party creation menu; *Pool of Radiance* and *Curse* take
+  no mouse. OpenGoldBox shows its own title, then a main menu and a menu for
+  each game (Continue, Load game, Options, Play with default party, Create
+  new party, Main menu, Exit to desktop). *Pool of Radiance* shows its new
+  title rather than its two original pictures; the other games show their
+  own pictures, without the credits screens that follow them. In every game
+  any key or click passes a title, and Escape goes back
+  ([GAMES](GAMES.md), phase 2, step 7).
+
 - **Shops name their keepers and tell what an item does** (2026-11-08). The
   original's shops list their stock in one column under the town's heading.
   OpenGoldBox names each shopkeeper (a random name, editable in the Shop &

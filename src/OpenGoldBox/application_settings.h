@@ -4,6 +4,7 @@
 #include "opengold/difficulty.h"
 #include <godot_cpp/variant/string.hpp>
 #include <godot_cpp/variant/packed_string_array.hpp>
+#include <filesystem>
 
 #include "opengold/gold_box_game.h"
 
@@ -88,6 +89,23 @@ void choose_game(opengold::GoldBoxGame game);
 // game plays by until it is asked.
 [[nodiscard]] GameRules chosen_rules();
 void choose_rules(GameRules rules);
+
+// How the game screen begins: a new party made on the creation screens, the
+// game's own pre-rolled party (its saved game A), or a save loaded.
+struct GameStart
+{
+    enum class Kind
+    {
+        new_party,
+        default_party,
+        saved_game
+    };
+    Kind kind{Kind::new_party};
+    std::filesystem::path save; // The save to load, for saved_game.
+};
+
+[[nodiscard]] GameStart chosen_game_start();
+void choose_game_start(GameStart start);
 // A game's folder. Pool of Radiance's is game_path(); another's is kept under
 // [games] by its folder name, or found in OPENGOLD_GOLDBOX_DIR.
 [[nodiscard]] godot::String game_folder(opengold::GoldBoxGame game);

@@ -149,19 +149,21 @@ starts or a save is loaded, and new settings files receive the default. See
 If the config is absent, the game asks for the language first, then the game folder.
 If only one value is missing or invalid, it asks only for that value. A saved
 folder that disappears or lacks required files must be selected again.
-Setup completes before the optional splash screens.
+Setup completes before the chosen game's title.
 
 From **cmd.exe**:
 
 ```bat
 win-package\opengoldbox.exe --reset-lang
 win-package\opengoldbox.exe --reset-game-path
-win-package\opengoldbox.exe --reset-game-path --reset-lang --splash
+win-package\opengoldbox.exe --reset-game-path --reset-lang
 ```
 
 `--lang` has been removed. `--reset-lang` forces language selection;
 `--reset-game-path` forces folder selection. Neither deletes the previous value
-on launch. Cancel, the dialog X, and Ctrl+X exit through normal shutdown.
+on launch. In the language dialog Cancel, the dialog X and Ctrl+X exit through
+normal shutdown; in a game's folder dialog Cancel, the X and Escape go back to
+the games.
 Only a confirmed replacement is saved. If the language is confirmed and the user
 then cancels folder selection, the confirmed language remains saved.
 

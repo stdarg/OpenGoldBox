@@ -1,6 +1,6 @@
 extends SceneTree
 
-# Use --shutdown-close or --shutdown-key; optional --splash, --shutdown-second,
+# Use --shutdown-close or --shutdown-key; optional --shutdown-second,
 # --shutdown-dialog, and --shutdown-paused exercise different active views.
 func _initialize() -> void:
 	call_deferred("run_check")

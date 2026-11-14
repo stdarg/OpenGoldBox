@@ -4,6 +4,7 @@
 #include <exception>
 #include <filesystem>
 #include <functional>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -15,6 +16,8 @@
 // its saves always were.
 [[nodiscard]] std::filesystem::path campaign_save_directory(opengold::GoldBoxGame game);
 [[nodiscard]] std::string campaign_save_name(const std::filesystem::path &file);
+// The game's save written last, if it has one: what Continue loads.
+[[nodiscard]] std::optional<std::filesystem::path> newest_campaign_save(opengold::GoldBoxGame game);
 
 // Scene-owned shared save UI. Callbacks remain in the campaign host.
 class SaveSlots : public godot::Window

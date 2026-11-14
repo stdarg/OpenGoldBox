@@ -609,15 +609,14 @@ at 1920 x 1080 this leaves about one pixel of total horizontal margin. Other
 aspect ratios use black letterboxing. The generated lettering layers also remain at their original 1672 x 941 size. The two 1920 x 1080 PNG screen previews in `art/` are captured from
 Godot's final rendering; the runtime uses the shared backdrop and transparent lettering layers.
 
-Startup retains the optional `--splash` sequence: engine introduction, then
-Pool of Radiance introduction, then character creation. The background appears
+Startup shows the engine's lettering (OpenGoldBox's title) for 2 seconds after
+the language, then the main menu; picking *Pool of Radiance* shows its
+lettering (its title) for 5 seconds before its menu. The background appears
 immediately. Each lettering layer fades linearly from transparent to opaque
-over 0.6 seconds, using C++ `_process` delta time. A key clears the first lettering
-and starts the second fade; a further key opens character creation. Input
-remains responsive during fades and held-key repeats do not advance.
-Only the lettering opacity animates; the shared background remains unchanged.
-Any key advances;
-Escape skips the splash sequence. Default startup opens character creation.
+over 0.6 seconds, using C++ `_process` delta time. Any key or click passes a
+title; key releases and held-key repeats do not, and Escape goes back.
+Only the lettering opacity animates; the shared background remains unchanged
+([GAMES](GAMES.md), phase 2, step 7).
 The build copies the local shared backdrop from `art/` into the game package.
 See `art/OpenGoldBoxScreens.provenance.md` for artwork sources and prompts.
 The rendered startup check compares both backgrounds byte for byte with the

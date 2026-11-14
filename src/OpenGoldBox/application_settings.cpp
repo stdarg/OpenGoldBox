@@ -16,6 +16,7 @@
 #include <functional>
 #include <map>
 #include <optional>
+#include <utility>
 
 using namespace godot;
 
@@ -24,6 +25,7 @@ namespace
 std::optional<String> confirmed_path, confirmed_language;
 opengold::GoldBoxGame current_game = opengold::GoldBoxGame::pool_of_radiance;
 GameRules current_rules = new_game_rules;
+settings::GameStart current_start;
 std::map<opengold::GoldBoxGame, String> confirmed_folders;
 
 String read(const char *section, const char *key)
@@ -494,6 +496,16 @@ GameRules chosen_rules()
 void choose_rules(GameRules rules)
 {
     current_rules = rules;
+}
+
+GameStart chosen_game_start()
+{
+    return current_start;
+}
+
+void choose_game_start(GameStart start)
+{
+    current_start = std::move(start);
 }
 
 String game_folder(opengold::GoldBoxGame game)

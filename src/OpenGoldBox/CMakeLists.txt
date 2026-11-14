@@ -617,9 +617,9 @@ if(OPENGOLD_BUILD_TESTS)
             FIXTURES_REQUIRED godot_project TIMEOUT 320 LABELS godot
             SKIP_REGULAR_EXPRESSION "Skipped: ")
     endfunction()
-    opengold_settings_check(startup startup_tests "Startup check passed: no flag")
-    opengold_settings_check(startup_splash startup_tests "Startup check passed: two"
-        -DARGS=--splash)
+    # OpenGoldBox's title, the main menu, the games, Pool of Radiance's title and
+    # its menu (the user's design, 2026-11-14).
+    opengold_settings_check(startup startup_tests "Startup check passed: OpenGoldBox's title")
     # The startup menu: Options, a button for each game and Exit to desktop.
     opengold_settings_check(startup_menu startup_menu_tests "Startup menu passed: Options")
     opengold_settings_check(startup_menu_exit startup_menu_tests
@@ -650,33 +650,31 @@ if(OPENGOLD_BUILD_TESTS)
     opengold_settings_check(language language_dialog_tests "Language dialog passed"
         -DARGS=--reset-lang -DRESTART_ARGS=--language-restore
         "-DRESTART_EXPECTED=Language restore passed across process restart")
-    opengold_settings_check(language_splash language_dialog_tests "Language dialog passed"
-        "-DARGS=--reset-lang\;--splash")
     opengold_settings_check(language_close language_dialog_tests
         "Language dialog close: scene teardown passed" "-DARGS=--reset-lang\;--language-close")
     opengold_settings_check(language_ctrl_x language_dialog_tests
         "Language dialog Ctrl.X: scene teardown passed" "-DARGS=--reset-lang\;--language-ctrl-x")
-    # Setup completes before the optional splash screens, which these cases check
-    # start. The reset flags make a complete config ask again.
+    # Setup completes before Pool of Radiance's title, which these cases check
+    # starts. The reset flags make a complete config ask again.
     foreach(setup_case first first-warning save-error missing-path valid override missing-lang)
         string(REPLACE "-" "_" test_name "setup_${setup_case}")
         opengold_settings_check(${test_name} setup_config_tests
-            "Setup config passed: ${setup_case}" "-DARGS=--setup-case=${setup_case}\;--splash")
+            "Setup config passed: ${setup_case}" "-DARGS=--setup-case=${setup_case}")
     endforeach()
     foreach(setup_case mismatch missing-file)
         string(REPLACE "-" "_" test_name "setup_${setup_case}")
         opengold_settings_check(${test_name} setup_config_tests
             "Setup config passed: ${setup_case}"
-            "-DARGS=--setup-case=${setup_case}\;--splash\;--reset-game-path")
+            "-DARGS=--setup-case=${setup_case}\;--reset-game-path")
     endforeach()
     opengold_settings_check(setup_reset setup_config_tests "Setup config passed: reset"
-        "-DARGS=--setup-case=reset\;--splash\;--reset-lang\;--reset-game-path")
+        "-DARGS=--setup-case=reset\;--reset-lang\;--reset-game-path")
     opengold_settings_check(setup_cancel_path setup_config_tests "Setup cancel-path passed"
-        "-DARGS=--setup-case=cancel-path\;--splash")
+        "-DARGS=--setup-case=cancel-path")
     opengold_settings_check(setup_cancel_lang setup_config_tests "Setup cancel-language passed"
-        "-DARGS=--setup-case=cancel-lang\;--splash\;--reset-lang")
+        "-DARGS=--setup-case=cancel-lang\;--reset-lang")
     opengold_settings_check(setup_warning_quit setup_config_tests "Setup checksum-quit passed"
-        "-DARGS=--setup-case=warning-quit\;--splash\;--reset-game-path")
+        "-DARGS=--setup-case=warning-quit\;--reset-game-path")
 endif()
 
 # Godot exports the executable; the C++ game code is its GDExtension.

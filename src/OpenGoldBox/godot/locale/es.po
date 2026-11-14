@@ -49,7 +49,7 @@ msgstr " (desventaja)"
 msgid " (one-handed)"
 msgstr " (a una mano)"
 
-#: src/OpenGoldBox/save_slots.cpp:196
+#: src/OpenGoldBox/save_slots.cpp:225
 msgid " (previous version)"
 msgstr " (versión anterior)"
 
@@ -541,11 +541,11 @@ msgstr "CA {ac}   Velocidad {speed} pies"
 msgid "AC {ac} / HP {current}/{maximum}"
 msgstr "CA {ac} / PG {current}/{maximum}"
 
-#: src/OpenGoldBox/startup_view.cpp:739
+#: src/OpenGoldBox/startup_view.cpp:1018
 msgid "AD&D"
 msgstr "AD&D"
 
-#: src/OpenGoldBox/startup_view.cpp:738
+#: src/OpenGoldBox/startup_view.cpp:1017
 msgid "AD&D: the scores change again as characters grow older."
 msgstr "AD&D: las puntuaciones cambian de nuevo a medida que los personajes envejecen."
 
@@ -787,7 +787,7 @@ msgstr "Ventaja en las salvaciones para mantener su concentración."
 msgid "After a melee hit, attack a second creature within 5 feet of the first with the same weapon. Once per turn."
 msgstr "Tras un impacto cuerpo a cuerpo, ataca con la misma arma a una segunda criatura a 5 pies o menos de la primera. Una vez por turno."
 
-#: src/OpenGoldBox/godot/scenes/startup.tscn:344
+#: src/OpenGoldBox/godot/scenes/startup.tscn:460
 msgid "Aging"
 msgstr "Envejecimiento"
 
@@ -1104,11 +1104,11 @@ msgstr "Flechas/teclado numérico: mover | Mayús+flecha: diagonal | A: acción 
 msgid "Arrows: choose | Space: use | Escape: skip"
 msgstr "Flechas: elegir | Espacio: usar | Escape: omitir"
 
-#: src/OpenGoldBox/startup_view.cpp:739
+#: src/OpenGoldBox/startup_view.cpp:1018
 msgid "As the original"
 msgstr "Como el original"
 
-#: src/OpenGoldBox/startup_view.cpp:735
+#: src/OpenGoldBox/startup_view.cpp:1014
 msgid "As the original: the starting age changes the scores once."
 msgstr "Como el original: la edad inicial cambia las puntuaciones una vez."
 
@@ -1213,7 +1213,7 @@ msgstr "Autoequipar"
 msgid "Automatically equip items better than currently equipped items"
 msgstr "Equipar automáticamente los objetos mejores que los equipados"
 
-#: src/OpenGoldBox/character_creation_view.cpp:597 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:355 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:126 src/OpenGoldBox/level_up_dialog.cpp:99
+#: src/OpenGoldBox/character_creation_view.cpp:597 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:355 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:126 src/OpenGoldBox/godot/scenes/startup.tscn:337 src/OpenGoldBox/level_up_dialog.cpp:99
 msgid "Back"
 msgstr "Atrás"
 
@@ -1356,7 +1356,7 @@ msgstr "Embotado"
 msgid "Befuddlement"
 msgstr "Embotamiento mental"
 
-#: src/OpenGoldBox/godot/scenes/startup.tscn:358
+#: src/OpenGoldBox/godot/scenes/startup.tscn:474
 msgid "Begin"
 msgstr "Empezar"
 
@@ -1881,7 +1881,7 @@ msgstr "Puede volver a tirar un d20 una vez."
 msgid "Can target another creature as a Magic action."
 msgstr "Puede elegir como objetivo a otra criatura como acción mágica."
 
-#: src/OpenGoldBox/ally_attack_controls.h:32 src/OpenGoldBox/character_creation_view.cpp:917 src/OpenGoldBox/equipment_choice_dialog.cpp:76 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:318 src/OpenGoldBox/godot/scenes/startup.tscn:106 src/OpenGoldBox/godot/scenes/startup.tscn:169 src/OpenGoldBox/level_up_dialog.cpp:146 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:246 src/OpenGoldBox/rest_dialog_impl.h:66 src/OpenGoldBox/save_slots.cpp:104 src/OpenGoldBox/spell_choice_controls.h:249 src/OpenGoldBox/startup_view.cpp:477
+#: src/OpenGoldBox/ally_attack_controls.h:32 src/OpenGoldBox/character_creation_view.cpp:917 src/OpenGoldBox/equipment_choice_dialog.cpp:76 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:318 src/OpenGoldBox/godot/scenes/startup.tscn:106 src/OpenGoldBox/godot/scenes/startup.tscn:169 src/OpenGoldBox/level_up_dialog.cpp:146 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:246 src/OpenGoldBox/rest_dialog_impl.h:66 src/OpenGoldBox/save_slots.cpp:133 src/OpenGoldBox/spell_choice_controls.h:249 src/OpenGoldBox/startup_view.cpp:756
 msgid "Cancel"
 msgstr "Cancelar"
 
@@ -1957,7 +1957,7 @@ msgstr "No se puede leer la lista de comprobación de archivos del juego."
 msgid "Cannot regain Hit Points."
 msgstr "No puede recuperar puntos de golpe."
 
-#: src/OpenGoldBox/startup_view.cpp:479
+#: src/OpenGoldBox/startup_view.cpp:758
 msgid "Cannot save language."
 msgstr "No se puede guardar el idioma."
 
@@ -1966,7 +1966,7 @@ msgstr "No se puede guardar el idioma."
 msgid "Cannot save screenshot: {path}"
 msgstr "No se puede guardar la captura de pantalla: {path}"
 
-#: src/OpenGoldBox/startup_view.cpp:384
+#: src/OpenGoldBox/startup_view.cpp:675
 msgid "Cannot save settings. Check that settings.cfg in the game's user data folder can be written and is valid."
 msgstr "No se puede guardar la configuración. Comprueba que settings.cfg, en la carpeta de datos de usuario del juego, se pueda escribir y sea válido."
 
@@ -2208,7 +2208,7 @@ msgstr "Personaje cargado."
 msgid "Character modifiers"
 msgstr "Modificadores del personaje"
 
-#: src/OpenGoldBox/save_slots.cpp:158
+#: src/OpenGoldBox/save_slots.cpp:187
 msgid "Character save name"
 msgstr "Nombre del personaje guardado"
 
@@ -2224,7 +2224,7 @@ msgstr "Hoja de personaje"
 msgid "Characters"
 msgstr "Personajes"
 
-#: src/OpenGoldBox/startup_view.cpp:728
+#: src/OpenGoldBox/startup_view.cpp:1007
 msgid "Characters, fights and magic as the original game had them: AD&D 1st edition."
 msgstr "Personajes, combates y magia como los tenía el juego original: AD&D 1.ª edición."
 
@@ -2404,7 +2404,7 @@ msgstr "Elige un Estilo de combate válido"
 msgid "Choose an existing folder containing the Pool of Radiance game files."
 msgstr "Elige una carpeta existente con los archivos de Pool of Radiance."
 
-#: src/OpenGoldBox/application_settings.cpp:246
+#: src/OpenGoldBox/application_settings.cpp:248
 msgid "Choose an existing folder holding the OpenGoldBox new art."
 msgstr "Elige una carpeta existente con el arte nuevo de OpenGoldBox."
 
@@ -2424,7 +2424,7 @@ msgstr "Elige trucos, entradas del libro de conjuros y conjuros preparados. Atr�
 msgid "Choose game folder"
 msgstr "Elige la carpeta del juego"
 
-#: src/OpenGoldBox/godot/scenes/startup.tscn:65 src/OpenGoldBox/startup_view.cpp:475
+#: src/OpenGoldBox/godot/scenes/startup.tscn:65 src/OpenGoldBox/startup_view.cpp:754
 msgid "Choose language"
 msgstr "Elige idioma"
 
@@ -2440,7 +2440,7 @@ msgstr "Elige conjuros preparados. Las elecciones sin completar quedan pendiente
 msgid "Choose the folder containing START.EXE and the original DAX game files."
 msgstr "Elige la carpeta que contiene START.EXE y los archivos DAX originales del juego."
 
-#: src/OpenGoldBox/application_settings.cpp:548
+#: src/OpenGoldBox/application_settings.cpp:560
 msgid "Choose the folder that holds this game's files."
 msgstr "Elige la carpeta con los archivos de este juego."
 
@@ -2880,7 +2880,7 @@ msgstr "Cono de frío"
 msgid "Confirm"
 msgstr "Confirmar"
 
-#: src/OpenGoldBox/save_slots.cpp:275
+#: src/OpenGoldBox/save_slots.cpp:304
 msgid "Confirm load"
 msgstr "Confirmar carga"
 
@@ -2999,7 +2999,7 @@ msgstr "Contingencia: {spell} ({trigger})"
 msgid "Contingency: {spell} takes effect on {name}."
 msgstr "Contingencia: {spell} surte efecto en {name}."
 
-#: src/OpenGoldBox/godot/scenes/combat_demo.tscn:334 src/OpenGoldBox/godot/scenes/startup.tscn:177 src/OpenGoldBox/godot/scenes/startup.tscn:242 src/OpenGoldBox/godot/scenes/startup.tscn:88 src/OpenGoldBox/startup_view.cpp:476
+#: src/OpenGoldBox/godot/scenes/combat_demo.tscn:334 src/OpenGoldBox/godot/scenes/startup.tscn:177 src/OpenGoldBox/godot/scenes/startup.tscn:242 src/OpenGoldBox/godot/scenes/startup.tscn:280 src/OpenGoldBox/godot/scenes/startup.tscn:375 src/OpenGoldBox/godot/scenes/startup.tscn:88 src/OpenGoldBox/startup_view.cpp:755
 msgid "Continue"
 msgstr "Continuar"
 
@@ -3059,6 +3059,10 @@ msgstr "Crea un personaje, termina su hoja y pulsa Añadir al grupo.\n\nUn grupo
 #: src/OpenGoldBox/godot/scenes/party_panel.tscn:102
 msgid "Create character"
 msgstr "Crear personaje"
+
+#: src/OpenGoldBox/godot/scenes/startup.tscn:395
+msgid "Create new party"
+msgstr "Crear un grupo nuevo"
 
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:196
 msgid "Creatures in its Aura of Protection have +2 to Armor Class and Dexterity saves."
@@ -3144,7 +3148,7 @@ msgstr "Selecciones actuales"
 msgid "Curse"
 msgstr "Maldición"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:133 src/OpenGoldBox/rolf_tour_view.cpp:283 src/OpenGoldBox/startup_view.cpp:86
+#: src/OpenGoldBox/rolf_tour_view.cpp:133 src/OpenGoldBox/rolf_tour_view.cpp:283 src/OpenGoldBox/startup_view.cpp:89
 msgid "Curse of the Azure Bonds"
 msgstr "Curse of the Azure Bonds"
 
@@ -4122,7 +4126,7 @@ msgstr "Salir"
 msgid "Exit to OS"
 msgstr "Salir del juego"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:101 src/OpenGoldBox/godot/scenes/startup.tscn:289
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:101 src/OpenGoldBox/godot/scenes/startup.tscn:295 src/OpenGoldBox/godot/scenes/startup.tscn:405
 msgid "Exit to desktop"
 msgstr "Salir al escritorio"
 
@@ -6066,7 +6070,7 @@ msgstr "Lanza de caballería"
 msgid "Land's Aid"
 msgstr "Ayuda de la tierra"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:353 src/OpenGoldBox/godot/scenes/startup.tscn:43 src/OpenGoldBox/startup_view.cpp:474
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:353 src/OpenGoldBox/godot/scenes/startup.tscn:43 src/OpenGoldBox/startup_view.cpp:753
 msgid "Language"
 msgstr "Idioma"
 
@@ -6438,7 +6442,7 @@ msgstr "Fortaleza de los hombres lagarto, el nivel inundado"
 msgid "Lizardfolk"
 msgstr "Hombre lagarto"
 
-#: src/OpenGoldBox/save_slots.cpp:207 src/OpenGoldBox/save_slots.cpp:223 src/OpenGoldBox/save_slots.cpp:297
+#: src/OpenGoldBox/save_slots.cpp:236 src/OpenGoldBox/save_slots.cpp:252 src/OpenGoldBox/save_slots.cpp:326
 msgid "Load"
 msgstr "Cargar"
 
@@ -6450,7 +6454,7 @@ msgstr "Cargar personaje"
 msgid "Load a saved game to continue."
 msgstr "Carga una partida guardada para continuar."
 
-#: src/OpenGoldBox/save_slots.cpp:146
+#: src/OpenGoldBox/save_slots.cpp:175
 msgid "Load character"
 msgstr "Cargar personaje"
 
@@ -6458,15 +6462,15 @@ msgstr "Cargar personaje"
 msgid "Load combat"
 msgstr "Cargar combate"
 
-#: src/OpenGoldBox/campaign_save_view.cpp:106 src/OpenGoldBox/godot/scenes/game_menu.tscn:68 src/OpenGoldBox/godot/scenes/party_panel.tscn:257 src/OpenGoldBox/save_slots.cpp:147
+#: src/OpenGoldBox/campaign_save_view.cpp:106 src/OpenGoldBox/godot/scenes/game_menu.tscn:68 src/OpenGoldBox/godot/scenes/party_panel.tscn:257 src/OpenGoldBox/godot/scenes/startup.tscn:380 src/OpenGoldBox/save_slots.cpp:176
 msgid "Load game"
 msgstr "Cargar partida"
 
-#: src/OpenGoldBox/save_slots.cpp:272
+#: src/OpenGoldBox/save_slots.cpp:301
 msgid "Load this character? Any unsaved demo progress will be discarded."
 msgstr "¿Cargar este personaje? Se perderá el progreso no guardado de la demo."
 
-#: src/OpenGoldBox/save_slots.cpp:273
+#: src/OpenGoldBox/save_slots.cpp:302
 msgid "Load this save? Any unsaved campaign progress will be discarded."
 msgstr "¿Cargar esta partida? Se perderá todo el progreso de campaña sin guardar."
 
@@ -6712,6 +6716,10 @@ msgstr "Mano principal"
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Main hand — {item}"
 msgstr "Mano principal — {item}"
+
+#: src/OpenGoldBox/godot/scenes/startup.tscn:400
+msgid "Main menu"
+msgstr "Menú principal"
 
 #: src/OpenGoldBox/godot/scenes/character_creation.tscn:1434 src/OpenGoldBox/godot/scenes/party_panel.tscn:267
 msgid "Make leader"
@@ -7081,7 +7089,7 @@ msgstr "Los proyectiles no mágicos desde más de 5 pies fallan contra él."
 msgid "Missing HP: {amount}. Damage and other HP losses are not individually recorded."
 msgstr "PG perdidos: {amount}. El daño y otras pérdidas de PG no se registran por separado."
 
-#: src/OpenGoldBox/startup_view.cpp:352
+#: src/OpenGoldBox/startup_view.cpp:644
 msgid "Missing or unreadable game files:"
 msgstr "Faltan archivos del juego o no se pueden leer:"
 
@@ -7336,7 +7344,7 @@ msgstr "Nueva Verdigris"
 msgid "New art folder"
 msgstr "Carpeta del arte nuevo"
 
-#: src/OpenGoldBox/godot/scenes/startup.tscn:292 src/OpenGoldBox/godot/scenes/startup.tscn:326
+#: src/OpenGoldBox/godot/scenes/startup.tscn:408 src/OpenGoldBox/godot/scenes/startup.tscn:442
 msgid "New game"
 msgstr "Partida nueva"
 
@@ -7550,11 +7558,11 @@ msgstr "Juramento de devoción: Aura de devoción. Ni tú ni tus aliados en tu A
 msgid "Oath of Devotion: Smite of Protection. When you cast Divine Smite, you and allies in your Aura of Protection gain +2 AC and +2 to Dexterity saves until your next turn.\nA second level 4 spell slot."
 msgstr "Juramento de devoción: Castigo de protección. Cuando lanzas Castigo divino, tú y tus aliados en tu Aura de protección obtenéis +2 a la CA y +2 a las salvaciones de Destreza hasta tu siguiente turno.\nUn segundo espacio de conjuro de nivel 4."
 
-#: src/OpenGoldBox/game_menu_view.cpp:258 src/OpenGoldBox/startup_view.cpp:739
+#: src/OpenGoldBox/game_menu_view.cpp:258 src/OpenGoldBox/startup_view.cpp:1018
 msgid "Off"
 msgstr "No"
 
-#: src/OpenGoldBox/startup_view.cpp:736
+#: src/OpenGoldBox/startup_view.cpp:1015
 msgid "Off: age never changes the scores."
 msgstr "Desactivado: la edad nunca cambia las puntuaciones."
 
@@ -7734,7 +7742,7 @@ msgstr "Abrir subida de nivel"
 msgid "Open locks"
 msgstr "Abrir cerraduras"
 
-#: src/OpenGoldBox/godot/scenes/startup.tscn:245
+#: src/OpenGoldBox/godot/scenes/startup.tscn:245 src/OpenGoldBox/godot/scenes/startup.tscn:340
 msgid "OpenGoldBox"
 msgstr "OpenGoldBox"
 
@@ -7746,7 +7754,7 @@ msgstr "Los ataques de oportunidad contra ti tienen desventaja."
 msgid "Opportunity attack"
 msgstr "Ataque de oportunidad"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:130 src/OpenGoldBox/godot/scenes/game_menu.tscn:79 src/OpenGoldBox/godot/scenes/startup.tscn:280
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:130 src/OpenGoldBox/godot/scenes/game_menu.tscn:79 src/OpenGoldBox/godot/scenes/startup.tscn:290 src/OpenGoldBox/godot/scenes/startup.tscn:385
 msgid "Options"
 msgstr "Opciones"
 
@@ -7855,11 +7863,11 @@ msgstr "Sobrecanalizar: un conjuro de mago que hace daño, lanzado con un espaci
 msgid "Overland"
 msgstr "Campo abierto"
 
-#: src/OpenGoldBox/save_slots.cpp:275
+#: src/OpenGoldBox/save_slots.cpp:304
 msgid "Overwrite"
 msgstr "Sobrescribir"
 
-#: src/OpenGoldBox/save_slots.cpp:270
+#: src/OpenGoldBox/save_slots.cpp:299
 msgid "Overwrite this save? Its previous version will be retained."
 msgstr "¿Sobrescribir esta partida? Se conservará la versión anterior."
 
@@ -8072,6 +8080,10 @@ msgstr "Ruinas de Phlan"
 msgid "Pick"
 msgstr "Abrir la cerradura"
 
+#: src/OpenGoldBox/godot/scenes/startup.tscn:285 src/OpenGoldBox/godot/scenes/startup.tscn:298
+msgid "Pick game"
+msgstr "Elegir juego"
+
 #: src/OpenGoldBox/character_sheet_text.cpp:107
 msgid "Pick pockets"
 msgstr "Robar bolsillos"
@@ -8111,6 +8123,10 @@ msgstr "Crecimiento vegetal"
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Plate Armor"
 msgstr "Armadura de placas"
+
+#: src/OpenGoldBox/godot/scenes/startup.tscn:390
+msgid "Play with default party"
+msgstr "Jugar con el grupo predeterminado"
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:192
 msgid "Podol Plaza"
@@ -8184,11 +8200,11 @@ msgstr "Polimorfar: lobo"
 msgid "Polymorphed"
 msgstr "Polimorfado"
 
-#: src/OpenGoldBox/startup_view.cpp:85
+#: src/OpenGoldBox/startup_view.cpp:88
 msgid "Pool of Radiance"
 msgstr "Pool of Radiance"
 
-#: src/OpenGoldBox/godot/scenes/startup.tscn:109 src/OpenGoldBox/godot/scenes/startup.tscn:131 src/OpenGoldBox/startup_view.cpp:219
+#: src/OpenGoldBox/godot/scenes/startup.tscn:109 src/OpenGoldBox/godot/scenes/startup.tscn:131 src/OpenGoldBox/startup_view.cpp:512
 msgid "Pool of Radiance game files"
 msgstr "Archivos de Pool of Radiance"
 
@@ -9532,7 +9548,7 @@ msgstr "Ruinas de Myth Drannor"
 msgid "Ruins of Old Verdigris"
 msgstr "Ruinas de la Vieja Verdigris"
 
-#: src/OpenGoldBox/godot/scenes/startup.tscn:331
+#: src/OpenGoldBox/godot/scenes/startup.tscn:447
 msgid "Rules"
 msgstr "Reglas"
 
@@ -9540,7 +9556,7 @@ msgstr "Reglas"
 msgid "Run the area's pre-camp check and attempt an eight-hour long rest."
 msgstr "Comprueba si se puede acampar e intenta un descanso largo de ocho horas."
 
-#: src/OpenGoldBox/startup_view.cpp:729
+#: src/OpenGoldBox/startup_view.cpp:1008
 msgid "SRD 5.2.1"
 msgstr "SRD 5.2.1"
 
@@ -9601,7 +9617,7 @@ msgstr "Atacante salvaje"
 msgid "Savage Attacker: once per turn on a weapon hit, weapon damage is rolled twice and the higher result is kept automatically."
 msgstr "Atacante salvaje: una vez por turno, al impactar con un arma, el daño se tira dos veces y se usa automáticamente el resultado mayor."
 
-#: src/OpenGoldBox/save_slots.cpp:207 src/OpenGoldBox/save_slots.cpp:223 src/OpenGoldBox/save_slots.cpp:297
+#: src/OpenGoldBox/save_slots.cpp:236 src/OpenGoldBox/save_slots.cpp:252 src/OpenGoldBox/save_slots.cpp:326
 msgid "Save"
 msgstr "Guardar"
 
@@ -9609,7 +9625,7 @@ msgstr "Guardar"
 msgid "Save Character"
 msgstr "Guardar personaje"
 
-#: src/OpenGoldBox/save_slots.cpp:146
+#: src/OpenGoldBox/save_slots.cpp:175
 msgid "Save character"
 msgstr "Guardar personaje"
 
@@ -9617,7 +9633,7 @@ msgstr "Guardar personaje"
 msgid "Save combat"
 msgstr "Guardar combate"
 
-#: src/OpenGoldBox/campaign_save_view.cpp:106 src/OpenGoldBox/godot/scenes/game_menu.tscn:57 src/OpenGoldBox/godot/scenes/party_panel.tscn:247 src/OpenGoldBox/rest_dialog_impl.h:31 src/OpenGoldBox/rest_dialog_impl.h:65 src/OpenGoldBox/save_slots.cpp:147
+#: src/OpenGoldBox/campaign_save_view.cpp:106 src/OpenGoldBox/godot/scenes/game_menu.tscn:57 src/OpenGoldBox/godot/scenes/party_panel.tscn:247 src/OpenGoldBox/rest_dialog_impl.h:31 src/OpenGoldBox/rest_dialog_impl.h:65 src/OpenGoldBox/save_slots.cpp:176
 msgid "Save game"
 msgstr "Guardar partida"
 
@@ -9625,7 +9641,7 @@ msgstr "Guardar partida"
 msgid "Save game, Load game, Options and Exit (Escape)."
 msgstr "Guardar partida, Cargar partida, Opciones y Salir (Escape)."
 
-#: src/OpenGoldBox/save_slots.cpp:158 src/OpenGoldBox/save_slots.cpp:94
+#: src/OpenGoldBox/save_slots.cpp:123 src/OpenGoldBox/save_slots.cpp:187
 msgid "Save name"
 msgstr "Nombre de la partida"
 
@@ -9740,7 +9756,7 @@ msgstr "Segundo aliento: {count}"
 msgid "Second level"
 msgstr "Segundo nivel"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:178 src/OpenGoldBox/startup_view.cpp:87
+#: src/OpenGoldBox/rolf_tour_view.cpp:178 src/OpenGoldBox/startup_view.cpp:90
 msgid "Secret of the Silver Blades"
 msgstr "Secret of the Silver Blades"
 
@@ -9772,11 +9788,11 @@ msgstr "Ve a las criaturas invisibles y a través de la oscuridad mágica."
 msgid "Sees Invisible creatures as if they were visible."
 msgstr "Ve a las criaturas invisibles como si fueran visibles."
 
-#: src/OpenGoldBox/save_slots.cpp:152
+#: src/OpenGoldBox/save_slots.cpp:181
 msgid "Select a character save to overwrite, or enter a new name."
 msgstr "Selecciona un personaje guardado para sobrescribirlo o escribe un nombre nuevo."
 
-#: src/OpenGoldBox/save_slots.cpp:153
+#: src/OpenGoldBox/save_slots.cpp:182
 msgid "Select a character save. Previous versions are available for recovery."
 msgstr "Selecciona un personaje guardado. Hay versiones anteriores disponibles para recuperarlo."
 
@@ -9788,11 +9804,11 @@ msgstr "Elige Color-1 o Color-2 de una parte y después una muestra. Cambiarán 
 msgid "Select a save first."
 msgstr "Elige primero una partida guardada."
 
-#: src/OpenGoldBox/save_slots.cpp:154
+#: src/OpenGoldBox/save_slots.cpp:183
 msgid "Select a save to overwrite, or enter a new name."
 msgstr "Elige una partida para sobrescribir o introduce un nombre nuevo."
 
-#: src/OpenGoldBox/save_slots.cpp:155
+#: src/OpenGoldBox/save_slots.cpp:184
 msgid "Select a save. Previous versions are available for recovery."
 msgstr "Elige una partida. Puedes recuperar versiones anteriores."
 
@@ -11159,7 +11175,7 @@ msgstr "La puerta se abre."
 msgid "The door stays locked."
 msgstr "La puerta sigue cerrada."
 
-#: src/OpenGoldBox/startup_view.cpp:730
+#: src/OpenGoldBox/startup_view.cpp:1009
 msgid "The fifth edition's System Reference Document, with the original's adventures."
 msgstr "El System Reference Document de la quinta edición, con las aventuras del original."
 
@@ -11228,7 +11244,7 @@ msgstr "El aceite sobre {name} arde y causa 5 de daño más."
 msgid "The original game's art shows until you choose the folder of the OpenGoldBox new art download."
 msgstr "Se muestra el arte del juego original hasta que elijas la carpeta de la descarga del arte nuevo de OpenGoldBox."
 
-#: src/OpenGoldBox/startup_view.cpp:727
+#: src/OpenGoldBox/startup_view.cpp:1006
 msgid "The original rules (Pool of Radiance)"
 msgstr "Las reglas originales (Pool of Radiance)"
 
@@ -11456,7 +11472,7 @@ msgstr "Este personaje no está listo para entrenar"
 msgid "This character was not made under the original rules"
 msgstr "Este personaje no se creó con las reglas originales"
 
-#: src/OpenGoldBox/application_settings.cpp:256
+#: src/OpenGoldBox/application_settings.cpp:258
 msgid "This folder is not the OpenGoldBox new art: it has no new-art-pack.json."
 msgstr "Esta carpeta no es el arte nuevo de OpenGoldBox: no tiene new-art-pack.json."
 
@@ -13334,7 +13350,7 @@ msgstr "{feat}: {spell}; bonificador de ataque de conjuro {attack}."
 msgid "{finder} finds {name}."
 msgstr "{finder} encuentra a {name}."
 
-#: src/OpenGoldBox/startup_view.cpp:220
+#: src/OpenGoldBox/startup_view.cpp:513
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{game} game files"
 msgstr "Archivos de {game}"

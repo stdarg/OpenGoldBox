@@ -1,12 +1,12 @@
 extends SceneTree
 
-# The startup menu (the user's design, 2026-11-12): after the language, a modal
-# dialog with Options, a button for each game and Exit to desktop. Run by
-# tests/settings_check.cmake; --menu-capture=DIR saves a picture of it.
+# The startup menus (the user's design, 2026-11-14): after OpenGoldBox's
+# title, the main menu's Options and Exit to desktop, and the games. Run by
+# tests/settings_check.cmake; --menu-capture=DIR saves pictures of them.
 # Curse's button is checked when OPENGOLD_GOLDBOX_DIR holds its files, and
-# with --secret Secret of the Silver Blades' button. A game's button first
-# shows the game's own title pictures (TITLE.DAX), as its original does when
-# it starts.
+# with --secret Secret of the Silver Blades' button. A game other than Pool
+# of Radiance first shows its own title pictures (TITLE.DAX), as its original
+# does when it starts, then its menu.
 
 var captures := ""
 var exit_case := false
@@ -64,7 +64,7 @@ func capture(name: String) -> void:
 	await process_frame
 	RenderingServer.force_draw(false)
 	await process_frame
-	var menu: Window = current_scene.get_node("GameMenu")
+	var menu: Window = current_scene.get_node("MainMenu")
 	menu.get_texture().get_image().save_png(captures.path_join(name + "-menu.png"))
 	root.get_texture().get_image().save_png(captures.path_join(name + "-screen.png"))
 
@@ -97,8 +97,7 @@ func shown_title() -> PackedByteArray:
 	require(picture.texture.get_size() == Vector2(320, 200), "A title screen is the original's 320 x 200 screen")
 	return picture.texture.get_image().get_data()
 
-# The game's title, screen by screen, each new; the new game's question waits
-# for it. The first screen leaves by itself when its seconds are up, a click
+# The game's title, screen by screen, each new; the game's menu waits for it. The first screen leaves by itself when its seconds are up, a click
 # passes the second and a key each one after. The screen at index sound_screen
 # starts the game's title sound.
 func check_title(game: String, screens: int, first_seconds: float, sound_screen := -1) -> void:
@@ -106,7 +105,7 @@ func check_title(game: String, screens: int, first_seconds: float, sound_screen 
 	for screen in range(screens):
 		var shown := shown_title()
 		require(not shown.is_empty() and not seen.has(shown), game + "'s title screen " + str(screen + 1) + " must show")
-		require(not current_scene.get_node("RulesDialog").visible, "The new game's question waits for the title")
+		require(not current_scene.get_node("GameMenu").visible, "The game's menu waits for the title")
 		seen.append(shown)
 		require(current_scene.get_node("TitleSound").playing == (screen == sound_screen), game + "'s title sound plays with its screen " + str(sound_screen + 1) + " only")
 		await capture_screen(game + "-title-" + str(screen + 1))
@@ -120,24 +119,35 @@ func check_title(game: String, screens: int, first_seconds: float, sound_screen 
 		else:
 			await press_key()
 	require(not current_scene.get_node("GameTitle").visible, game + "'s title ends after " + str(screens) + " screens")
-	require(current_scene.get_node("RulesDialog").visible, "The new game's question follows " + game + "'s title")
+	require(current_scene.get_node("GameMenu").visible, "The game's menu follows " + game + "'s title")
 
-func run_checks() -> void:
+# Startup to the main menu: OpenGoldBox's title, passed by a key.
+func open_main_menu() -> Window:
 	change_scene_to_file("res://scenes/startup.tscn")
 	await settle()
 	require(current_scene.name == "Startup", "Startup scene missing")
+	await press_key()
+	return current_scene.get_node("MainMenu")
+
+# The main menu's Pick game, then the game's button.
+func pick(folder: String) -> void:
+	current_scene.get_node("MainMenu/Buttons/PickGame").pressed.emit()
+	await settle()
+	current_scene.get_node("GamePicker/Buttons/Games/" + folder).pressed.emit()
+	await settle()
+
+# The game's menu's Create new party, which asks the rules first.
+func create_new_party(original := false) -> void:
+	var menu: Window = current_scene.get_node("GameMenu")
+	require(menu.visible, "The game's menu must show")
+	menu.get_node("Buttons/NewParty").pressed.emit()
+	await answer_rules(original)
+
+func run_checks() -> void:
+	var menu: Window = await open_main_menu()
 	var image: TextureRect = current_scene.get_node("ImageFit/Image")
 	require(image.texture != null, "The title picture must show behind the menu")
-	var menu: Window = current_scene.get_node("GameMenu")
-	require(menu.visible and menu.exclusive, "The startup menu must be a modal dialog")
-	var buttons := menu.get_node("Buttons")
-	var labels := []
-	for child in buttons.get_children():
-		if child is Button: labels.append(child.text)
-		else:
-			for game in child.get_children(): labels.append(game.text)
-	require(labels == ["Options", "Pool of Radiance", "Curse of the Azure Bonds", "Secret of the Silver Blades", "Exit to desktop"],
-		"The menu offers Options, each game and Exit to desktop: " + str(labels))
+	require(menu.visible and menu.exclusive, "The main menu must be a modal dialog")
 	await capture("startup")
 	if exit_case:
 		current_scene.tree_exiting.connect(func(): print("Startup menu passed: Exit to desktop."))
@@ -158,25 +168,38 @@ func run_checks() -> void:
 	if secret_case:
 		await check_secret(menu)
 		return
-	# Pool of Radiance's title: its two pictures, 5 seconds each; closing the
-	# question then returns to the menu.
-	menu.get_node("Buttons/Games/POOLRAD").pressed.emit()
+	# Pool of Radiance's title is its new one, which a key passes; Options from
+	# its menu returns to its menu, and closing the question too.
+	await pick("POOLRAD")
+	require(shown_title().is_empty(), "Pool of Radiance keeps its new title, not its original pictures")
+	await press_key()
+	var game_menu: Window = current_scene.get_node("GameMenu")
+	require(game_menu.visible, "Pool of Radiance's menu follows its title")
+	await capture("pool")
+	game_menu.get_node("Buttons/Options").pressed.emit()
 	await settle()
-	await check_title("POOLRAD", 2, 5.0)
+	require(not game_menu.visible and current_scene.get_node("Options").visible, "The game's menu steps aside for Options")
+	current_scene.get_node("Options/Options/Close").pressed.emit()
+	await settle()
+	require(game_menu.visible, "Closing Options returns to the game's menu")
+	game_menu.get_node("Buttons/NewParty").pressed.emit()
+	await settle()
 	current_scene.get_node("RulesDialog").close_requested.emit()
 	await settle()
-	require(menu.visible and not current_scene.get_node("GameTitle").visible, "Closing the question returns to the menu")
+	require(game_menu.visible and not current_scene.get_node("GameTitle").visible, "Closing the question returns to the game's menu")
+	game_menu.get_node("Buttons/MainMenu").pressed.emit()
+	await settle()
 	var curse := OS.get_environment("OPENGOLD_GOLDBOX_DIR").path_join("CURSE")
 	if OS.get_environment("OPENGOLD_GOLDBOX_DIR").is_empty() or not FileAccess.file_exists(curse.path_join("TILES.DAX")):
-		print("Startup menu passed: Options and back, Pool of Radiance's title (Curse's files are not here).")
+		print("Startup menu passed: Options and back, Pool of Radiance's title and menu (Curse's files are not here).")
 		quit(0)
 		return
-	menu.get_node("Buttons/Games/CURSE").pressed.emit()
-	await settle()
+	await pick("CURSE")
 	# Curse's title: picture 1, its name over picture 2, and picture 4 with its
 	# sound (sndIntro).
 	await check_title("CURSE", 3, 5.0, 2)
-	await answer_rules(true)
+	require(game_menu.title == "Curse of the Azure Bonds", "The menu names its game: " + game_menu.title)
+	await create_new_party(true)
 	require(current_scene != null and current_scene.name == "CharacterCreation", "Curse's button must lead on to the party")
 	# Curse's own creation under the original rules: a human may be a paladin
 	# or ranger, and starts trained up from 25,000 experience with 300 platinum.
@@ -213,7 +236,7 @@ func run_checks() -> void:
 		RenderingServer.force_draw(false)
 		await process_frame
 		root.get_texture().get_image().save_png(captures.path_join("curse-exploration.png"))
-	print("Startup menu passed: Options and back, Pool of Radiance's and Curse's titles, Curse's folder found, the party screen and Curse's opening.")
+	print("Startup menu passed: Options and back, Pool of Radiance's and Curse's titles and menus, Curse's folder found, the party screen and Curse's opening.")
 	quit(0)
 
 # Secret of the Silver Blades from the menu: its folder found, a fighter made
@@ -225,8 +248,7 @@ func check_secret(menu: Window) -> void:
 		print("Skipped: Secret's files are not here.")
 		quit(0)
 		return
-	menu.get_node("Buttons/Games/SECRET").pressed.emit()
-	await settle()
+	await pick("SECRET")
 	# Secret's title: four screens, which one key ends, as its original's does.
 	require(not shown_title().is_empty(), "Secret's title must show")
 	require(current_scene.get_node("TitleSound").playing, "Secret's title music plays over its pictures")
@@ -234,7 +256,7 @@ func check_secret(menu: Window) -> void:
 	await settle()
 	require(not current_scene.get_node("GameTitle").visible, "One key ends Secret's title")
 	require(not current_scene.get_node("TitleSound").playing, "Secret's title music ends with its title")
-	await answer_rules(true)
+	await create_new_party(true)
 	require(current_scene != null and current_scene.name == "CharacterCreation", "Secret's button must lead on to the party")
 	var name: LineEdit = current_scene.get_node("Name")
 	name.text = "Vala"

@@ -43,16 +43,36 @@ func rows(list: ItemList) -> Array:
 	for i in range(list.item_count): texts.append(list.get_item_text(i))
 	return texts
 
-# The chosen game's own title pictures (TITLE.DAX): a key passes each.
+# A title on screen, OpenGoldBox's, Pool of Radiance's new one or a game's own
+# pictures (TITLE.DAX): a key passes each.
 func pass_title() -> void:
 	for screen in range(8):
-		var title: Control = current_scene.get_node_or_null("GameTitle") if current_scene else null
-		if title == null or not title.visible: return
+		var scene := current_scene
+		if scene == null or scene.name != "Startup": return
+		var lettering: TextureRect = scene.get_node("ImageFit/Image/Text")
+		if not scene.get_node("GameTitle").visible and not (lettering.visible and lettering.texture != null): return
 		var event := InputEventKey.new()
 		event.keycode = KEY_SPACE
 		event.pressed = true
 		Input.parse_input_event(event)
 		for frame in range(6): await process_frame
+
+# Startup's menus to the new game's question for the game (the user's design,
+# 2026-11-14): OpenGoldBox's title, Pick game, the game's button, its title and
+# its menu's Create new party.
+func pick_game(folder := "POOLRAD") -> void:
+	await pass_title()
+	var menu: Window = current_scene.get_node("MainMenu")
+	require(menu.visible and menu.exclusive, "The main menu must show")
+	menu.get_node("Buttons/PickGame").pressed.emit()
+	await settle()
+	current_scene.get_node("GamePicker/Buttons/Games/" + folder).pressed.emit()
+	await settle()
+	await pass_title()
+	var game_menu: Window = current_scene.get_node_or_null("GameMenu")
+	if game_menu and game_menu.visible:
+		game_menu.get_node("Buttons/NewParty").pressed.emit()
+		await settle()
 
 # The new game's first question: the rules it plays by; the original's here.
 func answer_original_rules() -> void:
@@ -78,9 +98,7 @@ func run_checks() -> void:
 	place_pool_save()
 	change_scene_to_file("res://scenes/startup.tscn")
 	await settle()
-	var menu: Window = current_scene.get_node("GameMenu")
-	menu.get_node("Buttons/Games/" + ("POOLRAD" if pool_game else "CURSE")).pressed.emit()
-	await settle()
+	await pick_game("POOLRAD" if pool_game else "CURSE")
 	await answer_original_rules()
 	require(current_scene != null and current_scene.name == "CharacterCreation", "The game's button must lead on to the party")
 	var screen := current_scene

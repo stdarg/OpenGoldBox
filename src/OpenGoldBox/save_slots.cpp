@@ -70,6 +70,35 @@ std::string campaign_save_name(const std::filesystem::path &file)
     return decoded(opengold::path_text(file.stem()));
 }
 
+std::optional<std::filesystem::path> newest_campaign_save(opengold::GoldBoxGame game)
+{
+    const auto directory = campaign_save_directory(game);
+    std::error_code missing;
+    if (!std::filesystem::is_directory(directory, missing))
+    {
+        return std::nullopt;
+    }
+    std::optional<std::filesystem::path> newest;
+    std::filesystem::file_time_type newest_time{};
+    for (const auto &entry : std::filesystem::directory_iterator(directory))
+    {
+        // Previous versions (.bak) are for recovery, never what Continue loads.
+        const auto &file = entry.path();
+        if (!entry.is_regular_file() || file.extension() != ".ogs" ||
+            campaign_save_name(file).empty())
+        {
+            continue;
+        }
+        const auto written = entry.last_write_time();
+        if (!newest || written > newest_time)
+        {
+            newest = file;
+            newest_time = written;
+        }
+    }
+    return newest;
+}
+
 void SaveSlots::_ready()
 {
     presentation::run_guarded(*this,

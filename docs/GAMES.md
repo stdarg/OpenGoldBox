@@ -206,13 +206,21 @@ In small steps, each with its check:
       name ([curse.md](games/curse.md), Area names). *Title pictures and saves by game done
       2026-11-14:* choosing a game shows its own title pictures from its
       TITLE.DAX, as its original's Intro shows them before its menu
-      (`load_title_screens`): *Pool of Radiance*'s pictures 1 and 2 for 5
-      seconds each; *Curse*'s picture 1 for 5, its name (3) over picture 2
+      (`load_title_screens`): *Curse*'s picture 1 for 5, its name (3) over picture 2
       for 10, and picture 4 with its sound for 10; *Secret*'s 1, 2, 3 over 2
       and 4 over 2 again for 15, 50, 50 and 60. A key or click passes a
-      screen, in *Secret* the whole title; the new game's question follows.
-      The credits screens after the pictures and *Pool of Radiance*'s
-      flashing of its second picture wait for the user's decision. Each game
+      screen, in *Secret* the whole title. *Startup's menus done 2026-11-14, to
+      the user's design:* OpenGoldBox's title for 2 seconds, then a main menu
+      (Continue, which loads the newest save of any game, Pick game, Options,
+      Exit to desktop). Picking a game shows its title (*Pool of Radiance*
+      keeps its new title, 5 seconds; the others their own pictures, without
+      the credits screens), then the game's menu: Continue (its newest save),
+      Load game, Options, Play with default party (the game's pre-rolled
+      party, its saved game A), Create new party (the new game's question,
+      then the creation screens), Main menu and Exit to desktop. On a title
+      any key or click passes it; Escape goes back, from a title or the
+      game's menu to the games, from the games to the main menu
+      (`opengold_godot_startup`, `opengold_godot_startup_menu`). Each game
       keeps its saves in its own folder (*Pool of Radiance*'s where they always
       were, the others' in `saves/CURSE` and so on), its save and load screens
       list only its own, a save records its game's files, and loading a save

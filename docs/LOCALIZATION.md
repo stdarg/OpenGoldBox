@@ -11,7 +11,7 @@ From **cmd.exe**:
 
 ```bat
 win-package\opengoldbox.exe --reset-lang
-win-package\opengoldbox.exe --reset-lang --splash
+win-package\opengoldbox.exe --reset-lang
 ```
 
 `--reset-lang` opens a centered language dialog before the optional splash screens.
@@ -31,9 +31,8 @@ Both the game path and language live in `settings.cfg` in the player's user data
 See [CONFIGURATION.md](CONFIGURATION.md) for first-run setup, `--reset-game-path`,
 environment overrides and MD5 compatibility warnings. `--lang` is removed.
 
-`--splash` remains independent: without it, selection proceeds directly to
-character creation; with it, both translated lettering overlays fade in using
-the existing key-to-advance flow. From interactive CMD, run
+After the language, OpenGoldBox's translated title fades in, then the main
+menu follows. From interactive CMD, run
 `win-package\opengoldbox.console.exe` with the same flags to wait for the game
 to exit.
 
@@ -149,9 +148,9 @@ repository's PNG ignore rule. See
 
 ## Validation
 
-`tests/language_dialog_tests.gd` checks `--reset-lang` with and without `--splash`,
-keyboard and button confirmation, preference persistence, and the first-splash
-input boundary. Its `--language-restore` mode verifies the saved Spanish choice
+`tests/language_dialog_tests.gd` checks `--reset-lang`, keyboard and button
+confirmation, preference persistence, and that the confirming key does not
+also pass the title. Its `--language-restore` mode verifies the saved Spanish choice
 in a fresh process; `--language-close` and `--language-ctrl-x` check scene teardown.
 `--language-capture=<absolute-directory>` captures the selector and Spanish
 splashes and compares the background pixels with lettering hidden.

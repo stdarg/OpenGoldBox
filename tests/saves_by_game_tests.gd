@@ -17,24 +17,43 @@ func require(condition: bool, message: String) -> void:
 func settle() -> void:
 	for frame in range(8): await process_frame
 
-func press_key() -> void:
-	var event := InputEventKey.new()
-	event.keycode = KEY_SPACE
-	event.pressed = true
-	Input.parse_input_event(event)
-	await settle()
+# A title on screen, OpenGoldBox's, Pool of Radiance's new one or a game's own
+# pictures (TITLE.DAX): a key passes each.
+func pass_title() -> void:
+	for screen in range(8):
+		var scene := current_scene
+		if scene == null or scene.name != "Startup": return
+		var lettering: TextureRect = scene.get_node("ImageFit/Image/Text")
+		if not scene.get_node("GameTitle").visible and not (lettering.visible and lettering.texture != null): return
+		var event := InputEventKey.new()
+		event.keycode = KEY_SPACE
+		event.pressed = true
+		Input.parse_input_event(event)
+		for frame in range(6): await process_frame
 
-# The startup menu's button for the game, its title passed by key, and the new
-# game's question answered: the original rules for Curse, the SRD's for Pool
-# of Radiance.
+# Startup's menus to the new game's question for the game (the user's design,
+# 2026-11-14): OpenGoldBox's title, Pick game, the game's button, its title and
+# its menu's Create new party.
+func pick_game(folder := "POOLRAD") -> void:
+	await pass_title()
+	var menu: Window = current_scene.get_node("MainMenu")
+	require(menu.visible and menu.exclusive, "The main menu must show")
+	menu.get_node("Buttons/PickGame").pressed.emit()
+	await settle()
+	current_scene.get_node("GamePicker/Buttons/Games/" + folder).pressed.emit()
+	await settle()
+	await pass_title()
+	var game_menu: Window = current_scene.get_node_or_null("GameMenu")
+	if game_menu and game_menu.visible:
+		game_menu.get_node("Buttons/NewParty").pressed.emit()
+		await settle()
+
+# The game picked on startup's menus and the new game's question answered:
+# the original rules for Curse, the SRD's for Pool of Radiance.
 func start(folder: String) -> void:
 	change_scene_to_file("res://scenes/startup.tscn")
 	await settle()
-	current_scene.get_node("GameMenu/Buttons/Games/" + folder).pressed.emit()
-	await settle()
-	for screen in range(8):
-		if not current_scene.get_node("GameTitle").visible: break
-		await press_key()
+	await pick_game(folder)
 	var dialog: Window = current_scene.get_node("RulesDialog")
 	require(dialog.visible, "The new game's question follows " + folder + "'s title")
 	var rules: OptionButton = dialog.get_node("Rows/Rules")
