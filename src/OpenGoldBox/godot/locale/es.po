@@ -5561,7 +5561,7 @@ msgstr "Máximo de puntos de golpe reducido en {value} hasta un Restablecimiento
 msgid "Hit Point maximum lowered by {value} until a Long Rest."
 msgstr "Máximo de puntos de golpe reducido en {value} hasta un descanso largo."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:625 src/OpenGold.Rules.Original/src/rules_module.cpp:640
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:626 src/OpenGold.Rules.Original/src/rules_module.cpp:641
 msgid "Hit Points outside the character's range"
 msgstr "Puntos de golpe fuera del rango del personaje"
 
@@ -5934,7 +5934,7 @@ msgstr "Selección de formación de nivel no válida"
 msgid "Invalid original-rules combat checkpoint"
 msgstr "Punto de control de combate de las reglas originales no válido"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:598
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:599
 msgid "Invalid original-rules profile"
 msgstr "Perfil de las reglas originales no válido"
 
@@ -7585,7 +7585,7 @@ msgstr "Nadie más puede escapar. Tu grupo sigue luchando."
 msgid "No one in the party needs {spell}."
 msgstr "Nadie del grupo necesita {spell}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:7067 src/OpenGold.Rules.Original/src/rules_module.cpp:609
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:7067 src/OpenGold.Rules.Original/src/rules_module.cpp:610
 msgid "No original-rules record for "
 msgstr "No hay registro de las reglas originales para "
 
@@ -7601,7 +7601,7 @@ msgstr "No hay ningún santuario preparado: lanza primero Palabra de regreso en 
 msgid "No spell choices for this class"
 msgstr "Esta clase no tiene conjuros que elegir"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:585
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:586
 msgid "No such level under the original rules"
 msgstr "Ese nivel no existe en las reglas originales"
 
@@ -7641,7 +7641,7 @@ msgstr "Norris el Gris"
 msgid "North"
 msgstr "norte"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:660
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:661
 msgid "Not an item of the original rules"
 msgstr "No es un objeto de las reglas originales"
 
@@ -12151,15 +12151,15 @@ msgstr "Candidato de equipo desconocido"
 msgid "Unknown training choice"
 msgstr "Opción de entrenamiento desconocida"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:174
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:175
 msgid "Unreadable original-rules level drain"
 msgstr "Pérdida de niveles ilegible de las reglas originales"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:147
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:148
 msgid "Unreadable original-rules raising"
 msgstr "Resurrección ilegible de las reglas originales"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:100
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:101
 msgid "Unreadable original-rules training"
 msgstr "Entrenamiento de las reglas originales ilegible"
 

@@ -5561,7 +5561,7 @@ msgstr ""
 msgid "Hit Point maximum lowered by {value} until a Long Rest."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:625 src/OpenGold.Rules.Original/src/rules_module.cpp:640
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:626 src/OpenGold.Rules.Original/src/rules_module.cpp:641
 msgid "Hit Points outside the character's range"
 msgstr ""
 
@@ -5934,7 +5934,7 @@ msgstr ""
 msgid "Invalid original-rules combat checkpoint"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:598
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:599
 msgid "Invalid original-rules profile"
 msgstr ""
 
@@ -7585,7 +7585,7 @@ msgstr ""
 msgid "No one in the party needs {spell}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:7067 src/OpenGold.Rules.Original/src/rules_module.cpp:609
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:7067 src/OpenGold.Rules.Original/src/rules_module.cpp:610
 msgid "No original-rules record for "
 msgstr ""
 
@@ -7601,7 +7601,7 @@ msgstr ""
 msgid "No spell choices for this class"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:585
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:586
 msgid "No such level under the original rules"
 msgstr ""
 
@@ -7641,7 +7641,7 @@ msgstr ""
 msgid "North"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:660
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:661
 msgid "Not an item of the original rules"
 msgstr ""
 
@@ -12151,15 +12151,15 @@ msgstr ""
 msgid "Unknown training choice"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:174
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:175
 msgid "Unreadable original-rules level drain"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:147
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:148
 msgid "Unreadable original-rules raising"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:100
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:101
 msgid "Unreadable original-rules training"
 msgstr ""
 

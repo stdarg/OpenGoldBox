@@ -5561,7 +5561,7 @@ msgstr "Hit Point maximum lowered by {value} until Greater Restoration."
 msgid "Hit Point maximum lowered by {value} until a Long Rest."
 msgstr "Hit Point maximum lowered by {value} until a Long Rest."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:625 src/OpenGold.Rules.Original/src/rules_module.cpp:640
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:626 src/OpenGold.Rules.Original/src/rules_module.cpp:641
 msgid "Hit Points outside the character's range"
 msgstr "Hit Points outside the character's range"
 
@@ -5934,7 +5934,7 @@ msgstr "Invalid advancement training choice"
 msgid "Invalid original-rules combat checkpoint"
 msgstr "Invalid original-rules combat checkpoint"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:598
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:599
 msgid "Invalid original-rules profile"
 msgstr "Invalid original-rules profile"
 
@@ -7585,7 +7585,7 @@ msgstr "No one else can get away. Your party fights on."
 msgid "No one in the party needs {spell}."
 msgstr "No one in the party needs {spell}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:7067 src/OpenGold.Rules.Original/src/rules_module.cpp:609
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:7067 src/OpenGold.Rules.Original/src/rules_module.cpp:610
 msgid "No original-rules record for "
 msgstr "No original-rules record for "
 
@@ -7601,7 +7601,7 @@ msgstr "No sanctuary is prepared: cast Word of Recall in a temple of New Phlan f
 msgid "No spell choices for this class"
 msgstr "No spell choices for this class"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:585
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:586
 msgid "No such level under the original rules"
 msgstr "No such level under the original rules"
 
@@ -7641,7 +7641,7 @@ msgstr "Norris the Gray"
 msgid "North"
 msgstr "North"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:660
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:661
 msgid "Not an item of the original rules"
 msgstr "Not an item of the original rules"
 
@@ -12151,15 +12151,15 @@ msgstr "Unknown equipment candidate"
 msgid "Unknown training choice"
 msgstr "Unknown training choice"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:174
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:175
 msgid "Unreadable original-rules level drain"
 msgstr "Unreadable original-rules level drain"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:147
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:148
 msgid "Unreadable original-rules raising"
 msgstr "Unreadable original-rules raising"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:100
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:101
 msgid "Unreadable original-rules training"
 msgstr "Unreadable original-rules training"
 
