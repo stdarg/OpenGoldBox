@@ -18,8 +18,9 @@ The user decided these on 2026-11-11 and 2026-11-12:
 - **The difficulty levels keep their names** (Easy, Normal, Hard, Nightmare,
   Infernal), but each set of rules has its own effects for them. The balance
   settings built so far (DIFF-2's table, `encounter_challenge`, the `[monsters]`
-  ability switches) belong to the SRD rules. The original rules' levels are
-  designed from the original game; see [Difficulty](#difficulty).
+  ability switches) belong to the SRD rules. Under the original rules the
+  game plays at Normal, the original's own play (2026-11-14); see
+  [Difficulty](#difficulty).
 - **Obvious bugs in the original are fixed, not kept.** Each one is put to the
   user for direction and then recorded in [DEVIATIONS.md](DEVIATIONS.md).
 - **The rules are chosen for each game** (2026-11-12): a new game's first
@@ -84,6 +85,10 @@ and a save each know which tables they use.
   each level at Constitution 17, 2 at 18, 3 at 19 and 20, 4 at 21 to 23 and 5
   at 24 and 25; a first-level ranger's bonus counts twice, for its two dice.
 - **Thief skills** go on to level 12.
+- **Paladins and rangers** strike three times in two rounds above levels 6
+  and 7 as fighters do above 6, and gain experience's tenth more when all
+  their prime scores are above 15 (Strength and Wisdom; Strength,
+  Intelligence and Wisdom).
 - **Spells:** *Curse* numbers its spells as *Pool of Radiance* does up to 56
   and keeps its item powers 57 and 59 to 65; its own (58 and 66 to 100: the
   fourth- and fifth-level spells, the druid's, and more powers) are numbered
@@ -274,6 +279,21 @@ chosen by the game as *Curse*'s are. In progress (2026-11-13):
   against giants, and none saves better against poison); and the hit points
   LOAD MONSTER scales by difficulty (the original rules have no difficulty
   yet, Difficulty).
+
+## Gateway to the Savage Frontier
+
+*Gateway* plays *Curse*'s rules and tables, number for number (its
+reconstruction), with these differences (2026-11-14):
+
+- **Creation:** a character starts with 3,000 experience (1,500 or 1,000 for
+  each class of a multi-class one), trained at once, and 35 platinum pieces.
+- **Level caps:** every class stops at its own level whatever the race:
+  clerics, druids and magic-users 6, rangers 7, fighters, paladins, thieves
+  and monks 8 (its levelCaps). So no paladin or ranger casts spells.
+- **Still to come:** its spell table's four changed rows (Strength in fights,
+  Prayer for the caster's side, Blink out of fights, Invisibility 10' Radius's
+  reach), its temple's poison rules, a half-elf ranger's starting age, and
+  training one class at a visit (as in *Curse*).
 
 ## What the original rules cover
 

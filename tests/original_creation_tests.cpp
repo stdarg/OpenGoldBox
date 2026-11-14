@@ -673,6 +673,51 @@ void secret_characters_start_trained()
           "A level 13 fighter attacks four times in two rounds");
 }
 
+// Gateway to the Savage Frontier plays Curse's tables, but a new character
+// starts with 3,000 experience and 35 platinum, and every class stops at its
+// own level whatever the race (its levelCaps).
+void gateway_characters_start_low_and_stop_at_caps()
+{
+    const auto gateway = GoldBoxGame::gateway_to_the_savage_frontier;
+    std::shared_ptr<const rules::CharacterRules> creation =
+        original::character_rules(original::default_aging, gateway);
+    const auto made = [&](std::string profession)
+    {
+        rules::CharacterDraft draft;
+        draft.race = "human";
+        draft.gender = "male";
+        draft.character_class = std::move(profession);
+        draft.alignment = "neutral_good";
+        draft.name = "Ivo";
+        RandomState random{12};
+        creation->roll_in_place(draft, random);
+        return creation->evaluate(draft, rules::NameRequirement::required);
+    };
+    const auto fighter = made("fighter");
+    check(fighter.original->experience == 3000 && fighter.original->class_levels[2] == 2 &&
+              fighter.original->platinum == 35 && fighter.original->gold == 0,
+          "A Gateway fighter starts at level 2 with 3,000 experience and 35 platinum");
+    check(made("thief").original->class_levels[6] == 3, "A thief reaches level 3");
+    check(std::ranges::find(made("magic_user").original->known_spells, 12) !=
+              made("magic_user").original->known_spells.end(),
+          "A magic-user knows Enlarge, as in Curse");
+    original::Content content;
+    content.game = gateway;
+    CampaignParty party(original::rules_module(content), creation);
+    const auto id = party.add_pc(made_fighter(creation));
+    party.add_coins(Coin::gold, 20000);
+    for (int round = 0; round < 12; ++round)
+    {
+        party.award_experience(400'000, "test:gateway-" + std::to_string(round));
+        if (party.hall_training(id, TrainingHall::fighters).denial == TrainingDenial::none)
+        {
+            party.train_at_hall_level(id, TrainingHall::fighters, {});
+        }
+    }
+    check(party.member(id).character.sheet().original->class_levels[2] == 8,
+          "A Gateway fighter stops at level 8");
+}
+
 void curse_paladins_and_rangers()
 {
     const auto module = original::rules_module();
@@ -982,6 +1027,7 @@ int main()
         a_pool_character_comes_to_curse();
         curse_paladins_and_rangers();
         secret_characters_start_trained();
+        gateway_characters_start_low_and_stop_at_caps();
         std::cout << "Original creation tests passed\n";
         return 0;
     }

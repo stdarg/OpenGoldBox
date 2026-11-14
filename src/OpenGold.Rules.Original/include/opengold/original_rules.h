@@ -333,7 +333,7 @@ enum class ThiefSkill : unsigned
 // with its prime ability above 15 earns a tenth more; a two-class character
 // half and a three-class character a third.
 [[nodiscard]] int experience_share(Profession profession, const rules::AbilityArray<int> &scores,
-                                   int award);
+                                   int award, GoldBoxGame game = GoldBoxGame::pool_of_radiance);
 
 // The spells a character knows (chargen.pas, CreateCharacterMenu): a cleric
 // every cleric spell of a level it has slots for; a magic-user the four it

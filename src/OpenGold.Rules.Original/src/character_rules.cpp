@@ -903,13 +903,15 @@ namespace
 constexpr std::string_view pool_edition = "pool-of-radiance-1.3";
 constexpr std::string_view curse_edition = "curse-of-the-azure-bonds";
 constexpr std::string_view secret_edition = "secret-of-the-silver-blades";
+constexpr std::string_view gateway_edition = "gateway-to-the-savage-frontier";
 } // namespace
 
 rules::Identity identity(GoldBoxGame game)
 {
-    const auto edition = game == GoldBoxGame::curse_of_the_azure_bonds      ? curse_edition
-                         : game == GoldBoxGame::secret_of_the_silver_blades ? secret_edition
-                                                                            : pool_edition;
+    const auto edition = game == GoldBoxGame::curse_of_the_azure_bonds         ? curse_edition
+                         : game == GoldBoxGame::secret_of_the_silver_blades    ? secret_edition
+                         : game == GoldBoxGame::gateway_to_the_savage_frontier ? gateway_edition
+                                                                               : pool_edition;
     return {"opengold.original", "0.1.0", std::string(edition)};
 }
 
@@ -918,6 +920,10 @@ GoldBoxGame game_of(const rules::Identity &identity)
     if (identity.content == curse_edition)
     {
         return GoldBoxGame::curse_of_the_azure_bonds;
+    }
+    if (identity.content == gateway_edition)
+    {
+        return GoldBoxGame::gateway_to_the_savage_frontier;
     }
     return identity.content == secret_edition ? GoldBoxGame::secret_of_the_silver_blades
                                               : GoldBoxGame::pool_of_radiance;

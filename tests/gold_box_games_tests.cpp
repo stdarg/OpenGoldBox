@@ -632,9 +632,7 @@ const std::vector<RouteBeat> &curse_route()
          3,
          8,
          D::west,
-         {"YES", "Raise Dead", "paladin 1", "Pay", "Raise Dead", "ranger 3", "Pay", "Raise Dead",
-          "cleric 4", "Pay", "Raise Dead", "cleric 5", "Pay", "Raise Dead", "magic_user 6", "Pay",
-          "Leave"},
+         {"YES", "raise:dead", "Leave"},
          false,
          false,
          false,
@@ -782,8 +780,7 @@ const std::vector<RouteBeat> &curse_route()
          0,
          0,
          D::north,
-         {"JOURNEY", "VOONLAR", "TRAIL", "ENTER CITY", "TEMPLE", "Raise Dead", "cleric 4", "Pay",
-          "Raise Dead", "cleric 5", "Pay", "Leave", "stop:INN"},
+         {"JOURNEY", "VOONLAR", "TRAIL", "ENTER CITY", "TEMPLE", "raise:dead", "Leave", "stop:INN"},
          false,
          false,
          true},
@@ -1559,6 +1556,27 @@ bool walk_census(GoldBoxGame game, bool route)
                         if (found != s.choices.end())
                         {
                             pick = static_cast<std::size_t>(found - s.choices.begin());
+                            break;
+                        }
+                    }
+                }
+                // "raise:dead" at a temple's services raises each dead member,
+                // whoever the fights have left dead, then goes on.
+                if (!answers.empty() && answers.front() == "raise:dead" &&
+                    std::ranges::any_of(s.choices,
+                                        [](const std::string &choice)
+                                        {
+                                            return choice.starts_with("Raise Dead");
+                                        }))
+                {
+                    answers.erase(answers.begin());
+                    for (const auto id : party->state().slots)
+                    {
+                        if (id && party->member(id).vitals.dead)
+                        {
+                            answers.insert(answers.begin(),
+                                           {"Raise Dead", party->member(id).character.sheet().name,
+                                            "Pay", "raise:dead"});
                             break;
                         }
                     }

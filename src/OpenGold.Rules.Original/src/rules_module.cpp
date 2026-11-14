@@ -221,14 +221,22 @@ por::CharacterRecord character_record(const CharacterSheet &sheet)
                                 static_cast<std::uint8_t>(original.exceptional_strength)};
     record.abilities = record.current_abilities;
     // Characters' blows take Strength; a fighter above level 6 strikes three
-    // times in two rounds (chargen.pas, ClassCal). In Secret a paladin does
-    // too, and both four times above level 12; a ranger three times above
-    // level 7 and four above 14 (classcal.pas, RecalcClassStats).
+    // times in two rounds (chargen.pas, ClassCal). In Secret a fighter or
+    // paladin strikes four times above level 12, a ranger above 14
+    // (classcal.pas, RecalcClassStats).
     record.strength_bonus_flag_raw = 1;
     const auto &l = original.class_levels;
     const auto fighter = level_in(l, ClassSlot::fighter);
+    // Curse and Gateway give a paladin above level 6 and a ranger above 7
+    // the same (their RecalcClassStats).
+    const auto game = game_of(sheet.identity);
     int attacks = fighter > 6 ? 3 : 2;
-    if (game_of(sheet.identity) == GoldBoxGame::secret_of_the_silver_blades)
+    if (game != GoldBoxGame::pool_of_radiance)
+    {
+        const bool warrior = std::max(fighter, level_in(l, ClassSlot::paladin)) > 6;
+        attacks = warrior || level_in(l, ClassSlot::ranger) > 7 ? 3 : 2;
+    }
+    if (game == GoldBoxGame::secret_of_the_silver_blades)
     {
         const auto warrior = std::max(fighter, level_in(l, ClassSlot::paladin));
         const auto ranger = level_in(l, ClassSlot::ranger);
@@ -1312,9 +1320,9 @@ unsigned OriginalModule::experience_after_advance(const CharacterSheet &before,
 unsigned OriginalModule::experience_share(const CharacterSheet &sheet, unsigned award) const
 {
     const auto capped = std::min<unsigned>(award, std::numeric_limits<int>::max());
-    return static_cast<unsigned>(
-        original::experience_share(static_cast<Profession>(original_numbers(sheet).profession),
-                                   sheet.scores, static_cast<int>(capped)));
+    return static_cast<unsigned>(original::experience_share(
+        static_cast<Profession>(original_numbers(sheet).profession), sheet.scores,
+        static_cast<int>(capped), game_of(sheet.identity)));
 }
 
 // A day's rest heals each member not dead 1 Hit Point (gametime.pas,
@@ -1653,7 +1661,7 @@ std::optional<int> item_power(std::string_view key, GoldBoxGame game)
         return std::nullopt;
     }
     const int code = record->effect_codes[1];
-    if (game == GoldBoxGame::curse_of_the_azure_bonds)
+    if (game != GoldBoxGame::pool_of_radiance)
     {
         return canonical_spell(code & 0x7F, game);
     }

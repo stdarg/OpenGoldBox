@@ -351,6 +351,17 @@ constexpr std::array<std::array<int, 17>, class_slot_count> experience_table_sec
 constexpr std::array<int, class_slot_count> curse_hit_dice_levels{10, 15, 10, 10, 11, 12, 11, 13};
 constexpr std::array<int, class_slot_count> curse_fixed_hit_points{2, 0, 3, 3, 2, 1, 2, 0};
 
+// Gateway to the Savage Frontier keeps Curse's tables, number for number.
+[[nodiscard]] constexpr bool curse_tables(GoldBoxGame game) noexcept
+{
+    return game == GoldBoxGame::curse_of_the_azure_bonds ||
+           game == GoldBoxGame::gateway_to_the_savage_frontier;
+}
+
+// Gateway caps every class by its own level, whatever the race (its
+// levelCaps): clerics, druids and magic-users 6, rangers 7, the rest 8.
+constexpr std::array<int, class_slot_count> gateway_level_caps{6, 6, 8, 8, 7, 6, 8, 8};
+
 using SlotRow = std::array<int, 7>;
 // Spell slots of levels 1 to 7, for class levels 2 to 15 (Secret's, its
 // classProgression summed). Pool of Radiance's and Curse's are the same to
@@ -742,6 +753,8 @@ int starting_experience(Profession profession, GoldBoxGame game)
     {
     case GoldBoxGame::curse_of_the_azure_bonds:
         return 25000 / classes;
+    case GoldBoxGame::gateway_to_the_savage_frontier:
+        return 3000 / classes;
     case GoldBoxGame::secret_of_the_silver_blades:
         // Its creation rounds a three-class character's share up.
         return classes == 3 ? 66667 : 200000 / classes;
@@ -767,7 +780,15 @@ int starting_reach(ClassSlot slot, Profession profession, GoldBoxGame game)
 
 int starting_platinum(GoldBoxGame game)
 {
-    return game == GoldBoxGame::curse_of_the_azure_bonds ? 300 : 0;
+    switch (game)
+    {
+    case GoldBoxGame::curse_of_the_azure_bonds:
+        return 300;
+    case GoldBoxGame::gateway_to_the_savage_frontier:
+        return 35;
+    default:
+        return 0;
+    }
 }
 
 namespace
@@ -1048,12 +1069,10 @@ std::array<int, 8> thief_skills(Race race, int thief_level, int dexterity, GoldB
     {
         return skills;
     }
-    const int top = game == GoldBoxGame::pool_of_radiance           ? 9
-                    : game == GoldBoxGame::curse_of_the_azure_bonds ? 12
-                                                                    : 18;
+    const int top = game == GoldBoxGame::pool_of_radiance ? 9 : curse_tables(game) ? 12 : 18;
     const auto level = std::min(thief_level, top);
     auto base = thief_base[static_cast<std::size_t>(level - 1)];
-    if (game == GoldBoxGame::curse_of_the_azure_bonds && level >= 11)
+    if (curse_tables(game) && level >= 11)
     {
         base[7] += 5;
     }
@@ -1078,7 +1097,7 @@ std::array<int, 8> thief_skills(Race race, int thief_level, int dexterity, GoldB
 
 int thac0(const ClassLevels &levels, GoldBoxGame game)
 {
-    const bool curse = game == GoldBoxGame::curse_of_the_azure_bonds;
+    const bool curse = curse_tables(game);
     // Only the classes held count; with none, 20.
     int best = 40;
     bool held = false;
@@ -1105,7 +1124,7 @@ int thac0(const ClassLevels &levels, GoldBoxGame game)
 
 std::array<int, 5> saving_throws(const ClassLevels &levels, GoldBoxGame game)
 {
-    const bool curse = game == GoldBoxGame::curse_of_the_azure_bonds;
+    const bool curse = curse_tables(game);
     std::array<int, 5> best{20, 20, 20, 20, 20};
     for (std::size_t slot = 0; slot < class_slot_count; ++slot)
     {
@@ -1151,7 +1170,7 @@ std::optional<int> experience_for_level(ClassSlot slot, int level, GoldBoxGame g
             experience_table_secret[index(slot)][static_cast<std::size_t>(level - 2)];
         return needed == 0 ? std::nullopt : std::optional<int>{needed};
     }
-    const bool curse = game == GoldBoxGame::curse_of_the_azure_bonds;
+    const bool curse = curse_tables(game);
     if (level < 2 || level > (curse ? 13 : 9))
     {
         return std::nullopt;
@@ -1170,8 +1189,7 @@ std::vector<int> known_spells(const ClassLevels &levels, int wisdom, std::span<c
         spell_slots(ClassSlot::cleric, level_in(levels, ClassSlot::cleric), wisdom, 9, game);
     // Detect Magic, Read Magic, Sleep, and Shield (Pool of Radiance) or
     // Enlarge (Curse).
-    const std::array<int, 4> first_magic_user_spells{
-        11, game == GoldBoxGame::curse_of_the_azure_bonds ? 12 : 19, 18, 21};
+    const std::array<int, 4> first_magic_user_spells{11, curse_tables(game) ? 12 : 19, 18, 21};
     const bool magic_user = level_in(levels, ClassSlot::magic_user) > 0;
     std::vector<int> known;
     for (const int number : castable_spells(game))
@@ -1207,7 +1225,9 @@ std::vector<ClassSlot> classes_ready_to_train(Race race, const ClassLevels &leve
         }
         const auto limit = racial_level_limit(race, slot, scores, game);
         const auto needed = experience_for_level(slot, level + 1, game);
-        if ((!limit || level < *limit) && needed && *needed <= experience)
+        const bool capped =
+            game == GoldBoxGame::gateway_to_the_savage_frontier && level >= gateway_level_caps[at];
+        if (!capped && (!limit || level < *limit) && needed && *needed <= experience)
         {
             ready.push_back(slot);
         }
@@ -1306,16 +1326,35 @@ int raised_hit_point_loss(const ClassLevels &levels, int constitution, int hit_p
     return constitution < 17 || fighter ? loss : 0;
 }
 
-int experience_share(Profession profession, const AbilityArray<int> &scores, int award)
+int experience_share(Profession profession, const AbilityArray<int> &scores, int award,
+                     GoldBoxGame game)
 {
     const auto bonus_above_15 = [&](Ability prime)
     {
         return scores[prime] > 15 ? award + award / 10 : award;
     };
+    // A paladin's and a ranger's bonus needs every one of its prime scores
+    // (postcbt.pas, AwardExperience).
+    const auto bonus_for_all = [&](std::initializer_list<Ability> primes)
+    {
+        const bool all = std::ranges::all_of(primes,
+                                             [&](Ability prime)
+                                             {
+                                                 return scores[prime] > 15;
+                                             });
+        return all ? award + award / 10 : award;
+    };
     switch (profession)
     {
     case P::cleric:
-        return bonus_above_15(Ability::wisdom);
+        // Secret's cleric gains it from Wisdom 15.
+        return game == GoldBoxGame::secret_of_the_silver_blades && scores[Ability::wisdom] == 15
+                   ? award + award / 10
+                   : bonus_above_15(Ability::wisdom);
+    case P::paladin:
+        return bonus_for_all({Ability::strength, Ability::wisdom});
+    case P::ranger:
+        return bonus_for_all({Ability::strength, Ability::intelligence, Ability::wisdom});
     case P::fighter:
         return bonus_above_15(Ability::strength);
     case P::magic_user:
