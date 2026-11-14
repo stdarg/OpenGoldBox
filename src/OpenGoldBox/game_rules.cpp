@@ -34,13 +34,35 @@ const opengold::original::Content &original_content(const RulesFiles &files)
 std::shared_ptr<const opengold::rules::CharacterRules> character_rules(const GameRules &rules,
                                                                        const RulesFiles &files)
 {
-    if (rules.set == GameRules::Set::original)
+    if (rules.set != GameRules::Set::original)
+    {
+        return opengold::srd5::character_rules();
+    }
+    if (files.game != opengold::GoldBoxGame::unlimited_adventures)
     {
         return opengold::original::character_rules(rules.aging, files.game);
     }
-    return opengold::srd5::character_rules();
+    // A design's characters start as its game record says.
+    const opengold::ua::DesignFiles design(files.original_game, files.design);
+    const auto record = design.data("GAME", 1);
+    const auto game = record ? opengold::ua::decode_game_settings(*record) : std::nullopt;
+    if (!game)
+    {
+        throw std::runtime_error("The design's game record does not decode");
+    }
+    return opengold::original::design_character_rules(rules.aging,
+                                                      opengold::ua::starting_stock(*game));
 }
 } // namespace
+
+void outfit_for_game(opengold::CampaignParty &party, opengold::MemberId id, const RulesFiles &files)
+{
+    if (files.game == opengold::GoldBoxGame::unlimited_adventures)
+    {
+        opengold::ua::outfit_new_character(
+            party, id, opengold::ua::DesignFiles(files.original_game, files.design));
+    }
+}
 
 std::unique_ptr<opengold::rules::RulesModule> make_rules_module(const GameRules &rules,
                                                                 const RulesFiles &files)

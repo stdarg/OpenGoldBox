@@ -33,6 +33,33 @@ constexpr rules::EntityId first_monster_id = 1000;
     return static_cast<std::uint16_t>(bytes[at] | bytes[at + 1] << 8);
 }
 
+// A file of the design's folder, or else of the kit's first disk.
+[[nodiscard]] std::vector<std::uint8_t> read_item_file(const DesignFiles &files,
+                                                       const std::string &name)
+{
+    for (const auto &folder : {files.design(), files.kit() / "DISK1"})
+    {
+        const auto path = folder / name;
+        if (!folder.empty() && std::filesystem::is_regular_file(path))
+        {
+            return por::detail::read_archive_bytes<std::runtime_error>(
+                path, name + " is too large", "Cannot open " + name, "Cannot read " + name);
+        }
+    }
+    throw std::runtime_error("The kit's " + name + " is missing");
+}
+
+[[nodiscard]] std::vector<por::ItemTemplate> read_item_types(const DesignFiles &files)
+{
+    auto types = por::decode_item_templates(read_item_file(files, "ITEMS.DAT"),
+                                            GoldBoxGame::unlimited_adventures);
+    if (!types)
+    {
+        throw std::runtime_error("ITEMS.DAT does not decode");
+    }
+    return std::move(*types);
+}
+
 [[nodiscard]] Monster read_monster(const DesignFiles &files, unsigned number)
 {
     const auto bytes = files.data("MONST", number);
@@ -124,29 +151,135 @@ original::Content load_design_content(const DesignFiles &files)
                                      monster_combatant(read_monster(files, entry.number)));
         }
     }
-    std::optional<std::filesystem::path> items;
-    for (const auto &folder : {files.design(), files.kit() / "DISK1"})
-    {
-        const auto path = folder / "ITEMS.DAT";
-        if (!folder.empty() && std::filesystem::is_regular_file(path))
-        {
-            items = path;
-            break;
-        }
-    }
+    content.item_types = read_item_types(files);
+    return content;
+}
+
+DesignItems load_design_items(const DesignFiles &files)
+{
+    auto items = decode_items(read_item_file(files, "ITEM.DAT"));
     if (!items)
     {
-        throw std::runtime_error("The kit's ITEMS.DAT is missing");
+        throw std::runtime_error("ITEM.DAT does not decode");
     }
-    const auto bytes = por::detail::read_archive_bytes<std::runtime_error>(
-        *items, "ITEMS.DAT is too large", "Cannot open ITEMS.DAT", "Cannot read ITEMS.DAT");
-    auto types = por::decode_item_templates(bytes, GoldBoxGame::unlimited_adventures);
-    if (!types)
+    return {std::move(*items), read_item_types(files)};
+}
+
+std::optional<por::Equipment> design_item(const DesignItems &items, unsigned number,
+                                          bool identified)
+{
+    if (number == 0 || number > items.items.size())
     {
-        throw std::runtime_error("ITEMS.DAT does not decode");
+        return std::nullopt;
     }
-    content.item_types = std::move(*types);
-    return content;
+    const auto &record = items.items[number - 1];
+    // The kit marks an unused record with type FFh.
+    if (record.type >= items.types.size())
+    {
+        return std::nullopt;
+    }
+    por::Equipment item;
+    auto &stored = item.stored;
+    stored.type = record.type;
+    stored.name_components = record.name_words;
+    stored.magic_bonus = record.magic_bonus;
+    stored.save_bonus = record.save_bonus;
+    stored.cursed_raw = record.cursed;
+    stored.hidden_name_words = identified ? 0 : record.hidden_name_words & 7;
+    stored.weight = record.weight;
+    stored.value = record.value;
+    stored.stack_size = record.count;
+    stored.effect_codes = record.effects;
+    item.base = items.types[record.type];
+    item.bonuses = por::equipment_bonuses(stored, item.base);
+    return item;
+}
+
+original::StartingStock starting_stock(const GameSettings &game)
+{
+    return {static_cast<int>(std::min<std::uint32_t>(game.start_experience, 100000000)),
+            static_cast<int>(std::min<std::uint32_t>(game.start_platinum, 1000000))};
+}
+
+std::vector<unsigned> starting_items(unsigned set, const rules::CharacterSheet &sheet)
+{
+    // ITEM.DAT numbers by class group and set 1 to 8 (create.c, gear_start).
+    using Sets = std::array<std::vector<unsigned>, 8>;
+    static const Sets fighters{{{0x17, 0x29},
+                                {0x1B, 0x2A, 0x2B},
+                                {0x1C, 0x24, 0x2B, 0x06, 0x01},
+                                {0x1E, 0x28, 0x05, 0x01},
+                                {0x42, 0x4B, 0x35, 0x32, 0x4E, 0x49},
+                                {0x60, 0x69, 0x6C, 0x50, 0x53, 0x67},
+                                {0x7E, 0x87, 0x6E, 0x71, 0x8A, 0x85},
+                                {0x9C, 0xA5, 0xA8, 0xA3, 0x8C, 0x8F}}};
+    static const Sets clerics{{{0x08, 0x26},
+                               {0x10, 0x29, 0x2B},
+                               {0x10, 0x25, 0x2B, 0x0E},
+                               {0x0C, 0x19, 0x28, 0x2B},
+                               {0x3C, 0x47, 0x4E, 0x41},
+                               {0x5A, 0x65, 0x58, 0x6C, 0x67},
+                               {0x78, 0x83, 0x7D, 0x8A, 0x85},
+                               {0x93, 0xA1, 0xA8, 0x9B, 0xA3}}};
+    static const Sets thieves{{{0x08},
+                               {0x1D, 0x27},
+                               {0x1B, 0x27, 0x16},
+                               {0x1C, 0x04, 0x01, 0x2C},
+                               {0x42, 0x4F, 0x34, 0x32},
+                               {0x60, 0x5D, 0x6D},
+                               {0x7E, 0x7B, 0x8B},
+                               {0x9C, 0x99, 0xD4, 0xA0}}};
+    static const Sets magic_users{{{0x0B},
+                                   {0x0B, 0x0A},
+                                   {0x0B, 0x18, 0x23},
+                                   {0x0B, 0x18, 0x22, 0x23},
+                                   {0x37, 0x38, 0xD2, 0x46},
+                                   {0x5E, 0x56, 0xD3, 0x64},
+                                   {0x73, 0x74, 0xD4, 0x82},
+                                   {0x9A, 0x2F, 0x2F, 0xD4, 0xA0}}};
+    if (set == 0 || set > 8 || !sheet.original)
+    {
+        return {};
+    }
+    const auto &levels = sheet.original->class_levels;
+    // The original rules' class slots: cleric, druid, fighter, paladin,
+    // ranger, magic-user, thief, monk.
+    const bool fighter = levels[2] > 0 || levels[3] > 0 || levels[4] > 0;
+    const auto &group = fighter         ? fighters
+                        : levels[0] > 0 ? clerics
+                        : levels[6] > 0 ? thieves
+                                        : magic_users;
+    return group[set - 1];
+}
+
+void outfit_new_character(CampaignParty &party, MemberId id, const DesignFiles &files)
+{
+    const auto record = files.data("GAME", 1);
+    const auto game = record ? decode_game_settings(*record) : std::nullopt;
+    if (!game)
+    {
+        throw std::runtime_error("The design's game record does not decode");
+    }
+    party.add_coins(Coin::gems, game->start_gems);
+    party.add_coins(Coin::jewelry, game->start_jewelry);
+    const auto items = load_design_items(files);
+    const auto &sheet = party.member(id).character.sheet();
+    for (const auto number : starting_items(game->start_equipment, sheet))
+    {
+        auto item = design_item(items, number, true);
+        if (!item)
+        {
+            continue;
+        }
+        // Arrows, bolts and darts come forty to a bundle (create.c, gear_add).
+        if (number == 0x50 || number == 0x56 || number == 0x5B)
+        {
+            item->stored.stack_size = 40;
+        }
+        party.take_item(id, *item);
+        const auto taken = party.member(id).character.inventory().items().back().id;
+        (void)party.auto_equip(id, taken, UnidentifiedMagic::equip);
+    }
 }
 
 UaSession UaSession::start(DesignFiles files)

@@ -49,6 +49,12 @@ make_rules_module(const GameRules &rules, const RulesFiles &files);
 [[nodiscard]] std::shared_ptr<opengold::CampaignParty> new_campaign_party(const GameRules &rules,
                                                                           const RulesFiles &files);
 
+// A new character's start besides what creation gives it: under an
+// Unlimited Adventures design, its game record's gems, jewelry and equipment
+// (opengold::ua::outfit_new_character); nothing in the other games.
+void outfit_for_game(opengold::CampaignParty &party, opengold::MemberId id,
+                     const RulesFiles &files);
+
 // The rules a save was made under (opengold::saved_campaign_rules), or a
 // game's party plays by. Throws for rules this build does not play.
 [[nodiscard]] GameRules game_rules_of(const opengold::CampaignRules &saved);

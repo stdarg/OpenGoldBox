@@ -192,12 +192,18 @@ struct RolledCharacter
 // included: its abilities, its age, its Hit Dice and its starting gold.
 [[nodiscard]] RolledCharacter roll_character(Race race, Profession profession, GoldBoxGame game,
                                              RandomState &random);
+// The same with `experience` for each class, as a game that sets it does (an
+// Unlimited Adventures design's game record).
+[[nodiscard]] RolledCharacter roll_character(Race race, Profession profession, GoldBoxGame game,
+                                             int experience, RandomState &random);
 
 // The experience a new character starts with: none in Pool of Radiance;
 // 25,000 in Curse, shared among a multi-class character's classes.
 [[nodiscard]] int starting_experience(Profession profession, GoldBoxGame game);
 // The highest level of a class the starting experience reaches by the table.
 [[nodiscard]] int starting_reach(ClassSlot slot, Profession profession, GoldBoxGame game);
+// The same with `experience` for each class.
+[[nodiscard]] int starting_reach(ClassSlot slot, int experience, GoldBoxGame game);
 // The platinum a new character starts with besides its gold: Curse's 300.
 [[nodiscard]] int starting_platinum(GoldBoxGame game);
 
@@ -215,6 +221,11 @@ struct StartingTraining
 [[nodiscard]] StartingTraining starting_training(Race race, Profession profession,
                                                  const rules::AbilityArray<int> &scores,
                                                  const RolledCharacter &rolled, GoldBoxGame game);
+// The same with `experience` for each class.
+[[nodiscard]] StartingTraining starting_training(Race race, Profession profession,
+                                                 const rules::AbilityArray<int> &scores,
+                                                 const RolledCharacter &rolled, GoldBoxGame game,
+                                                 int experience);
 
 // The character's scores at its current age. At its starting age each
 // ability is changed for age, kept within the race's limits and raised to the

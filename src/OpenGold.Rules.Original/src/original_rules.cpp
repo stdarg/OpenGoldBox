@@ -819,6 +819,12 @@ AbilityArray<int> age_changes(Aging aging, Race race, int age)
 RolledCharacter roll_character(Race race, Profession profession, GoldBoxGame game,
                                RandomState &random)
 {
+    return roll_character(race, profession, game, starting_experience(profession, game), random);
+}
+
+RolledCharacter roll_character(Race race, Profession profession, GoldBoxGame game, int experience,
+                               RandomState &random)
+{
     // Curse and Secret roll each 3d6 one higher (ovr018, createPlayer), and a
     // first level's Hit Dice the better of two.
     const bool curse = game != GoldBoxGame::pool_of_radiance;
@@ -859,7 +865,7 @@ RolledCharacter roll_character(Race race, Profession profession, GoldBoxGame gam
     }
     for (const auto slot : classes)
     {
-        for (int level = 2; level <= starting_reach(slot, profession, game); ++level)
+        for (int level = 2; level <= starting_reach(slot, experience, game); ++level)
         {
             rolled.training_hit_dice.push_back(
                 better_of_two({1, hit_dice[index(slot)].sides}, random));
@@ -897,7 +903,11 @@ int starting_experience(Profession profession, GoldBoxGame game)
 
 int starting_reach(ClassSlot slot, Profession profession, GoldBoxGame game)
 {
-    const int experience = starting_experience(profession, game);
+    return starting_reach(slot, starting_experience(profession, game), game);
+}
+
+int starting_reach(ClassSlot slot, int experience, GoldBoxGame game)
+{
     int level = 1;
     while (true)
     {
@@ -1005,16 +1015,23 @@ StartingTraining starting_training(Race race, Profession profession,
                                    const AbilityArray<int> &scores, const RolledCharacter &rolled,
                                    GoldBoxGame game)
 {
+    return starting_training(race, profession, scores, rolled, game,
+                             starting_experience(profession, game));
+}
+
+StartingTraining starting_training(Race race, Profession profession,
+                                   const AbilityArray<int> &scores, const RolledCharacter &rolled,
+                                   GoldBoxGame game, int experience)
+{
     StartingTraining trained;
     trained.levels = first_levels(profession);
-    const int experience = starting_experience(profession, game);
     const auto classes = classes_of(profession);
     // Where each class's dice start in rolled.training_hit_dice.
     std::array<std::size_t, 3> first_die{};
     for (std::size_t n = 1; n < classes.size(); ++n)
     {
         first_die[n] = first_die[n - 1] + static_cast<std::size_t>(
-                                              starting_reach(classes[n - 1], profession, game) - 1);
+                                              starting_reach(classes[n - 1], experience, game) - 1);
     }
     while (true)
     {

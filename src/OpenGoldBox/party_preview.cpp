@@ -1163,9 +1163,10 @@ void CharacterCreationView::party_action(PartyAction action)
             {
                 return;
             }
-            (void)campaign_->add_pc(*completed_);
+            const auto added = campaign_->add_pc(*completed_);
             campaign_->add_coins(Coin::gold, creator_->starting_gold());
             campaign_->add_coins(Coin::platinum, creator_->starting_platinum());
+            outfit_for_game(*campaign_, added, game_rules_files());
             added_to_party_ = true;
             roster_index_ = campaign_->state().roster.size() - 1;
             refresh();

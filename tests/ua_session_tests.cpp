@@ -292,6 +292,20 @@ std::filesystem::path build_test_design(const std::filesystem::path &kit,
     std::copy(title.begin(), title.end(), game.begin());
     game[0x30] = 5;
     game[0x31] = 1;
+    // A new character's start: 20,000 experience, 75 platinum, 2 gems, 1
+    // jewel and the first set of equipment.
+    const auto put_long = [&game](std::size_t at, std::uint32_t value)
+    {
+        for (std::size_t n = 0; n < 4; ++n)
+        {
+            game[at + n] = static_cast<std::uint8_t>(value >> (8 * n));
+        }
+    };
+    put_long(0x20, 20000);
+    put_long(0x24, 75);
+    put_long(0x28, 2);
+    put_long(0x2C, 1);
+    game[0x32] = 1;
     write(folder / "GAME001.DAT", game);
     return folder;
 }
@@ -491,6 +505,47 @@ void a_character_follows_the_kits_rules()
     check(sheet.original && sheet.original->experience == 40001 && sheet.original->platinum == 200,
           "A new character starts with the kit's 40,001 experience and 200 platinum");
     check(sheet.level > 1, "It is trained to the levels its experience reaches");
+}
+
+// A character made for the design starts as its game record says: its
+// experience, money and equipment, not the kit's defaults.
+void a_character_starts_as_the_design_says(const std::filesystem::path &kit)
+{
+    const ua::DesignFiles files(kit,
+                                build_test_design(kit, temporary_design("opengold_ua_start.dsn")));
+    const auto game = ua::decode_game_settings(*files.data("GAME", 1));
+    std::shared_ptr<const opengold::rules::CharacterRules> creation =
+        opengold::original::design_character_rules(opengold::original::default_aging,
+                                                   ua::starting_stock(*game));
+    opengold::CampaignParty party(opengold::original::rules_module(ua::load_design_content(files)),
+                                  creation);
+    opengold::CharacterCreator creator(creation, 5);
+    creator.select(opengold::rules::CreationField::race, "human");
+    creator.select(opengold::rules::CreationField::character_class, "fighter");
+    creator.name("STARTER");
+    for (const bool roll : {false, false, false, true, false, false})
+    {
+        if (roll)
+        {
+            creator.roll();
+        }
+        creator.next();
+    }
+    const auto character = creator.create_character();
+    const auto &sheet = character.sheet();
+    check(sheet.original && sheet.original->experience == 20000 && sheet.original->platinum == 75 &&
+              creator.starting_platinum() == 75,
+          "A new character starts with the design's experience and platinum");
+    const auto id = party.add_pc(character);
+    ua::outfit_new_character(party, id, files);
+    check(party.state().wealth[5] == 2 && party.state().wealth[6] == 1,
+          "It brings the design's gems and jewelry");
+    const auto items = ua::load_design_items(files);
+    const auto &carried = party.member(id).character.inventory().items();
+    check(carried.size() == 2, "A fighter starts with the first set's two items");
+    check(ua::starting_items(1, sheet) == std::vector<unsigned>{0x17, 0x29} &&
+              ua::design_item(items, 0x17, true).has_value(),
+          "The first set is the kit's ITEM.DAT items 17h and 29h");
 }
 
 void the_design_loads_and_plays(const std::filesystem::path &kit)
@@ -733,6 +788,7 @@ int main(int argc, char **argv)
         {
             return walk_every_square(*kit) ? 0 : 1;
         }
+        a_character_starts_as_the_design_says(*kit);
         the_design_loads_and_plays(*kit);
         the_view_plays_it_through_the_seam(*kit);
         // The game's startup check plays the test design from the menu (a

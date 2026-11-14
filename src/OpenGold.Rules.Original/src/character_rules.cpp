@@ -6,6 +6,7 @@
 #include "opengold/original_spells.h"
 #include <algorithm>
 #include <cctype>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 
@@ -435,7 +436,8 @@ std::string title_case(std::string_view name)
 class OriginalCharacterRules final : public rules::CharacterRules
 {
   public:
-    OriginalCharacterRules(Aging aging, GoldBoxGame game) : aging_(aging), game_(game)
+    OriginalCharacterRules(Aging aging, GoldBoxGame game, std::optional<StartingStock> start = {})
+        : aging_(aging), game_(game), start_(start)
     {
     }
 
@@ -592,7 +594,8 @@ class OriginalCharacterRules final : public rules::CharacterRules
     void roll_in_place(CharacterDraft &draft, RandomState &random) const override
     {
         const auto chosen = read_choices(draft, game_);
-        draft.rules_data = encode(roll_character(chosen.race, chosen.profession, game_, random));
+        draft.rules_data = encode(roll_character(chosen.race, chosen.profession, game_,
+                                                 experience_of(chosen.profession), random));
         draft.rolled = true;
     }
 
@@ -712,8 +715,8 @@ class OriginalCharacterRules final : public rules::CharacterRules
         sheet.base = ability;
         sheet.scores = ability;
         // Curse's character starts trained to its starting experience.
-        const auto trained =
-            starting_training(chosen.race, chosen.profession, ability, rolled, game_);
+        const auto trained = starting_training(chosen.race, chosen.profession, ability, rolled,
+                                               game_, experience_of(chosen.profession));
         const auto &levels = trained.levels;
         sheet.level = *std::max_element(levels.begin(), levels.end());
         sheet.hit_points = first_level_hit_points(chosen.profession, rolled,
@@ -727,8 +730,8 @@ class OriginalCharacterRules final : public rules::CharacterRules
         original.class_levels = levels;
         original.thac0 = thac0(levels, game_);
         original.saving_throws = saving_throws(levels, game_);
-        original.experience = starting_experience(chosen.profession, game_);
-        original.platinum = starting_platinum(game_);
+        original.experience = experience_of(chosen.profession);
+        original.platinum = platinum();
         original.exceptional_strength =
             exceptional_strength(chosen.race, chosen.gender, chosen.profession, rolled,
                                  ability[Ability::strength], game_);
@@ -811,7 +814,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
         numbers.profession = from.profession;
         numbers.alignment = from.alignment;
         numbers.experience = from.experience;
-        numbers.platinum = starting_platinum(game_);
+        numbers.platinum = platinum();
         numbers.drained_levels = from.drained_levels;
         numbers.drained_hit_points = from.drained_hit_points;
         // Its Hit Points less a level's Constitution bonus, as Curse's
@@ -917,8 +920,25 @@ class OriginalCharacterRules final : public rules::CharacterRules
                               rolled.starting_age, game_);
     }
 
+    // A new character's experience for each class and its platinum: the
+    // game's, or what a design's game record sets.
+    [[nodiscard]] int experience_of(Profession profession) const
+    {
+        if (!start_)
+        {
+            return starting_experience(profession, game_);
+        }
+        return start_->experience / static_cast<int>(classes_of(profession).size());
+    }
+
+    [[nodiscard]] int platinum() const
+    {
+        return start_ ? start_->platinum : starting_platinum(game_);
+    }
+
     Aging aging_;
     GoldBoxGame game_;
+    std::optional<StartingStock> start_;
 };
 } // namespace
 
@@ -974,5 +994,11 @@ GoldBoxGame game_of(const rules::Identity &identity)
 std::unique_ptr<rules::CharacterRules> character_rules(Aging aging, GoldBoxGame game)
 {
     return std::make_unique<OriginalCharacterRules>(aging, game);
+}
+
+std::unique_ptr<rules::CharacterRules> design_character_rules(Aging aging, StartingStock start)
+{
+    return std::make_unique<OriginalCharacterRules>(aging, GoldBoxGame::unlimited_adventures,
+                                                    start);
 }
 } // namespace opengold::original

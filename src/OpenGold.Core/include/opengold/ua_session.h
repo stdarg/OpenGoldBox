@@ -4,6 +4,7 @@
 #include "opengold/campaign_encounter.h"
 #include "opengold/campaign_party.h"
 #include "opengold/exploration_session.h"
+#include "opengold/original.h"
 #include "opengold/original_combat.h"
 #include "opengold/rolf_tour.h"
 #include "opengold/ua_design.h"
@@ -98,6 +99,36 @@ struct DesignArea
 
 // The numbers a MONST record fights with under the original rules.
 [[nodiscard]] original::Combatant monster_combatant(const Monster &monster);
+
+// The design's items (ITEM.DAT, numbered from 1) and their types (ITEMS.DAT),
+// the design's own files or the kit's. Throws when either cannot be read.
+struct DesignItems
+{
+    std::vector<ItemRecord> items;
+    std::vector<por::ItemTemplate> types;
+};
+
+[[nodiscard]] DesignItems load_design_items(const DesignFiles &files);
+
+// Item `number` as a member carries it; nullopt for no item (0, past the
+// list, or a record the kit leaves unused). An identified item shows every
+// name word.
+[[nodiscard]] std::optional<por::Equipment> design_item(const DesignItems &items, unsigned number,
+                                                        bool identified);
+
+// What a new character of the design starts with by its game record:
+// experience and platinum go to creation (original::design_character_rules).
+[[nodiscard]] original::StartingStock starting_stock(const GameSettings &game);
+
+// The items a new character starts with (create.c's table): the game
+// record's set (1 to 8; 0 none) for its class group, fighters, paladins and
+// rangers first, then clerics, thieves and magic-users.
+[[nodiscard]] std::vector<unsigned> starting_items(unsigned set,
+                                                   const rules::CharacterSheet &sheet);
+
+// A new member made for the design gets the rest of its start: the game
+// record's gems, jewelry and equipment, readied where it can be.
+void outfit_new_character(CampaignParty &party, MemberId id, const DesignFiles &files);
 
 class UaSession final : public ExplorationSession
 {
