@@ -206,6 +206,8 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/speaker_audio.cpp
     src/OpenGold.Core/src/sound_bank.cpp
     src/OpenGold.Core/src/sound_player.cpp
+    src/OpenGold.Core/src/fm_synth.cpp
+    src/OpenGold.Core/src/music_render.cpp
 )
 
 target_include_directories(opengold_core
@@ -847,6 +849,9 @@ if(OPENGOLD_BUILD_TESTS)
     add_executable(opengold_sound_player_tests tests/sound_player_tests.cpp)
     target_link_libraries(opengold_sound_player_tests PRIVATE opengold_core)
     add_test(NAME opengold_sound_player_tests COMMAND opengold_sound_player_tests)
+    add_executable(opengold_music_render_tests tests/music_render_tests.cpp)
+    target_link_libraries(opengold_music_render_tests PRIVATE opengold_core)
+    add_test(NAME opengold_music_render_tests COMMAND opengold_music_render_tests)
 endif()
 
 add_executable(opengold_creatures tools/creatures.cpp)

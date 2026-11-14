@@ -1,5 +1,7 @@
 #include "opengold/sound_bank.h"
 
+#include "opengold/music_render.h"
+
 #include <algorithm>
 #include <set>
 #include <stdexcept>
@@ -35,6 +37,17 @@ SoundBank::SoundBank(std::vector<SoundEffect> effects)
 SoundBank SoundBank::load(const std::filesystem::path &game_directory, GoldBoxGame game)
 {
     return SoundBank(load_sound_effects(game_directory, game));
+}
+
+SoundBank SoundBank::load_music(const std::filesystem::path &game_directory, GoldBoxGame game,
+                                unsigned piece)
+{
+    // The driver always starts a bank's first song.
+    PcmBuffer pcm(
+        render_music(load_music_bank(game_directory, game, piece), 0, PcmBuffer::sample_rate()));
+    SoundBank bank(std::vector<SoundEffect>{});
+    bank.clips_.push_back({piece, "Music " + std::to_string(piece), false, true, std::move(pcm)});
+    return bank;
 }
 
 const SoundClip &SoundBank::at(unsigned id) const

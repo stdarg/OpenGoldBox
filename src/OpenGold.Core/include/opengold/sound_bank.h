@@ -25,6 +25,10 @@ class SoundBank
     // The game's sound effects; Pool of Radiance's unless told otherwise.
     [[nodiscard]] static SoundBank load(const std::filesystem::path &game_directory,
                                         GoldBoxGame game = GoldBoxGame::pool_of_radiance);
+    // A piece of the later games' music (load_music_bank), as an AdLib card
+    // played it: one clip, whose ID is the piece.
+    [[nodiscard]] static SoundBank load_music(const std::filesystem::path &game_directory,
+                                              GoldBoxGame game, unsigned piece);
 
     [[nodiscard]] std::span<const SoundClip> clips() const noexcept
     {
