@@ -476,10 +476,14 @@ new decoders.
 5. The route from the opening to the win (`opengold_darkness_route`). *Begun
    (2026-11-14):* the route plays the prologue: Rolf's tour, Sasha's escort
    duty at West Phlan's gate, the storm that takes Phlan, Elminster in Limbo,
-   and a step on the area map, where the party moves on a 38 by 15 grid
-   (darkness.md, The area map). The win is PROGRAM 1 after Gothmenes falls
-   (darkness.md, The win and the route). No stand-ins yet; until the route
-   reaches the win it passes when it plays every beat to the area map.
+   and steps on the area map, where the party moves on a 38 by 15 grid
+   (darkness.md, The area map), across the Lands of Thar to Taydome's Keep,
+   where it beats Kimarr's first attack in the hall. The win is PROGRAM 1
+   after Gothmenes falls (darkness.md, The win and the route). No stand-ins
+   yet; until the route reaches the win it passes when it plays every beat to
+   the keep (map 22). Still to come: drawing the area map, spell levels 8 and
+   9 and the new spells, starting equipment, skies, combat ground tiles,
+   sound and music.
 
 ### 8. *Unlimited Adventures*
 

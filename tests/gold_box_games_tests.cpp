@@ -1485,7 +1485,7 @@ const std::vector<RouteBeat> &secret_route()
 // Pools of Darkness's route plays to the game's end once this is true; until
 // then it stops on this map (docs/GAMES.md, Pools of Darkness, step 5).
 constexpr bool darkness_route_ends_the_game = false;
-constexpr unsigned darkness_route_stops_on_map = 17;
+constexpr unsigned darkness_route_stops_on_map = 22;
 
 // Pools of Darkness's story, beat by beat, as its cluebook tells it: from New
 // Phlan's docks, where Rolf has walked the party out.
@@ -1509,6 +1509,19 @@ const std::vector<RouteBeat> &darkness_route()
         west.area_steps = {opengold::por::ExplorationCommand::west};
         west.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x25, 25};
         route.push_back(west);
+        // North-west across the Lands of Thar, past Melvaunt's army and the
+        // farmhouse, to the stockade of Taydome's Keep (19,1), where Sasha is
+        // held (the cluebook's Sasha and the Lands of Thar).
+        using C = opengold::por::ExplorationCommand;
+        RouteBeat to_keep{17, 0, 0, D::north, {"YES", "WAIT"}};
+        to_keep.area_steps = {C::northwest, C::northwest, C::northwest,
+                              C::northwest, C::northwest, C::west};
+        route.push_back(to_keep);
+        // Inside, the party waits while the giants lock the gate, then meets
+        // Kimarr and his monsters in the keep's hall (6,4), rested first.
+        RouteBeat kimarr{22, 6, 4, D::north, {}};
+        kimarr.rest_first = true;
+        route.push_back(kimarr);
         return route;
     }();
     return beats;

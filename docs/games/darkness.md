@@ -403,10 +403,18 @@ clerics and a magic-user, made under Darkness's rules) in the cluebook's
 order. It takes Rolf's tour, walks off the docks' map into West Phlan (cell
 21h, set as a step leaves the map's edge), takes Sasha's escort duty at the
 west gate, sees the storm take Phlan, meets Elminster in Limbo and comes back
-on the area map at (26,6), where it takes a step west. It has no stand-ins
-yet. Until it reaches the win it passes when it plays every beat to the area
-map; the next beats are the cluebook's Limbo, the overland's mini
-adventures and the Lands of Thar.
+on the area map at (26,6), where it takes a step west. It walks north-west
+across the Lands of Thar, beating the ogre patrols it meets, to the stockade
+of Taydome's Keep (19,1), goes in (map 22), waits while the giants lock the
+gate, and beats Kimarr and his monsters in the keep's hall (6,4), rested
+first. It has no stand-ins yet. Until it reaches the win it passes when it
+plays every beat to the keep (map 22).
+
+Where it stops: the keep's end, Quil's secret passages, Bostell freed in
+the meeting room, the final confrontation with Kimarr ("the great spell is
+broken and Sasha is safe", script 22), depends on cells the route has yet to
+trace; then Vala and the Vaasans, the Temple of Tyr and the rest of the
+cluebook's order to Gothmenes.
 
 ### Creatures
 
