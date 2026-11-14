@@ -1,6 +1,7 @@
 #include "opengold/original.h"
 #include "opengold/curse_records.h"
 #include "opengold/secret_records.h"
+#include "opengold/late_records.h"
 #include "opengold/pool_radiance.h"
 #include "opengold/original_spells.h"
 #include <algorithm>
@@ -262,6 +263,8 @@ std::optional<por::CharacterRecord> decode_record(std::span<const std::uint8_t> 
         return curse::decode_creature(bytes);
     case 439:
         return secret::decode_creature(bytes);
+    case 510:
+        return late::decode_creature(bytes, GoldBoxGame::pools_of_darkness);
     default:
         return por::decode_character(bytes);
     }

@@ -446,6 +446,28 @@ WallArtSet load_vga_wall_art(const AreaFiles &files, unsigned set)
         walls.appearances.push_back(std::move(images));
     }
     walls.originals.resize(walls.appearances.size());
+    // Its backdrops: BACK1's picture of the set's number indoors, and the
+    // daytime sky (SKYGRND 1), drawn through color 13, elsewhere.
+    const auto backdrop = [&files](const std::string &name, unsigned record,
+                                   std::optional<std::uint8_t> clear) -> std::optional<Image>
+    {
+        if (!files.has_archive(name))
+        {
+            return std::nullopt;
+        }
+        const auto &records = files.archive(name).records;
+        const auto found = std::ranges::find(records, record, &DaxRecord::id);
+        const auto picture =
+            found == records.end() ? std::nullopt : decode_vga_picture(found->bytes);
+        if (!picture || picture->frames.empty())
+        {
+            return std::nullopt;
+        }
+        return vga_rgba(picture->frames.front(), vga_color_table(picture->palette), clear);
+    };
+    constexpr unsigned daytime_sky = 1;
+    walls.indoor_backdrop = backdrop("BACK1.DAX", set, std::nullopt);
+    walls.sky_backdrop = backdrop("SKYGRND.DAX", daytime_sky, see_through);
     return walls;
 }
 

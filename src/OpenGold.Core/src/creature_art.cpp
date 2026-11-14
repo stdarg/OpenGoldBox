@@ -3,6 +3,7 @@
 #include "opengold/scroll_key.h"
 #include "opengold/formats.h"
 #include "opengold/gateway_formats.h"
+#include "opengold/vga_picture.h"
 #include <algorithm>
 #include <utility>
 
@@ -61,13 +62,20 @@ std::optional<CombatArt> creature_art(const std::vector<std::uint8_t> &archive, 
                                       const ExportedMonster *exported, bool archer,
                                       GoldBoxGame game)
 {
-    // Gateway's icons are pictures of its own format.
+    // Gateway's icons are pictures of its own format, Pools of Darkness's
+    // 256-color pictures.
     const auto decode = [&](unsigned record)
     {
         const auto id = static_cast<std::uint8_t>(record);
-        return game == GoldBoxGame::gateway_to_the_savage_frontier
-                   ? gateway::decode_combat_icon(archive, id)
-                   : decode_ega_combat_icon(archive, id, 0);
+        switch (game)
+        {
+        case GoldBoxGame::gateway_to_the_savage_frontier:
+            return gateway::decode_combat_icon(archive, id);
+        case GoldBoxGame::pools_of_darkness:
+            return decode_vga_combat_icon(archive, id);
+        default:
+            return decode_ega_combat_icon(archive, id, 0);
+        }
     };
     auto ready = decode(icon);
     if (!ready)

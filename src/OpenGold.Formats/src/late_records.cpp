@@ -8,6 +8,16 @@ namespace opengold::late
 namespace
 {
 
+// Pools of Darkness numbers its races elf 0, half-elf 1, dwarf 2, gnome 3,
+// halfling 4, human 5 and monster 6 (Secret's less 1); the shared fields keep
+// the earlier games' numbers, monster 0 and dwarf, elf, gnome, half-elf,
+// halfling, half-orc and human 1 to 7.
+std::uint8_t shared_race(std::uint8_t race)
+{
+    constexpr std::array<std::uint8_t, 7> shared{2, 4, 1, 3, 5, 7, 0};
+    return race < shared.size() ? shared[race] : 0;
+}
+
 constexpr std::size_t creature_size = 510;
 constexpr std::size_t item_size = 17;
 // An earlier game's item: a 46-byte name area, then these 17 bytes.
@@ -65,7 +75,7 @@ std::optional<por::CharacterRecord> decode_creature(std::span<const std::uint8_t
     c.memorized_spells.assign(b.begin() + 30, b.begin() + 30 + 141);
     c.spell_byte_44_raw = b[171];
     c.base_thac0 = 60 - b[172];
-    c.race = b[173];
+    c.race = shared_race(b[173]);
     c.character_class = b[174];
     c.age = format::read_u16(b, 176);
     c.max_hit_points = b[178];

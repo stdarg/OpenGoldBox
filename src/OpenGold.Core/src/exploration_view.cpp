@@ -55,6 +55,28 @@ ExplorationView render_exploration_view(const GeoMap &map, const WallArtSet &art
             std::copy_n(first, row_bytes, first + static_cast<std::ptrdiff_t>(row * row_bytes));
         }
     }
+    // Pools of Darkness's picture behind the walls, from the view's top left
+    // corner; its clear pixels keep the colors beneath.
+    if (const auto &backdrop = interior ? art.indoor_backdrop : art.sky_backdrop)
+    {
+        const int rows = std::min<int>(backdrop->height * scale, side),
+                  columns = std::min<int>(backdrop->width * scale, side);
+        for (int row = 0; row < rows; ++row)
+        {
+            for (int column = 0; column < columns; ++column)
+            {
+                const auto *source =
+                    backdrop->rgba.data() +
+                    (static_cast<std::size_t>(row / scale) * backdrop->width + column / scale) * 4;
+                if (source[3] != 0)
+                {
+                    std::copy_n(source, 4,
+                                result.rgba.begin() +
+                                    (static_cast<std::ptrdiff_t>(row) * side + column) * 4);
+                }
+            }
+        }
+    }
     const auto cell_at = [&](int depth, int lateral) -> int
     {
         const int cx = static_cast<int>(x) + step_x(facing) * depth - step_y(facing) * lateral;

@@ -29,7 +29,7 @@ The user decided these on 2026-11-12:
 | 2 | *Curse of the Azure Bonds* | 1989 | `CURSE` | Played to its end by the route test, with stand-ins ([curse.md](games/curse.md)) |
 | 3 | *Secret of the Silver Blades* | 1990 | `SECRET` | Every file decodes ([secret.md](games/secret.md)) |
 | 4 | *Gateway to the Savage Frontier* | 1991 | `GATEWAY` | Every file decodes ([gateway.md](games/gateway.md)) |
-| 5 | *Pools of Darkness* | 1991 | `DARKNESS` | Its opening plays ([darkness.md](games/darkness.md)) |
+| 5 | *Pools of Darkness* | 1991 | `DARKNESS` | Its opening plays and its walk passes ([darkness.md](games/darkness.md)) |
 | 6 | *Treasures of the Savage Frontier* | 1992 | `TREASURE` | Every file decodes ([treasure.md](games/treasure.md)) |
 | 7 | *Forgotten Realms: Unlimited Adventures* | 1993 | `UA` | A design made with the kit plays: its walls, events and fights ([ua.md](games/ua.md)) |
 
@@ -464,6 +464,14 @@ new decoders.
    and its creation spells (2026-11-14, `opengold_original_creation_tests`).
    Bringing a *Secret* party across, which the original offers, is still to
    come.
+4. Walking every map and playing every event and fight (the walk). *The walk
+   passes (2026-11-14):* `opengold_darkness_walk` walks every square of every
+   map a script loads with six fighters made under its rules. Its script
+   host reads and writes the current character's record byte for byte, hands
+   out TREASURE from `ITEM0`'s definitions, opens the stores its `GAME.EXE`
+   lists, and answers FIND NPC, SPELL and its DAMAGE forms; its sprites and
+   combat icons are drawn in their own colors (darkness.md, The walk). Still
+   to come: the area map outside dungeons, the startup menu and the route.
 
 ### 8. *Unlimited Adventures*
 

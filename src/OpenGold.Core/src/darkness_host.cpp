@@ -3,8 +3,10 @@
 #include "opengold/rolf_tour.h"
 #include "area_loading.h"
 #include "opengold/original_spells.h"
+#include "opengold/vga_picture.h"
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 
 namespace opengold::por
@@ -15,7 +17,7 @@ namespace
 // The map number from which LOAD FILES loads no map, and the wall set that
 // keeps the current one.
 constexpr unsigned first_non_map = 0x7F, keep_walls = 255;
-// PLAY SOUND's footstep, and its music from 80h up.
+// PLAY SOUND's footstep (its music starts from 80h).
 constexpr unsigned footstep_sound = 10;
 
 // The current character's record, from 401h: the bytes of its fields the
@@ -141,6 +143,117 @@ void RolfTourSession::open_darkness_store(const EclRequest &request)
     snapshot_.choices.clear();
     snapshot_.diagnostic.clear();
     ++snapshot_.revision;
+}
+
+EclHostReply RolfTourSession::darkness_spell(unsigned spell, EclAddress place, EclAddress member)
+{
+    constexpr std::uint16_t nobody = 0xFF;
+    auto reply = character_reply(selected_character_);
+    std::uint16_t found = nobody, caster_slot = 0;
+    const auto id = opengold::original::spell_id(
+        opengold::original::canonical_spell(static_cast<int>(spell), game()));
+    if (!id.empty())
+    {
+        if (const auto caster = campaign_->cast_exploration_spell(id))
+        {
+            const auto &slots = campaign_->state().slots;
+            found = 0;
+            caster_slot =
+                static_cast<std::uint16_t>(std::ranges::find(slots, *caster) - slots.begin());
+        }
+    }
+    reply.writes.push_back({place, found});
+    reply.writes.push_back({member, caster_slot});
+    return reply;
+}
+
+void RolfTourSession::darkness_damage(const EclRequest &request)
+{
+    // DAMAGE: attack, dice, sides, bonus, value (its EclDamage). With attack's
+    // 80h its low four bits are the save's modifier and value's low three bits
+    // the save: 40h hurts the whole party (20h with no save), else value's 80h
+    // the current character (its save is value's bits less 1, none at 0), else
+    // a random member; a save halves the damage with 10h and avoids it
+    // without. Without 80h attack is a number of attacks on random members,
+    // each to hit with value.
+    constexpr unsigned special = 0x80, whole_party = 0x40, no_save = 0x20, halves = 0x10,
+                       chosen = 0x80;
+    // The difficulty a save is shown against, as the other games' scripts.
+    constexpr int shown_save_dc = 13;
+    const auto number = [&request](std::size_t n)
+    {
+        return request.arguments.at(n).number();
+    };
+    const auto attack = number(0), value = number(4);
+    rules::HazardAttack harm{0, number(1), number(2), static_cast<int>(number(3)), {}};
+    harm.automatic = true;
+    if (!(attack & special))
+    {
+        harm.automatic = false;
+        harm.original_attack = static_cast<int>(value);
+        snapshot_.dialogue += shoot_arrows(attack, "blow", harm);
+        return;
+    }
+    const auto save_against = [&](int save)
+    {
+        harm.original_save = save;
+        harm.original_save_modifier = static_cast<int>(attack & 0x0F);
+        harm.save_dc = shown_save_dc - harm.original_save_modifier;
+        harm.half_on_save = (attack & halves) != 0;
+    };
+    const auto hurt_member = [&](MemberId id)
+    {
+        const auto result = campaign_->hazard_attack(id, harm);
+        snapshot_.dialogue += hurt(result ? std::optional<HazardHit>{{id, *result}} : std::nullopt,
+                                   harm.save_dc, harm.sides);
+    };
+    if (attack & whole_party)
+    {
+        if (!(attack & no_save))
+        {
+            save_against(static_cast<int>(value & 7));
+        }
+        for (const auto id : campaign_->state().slots)
+        {
+            if (id)
+            {
+                hurt_member(id);
+            }
+        }
+        return;
+    }
+    if (value & chosen)
+    {
+        if ((value & 7) != 0)
+        {
+            save_against(static_cast<int>(value & 7) - 1);
+        }
+        const auto id = campaign_->state().slots.at(selected_character_.index);
+        if (!id)
+        {
+            throw EclError("DAMAGE needs a chosen member");
+        }
+        hurt_member(id);
+        return;
+    }
+    save_against(static_cast<int>(value & 7));
+    snapshot_.dialogue += hurt(campaign_->hazard_attack(harm), harm.save_dc, harm.sides);
+}
+
+ImageDecodeResult RolfTourSession::darkness_sprite(unsigned id, unsigned distance) const
+{
+    // Its frames are the monster near, at middle distance and far; the
+    // original swaps colors 0 and 13 and draws through 13, so 0 shows through.
+    constexpr std::uint8_t see_through = 0;
+    const auto record =
+        decode_dax_record(area_resources().sprite_archive, static_cast<std::uint8_t>(id));
+    const auto animation = record ? decode_vga_animation(*record) : std::nullopt;
+    if (!animation || distance >= animation->frames.size())
+    {
+        return {FormatResult::not_found, {}};
+    }
+    return {FormatResult::ok, vga_rgba(animation->frames[distance].image,
+                                       vga_color_table(animation->palette), see_through)};
 }
 
 EclHostReply RolfTourSession::darkness_find_npc(const std::string &name, EclAddress place) const

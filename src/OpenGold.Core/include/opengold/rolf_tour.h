@@ -1036,6 +1036,15 @@ class RolfTourSession
     void stage_darkness_treasure(const EclRequest &request);
     // Its STORE: one of the program's eleven stores opens with its goods.
     void open_darkness_store(const EclRequest &request);
+    // Its SPELL: the first member with the spell memorized casts it; its place
+    // in the member's list (0, or FFh for no one) into `place`, the member's
+    // into `member`.
+    [[nodiscard]] EclHostReply darkness_spell(unsigned spell, EclAddress place, EclAddress member);
+    // Its DAMAGE's forms, told in the dialogue.
+    void darkness_damage(const EclRequest &request);
+    // Its encounter sprite's view at a distance (0 near, 2 far), in the
+    // colors the sprite sets, its color 0 see-through.
+    [[nodiscard]] ImageDecodeResult darkness_sprite(unsigned id, unsigned distance) const;
     // Its FIND NPC: the named companion's place in the party into `place`.
     [[nodiscard]] EclHostReply darkness_find_npc(const std::string &name, EclAddress place) const;
     // Scripts change coins relative to the view they were given, so the script

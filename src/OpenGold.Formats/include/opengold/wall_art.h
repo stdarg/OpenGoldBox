@@ -34,6 +34,10 @@ struct WallArtSet
     // scale, so the view can show the original instead (#274); empty images
     // for the others.
     std::vector<std::array<Image, 10>> originals;
+    // Pools of Darkness draws a picture behind the walls (its DrawBackdrop):
+    // the wall set's own where the map marks the square as indoors, the sky
+    // elsewhere. The other games' views are flat colors, and have none.
+    std::optional<Image> indoor_backdrop, sky_backdrop;
 };
 
 // The size in pixels the original draws a view's piece at, for every appearance.

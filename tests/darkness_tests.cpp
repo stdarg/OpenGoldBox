@@ -7,7 +7,9 @@
 #include "opengold/game_census.h"
 #include "opengold/pool_radiance.h"
 #include "opengold/por_sound.h"
+#include "opengold/map_catalog.h"
 #include "test_support.h"
+#include "tour_access.h"
 
 #include <cstdlib>
 #include <filesystem>
@@ -173,9 +175,47 @@ void the_opening_reaches_new_phlan()
     check(session.snapshot().footsteps > 0, "His steps are heard");
     check(session.script_diagnostics().empty(), "The opening needs nothing unsupported");
     const auto view = session.observe_view();
+    // Behind the walls the daytime sky and ground (SKYGRND 1), not the other
+    // games' flat sky: its top row holds more than one color.
+    std::set<std::uint32_t> sky;
+    for (std::size_t p = 0; p < std::size_t{view.width} * 4; p += 4)
+    {
+        sky.insert(view.rgba[p] << 16 | view.rgba[p + 1] << 8 | view.rgba[p + 2]);
+    }
+    check(sky.size() > 1, "The sky is Darkness's picture");
     check(colours(view) > 8, "The 3D view shows the docks' walls in 256 colors");
     check(session.explore(ExplorationCommand::turn_left), "The party turns");
     check(session.observe_view().rgba != view.rgba, "Turning shows another view");
+}
+
+// Every map of GEO1 is held by a script that loads it (LOAD FILES), so the
+// walk (opengold_darkness_walk) walks them all; map 49 is in the file, but no
+// script loads it.
+void every_map_has_its_script()
+{
+    const auto folder = darkness_folder();
+    if (folder.empty())
+    {
+        std::cout << "Pools of Darkness's files are not here; its maps are not counted.\n";
+        return;
+    }
+    const auto session = opengold::load_campaign(folder, darkness_game);
+    const auto scripts = opengold::test::TourAccess::area_scripts(session);
+    const auto maps = opengold::por::MapCatalog::load(folder);
+    std::vector<unsigned> without;
+    for (const auto &[id, map] : maps.all())
+    {
+        if (!scripts.contains(id.record))
+        {
+            without.push_back(id.record);
+        }
+    }
+    std::string missing;
+    for (const auto map : without)
+    {
+        missing += " " + std::to_string(map);
+    }
+    check(without == std::vector<unsigned>{49}, "Every map has its script; without one:" + missing);
 }
 
 } // namespace
@@ -187,6 +227,7 @@ int main()
         the_new_commands_run();
         the_item_words_are_in_the_game_program();
         the_opening_reaches_new_phlan();
+        every_map_has_its_script();
         std::cout << "Pools of Darkness passed.\n";
     }
     catch (const std::exception &error)

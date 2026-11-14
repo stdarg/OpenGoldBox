@@ -83,6 +83,12 @@ using VgaColorTable = std::array<VgaColor, 256>;
 [[nodiscard]] Image vga_rgba(const VgaImage &image, const VgaColorTable &colors,
                              std::optional<std::uint8_t> see_through = std::nullopt);
 
+// A monster's combat icon in a CPIC record of the 256-color games: its one
+// frame in the colors it sets, color 8 see-through (the original draws icons
+// through it). The second pose is the record 128 above.
+[[nodiscard]] ImageDecodeResult decode_vga_combat_icon(std::span<const std::uint8_t> dax,
+                                                       std::uint8_t record_id);
+
 } // namespace opengold
 
 #endif

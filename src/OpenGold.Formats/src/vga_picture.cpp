@@ -269,4 +269,21 @@ Image vga_rgba(const VgaImage &image, const VgaColorTable &colors,
     return result;
 }
 
+ImageDecodeResult decode_vga_combat_icon(std::span<const std::uint8_t> dax, std::uint8_t record_id)
+{
+    constexpr std::uint8_t see_through = 8;
+    const auto record = decode_dax_record(dax, record_id);
+    if (!record)
+    {
+        return {FormatResult::not_found, {}};
+    }
+    const auto picture = decode_vga_picture(*record);
+    if (!picture || picture->frames.empty())
+    {
+        return {};
+    }
+    return {FormatResult::ok,
+            vga_rgba(picture->frames.front(), vga_color_table(picture->palette), see_through)};
+}
+
 } // namespace opengold

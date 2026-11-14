@@ -3019,13 +3019,16 @@ std::string RolfTourSession::hurt(const std::optional<HazardHit> &hit, int save_
     const auto &name = member.character.sheet().name;
     const auto save = " (saving throw " + std::to_string(result.save_total) + " vs DC " +
                       std::to_string(save_dc) + ")";
-    if (result.saved)
+    if (result.saved && result.damage == 0)
     {
         return "\n" + name + " avoids it" + save + ".";
     }
-    auto report = "\n" + name + (save_dc ? " fails to avoid it" + save + " and" : "") + " takes " +
-                  std::to_string(result.damage) + " damage" + damage_dice_shown(result, sides) +
-                  ".";
+    // A save that only halves the damage (Pools of Darkness's) still hurts.
+    const auto saving = result.saved ? " saves" + save + " but"
+                        : save_dc    ? " fails to avoid it" + save + " and"
+                                     : std::string();
+    auto report = "\n" + name + saving + " takes " + std::to_string(result.damage) + " damage" +
+                  damage_dice_shown(result, sides) + ".";
     if (member.vitals.dead)
     {
         report += " " + name + " dies.";
@@ -3177,12 +3180,19 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             ++snapshot_.picture_revision;
             break;
         }
+        // Pools of Darkness's sprites are 256-color animations.
+        const auto sprite = [this](unsigned id, unsigned distance)
+        {
+            return game() == GoldBoxGame::pools_of_darkness
+                       ? darkness_sprite(id, distance)
+                       : decode_ega_sprite(area_resources().sprite_archive,
+                                           static_cast<std::uint8_t>(id),
+                                           static_cast<std::uint8_t>(distance));
+        };
         // The Pitt's buccaneer names sprite 19, which SPRIT1 lacks: met face
         // to face, the original shows the head (0x6DE1) and body portrait.
         const auto head_id = machine_.variable(game_cell(EclAddress{0x6DE1}));
-        if (!decode_ega_sprite(area_resources().sprite_archive,
-                               static_cast<std::uint8_t>(arg(0)), 0) &&
-            encounter_distance_ == 0 && head_id != 255)
+        if (!sprite(arg(0), 0) && encounter_distance_ == 0 && head_id != 255)
         {
             snapshot_.sprite_frame = -1;
             snapshot_.sprite_id = arg(0);
@@ -3194,9 +3204,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         }
         for (unsigned n = 0; n < 3; ++n)
         {
-            auto image = decode_ega_sprite(area_resources().sprite_archive,
-                                           static_cast<std::uint8_t>(arg(0)),
-                                           static_cast<std::uint8_t>(n));
+            auto image = sprite(arg(0), n);
             // Beyond a sprite's last distance frame its farthest one shows.
             if (!image && n > 0)
             {
@@ -3419,6 +3427,13 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         constexpr unsigned cleric_dispel = 41, magic_user_dispel = 46;
         const bool dispel = game() == GoldBoxGame::secret_of_the_silver_blades &&
                             (arg(0) == cleric_dispel || arg(0) == magic_user_dispel);
+        // Pools of Darkness asks for any spell: whoever has it memorized casts it.
+        if (game() == GoldBoxGame::pools_of_darkness)
+        {
+            read_character();
+            reply = darkness_spell(arg(0), address_arg(1), address_arg(2));
+            break;
+        }
         if (arg(0) != knock && !dispel)
         {
             throw EclError("Unsupported SPELL " + std::to_string(arg(0)));
@@ -4104,6 +4119,17 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     }
     case 46:
     {
+        if (game() == GoldBoxGame::pools_of_darkness)
+        {
+            read_character();
+            darkness_damage(request);
+            damage_request_ = request.id;
+            snapshot_.phase = TourPhase::awaiting_continue;
+            snapshot_.choices = {"Continue"};
+            snapshot_.continue_ticket = ++next_ticket_;
+            ++snapshot_.revision;
+            return true;
+        }
         // Arrow volleys: arg(0) arrows of arg(1)d arg(2) + arg(3). A high bit
         // marks the original's other forms (coab CMD_Damage): the dice dealt
         // to the member the script chose, with no saving throw (the Cadorna

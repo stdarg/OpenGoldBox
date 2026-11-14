@@ -319,11 +319,58 @@ there:
   colors it sets (`vga_color_table`, `vga_rgba`).
 - TREASURE names its items in `ITEM0`'s definitions: there are no item lists.
 - The item words are in `GAME.EXE`: 125 slots of 21 bytes, "Battle Axe" first.
-- The view's sky and floor keep the colors the other games' views draw them
-  in; the original draws `SKYGRND` and `BACK1` there.
+- Behind the walls the view draws a picture, as the original's DrawBackdrop
+  does: on a square whose event has 80h, the wall set's own (`BACK1` record
+  n), elsewhere the sky and ground (`SKYGRND` 1, the daytime sky, through
+  color 13). The original picks other skies by the area's tile set, the hour
+  and cell 3Bh; OpenGoldBox shows the daytime one.
 
 `opengold_darkness_tests` plays the opening on the real files, declining the
 tour.
+
+## The walk
+
+`opengold_darkness_walk` (`opengold_gold_box_games_tests --darkness-walk`)
+walks every square of every map with six fighters made under Darkness's rules
+(ORIGINAL-RULES.md, *Pools of Darkness*) and runs each event and fight; it
+passes when no event needs what the session cannot do (2026-11-14). Map 49 is
+in `GEO1` but no script loads it, so no one walks it. What the walk needed:
+
+- **The current character's record** at 401h: its name, both scores of each
+  ability, Exceptional Strength, race (Darkness's numbers: elf 0, half-elf 1,
+  dwarf 2, gnome 3, halfling 4, human 5), class (numbered as the original
+  rules' professions), age, maximum and current Hit Points, levels, thief
+  skills, gender, alignment, companion flag, the party's platinum, gems and
+  jewelry, status (0 okay, 6 dead), whether it is in play and its side. A
+  script's change to the Hit Points and coins is read back.
+- **TREASURE** hands out platinum, gems, jewelry and `ITEM0`'s definitions,
+  as the other games' treasure is handed out; FFh is a scroll of three magic-
+  user spells drawn at random.
+- **STORE** opens one of eleven stores, its goods identified. The program
+  lists each store's first and last slot and the slots' item definitions; the
+  session finds the lists in the player's `GAME.EXE` by their shape (the
+  first store starts at slot 1, each one after the last).
+- **FIND NPC** stores a named companion's place in the party (80h more when
+  it is out of play), or FFh.
+- **SPELL** asks for any spell: the first member with it memorized casts it.
+- **DAMAGE:** with 80h its low four bits are the save's modifier and the
+  value's three bits the save; 40h hurts the whole party (20h with no save),
+  the value's 80h the current character (its save one less, none at 0), else
+  a random member; with 10h a made save halves the damage, without it avoids
+  it. Without 80h it is that many attacks on random members, each to hit with
+  the value.
+- **Encounter sprites** (`SPRIT1`) are animations of three frames, near,
+  middle and far, drawn in the colors they set with color 0 see-through.
+- **Combat icons** (`CPIC1`) are pictures in the colors they set, color 8
+  see-through; a monster's second pose is the record 128 above.
+- A training hall's classes are cell 30h's mask (127 every class).
+- An NPC's record (510 bytes) joins the party as its record holds it.
+
+Still to come: the area map outside dungeons (in-dungeon cell 22h at 0, with
+`BACK1` and the tile set of cell 3Ah) is not drawn; the evening and other
+skies; the combat ground tiles (`DUNGCOM`, `WILDCOM`); sound effects other
+than the footstep, and the music PLAY SOUND starts; the opening and closing
+films in the game; the startup menu's button; the route.
 
 ### Creatures
 

@@ -1500,7 +1500,7 @@ HazardAttackResult OriginalModule::hazard_attack(VitalState &state, const Charac
             roll == 20 ||
             (roll > 1 &&
              result.save_total >= c.saving_throws[static_cast<std::size_t>(attack.original_save)]);
-        if (result.saved)
+        if (result.saved && !attack.half_on_save)
         {
             return result;
         }
@@ -1513,7 +1513,7 @@ HazardAttackResult OriginalModule::hazard_attack(VitalState &state, const Charac
         damage += rolled;
     }
     result.damage_rolled = damage;
-    result.damage = std::max(damage, 0);
+    result.damage = std::max(result.saved ? damage / 2 : damage, 0);
     const int left = state.hit_points - result.damage;
     state.dead = state.dead || left <= -10;
     state.hit_points = std::max(left, 0);
