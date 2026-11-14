@@ -2355,8 +2355,8 @@ void time_passes_between_rests()
 void items_are_readied_mid_fight()
 {
     std::vector<por::ItemTemplate> types(256);
-    constexpr std::uint8_t sword = 36, bow = 41, arrows = 73, shield = 59;
-    for (const auto type : {sword, bow, arrows, shield})
+    constexpr std::uint8_t sword = 36, bow = 41, arrows = 73, shield = 59, ring = 69;
+    for (const auto type : {sword, bow, arrows, shield, ring})
     {
         types[type].class_restrictions = 0xFF;
     }
@@ -2373,6 +2373,7 @@ void items_are_readied_mid_fight()
     types[shield].worn_location = 1;
     types[shield].hands = 1;
     types[shield].protection_raw = 0x81;
+    types[ring].worn_location = 9;
 
     por::CharacterRecord kobold;
     kobold.name = "KOBOLD";
@@ -2400,11 +2401,18 @@ void items_are_readied_mid_fight()
     quiver.stored.stack_size = 5;
     quiver.stored.raw[57] = 5;
     const auto shafts = carried(party, archer, quiver);
+    // A Ring of Fire Resistance: its special byte's handler 129 lays effect 61.
+    auto fire_ring = original_item(types, ring, 1);
+    fire_ring.stored.effect_codes = {0, 61, 0x81};
+    fire_ring.stored.raw[61] = 61;
+    fire_ring.stored.raw[62] = 0x81;
+    const auto ring_id = carried(party, archer, fire_ring);
     party.equip(archer, blade, rules::EquipmentOperation::equip);
     party.equip(archer, shafts, rules::EquipmentOperation::equip);
     const auto &names = party.member(archer).character.inventory();
     const auto sword_name = names.find(blade)->get().name;
     const auto bow_name = names.find(longbow)->get().name;
+    const auto ring_name = names.find(ring_id)->get().name;
 
     const auto module = original::rules_module(content);
     rules::Encounter encounter;
@@ -2441,6 +2449,20 @@ void items_are_readied_mid_fight()
               "The sword is put away");
         const auto ready_bow = offered_for(*session, "ready", bow_name);
         check(ready_bow && session->submit(*ready_bow), "The bow is readied");
+        const auto fire_resistant = [&]
+        {
+            const auto now = session->snapshot();
+            const auto &view =
+                *std::ranges::find(now.combatants, archer, &rules::CombatantView::id);
+            const auto numbers = original::Combatant::decode(view.persistent.resources);
+            return numbers && std::ranges::find(numbers->effects, 61, &original::Effect::code) !=
+                                  numbers->effects.end();
+        };
+        check(!fire_resistant() && session->submit(*offered_for(*session, "ready", ring_name)) &&
+                  fire_resistant(),
+              "A ring readied mid-fight lays its effect on its wearer");
+        check(session->submit(*offered_for(*session, "unready", ring_name)) && !fire_resistant(),
+              "Put away, it takes its effect with it");
         readied = true;
     }
     check(readied, "The archer's turn came");

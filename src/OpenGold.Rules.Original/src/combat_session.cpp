@@ -97,10 +97,10 @@ constexpr int renew_invisibility = 56, reflectable_gaze = 127, fear = 342;
 // secret_effect_offset).
 constexpr int globe_of_invulnerability = 457, petrifying_gaze = 458, needs_plus_three = 460,
               poison_touch = 464, stone_touch = 465, swallows_whole = 466, fire_beside = 467,
-              confusing_gaze = 470, luck = 478, iron_golem = 479, fire_at_target = 480,
-              spits_acid = 481, dragon_fear = 482, cold_breath = 483, strong_poison_touch = 486,
-              ghoul_touch = 488, bashing_proof = 490, fearless = 492, hardy = 494,
-              fire_breath = 504, stunned = 506;
+              confusing_gaze = 470, giant_bane = 475, luck = 478, iron_golem = 479,
+              fire_at_target = 480, spits_acid = 481, dragon_fear = 482, cold_breath = 483,
+              strong_poison_touch = 486, ghoul_touch = 488, bashing_proof = 490, fearless = 492,
+              hardy = 494, fire_breath = 504, stunned = 506;
 // Unlimited Adventures' own (canonical_effect, its code plus kit_effect_offset).
 // Pools of Darkness plays four of them by the same rules: the Rakshasa's
 // protection is the kit's spell_proof, its weapons below +3 and +4 halving,
@@ -539,6 +539,14 @@ bool dispel_evil_takes(const Fighter &f, GoldBoxGame game)
     }
     const int alignment = f.numbers.alignment;
     return alignment == 2 || alignment == 5 || alignment == 8;
+}
+
+// Whether a Secret giant-bane weapon (its effect 75, EffHolyWater) bites on
+// the defender: one its record flags for it (target flag bit 0).
+bool giant_bane_strikes(const Fighter &attacker, const Fighter &defender, GoldBoxGame game)
+{
+    return game == GoldBoxGame::secret_of_the_silver_blades && attacker.has(effect::giant_bane) &&
+           (defender.numbers.traits & trait::giant_bane) != 0;
 }
 
 // Haste doubles a creature's rates of movement and attacks and Slow halves
@@ -1409,6 +1417,14 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
                 dice += roll(std::max(attack.sides, 1));
             }
             auto damage = hit_damage(dice, attack.modifier);
+            // A giant-bane weapon's blow is 6d6 and the Strength bonus in
+            // place of the weapon's own (EffHolyWater, at its damage).
+            if (giant_bane_strikes(attacker, defender, game_of(identity_)))
+            {
+                damage = roll(6) + roll(6) + roll(6) + roll(6) + roll(6) + roll(6) +
+                         strength_damage_bonus(attacker.numbers.strength,
+                                               attacker.numbers.exceptional_strength);
+            }
             // Secret multiplies a backstab after the effects on the blow, so the
             // multiple covers a ranger's bonus too (CalcWeaponDamage), with
             // (level - 1) div 4 + 2; Pools of Darkness by 5 at most.
@@ -1496,6 +1512,7 @@ int attack_modifier(const Fighter &attacker, const Fighter &defender, GoldBoxGam
     }
     // Dispel Evil keeps the evil 7 worse off at its bearer (Curse, DispelEvil).
     modifier -= dispel_evil_takes(attacker, game) && defender.has(204) ? 7 : 0;
+    modifier += giant_bane_strikes(attacker, defender, game) ? 1 : 0;
     return modifier;
 }
 
@@ -3203,6 +3220,22 @@ void Session::rework_gear(Fighter &f, const std::vector<Held> &before_held,
     n.wards_gaze = after.wards_gaze || (n.wards_gaze && !before.wards_gaze);
     n.mirror = after.mirror || (n.mirror && !before.mirror);
     n.items = after.items;
+    // An item put away takes the effect it gave, one readied lays its own
+    // (ToggleItemEffect); the numbers worked from the items hold only theirs.
+    for (const auto &given : before.effects)
+    {
+        if (std::ranges::find(after.effects, given.code, &Effect::code) == after.effects.end())
+        {
+            f.remove(given.code);
+        }
+    }
+    for (const auto &given : after.effects)
+    {
+        if (!f.has(given.code))
+        {
+            n.effects.push_back(given);
+        }
+    }
     const int had = attacks_with(before), now = attacks_with(after);
     f.attacks_left[0] = f.attacks_left[0] >= had ? now : std::min(f.attacks_left[0], now);
     f.held = std::move(after_held);

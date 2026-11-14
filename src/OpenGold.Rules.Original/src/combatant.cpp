@@ -511,6 +511,41 @@ bool reflects_gazes(const CarriedItem &carried)
     return carried.item.readied() && bytes[1] == secret_reflection && bytes[2] == 0x80;
 }
 
+// The effect a readied item lays on its bearer while it stays readied, by
+// the fight's numbers: the effect its effect byte (61) names, when its special
+// byte (62) says the item gives one. Pool of Radiance's special byte names a
+// handler of its own, and those that grant an effect are 128 to 130, 133, 134,
+// 136, 138 and 139 (viewchar.pas, ToggleReadyItem; effhndlr.pas,
+// EffGrantItemEffect); from Curse on the byte's 0x80 with no other bit does
+// (ToggleItemEffect). The 256-color games and Unlimited Adventures number
+// their effects in ways the fight does not read yet, so their items give none.
+std::optional<Effect> granted_effect(const CarriedItem &carried, GoldBoxGame game)
+{
+    const auto &bytes = carried.item.effect_codes;
+    const int special = bytes[2], code = bytes[1];
+    if (!carried.item.readied() || code == 0 || vga_engine(game) ||
+        game == GoldBoxGame::unlimited_adventures)
+    {
+        return std::nullopt;
+    }
+    if (game == GoldBoxGame::pool_of_radiance)
+    {
+        constexpr std::array<int, 8> granting{128, 129, 130, 133, 134, 136, 138, 139};
+        constexpr int strength = 12;
+        if (std::ranges::find(granting, special) == granting.end())
+        {
+            return std::nullopt;
+        }
+        return Effect{code, 0, strength, false};
+    }
+    constexpr int strength = 255;
+    if (special != 0x80)
+    {
+        return std::nullopt;
+    }
+    return Effect{canonical_effect(code, game), 0, strength, true};
+}
+
 // A thief backstabs with no weapon, a club or a dagger (item types 3 and 4)
 // or a broad, long or short sword (17 to 19) in any armor (cbtacts.pas,
 // IsBackstab, in Secret's reconstruction); in Pools of Darkness also with an
@@ -881,6 +916,17 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
         {
             c.effects.push_back({canonical_effect(effect.code, record.game), effect.duration_raw,
                                  effect.data, effect.table_flag != 0});
+        }
+    }
+    // What its readied items give, unless its record holds the effect already,
+    // as a monster's saved with its items does.
+    for (const auto &item : carried)
+    {
+        const auto granted = granted_effect(item, record.game);
+        if (granted &&
+            std::ranges::find(c.effects, granted->code, &Effect::code) == c.effects.end())
+        {
+            c.effects.push_back(*granted);
         }
     }
     return c;

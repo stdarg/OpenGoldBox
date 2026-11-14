@@ -367,9 +367,12 @@ chosen by the game as *Curse*'s are. In progress (2026-11-13):
   paralysis (its effect 99) or turned, and at a step into a stinking cloud
   unless it coughs already, a globe guards it (its effects 57 and 63), it is
   proof or turned, or it saves against paralysis.
-- **Still to come:** a giant-bane weapon (effect 75); and the hit points LOAD
-  MONSTER scales by difficulty (the original rules have no difficulty yet,
-  Difficulty).
+- **The giant-bane weapon** (2026-11-14; its effect 75, `EffHolyWater`),
+  readied, strikes one its record flags for it (target flag bit 0) 1
+  better, for 6d6 and the wielder's Strength bonus in place
+  of the weapon's own damage, before the defenses and a backstab's multiple.
+- **Still to come:** the hit points LOAD MONSTER scales by difficulty (the
+  original rules have no difficulty yet, Difficulty).
 
 ## Gateway to the Savage Frontier
 
@@ -653,10 +656,6 @@ The work asked for next (2026-11-14), in order, with what each needs:
 
 1. The other "Still to come" items above that are no one game's campaign or
    route work, in their order in this file:
-   - *Secret*'s giant-bane weapon (its effect 75, `EffHolyWater`: 6d6 and
-     the Strength bonus, +1 to hit, against one of target flag bit 0). It
-     needs a readied item's own effect (its special byte above 0x7F, which
-     `ToggleReadyItem` lays on its wielder), which no item gives a fight yet.
    - The party's facing, the terrain heights for sight and
      PARTY_MOVE_MODIFIER (step 7).
    - Spiritual Hammer's hammer (step 8b-2).
@@ -1171,6 +1170,25 @@ gear.
      each, which the inventory keeps; a save mid-fight keeps them (combat
      checkpoint 21). Secret's and the later records' item limits (their class
      bits) are read from them.
+   - **Readied items' own effects** (2026-11-14; `ToggleReadyItem`,
+     `ToggleItemEffect`, `EffGrantItemEffect`): an item readied lays the
+     effect its byte 61 names on its bearer for as long as it stays readied,
+     in a fight and from its start, and one put away mid-fight takes it with
+     it. In *Pool of Radiance* the special byte (62) names a handler, and
+     those that grant are 128 to 130, 133, 134, 136, 138 and 139 (the Ring
+     of Fire Resistance's 61, the Cloak of Displacement's 89); from *Curse*
+     on the byte's 0x80 alone does, the effect read by the fight's numbers
+     (rings of invisibility, cloaks of displacement, *Secret*'s luckstone and
+     giant-bane sword). A record that holds the effect already, as a
+     monster's saved with its items does, keeps one. The effects the fight
+     does not play yet do nothing: *Pool of Radiance*'s undead slayer (3) and
+     flame tongue (6), *Curse*'s spell failure, dragon slayer, bane weapon
+     and berserk (74 to 77), *Secret*'s boots of speed (74). The 256-color
+     games and *Unlimited Adventures* number their effects in ways the fight
+     does not read yet (`canonical_effect` reads *Gateway*'s, *Pools of
+     Darkness*'s and *Treasures*' as *Pool of Radiance*'s), so their items
+     give none; the special byte's other kinds (Strength, spell slots, the
+     aligned weapon) are their own items.
    - Still to come: the party's facing, the original's terrain heights for
      sight and PARTY_MOVE_MODIFIER. Out of doors a fireball
      catches only those within 2 squares of its aim (`SpellFireball`).

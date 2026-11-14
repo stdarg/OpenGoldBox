@@ -4327,6 +4327,77 @@ void a_quarrel_banishes_the_rakshasa()
     check(logged(*plain.session, "{name} is banished.") == 0, "Another blow only wounds it");
 }
 
+// A readied item lays its own effect on its bearer (viewchar.pas,
+// ToggleReadyItem and ToggleItemEffect): in Pool of Radiance by its special
+// byte's handler, from Curse on by the byte's 0x80 alone, read by the fight's
+// numbers; a record holding the effect already keeps one.
+void readied_items_give_their_effects()
+{
+    const auto effects_with = [](GoldBoxGame game, std::array<std::uint8_t, 3> bytes, bool readied,
+                                 std::vector<por::EffectRecord> own = {})
+    {
+        auto record = kobold_record();
+        record.game = game;
+        por::ItemRecord item;
+        item.readied_raw = readied ? 1 : 0;
+        item.effect_codes = bytes;
+        por::ItemTemplate ring;
+        ring.worn_location = 9;
+        const std::vector<original::CarriedItem> gear{{item, ring}};
+        std::vector<int> codes;
+        for (const auto &e : original::combatant_from_record(record, gear, own).effects)
+        {
+            codes.push_back(e.code);
+        }
+        return codes;
+    };
+    constexpr auto pool = GoldBoxGame::pool_of_radiance;
+    check(effects_with(pool, {0, 61, 0x81}, true) == std::vector<int>{61} &&
+              effects_with(pool, {0, 61, 0x81}, false).empty(),
+          "A Ring of Fire Resistance gives its effect while readied");
+    check(effects_with(pool, {0, 38, 0x83}, true).empty(),
+          "Gauntlets of Ogre Power's handler grants no effect");
+    check(effects_with(secret_game, {0, 75, 0x80}, true) == std::vector<int>{475} &&
+              effects_with(secret_game, {0, 5, 0x85}, true).empty(),
+          "Secret's giant-bane sword gives its effect by Secret's numbers");
+    check(effects_with(GoldBoxGame::curse_of_the_azure_bonds, {0, 89, 0x80}, true) ==
+              std::vector<int>{89},
+          "Curse's Cloak of Displacement displaces its wearer");
+    por::EffectRecord displaced;
+    displaced.code = 89;
+    check(effects_with(secret_game, {0, 89, 0x80}, true, {displaced}) == std::vector<int>{89},
+          "A record holding the item's effect keeps one");
+    check(effects_with(GoldBoxGame::pools_of_darkness, {0, 75, 0x80}, true).empty(),
+          "The 256-color games' items give none until the fight reads their numbers");
+}
+
+// Secret's giant-bane weapon (its effect 75, EffHolyWater): against one its
+// record flags for it, 1 better to hit and 6d6 with the Strength bonus in
+// place of the weapon's own damage; against others the weapon's.
+void a_giant_bane_weapon_bites_giants()
+{
+    auto slayer = monster({2, 1, 1, 0}, {0, 0, 0, 0}, {{475, 0, 255, true}});
+    slayer.strength = slayer.natural_strength = 18;
+    slayer.exceptional_strength = slayer.natural_exceptional_strength = 100;
+    const auto first_blow = [&](const original::Combatant &target)
+    {
+        auto fight = attack_until(
+            slayer, target,
+            [](const rules::CombatSession &session)
+            {
+                return logged(session, "{attacker} hits {name} for {damage}.", "Monster") > 0;
+            },
+            47, secret_game);
+        return 500 - view_of(fight.session->snapshot(), "Victim").hit_points;
+    };
+    auto giant = victim(500);
+    giant.traits = original::trait::giant_bane;
+    const int bitten = first_blow(giant);
+    check(bitten >= 6 + 6 && bitten <= 36 + 6,
+          "A giant takes 6d6 and 18/00's 6 from the giant-bane weapon");
+    check(first_blow(victim(500)) == 1, "Another takes the weapon's own 1");
+}
+
 // Secret's Delayed Blast Fireball waits the rounds its caster chooses on its
 // square, then catches all within 3 (SpellDelayedBlastFireball, effect 100);
 // a checkpoint keeps it waiting.
@@ -4678,6 +4749,8 @@ int main()
         strength_spells_strengthen();
         out_of_doors();
         a_quarrel_banishes_the_rakshasa();
+        readied_items_give_their_effects();
+        a_giant_bane_weapon_bites_giants();
         a_blast_waits();
         write_view_fixture();
         sleep_takes_the_weak();
