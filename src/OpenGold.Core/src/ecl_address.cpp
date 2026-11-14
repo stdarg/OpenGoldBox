@@ -45,7 +45,8 @@ ZoneStarts zone_starts(GoldBoxGame game)
 // byte. Each Pool of Radiance cell the engine names has its cell here.
 using CellPair = std::pair<std::uint16_t, std::uint16_t>;
 constexpr std::uint16_t vga_record = 0x401;
-constexpr std::array<CellPair, 33> vga_cells{{
+constexpr std::array<CellPair, 34> vga_cells{{
+    {0x6DC9, 0x0003}, // FFh holds back the step a step's event began with.
     {0x49C5, 0x0013}, // The map LOAD FILES loaded.
     // The clock: minute ones and tens, hour, day, month and year.
     {0x49C7, 0x0006},

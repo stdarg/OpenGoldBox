@@ -1995,7 +1995,7 @@ const std::vector<RouteBeat> &secret_route()
 // Pools of Darkness's route plays to the game's end once this is true; until
 // then it stops on this map (docs/GAMES.md, Pools of Darkness, step 5).
 constexpr bool darkness_route_ends_the_game = false;
-constexpr unsigned darkness_route_stops_on_map = 50;
+constexpr unsigned darkness_route_stops_on_map = 32;
 
 // Pools of Darkness's story, beat by beat, as its cluebook tells it: from New
 // Phlan's docks, where Rolf has walked the party out.
@@ -2407,6 +2407,126 @@ const std::vector<RouteBeat> &darkness_route()
         // plunder alone, and out of the temple: Priam stays with his army.
         walk_passages(route, 50, {{2, 5, D::east}, {3, 5, D::south}, {3, 6, D::south}});
         route.push_back(step_beat(50, 3, 7, D::south, {"YES", "NO"}));
+        // West across the Moonsea's north shore, by the crater of Phlan, to
+        // the Hill Giant Steading near Dragonhorn Gap (9,2): the party talks
+        // its way past the gate's giants as would-be mercenaries (map 21).
+        RouteBeat to_steading{17, 0, 0, D::north, {"YES", "TALK"}};
+        to_steading.area_steps = {C::northwest, C::west, C::west,      C::west,
+                                  C::west,      C::west, C::west,      C::west,
+                                  C::west,      C::west, C::northwest, C::northwest};
+        route.push_back(to_steading);
+        // North through the courtyard to the Twisted Horn (9,8), where Kardal,
+        // Sasha's spy, tells the party to kill the cloud giants in the private
+        // room south of it for promotion to the inner steading (cell 114h
+        // bit 1).
+        walk_passages(route, 21,
+                      {{7, 15, D::north},
+                       {7, 14, D::north},
+                       {7, 13, D::north},
+                       {7, 12, D::north},
+                       {7, 11, D::north},
+                       {7, 10, D::north},
+                       {7, 9, D::north},
+                       {7, 8, D::east}});
+        auto kardal = step_beat(21, 8, 8, D::east, {"YES", "YES"});
+        kardal.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x114, 3};
+        route.push_back(kardal);
+        // The cloud giants at their gaming table (9,10), rested first: beaten,
+        // they earn the party its notoriety (bit 2).
+        walk_passages(route, 21, {{9, 8, D::south}});
+        auto cloud_giants = step_beat(21, 9, 9, D::south);
+        cloud_giants.rest_first = true;
+        cloud_giants.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x114, 7};
+        route.push_back(cloud_giants);
+        // Back past the tavern to the inner steading's barred door (7,8): the
+        // hill giants pull the party through, and the shaman sends for it
+        // (bit 3).
+        walk_passages(route, 21,
+                      {{9, 10, D::north},
+                       {9, 9, D::north},
+                       {9, 8, D::west},
+                       {8, 8, D::west},
+                       {7, 8, D::north}});
+        // North and round to Kardal's jeweled dagger in the hall (8,3), its
+        // trail of blood followed (bit 4).
+        walk_passages(route, 21,
+                      {{7, 7, D::north},
+                       {7, 6, D::east},
+                       {8, 6, D::east},
+                       {9, 6, D::east},
+                       {10, 6, D::east},
+                       {11, 6, D::north},
+                       {11, 5, D::west},
+                       {10, 5, D::west},
+                       {9, 5, D::north},
+                       {9, 4, D::north}});
+        auto dagger = step_beat(21, 9, 3, D::west);
+        dagger.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x114, 31};
+        route.push_back(dagger);
+        // Down the trail to Kardal (6,4), whom the party rescues from his
+        // captors, rested first; he tells it of the Fire Giants (journal entry
+        // 49, bit 5).
+        walk_passages(route, 21, {{8, 3, D::west}, {7, 3, D::west}});
+        auto rescue = step_beat(21, 6, 3, D::south, {"RESCUE HIM"});
+        rescue.rest_first = true;
+        rescue.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x114, 63};
+        route.push_back(rescue);
+        // A door slams in the distance (3,4), and a rear guard of hill giants
+        // and ogres blocks the way south (3,6). A paladin challenges their
+        // authority, the puzzled giants turn on the ogres, and the party beats
+        // the ogres who win (bit 7).
+        walk_passages(route, 21,
+                      {{6, 4, D::west}, {5, 4, D::west}, {4, 4, D::west}, {3, 4, D::south}});
+        auto rear_guard = step_beat(21, 3, 5, D::south, {"CHALLENGE", "paladin 1"});
+        rear_guard.rest_first = true;
+        route.push_back(rear_guard);
+        // West and north round the dragons' hoard (3,2) to the hill giants,
+        // ettins and skeletons making a stand (5,0), whom the party attacks:
+        // the giants would see through a second challenge.
+        walk_passages(route, 21,
+                      {{3, 6, D::south},
+                       {3, 7, D::west},
+                       {2, 7, D::west},
+                       {1, 7, D::west},
+                       {0, 7, D::north},
+                       {0, 6, D::north},
+                       {0, 5, D::north},
+                       {0, 4, D::north},
+                       {0, 3, D::north},
+                       {0, 2, D::east},
+                       {1, 2, D::east},
+                       {2, 2, D::north},
+                       {2, 1, D::west},
+                       {1, 1, D::north},
+                       {1, 0, D::east},
+                       {2, 0, D::east},
+                       {3, 0, D::east}});
+        auto last_stand = step_beat(21, 4, 0, D::east, {"ATTACK"});
+        last_stand.rest_first = true;
+        route.push_back(last_stand);
+        // East to the antechamber (11,1), where a white and a black dragon
+        // guard the shaman, and on to the Hill Giant Shaman himself (13,1),
+        // each fight rested for.
+        walk_passages(route, 21,
+                      {{5, 0, D::east},
+                       {6, 0, D::east},
+                       {7, 0, D::east},
+                       {8, 0, D::east},
+                       {9, 0, D::east},
+                       {10, 0, D::south}});
+        auto antechamber = step_beat(21, 10, 1, D::east);
+        antechamber.rest_first = true;
+        route.push_back(antechamber);
+        walk_passages(route, 21, {{11, 1, D::east}});
+        auto shaman = step_beat(21, 12, 1, D::east);
+        shaman.rest_first = true;
+        shaman.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x116, 255};
+        route.push_back(shaman);
+        // His vault (12,0) is locked, and no one forces its door; past it,
+        // the door in the steading's north wall (15,0) leads to the Fire Giant
+        // Cave (script 32).
+        walk_passages(route, 21, {{13, 1, D::north}, {13, 0, D::east}, {14, 0, D::east}});
+        route.push_back(step_beat(21, 15, 0, D::north, {"YES"}));
         return route;
     }();
     return beats;

@@ -271,6 +271,7 @@ keeps nothing. The cells the engine itself reads or writes:
 
 | Cell | What it holds |
 |---|---|
+| 3h | FFh holds back the step whose event set it (stairs, a barred door); OpenGoldBox honors it since 2026-11-14, before which the party stepped on as well |
 | 5h–Bh | The clock: ticks, minute ones and tens, hour, day, month, year |
 | 11h | The party's facing, 0 to 3 (north, east, south, west) |
 | 13h | The map LOAD FILES loaded |
