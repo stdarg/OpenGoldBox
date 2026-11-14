@@ -516,8 +516,11 @@ playing each event and fight; it fails on any event the session cannot play.
   services): Pool, Share and Take, Appraise, vault items, the camp menu at
   an inn, a temple's Restoration and Fix; drinks as more than a count; the encounter's monster
   picture at its range.
-- Overland areas: their big picture (steps already move the party there,
-  and their rest encounters break a camp); zone texts and step events.
+- Overland areas: their picture, which the kit draws from the area's big
+  picture (`BIGPIC`, the header's first backdrop) with the party's marker
+  over its square (`view3d.c`, `wild_pic_open`; `cursor.c`), and their zone
+  texts (steps already move the party there, and their step events and
+  rest encounters play).
 - Locked doors: bashing, picking and Knock.
 - Fights:
   - The 14 monster effects no game's effect plays yet (Monsters' effects,
@@ -535,10 +538,7 @@ playing each event and fight; it fails on any event the session cannot play.
   which is not read; an item shows its type's name).
 - The kit's rules' remaining differences (above).
 - A default party; the kit's camp menu's own parts (Alter, Fix, the rest
-  menu's chosen hours); an overland area's picture (the kit draws the
-  area's big picture, `BIGPIC`, the header's first backdrop, with the
-  party's marker over its square: `view3d.c`, `wild_pic_open`; `cursor.c`)
-  and its zone texts, step events and maps larger than 16 by 16.
+  menu's chosen hours); overhead maps of dungeons larger than 16 by 16.
 
 ### Monsters' effects, "no magic" fights and step events
 
