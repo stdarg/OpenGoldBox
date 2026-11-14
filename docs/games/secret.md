@@ -226,17 +226,28 @@ goes on.
 
 `opengold_secret_route` (`opengold_gold_box_games_tests --secret-route`) plays
 the cluebook's order of play with two paladins, a ranger, two clerics and a
-magic-user made under Secret's rules. It has not reached the end yet; where it
-stops and why is in [GAMES.md](../GAMES.md), phase 4 step 4. Two planning
-aids help extend it: `OPENGOLD_SECRET_LINKS` prints the ruins' passages, and
+magic-user made under Secret's rules, from New Verdigris to the soul gem's
+shattering and the win; its beats and stand-ins are in [GAMES.md](../GAMES.md),
+phase 4 step 4. Planning aids help change it: `OPENGOLD_SECRET_LINKS` prints the ruins' passages, and
 `OPENGOLD_SECRET_FIND=X,Y[,MAP]` (or `*`, or `map:N`, with
 `OPENGOLD_SECRET_KEYS` and `OPENGOLD_SECRET_GOAL` naming cells, and
 `OPENGOLD_SECRET_SEARCHING`, and `OPENGOLD_SECRET_PREFER=WORD,...` for the
 choices to take on the way) searches from where the route ends for the steps
 that reach a square or set a cell, playing each step as the game does
 (questions answered NO, every fight won at once), and prints them for the
-route's `walk_passages`. A search takes a few minutes; the route alone
-takes about five.
+route's `walk_passages`. `OPENGOLD_ROUTE_SAVE=FILE` saves the game where the
+route ends and `OPENGOLD_ROUTE_RESUME=FILE` plays on from it (with
+`OPENGOLD_ROUTE_BEATS=N` to stop after N beats), so a search starts in seconds
+instead of after the route's six minutes.
+
+The castle as the route plays it: the Castle Entrance's rotating alcoves turn
+the party into the rooms beside the great hall and back only once the room's
+lever is pulled (cells 4C04 and 4C05, a bit a room); a flagstone at 9,15
+sends a party stepping east to 13,0, by the stairway up, and one at 13,0
+stepping west back; its gateway at 6,9 and the Sanctum's at 12,11 lead to the
+Well's gates 13 and 6. The Sanctum's three key doors open with the Silver Key
+(12,0), the Gold Key (2,9) and the Brass Key (6,1; cells 4C06, 4C07 and 4C05
+set to 1), the last onto script 99, which plays on the Sanctum's own map.
 
 ## Sound effects
 

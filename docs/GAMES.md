@@ -413,32 +413,44 @@ The steps of *Curse*'s phase 3, with *Secret*'s differences
    blockaded door open, wins the king over by fighting the Black Circle
    beside him, has his guards lead it east into the Eastern Crevasses (map
    82), and passes the castle's gate, where Oswulf's spirit blesses the
-   staff's bearers, into the Castle Entrance (map 96). *Stand-ins:* the
-   experience above; and from the mine on, a fight on the way (or in a camp
-   on the way) that the route's player loses with every dice it tries, or
-   wins only with a member dead or turned to stone, is won by the test (about
-   thirty fights in the last run, most in the crevasses). *The route's own
-   play:* a party below half its Hit Points rests before passing on, flees
-   monsters met in camp while hurt, rests to raise its dead while a cleric
-   stands, and gives up resting on a map where monsters break its camp three
-   times. *Where it stops (2026-11-14):* in the Castle Entrance (map 96, at
-   0,8). The planning aid reaches only its western half (x up to 9) and finds
-   no way to the stairway up at 15,0; the castle's rotating alcove, its
-   smith and its traps are still to be read in script 96. *Next:* the
-   stairway up (96, leaving the map north from 15,0, "UP", YES) to the
-   Middle Level (97: the iron golems' password STEELEYE is already in the
-   route's answers), the Dreadlord's Sanctum (98): its three doors take the
-   Brass Key at 6,1 (opening the way west to the soul gem's chamber, script
-   99), the Silver Key at 12,0 and the Gold Key at 2,9, and the door asking
-   for the Dreadlord's brother takes OSWULF; then the gem in script 99
-   ("EXPLORE ROOM", its twelve iron golems and six medusae), which sets cell
-   4CD9 to 1. Then `secret_route_ends_the_game` is set to true, and the
-   check asks for the win as *Curse*'s does. Until then it passes when the
-   route plays every beat to the castle (`secret_route_stops_on_map`). The
-   win itself is in place: the event that frees Eldamar's soul (cell 4CD9
-   set to 1 by script 99) ends with "Eldamar's soul is free, and the
-   Dreadlord is no more. You have won." as a win (`game_won`)
-   ([secret.md](games/secret.md), The ending).
+   staff's bearers, into the Castle Entrance (map 96). *The castle (since
+   2026-11-14):* the castle's guards break every camp, so the hurt party
+   walks along the great hall, attacking Sargatha at once when she offers
+   her scroll (signing sends it robbed to the Dungeon), through the rotating
+   alcove at 5,9 to the gateway at 6,9, rests at the Well and comes back by
+   its gate 13; pulls the lever at 5,15 that turns that room's alcove back,
+   takes the alcove at 8,9 into the next room and the flagstone at 9,15 to
+   13,0, and climbs the stairway at 15,0 to the Middle Level (map 97). Its
+   maze leads to the stairway up at 0,15; its iron golems are told STEELEYE,
+   also where a magic mouth calls the password FOOL. In the Dreadlord's
+   Sanctum (map 98) the party lets the Dreadlord's illusion attack first,
+   which ends it, walks on hurt to the gateway at 12,11 to rest at the Well
+   and comes back by its gate 6; bashes through the illusory lightning at
+   13,9, opens the door at 12,0 with the Silver Key, answers OSWULF at the
+   door asking for the Dreadlord's brother (8,9), beats Sargatha's ambush,
+   opens the door at 2,9 with the Gold Key, beats the warrior in golden
+   armor at 7,1 and opens the door at 6,1 with the Brass Key onto the
+   Dreadlord's rooms (script 99 on the Sanctum's map): the hydras, the
+   Dreadlord himself, a secret door found by searching at 1,3, and the
+   chamber of his soul, explored, where the iron golems and medusae fall
+   and the gem is shattered (cell 4CD9 set to 1): "Eldamar's soul is free,
+   and the Dreadlord is no more. You have won." (`game_won`,
+   [secret.md](games/secret.md), The ending). `secret_route_ends_the_game`
+   is true: the check asks for the win, every member alive, as *Curse*'s
+   does. *Stand-ins:* the experience above; and from the mine on, a fight
+   on the way (or in a camp on the way) that the route's player loses with
+   every dice it tries, or wins only with a member dead or turned to stone,
+   is won by the test (31 fights in the last run, most in the
+   crevasses and the castle, the castle's last fights all of them: the
+   warrior in golden armor, the hydras, the Dreadlord and the soul gem's
+   guards). *The route's own play:* a party below half its Hit Points rests
+   before passing on, flees monsters met in camp while hurt, rests to raise
+   its dead while a cleric stands, and gives up resting on a map where
+   monsters break its camp three times. *Planning aids:*
+   `OPENGOLD_ROUTE_SAVE=FILE` saves the game where the route ends,
+   `OPENGOLD_ROUTE_RESUME=FILE` plays on from such a save, and
+   `OPENGOLD_ROUTE_BEATS=N` plays only the first N beats, so a search
+   (`OPENGOLD_SECRET_FIND`) starts in seconds where the route ends.
 
 ### 5 to 7. The other campaigns
 
