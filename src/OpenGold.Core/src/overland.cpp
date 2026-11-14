@@ -514,16 +514,19 @@ class FieldBuilder
 
     DungeonBattlefield field() const
     {
-        DungeonBattlefield result{{field_columns, field_rows,
-                                   std::vector<rules::Terrain>(grid_.size()),
-                                   std::vector<bool>(grid_.size(), true)},
-                                  std::vector<std::uint8_t>(grid_.size())};
+        DungeonBattlefield result{
+            {field_columns, field_rows, std::vector<rules::Terrain>(grid_.size()),
+             std::vector<bool>(grid_.size(), true), std::vector<std::uint8_t>(grid_.size()),
+             std::vector<std::uint8_t>(grid_.size())},
+            std::vector<std::uint8_t>(grid_.size())};
         for (std::size_t n = 0; n < grid_.size(); ++n)
         {
             const auto &tile = tiles_[grid_[n]];
             result.tiles[n] = tile.frame;
             result.geometry.terrain[n] =
                 tile.cost == 255 ? rules::Terrain::obstacle : rules::Terrain::open;
+            result.geometry.clearance[n] = tile.clearance;
+            result.geometry.blocking[n] = tile.blocking;
         }
         return result;
     }
@@ -566,7 +569,8 @@ std::optional<OverlandWorld> read_overland_world(std::span<const std::uint8_t> i
     for (std::size_t tile = 0; tile < combat_tile_count; ++tile)
     {
         const auto entry = data + combat_tile_offset + tile * 4;
-        world.combat_tiles.push_back({image[entry], image[entry + 3]});
+        world.combat_tiles.push_back(
+            {image[entry], image[entry + 3], image[entry + 1], image[entry + 2]});
     }
     if (world.window_start != std::array<unsigned, 3>{0, 13, 26})
     {
@@ -805,7 +809,7 @@ DungeonBattlefield gateway_wilderness_battlefield(std::span<const OverlandWorld:
 std::optional<GatewayWilderness> gateway_wilderness(std::span<const std::uint8_t> image)
 {
     // The release this engine reads keeps its terrain table (terrains 1 to 65:
-    // movement cost, two bytes, combat tile) and the 32 grounds' classes at
+    // movement cost, clearance, blocking, combat tile) and the 32 grounds' classes at
     // fixed places in its unpacked GAME.EXE, where terrain 1 is a wall (255,
     // tile 0), grass costs 1 on tile 22, and the last ground is bare (80h).
     constexpr std::size_t tile_offset = 0x7E20, class_offset = 0x509C, class_count = 32;
@@ -819,11 +823,12 @@ std::optional<GatewayWilderness> gateway_wilderness(std::span<const std::uint8_t
     }
     GatewayWilderness wilderness;
     // Terrain 0 is none: a wall, which the field never holds.
-    wilderness.combat_tiles.push_back({255, 0});
+    wilderness.combat_tiles.push_back({255, 0, 0, 2});
     for (std::size_t terrain = 0; terrain < gateway_terrain_count; ++terrain)
     {
         const auto entry = tile_offset + terrain * 4;
-        wilderness.combat_tiles.push_back({image[entry], image[entry + 3]});
+        wilderness.combat_tiles.push_back(
+            {image[entry], image[entry + 3], image[entry + 1], image[entry + 2]});
     }
     wilderness.terrain_classes.assign(image.begin() + static_cast<std::ptrdiff_t>(class_offset),
                                       image.begin() +
@@ -847,7 +852,8 @@ std::optional<CurseWilderness> curse_wilderness(std::span<const std::uint8_t> im
     for (std::size_t tile = 0; tile < combat_tile_count; ++tile)
     {
         const auto entry = tile_offset + tile * 4;
-        wilderness.combat_tiles.push_back({image[entry], image[entry + 3]});
+        wilderness.combat_tiles.push_back(
+            {image[entry], image[entry + 3], image[entry + 1], image[entry + 2]});
     }
     wilderness.place_flags.assign(image.begin() + static_cast<std::ptrdiff_t>(place_offset),
                                   image.begin() +

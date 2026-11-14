@@ -3905,6 +3905,9 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             constexpr EclAddress gateway_combat_mode{0x4D01};
             encounter_->escape_ends_fight = game() == GoldBoxGame::gateway_to_the_savage_frontier &&
                                             machine_.variable(gateway_combat_mode) == 1;
+            // PARTY_MOVE_MODIFIER, which the fight's end clears (postcbt.pas).
+            encounter_->party_move_modifier =
+                static_cast<int>(machine_.variable(game_cell(EclAddress{0x6E72})) & 0xFF);
             if (std::exchange(duel_, false))
             {
                 encounter_->mirror = mirror_duel_;

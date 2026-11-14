@@ -22,7 +22,9 @@ void validate_battlefield(const Battlefield &board)
                     {
                         return tile > Terrain::overgrown;
                     }) ||
-        (!board.plants.empty() && board.plants.size() != board.terrain.size()))
+        (!board.plants.empty() && board.plants.size() != board.terrain.size()) ||
+        board.clearance.size() != board.blocking.size() ||
+        (!board.blocking.empty() && board.blocking.size() != board.terrain.size()))
     {
         throw std::runtime_error("Invalid battlefield");
     }

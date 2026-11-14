@@ -31,11 +31,14 @@ struct OverlandWorld
     // The world column of each window's first column, by travel mode: 2 west,
     // 3 central, 4 east.
     std::array<unsigned, 3> window_start{};
+
     // The original's combat terrain table: per battlefield tile its movement
-    // cost (255 impassable) and its art frame.
+    // cost (255 impassable), its art frame, and its heights for sight (the
+    // clearance of a creature standing on it and how high it blocks sight,
+    // rules::Battlefield).
     struct CombatTile
     {
-        std::uint8_t cost{}, frame{};
+        std::uint8_t cost{}, frame{}, clearance{}, blocking{};
     };
     std::vector<CombatTile> combat_tiles;
 

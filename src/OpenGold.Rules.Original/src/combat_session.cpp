@@ -32,7 +32,7 @@ using rules::Side;
 
 // The original counts movement in half-moves: 2 a straight step, 3 a diagonal one.
 constexpr rules::StepCosts half_moves{2, 3, 2, 4, 0};
-constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 21";
+constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 22";
 
 enum class Condition : unsigned
 {
@@ -83,7 +83,8 @@ constexpr int bite_hold = 74, blood_drain = 75, rot = 50, poisoned = 55, mummy_r
               stinking_cloud = 40, cloudkill = 291, enlarged = 12, strengthened = 38,
               strength_wasted = original::strength_wasted, delayed_blast = 500, animated = 32,
               snake_charm = 51, slow_poison_tick = 15, slow_poison = 22, revival = 78,
-              read_magic = 16, dust = 71, age_in_years = original::age_in_years;
+              read_magic = 16, dust = 71, age_in_years = original::age_in_years,
+              spiritual_hammer = 23;
 // Haste keeps whether it has aged its creature in this bit of its strength,
 // which no caster's level reaches. The original's bit 0x10 is set already by
 // a caster of level 16 to 31, whose Haste so never aged (Bugs).
@@ -97,10 +98,10 @@ constexpr int renew_invisibility = 56, reflectable_gaze = 127, fear = 342;
 // secret_effect_offset).
 constexpr int globe_of_invulnerability = 457, petrifying_gaze = 458, needs_plus_three = 460,
               poison_touch = 464, stone_touch = 465, swallows_whole = 466, fire_beside = 467,
-              confusing_gaze = 470, giant_bane = 475, luck = 478, iron_golem = 479,
-              fire_at_target = 480, spits_acid = 481, dragon_fear = 482, cold_breath = 483,
-              strong_poison_touch = 486, ghoul_touch = 488, bashing_proof = 490, fearless = 492,
-              hardy = 494, fire_breath = 504, stunned = 506;
+              confusing_gaze = 470, boots_of_speed = 474, giant_bane = 475, luck = 478,
+              iron_golem = 479, fire_at_target = 480, spits_acid = 481, dragon_fear = 482,
+              cold_breath = 483, strong_poison_touch = 486, ghoul_touch = 488, bashing_proof = 490,
+              fearless = 492, hardy = 494, fire_breath = 504, stunned = 506;
 // Unlimited Adventures' own (canonical_effect, its code plus kit_effect_offset).
 // Pools of Darkness plays four of them by the same rules: the Rakshasa's
 // protection is the kit's spell_proof, its weapons below +3 and +4 halving,
@@ -153,6 +154,9 @@ struct Held
     bool gone{};
     // Its place among the creature's readied items, which keeps their order.
     int readied_order{-1};
+    // Spiritual Hammer's hammer, which is no item of the party's and goes
+    // with its spell (effhndlr.pas, EffSpiritualHammer).
+    bool conjured{};
 };
 
 struct Fighter
@@ -347,15 +351,93 @@ int distance(const Fighter &a, const Fighter &b)
     return nearest;
 }
 
+// A straight line walked a square at a time, its doubled distance growing by
+// 2 a straight step and 3 a diagonal one (pathing.pas, PathFind and NextPathStep).
+struct LineWalk
+{
+    Cell start, end, at;
+    int across{}, down{}, step_x{}, step_y{}, error{}, diagonal_step{}, straight_step{}, distance{};
+
+    LineWalk(Cell from, Cell to) : start(from), end(to), at(from)
+    {
+        across = std::abs(to.x - from.x);
+        down = std::abs(to.y - from.y);
+        step_x = (to.x > from.x) - (to.x < from.x);
+        step_y = (to.y > from.y) - (to.y < from.y);
+        const int major = std::max(across, down), minor = std::min(across, down);
+        error = 2 * minor - major;
+        diagonal_step = 2 * (minor - major);
+        straight_step = 2 * minor;
+    }
+
+    // One step on; false at the line's end.
+    bool next()
+    {
+        const bool x_major = across > down;
+        if ((x_major && at.x == end.x) || (!x_major && at.y == end.y))
+        {
+            return false;
+        }
+        if (error >= 0)
+        {
+            (x_major ? at.y : at.x) += x_major ? step_y : step_x;
+            error += diagonal_step;
+            distance += 3;
+        }
+        else
+        {
+            error += straight_step;
+            distance += 2;
+        }
+        (x_major ? at.x : at.y) += x_major ? step_x : step_y;
+        return true;
+    }
+};
+
+// Whether the line from one square to another is clear (pathing.pas,
+// WalkLine): a square on it, both ends too, blocks it when the square's
+// blocking height is above the clearance of the square looked from. Without
+// heights an obstacle blocks and nothing else does.
+bool clear_line(const rules::Battlefield &board, Cell from, Cell to)
+{
+    const auto at = [&board](Cell cell)
+    {
+        return static_cast<std::size_t>(cell.y * board.width + cell.x);
+    };
+    const auto blocking = [&](Cell cell) -> int
+    {
+        if (!board.contains(cell))
+        {
+            return 255;
+        }
+        if (board.blocking.empty())
+        {
+            return board.at(cell) == rules::Terrain::obstacle ? 2 : 0;
+        }
+        return board.blocking[at(cell)];
+    };
+    const int eye =
+        board.clearance.empty() || !board.contains(from) ? 0 : board.clearance[at(from)];
+    LineWalk line(from, to);
+    do
+    {
+        if (blocking(line.at) > eye)
+        {
+            return false;
+        }
+    } while (line.next());
+    return true;
+}
+
 // Whether a line runs from a square of one creature to a square of the other
-// that walls do not block; creatures do not (pathing.pas, BuildTargetList).
+// that the ground does not block; creatures do not (pathing.pas, BuildTargetList).
 bool sees(const rules::Battlefield &board, const Fighter &a, const Fighter &b)
 {
     for (const auto from : squares_of(a))
     {
         for (const auto to : squares_of(b))
         {
-            if (rules::has_line_of_sight(board, from, to))
+            if (clear_line(board, from, to))
             {
                 return true;
             }
@@ -561,13 +643,6 @@ int paced(const Fighter &f, int rate)
     return slowed && !hasted ? rate / 2 : rate;
 }
 
-// Its movement in squares this round, as the original weighs flight and
-// morale with it (cbtacts.pas, CalcCreatureMovement).
-int movement_of(const Fighter &f)
-{
-    return paced(f, 2 * f.numbers.movement) / 2;
-}
-
 // A caster's level for a spell: its cleric or magic-user level, 12 for an
 // item's own power (magic.pas, GetCasterLevel). Curse and the games after it
 // count a paladin's cleric spells at its level less 8 (Secret at its level),
@@ -647,8 +722,8 @@ bool spell_built(int number)
 {
     constexpr std::array built{
         26, 27, 36, 41, 46, 57, 58, 59, 60, 61, 62, 63, 64, 65, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
-        12, 13, 15, 16, 17, 19, 20, 21, 23, 24, 25, 29, 30, 32, 33, 35, 37, 38, 40, 42, 34, 43, 44,
-        45, 47, 48, 49, 50, 51, 52, 53, 54, 55,
+        12, 13, 15, 16, 17, 19, 20, 21, 23, 24, 25, 28, 29, 30, 32, 33, 35, 37, 38, 40, 42, 34, 43,
+        44, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55,
         // Curse's (spells.cpp, curse_spells).
         158, 166, 168, 169, 170, 171, 172, 173, 174, 176, 177, 178, 179, 180, 181, 182, 183, 184,
         185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200,
@@ -658,49 +733,6 @@ bool spell_built(int number)
         301, 303, 304, 308, 309, 318, 319, 320, 321, 322, 323, 324, 325, 326};
     return std::find(built.begin(), built.end(), number) != built.end();
 }
-
-// A straight line walked a square at a time, its doubled distance growing by
-// 2 a straight step and 3 a diagonal one (pathing.pas, PathFind and NextPathStep).
-struct LineWalk
-{
-    Cell start, end, at;
-    int across{}, down{}, step_x{}, step_y{}, error{}, diagonal_step{}, straight_step{}, distance{};
-
-    LineWalk(Cell from, Cell to) : start(from), end(to), at(from)
-    {
-        across = std::abs(to.x - from.x);
-        down = std::abs(to.y - from.y);
-        step_x = (to.x > from.x) - (to.x < from.x);
-        step_y = (to.y > from.y) - (to.y < from.y);
-        const int major = std::max(across, down), minor = std::min(across, down);
-        error = 2 * minor - major;
-        diagonal_step = 2 * (minor - major);
-        straight_step = 2 * minor;
-    }
-
-    // One step on; false at the line's end.
-    bool next()
-    {
-        const bool x_major = across > down;
-        if ((x_major && at.x == end.x) || (!x_major && at.y == end.y))
-        {
-            return false;
-        }
-        if (error >= 0)
-        {
-            (x_major ? at.y : at.x) += x_major ? step_y : step_x;
-            error += diagonal_step;
-            distance += 3;
-        }
-        else
-        {
-            error += straight_step;
-            distance += 2;
-        }
-        (x_major ? at.x : at.y) += x_major ? step_x : step_y;
-        return true;
-    }
-};
 
 // A cloud on the field: the caster's, its number among the caster's clouds of
 // its kind, and the squares it covers where the ground can be walked. A
@@ -750,12 +782,20 @@ class Session final : public rules::CombatSession
 {
   public:
     Session(rules::Identity identity, rules::Battlefield board, std::vector<Fighter> fighters,
-            std::uint64_t seed, unsigned morale, bool outdoors, bool escape_ends_fight)
+            std::uint64_t seed, unsigned morale, bool outdoors, bool escape_ends_fight,
+            int party_facing, int party_move_modifier)
         : identity_(std::move(identity)), board_(std::move(board)), fighters_(std::move(fighters)),
           random_{seed}, morale_threshold_(std::min(morale, 100U)), outdoors_(outdoors),
-          escape_ends_fight_(escape_ends_fight)
+          escape_ends_fight_(escape_ends_fight), party_facing_(party_facing),
+          party_move_modifier_(party_move_modifier)
     {
         rules::validate_battlefield(board_);
+        // Each creature starts turned along the party's facing, the party's
+        // enemies back toward it (combatst.pas, InitCreatureCombatData).
+        for (auto &f : fighters_)
+        {
+            f.direction = (along_party_facing() + (f.side == Side::party ? 0 : 4)) % 8;
+        }
         log({"Combat begins.", {}});
         combat_start();
         update_hostile_hit_points();
@@ -771,6 +811,12 @@ class Session final : public rules::CombatSession
 
     static std::unique_ptr<Session> restored(rules::Identity identity, std::string_view checkpoint,
                                              const Content &content);
+
+    // The game's item types, which a hammer the fight conjures is made of.
+    void know_item_types(std::vector<por::ItemTemplate> types)
+    {
+        item_types_ = std::move(types);
+    }
 
     [[nodiscard]] rules::Snapshot snapshot() const override;
     [[nodiscard]] std::vector<rules::Command> legal_commands() const override;
@@ -800,6 +846,24 @@ class Session final : public rules::CombatSession
     bool escape_ends_fight_{};
     // The side the member who ended such a fight ran off.
     std::optional<unsigned> escape_side_;
+    // The party's facing and the script's change to its movement
+    // (rules::Encounter).
+    int party_facing_{};
+    int party_move_modifier_{};
+    std::vector<por::ItemTemplate> item_types_;
+
+    // The direction along the party's facing on the field: north gives
+    // north-west and south south-east, as the original's table turns them
+    // (combatst.pas, quadDir; combatai.pas, AiMoveStep).
+    [[nodiscard]] int along_party_facing() const
+    {
+        constexpr std::array<int, 4> turned{7, 2, 3, 6};
+        return turned[static_cast<std::size_t>(party_facing_ / 2 % 4)];
+    }
+
+    [[nodiscard]] int squares_of_movement(const Fighter &f) const;
+    [[nodiscard]] int half_moves_of(const Fighter &f) const;
+    [[nodiscard]] int movement_of(const Fighter &f) const;
     std::vector<Cloud> clouds_;
 
     // Delayed Blast Fireballs set and not yet gone off: the caster's, its
@@ -881,6 +945,8 @@ class Session final : public rules::CombatSession
     void rework_gear(Fighter &f, const std::vector<Held> &before_held,
                      std::vector<Held> after_held);
     void toggle_readied(Fighter &f, std::size_t index);
+    void conjure_hammer(Fighter &caster);
+    void settle_hammers();
     void equip_best(Fighter &f);
     [[nodiscard]] int weapon_priority(const Fighter &f, const Held &weapon, int other_hands) const;
     void next_actor();
@@ -1067,6 +1133,38 @@ void Session::log(Message message)
     log_.push_back({english(message), std::move(message)});
 }
 
+// A creature's movement in squares before Haste and Slow (cbtacts.pas,
+// CalcCreatureMovement): the party's side moves by the script's modifier
+// too, a byte that wraps, and a movement outside 1 to 96 is 1. Secret's
+// boots of speed double it (charhlp.pas, RecalcMovement).
+int Session::squares_of_movement(const Fighter &f) const
+{
+    int squares = f.numbers.movement;
+    if (secret() && f.has(effect::boots_of_speed))
+    {
+        squares *= 2;
+    }
+    if (f.side == Side::party)
+    {
+        squares = (squares + party_move_modifier_) % 256;
+    }
+    return squares < 1 || squares > 96 ? 1 : squares;
+}
+
+// The half-moves it has this round: twice its movement, doubled by Haste and
+// halved by Slow.
+int Session::half_moves_of(const Fighter &f) const
+{
+    return paced(f, 2 * squares_of_movement(f));
+}
+
+// Its movement in squares this round, as the original weighs flight and
+// morale with it.
+int Session::movement_of(const Fighter &f) const
+{
+    return half_moves_of(f) / 2;
+}
+
 // Every creature able to act rolls initiative: d6 with its Dexterity's
 // missile adjustment, at least 1; a surprised one loses 6 in the first round,
 // and a result outside 0 to 20 lets it not act (combat.pas, BeginRound).
@@ -1089,7 +1187,7 @@ void Session::begin_round()
                 f.initiative = 0;
             }
         }
-        f.half_moves = f.has(effect::immobile) ? 0 : paced(f, 2 * f.numbers.movement);
+        f.half_moves = f.has(effect::immobile) ? 0 : half_moves_of(f);
         f.cast_allowed = true;
         f.item_use_allowed = true;
         f.using_item = -1;
@@ -1268,6 +1366,7 @@ void Session::next_actor()
 void Session::end_round()
 {
     age_effects();
+    settle_hammers();
     update_hostile_hit_points();
     round_end_effects();
     for (auto &f : fighters_)
@@ -2243,7 +2342,7 @@ std::vector<rules::Command> Session::aiming_commands(const Fighter &caster) cons
                 const Cell cell{x, y};
                 if (board_.at(cell) == rules::Terrain::obstacle ||
                     doubled_distance(caster.cell, cell) / 2 > range ||
-                    !rules::has_line_of_sight(board_, caster.cell, cell))
+                    !clear_line(board_, caster.cell, cell))
                 {
                     continue;
                 }
@@ -2291,7 +2390,7 @@ std::vector<EntityId> Session::within(Cell aim, int radius) const
         int nearest = 1000;
         for (const auto square : squares_of(f))
         {
-            if (rules::has_line_of_sight(board_, aim, square))
+            if (clear_line(board_, aim, square))
             {
                 nearest = std::min(nearest, doubled_distance(aim, square));
             }
@@ -2968,11 +3067,16 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         // Mind Blank lasts a day (magic.pas, CalcSpellDuration).
         cast_generic(caster, number, level, targets, 0, 0, 0, 1440);
         break;
+    case 28:
+        cast_generic(caster, number, level, targets, 0, 0);
+        conjure_hammer(caster);
+        break;
     default:
         cast_generic(caster, number, level, targets, 0, 0);
         break;
     }
     damage_dice_ = 0;
+    settle_hammers();
     caster.using_item = -1;
     end_actions(caster);
 }
@@ -3248,9 +3352,148 @@ void Session::toggle_readied(Fighter &f, std::size_t index)
 {
     const auto before = held_now(f);
     auto after = before;
-    place_readied(after, index, !after[index].carried.item.readied());
+    const bool putting_away = after[index].carried.item.readied();
+    place_readied(after, index, !putting_away);
     rework_gear(f, before, std::move(after));
     f.readied_changed = true;
+    // Pool of Radiance's hammer put away ends its spell (its special byte's
+    // handler 137, EffHammerGone), as Secret's and the later games' do by
+    // taking the effect the hammer gives; Curse's and Gateway's stay.
+    const auto game = game_of(identity_);
+    const bool curse_engine = game == GoldBoxGame::curse_of_the_azure_bonds ||
+                              game == GoldBoxGame::gateway_to_the_savage_frontier ||
+                              game == GoldBoxGame::unlimited_adventures;
+    if (putting_away && f.held[index].conjured && !curse_engine)
+    {
+        f.remove(effect::spiritual_hammer);
+    }
+    settle_hammers();
+}
+
+namespace
+{
+// Spiritual Hammer's hammer as each game makes it (effhndlr.pas,
+// EffSpiritualHammer): a hammer +1 named "Spiritual Hammer", whose effect
+// byte is the spell's effect (23); Pool of Radiance's special byte names the
+// handler that ends the spell as it is put away (137), Curse's and Gateway's
+// none that does anything (A0h), Secret's and the later games' gives the
+// spell's effect (80h). Secret's and the later games' hammer is item type 6,
+// the earlier games' 20.
+struct HammerMaking
+{
+    std::uint8_t type{}, name_word{}, special{};
+    // Readied as it comes: always in Curse and Gateway, in Secret and after
+    // when no weapon is readied, never in Pool of Radiance.
+    bool readied_always{}, readied_unarmed{};
+};
+
+HammerMaking hammer_making(GoldBoxGame game)
+{
+    if (game == GoldBoxGame::pool_of_radiance)
+    {
+        return {20, 243, 137, false, false};
+    }
+    if (game == GoldBoxGame::curse_of_the_azure_bonds ||
+        game == GoldBoxGame::gateway_to_the_savage_frontier ||
+        game == GoldBoxGame::unlimited_adventures)
+    {
+        return {20, 243, 0xA0, true, false};
+    }
+    return {6, 121, 0x80, false, true};
+}
+} // namespace
+
+// The caster of Spiritual Hammer gains its hammer while the spell lasts,
+// unless it has one or carries 16 items (effhndlr.pas, EffSpiritualHammer).
+void Session::conjure_hammer(Fighter &caster)
+{
+    const auto making = hammer_making(game_of(identity_));
+    if (!caster.record || !caster.has(effect::spiritual_hammer) ||
+        making.type >= item_types_.size())
+    {
+        return;
+    }
+    const auto before = held_now(caster);
+    const auto living = std::ranges::count_if(before,
+                                              [](const Held &h)
+                                              {
+                                                  return !h.gone;
+                                              });
+    const bool has_one = std::ranges::any_of(before,
+                                             [](const Held &h)
+                                             {
+                                                 return h.conjured && !h.gone;
+                                             });
+    if (has_one || living >= 16)
+    {
+        return;
+    }
+    Held hammer;
+    auto &item = hammer.carried.item;
+    item.type = making.type;
+    item.name_components = {0, making.type, making.name_word};
+    item.magic_bonus = 1;
+    item.effect_codes = {0, effect::spiritual_hammer, making.special};
+    item.raw[46] = item.type;
+    item.raw[47 + 1] = item.name_components[1];
+    item.raw[47 + 2] = item.name_components[2];
+    item.raw[50] = 1;
+    item.raw[61] = item.effect_codes[1];
+    item.raw[62] = item.effect_codes[2];
+    hammer.carried.type = item_types_[making.type];
+    hammer.name = "Spiritual Hammer";
+    hammer.conjured = true;
+    hammer.start_count = 1;
+    auto after = before;
+    after.push_back(std::move(hammer));
+    const std::size_t at = after.size() - 1;
+    std::vector<CarriedItem> readied;
+    bool armed = false;
+    for (const auto &h : before)
+    {
+        if (!h.gone && h.carried.item.readied())
+        {
+            readied.push_back(h.carried);
+            armed = armed || h.carried.type.worn_location == 0;
+        }
+    }
+    const bool ready = making.readied_always || (making.readied_unarmed && !armed);
+    if (ready && !readying_refusal(after[at].carried, readied, caster.record->item_limit,
+                                   game_of(identity_)))
+    {
+        place_readied(after, at, true);
+        caster.readied_changed = true;
+    }
+    rework_gear(caster, before, std::move(after));
+    log({"{name} gains an item.", {{"name", caster.name}}});
+}
+
+// A hammer whose spell has ended is gone (EffSpiritualHammer, as its effect
+// is removed).
+void Session::settle_hammers()
+{
+    for (auto &f : fighters_)
+    {
+        const auto conjured = std::ranges::find_if(f.held,
+                                                   [](const Held &h)
+                                                   {
+                                                       return h.conjured && !h.gone;
+                                                   });
+        if (conjured == f.held.end() || f.has(effect::spiritual_hammer))
+        {
+            continue;
+        }
+        const auto at = static_cast<std::size_t>(conjured - f.held.begin());
+        const auto before = held_now(f);
+        auto after = before;
+        after[at].gone = true;
+        if (after[at].carried.item.readied())
+        {
+            place_readied(after, at, false);
+            f.readied_changed = true;
+        }
+        rework_gear(f, before, std::move(after));
+    }
 }
 
 // What the original's AI makes of a weapon (combatai.pas, CalcWeaponPriority):
@@ -6053,20 +6296,10 @@ bool Session::ai_step(Fighter &f, int &last_direction, int &stuck)
     int base = 0;
     if (f.fleeing)
     {
-        // Away from its enemies; the original ran along the party's facing,
-        // which the fight learns with step 7.
+        // The party's enemies run along its facing, its own side the other
+        // way (combatai.pas, AiMoveStep).
         f.stance = roll(2);
-        int x = 0, y = 0, enemies = 0;
-        for (const auto &o : fighters_)
-        {
-            if (o.side != f.side && o.able())
-            {
-                x += o.cell.x;
-                y += o.cell.y;
-                ++enemies;
-            }
-        }
-        base = enemies ? direction_toward({x / enemies, y / enemies}, f.cell) : 0;
+        base = (along_party_facing() + (f.side == Side::party ? 4 : 0)) % 8;
     }
     else if (locked)
     {
@@ -7840,7 +8073,7 @@ std::vector<rules::Command> Session::legal_commands() const
         {
             const auto &item = held[at];
             const bool is_readied = item.carried.item.readied();
-            if (item.gone || !item.inventory_id ||
+            if (item.gone || (!item.inventory_id && !item.conjured) ||
                 (is_readied ? item.carried.item.cursed_raw != 0
                             : readying_refusal(item.carried, readied, actor->record->item_limit,
                                                game_of(identity_))
@@ -8107,9 +8340,14 @@ std::string Session::save() const
     {
         out(plant);
     }
+    out(board_.blocking.size());
+    for (std::size_t n = 0; n < board_.blocking.size(); ++n)
+    {
+        out(static_cast<unsigned>(board_.clearance[n]), static_cast<unsigned>(board_.blocking[n]));
+    }
     out(random_.value, round_, revision_, actor_, static_cast<unsigned>(outcome_),
-        morale_threshold_, outdoors_, escape_ends_fight_, escape_side_.value_or(4),
-        hostile_hit_points_percent_, clouds_.size());
+        morale_threshold_, outdoors_, escape_ends_fight_, escape_side_.value_or(4), party_facing_,
+        party_move_modifier_, hostile_hit_points_percent_, clouds_.size());
     for (const auto &cloud : clouds_)
     {
         out(cloud.caster, cloud.index, cloud.corner.x, cloud.corner.y,
@@ -8155,7 +8393,7 @@ std::string Session::save() const
         {
             const auto &item = held.carried.item;
             out(por::original_item_key(item), item.readied_raw, item.stack_size, held.inventory_id,
-                held.name, held.start_count, held.gone, held.readied_order);
+                held.name, held.start_count, held.gone, held.readied_order, held.conjured);
         }
         out(f.worked_from.size());
         for (const int at : f.worked_from)
@@ -8218,6 +8456,7 @@ void read_gear(Reader &in, Fighter &f, const Content &content)
         held.start_count = in.as<int>();
         held.gone = in.as<bool>();
         held.readied_order = in.as<int>();
+        held.conjured = in.as<bool>();
         f.held.push_back(std::move(held));
     }
     const auto worked = in.as<std::size_t>();
@@ -8243,6 +8482,7 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
     }
     std::unique_ptr<Session> session(new Session);
     session->identity_ = std::move(identity);
+    session->item_types_ = content.item_types;
     auto &board = session->board_;
     board.width = in.as<int>();
     board.height = in.as<int>();
@@ -8264,6 +8504,16 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
     {
         board.plants.push_back(in.as<bool>());
     }
+    const auto heights = in.as<std::size_t>();
+    if (heights != 0 && heights != board.terrain.size())
+    {
+        throw std::runtime_error("Invalid original-rules combat checkpoint");
+    }
+    for (std::size_t n = 0; n < heights; ++n)
+    {
+        board.clearance.push_back(static_cast<std::uint8_t>(in.as<unsigned>()));
+        board.blocking.push_back(static_cast<std::uint8_t>(in.as<unsigned>()));
+    }
     rules::validate_battlefield(board);
     session->random_.value = in.as<std::uint64_t>();
     session->round_ = in.as<unsigned>();
@@ -8277,6 +8527,8 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
     {
         session->escape_side_ = side;
     }
+    session->party_facing_ = in.as<int>();
+    session->party_move_modifier_ = in.as<int>();
     session->hostile_hit_points_percent_ = in.as<int>();
     const auto clouds = in.as<std::size_t>();
     if (clouds > 64)
@@ -8689,9 +8941,12 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
             f.numbers.morale = non_player + threshold / 2;
         }
     }
-    return std::make_unique<Session>(std::move(identity), std::move(encounter.battlefield),
-                                     std::move(fighters), seed, threshold, encounter.outdoors,
-                                     encounter.escape_ends_fight);
+    auto session = std::make_unique<Session>(std::move(identity), std::move(encounter.battlefield),
+                                             std::move(fighters), seed, threshold,
+                                             encounter.outdoors, encounter.escape_ends_fight,
+                                             encounter.party_facing, encounter.party_move_modifier);
+    session->know_item_types(content.item_types);
+    return session;
 }
 
 std::unique_ptr<rules::CombatSession>

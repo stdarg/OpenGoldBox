@@ -288,6 +288,11 @@ Departures from the original game's own rules, when OpenGoldBox plays by them
   `COMSPR.TLB`). A party made in OpenGoldBox has the combat icon its
   creation gives it, from the DAX games' art, as on their combat screens;
   the design's monsters keep the kit's own icons (`CPIC.TLB`).
+- **Spiritual Hammer's hammer stays in its fight** (2026-11-14). The
+  original puts the hammer among its caster's items, where it stays until
+  the spell's rounds run out, a few minutes after the fight at most.
+  OpenGoldBox's hammer lasts as long within the fight but is gone when the
+  fight ends, as the spell's effect is.
 
 ## Party and parley
 

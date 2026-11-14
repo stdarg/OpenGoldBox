@@ -656,11 +656,31 @@ The work asked for next (2026-11-14), in order, with what each needs:
 
 1. The other "Still to come" items above that are no one game's campaign or
    route work, in their order in this file:
-   - The party's facing, the terrain heights for sight and
-     PARTY_MOVE_MODIFIER (step 7).
-   - Spiritual Hammer's hammer (step 8b-2).
    - The original's rest of any length and its preparation time for
-     memorizing (step 5; scribing takes its own, Scribing).
+     memorizing (step 5; scribing takes its own, Scribing). What the
+     original does (`gametime.pas`, `CampRest`, `CampRestMenu`,
+     `AdvanceSpellPrep`, `AdvanceSpellPrepBase`, `CheckRestingHeal`;
+     `camp.pas`, `RestForSpellPrep`, `CampSpellPrepTime`,
+     `CampMemorizeMenu`): Memorize marks spells pending (bit 0x80 of the
+     memorized slot) before the rest; Rest proposes the party's longest
+     preparation (4 hours, 6 with a pending spell above level 2, plus a
+     quarter hour a pending level, memorizing and scribing alike), which
+     the player raises or lowers by days, hours and five minutes, and stops
+     at any key. It rests in five-minute steps: each step passes the
+     clock, every 288 steps (a day) each member heals 1, each member's base
+     hours count down by the hour and then its pending spells finish one at
+     a time, a scribed spell first, 15 minutes a level each, and the area's
+     rest encounter may break it. What OpenGoldBox does now: the camp's
+     long rest is a day (at least the scribing preparation), the short rest
+     an hour, and spells are chosen after the long rest
+     (`CampaignParty::rest`, `long_rest_benefits` in campaign_rest.cpp,
+     `OriginalModule::long_rest_policy`). It needs a rest length on the
+     campaign's rest (`CampaignParty::rest` and its RestPolicy) with the
+     heal by whole days of rest, memorizing chosen before it and finished by
+     each member's preparation, the camps that call it
+     (`RolfTourSession` in phlan_session.cpp, `rest_interruption`;
+     ua_session.cpp; vga_host.cpp, other sessions' files, small hooks only)
+     and the rest dialog's length (days, hours, minutes) in the Godot view.
    - The training hall's fee and the classes each hall trains (step 3).
    - The temples' Restoration (step 6; *Pools of Darkness*'s and
      *Treasures*'), a service the game's temple screen does not offer yet;
@@ -1038,12 +1058,10 @@ gear.
    spends one, and the last thrown weapon leaves its thrower empty-handed.
    With an enemy next to it a creature cannot shoot, unless its weapon is one
    it throws with Strength (a dagger, hand axe, spear or javelin), which then
-   strikes as in melee; only such a weapon, or none, can guard. Two things
-   wait for step 7: sight on the shared battlefield is blocked by its
-   obstacles, where the original also weighs each square's height, so the
-   original's terrain heights come with its battlefields; and the shots spent
-   leave the party's inventory, as the original drops a thrown weapon in the
-   loot.
+   strikes as in melee; only such a weapon, or none, can guard. Sight weighs
+   the original's heights (step 7). One thing waits for step 7: the shots
+   spent leave the party's inventory, as the original drops a thrown weapon
+   in the loot.
 5. Morale, fleeing and surrender. *Done 2026-11-12:* a creature whose
    record's NPC byte is 0x80 or more checks its morale as its turn starts
    (the player's characters never do). It holds while its morale (twice the
@@ -1059,11 +1077,9 @@ gear.
    gets away with no enemy in sight or more movement than the fastest enemy,
    or on 1 in 2 when they tie. With none of the party left fighting, the
    party has fled when one of its own characters got away, and is defeated
-   otherwise. Left for later: where a panicked creature runs is the AI's
-   (step 9), which runs monsters along the party's facing; the script's
-   change to the party's movement (PARTY_MOVE_MODIFIER) comes with step 7, as
-   does what the game does after a flight: the members left behind are lost,
-   as in the original.
+   otherwise. Where a panicked creature runs is the AI's (step 9), along the
+   party's facing (step 7). Left for later: what the game does after a
+   flight: the members left behind are lost, as in the original.
 6. Saving throws, then the monsters' special abilities (MONnSPC). In parts:
    - 6a. *Done 2026-11-12:* a creature's effects (a monster's from its
      record) with their minutes, which a round ages by one; those that end at
@@ -1183,15 +1199,46 @@ gear.
      monster's saved with its items does, keeps one. The effects the fight
      does not play yet do nothing: *Pool of Radiance*'s undead slayer (3) and
      flame tongue (6), *Curse*'s spell failure, dragon slayer, bane weapon
-     and berserk (74 to 77), *Secret*'s boots of speed (74). The 256-color
+     and berserk (74 to 77). The 256-color
      games and *Unlimited Adventures* number their effects in ways the fight
      does not read yet (`canonical_effect` reads *Gateway*'s, *Pools of
      Darkness*'s and *Treasures*' as *Pool of Radiance*'s), so their items
      give none; the special byte's other kinds (Strength, spell slots, the
      aligned weapon) are their own items.
-   - Still to come: the party's facing, the original's terrain heights for
-     sight and PARTY_MOVE_MODIFIER. Out of doors a fireball
-     catches only those within 2 squares of its aim (`SpellFireball`).
+   - **The party's facing** (2026-11-14; `combatst.pas`,
+     `InitCreatureCombatData`; `combatai.pas`, `AiMoveStep`): the fight
+     knows the way the party faced as it met its foes
+     (`rules::Encounter::party_facing`, kept by combat checkpoint 22). Each
+     creature starts turned along it, the party's enemies back toward it,
+     and a fleeing one of the party's enemies runs along it, one of the
+     party's side the other way.
+     The original turns a party facing north to north-west and one facing
+     south to south-east on the field (its `quadDir`), and so does this.
+   - **Heights for sight** (2026-11-14; `pathing.pas`, `WalkLine`): the
+     original's terrain tables give each battlefield tile a clearance (how
+     high one standing on it sees from) and a blocking height, read with
+     their costs and frames from the games' programs (*Pool of Radiance*'s
+     START.EXE, *Curse*'s START.EXE, *Gateway*'s GAME.EXE) onto the
+     wilderness fields (`rules::Battlefield::clearance` and `blocking`).
+     Sight walks the original's line square by square (its `PathFind` and
+     `NextPathStep`), both ends too, and a square stops it whose blocking is
+     above the clearance of the looker's square: in *Pool of Radiance* some
+     ground no one can cross does not stop an arrow, and in *Curse* one on
+     its hills (clearance 2) sees over trees and rocks. A dungeon's field has
+     no heights: its walls block, as the original's do. The original weighs
+     only the looker's square, though its line walk carries a height from
+     the looker's square to the same square's again; this follows it.
+     Spells' aims and areas use the same line.
+   - **PARTY_MOVE_MODIFIER** (2026-11-14; `cbtacts.pas`,
+     `CalcCreatureMovement`): what a script puts in the cell (0x6E72 in
+     *Pool of Radiance*, its place in the later games' memory) is added to
+     the movement of every creature on the party's side for the fight, a
+     byte that wraps, so 253 takes 3 away; a movement outside 1 to 96 is 1,
+     as the original's is, before Haste and Slow. The fight's end clears it,
+     as before. *Secret*'s boots of speed (its effect 74) double a
+     creature's movement (`RecalcMovement`).
+   - Out of doors a fireball catches only those within 2 squares of its aim
+     (`SpellFireball`).
 8. Spells in combat. In parts:
    - 8a. *Done 2026-11-12:* the casting framework, with the first-level
      spells (`original_spells.h` holds the original's spell table). Cast
@@ -1242,8 +1289,19 @@ gear.
      Animate Dead (the human dead rise whole for the caster, and collapse at
      0), Slow Poison (one killed by poison stands with 1 Hit Point, and dies
      if the poison outlasts the spell) and Snake Charm. Enlarge, Reduce and
-     Strength came with magic (plan step 5); Spiritual Hammer's hammer, an
-     item, comes with step 7.
+     Strength came with magic (plan step 5).
+   - 8b-3. *Done 2026-11-14:* Spiritual Hammer (`SpellSpiritualHammer`,
+     `EffSpiritualHammer`) gives its caster the spell's effect (23) for a
+     round a level and a hammer +1 named "Spiritual Hammer" while it lasts,
+     unless it has one or carries 16 items ("{name} gains an item."). Each
+     game makes it its own way: *Pool of Radiance*'s (item type 20) comes
+     unreadied, and put away it ends the spell (its special byte's handler
+     137, `EffHammerGone`); *Curse*'s and *Gateway*'s (type 20) come readied
+     as `ToggleReadyItem` allows, and stay put away; *Secret*'s and the later
+     games' (type 6) come readied to a hand with no weapon, and put away end
+     the spell. When the spell ends, by its time, Dispel Magic or the hammer
+     put away, the hammer is gone. It is no item of the party's: the fight
+     never gives it to the inventory (DEVIATIONS.md).
    - 8c. *Done 2026-11-12:* turning undead, once a fight for one with cleric
      levels: one d20 for the whole attempt against up to 1d12 undead enemies
      in sight, the lowest kinds first and the nearest of those, by the
@@ -1286,8 +1344,8 @@ gear.
    at each turn (`EquipWeaponAndArmor`) and readies another weapon when an
    enemy is next to its bow, which ends its turn (step 7: many monsters carry
    their weapons unreadied, Pool of Radiance's goblin guards their short
-   swords). Waiting for the party's facing (step 7): a fleeing creature runs
-   along it (away from its enemies meanwhile). Each step is a stop, so it never
+   swords). A fleeing creature runs along the party's facing (step 7). Each
+   step is a stop, so it never
    ends on another creature's square. The game's computer turns under these
    rules (monsters, allies and party members on Quick) are this AI's: the
    shared command chooser takes `quick` (or `quick_magic`) whenever the rules

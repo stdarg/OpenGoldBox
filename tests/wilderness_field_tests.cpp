@@ -24,6 +24,17 @@ void check(bool ok, const std::string &message)
     }
 }
 
+// The heights for sight a tile of this frame has in the made-up table.
+std::uint8_t clearance_of(int frame)
+{
+    return static_cast<std::uint8_t>(frame % 3);
+}
+
+std::uint8_t blocking_of(int frame)
+{
+    return static_cast<std::uint8_t>(frame % 4);
+}
+
 // Tiles 0x17 and 0x36 are floor (frame 0x16), as in the original; every other
 // tile is its own frame and open.
 OverlandWorld world()
@@ -32,7 +43,8 @@ OverlandWorld world()
     for (unsigned tile = 0; tile < 66; ++tile)
     {
         const bool floor = tile == 0x17 || tile == 0x36;
-        result.combat_tiles.push_back({1, static_cast<std::uint8_t>(floor ? 0x16 : tile)});
+        const auto frame = static_cast<std::uint8_t>(floor ? 0x16 : tile);
+        result.combat_tiles.push_back({1, frame, clearance_of(frame), blocking_of(frame)});
     }
     return result;
 }
@@ -137,6 +149,20 @@ void road_to_the_last_column()
 }
 } // namespace
 
+// Each square keeps its tile's heights for sight (rules::Battlefield).
+void squares_keep_their_heights()
+{
+    const auto field = grow(0x25, {3});
+    bool kept = field.geometry.clearance.size() == field.tiles.size() &&
+                field.geometry.blocking.size() == field.tiles.size();
+    for (std::size_t n = 0; kept && n < field.tiles.size(); ++n)
+    {
+        kept = field.geometry.clearance[n] == clearance_of(field.tiles[n]) &&
+               field.geometry.blocking[n] == blocking_of(field.tiles[n]);
+    }
+    check(kept, "Every square has its tile's clearance and blocking");
+}
+
 int main()
 {
     try
@@ -145,6 +171,7 @@ int main()
         boulders_in_pairs();
         pair_beside_a_bare_road();
         road_to_the_last_column();
+        squares_keep_their_heights();
     }
     catch (const std::exception &error)
     {

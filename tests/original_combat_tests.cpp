@@ -377,10 +377,13 @@ original::Combatant creature(int hit_points, int level = 1)
 Fight arrange(const std::vector<Placed> &placed, std::uint64_t seed,
               const std::vector<rules::Cell> &walls = {}, unsigned morale = 100,
               GoldBoxGame game = GoldBoxGame::pool_of_radiance, bool outdoors = false,
-              bool no_magic = false)
+              bool no_magic = false,
+              const std::function<void(rules::Encounter &)> &adjust = nullptr,
+              std::vector<por::ItemTemplate> item_types = {})
 {
     original::Content content;
     content.game = game;
+    content.item_types = std::move(item_types);
     Fight fight{original::rules_module(std::move(content)), nullptr};
     rules::Encounter encounter;
     encounter.morale = morale;
@@ -403,6 +406,10 @@ Fight arrange(const std::vector<Placed> &placed, std::uint64_t seed,
         participant.cell = p.cell;
         participant.character_profile = p.numbers.encode();
         encounter.participants.push_back(participant);
+    }
+    if (adjust)
+    {
+        adjust(encounter);
     }
     fight.session = fight.module->create(std::move(encounter), seed);
     return fight;
@@ -4327,6 +4334,203 @@ void a_quarrel_banishes_the_rakshasa()
     check(logged(*plain.session, "{name} is banished.") == 0, "Another blow only wounds it");
 }
 
+// Sight weighs the original's heights (pathing.pas, WalkLine): a square
+// blocks it when its blocking is above the clearance of the square looked
+// from, so ground that stops a step may not stop an arrow, and one on high
+// ground shoots over what stops the others.
+void heights_decide_sight()
+{
+    const auto can_shoot = [](int blocking, int archer_clearance)
+    {
+        auto fight = arrange({{"Archer", rules::Side::party, {0, 3}, archer(10)},
+                              {"Ogre", rules::Side::opposition, {7, 3}, creature(1000, 0)}},
+                             21, {{3, 3}}, 100, GoldBoxGame::pool_of_radiance, false, false,
+                             [&](rules::Encounter &encounter)
+                             {
+                                 auto &board = encounter.battlefield;
+                                 board.clearance.assign(board.terrain.size(), 1);
+                                 board.blocking.assign(board.terrain.size(), 0);
+                                 board.blocking[3 * 8 + 3] = static_cast<std::uint8_t>(blocking);
+                                 board.clearance[3 * 8 + 0] =
+                                     static_cast<std::uint8_t>(archer_clearance);
+                             });
+        until_turn_of(*fight.session, "Archer");
+        return offered(*fight.session, "ranged", "Ogre").has_value();
+    };
+    check(can_shoot(0, 1), "Impassable ground of no height lets the arrow by");
+    check(!can_shoot(2, 1), "A tree stops it");
+    check(can_shoot(2, 2), "From a hill the archer shoots over the tree");
+}
+
+// The party's facing (combatst.pas and combatai.pas): its enemies flee along
+// it, east when it faced east and west when it faced west; and the script's
+// change to the party's movement moves only the party (cbtacts.pas,
+// CalcCreatureMovement), a byte that wraps.
+void the_party_facing_and_movement()
+{
+    const auto flees_to = [](int facing)
+    {
+        auto coward = creature(20, 0);
+        coward.hit_points = 2;
+        coward.morale = 0x80 + 10;
+        coward.movement = 12;
+        auto slow = creature(50);
+        slow.movement = 1;
+        auto fight = arrange({{"Fighter", rules::Side::party, {3, 7}, slow},
+                              {"Coward", rules::Side::opposition, {4, 3}, coward}},
+                             191, {}, 50, GoldBoxGame::pool_of_radiance, false, false,
+                             [facing](rules::Encounter &encounter)
+                             {
+                                 encounter.party_facing = facing;
+                             });
+        auto &session = *fight.session;
+        all_quick(
+            session,
+            [&]
+            {
+                return view_of(session.snapshot(), "Coward").fled;
+            },
+            10);
+        const auto &view = view_of(session.snapshot(), "Coward");
+        return view.fled ? view.cell.x : -1;
+    };
+    check(flees_to(2) == 7 && flees_to(6) == 0,
+          "The party's enemies flee along its facing, off the side it faced");
+
+    const auto movement_feet = [](int modifier)
+    {
+        auto walker = creature(50);
+        walker.movement = 6;
+        auto fight = arrange({{"Walker", rules::Side::party, {0, 3}, walker},
+                              {"Kobold", rules::Side::opposition, {7, 3}, walker}},
+                             21, {}, 100, GoldBoxGame::pool_of_radiance, false, false,
+                             [modifier](rules::Encounter &encounter)
+                             {
+                                 encounter.party_move_modifier = modifier;
+                             });
+        const auto state = fight.session->snapshot();
+        return std::pair{view_of(state, "Walker").movement_feet,
+                         view_of(state, "Kobold").movement_feet};
+    };
+    check(movement_feet(3) == std::pair{45, 30}, "3 more squares for the party alone");
+    check(movement_feet(253) == std::pair{15, 30}, "253 takes 3 away");
+    check(movement_feet(250) == std::pair{5, 30}, "Below 1 is 1");
+}
+
+// Spiritual Hammer (magic.pas, SpellSpiritualHammer; effhndlr.pas,
+// EffSpiritualHammer): its caster gains a hammer +1 while the spell lasts, a
+// minute (a round) a level. Pool of Radiance leaves it to be readied and ends
+// the spell when it is put away; Curse readies it at once and keeps it put
+// away; Secret readies it when no weapon is.
+void spiritual_hammer_gives_its_hammer()
+{
+    using original::ClassSlot;
+
+    struct Cast
+    {
+        Fight fight;
+        bool gained{};
+    };
+
+    const auto cast_hammer = [](GoldBoxGame game, std::uint8_t hammer_type)
+    {
+        std::vector<por::ItemTemplate> types(256);
+        auto &hammer = types[hammer_type];
+        hammer.hands = 1;
+        hammer.small_medium_damage = {1, 4, 1};
+        hammer.large_damage = {1, 4, 0};
+        hammer.class_restrictions = 0xFF;
+        por::CharacterRecord record;
+        record.game = game;
+        record.base_thac0 = 20;
+        record.base_armor_class = 10;
+        record.max_hit_points = 30;
+        record.base_movement = 12;
+        record.base_attacks[0] = {2, {1, 2, 0}};
+        record.current_abilities = {10, 10, 10, 10, 10, 10, 0};
+        record.levels.cleric = 3;
+        record.item_limit = 0xFF;
+        Cast cast{arrange(
+            {{"Cleric", rules::Side::party, {1, 3}, caster(ClassSlot::cleric, 3, {28})},
+             {"Kobold", rules::Side::opposition, {6, 3}, creature(200, 0)}},
+            71, {}, 100, game, false, false,
+            [&record](rules::Encounter &encounter)
+            {
+                encounter.participants.front().character_record =
+                    original::encode_fight_record(record);
+            },
+            types)};
+        auto &session = *cast.fight.session;
+        until_turn_of(session, "Cleric");
+        check(session.submit(*cast_command(session, 28)), "The cleric casts Spiritual Hammer");
+        for (int step = 0; step < 40 && logged(session, "{name} casts {spell}.") == 0; ++step)
+        {
+            if (actor_name(session) == "Cleric")
+            {
+                if (const auto aim = aim_at_cell(session, {1, 3}))
+                {
+                    session.submit(*aim);
+                    continue;
+                }
+            }
+            session.submit(order(session, "end"));
+        }
+        cast.gained = logged(session, "{name} gains an item.") == 1;
+        return cast;
+    };
+    const auto hammer_command = [](const rules::CombatSession &session,
+                                   std::string_view verb) -> std::optional<rules::Command>
+    {
+        for (const auto &c : session.legal_commands())
+        {
+            if (c.verb == verb && c.label == "Spiritual Hammer")
+            {
+                return c;
+            }
+        }
+        return std::nullopt;
+    };
+    const auto offered_hammer = [&](const rules::CombatSession &session, std::string_view verb)
+    {
+        return hammer_command(session, verb).has_value();
+    };
+    const auto hammer_blow = [](const rules::CombatSession &session)
+    {
+        const auto blow = left_by_fight(session, "Cleric").attacks[0];
+        return blow.dice == 1 && blow.sides == 4 && blow.modifier == 2;
+    };
+
+    auto pool = cast_hammer(GoldBoxGame::pool_of_radiance, 20);
+    auto &pool_fight = *pool.fight.session;
+    until_turn_of(pool_fight, "Cleric");
+    check(pool.gained && offered_hammer(pool_fight, "ready") && !hammer_blow(pool_fight),
+          "Pool of Radiance's hammer comes to be readied");
+    pool_fight.submit(*hammer_command(pool_fight, "ready"));
+    check(hammer_blow(pool_fight), "Readied, it strikes for 1d4+1 and its +1");
+    pool_fight.submit(*hammer_command(pool_fight, "unready"));
+    check(!offered_hammer(pool_fight, "ready") && !offered_hammer(pool_fight, "unready"),
+          "Put away, it ends its spell and is gone");
+
+    auto curse = cast_hammer(GoldBoxGame::curse_of_the_azure_bonds, 20);
+    auto &curse_fight = *curse.fight.session;
+    check(curse.gained && hammer_blow(curse_fight), "Curse's hammer comes readied");
+    until_turn_of(curse_fight, "Cleric");
+    curse_fight.submit(*hammer_command(curse_fight, "unready"));
+    check(offered_hammer(curse_fight, "ready"), "Put away, Curse's hammer stays");
+
+    auto secret = cast_hammer(secret_game, 6);
+    auto &secret_fight = *secret.fight.session;
+    check(secret.gained && hammer_blow(secret_fight),
+          "Secret's hammer comes readied to an empty hand");
+    for (int step = 0; step < 200 && secret_fight.snapshot().round < 6; ++step)
+    {
+        secret_fight.submit(order(secret_fight, "end"));
+    }
+    until_turn_of(secret_fight, "Cleric");
+    check(!offered_hammer(secret_fight, "unready") && !hammer_blow(secret_fight),
+          "Its 3 rounds over, the hammer is gone");
+}
+
 // A readied item lays its own effect on its bearer (viewchar.pas,
 // ToggleReadyItem and ToggleItemEffect): in Pool of Radiance by its special
 // byte's handler, from Curse on by the byte's 0x80 alone, read by the fight's
@@ -4750,6 +4954,9 @@ int main()
         out_of_doors();
         a_quarrel_banishes_the_rakshasa();
         readied_items_give_their_effects();
+        heights_decide_sight();
+        the_party_facing_and_movement();
+        spiritual_hammer_gives_its_hammer();
         a_giant_bane_weapon_bites_giants();
         a_blast_waits();
         write_view_fixture();

@@ -141,6 +141,9 @@ struct CampaignEncounter
     // Gateway's maze fights, which one member's escape ends
     // (rules::Encounter::escape_ends_fight).
     bool escape_ends_fight{};
+    // What the script adds to the party's movement in this fight
+    // (rules::Encounter::party_move_modifier).
+    int party_move_modifier{};
 };
 
 // What the difficulty does to a fight's monsters and morale, those on the party's

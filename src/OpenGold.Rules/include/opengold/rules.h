@@ -597,6 +597,12 @@ struct Battlefield
     // for Plant Growth, and sunlight by day (Encounter::daylight). Empty means
     // none.
     std::vector<bool> plants;
+    // The original's heights for sight, one each a square (its terrain
+    // table's clearance and blocking bytes): under the original rules a
+    // square blocks the sight of a creature whose own square's clearance is
+    // below the square's blocking. Empty means an obstacle blocks sight and
+    // nothing else does.
+    std::vector<std::uint8_t> clearance, blocking;
     [[nodiscard]] bool contains(Cell p) const noexcept;
     // Outside the board, or past a short terrain list, is an obstacle.
     [[nodiscard]] Terrain at(Cell p) const noexcept;
@@ -719,6 +725,13 @@ struct Encounter
     // No one casts a spell in this fight (an Unlimited Adventures design's
     // "no magic" fight).
     bool no_magic{};
+    // The way the party faced as the fight began, as the original rules
+    // number directions (0 north, 2 east, 4 south, 6 west): their creatures
+    // start turned by it and flee along it.
+    int party_facing{};
+    // What the script adds to the party's movement in this fight (the
+    // original's PARTY_MOVE_MODIFIER, a byte that wraps).
+    int party_move_modifier{};
 };
 
 // A weapon attack as the rules resolve it: the attack roll's bonus and the
