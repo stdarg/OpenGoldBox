@@ -141,6 +141,25 @@ class AreaBuilder
         }
     }
 
+    // The rest encounter of the squares of zone `zone` (the header's four
+    // bytes a zone from +2Eh): event `event`, `chance` in 100 every
+    // `minutes` of rest.
+    void rest_encounter(unsigned zone, unsigned minutes, unsigned event, unsigned chance)
+    {
+        const auto at = header_at + 0x2E + 4 * zone;
+        bytes_[at] = static_cast<std::uint8_t>(minutes & 0xFF);
+        bytes_[at + 1] = static_cast<std::uint8_t>(minutes >> 8);
+        bytes_[at + 2] = static_cast<std::uint8_t>(event);
+        bytes_[at + 3] = static_cast<std::uint8_t>(chance);
+    }
+
+    // Whether the overhead map shows the area (bit 0 of the header's +7).
+    void overhead_map(bool shown)
+    {
+        auto &flags = bytes_[header_at + 7];
+        flags = static_cast<std::uint8_t>(shown ? flags | 1U : flags & ~1U);
+    }
+
     // A text of the area's pool; its slot (1-based).
     unsigned text(std::string words)
     {
@@ -204,6 +223,9 @@ std::filesystem::path build_test_design(const std::filesystem::path &kit,
     AreaBuilder hall(*blank);
     hall.name("THE TEST HALL");
     hall.entry(1, 2, 2, 2);
+    // The hall is safe to rest in, and its map is shown.
+    hall.rest_encounter(0, 0, 0, 0);
+    hall.overhead_map(true);
     hall.entry(2, 12, 11, 0);
     // A wall down the hall between columns 9 and 10, with a locked door at
     // row 5 and a door for the brass key (key 1) at row 12.
@@ -298,6 +320,11 @@ std::filesystem::path build_test_design(const std::filesystem::path &kit,
                  {{3, 3}});
     cellar.event(4, {4, 0, 0, 0, low(zap), high(zap), 0, 0, 1, 1, 2});
     cellar.event(5, {26, 0, 0, 0, 0, 0, 0, 4, 100});
+    // 6: rats break a rest in the cellar, at its first hour.
+    const auto rats = cellar.text("RATS SCURRY OVER THE SLEEPERS.");
+    cellar.event(6, {2, 0, 0, 0, 0, 0, 0, 0, low(rats), high(rats)});
+    cellar.rest_encounter(0, 60, 6, 100);
+    cellar.overhead_map(false);
     write(folder / "GEO006.DAT", cellar.finish());
 
     // Area 7, the town: a square of each service and test along row 1.
@@ -1258,9 +1285,66 @@ void the_view_plays_it_through_the_seam(const std::filesystem::path &kit)
               session.snapshot().dialogue.find("WELCOME TO THE TEST HALL") != std::string::npos,
           "Restart begins the design again");
     read_on();
+    // The hall's overhead map: its walls, its doors, and where the party has been.
+    const auto *map = session.area_map();
+    check(map && map->at(2, 0).walls[0] && map->at(9, 5).doors[1] && !map->at(9, 5).walls[1] &&
+              session.snapshot().seen.test(2 * 16 + 2),
+          "The hall's overhead map shows its edge, its locked door and the start");
+    design->place(6, 2, 2, MapDirection::north);
+    check(session.area_map() == nullptr, "The cellar's designer hid its map");
     // The overland areas have no 3D view yet: nothing to draw, nothing thrown.
     design->place(1, 0, 0, MapDirection::north);
     check(!session.view_picture(), "An overland area shows no 3D view yet");
+}
+
+// Camping (docs/games/ua.md, Camping): a rest where no encounter waits heals
+// as the rules rest; the cellar's rats break one at its first hour, and their
+// event runs.
+void the_party_camps(const std::filesystem::path &kit)
+{
+    const ua::DesignFiles files(kit,
+                                build_test_design(kit, temporary_design("opengold_ua_camp.dsn")));
+    const auto content = ua::load_design_content(files);
+    auto session = ua::UaSession::start(files);
+    auto party = new_party(content);
+    session.campaign_party(party);
+    Player player{session, party, content};
+    player.play();
+    opengold::ExplorationSession &exploring = session;
+    session.place(5, 4, 9, MapDirection::north);
+    auto state = party->checkpoint();
+    for (auto &member : state.roster)
+    {
+        member.vitals.hit_points = 1;
+    }
+    party->restore(std::move(state));
+    const auto before = party->state().time_minutes;
+    check(exploring.camp(opengold::RestKind::long_rest), "The party camps in the hall");
+    const auto rest_minutes = party->rule_module().long_rest_policy().duration_minutes;
+    check(session.snapshot().phase == TourPhase::completed &&
+              session.snapshot().dialogue == "The party rests." &&
+              party->state().time_minutes == before + rest_minutes,
+          "An unbroken rest takes the rules' time: " + session.snapshot().dialogue);
+    const auto &first = party->member(party->state().slots[0]);
+    check(first.vitals.hit_points > 1, "The rest heals");
+    while (party->state().spell_rest)
+    {
+        party->keep_rest_spells(party->state().spell_rest->members.front());
+    }
+    // The cellar's rats.
+    session.place(6, 2, 2, MapDirection::north);
+    const auto resting = party->state().time_minutes;
+    check(exploring.camp(opengold::RestKind::long_rest) &&
+              session.snapshot().phase == TourPhase::awaiting_continue &&
+              session.snapshot().dialogue == "The party's repose is interrupted!" &&
+              party->state().time_minutes == resting + 60,
+          "The rats break the rest at its first hour: " + session.snapshot().dialogue);
+    check(!exploring.camp(opengold::RestKind::long_rest), "No camp while words wait");
+    player.said.clear();
+    player.play();
+    check(player.heard("RATS SCURRY OVER THE SLEEPERS.") &&
+              session.snapshot().phase == TourPhase::completed,
+          "The rest encounter's event runs");
 }
 
 // Saving and loading (docs/games/ua.md, Saving and loading a game): a game
@@ -1487,6 +1571,7 @@ int main(int argc, char **argv)
         the_town_serves_the_party(*kit);
         the_view_plays_it_through_the_seam(*kit);
         a_game_saves_and_loads(*kit);
+        the_party_camps(*kit);
         // The game's startup check plays the test design from the menu (a
         // CTest fixture): it is written where the check looks for it.
         if (const char *fixture = std::getenv("OPENGOLD_UA_DESIGN_FIXTURE"))

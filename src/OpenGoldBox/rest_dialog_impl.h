@@ -81,7 +81,7 @@ void RolfTourView::setup_rest()
 
 void RolfTourView::camp()
 {
-    if (!campaign_ || !dax() || !session_->can_leave() || campaign_->in_combat())
+    if (!campaign_ || !session_ || !session_->can_leave() || campaign_->in_combat())
     {
         return;
     }
@@ -241,7 +241,7 @@ void RolfTourView::refresh_rest()
     presentation::required_node<Button>(*w, "Heal").set_visible(spending);
     presentation::required_node<Button>(*w, "Heal").set_disabled(!healable);
     presentation::required_node<Button>(*w, "Save")
-        .set_visible(embedded_party_ && dax() && session_->can_leave() && spending);
+        .set_visible(embedded_party_ && session_->can_leave() && spending);
     presentation::required_node<Button>(*w, "Finish")
         .set_text(rest_text(spending ? N_("Finish") : N_("Cancel")));
     if (spending && !w->is_visible() && !rest_save_open_ && is_visible_in_tree())
@@ -262,9 +262,9 @@ void RolfTourView::rest_start()
                 : opengold::RestKind::long_rest;
         w->hide();
         rest_result_ = String();
-        if (auto *campaign = dax())
+        if (session_)
         {
-            campaign->camp(kind);
+            session_->camp(kind);
         }
         refresh();
     }
@@ -593,9 +593,9 @@ void RolfTourView::rest_finish()
         presentation::required_node<Window>(*this, "RestDialog").hide();
         rest_save_open_ = false;
         rest_result_ = String();
-        if (auto *campaign = dax())
+        if (session_)
         {
-            campaign->decline_camp();
+            session_->decline_camp();
         }
         refresh();
     }
@@ -608,7 +608,7 @@ void RolfTourView::rest_finish()
 
 void RolfTourView::rest_save()
 {
-    if (!embedded_party_ || !dax() || !session_->can_leave() || !campaign_ ||
+    if (!embedded_party_ || !session_ || !session_->can_leave() || !campaign_ ||
         campaign_->in_combat())
     {
         return;
@@ -1358,7 +1358,7 @@ void RolfTourView::refresh_rest_training()
         presentation::required_node<Button>(*w, "Apply").set_disabled(true);
         presentation::required_node<Label>(*w, "Error").set_text(rest_text(e.what()));
     }
-    presentation::required_node<Button>(*w, "Save").set_visible(embedded_party_ && dax());
+    presentation::required_node<Button>(*w, "Save").set_visible(embedded_party_ && session_);
     presentation::required_node<Button>(*w, "Save")
         .set_disabled(!session_ || !session_->can_leave());
     if (!w->is_visible() && !rest_save_open_ && is_visible_in_tree())

@@ -27,6 +27,44 @@ constexpr std::size_t header_outdoor_set = 0xD, header_zone_sets = 0x108;
 // A fight's monsters take ids from here, as the DAX games' do.
 constexpr rules::EntityId first_monster_id = 1000;
 
+// The overhead map of a dungeon whose header allows it (bit 0 of +7), as
+// the kit's map shows it: a wall where a picture stops a step or hides a
+// secret door, a door where one opens; its first 16 by 16 squares.
+[[nodiscard]] std::optional<por::GeoMap> overhead_map(const DesignArea &area)
+{
+    constexpr std::size_t header_flags = 7;
+    if (area.overland() || (area.area.header[header_flags] & 1) == 0)
+    {
+        return std::nullopt;
+    }
+    por::GeoMap map;
+    const unsigned columns = std::min<unsigned>(area.area.columns, por::GeoMap::width);
+    const unsigned rows = std::min<unsigned>(area.area.rows, por::GeoMap::height);
+    for (unsigned y = 0; y < rows; ++y)
+    {
+        for (unsigned x = 0; x < columns; ++x)
+        {
+            const auto &square = area.area.squares[std::size_t{y} * area.area.columns + x];
+            auto &cell = map.cells[std::size_t{y} * por::GeoMap::width + x];
+            for (std::size_t side = 0; side < 4; ++side)
+            {
+                const auto wall = square.walls[side];
+                if ((wall & 0x0F) == 0)
+                {
+                    continue;
+                }
+                const auto kind = wall_kind(wall);
+                const bool hidden = kind == WallKind::blocked || kind == WallKind::false_door ||
+                                    kind == WallKind::open_secret ||
+                                    kind == WallKind::locked_secret ||
+                                    kind == WallKind::locked_wizard_secret;
+                (hidden ? cell.walls : cell.doors)[side] = 1;
+            }
+        }
+    }
+    return map;
+}
+
 [[nodiscard]] por::MapDirection kit_facing(unsigned facing)
 {
     return por::MapDirection{(facing & 7) / 2 % 4};
@@ -453,6 +491,7 @@ void UaSession::load_area(unsigned number)
     }
     area_ = {number, std::move(*area)};
     view_art_ = area_.overland() ? ViewArt{} : load_view_art(files_, area_.area);
+    area_map_ = overhead_map(area_);
     snapshot_.area_id = number;
     snapshot_.visited.reset();
     snapshot_.seen.reset();
@@ -519,9 +558,11 @@ std::string UaSession::text(unsigned slot, bool names) const
 void UaSession::move_party(unsigned x, unsigned y, MapDirection facing)
 {
     snapshot_.pose = {x, y, facing};
+    // The overhead map shows the squares the party has stood on.
     if (x < 16 && y < 16)
     {
         snapshot_.visited.set(y * 16 + x);
+        snapshot_.seen.set(y * 16 + x);
     }
 }
 
@@ -1190,6 +1231,91 @@ void UaSession::award_fight_experience(const rules::Snapshot &outcome)
     {
         party_->grant_experience_share(share, id);
     }
+}
+
+unsigned UaSession::party_zone() const
+{
+    const auto &pose = snapshot_.pose;
+    return (area_.area.squares[std::size_t{pose.y} * area_.area.columns + pose.x].bits >> 2) & 7;
+}
+
+// The area header's rest encounters, one a zone from +2Eh (rest.c,
+// encounter_roll): the minutes between rolls (a word), the event, and the
+// chance in 100, 80h and up the event's own test at every step. A chance
+// with no minutes between rolls divided by zero in the kit; it never rolls.
+std::optional<unsigned> UaSession::rest_encounter()
+{
+    constexpr std::size_t header_rest_encounters = 0x2E;
+    const std::size_t at = header_rest_encounters + 4 * std::size_t{party_zone()};
+    const auto &header = area_.area.header;
+    const unsigned interval = word_at(header, at), event = header[at + 2], chance = header[at + 3];
+    rest_ticks_ += 5;
+    if (event == 0 || event > event_count)
+    {
+        return std::nullopt;
+    }
+    if (chance >= 0x80)
+    {
+        return event_passes(event, record(event)) ? std::optional(event) : std::nullopt;
+    }
+    if (chance == 0 || interval == 0 || interval > rest_ticks_)
+    {
+        return std::nullopt;
+    }
+    for (auto rolls = rest_ticks_ / interval; rolls > 0; --rolls)
+    {
+        rest_ticks_ -= interval;
+        if (roll(100) <= chance && event_passes(event, record(event)))
+        {
+            return event;
+        }
+    }
+    return std::nullopt;
+}
+
+bool UaSession::camp(RestKind kind)
+{
+    if (!party_ || !can_leave() || running_ || party_lost_ || encounter_ || party_->in_combat() ||
+        party_->state().short_rest || party_->state().spell_rest || party_->state().training_rest)
+    {
+        return false;
+    }
+    const auto &rules = party_->rule_module();
+    const auto minutes =
+        (kind == RestKind::short_rest ? rules.short_rest_policy() : rules.long_rest_policy())
+            .duration_minutes;
+    snapshot_.dialogue.clear();
+    snapshot_.host_dialogue.clear();
+    rest_ticks_ = 0;
+    for (unsigned rested = 5; rested <= minutes; rested += 5)
+    {
+        const auto event = rest_encounter();
+        if (!event)
+        {
+            continue;
+        }
+        // The rest stops there and grants nothing; the encounter's event runs.
+        advance_minutes(rested);
+        say_kit({"The party's repose is interrupted!", {}});
+        wait_for_return(
+            [this, n = *event]
+            {
+                run_events(n);
+                refresh_snapshot();
+            });
+        refresh_snapshot();
+        return true;
+    }
+    if (party_->rest(kind))
+    {
+        say_kit({"The party rests.", {}});
+    }
+    else
+    {
+        say_kit({"Rest denied: no active member is eligible.", {}});
+    }
+    refresh_snapshot();
+    return true;
 }
 
 void UaSession::refresh_snapshot()

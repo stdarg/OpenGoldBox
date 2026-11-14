@@ -2928,12 +2928,6 @@ void RolfTourView::refresh()
     {
         required_node<Button>(*this, name).set_disabled(!completed);
     }
-    // Camping runs a DAX campaign's own services; a design's camp is still to
-    // come (docs/games/ua.md, What remains).
-    if (!dax())
-    {
-        required_node<Button>(*this, "%Camp").set_disabled(true);
-    }
     // Pressed while Search mode is on, whether the button or S turned it on.
     required_node<Button>(*this, "%Search").set_pressed_no_signal(s.searching);
     const bool overland = s.overland;
@@ -3352,17 +3346,13 @@ Dictionary RolfTourView::tour_visuals()
     data["wall"] = wall_view_;
     // The image itself: a headless check cannot read a texture's pixels back.
     data["wall_image"] = wall_image_;
-    // A design has no portraits, sprites or overhead map yet (docs/games/ua.md).
+    // A design has no portraits or sprites (docs/games/ua.md).
     const auto *campaign = dax();
-    if (!campaign)
-    {
-        return data;
-    }
-    if (fight_waits_on_picture_ && !monster_frames_.empty())
+    if (campaign && fight_waits_on_picture_ && !monster_frames_.empty())
     {
         data["picture"] = monster_frames_[current_monster_frame()];
     }
-    else
+    else if (campaign)
     {
         const auto portrait_file =
             opengold::speaking_npc_portrait(state, campaign->shops(), campaign->temples());
@@ -3383,6 +3373,11 @@ Dictionary RolfTourView::tour_visuals()
             data["sprite_size"] = Vector2(source.width, source.height);
         }
     }
+    const auto *map = session_->area_map();
+    if (!map)
+    {
+        return data;
+    }
     Array cells;
     cells.resize(256);
     for (unsigned y = 0; y < 16; ++y)
@@ -3395,7 +3390,7 @@ Dictionary RolfTourView::tour_visuals()
                 cells[index] = -1;
                 continue;
             }
-            const auto &cell = campaign->map().at(x, y);
+            const auto &cell = map->at(x, y);
             int flags = state.visited.test(index) ? 1 : 0;
             for (unsigned side = 0; side < 4; ++side)
             {

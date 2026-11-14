@@ -271,6 +271,13 @@ Departures from the original game's own rules, when OpenGoldBox plays by them
   party with a Rest button, not the kit's camp menu. Treasure items go to
   the first member with room, without the treasure menu. A design's NPC who
   is a monster (race 6) joins as a human.
+- **Unlimited Adventures' camp** (2026-11-14). The kit's camp menu (View,
+  Magic, Rest, Alter, Fix, Load, Save) and its rest menu, where the player
+  sets the days, hours and minutes to rest, are OpenGoldBox's Rest dialog,
+  as in the DAX games: a rest is the rules' rest (the original rules' day),
+  its spells memorized in the dialog that follows, and the menus' other
+  parts are the game's own screens. The kit's rest encounters break it as
+  they break the kit's.
 - **Unlimited Adventures' party icons** (2026-11-14). The kit gives a party
   member the combat icon made in its own icon editor (`CBODY.TLB` and
   `COMSPR.TLB`). A party made in OpenGoldBox has the combat icon its

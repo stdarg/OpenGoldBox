@@ -197,13 +197,13 @@ for the view's window (`view_picture`, nothing where there is nothing to
 draw yet) and the area's own name. `UaSession` implements it;
 `DaxExplorationSession` wraps a `RolfTourSession` for it, so the DAX
 session itself is unchanged. What only a DAX campaign has (shops and
-treasure piles, its script's variables, the overhead map, sprites and NPC
-portraits, temples, teleports and Word of Recall, close-ups, camping, the
-ending film, the difficulty and auto-equip settings) the view reaches
-through `dax()`, which is null for a design, so the view leaves those out
-instead of drawing them wrong: Camp is not offered, the map stays empty, and
-an overland area shows no 3D view. A design saves its own way (Saving and
-loading a game, below).
+treasure piles, its script's variables, sprites and NPC portraits, temples,
+teleports and Word of Recall, close-ups, the ending film, the difficulty
+and auto-equip settings) the view reaches through `dax()`, which is null for
+a design, so the view leaves those out instead of drawing them wrong; an
+overland area shows no picture yet. Camping (`camp`, `decline_camp`) and the
+overhead map (`area_map`) the session gives itself, and a design saves its
+own way (Saving and loading a game, below).
 
 The code: `ua_design` (the files), `ua_view` (the 3D view), `ua_session`
 (start, movement, fights) and `ua_events` (the event loop and its kinds), in
@@ -514,8 +514,8 @@ playing each event and fight; it fails on any event the session cannot play.
   services): Pool, Share and Take, Appraise, vault items, the camp menu at
   an inn, a temple's Restoration and Fix; drinks as more than a count; the encounter's monster
   picture at its range.
-- Overland areas: their map and big picture (steps already move the party
-  there); zone texts, step events and rest encounters.
+- Overland areas: their big picture (steps already move the party there,
+  and their rest encounters break a camp); zone texts and step events.
 - Locked doors: bashing, picking and Knock.
 - Fights:
   - Monsters' effects (the record's ten at +1AEh, held at strength FFh:
@@ -535,7 +535,37 @@ playing each event and fight; it fails on any event the session cannot play.
 - The treasure menu, and items' names (the kit's words are in CKIT.EXE,
   which is not read; an item shows its type's name).
 - The kit's rules' remaining differences (above).
-- A default party, camping, and the overhead map.
+- A default party; the kit's camp menu's own parts (Alter, Fix, the rest
+  menu's chosen hours); an overland area's picture (the kit draws the
+  area's big picture, `BIGPIC`, the header's first backdrop, with the
+  party's marker over its square: `view3d.c`, `wild_pic_open`; `cursor.c`)
+  and its zone texts, step events and maps larger than 16 by 16.
+
+### Camping and the overhead map
+
+Since 2026-11-14 a design's party camps and its dungeons have an overhead
+map (`ua_session.cpp`; the reconstruction's `rest.c` and `camp.c`).
+
+- **Camp** opens the Rest dialog the DAX games' camps use (DEVIATIONS.md,
+  Unlimited Adventures' camp): its Start rests the party as the rules rest
+  it (the original rules' day), its spells memorized in the dialog that
+  follows, and Save game. As the kit's `camp_rest` does, the rest passes in
+  five-minute steps, each a chance for the rest encounter of the zone the
+  party stands in: the area header's four bytes a zone from +2Eh, the
+  minutes between rolls (a word), the event, and the chance in 100 every
+  that many minutes (80h and up, the event's own test at every step). A
+  broken rest gives nothing: the time rested passes, "The party's repose is
+  interrupted!", and the event runs. A chance with no minutes between rolls
+  divided by zero in the kit; it never rolls (ORIGINAL-RULES.md, Bugs).
+- **The overhead map** shows a dungeon whose header allows it (bit 0 of
+  +7), as the DAX games' map does: a wall where a picture stops a step or
+  hides a secret door, a door where one opens, and the squares the party
+  has stood on; its first 16 by 16 squares.
+
+`opengold_ua_session_tests` rests in the hall (healed, the rules' time
+passed) and in the cellar, whose rats break the rest at its first hour, and
+reads the hall's map; `opengold_godot_startup_menu_ua` sees the hall's map
+and rests there from the Camp button.
 
 ### Saving and loading a game
 

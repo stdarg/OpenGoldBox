@@ -188,6 +188,15 @@ class UaSession final : public ExplorationSession
         snapshot_.searching = searching;
     }
 
+    // The kit's camp (rest.c, camp_rest): the party rests in five-minute
+    // steps, each a chance for the area's rest encounter of the party's zone
+    // to break it; an unbroken rest heals and memorizes as the rules rest.
+    bool camp(RestKind kind) override;
+
+    void decline_camp() override
+    {
+    }
+
     [[nodiscard]] bool can_leave() const override
     {
         return snapshot_.phase == por::TourPhase::completed;
@@ -209,6 +218,13 @@ class UaSession final : public ExplorationSession
     [[nodiscard]] std::optional<Image> view_picture() override;
     // The area's name as the designer wrote it.
     [[nodiscard]] std::string area_name() const override;
+
+    // A dungeon's walls and doors, where its header allows the overhead map
+    // (bit 0 of +7); none out of doors. Secret doors show as walls.
+    [[nodiscard]] const por::GeoMap *area_map() const override
+    {
+        return area_map_ ? &*area_map_ : nullptr;
+    }
 
     [[nodiscard]] por::RolfTourSession *dax() noexcept override
     {
@@ -399,6 +415,10 @@ class UaSession final : public ExplorationSession
     [[nodiscard]] unsigned fight_distance(const EventRecord &event) const;
 
     void move_party(unsigned x, unsigned y, por::MapDirection facing);
+    // The zone of the party's square (its bits 2 to 4).
+    [[nodiscard]] unsigned party_zone() const;
+    // A rest encounter breaks this five-minute step of a rest: its event.
+    [[nodiscard]] std::optional<unsigned> rest_encounter();
     void step_back();
     void advance_minutes(unsigned minutes);
     [[nodiscard]] unsigned hour() const;
@@ -417,6 +437,7 @@ class UaSession final : public ExplorationSession
     DesignItems items_;
     CombatIcons icons_;
     DesignArea area_;
+    std::optional<por::GeoMap> area_map_;
     ViewArt view_art_;
     std::shared_ptr<CampaignParty> party_;
     por::TourSnapshot snapshot_;
@@ -435,6 +456,9 @@ class UaSession final : public ExplorationSession
     bool started_{};
     // The clock while no party plays (the party keeps it otherwise).
     std::uint64_t clock_minutes_{};
+    // Minutes rested toward the next rest encounter roll (the kit's
+    // encounter_ticks), from a camp's start.
+    unsigned rest_ticks_{};
 
     // The event loop's state between steps.
     std::uint8_t loop_step_{};

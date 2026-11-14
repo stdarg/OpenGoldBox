@@ -1823,6 +1823,7 @@
   "The party enters a local Inn.",
   "Rest",
   "The party rests.",
+  "The party's repose is interrupted!",
   "{name} is in no condition to try.",
   "That attempt did not succeed.",
   "{name} doesn't have enough.",

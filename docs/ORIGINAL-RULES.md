@@ -1183,6 +1183,7 @@ tuned with the AI lab once the original rules play.
 |---|---|
 | Creation never applies racial ability adjustments: a leftover variable makes every character human (`chargen.pas`, the ability roll) | Fixed (the user, 2026-11-11) |
 | *Unlimited Adventures:* a ranger above level 8 learns a magic-user spell at every training, its ranger level risen or not (`train.c`, `train_hero`) | Only when its ranger level rises (the user, 2026-11-14) |
+| *Unlimited Adventures:* a rest encounter with a chance but no minutes between rolls divides by zero (`rest.c`, `encounter_roll`) | It never rolls |
 | *Unlimited Adventures:* a price rate above 19 reads past the kit's rate tables (`temple.c`, `rate_price`) | Taken as rate 19, a hundred times the price |
 | *Unlimited Adventures:* a wrong password says "wrong, try agin." (`evcmds.c`, the password event) | Spelt "Wrong, try again." |
 | *Unlimited Adventures:* an NPC refused by a full party still has its Hit Points set, on whichever member was current (`evcmds.c`, the NPC event) | A full party changes no one |

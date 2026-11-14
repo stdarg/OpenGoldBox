@@ -18,9 +18,9 @@ namespace opengold
 // (DaxExplorationSession) or a design made with Unlimited Adventures' kit
 // (ua::UaSession). Both speak through the same snapshot, commands, answers
 // and fights. What only a DAX campaign has (shops, treasure piles, its
-// script's variables, its overhead map and sprites, temples, teleports,
-// close-ups and camping) is reached through dax(), which is null for a
-// design, so the view leaves those out.
+// script's variables, its overhead map and sprites, temples, teleports and
+// close-ups) is reached through dax(), which is null for a design, so the
+// view leaves those out.
 class ExplorationSession
 {
   public:
@@ -41,6 +41,11 @@ class ExplorationSession
     virtual bool input(std::uint64_t ticket, std::string_view value) = 0;
     // The original's Search mode: each step searches, and takes longer.
     virtual void set_searching(bool searching) = 0;
+    // The party camps for a rest of `kind`, as the adventure lets it; false
+    // when it may not rest now. A rest the adventure interrupts says so.
+    virtual bool camp(RestKind kind) = 0;
+    // The player left the camp without resting.
+    virtual void decline_camp() = 0;
     // Nothing waits for the player: the party may camp, save or leave.
     [[nodiscard]] virtual bool can_leave() const = 0;
     // The player may change the selected member now.
@@ -61,6 +66,9 @@ class ExplorationSession
     // The adventure's own name for the party's area (a design's area name);
     // empty when the view names it, as it does a DAX game's areas.
     [[nodiscard]] virtual std::string area_name() const = 0;
+    // The party's area as the overhead map draws it (its walls and doors,
+    // 16 by 16 squares), or null where the adventure shows none.
+    [[nodiscard]] virtual const por::GeoMap *area_map() const = 0;
 
     // The DAX campaign played, or null for a design.
     [[nodiscard]] virtual por::RolfTourSession *dax() noexcept = 0;
@@ -123,6 +131,16 @@ class DaxExplorationSession final : public ExplorationSession
         session_.set_searching(searching);
     }
 
+    bool camp(RestKind kind) override
+    {
+        return session_.camp(kind);
+    }
+
+    void decline_camp() override
+    {
+        session_.decline_camp();
+    }
+
     [[nodiscard]] bool can_leave() const override
     {
         return session_.can_leave();
@@ -161,6 +179,11 @@ class DaxExplorationSession final : public ExplorationSession
     [[nodiscard]] std::string area_name() const override
     {
         return {};
+    }
+
+    [[nodiscard]] const por::GeoMap *area_map() const override
+    {
+        return &session_.map();
     }
 
     [[nodiscard]] por::RolfTourSession *dax() noexcept override
