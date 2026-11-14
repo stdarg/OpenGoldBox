@@ -188,7 +188,8 @@ struct Combatant
     // a dwarf's or a gnome's sworn foe, a giant, a bugbear or gnoll.
     int kin{};
     // What Secret of the Silver Blades' effects and spells take it for, by
-    // its record's flags (trait bits); none in the earlier games.
+    // its record's flags (trait bits), and Unlimited Adventures' ranger's foe
+    // by its monster types; none in the earlier games.
     int traits{};
     // Its magic resistance in percent, read from its record in Secret of the
     // Silver Blades; the earlier games give it by effects.

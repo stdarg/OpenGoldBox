@@ -225,6 +225,27 @@ void keep_item_uses(PartyMember &member, std::uint64_t id, unsigned left)
     member.character.replace_inventory(std::move(inventory));
 }
 
+// An original item whose magic the fight changed (a black pudding's acid on
+// armor) keeps the plus it has left in its record, and so in its key; its name
+// stays, as the original's does.
+void keep_item_plus(PartyMember &member, std::uint64_t id, int plus)
+{
+    const auto item = member.character.inventory().find(id);
+    const auto source = member.item_sources.find(id);
+    if (!item || source == member.item_sources.end() ||
+        !por::item_of_original_key(item->get().definition_id) ||
+        source->second.stored.magic_bonus == plus)
+    {
+        return;
+    }
+    auto &stored = source->second.stored;
+    stored.magic_bonus = plus;
+    stored.raw[50] = static_cast<std::uint8_t>(plus);
+    auto inventory = member.character.inventory();
+    inventory.redefine(id, por::original_item_key(stored));
+    member.character.replace_inventory(std::move(inventory));
+}
+
 // Remove Curse lets a member put down its cursed items, which are then lost:
 // the original's Remove Curse let a character drop a cursed object (MAGIC-1).
 void put_down_cursed_items(const rules::RulesModule &rules, PartyMember &member)
@@ -4224,7 +4245,8 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
             vitals.emplace_back(actor.id, lasting);
             const bool items_changed = !actor.thrown_gear_left.empty() || actor.curse_lifted ||
                                        !actor.item_uses_left.empty() ||
-                                       actor.readied_items.has_value();
+                                       actor.readied_items.has_value() ||
+                                       !actor.item_pluses.empty();
             if (changed && !items_changed)
             {
                 thrown.push_back(std::move(*changed));
@@ -4257,6 +4279,10 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
                 for (const auto &[item, left] : actor.item_uses_left)
                 {
                     keep_item_uses(member, item, left);
+                }
+                for (const auto &[item, plus] : actor.item_pluses)
+                {
+                    keep_item_plus(member, item, plus);
                 }
                 if (actor.curse_lifted)
                 {

@@ -827,6 +827,9 @@ struct CombatantView
     // The inventory IDs of the items it has readied, when the fight changed
     // which (the original rules' readying mid-fight); the campaign equips them.
     std::optional<std::vector<std::uint64_t>> readied_items;
+    // Items whose magic the fight changed, by inventory ID: their plus now
+    // (a black pudding eats into armor); the campaign keeps it.
+    std::vector<std::pair<std::uint64_t, int>> item_pluses;
     // Regenerates Hit Points each turn unless Acid or Fire stops it (stopped: it
     // already took Acid or Fire since its last turn); burning; covered in oil
     // (its next Fire damage deals 5 more); carries or wields a Torch.

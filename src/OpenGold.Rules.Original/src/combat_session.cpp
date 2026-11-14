@@ -101,6 +101,16 @@ constexpr int globe_of_invulnerability = 457, petrifying_gaze = 458, needs_plus_
               spits_acid = 481, dragon_fear = 482, cold_breath = 483, strong_poison_touch = 486,
               ghoul_touch = 488, bashing_proof = 490, fearless = 492, hardy = 494,
               fire_breath = 504, stunned = 506;
+// Unlimited Adventures' own (canonical_effect, its code plus kit_effect_offset).
+constexpr int spell_proof = 640, disease_proof = 676, halved_below_plus_three = 680,
+              halved_below_plus_four = 681, poison_breath = 690, bulette_attacks = 699,
+              needs_plus_two = 725, gaze_proof = 726, stench = 737, sickened = 748,
+              hurt_more_by_magical_fire = 768, eats_armor = 786, blow_proof = 793,
+              gorgon_breath = 795, fire_less_by_the_die = 819;
+// OpenGoldBox's own mark on a creature whose armor a black pudding has eaten
+// into, for the campaign to keep: past the kit's last effect (228), so no
+// record of the kit's names it.
+constexpr int armor_eaten = kit_effect_offset + 250;
 } // namespace effect
 
 // What a hit carries, by the attacker's effects, in the original's order: a
@@ -785,10 +795,19 @@ class Session final : public rules::CombatSession
     // reconstruction). Empty in the earlier games, which pick the highest
     // initiative left each time.
     std::vector<EntityId> turn_order_;
+    // The dice the damage of the spell going off was rolled with (the kit's
+    // damage_dice_count), which the kit's effects weigh fire by; 0 for any
+    // other damage, which has no dice to weigh.
+    int damage_dice_{};
 
     [[nodiscard]] bool secret() const
     {
         return game_of(identity_) == GoldBoxGame::secret_of_the_silver_blades;
+    }
+
+    [[nodiscard]] bool kit() const
+    {
+        return game_of(identity_) == GoldBoxGame::unlimited_adventures;
     }
 
     // Secret and Unlimited Adventures order each round once as it begins,
@@ -891,6 +910,8 @@ class Session final : public rules::CombatSession
     void monster_specials(Fighter &f);
     void curse_specials(Fighter &f);
     void secret_specials(Fighter &f);
+    void kit_specials(Fighter &f);
+    void kit_turn_start(Fighter &f);
     void petrifying_gaze(Fighter &gazer);
     bool secret_breath(Fighter &dragon, int code, int length, int element);
     [[nodiscard]] Fighter *secret_target(Fighter &f, int range, bool skip_helpless);
@@ -930,6 +951,7 @@ class Session final : public rules::CombatSession
     [[nodiscard]] bool turned_aside(Fighter &defender);
     [[nodiscard]] int weapon_damage_defenses(const Fighter &attacker, Fighter &defender, int damage,
                                              int phase, int &primary_hits);
+    bool eat_armor(const Fighter &pudding, Fighter &target);
     void age_effects();
     [[nodiscard]] bool saving_throw(const Fighter &f, int save, int modifier,
                                     const Fighter *caster = nullptr, int element = 0);
@@ -1152,6 +1174,7 @@ void Session::next_actor()
             // (effhndlr.pas, ACTION_START).
             attached_turn(*best);
             curse_turn_start(*best);
+            kit_turn_start(*best);
             if (best->initiative <= 0 || !best->able() || check_morale(*best))
             {
                 continue;
@@ -1383,6 +1406,8 @@ int attack_modifier(const Fighter &attacker, const Fighter &defender, GoldBoxGam
     // Blindness and Bestow Curse take 4 from the attacker's rolls (effhndlr.pas, 33, 36).
     modifier -= attacker.has(effect::blind) ? 4 : 0;
     modifier -= attacker.has(effect::bestow_curse) ? 4 : 0;
+    // The kit's 148, which a ghast's stench gives, takes 2 (effects.c).
+    modifier -= attacker.has(effect::sickened) ? 2 : 0;
     if (defender.has(effect::invisible) || defender.has(effect::dust))
     {
         modifier -= 4;
@@ -2261,6 +2286,7 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
          {{"name", caster.name}, {"spell", std::string(known.name), true}}});
     const auto roll_dice = [this](int count, int sides)
     {
+        damage_dice_ = count;
         int total = 0;
         for (int n = 0; n < count; ++n)
         {
@@ -2846,6 +2872,7 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         cast_generic(caster, number, level, targets, 0, 0);
         break;
     }
+    damage_dice_ = 0;
     caster.using_item = -1;
     end_actions(caster);
 }
@@ -3550,6 +3577,7 @@ void Session::cast_secret_spell(Fighter &caster, int number, int level,
     const auto &known = *game_spell(number);
     const auto roll_dice = [this](int count, int sides)
     {
+        damage_dice_ = count;
         int total = 0;
         for (int n = 0; n < count; ++n)
         {
@@ -3935,6 +3963,11 @@ bool Session::add_with_message(Fighter &target, Effect added, bool negates, bool
              (target.has(effect::globe_of_invulnerability) && spell_effect && known->level <= 4);
     immune = immune || (target.has(effect::fearless) && is({effect::fear}));
     immune = immune || target.has(effect::iron_golem);
+    // The kit's (effects.c): a spell below the eighth level takes no hold
+    // (40), nor does disease on an otyugh (76).
+    immune = immune || (target.has(effect::spell_proof) && spell_effect && known->level < 8);
+    constexpr int diseased = 34;
+    immune = immune || (target.has(effect::disease_proof) && code == diseased);
     if (immune || (negates && saved))
     {
         log({"{name} is unaffected.", {{"name", target.name}}});
@@ -3995,13 +4028,15 @@ void Session::nonweapon_damage(Fighter &target, int damage, int save_result, boo
     }
     // Curse's protections (ovr013): cold for one immune to it (310), dragon
     // breath (273), magic (329), electricity (335), and a spell below the
-    // fourth level for a Minor Globe of Invulnerability (263), and Secret's
-    // Globe of Invulnerability, to the fourth.
+    // fourth level for a Minor Globe of Invulnerability (263), Secret's
+    // Globe of Invulnerability, to the fourth, and the kit's rakshasa (its
+    // 40), below the eighth.
     const bool spell_cast = cast && cast->caster_class != SpellClass::item;
     if (((element & 2) && target.has(310)) || ((element & 0x20) && target.has(273)) ||
         ((element & 8) && target.has(329)) || ((element & 4) && target.has(335)) ||
         (target.has(263) && spell_cast && cast->level < 4) ||
-        (target.has(effect::globe_of_invulnerability) && spell_cast && cast->level <= 4))
+        (target.has(effect::globe_of_invulnerability) && spell_cast && cast->level <= 4) ||
+        (target.has(effect::spell_proof) && spell_cast && cast->level < 8))
     {
         log({"{name} is unaffected.", {{"name", target.name}}});
         damage = 0;
@@ -4044,6 +4079,17 @@ void Session::nonweapon_damage(Fighter &target, int damage, int save_result, boo
         !target.has(effect::regenerating_soon))
     {
         target.numbers.effects.push_back({effect::regenerating_soon, 3, 0, true});
+    }
+    // The kit's (effects.c), by the dice the damage was rolled with: a mummy
+    // takes 1 more a die of magical fire (168); an efreeti 1 less a die of
+    // fire, never under 1 a die (219).
+    if ((element & 9) == 9 && target.has(effect::hurt_more_by_magical_fire) && damage > 0)
+    {
+        damage += damage_dice_;
+    }
+    if ((element & 1) && target.has(effect::fire_less_by_the_die) && damage > 0)
+    {
+        damage = std::max(damage - damage_dice_, damage_dice_);
     }
     if (saved && save_result == 1)
     {
@@ -4819,16 +4865,19 @@ void Session::monster_specials(Fighter &f)
         }
     }
     lock = find(f.lock);
-    // Effect 84 is the charming gaze in Pool of Radiance only: Curse's and
-    // Gateway's shambling mounds carry it as their absorbing of electricity
-    // (their effhndlr.pas), which charms nothing.
-    if (f.has(84) && game_of(identity_) == GoldBoxGame::pool_of_radiance && lock && lock->able() &&
-        can_target(f, *lock) && sees(board_, f, *lock))
+    // Effect 84 is the charming gaze in Pool of Radiance, and the kit's
+    // vampires' (its 124), only: Curse's and Gateway's shambling mounds carry
+    // it as their absorbing of electricity (their effhndlr.pas), which charms
+    // nothing.
+    const bool charming = game_of(identity_) == GoldBoxGame::pool_of_radiance || kit();
+    if (f.has(84) && charming && lock && lock->able() && can_target(f, *lock) &&
+        sees(board_, f, *lock))
     {
-        // The charming gaze: saved against at -2. The original's reach was an
-        // unset value; it reaches what the gazer sees here (an obvious bug, fixed).
+        // The charming gaze: saved against at -2, and always by one that
+        // meets gazes unharmed. The original's reach was an unset value; it
+        // reaches what the gazer sees here (an obvious bug, fixed).
         log({"{name} gazes.", {{"name", f.name}}});
-        const bool saved = saving_throw(*lock, 4, -2, &f);
+        const bool saved = saving_throw(*lock, 4, -2, &f) || lock->has(effect::gaze_proof);
         if (add_with_message(*lock,
                              {effect::charm, 0, (f.side == Side::opposition ? 128 : 0) + 12, true},
                              true, saved, 0, 12, game_spell(10)))
@@ -4894,6 +4943,94 @@ void Session::monster_specials(Fighter &f)
     }
     curse_specials(f);
     secret_specials(f);
+    kit_specials(f);
+}
+
+// The kit's monsters' breath as their AI attacks (aiturn.c, ai_attack;
+// fxcombat.c and effects.c): a green dragon breathes poison three times a
+// fight, its maximum Hit Points along 3 squares at an enemy within them, half
+// on a save against breath (90); a gorgon four times, along 6 squares two
+// wide at an enemy within them but never through its own side, turning to
+// stone each that fails a save against petrification (195). Each breath ends
+// its turn.
+void Session::kit_specials(Fighter &f)
+{
+    if (auto *breath = f.find_effect(effect::poison_breath); breath && f.able() && f.initiative > 0)
+    {
+        breath->strength = std::min(breath->strength, 3);
+        const auto targets = breath->strength > 0 && acquire_target(f, 3, false, true)
+                                 ? path_area(f, find(f.lock)->cell, 3, 1)
+                                 : std::vector<EntityId>{};
+        if (!targets.empty())
+        {
+            --breath->strength;
+            log({"{name} breathes poison.", {{"name", f.name}}});
+            for (const auto id : targets)
+            {
+                auto &victim = *find(id);
+                nonweapon_damage(victim, f.numbers.max_hit_points, 2,
+                                 saving_throw(victim, 3, 0, &f, 0x20), 0x20, 12, 0, false);
+            }
+            end_actions(f);
+            return;
+        }
+    }
+    if (auto *breath = f.find_effect(effect::gorgon_breath); breath && f.able() && f.initiative > 0)
+    {
+        breath->strength = std::min(breath->strength, 4);
+        const auto targets = breath->strength > 0 && acquire_target(f, 6, false, true)
+                                 ? path_area(f, find(f.lock)->cell, 6, 2)
+                                 : std::vector<EntityId>{};
+        const bool spares_friends = std::ranges::none_of(targets,
+                                                         [&](EntityId id)
+                                                         {
+                                                             return find(id)->side == f.side;
+                                                         });
+        if (!targets.empty() && spares_friends)
+        {
+            --breath->strength;
+            log({"{name} breathes.", {{"name", f.name}}});
+            for (const auto id : targets)
+            {
+                auto &victim = *find(id);
+                if (victim.able() && !saving_throw(victim, 1, 0, &f))
+                {
+                    turn_to_stone(victim);
+                }
+            }
+            end_actions(f);
+        }
+    }
+}
+
+// The kit's effects as a creature's turn starts (combat.c, its turn;
+// effects.c): a ghast's stench leaves each enemy beside it that fails a save
+// against spells 2 worse at its attacks for the round (137, the kit's 148 on
+// it), and a bulette strikes 4 times with its second attack, 8 one time in 4
+// (99, as its AI readies its weapons).
+void Session::kit_turn_start(Fighter &f)
+{
+    if (!f.able())
+    {
+        return;
+    }
+    if (f.has(effect::stench))
+    {
+        log({"{name} emits an evil stench.", {{"name", f.name}}});
+        for (auto &other : fighters_)
+        {
+            if (other.side != f.side && other.able() && adjacent(f, other) &&
+                !saving_throw(other, 4, 0, &f))
+            {
+                log({"{name} is sickened.", {{"name", other.name}}});
+                other.numbers.effects.push_back({effect::sickened, 1, 0, false});
+            }
+        }
+    }
+    if (f.has(effect::bulette_attacks))
+    {
+        f.attacks_left[1] = roll(4) == 1 ? 8 : 4;
+    }
 }
 
 // The target a Secret monster's power picks, as its AI aims a spell
@@ -4932,13 +5069,13 @@ void Session::secret_specials(Fighter &f)
         nonweapon_damage(*lock, 8, 2, saving_throw(*lock, 3, 0, &f, 0x21), 0x21, 12, 0, false);
     }
     // The umber hulk's gaze confuses one beside it for 1d10+2 rounds unless
-    // it saves against spells (EffReflectSpell).
+    // it saves against spells (EffReflectSpell) or meets gazes unharmed.
     if (f.has(effect::confusing_gaze) && f.able())
     {
         if (auto *target = secret_target(f, 1, false))
         {
             log({"{name} gazes.", {{"name", f.name}}});
-            if (!saving_throw(*target, 4, 0, &f))
+            if (!saving_throw(*target, 4, 0, &f) && !target->has(effect::gaze_proof))
             {
                 (void)add_with_message(*target, {235, roll(10) + 2, f.numbers.level, true}, true,
                                        false, 0, f.numbers.level, game_spell(182));
@@ -4995,7 +5132,8 @@ void Session::secret_specials(Fighter &f)
 // A Secret gaze that turns to stone (effhndlr.pas, EffPetrifyingGaze, in its
 // reconstruction): at an enemy within 6 squares that is not helpless, saved
 // against as petrification. A target with a mirror turns a gaze that can be
-// reflected back on the gazer.
+// reflected back on the gazer. Unlimited Adventures' vampires and dracolisk
+// meet every gaze unharmed (the kit's 126).
 void Session::petrifying_gaze(Fighter &gazer)
 {
     auto *target = secret_target(gazer, 6, true);
@@ -5010,7 +5148,7 @@ void Session::petrifying_gaze(Fighter &gazer)
         log({"{name} reflects it.", {{"name", target->name}}});
         victim = &gazer;
     }
-    if (!saving_throw(*victim, 1, 0, &gazer))
+    if (!saving_throw(*victim, 1, 0, &gazer) && !victim->has(effect::gaze_proof))
     {
         turn_to_stone(*victim);
     }
@@ -6429,6 +6567,12 @@ int Session::weapon_damage_defenses(const Fighter &attacker, Fighter &defender, 
         }
         return true;
     };
+    // A black pudding's acid spends the blow on the armor it eats (the kit's
+    // 186), as the attacker's effects come before the defender's.
+    if (attacker.has(effect::eats_armor) && eat_armor(attacker, defender))
+    {
+        damage = 0;
+    }
     // Curse's rakshasa (its effect 130) struck by a banishing quarrel is gone
     // for good (effhndlr.pas, EffBanishByWeapon).
     constexpr int banished_by_quarrel = 330;
@@ -6493,6 +6637,27 @@ int Session::weapon_damage_defenses(const Fighter &attacker, Fighter &defender, 
     {
         damage = 0;
     }
+    // The kit's (effects.c): a weapon below +3 or +4 does half (80, 81); one
+    // below +2 nothing, nor a creature's bare blows unless a monster's of 7
+    // Hit Dice or more (125); and a black pudding takes nothing from any
+    // blow (193).
+    if (defender.has(effect::halved_below_plus_three) && striker && plus < 3)
+    {
+        damage /= 2;
+    }
+    if (defender.has(effect::halved_below_plus_four) && striker && plus < 4)
+    {
+        damage /= 2;
+    }
+    const bool strong_monster = attacker.numbers.race == 0 && attacker.numbers.level >= 7;
+    if (defender.has(effect::needs_plus_two) && (striker ? plus < 2 : !strong_monster))
+    {
+        damage = 0;
+    }
+    if (defender.has(effect::blow_proof))
+    {
+        damage = 0;
+    }
     if (defender.has(123))
     {
         damage = plus > 0 ? damage : silver ? damage / 2 : 0;
@@ -6520,11 +6685,12 @@ int Session::weapon_damage_defenses(const Fighter &attacker, Fighter &defender, 
         damage = std::min(damage, 1);
     }
     // A ranger adds its level against giants (Curse, AffectRangerVsGiant); in
-    // Secret against the creatures its flags name, from next to them
-    // (EffRangerDamageBonus).
-    const bool ranger_foe =
-        secret() ? (defender.numbers.traits & trait::ranger_foe) && adjacent(attacker, defender)
-                 : (defender.numbers.kin & kin::giant) != 0;
+    // Secret against the creatures its flags name, and in the kit those its
+    // monster types do, from next to them (EffRangerDamageBonus; the kit's
+    // effects.c, 105).
+    const bool ranger_foe = secret() || kit() ? (defender.numbers.traits & trait::ranger_foe) &&
+                                                    adjacent(attacker, defender)
+                                              : (defender.numbers.kin & kin::giant) != 0;
     if (attacker.has(334) && ranger_foe && damage > 0)
     {
         damage += attacker.numbers.class_levels[static_cast<std::size_t>(ClassSlot::ranger)];
@@ -6545,6 +6711,54 @@ int Session::weapon_damage_defenses(const Fighter &attacker, Fighter &defender, 
         damage = roll(6) + 1;
     }
     return damage;
+}
+
+// A black pudding's blow eats into the armor its target has readied (the
+// kit's effects.c, 186): a plus at a time, banded and plate mail (the kit's
+// item types 23h and 24h) to -1 and other armor to 0, then dissolves it.
+// Whether there was armor to eat, which takes the blow's harm.
+bool Session::eat_armor(const Fighter &pudding, Fighter &target)
+{
+    constexpr std::uint8_t armor_slot = 2, banded_mail = 0x23, plate_mail = 0x24;
+    if (!target.record)
+    {
+        return false;
+    }
+    const auto before = held_now(target);
+    auto after = before;
+    bool eaten = false;
+    for (auto &held : after)
+    {
+        auto &armor = held.carried.item;
+        if (held.gone || !armor.readied() || held.carried.type.worn_location != armor_slot)
+        {
+            continue;
+        }
+        eaten = true;
+        const int lowest = armor.type == banded_mail || armor.type == plate_mail ? -1 : 0;
+        if (armor.magic_bonus > lowest)
+        {
+            --armor.magic_bonus;
+            armor.raw[50] = static_cast<std::uint8_t>(armor.magic_bonus);
+            log({"{name} is dissolving {target}'s armor!",
+                 {{"name", pudding.name}, {"target", target.name}}});
+        }
+        else
+        {
+            held.gone = true;
+            log({"{name} dissolves {target}'s armor!",
+                 {{"name", pudding.name}, {"target", target.name}}});
+        }
+    }
+    if (eaten)
+    {
+        rework_gear(target, before, std::move(after));
+        if (!target.has(effect::armor_eaten))
+        {
+            target.numbers.effects.push_back({effect::armor_eaten, 0, 0, false});
+        }
+    }
+    return eaten;
 }
 
 // A saving throw (fxengine.pas, RollSavingThrow): a natural 1 fails and a
@@ -6962,6 +7176,12 @@ rules::Snapshot Session::snapshot() const
                 if (!item.gone && item.carried.item.readied())
                 {
                     readied.emplace_back(item.readied_order, item.inventory_id);
+                }
+                // Armor a black pudding has eaten into keeps the plus it has left.
+                if (!item.gone && f->has(effect::armor_eaten) &&
+                    item.carried.type.worn_location == 2)
+                {
+                    view.item_pluses.emplace_back(item.inventory_id, item.carried.item.magic_bonus);
                 }
             }
             if (f->readied_changed)

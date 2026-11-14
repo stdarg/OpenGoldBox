@@ -217,8 +217,8 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
     const auto effect_count = *next++;
     for (int n = 0; n < effect_count; ++n, next += 4)
     {
-        // Curse's and Secret's own effects run past 255 (canonical_effect).
-        if (next[0] < 1 || next[0] > 255 + secret_effect_offset || next[1] < 0 || next[2] < 0)
+        // Curse's, Secret's and the kit's own effects run past 255 (canonical_effect).
+        if (next[0] < 1 || next[0] > 255 + kit_effect_offset || next[1] < 0 || next[2] < 0)
         {
             return std::nullopt;
         }
@@ -475,6 +475,25 @@ int secret_traits(const por::CharacterRecord &record)
     traits |= (targets & target::person) ? trait::person : 0;
     traits |= (targets & target::unliving) ? trait::unliving : 0;
     return traits;
+}
+
+// An Unlimited Adventures monster's kinds of foe and traits, from its
+// monster types (the kit's MONST record, +BFh; fxcombat.c and effects.c): a
+// dwarf's foe (80h, its effect 26), a giant (4, 47), the big folk a gnome
+// defends against (20h, 48) and a ranger's foe (8, 105).
+int kit_kin(const por::CharacterRecord &record)
+{
+    const auto types = record.creature_type_flags;
+    int kinds = 0;
+    kinds |= (types & 0x80) ? kin::dwarf_foe : 0;
+    kinds |= (types & 0x04) ? kin::giant : 0;
+    kinds |= (types & 0x20) ? kin::bugbear : 0;
+    return kinds;
+}
+
+int kit_traits(const por::CharacterRecord &record)
+{
+    return (record.creature_type_flags & 0x08) ? trait::ranger_foe : 0;
 }
 
 // Secret's effect that turns a gaze back on the gazer (EffPetrifyingGaze in
@@ -778,8 +797,9 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
     c.constitution = record.current_abilities.constitution;
     c.alignment = record.alignment;
     c.creature_type = record.type;
-    c.kin = secret ? secret_kin(record) : kin_of(record);
-    c.traits = secret ? secret_traits(record) : 0;
+    const bool kit = record.game == GoldBoxGame::unlimited_adventures;
+    c.kin = secret ? secret_kin(record) : kit ? kit_kin(record) : kin_of(record);
+    c.traits = secret ? secret_traits(record) : kit ? kit_traits(record) : 0;
     c.magic_resistance = record.magic_resistance;
     c.items = usable_items(carried, record.game);
     // Memorized spells; those still being learned (bit 0x80) are not ready.
