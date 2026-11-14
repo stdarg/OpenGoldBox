@@ -43,9 +43,21 @@ func rows(list: ItemList) -> Array:
 	for i in range(list.item_count): texts.append(list.get_item_text(i))
 	return texts
 
+# The chosen game's own title pictures (TITLE.DAX): a key passes each.
+func pass_title() -> void:
+	for screen in range(8):
+		var title: Control = current_scene.get_node_or_null("GameTitle") if current_scene else null
+		if title == null or not title.visible: return
+		var event := InputEventKey.new()
+		event.keycode = KEY_SPACE
+		event.pressed = true
+		Input.parse_input_event(event)
+		for frame in range(6): await process_frame
+
 # The new game's first question: the rules it plays by; the original's here.
 func answer_original_rules() -> void:
 	await settle()
+	await pass_title()
 	var dialog: Window = current_scene.get_node_or_null("RulesDialog") if current_scene else null
 	if dialog and dialog.visible:
 		var rules: OptionButton = dialog.get_node("Rows/Rules")

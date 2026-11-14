@@ -4,9 +4,13 @@
 #include <godot_cpp/classes/control.hpp>
 #include <godot_cpp/classes/input_event.hpp>
 #include <exception>
+#include <memory>
+#include <optional>
 #include <vector>
 
 #include "opengold/gold_box_game.h"
+#include "opengold/sound_player.h"
+#include "opengold/title_screens.h"
 
 class StartupView : public godot::Control
 {
@@ -20,6 +24,7 @@ class StartupView : public godot::Control
 
     void _ready() override;
     void _input(const godot::Ref<godot::InputEvent> &event) override;
+    void _process(double delta) override;
 
   protected:
     static void _bind_methods();
@@ -36,6 +41,17 @@ class StartupView : public godot::Control
     godot::String pending_path_;
     void show_screen();
     void finish();
+    // The chosen game's own title pictures, as its original shows them when
+    // it starts, before the new game's question.
+    void show_game_title();
+    void show_title_screen();
+    void play_title_sound(unsigned sound);
+    void next_title_screen();
+    void end_game_title();
+    std::optional<opengold::TitleScreens> game_title_;
+    std::size_t title_screen_{};
+    double title_seconds_left_{};
+    std::unique_ptr<opengold::por::SoundPlayer> title_sound_;
     void open_character_creation();
     // The new game's first question: its rules, then under the original rules
     // its aging (docs/ORIGINAL-RULES.md). --rules=srd or --rules=original
@@ -60,6 +76,9 @@ class StartupView : public godot::Control
     void next_folder();
     bool game_menu_ready_{};
     bool choosing_game_{};
+    // The game came from --game=, for a check: like the original's STING,
+    // it skips the game's title pictures.
+    bool game_from_flag_{};
     // The games whose folders startup still needs, the first being asked now.
     std::vector<opengold::GoldBoxGame> folders_needed_;
     void show_path(const godot::String &message = {});

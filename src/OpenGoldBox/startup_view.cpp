@@ -4,6 +4,12 @@
 #include "guarded_handlers.h"
 #include "godot_nodes.h"
 #include "game_menu_view.h"
+#include "godot_images.h"
+#include "godot_path.h"
+#include "godot_sound_output.h"
+#include "opengold/diagnostic_log.h"
+#include <godot_cpp/classes/audio_stream_player.hpp>
+#include <godot_cpp/classes/input_event_mouse_button.hpp>
 #include <godot_cpp/classes/line_edit.hpp>
 #include <godot_cpp/classes/file_dialog.hpp>
 #include <godot_cpp/classes/rich_text_label.hpp>
@@ -137,6 +143,7 @@ void StartupView::show_game_menu()
             {
                 if (folder == String(std::string(opengold::game_folder(game)).c_str()))
                 {
+                    game_from_flag_ = true;
                     game_chosen(static_cast<std::int64_t>(game));
                     return;
                 }
@@ -518,16 +525,44 @@ void StartupView::_input(const Ref<InputEvent> &event)
                               });
 }
 
+namespace
+{
+// Application shortcuts must not advance a splash or a title.
+bool application_shortcut(const Ref<InputEventKey> &key)
+{
+    return key.is_valid() && key->is_ctrl_pressed() &&
+           (key->get_keycode() == KEY_X || key->get_keycode() == KEY_S);
+}
+} // namespace
+
 void StartupView::respond_to_input(const Ref<InputEvent> &event)
 {
     const Ref<InputEventKey> key = event;
-    if (finishing_ || choosing_language_ || choosing_path_ || choosing_game_ || key.is_null() ||
-        !key->is_pressed() || key->is_echo())
+    if (application_shortcut(key))
     {
         return;
     }
-    // Application shortcuts must not advance a splash.
-    if (key->is_ctrl_pressed() && (key->get_keycode() == KEY_X || key->get_keycode() == KEY_S))
+    if (game_title_)
+    {
+        // Any key or click, as Secret of the Silver Blades takes its mouse's.
+        const Ref<InputEventMouseButton> click = event;
+        if ((key.is_valid() && key->is_pressed() && !key->is_echo()) ||
+            (click.is_valid() && click->is_pressed()))
+        {
+            get_viewport()->set_input_as_handled();
+            if (game_title_->key_ends_all)
+            {
+                end_game_title();
+            }
+            else
+            {
+                next_title_screen();
+            }
+        }
+        return;
+    }
+    if (finishing_ || choosing_language_ || choosing_path_ || choosing_game_ || key.is_null() ||
+        !key->is_pressed() || key->is_echo())
     {
         return;
     }
@@ -551,6 +586,98 @@ void StartupView::finish()
     }
     finishing_ = true;
     required_node<TextureRect>(*this, "ImageFit/Image/Text").call("cancel");
+    show_game_title();
+}
+
+void StartupView::show_game_title()
+{
+    const auto game = settings::chosen_game();
+    if (!game_from_flag_ && !settings::flag("--combat-demo"))
+    {
+        try
+        {
+            game_title_ = opengold::load_title_screens(
+                presentation::path_from_godot(settings::game_folder(game)), game);
+        }
+        catch (const std::exception &failure)
+        {
+            // The folder passed its check; a title it lacks is only skipped.
+            opengold::log_diagnostic(opengold::LogPriority::warning, "startup", failure.what());
+        }
+    }
+    if (!game_title_ || game_title_->screens.empty())
+    {
+        end_game_title();
+        return;
+    }
+    title_screen_ = 0;
+    show_title_screen();
+}
+
+void StartupView::show_title_screen()
+{
+    const auto &screen = game_title_->screens.at(title_screen_);
+    required_node<TextureRect>(*this, "GameTitle/Picture")
+        .set_texture(presentation::image_texture(screen.screen));
+    required_node<Control>(*this, "GameTitle").show();
+    if (screen.sound)
+    {
+        play_title_sound(*screen.sound);
+    }
+    title_seconds_left_ = screen.seconds;
+}
+
+void StartupView::play_title_sound(unsigned sound)
+{
+    if (!title_sound_)
+    {
+        const auto game = settings::chosen_game();
+        try
+        {
+            title_sound_ = std::make_unique<opengold::por::SoundPlayer>(
+                opengold::por::SoundBank::load(
+                    presentation::path_from_godot(settings::game_folder(game)), game),
+                std::make_unique<GodotSoundOutput>(
+                    required_node<AudioStreamPlayer>(*this, "TitleSound")));
+        }
+        catch (const std::runtime_error &failure)
+        {
+            // A game whose sounds cannot be read shows its title silent.
+            opengold::log_diagnostic(opengold::LogPriority::warning, "startup", failure.what());
+            return;
+        }
+        // The level the exploration screen plays the original's sounds at.
+        title_sound_->set_volume(0.125);
+    }
+    title_sound_->play(sound);
+}
+
+void StartupView::_process(double delta)
+{
+    presentation::run_guarded(*this,
+                              [&]
+                              {
+                                  if (game_title_ && (title_seconds_left_ -= delta) <= 0)
+                                  {
+                                      next_title_screen();
+                                  }
+                              });
+}
+
+void StartupView::next_title_screen()
+{
+    if (++title_screen_ == game_title_->screens.size())
+    {
+        end_game_title();
+        return;
+    }
+    show_title_screen();
+}
+
+void StartupView::end_game_title()
+{
+    game_title_.reset();
+    required_node<Control>(*this, "GameTitle").hide();
     ask_rules();
 }
 

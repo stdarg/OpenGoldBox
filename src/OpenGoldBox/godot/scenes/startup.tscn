@@ -356,3 +356,28 @@ custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 size_flags_vertical = 10
 text = "Begin"
+
+[node name="GameTitle" type="Panel" parent="."]
+visible = false
+theme_type_variation = &"BlackSurface"
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Picture" type="TextureRect" parent="GameTitle"]
+texture_filter = 1
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="TitleSound" type="AudioStreamPlayer" parent="."]

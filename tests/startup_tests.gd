@@ -18,10 +18,22 @@ func settle() -> void:
 	for frame in range(6):
 		await process_frame
 
+# The chosen game's own title pictures (TITLE.DAX): a key passes each.
+func pass_title() -> void:
+	for screen in range(8):
+		var title: Control = current_scene.get_node_or_null("GameTitle") if current_scene else null
+		if title == null or not title.visible: return
+		var event := InputEventKey.new()
+		event.keycode = KEY_SPACE
+		event.pressed = true
+		Input.parse_input_event(event)
+		for frame in range(6): await process_frame
+
 # The new game's first question (docs/ORIGINAL-RULES.md): the rules it plays
 # by, the SRD's offered first for now; Begin starts the game with them.
 func answer_rules() -> void:
 	await settle()
+	await pass_title()
 	var dialog: Window = current_scene.get_node_or_null("RulesDialog") if current_scene else null
 	if dialog and dialog.visible:
 		dialog.get_node("Rows/Begin").pressed.emit()
@@ -40,6 +52,7 @@ func pick_game(folder := "POOLRAD") -> void:
 	require(menu.visible and menu.exclusive, "The startup menu must offer the games")
 	menu.get_node("Buttons/Games/" + folder).pressed.emit()
 	await settle()
+	await pass_title()
 
 func is_splash(index: int) -> bool:
 	if not require(current_scene != null and current_scene.name == "Startup", "Expected splash scene"):

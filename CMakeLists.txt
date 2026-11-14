@@ -208,6 +208,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/sound_player.cpp
     src/OpenGold.Core/src/fm_synth.cpp
     src/OpenGold.Core/src/music_render.cpp
+    src/OpenGold.Core/src/title_screens.cpp
 )
 
 target_include_directories(opengold_core
@@ -269,6 +270,11 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_secret_walk COMMAND opengold_gold_box_games_tests --secret-walk)
     # Curse's story, beat by beat, with a party made for it (plan step 7).
     add_test(NAME opengold_curse_route COMMAND opengold_gold_box_games_tests --curse-route)
+    # Each game's title pictures, as its original shows them when it starts.
+    add_executable(opengold_title_screens_tests tests/title_screens_tests.cpp)
+    target_link_libraries(opengold_title_screens_tests PRIVATE opengold_core)
+    add_test(NAME opengold_title_screens_tests COMMAND opengold_title_screens_tests)
+    set_tests_properties(opengold_title_screens_tests PROPERTIES SKIP_REGULAR_EXPRESSION "Skipped: ")
     # Pools of Darkness' and Treasures' 256-color pictures, read from the games' files.
     add_executable(opengold_vga_graphics_tests tests/vga_graphics_tests.cpp)
     target_link_libraries(opengold_vga_graphics_tests PRIVATE opengold_formats)
