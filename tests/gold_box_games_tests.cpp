@@ -2544,7 +2544,7 @@ std::vector<std::string> train_gateway_party()
 // Gateway's route plays to the game's end once this is true; until then it
 // stops on this map (docs/GAMES.md, phase 5 step 4).
 constexpr bool gateway_route_ends_the_game = false;
-constexpr unsigned gateway_route_stops_on_map = 18;
+constexpr unsigned gateway_route_stops_on_map = 19;
 
 // Gateway's story, beat by beat, as its cluebook tells it (plan phase 5, step
 // 4): from the inn of Yartar on.
@@ -3199,6 +3199,33 @@ const std::vector<RouteBeat> &gateway_route()
                        {5, 10, D::west},  {4, 10, D::north}, {4, 9, D::north},  {4, 8, D::west}},
                       true);
         route.back().expect_cell = {{0x4C27, 15}};
+        // Rested in her chamber, back to the alcove where the aarakocra wait to
+        // fly the party down, and overland north-east to Sundabar.
+        {
+            auto rested = step_beat(18, 3, 8, D::west);
+            rested.passing = true;
+            rested.searching = true;
+            rested.rest_first = true;
+            route.push_back(rested);
+        }
+        walk_passages(route, 18,
+                      {{2, 8, D::north}, {2, 7, D::north},  {2, 6, D::north}, {2, 5, D::east},
+                       {3, 5, D::north}, {3, 4, D::north},  {3, 3, D::east},  {4, 3, D::north},
+                       {4, 2, D::east},  {5, 2, D::north},  {5, 1, D::east},  {6, 1, D::north},
+                       {6, 0, D::east},  {7, 0, D::east},   {8, 0, D::east},  {9, 0, D::east},
+                       {10, 0, D::east}, {11, 0, D::south}, {11, 1, D::east}, {12, 1, D::south},
+                       {12, 2, D::east}, {13, 2, D::east}},
+                      true);
+        route.push_back(step_beat(18, 14, 2, D::east, {"YES"}));
+        walk_overland(route, 26, {{2, 3, D::east}, {3, 2, D::east}, {4, 0, D::north}});
+        walk_overland(route, 23,
+                      {{8, 15, D::east},
+                       {9, 14, D::east},
+                       {10, 12, D::east},
+                       {11, 10, D::east},
+                       {12, 8, D::east},
+                       {13, 6, D::east}});
+        route.push_back(step_beat(23, 14, 4, D::east, {"YES"}));
         return route;
     }();
     return beats;
