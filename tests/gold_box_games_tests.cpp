@@ -3749,6 +3749,26 @@ const std::vector<RouteBeat> &treasure_route()
         // river by the boat rentals (3,15), open once Geildarr is dead.
         route.push_back(step_beat(17, 11, 10, D::west));
         route.push_back({16, 3, 15, D::north, {"YES"}});
+        // Overland west to Secomber (map 19), each step as OPENGOLD_SECRET_FIND
+        // finds it, fleeing what may be fled, and into the town.
+        walk_overland(route, 57, {{15, 3, D::east}, {0, 3, D::south}});
+        walk_overland(route, 56,
+                      {{14, 4, D::south},
+                       {14, 5, D::south},
+                       {14, 6, D::west},
+                       {13, 6, D::south},
+                       {13, 7, D::west}});
+        route.push_back(step_beat(56, 12, 7, D::west, {"YES"}));
+        // Secomber: the first crystal battle (13,15), the Hosttower, Kraken
+        // and Zhentil agents over their Lucky Papers; then Amanitas's house
+        // (7,10), where Erek leads the party in and Amanitas gives it his
+        // crown and sends it to Leilon.
+        RouteBeat crystal{19, 13, 15, D::north, {}};
+        crystal.rest_first = true;
+        route.push_back(crystal);
+        RouteBeat amanitas{19, 7, 10, D::north, {"YES"}};
+        amanitas.rest_first = true;
+        route.push_back(amanitas);
         return route;
     }();
     return beats;
