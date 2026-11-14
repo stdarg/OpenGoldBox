@@ -20504,3 +20504,23 @@ msgstr "Subir"
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "{name} is selected."
 msgstr "{name} está seleccionado."
+
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4967
+msgid "{name} breathes poison."
+msgstr "{name} exhala veneno."
+
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:6749
+msgid "{name} dissolves {target}'s armor!"
+msgstr "¡{name} disuelve la armadura de {target}!"
+
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:5019
+msgid "{name} emits an evil stench."
+msgstr "{name} desprende un hedor maligno."
+
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:6743
+msgid "{name} is dissolving {target}'s armor!"
+msgstr "¡{name} está disolviendo la armadura de {target}!"
