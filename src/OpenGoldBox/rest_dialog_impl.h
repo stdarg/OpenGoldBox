@@ -484,9 +484,9 @@ std::optional<String> RolfTourView::use_outside_combat(opengold::MemberId user,
     const int before = party_hp();
     // The session hears the spell, as a script may wait for one (Treasures'
     // Cortarra); without one the party casts it alone.
-    if (session_)
+    if (dax())
     {
-        session_->cast_outside_combat(user, patient, id.utf8().get_data());
+        dax()->cast_outside_combat(user, patient, id.utf8().get_data());
     }
     else
     {
