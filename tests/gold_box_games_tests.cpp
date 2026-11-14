@@ -2544,7 +2544,7 @@ std::vector<std::string> train_gateway_party()
 // Gateway's route plays to the game's end once this is true; until then it
 // stops on this map (docs/GAMES.md, phase 5 step 4).
 constexpr bool gateway_route_ends_the_game = false;
-constexpr unsigned gateway_route_stops_on_map = 19;
+constexpr unsigned gateway_route_stops_on_map = 20;
 
 // Gateway's story, beat by beat, as its cluebook tells it (plan phase 5, step
 // 4): from the inn of Yartar on.
@@ -3226,6 +3226,46 @@ const std::vector<RouteBeat> &gateway_route()
                        {12, 8, D::east},
                        {13, 6, D::east}});
         route.push_back(step_beat(23, 14, 4, D::east, {"YES"}));
+        // Out of Sundabar by its west gate, and overland round the mountains
+        // east to Ascore.
+        walk_passages(route, 19, {{0, 10, D::west}}, true);
+        walk_overland(route, 23,
+                      {{14, 4, D::north}, {14, 1, D::north}, {14, 14, D::east}, {15, 12, D::east}});
+        walk_overland(route, 24,
+                      {{0, 12, D::east},
+                       {1, 10, D::east},
+                       {2, 8, D::east},
+                       {3, 6, D::east},
+                       {4, 4, D::east},
+                       {5, 3, D::north},
+                       {5, 0, D::east},
+                       {6, 14, D::east},
+                       {7, 12, D::east},
+                       {8, 10, D::east},
+                       {9, 8, D::east},
+                       {10, 6, D::north},
+                       {10, 4, D::east},
+                       {11, 3, D::east}});
+        route.push_back(step_beat(24, 12, 1, D::east, {"YES"}));
+        // Ascore: east through the ruins to Vaalgamon's gate, which the four
+        // statuettes open past its giant spiders, and on to the passage where
+        // Vaalgamon waits.
+        walk_passages(
+            route, 20,
+            {{0, 7, D::east},    {1, 7, D::east},    {2, 7, D::north},   {2, 6, D::east},
+             {3, 6, D::south},   {3, 7, D::east},    {4, 7, D::north},   {4, 6, D::east},
+             {5, 6, D::east},    {6, 6, D::east},    {7, 6, D::south},   {7, 7, D::east},
+             {8, 7, D::east},    {9, 7, D::east},    {10, 7, D::east},   {11, 7, D::south},
+             {11, 8, D::south},  {11, 9, D::south},  {11, 10, D::south}, {11, 11, D::west},
+             {10, 11, D::south}, {10, 12, D::south}, {10, 13, D::south}, {10, 14, D::south},
+             {10, 15, D::east}},
+            true);
+        {
+            // Rested first, the party meets Vaalgamon's challenge.
+            auto finale = step_beat(20, 11, 15, D::east, {"MOVE AHEAD"});
+            finale.rest_first = true;
+            route.push_back(finale);
+        }
         return route;
     }();
     return beats;
