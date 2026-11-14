@@ -2733,6 +2733,51 @@ const std::vector<RouteBeat> &darkness_route()
                          "magic_user 6", "Leave", "MOVE ON", "THORNE"}};
         limbo.waiting = true;
         route.push_back(limbo);
+        // In Thorne's cave (map 34) the party beats the red dragons at the
+        // gate and goes straight for Thorne's chamber, by the way the
+        // planning aid finds, before the Horn of Doom's third blast: past the
+        // Ki-rin's spirit, who asks why it has come (DUTY), to Thorne (3,7),
+        // whom it will not leave; beaten, he leaves the Horn of Doom (cell
+        // 152h FFh).
+        walk_passages(route, 34,
+                      {{1, 13, D::south},  {1, 14, D::south},  {1, 15, D::east},  {2, 15, D::east},
+                       {3, 15, D::east},   {4, 15, D::north},  {4, 14, D::east},  {5, 14, D::east},
+                       {6, 14, D::east},   {7, 14, D::north},  {7, 13, D::north}, {7, 12, D::east},
+                       {8, 12, D::east},   {9, 12, D::east},   {10, 12, D::east}, {11, 12, D::east},
+                       {12, 12, D::north}, {12, 11, D::east},  {13, 11, D::east}, {14, 11, D::east},
+                       {15, 11, D::north}, {15, 10, D::north}, {15, 9, D::north}, {15, 8, D::north},
+                       {15, 7, D::west},   {14, 7, D::west},   {13, 7, D::west},  {12, 7, D::north},
+                       {12, 6, D::north},  {12, 5, D::west},   {11, 5, D::west},  {10, 5, D::south},
+                       {10, 6, D::south},  {10, 7, D::south},  {10, 8, D::west},  {9, 8, D::west},
+                       {8, 8, D::west},    {7, 8, D::north},   {7, 7, D::north},  {7, 6, D::north},
+                       {7, 5, D::west},    {6, 5, D::north},   {6, 4, D::north},  {6, 3, D::north},
+                       {6, 2, D::north},   {6, 1, D::west},    {5, 1, D::west},   {4, 1, D::west},
+                       {3, 1, D::west},    {2, 1, D::south},   {2, 2, D::south},  {2, 3, D::south},
+                       {2, 4, D::west},    {1, 4, D::south},   {1, 5, D::east},   {2, 5, D::east},
+                       {3, 5, D::south}});
+        auto thorne = step_beat(34, 3, 6, D::south, {"YES"});
+        thorne.rest_first = true;
+        thorne.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x152, 255};
+        route.push_back(thorne);
+        // Back the way it came to the dimensional gate (0,13), stepped
+        // through westward, and from Limbo on to the Realms.
+        walk_passages(route, 34,
+                      {{3, 7, D::north},  {3, 6, D::north},   {3, 5, D::west},   {2, 5, D::west},
+                       {1, 5, D::north},  {1, 4, D::north},   {1, 3, D::east},   {2, 3, D::north},
+                       {2, 2, D::north},  {2, 1, D::east},    {3, 1, D::east},   {4, 1, D::east},
+                       {5, 1, D::east},   {6, 1, D::south},   {6, 2, D::south},  {6, 3, D::south},
+                       {6, 4, D::south},  {6, 5, D::east},    {7, 5, D::south},  {7, 6, D::south},
+                       {7, 7, D::south},  {7, 8, D::east},    {8, 8, D::north},  {8, 7, D::north},
+                       {8, 6, D::east},   {9, 6, D::east},    {10, 6, D::north}, {10, 5, D::east},
+                       {11, 5, D::east},  {12, 5, D::south},  {12, 6, D::south}, {12, 7, D::east},
+                       {13, 7, D::east},  {14, 7, D::east},   {15, 7, D::south}, {15, 8, D::south},
+                       {15, 9, D::south}, {15, 10, D::south}, {15, 11, D::west}, {14, 11, D::west},
+                       {13, 11, D::west}, {12, 11, D::south}, {12, 12, D::west}, {11, 12, D::west},
+                       {10, 12, D::west}, {9, 12, D::west},   {8, 12, D::west},  {7, 12, D::south},
+                       {7, 13, D::south}, {7, 14, D::south},  {7, 15, D::west},  {6, 15, D::west},
+                       {5, 15, D::west},  {4, 15, D::west},   {3, 15, D::west},  {2, 15, D::west},
+                       {1, 15, D::north}, {1, 14, D::north}});
+        route.push_back(step_beat(34, 1, 13, D::west, {"YES", "MOVE ON", "REALM"}));
         return route;
     }();
     return beats;
