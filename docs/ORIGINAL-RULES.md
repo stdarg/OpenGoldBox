@@ -495,13 +495,28 @@ whole list):
 The work asked for next (2026-11-14), in order, with what each needs:
 
 1. The other "Still to come" items above that are no one game's campaign or
-   route work, in their order in this file: the AI's caution near clouds and
-   a giant-bane weapon (effect 75) in *Secret*; the party's facing, the
-   terrain heights for sight and PARTY_MOVE_MODIFIER (step 7); Spiritual
-   Hammer's hammer (step 8b-2); the original's rest of any length and its
-   preparation time (step 5); the training hall's fee and the classes each
-   hall trains (step 3); Restoration's giving back of drained levels (step
-   6); and the original rules' difficulty levels (step 7).
+   route work, in their order in this file:
+   - *Secret*'s AI caution near clouds.
+   - *Secret*'s giant-bane weapon (its effect 75, `EffHolyWater`: 6d6 and
+     the Strength bonus, +1 to hit, against one of target flag bit 0). It
+     needs a readied item's own effect (its special byte above 0x7F, which
+     `ToggleReadyItem` lays on its wielder), which no item gives a fight yet.
+   - The party's facing, the terrain heights for sight and
+     PARTY_MOVE_MODIFIER (step 7).
+   - Spiritual Hammer's hammer (step 8b-2).
+   - The original's rest of any length and its preparation time for
+     memorizing (step 5; scribing takes its own, Scribing).
+   - The training hall's fee and the classes each hall trains (step 3).
+   - Restoration's giving back of drained levels (step 6).
+   - The original rules' difficulty levels (step 7): they all play at
+     Normal (Decisions); ask the user before designing anything new.
+   - Under AD&D aging, a year added for each year the game's clock passes
+     (An age that changes after creation, step 3).
+2. Questions for the user: whether scribing at once, each spell with its
+   own four hours, is kept (DEVIATIONS.md, Scribing at once); and whether
+   Haste cast at caster level 16 to 31 never aging its targets (its
+   strength's level sets the bit that marks a creature aged, `EffHasted`) is
+   a bug to fix. It is kept as the original has it for now.
 
 ## What the original rules cover
 
