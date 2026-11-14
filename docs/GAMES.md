@@ -580,7 +580,12 @@ new decoders.
    and goes through into the Fire Giant Cave. The win is
    PROGRAM 1 after Gothmenes falls (darkness.md, The win and the route).
    *Stand-ins:* the test wins the fight with the Vaasans who get through
-   Vala's breach (their mages hold the party with Hold Monster). Until the
+   Vala's breach (their mages hold the party with Hold Monster), also where
+   the best play wins it with members dead. Each script starts its wandering
+   monsters afresh, as the original's does (cells 97h to C8h, 2026-11-14), so
+   the route meets more of them; in the Temple of Tyr, whose patrols break
+   every camp until the bells ring (cell 181h), a hurt party walks on rather
+   than rest. Until the
    route reaches the win it passes when it plays every beat to the Fire
    Giant Cave (map 32). *Where it stops (2026-11-14):* at the Fire Giant
    Cave's entrance (map 32, 3,15); next, the cave (Ungleow's endless

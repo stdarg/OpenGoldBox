@@ -508,6 +508,9 @@ struct RouteBeat
     // beat's maze fights by, one a fight, as Gateway's cluebook leads through
     // Ascore: a member runs off that side (rules::Encounter::escape_ends_fight).
     std::vector<unsigned> maze_exits;
+    // The map's monsters break every camp (Pools of Darkness's Temple of Tyr
+    // until it is freed): a passing party walks on hurt instead of resting.
+    bool camp_broken = false;
 };
 
 // Answers that train each of the route's members a level at a hall: its
@@ -2207,7 +2210,10 @@ const std::vector<RouteBeat> &darkness_route()
         route.push_back(step_beat(50, 3, 7, D::north));
         route.push_back(step_beat(50, 3, 6, D::north, {"PURSUE"}));
         // From the office (11,1) back to the stairs (8,5) and down to the
-        // worship area.
+        // worship area. The temple's patrols break every camp until it is
+        // freed (its rest entry, cell 181h): until the bells ring, a party
+        // the temple's fights hurt walks on without resting.
+        const auto temple_unfreed = route.size();
         walk_passages(route, 50,
                       {{11, 1, D::west},
                        {10, 1, D::south},
@@ -2398,6 +2404,11 @@ const std::vector<RouteBeat> &darkness_route()
         auto bells = step_beat(50, 11, 3, D::east, {"PULL ROPES", "STEP AWAY"});
         bells.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x181, 1};
         route.push_back(bells);
+        for (auto beat = route.begin() + static_cast<std::ptrdiff_t>(temple_unfreed);
+             beat != route.end(); ++beat)
+        {
+            beat->camp_broken = true;
+        }
         // Back down the stairs (8,5) to the ground floor.
         walk_passages(route, 50,
                       {{11, 3, D::west},
@@ -4099,9 +4110,12 @@ bool walk_census(GoldBoxGame game, bool route)
         }
         // Where the test wins fights, it also wins one the best play wins
         // only at the cost of a member dead or turned to stone: the party
-        // would be lost on the way (Secret's route's stand-in).
+        // would be lost on the way (Secret's and Pools of Darkness's routes'
+        // stand-in; Darkness's Vaasans leave most of the party dead).
         const bool costly =
-            test_winning && game == GoldBoxGame::secret_of_the_silver_blades &&
+            test_winning &&
+            (game == GoldBoxGame::secret_of_the_silver_blades ||
+             game == GoldBoxGame::pools_of_darkness) &&
             std::ranges::any_of(result.combatants,
                                 [](const opengold::rules::CombatantView &unit)
                                 {
@@ -4769,8 +4783,8 @@ bool walk_census(GoldBoxGame game, bool route)
                 }
                 // A camp before the beat fights as the beat does.
                 test_winning = beat.test_wins;
-                if (beat.rest_first ||
-                    (beat.passing && party_hurt() && session.snapshot().area_id != restless_map))
+                if (beat.rest_first || (beat.passing && !beat.camp_broken && party_hurt() &&
+                                        session.snapshot().area_id != restless_map))
                 {
                     // A camp attacked fights: the last beat's flight is over.
                     fleeing = false;
