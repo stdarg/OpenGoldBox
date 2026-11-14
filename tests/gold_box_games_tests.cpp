@@ -3769,6 +3769,52 @@ const std::vector<RouteBeat> &treasure_route()
         RouteBeat amanitas{19, 7, 10, D::north, {"YES"}};
         amanitas.rest_first = true;
         route.push_back(amanitas);
+        // Out of Secomber's west gate and overland, by the steps
+        // OPENGOLD_SECRET_FIND finds, north and west to Leilon (map 20).
+        walk_passages(route, 19,
+                      {{7, 11, D::west},
+                       {6, 11, D::west},
+                       {5, 11, D::west},
+                       {4, 11, D::west},
+                       {3, 11, D::north},
+                       {3, 10, D::west},
+                       {2, 10, D::west},
+                       {1, 10, D::west},
+                       {0, 10, D::west}});
+        walk_overland(route, 56,
+                      {{10, 7, D::north},
+                       {10, 6, D::north},
+                       {10, 5, D::north},
+                       {10, 4, D::north},
+                       {10, 3, D::north},
+                       {10, 2, D::north},
+                       {10, 1, D::north}});
+        walk_overland(route, 54,
+                      {{15, 14, D::north},
+                       {15, 13, D::north},
+                       {15, 12, D::north},
+                       {15, 11, D::north},
+                       {15, 10, D::north},
+                       {15, 9, D::east},
+                       {0, 9, D::north}});
+        walk_overland(route, 53,
+                      {{14, 8, D::west},
+                       {13, 8, D::west},
+                       {12, 8, D::west},
+                       {11, 8, D::west},
+                       {10, 8, D::west},
+                       {9, 8, D::west},
+                       {8, 8, D::west},
+                       {7, 8, D::west},
+                       {6, 8, D::west}});
+        route.push_back(step_beat(53, 5, 8, D::west, {"YES"}));
+        // Leilon: the Tavern of the Rutting Buck (9,7), rested for, where the
+        // party is drugged and wakes in a guarded barn; it escapes by a trick
+        // through the door (12,5).
+        RouteBeat tavern{20, 9, 7, D::north, {}};
+        tavern.rest_first = true;
+        route.push_back(tavern);
+        route.push_back({20, 12, 5, D::north, {"SICK TRICK"}});
         return route;
     }();
     return beats;
