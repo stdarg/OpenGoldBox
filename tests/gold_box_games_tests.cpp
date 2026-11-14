@@ -990,11 +990,12 @@ void walk_ruins(
 void walk_passages(
     std::vector<RouteBeat> &beats, unsigned map,
     std::initializer_list<std::tuple<unsigned, unsigned, opengold::por::MapDirection>> passages,
-    bool searching = false, bool test_wins = false, bool avoiding = false)
+    bool searching = false, bool test_wins = false, bool avoiding = false,
+    const std::vector<std::string> &answers = {})
 {
     for (const auto &[x, y, facing] : passages)
     {
-        auto beat = step_beat(map, x, y, facing);
+        auto beat = step_beat(map, x, y, facing, answers);
         beat.passing = true;
         beat.searching = searching;
         beat.test_wins = test_wins;
@@ -1650,6 +1651,96 @@ const std::vector<RouteBeat> &secret_route()
                        {2, 14, D::south},
                        {2, 15, D::south}},
                       true);
+        // The Western Crevasses (script 80; its places told apart by cells 4C05
+        // and 4C6B) to the Frost Giant Village (script 81). Its patrols of the
+        // Dreadlord's legion beat the route's party with every dice it tries:
+        // there the test wins the fight its player loses (a stand-in).
+        walk_passages(
+            route, 80,
+            {{1, 11, D::east},   {2, 11, D::east},   {3, 11, D::north},  {3, 10, D::east},
+             {4, 10, D::north},  {4, 9, D::east},    {5, 9, D::east},    {1, 7, D::east},
+             {2, 7, D::east},    {3, 7, D::east},    {4, 7, D::east},    {5, 7, D::east},
+             {6, 7, D::east},    {7, 7, D::east},    {8, 7, D::east},    {9, 7, D::east},
+             {10, 7, D::east},   {11, 7, D::east},   {12, 7, D::east},   {13, 7, D::east},
+             {14, 7, D::east},   {1, 1, D::east},    {2, 1, D::south},   {2, 2, D::east},
+             {3, 2, D::south},   {3, 3, D::east},    {4, 3, D::south},   {4, 4, D::east},
+             {5, 4, D::south},   {5, 5, D::east},    {6, 5, D::south},   {6, 6, D::east},
+             {7, 6, D::east},    {4, 15, D::east},   {5, 15, D::east},   {6, 15, D::east},
+             {7, 15, D::east},   {8, 15, D::east},   {9, 15, D::east},   {1, 14, D::east},
+             {2, 14, D::north},  {2, 13, D::east},   {3, 13, D::north},  {3, 12, D::east},
+             {4, 12, D::north},  {4, 11, D::east},   {5, 11, D::north},  {5, 10, D::east},
+             {6, 10, D::north},  {6, 9, D::east},    {7, 9, D::east},    {2, 15, D::east},
+             {3, 15, D::north},  {3, 14, D::east},   {4, 14, D::east},   {5, 14, D::north},
+             {5, 13, D::east},   {6, 13, D::east},   {7, 13, D::north},  {7, 12, D::east},
+             {8, 12, D::east},   {9, 12, D::north},  {9, 11, D::east},   {10, 11, D::east},
+             {11, 11, D::north}, {11, 10, D::east},  {12, 10, D::east},  {13, 10, D::north},
+             {13, 9, D::east},   {14, 9, D::east},   {9, 14, D::east},   {10, 14, D::east},
+             {11, 14, D::east},  {12, 14, D::east},  {13, 14, D::east},  {14, 14, D::east},
+             {4, 0, D::east},    {5, 0, D::east},    {6, 0, D::east},    {7, 0, D::east},
+             {8, 0, D::east},    {9, 0, D::east},    {10, 0, D::east},   {11, 0, D::east},
+             {12, 0, D::east},   {13, 0, D::east},   {14, 0, D::east},   {12, 4, D::east},
+             {13, 4, D::east},   {14, 4, D::east},   {15, 4, D::north},  {15, 3, D::north},
+             {15, 2, D::west},   {14, 2, D::north},  {14, 1, D::west},   {13, 1, D::west},
+             {12, 1, D::west},   {9, 15, D::west},   {8, 15, D::west},   {7, 15, D::west},
+             {6, 15, D::west},   {5, 15, D::west},   {4, 15, D::west},   {7, 6, D::west},
+             {6, 6, D::north},   {6, 5, D::west},    {5, 5, D::north},   {5, 4, D::west},
+             {4, 4, D::north},   {4, 3, D::west},    {3, 3, D::north},   {3, 2, D::west},
+             {2, 2, D::north},   {2, 1, D::west},    {1, 1, D::west},    {2, 6, D::west},
+             {1, 6, D::west},    {0, 6, D::north},   {0, 5, D::north},   {0, 4, D::north},
+             {0, 3, D::north},   {0, 2, D::north},   {0, 1, D::north},   {0, 0, D::east},
+             {1, 0, D::east},    {2, 15, D::east},   {3, 15, D::north},  {3, 14, D::east},
+             {4, 14, D::east},   {5, 14, D::north},  {5, 13, D::east},   {6, 13, D::east},
+             {7, 13, D::north},  {7, 12, D::east},   {8, 12, D::east},   {9, 12, D::north},
+             {9, 11, D::east},   {10, 11, D::east},  {11, 11, D::north}, {11, 10, D::east},
+             {12, 10, D::east},  {13, 10, D::north}, {13, 9, D::east},   {14, 9, D::east},
+             {4, 0, D::east},    {5, 0, D::east},    {6, 0, D::east},    {7, 0, D::east},
+             {8, 0, D::east},    {9, 0, D::east},    {10, 0, D::east},   {11, 0, D::south},
+             {11, 1, D::south},  {11, 2, D::east},   {12, 2, D::east},   {13, 2, D::south},
+             {13, 3, D::east},   {14, 3, D::east},   {1, 7, D::east},    {2, 7, D::east},
+             {3, 7, D::east},    {4, 7, D::east},    {5, 7, D::east},    {6, 7, D::east},
+             {7, 7, D::east},    {8, 7, D::east},    {9, 7, D::east},    {10, 7, D::east},
+             {11, 7, D::east},   {12, 7, D::east},   {13, 7, D::east},   {14, 7, D::east},
+             {1, 8, D::east},    {2, 8, D::east},    {3, 8, D::east},    {4, 8, D::east},
+             {5, 8, D::east},    {6, 8, D::east},    {7, 8, D::east},    {8, 8, D::east},
+             {9, 8, D::east},    {10, 8, D::east},   {11, 8, D::east},   {12, 8, D::east},
+             {13, 8, D::east},   {14, 8, D::east},   {12, 1, D::east},   {13, 1, D::east},
+             {14, 1, D::south},  {14, 2, D::east},   {15, 2, D::south},  {15, 3, D::south},
+             {15, 4, D::west},   {14, 4, D::west},   {13, 4, D::west},   {12, 4, D::west},
+             {3, 9, D::west},    {2, 9, D::west},    {1, 9, D::west},    {0, 9, D::south},
+             {0, 10, D::south},  {0, 11, D::south},  {0, 12, D::south},  {0, 13, D::south},
+             {0, 14, D::south},  {0, 15, D::east},   {1, 15, D::east},   {5, 3, D::east},
+             {6, 3, D::south},   {6, 4, D::east},    {7, 4, D::south},   {7, 5, D::east},
+             {8, 5, D::east},    {9, 5, D::east},    {10, 5, D::east},   {12, 11, D::east},
+             {13, 11, D::south}, {13, 12, D::south}, {13, 13, D::south}, {13, 14, D::east},
+             {14, 14, D::east},  {6, 14, D::east},   {7, 14, D::east},   {8, 14, D::north},
+             {8, 13, D::east},   {9, 13, D::east},   {10, 13, D::north}, {10, 12, D::east},
+             {11, 12, D::east},  {12, 12, D::east},  {2, 0, D::east},    {3, 0, D::south},
+             {3, 1, D::east},    {4, 1, D::east},    {5, 1, D::south},   {5, 2, D::east},
+             {6, 2, D::east},    {7, 2, D::south},   {7, 3, D::east},    {8, 3, D::east},
+             {9, 3, D::south},   {9, 4, D::east},    {10, 4, D::east},   {11, 4, D::south},
+             {11, 5, D::east},   {12, 5, D::east},   {13, 5, D::south},  {13, 6, D::east},
+             {14, 6, D::east},   {2, 0, D::east},    {3, 0, D::south},   {3, 1, D::east},
+             {4, 1, D::east},    {5, 1, D::south},   {5, 2, D::east},    {6, 2, D::east},
+             {7, 2, D::south},   {7, 3, D::east},    {8, 3, D::east},    {9, 3, D::south},
+             {9, 4, D::east},    {10, 4, D::east},   {11, 4, D::south},  {11, 5, D::east},
+             {12, 5, D::east},   {13, 5, D::south},  {13, 6, D::east},   {14, 6, D::east},
+             {5, 12, D::east},   {6, 12, D::north},  {6, 11, D::east},   {7, 11, D::north},
+             {7, 10, D::east},   {8, 10, D::east},   {9, 10, D::east},   {10, 10, D::east},
+             {8, 6, D::east},    {9, 6, D::east},    {10, 6, D::east},   {11, 6, D::east},
+             {12, 6, D::east},   {1, 5, D::east},    {2, 5, D::east},    {3, 5, D::east}},
+            true, true);
+        // The Frost Giant Village (script 81): its blockaded door bashed open, its king won over by
+        // fighting the Black Circle beside him, his guards lead the party east, toward the castle,
+        // into the Eastern Crevasses (script 82). Fights its player loses with every dice are won
+        // by the test (a stand-in).
+        walk_passages(route, 81,
+                      {{0, 8, D::east},   {1, 8, D::east},   {2, 8, D::east},   {3, 8, D::east},
+                       {4, 8, D::east},   {5, 8, D::east},   {6, 8, D::east},   {7, 8, D::east},
+                       {8, 8, D::east},   {9, 8, D::south},  {9, 9, D::south},  {9, 10, D::south},
+                       {9, 11, D::south}, {9, 12, D::south}, {9, 13, D::south}, {9, 14, D::south},
+                       {9, 15, D::east},  {10, 15, D::east}, {11, 15, D::east}, {12, 15, D::north},
+                       {2, 15, D::west}},
+                      true, true, false, {"BASH", "BASH", "BASH", "CASTLE"});
         return route;
     }();
     return beats;
@@ -2888,6 +2979,27 @@ bool walk_census(GoldBoxGame game, bool route)
                 std::size_t pick = (++shown[s.dialogue] > 2 || declining) && !s.choices.empty()
                                        ? s.choices.size() - 1
                                        : 0;
+                // OPENGOLD_SECRET_PREFER=WORD,... has the planning aid take a
+                // choice holding one of those words where one is offered (the
+                // way a walk is to go: the giants' guards ask which way; a
+                // blocked door is bashed until it gives).
+                if (const char *prefer = std::getenv("OPENGOLD_SECRET_PREFER"); planning && prefer)
+                {
+                    std::stringstream words(prefer);
+                    std::string word;
+                    while (std::getline(words, word, ','))
+                    {
+                        if (std::ranges::any_of(s.choices,
+                                                [&](const std::string &choice)
+                                                {
+                                                    return choice.find(word) != std::string::npos;
+                                                }))
+                        {
+                            answers = {word};
+                            break;
+                        }
+                    }
+                }
                 // The planning aid takes on what it meets but declines a
                 // question (NO), so it fights its way on but stays put.
                 // Monsters that come on Secret's party in camp while a member
