@@ -276,8 +276,12 @@ struct AmmunitionTypes
 // or run out, by the fight's numbers: blindness (33), disease (34, 43, 44,
 // and Pool of Radiance's rot, 50 and 57), the helplessness a disease brings
 // for good (31 with no end), poison (55, and Slow Poison's 15 and 22), Bestow
-// Curse (36), feeblemind (268), Enlarge (12) and Strength (38), cast in camp
-// or left from a fight; what a paladin has spent, the day's laying on of
+// Curse (36), feeblemind (268), Enlarge (12) and Strength (38), and the
+// effects of the spells cast in camp before a fight (Bless 1, the
+// protections 8, 9, 45, 46 and 41, the resistances 10 and 20, Shield 17,
+// Detect Invisibility 24, Invisibility 25, Mirror Image 28, Blink 37, Haste
+// 39 and Prayer 49), cast in camp or left from a fight; what a paladin has
+// spent, the day's laying on of
 // hands (340) and the week's cures of disease (341, its strength the cures
 // spent); and the Strength a disease has wasted (601, OpenGoldBox's own, its
 // strength the points).

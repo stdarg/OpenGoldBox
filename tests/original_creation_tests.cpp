@@ -1255,6 +1255,58 @@ void camp_spells_last_and_diseases_waste()
     check(dead.dead, "The poison kills again when the spell runs out");
 }
 
+// Spells cast in camp for their effects carry into the next fight
+// (camp.pas, NoncombatCastMenu): Bless on the whole party, Protection from
+// Evil on one member; Blink only where the game's table lets it be cast out
+// of a fight (Gateway's).
+void camp_effects_carry_into_fights()
+{
+    const auto module = original::rules_module();
+    const auto curse = GoldBoxGame::curse_of_the_azure_bonds;
+    auto priest = original_character(curse, "cleric", "lawful_good", 101);
+    priest.prepared_spells = {"cleric:bless", "cleric:protection_from_evil"};
+    const auto fighter = original_character(curse, "fighter", "lawful_good", 103);
+    RandomState random{107};
+    rules::VitalState own{priest.hit_points, false, {}, {}};
+    rules::VitalState guard{fighter.hit_points, false, {}, {}};
+    const auto actions = module->camp_actions(priest, own);
+    const auto bless =
+        std::ranges::find(actions, std::string("cast:cleric:bless"), &rules::CampAction::id);
+    check(bless != actions.end() && bless->whole_party, "Bless is cast on the party in camp");
+    std::vector<rules::CampTarget> party{{priest, own}, {fighter, guard}};
+    module->use_party_camp_action(priest, own, party, "cast:cleric:bless", random);
+    module->use_camp_action(priest, own, fighter, guard, "cast:cleric:protection_from_evil",
+                            random);
+    const auto blessed = fought_from(*module, fighter, guard, curse);
+    const auto has = [&blessed](int code)
+    {
+        return std::ranges::any_of(blessed.effects,
+                                   [code](const original::Effect &e)
+                                   {
+                                       return e.code == code;
+                                   });
+    };
+    check(has(1) && has(8) && carries(priest, own, 1),
+          "Bless and Protection from Evil cast in camp start the next fight");
+
+    auto mage = original_character(curse, "magic_user", "neutral_good", 109);
+    mage.prepared_spells = {"magic_user:blink"};
+    rules::VitalState mage_state{mage.hit_points, false, {}, {}};
+    const auto offers_blink = [&](const rules::CharacterSheet &sheet)
+    {
+        return std::ranges::any_of(module->camp_actions(sheet, mage_state),
+                                   [](const rules::CampAction &a)
+                                   {
+                                       return a.id == "cast:magic_user:blink";
+                                   });
+    };
+    auto gateway_mage = original_character(GoldBoxGame::gateway_to_the_savage_frontier,
+                                           "magic_user", "neutral_good", 113);
+    gateway_mage.prepared_spells = {"magic_user:blink"};
+    check(!offers_blink(mage) && offers_blink(gateway_mage),
+          "Blink is cast in camp only in Gateway");
+}
+
 // The races' innate effects as each game gives them (chargen.pas): Secret's
 // gnome has no defense against giants (47) and no race the Constitution save
 // against poison (90); its arrows and quarrels are item types 30 and 12, and
@@ -1534,6 +1586,7 @@ int main()
         a_fight_starts_with_lasting_conditions();
         camp_spells_last_and_diseases_waste();
         secret_races_and_items();
+        camp_effects_carry_into_fights();
         raise_dead_costs_constitution();
         scripts_harm_as_the_original();
         a_potion_heals_outside_a_fight();

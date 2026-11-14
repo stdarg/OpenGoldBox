@@ -366,8 +366,8 @@ reconstruction), with these differences (2026-11-14):
   as *Secret*'s does.
 - **Strength** cast in a fight goes on its caster, as its row has it (the
   Strength spells, plan step 5).
-- **Still to come:** Blink's cast in camp, with the camp's spells whose
-  effects are a fight's.
+- **Blink** may be cast in camp, carried into the next fight with the
+  camp's other spells for a fight (plan step 5).
 
 ## Pools of Darkness
 
@@ -555,8 +555,14 @@ lines in all:
    - **Camp:** a cleric casts Cure Light Wounds in camp, healing a member 1d8
      (`NoncombatCastMenu`).
    - The camp's cures of conditions (Conditions outside fights, step 6).
-   - Still to come: the camp spells whose effects are a fight's (Bless,
-     Prayer and the like, cast before one); scribing a scroll's spell into a
+   - **Camp spells for a fight** (2026-11-14; `NoncombatCastMenu`): Bless,
+     the Protections, Resist Cold and Fire, Shield, Detect Invisibility,
+     Invisibility and its 10' Radius, Mirror Image, Prayer, Haste (on as many
+     as the caster's level) and Protection from Normal Missiles, and Blink
+     where the game's table allows (Gateway's), cast in camp, carry their
+     effects into the next fight by their minutes, and through a day's rest
+     as their minutes allow; the time between is not counted.
+   - Still to come: scribing a scroll's spell into a
      magic-user's book (`CampScribeMenu`); the original's rest of any length
      and its preparation time (`CampSpellPrepTime`).
    - **The Strength spells** (2026-11-14; `magic.pas`, `SpellEnlarge`,

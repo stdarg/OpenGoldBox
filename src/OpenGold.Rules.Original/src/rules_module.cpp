@@ -1430,6 +1430,36 @@ void strengthen_in_camp(const CharacterSheet &caster, const CharacterSheet &targ
                       });
 }
 
+// The spells cast in camp for their effects, which carry into the next fight
+// (lasting_condition); the party is camp target 4.
+constexpr std::array<int, 19> camp_effect_spells{1,  6,  7,  8,  16, 17, 19, 24, 29, 30,
+                                                 32, 42, 45, 48, 50, 52, 53, 54, 169};
+constexpr int party_target = 4;
+
+// A camp spell's effect on its target (magic.pas, ResolveSpell): its minutes
+// by the caster's level, its strength the caster's level; Mirror Image's the
+// 1d4 images, Prayer's the party's side (bit 4 clear) and the level.
+void lay_camp_effect(const CharacterSheet &caster, const CharacterSheet &target, VitalState &state,
+                     int number, RandomState &random_state)
+{
+    constexpr int mirror_image = 32;
+    const auto &known = *spell(number, game_of(caster.identity));
+    const int level = camp_caster_level(caster, known);
+    const int minutes = known.minutes_fixed + known.minutes_per_level * level;
+    const int strength = number == mirror_image ? roll_die(random_state, 4) : level;
+    const int code = known.effect;
+    change_conditions(target, state,
+                      [&](std::vector<Effect> &effects)
+                      {
+                          std::erase_if(effects,
+                                        [code](const Effect &e)
+                                        {
+                                            return e.code == code;
+                                        });
+                          effects.push_back({code, minutes, strength, false});
+                      });
+}
+
 // What a paladin may still do: lay on hands today, and cure disease this week.
 bool may_lay_on_hands(const CharacterSheet &sheet, const VitalState &state)
 {
@@ -1974,6 +2004,19 @@ std::vector<CampAction> OriginalModule::camp_actions(const CharacterSheet &sheet
                  false});
         }
     }
+    // The spells whose effects carry into the next fight, those the game's
+    // table lets be cast out of one, on the party for a party's spell.
+    const auto game = game_of(sheet.identity);
+    for (const int number : camp_effect_spells)
+    {
+        const auto *known = spell(number, game);
+        if (std::ranges::find(left, number) != left.end() && known->when != 1)
+        {
+            actions.push_back({std::string(cast_prefix) + spell_id(number),
+                               {"Cast {spell}", {{"spell", std::string(known->name), true}}},
+                               known->camp_target == party_target});
+        }
+    }
     return actions;
 }
 
@@ -2027,6 +2070,21 @@ void OriginalModule::use_camp_action(const CharacterSheet &user, VitalState &use
                             ? spell_number(action.substr(cast_prefix.size()))
                             : std::nullopt;
     const auto left = spells_left(user, user_state);
+    if (number && std::ranges::find(camp_effect_spells, *number) != camp_effect_spells.end())
+    {
+        const auto *known = spell(*number, game);
+        if (std::ranges::find(left, *number) == left.end() || user_state.dead ||
+            target_state.dead || known->when == 1 || known->camp_target == party_target)
+        {
+            throw std::runtime_error("That spell cannot be cast now");
+        }
+        spend_spell(user, user_state, *number);
+        // A spell on the caster goes on the caster, whomever it was aimed at.
+        const bool on_caster = known->camp_target == 1;
+        lay_camp_effect(user, on_caster ? user : target, on_caster ? user_state : target_state,
+                        *number, random_state);
+        return;
+    }
     if (!number || std::ranges::find(camp_spells, *number) == camp_spells.end() ||
         std::ranges::find(left, *number) == left.end() || user_state.dead)
     {
@@ -2169,11 +2227,35 @@ void OriginalModule::drink_potion(const CharacterSheet &sheet, VitalState &state
     state.hit_points = std::min(state.hit_points + healing, sheet.hit_points);
 }
 
-void OriginalModule::use_party_camp_action(const CharacterSheet &, VitalState &,
-                                           std::span<CampTarget>, std::string_view,
-                                           RandomState &) const
+// A party's spell cast in camp (camp.pas, NoncombatCastMenu): Bless,
+// Invisibility 10' Radius and the like on every living member, Haste on as
+// many as the caster's level.
+void OriginalModule::use_party_camp_action(const CharacterSheet &user, VitalState &user_state,
+                                           std::span<CampTarget> party, std::string_view action,
+                                           RandomState &random_state) const
 {
-    throw unavailable("use_party_camp_action");
+    const auto number = action.starts_with(cast_prefix)
+                            ? spell_number(action.substr(cast_prefix.size()))
+                            : std::nullopt;
+    const auto game = game_of(user.identity);
+    const auto left = spells_left(user, user_state);
+    if (!number || std::ranges::find(camp_effect_spells, *number) == camp_effect_spells.end() ||
+        std::ranges::find(left, *number) == left.end() || user_state.dead ||
+        spell(*number, game)->camp_target != party_target || spell(*number, game)->when == 1)
+    {
+        throw std::runtime_error("That spell cannot be cast now");
+    }
+    spend_spell(user, user_state, *number);
+    constexpr int haste = 48;
+    int left_to_hasten = camp_caster_level(user, *spell(*number, game));
+    for (auto &member : party)
+    {
+        if (member.state.get().dead || (*number == haste && left_to_hasten-- <= 0))
+        {
+            continue;
+        }
+        lay_camp_effect(user, member.sheet.get(), member.state.get(), *number, random_state);
+    }
 }
 
 std::vector<CampAction> OriginalModule::scroll_actions(const CharacterSheet &, const VitalState &,
