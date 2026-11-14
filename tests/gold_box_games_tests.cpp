@@ -931,6 +931,19 @@ const std::vector<RouteBeat> &curse_route()
     return beats;
 }
 
+// Secret's story, beat by beat, as its cluebook tells it (plan phase 4, step
+// 4): from New Verdigris on.
+const std::vector<RouteBeat> &secret_route()
+{
+    static const std::vector<RouteBeat> beats{};
+    return beats;
+}
+
+const std::vector<RouteBeat> &route_for(GoldBoxGame game)
+{
+    return game == GoldBoxGame::secret_of_the_silver_blades ? secret_route() : curse_route();
+}
+
 // Secret of the Silver Blades starts with script 17 of disk 2: a vision of
 // the valley over picture 119, then NEW ECL 16 on disk 1: New Verdigris
 // (docs/games/secret.md).
@@ -1186,12 +1199,17 @@ bool walk_census(GoldBoxGame game, bool route)
                 creator.next();
             }
             const auto id = party->add_pc(creator.create_character());
-            // A long sword, plate mail and a shield of Curse's own item types; a
-            // cleric's mace; a magic-user's dagger.
+            // A long sword, plate mail and a shield of the game's own item
+            // types; a cleric's mace; a magic-user's dagger. Secret numbers
+            // its types as Pool of Radiance does, not as Curse.
+            const bool secret = game == GoldBoxGame::secret_of_the_silver_blades;
+            const std::uint8_t sword = secret ? 18 : 36, plate = secret ? 36 : 55,
+                               shield = secret ? 37 : 59, mace = secret ? 8 : 23,
+                               dagger = secret ? 4 : 8;
             const std::vector<std::uint8_t> gear_types =
-                klass == "magic_user" ? std::vector<std::uint8_t>{8}
-                : klass == "cleric"   ? std::vector<std::uint8_t>{23, 55, 59}
-                                      : std::vector<std::uint8_t>{36, 55, 59};
+                klass == "magic_user" ? std::vector<std::uint8_t>{dagger}
+                : klass == "cleric"   ? std::vector<std::uint8_t>{mace, plate, shield}
+                                      : std::vector<std::uint8_t>{sword, plate, shield};
             for (const std::uint8_t type : gear_types)
             {
                 std::array<std::uint8_t, 63> raw{};
@@ -1201,7 +1219,7 @@ bool walk_census(GoldBoxGame game, bool route)
                 // record's magic bonus, byte 50).
                 if (route)
                 {
-                    raw[50] = type == 55 || type == 59 ? 1 : 2;
+                    raw[50] = type == plate || type == shield ? 1 : 2;
                 }
                 opengold::por::Equipment gear;
                 gear.stored = opengold::por::decode_items(raw)->front();
@@ -1750,7 +1768,7 @@ bool walk_census(GoldBoxGame game, bool route)
         std::string current_beat = "the route's start";
         try
         {
-            for (const auto &beat : curse_route())
+            for (const auto &beat : route_for(game))
             {
                 ++beat_number;
                 const auto where = "beat " + std::to_string(beat.map) + " " +
@@ -2043,6 +2061,10 @@ int main(int argc, char **argv)
         if (argc == 2 && std::string_view(argv[1]) == "--secret-walk")
         {
             return walk_census(GoldBoxGame::secret_of_the_silver_blades, false) ? 0 : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--secret-route")
+        {
+            return walk_census(GoldBoxGame::secret_of_the_silver_blades, true) ? 0 : 1;
         }
         each_game_is_told_apart_by_its_files();
         curse_creatures_are_read_from_their_layout();

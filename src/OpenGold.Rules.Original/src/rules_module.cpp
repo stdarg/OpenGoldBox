@@ -651,15 +651,19 @@ namespace
 constexpr std::array<std::uint8_t, class_slot_count> usability_bits{1 << 1, 1 << 4, 1 << 3, 1 << 6,
                                                                     1 << 7, 1 << 0, 1 << 2, 1 << 5};
 
+// Secret's items mark rangers with the paladin's bit (its classMaskTbl).
 std::uint8_t usability(const CharacterSheet &sheet)
 {
+    const bool secret = game_of(sheet.identity) == GoldBoxGame::secret_of_the_silver_blades;
     std::uint8_t bits = 0;
     const auto &levels = original_numbers(sheet).class_levels;
     for (std::size_t at = 0; at < class_slot_count; ++at)
     {
         if (levels[at] > 0)
         {
-            bits |= usability_bits[at];
+            const bool ranger = static_cast<ClassSlot>(at) == ClassSlot::ranger;
+            bits |= secret && ranger ? usability_bits[static_cast<std::size_t>(ClassSlot::paladin)]
+                                     : usability_bits[at];
         }
     }
     return bits;
