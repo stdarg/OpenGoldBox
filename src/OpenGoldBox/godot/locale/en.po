@@ -541,11 +541,11 @@ msgstr "AC {ac}   Speed {speed} ft"
 msgid "AC {ac} / HP {current}/{maximum}"
 msgstr "AC {ac} / HP {current}/{maximum}"
 
-#: src/OpenGoldBox/startup_view.cpp:1018
+#: src/OpenGoldBox/startup_view.cpp:1021
 msgid "AD&D"
 msgstr "AD&D"
 
-#: src/OpenGoldBox/startup_view.cpp:1017
+#: src/OpenGoldBox/startup_view.cpp:1020
 msgid "AD&D: the scores change again as characters grow older."
 msgstr "AD&D: the scores change again as characters grow older."
 
@@ -1104,11 +1104,11 @@ msgstr "Arrows/Numpad: move | Shift+arrow: diagonal | A: action | Space: use | Z
 msgid "Arrows: choose | Space: use | Escape: skip"
 msgstr "Arrows: choose | Space: use | Escape: skip"
 
-#: src/OpenGoldBox/startup_view.cpp:1018
+#: src/OpenGoldBox/startup_view.cpp:1021
 msgid "As the original"
 msgstr "As the original"
 
-#: src/OpenGoldBox/startup_view.cpp:1014
+#: src/OpenGoldBox/startup_view.cpp:1017
 msgid "As the original: the starting age changes the scores once."
 msgstr "As the original: the starting age changes the scores once."
 
@@ -1881,7 +1881,7 @@ msgstr "Can roll a d20 again once."
 msgid "Can target another creature as a Magic action."
 msgstr "Can target another creature as a Magic action."
 
-#: src/OpenGoldBox/ally_attack_controls.h:32 src/OpenGoldBox/character_creation_view.cpp:918 src/OpenGoldBox/equipment_choice_dialog.cpp:76 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:318 src/OpenGoldBox/godot/scenes/startup.tscn:106 src/OpenGoldBox/godot/scenes/startup.tscn:169 src/OpenGoldBox/level_up_dialog.cpp:146 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:246 src/OpenGoldBox/rest_dialog_impl.h:66 src/OpenGoldBox/save_slots.cpp:133 src/OpenGoldBox/spell_choice_controls.h:249 src/OpenGoldBox/startup_view.cpp:756
+#: src/OpenGoldBox/ally_attack_controls.h:32 src/OpenGoldBox/character_creation_view.cpp:918 src/OpenGoldBox/equipment_choice_dialog.cpp:76 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:318 src/OpenGoldBox/godot/scenes/startup.tscn:106 src/OpenGoldBox/godot/scenes/startup.tscn:169 src/OpenGoldBox/level_up_dialog.cpp:146 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:246 src/OpenGoldBox/rest_dialog_impl.h:66 src/OpenGoldBox/save_slots.cpp:133 src/OpenGoldBox/spell_choice_controls.h:249 src/OpenGoldBox/startup_view.cpp:759
 msgid "Cancel"
 msgstr "Cancel"
 
@@ -1957,7 +1957,7 @@ msgstr "Cannot read the bundled game-file checksum manifest."
 msgid "Cannot regain Hit Points."
 msgstr "Cannot regain Hit Points."
 
-#: src/OpenGoldBox/startup_view.cpp:758
+#: src/OpenGoldBox/startup_view.cpp:761
 msgid "Cannot save language."
 msgstr "Cannot save language."
 
@@ -1966,7 +1966,7 @@ msgstr "Cannot save language."
 msgid "Cannot save screenshot: {path}"
 msgstr "Cannot save screenshot: {path}"
 
-#: src/OpenGoldBox/startup_view.cpp:675
+#: src/OpenGoldBox/startup_view.cpp:678
 msgid "Cannot save settings. Check that settings.cfg in the game's user data folder can be written and is valid."
 msgstr "Cannot save settings. Check that settings.cfg in the game's user data folder can be written and is valid."
 
@@ -2224,7 +2224,7 @@ msgstr "Character sheet"
 msgid "Characters"
 msgstr "Characters"
 
-#: src/OpenGoldBox/startup_view.cpp:1007
+#: src/OpenGoldBox/startup_view.cpp:1010
 msgid "Characters, fights and magic as the original game had them: AD&D 1st edition."
 msgstr "Characters, fights and magic as the original game had them: AD&D 1st edition."
 
@@ -2424,7 +2424,7 @@ msgstr "Choose cantrips, spellbook entries and prepared spells. Back preserves y
 msgid "Choose game folder"
 msgstr "Choose game folder"
 
-#: src/OpenGoldBox/godot/scenes/startup.tscn:65 src/OpenGoldBox/startup_view.cpp:754
+#: src/OpenGoldBox/godot/scenes/startup.tscn:65 src/OpenGoldBox/startup_view.cpp:757
 msgid "Choose language"
 msgstr "Choose language"
 
@@ -2999,7 +2999,7 @@ msgstr "Contingency: {spell} ({trigger})"
 msgid "Contingency: {spell} takes effect on {name}."
 msgstr "Contingency: {spell} takes effect on {name}."
 
-#: src/OpenGoldBox/godot/scenes/combat_demo.tscn:334 src/OpenGoldBox/godot/scenes/startup.tscn:177 src/OpenGoldBox/godot/scenes/startup.tscn:242 src/OpenGoldBox/godot/scenes/startup.tscn:280 src/OpenGoldBox/godot/scenes/startup.tscn:375 src/OpenGoldBox/godot/scenes/startup.tscn:88 src/OpenGoldBox/startup_view.cpp:755
+#: src/OpenGoldBox/godot/scenes/combat_demo.tscn:334 src/OpenGoldBox/godot/scenes/startup.tscn:177 src/OpenGoldBox/godot/scenes/startup.tscn:242 src/OpenGoldBox/godot/scenes/startup.tscn:280 src/OpenGoldBox/godot/scenes/startup.tscn:375 src/OpenGoldBox/godot/scenes/startup.tscn:88 src/OpenGoldBox/startup_view.cpp:758
 msgid "Continue"
 msgstr "Continue"
 
@@ -6070,7 +6070,7 @@ msgstr "Lance"
 msgid "Land's Aid"
 msgstr "Land's Aid"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:353 src/OpenGoldBox/godot/scenes/startup.tscn:43 src/OpenGoldBox/startup_view.cpp:753
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:353 src/OpenGoldBox/godot/scenes/startup.tscn:43 src/OpenGoldBox/startup_view.cpp:756
 msgid "Language"
 msgstr "Language"
 
@@ -7089,7 +7089,7 @@ msgstr "Missiles without magic from more than 5 feet away miss it."
 msgid "Missing HP: {amount}. Damage and other HP losses are not individually recorded."
 msgstr "Missing HP: {amount}. Damage and other HP losses are not individually recorded."
 
-#: src/OpenGoldBox/startup_view.cpp:644
+#: src/OpenGoldBox/startup_view.cpp:647
 msgid "Missing or unreadable game files:"
 msgstr "Missing or unreadable game files:"
 
@@ -7562,11 +7562,11 @@ msgstr "Oath of Devotion: Aura of Devotion. You and allies in your Aura of Prote
 msgid "Oath of Devotion: Smite of Protection. When you cast Divine Smite, you and allies in your Aura of Protection gain +2 AC and +2 to Dexterity saves until your next turn.\nA second level 4 spell slot."
 msgstr "Oath of Devotion: Smite of Protection. When you cast Divine Smite, you and allies in your Aura of Protection gain +2 AC and +2 to Dexterity saves until your next turn.\nA second level 4 spell slot."
 
-#: src/OpenGoldBox/game_menu_view.cpp:271 src/OpenGoldBox/startup_view.cpp:1018
+#: src/OpenGoldBox/game_menu_view.cpp:271 src/OpenGoldBox/startup_view.cpp:1021
 msgid "Off"
 msgstr "Off"
 
-#: src/OpenGoldBox/startup_view.cpp:1015
+#: src/OpenGoldBox/startup_view.cpp:1018
 msgid "Off: age never changes the scores."
 msgstr "Off: age never changes the scores."
 
@@ -8208,7 +8208,7 @@ msgstr "Polymorphed"
 msgid "Pool of Radiance"
 msgstr "Pool of Radiance"
 
-#: src/OpenGoldBox/godot/scenes/startup.tscn:109 src/OpenGoldBox/godot/scenes/startup.tscn:131 src/OpenGoldBox/startup_view.cpp:512
+#: src/OpenGoldBox/godot/scenes/startup.tscn:109 src/OpenGoldBox/godot/scenes/startup.tscn:131 src/OpenGoldBox/startup_view.cpp:515
 msgid "Pool of Radiance game files"
 msgstr "Pool of Radiance game files"
 
@@ -9560,7 +9560,7 @@ msgstr "Rules"
 msgid "Run the area's pre-camp check and attempt an eight-hour long rest."
 msgstr "Run the area's pre-camp check and attempt an eight-hour long rest."
 
-#: src/OpenGoldBox/startup_view.cpp:1008
+#: src/OpenGoldBox/startup_view.cpp:1011
 msgid "SRD 5.2.1"
 msgstr "SRD 5.2.1"
 
@@ -11187,7 +11187,7 @@ msgstr "The door opens."
 msgid "The door stays locked."
 msgstr "The door stays locked."
 
-#: src/OpenGoldBox/startup_view.cpp:1009
+#: src/OpenGoldBox/startup_view.cpp:1012
 msgid "The fifth edition's System Reference Document, with the original's adventures."
 msgstr "The fifth edition's System Reference Document, with the original's adventures."
 
@@ -11261,7 +11261,7 @@ msgstr "The oil on {name} burns for 5 more damage."
 msgid "The original game's art shows until you choose the folder of the OpenGoldBox new art download."
 msgstr "The original game's art shows until you choose the folder of the OpenGoldBox new art download."
 
-#: src/OpenGoldBox/startup_view.cpp:1006
+#: src/OpenGoldBox/startup_view.cpp:1009
 msgid "The original rules (Pool of Radiance)"
 msgstr "The original rules (Pool of Radiance)"
 
@@ -13367,7 +13367,7 @@ msgstr "{feat}: {spell}; spell attack bonus {attack}."
 msgid "{finder} finds {name}."
 msgstr "{finder} finds {name}."
 
-#: src/OpenGoldBox/startup_view.cpp:513
+#: src/OpenGoldBox/startup_view.cpp:516
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{game} game files"
 msgstr "{game} game files"
