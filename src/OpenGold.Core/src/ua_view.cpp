@@ -1,6 +1,7 @@
 #include "opengold/ua_view.h"
 
 #include <algorithm>
+#include <cstdio>
 #include <stdexcept>
 #include <string>
 
@@ -407,6 +408,103 @@ ViewArt load_view_art(const DesignFiles &files, const Area &area)
         set->palette = base;
     }
     return art;
+}
+
+namespace
+{
+
+// The first image among a library's glyphs.
+[[nodiscard]] const Glyph *first_image(const TileLibrary &tiles)
+{
+    const auto image = std::ranges::find_if(tiles.glyphs,
+                                            [](const std::optional<Glyph> &glyph)
+                                            {
+                                                return glyph && glyph->kind == GlyphKind::image;
+                                            });
+    return image == tiles.glyphs.end() ? nullptr : &**image;
+}
+
+} // namespace
+
+OverlandArt load_overland_art(const DesignFiles &files, const Area &area, unsigned number)
+{
+    // The kit's own big picture of area n is F0h + n - 1 (view3d.c,
+    // wild_pic_open: the area number less 11h, in a byte).
+    const unsigned picture = area.header[header_backdrops] != 0 ? area.header[header_backdrops]
+                                                                : (number + 0x100 - 0x11) & 0xFF;
+    const auto what = "Big picture " + std::to_string(picture);
+    char loose_name[16];
+    std::snprintf(loose_name, sizeof loose_name, "BIGP1%03u.TLB", picture);
+    std::optional<TileLibrary> tiles;
+    if (const auto loose = files.library(loose_name))
+    {
+        tiles = decode_tile_library(*loose);
+        if (!tiles)
+        {
+            throw std::runtime_error(what + ": its glyphs do not decode");
+        }
+    }
+    else
+    {
+        const auto file = picture < 0xF8 ? "BIGPIC.TLB" : "BIGPIX.TLB";
+        const auto library = files.library(file);
+        if (!library)
+        {
+            throw std::runtime_error(what + ": " + file + " is missing");
+        }
+        tiles = nested_tiles(*library, picture, what);
+    }
+    // The screen's colors, then the picture's over them (picview.c,
+    // big_redraw).
+    auto palette = vga_color_table({});
+    apply_palette_glyph(palette, *tiles);
+    const auto *image = first_image(*tiles);
+    if (!image)
+    {
+        throw std::runtime_error(what + " has no picture");
+    }
+    OverlandArt art;
+    art.picture = glyph_image(*image, palette);
+    // The marker, in the colors the screen has with the picture shown.
+    constexpr std::size_t marker_glyph = 0x19;
+    const auto always = files.library("ALWAYS.TLB");
+    const auto always_tiles = always ? decode_tile_library(*always) : std::nullopt;
+    if (!always_tiles || always_tiles->glyphs.size() <= marker_glyph ||
+        !always_tiles->glyphs[marker_glyph] ||
+        always_tiles->glyphs[marker_glyph]->kind != GlyphKind::image)
+    {
+        throw std::runtime_error("ALWAYS.TLB has no party marker");
+    }
+    const auto &marker = *always_tiles->glyphs[marker_glyph];
+    art.marker = glyph_image(marker, palette);
+    art.marker_x = -marker.origin_column;
+    art.marker_y = -marker.origin_row;
+    return art;
+}
+
+Image render_overland(const OverlandArt &art, unsigned x, unsigned y)
+{
+    auto image = art.picture;
+    constexpr int square = 8;
+    const int left = static_cast<int>(x) * square + art.marker_x,
+              top = static_cast<int>(y) * square + art.marker_y;
+    for (int row = 0; row < static_cast<int>(art.marker.height); ++row)
+    {
+        for (int column = 0; column < static_cast<int>(art.marker.width); ++column)
+        {
+            const int px = left + column, py = top + row;
+            const auto from = (static_cast<std::size_t>(row) * art.marker.width + column) * 4;
+            if (px < 0 || py < 0 || px >= static_cast<int>(image.width) ||
+                py >= static_cast<int>(image.height) || art.marker.rgba[from + 3] == 0)
+            {
+                continue;
+            }
+            const auto to = (static_cast<std::size_t>(py) * image.width + px) * 4;
+            std::copy_n(art.marker.rgba.begin() + static_cast<std::ptrdiff_t>(from), 4,
+                        image.rgba.begin() + static_cast<std::ptrdiff_t>(to));
+        }
+    }
+    return image;
 }
 
 Image render_view(const Area &area, const ViewArt &art, unsigned x, unsigned y,

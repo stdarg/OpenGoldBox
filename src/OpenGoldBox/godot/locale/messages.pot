@@ -11610,6 +11610,10 @@ msgid "The original rules (Pool of Radiance)"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "The party cannot go that way."
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "The party enters a local Inn."
 msgstr ""
 

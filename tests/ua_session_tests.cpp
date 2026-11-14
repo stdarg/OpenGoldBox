@@ -173,6 +173,31 @@ class AreaBuilder
         flags = static_cast<std::uint8_t>(shown ? flags | 1U : flags & ~1U);
     }
 
+    // Square (x, y) lies in zone `zone` (its bits 2 to 4).
+    void zone(unsigned x, unsigned y, unsigned zone)
+    {
+        auto &bits = bytes_[map_at + (y * columns_ + x) * 6 + 5];
+        bits = static_cast<std::uint8_t>((bits & ~0x1CU) | zone << 2);
+    }
+
+    // Zone `zone`'s text, its slot a big-endian word of the header's eight
+    // from +110h.
+    void zone_text(unsigned zone, unsigned slot)
+    {
+        bytes_[header_at + 0x110 + 2 * zone] = static_cast<std::uint8_t>(slot >> 8);
+        bytes_[header_at + 0x111 + 2 * zone] = static_cast<std::uint8_t>(slot & 0xFF);
+    }
+
+    [[nodiscard]] unsigned rows() const noexcept
+    {
+        return rows_;
+    }
+
+    [[nodiscard]] unsigned columns() const noexcept
+    {
+        return columns_;
+    }
+
     // A text of the area's pool; its slot (1-based).
     unsigned text(std::string words)
     {
@@ -440,6 +465,24 @@ std::filesystem::path build_test_design(const std::filesystem::path &kit,
     town.wall(5, 9, MapDirection::east, 0x13);
     town.wall(5, 11, MapDirection::east, 0x33);
     write(folder / "GEO007.DAT", town.finish());
+
+    // Area 1, the wilds: the kit's overland template, a forest's zone with
+    // its text east of the start, and a wall.
+    const auto wild_template = templates.data("GEO", 1);
+    check(wild_template.has_value(), "The kit has its overland template");
+    AreaBuilder wilds(*wild_template);
+    wilds.name("THE TEST WILDS");
+    wilds.entry(1, 5, 5, 2);
+    const auto forest = wilds.text("THE FOREST IS DARK.");
+    wilds.zone_text(1, forest);
+    for (unsigned x = 8; x < 12; ++x)
+    {
+        wilds.zone(x, 5, 1);
+    }
+    // A wall south of (5, 5), and one between (5, 6) and (6, 6).
+    wilds.side(5, 5, MapDirection::south, 0xE1);
+    wilds.wall(6, 6, MapDirection::west, 0xE1);
+    write(folder / "GEO001.DAT", wilds.finish());
 
     const auto settings = templates.data("GAME", 1);
     check(settings && settings->size() == 388, "The kit has its game record");
@@ -1015,6 +1058,77 @@ void the_design_loads_and_plays(const std::filesystem::path &kit)
               session.snapshot().pose.y == 11,
           "The cellar's stairs take it back to the hall's second entry point");
     check(session.diagnostics().empty(), "Every event of the test design is played");
+}
+
+// An overland area (docs/games/ua.md, Overland areas): the kit's big
+// picture of it with the party's marker on its square, steps in eight
+// directions that its edges and walls stop, and its zones' texts.
+void the_wilds_show_the_kits_big_picture(const std::filesystem::path &kit)
+{
+    const ua::DesignFiles files(kit,
+                                build_test_design(kit, temporary_design("opengold_ua_wilds.dsn")));
+    const auto content = ua::load_design_content(files);
+    auto session = ua::UaSession::start(files);
+    auto party = new_party(content);
+    session.campaign_party(party);
+    Player player{session, party, content};
+    player.play();
+    session.place(1, 5, 5, MapDirection::east);
+    check(session.snapshot().overland, "The view steps by the compass out of doors");
+    const auto here = session.view_picture();
+    check(here && here->width >= 38 * 8 && here->height >= 15 * 8 && colours(*here) > 8,
+          "The overland shows the area's big picture");
+    session.place(1, 6, 5, MapDirection::east);
+    const auto there = session.view_picture();
+    // The marker moves with the party: the picture differs where it was and
+    // where it is, and nowhere else.
+    std::size_t changed_outside = 0, changed_inside = 0;
+    for (unsigned y = 0; y < here->height; ++y)
+    {
+        for (unsigned x = 0; x < here->width; ++x)
+        {
+            const auto at = (std::size_t{y} * here->width + x) * 4;
+            const bool differs =
+                !std::equal(here->rgba.begin() + static_cast<std::ptrdiff_t>(at),
+                            here->rgba.begin() + static_cast<std::ptrdiff_t>(at + 4),
+                            there->rgba.begin() + static_cast<std::ptrdiff_t>(at));
+            const bool near_marks =
+                y >= 5 * 8 - 8 && y < 6 * 8 + 8 && x >= 5 * 8 - 8 && x < 7 * 8 + 8;
+            (near_marks ? changed_inside : changed_outside) += differs ? 1 : 0;
+        }
+    }
+    check(changed_inside > 0 && changed_outside == 0,
+          "The party's marker stands on its square, and moves with it");
+
+    // Steps: east, a diagonal, and the time out of doors.
+    session.place(1, 5, 5, MapDirection::east);
+    const auto clock = party->state().time_minutes;
+    check(session.explore(ExplorationCommand::east) && session.snapshot().pose.x == 6 &&
+              session.snapshot().pose.y == 5,
+          "A step east");
+    check(party->state().time_minutes == clock + 12 * 60, "A step out of doors takes 12 hours");
+    check(session.explore(ExplorationCommand::northeast) && session.snapshot().pose.x == 7 &&
+              session.snapshot().pose.y == 4,
+          "A step northeast");
+    // A wall south of (5, 5) stops a step that way, and the wall west of
+    // (6, 6) one southwest from (6, 5), whose first part reaches it.
+    session.place(1, 5, 5, MapDirection::east);
+    check(!session.explore(ExplorationCommand::south) && session.snapshot().pose.y == 5,
+          "A wall stops a step");
+    session.place(1, 6, 5, MapDirection::east);
+    check(!session.explore(ExplorationCommand::southwest) && session.snapshot().pose.x == 6,
+          "A wall stops a diagonal step past it");
+    // The edge.
+    session.place(1, 0, 0, MapDirection::north);
+    check(session.explore(ExplorationCommand::north) && session.snapshot().pose.y == 0 &&
+              session.snapshot().dialogue == "The party cannot go that way.",
+          "The map's edge stops a step, saying so");
+    // The forest's zone says its text as the party goes in, and as it is
+    // turned back from it.
+    session.place(1, 7, 5, MapDirection::east);
+    check(session.explore(ExplorationCommand::east) &&
+              session.snapshot().dialogue == "THE FOREST IS DARK.",
+          "A zone's text greets the party: " + session.snapshot().dialogue);
 }
 
 // The kit's doors (docs/games/ua.md, Locked doors): a locked door is bashed by
@@ -1597,9 +1711,10 @@ void the_view_plays_it_through_the_seam(const std::filesystem::path &kit)
           "The hall's overhead map shows its edge, its locked door and the start");
     design->place(6, 2, 2, MapDirection::north);
     check(session.area_map() == nullptr, "The cellar's designer hid its map");
-    // The overland areas have no 3D view yet: nothing to draw, nothing thrown.
+    // An overland area shows its big picture through the seam.
     design->place(1, 0, 0, MapDirection::north);
-    check(!session.view_picture(), "An overland area shows no 3D view yet");
+    check(session.view_picture() && session.view_picture()->width == 304,
+          "An overland area shows its big picture");
 }
 
 // The kit's monster effects as the fight's (docs/games/ua.md, Monsters'
@@ -1999,7 +2114,8 @@ bool walk_every_square(const std::filesystem::path &kit)
                                           MapDirection::south, MapDirection::west})
                 {
                     session.place(area, x, y, facing);
-                    check(colours(session.observe_view()) > 2, "The view draws");
+                    const auto picture = session.view_picture();
+                    check(picture && colours(*picture) > 2, "The view draws");
                     if (facing == MapDirection::north)
                     {
                         session.look();
@@ -2056,6 +2172,7 @@ int main(int argc, char **argv)
         {
             return the_design_plays_to_its_end(*kit) ? 0 : 1;
         }
+        the_wilds_show_the_kits_big_picture(*kit);
         the_kits_doors_open_as_the_kit_opens_them(*kit);
         a_character_starts_as_the_design_says(*kit);
         the_design_loads_and_plays(*kit);

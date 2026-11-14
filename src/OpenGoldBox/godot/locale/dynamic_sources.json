@@ -1860,6 +1860,11 @@
   "Items",
   "The party takes the money.",
   "Items:",
+<<<<<<< HEAD
   "Treasure is still left here. Go back for it?"
 >>>>>>> 286f08a1 (UA treasure menu and item names as the kit shows them: a treasure (an event's, or a won fight's with the monsters' money and items) opens Take (Money into the one purse, Items by name to the selected member, whom the player may change), Detect (a memorized Detect Magic, spent, starring the magic items) and Exit (asked while treasure is left); items carry the kit's names, its 122 words read from the player's CKIT.EXE as the DAX games read theirs (ua::decode_item_words). Replaces the first-member-with-room shortcut (DEVIATIONS.md); ua.md (The treasure menu and items' names); opengold_ua_session_tests)
+=======
+  "Treasure is still left here. Go back for it?",
+  "The party cannot go that way."
+>>>>>>> a56e7059 (UA overland areas show the kit's big picture with the party's marker: the header's first backdrop or the kit's own (BIGPIC/BIGPIX, a design's loose BIGP1nnn.TLB first) in its colors, ALWAYS.TLB's marker on the party's square; steps by the compass in eight directions, the 38-by-15 map's edges and walls stopping them (a diagonal by the side wall its first part reaches), and the zones' texts. The test design gains the wilds (area 1). ua.md (Overland areas); opengold_ua_session_tests, opengold_ua_walk)
 ]

@@ -201,8 +201,7 @@ session itself is unchanged. What only a DAX campaign has (shops and
 treasure piles, its script's variables, sprites and NPC portraits, temples,
 teleports and Word of Recall, close-ups, the ending film, the difficulty
 and auto-equip settings) the view reaches through `dax()`, which is null for
-a design, so the view leaves those out instead of drawing them wrong; an
-overland area shows no picture yet. Camping (`camp`, `decline_camp`) and the
+a design, so the view leaves those out instead of drawing them wrong. Camping (`camp`, `decline_camp`) and the
 overhead map (`area_map`) the session gives itself, and a design saves its
 own way (Saving and loading a game, below).
 
@@ -495,6 +494,9 @@ into `ua-fixtures/TEST.DSN`.
   hall's second entry point, rats that break a rest at its first hour, a
   draft every third step, no overhead map, and the adventure's end at
   (8,8). The hall's map is shown, and a no-magic fight waits at (1,13).
+- **Area 1, the wilds**: the kit's overland template, entry point 1 at
+  (5,5), a forest's zone with its text from (8,5), a wall south of (5,5) and
+  one west of (6,6).
 - **Area 7, the town**: a training hall, a tavern with a tale, drinks and a
   brawl, a shop, a temple taking a tithe, a vault, an inn, a small town with
   every service, a guided tour, an NPC (the kit's 70h) joining, speaking and
@@ -517,11 +519,6 @@ playing each event and fight; it fails on any event the session cannot play.
   services): Pool, Share and Take, Appraise, vault items, the camp menu at
   an inn, a temple's Restoration and Fix; drinks as more than a count; the encounter's monster
   picture at its range.
-- Overland areas: their picture, which the kit draws from the area's big
-  picture (`BIGPIC`, the header's first backdrop) with the party's marker
-  over its square (`view3d.c`, `wild_pic_open`; `cursor.c`), and their zone
-  texts (steps already move the party there, and their step events and
-  rest encounters play).
 - Fights:
   - The 14 monster effects no game's effect plays yet (Monsters' effects,
     below), the kit's monster types (+BFh) as the fight's kin for the
@@ -641,6 +638,31 @@ map (`ua_session.cpp`; the reconstruction's `rest.c` and `camp.c`).
 passed) and in the cellar, whose rats break the rest at its first hour, and
 reads the hall's map; `opengold_godot_startup_menu_ua` sees the hall's map
 and rests there from the Camp button.
+
+### Overland areas
+
+Since 2026-11-14 an overland area (1 to 4) shows on the exploration screen
+as the kit shows it (`ua_view.cpp`, `load_overland_art` and
+`render_overland`; the reconstruction's `view3d.c`, `wild_pic_open`,
+`picview.c`, `big_open`, and `cursor.c`): the area's big picture, 304 by
+120, the header's first backdrop or else the kit's own for the area (F0h and
+on for areas 1 to 4), from the design's loose `BIGP1nnn.TLB` first, then
+`BIGPIC.TLB` (`BIGPIX.TLB` from F8h), in its own colors; and over it the
+party's marker, `ALWAYS.TLB`'s glyph 19h, on the party's square, 8 pixels a
+square.
+
+The party steps by the compass there, in eight directions (`move.c`,
+`move_resolve`): the map is 38 squares by 15 and its edges stop a step ("The
+party cannot go that way."); any wall stops one, and a diagonal step the
+side wall of the square its first part reaches. A step takes 12 hours. The
+zone the step heads into says its text (the header's eight big-endian words
+from +110h): after the step where the square has no event of its own, or as
+the step is refused.
+
+`opengold_ua_session_tests` draws the test design's wilds (area 1, from the
+kit's overland template) with the marker moving with the party, steps east,
+northeast, into a wall, a diagonal past one and off the edge, and hears the
+forest's zone text; the walk walks every square of it too.
 
 ### The treasure menu and items' names
 

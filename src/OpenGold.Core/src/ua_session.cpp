@@ -524,6 +524,9 @@ void UaSession::load_area(unsigned number)
     }
     area_ = {number, std::move(*area)};
     view_art_ = area_.overland() ? ViewArt{} : load_view_art(files_, area_.area);
+    overland_art_ = area_.overland() ? std::optional{load_overland_art(files_, area_.area, number)}
+                                     : std::nullopt;
+    snapshot_.overland = area_.overland();
     area_map_ = overhead_map(area_);
     step_counts_ = {};
     snapshot_.area_id = number;
@@ -655,10 +658,9 @@ bool UaSession::can_step(MapDirection direction) const
         area_.area.squares[std::size_t{snapshot_.pose.y} * area_.area.columns + snapshot_.pose.x];
     const auto wall = square.walls[por::index(direction)];
     const auto kind = wall_kind(wall);
-    // Out of doors any obstacle stops the party.
     if (area_.overland())
     {
-        return kind == WallKind::open;
+        return overland_destination(static_cast<unsigned>(por::index(direction)) * 2).has_value();
     }
     switch (kind)
     {
@@ -689,6 +691,20 @@ bool UaSession::explore(por::ExplorationCommand command)
         return false;
     }
     auto &pose = snapshot_.pose;
+    if (area_.overland())
+    {
+        // The wilderness map: a step in one of eight directions (move.c,
+        // move_resolve), forward the party's facing.
+        if (command == ExplorationCommand::forward)
+        {
+            return step_overland(static_cast<unsigned>(por::index(pose.facing)) * 2);
+        }
+        if (command >= ExplorationCommand::north && command <= ExplorationCommand::northwest)
+        {
+            return step_overland(static_cast<unsigned>(command) -
+                                 static_cast<unsigned>(ExplorationCommand::north));
+        }
+    }
     switch (command)
     {
     case ExplorationCommand::turn_left:
@@ -729,18 +745,115 @@ bool UaSession::explore(por::ExplorationCommand command)
 
 void UaSession::step_ahead()
 {
-    auto &pose = snapshot_.pose;
-    step_back_pose_ = pose;
+    const auto &pose = snapshot_.pose;
     const int columns = area_.area.columns, rows = area_.area.rows;
-    // A step off the area's edge comes in at the other, as in the kit.
+    // A step off a dungeon's edge comes in at the other, as in the kit.
     const auto x = (static_cast<int>(pose.x) + por::step_x(pose.facing) + columns) % columns;
     const auto y = (static_cast<int>(pose.y) + por::step_y(pose.facing) + rows) % rows;
-    move_party(static_cast<unsigned>(x), static_cast<unsigned>(y), pose.facing);
+    step_to(static_cast<unsigned>(x), static_cast<unsigned>(y), pose.facing);
+}
+
+void UaSession::step_to(unsigned x, unsigned y, MapDirection facing)
+{
+    step_back_pose_ = snapshot_.pose;
+    move_party(x, y, facing);
     ++snapshot_.footsteps;
     advance_minutes(area_.overland() ? 12 * 60 : (snapshot_.searching ? 10 : 1));
     tavern_tales_.clear();
     bash_tried_ = pick_tried_ = false;
-    run_step_events(square_event(pose.x, pose.y));
+    run_step_events(square_event(x, y));
+}
+
+// The kit's eight steps out of doors, 0 north and on clockwise.
+constexpr std::array<int, 8> wild_dx{0, 1, 1, 1, 0, -1, -1, -1};
+constexpr std::array<int, 8> wild_dy{-1, -1, 0, 1, 1, 1, 0, -1};
+
+std::optional<std::pair<unsigned, unsigned>> UaSession::overland_destination(unsigned facing) const
+{
+    // The kit's wilderness is 38 squares by 15, and its edges stop a step.
+    constexpr int wild_columns = 38, wild_rows = 15;
+    const int columns = std::min<int>(area_.area.columns, wild_columns),
+              rows = std::min<int>(area_.area.rows, wild_rows);
+    const int x = static_cast<int>(snapshot_.pose.x), y = static_cast<int>(snapshot_.pose.y);
+    const int nx = x + wild_dx[facing & 7], ny = y + wild_dy[facing & 7];
+    if (nx < 0 || ny < 0 || nx >= columns || ny >= rows)
+    {
+        return std::nullopt;
+    }
+    // A wall stops it; a diagonal step looks at the side wall of the square
+    // the step's first part reaches (view3d.c, wall_kind), none past the edge.
+    int wx = x, wy = y;
+    unsigned side = (facing & 7) / 2;
+    if ((facing & 1) != 0)
+    {
+        wx += wild_dx[facing - 1];
+        wy += wild_dy[facing - 1];
+        side = ((facing + 1) & 6) / 2;
+    }
+    const bool inside = wx >= 0 && wy >= 0 && wx < static_cast<int>(area_.area.columns) &&
+                        wy < static_cast<int>(area_.area.rows);
+    if (inside)
+    {
+        const auto &square = area_.area.squares[static_cast<std::size_t>(wy) * area_.area.columns +
+                                                static_cast<std::size_t>(wx)];
+        if (wall_kind(square.walls[side]) != WallKind::open)
+        {
+            return std::nullopt;
+        }
+    }
+    return std::pair{static_cast<unsigned>(nx), static_cast<unsigned>(ny)};
+}
+
+// The text of a zone, the area header's eight from +110h (big-endian words,
+// as the kit's area_parse swaps them).
+std::string UaSession::zone_text(unsigned zone) const
+{
+    constexpr std::size_t header_zone_texts = 0x110;
+    const auto &header = area_.area.header;
+    const auto at = header_zone_texts + 2 * (zone & 7);
+    return text(static_cast<unsigned>(header[at] << 8 | header[at + 1]));
+}
+
+// A step on the wilderness map (move.c, move_resolve): the zone the party
+// heads into says its text, after the step where the square has no event
+// of its own, or as the step is refused.
+bool UaSession::step_overland(unsigned facing)
+{
+    const auto destination = overland_destination(facing);
+    const int nx = static_cast<int>(snapshot_.pose.x) + wild_dx[facing & 7],
+              ny = static_cast<int>(snapshot_.pose.y) + wild_dy[facing & 7];
+    const bool on_map = nx >= 0 && ny >= 0 && nx < static_cast<int>(area_.area.columns) &&
+                        ny < static_cast<int>(area_.area.rows);
+    const auto words =
+        on_map ? zone_text((area_.area
+                                .squares[static_cast<std::size_t>(ny) * area_.area.columns +
+                                         static_cast<std::size_t>(nx)]
+                                .bits >>
+                            2) &
+                           7)
+               : std::string{};
+    snapshot_.dialogue.clear();
+    snapshot_.host_dialogue.clear();
+    if (!destination)
+    {
+        if (!on_map)
+        {
+            say_kit({"The party cannot go that way.", {}});
+        }
+        say(words);
+        refresh_snapshot();
+        return !snapshot_.dialogue.empty();
+    }
+    // Facing turns with an orthogonal step; a diagonal keeps it.
+    const auto facing_now = (facing & 1) == 0 ? MapDirection{facing / 2} : snapshot_.pose.facing;
+    const bool quiet = square_event(destination->first, destination->second) == 0;
+    step_to(destination->first, destination->second, facing_now);
+    if (quiet && !running_ && pending_.wait == Wait::nothing)
+    {
+        say(words);
+    }
+    refresh_snapshot();
+    return true;
 }
 
 Image UaSession::observe_view()
@@ -758,7 +871,9 @@ std::optional<Image> UaSession::view_picture()
 {
     if (area_.overland())
     {
-        return std::nullopt;
+        return overland_art_ ? std::optional{render_overland(*overland_art_, snapshot_.pose.x,
+                                                             snapshot_.pose.y)}
+                             : std::nullopt;
     }
     return observe_view();
 }

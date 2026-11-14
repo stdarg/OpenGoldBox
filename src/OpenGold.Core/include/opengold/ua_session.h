@@ -20,6 +20,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 // Playing an adventure made with Unlimited Adventures' construction kit
@@ -218,8 +219,8 @@ class UaSession final : public ExplorationSession
         return false;
     }
 
-    // The 3D view in a dungeon; nothing on the overland, which is not drawn
-    // yet (docs/games/ua.md, What remains).
+    // The 3D view in a dungeon; on the overland the area's big picture with
+    // the party's marker.
     [[nodiscard]] std::optional<Image> view_picture() override;
     // The area's name as the designer wrote it.
     [[nodiscard]] std::string area_name() const override;
@@ -432,6 +433,13 @@ class UaSession final : public ExplorationSession
 
     // The step forward the party takes, and its square's events.
     void step_ahead();
+    void step_to(unsigned x, unsigned y, por::MapDirection facing);
+    // A step on the wilderness map in one of the kit's eight facings (0
+    // north, on clockwise), and the square it reaches unless it is barred.
+    bool step_overland(unsigned facing);
+    [[nodiscard]] std::optional<std::pair<unsigned, unsigned>>
+    overland_destination(unsigned facing) const;
+    [[nodiscard]] std::string zone_text(unsigned zone) const;
     // The kit's doors (ua_doors.cpp, move.c): a secret door ahead says so and
     // a locked one asks "Blocked:"; false for a wall that only stops a step.
     bool door_ahead(WallKind kind);
@@ -470,6 +478,7 @@ class UaSession final : public ExplorationSession
     DesignArea area_;
     std::optional<por::GeoMap> area_map_;
     ViewArt view_art_;
+    std::optional<OverlandArt> overland_art_;
     std::shared_ptr<CampaignParty> party_;
     por::TourSnapshot snapshot_;
     std::uint64_t next_ticket_{1};

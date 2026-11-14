@@ -54,6 +54,29 @@ void apply_palette_glyph(std::array<VgaColor, 256> &palette, const TileLibrary &
 // when a set or backdrop it names is missing or does not decode.
 [[nodiscard]] ViewArt load_view_art(const DesignFiles &files, const Area &area);
 
+// An overland area's picture (docs/games/ua.md, Overland areas): the kit's
+// big picture of the area, in its colors, and the party's marker, ALWAYS.TLB's
+// glyph 19h, which the kit draws over the party's square (view3d.c,
+// wild_pic_open; cursor.c).
+struct OverlandArt
+{
+    Image picture;
+    Image marker;
+    // Where the marker's corner lies from its square's.
+    int marker_x{}, marker_y{};
+};
+
+// The big picture an overland area shows: the header's first backdrop, or
+// else the kit's own for area `number` (1 to 4), from the design's loose
+// BIGP1nnn.TLB first, then BIGPIC.TLB (BIGPIX.TLB from F8h). Throws when it
+// is missing or does not decode.
+[[nodiscard]] OverlandArt load_overland_art(const DesignFiles &files, const Area &area,
+                                            unsigned number);
+
+// The overland picture with the party's marker on square (x, y), 8 pixels a
+// square from the picture's corner.
+[[nodiscard]] Image render_overland(const OverlandArt &art, unsigned x, unsigned y);
+
 // What a wall byte says: its low four bits the graphic (0 none; 1 to 15 the
 // set slot (v - 1) / 5 and its variant (v - 1) % 5 + 1), its high four bits
 // what it does to a step.
