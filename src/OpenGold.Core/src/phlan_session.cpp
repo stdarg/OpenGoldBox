@@ -863,7 +863,10 @@ bool RolfTourSession::move_party(ExplorationCommand command)
 
 void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_t> entry)
 {
-    soul_at_event_start_ = machine_.variable(secret_soul_freed);
+    if (game() == GoldBoxGame::secret_of_the_silver_blades)
+    {
+        soul_at_event_start_ = machine_.variable(secret_soul_freed);
+    }
     // Loot left unclaimed until the party had room is named with this event.
     snapshot_.loot_taken.clear();
     snapshot_.gear_changes.clear();
