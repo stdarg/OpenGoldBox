@@ -521,19 +521,25 @@ and move the party back a square (the walk passed all the same).
 
 Where it stops (2026-11-14): at the Fire Giant Cave's entrance (map 32,
 3,15). Next, the cave as the cluebook gives it: Ungleow's bribe (5,12; the
-Ring of Vulnerability in it is not to be worn), the endless corridor, whose
-spell breaks when the party, sitting down to clear its head, finds the ring
-in the skull and throws it down the corridor (script 32 from 8393h: with
-cell 134h bit 0 set, steps there return the party and count in cell 9Eh; at
-12 the skull's question comes; THROW IT AWAY sets cell 132h bit 0), the two
-hill giants' cave-in plan, the teleporting rooms (7,7) and (15,8), the
-rotating floors (event 3: travel east once they stop), Ungleow's guards and
-Ungleow herself, and the red, black and green dragons (0,2) guarding the
-passage to the Dragons' Aerie ("YOU SEE DRAGONS FLYING OFF TO THE
-NORTHWEST. DO YOU FOLLOW THEM?"). A first try at the corridor (2026-11-14)
-found the party could walk from the entrance only to (11,15): the next
-agent should find what sets cell 134h and what holds the party between
-(8,15) and (11,15). Then the Aerie's four keys, Thorne's cave, and on
+Ring of Vulnerability in it is not to be worn), the endless corridor (script 32 from 8393h, reached from its entry at
+809Ah for event 6, the squares (8,15) and (11,15)): unless cell 132h bit 0
+is set, a step onto either square sends the party back between (9,15) and
+(10,15) and counts in cell 9Eh; at 12 the crushed skull asks "DO YOU WANT
+TO STOP AND COLLECT YOUR THOUGHTS?" (YES), then "DO YOU PICK IT UP?" (YES),
+and THROW IT AWAY breaks the spell (cell 132h bit 0). Cell 134h is not the
+spell: its bit 0 is set when the party beats Ungleow and her guards in her
+room (event 15, (0,5) and (2,5); script 32 from 9408h, where SIT DOWN and
+agreeing to kill Manshoon set bit 2 instead), and from then on the cave's
+step entry rolls wandering monsters on the higher events. The rest of the
+cave: the two hill giants' cave-in plan, the teleporting rooms (7,7) and
+(15,8), the rotating floors (event 3: travel east once they stop), and the
+red, black and green dragons (0,2) guarding the passage to the Dragons'
+Aerie ("YOU SEE DRAGONS FLYING OFF TO THE NORTHWEST. DO YOU FOLLOW THEM?").
+A first try (2026-11-14) stepped east from (9,15) twelve times and only
+reached (10,15); the steps that count are those onto (11,15) or (8,15). In
+the planning aid a step from (10,15) onto (11,15) stayed there, so check
+that OpenGoldBox runs the entry at 809Ah after each step, as the corridor
+needs. Then the Aerie's four keys, Thorne's cave, and on
 counter-clockwise round the area map (its sites listed by
 `OPENGOLD_DARKNESS_SITES`) to Gothmenes in Dark Phlan.
 `OPENGOLD_ROUTE_BEATS` and `OPENGOLD_SECRET_FIND` plan each step: the
