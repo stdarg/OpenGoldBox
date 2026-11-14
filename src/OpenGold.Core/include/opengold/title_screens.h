@@ -29,11 +29,13 @@ struct TitleScreens
     // Secret of the Silver Blades' title ends at the first key; the earlier
     // games' key ends only the screen shown.
     bool key_ends_all{};
+    // The screen the game's title music starts with (the later games'):
+    // Gateway's starts with its second picture, Secret's with its first.
+    std::size_t music_screen{};
 };
 
 // The full introduction's pictures (the installers' "F"). Empty for a game
-// whose title is not drawn yet: the 256-color games and the color-header
-// pictures of Gateway to the Savage Frontier. Throws when the folder's
+// whose title is not drawn yet: the 256-color games. Throws when the folder's
 // TITLE.DAX is missing or unreadable.
 [[nodiscard]] TitleScreens load_title_screens(const std::filesystem::path &folder,
                                               GoldBoxGame game);

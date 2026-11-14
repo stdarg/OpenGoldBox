@@ -4,19 +4,22 @@ extends SceneTree
 # title, the main menu's Options and Exit to desktop, and the games. Run by
 # tests/settings_check.cmake; --menu-capture=DIR saves pictures of them.
 # Curse's button is checked when OPENGOLD_GOLDBOX_DIR holds its files, and
-# with --secret Secret of the Silver Blades' button. A game other than Pool
+# with --secret Secret of the Silver Blades' button, with --gateway Gateway
+# to the Savage Frontier's. A game other than Pool
 # of Radiance first shows its own title pictures (TITLE.DAX), as its original
 # does when it starts, then its menu.
 
 var captures := ""
 var exit_case := false
 var secret_case := false
+var gateway_case := false
 
 func _initialize() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--menu-capture="): captures = arg.trim_prefix("--menu-capture=")
 		if arg == "--menu-exit": exit_case = true
 		if arg == "--secret": secret_case = true
+		if arg == "--gateway": gateway_case = true
 	call_deferred("run_checks")
 
 func require(condition: bool, message: String) -> void:
@@ -168,6 +171,9 @@ func run_checks() -> void:
 	if secret_case:
 		await check_secret(menu)
 		return
+	if gateway_case:
+		await check_gateway()
+		return
 	# Pool of Radiance's title is its new one, which a key passes; Options from
 	# its menu returns to its menu, and closing the question too.
 	await pick("POOLRAD")
@@ -239,6 +245,72 @@ func run_checks() -> void:
 	print("Startup menu passed: Options and back, Pool of Radiance's and Curse's titles and menus, Curse's folder found, the party screen and Curse's opening.")
 	quit(0)
 
+# A fighter made on the party screen, under the original rules, taken exploring.
+func explore_with_a_fighter() -> Control:
+	var name: LineEdit = current_scene.get_node("Name")
+	name.text = "Vala"
+	name.text_changed.emit(name.text)
+	await settle()
+	await choose("Human")
+	await press("Next")
+	await choose("Fighter")
+	await press("Next")
+	await choose("Lawful Good")
+	await press("Next")
+	await press("Roll")
+	for page in range(3): await press("Next")
+	await press("AddParty")
+	require(current_scene.get_node("PartyPanel/Roster").item_count == 1, "The fighter joins the party")
+	await press("PartyPanel/ActionRow2/Explore")
+	return current_scene.get_node("CampaignTown")
+
+# Gateway to the Savage Frontier from the menu: its five title pictures, its
+# title music from the second, then a party made under the original rules
+# plays the opening, the night of celebration and the morning's loss, and
+# explores Yartar.
+func check_gateway() -> void:
+	var gateway := OS.get_environment("OPENGOLD_GOLDBOX_DIR").path_join("GATEWAY")
+	if OS.get_environment("OPENGOLD_GOLDBOX_DIR").is_empty() or not FileAccess.file_exists(gateway.path_join("GEO2.DAX")):
+		print("Skipped: Gateway's files are not here.")
+		quit(0)
+		return
+	await pick("GATEWAY")
+	require(not shown_title().is_empty(), "Gateway's title must show")
+	require(not current_scene.get_node("TitleSound").playing, "Gateway's title music waits for its second picture")
+	var seen := []
+	for screen in range(5):
+		var shown := shown_title()
+		require(not shown.is_empty() and not seen.has(shown), "Gateway's title screen " + str(screen + 1) + " must show")
+		seen.append(shown)
+		if screen > 0:
+			require(current_scene.get_node("TitleSound").playing, "Gateway's title music plays from its second picture")
+		await capture_screen("GATEWAY-title-" + str(screen + 1))
+		await press_key()
+	require(not current_scene.get_node("GameTitle").visible, "Gateway's title ends after five screens")
+	await create_new_party(true)
+	require(current_scene != null and current_scene.name == "CharacterCreation", "Gateway's button must lead on to the party")
+	var town: Control = await explore_with_a_fighter()
+	var celebration := false
+	var morning := false
+	for wait in range(600):
+		await process_frame
+		var dialogue: String = town.find_child("Dialogue", true, false).get_parsed_text()
+		if dialogue.contains("NIGHT OF CELEBRATION"): celebration = true
+		if dialogue.contains("AWAKEN TO DESPAIR"): morning = true
+		var continue_button: Button = town.get_node("%Continue")
+		if morning and not continue_button.visible: break
+		if continue_button.visible and not continue_button.disabled:
+			continue_button.pressed.emit()
+			await settle()
+	require(celebration and morning, "Gateway's opening must play on the exploration screen")
+	require(not town.get_node("%Continue").visible, "The opening ends exploring Yartar")
+	if not captures.is_empty():
+		RenderingServer.force_draw(false)
+		await process_frame
+		root.get_texture().get_image().save_png(captures.path_join("gateway-exploration.png"))
+	print("Startup menu passed: Gateway's title, a party made under the original rules, its opening and Yartar.")
+	quit(0)
+
 # Secret of the Silver Blades from the menu: its folder found, a fighter made
 # under the original rules and taken exploring, and the opening vision played
 # on to New Verdigris, whose name the exploration screen shows.
@@ -258,22 +330,7 @@ func check_secret(menu: Window) -> void:
 	require(not current_scene.get_node("TitleSound").playing, "Secret's title music ends with its title")
 	await create_new_party(true)
 	require(current_scene != null and current_scene.name == "CharacterCreation", "Secret's button must lead on to the party")
-	var name: LineEdit = current_scene.get_node("Name")
-	name.text = "Vala"
-	name.text_changed.emit(name.text)
-	await settle()
-	await choose("Human")
-	await press("Next")
-	await choose("Fighter")
-	await press("Next")
-	await choose("Lawful Good")
-	await press("Next")
-	await press("Roll")
-	for page in range(3): await press("Next")
-	await press("AddParty")
-	require(current_scene.get_node("PartyPanel/Roster").item_count == 1, "The fighter joins the party")
-	await press("PartyPanel/ActionRow2/Explore")
-	var town: Control = current_scene.get_node("CampaignTown")
+	var town: Control = await explore_with_a_fighter()
 	var vision := ""
 	var location := ""
 	for wait in range(600):

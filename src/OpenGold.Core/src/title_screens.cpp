@@ -1,6 +1,7 @@
 #include "opengold/title_screens.h"
 
 #include "area_loading.h"
+#include "opengold/gateway_formats.h"
 
 #include <algorithm>
 #include <map>
@@ -33,6 +34,9 @@ struct TitleScript
 {
     std::vector<TitleStep> steps;
     bool key_ends_all{};
+    // Each step's pictures are drawn on a cleared screen, not over the last.
+    bool clears_between{};
+    std::size_t music_screen{};
 };
 
 // Each game's Intro.Introduction with its full-introduction flag on, without
@@ -58,6 +62,16 @@ TitleScript title_script(GoldBoxGame game)
                  {{{3, 2, 5}}, 50, {}},
                  {{{2, 0, 0}, {4, 5, 5}}, 60, {}}},
                 true};
+    case GoldBoxGame::gateway_to_the_savage_frontier:
+        // The last picture stays 20 seconds, or until the title music ends.
+        return {{{{{1, 0, 0}}, 3, {}},
+                 {{{2, 0, 0}}, 3, {}},
+                 {{{3, 0, 0}}, 10, {}},
+                 {{{4, 0, 0}}, 20, {}},
+                 {{{5, 0, 0}}, 20, {}}},
+                false,
+                true,
+                1};
     default:
         return {};
     }
@@ -106,15 +120,28 @@ TitleScreens load_title_screens(const std::filesystem::path &folder, GoldBoxGame
     std::map<std::uint8_t, Image> pictures;
     for (const auto &record : archive.records)
     {
+        if (game == GoldBoxGame::gateway_to_the_savage_frontier)
+        {
+            if (const auto picture = gateway::decode_picture(record.bytes);
+                picture && !picture->frames.empty())
+            {
+                pictures.emplace(record.id, gateway::picture_image(*picture));
+            }
+            continue;
+        }
         if (auto picture = decode_ega_picture(record.bytes))
         {
             pictures.emplace(record.id, std::move(picture.image));
         }
     }
-    TitleScreens title{{}, script.key_ends_all};
+    TitleScreens title{{}, script.key_ends_all, script.music_screen};
     auto screen = black_screen();
     for (const auto &step : script.steps)
     {
+        if (script.clears_between)
+        {
+            screen = black_screen();
+        }
         for (const auto &[record, column, row] : step.draws)
         {
             const auto picture = pictures.find(record);

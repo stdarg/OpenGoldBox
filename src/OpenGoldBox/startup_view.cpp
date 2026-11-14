@@ -84,10 +84,12 @@ struct MenuGame
 };
 
 // The games the startup menu offers, in release order (docs/GAMES.md).
-constexpr std::array<MenuGame, 3> playable_games{
+constexpr std::array<MenuGame, 4> playable_games{
     {{opengold::GoldBoxGame::pool_of_radiance, N_("Pool of Radiance")},
      {opengold::GoldBoxGame::curse_of_the_azure_bonds, N_("Curse of the Azure Bonds")},
-     {opengold::GoldBoxGame::secret_of_the_silver_blades, N_("Secret of the Silver Blades")}}};
+     {opengold::GoldBoxGame::secret_of_the_silver_blades, N_("Secret of the Silver Blades")},
+     {opengold::GoldBoxGame::gateway_to_the_savage_frontier,
+      N_("Gateway to the Savage Frontier")}}};
 
 const char *menu_title(opengold::GoldBoxGame game)
 {
@@ -130,7 +132,7 @@ std::optional<std::pair<opengold::GoldBoxGame, std::filesystem::path>> newest_sa
     return newest;
 }
 
-// --game=POOLRAD (or CURSE, or SECRET): the game a check plays, without the
+// --game=POOLRAD (or CURSE, SECRET or GATEWAY): the game a check plays, without the
 // titles and the menus.
 std::optional<opengold::GoldBoxGame> game_from_command_line()
 {
@@ -906,11 +908,10 @@ void StartupView::show_game_title()
     stage_ = Stage::original_title;
     title_screen_ = 0;
     show_title_screen();
-    play_title_music(game);
 }
 
-// The later games play a piece of their music over the title, from its first
-// picture until the title ends.
+// The later games play a piece of their music over the title, from the screen
+// the title names until the title ends.
 void StartupView::play_title_music(opengold::GoldBoxGame game)
 {
     const auto piece = opengold::title_music_piece(game);
@@ -943,6 +944,10 @@ void StartupView::show_title_screen()
     required_node<TextureRect>(*this, "GameTitle/Picture")
         .set_texture(presentation::image_texture(screen.screen));
     required_node<Control>(*this, "GameTitle").show();
+    if (title_screen_ == game_title_->music_screen)
+    {
+        play_title_music(settings::chosen_game());
+    }
     if (screen.sound)
     {
         play_title_sound(*screen.sound);

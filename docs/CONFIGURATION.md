@@ -52,10 +52,10 @@ After the language, the startup menu offers Options, a button for each game
 and Exit to desktop. Choosing a game asks for its folder the first time:
 `[game] path` holds *Pool of Radiance*'s, and `[games]` the others' by their
 folder name (`CURSE` for *Curse of the Azure Bonds*, `SECRET` for *Secret of the
-Silver Blades*), or `OPENGOLD_GOLDBOX_DIR`
+Silver Blades*, `GATEWAY` for *Gateway to the Savage Frontier*), or `OPENGOLD_GOLDBOX_DIR`
 names a folder holding them all. A party still takes its portraits and combat
 art from *Pool of Radiance*'s files, so choosing another game asks for that
-folder too when it is not set ([GAMES.md](GAMES.md)). `--game=POOLRAD`, `--game=CURSE` or `--game=SECRET`
+folder too when it is not set ([GAMES.md](GAMES.md)). `--game=POOLRAD`, `--game=CURSE`, `--game=SECRET` or `--game=GATEWAY`
 on the command line picks the game without the menu, as the packaged game's own checks
 do.
 
