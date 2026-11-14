@@ -59,6 +59,7 @@ std::vector<int> numbers_of(const Combatant &c)
                                    c.striker ? c.striker->plus : 0,
                                    c.striker && c.striker->silver ? 1 : 0,
                                    c.striker ? c.striker->weapon_class : 0,
+                                   c.striker && c.striker->banishing ? 1 : 0,
                                    c.weapon_type,
                                    c.wards_gaze ? 1 : 0,
                                    c.mirror ? 1 : 0,
@@ -206,9 +207,9 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
     c.race = *next++;
     if (*next++ != 0)
     {
-        c.striker = StrikingItem{next[0], next[1] != 0, next[2]};
+        c.striker = StrikingItem{next[0], next[1] != 0, next[2], next[3] != 0};
     }
-    next += 3;
+    next += 4;
     c.weapon_type = *next++;
     c.wards_gaze = *next++ != 0;
     c.mirror = *next++ != 0;
@@ -396,9 +397,11 @@ std::optional<StrikingItem> striker_of(std::span<const CarriedItem> carried,
                                                   : nullptr;
         strikes = shot ? shot : weapon;
     }
-    // Name word 177 is "Silver", in the item's third name part.
-    return StrikingItem{strikes->item.magic_bonus, strikes->item.name_components[2] == 177,
-                        strikes->type.damage_type};
+    // Name word 177 is "Silver", in the item's third name part; a quarrel
+    // with word 135 there banishes a rakshasa.
+    const auto &words = strikes->item.name_components;
+    return StrikingItem{strikes->item.magic_bonus, words[2] == 177, strikes->type.damage_type,
+                        strikes->item.type == quarrels_type && words[2] == 135};
 }
 
 // A mirror (name word 118 in any part) or the wooden holy symbol (word 152

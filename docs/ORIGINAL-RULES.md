@@ -203,8 +203,8 @@ and a save each know which tables they use.
   camps, and Gateway's overland).
 - A camp Remove Curse, as the temple's, lets its target put down a cursed
   item (`RulesModule::cursed_item`, by the record's flag).
-- Still to come: the rakshasa's death by a blessed crossbow bolt (GAMES.md,
-  phase 3 step 5).
+- **The rakshasa** (its effect 130) struck by a quarrel of name word 135 is
+  gone for good (`EffBanishByWeapon`).
 
 ## Secret of the Silver Blades
 

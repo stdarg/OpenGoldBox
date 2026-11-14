@@ -66,6 +66,9 @@ struct StrikingItem
     int plus{};
     bool silver{};
     int weapon_class{};
+    // A quarrel named with Curse's word 135, which sends a rakshasa (its
+    // effect 130) away for good (effhndlr.pas, EffBanishByWeapon).
+    bool banishing{};
 
     bool operator==(const StrikingItem &) const = default;
 };

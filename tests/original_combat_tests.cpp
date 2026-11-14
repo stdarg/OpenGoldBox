@@ -3964,6 +3964,35 @@ void out_of_doors()
     }
 }
 
+// Curse's rakshasa (its effect 130) is sent away for good by a quarrel of
+// word 135 (effhndlr.pas, EffBanishByWeapon), and only by that.
+void a_quarrel_banishes_the_rakshasa()
+{
+    const auto curse = GoldBoxGame::curse_of_the_azure_bonds;
+    auto rakshasa = creature(200);
+    rakshasa.effects = {{330, 0, 0, false}};
+    auto archer = monster({2, 1, 4, 0}, {}, {});
+    archer.striker = original::StrikingItem{0, false, 0, true};
+    const auto banished = attack_until(
+        archer, rakshasa,
+        [](const rules::CombatSession &session)
+        {
+            return logged(session, "{name} is banished.") > 0;
+        },
+        353, curse);
+    check(logged(*banished.session, "{name} is banished.") == 1,
+          "A banishing quarrel sends the rakshasa away");
+    archer.striker = original::StrikingItem{0, false, 0, false};
+    const auto plain = attack_until(
+        archer, rakshasa,
+        [](const rules::CombatSession &session)
+        {
+            return logged(session, "{attacker} hits {name} for {damage}.") > 2;
+        },
+        353, curse);
+    check(logged(*plain.session, "{name} is banished.") == 0, "Another blow only wounds it");
+}
+
 } // namespace
 
 int main()
@@ -4011,6 +4040,7 @@ int main()
         gateway_rows_change();
         strength_spells_strengthen();
         out_of_doors();
+        a_quarrel_banishes_the_rakshasa();
         sleep_takes_the_weak();
         charm_person_turns_a_foe();
         cure_light_wounds_stops_bleeding();

@@ -5767,6 +5767,15 @@ int Session::weapon_damage_defenses(const Fighter &attacker, Fighter &defender, 
         }
         return true;
     };
+    // Curse's rakshasa (its effect 130) struck by a banishing quarrel is gone
+    // for good (effhndlr.pas, EffBanishByWeapon).
+    constexpr int banished_by_quarrel = 330;
+    if (defender.has(banished_by_quarrel) && striker && striker->banishing)
+    {
+        log({"{name} is banished.", {{"name", defender.name}}});
+        put_out_of_play(defender, Condition::gone);
+        return 0;
+    }
     // Ray of Enfeeblement takes a quarter of the attacker's damage (effhndlr.pas, EffEnfeeble).
     if (attacker.has(effect::enfeebled))
     {
