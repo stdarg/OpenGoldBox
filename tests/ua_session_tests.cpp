@@ -16,6 +16,7 @@
 #include "opengold/ua_session.h"
 #include "test_support.h"
 
+#include <cctype>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -431,6 +432,12 @@ std::filesystem::path build_test_design(const std::filesystem::path &kit,
                     0,         low(wrong), high(wrong), low(pass),   high(pass),
                     0,         0,          0,           0,           2},
                {{1, 3}});
+    // The kit's other doors, east from column 5: a wizard lock (row 5), a
+    // false door (7), a secret door (9) and a locked secret door (11).
+    town.wall(5, 5, MapDirection::east, 0x43);
+    town.wall(5, 7, MapDirection::east, 0xF3);
+    town.wall(5, 9, MapDirection::east, 0x13);
+    town.wall(5, 11, MapDirection::east, 0x33);
     write(folder / "GEO007.DAT", town.finish());
 
     const auto settings = templates.data("GAME", 1);
@@ -480,19 +487,29 @@ std::optional<std::filesystem::path> kit_folder()
 }
 
 // Six human fighters made under Unlimited Adventures' rules.
-std::shared_ptr<opengold::CampaignParty> new_party(const opengold::original::Content &content)
+// A party made under the kit's rules: human members of `classes`, named for
+// their class and place (FIGHTER 1).
+std::shared_ptr<opengold::CampaignParty>
+new_party(const opengold::original::Content &content,
+          const std::vector<std::string> &classes = std::vector<std::string>(6, "fighter"))
 {
     std::shared_ptr<const opengold::rules::CharacterRules> creation =
         opengold::original::character_rules(opengold::original::default_aging,
                                             GoldBoxGame::unlimited_adventures);
     auto party = std::make_shared<opengold::CampaignParty>(
         opengold::original::rules_module(content), creation);
-    for (unsigned n = 0; n < 6; ++n)
+    for (unsigned n = 0; n < classes.size(); ++n)
     {
         opengold::CharacterCreator creator(creation, 90 + n);
         creator.select(opengold::rules::CreationField::race, "human");
-        creator.select(opengold::rules::CreationField::character_class, "fighter");
-        creator.name("FIGHTER " + std::to_string(n + 1));
+        creator.select(opengold::rules::CreationField::character_class, classes[n]);
+        std::string name = classes[n] == "magic_user" ? "MAGE" : classes[n];
+        std::ranges::transform(name, name.begin(),
+                               [](char c)
+                               {
+                                   return static_cast<char>(std::toupper(c));
+                               });
+        creator.name(name + " " + std::to_string(n + 1));
         for (const bool roll : {false, false, false, true, false, false})
         {
             if (roll)
@@ -909,6 +926,166 @@ void the_design_loads_and_plays(const std::filesystem::path &kit)
               session.snapshot().pose.y == 11,
           "The cellar's stairs take it back to the hall's second entry point");
     check(session.diagnostics().empty(), "Every event of the test design is played");
+}
+
+// Pressing on into the door ahead: the kit's "Blocked:" menu and its choices.
+std::vector<std::string> door_choices(ua::UaSession &session)
+{
+    check(session.explore(ExplorationCommand::forward), "A door ahead answers a step");
+    const auto &s = session.snapshot();
+    check(s.phase == TourPhase::awaiting_continue &&
+              s.dialogue.find("Blocked:") != std::string::npos,
+          "The door asks what the party does: " + s.dialogue);
+    return s.choices;
+}
+
+void choose_choice(ua::UaSession &session, std::string_view choice)
+{
+    const auto &s = session.snapshot();
+    const auto found = std::ranges::find(s.choices, choice);
+    check(found != s.choices.end(), "The menu offers " + std::string(choice));
+    check(session.choose(s.continue_ticket, static_cast<std::size_t>(found - s.choices.begin())),
+          "The door's choice is taken");
+}
+
+// The kit's doors (docs/games/ua.md, Locked doors): a locked door is bashed by
+// Strength, picked by a thief or opened by Knock, each of Bash and Pick once
+// until the party steps; a wizard lock defies picks, a false door everything,
+// and a secret door says so.
+void the_kits_doors_open_as_the_kit_opens_them(const std::filesystem::path &kit)
+{
+    const ua::DesignFiles files(kit,
+                                build_test_design(kit, temporary_design("opengold_ua_doors.dsn")));
+    const auto content = ua::load_design_content(files);
+    auto session = ua::UaSession::start(files);
+    auto party = new_party(content, {"fighter", "thief", "magic_user"});
+    session.campaign_party(party);
+    Player player{session, party, content};
+    player.play();
+    const auto mage = party->state().slots[2];
+    // A day's rest, the mage memorizing Knock.
+    const auto memorize_knock = [&party, mage]
+    {
+        check(party->rest(), "The party rests a day");
+        while (party->state().spell_rest)
+        {
+            const auto id = party->state().spell_rest->members.front();
+            if (id == mage)
+            {
+                party->choose_spells(mage, {{}, std::vector<std::string>{"magic_user:knock"}});
+            }
+            else
+            {
+                party->keep_rest_spells(id);
+            }
+        }
+    };
+
+    // The hall's locked door: a thief in the party may pick it; no one has
+    // Knock memorized yet.
+    session.place(5, 9, 5, MapDirection::east);
+    check(door_choices(session) == std::vector<std::string>{"Bash", "Pick", "Exit"},
+          "A locked door offers Bash, Pick and Exit");
+    choose_choice(session, "Exit");
+    check(session.snapshot().pose.x == 9 && session.snapshot().phase == TourPhase::completed,
+          "Exit leaves the party where it stands");
+    // Bash until it gives: each failure takes Bash off the menu until the
+    // party steps, so the party steps back and on again.
+    bool through = false;
+    for (int attempt = 0; attempt < 60 && !through; ++attempt)
+    {
+        session.place(5, 9, 5, MapDirection::east);
+        (void)door_choices(session);
+        choose_choice(session, "Bash");
+        player.play();
+        through = session.snapshot().pose.x == 10;
+        if (!through)
+        {
+            check(door_choices(session) == std::vector<std::string>{"Pick", "Exit"},
+                  "A failed bash is not offered again until the party steps");
+            choose_choice(session, "Exit");
+        }
+    }
+    check(through, "A bash forces the locked door, and the party steps through");
+    session.place(5, 9, 5, MapDirection::east);
+    check(!session.can_step(MapDirection::east), "A forced door stays locked, as in the kit");
+
+    // The thief picks it, once a step.
+    through = false;
+    for (int attempt = 0; attempt < 60 && !through; ++attempt)
+    {
+        session.place(5, 9, 5, MapDirection::east);
+        (void)door_choices(session);
+        choose_choice(session, "Pick");
+        player.play();
+        through = session.snapshot().pose.x == 10;
+        if (!through)
+        {
+            check(door_choices(session) == std::vector<std::string>{"Bash", "Exit"},
+                  "A failed pick is not offered again until the party steps");
+            choose_choice(session, "Exit");
+        }
+    }
+    check(through, "The thief picks the lock");
+
+    // Knock, memorized, opens it and is spent.
+    memorize_knock();
+    session.place(5, 9, 5, MapDirection::east);
+    check(door_choices(session) == std::vector<std::string>{"Bash", "Pick", "Knock", "Exit"},
+          "A member with Knock memorized offers it");
+    choose_choice(session, "Knock");
+    player.play();
+    check(session.snapshot().pose.x == 10 && !party->can_try_door(opengold::DoorMethod::knock),
+          "Knock opens the door and is spent");
+
+    // A wizard lock: no pick opens it, though the thief may try.
+    memorize_knock();
+    session.place(7, 5, 5, MapDirection::east);
+    (void)door_choices(session);
+    choose_choice(session, "Pick");
+    check(session.snapshot().pose.x == 5, "A pick never opens a wizard lock");
+    check(door_choices(session) == std::vector<std::string>{"Bash", "Knock", "Exit"},
+          "The pick was tried");
+    choose_choice(session, "Knock");
+    player.play();
+    check(session.snapshot().pose.x == 6, "Knock opens a wizard lock");
+
+    // A false door gives to nothing, and takes the Knock.
+    memorize_knock();
+    session.place(7, 5, 7, MapDirection::east);
+    (void)door_choices(session);
+    choose_choice(session, "Knock");
+    check(session.snapshot().pose.x == 5 && !party->can_try_door(opengold::DoorMethod::knock),
+          "Knock is spent on a false door, which stays shut");
+    for (const std::string_view way : {"Bash", "Pick"})
+    {
+        (void)door_choices(session);
+        choose_choice(session, way);
+        check(session.snapshot().pose.x == 5, "A false door never gives");
+    }
+    check(door_choices(session) == std::vector<std::string>{"Exit"}, "Only Exit is left");
+    choose_choice(session, "Exit");
+
+    // A secret door says so as the party goes through; a locked one says so
+    // before it asks.
+    session.place(7, 5, 9, MapDirection::east);
+    check(session.explore(ExplorationCommand::forward) &&
+              session.snapshot().dialogue == "A secret door!" &&
+              session.snapshot().phase == TourPhase::awaiting_continue,
+          "A secret door says so");
+    player.play();
+    check(session.snapshot().pose.x == 6, "The party goes through the secret door");
+    session.place(7, 5, 11, MapDirection::east);
+    check(session.explore(ExplorationCommand::forward) &&
+              session.snapshot().dialogue == "A secret door!",
+          "A locked secret door says so first");
+    check(session.continue_dialogue(session.snapshot().continue_ticket) &&
+              session.snapshot().dialogue.find("Blocked:") != std::string::npos,
+          "Then it asks what the party does");
+    choose_choice(session, "Exit");
+    check(!session.explore(ExplorationCommand::turn_left) ||
+              session.snapshot().phase == TourPhase::completed,
+          "The party is free to go on");
 }
 
 // The town's services and tests, each played as the test design sets them.
@@ -1772,6 +1949,7 @@ int main(int argc, char **argv)
         {
             return the_design_plays_to_its_end(*kit) ? 0 : 1;
         }
+        the_kits_doors_open_as_the_kit_opens_them(*kit);
         a_character_starts_as_the_design_says(*kit);
         the_design_loads_and_plays(*kit);
         the_kits_fights_look_as_the_kit_draws_them(*kit);

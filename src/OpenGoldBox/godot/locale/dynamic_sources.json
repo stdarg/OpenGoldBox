@@ -1840,7 +1840,15 @@
   "Wait",
   "Talk",
   "Drink",
+<<<<<<< HEAD
   "Magic-user spells of level 1",
   "Magic-user spells of level 2",
   "Magic-user spells of level 3"
+=======
+  "Blocked:",
+  "Bash",
+  "Pick",
+  "Knock",
+  "A secret door!"
+>>>>>>> 74a05cd5 (UA locked doors open as the kit opens them: a step into a locked door, a wizard lock or a false door asks "Blocked:" with Bash (each member who can act by Strength, the kit's two tables), Pick (a thief's open-locks chance, never a wizard lock) and Knock (memorized, spent), each of Bash and Pick once until the party steps; a false door gives to nothing; a secret door says "A secret door!". The kit's wizard-lock table read by the wrong wall kinds, and dead members bashing and casting Knock, are fixed (ORIGINAL-RULES.md, Bugs). ua.md (Locked doors); opengold_ua_session_tests)
 ]

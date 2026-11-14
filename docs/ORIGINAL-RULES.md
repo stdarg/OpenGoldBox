@@ -1205,6 +1205,8 @@ tuned with the AI lab once the original rules play.
 | *Unlimited Adventures:* a displacing monster (effect 89) turns aside one attack a fight, its effect readied only as the fight starts | Once a round, as the fight's effect 89 |
 | *Unlimited Adventures:* the shambling mound (effect 173) heals a flat 8 from electricity, past its maximum, its 1d8 thrown away; the owlbear's hug (220) never squeezes | 1d8, and the hug squeezes, as the fight's 284 and 296 |
 | *Unlimited Adventures:* a troll (effect 216) tests a blow's element against 0, so acid never keeps it down | Fire and acid keep it down, as the fight's 100 |
+| *Unlimited Adventures:* bashing a door judges the wizard lock's harder table by wall kinds 5 and 6 (a secret wizard lock and the first key's door), so a plain wizard lock (4) bashes as an ordinary lock (`move.c`, `door_bash`) | Kinds 4 and 5, the two wizard locks |
+| *Unlimited Adventures:* dead and unconscious members bash doors and cast Knock (`move.c`, `door_bash`, `spell_caster`) | Only members who can act |
 | *Unlimited Adventures:* a rest encounter with a chance but no minutes between rolls divides by zero (`rest.c`, `encounter_roll`) | It never rolls |
 | *Unlimited Adventures:* a price rate above 19 reads past the kit's rate tables (`temple.c`, `rate_price`) | Taken as rate 19, a hundred times the price |
 | *Unlimited Adventures:* a wrong password says "wrong, try agin." (`evcmds.c`, the password event) | Spelt "Wrong, try again." |

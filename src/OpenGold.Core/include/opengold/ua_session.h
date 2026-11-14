@@ -414,6 +414,17 @@ class UaSession final : public ExplorationSession
     [[nodiscard]] FightField fight_field(const EventRecord &event);
     [[nodiscard]] unsigned fight_distance(const EventRecord &event) const;
 
+    // The step forward the party takes, and its square's events.
+    void step_ahead();
+    // The kit's doors (ua_doors.cpp, move.c): a secret door ahead says so and
+    // a locked one asks "Blocked:"; false for a wall that only stops a step.
+    bool door_ahead(WallKind kind);
+    void door_menu(WallKind kind);
+    [[nodiscard]] bool bash_door(WallKind kind);
+    [[nodiscard]] bool pick_lock(WallKind kind);
+    [[nodiscard]] bool knock(WallKind kind);
+    [[nodiscard]] bool party_has_thief() const;
+
     void move_party(unsigned x, unsigned y, por::MapDirection facing);
     // The zone of the party's square (its bits 2 to 4).
     [[nodiscard]] unsigned party_zone() const;
@@ -456,6 +467,9 @@ class UaSession final : public ExplorationSession
     // Where a step back takes the party: the square it stepped from.
     std::optional<por::PartyPose> step_back_pose_;
     bool looking_{};
+    // A bash and a pick failed at the door ahead: neither is offered again
+    // until the party steps (the kit's door_tries).
+    bool bash_tried_{}, pick_tried_{};
     // The start square's event has run.
     bool started_{};
     // The clock while no party plays (the party keeps it otherwise).

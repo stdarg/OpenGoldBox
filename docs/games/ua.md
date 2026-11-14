@@ -521,7 +521,6 @@ playing each event and fight; it fails on any event the session cannot play.
   over its square (`view3d.c`, `wild_pic_open`; `cursor.c`), and their zone
   texts (steps already move the party there, and their step events and
   rest encounters play).
-- Locked doors: bashing, picking and Knock.
 - Fights:
   - The 14 monster effects no game's effect plays yet (Monsters' effects,
     below), the kit's monster types (+BFh) as the fight's kin for the
@@ -643,6 +642,34 @@ map (`ua_session.cpp`; the reconstruction's `rest.c` and `camp.c`).
 passed) and in the cellar, whose rats break the rest at its first hour, and
 reads the hall's map; `opengold_godot_startup_menu_ua` sees the hall's map
 and rests there from the Camp button.
+
+### Locked doors
+
+Since 2026-11-14 a dungeon's doors open as the kit opens them (`ua_doors.cpp`;
+the reconstruction's `move.c`, `move_resolve`). A step into a locked door, a
+wizard lock or a false door asks "Blocked:" with:
+
+- **Bash**, each member who can act trying in turn until one forces it, by
+  Strength: an ordinary lock 1 in 6 from Strength 3, 2 in 6 from 8, 3 in 6
+  from 16 to 18/50, 4 in 6 to 18/98, 5 in 6 at 18/99 and 18/00, then 7 in 8,
+  9 in 10, 11 in 12, 19 in 20 and at 25 always; a wizard lock nothing below
+  18/91, 1 in 6 to 18/99, 2 in 6 at 18/00, 3 in 6 at 19 and 20, 4 in 6 at 21
+  and 22, 5 in 6 at 23, 7 in 8 at 24 and always at 25.
+- **Pick**, while a member is a thief: each member who can act tries its
+  open-locks chance in turn. It never opens a wizard lock.
+- **Knock**, while a member has it memorized: the first such casts it,
+  spending it, and the lock opens.
+- **Exit.**
+
+A failed bash or pick is not offered again until the party steps. A false
+door gives to nothing, and takes a Knock. A door forced, picked or knocked
+open lets that step through and stays locked behind it (the kit's unlocking
+routine is empty). A secret door, locked or not, says "A secret door!" as
+the party goes into it, before its menu. The kit's own slips are fixed
+([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Bugs).
+
+`opengold_ua_session_tests` bashes, picks and knocks the hall's locked door
+and tries the town's wizard lock, false door and secret doors.
 
 ### Saving and loading a game
 

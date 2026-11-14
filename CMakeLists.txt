@@ -190,6 +190,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/ua_design.cpp
     src/OpenGold.Core/src/ua_view.cpp
     src/OpenGold.Core/src/ua_combat.cpp
+    src/OpenGold.Core/src/ua_doors.cpp
     src/OpenGold.Core/src/ua_session.cpp
     src/OpenGold.Core/src/ua_events.cpp
     src/OpenGold.Core/src/ua_services.cpp

@@ -608,6 +608,7 @@ void UaSession::place(unsigned area, unsigned x, unsigned y, MapDirection facing
         throw std::out_of_range("The square is outside the area");
     }
     move_party(x, y, facing);
+    bash_tried_ = pick_tried_ = false;
     step_back_pose_ = snapshot_.pose;
     // As in the kit's test mode, a won adventure plays on from where the
     // party is put.
@@ -659,14 +660,14 @@ bool UaSession::can_step(MapDirection direction) const
         return quest_flags_[static_cast<unsigned>(kind) -
                             static_cast<unsigned>(WallKind::first_key)] != 0;
     }
-    // A locked door waits for a bash, a pick or Knock, which come later.
+    // A locked door opens only to a bash, a pick or Knock (door_ahead).
     return false;
 }
 
 bool UaSession::explore(por::ExplorationCommand command)
 {
     using por::ExplorationCommand;
-    if (running_ || party_lost_ || encounter_)
+    if (running_ || pending_.wait != Wait::nothing || party_lost_ || encounter_)
     {
         return false;
     }
@@ -687,20 +688,19 @@ bool UaSession::explore(por::ExplorationCommand command)
         return true;
     case ExplorationCommand::forward:
     {
+        const auto kind =
+            wall_kind(area_.area.squares[std::size_t{pose.y} * area_.area.columns + pose.x]
+                          .walls[por::index(pose.facing)]);
+        if (!area_.overland() && party_ &&
+            (kind == WallKind::open_secret || !can_step(pose.facing)))
+        {
+            return door_ahead(kind);
+        }
         if (!can_step(pose.facing))
         {
             return false;
         }
-        step_back_pose_ = pose;
-        const int columns = area_.area.columns, rows = area_.area.rows;
-        // A step off the area's edge comes in at the other, as in the kit.
-        const auto x = (static_cast<int>(pose.x) + por::step_x(pose.facing) + columns) % columns;
-        const auto y = (static_cast<int>(pose.y) + por::step_y(pose.facing) + rows) % rows;
-        move_party(static_cast<unsigned>(x), static_cast<unsigned>(y), pose.facing);
-        ++snapshot_.footsteps;
-        advance_minutes(area_.overland() ? 12 * 60 : (snapshot_.searching ? 10 : 1));
-        tavern_tales_.clear();
-        run_step_events(square_event(pose.x, pose.y));
+        step_ahead();
         return true;
     }
     default:
@@ -708,6 +708,22 @@ bool UaSession::explore(por::ExplorationCommand command)
     }
     refresh_snapshot();
     return true;
+}
+
+void UaSession::step_ahead()
+{
+    auto &pose = snapshot_.pose;
+    step_back_pose_ = pose;
+    const int columns = area_.area.columns, rows = area_.area.rows;
+    // A step off the area's edge comes in at the other, as in the kit.
+    const auto x = (static_cast<int>(pose.x) + por::step_x(pose.facing) + columns) % columns;
+    const auto y = (static_cast<int>(pose.y) + por::step_y(pose.facing) + rows) % rows;
+    move_party(static_cast<unsigned>(x), static_cast<unsigned>(y), pose.facing);
+    ++snapshot_.footsteps;
+    advance_minutes(area_.overland() ? 12 * 60 : (snapshot_.searching ? 10 : 1));
+    tavern_tales_.clear();
+    bash_tried_ = pick_tried_ = false;
+    run_step_events(square_event(pose.x, pose.y));
 }
 
 Image UaSession::observe_view()
