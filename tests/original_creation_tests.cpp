@@ -731,6 +731,80 @@ void secret_clerics_heal_in_camp()
     check(module->camp_actions(priest, own).empty(), "Both are spent");
 }
 
+// Pools of Darkness's new spells in camp (its reconstruction's magic.pas):
+// Resurrection raises a dead member to its full Hit Points at no cost, a
+// ranger's Cure Disease and Neutralize Poison work as a cleric's, Protection
+// from Fire gives a ranger the druid's protection and anyone else Resist Fire
+// with no end, and Mind Blank lasts a day.
+void darkness_spells_in_camp()
+{
+    const auto darkness = GoldBoxGame::pools_of_darkness;
+    const auto module = original::rules_module();
+    const auto creation = original::character_rules(original::default_aging, darkness);
+    const auto made = [&](std::string profession)
+    {
+        RandomState random{29};
+        auto draft = rules::CharacterDraft{};
+        draft.race = "human";
+        draft.gender = "female";
+        draft.alignment = "neutral_good";
+        draft.character_class = std::move(profession);
+        draft.name = "Ilsa";
+        creation->roll_in_place(draft, random);
+        return creation->evaluate(draft, rules::NameRequirement::required);
+    };
+    const auto conditions = [](const rules::VitalState &state)
+    {
+        return original::carried_state(state.resources, darkness).conditions;
+    };
+    RandomState random{37};
+
+    auto priest = made("cleric");
+    priest.prepared_spells = {"cleric:resurrection", "cleric:restoration"};
+    rules::VitalState own{priest.hit_points, false, {}, {}};
+    check(module->camp_actions(priest, own).size() == 1,
+          "Resurrection is cast in camp (Restoration not yet)");
+    rules::VitalState dead{0, true, {}, {}};
+    module->use_camp_action(priest, own, priest, dead, "cast:cleric:resurrection", random);
+    auto raised = priest;
+    const auto cost = module->revival_changes(priest, rules::Revival::spell);
+    check(!dead.dead && dead.hit_points == priest.hit_points && cost.size() == 1 &&
+              module->advance_character(raised, dead, cost.front()) &&
+              raised.scores[rules::Ability::constitution] ==
+                  priest.scores[rules::Ability::constitution],
+          "Resurrection raises to every Hit Point and costs no Constitution");
+
+    // A ranger casts its druid spells from level 16 (its third-level slots).
+    auto ranger = made("ranger");
+    ranger.original->class_levels[4] = 16;
+    ranger.prepared_spells = {"druid:protection_from_fire", "druid:protection_from_fire#2",
+                              "druid:neutralize_poison"};
+    rules::VitalState woods{ranger.hit_points, false, {}, {}};
+    check(module->camp_actions(ranger, woods).size() == 2,
+          "A ranger casts Protection from Fire and Neutralize Poison in camp");
+    module->use_camp_action(ranger, woods, ranger, woods, "cast:druid:protection_from_fire",
+                            random);
+    auto fighter = made("fighter");
+    rules::VitalState guarded{fighter.hit_points, false, {}, {}};
+    module->use_camp_action(ranger, woods, fighter, guarded, "cast:druid:protection_from_fire",
+                            random);
+    const auto mine = conditions(woods), theirs = conditions(guarded);
+    check(mine.size() == 1 && mine.front().code == 519 && mine.front().strength == 9 &&
+              theirs.size() == 1 && theirs.front().code == 20 && theirs.front().minutes == 0,
+          "Protection from Fire: the druid's on a ranger, Resist Fire with no end on others");
+
+    auto mage = made("magic_user");
+    mage.prepared_spells = {"magic_user:mind_blank", "magic_user:iron_skin"};
+    rules::VitalState study{mage.hit_points, false, {}, {}};
+    module->use_camp_action(mage, study, fighter, guarded, "cast:magic_user:mind_blank", random);
+    module->use_camp_action(mage, study, fighter, guarded, "cast:magic_user:iron_skin", random);
+    const auto blank = conditions(guarded);
+    const auto skin = conditions(study);
+    check(blank.size() == 2 && blank.back().code == 523 && blank.back().minutes == 1440 &&
+              skin.size() == 1 && skin.front().code == 522 && skin.front().minutes == 14,
+          "Mind Blank lasts a day; Iron Skin goes on its caster for a round a level");
+}
+
 // A Pool of Radiance character brought into Curse (its ConvertPoolRadPlayer):
 // its levels, Hit Points, experience and items come along, with 300
 // platinum; its money stays behind.
@@ -2403,6 +2477,7 @@ int main()
         time_passes_between_rests();
         curse_clerics_heal_and_raise_in_camp();
         secret_clerics_heal_in_camp();
+        darkness_spells_in_camp();
         a_pool_character_comes_to_curse();
         curse_paladins_and_rangers();
         secret_rangers_memorize_their_spells();

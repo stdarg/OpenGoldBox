@@ -1200,12 +1200,14 @@ constexpr int cure_light_wounds = 3, cure_serious_wounds = 158, cure_critical_wo
               raise_dead = 175, heal = 236, barkskin = 290, druid_cure_light_wounds = 298,
               cure_blindness = 37, cure_disease = 39, remove_curse = 43,
               magic_user_remove_curse = 189, neutralize_poison = 167, enlarge = 12, reduce = 13,
-              strength_spell = 35, slow_poison = 26;
+              strength_spell = 35, slow_poison = 26, resurrection = 305, druid_cure_disease = 306,
+              druid_neutralize_poison = 307;
 // The spells a member may cast in camp: the cures, Curse's Raise Dead and
 // Neutralize Poison, Secret's Heal and Barkskin, which its table casts as
-// Heal, Slow Poison, and the Strength spells, whose effects last into the
-// next fight.
-constexpr std::array<int, 16> camp_spells{cure_light_wounds,
+// Heal, Slow Poison, the Strength spells, whose effects last into the next
+// fight, and Pools of Darkness's Resurrection and its ranger's Cure Disease
+// and Neutralize Poison.
+constexpr std::array<int, 19> camp_spells{cure_light_wounds,
                                           cure_serious_wounds,
                                           cure_critical_wounds,
                                           raise_dead,
@@ -1220,7 +1222,10 @@ constexpr std::array<int, 16> camp_spells{cure_light_wounds,
                                           enlarge,
                                           reduce,
                                           strength_spell,
-                                          slow_poison};
+                                          slow_poison,
+                                          resurrection,
+                                          druid_cure_disease,
+                                          druid_neutralize_poison};
 constexpr std::string_view cast_prefix = "cast:";
 // A paladin's laying on of hands, once between a day's rests; the member's
 // state keeps that it was used (as the paladinDailyHealCast effect).
@@ -1236,9 +1241,10 @@ constexpr int cured_this_week = 341, week_minutes = 7 * 24 * 60;
 constexpr int blind = 33, bestow_curse = 36, poisoned = 55, slow_poison_hit = 15,
               slow_poison_end = 22, feebleminded = 268;
 constexpr std::array<int, 3> poison_codes{poisoned, slow_poison_hit, slow_poison_end};
-// A revival from poison, which costs nothing (Secret's and Gateway's temples,
-// Curse's Neutralize Poison): the state keeps it until the raising's cost
-// is waived (raise_character). No game's effect has its number.
+// A revival that costs nothing, from poison (Secret's and Gateway's temples,
+// Curse's Neutralize Poison) or by Pools of Darkness's Resurrection: the
+// state keeps it until the raising's cost is waived (raise_character). No
+// game's effect has its number.
 constexpr int revived_from_poison = 600;
 
 // Disease as its cures take it away (temple.pas, cureDiseaseEffects): the
@@ -1386,6 +1392,10 @@ void stand_unpoisoned(const CharacterSheet &sheet, VitalState &state)
 int camp_caster_level(const CharacterSheet &caster, const Spell &known)
 {
     const auto &levels = original_numbers(caster).class_levels;
+    if (known.caster_class == SpellClass::druid)
+    {
+        return std::max(level_in(levels, ClassSlot::ranger) - 7, 0);
+    }
     if (known.caster_class == SpellClass::cleric)
     {
         return std::max(level_in(levels, ClassSlot::cleric),
@@ -1466,8 +1476,10 @@ void strengthen_in_camp(const CharacterSheet &caster, const CharacterSheet &targ
 
 // The spells cast in camp for their effects, which carry into the next fight
 // (lasting_condition); the party is camp target 4.
-constexpr std::array<int, 20> camp_effect_spells{1,  6,  7,  8,  16, 17, 18, 19, 24, 29,
-                                                 30, 32, 42, 45, 48, 50, 52, 53, 54, 169};
+constexpr int protection_from_fire = 309, mind_blank = 322;
+constexpr std::array<int, 24> camp_effect_spells{1,  6,  7,  8,   16,  17,  18,  19,
+                                                 24, 29, 30, 32,  42,  45,  48,  50,
+                                                 52, 53, 54, 169, 309, 318, 319, 322};
 constexpr int party_target = 4;
 
 // The spells a player casts outside combat to see what is hidden, spent with
@@ -1493,9 +1505,24 @@ void lay_camp_effect(const CharacterSheet &caster, const CharacterSheet &target,
     constexpr int mirror_image = 32;
     const auto &known = *spell(number, game_of(caster.identity));
     const int level = camp_caster_level(caster, known);
-    const int minutes = known.minutes_fixed + known.minutes_per_level * level;
-    const int strength = number == mirror_image ? roll_die(random_state, 4) : level;
-    const int code = known.effect;
+    int minutes = known.minutes_fixed + known.minutes_per_level * level;
+    int strength = number == mirror_image ? roll_die(random_state, 4) : level;
+    int code = known.effect;
+    // Mind Blank lasts a day (magic.pas, CalcSpellDuration). Protection from
+    // Fire gives a ranger the druid's protection, which lasts until it has
+    // taken 12 points of fire a caster level, and anyone else Resist Fire,
+    // with no end (SpellProtectionFromFire).
+    if (number == mind_blank)
+    {
+        minutes = 1440;
+    }
+    if (number == protection_from_fire &&
+        level_in(original_numbers(target).class_levels, ClassSlot::ranger) == 0)
+    {
+        constexpr int resist_fire = 20;
+        code = resist_fire;
+        strength = 0;
+    }
     change_conditions(target, state,
                       [&](std::vector<Effect> &effects)
                       {
@@ -2272,8 +2299,8 @@ void OriginalModule::use_camp_action(const CharacterSheet &user, VitalState &use
     {
         throw std::runtime_error("That spell cannot be cast now");
     }
-    const bool raising = *number == raise_dead;
-    const bool unpoisoning = *number == neutralize_poison;
+    const bool raising = *number == raise_dead || *number == resurrection;
+    const bool unpoisoning = *number == neutralize_poison || *number == druid_neutralize_poison;
     constexpr int elf = static_cast<int>(Race::elf);
     if (raising && (!target_state.dead || original_numbers(target).race == elf ||
                     target.scores[Ability::constitution] <= 0))
@@ -2305,7 +2332,15 @@ void OriginalModule::use_camp_action(const CharacterSheet &user, VitalState &use
         target_state.hit_points = 1;
         (void)cure(target, target_state, poison_codes);
         return;
+    case resurrection:
+        // Raised with every Hit Point and its poison gone, losing nothing
+        // (magic.pas, SpellResurrection).
+        (void)cure(target, target_state, poison_codes);
+        stand_unpoisoned(target, target_state);
+        target_state.hit_points = target.hit_points;
+        return;
     case neutralize_poison:
+    case druid_neutralize_poison:
         if (cure(target, target_state, poison_codes) && target_state.dead)
         {
             stand_unpoisoned(target, target_state);
@@ -2323,6 +2358,7 @@ void OriginalModule::use_camp_action(const CharacterSheet &user, VitalState &use
         strengthen_in_camp(user, target, target_state, *number, random_state);
         return;
     case cure_disease:
+    case druid_cure_disease:
         (void)cure(target, target_state, disease_codes(game));
         return;
     case remove_curse:
