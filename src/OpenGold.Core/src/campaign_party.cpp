@@ -1193,8 +1193,13 @@ MemberId CampaignParty::recruit(std::string source, Character converted, unsigne
                                     });
     if (found != state_.roster.end())
     {
+        // A script that adds an NPC who is with the party already changes
+        // nothing.
         const auto id = found->id;
-        rejoin(id);
+        if (std::ranges::find(state_.slots, id) == state_.slots.end())
+        {
+            rejoin(id);
+        }
         return id;
     }
     if (state_.roster.size() >= 128)
