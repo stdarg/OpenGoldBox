@@ -262,7 +262,10 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_original_creation_tests COMMAND opengold_original_creation_tests)
     add_executable(opengold_original_combat_tests tests/original_combat_tests.cpp)
     target_link_libraries(opengold_original_combat_tests PRIVATE opengold_rules_original opengold_core)
+    target_compile_definitions(opengold_original_combat_tests PRIVATE OPENGOLD_BINARY_DIR="${PROJECT_BINARY_DIR}")
     add_test(NAME opengold_original_combat_tests COMMAND opengold_original_combat_tests)
+    # It writes the fight the original rules' combat view check loads.
+    set_tests_properties(opengold_original_combat_tests PROPERTIES FIXTURES_SETUP original_combat_fixtures)
 
     add_executable(opengold_gold_box_games_tests tests/gold_box_games_tests.cpp)
     target_link_libraries(opengold_gold_box_games_tests PRIVATE opengold_core opengold_rules_srd5

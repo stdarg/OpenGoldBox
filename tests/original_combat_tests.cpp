@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
 #include <functional>
 #include <iostream>
 #include <map>
@@ -4040,6 +4041,37 @@ void a_blast_waits()
           "It goes off on its square when its rounds are up");
 }
 
+// The fight the original rules' combat view check plays (tests/
+// original_combat_view_tests.gd): a magic-user's Fire Shield coming due,
+// its flames to choose, and a Delayed Blast Fireball to cast.
+void write_view_fixture()
+{
+    using original::ClassSlot;
+    auto fight = arrange(
+        {{"Mage", rules::Side::party, {1, 3}, caster(ClassSlot::magic_user, 14, {185, 315})},
+         {"Kobold", rules::Side::opposition, {7, 6}, victim(200)}},
+        361);
+    auto &session = *fight.session;
+    until_turn_of(session, "Mage");
+    check(session.submit(*cast_command(session, 185)), "Fire Shield is begun");
+    play_until(
+        session,
+        [&](const std::string &)
+        {
+            return order(session, "end");
+        },
+        [&]
+        {
+            return offered(session, "flames").has_value();
+        });
+    check(offered(session, "flames").has_value(), "Its flames are asked for");
+    const auto folder = std::filesystem::path(OPENGOLD_BINARY_DIR) / "original-combat-fixtures";
+    std::filesystem::create_directories(folder);
+    std::ofstream out(folder / "fire_shield.save", std::ios::binary);
+    out << session.save();
+    check(bool(out), "The view fixture is written");
+}
+
 } // namespace
 
 int main()
@@ -4089,6 +4121,7 @@ int main()
         out_of_doors();
         a_quarrel_banishes_the_rakshasa();
         a_blast_waits();
+        write_view_fixture();
         sleep_takes_the_weak();
         charm_person_turns_a_foe();
         cure_light_wounds_stops_bleeding();

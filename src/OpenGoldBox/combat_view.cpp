@@ -1,6 +1,7 @@
 #include "godot_text.h"
 #include "class_text.h"
 #include "game_rules.h"
+#include "opengold/original_combat.h"
 #include "opengold/diagnostic_log.h"
 #include "opengold/path_text.h"
 #include "initiative_controls.h"
@@ -84,6 +85,35 @@ constexpr std::array<std::pair<const char *, const char *>, 10> action_buttons{
      {"Dash", "dash"},
      {"Dodge", "dodge"},
      {"Disengage", "disengage"}}};
+
+// The original rules' actions the Items list offers, by a key of their verb
+// and item (a spell's number, a choice's), and their names.
+constexpr std::string_view original_action_prefix = "original:";
+
+std::string original_action_key(const Command &command)
+{
+    return std::string(original_action_prefix) + command.verb + "#" + std::to_string(command.item);
+}
+
+String original_action_label(const Command &command)
+{
+    if (command.verb == "cast")
+    {
+        return i18n::format(N_("Cast {spell}"), {{"spell", i18n::text(command.label)}});
+    }
+    if (command.verb == "use" || command.verb == "flames" || command.verb == "blast_delay")
+    {
+        return i18n::text(command.label);
+    }
+    const char *label = command.verb == "guard"      ? N_("Guard")
+                        : command.verb == "delay"    ? N_("Delay")
+                        : command.verb == "turn"     ? N_("Turn undead")
+                        : command.verb == "bandage"  ? N_("Bandage")
+                        : command.verb == "aim_done" ? N_("Done aiming")
+                        : command.verb == "abort"    ? N_("Abort the spell")
+                                                     : nullptr;
+    return label ? i18n::text(label) : String();
+}
 
 std::string spell_verb(std::string verb, unsigned slot)
 {
@@ -1349,7 +1379,21 @@ void CombatView::load_game()
     try
     {
         const auto bytes = read_save_file(local_path("user://checks/combat.save"), 4 * 1024 * 1024);
-        demo_.change().restore_combat(bytes);
+        // A fight saved under the original rules is played on under them: its
+        // checkpoint opens with its format's name.
+        if (std::string_view(bytes).substr(0, 32).find("OGORIGINALCOMBAT") !=
+            std::string_view::npos)
+        {
+            // Its checkpoint carries every creature's numbers, so the fight
+            // needs none of the game's files.
+            auto original = std::make_unique<CombatDemo>(opengold::original::rules_module());
+            original->restore_combat(bytes);
+            demo_ = std::move(original);
+        }
+        else
+        {
+            demo_.change().restore_combat(bytes);
+        }
         sync_art();
         error_.clear();
         refresh();
@@ -1498,6 +1542,26 @@ void CombatView::use_item()
     }
     required_node<Button>(*this, "UseItemAction").release_focus();
     const auto &offered = demo_.legal_commands();
+    if (item_verb_.starts_with(original_action_prefix))
+    {
+        const auto chosen = std::find_if(offered.begin(), offered.end(),
+                                         [&](const auto &c)
+                                         {
+                                             return original_action_key(c) == item_verb_;
+                                         });
+        if (chosen == offered.end())
+        {
+            return;
+        }
+        if (chosen->verb == "bandage")
+        {
+            // The dying member is clicked on the battlefield.
+            select_mode("bandage");
+            return;
+        }
+        act(*chosen);
+        return;
+    }
     const bool targeted =
         std::any_of(offered.begin(), offered.end(),
                     [&](const auto &c)
@@ -2695,10 +2759,10 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
                         return target != s.combatants.end() && target->cell == cell;
                     });
     if (!s.free_movement && !s.effect_targeting && !targets_clicked && mode_ != "stabilize" &&
-        mode_ != "lay_on_hands" && mode_ != "lay_on_hands_cure" &&
-        mode_ != "lay_on_hands_restore" && mode_ != "chill_touch" && mode_ != "poison_spray" &&
-        mode_ != "sacred_flame" && mode_ != "shocking_grasp" && mode_ != "eldritch_blast" &&
-        mode_ != "ray_of_frost")
+        mode_ != "aim" && mode_ != "bandage" && mode_ != "lay_on_hands" &&
+        mode_ != "lay_on_hands_cure" && mode_ != "lay_on_hands_restore" && mode_ != "chill_touch" &&
+        mode_ != "poison_spray" && mode_ != "sacred_flame" && mode_ != "shocking_grasp" &&
+        mode_ != "eldritch_blast" && mode_ != "ray_of_frost")
     {
         for (const auto &a : s.combatants)
         {
@@ -2725,7 +2789,8 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
     {
         if (c.verb == mode_ && matches_item(c))
         {
-            if ((c.verb == "move" || c.verb == "effect_push") && c.destination == cell)
+            if ((c.verb == "move" || c.verb == "effect_push" || (c.verb == "aim" && !c.target)) &&
+                c.destination == cell)
             {
                 act(c);
                 get_viewport()->set_input_as_handled();
@@ -3149,6 +3214,20 @@ void CombatView::refresh()
     }
     static const std::vector<Command> no_commands;
     const auto &offered = loaded ? demo_.legal_commands() : no_commands;
+    // The original rules aim a spell as it goes off: its creatures or square
+    // are clicked on the battlefield (docs/ORIGINAL-RULES.md, step 8a).
+    if (std::any_of(offered.begin(), offered.end(),
+                    [](const auto &c)
+                    {
+                        return c.verb == "aim";
+                    }))
+    {
+        mode_ = "aim";
+    }
+    else if (mode_ == "aim")
+    {
+        mode_ = "move";
+    }
     const auto enabled = [&](std::string_view verb)
     {
         return player &&
@@ -3265,6 +3344,22 @@ void CombatView::refresh()
                 items->add_item(i18n::text(command.label), static_cast<int>(item_verbs_.size()));
                 item_verbs_.push_back(command.verb);
             }
+        }
+        // The original rules' own actions (docs/ORIGINAL-RULES.md): a spell to
+        // cast or an item's power to use, Guard, Delay, turning undead and
+        // bandaging, and what a spell asks as it goes off: Fire Shield's
+        // flames, a Delayed Blast Fireball's delay, Done and Abort.
+        for (const auto &command : offered)
+        {
+            const auto label = original_action_label(command);
+            const auto key = original_action_key(command);
+            if (command.actor != throwing->id || label.is_empty() ||
+                std::find(item_verbs_.begin(), item_verbs_.end(), key) != item_verbs_.end())
+            {
+                continue;
+            }
+            items->add_item(label, static_cast<int>(item_verbs_.size()));
+            item_verbs_.push_back(key);
         }
         // Last, so that it is never what the list offers ahead of an item.
         const auto doff = std::find_if(offered.begin(), offered.end(),

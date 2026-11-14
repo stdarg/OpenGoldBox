@@ -191,6 +191,12 @@ and a save each know which tables they use.
   at 0 at level 6, and breathes it unharmed above.
 - **Fire Shield**'s caster chooses hot or cold flames as it goes off (the
   `flames` command); the AI, and Quick, pick at random.
+- **On the combat screen** the Items list offers the original rules' own
+  actions: a spell to cast (its creatures or square then clicked on the
+  field, with Done aiming and Abort the spell), an item's power, Guard,
+  Delay, Turn undead and Bandage, and what a spell asks as it goes off, Fire
+  Shield's flames and a Delayed Blast Fireball's delay. A training fight
+  saved under the original rules loads under them.
 - The magic-user's Remove Curse and the item power that animates the dead
   work in fights as the cleric's spells do.
 - **Camp:** Cure Blindness, Cure Disease, both Remove Curses and Neutralize
