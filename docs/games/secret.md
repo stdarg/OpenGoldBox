@@ -205,6 +205,12 @@ and perhaps another place.
   level has two tables, one a half); an entry of 128 or more is rubble. A
   hidden trapdoor on level 2 drops an unwary party to level 3 (search mode, a
   dwarf or a thief notices it).
+- **The Dungeon** (map 64 for levels 10 to 7, 65 for 6 to 3, 66 for 2 and
+  1): cell 4C87 is the level; its stairs are guarded by the spirit's
+  riddles, and each key lies on its own map.
+- **The crevasses** (maps 80 and 82): passages as the mines', the places told
+  apart by cells 4C05 and 4C6B; 4CFD and 4CFE count the cluebook's
+  coordinates, the x one wrapping at 99.
 
 ## The ending
 
@@ -225,10 +231,12 @@ stops and why is in [GAMES.md](../GAMES.md), phase 4 step 4. Two planning
 aids help extend it: `OPENGOLD_SECRET_LINKS` prints the ruins' passages, and
 `OPENGOLD_SECRET_FIND=X,Y[,MAP]` (or `*`, or `map:N`, with
 `OPENGOLD_SECRET_KEYS` and `OPENGOLD_SECRET_GOAL` naming cells, and
-`OPENGOLD_SECRET_SEARCHING`) searches from where the route ends for the
-steps that reach a square or set a cell, playing each step as the game does
-(offers declined, every fight won at once), and prints them for the route's
-`walk_passages`.
+`OPENGOLD_SECRET_SEARCHING`, and `OPENGOLD_SECRET_PREFER=WORD,...` for the
+choices to take on the way) searches from where the route ends for the steps
+that reach a square or set a cell, playing each step as the game does
+(questions answered NO, every fight won at once), and prints them for the
+route's `walk_passages`. A search takes a few minutes; the route alone
+takes about five.
 
 ## Sound effects
 

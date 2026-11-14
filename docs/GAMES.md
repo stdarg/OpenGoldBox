@@ -397,23 +397,47 @@ The steps of *Curse*'s phase 3, with *Secret*'s differences
    Tyr (the lift's rests are interrupted), and walks level 10 to the hole the
    miners broke into the Dungeon (map 64). Every walk inside a map is played
    step by step as the planning aid `OPENGOLD_SECRET_FIND` found it (each
-   arrival's event runs; the party answers NO where only passing by); the
-   spirit's riddles are answered as the cluebook answers them. *Where it
-   stops:* on the Dungeon's level 10 (map 64, 0,15). Level 10's patrols of
-   cockatrices, medusae and basilisks stone members with every dice the route
-   tries; its walk lets the test win a fight its player loses (a stand-in,
-   three fights in the last run), and the party reaches the Dungeon with one
-   member dead and three stoned, which the route's player cannot cure there
-   (the Temple of Gond's Stone to Flesh is the way). The planning aid then
-   finds no way to the Brass Key (cell 4CDE) from the Dungeon's entrance. The
-   next steps: return by the Dungeon's teleporter (location 7) to the Well and
-   the Temple of Gond, then the three keys (cells 4CDE, 4CDF, 4CE0), the
-   crevasses, the Frost Giant Village, the castle and the soul gem. Until it
-   reaches the end the check passes when the route plays every beat to the
-   Dungeon (`secret_route_stops_on_map`); then it checks the win as *Curse*'s
-   does. The win itself is in place: the event that frees Eldamar's soul
-   (cell 4CD9 set to 1 by script 99) ends with "Eldamar's soul is free, and
-   the Dreadlord is no more. You have won." as a win (`game_won`)
+   arrival's event runs; the party answers NO where it only passes by, and a
+   walk may carry the answers it is to give on the way); the riddles and
+   spoken words are answered as the cluebook answers them. At the town's
+   armoury it buys each member a mirror, which turns the basilisks' and
+   medusae's gazes back. A member turned to stone stays a statue until Stone
+   to Flesh (ORIGINAL-RULES.md, Stone): from the Dungeon's entrance the party
+   goes by the Dungeon's teleporter (location 7) to the Well and the Temple
+   of Gond (Raise Dead, Stone to Flesh) and back by the Well's gate 15. It
+   takes the Brass Key (level 7, the Amulet revealing it), the Silver Key
+   (levels 6 to 3, the pyro-hydras) and the Gold Key (levels 2 and 1, the
+   purple worms; cells 4CDE, 4CDF, 4CE0), leaves the Dungeon's top into the
+   Western Crevasses (map 80; its places told apart by cells 4C05 and
+   4C6B), walks them to the Frost Giant Village (map 81), bashes its
+   blockaded door open, wins the king over by fighting the Black Circle
+   beside him, has his guards lead it east into the Eastern Crevasses (map
+   82), and passes the castle's gate, where Oswulf's spirit blesses the
+   staff's bearers, into the Castle Entrance (map 96). *Stand-ins:* the
+   experience above; and from the mine on, a fight on the way (or in a camp
+   on the way) that the route's player loses with every dice it tries, or
+   wins only with a member dead or turned to stone, is won by the test (about
+   thirty fights in the last run, most in the crevasses). *The route's own
+   play:* a party below half its Hit Points rests before passing on, flees
+   monsters met in camp while hurt, rests to raise its dead while a cleric
+   stands, and gives up resting on a map where monsters break its camp three
+   times. *Where it stops (2026-11-14):* in the Castle Entrance (map 96, at
+   0,8). The planning aid reaches only its western half (x up to 9) and finds
+   no way to the stairway up at 15,0; the castle's rotating alcove, its
+   smith and its traps are still to be read in script 96. *Next:* the
+   stairway up (96, leaving the map north from 15,0, "UP", YES) to the
+   Middle Level (97: the iron golems' password STEELEYE is already in the
+   route's answers), the Dreadlord's Sanctum (98): its three doors take the
+   Brass Key at 6,1 (opening the way west to the soul gem's chamber, script
+   99), the Silver Key at 12,0 and the Gold Key at 2,9, and the door asking
+   for the Dreadlord's brother takes OSWULF; then the gem in script 99
+   ("EXPLORE ROOM", its twelve iron golems and six medusae), which sets cell
+   4CD9 to 1. Then `secret_route_ends_the_game` is set to true, and the
+   check asks for the win as *Curse*'s does. Until then it passes when the
+   route plays every beat to the castle (`secret_route_stops_on_map`). The
+   win itself is in place: the event that frees Eldamar's soul (cell 4CD9
+   set to 1 by script 99) ends with "Eldamar's soul is free, and the
+   Dreadlord is no more. You have won." as a win (`game_won`)
    ([secret.md](games/secret.md), The ending).
 
 ### 5 to 7. The other campaigns
