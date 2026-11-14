@@ -182,9 +182,12 @@ unsigned high(unsigned word)
 
 // The test design: areas 5 (the hall) and 6 (the cellar), and a game record
 // that starts the party in the hall (docs/games/ua.md, The test design).
-std::filesystem::path build_test_design(const std::filesystem::path &kit)
+// Each check builds its own, named for it, in the folder it runs in (its
+// build's), as the checks and the builds' suites run at once.
+std::filesystem::path build_test_design(const std::filesystem::path &kit,
+                                        const std::string &check_name)
 {
-    const auto folder = std::filesystem::temp_directory_path() / "opengold_ua_test.dsn";
+    const auto folder = std::filesystem::current_path() / ("opengold_ua_" + check_name + ".dsn");
     std::filesystem::remove_all(folder);
     std::filesystem::create_directories(folder);
     const ua::DesignFiles templates(kit, {});
@@ -476,7 +479,7 @@ void a_character_follows_the_kits_rules()
 
 void the_design_loads_and_plays(const std::filesystem::path &kit)
 {
-    const auto design = build_test_design(kit);
+    const auto design = build_test_design(kit, "session");
     const ua::DesignFiles files(kit, design);
     const auto content = ua::load_design_content(files);
     check(content.bestiary.size() == 127 && content.bestiary.contains(ua::monster_key(1)),
@@ -576,7 +579,7 @@ void the_design_loads_and_plays(const std::filesystem::path &kit)
 // open step from it taken.
 bool walk_every_square(const std::filesystem::path &kit)
 {
-    const auto design = build_test_design(kit);
+    const auto design = build_test_design(kit, "walk");
     const ua::DesignFiles files(kit, design);
     const auto content = ua::load_design_content(files);
     auto session = ua::UaSession::start(files);
