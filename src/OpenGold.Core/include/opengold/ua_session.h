@@ -275,7 +275,7 @@ class UaSession
     bool running_{}, chain_due_{}, chain_allowed_{true}, party_moved_{}, moved_last_pass_{};
     bool rerun_square_{}, step_back_due_{}, again_{};
     // No member can act any more, or an event ended the adventure.
-    bool party_lost_{}, game_ended_{};
+    bool party_lost_{};
     std::vector<unsigned> event_stack_;
     Pending pending_;
     std::optional<CampaignEncounter> encounter_;

@@ -706,9 +706,9 @@ void UaSession::utilities_event(const EventRecord &event)
         }
         quest_flags_[event[13]] = result ? 1 : 0;
     }
+    // The adventure ends here, as when no member can act.
     if (event[4] & 0x10)
     {
-        game_ended_ = true;
         party_lost_ = true;
     }
 }
