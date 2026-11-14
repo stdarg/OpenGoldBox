@@ -1131,6 +1131,43 @@ void the_wilds_show_the_kits_big_picture(const std::filesystem::path &kit)
           "A zone's text greets the party: " + session.snapshot().dialogue);
 }
 
+// The overhead map of an area larger than 16 by 16 squares (docs/games/ua.md,
+// Camping and the overhead map): a window of it centred on the party, kept
+// within the area, the squares stood on remembered across it and saved.
+void a_large_area_maps_around_the_party(const std::filesystem::path &kit)
+{
+    const auto design = build_test_design(kit, temporary_design("opengold_ua_caves.dsn"));
+    // Area 8, the caves: the dungeon template made 24 by 24, a door east of
+    // (22, 21).
+    auto blank = *ua::DesignFiles(kit, {}).data("GEO", 5);
+    blank[header_at + 2] = 24;
+    blank[header_at + 3] = 24;
+    AreaBuilder caves(blank);
+    caves.overhead_map(true);
+    caves.wall(22, 21, MapDirection::east, 0x03);
+    write(design / "GEO008.DAT", caves.finish());
+    const ua::DesignFiles files(kit, design);
+    auto session = ua::UaSession::start(files);
+    session.place(8, 20, 20, MapDirection::north);
+    const auto origin = session.map_origin();
+    const auto *map = session.area_map();
+    check(map && origin.x == 8 && origin.y == 8,
+          "The map's window keeps the party in its middle, within the area");
+    check(session.snapshot().visited.test(12 * 16 + 12) && map->at(14, 13).doors[1],
+          "The window shows the party's square and the door near it");
+    session.place(8, 2, 2, MapDirection::north);
+    check(session.map_origin().x == 0 && session.map_origin().y == 0 &&
+              session.snapshot().visited.test(2 * 16 + 2) &&
+              !session.snapshot().visited.test(12 * 16 + 12),
+          "Back near the corner, the window starts at it");
+    const auto saved = session.saved_state();
+    auto loaded = ua::UaSession::resume(files, saved);
+    loaded.place(8, 19, 20, MapDirection::north);
+    check(loaded.snapshot().visited.test(12 * 16 + 12) &&
+              loaded.snapshot().visited.test(12 * 16 + 11),
+          "The squares stood on are remembered and saved");
+}
+
 // The kit's doors (docs/games/ua.md, Locked doors): a locked door is bashed by
 // Strength, picked by a thief or opened by Knock, each of Bash and Pick once
 // until the party steps; a wizard lock defies picks, a false door everything,
@@ -1830,6 +1867,111 @@ void the_party_camps(const std::filesystem::path &kit)
     check(player.heard("RATS SCURRY OVER THE SLEEPERS.") &&
               session.snapshot().phase == TourPhase::completed,
           "The rest encounter's event runs");
+
+    // The kit's camp menu: Rest for a time the player sets (a day first, the
+    // rules' time to memorize), here a day and five hours.
+    session.place(5, 4, 9, MapDirection::north);
+    check(exploring.camp_menu() &&
+              session.snapshot().choices ==
+                  std::vector<std::string>{"Rest", "Alter", "Fix", "Exit"} &&
+              session.can_select_member(),
+          "Camp opens the kit's camp menu");
+    choose_choice(session, "Rest");
+    check(session.snapshot().dialogue.find("Rest time: 1 days, 0 hours, 0 minutes.") !=
+              std::string::npos,
+          "The rest menu offers a day: " + session.snapshot().dialogue);
+    for (int hour = 0; hour < 5; ++hour)
+    {
+        choose_choice(session, "Add");
+    }
+    choose_choice(session, "Minutes");
+    choose_choice(session, "Add");
+    choose_choice(session, "Subtract");
+    check(session.snapshot().dialogue.find("Rest time: 1 days, 5 hours, 0 minutes.") !=
+              std::string::npos,
+          "Add and Subtract set the time: " + session.snapshot().dialogue);
+    const auto before_menu_rest = party->state().time_minutes;
+    choose_choice(session, "Rest");
+    check(party->state().time_minutes == before_menu_rest + 29 * 60 &&
+              session.snapshot().dialogue == "The party rests.",
+          "The party rests the time set");
+    while (party->state().spell_rest)
+    {
+        party->keep_rest_spells(party->state().spell_rest->members.front());
+    }
+
+    // Alter: the selected member moves down the order, and is dropped.
+    const auto first_id = party->state().slots[0];
+    check(exploring.camp_menu(), "Camp again");
+    choose_choice(session, "Alter");
+    choose_choice(session, "Order");
+    choose_choice(session, "Down");
+    check(party->state().slots[1] == first_id, "Down moves the selected member down the order");
+    choose_choice(session, "Exit");
+    const auto members = std::ranges::count_if(party->state().slots,
+                                               [](opengold::MemberId id)
+                                               {
+                                                   return id != 0;
+                                               });
+    choose_choice(session, "Drop");
+    choose_choice(session, "Yes");
+    check(std::ranges::count_if(party->state().slots,
+                                [](opengold::MemberId id)
+                                {
+                                    return id != 0;
+                                }) == members - 1 &&
+              std::ranges::find(party->state().slots, first_id) == party->state().slots.end(),
+          "Drop takes the selected member out of the party");
+    choose_choice(session, "Exit");
+
+    // Fix: fighters have no healing spells.
+    choose_choice(session, "Fix");
+    check(session.snapshot().dialogue == "No one can fix the party now.",
+          "Fix needs a healer: " + session.snapshot().dialogue);
+    player.play();
+}
+
+// Fix (docs/games/ua.md, Camping): a cleric's memorized Cure Light Wounds
+// heal the most wounded while the party rests the casting's time.
+void a_cleric_fixes_the_party(const std::filesystem::path &kit)
+{
+    const ua::DesignFiles files(kit,
+                                build_test_design(kit, temporary_design("opengold_ua_fix.dsn")));
+    const auto content = ua::load_design_content(files);
+    auto session = ua::UaSession::start(files);
+    auto party = new_party(content, {"fighter", "cleric"});
+    session.campaign_party(party);
+    Player player{session, party, content};
+    player.play();
+    const auto cleric = party->state().slots[1];
+    check(party->rest(), "The party rests a day");
+    while (party->state().spell_rest)
+    {
+        const auto id = party->state().spell_rest->members.front();
+        if (id == cleric)
+        {
+            // Two Cure Light Wounds (a second of a spell is named "#2").
+            const auto cure = opengold::original::spell_id(3);
+            party->choose_spells(cleric, {{}, std::vector<std::string>{cure, cure + "#2"}});
+        }
+        else
+        {
+            party->keep_rest_spells(id);
+        }
+    }
+    session.place(5, 4, 9, MapDirection::north);
+    auto state = party->checkpoint();
+    state.roster[0].vitals.hit_points = 1;
+    party->restore(std::move(state));
+    const auto before = party->state().time_minutes;
+    check(session.camp_menu(), "Camp");
+    choose_choice(session, "Fix");
+    check(session.snapshot().dialogue == "The party is fixed." &&
+              party->member(party->state().slots[0]).vitals.hit_points > 1 &&
+              party->state().time_minutes > before,
+          "The cleric's cures heal the wounded fighter while the party rests: " +
+              session.snapshot().dialogue);
+    player.play();
 }
 
 // Saving and loading (docs/games/ua.md, Saving and loading a game): a game
@@ -2173,6 +2315,7 @@ int main(int argc, char **argv)
             return the_design_plays_to_its_end(*kit) ? 0 : 1;
         }
         the_wilds_show_the_kits_big_picture(*kit);
+        a_large_area_maps_around_the_party(*kit);
         the_kits_doors_open_as_the_kit_opens_them(*kit);
         a_character_starts_as_the_design_says(*kit);
         the_design_loads_and_plays(*kit);
@@ -2182,6 +2325,7 @@ int main(int argc, char **argv)
         the_view_plays_it_through_the_seam(*kit);
         a_game_saves_and_loads(*kit);
         the_party_camps(*kit);
+        a_cleric_fixes_the_party(*kit);
         the_kits_monsters_and_events_play_as_the_kit_has_them(*kit);
         // The game's startup check plays the test design from the menu (a
         // CTest fixture): it is written where the check looks for it.

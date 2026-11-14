@@ -273,13 +273,17 @@ Departures from the original game's own rules, when OpenGoldBox plays by them
   leaves out the count the kit puts before a stack's name, and its plural:
   the inventory shows the quantity. A design's NPC who is a monster (race 6)
   joins as a human.
-- **Unlimited Adventures' camp** (2026-11-14). The kit's camp menu (View,
-  Magic, Rest, Alter, Fix, Load, Save) and its rest menu, where the player
-  sets the days, hours and minutes to rest, are OpenGoldBox's Rest dialog,
-  as in the DAX games: a rest is the rules' rest (the original rules' day),
-  its spells memorized in the dialog that follows, and the menus' other
-  parts are the game's own screens. The kit's rest encounters break it as
-  they break the kit's.
+- **Unlimited Adventures' camp** (2026-11-14). The kit's camp menu offers
+  Rest, Alter and Fix as the kit does; its View, Magic, Load and Save are
+  the game's own screens, and Alter's Speed, Icon and Level the game's own
+  settings (the party's combat icons are its creation's; the original rules
+  play at Normal). A rest of the time the player sets heals and memorizes
+  by the rules' day: each whole day is one, the part of a day left over
+  only passes, where the kit memorizes spell by spell as their time passes
+  and heals every 24 hours. Fix casts the party's memorized healing and
+  curing spells as the game's camp casts them, on the most wounded or the
+  one each would cure, where the kit pools its healing and rolls it
+  together.
 - **Unlimited Adventures' party icons** (2026-11-14). The kit gives a party
   member the combat icon made in its own icon editor (`CBODY.TLB` and
   `COMSPR.TLB`). A party made in OpenGoldBox has the combat icon its

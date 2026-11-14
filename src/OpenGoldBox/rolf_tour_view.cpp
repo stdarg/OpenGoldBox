@@ -3407,7 +3407,9 @@ Dictionary RolfTourView::tour_visuals()
         }
     }
     data["cells"] = cells;
-    data["pose"] = Vector2i(state.pose.x, state.pose.y);
+    const auto origin = session_->map_origin();
+    data["pose"] = Vector2i(static_cast<int>(state.pose.x - origin.x),
+                            static_cast<int>(state.pose.y - origin.y));
     data["facing"] = static_cast<int>(index(state.pose.facing));
     return data;
 }

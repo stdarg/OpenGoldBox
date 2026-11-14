@@ -85,6 +85,12 @@ void RolfTourView::camp()
     {
         return;
     }
+    // A design's camp is the kit's own menu, in the dialogue's choices.
+    if (session_->camp_menu())
+    {
+        refresh();
+        return;
+    }
     rest_save_open_ = false;
     rest_result_ = String();
     refresh_rest();

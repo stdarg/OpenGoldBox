@@ -201,16 +201,20 @@ class UaSession final : public ExplorationSession
     {
     }
 
+    // The kit's camp menu (ua_camp.cpp): Rest for a time the player sets,
+    // Alter and Fix, through the snapshot's choices.
+    bool camp_menu() override;
+
     [[nodiscard]] bool can_leave() const override
     {
         return snapshot_.phase == por::TourPhase::completed;
     }
 
-    // While nothing waits, and at the treasure menu, which gives to the
-    // selected member.
+    // While nothing waits, and at the treasure and camp menus, which act for
+    // the selected member.
     [[nodiscard]] bool can_select_member() const override
     {
-        return can_leave() || treasure_open_;
+        return can_leave() || treasure_open_ || camp_open_;
     }
 
     // No member turns on the party in a design yet.
@@ -226,10 +230,18 @@ class UaSession final : public ExplorationSession
     [[nodiscard]] std::string area_name() const override;
 
     // A dungeon's walls and doors, where its header allows the overhead map
-    // (bit 0 of +7); none out of doors. Secret doors show as walls.
+    // (bit 0 of +7), in the window around the party; none out of doors.
+    // Secret doors show as walls.
     [[nodiscard]] const por::GeoMap *area_map() const override
     {
         return area_map_ ? &*area_map_ : nullptr;
+    }
+
+    // An area larger than 16 by 16 squares shows the window of it around the
+    // party, as the kit's map scrolls with it.
+    [[nodiscard]] MapOrigin map_origin() const override
+    {
+        return {map_left_, map_top_};
     }
 
     [[nodiscard]] por::RolfTourSession *dax() noexcept override
@@ -358,6 +370,17 @@ class UaSession final : public ExplorationSession
     void text_event(const EventRecord &event);
     void show_texts(const EventRecord &event, unsigned from);
     void treasure_event(const EventRecord &event, bool now);
+    // The camp menu's parts (ua_camp.cpp).
+    void kit_camp_menu();
+    void rest_time_menu();
+    // A rest of `minutes`, which a rest encounter may break; true when it
+    // was not broken.
+    bool rest_for(unsigned minutes);
+    void alter_menu();
+    void order_menu();
+    void drop_member();
+    void fix_party();
+
     // The treasure menu (ua_treasure.cpp; postcmbt.c, loot_menu): Take,
     // Detect and Exit while the treasure holds something.
     void offer_treasure();
@@ -450,6 +473,7 @@ class UaSession final : public ExplorationSession
     [[nodiscard]] bool party_has_thief() const;
 
     void move_party(unsigned x, unsigned y, por::MapDirection facing);
+    void refresh_map_window();
     // The zone of the party's square (its bits 2 to 4).
     [[nodiscard]] unsigned party_zone() const;
     // A rest encounter breaks this five-minute step of a rest: its event.
@@ -477,6 +501,10 @@ class UaSession final : public ExplorationSession
     CombatIcons icons_;
     DesignArea area_;
     std::optional<por::GeoMap> area_map_;
+    // The squares of the area the party has stood on, and where the
+    // overhead map's window over it starts.
+    std::vector<bool> stood_on_;
+    unsigned map_left_{}, map_top_{};
     ViewArt view_art_;
     std::optional<OverlandArt> overland_art_;
     std::shared_ptr<CampaignParty> party_;
@@ -537,6 +565,17 @@ class UaSession final : public ExplorationSession
     std::array<unsigned, 3> pile_money_{};
     std::vector<por::Equipment> pile_items_;
     bool pile_magic_shown_{}, treasure_open_{};
+    // The camp menu is open; the rest it offers, and the unit Add and
+    // Subtract change.
+    enum class RestUnit : std::uint8_t
+    {
+        days,
+        hours,
+        minutes,
+    };
+    bool camp_open_{};
+    unsigned rest_minutes_{24 * 60};
+    RestUnit rest_unit_{RestUnit::hours};
     // A tavern's drinks this visit and the next tale it tells in order.
     unsigned drunkenness_{}, tavern_tale_next_{};
     // The open shop's ITEM.DAT numbers.

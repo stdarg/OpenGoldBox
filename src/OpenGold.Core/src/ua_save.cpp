@@ -3,6 +3,7 @@
 // progress, the session's own state, as text the campaign save carries.
 #include "opengold/ua_session.h"
 
+#include <algorithm>
 #include <iomanip>
 #include <locale>
 #include <sstream>
@@ -13,8 +14,10 @@ namespace opengold::ua
 namespace
 {
 
-// The first line of a saved state, naming its layout.
-constexpr std::string_view state_tag = "UA-STATE 1";
+// The first line of a saved state, naming its layout: 2 keeps every square
+// the party has stood on in its area; 1, saved before areas larger than 16
+// by 16 had a map, kept the first 16 by 16.
+constexpr std::string_view state_tag = "UA-STATE 2", first_state_tag = "UA-STATE 1";
 
 void require(bool ok, const char *message)
 {
@@ -94,7 +97,7 @@ std::string UaSession::saved_state() const
         out << unsigned{flag} << ' ';
     }
     out << '\n' << hex_bits(done_bits_) << '\n';
-    out << snapshot_.visited.to_string() << ' ' << snapshot_.seen.to_string() << '\n';
+    out << hex_bits(stood_on_) << '\n';
     for (const auto steps : step_counts_)
     {
         out << steps << ' ';
@@ -115,7 +118,8 @@ UaSession UaSession::resume(DesignFiles files, std::string_view state)
     in.imbue(std::locale::classic());
     std::string tag;
     std::getline(in, tag);
-    require(tag == state_tag, "The saved design's state is not one this build reads");
+    require(tag == state_tag || tag == first_state_tag,
+            "The saved design's state is not one this build reads");
     auto session = start(std::move(files));
     const auto area = next<unsigned>(in);
     if (area != session.area_.number)
@@ -155,8 +159,25 @@ UaSession UaSession::resume(DesignFiles files, std::string_view state)
         flag = static_cast<std::uint8_t>(value);
     }
     session.done_bits_ = bits_from_hex(next<std::string>(in), session.done_bits_.size());
-    session.snapshot_.visited = decltype(session.snapshot_.visited)(next<std::string>(in));
-    session.snapshot_.seen = decltype(session.snapshot_.seen)(next<std::string>(in));
+    if (tag == first_state_tag)
+    {
+        // The first 16 by 16 squares stood on (and seen, the same squares).
+        const decltype(session.snapshot_.visited) visited(next<std::string>(in));
+        (void)next<std::string>(in);
+        const unsigned columns = map.columns;
+        for (unsigned y = 0; y < std::min(16U, unsigned{map.rows}); ++y)
+        {
+            for (unsigned x = 0; x < std::min(16U, columns); ++x)
+            {
+                session.stood_on_[std::size_t{y} * columns + x] = visited.test(y * 16 + x);
+            }
+        }
+    }
+    else
+    {
+        session.stood_on_ = bits_from_hex(next<std::string>(in), session.stood_on_.size());
+    }
+    session.refresh_map_window();
     for (auto &steps : session.step_counts_)
     {
         steps = next<unsigned>(in);

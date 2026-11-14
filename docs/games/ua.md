@@ -201,7 +201,7 @@ session itself is unchanged. What only a DAX campaign has (shops and
 treasure piles, its script's variables, sprites and NPC portraits, temples,
 teleports and Word of Recall, close-ups, the ending film, the difficulty
 and auto-equip settings) the view reaches through `dax()`, which is null for
-a design, so the view leaves those out instead of drawing them wrong. Camping (`camp`, `decline_camp`) and the
+a design, so the view leaves those out instead of drawing them wrong. Camping (`camp_menu`, the kit's own menu, `camp` and `decline_camp`) and the
 overhead map (`area_map`) the session gives itself, and a design saves its
 own way (Saving and loading a game, below).
 
@@ -218,8 +218,10 @@ folders are. Then the design is asked each time the game is chosen, the last
 one offered (`[games] UA_DESIGN`), since a player may have several: a folder
 whose name ends in `.DSN` ([CONFIGURATION.md](../CONFIGURATION.md)). The kit
 has no title pictures, so its menu follows at once. Play with default party
-is not offered (no default party is made for a design yet); Continue and
-Load offer the design's saves. The rules question offers only the
+plays the design with six made under the kit's rules, each given the
+design's start as a new character is (`data/default_parties/UA.json`,
+[DEFAULT-PARTIES.md](../DEFAULT-PARTIES.md)); Continue and Load offer the
+design's saves. The rules question offers only the
 original rules, as the SRD has none of a design's monsters; Create new party
 makes characters under the kit's rules
 (`original::character_rules(aging, GoldBoxGame::unlimited_adventures)`), and
@@ -532,8 +534,6 @@ playing each event and fight; it fails on any event the session cannot play.
   - Byte 12h's top bits (the turning level +0, 2, 10 or 41 over the
     area's) and an icon over two squares a side, which stands as two.
 - The kit's rules' remaining differences (above).
-- A default party; the kit's camp menu's own parts (Alter, Fix, the rest
-  menu's chosen hours); overhead maps of dungeons larger than 16 by 16.
 
 ### Monsters' effects, "no magic" fights and step events
 
@@ -618,12 +618,30 @@ to its end at (8,8), and checks the win.
 Since 2026-11-14 a design's party camps and its dungeons have an overhead
 map (`ua_session.cpp`; the reconstruction's `rest.c` and `camp.c`).
 
-- **Camp** opens the Rest dialog the DAX games' camps use (DEVIATIONS.md,
-  Unlimited Adventures' camp): its Start rests the party as the rules rest
-  it (the original rules' day), its spells memorized in the dialog that
-  follows, and Save game. As the kit's `camp_rest` does, the rest passes in
-  five-minute steps, each a chance for the rest encounter of the zone the
-  party stands in: the area header's four bytes a zone from +2Eh, the
+- **Camp** opens the kit's camp menu (`ua_camp.cpp`; `camp.c`,
+  `camp_menu`), in the dialogue's choices, the player choosing the member
+  it acts for: Rest, Alter, Fix and Exit (View, Magic, Save and Load are the
+  game's own screens; DEVIATIONS.md, Unlimited Adventures' camp).
+  - **Rest** opens the rest menu (`rest.c`, `rest_menu`): the time to rest
+    in days, hours and minutes, Days, Hours or Minutes choosing which Add
+    and Subtract change (a minute step is 5), to 99 days; it starts at a
+    day, the time memorizing takes under the rules, as the kit starts at
+    its time to memorize. Each whole day of an unbroken rest is the rules'
+    day of rest, its healing and memorizing, the members keeping their
+    spells on all but the last, whose spells the player chooses; the rest
+    of the time just passes.
+  - **Alter**: Order moves the selected member up or down the party, round
+    from one end to the other as the kit's does; Drop takes it out of the
+    party, asked first, never the last member.
+  - **Fix** (`camp.c`, `fix_menu`): the party rests while each member who
+    can act casts the healing and curing spells it has memorized (Cure
+    Light, Serious and Critical Wounds and Heal on the most wounded, Raise
+    Dead, Resurrection, Neutralize Poison, Cure Blindness, Cure Disease,
+    Remove Curse and Stone to Flesh on one they would help), as long as
+    they help anyone. The rest lasts the longest caster's casting, a quarter
+    hour a spell level (the kit's `heal_clock`), worked out before it.
+- A rest passes in five-minute steps, as the kit's `camp_rest` does, each a
+  chance for the rest encounter of the zone the party stands in: the area header's four bytes a zone from +2Eh, the
   minutes between rolls (a word), the event, and the chance in 100 every
   that many minutes (80h and up, the event's own test at every step). A
   broken rest gives nothing: the time rested passes, "The party's repose is
@@ -631,13 +649,21 @@ map (`ua_session.cpp`; the reconstruction's `rest.c` and `camp.c`).
   divided by zero in the kit; it never rolls (ORIGINAL-RULES.md, Bugs).
 - **The overhead map** shows a dungeon whose header allows it (bit 0 of
   +7), as the DAX games' map does: a wall where a picture stops a step or
-  hides a secret door, a door where one opens, and the squares the party
-  has stood on; its first 16 by 16 squares.
+  hides a secret door, a door where one opens or a false door stands (as
+  the kit's map draws it, `view3d.c`, `map_wall`), and the squares the
+  party has stood on. An area larger than 16 by 16 squares shows a window
+  of 16 by 16 that keeps the party in its middle and stays within the area,
+  as the kit's map scrolls (`map_scroll`); the squares stood on are kept
+  for the whole area, and saved (the session's state `UA-STATE 2`; a state
+  saved before reads as its first 16 by 16).
 
 `opengold_ua_session_tests` rests in the hall (healed, the rules' time
-passed) and in the cellar, whose rats break the rest at its first hour, and
-reads the hall's map; `opengold_godot_startup_menu_ua` sees the hall's map
-and rests there from the Camp button.
+passed) and in the cellar, whose rats break the rest at its first hour,
+rests a day and five hours set on the rest menu, moves and drops a member,
+has a cleric fix a wounded fighter, and reads the hall's map and a
+24-by-24 cave's window around the party;
+`opengold_godot_startup_menu_ua` sees the hall's map and rests there from
+the Camp button's menu.
 
 ### Overland areas
 
@@ -739,7 +765,7 @@ the kit's `SavGamA..J.csv`:
   loading picks the design's monsters before the party; and the session's
   own state (`ua::UaSession::saved_state`, `ua_save.cpp`): the area, the
   party's square and facing, the square a step back returns to, the quest
-  flags, every area's events done, the squares seen, the step
+  flags, every area's events done, the squares stood on, the step
   events' counts, Search mode, the clock
   while no party plays, the session's dice, the tithe given, the vault, the
   tavern's next tale and drink, and the tavern tales heard on this square.

@@ -528,7 +528,7 @@ func check_secret(menu: Window) -> void:
 	quit(0)
 
 # Unlimited Adventures from the menu: the kit's folder found, its design asked
-# (a folder that is not a design refused), no title, no default party, the
+# (a folder that is not a design refused), no title, its default party offered, the
 # original rules only, then a fighter made under the kit's rules plays the
 # design's start: its welcome, the 3D view drawn, and a step.
 func check_ua() -> void:
@@ -553,7 +553,7 @@ func check_ua() -> void:
 	require(not dialog.visible, "The test design is taken")
 	var game_menu: Window = current_scene.get_node("GameMenu")
 	require(game_menu.visible and game_menu.title == "Unlimited Adventures", "Unlimited Adventures' menu follows, with no title")
-	require(game_menu.get_node("Buttons/DefaultParty").disabled, "A design has no default party yet")
+	require(not game_menu.get_node("Buttons/DefaultParty").disabled, "A design offers its default party")
 	require(game_menu.get_node("Buttons/Load").disabled, "Load game waits for a save of the design")
 	game_menu.get_node("Buttons/NewParty").pressed.emit()
 	await settle()
@@ -583,15 +583,14 @@ func check_ua() -> void:
 	require(not town.get_node("%Continue").visible, "The welcome's words end")
 	require(town.tour_visuals().has("cells") and (town.tour_visuals()["cells"] as Array)[2 * 16 + 2] != -1,
 		"The hall's overhead map shows where the party stands")
-	# Camp: the Rest dialog rests the party in the hall, where nothing waits.
+	# Camp: the kit's camp menu rests the party in the hall, where nothing
+	# waits, for the day its rest menu offers.
 	await press("CampaignTown/%Camp")
-	var rest: Window = town.get_node("RestDialog")
-	require(rest.visible, "Camp opens the Rest dialog for a design")
-	var kind: OptionButton = rest.find_child("Kind", true, false)
-	kind.select(1)
-	kind.item_selected.emit(1)
-	rest.find_child("Start", true, false).pressed.emit()
-	await settle()
+	require(not town.get_node("RestDialog").visible, "A design camps with the kit's own menu")
+	var camp_choices: ItemList = town.get_node("%Choices")
+	require(camp_choices.visible and camp_choices.item_count == 4 and camp_choices.get_item_text(0) == "Rest",
+		"Camp opens the kit's camp menu")
+	await answer_town(town, "Rest")
 	var rested: String = town.find_child("Dialogue", true, false).get_parsed_text()
 	require(rested.contains("The party rests."), "The party rests in the hall: " + rested)
 	require(town.get_node("%Coordinates").text.begins_with("Party (2, 2)"), "The party stands on the design's start")

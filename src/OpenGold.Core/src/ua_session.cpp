@@ -28,9 +28,11 @@ constexpr std::size_t header_outdoor_set = 0xD, header_zone_sets = 0x108;
 constexpr rules::EntityId first_monster_id = 1000;
 
 // The overhead map of a dungeon whose header allows it (bit 0 of +7), as
-// the kit's map shows it: a wall where a picture stops a step or hides a
-// secret door, a door where one opens; its first 16 by 16 squares.
-[[nodiscard]] std::optional<por::GeoMap> overhead_map(const DesignArea &area)
+// the kit's map shows it (view3d.c, map_wall): a wall where a picture stops
+// a step or hides a secret door, a door where one opens or looks as if it
+// would (a false door); the 16 by 16 squares from (left, top).
+[[nodiscard]] std::optional<por::GeoMap> overhead_map(const DesignArea &area, unsigned left,
+                                                      unsigned top)
 {
     constexpr std::size_t header_flags = 7;
     if (area.overland() || (area.area.header[header_flags] & 1) == 0)
@@ -38,13 +40,14 @@ constexpr rules::EntityId first_monster_id = 1000;
         return std::nullopt;
     }
     por::GeoMap map;
-    const unsigned columns = std::min<unsigned>(area.area.columns, por::GeoMap::width);
-    const unsigned rows = std::min<unsigned>(area.area.rows, por::GeoMap::height);
+    const unsigned columns = std::min<unsigned>(area.area.columns - left, por::GeoMap::width);
+    const unsigned rows = std::min<unsigned>(area.area.rows - top, por::GeoMap::height);
     for (unsigned y = 0; y < rows; ++y)
     {
         for (unsigned x = 0; x < columns; ++x)
         {
-            const auto &square = area.area.squares[std::size_t{y} * area.area.columns + x];
+            const auto &square =
+                area.area.squares[std::size_t{top + y} * area.area.columns + left + x];
             auto &cell = map.cells[std::size_t{y} * por::GeoMap::width + x];
             for (std::size_t side = 0; side < 4; ++side)
             {
@@ -54,8 +57,7 @@ constexpr rules::EntityId first_monster_id = 1000;
                     continue;
                 }
                 const auto kind = wall_kind(wall);
-                const bool hidden = kind == WallKind::blocked || kind == WallKind::false_door ||
-                                    kind == WallKind::open_secret ||
+                const bool hidden = kind == WallKind::blocked || kind == WallKind::open_secret ||
                                     kind == WallKind::locked_secret ||
                                     kind == WallKind::locked_wizard_secret;
                 (hidden ? cell.walls : cell.doors)[side] = 1;
@@ -63,6 +65,18 @@ constexpr rules::EntityId first_monster_id = 1000;
         }
     }
     return map;
+}
+
+// Where a 16-square window over an axis of `extent` squares starts to keep
+// `at` in its middle (view3d.c, map_scroll centering the party).
+[[nodiscard]] unsigned map_window_start(unsigned at, unsigned extent)
+{
+    constexpr unsigned size = 16;
+    if (extent <= size)
+    {
+        return 0;
+    }
+    return std::min(at > size / 2 ? at - size / 2 : 0U, extent - size);
 }
 
 // An item's name in the kit's words, last first, and the name it shows
@@ -527,7 +541,9 @@ void UaSession::load_area(unsigned number)
     overland_art_ = area_.overland() ? std::optional{load_overland_art(files_, area_.area, number)}
                                      : std::nullopt;
     snapshot_.overland = area_.overland();
-    area_map_ = overhead_map(area_);
+    stood_on_.assign(std::size_t{area_.area.rows} * area_.area.columns, false);
+    map_left_ = map_top_ = 0;
+    area_map_ = overhead_map(area_, 0, 0);
     step_counts_ = {};
     snapshot_.area_id = number;
     snapshot_.visited.reset();
@@ -596,11 +612,34 @@ void UaSession::move_party(unsigned x, unsigned y, MapDirection facing)
 {
     snapshot_.pose = {x, y, facing};
     // The overhead map shows the squares the party has stood on.
-    if (x < 16 && y < 16)
+    stood_on_[std::size_t{y} * area_.area.columns + x] = true;
+    refresh_map_window();
+}
+
+// The overhead map's window follows the party over an area larger than 16
+// by 16 squares; the snapshot marks the squares stood on within it.
+void UaSession::refresh_map_window()
+{
+    const auto left = map_window_start(snapshot_.pose.x, area_.area.columns),
+               top = map_window_start(snapshot_.pose.y, area_.area.rows);
+    if (area_map_ && (left != map_left_ || top != map_top_))
     {
-        snapshot_.visited.set(y * 16 + x);
-        snapshot_.seen.set(y * 16 + x);
+        area_map_ = overhead_map(area_, left, top);
     }
+    map_left_ = left;
+    map_top_ = top;
+    snapshot_.visited.reset();
+    for (unsigned y = 0; y < 16 && top + y < area_.area.rows; ++y)
+    {
+        for (unsigned x = 0; x < 16 && left + x < area_.area.columns; ++x)
+        {
+            if (stood_on_[std::size_t{top + y} * area_.area.columns + left + x])
+            {
+                snapshot_.visited.set(y * 16 + x);
+            }
+        }
+    }
+    snapshot_.seen = snapshot_.visited;
 }
 
 void UaSession::step_back()
@@ -1495,35 +1534,7 @@ bool UaSession::camp(RestKind kind)
             .duration_minutes;
     snapshot_.dialogue.clear();
     snapshot_.host_dialogue.clear();
-    rest_ticks_ = 0;
-    for (unsigned rested = 5; rested <= minutes; rested += 5)
-    {
-        const auto event = rest_encounter();
-        if (!event)
-        {
-            continue;
-        }
-        // The rest stops there and grants nothing; the encounter's event runs.
-        advance_minutes(rested);
-        say_kit({"The party's repose is interrupted!", {}});
-        wait_for_return(
-            [this, n = *event]
-            {
-                run_events(n);
-                refresh_snapshot();
-            });
-        refresh_snapshot();
-        return true;
-    }
-    if (party_->rest(kind))
-    {
-        say_kit({"The party rests.", {}});
-    }
-    else
-    {
-        say_kit({"Rest denied: no active member is eligible.", {}});
-    }
-    refresh_snapshot();
+    (void)rest_for(minutes);
     return true;
 }
 

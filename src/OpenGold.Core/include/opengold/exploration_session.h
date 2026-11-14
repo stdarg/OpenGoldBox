@@ -46,6 +46,25 @@ class ExplorationSession
     virtual bool camp(RestKind kind) = 0;
     // The player left the camp without resting.
     virtual void decline_camp() = 0;
+
+    // Where the overhead map's 16 by 16 squares start in the area: an
+    // adventure with larger areas shows the window around the party.
+    struct MapOrigin
+    {
+        unsigned x{}, y{};
+    };
+
+    [[nodiscard]] virtual MapOrigin map_origin() const
+    {
+        return {};
+    }
+
+    // An adventure with a camp menu of its own (a design's) opens it through
+    // the snapshot's choices; false where the game's Rest dialog serves.
+    virtual bool camp_menu()
+    {
+        return false;
+    }
     // Nothing waits for the player: the party may camp, save or leave.
     [[nodiscard]] virtual bool can_leave() const = 0;
     // The player may change the selected member now.
@@ -59,9 +78,9 @@ class ExplorationSession
     virtual bool resolve_combat(const rules::Snapshot &outcome) = 0;
     virtual bool reject_combat(std::string diagnostic) = 0;
 
-    // What the view's window shows: a picture an event shows, or the 3D view
-    // where the party stands. Nullopt where there is nothing to draw yet (a
-    // design's overland areas).
+    // What the view's window shows: a picture an event shows, the 3D view
+    // where the party stands, or a design's overland picture. Nullopt where
+    // there is nothing to draw.
     [[nodiscard]] virtual std::optional<Image> view_picture() = 0;
     // The adventure's own name for the party's area (a design's area name);
     // empty when the view names it, as it does a DAX game's areas.
