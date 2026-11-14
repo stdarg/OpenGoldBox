@@ -564,8 +564,7 @@ new decoders.
    host reads and writes the current character's record byte for byte, hands
    out TREASURE from `ITEM0`'s definitions, opens the stores its `GAME.EXE`
    lists, and answers FIND NPC, SPELL and its DAMAGE forms; its sprites and
-   combat icons are drawn in their own colors (darkness.md, The walk). Still
-   to come: the startup menu. A fight that ends
+   combat icons are drawn in their own colors (darkness.md, The walk). A fight that ends
    without a result fails any game's walk (2026-11-14).
 5. The route from the opening to the win (`opengold_darkness_route`). *Begun
    (2026-11-14):* the route plays the prologue: Rolf's tour, Sasha's escort
@@ -597,6 +596,15 @@ new decoders.
    the party's marker, as the original draws it. Still to come: spell levels 8 and 9
    and the new spells, starting equipment, skies, combat ground tiles, sound
    and music.
+6. *From the startup menu (2026-11-14):* the menu offers *Pools of
+   Darkness*, asks for its folder (`DARKNESS`) and the rules, and plays the
+   opening film (`INTRO`, with its song `P1.SMS`) as `CONTROL.EXE` does, a
+   key ending it after its title card; then its three title pictures as its
+   Intro shows them (5, 5 and 20 seconds; a key on the first or second goes
+   on to the third, a key on the third ends the title) with its title music
+   from the first. The party screen's party meets Rolf on New Phlan's docks
+   and is walked out (`opengold_godot_startup_menu_darkness`). The closing
+   film after the win is still to come (darkness.md, In OpenGoldBox).
 
 *Treasures of the Savage Frontier* ([treasure.md](games/treasure.md)) runs on
 the engine of *Pools of Darkness*, and OpenGoldBox plays both with one code
@@ -619,10 +627,16 @@ pictures, walls and script host, *Treasures* adding only what it changes.
    (script 51, maps 51 to 57, drawn from above from `OVER`'s pictures), with
    six fighters made under *Treasures*' rules, and runs each event and fight
    (treasure.md, The walk). Still to come: the music and sounds, the
-   romances and luck readings (PROGRAM 3), the startup menu and the route.
+   romances and luck readings (PROGRAM 3) and the route.
    The win is in place: the event in which Freezefire dies (script 38 sets
    cell 25Ch to 1) ends as a win (`game_won`), the original having no ending
    of its own (treasure.md, The ending).
+5. *From the startup menu (2026-11-14):* the menu offers *Treasures*, asks
+   for its folder (`TREASURE`) and the rules, and shows its title pictures
+   as its Intro does: 1 to 3 for 25 seconds, the VGA's 4 and the credits (6)
+   for 50, a key passing one, with its title music from the first. The party
+   screen's party plays the opening on to the dwarves' fortress
+   (`opengold_godot_startup_menu_treasure`).
 
 ### 8. *Unlimited Adventures*
 

@@ -217,6 +217,17 @@ colors. `tests/vace_film_tests.cpp` checks the frame counts, pixels and colors
 of chosen frames, that INTRO's third frame changes exactly one pixel of the
 second, the frames' times, and that broken files are refused.
 
+### In OpenGoldBox
+
+Choosing *Pools of Darkness* at the startup menu plays INTRO as `CONTROL.EXE`
+does before the game (since 2026-11-14): each frame for its time with sound
+on, `P1.SMS`'s song 0 from the first, the title card deaf to keys and a key
+ending the film after it (commands 13 and 14, which the decoder reports for
+each frame). Then come the game's own title pictures as its Intro shows them:
+`TITLE` 1 and 2 for 5 seconds each, a key on either going on to 3, the title
+menu's backdrop, which stays 20 seconds; `MUSIC.DAX`'s piece 1 plays from
+picture 1 (`load_title_screens`). FINAL is still to come after the win.
+
 ## Scripts, creatures and items
 
 Since 2026-11-13 the scripts (`ECL1`, 56), creatures (`MON1CHA`, 122), their
@@ -373,8 +384,7 @@ experience nor treasure, as the original's CombatDoneCleanup marks it.
 
 Still to come: the evening and other skies; the combat ground tiles
 (`DUNGCOM`, `WILDCOM`); sound effects other than the footstep, and the music
-PLAY SOUND starts; the opening and closing films in the game; the startup
-menu's button.
+PLAY SOUND starts; the closing film after the win.
 
 ## The area map
 
