@@ -448,7 +448,7 @@ msgstr "A new class: its level-one features and part of its training."
 msgid "A pack of spirit animals appears."
 msgstr "A pack of spirit animals appears."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:7037
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:7040
 msgid "A party member has no original-rules profile: "
 msgstr "A party member has no original-rules profile: "
 
@@ -2070,7 +2070,7 @@ msgstr "Cast a spell or use a feature outside combat."
 msgid "Cast spell"
 msgstr "Cast spell"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2003 src/OpenGold.Rules.Original/src/rules_module.cpp:2016 src/OpenGoldBox/combat_view.cpp:102
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2023 src/OpenGold.Rules.Original/src/rules_module.cpp:2036 src/OpenGoldBox/combat_view.cpp:102
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Cast {spell}"
 msgstr "Cast {spell}"
@@ -3164,7 +3164,7 @@ msgstr "Cure Wounds (Magic Initiate)"
 msgid "Cure Wounds (level 2 slot)"
 msgstr "Cure Wounds (level 2 slot)"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1995
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2015
 msgid "Cure disease"
 msgstr "Cure disease"
 
@@ -5930,7 +5930,7 @@ msgstr "Invalid Weapon Mastery choices or provenance"
 msgid "Invalid advancement training choice"
 msgstr "Invalid advancement training choice"
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:425 src/OpenGold.Rules.Original/src/combat_session.cpp:445 src/OpenGold.Rules.Original/src/combat_session.cpp:6772 src/OpenGold.Rules.Original/src/combat_session.cpp:6782 src/OpenGold.Rules.Original/src/combat_session.cpp:6800 src/OpenGold.Rules.Original/src/combat_session.cpp:6811 src/OpenGold.Rules.Original/src/combat_session.cpp:6823 src/OpenGold.Rules.Original/src/combat_session.cpp:6837 src/OpenGold.Rules.Original/src/combat_session.cpp:6846 src/OpenGold.Rules.Original/src/combat_session.cpp:6851 src/OpenGold.Rules.Original/src/combat_session.cpp:6866 src/OpenGold.Rules.Original/src/combat_session.cpp:6900 src/OpenGold.Rules.Original/src/combat_session.cpp:6907 src/OpenGold.Rules.Original/src/combat_session.cpp:6917 src/OpenGold.Rules.Original/src/combat_session.cpp:6927 src/OpenGold.Rules.Original/src/combat_session.cpp:6954
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:425 src/OpenGold.Rules.Original/src/combat_session.cpp:445 src/OpenGold.Rules.Original/src/combat_session.cpp:6775 src/OpenGold.Rules.Original/src/combat_session.cpp:6785 src/OpenGold.Rules.Original/src/combat_session.cpp:6803 src/OpenGold.Rules.Original/src/combat_session.cpp:6814 src/OpenGold.Rules.Original/src/combat_session.cpp:6826 src/OpenGold.Rules.Original/src/combat_session.cpp:6840 src/OpenGold.Rules.Original/src/combat_session.cpp:6849 src/OpenGold.Rules.Original/src/combat_session.cpp:6854 src/OpenGold.Rules.Original/src/combat_session.cpp:6869 src/OpenGold.Rules.Original/src/combat_session.cpp:6903 src/OpenGold.Rules.Original/src/combat_session.cpp:6910 src/OpenGold.Rules.Original/src/combat_session.cpp:6920 src/OpenGold.Rules.Original/src/combat_session.cpp:6930 src/OpenGold.Rules.Original/src/combat_session.cpp:6957
 msgid "Invalid original-rules combat checkpoint"
 msgstr "Invalid original-rules combat checkpoint"
 
@@ -6214,7 +6214,7 @@ msgstr "Lay On Hands: cure Poisoned"
 msgid "Lay On Hands: cure Poisoned (5)"
 msgstr "Lay On Hands: cure Poisoned (5)"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1991
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2011
 msgid "Lay on hands"
 msgstr "Lay on hands"
 
@@ -7585,7 +7585,7 @@ msgstr "No one else can get away. Your party fights on."
 msgid "No one in the party needs {spell}."
 msgstr "No one in the party needs {spell}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:7067 src/OpenGold.Rules.Original/src/rules_module.cpp:610
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:7070 src/OpenGold.Rules.Original/src/rules_module.cpp:610
 msgid "No original-rules record for "
 msgstr "No original-rules record for "
 
@@ -8742,7 +8742,7 @@ msgstr "Raise Dead can bring it back within ten days of its death."
 msgid "Raise Dead cannot bring back {name}, who has been dead too long or is dust."
 msgstr "Raise Dead cannot bring back {name}, who has been dead too long or is dust."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2099
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2119
 msgid "Raise Dead cannot bring this member back"
 msgstr "Raise Dead cannot bring this member back"
 
@@ -11138,11 +11138,11 @@ msgstr "Temporary HP:"
 msgid "Teshwave Ruins"
 msgstr "Teshwave Ruins"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2034
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2054
 msgid "That cannot be done now"
 msgstr "That cannot be done now"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2217
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2237
 msgid "That cannot be used now"
 msgstr "That cannot be used now"
 
@@ -11154,7 +11154,7 @@ msgstr "That is not a Manual of Bodily Health"
 msgid "That potion works only in combat"
 msgstr "That potion works only in combat"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2079 src/OpenGold.Rules.Original/src/rules_module.cpp:2091 src/OpenGold.Rules.Original/src/rules_module.cpp:2246 src/OpenGold.Rules.Original/src/rules_module.cpp:2318
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2099 src/OpenGold.Rules.Original/src/rules_module.cpp:2111 src/OpenGold.Rules.Original/src/rules_module.cpp:2266 src/OpenGold.Rules.Original/src/rules_module.cpp:2338
 msgid "That spell cannot be cast now"
 msgstr "That spell cannot be cast now"
 
@@ -11343,7 +11343,7 @@ msgstr "The cloud drifts."
 msgid "The creature that hit it this turn attacks it with Disadvantage."
 msgstr "The creature that hit it this turn attacks it with Disadvantage."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2105
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2125
 msgid "The dead cannot be healed"
 msgstr "The dead cannot be healed"
 
@@ -11536,7 +11536,7 @@ msgstr "The sunlight ends the magical Darkness."
 msgid "The sword will not stay in {name}'s hand and burns for {damage} Force damage."
 msgstr "The sword will not stay in {name}'s hand and burns for {damage} Force damage."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1843
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1857
 msgid "The temple cannot help with that"
 msgstr "The temple cannot help with that"
 
@@ -13806,7 +13806,7 @@ msgstr "{name} Wisdom save: d20 {roll} + {bonus} (Aura of Protection +{aura}) vs
 msgid "{name} Wisdom save: d20 {roll} + {bonus} vs DC {dc} ({result})."
 msgstr "{name} Wisdom save: d20 {roll} + {bonus} vs DC {dc} ({result})."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:5188 src/OpenGold.Rules.Original/src/combat_session.cpp:6617
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:5188 src/OpenGold.Rules.Original/src/combat_session.cpp:6620
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} aborts the spell."
 msgstr "{name} aborts the spell."
@@ -14421,7 +14421,7 @@ msgstr "{name} grows drowsy."
 msgid "{name} grows."
 msgstr "{name} grows."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4142 src/OpenGold.Rules.Original/src/combat_session.cpp:6644
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4142 src/OpenGold.Rules.Original/src/combat_session.cpp:6647
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} guards."
 msgstr "{name} guards."
@@ -14576,7 +14576,7 @@ msgstr "{name} is at the highest level."
 msgid "{name} is bandaged and stable."
 msgstr "{name} is bandaged and stable."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:6662
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:6665
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is bandaged."
 msgstr "{name} is bandaged."
@@ -16161,7 +16161,7 @@ msgstr "{name} uses Uncanny Metabolism."
 msgid "{name} uses Wholeness of Body."
 msgstr "{name} uses Wholeness of Body."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4997 src/OpenGold.Rules.Original/src/combat_session.cpp:6583
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4997 src/OpenGold.Rules.Original/src/combat_session.cpp:6586
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} uses an item."
 msgstr "{name} uses an item."
