@@ -985,6 +985,9 @@ class RolfTourSession
     // Puts the party on a Teleport's spot on its map.
     void arrive(const TeleportArrival &arrival);
     void enable_party_commands();
+    // The encounter commands the host answers (SETUP MONSTER, LOAD MONSTER,
+    // COMBAT and the rest), for a new machine or one a save restores.
+    void enable_encounter_commands();
     // Another script takes over at `arrival`, and its entry runs.
     void enter_script(unsigned script, const TeleportArrival &arrival);
     // The script's shop request the party is shopping for; 0 at a shop

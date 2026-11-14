@@ -805,15 +805,7 @@ void RolfTourSession::reset_run()
         machine_.bind_variable(game_cell(EclAddress{address}), 0);
     }
     machine_.bind_variable(game_cell(ecl_clock_hour), 12); // Research fixture: midday.
-    for (const std::uint8_t opcode : std::initializer_list<std::uint8_t>{12, 13, 14, 45, 49, 58})
-    {
-        // Pools of Darkness's 31h is ACTION MENU, which the machine runs.
-        if (opcode == 49 && vga_engine(game()))
-        {
-            continue;
-        }
-        machine_.enable_host(opcode);
-    }
+    enable_encounter_commands();
     if (town_)
     {
         configure_town();
@@ -826,6 +818,19 @@ void RolfTourSession::reset_run()
     if (!machine_.start_at_for_inspection(entry_))
     {
         fail("Invalid isolated tour entry");
+    }
+}
+
+void RolfTourSession::enable_encounter_commands()
+{
+    for (const std::uint8_t opcode : std::initializer_list<std::uint8_t>{12, 13, 14, 45, 49, 58})
+    {
+        // Pools of Darkness's 31h is ACTION MENU, which the machine runs.
+        if (opcode == 49 && vga_engine(game()))
+        {
+            continue;
+        }
+        machine_.enable_host(opcode);
     }
 }
 

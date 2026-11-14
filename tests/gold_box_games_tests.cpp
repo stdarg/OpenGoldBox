@@ -511,6 +511,9 @@ struct RouteBeat
     // The map's monsters break every camp (Pools of Darkness's Temple of Tyr
     // until it is freed): a passing party walks on hurt instead of resting.
     bool camp_broken = false;
+    // Play the beat again (up to 40 times) until this cell holds these bits:
+    // the Fire Giant Cave's endless corridor until its spell is broken.
+    std::optional<std::pair<std::uint16_t, std::uint16_t>> repeat_until_bits;
 };
 
 // Answers that train each of the route's members a level at a hall: its
@@ -2543,6 +2546,84 @@ const std::vector<RouteBeat> &darkness_route()
         // Cave (script 32).
         walk_passages(route, 21, {{13, 1, D::north}, {13, 0, D::east}, {14, 0, D::east}});
         route.push_back(step_beat(21, 15, 0, D::north, {"YES"}));
+        // In the Fire Giant Cave (map 32) Ungleow, the fire giant mage, meets
+        // the party with a bribe (5,12), which it leaves, and it goes on to
+        // her endless corridor along the south wall.
+        walk_passages(route, 32,
+                      {{3, 15, D::north},
+                       {3, 14, D::north},
+                       {3, 13, D::north},
+                       {3, 12, D::north},
+                       {3, 11, D::east},
+                       {4, 11, D::east},
+                       {5, 11, D::south},
+                       {5, 12, D::south},
+                       {5, 13, D::west},
+                       {4, 13, D::south},
+                       {4, 14, D::south},
+                       {4, 15, D::east},
+                       {5, 15, D::east},
+                       {6, 15, D::east},
+                       {7, 15, D::east},
+                       {8, 15, D::east},
+                       {9, 15, D::east},
+                       {10, 15, D::east}});
+        // Each step east from its end (11,15) takes the party back to (9,15)
+        // and counts (cell 9Eh); at twelve a crushed skull lies there, and the
+        // party sits down to collect its thoughts, picks up the ring in it and
+        // throws it down the corridor, which breaks the spell (cell 132h bit 0).
+        auto corridor = step_beat(32, 11, 15, D::east, {"YES", "YES", "THROW IT AWAY"});
+        corridor.passing = true;
+        corridor.repeat_in_place = true;
+        corridor.repeat_until_bits = std::pair<std::uint16_t, std::uint16_t>{0x132, 1};
+        route.push_back(corridor);
+        // Out of the corridor's east end and round by the fire giants who
+        // block the way (13,12), north through the room that teleports the
+        // party (7,6) and over the rotating floor (12,7), past the mage's
+        // guards (10,4) and the assassin who would treat on her behalf (2,3),
+        // to Ungleow's room (2,5).
+        walk_passages(
+            route, 32,
+            {{11, 15, D::east},  {12, 15, D::east},  {13, 15, D::east},  {14, 15, D::east},
+             {15, 15, D::north}, {15, 14, D::north}, {15, 13, D::north}, {15, 12, D::west},
+             {14, 12, D::west},  {13, 12, D::west},  {12, 12, D::west},  {11, 12, D::north},
+             {11, 11, D::west},  {10, 11, D::west},  {9, 11, D::west},   {8, 11, D::west},
+             {7, 11, D::north},  {7, 10, D::west},   {6, 10, D::north},  {6, 9, D::north},
+             {6, 8, D::north},   {6, 7, D::north},   {6, 6, D::east},    {7, 6, D::south},
+             {11, 6, D::north},  {11, 5, D::east},   {12, 5, D::south},  {12, 6, D::south},
+             {12, 7, D::east},   {13, 7, D::east},   {14, 7, D::east},   {15, 7, D::north},
+             {15, 6, D::north},  {15, 5, D::north},  {15, 4, D::west},   {14, 4, D::west},
+             {13, 4, D::west},   {12, 4, D::west},   {11, 4, D::west},   {10, 4, D::south},
+             {10, 5, D::west},   {9, 5, D::west},    {8, 5, D::west},    {7, 5, D::west},
+             {6, 5, D::north},   {6, 4, D::north},   {6, 3, D::east},    {7, 3, D::east},
+             {8, 3, D::east},    {9, 3, D::east},    {10, 3, D::east},   {11, 3, D::east},
+             {12, 3, D::east},   {13, 3, D::east},   {14, 3, D::east},   {15, 3, D::north},
+             {15, 2, D::north},  {15, 1, D::north},  {15, 0, D::west},   {14, 0, D::west},
+             {13, 0, D::west},   {12, 0, D::west},   {11, 0, D::west},   {10, 0, D::west},
+             {9, 0, D::west},    {8, 0, D::west},    {7, 0, D::west},    {6, 0, D::west},
+             {5, 0, D::west},    {4, 0, D::south},   {4, 1, D::west},    {3, 1, D::west},
+             {2, 1, D::south},   {2, 2, D::south},   {2, 3, D::south}});
+        // Ungleow pulls away from her giants and asks the party to sit down:
+        // it attacks, and beats her and her guards (cell 134h bit 0).
+        auto ungleow = step_beat(32, 2, 4, D::south, {"ATTACK"});
+        ungleow.rest_first = true;
+        route.push_back(ungleow);
+        // Through her room and north up the passage to the dragons guarding
+        // the way to the Aerie (0,2): the red, black and green dragons are
+        // beaten (cell 133h bit 1), rested for first.
+        walk_passages(route, 32,
+                      {{2, 5, D::west}, {1, 5, D::west}, {0, 5, D::north}, {0, 4, D::north}});
+        auto cave_dragons = step_beat(32, 0, 3, D::north);
+        cave_dragons.rest_first = true;
+        cave_dragons.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x133, 3};
+        route.push_back(cave_dragons);
+        // West from (0,1) the party sees the dragons flying off to the north-
+        // west and follows them; the tunnel seals behind it, and it comes out
+        // on the area map below the Dragons' Aerie (7,1).
+        walk_passages(route, 32, {{0, 2, D::north}});
+        auto follow_dragons = step_beat(32, 0, 1, D::west, {"YES"});
+        follow_dragons.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x25, 7};
+        route.push_back(follow_dragons);
         return route;
     }();
     return beats;
@@ -4888,8 +4969,11 @@ bool walk_census(GoldBoxGame game, bool route)
                         }
                     }
                     const auto &until = beat.repeat_until_at_least;
-                    if (!until || cell(until->first) >= until->second ||
-                        session.snapshot().phase == TourPhase::defeated)
+                    const auto &bits = beat.repeat_until_bits;
+                    const bool repeating =
+                        (until && cell(until->first) < until->second) ||
+                        (bits && (cell(bits->first) & bits->second) != bits->second);
+                    if (!repeating || session.snapshot().phase == TourPhase::defeated)
                     {
                         break;
                     }

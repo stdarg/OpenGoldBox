@@ -475,8 +475,9 @@ template <bool Reading> struct SaveCodec
                 por::CharacterAppearance appearance;
                 int level{};
                 fields(draft, appearance, level);
-                // The rules module bounds each class's level; this bounds the format.
-                require(level >= 1 && level <= 20, "Unsupported saved character level");
+                // The rules module bounds each class's level; this bounds the format:
+                // Pools of Darkness's tables run to level 40.
+                require(level >= 1 && level <= 40, "Unsupported saved character level");
                 std::vector<rules::AdvancementChoice> history;
                 std::vector<SpellChoiceEdit> edits;
                 std::vector<TrainingChoiceEdit> training;
@@ -796,11 +797,7 @@ template <bool Reading> struct SaveCodec
                         v.rest_checks_ <= std::numeric_limits<std::uint16_t>::max(),
                     "Unsupported saved town context");
             v.machine_ = por::EclMachine(v.town_->programs.at(v.current_script_));
-            for (const std::uint8_t op :
-                 std::initializer_list<std::uint8_t>{12, 13, 14, 45, 49, 58})
-            {
-                v.machine_.enable_host(op);
-            }
+            v.enable_encounter_commands();
             v.configure_town();
         }
         machine(v.machine_);
