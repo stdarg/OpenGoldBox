@@ -320,9 +320,10 @@ std::optional<std::vector<std::string>> decode_item_words(std::span<const std::u
 std::optional<std::vector<std::string>> decode_item_words(std::span<const std::uint8_t> image,
                                                           GoldBoxGame game)
 {
-    const std::size_t count = game == GoldBoxGame::secret_of_the_silver_blades ? 123
-                              : game == GoldBoxGame::pools_of_darkness         ? 125
-                                                                               : 255;
+    const std::size_t count = game == GoldBoxGame::secret_of_the_silver_blades        ? 123
+                              : game == GoldBoxGame::pools_of_darkness                ? 125
+                              : game == GoldBoxGame::treasures_of_the_savage_frontier ? 181
+                                                                                      : 255;
     const auto table = find_string_table(image, "Battle Axe", "Hand Axe");
 
     if (!table)

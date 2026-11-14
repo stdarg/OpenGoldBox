@@ -5,7 +5,6 @@
 #include "opengold/ecl_machine.h"
 #include "opengold/map_catalog.h"
 #include "opengold/por_sound.h"
-#include "opengold/treasures_texts.h"
 #include "opengold/vga_picture.h"
 
 #include <algorithm>
@@ -341,23 +340,6 @@ std::vector<std::vector<std::uint8_t>> treasures_stores(std::span<const std::uin
     return stores.size() == store_count ? stores : std::vector<std::vector<std::uint8_t>>{};
 }
 
-// Treasures' item words: BORD.DAX record 10, numbered from 1 as the other
-// games' are.
-std::vector<std::string> treasures_item_words(const std::filesystem::path &folder)
-{
-    constexpr std::uint8_t word_record = 10;
-    constexpr std::size_t word_letters = 20;
-    const auto record = decode_dax_record(
-        por::detail::read_archive(por::detail::resolve_archive(folder, "BORD.DAX")), word_record);
-    auto words = record ? treasures::decode_name_table(*record, word_letters) : std::nullopt;
-    if (!words)
-    {
-        throw EclError("BORD.DAX has no item words");
-    }
-    words->insert(words->begin(), std::string{});
-    return std::move(*words);
-}
-
 // Treasures' overland (docs/games/treasure.md, The overland): each map's
 // picture (OVER 51 to 57) in the colors of each record that only sets colors
 // (1 to 4), which the cell 42h picks, and the party's arrow on it (the
@@ -454,13 +436,12 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
         throw EclError("Invalid item templates");
     }
     // The program holding the item words and the game's tables: START.EXE, or
-    // the later games' GAME.EXE; Treasures keeps its words in BORD.DAX.
+    // the later games' GAME.EXE.
     const bool treasures = game == GoldBoxGame::treasures_of_the_savage_frontier;
-    const auto program = treasures ? std::string_view("GAME.EXE") : item_words_program(game);
+    const auto program = item_words_program(game);
     const auto program_image = por::unpack_sound_executable(
         por::detail::read_archive(por::detail::resolve_archive(folder, program)));
-    auto words = treasures ? std::optional{treasures_item_words(folder)}
-                           : por::decode_item_words(program_image, game);
+    auto words = por::decode_item_words(program_image, game);
     if (!words)
     {
         throw EclError(std::string(program) + " has no item name table");

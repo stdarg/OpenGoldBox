@@ -51,7 +51,7 @@ set colors: the game loads record n + 1 for overland map n to set its colors.
 | 7 | 19 runs of frame tiles, each ended by FEh; FFh leaves a cell alone. The game draws each frame of the screen from one run, starting at a fixed place in the record |
 | 8 | The font, a picture of 64 8x8 glyphs |
 | 9 | 160 effect names, each a length byte and 37 letters |
-| 10 | 255 item words, each a length byte and 20 letters |
+| 10 | *Gateway*'s 255 item words, each a length byte and 20 letters, by which a *Gateway* character's items are renamed as they come across (its own 181 are in `GAME.EXE`) |
 
 **`LUCK`, texts.** Each record is a text ended by the end-of-file mark 1Ah:
 records 0 to 14 are the news a luck reading tells, 51 to 61 the words on lucky
@@ -160,8 +160,8 @@ combat icons, walls and backdrops in the colors each sets (`vga_picture.h`,
 `load_vga_wall_art`), and script host (`vga_host.cpp`). What *Treasures* adds
 there: LOAD WALL SETS fills three slots, each set copying its appearances into
 its slot and the ones after it, as its LoadWallSet does (Pools of Darkness
-loads one set, into the first slot); `PIC1A` continues `PIC1`; its item words
-are `BORD`'s record 10; its stores are listed differently (The walk); the
+loads one set, into the first slot); `PIC1A` continues `PIC1`; its 181 item words
+are in `GAME.EXE`; its stores are listed differently (The walk); the
 overland, FIND and TAKE NAMED ITEM, and CHECK PARTY doing nothing.
 
 ## The overland
