@@ -1578,6 +1578,40 @@ void crowded_band_leaves_monsters_out()
     }
 }
 
+// A wilderness field's trees can close in the open square nearest the arena's
+// centre, so the squares reachable from it are fewer than the fighters. The
+// original stands everyone on its formation square whatever is reachable
+// (PlaceAllCreatures), so the fight still begins with every fighter.
+void enclosed_square_does_not_stop_a_fight()
+{
+    auto party = std::make_shared<CampaignParty>(module());
+    party->add_pc(character("fighter"));
+    party->add_pc(character("cleric", "Second"));
+    CampaignEncounter encounter;
+    encounter.field.geometry = {50, 25, std::vector<Terrain>(50 * 25)};
+    encounter.field.tiles.resize(50 * 25, 7);
+    for (const Cell tree : {Cell{24, 13}, Cell{26, 13}, Cell{25, 12}, Cell{25, 14}})
+    {
+        encounter.field.geometry.terrain[tree.y * 50 + tree.x] = Terrain::obstacle;
+    }
+    encounter.distance = 2;
+    encounter.enemies = {{1000, "bandit", "First enemy", Side::opposition, {}},
+                         {1001, "bandit", "Second enemy", Side::opposition, {}}};
+    auto observed = std::make_shared<EncounterObservation>();
+    CombatDemo fight(std::make_unique<ObservedModule>(observed));
+    fight.campaign_party(party);
+    fight.encounter(encounter, 1234);
+    const auto &handed = observed->encounter;
+    check(handed.participants.size() == 4,
+          "Both members and both monsters fight beside a one-square pocket");
+    for (const auto &participant : handed.participants)
+    {
+        check(handed.battlefield.at(participant.cell) == Terrain::open &&
+                  participant.cell != Cell{25, 13},
+              "Everyone stands on an open square of the formation, not in the pocket");
+    }
+}
+
 void allied_campaign_movement()
 {
     auto party = std::make_shared<CampaignParty>(module());
@@ -3577,6 +3611,7 @@ int main()
         campaign_encounters();
         camp_ambush_encounter();
         crowded_band_leaves_monsters_out();
+        enclosed_square_does_not_stop_a_fight();
         allied_campaign_movement();
         standalone_checkpoints();
         combat_ownership();

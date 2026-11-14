@@ -578,10 +578,10 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
     {
         throw std::runtime_error("No member is left to fight for the party");
     }
-    if (cells.size() < participants.size() + 1)
-    {
-        throw std::runtime_error("Original battlefield cannot fit the complete encounter");
-    }
+    // The reachable squares are not counted against the fighters: trees can
+    // close in the open square nearest the centre, yet the original stands
+    // everyone on its formation square whatever is reachable. Only one who
+    // falls back to `cells` needs room there (stand_nearest).
     if (!encounter.positions.empty())
     {
         if (encounter.positions.size() != participants.size() + encounter.enemies.size())
