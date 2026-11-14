@@ -944,6 +944,15 @@ class Session final : public rules::CombatSession
     bool ai_step(Fighter &f, int &last_direction, int &stuck);
     bool take_ai_step(Fighter &f, int direction, int &last_direction);
     bool can_step(const Fighter &f, int direction, bool &edge) const;
+    // Whether Secret's AI balks at a step into a cloud: not at all, unless it
+    // saves against paralysis, or always.
+    enum class CloudBalk
+    {
+        none,
+        unless_saved,
+        always
+    };
+    [[nodiscard]] CloudBalk cloud_balk(const Fighter &f, const Fighter &moved) const;
 
     struct Route
     {
@@ -5313,9 +5322,33 @@ bool Session::can_step(const Fighter &f, int direction, bool &edge) const
     {
         return false;
     }
+    if (secret())
+    {
+        // A stinking cloud's save is rolled as the step is taken (ai_step).
+        return cloud_balk(f, moved) != CloudBalk::always;
+    }
     const bool breathes_freely = f.has(effect::animated) || f.has(effect::coughing) || f.has(111) ||
                                  f.has(125) || breathes_clouds_freely(f);
     return breathes_freely || !in_cloud(moved, CloudKind::stinking);
+}
+
+// Secret's AI balks at a step into a cloud (combatai.pas, AiCanStep): into a
+// cloudkill when its movement is below 7, unless proof against poison and
+// paralysis (its effect 99) or turned; into a stinking cloud unless it coughs
+// already, a globe guards it (its effects 57 and 63), it is proof or turned,
+// or it saves against paralysis.
+Session::CloudBalk Session::cloud_balk(const Fighter &f, const Fighter &moved) const
+{
+    const auto game = game_of(identity_);
+    const bool proof = f.has(canonical_effect(99, game));
+    if (in_cloud(moved, CloudKind::deadly) && f.numbers.movement < 7 && !proof && !f.turned)
+    {
+        return CloudBalk::always;
+    }
+    const bool guarded = f.has(effect::coughing) || f.has(canonical_effect(57, game)) ||
+                         f.has(canonical_effect(63, game)) || proof || f.turned;
+    return in_cloud(moved, CloudKind::stinking) && !guarded ? CloudBalk::unless_saved
+                                                            : CloudBalk::none;
 }
 
 // The first step of the shortest way, round walls and creatures, to a square
@@ -5429,7 +5462,11 @@ bool Session::ai_step(Fighter &f, int &last_direction, int &stuck)
     {
         const int direction = (base + offset) % 8;
         bool edge = false;
-        if (can_step(f, direction, edge))
+        auto moved = f;
+        moved.cell = {f.cell.x + step_x[static_cast<std::size_t>(direction)],
+                      f.cell.y + step_y[static_cast<std::size_t>(direction)]};
+        if (can_step(f, direction, edge) &&
+            (!secret() || cloud_balk(f, moved) != CloudBalk::unless_saved || saving_throw(f, 0, 0)))
         {
             chosen = direction;
             break;

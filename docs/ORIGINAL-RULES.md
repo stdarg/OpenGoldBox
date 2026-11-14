@@ -353,9 +353,14 @@ chosen by the game as *Curse*'s are. In progress (2026-11-13):
   and an elf's bows and swords 18, 19 and 22 to 26 (`WeaponAdjust`); its
   races' innate effects are its own (`chargen.pas`): a gnome has no defense
   against giants, and no race saves better against poison.
-- **Still to come:** the AI's caution near clouds; a giant-bane weapon
-  (effect 75); and the hit points LOAD MONSTER scales by difficulty (the
-  original rules have no difficulty yet, Difficulty).
+- **The AI near clouds** (2026-11-14; `AiCanStep`): it balks at a step into a
+  cloudkill when its movement is below 7, unless proof against poison and
+  paralysis (its effect 99) or turned, and at a step into a stinking cloud
+  unless it coughs already, a globe guards it (its effects 57 and 63), it is
+  proof or turned, or it saves against paralysis.
+- **Still to come:** a giant-bane weapon (effect 75); and the hit points LOAD
+  MONSTER scales by difficulty (the original rules have no difficulty yet,
+  Difficulty).
 
 ## Gateway to the Savage Frontier
 
@@ -501,7 +506,6 @@ The work asked for next (2026-11-14), in order, with what each needs:
 
 1. The other "Still to come" items above that are no one game's campaign or
    route work, in their order in this file:
-   - *Secret*'s AI caution near clouds.
    - *Secret*'s giant-bane weapon (its effect 75, `EffHolyWater`: 6d6 and
      the Strength bonus, +1 to hit, against one of target flag bit 0). It
      needs a readied item's own effect (its special byte above 0x7F, which

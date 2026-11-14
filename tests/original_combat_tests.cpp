@@ -2402,6 +2402,41 @@ void cloudkill_poisons()
     check(logged(session, "The air clears a little.") == 1, "The cloud clears");
 }
 
+// Secret's AI balks at a step into a cloudkill when its movement is below 7
+// (combatai.pas, AiCanStep, in its reconstruction): the slow monster goes
+// round the cloud or waits, never into it, while it lasts.
+void secret_ai_shuns_clouds()
+{
+    using original::ClassSlot;
+    auto slow = victim(500);
+    slow.level = 7;
+    slow.movement = 6;
+    auto fight =
+        arrange({{"Mage", rules::Side::party, {1, 3}, caster(ClassSlot::magic_user, 9, {191})},
+                 {"Slow", rules::Side::opposition, {5, 3}, slow}},
+                331, {}, 100, GoldBoxGame::secret_of_the_silver_blades);
+    auto &session = *fight.session;
+    cast_now(session, "Mage", 191,
+             [&]
+             {
+                 return aim_at_cell(session, {3, 3});
+             });
+    bool entered = false;
+    play_until(
+        session,
+        [&](const std::string &actor)
+        {
+            return order(session, actor == "Slow" ? "quick" : "guard");
+        },
+        [&]
+        {
+            const auto cell = view_of(session.snapshot(), "Slow").cell;
+            entered = entered || (cell.x >= 2 && cell.x <= 4 && cell.y >= 2 && cell.y <= 4);
+            return logged(session, "The air clears a little.") > 0 || session.snapshot().round > 8;
+        });
+    check(!entered, "A monster slower than 7 never steps into the cloudkill");
+}
+
 // Fire Shield's caster chooses its flames as it goes off: hot doubles fire,
 // cold doubles cold (Curse's SpellFireShield).
 void fire_shield_flames_are_chosen()
@@ -4141,6 +4176,7 @@ int main()
         curse_conditions_take_hold();
         a_cloud_sickens();
         cloudkill_poisons();
+        secret_ai_shuns_clouds();
         fire_shield_flames_are_chosen();
         dispel_magic_strips();
         the_dead_rise();
