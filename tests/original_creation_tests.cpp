@@ -1899,6 +1899,151 @@ void ages_change_after_creation()
                                                      : "Under the original's aging they stay");
     }
 }
+
+// A fight's command of this verb for this item, if offered.
+std::optional<rules::Command> offered_for(const rules::CombatSession &session,
+                                          std::string_view verb, std::string_view label)
+{
+    for (const auto &command : session.legal_commands())
+    {
+        if (command.verb == verb && command.label == label)
+        {
+            return command;
+        }
+    }
+    return std::nullopt;
+}
+
+// Readying mid-fight (viewchar.pas, ToggleReadyItem; charhlp.pas,
+// RecalcStats): a party member puts its sword away and readies its bow,
+// which its hands did not leave room for, and shoots; the fight keeps it
+// through a save, and the inventory keeps what it readied. A monster readies
+// the shield it carries (combatai.pas, EquipWeaponAndArmor).
+void items_are_readied_mid_fight()
+{
+    std::vector<por::ItemTemplate> types(256);
+    constexpr std::uint8_t sword = 36, bow = 41, arrows = 73, shield = 59;
+    for (const auto type : {sword, bow, arrows, shield})
+    {
+        types[type].class_restrictions = 0xFF;
+    }
+    types[sword].hands = 1;
+    types[sword].small_medium_damage = {1, 8, 0};
+    types[sword].large_damage = {1, 12, 0};
+    types[bow].hands = 2;
+    types[bow].range = 8;
+    types[bow].rate_of_fire = 2;
+    types[bow].small_medium_damage = {1, 6, 0};
+    namespace bit = por::item_property;
+    types[bow].properties = bit::fires_arrows | bit::fires_ammunition | bit::dexterity_missile;
+    types[arrows].worn_location = 10;
+    types[shield].worn_location = 1;
+    types[shield].hands = 1;
+    types[shield].protection_raw = 0x81;
+
+    por::CharacterRecord kobold;
+    kobold.name = "KOBOLD";
+    kobold.max_hit_points = 40;
+    kobold.base_thac0 = 20;
+    kobold.base_armor_class = 7;
+    kobold.base_movement = 1;
+    kobold.base_attacks[0] = {2, {1, 4, 0}};
+    kobold.item_limit = 0xFF;
+    original::Content content{{}, types};
+    std::array<std::uint8_t, 63> raw{};
+    raw[46] = shield;
+    const original::CarriedItem kobold_shield{por::decode_items(raw)->front(), types[shield]};
+    const std::array kobold_items{kobold_shield};
+    content.bestiary.emplace("MON2CHA.DAX:0",
+                             original::combatant_from_record(kobold, kobold_items));
+    content.gear.emplace("MON2CHA.DAX:0", original::MonsterGear{kobold, {kobold_shield}});
+
+    std::shared_ptr<const rules::CharacterRules> creation = original::character_rules();
+    CampaignParty party(original::rules_module(content), creation);
+    const auto archer = member_with(party, creation, "fighter", "Robin");
+    const auto blade = carried(party, archer, original_item(types, sword, 60));
+    const auto longbow = carried(party, archer, original_item(types, bow, 30));
+    auto quiver = original_item(types, arrows, 1);
+    quiver.stored.stack_size = 5;
+    quiver.stored.raw[57] = 5;
+    const auto shafts = carried(party, archer, quiver);
+    party.equip(archer, blade, rules::EquipmentOperation::equip);
+    party.equip(archer, shafts, rules::EquipmentOperation::equip);
+    const auto &names = party.member(archer).character.inventory();
+    const auto sword_name = names.find(blade)->get().name;
+    const auto bow_name = names.find(longbow)->get().name;
+
+    const auto module = original::rules_module(content);
+    rules::Encounter encounter;
+    encounter.battlefield = {12, 6, std::vector<rules::Terrain>(72, rules::Terrain::open)};
+    encounter.participants = party.participants();
+    rules::Participant target;
+    target.id = 1000;
+    target.definition = "MON2CHA.DAX:0";
+    target.name = "Kobold";
+    target.side = rules::Side::opposition;
+    target.cell = {6, 1};
+    encounter.participants.push_back(target);
+    party.begin_combat();
+    auto session = module->create(encounter, 5);
+    const auto started = session->snapshot();
+    const auto kobold_ac =
+        std::ranges::find(started.combatants, rules::EntityId{1000}, &rules::CombatantView::id)
+            ->armor_class;
+    bool readied = false, kobold_acted = false;
+    for (int step = 0; step < 40 && !readied; ++step)
+    {
+        if (session->snapshot().actor != archer)
+        {
+            const auto commands = session->legal_commands();
+            const auto quick =
+                std::ranges::find(commands, std::string("quick"), &rules::Command::verb);
+            check(session->submit(*quick), "The kobold takes its turn");
+            kobold_acted = true;
+            continue;
+        }
+        check(!offered_for(*session, "ready", bow_name),
+              "A bow needs the hands a readied sword takes");
+        check(session->submit(*offered_for(*session, "unready", sword_name)),
+              "The sword is put away");
+        const auto ready_bow = offered_for(*session, "ready", bow_name);
+        check(ready_bow && session->submit(*ready_bow), "The bow is readied");
+        readied = true;
+    }
+    check(readied, "The archer's turn came");
+    const auto shoots =
+        std::ranges::any_of(session->legal_commands(),
+                            [](const rules::Command &command)
+                            {
+                                return command.verb == "ranged" && command.target == 1000;
+                            });
+    check(shoots, "With its bow readied it shoots");
+    const auto restored = module->restore(session->save());
+    check(offered_for(*restored, "unready", bow_name).has_value(), "A save keeps the bow readied");
+    for (int step = 0; step < 40 && !kobold_acted; ++step)
+    {
+        const auto commands = session->legal_commands();
+        const bool kobold = session->snapshot().actor == 1000;
+        const auto next = std::ranges::find(commands, std::string(kobold ? "quick" : "end"),
+                                            &rules::Command::verb);
+        check(session->submit(*next), "The fight goes on");
+        kobold_acted = kobold;
+    }
+    const auto snapshot = session->snapshot();
+    const auto &view = *std::ranges::find(snapshot.combatants, archer, &rules::CombatantView::id);
+    check(view.readied_items && view.readied_items->size() == 2,
+          "The fight reports the bow and arrows readied");
+    const auto &monster =
+        *std::ranges::find(snapshot.combatants, rules::EntityId{1000}, &rules::CombatantView::id);
+    check(monster.armor_class == kobold_ac - 1, "The kobold readied its shield on its turn");
+    party.apply_combat(snapshot);
+    party.end_combat();
+    const auto &equipped = party.member(archer).equipped;
+    check(std::ranges::find(equipped, longbow) != equipped.end() &&
+              std::ranges::find(equipped, shafts) != equipped.end() &&
+              std::ranges::find(equipped, blade) == equipped.end(),
+          "The inventory keeps the bow readied and the sword put away");
+}
 } // namespace
 
 int main()
@@ -1927,6 +2072,7 @@ int main()
         an_npc_joins_as_its_record();
         a_drain_lasts_beyond_the_fight();
         ages_change_after_creation();
+        items_are_readied_mid_fight();
         curse_clerics_heal_and_raise_in_camp();
         secret_clerics_heal_in_camp();
         a_pool_character_comes_to_curse();

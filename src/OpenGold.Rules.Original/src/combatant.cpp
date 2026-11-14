@@ -498,6 +498,8 @@ bool secret_backstab_weapon(const CarriedItem *weapon)
     return !weapon || type == 3 || type == 4 || (type >= 17 && type <= 19);
 }
 
+} // namespace
+
 // The items a creature can use: a scroll (an item whose type sits in slots
 // 11 to 13) with a spell, or another item with a spell or power. In Pool of
 // Radiance numbers above 56 are item powers 23 down (viewchar.pas, UseItem;
@@ -546,8 +548,6 @@ std::vector<UsableItem> usable_items(std::span<const CarriedItem> carried, GoldB
     }
     return items;
 }
-
-} // namespace
 
 namespace
 {
@@ -875,6 +875,181 @@ std::string rested_state(std::span<const Effect> conditions)
                 std::to_string(e.strength) + ' ' + (e.on_remove ? '1' : '0');
     }
     return text;
+}
+
+std::uint8_t usability_of(const std::array<int, 8> &class_levels, GoldBoxGame game)
+{
+    constexpr std::array<std::uint8_t, class_slot_count> bits_of{1 << 1, 1 << 4, 1 << 3, 1 << 6,
+                                                                 1 << 7, 1 << 0, 1 << 2, 1 << 5};
+    const bool secret = game == GoldBoxGame::secret_of_the_silver_blades || vga_engine(game);
+    std::uint8_t bits = 0;
+    for (std::size_t at = 0; at < class_slot_count; ++at)
+    {
+        if (class_levels[at] > 0)
+        {
+            const bool ranger = static_cast<ClassSlot>(at) == ClassSlot::ranger;
+            bits |= secret && ranger ? bits_of[static_cast<std::size_t>(ClassSlot::paladin)]
+                                     : bits_of[at];
+        }
+    }
+    return bits;
+}
+
+std::optional<ReadyRefusal> readying_refusal(const CarriedItem &chosen,
+                                             std::span<const CarriedItem> readied,
+                                             std::uint8_t usability, GoldBoxGame game)
+{
+    constexpr std::uint8_t boots_slot = 8;
+    if ((chosen.type.class_restrictions & usability) == 0)
+    {
+        return ReadyRefusal::wrong_class;
+    }
+    const auto place = chosen.type.worn_location;
+    const auto ammunition = ammunition_types(game);
+    const bool shot =
+        chosen.item.type == ammunition.arrows || chosen.item.type == ammunition.quarrels;
+    unsigned hands = chosen.type.hands, rings = 0;
+    for (const auto &other : readied)
+    {
+        hands += other.type.hands;
+        const auto other_place = other.type.worn_location;
+        rings += other_place == first_ring_slot ? 1 : 0;
+        const bool same_place = place <= boots_slot && other_place == place;
+        const bool same_stack = shot && other.item.type == chosen.item.type;
+        if (same_place || same_stack)
+        {
+            return ReadyRefusal::place_taken;
+        }
+    }
+    if (place == first_ring_slot && rings >= 2)
+    {
+        return ReadyRefusal::place_taken;
+    }
+    if (hands > 2)
+    {
+        return ReadyRefusal::hands_full;
+    }
+    return std::nullopt;
+}
+
+namespace
+{
+constexpr std::string_view fight_record_format = "FIGHTRECORD1";
+} // namespace
+
+std::string encode_fight_record(const por::CharacterRecord &r)
+{
+    std::vector<int> numbers;
+    const auto add = [&numbers](auto... values)
+    {
+        (numbers.push_back(static_cast<int>(values)), ...);
+    };
+    const auto &a = r.current_abilities;
+    add(r.game, a.strength, a.intelligence, a.wisdom, a.dexterity, a.constitution, a.charisma,
+        a.exceptional_strength, r.base_thac0, r.base_armor_class, r.max_hit_points,
+        r.base_movement);
+    for (const auto &attack : r.base_attacks)
+    {
+        add(attack.attacks_per_two_rounds, attack.damage.count, attack.damage.sides,
+            attack.damage.modifier);
+    }
+    const auto &v = r.saves;
+    add(v.paralysis_poison_death, v.petrification_polymorph, v.rods_staves_wands, v.breath,
+        v.spells);
+    const auto &l = r.levels;
+    add(l.cleric, l.druid, l.fighter, l.paladin, l.ranger, l.mage, l.thief, l.monk);
+    add(r.npc_flag, r.race, r.alignment, r.type, r.icon_size_raw, r.highest_level_raw,
+        r.undead_level, r.creature_type_flags, r.target_flags, r.magic_resistance,
+        r.strength_bonus_flag_raw, r.item_limit, r.current.hit_points_raw);
+    for (const auto coins : r.wealth)
+    {
+        add(coins);
+    }
+    add(r.name.size());
+    for (const char c : r.name)
+    {
+        add(static_cast<unsigned char>(c));
+    }
+    std::string text(fight_record_format);
+    for (const int number : numbers)
+    {
+        text += ' ' + std::to_string(number);
+    }
+    return text;
+}
+
+std::optional<por::CharacterRecord> decode_fight_record(std::string_view data)
+{
+    if (!data.starts_with(fight_record_format))
+    {
+        return std::nullopt;
+    }
+    std::istringstream in{std::string(data.substr(fight_record_format.size()))};
+    std::vector<int> numbers;
+    for (int number{}; in >> number;)
+    {
+        numbers.push_back(number);
+    }
+    constexpr std::size_t fixed = 12 + 8 + 5 + 8 + 13 + 7 + 1;
+    if (!in.eof() || numbers.size() < fixed ||
+        numbers.size() != fixed + static_cast<std::size_t>(std::max(numbers[fixed - 1], 0)))
+    {
+        return std::nullopt;
+    }
+    auto next = numbers.begin();
+    const auto take = [&next](auto &field)
+    {
+        field = static_cast<std::remove_reference_t<decltype(field)>>(*next++);
+    };
+    por::CharacterRecord r;
+    take(r.game);
+    auto &a = r.current_abilities;
+    for (auto *score : {&a.strength, &a.intelligence, &a.wisdom, &a.dexterity, &a.constitution,
+                        &a.charisma, &a.exceptional_strength})
+    {
+        take(*score);
+    }
+    r.abilities = a;
+    take(r.base_thac0);
+    take(r.base_armor_class);
+    take(r.max_hit_points);
+    take(r.base_movement);
+    for (auto &attack : r.base_attacks)
+    {
+        take(attack.attacks_per_two_rounds);
+        take(attack.damage.count);
+        take(attack.damage.sides);
+        take(attack.damage.modifier);
+    }
+    auto &v = r.saves;
+    for (auto *save : {&v.paralysis_poison_death, &v.petrification_polymorph, &v.rods_staves_wands,
+                       &v.breath, &v.spells})
+    {
+        take(*save);
+    }
+    auto &l = r.levels;
+    for (auto *level :
+         {&l.cleric, &l.druid, &l.fighter, &l.paladin, &l.ranger, &l.mage, &l.thief, &l.monk})
+    {
+        take(*level);
+    }
+    for (auto *byte :
+         {&r.npc_flag, &r.race, &r.alignment, &r.type, &r.icon_size_raw, &r.highest_level_raw,
+          &r.undead_level, &r.creature_type_flags, &r.target_flags, &r.magic_resistance,
+          &r.strength_bonus_flag_raw, &r.item_limit, &r.current.hit_points_raw})
+    {
+        take(*byte);
+    }
+    for (auto &coins : r.wealth)
+    {
+        take(coins);
+    }
+    ++next;
+    while (next != numbers.end())
+    {
+        r.name += static_cast<char>(*next++);
+    }
+    return r;
 }
 
 } // namespace opengold::original

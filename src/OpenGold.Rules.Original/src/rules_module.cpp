@@ -25,10 +25,9 @@ namespace
 using namespace rules;
 
 // Where an item type is readied (ITEMS byte 0, C_Equip): a weapon, a
-// shield, armor, gauntlets to boots in their own places, rings two at most;
-// anything else (arrows, quarrels, wands, scrolls) only takes its hands.
-constexpr std::uint8_t weapon_place = 0, shield_place = 1, armor_place = 2, boots_place = 8,
-                       ring_place = 9;
+// shield, armor; gauntlets to boots in their own places, rings two at most
+// (readying_refusal).
+constexpr std::uint8_t weapon_place = 0, shield_place = 1, armor_place = 2;
 
 std::runtime_error unavailable(std::string_view what)
 {
@@ -254,6 +253,8 @@ por::CharacterRecord character_record(const CharacterSheet &sheet)
     // The record reads its spells and items by its game's numbers.
     record.game = game_of(sheet.identity);
     record.name = sheet.name;
+    // The items its classes may use (chargen.pas, the item limits).
+    record.item_limit = usability_of(original.class_levels, record.game);
     record.current_abilities = {score(Ability::strength),
                                 score(Ability::intelligence),
                                 score(Ability::wisdom),
@@ -580,7 +581,7 @@ std::unique_ptr<CombatSession> OriginalModule::create(Encounter encounter, std::
 
 std::unique_ptr<CombatSession> OriginalModule::restore(std::string_view checkpoint) const
 {
-    return detail::restore_session(identity(), checkpoint);
+    return detail::restore_session(identity(), checkpoint, content_);
 }
 
 CharacterProfile OriginalModule::character_profile(const CharacterSheet &sheet,
@@ -590,6 +591,7 @@ CharacterProfile OriginalModule::character_profile(const CharacterSheet &sheet,
     const auto combatant = character_combatant(sheet, carried);
     CharacterProfile profile;
     profile.data = combatant.encode();
+    profile.record = encode_fight_record(character_record(sheet));
     profile.hit_points = combatant.max_hit_points;
     profile.armor_class = combatant.armor_class;
     profile.movement_feet = combatant.movement * 5;
@@ -708,28 +710,10 @@ std::vector<CarriedItem> OriginalModule::readied(std::span<const std::string> ge
 
 namespace
 {
-// The usability bit of each class slot (gdconsts.pas, usabilityBit).
-constexpr std::array<std::uint8_t, class_slot_count> usability_bits{1 << 1, 1 << 4, 1 << 3, 1 << 6,
-                                                                    1 << 7, 1 << 0, 1 << 2, 1 << 5};
-
-// Secret's and Pools of Darkness's items mark rangers with the paladin's bit
-// (their classMaskTbl).
+// The usability bits of the character's classes (usability_of).
 std::uint8_t usability(const CharacterSheet &sheet)
 {
-    const auto game = game_of(sheet.identity);
-    const bool secret = game == GoldBoxGame::secret_of_the_silver_blades || vga_engine(game);
-    std::uint8_t bits = 0;
-    const auto &levels = original_numbers(sheet).class_levels;
-    for (std::size_t at = 0; at < class_slot_count; ++at)
-    {
-        if (levels[at] > 0)
-        {
-            const bool ranger = static_cast<ClassSlot>(at) == ClassSlot::ranger;
-            bits |= secret && ranger ? usability_bits[static_cast<std::size_t>(ClassSlot::paladin)]
-                                     : usability_bits[at];
-        }
-    }
-    return bits;
+    return usability_of(original_numbers(sheet).class_levels, game_of(sheet.identity));
 }
 
 // A d20 hit's chance against THAC0 and an Armor Class: a 1 misses, a 20 hits.
@@ -818,40 +802,22 @@ EquipmentChange OriginalModule::equipment_change(const CharacterSheet &sheet,
         }
         return change;
     }
-    if ((chosen.type.class_restrictions & usability(sheet)) == 0)
-    {
-        throw std::runtime_error("Wrong class");
-    }
-    unsigned hands = chosen.type.hands, rings = 0;
-    const auto place = chosen.type.worn_location;
+    std::vector<CarriedItem> others;
     for (unsigned n = 0; n < candidates.size(); ++n)
     {
-        if (n == selected)
+        if (n != selected)
         {
-            continue;
+            others.push_back(item_for(candidates[n]));
+            change.indices.push_back(n);
         }
-        const auto other = item_for(candidates[n]);
-        hands += other.type.hands;
-        const auto other_place = other.type.worn_location;
-        rings += other_place == ring_place ? 1 : 0;
-        const bool same_place = place <= boots_place && other_place == place;
-        const auto ammunition = ammunition_types(game_of(sheet.identity));
-        const bool same_stack =
-            (chosen.item.type == ammunition.arrows || chosen.item.type == ammunition.quarrels) &&
-            other.item.type == chosen.item.type;
-        if (same_place || same_stack)
-        {
-            throw std::runtime_error("Already using another item there");
-        }
-        change.indices.push_back(n);
     }
-    if (place == ring_place && rings >= 2)
+    if (const auto refusal =
+            readying_refusal(chosen, others, usability(sheet), game_of(sheet.identity)))
     {
-        throw std::runtime_error("Already using another item there");
-    }
-    if (hands > 2)
-    {
-        throw std::runtime_error("Your hands are full!");
+        throw std::runtime_error(*refusal == ReadyRefusal::wrong_class ? "Wrong class"
+                                 : *refusal == ReadyRefusal::hands_full
+                                     ? "Your hands are full!"
+                                     : "Already using another item there");
     }
     change.indices.push_back(selected);
     return change;

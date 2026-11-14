@@ -15,9 +15,9 @@ namespace opengold::original::detail
                                                                    rules::Encounter encounter,
                                                                    std::uint64_t seed,
                                                                    const Content &content);
-// A fight saved with CombatSession::save.
-[[nodiscard]] std::unique_ptr<rules::CombatSession> restore_session(rules::Identity identity,
-                                                                    std::string_view checkpoint);
+// A fight saved with CombatSession::save; its items' types are the game's.
+[[nodiscard]] std::unique_ptr<rules::CombatSession>
+restore_session(rules::Identity identity, std::string_view checkpoint, const Content &content);
 
 } // namespace opengold::original::detail
 #endif

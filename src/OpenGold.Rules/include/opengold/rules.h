@@ -301,6 +301,10 @@ struct CharacterProfile
     // What worn items add to every saving throw (a Ring of Protection, a
     // cursed necklace), beyond the sheet's own saving throws.
     int item_save_bonus{};
+    // The rules' own record of the character, which a fight works its numbers
+    // out from again as it readies an item (the original rules' character
+    // record); empty when the rules need none.
+    std::string record;
 };
 enum class EquipmentSlot
 {
@@ -623,6 +627,8 @@ struct CarriedEquipment
     std::string definition;
     unsigned quantity{};
     int equipment_index{-1};
+    // Its name as the inventory shows it, for a fight's commands.
+    std::string name;
 };
 
 // Which side of an encounter a participant fights on, named so a comparison
@@ -668,6 +674,9 @@ struct Participant
     bool holds_shield{};
     // The squares it fills, its cell the top-left one (FOOT-1).
     Footprint footprint;
+    // The rules' own record of a character, which a fight works its numbers
+    // out from again as it readies an item (CharacterProfile::record).
+    std::string character_record;
 };
 
 struct Encounter
@@ -812,6 +821,9 @@ struct CombatantView
     // Charged items (MAGIC-3) by inventory ID: the charges, missiles or potions
     // left; the campaign trims its inventory to these counts.
     std::vector<std::pair<std::uint64_t, unsigned>> item_uses_left;
+    // The inventory IDs of the items it has readied, when the fight changed
+    // which (the original rules' readying mid-fight); the campaign equips them.
+    std::optional<std::vector<std::uint64_t>> readied_items;
     // Regenerates Hit Points each turn unless Acid or Fire stops it (stopped: it
     // already took Acid or Fire since its last turn); burning; covered in oil
     // (its next Fire damage deals 5 more); carries or wields a Torch.

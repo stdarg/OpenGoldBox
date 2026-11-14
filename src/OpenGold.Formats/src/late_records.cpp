@@ -109,6 +109,8 @@ std::optional<por::CharacterRecord> decode_creature(std::span<const std::uint8_t
     }
     c.base_armor_class = 60 - b[368];
     c.experience = format::read_u32(b, 370);
+    // The classes' usability bits, which an item type's restrictions read.
+    c.item_limit = b[379];
     c.rolled_hit_points = b[380];
     for (std::size_t list = 0; list < c.spell_slots.size(); ++list)
     {

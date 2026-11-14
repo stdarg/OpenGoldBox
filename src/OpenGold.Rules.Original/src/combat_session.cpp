@@ -32,7 +32,7 @@ using rules::Side;
 
 // The original counts movement in half-moves: 2 a straight step, 3 a diagonal one.
 constexpr rules::StepCosts half_moves{2, 3, 2, 4, 0};
-constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 19";
+constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 20";
 
 enum class Condition : unsigned
 {
@@ -113,10 +113,38 @@ constexpr std::array<int, 15> secondary_hit_effects{
     // Secret's.
     effect::poison_touch, effect::stone_touch, effect::strong_poison_touch, effect::ghoul_touch};
 
+// An item a creature carries, which it may ready or put away in a fight
+// (viewchar.pas, ToggleReadyItem): its record, readied or not, with what is
+// left of it, and its type; its inventory entry (0 for a monster's own) and
+// name; its count as the fight began (held_count); and whether it is spent.
+struct Held
+{
+    CarriedItem carried;
+    std::uint64_t inventory_id{};
+    std::string name;
+    int start_count{};
+    bool gone{};
+    // Its place among the creature's readied items, which keeps their order.
+    int readied_order{-1};
+};
+
 struct Fighter
 {
     EntityId id{};
     std::string name, definition;
+    // What its numbers are worked out from again as it readies or puts away
+    // an item (charhlp.pas, RecalcStats): its record and the items it carries,
+    // and the items its numbers were last worked out from, in their order
+    // (UsableItem::ordinal), by their places among the held. A creature with
+    // no record readies nothing.
+    std::optional<por::CharacterRecord> record;
+    std::vector<Held> held;
+    std::vector<int> worked_from;
+    // Its numbers count the items it has not readied too, as a monster's
+    // record loads them.
+    bool weighs_unreadied{};
+    // The fight changed which items it has readied.
+    bool readied_changed{};
     // A party member's items as its inventory knows them: each usable item's
     // inventory ID by its place (UsableItem::ordinal), and the item its
     // missile shoots, whose counts left the snapshot reports.
@@ -701,7 +729,8 @@ class Session final : public rules::CombatSession
         }
     }
 
-    static std::unique_ptr<Session> restored(rules::Identity identity, std::string_view checkpoint);
+    static std::unique_ptr<Session> restored(rules::Identity identity, std::string_view checkpoint,
+                                             const Content &content);
 
     [[nodiscard]] rules::Snapshot snapshot() const override;
     [[nodiscard]] std::vector<rules::Command> legal_commands() const override;
@@ -776,6 +805,14 @@ class Session final : public rules::CombatSession
     void begin_round();
     void age_the_hasted();
     void make_younger(Fighter &user);
+    [[nodiscard]] std::vector<Held> held_now(const Fighter &f) const;
+    [[nodiscard]] Combatant numbers_with(const Fighter &f, const std::vector<Held> &held,
+                                         std::vector<int> &order) const;
+    void rework_gear(Fighter &f, const std::vector<Held> &before_held,
+                     std::vector<Held> after_held);
+    void toggle_readied(Fighter &f, std::size_t index);
+    void equip_best(Fighter &f);
+    [[nodiscard]] int weapon_priority(const Fighter &f, const Held &weapon, int other_hands) const;
     void next_actor();
     void end_round();
     void end_actions(Fighter &fighter);
@@ -2814,6 +2851,425 @@ void Session::age_the_hasted()
     }
 }
 
+namespace
+{
+// An item that holds spells to read: its type sits in slots 11 to 13
+// (magic.pas, ItemReadable).
+bool readable_item(const CarriedItem &c)
+{
+    return c.type.worn_location > 10 && c.type.worn_location < 14;
+}
+
+// What the inventory counts of an item: a scroll the bits of its spells left,
+// a charged item its charges, a stack its size, anything else one.
+int held_count(const CarriedItem &c)
+{
+    const auto &bytes = c.item.effect_codes;
+    if (readable_item(c))
+    {
+        int bits = 0;
+        for (std::size_t at = 0; at < bytes.size(); ++at)
+        {
+            bits |= bytes[at] != 0 ? 1 << at : 0;
+        }
+        return bits;
+    }
+    if (bytes[1] > 0 && bytes[2] < 0x80 && bytes[0] > 0)
+    {
+        return bytes[0];
+    }
+    return std::max<int>(c.item.stack_size, 1);
+}
+
+void set_readied(Held &held, bool readied)
+{
+    held.carried.item.readied_raw = readied ? 1 : 0;
+    held.carried.item.raw[52] = held.carried.item.readied_raw;
+}
+
+// Readies an item last among the readied, or puts it away.
+void place_readied(std::vector<Held> &held, std::size_t at, bool readied)
+{
+    int last = -1;
+    for (const auto &other : held)
+    {
+        last = std::max(last, other.readied_order);
+    }
+    set_readied(held[at], readied);
+    held[at].readied_order = readied ? last + 1 : -1;
+}
+} // namespace
+
+// The items as the fight has left them: what each usable one has left, the
+// shots its missile has left, and those used up (a spent charge's last, a
+// thrown weapon gone from its hand).
+std::vector<Held> Session::held_now(const Fighter &f) const
+{
+    auto held = f.held;
+    if (!f.record)
+    {
+        return held;
+    }
+    std::vector<CarriedItem> worked;
+    for (const int at : f.worked_from)
+    {
+        worked.push_back(held[static_cast<std::size_t>(at)].carried);
+    }
+    const auto &n = f.numbers;
+    for (const auto &usable : usable_items(worked, game_of(identity_)))
+    {
+        auto &item =
+            held[static_cast<std::size_t>(f.worked_from[static_cast<std::size_t>(usable.ordinal)])];
+        const auto now = std::ranges::find(n.items, usable.ordinal, &UsableItem::ordinal);
+        if (now == n.items.end())
+        {
+            item.gone = true;
+            continue;
+        }
+        auto &raw = item.carried.item;
+        for (std::size_t at = 0; now->scroll && at < now->spells.size(); ++at)
+        {
+            if (now->spells[at] == 0)
+            {
+                raw.effect_codes[at] = 0;
+                raw.raw[60 + at] = 0;
+            }
+        }
+        if (!now->scroll && usable.charges > 0)
+        {
+            raw.effect_codes[0] = static_cast<std::uint8_t>(now->charges);
+            raw.raw[60] = raw.effect_codes[0];
+        }
+        if (now->quantity > 0)
+        {
+            raw.stack_size = static_cast<std::uint8_t>(now->quantity);
+            raw.raw[57] = raw.stack_size;
+        }
+    }
+    // The missile's shots: a thrown weapon, or the arrows or quarrels its
+    // launcher fires; a readied weapon gone from its hand was thrown.
+    namespace bit = por::item_property;
+    const auto ammunition = ammunition_types(game_of(identity_));
+    for (const int at : f.worked_from)
+    {
+        auto &weapon = held[static_cast<std::size_t>(at)];
+        const auto &c = weapon.carried;
+        if (!c.item.readied() || c.type.worn_location != 0)
+        {
+            continue;
+        }
+        if (n.weapon_type != c.item.type)
+        {
+            weapon.gone = true;
+            continue;
+        }
+        const auto &missile = n.missile;
+        if (!missile || missile->needs_no_ammunition)
+        {
+            continue;
+        }
+        for (const int shot_at : f.worked_from)
+        {
+            auto &shot = held[static_cast<std::size_t>(shot_at)];
+            const auto type = shot.carried.item.type;
+            const bool arrows = c.type.has(bit::fires_arrows) && type == ammunition.arrows;
+            const bool quarrels = c.type.has(bit::fires_quarrels) && type == ammunition.quarrels;
+            const bool shoots = missile->thrown
+                                    ? shot_at == at
+                                    : shot.carried.item.readied() && (arrows || quarrels);
+            if (!shoots)
+            {
+                continue;
+            }
+            if (!missile->loaded)
+            {
+                shot.gone = true;
+            }
+            else if (missile->quantity > 0)
+            {
+                shot.carried.item.stack_size = static_cast<std::uint8_t>(missile->quantity);
+                shot.carried.item.raw[57] = shot.carried.item.stack_size;
+            }
+        }
+    }
+    return held;
+}
+
+// A creature's numbers with these items, as RecalcStats works them out from
+// its record, at the Strength it has now: a monster's with all it carries, a
+// character's with those it has readied, in the order it readied them.
+// `order` gets their places among the held.
+Combatant Session::numbers_with(const Fighter &f, const std::vector<Held> &held,
+                                std::vector<int> &order) const
+{
+    order.clear();
+    for (std::size_t at = 0; at < held.size(); ++at)
+    {
+        const bool counted = f.weighs_unreadied || held[at].carried.item.readied();
+        if (!held[at].gone && counted)
+        {
+            order.push_back(static_cast<int>(at));
+        }
+    }
+    if (!f.weighs_unreadied)
+    {
+        std::ranges::stable_sort(order,
+                                 [&held](int a, int b)
+                                 {
+                                     return held[static_cast<std::size_t>(a)].readied_order <
+                                            held[static_cast<std::size_t>(b)].readied_order;
+                                 });
+    }
+    std::vector<CarriedItem> items;
+    for (const int at : order)
+    {
+        items.push_back(held[static_cast<std::size_t>(at)].carried);
+    }
+    auto record = *f.record;
+    record.current_abilities.strength = static_cast<std::uint8_t>(f.numbers.strength);
+    record.current_abilities.exceptional_strength =
+        static_cast<std::uint8_t>(f.numbers.exceptional_strength);
+    return combatant_from_record(record, items);
+}
+
+// The creature's numbers as its items change (charhlp.pas, RecalcStats;
+// cbtacts.pas, RecalcAttacksLeft): what its items give changes by the
+// difference, and what the fight has done to it (drained levels, effects,
+// Strength) stays. One that has not attacked yet this round gets the new
+// weapon's attacks; one that has keeps no more than that.
+void Session::rework_gear(Fighter &f, const std::vector<Held> &before_held,
+                          std::vector<Held> after_held)
+{
+    std::vector<int> before_order, after_order;
+    const auto before = numbers_with(f, before_held, before_order);
+    const auto after = numbers_with(f, after_held, after_order);
+    const auto attacks_with = [&](const Combatant &c)
+    {
+        const auto &missile = c.missile;
+        if (missile && missile->loaded)
+        {
+            const int attacks = attacks_this_round(paced(f, missile->rate_per_two_rounds),
+                                                   static_cast<int>(round_));
+            return missile->needs_no_ammunition ? attacks
+                                                : std::min(attacks, std::max(missile->quantity, 1));
+        }
+        return attacks_this_round(paced(f, c.attacks[0].rate_per_two_rounds),
+                                  static_cast<int>(round_));
+    };
+    auto &n = f.numbers;
+    n.thac0 += after.thac0 - before.thac0;
+    n.armor_class += after.armor_class - before.armor_class;
+    n.rear_armor_class += after.rear_armor_class - before.rear_armor_class;
+    n.save_bonus += after.save_bonus - before.save_bonus;
+    n.movement += after.movement - before.movement;
+    n.attacks[0] = after.attacks[0];
+    n.large_attack = after.large_attack;
+    n.missile = after.missile;
+    n.striker = after.striker;
+    n.weapon_type = after.weapon_type;
+    n.backstabs = after.backstabs;
+    n.strength_counts = after.strength_counts;
+    // What an effect gives (Secret's reflection) stays.
+    n.wards_gaze = after.wards_gaze || (n.wards_gaze && !before.wards_gaze);
+    n.mirror = after.mirror || (n.mirror && !before.mirror);
+    n.items = after.items;
+    const int had = attacks_with(before), now = attacks_with(after);
+    f.attacks_left[0] = f.attacks_left[0] >= had ? now : std::min(f.attacks_left[0], now);
+    f.held = std::move(after_held);
+    f.worked_from = std::move(after_order);
+}
+
+// Readying an item, or putting one away, as the View menu does in a fight
+// (viewchar.pas, ToggleReadyItem): it takes no action.
+void Session::toggle_readied(Fighter &f, std::size_t index)
+{
+    const auto before = held_now(f);
+    auto after = before;
+    place_readied(after, index, !after[index].carried.item.readied());
+    rework_gear(f, before, std::move(after));
+    f.readied_changed = true;
+}
+
+// What the original's AI makes of a weapon (combatai.pas, CalcWeaponPriority):
+// its dice, 8 a plus, 2 a point of its damage bonus, 2 a shot beyond one for a
+// launcher and 3 for one hand; holy water against undead is worth 8; none
+// for one needing more hands than are free, an aligned weapon of another
+// alignment, the Javelin of Lightning or a cursed weapon.
+int Session::weapon_priority(const Fighter &f, const Held &weapon, int other_hands) const
+{
+    namespace bit = por::item_property;
+    constexpr int holy_water = 85, aligned_weapon = 132, javelin_of_lightning = 83;
+    const auto &type = weapon.carried.type;
+    const auto &item = weapon.carried.item;
+    const auto &damage = type.small_medium_damage;
+    int priority = damage.count * damage.sides;
+    priority += item.magic_bonus > 0 ? item.magic_bonus * 8 : 0;
+    priority += damage.modifier > 0 ? damage.modifier * 2 : 0;
+    const auto target = std::ranges::find(fighters_, f.lock, &Fighter::id);
+    const bool pool_numbers = !secret() && !vga_engine(game_of(identity_));
+    if (pool_numbers && item.type == holy_water && f.lock && target != fighters_.end() &&
+        target->numbers.undead_level > 0)
+    {
+        priority = 8;
+    }
+    if (type.has(bit::fires_ammunition))
+    {
+        priority += (type.rate_of_fire - 1) * 2;
+    }
+    priority += type.hands <= 1 ? 3 : 0;
+    const bool other_alignment = item.effect_codes[2] == aligned_weapon &&
+                                 (item.effect_codes[1] & 0xF) != f.numbers.alignment;
+    if (type.hands + other_hands > 3 || other_alignment ||
+        item.effect_codes[1] == javelin_of_lightning || item.cursed_raw != 0)
+    {
+        priority = 0;
+    }
+    return priority;
+}
+
+// The original's AI readies its best weapon and shield (combatai.pas,
+// EquipWeaponAndArmor): its best missile weapon when it scores above half the
+// best melee weapon's (its own blows set the bar), has something to shoot and
+// is thrown with Strength or has no enemy next to it; else its best melee
+// weapon; and the shield of the best plus its hands leave room for. A cursed
+// item is never put away.
+void Session::equip_best(Fighter &f)
+{
+    if (!f.record)
+    {
+        return;
+    }
+    namespace bit = por::item_property;
+    constexpr std::uint8_t weapon_place = 0, shield_place = 1;
+    const auto before = held_now(f);
+    auto after = before;
+    int other_hands = 0;
+    std::optional<std::size_t> weapon, shield;
+    for (std::size_t at = 0; at < after.size(); ++at)
+    {
+        const auto &c = after[at].carried;
+        if (after[at].gone || !c.item.readied())
+        {
+            continue;
+        }
+        if (c.type.worn_location == weapon_place)
+        {
+            weapon = at;
+        }
+        else if (c.type.worn_location == shield_place)
+        {
+            shield = at;
+        }
+        else
+        {
+            other_hands += c.type.hands;
+        }
+    }
+    const auto &unarmed = f.record->base_attacks[0].damage;
+    int best_melee_score =
+        unarmed.count * unarmed.sides + (unarmed.modifier > 0 ? unarmed.modifier * 2 : 0);
+    int best_ranged_score = 1, best_shield_score = 0;
+    std::optional<std::size_t> best_melee, best_ranged, best_shield;
+    for (std::size_t at = 0; at < after.size(); ++at)
+    {
+        const auto &held = after[at];
+        const auto &type = held.carried.type;
+        if (held.gone || (type.class_restrictions & f.record->item_limit) == 0)
+        {
+            continue;
+        }
+        if (type.worn_location == weapon_place)
+        {
+            const int score = weapon_priority(f, held, other_hands);
+            const bool launcher = type.has(bit::fires_ammunition);
+            if ((launcher || type.has(bit::thrown)) && score > best_ranged_score)
+            {
+                best_ranged = at;
+                best_ranged_score = score;
+            }
+            if (!launcher && score > best_melee_score)
+            {
+                best_melee = at;
+                best_melee_score = score;
+            }
+        }
+        else if (type.worn_location == shield_place)
+        {
+            const int plus = held.carried.item.magic_bonus;
+            const int score = plus >= 0 ? plus + 1 : 0;
+            if (score > best_shield_score)
+            {
+                best_shield = at;
+                best_shield_score = score;
+            }
+        }
+    }
+    bool supplied = false, thrown_with_strength = false;
+    if (best_ranged)
+    {
+        const auto &type = after[*best_ranged].carried.type;
+        constexpr std::uint8_t sling = bit::fires_ammunition | bit::dexterity_missile;
+        const auto ammunition = ammunition_types(game_of(identity_));
+        const auto readied_of = [&after](std::uint8_t wanted)
+        {
+            return std::ranges::any_of(after,
+                                       [wanted](const Held &h)
+                                       {
+                                           return !h.gone && h.carried.item.readied() &&
+                                                  h.carried.item.type == wanted;
+                                       });
+        };
+        supplied = type.has(bit::thrown) || type.properties == sling ||
+                   (type.has(bit::fires_arrows) && readied_of(ammunition.arrows)) ||
+                   (type.has(bit::fires_quarrels) && readied_of(ammunition.quarrels));
+        thrown_with_strength =
+            type.range > 1 && type.has(bit::thrown) && type.has(bit::strength_bonus);
+    }
+    const bool shoots = best_ranged && best_ranged_score > best_melee_score / 2 && supplied &&
+                        (thrown_with_strength || !enemy_next_to(f));
+    const auto chosen = shoots ? best_ranged : best_melee;
+    const auto cursed = [&after](std::optional<std::size_t> at)
+    {
+        return at && after[*at].carried.item.cursed_raw != 0;
+    };
+    const auto ready = [&after](std::optional<std::size_t> at, bool readied)
+    {
+        if (at)
+        {
+            place_readied(after, *at, readied);
+        }
+    };
+    if (weapon != chosen && !cursed(weapon))
+    {
+        ready(weapon, false);
+        ready(chosen, true);
+        weapon = chosen;
+    }
+    const int weapon_hands = weapon ? after[*weapon].carried.type.hands : 0;
+    const int shield_hands = shield ? after[*shield].carried.type.hands : 0;
+    if (other_hands + weapon_hands + shield_hands > 2)
+    {
+        // Too many hands: the shield goes, or the weapon when the shield is
+        // cursed or there is none.
+        ready(shield && !cursed(shield) ? shield : weapon, false);
+    }
+    else if (other_hands + weapon_hands < 2 && shield != best_shield && !cursed(shield))
+    {
+        ready(shield, false);
+        ready(best_shield, true);
+    }
+    bool changed = false;
+    for (std::size_t at = 0; at < after.size(); ++at)
+    {
+        changed = changed || after[at].carried.item.readied() != before[at].carried.item.readied();
+    }
+    if (changed)
+    {
+        rework_gear(f, before, std::move(after));
+        f.readied_changed = true;
+    }
+}
+
 // Youth (Secret's item power 63, SpellYouth): its user becomes 1d4+1 years
 // younger, but not below 18.
 void Session::make_younger(Fighter &user)
@@ -4108,6 +4564,7 @@ void Session::ai_turn(Fighter &f, bool magic)
     {
         return;
     }
+    equip_best(f);
     while (f.able() && f.initiative > 0)
     {
         if (!acquire_target(f, 255, true, false) || f.initiative <= 0)
@@ -4259,11 +4716,11 @@ bool Session::ai_move_attack(Fighter &f)
             }
             auto &pick = *find(
                 in_reach[static_cast<std::size_t>(roll(static_cast<int>(in_reach.size())) - 1)]);
-            // A missile weapon with an enemy next to it: the original readied
-            // another weapon here; until a fight knows a creature's items it
-            // guards (step 7).
+            // A missile weapon with an enemy next to it: it readies another
+            // weapon, and its turn ends (AiMoveAttack).
             if (missile_in_hand(f) && !f.numbers.missile->throwable && enemy_next_to(f))
             {
+                equip_best(f);
                 finish_round(f);
                 return true;
             }
@@ -6435,6 +6892,42 @@ rules::Snapshot Session::snapshot() const
         // What is left of a party member's items, for the game to trim its
         // inventory to: an item gone is 0, a scroll the bits of its spells
         // not read.
+        if (f->record)
+        {
+            // What it carries as the fight has left it: each item whose
+            // count changed, and the items readied when the fight changed
+            // which.
+            const auto held = held_now(*f);
+            std::vector<std::pair<int, std::uint64_t>> readied;
+            for (const auto &item : held)
+            {
+                if (!item.inventory_id)
+                {
+                    continue;
+                }
+                const int left = item.gone ? 0 : held_count(item.carried);
+                if (left != item.start_count)
+                {
+                    view.item_uses_left.emplace_back(item.inventory_id,
+                                                     static_cast<unsigned>(left));
+                }
+                if (!item.gone && item.carried.item.readied())
+                {
+                    readied.emplace_back(item.readied_order, item.inventory_id);
+                }
+            }
+            if (f->readied_changed)
+            {
+                std::ranges::sort(readied);
+                auto &ids = view.readied_items.emplace();
+                for (const auto &[order, id] : readied)
+                {
+                    ids.push_back(id);
+                }
+            }
+            state.combatants.push_back(std::move(view));
+            continue;
+        }
         for (const auto &[ordinal, id] : f->item_ids)
         {
             const auto &items = f->numbers.items;
@@ -6565,6 +7058,40 @@ std::vector<rules::Command> Session::legal_commands() const
                     break;
                 }
             }
+        }
+    }
+    // Ready, for an item a party member carries and may ready, and put away,
+    // for one readied that is not cursed (viewchar.pas, ToggleReadyItem).
+    if (actor->record)
+    {
+        const auto held = held_now(*actor);
+        std::vector<CarriedItem> readied;
+        for (const auto &item : held)
+        {
+            if (!item.gone && item.carried.item.readied())
+            {
+                readied.push_back(item.carried);
+            }
+        }
+        for (std::size_t at = 0; at < held.size(); ++at)
+        {
+            const auto &item = held[at];
+            const bool is_readied = item.carried.item.readied();
+            if (item.gone || !item.inventory_id ||
+                (is_readied ? item.carried.item.cursed_raw != 0
+                            : readying_refusal(item.carried, readied, actor->record->item_limit,
+                                               game_of(identity_))
+                                  .has_value()))
+            {
+                continue;
+            }
+            rules::Command toggle;
+            toggle.revision = revision_;
+            toggle.actor = actor_;
+            toggle.verb = is_readied ? "unready" : "ready";
+            toggle.item = static_cast<unsigned>(at);
+            toggle.label = item.name;
+            commands.push_back(toggle);
         }
     }
     // Guard needs a weapon that strikes next to it (combat.pas, DoneMenu).
@@ -6748,6 +7275,10 @@ bool Session::submit(const rules::Command &command)
     {
         ai_turn(actor, command.verb == "quick_magic");
     }
+    else if (command.verb == "ready" || command.verb == "unready")
+    {
+        toggle_readied(actor, command.item);
+    }
     else if (command.verb == "guard")
     {
         end_actions(actor);
@@ -6854,6 +7385,19 @@ std::string Session::save() const
         {
             out(ordinal, id);
         }
+        out(f.record ? encode_fight_record(*f.record) : std::string(), f.weighs_unreadied,
+            f.readied_changed, f.held.size());
+        for (const auto &held : f.held)
+        {
+            const auto &item = held.carried.item;
+            out(por::original_item_key(item), item.readied_raw, item.stack_size, held.inventory_id,
+                held.name, held.start_count, held.gone, held.readied_order);
+        }
+        out(f.worked_from.size());
+        for (const int at : f.worked_from)
+        {
+            out(at);
+        }
     }
     out(log_.size());
     for (const auto &entry : log_)
@@ -6867,7 +7411,66 @@ std::string Session::save() const
     return out.text();
 }
 
-std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string_view checkpoint)
+namespace
+{
+// A fighter's record and held items as a checkpoint keeps them, their types
+// from the game's.
+void read_gear(Reader &in, Fighter &f, const Content &content)
+{
+    const auto invalid = []
+    {
+        throw std::runtime_error("Invalid original-rules combat checkpoint");
+    };
+    if (const auto record = in.text(); !record.empty())
+    {
+        f.record = decode_fight_record(record);
+        if (!f.record)
+        {
+            invalid();
+        }
+    }
+    f.weighs_unreadied = in.as<bool>();
+    f.readied_changed = in.as<bool>();
+    const auto count = in.as<std::size_t>();
+    if (count > 255)
+    {
+        invalid();
+    }
+    for (std::size_t n = 0; n < count; ++n)
+    {
+        auto item = por::item_of_original_key(in.text());
+        if (!item || item->type >= content.item_types.size())
+        {
+            invalid();
+        }
+        Held held{{*item, content.item_types[item->type]}};
+        auto &raw = held.carried.item;
+        raw.readied_raw = in.as<std::uint8_t>();
+        raw.stack_size = in.as<std::uint8_t>();
+        raw.raw[52] = raw.readied_raw;
+        raw.raw[57] = raw.stack_size;
+        held.inventory_id = in.as<std::uint64_t>();
+        held.name = in.text();
+        held.start_count = in.as<int>();
+        held.gone = in.as<bool>();
+        held.readied_order = in.as<int>();
+        f.held.push_back(std::move(held));
+    }
+    const auto worked = in.as<std::size_t>();
+    for (std::size_t n = 0; n < worked; ++n)
+    {
+        const auto at = in.as<int>();
+        if (at < 0 || static_cast<std::size_t>(at) >= f.held.size())
+        {
+            invalid();
+        }
+        f.worked_from.push_back(at);
+    }
+}
+} // namespace
+
+std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string_view checkpoint,
+                                           const Content &content)
 {
     Reader in(checkpoint);
     if (in.text() != checkpoint_format)
@@ -7038,6 +7641,7 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
             const auto ordinal = in.as<int>();
             f.item_ids.emplace_back(ordinal, in.as<std::uint64_t>());
         }
+        read_gear(in, f, content);
         if (f.condition > Condition::stoned || f.attack_phase < 0 || f.attack_phase > 1 ||
             f.direction < 0 || f.direction > 7)
         {
@@ -7128,6 +7732,75 @@ void take_counts(Fighter &f, const std::vector<rules::CarriedEquipment> &invento
         }
     }
 }
+
+// What a party member readies from in the fight: its record and the items it
+// carries, each with its count, the readied in the order its profile has
+// them. One with a readied item of no original record readies nothing.
+void take_gear(Fighter &f, const rules::Participant &p, const Content &content)
+{
+    auto record = decode_fight_record(p.character_record);
+    if (!record)
+    {
+        return;
+    }
+    std::vector<Held> held;
+    for (const auto &carried : p.inventory)
+    {
+        const auto item = por::item_of_original_key(carried.definition);
+        if (!item || item->type >= content.item_types.size())
+        {
+            if (carried.equipment_index >= 0)
+            {
+                return;
+            }
+            continue;
+        }
+        Held h{{*item, content.item_types[item->type]}, carried.inventory_id, carried.name};
+        const auto count = static_cast<int>(carried.quantity);
+        if (count > 1 && held_count(h.carried) != count)
+        {
+            h.carried.item.stack_size = static_cast<std::uint8_t>(count);
+            h.carried.item.raw[57] = h.carried.item.stack_size;
+        }
+        set_readied(h, carried.equipment_index >= 0);
+        h.readied_order = carried.equipment_index;
+        h.start_count = held_count(h.carried);
+        held.push_back(std::move(h));
+    }
+    std::vector<int> order;
+    for (std::size_t at = 0; at < held.size(); ++at)
+    {
+        if (held[at].readied_order >= 0)
+        {
+            order.push_back(static_cast<int>(at));
+        }
+    }
+    std::ranges::sort(order,
+                      [&held](int a, int b)
+                      {
+                          return held[static_cast<std::size_t>(a)].readied_order <
+                                 held[static_cast<std::size_t>(b)].readied_order;
+                      });
+    f.record = std::move(*record);
+    f.held = std::move(held);
+    f.worked_from = std::move(order);
+}
+
+// What a monster readies from: its record and all it carries, as its
+// numbers were worked out from them.
+void take_monster_gear(Fighter &f, const MonsterGear &gear)
+{
+    f.record = gear.record;
+    f.weighs_unreadied = true;
+    for (std::size_t at = 0; at < gear.carried.size(); ++at)
+    {
+        Held h{gear.carried[at]};
+        h.readied_order = h.carried.item.readied() ? static_cast<int>(at) : -1;
+        h.start_count = held_count(h.carried);
+        f.held.push_back(std::move(h));
+        f.worked_from.push_back(static_cast<int>(at));
+    }
+}
 } // namespace
 
 std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
@@ -7155,6 +7828,7 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
             }
             f.numbers = *numbers;
             take_counts(f, p.inventory, content);
+            take_gear(f, p, content);
             // A member's last fight left it the spells it had not cast, which
             // it keeps until a day's rest memorizes them again, and the
             // conditions that outlast fights and rests (lasting_condition).
@@ -7178,6 +7852,10 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
                  found != content.bestiary.end())
         {
             f.numbers = found->second;
+            if (const auto gear = content.gear.find(p.definition); gear != content.gear.end())
+            {
+                take_monster_gear(f, gear->second);
+            }
         }
         else
         {
@@ -7219,10 +7897,10 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
                                      encounter.escape_ends_fight);
 }
 
-std::unique_ptr<rules::CombatSession> restore_session(rules::Identity identity,
-                                                      std::string_view checkpoint)
+std::unique_ptr<rules::CombatSession>
+restore_session(rules::Identity identity, std::string_view checkpoint, const Content &content)
 {
-    return Session::restored(std::move(identity), checkpoint);
+    return Session::restored(std::move(identity), checkpoint, content);
 }
 
 } // namespace opengold::original::detail

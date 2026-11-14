@@ -105,6 +105,12 @@ String original_action_label(const Command &command)
     {
         return i18n::text(command.label);
     }
+    // Readying an item, or putting one away, by its name as the inventory shows it.
+    if (command.verb == "ready" || command.verb == "unready")
+    {
+        return i18n::format(command.verb == "ready" ? N_("Ready {item}") : N_("Put away {item}"),
+                            {{"item", String::utf8(command.label.c_str())}});
+    }
     const char *label = command.verb == "guard"      ? N_("Guard")
                         : command.verb == "delay"    ? N_("Delay")
                         : command.verb == "turn"     ? N_("Turn undead")

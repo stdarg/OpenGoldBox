@@ -29,6 +29,7 @@ original::Content load_original_content(const std::filesystem::path &folder, Gol
         }
         content.bestiary.emplace(
             id.key(), original::combatant_from_record(creature.stored, carried, effects));
+        content.gear.emplace(id.key(), original::MonsterGear{creature.stored, std::move(carried)});
     }
     std::ifstream items(folder / item_types_file(game), std::ios::binary);
     const std::vector<std::uint8_t> bytes{std::istreambuf_iterator<char>(items), {}};

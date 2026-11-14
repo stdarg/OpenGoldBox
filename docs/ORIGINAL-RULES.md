@@ -494,16 +494,11 @@ whole list):
 
 The work asked for next (2026-11-14), in order, with what each needs:
 
-1. **Readying items mid-fight** (the View menu; `RecalcStats`,
-   `RecalcAttacksLeft`, the AI's `EquipWeaponAndArmor`): a fight holds only a
-   member's Combatant. It needs, through the rules seam, the member's record
-   and its carried items, so the session can work its numbers out again as
-   an item is readied or put away.
-2. **Time between rests:** the walking time the campaign's clock counts, so
+1. **Time between rests:** the walking time the campaign's clock counts, so
    a disease wastes (a point of Strength an hour, a Hit Point every ten
    minutes) and camp spells, Slow Poison and the paladin's week run down as
    the original counts time; today they change only at a day's rest.
-3. The other "Still to come" items above that are no one game's campaign or
+2. The other "Still to come" items above that are no one game's campaign or
    route work, in their order in this file: the AI's caution near clouds and
    a giant-bane weapon (effect 75) in *Secret*; the party's facing, the
    terrain heights for sight and PARTY_MOVE_MODIFIER (step 7); Spiritual
@@ -941,10 +936,7 @@ gear.
      the original's AI acts for a monster with a target (MONSTER_SPECIAL), so
      they come with step 9.
 7. Into the game: fights in the campaign under the original rules, on screen.
-   Readying items mid-fight (the View menu) changes a creature's numbers as
-   the original recomputes them (`RecalcStats`, `RecalcAttacksLeft`), so a
-   fight needs each creature's items, not only the profile worked out at its
-   start. *In part, 2026-11-13:*
+   *In part, 2026-11-13:*
    - **Items stay the original's:** under the original rules an item's key is
      its record (`por::original_item_key`, without its readied byte and
      count, which the inventory keeps). The module reads the item types and
@@ -984,9 +976,27 @@ gear.
      (`DetermineLootExp`).
    - **Armor Class** counts down as the original's does on every screen, the
      shop's preview and auto-equip's comparison included.
-   - Still to come: readying items mid-fight (and the AI's
-     `EquipWeaponAndArmor`), the party's facing, the original's terrain
-     heights for sight and PARTY_MOVE_MODIFIER. Out of doors a fireball
+   - **Readying mid-fight** (2026-11-14; `ToggleReadyItem`, `RecalcStats`,
+     `RecalcAttacksLeft`): a fight gets each member's record and carried
+     items through the rules seam (`CharacterProfile::record`,
+     `Participant::character_record`, the inventory's names), and each
+     monster's from its record and MONnITM items (`Content::gear`). On its
+     turn a member may ready an item or put one away on the combat screen's
+     Items list ("Ready" and "Put away"), as the original allows readying
+     (the class's items, two hands, one in each place but two rings, one
+     stack each of arrows and quarrels, a cursed item kept); it takes no
+     action. The creature's numbers are worked out again from its record and
+     items, what the fight has done to it (drained levels, effects, Strength)
+     kept, and one that has not attacked yet this round gets the new
+     weapon's attacks, one that has no more than those. The original's AI
+     readies its best weapon and shield at its turn (`EquipWeaponAndArmor`,
+     `CalcWeaponPriority`) and readies another weapon when an enemy is next
+     to its bow. The fight reports the items readied and what is left of
+     each, which the inventory keeps; a save mid-fight keeps them (combat
+     checkpoint 20). Secret's and the later records' item limits (their class
+     bits) are read from them.
+   - Still to come: the party's facing, the original's terrain heights for
+     sight and PARTY_MOVE_MODIFIER. Out of doors a fireball
      catches only those within 2 squares of its aim (`SpellFireball`).
 8. Spells in combat. In parts:
    - 8a. *Done 2026-11-12:* the casting framework, with the first-level
@@ -1078,13 +1088,12 @@ gear.
    a reflectable gaze back), the charming gaze, the lightning breath (always
    in the first round, then half the time, for its maximum Hit Points, 3, 2
    or 1 breaths) and the ankheg's acid, once a fight; and the fire and acid
-   touches (79, 80) burn on a hit. Two things wait for step 7, when a fight
-   knows each creature's items and the party's facing: the AI readies its
-   best weapon and shield at each turn (`EquipWeaponAndArmor`) and swaps a
-   bow for a melee weapon when an enemy is next to it (it guards meanwhile;
-   many monsters carry their weapons unreadied, Pool of Radiance's goblin
-   guards their short swords), and a fleeing creature runs along the party's
-   facing (away from its enemies meanwhile). Each step is a stop, so it never
+   touches (79, 80) burn on a hit. The AI readies its best weapon and shield
+   at each turn (`EquipWeaponAndArmor`) and readies another weapon when an
+   enemy is next to its bow, which ends its turn (step 7: many monsters carry
+   their weapons unreadied, Pool of Radiance's goblin guards their short
+   swords). Waiting for the party's facing (step 7): a fleeing creature runs
+   along it (away from its enemies meanwhile). Each step is a stop, so it never
    ends on another creature's square. The game's computer turns under these
    rules (monsters, allies and party members on Quick) are this AI's: the
    shared command chooser takes `quick` (or `quick_magic`) whenever the rules

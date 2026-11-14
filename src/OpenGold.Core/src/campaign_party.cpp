@@ -4019,14 +4019,15 @@ std::vector<rules::Participant> CampaignParty::participants() const
                               {1 + static_cast<int>(slot / 4), 1 + static_cast<int>(slot % 4) * 2},
                               std::move(p.data),
                               m.vitals});
+            result.back().character_record = std::move(p.record);
             for (const auto &item : m.character.inventory().items())
             {
                 const auto equipped = std::find(m.equipped.begin(), m.equipped.end(), item.id);
                 result.back().inventory.push_back(
                     {item.id, rules_definition(m, item), item.quantity,
-                     equipped == m.equipped.end()
-                         ? -1
-                         : static_cast<int>(equipped - m.equipped.begin())});
+                     equipped == m.equipped.end() ? -1
+                                                  : static_cast<int>(equipped - m.equipped.begin()),
+                     item.name});
             }
         }
     }
@@ -4153,15 +4154,34 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
                 newly_checked.emplace_back(actor.id, actor.max_hit_points);
             }
             vitals.emplace_back(actor.id, lasting);
-            if (changed && actor.thrown_gear_left.empty() && !actor.curse_lifted &&
-                actor.item_uses_left.empty())
+            const bool items_changed = !actor.thrown_gear_left.empty() || actor.curse_lifted ||
+                                       !actor.item_uses_left.empty() ||
+                                       actor.readied_items.has_value();
+            if (changed && !items_changed)
             {
                 thrown.push_back(std::move(*changed));
             }
-            else if (!actor.thrown_gear_left.empty() || actor.curse_lifted ||
-                     !actor.item_uses_left.empty())
+            else if (items_changed)
             {
                 auto member = changed ? std::move(*changed) : *it;
+                // The items it readied or put away in the fight, those still
+                // readied first in their order (the original rules' View menu).
+                if (actor.readied_items)
+                {
+                    const auto &readied = *actor.readied_items;
+                    std::erase_if(member.equipped,
+                                  [&readied](std::uint64_t id)
+                                  {
+                                      return std::ranges::find(readied, id) == readied.end();
+                                  });
+                    for (const auto id : readied)
+                    {
+                        if (std::ranges::find(member.equipped, id) == member.equipped.end())
+                        {
+                            member.equipped.push_back(id);
+                        }
+                    }
+                }
                 for (const auto &[definition, left] : actor.thrown_gear_left)
                 {
                     keep_thrown_gear(member, definition, left);

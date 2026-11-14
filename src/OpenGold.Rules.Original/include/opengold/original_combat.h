@@ -313,15 +313,55 @@ struct CarriedState
 // A rested member's state: its lasting conditions, or empty for none.
 [[nodiscard]] std::string rested_state(std::span<const Effect> conditions);
 
+// The items a creature can use in a fight among those it carries
+// (UsableItem), each by its place among them.
+[[nodiscard]] std::vector<UsableItem> usable_items(std::span<const CarriedItem> carried,
+                                                   GoldBoxGame game);
+// The usability bits of a creature's classes (gdconsts.pas, usabilityBit),
+// which an item type's class restrictions are read against: Secret's and the
+// 256-color engine's mark a ranger with the paladin's bit (their classMaskTbl).
+[[nodiscard]] std::uint8_t usability_of(const std::array<int, 8> &class_levels, GoldBoxGame game);
+// Why a creature may not ready an item beside those it has readied
+// (viewchar.pas, ToggleReadyItem): its classes may not use it, its place (but
+// a ring's two) or its arrows' or quarrels' is taken, or it would take more
+// than two hands.
+enum class ReadyRefusal
+{
+    wrong_class,
+    place_taken,
+    hands_full
+};
+
+// Why the creature may not ready `chosen`; nothing when it may.
+[[nodiscard]] std::optional<ReadyRefusal> readying_refusal(const CarriedItem &chosen,
+                                                           std::span<const CarriedItem> readied,
+                                                           std::uint8_t usability,
+                                                           GoldBoxGame game);
+// A creature's record as a fight keeps it to work its numbers out again as
+// it readies an item (combatant_from_record): the fields those numbers read.
+[[nodiscard]] std::string encode_fight_record(const por::CharacterRecord &record);
+[[nodiscard]] std::optional<por::CharacterRecord> decode_fight_record(std::string_view data);
+
+// A monster's record and the items it carries, which it may ready in a fight
+// (combatai.pas, EquipWeaponAndArmor).
+struct MonsterGear
+{
+    por::CharacterRecord record;
+    std::vector<CarriedItem> carried;
+};
+
 // What the original rules' module knows of a game: its monsters, by the key a
 // fight's participant names them with (por::CreatureId::key(), "MON2CHA.DAX:0"),
-// and its item types (ITEMS), by type.
+// with the record and items each fights from, and its item types (ITEMS), by
+// type.
 struct Content
 {
     std::map<std::string, Combatant, std::less<>> bestiary;
     std::vector<por::ItemTemplate> item_types;
     // The game whose original rules these are, its monsters and items.
     GoldBoxGame game{GoldBoxGame::pool_of_radiance};
+    // Each monster's record and items, by the bestiary's keys.
+    std::map<std::string, MonsterGear, std::less<>> gear;
 };
 
 // The original rules as the module the game's fights and party run through.
