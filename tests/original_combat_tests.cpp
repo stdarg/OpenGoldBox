@@ -3714,6 +3714,51 @@ void secret_spells_stun_hide_and_burn()
           "Charm Person or Mammal charms a mammal and no other monster");
 }
 
+// Gateway's changed rows (its spellTable): Prayer on up to four creatures the
+// caster touches, Invisibility 10' Radius aimed beside the caster and
+// reaching 6 squares around, Blink and Strength cast in and out of fights.
+void gateway_rows_change()
+{
+    using original::ClassSlot;
+    constexpr auto gateway = GoldBoxGame::gateway_to_the_savage_frontier;
+    check(original::spell(45, gateway)->when == 2 && original::spell(35, gateway)->when == 2 &&
+              original::spell(45)->when == 1 && original::spell(35)->when == 0,
+          "Gateway casts Blink out of fights and Strength in them");
+    auto fight =
+        arrange({{"Priest", rules::Side::party, {1, 3}, caster(ClassSlot::cleric, 6, {42})},
+                 {"Fighter", rules::Side::party, {2, 3}, creature(30)},
+                 {"Archer", rules::Side::party, {1, 4}, creature(30)},
+                 {"Far", rules::Side::party, {5, 5}, creature(30)},
+                 {"Kobold", rules::Side::opposition, {7, 0}, creature(20, 0)}},
+                311, {}, 100, gateway);
+    auto &session = *fight.session;
+    cast_now(session, "Priest", 42,
+             [&]
+             {
+                 return aim_at(session, "Fighter");
+             });
+    check(!aim_at(session, "Far"), "Prayer touches: one far off cannot be picked");
+    session.submit(*aim_at(session, "Archer"));
+    session.submit(order(session, "aim_done"));
+    check(logged(session, "{name} is affected by {spell}.") == 2, "Prayer goes on each it touches");
+
+    auto hide =
+        arrange({{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 6, {50})},
+                 {"Near", rules::Side::party, {1, 7}, creature(30)},
+                 {"Far", rules::Side::party, {7, 3}, creature(30)},
+                 {"Kobold", rules::Side::opposition, {7, 0}, creature(20, 0)}},
+                313, {}, 100, gateway);
+    cast_now(*hide.session, "Mage", 50,
+             [&]
+             {
+                 check(!aim_at_cell(*hide.session, {3, 3}),
+                       "Invisibility 10' Radius is aimed beside the caster");
+                 return aim_at_cell(*hide.session, {1, 3});
+             });
+    check(logged(*hide.session, "{name} is affected by {spell}.") == 3,
+          "Invisibility 10' Radius reaches 6 squares around its square");
+}
+
 } // namespace
 
 int main()
@@ -3758,6 +3803,7 @@ int main()
         damage_loses_a_spell();
         magic_missiles();
         curse_caster_levels();
+        gateway_rows_change();
         sleep_takes_the_weak();
         charm_person_turns_a_foe();
         cure_light_wounds_stops_bleeding();

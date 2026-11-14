@@ -236,6 +236,10 @@ struct StartingTraining
 [[nodiscard]] int first_level_rolled_hit_points(Profession profession,
                                                 const RolledCharacter &rolled);
 
+// A new character's age (chargen.pas): its race's and class's dice, a
+// multi-class one the most its cleric's, magic-user's or fighter's allow.
+// Gateway gives a half-elf ranger 26+3d8 and Pools of Darkness 22; Curse and
+// Secret have no row for one, and a half-elf fighter's stands in (docs/ORIGINAL-RULES.md, Bugs).
 [[nodiscard]] int starting_age(Race race, Profession profession, RandomState &random,
                                GoldBoxGame game = GoldBoxGame::pool_of_radiance);
 // The Hit Points every level of every class adds for this Constitution, before

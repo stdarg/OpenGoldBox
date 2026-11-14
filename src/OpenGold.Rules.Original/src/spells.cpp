@@ -196,6 +196,19 @@ constexpr std::array<NumberedSpell, 13> secret_spells{{
      {"Power Word Stun", SpellClass::magic_user, 7, 0, 2, 0, 0, 4, 0, 0, 4, 506, 1, 1, 3, true, 0}},
 }};
 
+// The four rows Gateway to the Savage Frontier's table changes from Curse's
+// (its reconstruction's spellTable): Strength in fights too, Prayer on up
+// to four creatures within reach, Blink out of fights too, and Invisibility
+// 10' Radius aimed beside the caster and reaching 6 squares around.
+constexpr std::array<NumberedSpell, 4> gateway_rows{{
+    {35, {"Strength", SpellClass::magic_user, 2, 0, 0, 0, 60, 0, 2, 0, 4, 38, 2, 10, 0, false, 0}},
+    {42, {"Prayer", SpellClass::cleric, 3, 0, 0, 0, 1, 3, 1, 0, 4, 49, 2, 6, 6, false, 0}},
+    {45, {"Blink", SpellClass::magic_user, 3, 0, 0, 0, 1, 0, 1, 0, 4, 37, 2, 1, 2, false, 0}},
+    {50,
+     {"Invisibility, 10' Radius", SpellClass::magic_user, 3, 1, 0, 0, 0, 14, 4, 0, 4, 25, 2, 3, 1,
+      false, 0}},
+}};
+
 // Curse's spells that its characters can know, in its table's order: Pool of
 // Radiance's 56, then its own.
 constexpr std::array<int, 30> curse_castable{158, 166, 167, 168, 169, 170, 171, 172, 173, 174,
@@ -335,6 +348,21 @@ const Spell *spell(int number) noexcept
         }
     }
     return nullptr;
+}
+
+const Spell *spell(int number, GoldBoxGame game) noexcept
+{
+    if (game == GoldBoxGame::gateway_to_the_savage_frontier)
+    {
+        for (const auto &entry : gateway_rows)
+        {
+            if (entry.number == number)
+            {
+                return &entry.spell;
+            }
+        }
+    }
+    return spell(number);
 }
 
 } // namespace opengold::original

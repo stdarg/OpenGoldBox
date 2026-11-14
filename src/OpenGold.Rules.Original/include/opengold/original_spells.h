@@ -67,6 +67,11 @@ inline constexpr int secret_spell_offset = 200;
 // The spell or item power of this number (1 to 67, Curse's 158 and 166 to
 // 200, and Secret's 236, 256, 290, 296, 298 and 310 to 317), or nothing.
 [[nodiscard]] const Spell *spell(int number) noexcept;
+// The spell as a game's table has it: Gateway's Strength may be cast in
+// fights, its Prayer goes on up to four creatures the caster touches, its
+// Blink may be cast out of fights, and its Invisibility 10' Radius reaches
+// all within 6 squares of a square beside the caster (its spellTable).
+[[nodiscard]] const Spell *spell(int number, GoldBoxGame game) noexcept;
 // The number spell() knows for a game's own (its records', items' and
 // scripts'): Curse's spells beyond Pool of Radiance's, 58 and 66 up, are
 // curse_spell_offset higher.

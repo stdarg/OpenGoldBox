@@ -325,10 +325,18 @@ reconstruction), with these differences (2026-11-14):
 - **Level caps:** every class stops at its own level whatever the race:
   clerics, druids and magic-users 6, rangers 7, fighters, paladins, thieves
   and monks 8 (its levelCaps). So no paladin or ranger casts spells.
-- **Still to come:** its spell table's four changed rows (Strength in fights,
-  Prayer for the caster's side, Blink out of fights, Invisibility 10' Radius's
-  reach), its temple's poison rules, and a half-elf ranger's starting age.
-  Training takes one class a visit, as in *Curse*.
+- **Its spell table's four changed rows** (its spellTable): Prayer goes on up
+  to four creatures within the caster's reach, each an aura for its side;
+  Invisibility 10' Radius is aimed at a square beside the caster and reaches
+  all within 6 squares of it; Blink may be cast out of fights and Strength in
+  them (`original::spell(number, game)`).
+- **A half-elf ranger** starts aged 26+3d8, from its own row.
+- Training takes one class a visit, as in *Curse*.
+- **Still to come:** its temple's poison rules (Raise Dead brings back one
+  that poison killed with no loss, Neutralize Poison stands it up), with the
+  conditions that last outside fights; Strength's effect, cast in a fight or
+  out of one, comes with the Strength spells (plan step 5), as does Blink's
+  cast in camp with the camp's other lasting spells.
 
 ## Pools of Darkness
 
@@ -976,7 +984,7 @@ tuned with the AI lab once the original rules play.
 | Strength 19 and above has no row in the open-doors table, so a member that strong never forces an ordinary door (`explore.pas`, `BashDoor`) | It forces one as 18/00 does, 5 in 6 |
 | *Curse* and *Secret:* past a class's Hit Dice, training's fixed Hit Points (3 a fighter or paladin, 2 a cleric, ranger or thief, 1 a magic-user) replace the other classes' rolls instead of adding to them (`ovr018`, `sub_509E0`) | Added to them |
 | *Curse* and *Secret:* the paladin's saving throws, otherwise 2 better than a fighter's, are 1 worse against petrification at levels 5 and 6 and against death at level 8 than that (`ovr026`, `SaveThrowValues`) | 2 better throughout |
-| *Curse:* its starting-age table has no row for a half-elf ranger, which starts aged 0 (`Gbl.cs`, `halfelf_ages` in its reconstruction) | A half-elf fighter's age |
+| *Curse* and *Secret:* their starting-age tables have no row for a half-elf ranger, which starts aged 0 (`Gbl.cs`, `halfelf_ages` in its reconstruction) | A half-elf fighter's age |
 | *Secret:* poison rides only a creature's second attack, so the centipede, the giant snake and spider, the medusa and the Sargatha, which attack only with their first, never poison (`fxengine.pas`, its conditions 2 and 3) | A creature with no second attack poisons with its first |
 | *Secret* and *Curse:* magic resistance's chance is kept in a byte, so a caster above level 11 plus a fifth of the resistance wraps it and is always resisted: the drider is proof against casters of level 15 and up (`fxengine.pas`, `CheckSpellResistance`) | The chance only lessens with the caster's level |
 | *Secret:* cold vulnerability doubles cold damage by whether the game was saved, not whether the creature saved (`effhndlr.pas`, `EffColdVulnerable`) | Doubled unless the creature saved |

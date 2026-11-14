@@ -698,6 +698,12 @@ class Session final : public rules::CombatSession
         return game_of(identity_) == GoldBoxGame::secret_of_the_silver_blades;
     }
 
+    // A spell as this fight's game has it (Gateway changes four rows).
+    [[nodiscard]] const Spell *game_spell(int number) const
+    {
+        return spell(number, game_of(identity_));
+    }
+
     int roll(int sides)
     {
         return roll_die(random_, sides);
@@ -1885,7 +1891,7 @@ void Session::drain_levels(Fighter &victim, int levels)
 // without goes off now.
 void Session::begin_cast(Fighter &caster, int spell_number)
 {
-    const auto &known = *spell(spell_number);
+    const auto &known = *game_spell(spell_number);
     const int delay = known.casting_time / 3;
     if (delay == 0)
     {
@@ -1907,7 +1913,7 @@ void Session::begin_cast(Fighter &caster, int spell_number)
 // a spell on the caster goes off at once; others wait for their aim.
 void Session::start_aiming(Fighter &caster, int spell_number)
 {
-    const auto &known = *spell(spell_number);
+    const auto &known = *game_spell(spell_number);
     const int area = known.area & 0x0F;
     caster.aiming = spell_number;
     caster.picked.clear();
@@ -1925,7 +1931,7 @@ void Session::start_aiming(Fighter &caster, int spell_number)
 bool Session::reachable_by_spell(const Fighter &caster, const Fighter &target) const
 {
     constexpr int heal = 236, druid_cure = 298, stone_to_flesh = 313;
-    const auto &known = *spell(caster.aiming);
+    const auto &known = *game_spell(caster.aiming);
     const bool heals = caster.aiming == 3 || caster.aiming == heal || caster.aiming == druid_cure;
     const bool slows_poison =
         caster.aiming == 26 && target.has(effect::poisoned) && target.condition == Condition::dead;
@@ -1943,7 +1949,7 @@ bool Session::reachable_by_spell(const Fighter &caster, const Fighter &target) c
 std::vector<rules::Command> Session::aiming_commands(const Fighter &caster) const
 {
     std::vector<rules::Command> commands;
-    const auto &known = *spell(caster.aiming);
+    const auto &known = *game_spell(caster.aiming);
     const int area = known.area & 0x0F;
     const auto command = [&](std::string verb)
     {
@@ -2061,7 +2067,7 @@ bool magic_resists(const Fighter &target, int caster_level, int roll_100);
 void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell aim)
 {
     const int number = caster.aiming;
-    const auto &known = *spell(number);
+    const auto &known = *game_spell(number);
     const int level = caster_level(caster, known, game_of(identity_));
     caster.aiming = caster.picks_left = 0;
     caster.picked.clear();
@@ -2239,11 +2245,15 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         cast_generic(caster, number, level, targets, 0, 0, 0, roll(6) * 10);
         break;
     case 42:
-        // Prayer: its strength keeps the caster's side in bit 4.
-        add_with_message(
-            caster,
-            {effect::prayer, level, (caster.side == Side::opposition ? 0x10 : 0) + level, false},
-            false, false, 0, level, &known);
+        // Prayer on the caster, or in Gateway on those it touches: its
+        // strength keeps the caster's side in bit 4.
+        for (const auto id : targets)
+        {
+            (void)add_with_message(*find(id),
+                                   {effect::prayer, level,
+                                    (caster.side == Side::opposition ? 0x10 : 0) + level, false},
+                                   false, false, 0, level, &known);
+        }
         break;
     case 43:
         for (const auto id : targets)
@@ -2575,7 +2585,7 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
             auto &target = *find(id);
             if (target.numbers.creature_type == plant)
             {
-                nonweapon_damage(target, damage, spell(number)->save_result, false, 8, level,
+                nonweapon_damage(target, damage, game_spell(number)->save_result, false, 8, level,
                                  number, false);
             }
             else
@@ -2759,7 +2769,7 @@ void Session::cast_generic(Fighter &caster, int number, int level,
     {
         element = 0;
     }
-    const auto &known = *spell(number);
+    const auto &known = *game_spell(number);
     for (const auto id : targets)
     {
         auto &target = *find(id);
@@ -2881,7 +2891,7 @@ void Session::cast_secret_spell(Fighter &caster, int number, int level,
                   stone_to_flesh = 313, flesh_to_stone = 314, delayed_blast_fireball = 315,
                   mass_invisibility = 316, power_word_stun = 317;
     constexpr int diseased = 34, fire = 9;
-    const auto &known = *spell(number);
+    const auto &known = *game_spell(number);
     const auto roll_dice = [this](int count, int sides)
     {
         int total = 0;
@@ -3168,7 +3178,7 @@ void Session::nonweapon_damage(Fighter &target, int damage, int save_result, boo
     // Secret's resistance turns a spell's damage only when the spell carries
     // an effect too, so a Fireball's goes through (fxengine.pas,
     // CheckSpellResistance, in its reconstruction).
-    const auto *cast = spell(spell_number);
+    const auto *cast = game_spell(spell_number);
     const bool resistible = target.numbers.magic_resistance == 0 || (cast && cast->effect != 0);
     if ((element & 8) && resistible && resists_magic_at_all(target) &&
         magic_resists(target, caster_level, roll(100)))
@@ -3285,7 +3295,7 @@ void Session::charm(Fighter &target, Side charmer)
 void Session::cast_sleep(int level, Cell aim)
 {
     int pool = roll(4) + roll(4) + roll(4) + roll(4);
-    const auto &known = *spell(21);
+    const auto &known = *game_spell(21);
     for (const auto id : within(aim, known.area & 7))
     {
         auto &f = *find(id);
@@ -3545,7 +3555,7 @@ void Session::breathe_cloud(Fighter &f)
     {
         return;
     }
-    const auto &known = *spell(34);
+    const auto &known = *game_spell(34);
     if (saving_throw(f, 0, 0))
     {
         add_with_message(f, {effect::coughing, 1, 255, false}, false, true, 0, 0, &known);
@@ -3660,7 +3670,7 @@ void Session::slow_poison(Fighter &target, int level)
     target.hit_points = std::max(target.hit_points, 1);
     target.numbers.effects.push_back({effect::slow_poison, 60 * level, 255, true});
     log({"{name} is affected by {spell}.",
-         {{"name", target.name}, {"spell", std::string(spell(26)->name), true}}});
+         {{"name", target.name}, {"spell", std::string(game_spell(26)->name), true}}});
     revive(target);
     target.numbers.effects.push_back({effect::slow_poison_tick, 10, 255, true});
 }
@@ -3967,7 +3977,7 @@ void Session::monster_specials(Fighter &f)
         const bool saved = saving_throw(*lock, 4, -2, &f);
         if (add_with_message(*lock,
                              {effect::charm, 0, (f.side == Side::opposition ? 128 : 0) + 12, true},
-                             true, saved, 0, 12, spell(10)))
+                             true, saved, 0, 12, game_spell(10)))
         {
             charm(*lock, f.side);
         }
@@ -4077,7 +4087,7 @@ void Session::secret_specials(Fighter &f)
             if (!saving_throw(*target, 4, 0, &f))
             {
                 (void)add_with_message(*target, {235, roll(10) + 2, f.numbers.level, true}, true,
-                                       false, 0, f.numbers.level, spell(182));
+                                       false, 0, f.numbers.level, game_spell(182));
             }
         }
     }
@@ -4209,7 +4219,7 @@ void Session::dragon_fear(const Fighter &dragon)
             continue;
         }
         if (add_with_message(f, {effect::fear, 0, 255, true}, true, false, 0, dragon.numbers.level,
-                             spell(184)))
+                             game_spell(184)))
         {
             f.turned = true;
         }
@@ -4675,7 +4685,7 @@ bool Session::ai_use_item(Fighter &f)
             log({"{name} uses an item.", {{"name", f.name}}});
             f.aiming = number;
             f.picked.clear();
-            const auto &known = *spell(number);
+            const auto &known = *game_spell(number);
             f.picks_left = (known.area & 0x0F) <= 7 ? (known.area & 3) + 1 : 1;
             if (!ai_aim(f))
             {
@@ -4713,7 +4723,7 @@ bool Session::ai_cast(Fighter &f, bool magic)
         {
             const int number =
                 spells[static_cast<std::size_t>(roll(static_cast<int>(spells.size())) - 1)];
-            if (spell(number) && spell(number)->when != 0 && spell_built(number) &&
+            if (game_spell(number) && game_spell(number)->when != 0 && spell_built(number) &&
                 ai_decides(f, number, 8 - pass))
             {
                 begin_cast(f, number);
@@ -4735,7 +4745,7 @@ bool Session::ai_cast(Fighter &f, bool magic)
 // has a friend within the spell's blast.
 bool Session::ai_decides(const Fighter &f, int number, int least_priority) const
 {
-    const auto &known = *spell(number);
+    const auto &known = *game_spell(number);
     if (known.ai_priority == 0 || known.ai_priority < least_priority)
     {
         return false;
@@ -4810,7 +4820,7 @@ Fighter *Session::cure_search(const Fighter &f)
 // helpless one for a spell that makes helpless. False when it finds none.
 bool Session::ai_aim(Fighter &f)
 {
-    const auto &known = *spell(f.aiming);
+    const auto &known = *game_spell(f.aiming);
     const int area = known.area & 0x0F;
     if (f.aiming == 3)
     {
@@ -6056,7 +6066,7 @@ std::vector<rules::Command> Session::legal_commands() const
         std::vector<int> offered_spells;
         for (const int number : actor->numbers.spells)
         {
-            const auto *known = spell(number);
+            const auto *known = game_spell(number);
             if (known && known->when != 0 && spell_built(number) &&
                 std::find(offered_spells.begin(), offered_spells.end(), number) ==
                     offered_spells.end())
@@ -6089,7 +6099,7 @@ std::vector<rules::Command> Session::legal_commands() const
             }
             for (const int number : item.spells)
             {
-                const auto *known = spell(number);
+                const auto *known = game_spell(number);
                 if (!known || known->when == 0 || !spell_built(number))
                 {
                     continue;
@@ -6237,7 +6247,7 @@ bool Session::submit(const rules::Command &command)
     }
     else if (command.verb == "aim")
     {
-        const auto &known = *spell(actor.aiming);
+        const auto &known = *game_spell(actor.aiming);
         const int area = known.area & 0x0F;
         if (area >= 8 && area <= 14)
         {

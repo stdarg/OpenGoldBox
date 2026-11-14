@@ -1103,9 +1103,18 @@ int starting_age(Race race, Profession profession, RandomState &random, GoldBoxG
             throw std::invalid_argument("The original has no starting age for a monk");
         }
         const bool darkness = game == GoldBoxGame::pools_of_darkness;
-        // Curse's table has no half-elf ranger, which it starts aged 0
-        // (docs/ORIGINAL-RULES.md, Bugs): a warrior's row stands in. Pools of
-        // Darkness's has one, 22 years and no dice.
+        // Gateway's table gives a half-elf ranger its own row, and Pools of
+        // Darkness's one of 22 years and no dice; Curse's has none, and
+        // starts one aged 0 (docs/ORIGINAL-RULES.md, Bugs): a warrior's row
+        // stands in.
+        constexpr AgeDice gateway_half_elf_ranger{26, 3, 8};
+        if (game == GoldBoxGame::gateway_to_the_savage_frontier && race == Race::half_elf &&
+            classes.front() == C::ranger)
+        {
+            return gateway_half_elf_ranger.base +
+                   roll_dice(random,
+                             {gateway_half_elf_ranger.count, gateway_half_elf_ranger.sides});
+        }
         const auto &row = ages[index(classes.front())];
         const auto dice = row.base > 0 ? row
                           : darkness   ? AgeDice{22, 0, 0}

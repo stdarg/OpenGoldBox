@@ -559,6 +559,15 @@ void constitution_and_age()
     }
     check(starting_age(Race::elf, Profession::fighter_magic_user, random) == 180,
           "A fighter/magic-user elf takes the magic-user's oldest starting age");
+    for (int n = 0; n < 200; ++n)
+    {
+        const int gateway = starting_age(Race::half_elf, Profession::ranger, random,
+                                         opengold::GoldBoxGame::gateway_to_the_savage_frontier);
+        const int curse = starting_age(Race::half_elf, Profession::ranger, random,
+                                       opengold::GoldBoxGame::curse_of_the_azure_bonds);
+        check(gateway >= 29 && gateway <= 50 && curse >= 25 && curse <= 34,
+              "A half-elf ranger starts at 26+3d8 in Gateway, as a half-elf fighter in Curse");
+    }
     rejects(
         [&]
         {
