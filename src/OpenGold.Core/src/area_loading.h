@@ -140,6 +140,11 @@ class AreaFiles
 [[nodiscard]] WallArtSet load_vga_wall_art(const AreaFiles &files,
                                            const std::array<unsigned, 3> &slots);
 
+// Pools of Darkness's marker of the party's square on its area map: CURSOR
+// record 1 in the colors it sets, color 13 see-through; nothing without the
+// file (darkness_area_map.cpp).
+[[nodiscard]] std::optional<Image> load_darkness_area_map_marker(const AreaFiles &files);
+
 // One map of an area, without its creatures: the campaign adds those.
 [[nodiscard]] std::shared_ptr<PhlanResources>
 load_district(const AreaFiles &files, const MapCatalog &maps, const AreaSource &area,

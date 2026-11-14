@@ -122,6 +122,8 @@ std::size_t colours(const opengold::Image &image)
     return seen.size();
 }
 
+void the_area_map_is_drawn(opengold::por::RolfTourSession &session);
+
 // A new game runs script 16: map 16, New Phlan's docks, with wall set 1, the
 // party at (15,0) facing west over picture 148, where Rolf, the portmaster,
 // offers a tour. Declining it, he walks the party out, and the docks' walls are
@@ -186,6 +188,42 @@ void the_opening_reaches_new_phlan()
     check(colours(view) > 8, "The 3D view shows the docks' walls in 256 colors");
     check(session.explore(ExplorationCommand::turn_left), "The party turns");
     check(session.observe_view().rgba != view.rgba, "Turning shows another view");
+    the_area_map_is_drawn(session);
+}
+
+// Outside a dungeon (cell 22h at 0) the view is the area map as the original
+// draws it: the tile set's big picture (240 for set 0, cell 3Ah) with the
+// party's marker over its square (cells 25h and 26h), one 8-pixel cell each.
+void the_area_map_is_drawn(opengold::por::RolfTourSession &session)
+{
+    using opengold::test::TourAccess;
+    TourAccess::set_variable(session, EclAddress{0x22}, 0);
+    TourAccess::set_variable(session, EclAddress{0x3A}, 0);
+    TourAccess::set_variable(session, EclAddress{0x25}, 26);
+    TourAccess::set_variable(session, EclAddress{0x26}, 6);
+    const auto map = session.observe_view();
+    check(map.width == 304 && map.height == 120 && colours(map) > 16,
+          "The area map is picture 240, 38 by 15 squares, in its own colors");
+    TourAccess::set_variable(session, EclAddress{0x25}, 25);
+    const auto moved = session.observe_view();
+    const auto square_differs = [&](unsigned column, unsigned row)
+    {
+        for (unsigned y = row * 8; y < row * 8 + 8; ++y)
+        {
+            for (unsigned x = column * 8; x < column * 8 + 8; ++x)
+            {
+                const auto at = (std::size_t{y} * map.width + x) * 4;
+                if (!std::equal(map.rgba.begin() + at, map.rgba.begin() + at + 4,
+                                moved.rgba.begin() + at))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+    check(square_differs(26, 6) && square_differs(25, 6) && !square_differs(10, 10),
+          "The marker moves with the party, the rest of the map stays");
 }
 
 // Every map of GEO1 is held by a script that loads it (LOAD FILES), so the

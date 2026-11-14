@@ -958,7 +958,11 @@ void RolfTourSession::publish_pose()
     }
     snapshot_.pose = next;
     snapshot_.overland = overland();
-    if (overland())
+    if (darkness_area_map())
+    {
+        publish_darkness_area_square();
+    }
+    else if (overland())
     {
         snapshot_.overland_x = machine_.variable(game_cell(ecl_overland_x));
         snapshot_.overland_y = machine_.variable(game_cell(ecl_overland_y));
@@ -1014,6 +1018,10 @@ Image RolfTourSession::observe_view()
         return render_overland_window(*town_->overland,
                                       healed ? town_->healed_overland_tiles : town_->overland_tiles,
                                       town_->party_icon, view);
+    }
+    if (darkness_area_map())
+    {
+        return render_darkness_area_map();
     }
     const auto pose = snapshot_.pose;
     if (gateway_overland())

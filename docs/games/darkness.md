@@ -370,11 +370,10 @@ A fight that ends without a result fails the walk. A monster still charmed
 onto the party's side as a fight ends leaves as one that ran, worth neither
 experience nor treasure, as the original's CombatDoneCleanup marks it.
 
-Still to come: the area map is not drawn (the party walks on it, below);
-the evening and other skies; the combat ground tiles (`DUNGCOM`,
-`WILDCOM`); sound effects other than the footstep, and the music PLAY SOUND
-starts; the opening and closing films in the game; the startup menu's
-button.
+Still to come: the evening and other skies; the combat ground tiles
+(`DUNGCOM`, `WILDCOM`); sound effects other than the footstep, and the music
+PLAY SOUND starts; the opening and closing films in the game; the startup
+menu's button.
 
 ## The area map
 
@@ -386,8 +385,18 @@ the square left in cells 17h and 18h; it takes half a day. Script 17 reads
 the square after the step and names the site there: Phlan's crater at (9,4),
 Zhentil Keep's gates at (0,4), Mulmaster at (31,11), Myth Drannor's ruins at
 (0,13) and the rest (`OPENGOLD_DARKNESS_SITES` lists them all from where the
-route ends). OpenGoldBox moves the party there; it does not draw the map
-yet.
+route ends).
+
+The original draws no window of its own here: it shows the whole big
+picture of the area's tile set (cell 3Ah; its areaPictureIds give 240 for
+set 0, 241, 242 for sets 2 and 3, 245, and none for set 5) and draws its
+marker, `CURSOR` record 1 through color 13, over the party's square, one
+8-pixel cell of the picture for each square (its MapWin). OpenGoldBox's view
+does the same (`render_darkness_area_map`, `darkness_area_map.cpp`, since
+2026-11-14): picture 240 is the Moonsea, 304 by 120 pixels. The party's
+square goes out as a wilderness map's does, so the game's view steps it
+with the arrow keys and redraws the marker. Still to come: the colors the
+original cycles in these pictures (its palette presets for 240 to 246).
 
 ## The win and the route
 

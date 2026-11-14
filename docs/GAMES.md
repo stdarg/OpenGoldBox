@@ -533,7 +533,7 @@ new decoders.
    out TREASURE from `ITEM0`'s definitions, opens the stores its `GAME.EXE`
    lists, and answers FIND NPC, SPELL and its DAMAGE forms; its sprites and
    combat icons are drawn in their own colors (darkness.md, The walk). Still
-   to come: drawing the area map, and the startup menu. A fight that ends
+   to come: the startup menu. A fight that ends
    without a result fails any game's walk (2026-11-14).
 5. The route from the opening to the win (`opengold_darkness_route`). *Begun
    (2026-11-14):* the route plays the prologue: Rolf's tour, Sasha's escort
@@ -550,7 +550,8 @@ new decoders.
    route reaches the win it passes when it plays every beat to the Temple of
    Tyr (map 50). *Where it stops (2026-11-14):* in the temple with Priam;
    next, the temple's own events, then counter-clockwise round the area map
-   to Dark Phlan. Still to come: drawing the area map, spell levels 8 and 9
+   to Dark Phlan. *The area map is drawn (2026-11-14):* the big picture with
+   the party's marker, as the original draws it. Still to come: spell levels 8 and 9
    and the new spells, starting equipment, skies, combat ground tiles, sound
    and music.
 

@@ -116,6 +116,9 @@ struct PhlanResources
     // party's arrow on them, by facing.
     std::map<unsigned, Image> overland_pictures;
     std::array<Image, 4> overland_arrows;
+    // Pools of Darkness's marker of the party's square on its area map
+    // (CURSOR record 1, drawn through color 13).
+    std::optional<Image> area_map_marker;
     // ITEMS templates, indexed by original item type, for generated treasure.
     std::vector<ItemTemplate> item_templates;
     std::vector<std::uint8_t> sprite_archive;
@@ -1069,6 +1072,14 @@ class RolfTourSession
     // and 26h; a step takes half a day.
     [[nodiscard]] bool vga_area_map() const;
     void vga_area_step();
+    // Pools of Darkness's party on its area map (darkness_area_map.cpp).
+    [[nodiscard]] bool darkness_area_map() const;
+    // The area map as the original draws it: the tile set's big picture with
+    // the party's marker over its square.
+    [[nodiscard]] Image render_darkness_area_map() const;
+    // Shows the party on the area map as on a wilderness map: its square and
+    // its last step's direction, so the view steps it in eight directions.
+    void publish_darkness_area_square();
     // Its DAMAGE's forms, told in the dialogue.
     void vga_damage(const EclRequest &request);
     // Its encounter sprite's view at a distance (0 near, 2 far), in the

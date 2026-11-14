@@ -490,6 +490,7 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
         {
             throw EclError(std::string(game_title(game)) + "'s GAME.EXE has no store lists");
         }
+        root->area_map_marker = por::detail::load_darkness_area_map_marker(files);
     }
     else
     {
