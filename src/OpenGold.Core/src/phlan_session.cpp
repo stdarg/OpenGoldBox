@@ -645,7 +645,9 @@ EclHostReply RolfTourSession::character_reply(PartySlot slot) const
         {
             write.address = game_cell(write.address);
         }
-        if (game() == GoldBoxGame::curse_of_the_azure_bonds && slot.index < 8)
+        const bool curse_record = game() == GoldBoxGame::curse_of_the_azure_bonds ||
+                                  game() == GoldBoxGame::gateway_to_the_savage_frontier;
+        if (curse_record && slot.index < 8)
         {
             // Curse's scripts also read the character's Intelligence and gender.
             if (const auto id = campaign_->state().slots[slot.index])
@@ -661,6 +663,13 @@ EclHostReply RolfTourSession::character_reply(PartySlot slot) const
                 at(0x15) = static_cast<std::uint16_t>(
                     member.character.sheet().scores[rules::Ability::intelligence]);
                 at(0xD6) = member.character.creation_data().gender == "female" ? 1 : 0;
+                // Gateway's also read the Dexterity, which a climb rolls
+                // against (the Kraken cell's grating, ECL2:2 0x8798).
+                if (game() == GoldBoxGame::gateway_to_the_savage_frontier)
+                {
+                    at(0x17) = static_cast<std::uint16_t>(
+                        member.character.sheet().scores[rules::Ability::dexterity]);
+                }
             }
         }
         // The party's size, which the scripts loop over member by member
@@ -3103,6 +3112,38 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         {
             break;
         }
+        // Gateway's LOAD CHARACTER with bit 7 makes the member at its position
+        // current and, when the script has cleared the name and status,
+        // removes that member (its EclLoadCharacter): Erek leaves with
+        // Amanitas, though the record the script cleared is another's. The
+        // cleared record is not read back into anyone.
+        if (arg(0) >= 128 && game() == GoldBoxGame::gateway_to_the_savage_frontier && campaign_)
+        {
+            const PartySlot target{static_cast<unsigned>(arg(0) & 127)};
+            const auto leaving =
+                target.index < 8 ? campaign_->state().slots[target.index] : MemberId{};
+            const bool cleared = machine_.variable(game_cell(ecl_character_record)) == 0 &&
+                                 machine_.variable(game_cell(ecl_character_status)) == 0;
+            if (cleared && leaving)
+            {
+                campaign_->remove(leaving);
+                if (selected_character_.index >= 8 ||
+                    !campaign_->state().slots[selected_character_.index])
+                {
+                    selected_character_ = campaign_->state().selected_slot;
+                }
+            }
+            else
+            {
+                read_character();
+                if (leaving)
+                {
+                    selected_character_ = target;
+                }
+            }
+            reply = character_reply(selected_character_);
+            break;
+        }
         if (arg(0) >= 128)
         {
             if (static_cast<unsigned>(arg(0) & 127) != selected_character_.index)
@@ -3443,8 +3484,15 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         // Dispel Magic (ECL1:34 0x8E6D); whoever has it memorized casts it,
         // and the script's own clearing of the spell's cell does nothing more.
         constexpr unsigned cleric_dispel = 41, magic_user_dispel = 46;
-        const bool dispel = game() == GoldBoxGame::secret_of_the_silver_blades &&
-                            (arg(0) == cleric_dispel || arg(0) == magic_user_dispel);
+        // Gateway's squid tank asks for each fire spell (ECL2:2 0x9263): every
+        // memorized one the water ruins is gone, one a question, until none is left.
+        const bool gateway = game() == GoldBoxGame::gateway_to_the_savage_frontier;
+        const auto asked =
+            original::spell_id(gateway ? original::canonical_spell(static_cast<int>(arg(0)), game())
+                                       : static_cast<int>(arg(0)));
+        const bool dispel = (game() == GoldBoxGame::secret_of_the_silver_blades &&
+                             (arg(0) == cleric_dispel || arg(0) == magic_user_dispel)) ||
+                            (gateway && !asked.empty());
         // Pools of Darkness asks for any spell: whoever has it memorized casts it.
         if (game() == GoldBoxGame::pools_of_darkness)
         {
@@ -3461,8 +3509,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         std::uint16_t place = 255, slot = 0;
         if (dispel)
         {
-            if (const auto caster =
-                    campaign_->cast_exploration_spell(original::spell_id(static_cast<int>(arg(0)))))
+            if (const auto caster = campaign_->cast_exploration_spell(asked))
             {
                 const auto &slots = campaign_->state().slots;
                 place = 0;
@@ -3578,7 +3625,15 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         }
         for (const auto item : unequipped)
         {
-            (void)campaign_->equip(joined, item);
+            // A record may mark two items readied in one place (Gateway's
+            // Brinshaar, ECL3:9): the first is worn, the other stays packed.
+            try
+            {
+                (void)campaign_->equip(joined, item);
+            }
+            catch (const std::runtime_error &)
+            {
+            }
         }
         // The script may be looking at the slot the companion just took. The
         // record it holds must show the new member, or reading it back would
@@ -4270,12 +4325,38 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         reply = character_reply(selected_character_);
         break;
     }
+    case 45:
+    {
+        // Gateway's CALL 8810h changes the current character's coins up into
+        // larger ones; here the party's one purse is changed up. The other
+        // engine routines are the explorer's (handle_host).
+        if (game() != GoldBoxGame::gateway_to_the_savage_frontier || !campaign_ ||
+            address_arg(0) != EclAddress{ecl_engine_routines(game()).change_coins_up})
+        {
+            return false;
+        }
+        read_character();
+        campaign_->set_wealth(change_coins_up(campaign_->state().wealth, campaign_->coin_rates()));
+        reply = character_reply(selected_character_);
+        break;
+    }
     case 56:
         if (arg(0) == 0 && campaign_)
         {
             read_character();
             open_hall(request.id);
             return true;
+        }
+        // Gateway's PROGRAM 12h brings every member to full Hit Points (the
+        // wish Krevish saved for Ascore) and compares equal when it healed
+        // anyone, else not equal, which its script tests (ECL6:28 0x8907).
+        if (arg(0) == 0x12 && campaign_ && game() == GoldBoxGame::gateway_to_the_savage_frontier)
+        {
+            read_character();
+            const bool healed = campaign_->heal_living_members();
+            reply = character_reply(selected_character_);
+            reply.conditions = EclConditions{healed, !healed, false, false, false, false};
+            break;
         }
         // Tyranthraxus defeated (PROGRAM 8): the game is won (area byte 0x3FA,
         // the cell 0x4AFD). The original pauses on its closing words, healing

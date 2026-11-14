@@ -544,7 +544,10 @@ void EclMachine::execute(const EclInstruction &i)
         const auto id = value(a[0]) & 255;
         const bool darkness_won =
             program_->game() == GoldBoxGame::pools_of_darkness && id == darkness_win;
-        if (id != 0 && id != 8 && id != 9 && !darkness_won)
+        // Gateway's PROGRAM 12h heals the party.
+        const bool gateway_heal =
+            id == 0x12 && program_->game() == GoldBoxGame::gateway_to_the_savage_frontier;
+        if (id != 0 && id != 8 && id != 9 && !darkness_won && !gateway_heal)
         {
             pc_ = i.next;
             return;
@@ -1165,8 +1168,9 @@ bool EclMachine::resume_host(std::uint64_t id, const EclHostReply &reply)
         return false;
     }
     const auto opcode = pending_->instruction->opcode;
+    // FIND ITEM returns its flags; Gateway's PROGRAM 12h may (whether it healed).
     if ((opcode == 32) != static_cast<bool>(reply.next_program) ||
-        (opcode == 50) != reply.conditions.has_value())
+        (opcode == 50 && !reply.conditions) || (reply.conditions && opcode != 50 && opcode != 56))
     {
         return false;
     }

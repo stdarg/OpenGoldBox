@@ -80,6 +80,12 @@ inline constexpr CoinRates srd_coin_rates{{2, 20, 100, 200, 2000}};
 [[nodiscard]] SettledPurse pay_gold(const Purse &purse, std::uint64_t gold,
                                     const CoinRates &rates = srd_coin_rates);
 
+// Changes the purse's coins up into larger ones, copper through gold, each as
+// far as it makes whole coins of the next (Gateway's CALL 8810h): the
+// original's ten copper a silver, ten silver an electrum, two electrum a gold
+// and five gold a platinum at its rates. The purse is worth what it was.
+[[nodiscard]] Purse change_coins_up(Purse purse, const CoinRates &rates = srd_coin_rates);
+
 // Original New Phlan scripts check and take one particular denomination (the
 // inn asks for platinum). They see, in each denomination, what the whole coin
 // purse can afford at its rates. Gems and jewelry are not coins; they are

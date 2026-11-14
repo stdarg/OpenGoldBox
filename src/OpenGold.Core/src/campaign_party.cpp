@@ -3137,6 +3137,26 @@ int CampaignParty::hit_point_maximum(MemberId id) const
     return rules_->hit_point_maximum(m.character.sheet(), m.vitals);
 }
 
+bool CampaignParty::heal_living_members()
+{
+    editable();
+    bool healed = false;
+    for (const auto id : state_.slots)
+    {
+        if (!id || member(id).vitals.dead || member(id).vitals.hit_points >= hit_point_maximum(id))
+        {
+            continue;
+        }
+        const auto maximum = hit_point_maximum(id);
+        auto &m = edit(id);
+        auto vitals = m.vitals;
+        rules_->set_hit_points(vitals, m.character.sheet(), maximum);
+        m.vitals = std::move(vitals);
+        healed = true;
+    }
+    return healed;
+}
+
 std::vector<rules::StatusEffectView> CampaignParty::status_effects(MemberId id) const
 {
     const auto &m = member(id);

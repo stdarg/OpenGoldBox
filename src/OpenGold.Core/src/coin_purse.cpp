@@ -98,6 +98,18 @@ SettledPurse pay_gold(const Purse &purse, std::uint64_t gold, const CoinRates &r
     return result;
 }
 
+Purse change_coins_up(Purse purse, const CoinRates &rates)
+{
+    for (std::size_t coin = 0; coin + 1 < rates.worth.size(); ++coin)
+    {
+        const auto coins_a_larger = rates.worth[coin + 1] / rates.worth[coin];
+        const auto larger = purse[coin] / coins_a_larger;
+        add_coins(purse, coin + 1, larger);
+        purse[coin] = static_cast<std::uint32_t>(purse[coin] - larger * coins_a_larger);
+    }
+    return purse;
+}
+
 Purse script_coins(const Purse &purse, const CoinRates &rates)
 {
     Purse view;

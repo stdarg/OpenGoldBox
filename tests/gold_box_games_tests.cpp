@@ -484,6 +484,17 @@ struct RouteBeat
     // Steps on Pools of Darkness's area map, each in one of the eight
     // directions, instead of looking at or stepping from a square of a map.
     std::vector<opengold::por::ExplorationCommand> area_steps;
+    // The party flees what it meets where it may (ATTACK or FLEE), as a
+    // player crossing Gateway's wilds flees wandering monsters too strong
+    // for it; it fights when it cannot get away.
+    bool fleeing = false;
+    // The minute of the day the party waits for before the beat, as a player
+    // waits in camp for a ship's sailing: the test passes the time, for
+    // OpenGoldBox's camp rests only a night.
+    std::optional<unsigned> wait_until_minute;
+    // The rounds of repeat_until_at_least stay on the beat's square, as a
+    // player tries a climb again.
+    bool repeat_in_place = false;
 };
 
 // Answers that train each of the route's members a level at a hall: its
@@ -980,6 +991,20 @@ void walk_passages(
         beat.searching = searching;
         beat.test_wins = test_wins;
         beats.push_back(beat);
+    }
+}
+
+// Steps across Gateway's overland (maps 21 to 26), as walk_passages walks a
+// map, fleeing the wandering monsters it meets where it can.
+void walk_overland(
+    std::vector<RouteBeat> &beats, unsigned map,
+    std::initializer_list<std::tuple<unsigned, unsigned, opengold::por::MapDirection>> steps)
+{
+    walk_passages(beats, map, steps);
+    for (auto beat = beats.end() - static_cast<std::ptrdiff_t>(steps.size()); beat != beats.end();
+         ++beat)
+    {
+        beat->fleeing = true;
     }
 }
 
@@ -1527,6 +1552,429 @@ const std::vector<RouteBeat> &darkness_route()
     return beats;
 }
 
+// Answers that train each of Gateway's route's members a level at a hall,
+// Krevish too.
+std::vector<std::string> train_gateway_party()
+{
+    auto answers = train_everyone();
+    answers.insert(answers.end() - 1, "Krevish");
+    return answers;
+}
+
+// Gateway's route plays to the game's end once this is true; until then it
+// stops on this map (docs/GAMES.md, phase 5 step 4).
+constexpr bool gateway_route_ends_the_game = false;
+constexpr unsigned gateway_route_stops_on_map = 13;
+
+// Gateway's story, beat by beat, as its cluebook tells it (plan phase 5, step
+// 4): from the inn of Yartar on.
+const std::vector<RouteBeat> &gateway_route()
+{
+    static const std::vector<RouteBeat> beats = []
+    {
+        using D = opengold::por::MapDirection;
+        std::vector<RouteBeat> route{
+            // Yartar: the thugs cornering Krevish.
+            {1, 4, 0, D::north, {"YES"}},
+            // The boat rentals, out of the city by the river.
+            {1, 9, 3, D::north, {"YES"}},
+        };
+        // Up the River Dessarin by boat, each step as OPENGOLD_SECRET_FIND finds
+        // it, to Nesme's dock.
+        walk_overland(route, 22,
+                      {{5, 12, D::north},
+                       {5, 9, D::east},
+                       {6, 8, D::east},
+                       {7, 6, D::east},
+                       {8, 5, D::east}});
+        route.push_back(step_beat(22, 9, 3, D::south, {"YES"}));
+        // Nesme: from the dock through the streets to the hidden temple of
+        // Bane, its guards of lizard men and orcs, and the Banite cleric's
+        // chamber (cell 4C93 set as he falls).
+        walk_passages(route, 3,
+                      {{3, 12, D::north}, {3, 11, D::north}, {3, 10, D::west},  {2, 10, D::west},
+                       {1, 10, D::west},  {0, 10, D::north}, {0, 9, D::north},  {0, 8, D::north},
+                       {0, 7, D::east},   {1, 7, D::east},   {2, 7, D::east},   {3, 7, D::east},
+                       {4, 7, D::east},   {5, 7, D::east},   {6, 7, D::east},   {7, 7, D::east},
+                       {8, 7, D::east},   {9, 7, D::east},   {10, 7, D::north}, {10, 6, D::north},
+                       {10, 5, D::north}, {10, 4, D::north}, {10, 3, D::west},  {9, 3, D::south},
+                       {9, 4, D::west},   {8, 4, D::north},  {8, 3, D::north},  {8, 2, D::west},
+                       {7, 2, D::north},  {7, 1, D::north},  {7, 0, D::east},   {8, 0, D::east}},
+                      true);
+        {
+            auto cleric = step_beat(3, 9, 0, D::south);
+            cleric.rest_first = true;
+            cleric.expect_cell = {{0x4C93, 1}};
+            route.push_back(cleric);
+        }
+        // Out of the temple and the eastern gate, and overland east to
+        // Silverymoon.
+        walk_passages(route, 3,
+                      {{9, 1, D::east},
+                       {10, 1, D::north},
+                       {10, 15, D::north},
+                       {10, 14, D::north},
+                       {10, 13, D::east},
+                       {11, 12, D::east},
+                       {12, 12, D::north},
+                       {12, 11, D::east},
+                       {13, 11, D::north},
+                       {13, 10, D::north},
+                       {13, 9, D::north},
+                       {13, 8, D::east},
+                       {14, 7, D::east},
+                       {15, 7, D::east}});
+        walk_overland(route, 22,
+                      {{10, 4, D::east},
+                       {11, 2, D::east},
+                       {12, 1, D::east},
+                       {13, 0, D::east},
+                       {14, 15, D::east},
+                       {15, 13, D::east}});
+        walk_overland(route, 23,
+                      {{0, 13, D::east},
+                       {1, 11, D::east},
+                       {2, 9, D::east},
+                       {3, 7, D::east},
+                       {4, 5, D::east},
+                       {5, 4, D::east},
+                       {6, 3, D::east}});
+        route.push_back(step_beat(23, 7, 1, D::south, {"YES"}));
+        // Silverymoon: by the secret door east of the gate to the hidden
+        // rooms, the trolls the shouting man torments, and Erek, chained,
+        // who joins to rescue Amanitas.
+        walk_passages(route, 4,
+                      {{0, 1, D::north},
+                       {0, 0, D::east},
+                       {1, 0, D::east},
+                       {2, 0, D::east},
+                       {3, 0, D::east},
+                       {4, 0, D::east},
+                       {5, 0, D::east},
+                       {6, 0, D::east}},
+                      true);
+        {
+            auto trolls = step_beat(4, 7, 0, D::east);
+            trolls.rest_first = true;
+            route.push_back(trolls);
+        }
+        route.push_back(step_beat(4, 8, 0, D::south));
+        route.push_back(step_beat(4, 8, 1, D::west, {"ACCEPT HIM"}));
+        // Back out of the gate and overland south to Everlund.
+        walk_passages(route, 4,
+                      {{7, 1, D::east},
+                       {8, 1, D::north},
+                       {8, 0, D::west},
+                       {7, 0, D::west},
+                       {6, 0, D::west},
+                       {5, 0, D::west},
+                       {4, 0, D::west},
+                       {3, 0, D::west},
+                       {2, 0, D::west},
+                       {1, 0, D::west},
+                       {0, 0, D::west}});
+        walk_overland(route, 23,
+                      {{7, 1, D::north}, {7, 14, D::north}, {7, 11, D::north}, {7, 8, D::north}});
+        route.push_back(step_beat(23, 7, 5, D::west, {"YES"}));
+        // Everlund: through the streets to the stable, where owlbears guard
+        // the secret door to the passage beneath the River Rauvin.
+        walk_passages(route, 5,
+                      {{8, 15, D::north},
+                       {8, 14, D::north},
+                       {8, 13, D::north},
+                       {8, 12, D::north},
+                       {8, 11, D::north},
+                       {8, 10, D::north},
+                       {8, 9, D::west},
+                       {7, 8, D::west},
+                       {6, 8, D::west},
+                       {5, 8, D::north},
+                       {5, 7, D::west},
+                       {4, 7, D::north},
+                       {4, 6, D::west},
+                       {3, 6, D::west},
+                       {2, 6, D::west},
+                       {1, 6, D::west}},
+                      true);
+        {
+            auto owlbears = step_beat(5, 0, 6, D::south);
+            owlbears.rest_first = true;
+            owlbears.passing = true;
+            owlbears.searching = true;
+            route.push_back(owlbears);
+        }
+        walk_passages(route, 5, {{0, 7, D::south}, {0, 8, D::south}}, true);
+        // The passage to the hidden Zhentarim complex, the man whipping his
+        // owlbears, and Amanitas's room: his rescue (cell 4C32 set) gives the
+        // Card of Counting and the Ring of Reversal.
+        walk_passages(route, 5,
+                      {{0, 9, D::south},
+                       {0, 10, D::south},
+                       {0, 11, D::south},
+                       {0, 12, D::south},
+                       {0, 13, D::east},
+                       {1, 13, D::east},
+                       {2, 13, D::east},
+                       {3, 13, D::east}},
+                      true);
+        {
+            auto amanitas = step_beat(5, 4, 13, D::east);
+            amanitas.rest_first = true;
+            amanitas.expect_cell = {{0x4C32, 1}};
+            route.push_back(amanitas);
+        }
+        // Out of Everlund and overland west to Yartar, as Amanitas bids.
+        walk_passages(route, 5,
+                      {{5, 13, D::east},
+                       {6, 13, D::south},
+                       {6, 14, D::south},
+                       {6, 15, D::east},
+                       {7, 15, D::east},
+                       {8, 15, D::south}});
+        walk_overland(route, 23,
+                      {{6, 6, D::west},
+                       {5, 4, D::west},
+                       {4, 2, D::west},
+                       {3, 0, D::west},
+                       {2, 15, D::west},
+                       {1, 13, D::west},
+                       {0, 11, D::west}});
+        walk_overland(route, 22,
+                      {{15, 11, D::west},
+                       {14, 9, D::west},
+                       {13, 7, D::west},
+                       {12, 6, D::west},
+                       {11, 4, D::west},
+                       {10, 2, D::west},
+                       {9, 1, D::west},
+                       {8, 0, D::west},
+                       {7, 14, D::west}});
+        route.push_back(step_beat(22, 6, 12, D::west, {"YES"}));
+        // Yartar's Hall of Training. A player would have hunted Nesme's trolls
+        // and the wilds for experience by now; the test gives it (a stand-in,
+        // as Curse's and Secret's routes give a party brought from the game
+        // before) with the gold for the training, and the party trains a
+        // level a visit, twice, then rests
+        // at the Inn of the Glowing Gem.
+        for (int level = 0; level < 2; ++level)
+        {
+            RouteBeat experienced{1, 3, 9, D::north, train_gateway_party()};
+            experienced.test_experience = 6'000;
+            experienced.test_gold = 8'000;
+            route.push_back(experienced);
+        }
+        route.push_back({1, 0, 9, D::north, {"YES"}});
+        // Leaving the city with the Ring of Reversal, the party is pulled
+        // through a secret door into the Kraken complex beneath Yartar.
+        walk_passages(route, 1,
+                      {{3, 8, D::west}, {2, 8, D::west}, {1, 8, D::west}, {0, 8, D::west}});
+        // Krevish climbs through the grating above the cell's door and
+        // unlocks it (cell 4C08), tried again after a fall, as a player would.
+        {
+            auto grating = step_beat(2, 12, 15, D::west, {"YES", "Krevish"});
+            grating.repeat_until_at_least = {{0x4C08, 1}};
+            grating.repeat_in_place = true;
+            route.push_back(grating);
+        }
+        // North through the complex to the lizard men at the captain's door,
+        // and the Kraken captain and his spies.
+        walk_passages(route, 2,
+                      {{11, 15, D::west},
+                       {10, 15, D::north},
+                       {10, 14, D::north},
+                       {10, 13, D::north},
+                       {10, 12, D::east},
+                       {11, 12, D::east},
+                       {12, 12, D::north},
+                       {12, 11, D::east},
+                       {13, 11, D::north},
+                       {13, 10, D::north},
+                       {13, 9, D::north},
+                       {13, 8, D::north},
+                       {13, 7, D::north},
+                       {13, 6, D::west},
+                       {12, 6, D::north},
+                       {12, 5, D::north},
+                       {12, 4, D::north},
+                       {12, 3, D::west}},
+                      true);
+        walk_passages(route, 2, {{11, 3, D::west}, {10, 3, D::south}});
+        {
+            // The captain's room is safe to rest in once he is beaten.
+            auto rest = step_beat(2, 10, 4, D::north);
+            rest.rest_first = true;
+            route.push_back(rest);
+        }
+        // Out of Yartar's north gate and overland west to Neverwinter.
+        walk_passages(route, 1,
+                      {{13, 2, D::west},
+                       {12, 2, D::west},
+                       {11, 2, D::north},
+                       {11, 1, D::north},
+                       {11, 0, D::north}},
+                      true);
+        walk_overland(route, 22,
+                      {{6, 12, D::north},
+                       {6, 9, D::west},
+                       {5, 8, D::west},
+                       {4, 6, D::west},
+                       {3, 4, D::west},
+                       {2, 2, D::west},
+                       {1, 0, D::west},
+                       {0, 14, D::west}});
+        walk_overland(route, 21,
+                      {{15, 14, D::west},
+                       {14, 12, D::west},
+                       {13, 10, D::west},
+                       {12, 8, D::west},
+                       {11, 7, D::west},
+                       {10, 6, D::north},
+                       {10, 3, D::west},
+                       {9, 1, D::west},
+                       {8, 0, D::west},
+                       {7, 15, D::west},
+                       {6, 13, D::south},
+                       {6, 12, D::west}});
+        route.push_back(step_beat(21, 5, 10, D::west, {"YES"}));
+        // Out of Neverwinter and north along the coast to Luskan.
+        walk_passages(route, 6, {{7, 15, D::south}}, true);
+        walk_overland(route, 21,
+                      {{4, 11, D::north},
+                       {4, 9, D::north},
+                       {4, 6, D::south},
+                       {4, 5, D::west},
+                       {3, 3, D::west}});
+        route.push_back(step_beat(21, 2, 1, D::west, {"YES"}));
+        // Luskan: through the streets to the bridge to the Hosttower of the Arcane.
+        walk_passages(
+            route, 8,
+            {{15, 15, D::north}, {15, 14, D::west},  {14, 14, D::west}, {13, 14, D::west},
+             {12, 13, D::north}, {12, 12, D::north}, {12, 11, D::west}, {11, 11, D::north},
+             {11, 10, D::west},  {10, 10, D::west},  {9, 10, D::west},  {8, 10, D::south},
+             {8, 11, D::west},   {7, 11, D::west},   {6, 11, D::west},  {5, 11, D::west},
+             {4, 11, D::west},   {3, 11, D::west},   {2, 11, D::north}, {2, 10, D::west},
+             {1, 10, D::west},   {0, 10, D::north},  {0, 9, D::north}},
+            true);
+        // The Hosttower: through its owlbears' rooms to the tiny room whose trap door
+        // leads down into the dungeon beneath.
+        walk_passages(route, 9,
+                      {{9, 11, D::north}, {9, 10, D::north}, {9, 9, D::west},   {8, 9, D::north},
+                       {8, 8, D::west},   {7, 8, D::north},  {7, 7, D::west},   {6, 7, D::west},
+                       {5, 7, D::west},   {4, 7, D::west},   {3, 7, D::south},  {3, 8, D::west},
+                       {2, 8, D::south},  {2, 9, D::south},  {2, 10, D::south}, {2, 11, D::south},
+                       {2, 12, D::east},  {3, 12, D::south}, {3, 13, D::east},  {4, 13, D::east},
+                       {5, 13, D::east},  {6, 13, D::east},  {7, 13, D::north}, {7, 12, D::east},
+                       {8, 12, D::south}, {8, 13, D::south}, {8, 14, D::south}, {8, 15, D::west},
+                       {7, 15, D::west},  {1, 4, D::north},  {1, 3, D::north},  {1, 2, D::north},
+                       {1, 1, D::north},  {1, 0, D::east},   {2, 0, D::east}},
+                      true);
+        // Brinshaar's cell.
+        route.push_back(step_beat(9, 3, 0, D::south));
+        // The dungeon's maze of one-way doors, as the planning aid finds it, to the
+        // room where the statuette of the East is kept (bit 1 of cell 4C27).
+        walk_passages(
+            route, 9,
+            {{3, 1, D::south},   {3, 2, D::south},   {3, 3, D::south},   {3, 4, D::west},
+             {2, 4, D::south},   {2, 5, D::west},    {1, 5, D::south},   {1, 6, D::west},
+             {0, 6, D::south},   {0, 7, D::east},    {1, 7, D::east},    {2, 7, D::north},
+             {2, 6, D::east},    {3, 6, D::north},   {3, 5, D::east},    {4, 5, D::north},
+             {4, 4, D::east},    {5, 4, D::north},   {5, 3, D::north},   {5, 2, D::north},
+             {5, 1, D::north},   {5, 0, D::east},    {6, 0, D::east},    {7, 0, D::south},
+             {7, 1, D::south},   {7, 2, D::south},   {7, 3, D::south},   {7, 4, D::west},
+             {6, 4, D::south},   {6, 5, D::east},    {7, 5, D::south},   {7, 6, D::east},
+             {8, 6, D::east},    {9, 6, D::south},   {9, 7, D::south},   {9, 8, D::east},
+             {10, 8, D::east},   {11, 8, D::north},  {11, 7, D::north},  {11, 6, D::north},
+             {11, 5, D::west},   {10, 5, D::west},   {9, 5, D::north},   {9, 4, D::west},
+             {8, 4, D::north},   {8, 3, D::north},   {8, 2, D::north},   {8, 1, D::north},
+             {8, 0, D::east},    {9, 0, D::south},   {9, 1, D::east},    {10, 1, D::east},
+             {11, 1, D::south},  {11, 2, D::south},  {11, 3, D::east},   {12, 3, D::south},
+             {12, 4, D::south},  {12, 5, D::south},  {12, 6, D::east},   {13, 6, D::east},
+             {14, 6, D::south},  {14, 7, D::west},   {13, 7, D::west},   {12, 7, D::south},
+             {12, 8, D::south},  {12, 9, D::south},  {12, 10, D::east},  {13, 10, D::south},
+             {13, 11, D::south}, {13, 12, D::south}, {13, 13, D::south}, {13, 14, D::east},
+             {14, 14, D::south}, {14, 15, D::east},  {15, 15, D::north}, {15, 14, D::north},
+             {15, 13, D::west},  {14, 13, D::north}, {14, 12, D::east},  {15, 12, D::north},
+             {15, 11, D::west},  {14, 11, D::north}, {14, 10, D::north}, {14, 9, D::west},
+             {13, 9, D::north},  {13, 8, D::east},   {14, 8, D::east},   {15, 8, D::north},
+             {15, 7, D::north},  {15, 6, D::north},  {15, 5, D::west},   {14, 5, D::west},
+             {13, 5, D::north},  {13, 4, D::east},   {14, 4, D::east},   {15, 4, D::north},
+             {15, 3, D::west},   {14, 3, D::west},   {13, 3, D::north},  {13, 2, D::north},
+             {13, 1, D::east}},
+            true);
+        {
+            auto east = step_beat(9, 14, 1, D::north);
+            east.rest_first = true;
+            east.expect_cell = {{0x4C27, 1}};
+            route.push_back(east);
+        }
+        // Out of the Hosttower, where Brinshaar turns on the party, back through
+        // Luskan to the pier of the Company of the Brazen Pennant, and its ship to
+        // Tuern, which sails at 0800 (the party waits for it, a stand-in for a
+        // player's rest in camp).
+        walk_passages(route, 9,
+                      {{14, 0, D::south}, {14, 1, D::south}, {14, 2, D::west},  {13, 2, D::south},
+                       {13, 3, D::east},  {14, 3, D::east},  {15, 3, D::south}, {15, 4, D::west},
+                       {14, 4, D::west},  {13, 4, D::south}, {13, 5, D::east},  {14, 5, D::east},
+                       {15, 5, D::south}, {15, 6, D::south}, {15, 7, D::south}, {15, 8, D::west},
+                       {14, 8, D::west},  {13, 8, D::south}, {13, 9, D::south}, {13, 10, D::south},
+                       {13, 11, D::west}, {12, 11, D::west}, {11, 11, D::west}, {10, 11, D::west},
+                       {9, 11, D::south}},
+                      true);
+        walk_passages(route, 8,
+                      {{0, 9, D::south}, {0, 10, D::east}, {1, 10, D::east},  {2, 10, D::south},
+                       {2, 11, D::east}, {3, 11, D::east}, {4, 11, D::east},  {5, 11, D::east},
+                       {6, 11, D::east}, {7, 11, D::east}, {8, 11, D::north}, {8, 10, D::north},
+                       {8, 9, D::north}, {8, 8, D::north}, {8, 7, D::north},  {8, 6, D::north},
+                       {8, 5, D::west},  {7, 5, D::west},  {6, 5, D::west},   {5, 5, D::west},
+                       {4, 5, D::west},  {3, 5, D::north}, {3, 4, D::north},  {3, 3, D::north},
+                       {3, 2, D::west},  {2, 2, D::west},  {1, 2, D::west}},
+                      true);
+        {
+            auto ship = step_beat(8, 0, 2, D::south, {"YES"});
+            ship.wait_until_minute = 7 * 60 + 35;
+            route.push_back(ship);
+        }
+        // Uttersea's pier, and the morning ship to Gundarlun.
+        route.push_back(step_beat(10, 9, 12, D::south, {"GUNDARLUN"}));
+        // Gundbarg's Hall of Training on the experience of the islands' fights
+        // a player would have fought (the test gives it, as in Yartar), twice,
+        // the Temple's raising of the dead and the Green Turtle Inn's rest.
+        for (int level = 0; level < 2; ++level)
+        {
+            RouteBeat experienced{11, 9, 6, D::north, train_gateway_party()};
+            experienced.test_experience = 25'000;
+            experienced.test_gold = 8'000;
+            route.push_back(experienced);
+        }
+        route.push_back({11, 10, 3, D::north, {"raise:dead", "Leave"}});
+        route.push_back({11, 11, 7, D::north, {"YES"}});
+        // Gundbarg: the party waits for the morning ship, which sails at 0900
+        // (the test passes the time) and is wrecked by a giant kraken.
+        {
+            RouteBeat ship{11, 13, 10, D::south, {"NEVERWINTER", "PAY", "PAY"}};
+            ship.wait_until_minute = 9 * 60 + 5;
+            route.push_back(ship);
+        }
+        // The Purple Rocks: across the island to the small boat, and over the
+        // straits to the Kraken headquarters.
+        walk_passages(route, 12, {{13, 13, D::north}, {13, 12, D::north}, {13, 11, D::east},
+                                  {14, 11, D::east},  {15, 11, D::north}, {15, 10, D::north},
+                                  {15, 9, D::west},   {14, 9, D::south},  {14, 10, D::west},
+                                  {13, 10, D::west},  {12, 10, D::north}, {12, 9, D::north},
+                                  {12, 8, D::north},  {12, 7, D::east},   {13, 7, D::north},
+                                  {13, 6, D::north},  {13, 5, D::west},   {12, 5, D::south},
+                                  {12, 6, D::west},   {11, 6, D::south},  {11, 7, D::west}},
+                      true);
+        {
+            auto boat = step_beat(12, 10, 7, D::west);
+            boat.rest_first = true;
+            route.push_back(boat);
+        }
+        return route;
+    }();
+    return beats;
+}
+
 const std::vector<RouteBeat> &route_for(GoldBoxGame game)
 {
     switch (game)
@@ -1535,6 +1983,8 @@ const std::vector<RouteBeat> &route_for(GoldBoxGame game)
         return secret_route();
     case GoldBoxGame::pools_of_darkness:
         return darkness_route();
+    case GoldBoxGame::gateway_to_the_savage_frontier:
+        return gateway_route();
     default:
         return curse_route();
     }
@@ -2205,6 +2655,8 @@ bool walk_census(GoldBoxGame game, bool route)
     bool game_won_shown = false;
     // The beat being played only passes by (RouteBeat::passing).
     bool passing = false;
+    // The beat being played flees what it meets (RouteBeat::fleeing).
+    bool fleeing = false;
     const auto play = [&](const std::string &where)
     {
         const auto attribute = [&]
@@ -2264,6 +2716,24 @@ bool walk_census(GoldBoxGame game, bool route)
                     const auto no = std::ranges::find(s.choices, "NO");
                     pick = no == s.choices.end() ? 0
                                                  : static_cast<std::size_t>(no - s.choices.begin());
+                    // OPENGOLD_FIND_YES=TEXT|TEXT... has the planning aid
+                    // answer YES where the question holds a TEXT, as Gateway's
+                    // "ENTER NESME?", so it can walk into the place it looks for.
+                    std::stringstream yes(planning && std::getenv("OPENGOLD_FIND_YES")
+                                              ? std::getenv("OPENGOLD_FIND_YES")
+                                              : "");
+                    for (std::string text; std::getline(yes, text, '|');)
+                    {
+                        if (s.dialogue.find(text) != std::string::npos)
+                        {
+                            pick = 0;
+                        }
+                    }
+                    const auto flee = std::ranges::find(s.choices, "FLEE");
+                    if (fleeing && flee != s.choices.end())
+                    {
+                        pick = static_cast<std::size_t>(flee - s.choices.begin());
+                    }
                 }
                 // A magic-user learns the spell a player would take.
                 if (s.dialogue.starts_with("Choose a spell for"))
@@ -2598,6 +3068,14 @@ bool walk_census(GoldBoxGame game, bool route)
                 {
                     memorize();
                 }
+                if (beat.wait_until_minute)
+                {
+                    // The campaign's clock starts at noon.
+                    constexpr std::uint64_t minutes_a_day = 24 * 60, noon = 12 * 60;
+                    const auto now = (party->state().time_minutes + noon) % minutes_a_day;
+                    party->advance_time(std::chrono::minutes{
+                        (*beat.wait_until_minute + minutes_a_day - now) % minutes_a_day});
+                }
                 for (const auto &[address, value] : beat.test_cells)
                 {
                     opengold::test::TourAccess::set_variable(
@@ -2628,6 +3106,7 @@ bool walk_census(GoldBoxGame game, bool route)
                     answers = beat.answers;
                     taking_wand = beat.take_wand;
                     passing = beat.passing;
+                    fleeing = beat.fleeing;
                     if (beat.searching)
                     {
                         session.set_searching(*beat.searching);
@@ -2655,7 +3134,9 @@ bool walk_census(GoldBoxGame game, bool route)
                     }
                     else
                     {
-                        const unsigned x = (beat.x + static_cast<unsigned>(round)) % 16;
+                        const unsigned x = beat.repeat_in_place
+                                               ? beat.x
+                                               : (beat.x + static_cast<unsigned>(round)) % 16;
                         opengold::test::TourAccess::place(session, {x, beat.y, beat.facing});
                         if (session.explore(beat.step ? opengold::por::ExplorationCommand::forward
                                                       : opengold::por::ExplorationCommand::look))
@@ -2690,6 +3171,12 @@ bool walk_census(GoldBoxGame game, bool route)
                               std::to_string(beat.expect_cell->second)]
                             .push_back(where);
                     }
+                }
+                // OPENGOLD_BEAT_WORDS prints the words a beat ends on, which a
+                // trace leaves out when they ask nothing (an event that exits).
+                if (std::getenv("OPENGOLD_BEAT_WORDS"))
+                {
+                    std::cout << "  words: " << session.snapshot().dialogue.substr(0, 150) << "\n";
                 }
                 std::cout << "  party after " << where << ":";
                 for (const auto id : party->state().slots)
@@ -2768,6 +3255,33 @@ bool walk_census(GoldBoxGame game, bool route)
                 }
             }
         }
+        // OPENGOLD_ROUTE_EVENTS prints the event number of each square of the
+        // map the route ended on, row by row, to find where a script's event is.
+        if (std::getenv("OPENGOLD_ROUTE_EVENTS"))
+        {
+            for (unsigned y = 0; y < 16; ++y)
+            {
+                std::cout << "events row " << y << ":";
+                for (unsigned x = 0; x < 16; ++x)
+                {
+                    std::cout << " " << session.map().at(x, y).event_number();
+                }
+                // Each square's way out north, east, south and west: its
+                // barrier code (1 open, 2 and 3 locked), with a wall marked.
+                std::cout << "\nbarriers row " << y << ":";
+                for (unsigned x = 0; x < 16; ++x)
+                {
+                    const auto &cell = session.map().at(x, y);
+                    std::cout << " ";
+                    for (unsigned side = 0; side < 4; ++side)
+                    {
+                        std::cout << static_cast<int>(cell.doors[side])
+                                  << (cell.walls[side] ? "w" : "");
+                    }
+                }
+                std::cout << "\n";
+            }
+        }
         // OPENGOLD_CURSE_SURVEY walks the map the route ended on, printing each
         // square's event, to plan the route's next beats by.
         if (std::getenv("OPENGOLD_CURSE_SURVEY") && end.phase != TourPhase::defeated)
@@ -2790,8 +3304,17 @@ bool walk_census(GoldBoxGame game, bool route)
                                                       {x, y, opengold::por::MapDirection::north});
                     if (session.explore(opengold::por::ExplorationCommand::look))
                     {
-                        play("survey " + std::to_string(map) + " " + std::to_string(x) + "," +
-                             std::to_string(y));
+                        const auto where = "survey " + std::to_string(map) + " " +
+                                           std::to_string(x) + "," + std::to_string(y);
+                        play(where);
+                        // An event's words that ask nothing, such as a sign.
+                        if (session.snapshot().phase == TourPhase::completed &&
+                            !session.snapshot().dialogue.empty())
+                        {
+                            std::cout << where
+                                      << " says: " << session.snapshot().dialogue.substr(0, 120)
+                                      << "\n";
+                        }
                     }
                     if (!session.can_leave() || session.snapshot().area_id != map)
                     {
@@ -3040,6 +3563,12 @@ bool walk_census(GoldBoxGame game, bool route)
                       << ", short of the game's end (docs/GAMES.md, Pools of Darkness).\n";
             return played && end.area_id == darkness_route_stops_on_map;
         }
+        if (game == GoldBoxGame::gateway_to_the_savage_frontier && !gateway_route_ends_the_game)
+        {
+            std::cout << "Gateway's route stops on map " << end.area_id
+                      << ", short of the game's end (docs/GAMES.md, phase 5 step 4).\n";
+            return played && end.area_id == gateway_route_stops_on_map;
+        }
         return played && end.dialogue.find("You have won.") != std::string::npos &&
                game_won_shown && all_alive;
     }
@@ -3154,6 +3683,10 @@ int main(int argc, char **argv)
         if (argc == 2 && std::string_view(argv[1]) == "--darkness-route")
         {
             return walk_census(GoldBoxGame::pools_of_darkness, true) ? 0 : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--gateway-route")
+        {
+            return walk_census(GoldBoxGame::gateway_to_the_savage_frontier, true) ? 0 : 1;
         }
         each_game_is_told_apart_by_its_files();
         curse_creatures_are_read_from_their_layout();

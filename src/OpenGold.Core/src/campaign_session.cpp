@@ -11,6 +11,7 @@
 #include <span>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 
 namespace opengold
 {
@@ -138,30 +139,42 @@ std::map<unsigned, ScriptLoads> script_loads(const por::EclCatalog &catalog, Gol
     return loads;
 }
 
-// Curse's ending, told when Tyranthraxus falls (PROGRAM 8; its WinGame):
-// GAME.OVR's Pascal strings at a fixed place in the release this engine reads,
-// six screens of four lines, its "Press any key" prompt among them. It is read
-// from the player's copy, never stored here; another release yields none.
-std::vector<std::string> read_curse_ending(std::span<const std::uint8_t> overlay)
+// Where a release's ending (PROGRAM 8; its WinGame) keeps its lines: GAME.OVR's
+// Pascal strings at a fixed place, four lines a screen. They are read from the
+// player's copy, never stored here; another release yields none.
+struct EndingStrings
 {
-    constexpr std::size_t release_size = 272137, ending_offset = 0x265c6, strings = 25,
-                          lines_a_screen = 4;
-    if (overlay.size() != release_size)
+    std::size_t release_size, offset, strings;
+};
+
+// Curse's ending, told when Tyranthraxus falls: six screens, its "Press any
+// key" prompt among them.
+constexpr EndingStrings curse_ending{272137, 0x265c6, 25};
+// Gateway's, told when the statuettes are set in Ascore's altar: six screens,
+// each ending with its "(More)" prompt.
+constexpr EndingStrings gateway_ending{347622, 0x2cfa8, 24};
+
+std::vector<std::string> read_ending(std::span<const std::uint8_t> overlay,
+                                     const EndingStrings &release)
+{
+    constexpr std::size_t lines_a_screen = 4;
+    constexpr std::string_view more = "(More)";
+    if (overlay.size() != release.release_size)
     {
         return {};
     }
     std::vector<std::string> screens(1);
     std::size_t lines = 0;
-    auto at = ending_offset;
-    for (std::size_t n = 0; n < strings; ++n)
+    auto at = release.offset;
+    for (std::size_t n = 0; n < release.strings; ++n)
     {
         const std::size_t length = overlay[at];
         if (length == 0 || at + 1 + length > overlay.size())
         {
             return {};
         }
-        const std::string line(overlay.begin() + static_cast<std::ptrdiff_t>(at) + 1,
-                               overlay.begin() + static_cast<std::ptrdiff_t>(at + 1 + length));
+        std::string line(overlay.begin() + static_cast<std::ptrdiff_t>(at) + 1,
+                         overlay.begin() + static_cast<std::ptrdiff_t>(at + 1 + length));
         if (!std::all_of(line.begin(), line.end(),
                          [](char c)
                          {
@@ -175,14 +188,27 @@ std::vector<std::string> read_curse_ending(std::span<const std::uint8_t> overlay
         {
             continue;
         }
+        if (line.ends_with(more))
+        {
+            line.erase(line.find_last_not_of(' ', line.size() - more.size() - 1) + 1);
+        }
         if (lines == lines_a_screen)
         {
             screens.emplace_back();
             lines = 0;
         }
-        // Its lines end with the space that joins them.
-        screens.back() +=
-            (screens.back().empty() || screens.back().ends_with(' ') ? "" : " ") + line;
+        // Curse's lines end with the space that joins them; Gateway's do not,
+        // and a word broken at a line's end is joined whole.
+        auto &screen = screens.back();
+        if (screen.ends_with('-'))
+        {
+            screen.pop_back();
+        }
+        else if (!screen.empty() && !screen.ends_with(' '))
+        {
+            screen += ' ';
+        }
+        screen += line;
         ++lines;
     }
     return screens;
@@ -379,10 +405,12 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
     }
     root->combat_archive = por::detail::read_archive(
         por::detail::resolve_archive(folder, files.disk_archive("CPIC", campaign.root_disk)));
-    if (game == GoldBoxGame::curse_of_the_azure_bonds)
+    if (game == GoldBoxGame::curse_of_the_azure_bonds ||
+        game == GoldBoxGame::gateway_to_the_savage_frontier)
     {
-        root->closing_story = read_curse_ending(
-            por::detail::read_archive(por::detail::resolve_archive(folder, "GAME.OVR")));
+        root->closing_story = read_ending(
+            por::detail::read_archive(por::detail::resolve_archive(folder, "GAME.OVR")),
+            game == GoldBoxGame::curse_of_the_azure_bonds ? curse_ending : gateway_ending);
     }
     if (campaign.wilderness)
     {

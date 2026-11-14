@@ -184,6 +184,74 @@ constexpr EclAddress curse_town_cell{0x4C9B};
     }
 }
 
+// Gateway's maps as the cluebook's sections name them (docs/games/gateway.md,
+// Area names): one map a place, the overland's six by their region, and the
+// final battle's four as Ascore.
+[[nodiscard]] const char *gateway_area_name(unsigned area_id)
+{
+    switch (area_id)
+    {
+    case 1:
+        return N_("Yartar");
+    case 2:
+        return N_("Kraken Complex in Sub-Yartar");
+    case 3:
+        return N_("Nesme");
+    case 4:
+        return N_("Silverymoon");
+    case 5:
+        return N_("Everlund");
+    case 6:
+        return N_("Neverwinter");
+    case 7:
+        return N_("Port Llast and the Gallant Prince");
+    case 8:
+        return N_("Luskan");
+    case 9:
+        return N_("Hosttower of the Arcane");
+    case 10:
+        return N_("Uttersea, Tuern");
+    case 11:
+        return N_("Gundarlun");
+    case 12:
+        return N_("Purple Rocks");
+    case 13:
+        return N_("Kraken Headquarters");
+    case 14:
+        return N_("Secomber");
+    case 15:
+        return N_("Loudwater");
+    case 16:
+        return N_("Llorkh");
+    case 17:
+        return N_("Arena Beneath Llorkh");
+    case 18:
+        return N_("Star Mounts");
+    case 19:
+        return N_("Sundabar");
+    case 20:
+    case 27:
+    case 28:
+    case 29:
+    case 30:
+        return N_("Ascore");
+    case 21:
+        return N_("The Sword Coast");
+    case 22:
+        return N_("The Dessarin Valley");
+    case 23:
+        return N_("The Silver Marches");
+    case 24:
+        return N_("The Eastern Wilds");
+    case 25:
+        return N_("The High Forest");
+    case 26:
+        return N_("The Delimbiyr Vale");
+    default:
+        return N_("Gateway to the Savage Frontier");
+    }
+}
+
 // The areas the session can enter: the town (0), the Slums (20), Kuto's
 // Well's plaza (29) and catacombs (32), and Podol Plaza (18).
 [[nodiscard]] const char *district_name(unsigned area_id)
@@ -284,6 +352,8 @@ constexpr EclAddress curse_town_cell{0x4C9B};
         return district_name(s.area_id);
     case opengold::GoldBoxGame::secret_of_the_silver_blades:
         return secret_area_name(s.area_id);
+    case opengold::GoldBoxGame::gateway_to_the_savage_frontier:
+        return gateway_area_name(s.area_id);
     default:
         return session ? curse_area_name(s, *session) : N_("Curse of the Azure Bonds");
     }

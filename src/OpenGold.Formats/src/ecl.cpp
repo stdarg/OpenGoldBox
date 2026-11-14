@@ -210,10 +210,9 @@ EclEngineRoutines ecl_engine_routines(GoldBoxGame game)
         return {0x2DCB, 0xC018, 0xC01E, 0, 0, 0xB203, 0x6803};
     case GoldBoxGame::gateway_to_the_savage_frontier:
         // As Curse, matched less 7FFFh (AE11h, 401Bh, 401Fh, 2, 1, 3201h,
-        // E804h, 880Ah, 880Dh); 401Bh rereads the party's cell. Its new
-        // routines are in docs/games/gateway.md; 8810h, which changes coins
-        // up, is not run yet.
-        return {0x2E10, 0xC01A, 0xC01E, 0x8001, 0x8000, 0xB200, 0x6803, 0x0809, 0x080C};
+        // E804h, 880Ah, 880Dh, 8810h); 401Bh rereads the party's cell. Its
+        // new routines are in docs/games/gateway.md.
+        return {0x2E10, 0xC01A, 0xC01E, 0x8001, 0x8000, 0xB200, 0x6803, 0x0809, 0x080C, 0x080F};
     case GoldBoxGame::pools_of_darkness:
         // Its CALL names three routines by number: 1 redraws the view, 2 steps
         // forward, 3 shows the portrait's next frame (its EclCall).

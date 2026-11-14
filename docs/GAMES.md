@@ -441,13 +441,51 @@ new decoders.
    cell 4C24h) loads its symbol sets alone and is drawn from above with the
    party's arrow, and its fights are on grass with a river, trees and
    features from `GAME.EXE`'s terrain table ([gateway.md](games/gateway.md),
-   The overland). Still to come: CALL 8810h and the route.
+   The overland). CALL 8810h changes the coins up (2026-11-14).
 4. *From the startup menu (2026-11-14):* the menu offers *Gateway*, asks for
    its folder (`GATEWAY`) and the rules, and shows its five title pictures
    (3, 3, 10, 20 and 20 seconds, each on a cleared screen; a key on the first ends the title, a later key passes one)
    with its title music from the second, as its Intro does; the party
    screen's party plays the opening on to Yartar
    (`opengold_godot_startup_menu_gateway`).
+5. The cluebook's route to the end. *Started 2026-11-14:*
+   `opengold_gateway_route` plays the game with the cluebook's party (two
+   paladins, a ranger, two clerics and a magic-user, made under Gateway's
+   rules at 3,000 experience), carrying +2 weapons and +1 armor (a stand-in,
+   the route's gear in every game). In Yartar it saves Krevish from the
+   thugs and takes the captain's mission; it goes up the river by boat to
+   Nesme and kills the Banite cleric in his hidden temple; walks overland to
+   Silverymoon, beats the trolls and frees Erek; walks to Everlund, passes
+   the owlbears' stable and the passage under the Rauvin, and rescues
+   Amanitas (the Ring of Reversal, cell 4C21; Erek leaves with him). Back in
+   Yartar it trains twice on test experience and gold (a stand-in for the
+   fights a player would have fought by then: 6,000 each a visit), is pulled
+   into the Kraken complex, where Krevish climbs through the cell's grating,
+   beats the captain and crosses the squid tank. It walks overland, fleeing
+   the wandering monsters it can (as a player does), to Neverwinter and
+   Luskan, enters the Hosttower, takes the trap door down to its dungeon,
+   frees Brinshaar and follows the maze to the statuette of the East (cell
+   4C27 bit 1), beats Brinshaar's ambush, takes the Brazen Pennant's ship to
+   Tuern and on to Gundarlun, trains twice more there on test experience
+   (25,000 each a visit, to level 6, the stand-in again), has its dead
+   raised, and takes Gundbarg's ship, which the kraken wrecks on the Purple
+   Rocks; it crosses to the Kraken headquarters (map 13). The ships sail at
+   0800 and 0900: the test passes the time to the sailing, a stand-in for a
+   player's wait in camp, which OpenGoldBox's camp has no hours for. Every
+   walk is played step by step as the planning aid (`OPENGOLD_SECRET_FIND`,
+   with `OPENGOLD_FIND_YES` for the questions it must answer Yes) finds it.
+   *Where it stops:* on the Kraken headquarters' beach (map 13). The guards
+   there sound the alarm when one flees the fight, and the Pearl Chest's
+   guards, with the alarm sounded, kill the party with every dice the route
+   tries (eight Kraken guards and eight otyughs). The next steps: a fight
+   that keeps every guard from fleeing, then the race to the Pearl Chest
+   (the statuette of the West), Neverwinter, Secomber, Loudwater, Llorkh
+   and its arena (the North), the Star Mounts (the South), Sundabar and
+   Ascore. Until the route reaches the end its check passes when it plays
+   every beat to map 13 (`gateway_route_stops_on_map`). The win itself is in
+   place: script 28, which Ascore's last fight leads to, ends with the
+   closing words of the player's `GAME.OVR` and "You have won." as a win
+   (`opengold_gateway_tests`; [gateway.md](games/gateway.md), The ending).
 
 *Pools of Darkness* ([darkness.md](games/darkness.md)):
 

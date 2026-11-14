@@ -1,10 +1,15 @@
 // Gateway to the Savage Frontier's campaign (docs/games/gateway.md): its
 // opening plays on the real files when OPENGOLD_GOLDBOX_DIR names the folder
 // holding GATEWAY.
+#include "opengold/campaign_party.h"
 #include "opengold/campaign_session.h"
+#include "opengold/character_creator.h"
+#include "opengold/coin_purse.h"
 #include "opengold/ecl.h"
 #include "opengold/ecl_machine.h"
 #include "opengold/game_census.h"
+#include "opengold/original.h"
+#include "opengold/original_content.h"
 #include "opengold/pool_radiance.h"
 #include "opengold/overland.h"
 #include "opengold/por_sound.h"
@@ -90,6 +95,111 @@ void the_engine_prompts_are_menus()
           "880Ah waits for Enter");
     check(machine.resume(waiting.request->id, 0) && machine.run().state == EclState::completed,
           "Enter goes on");
+}
+
+// CALL 8810h is one of Gateway's engine routines, run by the host: it changes
+// the current character's coins up into larger ones, at the original's ten
+// copper a silver, ten silver an electrum, two electrum a gold and five gold
+// a platinum (Money.ConvertMoney(3)). The purse is worth what it was.
+void coins_change_up_into_larger_ones()
+{
+    check(opengold::por::ecl_engine_routines(gateway_game).contains(0x080F),
+          "CALL 8810h (address 080Fh) is an engine routine the host runs");
+    const opengold::CoinRates original{{1, 10, 100, 200, 1000}};
+    const opengold::Purse purse{25, 13, 3, 11, 0, 4, 2};
+    const auto changed = opengold::change_coins_up(purse, original);
+    check(changed == opengold::Purse{5, 5, 0, 3, 2, 4, 2},
+          "Copper to silver, silver to electrum, electrum to gold, gold to platinum");
+    check(opengold::gold_value(changed, original) == opengold::gold_value(purse, original),
+          "The purse is worth what it was");
+}
+
+// A party of six fighters made under Gateway's rules, for the events that
+// need one.
+std::shared_ptr<opengold::CampaignParty> gateway_party(const std::filesystem::path &folder)
+{
+    const auto content = opengold::load_original_content(folder, gateway_game);
+    const std::shared_ptr<const opengold::rules::CharacterRules> creation =
+        opengold::original::character_rules(opengold::original::default_aging, gateway_game);
+    auto party = std::make_shared<opengold::CampaignParty>(
+        opengold::original::rules_module(content), creation);
+    for (unsigned n = 0; n < 6; ++n)
+    {
+        opengold::CharacterCreator creator(creation, 90 + n);
+        creator.select(opengold::rules::CreationField::race, "human");
+        creator.select(opengold::rules::CreationField::character_class, "fighter");
+        creator.name("fighter " + std::to_string(n + 1));
+        for (const bool roll : {false, false, false, true, false, false})
+        {
+            if (roll)
+            {
+                creator.roll();
+            }
+            creator.next();
+        }
+        (void)party->add_pc(creator.create_character());
+    }
+    return party;
+}
+
+// Gateway's ending: script 28 of disk 6, which Ascore's last fight leads to,
+// tells of the statuettes set in the altar and Vaalgamon's fall, then
+// PROGRAM 8 (its WinGame) shows the closing words from the player's GAME.OVR,
+// six screens ending "You have won.", as a win until the player goes on.
+void the_ending_wins_the_game()
+{
+    const auto folder = gateway_folder();
+    if (folder.empty())
+    {
+        std::cout << "Gateway's files are not here; its ending is not played.\n";
+        return;
+    }
+    auto session = opengold::load_campaign(folder, gateway_game);
+    const auto &story = opengold::test::TourAccess::closing_story(session);
+    check(story.size() == 6 && story.front().starts_with("The Ring of Reversal is placed atop") &&
+              story[2].find("The massed forces that surround you") != std::string::npos &&
+              story.back().ends_with("when the party marches by!"),
+          "GAME.OVR holds the six screens of the closing words, their (More) left out");
+    session.campaign_party(gateway_party(folder));
+    // The opening plays to the inn's room first.
+    for (int step = 0; step < 50 && session.snapshot().phase != TourPhase::completed; ++step)
+    {
+        const auto &opening = session.snapshot();
+        if (opening.phase == TourPhase::awaiting_continue)
+        {
+            (void)session.choose(opening.continue_ticket, 0);
+            continue;
+        }
+        session.advance(1.0);
+    }
+    opengold::test::TourAccess::enter_script(session, 28, 28,
+                                             {8, 8, opengold::por::MapDirection::north});
+    bool won = false;
+    for (int step = 0; step < 400 && !won; ++step)
+    {
+        const auto &snapshot = session.snapshot();
+        if (snapshot.phase == TourPhase::running)
+        {
+            session.advance(1.0);
+            continue;
+        }
+        if (snapshot.phase != TourPhase::awaiting_continue)
+        {
+            break;
+        }
+        won = snapshot.game_won;
+        if (!won)
+        {
+            check(session.choose(snapshot.continue_ticket, 0), "The ending's words go on");
+        }
+    }
+    const auto &snapshot = session.snapshot();
+    check(won && snapshot.dialogue.starts_with(story.front()) &&
+              snapshot.dialogue.ends_with("You have won."),
+          "The ending shows the closing words and the win: " + snapshot.dialogue.substr(0, 80) +
+              snapshot.diagnostic);
+    check(session.choose(snapshot.continue_ticket, 0) && !session.snapshot().game_won,
+          "The win is shown until the player goes on");
 }
 
 // The item words are in GAME.EXE: 255 slots of 21 bytes, as in the earlier
@@ -293,10 +403,12 @@ int main()
     try
     {
         the_engine_prompts_are_menus();
+        coins_change_up_into_larger_ones();
         the_item_words_are_in_the_game_program();
         the_opening_reaches_yartar();
         overland_fights_are_on_grass();
         the_overland_is_drawn_from_above();
+        the_ending_wins_the_game();
         std::cout << "Gateway passed.\n";
     }
     catch (const std::exception &error)

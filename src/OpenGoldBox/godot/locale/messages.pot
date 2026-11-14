@@ -116,7 +116,7 @@ msgstr ""
 msgid "+{value} to weapon attack and damage rolls."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2432
+#: src/OpenGoldBox/rolf_tour_view.cpp:2502
 msgid ", with Thieves' Tools doubling the chance"
 msgstr ""
 
@@ -536,7 +536,7 @@ msgstr ""
 msgid "AC {ac}   Speed {speed} ft"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:3099
+#: src/OpenGoldBox/rolf_tour_view.cpp:3169
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "AC {ac} / HP {current}/{maximum}"
 msgstr ""
@@ -867,7 +867,7 @@ msgstr ""
 msgid "Alignment"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:333
+#: src/OpenGoldBox/rolf_tour_view.cpp:403
 msgid "All"
 msgstr ""
 
@@ -1055,11 +1055,15 @@ msgstr ""
 msgid "Archery"
 msgstr ""
 
+#: src/OpenGoldBox/rolf_tour_view.cpp:227
+msgid "Arena Beneath Llorkh"
+msgstr ""
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Arid Land"
 msgstr ""
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/rolf_tour_view.cpp:333
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/rolf_tour_view.cpp:403
 msgid "Armor"
 msgstr ""
 
@@ -1067,7 +1071,7 @@ msgstr ""
 msgid "Armor Class is at least 17."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2303
+#: src/OpenGoldBox/rolf_tour_view.cpp:2373
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Armor Class: {ac} for {name} (now {now})"
 msgstr ""
@@ -1084,7 +1088,7 @@ msgstr ""
 msgid "Arms"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2231
+#: src/OpenGoldBox/rolf_tour_view.cpp:2301
 msgid "Arms & Armor"
 msgstr ""
 
@@ -1114,6 +1118,10 @@ msgstr ""
 
 #: src/OpenGoldBox/startup_view.cpp:1022
 msgid "As the original: the starting age changes the scores once."
+msgstr ""
+
+#: src/OpenGoldBox/rolf_tour_view.cpp:237
+msgid "Ascore"
 msgstr ""
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:90
@@ -1336,7 +1344,7 @@ msgstr ""
 msgid "Base"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2174
+#: src/OpenGoldBox/rolf_tour_view.cpp:2244
 msgid "Bash"
 msgstr ""
 
@@ -1779,7 +1787,7 @@ msgstr ""
 msgid "Brutal Strike: after Reckless Attack, one Strength attack a turn may give up its Advantage; on a hit it deals 1d10 more damage and a Forceful Blow (a 15-foot push you may follow) or a Hamstring Blow (Speed 15 feet lower).\nRage Damage +3; Proficiency Bonus +4."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:266
+#: src/OpenGoldBox/rolf_tour_view.cpp:334
 msgid "Buccaneers' Base"
 msgstr ""
 
@@ -1815,7 +1823,7 @@ msgstr ""
 msgid "Burst the bead (Delayed Blast Fireball)"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2781
+#: src/OpenGoldBox/rolf_tour_view.cpp:2851
 msgid "Buy [Enter]"
 msgstr ""
 
@@ -1831,7 +1839,7 @@ msgstr ""
 msgid "CRITICAL"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:205
+#: src/OpenGoldBox/rolf_tour_view.cpp:273
 msgid "Cadorna Textile House"
 msgstr ""
 
@@ -2119,7 +2127,7 @@ msgstr ""
 msgid "Celestials, Elementals, Fey, Fiends and Undead attack it with Disadvantage."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:306
+#: src/OpenGoldBox/rolf_tour_view.cpp:376
 msgid "Central Wilderness, the grove"
 msgstr ""
 
@@ -2326,7 +2334,7 @@ msgstr ""
 msgid "Choose Temporary HP\n\nCurrent: {current} — {current_source}\nNew: {offered} — {offered_source}\n\nThe amounts do not add. The Bonus Action and use are already spent."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2782
+#: src/OpenGoldBox/rolf_tour_view.cpp:2852
 msgid "Choose [Enter]"
 msgstr ""
 
@@ -2493,7 +2501,7 @@ msgstr ""
 msgid "Choose what replaces it, or keep current."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2990
+#: src/OpenGoldBox/rolf_tour_view.cpp:3060
 msgid "Choose what to take."
 msgstr ""
 
@@ -3023,7 +3031,7 @@ msgstr ""
 msgid "Continue  [Enter]"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2784
+#: src/OpenGoldBox/rolf_tour_view.cpp:2854
 msgid "Continue [Enter]"
 msgstr ""
 
@@ -3031,7 +3039,7 @@ msgstr ""
 msgid "Copper"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1619
+#: src/OpenGoldBox/rolf_tour_view.cpp:1689
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Copy {spell} into the spellbook (Magic Ink of level {level} or higher, {hours} hours)"
 msgstr ""
@@ -3168,7 +3176,7 @@ msgstr ""
 msgid "Curse"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:138 src/OpenGoldBox/rolf_tour_view.cpp:288 src/OpenGoldBox/startup_view.cpp:89
+#: src/OpenGoldBox/rolf_tour_view.cpp:138 src/OpenGoldBox/rolf_tour_view.cpp:358 src/OpenGoldBox/startup_view.cpp:89
 msgid "Curse of the Azure Bonds"
 msgstr ""
 
@@ -3200,12 +3208,12 @@ msgstr ""
 msgid "Dagger +1"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2279
+#: src/OpenGoldBox/rolf_tour_view.cpp:2349
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Damage: {dice} {type}"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2274
+#: src/OpenGoldBox/rolf_tour_view.cpp:2344
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Damage: {dice} {type}; {two_handed} with both hands"
 msgstr ""
@@ -3247,12 +3255,12 @@ msgstr ""
 msgid "Dark gray"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2947
+#: src/OpenGoldBox/rolf_tour_view.cpp:3017
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Dark red: {name} is not trained to use it, or cannot use it, but can still buy it."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2946
+#: src/OpenGoldBox/rolf_tour_view.cpp:3016
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Dark red: {name} is not trained to use it, or cannot use it."
 msgstr ""
@@ -3847,7 +3855,7 @@ msgstr ""
 msgid "East"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2806
+#: src/OpenGoldBox/rolf_tour_view.cpp:2876
 msgid "East →"
 msgstr ""
 
@@ -3855,7 +3863,7 @@ msgstr ""
 msgid "Eastern Crevasses"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:314
+#: src/OpenGoldBox/rolf_tour_view.cpp:384
 msgid "Eastern wilderness, the cave"
 msgstr ""
 
@@ -3863,11 +3871,11 @@ msgstr ""
 msgid "Easy"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2106
+#: src/OpenGoldBox/rolf_tour_view.cpp:2176
 msgid "Eight hours passed; no one can benefit from another Long Rest so soon."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2137
+#: src/OpenGoldBox/rolf_tour_view.cpp:2207
 msgid "Eldamar's soul is free, and the Dreadlord is no more. You have won."
 msgstr ""
 
@@ -4106,11 +4114,11 @@ msgstr ""
 msgid "Equipped"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:934
+#: src/OpenGoldBox/rolf_tour_view.cpp:1004
 msgid "Equipped / "
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1215 src/OpenGoldBox/rolf_tour_view.cpp:1057
+#: src/OpenGoldBox/party_preview.cpp:1215 src/OpenGoldBox/rolf_tour_view.cpp:1127
 msgid "Equipped."
 msgstr ""
 
@@ -4166,6 +4174,10 @@ msgstr ""
 msgid "Evasion: a Dexterity save against half damage takes none on a success and half on a failure.\nReliable Talent: a d20 below 10 on a proficient skill check counts as 10.\nSneak Attack 4d6."
 msgstr ""
 
+#: src/OpenGoldBox/rolf_tour_view.cpp:203
+msgid "Everlund"
+msgstr ""
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Every party member is written in your book: the first one dropped to 0 Hit Points but not killed outright drops to 1 instead, once per Long Rest."
 msgstr ""
@@ -4182,7 +4194,7 @@ msgstr ""
 msgid "Exhale (Dragon's Breath)"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2174
+#: src/OpenGoldBox/rolf_tour_view.cpp:2244
 msgid "Exit"
 msgstr ""
 
@@ -4230,7 +4242,7 @@ msgstr ""
 msgid "Expertise in two more skills.\nLevel 3 spell slots and Ranger spells: Conjure Animals, Dispel Magic, Plant Growth, Protection from Energy, Revivify and Wind Wall.\nA fourth free Hunter's Mark (Favored Enemy); Proficiency Bonus +4."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2793
+#: src/OpenGoldBox/rolf_tour_view.cpp:2863
 msgid "Explore  /  arrow keys"
 msgstr ""
 
@@ -4439,7 +4451,7 @@ msgstr ""
 msgid "Fighter"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:3019
+#: src/OpenGoldBox/rolf_tour_view.cpp:3089
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Fighter / Level 1 / HP {current}/{maximum}\n{gold} gp / {items}"
 msgstr ""
@@ -4480,7 +4492,7 @@ msgstr ""
 msgid "Fill all six boxes to continue.\nAssigned scores include bonuses."
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:272 src/OpenGoldBox/rolf_tour_view.cpp:440
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:272 src/OpenGoldBox/rolf_tour_view.cpp:510
 msgid "Filter"
 msgstr ""
 
@@ -4697,11 +4709,11 @@ msgstr ""
 msgid "Folk of both human and elven blood, partly proof against sleep and charm magic, with the widest choice of classes."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2774
+#: src/OpenGoldBox/rolf_tour_view.cpp:2844
 msgid "Following Rolf..."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2791
+#: src/OpenGoldBox/rolf_tour_view.cpp:2861
 msgid "Following the guide"
 msgstr ""
 
@@ -4977,7 +4989,7 @@ msgstr ""
 msgid "Gameplay"
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:92
+#: src/OpenGoldBox/rolf_tour_view.cpp:251 src/OpenGoldBox/startup_view.cpp:92
 msgid "Gateway to the Savage Frontier"
 msgstr ""
 
@@ -4997,7 +5009,7 @@ msgstr ""
 msgid "Gender does not change attributes or restrict class or appearance choices."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2231
+#: src/OpenGoldBox/rolf_tour_view.cpp:2301
 msgid "General Items"
 msgstr ""
 
@@ -5113,7 +5125,7 @@ msgstr ""
 msgid "Grand Ruined Temple"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2956
+#: src/OpenGoldBox/rolf_tour_view.cpp:3026
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Gray: it would not raise {name}'s Armor Class."
 msgstr ""
@@ -5244,6 +5256,10 @@ msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:17450
 msgid "Guiding Light"
+msgstr ""
+
+#: src/OpenGoldBox/rolf_tour_view.cpp:215
+msgid "Gundarlun"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -5595,6 +5611,10 @@ msgstr ""
 msgid "Horde Breaker"
 msgstr ""
 
+#: src/OpenGoldBox/rolf_tour_view.cpp:211
+msgid "Hosttower of the Arcane"
+msgstr ""
+
 #: src/OpenGold.Rules.Original/src/combat_session.cpp:2054
 msgid "Hot flames"
 msgstr ""
@@ -5922,7 +5942,7 @@ msgstr ""
 msgid "Inventory"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:969
+#: src/OpenGoldBox/rolf_tour_view.cpp:1039
 msgid "Inventory is empty. Visit a shop to buy equipment."
 msgstr ""
 
@@ -5983,7 +6003,7 @@ msgstr ""
 msgid "It's cursed"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1060
+#: src/OpenGoldBox/rolf_tour_view.cpp:1130
 msgid "Item unequipped."
 msgstr ""
 
@@ -6060,7 +6080,7 @@ msgstr ""
 msgid "Javelin of Lightning spent"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2232
+#: src/OpenGoldBox/rolf_tour_view.cpp:2302
 msgid "Jewelry"
 msgstr ""
 
@@ -6092,7 +6112,7 @@ msgstr ""
 msgid "Kept from the former body"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:47 src/OpenGoldBox/rolf_tour_view.cpp:2174
+#: src/OpenGold.Rules.Original/src/spells.cpp:47 src/OpenGoldBox/rolf_tour_view.cpp:2244
 msgid "Knock"
 msgstr ""
 
@@ -6113,23 +6133,31 @@ msgstr ""
 msgid "Known cantrips"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:242
+#: src/OpenGoldBox/rolf_tour_view.cpp:310
 msgid "Kobold Caves"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:221
+#: src/OpenGoldBox/rolf_tour_view.cpp:289
 msgid "Kovel Mansion"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:201
+#: src/OpenGoldBox/rolf_tour_view.cpp:197
+msgid "Kraken Complex in Sub-Yartar"
+msgstr ""
+
+#: src/OpenGoldBox/rolf_tour_view.cpp:219
+msgid "Kraken Headquarters"
+msgstr ""
+
+#: src/OpenGoldBox/rolf_tour_view.cpp:269
 msgid "Kuto's Well"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:300
+#: src/OpenGoldBox/rolf_tour_view.cpp:370
 msgid "Kuto's Well, the catacombs"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:298
+#: src/OpenGoldBox/rolf_tour_view.cpp:368
 msgid "Kuto's Well, the plaza"
 msgstr ""
 
@@ -6206,7 +6234,7 @@ msgstr ""
 msgid "Leather Armor +1"
 msgstr ""
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/rolf_tour_view.cpp:2811
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/rolf_tour_view.cpp:2881
 msgid "Leave"
 msgstr ""
 
@@ -6214,11 +6242,11 @@ msgstr ""
 msgid "Leave Wild Shape"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2810
+#: src/OpenGoldBox/rolf_tour_view.cpp:2880
 msgid "Leave it behind"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:285 src/OpenGoldBox/rolf_tour_view.cpp:2809
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:285 src/OpenGoldBox/rolf_tour_view.cpp:2879
 msgid "Leave shop"
 msgstr ""
 
@@ -6306,7 +6334,7 @@ msgstr ""
 msgid "Level 5 spell slots and Cleric spells: Contagion, Dispel Evil and Good, Flame Strike, Insect Plague and Raise Dead; Life Domain: Greater Restoration and Mass Cure Wounds are always prepared.\nProficiency Bonus +4."
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:6 src/OpenGoldBox/level_up_dialog.cpp:68 src/OpenGoldBox/rolf_tour_view.cpp:425
+#: src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:6 src/OpenGoldBox/level_up_dialog.cpp:68 src/OpenGoldBox/rolf_tour_view.cpp:495
 msgid "Level up"
 msgstr ""
 
@@ -6502,20 +6530,24 @@ msgstr ""
 msgid "Lit (Starry Wisp)"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:246
+#: src/OpenGoldBox/rolf_tour_view.cpp:314
 msgid "Lizard Men's Keep"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:316
+#: src/OpenGoldBox/rolf_tour_view.cpp:386
 msgid "Lizard Men's Keep, the first level"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:318
+#: src/OpenGoldBox/rolf_tour_view.cpp:388
 msgid "Lizard Men's Keep, the flooded level"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Lizardfolk"
+msgstr ""
+
+#: src/OpenGoldBox/rolf_tour_view.cpp:225
+msgid "Llorkh"
 msgstr ""
 
 #: src/OpenGoldBox/save_slots.cpp:236 src/OpenGoldBox/save_slots.cpp:252 src/OpenGoldBox/save_slots.cpp:326
@@ -6550,7 +6582,7 @@ msgstr ""
 msgid "Load this save? Any unsaved campaign progress will be discarded."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2119
+#: src/OpenGoldBox/rolf_tour_view.cpp:2189
 msgid "Locked."
 msgstr ""
 
@@ -6562,7 +6594,7 @@ msgstr ""
 msgid "Long Rest cooldown remaining (minutes):"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2105
+#: src/OpenGoldBox/rolf_tour_view.cpp:2175
 msgid "Long rest complete: eight hours passed; eligible members recovered HP and supported resources."
 msgstr ""
 
@@ -6590,12 +6622,20 @@ msgstr ""
 msgid "Look [L]"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2114
+#: src/OpenGoldBox/rolf_tour_view.cpp:2184
 msgid "Loot is retained until your party has room in its purses."
 msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:342 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Lost in a maze"
+msgstr ""
+
+#: src/OpenGoldBox/rolf_tour_view.cpp:223
+msgid "Loudwater"
+msgstr ""
+
+#: src/OpenGoldBox/rolf_tour_view.cpp:209
+msgid "Luskan"
 msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:9225
@@ -6736,7 +6776,7 @@ msgstr ""
 msgid "Magic Resistance"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2233
+#: src/OpenGoldBox/rolf_tour_view.cpp:2303
 msgid "Magic User's Shop"
 msgstr ""
 
@@ -7043,7 +7083,7 @@ msgstr ""
 msgid "Memorize Spell"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:209
+#: src/OpenGoldBox/rolf_tour_view.cpp:277
 msgid "Mendor's Library"
 msgstr ""
 
@@ -7262,7 +7302,7 @@ msgstr ""
 msgid "Move up to {feet} feet without Opportunity Attacks or spending normal movement. Other pending effects wait."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2793
+#: src/OpenGoldBox/rolf_tour_view.cpp:2863
 msgid "Movement paused"
 msgstr ""
 
@@ -7392,6 +7432,10 @@ msgstr ""
 msgid "Necrotic"
 msgstr ""
 
+#: src/OpenGoldBox/rolf_tour_view.cpp:199
+msgid "Nesme"
+msgstr ""
+
 #: src/OpenGold.Rules.Srd5/src/character_rules.cpp:323
 msgid "Neutral"
 msgstr ""
@@ -7412,11 +7456,15 @@ msgstr ""
 msgid "Never"
 msgstr ""
 
+#: src/OpenGoldBox/rolf_tour_view.cpp:205
+msgid "Neverwinter"
+msgstr ""
+
 #: src/OpenGoldBox/game_menu_view.cpp:322
 msgid "New"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:272
+#: src/OpenGoldBox/rolf_tour_view.cpp:340
 msgid "New Phlan"
 msgstr ""
 
@@ -7487,7 +7535,7 @@ msgstr ""
 msgid "No Pool of Radiance game saved under the original rules was found."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:3088
+#: src/OpenGoldBox/rolf_tour_view.cpp:3158
 msgid "No armor"
 msgstr ""
 
@@ -7561,11 +7609,11 @@ msgstr ""
 msgid "No supported missing spell choices."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:3087
+#: src/OpenGoldBox/rolf_tour_view.cpp:3157
 msgid "No weapon"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:229
+#: src/OpenGoldBox/rolf_tour_view.cpp:297
 msgid "Nomad Camp"
 msgstr ""
 
@@ -7601,7 +7649,7 @@ msgstr ""
 msgid "Not enough experience."
 msgstr ""
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/rolf_tour_view.cpp:2322
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/rolf_tour_view.cpp:2392
 msgid "Not enough gold"
 msgstr ""
 
@@ -7609,7 +7657,7 @@ msgstr ""
 msgid "Not present"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2268
+#: src/OpenGoldBox/rolf_tour_view.cpp:2338
 msgid "Not trained: no training bonus to hit"
 msgstr ""
 
@@ -7625,15 +7673,15 @@ msgstr ""
 msgid "Nothing happens."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1654
+#: src/OpenGoldBox/rolf_tour_view.cpp:1724
 msgid "Nothing to cast or use outside combat."
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:65 src/OpenGoldBox/rolf_tour_view.cpp:2726
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:65 src/OpenGoldBox/rolf_tour_view.cpp:2796
 msgid "OPENGOLDBOX  /  Rolf's welcome"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2725 src/OpenGoldBox/rolf_tour_view.cpp:3773
+#: src/OpenGoldBox/rolf_tour_view.cpp:2795 src/OpenGoldBox/rolf_tour_view.cpp:3843
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "OPENGOLDBOX  /  {district}"
 msgstr ""
@@ -7670,7 +7718,7 @@ msgstr ""
 msgid "Oil"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:258
+#: src/OpenGoldBox/rolf_tour_view.cpp:326
 msgid "Old Town"
 msgstr ""
 
@@ -7874,7 +7922,7 @@ msgstr ""
 msgid "Original shops"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:333
+#: src/OpenGoldBox/rolf_tour_view.cpp:403
 msgid "Other"
 msgstr ""
 
@@ -8065,7 +8113,7 @@ msgstr ""
 msgid "Part"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2727
+#: src/OpenGoldBox/rolf_tour_view.cpp:2797
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Party ({x}, {y})   {direction}"
 msgstr ""
@@ -8168,7 +8216,7 @@ msgstr ""
 msgid "Phlan Ruins"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2174
+#: src/OpenGoldBox/rolf_tour_view.cpp:2244
 msgid "Pick"
 msgstr ""
 
@@ -8220,7 +8268,7 @@ msgstr ""
 msgid "Play with default party"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:197
+#: src/OpenGoldBox/rolf_tour_view.cpp:265
 msgid "Podol Plaza"
 msgstr ""
 
@@ -8298,6 +8346,10 @@ msgstr ""
 
 #: src/OpenGoldBox/godot/scenes/startup.tscn:109 src/OpenGoldBox/godot/scenes/startup.tscn:131 src/OpenGoldBox/startup_view.cpp:517
 msgid "Pool of Radiance game files"
+msgstr ""
+
+#: src/OpenGoldBox/rolf_tour_view.cpp:207
+msgid "Port Llast and the Gallant Prince"
 msgstr ""
 
 #: src/OpenGoldBox/character_creation_view.cpp:61 src/OpenGoldBox/godot/scenes/portrait_dialog.tscn:11 src/OpenGoldBox/godot/scenes/portrait_dialog.tscn:54
@@ -8426,7 +8478,7 @@ msgstr ""
 msgid "Previously selected training cannot be replaced"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:3001
+#: src/OpenGoldBox/rolf_tour_view.cpp:3071
 msgid "Prices are per listed item or bundle."
 msgstr ""
 
@@ -8566,6 +8618,10 @@ msgstr ""
 msgid "Pull off"
 msgstr ""
 
+#: src/OpenGoldBox/rolf_tour_view.cpp:217
+msgid "Purple Rocks"
+msgstr ""
+
 #: src/OpenGold.Rules.Original/src/character_rules.cpp:98 src/OpenGold.Rules.Srd5/src/character_rules.cpp:326
 msgid "Pursues selfish ends through structure and rules."
 msgstr ""
@@ -8586,15 +8642,15 @@ msgstr ""
 msgid "Put out the fire"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:233
+#: src/OpenGoldBox/rolf_tour_view.cpp:301
 msgid "Pyramid"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:310
+#: src/OpenGoldBox/rolf_tour_view.cpp:380
 msgid "Pyramid, the laboratories"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:308
+#: src/OpenGoldBox/rolf_tour_view.cpp:378
 msgid "Pyramid, the prison of souls"
 msgstr ""
 
@@ -9346,11 +9402,11 @@ msgstr ""
 msgid "Rest"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2107
+#: src/OpenGoldBox/rolf_tour_view.cpp:2177
 msgid "Rest denied: no active member is eligible."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2103
+#: src/OpenGoldBox/rolf_tour_view.cpp:2173
 msgid "Rest is not allowed here."
 msgstr ""
 
@@ -9370,7 +9426,7 @@ msgstr ""
 msgid "Restart test"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2771
+#: src/OpenGoldBox/rolf_tour_view.cpp:2841
 msgid "Restart with --reset-game-path to choose your Pool of Radiance data folder."
 msgstr ""
 
@@ -9550,11 +9606,11 @@ msgstr ""
 msgid "Rogue skills"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2233
+#: src/OpenGoldBox/rolf_tour_view.cpp:2303
 msgid "Rogue's Shop"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2740
+#: src/OpenGoldBox/rolf_tour_view.cpp:2810
 msgid "Rolf  /  Council guide"
 msgstr ""
 
@@ -9827,12 +9883,16 @@ msgstr ""
 msgid "Search mode: each step searches the square, as Look does, and takes ten minutes more."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2733
+#: src/OpenGoldBox/rolf_tour_view.cpp:2803
 msgid "Searching"
 msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:41 src/OpenGold.Rules.Srd5/src/srd5.cpp:31350 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Searing Smite"
+msgstr ""
+
+#: src/OpenGoldBox/rolf_tour_view.cpp:221
+msgid "Secomber"
 msgstr ""
 
 #: src/OpenGoldBox/godot/scenes/combat_demo.tscn:241
@@ -10027,12 +10087,12 @@ msgstr ""
 msgid "Shoot"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2755
+#: src/OpenGoldBox/rolf_tour_view.cpp:2825
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Shop / buying for {name}: party {gold} gp, carrying {carried}/{capacity} lb"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2738
+#: src/OpenGoldBox/rolf_tour_view.cpp:2808
 msgid "Shop / select an item"
 msgstr ""
 
@@ -10052,7 +10112,7 @@ msgstr ""
 msgid "Short Sword +1"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2104
+#: src/OpenGoldBox/rolf_tour_view.cpp:2174
 msgid "Short rest complete: one hour passed; eligible members can spend Hit Dice."
 msgstr ""
 
@@ -10092,8 +10152,12 @@ msgstr ""
 msgid "Silver"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2232
+#: src/OpenGoldBox/rolf_tour_view.cpp:2302
 msgid "Silver Items"
+msgstr ""
+
+#: src/OpenGoldBox/rolf_tour_view.cpp:201
+msgid "Silverymoon"
 msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:351 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -10219,7 +10283,7 @@ msgstr ""
 msgid "Slowed"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:193
+#: src/OpenGoldBox/rolf_tour_view.cpp:261
 msgid "Slums"
 msgstr ""
 
@@ -10271,7 +10335,7 @@ msgstr ""
 msgid "Sneak Attack: once per turn, extra weapon damage is added automatically to the first eligible hit; the combat log shows the dice."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:213
+#: src/OpenGoldBox/rolf_tour_view.cpp:281
 msgid "Sokal Keep"
 msgstr ""
 
@@ -10660,6 +10724,10 @@ msgstr ""
 msgid "Stand up"
 msgstr ""
 
+#: src/OpenGoldBox/rolf_tour_view.cpp:229
+msgid "Star Mounts"
+msgstr ""
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Starry Wisp"
 msgstr ""
@@ -10716,7 +10784,7 @@ msgstr ""
 msgid "Stinking Cloud"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:254
+#: src/OpenGoldBox/rolf_tour_view.cpp:322
 msgid "Stojanow Gate"
 msgstr ""
 
@@ -10736,7 +10804,7 @@ msgstr ""
 msgid "Stoneskin"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2787
+#: src/OpenGoldBox/rolf_tour_view.cpp:2857
 msgid "Stopped"
 msgstr ""
 
@@ -10797,7 +10865,7 @@ msgstr ""
 msgid "Subclass"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2783
+#: src/OpenGoldBox/rolf_tour_view.cpp:2853
 msgid "Submit [Enter]"
 msgstr ""
 
@@ -10853,6 +10921,10 @@ msgstr ""
 msgid "Sunburst"
 msgstr ""
 
+#: src/OpenGoldBox/rolf_tour_view.cpp:231
+msgid "Sundabar"
+msgstr ""
+
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:182 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Sundered (Sundering Blow)"
 msgstr ""
@@ -10905,11 +10977,11 @@ msgstr ""
 msgid "Switch the slot level used by Magic Missile, Cure Wounds and Healing Word."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2789
+#: src/OpenGoldBox/rolf_tour_view.cpp:2859
 msgid "Tab or number keys: choose the buyer"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2788
+#: src/OpenGoldBox/rolf_tour_view.cpp:2858
 msgid "Tab or number keys: choose who takes"
 msgstr ""
 
@@ -10930,7 +11002,7 @@ msgstr ""
 msgid "Tactical Shift: {name} may move {feet} feet without provoking Opportunity Attacks."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2780
+#: src/OpenGoldBox/rolf_tour_view.cpp:2850
 msgid "Take [Enter]"
 msgstr ""
 
@@ -11020,7 +11092,7 @@ msgstr ""
 msgid "Telekinesis"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2117
+#: src/OpenGoldBox/rolf_tour_view.cpp:2187
 msgid "Teleport takes the party away."
 msgstr ""
 
@@ -11033,15 +11105,15 @@ msgstr ""
 msgid "Temperate Land"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:225
+#: src/OpenGoldBox/rolf_tour_view.cpp:293
 msgid "Temple of Bane"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:302
+#: src/OpenGoldBox/rolf_tour_view.cpp:372
 msgid "Temple of Bane, the street east of the temple"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:304
+#: src/OpenGoldBox/rolf_tour_view.cpp:374
 msgid "Temple of Bane, the temple's block"
 msgstr ""
 
@@ -11126,6 +11198,18 @@ msgstr ""
 msgid "The Clerics' hall trains Clerics and Druids."
 msgstr ""
 
+#: src/OpenGoldBox/rolf_tour_view.cpp:249
+msgid "The Delimbiyr Vale"
+msgstr ""
+
+#: src/OpenGoldBox/rolf_tour_view.cpp:241
+msgid "The Dessarin Valley"
+msgstr ""
+
+#: src/OpenGoldBox/rolf_tour_view.cpp:245
+msgid "The Eastern Wilds"
+msgstr ""
+
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:175
 msgid "The Fighter's next attack roll against it has Advantage."
 msgstr ""
@@ -11141,6 +11225,10 @@ msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:21016
 msgid "The Guardian of Faith vanishes."
+msgstr ""
+
+#: src/OpenGoldBox/rolf_tour_view.cpp:247
+msgid "The High Forest"
 msgstr ""
 
 #: src/OpenGoldBox/training_control.h:213
@@ -11161,6 +11249,14 @@ msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "The Magic-users' hall trains Wizards, Sorcerers and Warlocks."
+msgstr ""
+
+#: src/OpenGoldBox/rolf_tour_view.cpp:243
+msgid "The Silver Marches"
+msgstr ""
+
+#: src/OpenGoldBox/rolf_tour_view.cpp:239
+msgid "The Sword Coast"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -11268,11 +11364,11 @@ msgstr ""
 msgid "The default party could not be made: {problem}"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2491
+#: src/OpenGoldBox/rolf_tour_view.cpp:2561
 msgid "The door opens."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2491
+#: src/OpenGoldBox/rolf_tour_view.cpp:2561
 msgid "The door stays locked."
 msgstr ""
 
@@ -11316,7 +11412,7 @@ msgstr ""
 msgid "The missile cannot touch {name}."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2110
+#: src/OpenGoldBox/rolf_tour_view.cpp:2180
 msgid "The monsters go on their way."
 msgstr ""
 
@@ -11353,7 +11449,7 @@ msgstr ""
 msgid "The original rules (Pool of Radiance)"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2138
+#: src/OpenGoldBox/rolf_tour_view.cpp:2208
 msgid "The party gains experience."
 msgstr ""
 
@@ -11373,7 +11469,7 @@ msgstr ""
 msgid "The party purse cannot pay the offering"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2374
+#: src/OpenGoldBox/rolf_tour_view.cpp:2444
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "The party takes {loot}."
 msgstr ""
@@ -11396,25 +11492,25 @@ msgstr ""
 msgid "The ray turns to {target}."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2108
+#: src/OpenGoldBox/rolf_tour_view.cpp:2178
 msgid "The rest was interrupted. Rest again to recover."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2134
+#: src/OpenGoldBox/rolf_tour_view.cpp:2204
 msgid "The river's stench drives you back."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1091
+#: src/OpenGoldBox/rolf_tour_view.cpp:1161
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "The shop identifies it: {item}."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1092
+#: src/OpenGoldBox/rolf_tour_view.cpp:1162
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "The shop learns nothing new about {item}."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1135
+#: src/OpenGoldBox/rolf_tour_view.cpp:1205
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "The shop offers {gold} gp for {item}. Press Sell again to sell it."
 msgstr ""
@@ -11435,7 +11531,7 @@ msgstr ""
 msgid "The sunlight ends the magical Darkness."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1051
+#: src/OpenGoldBox/rolf_tour_view.cpp:1121
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "The sword will not stay in {name}'s hand and burns for {damage} Force damage."
 msgstr ""
@@ -11460,51 +11556,51 @@ msgstr ""
 msgid "The wand can be used only while exploring."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1879
+#: src/OpenGoldBox/rolf_tour_view.cpp:1949
 msgid "The way is blocked"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2118
+#: src/OpenGoldBox/rolf_tour_view.cpp:2188
 msgid "The way is blocked."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2128
+#: src/OpenGoldBox/rolf_tour_view.cpp:2198
 msgid "The way to Kovel Mansion is not in the game yet."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2125
+#: src/OpenGoldBox/rolf_tour_view.cpp:2195
 msgid "The way to Stojanow Gate is not in the game yet."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2127
+#: src/OpenGoldBox/rolf_tour_view.cpp:2197
 msgid "The way to Valhingen Graveyard is not in the game yet."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2126
+#: src/OpenGoldBox/rolf_tour_view.cpp:2196
 msgid "The way to Valjevo Castle is not in the game yet."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2139
+#: src/OpenGoldBox/rolf_tour_view.cpp:2209
 msgid "The way to another area is not in the game yet."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2130
+#: src/OpenGoldBox/rolf_tour_view.cpp:2200
 msgid "The way to the Pyramid is not in the game yet."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2131
+#: src/OpenGoldBox/rolf_tour_view.cpp:2201
 msgid "The way to the Temple of Bane is not in the game yet."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2133
+#: src/OpenGoldBox/rolf_tour_view.cpp:2203
 msgid "The way to the eastern wilderness is not in the game yet."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2129
+#: src/OpenGoldBox/rolf_tour_view.cpp:2199
 msgid "The way to the nomad camp is not in the game yet."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2132
+#: src/OpenGoldBox/rolf_tour_view.cpp:2202
 msgid "The way to the western wilderness is not in the game yet."
 msgstr ""
 
@@ -11521,7 +11617,7 @@ msgstr ""
 msgid "The {spell} on the scroll is lost."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2976
+#: src/OpenGoldBox/rolf_tour_view.cpp:3046
 msgid "There is still treasure here. Leave it behind, or take more?"
 msgstr ""
 
@@ -11614,7 +11710,7 @@ msgstr ""
 msgid "This save was made by an older pre-release version of OpenGoldBox and can't be loaded."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2115
+#: src/OpenGoldBox/rolf_tour_view.cpp:2185
 msgid "This temple is now the party's sanctuary for Word of Recall."
 msgstr ""
 
@@ -11706,12 +11802,12 @@ msgstr ""
 msgid "Tireless: a Magic action gives you 1d8 + your Wisdom modifier in Temporary Hit Points, as many times as your Wisdom modifier per Long Rest."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2265
+#: src/OpenGoldBox/rolf_tour_view.cpp:2335
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "To hit AC {ac}: roll {roll} or more ({bonus})"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2263
+#: src/OpenGoldBox/rolf_tour_view.cpp:2333
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "To hit AC {ac}: roll {roll} or more ({bonus}), with Disadvantage"
 msgstr ""
@@ -11720,7 +11816,7 @@ msgstr ""
 msgid "To start in a class, your scores must reach its minimums. Classes in gray do not qualify; go Back to change your scores or bonuses."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2323
+#: src/OpenGoldBox/rolf_tour_view.cpp:2393
 msgid "Too heavy to carry"
 msgstr ""
 
@@ -11809,7 +11905,7 @@ msgstr ""
 msgid "Transmuted Spell"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2746
+#: src/OpenGoldBox/rolf_tour_view.cpp:2816
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Treasure / {name} takes: carrying {carried}/{capacity} lb"
 msgstr ""
@@ -11882,7 +11978,7 @@ msgstr ""
 msgid "Turn undead"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:415 src/OpenGoldBox/rolf_tour_view.cpp:2806
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:415 src/OpenGoldBox/rolf_tour_view.cpp:2876
 msgid "Turn →"
 msgstr ""
 
@@ -11967,7 +12063,7 @@ msgstr ""
 msgid "Tyranthraxus (Lightning Breath), ankhegs (Acid Spray)"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2135
+#: src/OpenGoldBox/rolf_tour_view.cpp:2205
 msgid "Tyranthraxus is destroyed, and Phlan is free of him. You have won."
 msgstr ""
 
@@ -11975,7 +12071,7 @@ msgstr ""
 msgid "Tyranthraxus, the vampire"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2737
+#: src/OpenGoldBox/rolf_tour_view.cpp:2807
 msgid "Unable to continue"
 msgstr ""
 
@@ -12160,27 +12256,31 @@ msgstr ""
 msgid "Used {value} times since the last Long Rest; using it again harms the Wizard."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:250
+#: src/OpenGoldBox/rolf_tour_view.cpp:213
+msgid "Uttersea, Tuern"
+msgstr ""
+
+#: src/OpenGoldBox/rolf_tour_view.cpp:318
 msgid "Valhingen Graveyard"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:262
+#: src/OpenGoldBox/rolf_tour_view.cpp:330
 msgid "Valjevo Castle"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:322
+#: src/OpenGoldBox/rolf_tour_view.cpp:392
 msgid "Valjevo Castle, the northeast quarter"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:320
+#: src/OpenGoldBox/rolf_tour_view.cpp:390
 msgid "Valjevo Castle, the northwest quarter"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:324
+#: src/OpenGoldBox/rolf_tour_view.cpp:394
 msgid "Valjevo Castle, the southeast quarter"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:326
+#: src/OpenGoldBox/rolf_tour_view.cpp:396
 msgid "Valjevo Castle, the tower's upper level"
 msgstr ""
 
@@ -12486,7 +12586,7 @@ msgstr ""
 msgid "Weapon hits deal an extra 1d4 Radiant damage."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:333
+#: src/OpenGoldBox/rolf_tour_view.cpp:403
 msgid "Weapons"
 msgstr ""
 
@@ -12510,7 +12610,7 @@ msgstr ""
 msgid "Western Crevasses"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:312
+#: src/OpenGoldBox/rolf_tour_view.cpp:382
 msgid "Western wilderness, the cave"
 msgstr ""
 
@@ -12607,7 +12707,7 @@ msgstr ""
 msgid "Wild Shape: Wolf"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:217 src/OpenGoldBox/rolf_tour_view.cpp:238
+#: src/OpenGoldBox/rolf_tour_view.cpp:285 src/OpenGoldBox/rolf_tour_view.cpp:306
 msgid "Wilderness"
 msgstr ""
 
@@ -12671,7 +12771,7 @@ msgstr ""
 msgid "Wizard features"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2120
+#: src/OpenGoldBox/rolf_tour_view.cpp:2190
 msgid "Wizard locked."
 msgstr ""
 
@@ -12704,7 +12804,7 @@ msgstr ""
 msgid "Word of Recall needs a quiet moment outside events"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2116
+#: src/OpenGoldBox/rolf_tour_view.cpp:2186
 msgid "Word of Recall takes the party back to its sanctuary."
 msgstr ""
 
@@ -12765,11 +12865,15 @@ msgstr ""
 msgid "Yarash"
 msgstr ""
 
+#: src/OpenGoldBox/rolf_tour_view.cpp:195
+msgid "Yartar"
+msgstr ""
+
 #: src/OpenGoldBox/character_creation_view.cpp:86
 msgid "Yellow"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2952
+#: src/OpenGoldBox/rolf_tour_view.cpp:3022
 msgid "Yellow: the party cannot afford it."
 msgstr ""
 
@@ -12818,31 +12922,31 @@ msgstr ""
 msgid "You cannot run off the battlefield now: an enemy is faster, you have no movement left, or you must stay."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2122
+#: src/OpenGoldBox/rolf_tour_view.cpp:2192
 msgid "You find a secret door in the east wall."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2121
+#: src/OpenGoldBox/rolf_tour_view.cpp:2191
 msgid "You find a secret door in the north wall."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2123
+#: src/OpenGoldBox/rolf_tour_view.cpp:2193
 msgid "You find a secret door in the south wall."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2124
+#: src/OpenGoldBox/rolf_tour_view.cpp:2194
 msgid "You find a secret door in the west wall."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2111
+#: src/OpenGoldBox/rolf_tour_view.cpp:2181
 msgid "You get away."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2113
+#: src/OpenGoldBox/rolf_tour_view.cpp:2183
 msgid "You have lost the fight."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2136
+#: src/OpenGoldBox/rolf_tour_view.cpp:2206
 msgid "You have won."
 msgstr ""
 
@@ -12858,7 +12962,7 @@ msgstr ""
 msgid "Your attack hit. Knock the target Prone with Hill's Tumble, or decline."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2109
+#: src/OpenGoldBox/rolf_tour_view.cpp:2179
 msgid "Your camp is attacked!"
 msgstr ""
 
@@ -12875,7 +12979,7 @@ msgstr ""
 msgid "Your melee weapon is your pact weapon: proficiency, Charisma for its attack and damage rolls, and Necrotic, Psychic or Radiant damage if you like."
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:2993 src/OpenGoldBox/rolf_tour_view.cpp:2112
+#: src/OpenGoldBox/combat_view.cpp:2993 src/OpenGoldBox/rolf_tour_view.cpp:2182
 msgid "Your party flees the battle."
 msgstr ""
 
@@ -12895,7 +12999,7 @@ msgstr ""
 msgid "Zhentil Keep"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:270
+#: src/OpenGoldBox/rolf_tour_view.cpp:338
 msgid "Zhentil Outpost"
 msgstr ""
 
@@ -13349,7 +13453,7 @@ msgstr ""
 msgid "{class}: level {level}"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2187
+#: src/OpenGoldBox/rolf_tour_view.cpp:2257
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{count} cp"
 msgstr ""
@@ -13361,19 +13465,19 @@ msgid_plural "{count} days left"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2187
+#: src/OpenGoldBox/rolf_tour_view.cpp:2257
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{count} ep"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2337
+#: src/OpenGoldBox/rolf_tour_view.cpp:2407
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{count} gem"
 msgid_plural "{count} gems"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2187
+#: src/OpenGoldBox/rolf_tour_view.cpp:2257
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{count} gp"
 msgstr ""
@@ -13385,7 +13489,7 @@ msgid_plural "{count} hours left"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:3023 src/OpenGoldBox/rolf_tour_view.cpp:3037
+#: src/OpenGoldBox/rolf_tour_view.cpp:3093 src/OpenGoldBox/rolf_tour_view.cpp:3107
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{count} item"
 msgid_plural "{count} items"
@@ -13404,14 +13508,14 @@ msgstr[1] ""
 msgid "{count} objects animate for {name}."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2342
+#: src/OpenGoldBox/rolf_tour_view.cpp:2412
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{count} piece of jewelry"
 msgid_plural "{count} pieces of jewelry"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2187
+#: src/OpenGoldBox/rolf_tour_view.cpp:2257
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{count} pp"
 msgstr ""
@@ -13423,7 +13527,7 @@ msgid_plural "{count} rounds left"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2187
+#: src/OpenGoldBox/rolf_tour_view.cpp:2257
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{count} sp"
 msgstr ""
@@ -13433,12 +13537,12 @@ msgstr ""
 msgid "{die} (maximum d{die}) {modifier} (Constitution) + {racial} (racial bonus) = {hp} HP"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2721 src/OpenGoldBox/rolf_tour_view.cpp:3770
+#: src/OpenGoldBox/rolf_tour_view.cpp:2791 src/OpenGoldBox/rolf_tour_view.cpp:3840
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{district}    N ↑"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2717
+#: src/OpenGoldBox/rolf_tour_view.cpp:2787
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{district} / {direction} view"
 msgstr ""
@@ -13483,12 +13587,12 @@ msgstr ""
 msgid "{high},{low}"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2402
+#: src/OpenGoldBox/rolf_tour_view.cpp:2472
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{items} go to the pack."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2402
+#: src/OpenGoldBox/rolf_tour_view.cpp:2472
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{items} goes to the pack."
 msgstr ""
@@ -13517,22 +13621,22 @@ msgid_plural "{item} ({count} missiles)"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:940
+#: src/OpenGoldBox/rolf_tour_view.cpp:1010
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{item} / sells for {gold} gp"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2865
+#: src/OpenGoldBox/rolf_tour_view.cpp:2935
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{item} / {price} gp"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2866
+#: src/OpenGoldBox/rolf_tour_view.cpp:2936
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{item} / {price} gp / cannot be equipped"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1138
+#: src/OpenGoldBox/rolf_tour_view.cpp:1208
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{item} will be gone for good. Press Drop again to drop it."
 msgstr ""
@@ -13542,7 +13646,7 @@ msgstr ""
 msgid "{item} x{quantity}"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2368
+#: src/OpenGoldBox/rolf_tour_view.cpp:2438
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{item} ×{count}"
 msgstr ""
@@ -13562,7 +13666,7 @@ msgstr ""
 msgid "{name} (beyond Raise Dead)"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:3030
+#: src/OpenGoldBox/rolf_tour_view.cpp:3100
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} / HP {current}/{maximum}\nparty {gold} gp / {items}"
 msgstr ""
@@ -13592,7 +13696,7 @@ msgstr ""
 msgid "{name} / {class} / Level {levels}"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:920
+#: src/OpenGoldBox/rolf_tour_view.cpp:990
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} / {class} / party {gold} gp"
 msgstr ""
@@ -13847,7 +13951,7 @@ msgstr ""
 msgid "{name} can take off the cursed item."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:890
+#: src/OpenGoldBox/rolf_tour_view.cpp:960
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} cannot carry that much weight."
 msgstr ""
@@ -13917,17 +14021,17 @@ msgstr ""
 msgid "{name} casts Hunter's Mark (Favored Enemy)."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1549
+#: src/OpenGoldBox/rolf_tour_view.cpp:1619
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} casts Identify and learns nothing new about {item}."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1548
+#: src/OpenGoldBox/rolf_tour_view.cpp:1618
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} casts Identify: {item}."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2425
+#: src/OpenGoldBox/rolf_tour_view.cpp:2495
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} casts Knock, and the lock opens."
 msgstr ""
@@ -13987,7 +14091,7 @@ msgstr ""
 msgid "{name} compels the charmed to go {direction}."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1502
+#: src/OpenGoldBox/rolf_tour_view.cpp:1572
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} copies the spell into the spellbook."
 msgstr ""
@@ -14082,7 +14186,7 @@ msgstr ""
 msgid "{name} douses the blade."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1478
+#: src/OpenGoldBox/rolf_tour_view.cpp:1548
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} drinks the {item}."
 msgstr ""
@@ -14107,7 +14211,7 @@ msgstr ""
 msgid "{name} drops to 1 Hit Point instead (Undead Fortitude)."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1152
+#: src/OpenGoldBox/rolf_tour_view.cpp:1222
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} drops {item}. It is gone."
 msgstr ""
@@ -14122,7 +14226,7 @@ msgstr ""
 msgid "{name} enters a Rage."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2398
+#: src/OpenGoldBox/rolf_tour_view.cpp:2468
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} equips {items}."
 msgstr ""
@@ -14137,7 +14241,7 @@ msgstr ""
 msgid "{name} fails to hide."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1509
+#: src/OpenGoldBox/rolf_tour_view.cpp:1579
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} fails to read {spell}, and it is lost."
 msgstr ""
@@ -14257,7 +14361,7 @@ msgstr ""
 msgid "{name} gains Resistance to {type} damage."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2164
+#: src/OpenGoldBox/rolf_tour_view.cpp:2234
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} gains experience."
 msgstr ""
@@ -14682,7 +14786,7 @@ msgstr ""
 msgid "{name} is knocked out."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2158
+#: src/OpenGoldBox/rolf_tour_view.cpp:2228
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is left behind and lost."
 msgstr ""
@@ -15067,42 +15171,42 @@ msgstr ""
 msgid "{name} parries {attacker}'s attack."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2214
+#: src/OpenGoldBox/rolf_tour_view.cpp:2284
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} pays {paid} for {owed} and receives {change} in change."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2210
+#: src/OpenGoldBox/rolf_tour_view.cpp:2280
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} pays {paid} for {owed}."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1413
+#: src/OpenGoldBox/rolf_tour_view.cpp:1483
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} points the Wand of Secrets. It does not pulse: no hidden secret door or trap is within 60 feet."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1424
+#: src/OpenGoldBox/rolf_tour_view.cpp:1494
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} points the Wand of Secrets. It pulses toward a secret door in the east wall of ({x}, {y})."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1423
+#: src/OpenGoldBox/rolf_tour_view.cpp:1493
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} points the Wand of Secrets. It pulses toward a secret door in the north wall of ({x}, {y})."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1425
+#: src/OpenGoldBox/rolf_tour_view.cpp:1495
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} points the Wand of Secrets. It pulses toward a secret door in the south wall of ({x}, {y})."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1426
+#: src/OpenGoldBox/rolf_tour_view.cpp:1496
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} points the Wand of Secrets. It pulses toward a secret door in the west wall of ({x}, {y})."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1419
+#: src/OpenGoldBox/rolf_tour_view.cpp:1489
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} points the Wand of Secrets. It pulses toward a trap at ({x}, {y})."
 msgstr ""
@@ -15132,7 +15236,7 @@ msgstr ""
 msgid "{name} readies {feature}."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1464
+#: src/OpenGoldBox/rolf_tour_view.cpp:1534
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} reads the Manual of Bodily Health: Constitution rises by 2."
 msgstr ""
@@ -15142,7 +15246,7 @@ msgstr ""
 msgid "{name} reads {spell} from a scroll."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1507
+#: src/OpenGoldBox/rolf_tour_view.cpp:1577
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} reads {spell} from the scroll."
 msgstr ""
@@ -15287,7 +15391,7 @@ msgstr ""
 msgid "{name} rolls the Flaming Sphere into {target}."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2457
+#: src/OpenGoldBox/rolf_tour_view.cpp:2527
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} searches for a secret door: d6 {die}, needing {needed} or less."
 msgstr ""
@@ -15302,7 +15406,7 @@ msgstr ""
 msgid "{name} seizes {target} with telekinesis."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1146
+#: src/OpenGoldBox/rolf_tour_view.cpp:1216
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} sells {item} for {gold} gp."
 msgstr ""
@@ -15372,7 +15476,7 @@ msgstr ""
 msgid "{name} smashes them flat."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2152
+#: src/OpenGoldBox/rolf_tour_view.cpp:2222
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} speaks for the party."
 msgstr ""
@@ -15492,7 +15596,7 @@ msgstr ""
 msgid "{name} takes the shape of a {form}."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2393
+#: src/OpenGoldBox/rolf_tour_view.cpp:2463
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} takes up {item}, which burns them for {damage} damage and stays in the pack."
 msgstr ""
@@ -15737,7 +15841,7 @@ msgstr ""
 msgid "{name} takes {damage}."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:884
+#: src/OpenGoldBox/rolf_tour_view.cpp:954
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} takes {item}."
 msgstr ""
@@ -15762,17 +15866,17 @@ msgstr ""
 msgid "{name} tries Relentless Rage."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2450
+#: src/OpenGoldBox/rolf_tour_view.cpp:2520
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} tries to force the door: Strength (Athletics) {total} (d20 {die}) against DC {dc}."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2440
+#: src/OpenGoldBox/rolf_tour_view.cpp:2510
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} tries to pick the lock with Thieves' Tools, which double the chance: Dexterity (Sleight of Hand) {total} (d20 {die}) against DC {dc}."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2446
+#: src/OpenGoldBox/rolf_tour_view.cpp:2516
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} tries to pick the lock: Dexterity (Sleight of Hand) {total} (d20 {die}) against DC {dc}."
 msgstr ""
@@ -16067,7 +16171,7 @@ msgstr ""
 msgid "{name} uses the {item}."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2429
+#: src/OpenGoldBox/rolf_tour_view.cpp:2499
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} uses up a set of Magic Lock Picks for Advantage{tools}: Dexterity (Sleight of Hand) {total} (d20 {die}) against DC {dc}."
 msgstr ""
@@ -16272,12 +16376,12 @@ msgstr ""
 msgid "{name}: Initiative {total}"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1599
+#: src/OpenGoldBox/rolf_tour_view.cpp:1669
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name}: cast a spell or use a feature"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1598
+#: src/OpenGoldBox/rolf_tour_view.cpp:1668
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name}: read a scroll"
 msgstr ""
@@ -16327,12 +16431,12 @@ msgstr ""
 msgid "{part} / Color-{bank}: choose a color"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2309
+#: src/OpenGoldBox/rolf_tour_view.cpp:2379
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{price} gp, {weight} lb"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2714
+#: src/OpenGoldBox/rolf_tour_view.cpp:2784
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{shopkeeper} - {type}"
 msgstr ""
@@ -16417,7 +16521,7 @@ msgstr ""
 msgid "{spell}: aim {left} more of {maximum}. Aimed at: {chosen}"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1694
+#: src/OpenGoldBox/rolf_tour_view.cpp:1764
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{spell}: {place}"
 msgstr ""
@@ -16442,19 +16546,19 @@ msgstr ""
 msgid "{victim} is digested instantly."
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:401 src/OpenGoldBox/rolf_tour_view.cpp:2802
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:401 src/OpenGoldBox/rolf_tour_view.cpp:2872
 msgid "← Turn"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2802
+#: src/OpenGoldBox/rolf_tour_view.cpp:2872
 msgid "← West"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2804
+#: src/OpenGoldBox/rolf_tour_view.cpp:2874
 msgid "↑ North"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:408 src/OpenGoldBox/rolf_tour_view.cpp:2804
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:408 src/OpenGoldBox/rolf_tour_view.cpp:2874
 msgid "↑ Step"
 msgstr ""
 

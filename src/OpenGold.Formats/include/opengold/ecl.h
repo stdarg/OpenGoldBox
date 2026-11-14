@@ -74,13 +74,16 @@ struct EclEngineRoutines
     // No into the menu choice cell 7F79h and the comparison (0 elsewhere).
     // The machine runs them as menus; contains() leaves them out.
     std::uint16_t wait_for_enter{}, ask_yes_no{};
+    // Gateway's change of the current character's coins up into larger ones
+    // (0 elsewhere).
+    std::uint16_t change_coins_up{};
 
     [[nodiscard]] bool contains(std::uint16_t address) const noexcept
     {
-        return address != 0 &&
-               (address == redraw_view || address == refresh_wall_ahead ||
-                address == move_forward || address == duel || address == mirror_duel ||
-                address == sound || address == portrait_animation_step);
+        return address != 0 && (address == redraw_view || address == refresh_wall_ahead ||
+                                address == move_forward || address == duel ||
+                                address == mirror_duel || address == sound ||
+                                address == portrait_animation_step || address == change_coins_up);
     }
 };
 

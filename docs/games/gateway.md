@@ -152,8 +152,75 @@ changes there:
   machine asks the player: Enter clears the text, and 880Dh stores Yes as 0
   and No as 1 in 7F79h and compares the answer with 1.
 
-Not yet played: CALL 8810h, which changes the current character's coins up
-into larger ones (no script calls it by number).
+- CALL 8810h (the address 080Fh), which the inns and halls call before a
+  payment (ECL2:1 0x9AC0), changes the current character's coins up into
+  larger ones, as its Money.ConvertMoney(3) does: ten copper a silver, ten
+  silver an electrum, two electrum a gold and five gold a platinum. The party
+  keeps one purse, so the purse is changed up (`change_coins_up`), worth what
+  it was.
+
+## What the route needed
+
+The route ([GAMES.md](../GAMES.md), phase 5 step 4) needed more of the script
+host, each as Gateway's engine has it:
+
+- PROGRAM 12h brings every member to full Hit Points and compares equal when
+  it healed anyone (its HealPartyForProgram), as Krevish's last wish does in
+  Ascore (ECL6:28 0x8904).
+- LOAD CHARACTER with bit 7 makes the member at its position current and,
+  when the script has cleared the name and status cells, removes that member
+  (its EclLoadCharacter): Erek leaves with Amanitas (ECL3:5 0x90F9), though
+  the record the script cleared is another member's.
+- The record a script reads shows the Dexterity (byte 17h), which the Kraken
+  cell's grating rolls a climb against (ECL2:2 0x8798), as well as *Curse*'s
+  Intelligence and gender.
+- SPELL asks for any memorized spell: the squid tank's water ruins each fire
+  spell, one a question, until none is left (ECL2:2 0x9263).
+- A companion whose record marks two items readied in one place (Brinshaar,
+  ECL3:9) wears the first; the other stays packed.
+- Many events look at the party's facing, which the scripts read from 03B2h:
+  Gundbarg's ship sails only for a party facing down its pier (south), and
+  Silverymoon's forge opens to one facing east.
+
+## The ending
+
+Script 28 of disk 6, which Ascore's last fight leads to, tells of the
+statuettes set in the altar and Vaalgamon's fall, then calls PROGRAM 8, the
+original's WinGame: six screens of four lines over BIGPIC 126 to 131. Their
+words are read from the player's `GAME.OVR` (`read_ending`, at 2CFA8h of the
+release of 347,622 bytes; another release yields none), each screen's
+"(More)" left out and a word broken at a line's end joined whole, and shown
+with "You have won." as a win (`game_won`) until the player goes on, as
+*Curse*'s is. The view then plays `endings/GATEWAY.ogv` when it is there
+([ENDING-FILMS.md](../ENDING-FILMS.md)). The script goes on to Yartar (NEW ECL
+1), as the original's does. `opengold_gateway_tests` plays script 28 to the
+win.
+
+## Area names
+
+The exploration screen names each map as the cluebook's sections do. The
+overland's six maps are named by their region: 21, 22 and 23 by the towns the
+route enters from them, 24 to 26 by where the overland script's edges lead
+(24 east of 23, 25 and 26 south of the first row), which the route has not
+crossed yet. Ascore's final battle (maps 27 to 30) is Ascore.
+
+| Map | Name | Map | Name |
+|---|---|---|---|
+| 1 | Yartar | 16 | Llorkh |
+| 2 | Kraken Complex in Sub-Yartar | 17 | Arena Beneath Llorkh |
+| 3 | Nesme | 18 | Star Mounts |
+| 4 | Silverymoon | 19 | Sundabar |
+| 5 | Everlund | 20, 27 to 30 | Ascore |
+| 6 | Neverwinter | 21 | The Sword Coast |
+| 7 | Port Llast and the Gallant Prince | 22 | The Dessarin Valley |
+| 8 | Luskan | 23 | The Silver Marches |
+| 9 | Hosttower of the Arcane | 24 | The Eastern Wilds |
+| 10 | Uttersea, Tuern | 25 | The High Forest |
+| 11 | Gundarlun | 26 | The Delimbiyr Vale |
+| 12 | Purple Rocks | | |
+| 13 | Kraken Headquarters | | |
+| 14 | Secomber | | |
+| 15 | Loudwater | | |
 
 ## The overland
 

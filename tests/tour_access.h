@@ -125,6 +125,14 @@ struct TourAccess
         town.enter_script(town.town_->districts.at(map)->script, {map, pose});
     }
 
+    // The party is taken into `script` on `map` at `pose`, as a NEW ECL that
+    // no map of its own names would take it (Gateway's ending, script 28).
+    static void enter_script(por::RolfTourSession &town, unsigned script, unsigned map,
+                             por::PartyPose pose)
+    {
+        town.enter_script(script, {map, pose});
+    }
+
     // Reseeds the script's dice, so a test can try an event on several rolls.
     static void seed_dice(por::RolfTourSession &town, std::uint32_t seed)
     {
