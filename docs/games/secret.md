@@ -44,8 +44,11 @@ Each script a NEW ECL loads starts with its map's own cells cleared, 4C00h to
 4C1Fh and 7F79h to 7F82h, as the original's EclInit clears them in *Curse*
 and *Gateway* too (*Pool of Radiance*'s are 4A00h to 4A1Fh). The Castle
 Entrance's levers (4C04h and 4C05h) are gone in the Sanctum, where 4C05h at 1
-marks its Brass door open. OpenGoldBox cleared *Pool of Radiance*'s cells for
-*Secret* until 2026-11-14.
+marks its Brass door open. Until 2026-11-14 OpenGoldBox cleared *Pool of
+Radiance*'s 4A00h to 4A1Fh for every game but *Gateway*; each game now clears
+its own (*Pools of Darkness* and *Treasures* 97h to C8h, their area's state),
+and a loaded game keeps them, as the original skips the clearing on its first
+start after a load.
 
 CALL's engine routines moved: the view's redraw is 2DCBh and the sound B203h
 (*Curse*'s addresses less 7FFFh are compared, as there), the wall ahead and the

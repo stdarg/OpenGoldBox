@@ -162,6 +162,30 @@ constexpr std::uint8_t vga_wait_key = 0x1D, vga_journal_entry = 0x1F, vga_yes_no
 // STORE (3Ch, PROTECTION elsewhere) reads its shop's number.
 constexpr std::uint8_t vga_treasure = 0x27, vga_find_npc = 0x37;
 
+// Whether a game's EclInit clears this cell, one of the map's own, as each new
+// script starts. The original skips it on the first start after a saved game
+// is loaded; a loaded game here restores its machine without starting one.
+bool cleared_by_new_script(std::uint16_t address, GoldBoxGame game)
+{
+    const auto within = [address](std::uint16_t first, std::uint16_t last)
+    {
+        return address >= first && address <= last;
+    };
+    if (game == GoldBoxGame::pool_of_radiance)
+    {
+        return within(0x4A00, 0x4A1F) || within(0x6E79, 0x6E82);
+    }
+    // Pools of Darkness's and Treasures' cells sit at 1h to 400h: their area's
+    // state (Darkness's TAreaState, the last map loaded among it).
+    if (game == GoldBoxGame::pools_of_darkness ||
+        game == GoldBoxGame::treasures_of_the_savage_frontier)
+    {
+        return within(0x97, 0xC8);
+    }
+    // Curse, Secret and Gateway: Pool of Radiance's cells where their zones moved.
+    return within(0x4C00, 0x4C1F) || within(0x7F79, 0x7F82);
+}
+
 } // namespace
 
 EclMachine::EclMachine(std::shared_ptr<const EclProgram> program)
@@ -1265,20 +1289,9 @@ void EclMachine::load_program(std::shared_ptr<const EclProgram> next,
     instruction_spans_.clear();
     stack_.clear();
     conditions_.fill(false);
-    // Gateway and Secret clear their own cells, a script's map's: 4C00h to
-    // 4C1Fh and 7F79h to 7F82h (their EclInit), where Pool of Radiance's are
-    // 4A00h to 4A1Fh.
-    const bool moved_cells = program_->game() == GoldBoxGame::gateway_to_the_savage_frontier ||
-                             program_->game() == GoldBoxGame::secret_of_the_silver_blades;
-    const auto cleared = [moved_cells](std::uint16_t address)
-    {
-        return moved_cells ? (address >= 0x4C00 && address <= 0x4C1F) ||
-                                 (address >= 0x7F79 && address <= 0x7F82)
-                           : address >= 0x4A00 && address <= 0x4A1F;
-    };
     for (auto &[address, v] : variables_)
     {
-        if (cleared(address))
+        if (cleared_by_new_script(address, program_->game()))
         {
             v = 0;
         }
