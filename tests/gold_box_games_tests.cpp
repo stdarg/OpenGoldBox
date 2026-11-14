@@ -31,6 +31,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <deque>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -503,6 +504,10 @@ struct RouteBeat
     // The rounds of repeat_until_at_least stay on the beat's square, as a
     // player tries a climb again.
     bool repeat_in_place = false;
+    // The sides (0 north, 1 east, 2 south, 3 west) the party leaves the
+    // beat's maze fights by, one a fight, as Gateway's cluebook leads through
+    // Ascore: a member runs off that side (rules::Encounter::escape_ends_fight).
+    std::vector<unsigned> maze_exits;
 };
 
 // Answers that train each of the route's members a level at a hall: its
@@ -2543,7 +2548,7 @@ std::vector<std::string> train_gateway_party()
 
 // Gateway's route plays to the game's end once this is true; until then it
 // stops on this map (docs/GAMES.md, phase 5 step 4).
-constexpr bool gateway_route_ends_the_game = false;
+constexpr bool gateway_route_ends_the_game = true;
 constexpr unsigned gateway_route_stops_on_map = 20;
 
 // Gateway's story, beat by beat, as its cluebook tells it (plan phase 5, step
@@ -3261,8 +3266,15 @@ const std::vector<RouteBeat> &gateway_route()
              {10, 15, D::east}},
             true);
         {
-            // Rested first, the party meets Vaalgamon's challenge.
-            auto finale = step_beat(20, 11, 15, D::east, {"MOVE AHEAD"});
+            // Rested first, the party takes Vaalgamon's challenge, through the
+            // maze of fights, each left as soon as a member runs off its north
+            // side (or won outright, which leaves the party facing north as it
+            // came, so the same way), the fourth past
+            // Vaalgamon's own room, out to the plaza of the pyramids, where the
+            // statuettes are set in the altar and the game is won (script 28):
+            // the route stops on its closing words.
+            auto finale = step_beat(20, 11, 15, D::east, {"MOVE AHEAD", "stop:Continue"});
+            finale.maze_exits = {0, 0, 0, 0};
             finale.rest_first = true;
             route.push_back(finale);
         }
@@ -3802,6 +3814,69 @@ bool walk_census(GoldBoxGame game, bool route)
         }
         return std::nullopt;
     };
+    // Steps over open ground from each square of the field to its edge, or
+    // to one side of it (0 north, 1 east, 2 south, 3 west), and the side a
+    // square at the edge leaves by, as the combat rules tell it.
+    const auto edge_side = [](const opengold::rules::Battlefield &field,
+                              opengold::rules::Cell cell) -> std::optional<unsigned>
+    {
+        return cell.y == 0                  ? std::optional<unsigned>{0}
+               : cell.x == field.width - 1  ? std::optional<unsigned>{1}
+               : cell.y == field.height - 1 ? std::optional<unsigned>{2}
+               : cell.x == 0                ? std::optional<unsigned>{3}
+                                            : std::nullopt;
+    };
+    const auto edge_steps =
+        [&](const opengold::rules::Battlefield &field, std::optional<unsigned> side)
+    {
+        const auto at = [&field](int x, int y)
+        {
+            return static_cast<std::size_t>(y * field.width + x);
+        };
+        std::vector<int> steps(static_cast<std::size_t>(field.width * field.height), 9999);
+        std::vector<opengold::rules::Cell> frontier;
+        for (int y = 0; y < field.height; ++y)
+        {
+            for (int x = 0; x < field.width; ++x)
+            {
+                const auto leaves_by = edge_side(field, {x, y});
+                if (leaves_by && (!side || leaves_by == side) &&
+                    field.terrain[at(x, y)] == opengold::rules::Terrain::open)
+                {
+                    steps[at(x, y)] = 0;
+                    frontier.push_back({x, y});
+                }
+            }
+        }
+        for (std::size_t n = 0; n < frontier.size(); ++n)
+        {
+            const auto from = frontier[n];
+            for (int dy = -1; dy <= 1; ++dy)
+            {
+                for (int dx = -1; dx <= 1; ++dx)
+                {
+                    const int x = from.x + dx, y = from.y + dy;
+                    if (x < 0 || y < 0 || x >= field.width || y >= field.height ||
+                        field.terrain[at(x, y)] != opengold::rules::Terrain::open ||
+                        steps[at(x, y)] <= steps[at(from.x, from.y)] + 1)
+                    {
+                        continue;
+                    }
+                    steps[at(x, y)] = steps[at(from.x, from.y)] + 1;
+                    frontier.push_back({x, y});
+                }
+            }
+        }
+        return [steps, at, &field](opengold::rules::Cell cell)
+        {
+            return cell.x < 0 || cell.y < 0 || cell.x >= field.width || cell.y >= field.height
+                       ? 9999
+                       : steps[at(cell.x, cell.y)];
+        };
+    };
+    // The side the party means to leave the next maze fight by
+    // (RouteBeat::maze_exits), as the cluebook leads through Ascore.
+    std::optional<unsigned> wanted_exit;
     const auto fight_once = [&](std::uint64_t seed, unsigned tactic)
     {
         opengold::CombatDemo combat(opengold::original::rules_module(content));
@@ -3832,7 +3907,28 @@ bool walk_census(GoldBoxGame game, bool route)
             const bool member = actor != state.combatants.end() &&
                                 actor->side == opengold::rules::Side::party &&
                                 !opengold::is_ally(state.actor);
-            const auto held = member && tactic == 2 ? player_turn(session, picked) : std::nullopt;
+            auto held = member && tactic == 2 ? player_turn(session, picked) : std::nullopt;
+            // In a maze fight each member makes for the side the party means to
+            // leave by and runs off it there.
+            if (member && wanted_exit && !held)
+            {
+                const auto &field = state.battlefield;
+                const auto to_exit = edge_steps(field, wanted_exit);
+                for (const auto &option : session.legal_commands())
+                {
+                    if (option.verb == "flee" && edge_side(field, actor->cell) == wanted_exit)
+                    {
+                        held = option;
+                        break;
+                    }
+                    if (option.verb == "move" &&
+                        to_exit(option.destination) < to_exit(actor->cell) &&
+                        (!held || to_exit(option.destination) < to_exit(held->destination)))
+                    {
+                        held = option;
+                    }
+                }
+            }
             const auto chosen =
                 held     ? *held
                 : member ? opengold::choose_quick_command(
@@ -3852,52 +3948,8 @@ bool walk_census(GoldBoxGame game, bool route)
         if (combat.combat().snapshot().outcome == opengold::rules::Outcome::ongoing)
         {
             ++phases["stalemates left by fleeing"];
-            // Steps over open ground from each square to the field's edge.
             const auto &field = session.pending_encounter()->field.geometry;
-            const auto at = [&field](int x, int y)
-            {
-                return static_cast<std::size_t>(y * field.width + x);
-            };
-            std::vector<int> steps(static_cast<std::size_t>(field.width * field.height), 9999);
-            std::vector<opengold::rules::Cell> frontier;
-            for (int y = 0; y < field.height; ++y)
-            {
-                for (int x = 0; x < field.width; ++x)
-                {
-                    const bool edge =
-                        x == 0 || y == 0 || x == field.width - 1 || y == field.height - 1;
-                    if (edge && field.terrain[at(x, y)] == opengold::rules::Terrain::open)
-                    {
-                        steps[at(x, y)] = 0;
-                        frontier.push_back({x, y});
-                    }
-                }
-            }
-            for (std::size_t n = 0; n < frontier.size(); ++n)
-            {
-                const auto from = frontier[n];
-                for (int dy = -1; dy <= 1; ++dy)
-                {
-                    for (int dx = -1; dx <= 1; ++dx)
-                    {
-                        const int x = from.x + dx, y = from.y + dy;
-                        if (x < 0 || y < 0 || x >= field.width || y >= field.height ||
-                            field.terrain[at(x, y)] != opengold::rules::Terrain::open ||
-                            steps[at(x, y)] <= steps[at(from.x, from.y)] + 1)
-                        {
-                            continue;
-                        }
-                        steps[at(x, y)] = steps[at(from.x, from.y)] + 1;
-                        frontier.push_back({x, y});
-                    }
-                }
-            }
-            const auto to_edge = [&](opengold::rules::Cell cell)
-            {
-                return cell.x < 0 || cell.y < 0 || cell.x >= field.width || cell.y >= field.height
-                           ? 9999
-                           : steps[at(cell.x, cell.y)];
-            };
+            const auto to_edge = edge_steps(field, std::nullopt);
             for (int command = 0; command < 3000 && combat.combat().snapshot().outcome ==
                                                         opengold::rules::Outcome::ongoing;
                  ++command)
@@ -3957,10 +4009,18 @@ bool walk_census(GoldBoxGame game, bool route)
     bool planning = false;
     // Fights played so far (a camp counts the ones that interrupt it).
     unsigned fights_fought = 0;
+    // The maze exits the beat being played has yet to take (RouteBeat::maze_exits).
+    std::deque<unsigned> maze_exits;
     const auto fight = [&]
     {
         ++fights_fought;
         const auto before = party->state();
+        wanted_exit.reset();
+        if (session.pending_encounter()->escape_ends_fight && !maze_exits.empty())
+        {
+            wanted_exit = maze_exits.front();
+            maze_exits.pop_front();
+        }
         const auto score = [&](const opengold::rules::Snapshot &result)
         {
             int lost = result.outcome == opengold::rules::Outcome::victory ? 0 : 1'000'000;
@@ -3978,6 +4038,11 @@ bool walk_census(GoldBoxGame game, bool route)
                 {
                     lost += 1'000'000;
                 }
+            }
+            // A maze fight left by another side leads elsewhere.
+            if (wanted_exit && result.escape_side != wanted_exit)
+            {
+                lost += 1'000'000;
             }
             return lost;
         };
@@ -4739,6 +4804,7 @@ bool walk_census(GoldBoxGame game, bool route)
                     }
                     test_winning = beat.test_wins;
                     holding_foes = beat.holding_foes;
+                    maze_exits.assign(beat.maze_exits.begin(), beat.maze_exits.end());
                     if (beat.waiting)
                     {
                         play(where);

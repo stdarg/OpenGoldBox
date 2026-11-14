@@ -1795,6 +1795,13 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
             results.push_back(write);
         }
         const auto conditions = darkness_combat_conditions(game(), !fled && !duel_lost);
+        // The party leaves a maze fight facing the side it ran off, which
+        // the script reads to find the next part of the maze (postcbt.pas).
+        if (result.escape_side)
+        {
+            results.push_back(
+                {game_cell(ecl_party_facing), static_cast<std::uint16_t>(*result.escape_side)});
+        }
         // The items the monsters leave wait for the party to take them; the
         // script hears the result once the party leaves the treasure.
         if (!treasure_pile_.empty())
@@ -3862,6 +3869,11 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             const auto hour = clock_minute_of_day(campaign_->state().time_minutes) / 60;
             encounter_->daylight = hour >= 6 && hour < 18;
             encounter_->outdoors = overland() || curse_outdoors || gateway_outdoors;
+            // Gateway's combat mode 1 (cell 4D01h), which its maze through
+            // Ascore sets (ECL6:27 0x843A).
+            constexpr EclAddress gateway_combat_mode{0x4D01};
+            encounter_->escape_ends_fight = game() == GoldBoxGame::gateway_to_the_savage_frontier &&
+                                            machine_.variable(gateway_combat_mode) == 1;
             if (std::exchange(duel_, false))
             {
                 encounter_->mirror = mirror_duel_;

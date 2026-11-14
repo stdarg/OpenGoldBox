@@ -679,9 +679,10 @@ class Session final : public rules::CombatSession
 {
   public:
     Session(rules::Identity identity, rules::Battlefield board, std::vector<Fighter> fighters,
-            std::uint64_t seed, unsigned morale, bool outdoors)
+            std::uint64_t seed, unsigned morale, bool outdoors, bool escape_ends_fight)
         : identity_(std::move(identity)), board_(std::move(board)), fighters_(std::move(fighters)),
-          random_{seed}, morale_threshold_(std::min(morale, 100U)), outdoors_(outdoors)
+          random_{seed}, morale_threshold_(std::min(morale, 100U)), outdoors_(outdoors),
+          escape_ends_fight_(escape_ends_fight)
     {
         rules::validate_battlefield(board_);
         log({"Combat begins.", {}});
@@ -723,6 +724,10 @@ class Session final : public rules::CombatSession
     unsigned morale_threshold_{100};
     // Out of doors (rules::Encounter::outdoors).
     bool outdoors_{};
+    // Gateway's maze fights: a member's escape ends them (rules::Encounter).
+    bool escape_ends_fight_{};
+    // The side the member who ended such a fight ran off.
+    std::optional<unsigned> escape_side_;
     std::vector<Cloud> clouds_;
 
     // Delayed Blast Fireballs set and not yet gone off: the caster's, its
@@ -879,6 +884,7 @@ class Session final : public rules::CombatSession
     [[nodiscard]] int highest_enemy_movement(const Fighter &f) const;
     bool check_morale(Fighter &f);
     void attempt_flee(Fighter &f);
+    void end_fight_by_escape(const Fighter &escaped);
     // The original's AI (combatai.pas).
     // A party member on Quick casts only with Quick magic on (`magic`).
     void ai_turn(Fighter &f, bool magic);
@@ -6180,10 +6186,33 @@ void Session::attempt_flee(Fighter &f)
     {
         put_out_of_play(f, Condition::fled);
         log({"{name} got away.", {{"name", f.name}}});
+        if (escape_ends_fight_ && f.side == Side::party && f.numbers.morale < non_player)
+        {
+            end_fight_by_escape(f);
+        }
         return;
     }
     log({"{name} cannot get away.", {{"name", f.name}}});
     end_actions(f);
+}
+
+// One member's escape ends Gateway's maze fights (cbtacts.pas, AttemptFlee in
+// combat mode 1): the party leaves by the side it ran off, and the monsters
+// left stay behind, worth nothing.
+void Session::end_fight_by_escape(const Fighter &escaped)
+{
+    escape_side_ = escaped.cell.y <= 0                   ? 0U
+                   : escaped.cell.x >= board_.width - 1  ? 1U
+                   : escaped.cell.y >= board_.height - 1 ? 2U
+                                                         : 3U;
+    for (auto &f : fighters_)
+    {
+        if (f.side == Side::opposition && f.condition == Condition::okay)
+        {
+            put_out_of_play(f, Condition::fled);
+        }
+    }
+    settle_outcome();
 }
 
 // The squares just off the field next to a creature on its edge.
@@ -6279,6 +6308,7 @@ rules::Snapshot Session::snapshot() const
     state.round = round_;
     state.actor = actor_;
     state.outcome = outcome_;
+    state.escape_side = escape_side_;
     state.battlefield = board_;
     state.log_entries = log_;
     std::vector<const Fighter *> order;
@@ -6709,7 +6739,8 @@ std::string Session::save() const
         out(plant);
     }
     out(random_.value, round_, revision_, actor_, static_cast<unsigned>(outcome_),
-        morale_threshold_, outdoors_, hostile_hit_points_percent_, clouds_.size());
+        morale_threshold_, outdoors_, escape_ends_fight_, escape_side_.value_or(4),
+        hostile_hit_points_percent_, clouds_.size());
     for (const auto &cloud : clouds_)
     {
         out(cloud.caster, cloud.index, cloud.corner.x, cloud.corner.y,
@@ -6800,6 +6831,11 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
     session->outcome_ = in.as<rules::Outcome>();
     session->morale_threshold_ = in.as<unsigned>();
     session->outdoors_ = in.as<bool>();
+    session->escape_ends_fight_ = in.as<bool>();
+    if (const auto side = in.as<unsigned>(); side < 4)
+    {
+        session->escape_side_ = side;
+    }
     session->hostile_hit_points_percent_ = in.as<int>();
     const auto clouds = in.as<std::size_t>();
     if (clouds > 64)
@@ -7105,7 +7141,8 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
         }
     }
     return std::make_unique<Session>(std::move(identity), std::move(encounter.battlefield),
-                                     std::move(fighters), seed, threshold, encounter.outdoors);
+                                     std::move(fighters), seed, threshold, encounter.outdoors,
+                                     encounter.escape_ends_fight);
 }
 
 std::unique_ptr<rules::CombatSession> restore_session(rules::Identity identity,

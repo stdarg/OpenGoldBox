@@ -679,6 +679,10 @@ struct Encounter
     // The fight is out of doors (the original's wilderness: its 3D-area cell
     // clear), where a fireball spreads less and Entangle's plants grow.
     bool outdoors{};
+    // Gateway's last fights through Ascore's maze (its combat mode 1): the
+    // first party member to get away ends the fight, the party leaving by
+    // the side it ran off (Snapshot::escape_side).
+    bool escape_ends_fight{};
 };
 
 // A weapon attack as the rules resolve it: the attack roll's bonus and the
@@ -960,6 +964,9 @@ struct Snapshot
     std::optional<EffectTargeting> effect_targeting;
     std::optional<SpellTargeting> spell_targeting;
     std::optional<AreaTargeting> area_targeting;
+    // The side of the field (0 north, 1 east, 2 south, 3 west) a party member
+    // ran off to end a fight that one escape ends (Encounter::escape_ends_fight).
+    std::optional<unsigned> escape_side;
     // Squares a spell makes Heavily Obscured, such as Fog Cloud's.
     std::vector<Cell> obscured;
     // Squares inside Silence.

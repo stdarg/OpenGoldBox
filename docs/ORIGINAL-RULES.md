@@ -374,6 +374,12 @@ reconstruction), with these differences (2026-11-14):
   Strength spells, plan step 5).
 - **Blink** may be cast in camp, carried into the next fight with the
   camp's other spells for a fight (plan step 5).
+- **Look** takes ten minutes, as its map menu's L does (2026-11-14). The
+  other games' originals do the same; OpenGoldBox's Look there still takes
+  no time.
+- **Ascore's maze of fights** (its combat mode 1, cell 4D01h): the first
+  member to get away ends the fight, and the party leaves facing the side it
+  ran off (2026-11-14).
 
 ## Pools of Darkness
 

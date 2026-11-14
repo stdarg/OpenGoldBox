@@ -181,6 +181,26 @@ host, each as Gateway's engine has it:
 - Many events look at the party's facing, which the scripts read from 03B2h:
   Gundbarg's ship sails only for a party facing down its pier (south), and
   Silverymoon's forge opens to one facing east.
+- The entries that run after a map's load entry read the event of the
+  square the load entry put the party on, as the original's redraw of the
+  view (MapView.DisplayMapView) rereads it between them: the Kraken
+  headquarters' landing (ECL4:13 0x8092) moves the party after loading the
+  map, and the square it left (a guard patrol's, event 2) sounded the alarm
+  where the original meets no one.
+- Look takes ten minutes, as the map menu's L does (AdvanceTime(1, 2)): the
+  cluebook has the party look about in the Pearl Chest's room (event 125)
+  until its guards come 30 minutes after the landing. A step takes six
+  seconds, ten minutes more in search mode, so the route races there out of
+  search mode.
+- Effect 84 is the charming gaze in Pool of Radiance only. In *Curse* and
+  Gateway it is a shambling mound's absorbing of electricity (their
+  effhndlr.pas), which charmed the party at the foot of the Star Mounts.
+- Ascore's maze of fights (script 27, maps 27 to 30) sets the combat mode,
+  cell 4D01h, to 1. In it the first member to get away ends the fight, the
+  monsters left behind and worth nothing, and the party leaves facing the
+  side it ran off (cbtacts.pas, AttemptFlee; postcbt.pas), which the script
+  reads to choose the next part of the maze (`rules::Encounter::escape_ends_fight`,
+  `Snapshot::escape_side`).
 
 ## The ending
 

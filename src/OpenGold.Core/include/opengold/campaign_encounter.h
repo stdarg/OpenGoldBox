@@ -130,6 +130,9 @@ struct CampaignEncounter
     std::vector<BandMember> band;
     // Easy's safety net (DIFF-2).
     bool spares_the_party{};
+    // Gateway's maze fights, which one member's escape ends
+    // (rules::Encounter::escape_ends_fight).
+    bool escape_ends_fight{};
 };
 
 // What the difficulty does to a fight's monsters and morale, those on the party's
