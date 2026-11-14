@@ -22,7 +22,7 @@ The user decided these on 2026-11-11 and 2026-11-12:
   game plays at Normal, the original's own play (2026-11-14); see
   [Difficulty](#difficulty).
 - **Obvious bugs in the original are fixed, not kept.** Since 2026-11-14 an
-  obvious one is fixed without asking first, listed in [Bugs](#bugs) and told
+  obvious one is fixed without asking first, listed in [Bugs](#bugs-in-the-original) and told
   to the user; one that may not be a bug, or has more than one fair fix, is
   put to the user first.
 - **2026-11-14 answers:** *Secret*'s Barkskin casts as Heal, as its table
