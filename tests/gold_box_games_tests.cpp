@@ -1711,6 +1711,18 @@ bool walk_census(GoldBoxGame game, bool route)
             return true;
         }
         const auto where = "map " + std::to_string(map) + " entry";
+        // Gateway's overland script (21) loads the map its cell 4C24h names,
+        // which the way the party came set: the overland map entered, or else
+        // Yartar's (22), where a new game's party first goes out (ECL2:1).
+        if (game == GoldBoxGame::gateway_to_the_savage_frontier)
+        {
+            constexpr unsigned overland_script = 21, yartar_overland = 22;
+            const bool overland =
+                opengold::test::TourAccess::area_scripts(session).at(map) == overland_script;
+            opengold::test::TourAccess::set_variable(
+                session, opengold::por::EclAddress{0x4C24},
+                static_cast<std::uint16_t>(overland ? map : yartar_overland));
+        }
         try
         {
             opengold::test::TourAccess::enter(session, map,

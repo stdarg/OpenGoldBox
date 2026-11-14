@@ -2,6 +2,8 @@
 #define OPENGOLD_OVERLAND_H
 #include "opengold/dungeon_battlefield.h"
 #include "opengold/formats.h"
+#include "opengold/geo_map.h"
+#include "opengold/wall_art.h"
 #include <array>
 #include <cstdint>
 #include <functional>
@@ -90,6 +92,16 @@ struct OverlandView
     std::function<bool(unsigned landmark)> landmark_shown;
 };
 
+// Gateway to the Savage Frontier's overland as its DrawOverlandView draws it
+// in the view's 88 by 88 pixels: the 11 by 11 squares around the party (kept
+// on the map), each square's north-and-east wall byte the number of a symbol
+// of the three sets its LOAD PIECES loaded (`symbols`, 70 a set; from 210 the
+// marks of `marks`), and the party's arrow over it, the marks' first four by
+// facing, their light magenta clear.
+[[nodiscard]] Image render_symbol_map(const GeoMap &map, std::span<const WallTile> symbols,
+                                      std::span<const WallTile> marks, unsigned x, unsigned y,
+                                      MapDirection facing);
+
 [[nodiscard]] Image render_overland_window(const OverlandWorld &world,
                                            std::span<const Image> tiles, const Image &party_icon,
                                            const OverlandView &view);
@@ -119,5 +131,25 @@ struct CurseWilderness
 };
 
 [[nodiscard]] std::optional<CurseWilderness> curse_wilderness(std::span<const std::uint8_t> image);
+
+// Gateway to the Savage Frontier's fights out of doors: its terrains (each
+// one's movement cost and WILDCOM tile, numbered from 1; 0 is none) and the
+// class bits of each kind of ground, read from its unpacked GAME.EXE.
+struct GatewayWilderness
+{
+    std::vector<OverlandWorld::CombatTile> combat_tiles;
+    std::vector<std::uint8_t> terrain_classes;
+};
+
+[[nodiscard]] std::optional<GatewayWilderness>
+gateway_wilderness(std::span<const std::uint8_t> image);
+
+// Gateway's field out of doors (its BuildWildernessArena): grass, a river by
+// chance on rough ground, trees and scattered features, as the ground's class
+// bits decide; `tiles` is GatewayWilderness's terrains.
+[[nodiscard]] DungeonBattlefield
+gateway_wilderness_battlefield(std::span<const OverlandWorld::CombatTile> tiles,
+                               unsigned terrain_class,
+                               const std::function<int(int count, int sides)> &roll);
 } // namespace opengold::por
 #endif

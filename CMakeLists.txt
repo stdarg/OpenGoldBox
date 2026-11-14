@@ -281,6 +281,8 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_curse_walk COMMAND opengold_gold_box_games_tests --curse-walk)
     # Every map of Secret of the Silver Blades walked the same way.
     add_test(NAME opengold_secret_walk COMMAND opengold_gold_box_games_tests --secret-walk)
+    # And every map of Gateway to the Savage Frontier, its overland too.
+    add_test(NAME opengold_gateway_walk COMMAND opengold_gold_box_games_tests --gateway-walk)
     # Curse's story, beat by beat, with a party made for it (plan step 7).
     add_test(NAME opengold_curse_route COMMAND opengold_gold_box_games_tests --curse-route)
     # Each game's title pictures, as its original shows them when it starts.

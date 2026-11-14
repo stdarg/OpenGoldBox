@@ -61,6 +61,9 @@ struct ScriptLoads
     unsigned disk{};
     std::vector<unsigned> maps;
     std::vector<std::array<unsigned, 3>> walls;
+    // A LOAD FILES whose map is a cell's (Gateway's overland, script 21, loads
+    // the map its cell 4C24h names).
+    bool maps_by_cell{};
 };
 
 std::map<unsigned, ScriptLoads> script_loads(const por::EclCatalog &catalog)
@@ -72,6 +75,10 @@ std::map<unsigned, ScriptLoads> script_loads(const por::EclCatalog &catalog)
         script.disk = static_cast<unsigned>(std::stoul(id.archive.substr(3)));
         for (const auto &i : por::walk_reachable(*program).instructions)
         {
+            if (i.opcode == load_files && !i.operands.empty() && i.operands[0].tag != 0)
+            {
+                script.maps_by_cell = true;
+            }
             const bool written = std::all_of(i.operands.begin(), i.operands.end(),
                                              [](const auto &operand)
                                              {
@@ -146,16 +153,10 @@ std::vector<std::string> read_curse_ending(std::span<const std::uint8_t> overlay
     return screens;
 }
 
-// Curse's fights out of doors (the script's 3D-area cell clear) are on open
-// ground drawn with WILDCOM's 34 tiles, then RANDCOM's 6.
-void add_curse_wilderness(const std::filesystem::path &folder,
-                          std::span<const std::uint8_t> start_image, por::PhlanResources &root)
+// Fights out of doors (the script's 3D-area cell clear) are on open ground
+// drawn with WILDCOM's 34 tiles, then RANDCOM's 6.
+void add_wilderness_art(const std::filesystem::path &folder, por::PhlanResources &root)
 {
-    root.curse_wilderness = por::curse_wilderness(start_image);
-    if (!root.curse_wilderness)
-    {
-        throw EclError("Curse's START.EXE has no wilderness battlefield tables");
-    }
     for (const auto &[name, frames] : {std::pair{"WILDCOM.DAX", 34u}, std::pair{"RANDCOM.DAX", 6u}})
     {
         const auto archive = por::detail::read_archive(por::detail::resolve_archive(folder, name));
@@ -169,6 +170,58 @@ void add_curse_wilderness(const std::filesystem::path &folder,
             root.wilderness_art.push_back(std::move(art.image));
         }
     }
+}
+
+void add_curse_wilderness(const std::filesystem::path &folder,
+                          std::span<const std::uint8_t> start_image, por::PhlanResources &root)
+{
+    root.curse_wilderness = por::curse_wilderness(start_image);
+    if (!root.curse_wilderness)
+    {
+        throw EclError("Curse's START.EXE has no wilderness battlefield tables");
+    }
+    add_wilderness_art(folder, root);
+}
+
+// Gateway's fights on its overland, from its GAME.EXE's terrain tables.
+void add_gateway_wilderness(const std::filesystem::path &folder,
+                            std::span<const std::uint8_t> game_image, por::PhlanResources &root)
+{
+    root.gateway_wilderness = por::gateway_wilderness(game_image);
+    if (!root.gateway_wilderness)
+    {
+        throw EclError("Gateway's GAME.EXE has no wilderness battlefield tables");
+    }
+    add_wilderness_art(folder, root);
+}
+
+// Every set of symbols in the files a disk's LOAD PIECES reads, the file
+// without a disk number first, as the original looks there first.
+void add_symbol_sets(const por::detail::AreaFiles &files, unsigned disk, por::PhlanResources &root)
+{
+    for (const auto &name : files.disk_archives("8X8D", disk))
+    {
+        if (!files.has_archive(name))
+        {
+            continue;
+        }
+        for (const auto &record : files.archive(name).records)
+        {
+            auto tiles = por::decode_wall_tiles(record.bytes);
+            if (!tiles)
+            {
+                throw EclError("Invalid symbol set " + std::to_string(record.id) + " in " + name);
+            }
+            root.symbol_sets.emplace(record.id, std::move(*tiles));
+        }
+    }
+    auto marks = por::decode_wall_tiles(files.record("8X8D1.DAX", por::gateway_marks));
+    if (!marks)
+    {
+        throw EclError("Invalid symbol set " + std::to_string(por::gateway_marks) +
+                       " in 8X8D1.DAX");
+    }
+    root.symbol_sets.emplace(por::gateway_marks, std::move(*marks));
 }
 
 por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, GoldBoxGame game)
@@ -249,6 +302,10 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
     {
         add_curse_wilderness(folder, program_image, *root);
     }
+    if (game == GoldBoxGame::gateway_to_the_savage_frontier)
+    {
+        add_gateway_wilderness(folder, program_image, *root);
+    }
     const auto loads = script_loads(catalog);
     for (const auto &[id, program] : catalog.all())
     {
@@ -257,6 +314,12 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
     }
     for (const auto &[script, load] : loads)
     {
+        // Gateway's overland script (21) loads symbol sets of its disk alone
+        // for the overland's map (view3d.pas LoadWallSet outside a dungeon).
+        if (game == GoldBoxGame::gateway_to_the_savage_frontier && load.maps_by_cell)
+        {
+            add_symbol_sets(files, load.disk, *root);
+        }
         for (const auto &walls : load.walls)
         {
             const auto key = std::make_pair(load.disk, walls);
@@ -310,6 +373,19 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
                     walls = load.walls.front();
                 }
                 scripts.push_back(script);
+            }
+        }
+        // A map no script names is one a script of its disk loads by a cell
+        // (Gateway's overland maps 21 to 26); its walls are the ones that
+        // script's LOAD PIECES names as it runs.
+        if (scripts.empty())
+        {
+            for (const auto &[script, load] : loads)
+            {
+                if (load.disk == map_disk && load.maps_by_cell)
+                {
+                    scripts.push_back(script);
+                }
             }
         }
         if (scripts.empty())

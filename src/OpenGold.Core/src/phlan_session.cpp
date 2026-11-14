@@ -747,7 +747,50 @@ void RolfTourSession::bind_pose(PartyPose pose)
     const auto &cell = map_.at(pose.x, pose.y);
     machine_.bind_variable(game_cell(ecl_wall_ahead), cell.walls[index(pose.facing)]);
     machine_.bind_variable(game_cell(ecl_cell_event), cell.event_raw);
+    // Gateway's scripts read the barrier ahead (its RefreshCurrentMapCell): the
+    // side's barrier where there is a wall or on the overland, else open (1).
+    if (game() == GoldBoxGame::gateway_to_the_savage_frontier)
+    {
+        constexpr EclAddress barrier_ahead{0x4CF6};
+        const auto side = index(pose.facing);
+        machine_.bind_variable(barrier_ahead,
+                               cell.walls[side] || gateway_overland() ? cell.doors[side] : 1);
+    }
     publish_pose();
+}
+
+unsigned RolfTourSession::room_ahead() const
+{
+    // Gateway's overland always has room for 2 (its MaxMonsterDist).
+    return gateway_overland() ? 2 : open_squares_ahead(map_, snapshot_.pose);
+}
+
+bool RolfTourSession::gateway_overland() const
+{
+    return game() == GoldBoxGame::gateway_to_the_savage_frontier &&
+           machine_.variable(game_cell(ecl_in_3d_area)) == 0;
+}
+
+void RolfTourSession::load_overland_symbols(const std::array<unsigned, 3> &banks)
+{
+    constexpr std::size_t slot_symbols = 70;
+    WallTiles symbols(slot_symbols * banks.size());
+    for (std::size_t slot = 0; slot < banks.size(); ++slot)
+    {
+        if (banks[slot] == detail::no_wall_bank)
+        {
+            continue;
+        }
+        const auto set = town_->symbol_sets.find(banks[slot]);
+        if (set == town_->symbol_sets.end() || set->second.size() < slot_symbols)
+        {
+            throw EclError("Unable to load symbol set " + std::to_string(banks[slot]));
+        }
+        std::copy_n(set->second.begin(), slot_symbols,
+                    symbols.begin() + static_cast<std::ptrdiff_t>(slot * slot_symbols));
+    }
+    overland_symbols_ = std::move(symbols);
+    ++snapshot_.revision;
 }
 
 bool RolfTourSession::move_party(ExplorationCommand command)
@@ -784,7 +827,12 @@ bool RolfTourSession::move_party(ExplorationCommand command)
         {
             return door > 1 || (wall && !door);
         };
-        if (blocked(a.walls[index(side)], a.doors[index(side)]))
+        // Gateway's overland passes only an open way (barrier 1), with or
+        // without a wall (its GetBarrierType).
+        const bool stopped = gateway_overland()
+                                 ? a.doors[index(side)] != 1
+                                 : blocked(a.walls[index(side)], a.doors[index(side)]);
+        if (stopped)
         {
             return false;
         }
@@ -1026,6 +1074,11 @@ void RolfTourSession::enter_script(unsigned script, const TeleportArrival &arriv
     current_script_ = script;
     snapshot_.script_id = current_script_;
     teleport_arrival_ = arrival;
+    // As NEW ECL does, Gateway's script starts in a dungeon.
+    if (game() == GoldBoxGame::gateway_to_the_savage_frontier)
+    {
+        machine_.bind_variable(game_cell(ecl_in_3d_area), 1);
+    }
     arrive(arrival);
     begin_event(EventTrigger::step, 4);
     event_stage_ = EventStage::area_entry;
@@ -2389,7 +2442,8 @@ void RolfTourSession::show_encounter_menu()
     // As in the original, Parley replaces Advance once the monsters are
     // adjacent, and on the wilderness map, where no one advances.
     snapshot_.choices = {"Fight", "Wait", "Flee",
-                         encounter_distance_ && !overland() ? "Advance" : "Parley"};
+                         encounter_distance_ && !overland() && !gateway_overland() ? "Advance"
+                                                                                   : "Parley"};
     snapshot_.phase = TourPhase::awaiting_continue;
     snapshot_.continue_ticket = ++next_ticket_;
     ++snapshot_.revision;
@@ -2527,7 +2581,7 @@ bool RolfTourSession::choose_encounter(std::size_t choice)
     }
     // The fourth choice is Advance at a distance and Parley when adjacent or
     // on the wilderness map.
-    if (choice == 3 && (encounter_distance_ == 0 || overland()))
+    if (choice == 3 && (encounter_distance_ == 0 || overland() || gateway_overland()))
     {
         choice = 4;
     }
@@ -3052,7 +3106,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         {
             throw EclError("Unsupported encounter distance");
         }
-        encounter_distance_ = std::min<unsigned>(arg(1), open_squares_ahead(map_, snapshot_.pose));
+        encounter_distance_ = std::min<unsigned>(arg(1), room_ahead());
         // Gateway's monsters have no distance sprites (255; it has no SPRIT
         // files): only the close-up shows, face to face (its DisplayMonster).
         constexpr unsigned no_sprite = 255;
@@ -3253,7 +3307,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             throw EclError("Unsupported encounter menu context");
         }
         encounter_menu_ = request;
-        encounter_distance_ = std::min<unsigned>(arg(1), open_squares_ahead(map_, snapshot_.pose));
+        encounter_distance_ = std::min<unsigned>(arg(1), room_ahead());
         show_encounter_menu();
         return true;
     case 29:
@@ -3542,6 +3596,17 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 const auto place = machine_.variable(curse_current_place);
                 return place < flags.size() ? flags[place] : 0U;
             };
+            // Gateway fights on its overland on grass grown from the ground's
+            // class (cell 4CA1h, which nothing sets), as its
+            // BuildWildernessArena does.
+            const bool gateway_outdoors = town_->gateway_wilderness && gateway_overland();
+            const auto gateway_ground_class = [&]() -> unsigned
+            {
+                constexpr EclAddress gateway_ground{0x4CA1};
+                const auto &classes = town_->gateway_wilderness->terrain_classes;
+                const std::size_t ground = machine_.variable(gateway_ground) & 0xFFu;
+                return ground < classes.size() ? classes[ground] : 0U;
+            };
             auto field =
                 overland()
                     ? wilderness_battlefield(
@@ -3552,12 +3617,16 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                           roll)
                 : curse_outdoors ? wilderness_battlefield(town_->curse_wilderness->combat_tiles,
                                                           curse_place_flags(), roll)
-                                 : dungeon_battlefield(map_, p.x, p.y);
+                : gateway_outdoors
+                    ? gateway_wilderness_battlefield(town_->gateway_wilderness->combat_tiles,
+                                                     gateway_ground_class(), roll)
+                    : dungeon_battlefield(map_, p.x, p.y);
             encounter_ = opengold::CampaignEncounter{
                 std::move(field),
                 std::move(staged_enemies_),
                 std::move(staged_art_),
-                overland() || curse_outdoors ? town_->wilderness_art : area_resources().terrain_art,
+                overland() || curse_outdoors || gateway_outdoors ? town_->wilderness_art
+                                                                 : area_resources().terrain_art,
                 overland() ? wilderness_facing : p.facing,
                 script_surprise(machine_.variable(game_cell(ecl_encounter_surprise)))};
             encounter_->band = std::move(staged_band_);
@@ -3606,11 +3675,12 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             }
             if (!overland())
             {
-                encounter_distance_ = std::min(encounter_distance_, open_squares_ahead(map_, p));
+                encounter_distance_ = std::min(encounter_distance_, room_ahead());
             }
             // On the wilderness map the original stands the monsters 2 squares
-            // away, whatever SETUP MONSTER asked (PLACE-2).
-            encounter_->distance = overland() ? 2u : encounter_distance_;
+            // away, whatever SETUP MONSTER asked (PLACE-2); so does Gateway's
+            // overland (its MaxMonsterDist).
+            encounter_->distance = overland() || gateway_overland() ? 2u : encounter_distance_;
             // The script sets the encounter's morale before COMBAT.
             encounter_->morale =
                 std::min<unsigned>(machine_.variable(game_cell(ecl_encounter_morale)), 100);
@@ -3731,6 +3801,12 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             current_script_ != curse_wilderness_script)
         {
             reply.writes.push_back({curse_back_from_camp, 0});
+        }
+        // Gateway's every new script starts in a dungeon (its EclInit); the
+        // overland's clears the cell itself.
+        if (game() == GoldBoxGame::gateway_to_the_savage_frontier)
+        {
+            reply.writes.push_back({game_cell(ecl_in_3d_area), 1});
         }
         current_script_ = arg(0);
         snapshot_.script_id = current_script_;
@@ -3902,6 +3978,11 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         const std::array<unsigned, 3> banks{arg(0), arg(1), arg(2)};
         if (banks == std::array<unsigned, 3>{127, 127, 127})
         {
+            break;
+        }
+        if (gateway_overland())
+        {
+            load_overland_symbols(detail::load_pieces_banks(banks));
             break;
         }
         // In Curse a script loads the view's walls itself, as the original does

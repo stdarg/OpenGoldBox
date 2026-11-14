@@ -89,6 +89,10 @@ struct SpentGear
     std::vector<std::pair<std::size_t, unsigned>> uses_left;
 };
 
+// Gateway's set of marks (8X8D1's record 202, its symbol set 4): the party's
+// arrows on the overland, by facing, and the automap's walls.
+inline constexpr unsigned gateway_marks = 202;
+
 struct PhlanResources
 {
     // A campaign that starts by running a script's load entry (Curse's script
@@ -130,6 +134,11 @@ struct PhlanResources
                                    shared_with.end();
     }
     std::array<unsigned, 3> pieces{};
+    // On the town only: Gateway's sets of eight-by-eight symbols, by record,
+    // that its LOAD PIECES loads alone on the overland, outside a dungeon
+    // (8X8D6's sets of 70, with the files' own for the disks of the scripts
+    // that load maps by cells).
+    std::map<unsigned, WallTiles> symbol_sets;
     std::vector<std::uint8_t> combat_archive;
     std::vector<Image> terrain_art;
     // On the town only: the wilderness from START.EXE, SQRPACI's 256 overland
@@ -145,6 +154,9 @@ struct PhlanResources
     // Curse's: the battlefield tiles and places' terrain its fights out of
     // doors are built from (curse_wilderness); empty for Pool of Radiance.
     std::optional<CurseWilderness> curse_wilderness;
+    // Gateway's: the terrains and grounds its fights on the overland are
+    // built from (gateway_wilderness).
+    std::optional<GatewayWilderness> gateway_wilderness;
     // On the town only: the original's closing story from GAME.OVR, one string
     // per page. Empty without that file.
     std::vector<std::string> closing_story;
@@ -801,6 +813,15 @@ class RolfTourSession
     // Steps the party one wilderness square in its direction, unless the
     // terrain stops it; false when it stays.
     bool overland_step();
+    // Gateway's overland: its script cleared the in-dungeon cell (4BE6h), and
+    // the map is drawn from above with symbols rather than walls.
+    [[nodiscard]] bool gateway_overland() const;
+    // The open squares ahead of the party where monsters may stand, at most 2.
+    [[nodiscard]] unsigned room_ahead() const;
+    // A LOAD PIECES on Gateway's overland: the three symbol sets that draw
+    // the map's cells, each into its slot of 70 symbols.
+    void load_overland_symbols(const std::array<unsigned, 3> &banks);
+    WallTiles overland_symbols_;
     std::map<unsigned, std::bitset<256>> visited_areas_;
     std::map<unsigned, std::bitset<256>> seen_areas_;
     std::vector<rules::Participant> staged_enemies_;

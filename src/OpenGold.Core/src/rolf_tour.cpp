@@ -1004,6 +1004,11 @@ Image RolfTourSession::observe_view()
                                       town_->party_icon, view);
     }
     const auto pose = snapshot_.pose;
+    if (gateway_overland())
+    {
+        return render_symbol_map(map_, overland_symbols_, town_->symbol_sets.at(gateway_marks),
+                                 pose.x, pose.y, pose.facing);
+    }
     auto view =
         render_exploration_view(map_, wall_art_, pose.x, pose.y, pose.facing, original_walls_);
     // Before the opening script publishes a pose, (0,0) is only a default

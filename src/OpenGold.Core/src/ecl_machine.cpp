@@ -1161,9 +1161,18 @@ void EclMachine::load_program(std::shared_ptr<const EclProgram> next,
     instruction_spans_.clear();
     stack_.clear();
     conditions_.fill(false);
+    // Gateway clears its own cells: 4C00h to 4C1Fh and 7F79h to 7F82h (its
+    // EclInit).
+    const bool gateway = program_->game() == GoldBoxGame::gateway_to_the_savage_frontier;
+    const auto cleared = [gateway](std::uint16_t address)
+    {
+        return gateway ? (address >= 0x4C00 && address <= 0x4C1F) ||
+                             (address >= 0x7F79 && address <= 0x7F82)
+                       : address >= 0x4A00 && address <= 0x4A1F;
+    };
     for (auto &[address, v] : variables_)
     {
-        if (address >= 0x4A00 && address <= 0x4A1F)
+        if (cleared(address))
         {
             v = 0;
         }

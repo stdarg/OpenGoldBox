@@ -14,6 +14,8 @@ namespace
 constexpr std::size_t landmark_offset = 0x0C36, squares_offset = 0x3648,
                       window_offset = 0x3C78, combat_tile_offset = 0x2744;
 constexpr std::size_t combat_tile_count = 0x42;
+// Gateway's terrains, numbered from 1.
+constexpr std::size_t gateway_terrain_count = 65;
 // The valley's healing: its two lists of tiles, the colors both remaps start
 // from, and what each turns them into.
 constexpr std::size_t healing_tiles_offset = 0x0900, healing_from_offset = 0x091D;
@@ -160,6 +162,8 @@ unsigned terrain_flags(std::uint8_t t)
 constexpr int field_columns = 50, field_rows = 25;
 constexpr std::uint8_t ground = 0x17, road = 0x32, ridge = 0x33, boulder = 0x34;
 constexpr std::uint8_t floor_frame = 0x16;
+// Gateway's ford across its river, two terrains one above the other.
+constexpr std::uint8_t ford = 64;
 
 class FieldBuilder
 {
@@ -338,6 +342,140 @@ class FieldBuilder
                         kind = roll(1, 3);
                     }
                     at(row, column) = static_cast<std::uint8_t>(0x2D + kind);
+                }
+            }
+        }
+    }
+
+    // Gateway's river (its PlaceRiver): down the field from a column near
+    // the middle, drifting a column a row, on rough ground by chance, with a
+    // ford one row in twenty.
+    void river(unsigned classes)
+    {
+        int chance = 0;
+        chance = classes & 0x20 ? 35 : chance;
+        chance = classes & 0x10 ? 75 : chance;
+        if (roll(1, 100) > chance)
+        {
+            return;
+        }
+        int column = 34 - roll(5, 4);
+        while ((column + 2) % 7 > 0)
+        {
+            --column;
+        }
+        for (int row = 0; row < field_rows && column < field_columns; ++row, ++column)
+        {
+            at(row, column) = static_cast<std::uint8_t>(roll(1, 2) + 59);
+            if (column + 1 < field_columns)
+            {
+                at(row, column + 1) = static_cast<std::uint8_t>(roll(1, 2) + 61);
+            }
+            if (roll(1, 20) == 1 && column + 1 < field_columns)
+            {
+                at(row, column + 1) = ford;
+                if (row + 1 < field_rows)
+                {
+                    at(row + 1, column + 1) = ford + 1;
+                }
+            }
+        }
+    }
+
+    // Gateway's trees (its PlaceTrees), one or two squares tall on grass,
+    // none on bare ground; the field is walked column by column.
+    void gateway_trees(unsigned classes)
+    {
+        if (classes & 0x80)
+        {
+            return;
+        }
+        int density = 10;
+        density -= classes & 0x02 ? 5 : 0;
+        density -= classes & 0x04 ? 2 : 0;
+        density += classes & 0x40 ? 5 : 0;
+        density += classes & 0x08 ? 10 : 0;
+        for (int column = 0; column < field_columns; ++column)
+        {
+            for (int row = 1; row < field_rows; ++row)
+            {
+                if (!floor(row, column) || !floor(row - 1, column) || density < roll(1, 100))
+                {
+                    continue;
+                }
+                if (density >= roll(1, 100))
+                {
+                    at(row, column) = static_cast<std::uint8_t>(roll(1, 2) + 41);
+                }
+                else
+                {
+                    at(row - 1, column) = static_cast<std::uint8_t>(roll(1, 5) + 31);
+                    at(row, column) = static_cast<std::uint8_t>(roll(1, 5) + 36);
+                }
+            }
+        }
+    }
+
+    // Gateway's scattered features (its ScatterFeatures): on each grass square
+    // one of five kinds or none, with chances the ground's weight picks.
+    void scatter(unsigned classes)
+    {
+        int weight = 50;
+        weight += classes & 0x10 ? 10 : 0;
+        weight += classes & 0x20 ? 30 : 0;
+        weight += classes & 0x40 ? 20 : 0;
+        weight -= classes & 0x04 ? 10 : 0;
+        weight -= classes & 0x02 ? 20 : 0;
+        weight -= classes & 0x80 ? 50 : 0;
+        // Each band's chances, in percent, of its five kinds.
+        std::array<int, 5> chances{};
+        if (weight >= -30 && weight <= 9)
+        {
+            chances = {0, 0, 0, 30, 15};
+        }
+        else if (weight >= 10 && weight <= 29)
+        {
+            chances = {0, 1, 5, 20, 10};
+        }
+        else if (weight >= 30 && weight <= 69)
+        {
+            chances = {0, 2, 5, 10, 5};
+        }
+        else if (weight >= 70 && weight <= 89)
+        {
+            chances = {10, 2, 10, 10, 1};
+        }
+        else if (weight >= 90 && weight <= 110)
+        {
+            chances = {15, 5, 15, 10, 1};
+        }
+        else
+        {
+            return;
+        }
+        // Each kind's terrains: the one before its first, and how many.
+        constexpr std::array<std::pair<int, int>, 5> kinds{
+            {{57, 2}, {47, 2}, {43, 4}, {54, 3}, {49, 4}}};
+        for (int column = 0; column < field_columns; ++column)
+        {
+            for (int row = 0; row < field_rows; ++row)
+            {
+                if (!floor(row, column))
+                {
+                    continue;
+                }
+                const int r = roll(1, 100);
+                int bound = 0;
+                for (std::size_t kind = 0; kind < kinds.size(); ++kind)
+                {
+                    bound += chances[kind];
+                    if (r <= bound)
+                    {
+                        const auto [before_first, variants] = kinds[kind];
+                        at(row, column) =
+                            static_cast<std::uint8_t>(roll(1, variants) + before_first);
+                        break;
+                    }
                 }
             }
         }
@@ -526,6 +664,55 @@ OverlandPassage overland_passage(std::uint8_t t) noexcept
     return in(t, {{0x66, 0x6C}, {0x72, 0x72}}) ? OverlandPassage::river : OverlandPassage::open;
 }
 
+Image render_symbol_map(const GeoMap &map, std::span<const WallTile> symbols,
+                        std::span<const WallTile> marks, unsigned x, unsigned y,
+                        MapDirection facing)
+{
+    constexpr unsigned squares = 11, size = 8, light_magenta = 13;
+    // The window's first square, from 0 to 5, keeps it on the 16 by 16 map.
+    const auto first = [](unsigned at)
+    {
+        return std::clamp<int>(static_cast<int>(at) - 5, 0, 5);
+    };
+    const auto left = static_cast<unsigned>(first(x)), top = static_cast<unsigned>(first(y));
+    Image result;
+    result.width = result.height = squares * size;
+    result.rgba.assign(static_cast<std::size_t>(result.width) * result.height * 4, 0);
+    const auto draw = [&](const WallTile *tile, unsigned column, unsigned row, bool masked)
+    {
+        for (unsigned pixel = 0; tile && pixel < tile->size(); ++pixel)
+        {
+            const auto color = (*tile)[pixel];
+            if (masked && color == light_magenta)
+            {
+                continue;
+            }
+            const auto rgb = ega_rgb(color);
+            const auto target =
+                ((row * size + pixel / size) * result.width + column * size + pixel % size) * 4;
+            std::copy(rgb.begin(), rgb.end(), result.rgba.begin() + target);
+            result.rgba[target + 3] = 255;
+        }
+    };
+    const auto at = [](std::span<const WallTile> set, std::size_t index) -> const WallTile *
+    {
+        return index < set.size() ? &set[index] : nullptr;
+    };
+    constexpr std::size_t loaded_symbols = 210;
+    for (unsigned row = 0; row < squares; ++row)
+    {
+        for (unsigned column = 0; column < squares; ++column)
+        {
+            const auto &cell = map.at(left + column, top + row);
+            const std::size_t symbol = static_cast<std::size_t>(cell.walls[0] << 4) | cell.walls[1];
+            draw(symbol < loaded_symbols ? at(symbols, symbol) : at(marks, symbol - loaded_symbols),
+                 column, row, false);
+        }
+    }
+    draw(at(marks, index(facing)), x - left, y - top, true);
+    return result;
+}
+
 Image render_overland_window(const OverlandWorld &world, std::span<const Image> tiles,
                              const Image &party_icon, const OverlandView &view)
 {
@@ -598,6 +785,50 @@ DungeonBattlefield wilderness_battlefield(std::span<const OverlandWorld::CombatT
     builder.ground_cover(flags);
     builder.debris();
     return builder.field();
+}
+
+DungeonBattlefield gateway_wilderness_battlefield(std::span<const OverlandWorld::CombatTile> tiles,
+                                                  unsigned terrain_class,
+                                                  const std::function<int(int, int)> &roll)
+{
+    if (tiles.size() < gateway_terrain_count + 1)
+    {
+        throw std::invalid_argument("Gateway's wilderness has no combat terrain table");
+    }
+    FieldBuilder builder(tiles, roll);
+    builder.river(terrain_class);
+    builder.gateway_trees(terrain_class);
+    builder.scatter(terrain_class);
+    return builder.field();
+}
+
+std::optional<GatewayWilderness> gateway_wilderness(std::span<const std::uint8_t> image)
+{
+    // The release this engine reads keeps its terrain table (terrains 1 to 65:
+    // movement cost, two bytes, combat tile) and the 32 grounds' classes at
+    // fixed places in its unpacked GAME.EXE, where terrain 1 is a wall (255,
+    // tile 0), grass costs 1 on tile 22, and the last ground is bare (80h).
+    constexpr std::size_t tile_offset = 0x7E20, class_offset = 0x509C, class_count = 32;
+    constexpr std::size_t grass_entry = tile_offset + (ground - 1) * 4;
+    if (image.size() < tile_offset + gateway_terrain_count * 4 ||
+        image.size() < class_offset + class_count || image[tile_offset] != 255 ||
+        image[tile_offset + 3] != 0 || image[grass_entry] != 1 ||
+        image[grass_entry + 3] != floor_frame || image[class_offset + class_count - 1] != 0x80)
+    {
+        return std::nullopt;
+    }
+    GatewayWilderness wilderness;
+    // Terrain 0 is none: a wall, which the field never holds.
+    wilderness.combat_tiles.push_back({255, 0});
+    for (std::size_t terrain = 0; terrain < gateway_terrain_count; ++terrain)
+    {
+        const auto entry = tile_offset + terrain * 4;
+        wilderness.combat_tiles.push_back({image[entry], image[entry + 3]});
+    }
+    wilderness.terrain_classes.assign(image.begin() + static_cast<std::ptrdiff_t>(class_offset),
+                                      image.begin() +
+                                          static_cast<std::ptrdiff_t>(class_offset + class_count));
+    return wilderness;
 }
 
 std::optional<CurseWilderness> curse_wilderness(std::span<const std::uint8_t> image)
