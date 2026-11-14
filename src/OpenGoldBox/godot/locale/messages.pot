@@ -274,7 +274,7 @@ msgstr ""
 msgid "A divine scroll: a Cleric, Druid, Paladin or Ranger reads its spells. A level-13 Thief reads any scroll."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1226
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1242
 msgid "A drain takes more levels than the character has"
 msgstr ""
 
@@ -895,7 +895,7 @@ msgstr ""
 msgid "Already added. Use Rejoin party for a reserved member."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:788 src/OpenGold.Rules.Original/src/rules_module.cpp:794
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:804 src/OpenGold.Rules.Original/src/rules_module.cpp:810
 msgid "Already using another item there"
 msgstr ""
 
@@ -2054,7 +2054,7 @@ msgstr ""
 msgid "Cast spell"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1569
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1585
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Cast {spell}"
 msgstr ""
@@ -5473,7 +5473,7 @@ msgstr ""
 msgid "Hit Point maximum lowered by {value} until a Long Rest."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:604 src/OpenGold.Rules.Original/src/rules_module.cpp:619
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:620 src/OpenGold.Rules.Original/src/rules_module.cpp:635
 msgid "Hit Points outside the character's range"
 msgstr ""
 
@@ -5838,7 +5838,7 @@ msgstr ""
 msgid "Invalid original-rules combat checkpoint"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:577
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:593
 msgid "Invalid original-rules profile"
 msgstr ""
 
@@ -5903,7 +5903,7 @@ msgstr ""
 msgid "It takes a bottle of Magic Ink of the spell's level or higher"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:755
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:771
 msgid "It's cursed"
 msgstr ""
 
@@ -6110,7 +6110,7 @@ msgstr ""
 msgid "Lay On Hands: cure Poisoned (5)"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1561
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1577
 msgid "Lay on hands"
 msgstr ""
 
@@ -7449,7 +7449,7 @@ msgstr ""
 msgid "No one in the party needs {spell}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:6426 src/OpenGold.Rules.Original/src/rules_module.cpp:588
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:6426 src/OpenGold.Rules.Original/src/rules_module.cpp:604
 msgid "No original-rules record for "
 msgstr ""
 
@@ -7465,7 +7465,7 @@ msgstr ""
 msgid "No spell choices for this class"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:564
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:580
 msgid "No such level under the original rules"
 msgstr ""
 
@@ -7505,7 +7505,7 @@ msgstr ""
 msgid "North"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:639
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:655
 msgid "Not an item of the original rules"
 msgstr ""
 
@@ -7698,7 +7698,7 @@ msgstr ""
 msgid "Only a damaged simulacrum can be repaired"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1158
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1174
 msgid "Only a magic-user's training learns a spell"
 msgstr ""
 
@@ -8598,7 +8598,7 @@ msgstr ""
 msgid "Raise Dead cannot bring back {name}, who has been dead too long or is dust."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1618
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1634
 msgid "Raise Dead cannot bring this member back"
 msgstr ""
 
@@ -10978,11 +10978,11 @@ msgstr ""
 msgid "Teshwave Ruins"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1591
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1607
 msgid "That cannot be done now"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1687
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1703
 msgid "That cannot be used now"
 msgstr ""
 
@@ -10994,7 +10994,7 @@ msgstr ""
 msgid "That potion works only in combat"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1611 src/OpenGold.Rules.Original/src/rules_module.cpp:1759
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1627 src/OpenGold.Rules.Original/src/rules_module.cpp:1775
 msgid "That spell cannot be cast now"
 msgstr ""
 
@@ -11002,11 +11002,11 @@ msgstr ""
 msgid "That spell cannot be copied into the spellbook"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1169
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1185
 msgid "That spell cannot be learned"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:911
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:927
 msgid "That spell cannot be memorized"
 msgstr ""
 
@@ -11120,7 +11120,7 @@ msgstr ""
 msgid "The cantrip reaches 30 feet farther per Warlock level."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1186
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1202
 msgid "The character has no levels in a class it trained in"
 msgstr ""
 
@@ -11159,7 +11159,7 @@ msgstr ""
 msgid "The creature that hit it this turn attacks it with Disadvantage."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1622
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1638
 msgid "The dead cannot be healed"
 msgstr ""
 
@@ -11352,7 +11352,7 @@ msgstr ""
 msgid "The sword will not stay in {name}'s hand and burns for {damage} Force damage."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1414
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1430
 msgid "The temple cannot help with that"
 msgstr ""
 
@@ -11481,7 +11481,7 @@ msgstr ""
 msgid "This armor imposes Disadvantage on Dexterity (Stealth) checks."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1125
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1141
 msgid "This character is not ready to train"
 msgstr ""
 
@@ -11636,7 +11636,7 @@ msgstr ""
 msgid "Too heavy to carry"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:916
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:932
 msgid "Too many spells of that level"
 msgstr ""
 
@@ -11955,7 +11955,7 @@ msgstr ""
 msgid "Unfilled cantrip choices remain pending. More choices will become available as spell support expands."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:747
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:763
 msgid "Unknown equipment candidate"
 msgstr ""
 
@@ -11963,15 +11963,15 @@ msgstr ""
 msgid "Unknown training choice"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:158
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:174
 msgid "Unreadable original-rules level drain"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:131
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:147
 msgid "Unreadable original-rules raising"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:84
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:100
 msgid "Unreadable original-rules training"
 msgstr ""
 
@@ -12665,7 +12665,7 @@ msgstr ""
 msgid "Write a scroll of {spell} (Magic Ink of level {level} or higher, {hours} hours)"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:768
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:784
 msgid "Wrong class"
 msgstr ""
 
@@ -12771,7 +12771,7 @@ msgstr ""
 msgid "Your character: {race} / {gender} / {class}"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:798
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:814
 msgid "Your hands are full!"
 msgstr ""
 
