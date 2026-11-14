@@ -675,6 +675,9 @@ struct Encounter
     // Easy (DIFF-2): a party member's flight always succeeds, and winning the
     // fight brings those it killed or downed back to 1 Hit Point.
     bool spares_the_party{};
+    // The fight is out of doors (the original's wilderness: its 3D-area cell
+    // clear), where a fireball spreads less and Entangle's plants grow.
+    bool outdoors{};
 };
 
 // A weapon attack as the rules resolve it: the attack roll's bonus and the

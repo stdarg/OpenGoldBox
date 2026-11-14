@@ -581,8 +581,8 @@ bool spell_built(int number)
         12, 13, 15, 16, 17, 19, 20, 21, 23, 24, 25, 29, 30, 32, 33, 35, 37, 38, 40, 42, 34, 43, 44,
         45, 47, 48, 49, 50, 51, 52, 53, 54, 55,
         // Curse's (spells.cpp, curse_spells).
-        158, 166, 168, 169, 170, 171, 172, 173, 174, 176, 177, 179, 180, 181, 182, 183, 184, 185,
-        186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200,
+        158, 166, 168, 169, 170, 171, 172, 173, 174, 176, 177, 178, 179, 180, 181, 182, 183, 184,
+        185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200,
         // Secret's (spells.cpp, secret_spells).
         236, 256, 290, 296, 298, 310, 311, 312, 313, 314, 315, 316, 317};
     return std::find(built.begin(), built.end(), number) != built.end();
@@ -676,9 +676,9 @@ class Session final : public rules::CombatSession
 {
   public:
     Session(rules::Identity identity, rules::Battlefield board, std::vector<Fighter> fighters,
-            std::uint64_t seed, unsigned morale)
+            std::uint64_t seed, unsigned morale, bool outdoors)
         : identity_(std::move(identity)), board_(std::move(board)), fighters_(std::move(fighters)),
-          random_{seed}, morale_threshold_(std::min(morale, 100U))
+          random_{seed}, morale_threshold_(std::min(morale, 100U)), outdoors_(outdoors)
     {
         rules::validate_battlefield(board_);
         log({"Combat begins.", {}});
@@ -718,6 +718,8 @@ class Session final : public rules::CombatSession
     // The encounter's morale, 0 to 100, which the opposition's whole strength
     // is weighed against (the script's MORALE_THRESHOLD).
     unsigned morale_threshold_{100};
+    // Out of doors (rules::Encounter::outdoors).
+    bool outdoors_{};
     std::vector<Cloud> clouds_;
     // The opposition's Hit Points left of its whole, in steps of 5, as of the
     // round's start (cbtacts.pas, UpdateHostileHpPercent).
@@ -823,6 +825,8 @@ class Session final : public rules::CombatSession
     void cast_secret_spell(Fighter &caster, int number, int level,
                            const std::vector<EntityId> &targets);
     void heal_all_but_1d4(Fighter &target);
+    [[nodiscard]] std::vector<EntityId> fireball_reach(const std::vector<EntityId> &targets,
+                                                       Cell aim) const;
     void recount_strength(Fighter &f);
     void cast_strength_spell(Fighter &caster, int number, int level,
                              const std::vector<EntityId> &targets);
@@ -2422,7 +2426,8 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         break;
     case 64:
         // A Necklace of Missiles: a fireball of 3, 5 or 7 dice.
-        cast_generic(caster, number, level, targets, roll_dice(roll(3) * 2 + 1, 6), 9);
+        cast_generic(caster, number, level, fireball_reach(targets, aim),
+                     roll_dice(roll(3) * 2 + 1, 6), 9);
         break;
     case 65:
         // A Wand of Magic Missiles: 2d4+2, which Shield does not stop.
@@ -2448,7 +2453,23 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
     }
     case 47:
         // Fireball: the caster's level in d6, one roll for all, saved for half.
-        cast_generic(caster, number, level, targets, roll_dice(level, 6), 9);
+        cast_generic(caster, number, level, fireball_reach(targets, aim), roll_dice(level, 6), 9);
+        break;
+    case 178:
+        // Entangle: out of doors, each that fails its save is held by the
+        // plants (Curse's SpellEntangle); in a dungeon nothing grows.
+        if (!outdoors_)
+        {
+            log({"Nothing happens.", {}});
+            break;
+        }
+        for (const auto id : targets)
+        {
+            auto &target = *find(id);
+            const bool saved = saving_throw(target, 4, 0, &caster);
+            (void)add_with_message(target, {336, known.minutes_fixed, level, false}, true, saved, 0,
+                                   level, &known);
+        }
         break;
     case 48:
     case 55:
@@ -3160,6 +3181,13 @@ void Session::recount_strength(Fighter &f)
     }
     n.strength = base;
     n.exceptional_strength = exceptional;
+}
+
+// Out of doors a fireball catches only those within 2 squares of its aim,
+// not 3 (magic.pas, SpellFireball, outside 3D maps).
+std::vector<EntityId> Session::fireball_reach(const std::vector<EntityId> &targets, Cell aim) const
+{
+    return outdoors_ ? within(aim, 2) : targets;
 }
 
 // Heal (SpellHeal): disease, blindness and feeblemind cured, then every Hit
@@ -6569,7 +6597,7 @@ std::string Session::save() const
         out(plant);
     }
     out(random_.value, round_, revision_, actor_, static_cast<unsigned>(outcome_),
-        morale_threshold_, hostile_hit_points_percent_, clouds_.size());
+        morale_threshold_, outdoors_, hostile_hit_points_percent_, clouds_.size());
     for (const auto &cloud : clouds_)
     {
         out(cloud.caster, cloud.index, cloud.corner.x, cloud.corner.y,
@@ -6654,6 +6682,7 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
     session->actor_ = in.as<EntityId>();
     session->outcome_ = in.as<rules::Outcome>();
     session->morale_threshold_ = in.as<unsigned>();
+    session->outdoors_ = in.as<bool>();
     session->hostile_hit_points_percent_ = in.as<int>();
     const auto clouds = in.as<std::size_t>();
     if (clouds > 64)
@@ -6939,7 +6968,7 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
         }
     }
     return std::make_unique<Session>(std::move(identity), std::move(encounter.battlefield),
-                                     std::move(fighters), seed, threshold);
+                                     std::move(fighters), seed, threshold, encounter.outdoors);
 }
 
 std::unique_ptr<rules::CombatSession> restore_session(rules::Identity identity,

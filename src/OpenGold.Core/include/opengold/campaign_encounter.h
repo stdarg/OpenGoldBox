@@ -113,6 +113,9 @@ struct CampaignEncounter
     // The fight is by day, 06:00 to 17:59, so squares open to the sky are in
     // sunlight (Sunlight Sensitivity).
     bool daylight{};
+    // The fight is out of doors, on the wilderness or the overland
+    // (rules::Encounter::outdoors).
+    bool outdoors{};
     // Monsters on the party's side, standing beside it.
     std::vector<rules::Participant> allies;
     // Party members who fight for the monsters, standing with them (the

@@ -3728,6 +3728,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             encounter_->party_resting = event_stage_ == EventStage::camp_interrupted;
             const auto hour = clock_minute_of_day(campaign_->state().time_minutes) / 60;
             encounter_->daylight = hour >= 6 && hour < 18;
+            encounter_->outdoors = overland() || curse_outdoors || gateway_outdoors;
             if (std::exchange(duel_, false))
             {
                 encounter_->mirror = mirror_duel_;

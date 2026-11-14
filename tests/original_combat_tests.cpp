@@ -375,13 +375,14 @@ original::Combatant creature(int hit_points, int level = 1)
 
 Fight arrange(const std::vector<Placed> &placed, std::uint64_t seed,
               const std::vector<rules::Cell> &walls = {}, unsigned morale = 100,
-              GoldBoxGame game = GoldBoxGame::pool_of_radiance)
+              GoldBoxGame game = GoldBoxGame::pool_of_radiance, bool outdoors = false)
 {
     original::Content content;
     content.game = game;
     Fight fight{original::rules_module(std::move(content)), nullptr};
     rules::Encounter encounter;
     encounter.morale = morale;
+    encounter.outdoors = outdoors;
     encounter.battlefield = {8, 8, std::vector<rules::Terrain>(64, rules::Terrain::open)};
     for (const auto wall : walls)
     {
@@ -3923,6 +3924,46 @@ void strength_spells_strengthen()
           "Gateway's Strength adds a magic-user's 1d4");
 }
 
+// Out of doors (Curse's SpellFireball and SpellEntangle): a fireball catches
+// only those within 2 squares of its aim, and Entangle's plants hold those
+// that fail to save; in a dungeon Entangle does nothing.
+void out_of_doors()
+{
+    using original::ClassSlot;
+    const auto curse = GoldBoxGame::curse_of_the_azure_bonds;
+    for (const bool outdoors : {false, true})
+    {
+        auto fight =
+            arrange({{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 6, {47})},
+                     {"Near", rules::Side::opposition, {5, 3}, victim(100)},
+                     {"Third", rules::Side::opposition, {5, 6}, victim(100)}},
+                    347, {}, 100, curse, outdoors);
+        cast_now(*fight.session, "Mage", 47,
+                 [&]
+                 {
+                     return aim_at_cell(*fight.session, {5, 3});
+                 });
+        const auto state = fight.session->snapshot();
+        check(view_of(state, "Near").hit_points < 100 &&
+                  (view_of(state, "Third").hit_points == 100) == outdoors,
+              outdoors ? "Out of doors a fireball reaches 2 squares"
+                       : "In a dungeon a fireball reaches 3 squares");
+
+        auto grove =
+            arrange({{"Druid", rules::Side::party, {0, 3}, caster(ClassSlot::ranger, 9, {178})},
+                     {"Orc", rules::Side::opposition, {4, 3}, victim(100)}},
+                    349, {}, 100, curse, outdoors);
+        cast_now(*grove.session, "Druid", 178,
+                 [&]
+                 {
+                     return aim_at_cell(*grove.session, {4, 3});
+                 });
+        check((logged(*grove.session, "{name} is affected by {spell}.") == 1) == outdoors &&
+                  (logged(*grove.session, "Nothing happens.") == 1) == !outdoors,
+              outdoors ? "Entangle holds out of doors" : "Entangle does nothing in a dungeon");
+    }
+}
+
 } // namespace
 
 int main()
@@ -3969,6 +4010,7 @@ int main()
         curse_caster_levels();
         gateway_rows_change();
         strength_spells_strengthen();
+        out_of_doors();
         sleep_takes_the_weak();
         charm_person_turns_a_foe();
         cure_light_wounds_stops_bleeding();

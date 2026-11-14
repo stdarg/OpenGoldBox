@@ -196,10 +196,15 @@ and a save each know which tables they use.
 - **Camp:** Cure Blindness, Cure Disease, both Remove Curses and Neutralize
   Poison take their conditions away (Conditions outside fights, plan step
   6); Neutralize Poison stands up one poison killed, at no cost.
-- Still to come: Entangle (it works only out of doors, which a fight does
-  not yet know), the rakshasa's death by a blessed crossbow bolt, and a camp
-  Remove Curse's putting down of cursed items, which the temple's does
-  (GAMES.md, phase 3 step 5).
+- **Entangle** works only out of doors (`SpellEntangle`, outside 3D maps):
+  each in its area that fails its save is held by the plants for 10 rounds,
+  as its row has it (Bugs). A fight knows it is out of doors from its
+  encounter (`rules::Encounter::outdoors`: the wilderness, its roads and
+  camps, and Gateway's overland).
+- A camp Remove Curse, as the temple's, lets its target put down a cursed
+  item (`RulesModule::cursed_item`, by the record's flag).
+- Still to come: the rakshasa's death by a blessed crossbow bolt (GAMES.md,
+  phase 3 step 5).
 
 ## Secret of the Silver Blades
 
@@ -864,7 +869,8 @@ gear.
      shop's preview and auto-equip's comparison included.
    - Still to come: readying items mid-fight (and the AI's
      `EquipWeaponAndArmor`), the party's facing, the original's terrain
-     heights for sight, the fireball's outdoor radius and PARTY_MOVE_MODIFIER.
+     heights for sight and PARTY_MOVE_MODIFIER. Out of doors a fireball
+     catches only those within 2 squares of its aim (`SpellFireball`).
 8. Spells in combat. In parts:
    - 8a. *Done 2026-11-12:* the casting framework, with the first-level
      spells (`original_spells.h` holds the original's spell table). Cast
@@ -902,8 +908,8 @@ gear.
      rates of movement and attacks, up to the caster's level of creatures,
      one under the other spell only freed of it), Protection from Evil and
      Good 10' Radius (an aura of a square) and Protection from Normal
-     Missiles. Two things wait for step 7: a fireball outdoors reaches 2 and
-     not 3, and the year Haste ages a creature.
+     Missiles. The year Haste ages a creature waits for step 7; a fireball out of
+     doors reaches 2 and not 3 (step 7).
    - 8b-2. *Done 2026-11-13:* Lightning Bolt (one roll at the aim and along
      8 squares beyond it, away from the caster, turned back by a wall, its
      length counted as the original counts it), Stinking Cloud (a cloud of up
@@ -1050,6 +1056,7 @@ tuned with the AI lab once the original rules play.
 | *Gateway:* Neutralize Poison at the temple stands up any member at 0 Hit Points or dead, poisoned or not, once the player pays for it anyway (`temple.pas`, `NeutralizePoison`) | Only one that is poisoned |
 | Enlarge cast above level 6 in *Pool of Radiance*, or above 11 in *Curse*, gives whatever Strength the last Enlarge left, as no table row sets it (`magic.pas`, `SpellEnlarge`) | The most the table gives |
 | *Pool of Radiance:* Strength cast on a creature of no class it names, and in *Curse* on a paladin or ranger, adds a die never rolled (`magic.pas`, `SpellStrength`) | A d4, and a warrior's d8 |
+| *Curse:* Entangle's hold lasts as long as the spell table's row past its end says, an unset value (`magic.pas`, `SpellEntangle`, its duration taken for spell 136) | Entangle's own 10 rounds |
 | *Curse* and *Gateway:* training picks the class whose next level needs the most experience, but reads every class at the level of the last one it looked at (TrainingMenu) | Each class at its own level |
 | *Curse:* Hold Monster holds only what Hold Person can, as the spell its resolver exempts from the creature-type rule is Dimension Door (0x53) and not Hold Monster (0x5E) (`ovr023`, `MultiTargetedSpell`) | Any creature |
 | *Curse:* Ice Storm and Cone of Cold deal acid damage, so resisting cold does not lessen them (`ovr023`, `SpellIceStorm`, `SpellConeOfCold`) | Cold |

@@ -675,11 +675,11 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
                            party_hit_points(*campaign_));
     }
     const RollPurpose initiative("initiative");
-    auto next = module_->create({encounter.field.geometry, std::move(participants),
-                                 campaign_->state().next_combat_scope, encounter.morale,
-                                 spendable_gold(campaign_->state().wealth, campaign_->coin_rates()),
-                                 encounter.daylight, encounter.spares_the_party},
-                                seed);
+    auto next = module_->create(
+        {encounter.field.geometry, std::move(participants), campaign_->state().next_combat_scope,
+         encounter.morale, spendable_gold(campaign_->state().wealth, campaign_->coin_rates()),
+         encounter.daylight, encounter.spares_the_party, encounter.outdoors},
+        seed);
     install_combat(std::move(next), {});
     seed_ = seed;
     battlefield_tiles_ = std::move(encounter.field.tiles);
