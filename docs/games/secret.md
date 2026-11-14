@@ -40,6 +40,13 @@ when its first is not 0, else to the selected character, saying so; each
 member's share is divided among its classes, and only members in play gain
 it. PROTECTION (3Ch) does nothing in *Secret*.
 
+Each script a NEW ECL loads starts with its map's own cells cleared, 4C00h to
+4C1Fh and 7F79h to 7F82h, as the original's EclInit clears them in *Curse*
+and *Gateway* too (*Pool of Radiance*'s are 4A00h to 4A1Fh). The Castle
+Entrance's levers (4C04h and 4C05h) are gone in the Sanctum, where 4C05h at 1
+marks its Brass door open. OpenGoldBox cleared *Pool of Radiance*'s cells for
+*Secret* until 2026-11-14.
+
 CALL's engine routines moved: the view's redraw is 2DCBh and the sound B203h
 (*Curse*'s addresses less 7FFFh are compared, as there), the wall ahead and the
 step forward keep *Curse*'s, and the duels are gone.

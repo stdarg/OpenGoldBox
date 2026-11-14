@@ -440,7 +440,7 @@ The steps of *Curse*'s phase 3, with *Secret*'s differences
    does. *Stand-ins:* the experience above; and from the mine on, a fight
    on the way (or in a camp on the way) that the route's player loses with
    every dice it tries, or wins only with a member dead or turned to stone,
-   is won by the test (31 fights in the last run, most in the
+   is won by the test (42 fights in the last run, most in the
    crevasses and the castle, the castle's last fights all of them: the
    warrior in golden armor, the hydras, the Dreadlord and the soul gem's
    guards). *The route's own play:* a party below half its Hit Points rests

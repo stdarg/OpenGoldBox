@@ -532,6 +532,41 @@ void host_services()
               transition.variable(EclAddress{0x4A20}) == 8,
           "New ECL exits old script, resets local flags, preserves campaign flags");
     check(transition.start(4) && transition.run().request->text == "42", "New ECL startup entry");
+    // Secret clears its map's cells where Gateway does (its EclInit): the
+    // Castle Entrance's levers (4C05h) are not the Sanctum's Brass door.
+    // Secret's scripts load at 8000h, so their entries jump to 8014h.
+    const auto secret_program = [](const Bytes &body)
+    {
+        Bytes bytes{0, 0};
+        for (int i = 0; i < 5; ++i)
+        {
+            bytes.insert(bytes.end(), {1, 1, 0x14, 0x80});
+        }
+        bytes.insert(bytes.end(), body.begin(), body.end());
+        return std::make_shared<const EclProgram>(EclProgram::decode(
+            bytes, "TEST:96", opengold::GoldBoxGame::secret_of_the_silver_blades));
+    };
+    EclMachine secret_transition(secret_program({32, 0, 98, 255}));
+    secret_transition.enable_host(32);
+    for (const auto &[address, value] : {std::pair<std::uint16_t, std::uint16_t>{0x4C05, 34},
+                                         {0x4C20, 8},
+                                         {0x7F79, 3},
+                                         {0x7F83, 5},
+                                         {0x4A00, 9}})
+    {
+        secret_transition.bind_variable(EclAddress{address}, value);
+    }
+    check(secret_transition.start(0), "Secret's transition start");
+    r = secret_transition.run();
+    EclHostReply secret_next;
+    secret_next.next_program = secret_program({17, 0, 42, 0});
+    check(secret_transition.resume_host(r.request->id, secret_next) &&
+              secret_transition.variable(EclAddress{0x4C05}) == 0 &&
+              secret_transition.variable(EclAddress{0x7F79}) == 0 &&
+              secret_transition.variable(EclAddress{0x4C20}) == 8 &&
+              secret_transition.variable(EclAddress{0x7F83}) == 5 &&
+              secret_transition.variable(EclAddress{0x4A00}) == 9,
+          "Secret's NEW ECL clears 4C00h-4C1Fh and 7F79h-7F82h, and keeps the rest");
     EclMachine query(
         program({30, 1, 0x1b, 0x6c, 0, 0, 1, 0, 0x97, 1, 1, 0x97, 1, 2, 0x97, 1, 3, 0x97, 0}));
     for (std::uint16_t a = 0x9700; a < 0x9704; ++a)

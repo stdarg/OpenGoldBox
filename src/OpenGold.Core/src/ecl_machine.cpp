@@ -1265,14 +1265,16 @@ void EclMachine::load_program(std::shared_ptr<const EclProgram> next,
     instruction_spans_.clear();
     stack_.clear();
     conditions_.fill(false);
-    // Gateway clears its own cells: 4C00h to 4C1Fh and 7F79h to 7F82h (its
-    // EclInit).
-    const bool gateway = program_->game() == GoldBoxGame::gateway_to_the_savage_frontier;
-    const auto cleared = [gateway](std::uint16_t address)
+    // Gateway and Secret clear their own cells, a script's map's: 4C00h to
+    // 4C1Fh and 7F79h to 7F82h (their EclInit), where Pool of Radiance's are
+    // 4A00h to 4A1Fh.
+    const bool moved_cells = program_->game() == GoldBoxGame::gateway_to_the_savage_frontier ||
+                             program_->game() == GoldBoxGame::secret_of_the_silver_blades;
+    const auto cleared = [moved_cells](std::uint16_t address)
     {
-        return gateway ? (address >= 0x4C00 && address <= 0x4C1F) ||
-                             (address >= 0x7F79 && address <= 0x7F82)
-                       : address >= 0x4A00 && address <= 0x4A1F;
+        return moved_cells ? (address >= 0x4C00 && address <= 0x4C1F) ||
+                                 (address >= 0x7F79 && address <= 0x7F82)
+                           : address >= 0x4A00 && address <= 0x4A1F;
     };
     for (auto &[address, v] : variables_)
     {
