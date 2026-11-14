@@ -1437,11 +1437,7 @@ bool RolfTourSession::explore(ExplorationCommand command)
             // Look takes ten minutes, as every game's map menu L does
             // (AdvanceTime(1, 2)): Gateway's party waits so for the Kraken's
             // Pearl Chest, as its cluebook bids.
-            if (campaign_)
-            {
-                pass_time(std::chrono::minutes{10});
-            }
-            begin_event(EventTrigger::look);
+            begin_event(EventTrigger::look, std::nullopt, std::chrono::minutes{10});
         }
         else
         {

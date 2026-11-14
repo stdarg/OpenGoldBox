@@ -1030,7 +1030,10 @@ class RolfTourSession
     };
 
     // `entry` starts another script slot than the trigger's, such as a town's entry.
-    void begin_event(EventTrigger trigger, std::optional<std::size_t> entry = std::nullopt);
+    // `takes` is the time the command that starts the event takes (Look's
+    // ten minutes), passed inside the event so a failed event takes it back.
+    void begin_event(EventTrigger trigger, std::optional<std::size_t> entry = std::nullopt,
+                     std::chrono::minutes takes = {});
     void finish_event();
     bool handle_town_host(const EclRequest &request);
     // The 256-color engine's LOAD FILES: a map (below 7Fh, indoors only) and a

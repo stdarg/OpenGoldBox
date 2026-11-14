@@ -943,7 +943,8 @@ bool RolfTourSession::move_party(ExplorationCommand command)
     return true;
 }
 
-void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_t> entry)
+void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_t> entry,
+                                  std::chrono::minutes takes)
 {
     if (const auto won = game_won_cell(game()))
     {
@@ -993,6 +994,11 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
                                         .pending_loot = pending_loot_,
                                         .snapshot = snapshot_,
                                         .selected_character = selected_character_};
+    if (campaign_ && takes.count() > 0)
+    {
+        pass_time(takes);
+        synchronize_clock();
+    }
     event_stage_ = trigger == EventTrigger::step   ? EventStage::step
                    : trigger == EventTrigger::camp ? EventStage::pre_camp
                                                    : EventStage::search;
