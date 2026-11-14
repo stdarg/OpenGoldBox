@@ -3253,20 +3253,46 @@ const std::vector<RouteBeat> &gateway_route()
                        {11, 3, D::east}});
         route.push_back(step_beat(24, 12, 1, D::east, {"YES"}));
         // Ascore: east through the ruins to Vaalgamon's gate, which the four
-        // statuettes open past its giant spiders, and on to the passage where
-        // Vaalgamon waits. The party does not rest there: OpenGoldBox's camps
-        // just inside the gate are broken by its undead night after night,
-        // where the cluebook calls them safe once the spiders are dead.
-        walk_passages(
-            route, 20,
-            {{0, 7, D::east},    {1, 7, D::east},    {2, 7, D::north},   {2, 6, D::east},
-             {3, 6, D::south},   {3, 7, D::east},    {4, 7, D::north},   {4, 6, D::east},
-             {5, 6, D::east},    {6, 6, D::east},    {7, 6, D::south},   {7, 7, D::east},
-             {8, 7, D::east},    {9, 7, D::east},    {10, 7, D::east},   {11, 7, D::south},
-             {11, 8, D::south},  {11, 9, D::south},  {11, 10, D::south}, {11, 11, D::west},
-             {10, 11, D::south}, {10, 12, D::south}, {10, 13, D::south}, {10, 14, D::south},
-             {10, 15, D::east}},
-            true);
+        // statuettes open past its giant spiders. The party rests on the
+        // gate's square, where Ascore's camp script lets it sleep (its events
+        // from 107 on, ECL6:20 0x81B2); the rooms east of the gate break every
+        // camp with undead, as the original's do. Then on to the passage where
+        // Vaalgamon waits.
+        walk_passages(route, 20,
+                      {{0, 7, D::east},
+                       {1, 7, D::east},
+                       {2, 7, D::north},
+                       {2, 6, D::east},
+                       {3, 6, D::south},
+                       {3, 7, D::east},
+                       {4, 7, D::north},
+                       {4, 6, D::east},
+                       {5, 6, D::east},
+                       {6, 6, D::east},
+                       {7, 6, D::south},
+                       {7, 7, D::east},
+                       {8, 7, D::east}},
+                      true);
+        {
+            auto rested = step_beat(20, 9, 7, D::east);
+            rested.passing = true;
+            rested.searching = true;
+            rested.rest_first = true;
+            route.push_back(rested);
+        }
+        walk_passages(route, 20,
+                      {{10, 7, D::east},
+                       {11, 7, D::south},
+                       {11, 8, D::south},
+                       {11, 9, D::south},
+                       {11, 10, D::south},
+                       {11, 11, D::west},
+                       {10, 11, D::south},
+                       {10, 12, D::south},
+                       {10, 13, D::south},
+                       {10, 14, D::south},
+                       {10, 15, D::east}},
+                      true);
         {
             // The party takes Vaalgamon's challenge, through the maze of
             // fights, each left as soon as a member runs off its north

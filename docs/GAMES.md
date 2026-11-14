@@ -530,10 +530,11 @@ new decoders.
    hours for. Every walk is played step by step as the planning aid
    (`OPENGOLD_SECRET_FIND`, with `OPENGOLD_FIND_YES` for the questions it must
    answer Yes) finds it. The stand-ins are the test experience and gold, the
-   gear and the waits for the ships; no fight is won by the test. *Still to
-   check:* the route does not rest past Vaalgamon's gate, for OpenGoldBox's
-   camps there are broken by the gate's undead night after night, where the
-   cluebook calls the area just inside it safe once the spiders are dead. What the
+   gear and the waits for the ships; no fight is won by the test. It rests on
+   the gate's square before the maze: Ascore's camp script (ECL6:20 0x818D)
+   lets a party sleep only on squares of events 4 and 107 on (but 121), and
+   breaks every other camp with undead, the rooms just east of the gate too,
+   which the cluebook calls safe; OpenGoldBox follows the script. What the
    route needed of the engine is in [gateway.md](games/gateway.md), What the
    route needed: the square's event read after a map's load entry, Look's ten
    minutes, effect 84 a charming gaze in Pool of Radiance only, and the maze
