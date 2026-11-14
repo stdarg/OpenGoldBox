@@ -202,11 +202,13 @@ cycling, the music and sounds other than the footstep, PROGRAM 3 to 5
 (the luck readings, the Fix menu, the party's repair), the romances, and the
 route.
 
-Two of the walk's fights no side can finish (map 24 at 1,5 and map 38 at
-3,6): a caster with no spells left and no way to reach the party stands
-across the battlefield from members with no way to reach it. The walk leaves
-them as a player would, each member walking to the field's edge and fleeing,
-as it leaves *Curse*'s and *Pools of Darkness*'s.
+One of the walk's fights no side can finish (map 24 at 1,5): a caster with no
+spells left and no way to reach the party stands across the battlefield from
+members with no way to reach it. The walk leaves it as a player would, each
+member walking to the field's edge and fleeing, as it leaves *Curse*'s and
+*Pools of Darkness*'s. In Freezefire's lair (map 38 at 3,6) the black-robed
+mages charm dwarves who fight beside the party onto their side; such an ally
+ends the fight as one out of it, as an ally the party attacked does.
 
 ## The ending
 

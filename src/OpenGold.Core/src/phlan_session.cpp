@@ -1556,9 +1556,10 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
             }
             continue;
         }
-        // A creature that fought beside the party until it was attacked.
-        if (unit.side == rules::Side::opposition && opengold::is_ally(unit.id) &&
-            result.allies_attacked)
+        // A creature that fought beside the party until it was attacked, or
+        // until a spell charmed it onto the monsters' side (Treasures'
+        // dwarves in Freezefire's lair).
+        if (unit.side == rules::Side::opposition && opengold::is_ally(unit.id))
         {
             continue;
         }

@@ -545,6 +545,9 @@ pictures, walls and script host, *Treasures* adding only what it changes.
    six fighters made under *Treasures*' rules, and runs each event and fight
    (treasure.md, The walk). Still to come: the music and sounds, the
    romances and luck readings (PROGRAM 3), the startup menu and the route.
+   The win is in place: the event in which Freezefire dies (script 38 sets
+   cell 25Ch to 1) ends as a win (`game_won`), the original having no ending
+   of its own (treasure.md, The ending).
 
 ### 8. *Unlimited Adventures*
 
