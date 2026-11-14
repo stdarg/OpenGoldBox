@@ -200,9 +200,11 @@ chosen by the game as *Curse*'s are. In progress (2026-11-13):
   11, a magic-user's from 12 and its seventh from 14. The sixth and seventh
   need Wisdom 17 and 18 for a cleric, Intelligence 12 and 14 for a
   magic-user. The character sheet shows up to seven levels of slots.
+- **Attacks:** a fighter or paladin strikes three times in two rounds above
+  level 6 and four above 12; a ranger three above 7 and four above 14.
 - **Still to come:** *Secret*'s own spells (Heal, Harm, Death Spell,
   Disintegrate and the rest), the paladin's and ranger's spells (in *Curse*
-  too), attacks per round past level 12, and *Secret*'s combat.
+  too), and *Secret*'s combat.
 
 ## What the original rules cover
 

@@ -656,6 +656,21 @@ void secret_characters_start_trained()
     check(party.member(id).character.sheet().original->class_levels[2] == 9 &&
               gold_value(party.state().wealth) == 0,
           "and the training costs nothing");
+
+    // Secret's fighters and paladins strike four times in two rounds above
+    // level 12 (its RecalcClassStats).
+    // Training keeps the experience short of the level after next, so each
+    // level needs its own award.
+    for (int level = 9; level < 13; ++level)
+    {
+        party.award_experience(500'000, "test:secret-veteran-" + std::to_string(level));
+        party.train_at_hall_level(id, TrainingHall::fighters, {});
+    }
+    const auto &veteran = party.member(id).character.sheet();
+    const auto numbers = *original::Combatant::decode(
+        original::rules_module(secret_content)->character_profile(veteran, {}).data);
+    check(veteran.original->class_levels[2] == 13 && numbers.attacks[0].rate_per_two_rounds == 4,
+          "A level 13 fighter attacks four times in two rounds");
 }
 
 void curse_paladins_and_rangers()

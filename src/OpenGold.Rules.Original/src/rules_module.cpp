@@ -221,11 +221,21 @@ por::CharacterRecord character_record(const CharacterSheet &sheet)
                                 static_cast<std::uint8_t>(original.exceptional_strength)};
     record.abilities = record.current_abilities;
     // Characters' blows take Strength; a fighter above level 6 strikes three
-    // times in two rounds (chargen.pas, ClassCal).
+    // times in two rounds (chargen.pas, ClassCal). In Secret a paladin does
+    // too, and both four times above level 12; a ranger three times above
+    // level 7 and four above 14 (classcal.pas, RecalcClassStats).
     record.strength_bonus_flag_raw = 1;
     const auto &l = original.class_levels;
     const auto fighter = level_in(l, ClassSlot::fighter);
-    record.base_attacks[0] = {static_cast<std::uint8_t>(fighter > 6 ? 3 : 2), {1, 2, 0}};
+    int attacks = fighter > 6 ? 3 : 2;
+    if (game_of(sheet.identity) == GoldBoxGame::secret_of_the_silver_blades)
+    {
+        const auto warrior = std::max(fighter, level_in(l, ClassSlot::paladin));
+        const auto ranger = level_in(l, ClassSlot::ranger);
+        attacks = std::max({2, warrior > 6 ? 3 : 2, warrior > 12 ? 4 : 2, ranger > 7 ? 3 : 2,
+                            ranger > 14 ? 4 : 2});
+    }
+    record.base_attacks[0] = {static_cast<std::uint8_t>(attacks), {1, 2, 0}};
     record.base_thac0 = original.thac0;
     record.base_armor_class = 10;
     record.max_hit_points = static_cast<std::uint8_t>(std::clamp(sheet.hit_points, 1, 255));
