@@ -2026,6 +2026,14 @@ void RolfTourSession::finish_event()
         if (!(in_curse_wilderness() && snapshot_.camp_offered))
         {
             event_stage_ = EventStage::search;
+            // The original redraws the view before the next entries, which
+            // reads the event of the square the entry put the party on: the
+            // Kraken headquarters' landing moves it after loading the map
+            // (ECL4:13 0x8092), and its square's event is not the one before.
+            machine_.bind_variable(game_cell(ecl_cell_event),
+                                   map_.at(machine_.variable(game_cell(ecl_party_x)),
+                                           machine_.variable(game_cell(ecl_party_y)))
+                                       .event_raw);
             if (!machine_.start(1))
             {
                 throw EclError("Cannot search building entrance");

@@ -2951,6 +2951,36 @@ const std::vector<RouteBeat> &gateway_route()
             boat.holding_foes = true;
             route.push_back(boat);
         }
+        // The Kraken headquarters: south from the beach through the southern
+        // fortress, out of search mode (a step searching takes ten minutes),
+        // its guards held from fleeing, to the room where the Pearl Chest
+        // passes 30 minutes after the landing (the cluebook's encounter 16,
+        // event 125).
+        const auto fortress_start = route.size();
+        walk_passages(route, 13, {{12, 7, D::south},  {12, 8, D::east},   {13, 8, D::south},
+                                  {13, 9, D::west},   {12, 9, D::south},  {12, 10, D::west},
+                                  {11, 10, D::south}, {11, 11, D::west},  {10, 11, D::south},
+                                  {10, 12, D::west},  {9, 12, D::north},  {9, 11, D::north},
+                                  {9, 10, D::east},   {10, 10, D::north}, {10, 9, D::east},
+                                  {11, 9, D::north},  {11, 8, D::west},   {10, 8, D::west},
+                                  {9, 8, D::south},   {9, 9, D::west},    {8, 9, D::north},
+                                  {8, 8, D::west},    {7, 8, D::west},    {6, 8, D::west},
+                                  {5, 8, D::south},   {5, 9, D::west},    {4, 9, D::west}});
+        for (auto beat = route.begin() + static_cast<std::ptrdiff_t>(fortress_start);
+             beat != route.end(); ++beat)
+        {
+            beat->holding_foes = true;
+        }
+        // There the party looks about (ten minutes a Look), letting time pass
+        // as the cluebook bids, until the chest's guards come; beaten, they
+        // leave the statuette of the West (bit 2 of cell 4C27).
+        {
+            RouteBeat chest{13, 3, 9, D::west, {}};
+            chest.repeat_until_at_least = {{0x4C27, 3}};
+            chest.repeat_in_place = true;
+            chest.holding_foes = true;
+            route.push_back(chest);
+        }
         return route;
     }();
     return beats;
