@@ -474,6 +474,8 @@ class UaSession final : public ExplorationSession
     bool rerun_square_{}, step_back_due_{}, again_{};
     // No member can act any more, or an event ended the adventure.
     bool party_lost_{};
+    // The adventure's own end event ran: the game is won.
+    bool adventure_won_{};
     std::vector<unsigned> event_stack_;
     Pending pending_;
     std::optional<CampaignEncounter> encounter_;

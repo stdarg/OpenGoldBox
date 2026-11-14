@@ -490,8 +490,10 @@ into `ua-fixtures/TEST.DSN`.
   with his items, one who keeps them where the party cannot die, and two
   kobolds starting north and south of the party.
 - **Area 6, the cellar**: words on arrival, a statue's list (damage to all,
-  experience to the selected member, or nothing), and stairs back to the
-  hall's second entry point.
+  experience to the selected member, or nothing), stairs back to the
+  hall's second entry point, rats that break a rest at its first hour, a
+  draft every third step, no overhead map, and the adventure's end at
+  (8,8). The hall's map is shown, and a no-magic fight waits at (1,13).
 - **Area 7, the town**: a training hall, a tavern with a tale, drinks and a
   brawl, a shop, a temple taking a tithe, a vault, an inn, a small town with
   every service, a guided tour, an NPC (the kit's 70h) joining, speaking and
@@ -599,6 +601,22 @@ Since 2026-11-14 (`ua_session.cpp`, `combatant.cpp`):
 effects, the hall's no-magic kobolds and the cellar's draft every third
 step; `opengold_original_combat_tests` that no one casts in a no-magic fight,
 saved or not.
+
+### The end
+
+A design ends where its designer says: a utilities event's bit 10h
+(mapevent.c, `event_utilities`), on which the kit leaves the adventure.
+Since 2026-11-14 OpenGoldBox shows it as the game won, as the DAX games'
+wins: the event's chain stops, "You have won." follows the designer's last
+words (`TourSnapshot::game_won`), and the party explores no more. A party
+put somewhere else (`place`, the kit's test mode) plays on.
+
+`opengold_ua_route` (`opengold_ua_session_tests --ua-route`) plays the test
+design from its start to that end by steps alone, as a player walks it: it
+finds the way to each beat through the open steps (`route_to`), answers
+every event met (Yes where asked) and fights every fight, through the hall
+and its brass key's door, down the stairs at (12,12), and across the cellar
+to its end at (8,8), and checks the win.
 
 ### Camping and the overhead map
 

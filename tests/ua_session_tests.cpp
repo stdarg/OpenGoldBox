@@ -342,6 +342,10 @@ std::filesystem::path build_test_design(const std::filesystem::path &kit,
     const auto draft = cellar.text("A DRAFT CHILLS THE PARTY.");
     cellar.event(7, {2, 0, 0, 0, 0, 0, 0, 0, low(draft), high(draft)});
     cellar.step_event(0, 3, 7, 0);
+    // 8 and 9: the adventure's end, its words and then the utilities' end.
+    const auto over = cellar.text("THE TEST IS OVER. WELL DONE.");
+    cellar.event(8, {2, 0, 0, 9, 0, 0, 0, 0, low(over), high(over)}, {{8, 8}});
+    cellar.event(9, {16, 0, 0, 0, 0x10});
     write(folder / "GEO006.DAT", cellar.finish());
 
     // Area 7, the town: a square of each service and test along row 1.
@@ -1556,6 +1560,124 @@ void a_game_saves_and_loads(const std::filesystem::path &kit)
     check(unreadable, "A saved state of an area the design lacks is refused");
 }
 
+// The steps from the party's square to (x, y) in its area, through open
+// steps, shortest first; empty when it stands there or none leads there.
+std::vector<MapDirection> route_to(const ua::UaSession &session, unsigned x, unsigned y)
+{
+    auto probe = session;
+    const auto area = session.area().number;
+    const unsigned columns = session.area().area.columns, rows = session.area().area.rows;
+    const auto start = session.snapshot().pose;
+    std::map<std::pair<unsigned, unsigned>, std::pair<std::pair<unsigned, unsigned>, MapDirection>>
+        came_from;
+    std::vector<std::pair<unsigned, unsigned>> frontier{{start.x, start.y}};
+    came_from[{start.x, start.y}] = {{start.x, start.y}, MapDirection::north};
+    for (std::size_t next = 0; next < frontier.size(); ++next)
+    {
+        const auto [sx, sy] = frontier[next];
+        if (sx == x && sy == y)
+        {
+            break;
+        }
+        for (const auto direction :
+             {MapDirection::north, MapDirection::east, MapDirection::south, MapDirection::west})
+        {
+            probe.place(area, sx, sy, direction);
+            if (!probe.can_step(direction))
+            {
+                continue;
+            }
+            const auto nx = (static_cast<int>(sx) + opengold::por::step_x(direction) +
+                             static_cast<int>(columns)) %
+                            static_cast<int>(columns);
+            const auto ny =
+                (static_cast<int>(sy) + opengold::por::step_y(direction) + static_cast<int>(rows)) %
+                static_cast<int>(rows);
+            const std::pair square{static_cast<unsigned>(nx), static_cast<unsigned>(ny)};
+            if (came_from.emplace(square, std::pair{frontier[next], direction}).second)
+            {
+                frontier.push_back(square);
+            }
+        }
+    }
+    std::vector<MapDirection> steps;
+    for (std::pair at{x, y}; came_from.contains(at) && at != std::pair{start.x, start.y};
+         at = came_from[at].first)
+    {
+        steps.insert(steps.begin(), came_from[at].second);
+    }
+    return steps;
+}
+
+// The route (docs/games/ua.md, The end): the design played from its start to
+// its end by steps alone, as a player walks it, every event met answered and
+// every fight fought: through the hall (the brass key's door), down its
+// stairs, and across the cellar to the end, which wins the game.
+bool the_design_plays_to_its_end(const std::filesystem::path &kit)
+{
+    const ua::DesignFiles files(kit,
+                                build_test_design(kit, temporary_design("opengold_ua_route.dsn")));
+    const auto content = ua::load_design_content(files);
+    auto session = ua::UaSession::start(files);
+    auto party = new_party(content);
+    session.campaign_party(party);
+    Player player{session, party, content};
+    player.play();
+
+    struct Beat
+    {
+        unsigned area, x, y;
+    };
+
+    // The stairs down, then the cellar's end.
+    const std::vector<Beat> beats{{5, 12, 12}, {6, 8, 8}};
+    std::size_t beat = 0;
+    for (int step = 0; step < 400 && beat < beats.size() && !session.snapshot().game_won; ++step)
+    {
+        const auto &goal = beats[beat];
+        if (session.area().number != goal.area)
+        {
+            std::cout << "The route left area " << goal.area << " for " << session.area().number
+                      << '\n';
+            return false;
+        }
+        const auto steps = route_to(session, goal.x, goal.y);
+        if (steps.empty())
+        {
+            // On the beat's square: the stairs ask, and Yes goes down.
+            player.answers = {"Yes"};
+            session.look();
+            player.play();
+            ++beat;
+            continue;
+        }
+        while (session.snapshot().pose.facing != steps.front())
+        {
+            check(session.explore(ExplorationCommand::turn_right), "The party turns");
+        }
+        player.answers = {"Yes"};
+        check(session.explore(ExplorationCommand::forward), "The route's step is open");
+        player.play();
+        if (session.snapshot().phase == TourPhase::defeated)
+        {
+            std::cout << "The party was lost on the route\n";
+            return false;
+        }
+        if (session.area().number != goal.area && beat + 1 < beats.size() &&
+            session.area().number == beats[beat + 1].area)
+        {
+            ++beat;
+        }
+    }
+    check(session.snapshot().game_won && player.heard("THE TEST IS OVER. WELL DONE.") &&
+              session.snapshot().dialogue.find("You have won.") != std::string::npos,
+          "The design's end wins the game: " + session.snapshot().dialogue);
+    check(!session.explore(ExplorationCommand::forward), "The adventure is over");
+    std::cout << "The route played the design to its end: " << player.fights << " fights ("
+              << player.victories << " won).\n";
+    return true;
+}
+
 // The walk (plan phase 8, step 1): every square of every area of the design,
 // stood on facing each way, its view drawn, its event played, and every
 // open step from it taken.
@@ -1645,6 +1767,10 @@ int main(int argc, char **argv)
         if (argc == 2 && std::string_view(argv[1]) == "--ua-walk")
         {
             return walk_every_square(*kit) ? 0 : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--ua-route")
+        {
+            return the_design_plays_to_its_end(*kit) ? 0 : 1;
         }
         a_character_starts_as_the_design_says(*kit);
         the_design_loads_and_plays(*kit);

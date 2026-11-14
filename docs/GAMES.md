@@ -661,9 +661,14 @@ pictures, walls and script host, *Treasures* adding only what it changes.
    and its session's state) from the in-game menu, and Continue and Load
    on the startup menus offer it; its characters rise by the kit's own
    experience table, and a ranger past level 8 learns magic-user spells.
-   Still to come: overland maps, locked doors, monsters' effects, "no
-   magic" fights, the treasure menu, the rest of its rules, the camp menu,
-   the overhead map and a default party.
+   Since 2026-11-14 the party camps (the Rest dialog, the kit's rest
+   encounters breaking it), dungeons have their overhead map, monsters
+   fight with their effects (54 of the kit's 68 kinds matched to the
+   original rules' effects), "no magic" fights bar spells, step events run,
+   and a design's end event wins the game: `opengold_ua_route` plays the
+   test design from its start to its end. Still to come: overland areas'
+   pictures, locked doors, the 14 unmatched effects, the treasure menu, the
+   rest of its rules, the camp menu's own parts and a default party.
 2. An updated construction kit for making new ones.
 
 ### 9. The SRD rules for the new games

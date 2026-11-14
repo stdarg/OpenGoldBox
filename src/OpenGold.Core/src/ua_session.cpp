@@ -609,6 +609,12 @@ void UaSession::place(unsigned area, unsigned x, unsigned y, MapDirection facing
     }
     move_party(x, y, facing);
     step_back_pose_ = snapshot_.pose;
+    // As in the kit's test mode, a won adventure plays on from where the
+    // party is put.
+    if (adventure_won_)
+    {
+        adventure_won_ = party_lost_ = snapshot_.game_won = false;
+    }
     snapshot_.phase = TourPhase::completed;
     refresh_snapshot();
 }

@@ -362,7 +362,9 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_ua_session_tests COMMAND opengold_ua_session_tests)
     # Every square of every area of the test design walked, each event and fight played.
     add_test(NAME opengold_ua_walk COMMAND opengold_ua_session_tests --ua-walk)
-    set_tests_properties(opengold_ua_session_tests opengold_ua_walk PROPERTIES
+    # The test design played by steps from its start to its end event, which wins.
+    add_test(NAME opengold_ua_route COMMAND opengold_ua_session_tests --ua-route)
+    set_tests_properties(opengold_ua_session_tests opengold_ua_walk opengold_ua_route PROPERTIES
         SKIP_REGULAR_EXPRESSION "Skipped: ")
     # It also writes the test design the game's startup check plays from the menu
     # (opengold_godot_startup_menu_ua).

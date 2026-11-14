@@ -191,6 +191,13 @@ void UaSession::end_events()
 {
     running_ = false;
     event_stack_.clear();
+    if (adventure_won_)
+    {
+        snapshot_.game_won = true;
+        say_kit({"You have won.", {}});
+        snapshot_.phase = TourPhase::completed;
+        return;
+    }
     if (party_lost_)
     {
         snapshot_.phase = TourPhase::defeated;
@@ -762,10 +769,12 @@ void UaSession::utilities_event(const EventRecord &event)
         }
         quest_flags_[event[13]] = result ? 1 : 0;
     }
-    // The adventure ends here, as when no member can act.
+    // The designer's end of the adventure (bit 10h): the kit leaves it there;
+    // OpenGoldBox shows the game won (docs/games/ua.md, The end).
     if (event[4] & 0x10)
     {
         party_lost_ = true;
+        adventure_won_ = true;
     }
 }
 
