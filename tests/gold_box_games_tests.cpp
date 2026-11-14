@@ -928,42 +928,126 @@ const std::vector<RouteBeat> &curse_route()
     return beats;
 }
 
+// A step forward from a square of `map`: a way out of a map, or one of the
+// ruins' passages, which its script turns into a move to another room
+// (Secret's step entry), with these answers.
+RouteBeat step_beat(unsigned map, unsigned x, unsigned y, opengold::por::MapDirection facing,
+                    std::vector<std::string> answers = {})
+{
+    RouteBeat beat{map, x, y, facing, std::move(answers)};
+    beat.step = true;
+    return beat;
+}
+
+// Steps through the passages of Secret's ruins (map 32), each from a square
+// the party walks to inside its room: the ruins are rooms of one map, each
+// passage moving the party on to another room or sector (cell 4C4B).
+void walk_ruins(
+    std::vector<RouteBeat> &beats,
+    std::initializer_list<std::tuple<unsigned, unsigned, opengold::por::MapDirection>> passages)
+{
+    for (const auto &[x, y, facing] : passages)
+    {
+        beats.push_back(step_beat(32, x, y, facing));
+    }
+}
+
 // Secret's story, beat by beat, as its cluebook tells it (plan phase 4, step
 // 4): from New Verdigris on.
 const std::vector<RouteBeat> &secret_route()
 {
     using D = opengold::por::MapDirection;
-    static const std::vector<RouteBeat> beats{
-        // The teleporter in the mayor's house's northmost room, to the Well
-        // of Knowledge.
-        {16, 3, 0, D::north, {"YES"}},
-        // The Ancient Red Dragon coiled about the Well; with it dead the Well
-        // is safe and asks for gems, which the party keeps.
-        {33, 7, 7, D::north, {"NO"}, true},
-        // The portal home, and Marcus's house: his welcome mat and his pets.
-        {33, 1, 1, D::north, {"YES"}},
-        {16, 15, 10, D::north, {}, true},
-        // The Temple of Gond heals the party for nothing.
-        {16, 10, 9, D::north, {"YES",       "Heal",     "paladin 1",    "Pay",      "Heal",
-                               "paladin 2", "Pay",      "Heal",         "ranger 3", "Pay",
-                               "Heal",      "cleric 4", "Pay",          "Heal",     "cleric 5",
-                               "Pay",       "Heal",     "magic_user 6", "Pay",      "Leave"}},
-        // Out by the town's east gate, into the ruins.
-        {16,
-         15,
-         8,
-         D::east,
-         {"YES"},
-         false,
-         false,
-         false,
-         std::nullopt,
-         0,
-         0,
-         std::nullopt,
-         false,
-         true},
-    };
+    static const std::vector<RouteBeat> beats = []
+    {
+        std::vector<RouteBeat> route;
+        // The training hall (free): a party brought from Curse of the Azure
+        // Bonds carries the experience of that game's end, which the test gives
+        // (a stand-in, as Curse's route stands in for a party from Pool of
+        // Radiance); an award stops short of the level after next, so the
+        // party trains a level a visit, four times.
+        for (int level = 0; level < 4; ++level)
+        {
+            RouteBeat experienced{16, 7, 6, D::north, train_everyone()};
+            experienced.test_experience = 1'000'000;
+            route.push_back(experienced);
+        }
+        route.insert(
+            route.end(),
+            {
+                // The teleporter in the mayor's house's northmost room, to the Well
+                // of Knowledge.
+                {16, 3, 0, D::north, {"YES"}},
+                // The Ancient Red Dragon coiled about the Well; with it dead the
+                // Well is safe and asks for gems, which the party keeps.
+                {33, 7, 7, D::north, {"NO"}, true},
+                // The portal home, and Marcus's house: his welcome mat and his pets.
+                {33, 1, 1, D::north, {"YES"}},
+                {16, 15, 10, D::north, {}, true},
+                // The Temple of Gond heals the party for nothing.
+                {16, 10, 9, D::north, {"YES", "Heal", "paladin 1", "Pay", "Heal", "paladin 2",
+                                       "Pay", "Heal", "ranger 3",  "Pay", "Heal", "cleric 4",
+                                       "Pay", "Heal", "cleric 5",  "Pay", "Heal", "magic_user 6",
+                                       "Pay", "Leave"}},
+            });
+        // Out by the town's east gate, into the ruins (sector 5).
+        route.push_back(step_beat(16, 15, 8, D::east, {"YES"}));
+        // Through the ruins to the lair of the Old Red Dragon (location 13,
+        // sector 9): west through sector 5, south through sector 7.
+        walk_ruins(route,
+                   {{14, 2, D::east},  {15, 5, D::east},  {10, 2, D::south}, {5, 0, D::north},
+                    {10, 4, D::north}, {0, 11, D::south}, {2, 10, D::west},  {0, 6, D::south},
+                    {14, 2, D::east},  {13, 4, D::west},  {6, 0, D::west},   {1, 14, D::south},
+                    {3, 0, D::north},  {0, 4, D::west},   {3, 5, D::south},  {7, 11, D::south},
+                    {8, 12, D::north}, {1, 9, D::south},  {2, 10, D::west},  {0, 6, D::south},
+                    {0, 5, D::east},   {13, 4, D::west},  {1, 1, D::west},   {5, 0, D::north}});
+        // The lair: the Old Red Dragon, rested for, and the Amulet of
+        // Eldamar (cell 4C53); its gateway takes the party to the Well.
+        auto lair = step_beat(32, 0, 3, D::north, {"ATTACK", "YES"});
+        lair.rest_first = true;
+        lair.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C53, 255};
+        route.push_back(lair);
+        // From the Well's north-west corner into the ruins (sector 6), and
+        // through sector 8 to the Black Circle Headquarters' main entrance;
+        // rested at the Well, safe since its dragon fell.
+        auto leave_well = step_beat(33, 0, 0, D::north);
+        leave_well.rest_first = true;
+        route.push_back(leave_well);
+        walk_ruins(route, {{2, 0, D::north},
+                           {6, 0, D::west},
+                           {1, 2, D::west},
+                           {1, 14, D::south},
+                           {7, 11, D::south},
+                           {2, 10, D::west},
+                           {1, 14, D::south},
+                           {2, 14, D::south},
+                           {11, 2, D::west},
+                           {3, 5, D::south},
+                           {7, 13, D::west},
+                           {1, 1, D::west},
+                           {0, 6, D::south},
+                           {1, 0, D::south},
+                           {0, 3, D::west}});
+        // The Headquarters (map 34): its captain bars the way and is fought.
+        route.push_back(step_beat(32, 0, 2, D::south, {"ATTACK"}));
+        // The commander and his troops, and on his desk the key to the
+        // secret door. The corridors allow no rest (guards come).
+        route.push_back({34, 12, 6, D::north, {}});
+        route.push_back({34, 10, 5, D::north, {}});
+        // The office's gateway to the Well (building 16), to rest where it is
+        // safe, and back.
+        route.push_back({34, 10, 6, D::north, {"YES"}});
+        route.push_back({33, 14, 14, D::north, {"YES"}, true});
+        // The key finds the secret door south of the corridor (a search); the
+        // locked door beyond is bashed.
+        route.push_back({34, 8, 4, D::south, {}});
+        route.push_back(step_beat(34, 8, 4, D::south));
+        route.push_back(step_beat(34, 8, 7, D::south, {"Bash", "Bash", "Bash", "Bash"}));
+        // The hatchling pool and the Inner Sanctum beyond: its gateway takes
+        // the party to the Well.
+        route.push_back({34, 13, 13, D::south, {"GO FORWARD"}});
+        route.push_back({34, 13, 14, D::south, {"ATTACK", "YES"}});
+        return route;
+    }();
     return beats;
 }
 
@@ -2021,6 +2105,61 @@ bool walk_census(GoldBoxGame game, bool route)
             }
             std::cout << "Survey ends on map " << session.snapshot().area_id << ", phase "
                       << static_cast<int>(session.snapshot().phase) << "\n";
+        }
+        // OPENGOLD_SECRET_LINKS prints, for Secret's ruins (one map, its
+        // sectors told apart by cell 4C4B), every step that leaves a sector
+        // or the map: sector, square and facing, and where the step lands.
+        if (std::getenv("OPENGOLD_SECRET_LINKS") && end.area_id == 32 && session.can_leave())
+        {
+            const auto base = session.detached_copy();
+            const auto party_before = party->state();
+            std::cout << "sector now "
+                      << opengold::test::TourAccess::machine(session).variable(
+                             opengold::por::EclAddress{0x4C4B})
+                      << "\n";
+            for (std::uint16_t sector = 1; sector <= 10; ++sector)
+            {
+                for (unsigned y = 0; y < 16; ++y)
+                {
+                    for (unsigned x = 0; x < 16; ++x)
+                    {
+                        for (unsigned f = 0; f < 4; ++f)
+                        {
+                            auto trial = base.detached_copy();
+                            trial.attach_restored_party(party);
+                            opengold::test::TourAccess::set_variable(
+                                trial, opengold::por::EclAddress{0x4C4B}, sector);
+                            const auto facing = static_cast<opengold::por::MapDirection>(f);
+                            opengold::test::TourAccess::place(trial, {x, y, facing});
+                            (void)trial.explore(opengold::por::ExplorationCommand::forward);
+                            for (int n = 0; n < 50 && trial.snapshot().phase == TourPhase::running;
+                                 ++n)
+                            {
+                                trial.advance(1.0);
+                            }
+                            const auto machine = opengold::test::TourAccess::machine(trial);
+                            const auto now = machine.variable(opengold::por::EclAddress{0x4C4B});
+                            const auto &s = trial.snapshot();
+                            const auto moved =
+                                std::abs(static_cast<int>(s.pose.x) - static_cast<int>(x)) +
+                                std::abs(static_cast<int>(s.pose.y) - static_cast<int>(y));
+                            if (now != sector || s.area_id != 32 || moved > 1 ||
+                                s.pose.facing != facing)
+                            {
+                                std::cout
+                                    << "link " << sector << " " << x << "," << y << " f" << f
+                                    << " -> map " << s.area_id << " sector " << now << " "
+                                    << s.pose.x << "," << s.pose.y << " f"
+                                    << static_cast<int>(s.pose.facing) << " big "
+                                    << machine.variable(opengold::por::EclAddress{0x4CFD}) << ","
+                                    << machine.variable(opengold::por::EclAddress{0x4CFE}) << " "
+                                    << s.dialogue.substr(0, 60) << "\n";
+                            }
+                            party->restore(party_before);
+                        }
+                    }
+                }
+            }
         }
         // The route's last beat wins the game: Tyranthraxus falls, and the
         // ending is told.
