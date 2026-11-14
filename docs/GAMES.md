@@ -630,7 +630,11 @@ pictures, walls and script host, *Treasures* adding only what it changes.
    7,533 for each class of two or three) trained at once and 200 platinum,
    on its engine's tables (ORIGINAL-RULES.md, *Treasures*). A *Gateway*
    character comes across as its LoadChar takes one in, its items renumbered
-   (`gateway_items_for_treasures`); the party screen's choice of saves is to come.
+   (`gateway_items_for_treasures`), keeping its own platinum, gems and
+   jewelry when the *Gateway's money* option is on; the party screen's choice
+   of saves is to come. Since 2026-11-14 a magic-user chooses its first- to
+   third-level spells on a page after the roll, slots x 4 / 3 of each, and
+   knows Read Magic (ORIGINAL-RULES.md, Decisions).
 4. Walking every map and playing every event and fight (the walk).
    `opengold_treasure_walk` (`opengold_gold_box_games_tests
    --treasure-walk`) walks every square of every map, the overland's too
