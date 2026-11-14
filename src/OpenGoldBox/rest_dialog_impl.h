@@ -482,7 +482,16 @@ std::optional<String> RolfTourView::use_outside_combat(opengold::MemberId user,
         return i18n::format(N_("{name} joins the party."), {{"name", String::utf8(name.c_str())}});
     }
     const int before = party_hp();
-    campaign_->use_camp_action(user, patient, id.utf8().get_data());
+    // The session hears the spell, as a script may wait for one (Treasures'
+    // Cortarra); without one the party casts it alone.
+    if (session_)
+    {
+        session_->cast_outside_combat(user, patient, id.utf8().get_data());
+    }
+    else
+    {
+        campaign_->use_camp_action(user, patient, id.utf8().get_data());
+    }
     if (id.begins_with("detect_magic"))
     {
         return action_text + String("   ") + rest_text(N_("Magic items are marked * for ten minutes."));

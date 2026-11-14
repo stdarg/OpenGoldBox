@@ -30,7 +30,7 @@ The user decided these on 2026-11-12:
 | 3 | *Secret of the Silver Blades* | 1990 | `SECRET` | Every file decodes ([secret.md](games/secret.md)) |
 | 4 | *Gateway to the Savage Frontier* | 1991 | `GATEWAY` | Every file decodes ([gateway.md](games/gateway.md)) |
 | 5 | *Pools of Darkness* | 1991 | `DARKNESS` | Its opening plays and its walk passes ([darkness.md](games/darkness.md)) |
-| 6 | *Treasures of the Savage Frontier* | 1992 | `TREASURE` | Its opening plays and the walk passes every map and fight ([treasure.md](games/treasure.md)) |
+| 6 | *Treasures of the Savage Frontier* | 1992 | `TREASURE` | The walk passes every map and fight; the route plays to the Smuggler's Dock ([treasure.md](games/treasure.md)) |
 | 7 | *Forgotten Realms: Unlimited Adventures* | 1993 | `UA` | A design made with the kit plays: its walls, events and fights ([ua.md](games/ua.md)) |
 
 The developer's copies live in `/Users/edmond/GoldBox/<folder>`.
@@ -637,7 +637,7 @@ pictures, walls and script host, *Treasures* adding only what it changes.
    (script 51, maps 51 to 57, drawn from above from `OVER`'s pictures), with
    six fighters made under *Treasures*' rules, and runs each event and fight
    (treasure.md, The walk). Still to come: the music and sounds, the
-   romances and luck readings (PROGRAM 3) and the route.
+   romances, and the camp's Fix (PROGRAM 4) and Crown.
    The win is in place: the event in which Freezefire dies (script 38 sets
    cell 25Ch to 1) ends as a win (`game_won`), the original having no ending
    of its own (treasure.md, The ending).
@@ -647,6 +647,22 @@ pictures, walls and script host, *Treasures* adding only what it changes.
    for 50, a key passing one, with its title music from the first. The party
    screen's party plays the opening on to the dwarves' fortress
    (`opengold_godot_startup_menu_treasure`).
+6. The route from the opening to the win (`opengold_treasure_route`).
+   *Begun (2026-11-14):* the cluebook's party, trained at Llorkh's hall on the
+   experience and money a party brought from *Gateway* carries (a stand-in,
+   to levels 8 and 9), frees Llorkh, goes down into Geildarr's Keep, sees
+   through Cortarra with Detect Magic cast outside combat, kills Geildarr,
+   takes the boat and walks overland to Secomber (the first crystal battle,
+   Amanitas's crown and word, PROGRAM 3), to Leilon (the drugged dinner and
+   the barn), is thrown into Waterdeep's harbor, crosses the sea elves'
+   caverns, kills the Zhentil captain (the second Lucky Paper mission) and
+   climbs out to the Smuggler's Dock (treasure.md, The route). It needed
+   COMBAT's flags after a fight, a spell cast outside combat answering a
+   script, PROGRAM 3 and 5, and the game's own item types (treasure.md, What
+   the route needed). *Where it stops:* the Smuggler's Dock (map 21); until
+   the route reaches the win it passes when it plays every beat to map 21.
+   Next: Daggerford and the Way Inn, then the other eight Lucky Paper
+   missions, Mirabar, Fireshear, the Firemines and the Ice Peak.
 
 ### 8. *Unlimited Adventures*
 

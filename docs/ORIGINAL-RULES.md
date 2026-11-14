@@ -472,6 +472,9 @@ Its differences (2026-11-14):
   choose a third more spells than the level's slots; OpenGoldBox teaches every
   spell of those levels for now, as *Pools of Darkness* does, until creation
   offers the choice.
+- **Detect Magic** may be cast outside combat, as in the originals, spent
+  with nothing more to lay: *Treasures*' scripts may wait for a spell
+  (Cortarra, [treasure.md](games/treasure.md), What the route needed).
 - **A *Gateway* character comes across** as its LoadChar takes one in
   (`CampaignParty::bring_across` with `gateway_items_for_treasures`): its
   scores, levels, Hit Points, experience and learned spells, and its items,

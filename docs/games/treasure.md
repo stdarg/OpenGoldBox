@@ -198,9 +198,8 @@ walk needed besides the opening's:
   scripts hold those maps.
 
 Still to come: the records that only set colors for the picture shown, the overland's color
-cycling, the music and sounds other than the footstep, PROGRAM 3 to 5
-(the luck readings, the Fix menu, the party's repair), the romances, and the
-route.
+cycling, the music and sounds other than the footstep, PROGRAM 4 (the camp's
+Fix), the camp's Crown, the romances, and the rest of the route (below).
 
 One of the walk's fights no side can finish (map 24 at 1,5): a caster with no
 spells left and no way to reach the party stands across the battlefield from
@@ -209,6 +208,82 @@ member walking to the field's edge and fleeing, as it leaves *Curse*'s and
 *Pools of Darkness*'s. In Freezefire's lair (map 38 at 3,6) the black-robed
 mages charm dwarves who fight beside the party onto their side; such an ally
 ends the fight as one out of it, as an ally the party attacked does.
+
+## What the route needed
+
+The route (below) plays the story as a player does, and needed these of the
+engine, each as the original does it:
+
+- **COMBAT's flags.** The fight ends with the equal flag set when the party
+  won and the not-equal flag when it fled (its PostCombat clears the flags,
+  then sets them), and the scripts test them at once: Geildarr's chamber goes
+  on to his second fight only on a win. A fight whose treasure the party
+  takes is a won one. The other games leave the flags alone.
+- **A spell cast outside combat.** A script waiting for one sets the last
+  spell's cell (4Bh) to FFh and ends, as Cortarra does when the party chooses
+  CAST before the two Siulajias. The spell cast is recorded there by its
+  number in *Treasures*' table, and the square's event runs again, as the
+  original's map menu runs the step and location entries after a cast (its
+  NoncombatCastMenu); Cortarra's script reads the cell against its list and
+  shows her for what she is. Detect Magic is a camp spell under the original
+  rules for this (spent, with nothing more to lay).
+- **PROGRAM 3**, Amanitas's word: the luck reading (`LUCK.DAX` 0 to 12) of
+  the first Lucky Paper mission not yet done (cells 127h to 130h at 1 when
+  done), 12 when cell 1F8h is FFh, and the crown's last words (0) when the
+  luck state (cell 25Ch, which Freezefire's fall sets to 1) is 1, which then
+  becomes 2 (its ShowNextLuckText). Its pages are shown together and wait for
+  the player to go on.
+- **PROGRAM 5** makes the party whole: blindness, disease and poison cured,
+  the dead (but elves) raised, the stoned made flesh, every Hit Point back
+  (its RepairParty), then waits for the player. Freezefire's lair uses it.
+- **Item types.** *Treasures* numbers its item types as *Pool of Radiance*
+  does (its `ITEMS`): a long sword is 18, plate mail 36, a shield 37, a mace 8
+  and a dagger 4.
+
+## The route
+
+`opengold_treasure_route` (`opengold_gold_box_games_tests --treasure-route`)
+plays the story in the cluebook's order with its party (two paladins, a
+ranger, two clerics and a magic-user, made under *Treasures*' rules, carrying
++2 weapons and +1 armor as every game's route does). A party brought from
+*Gateway* carries that game's experience and money: the test gives it (a
+stand-in, 100,000 experience and 10,000 gold at each of four visits to
+Llorkh's hall, training the party to levels 8 and 9).
+
+1. **Llorkh** (map 16): before each fight the party has its dead raised at the
+   Temple of Dumathain (15,3) and rests at the inn (12,1), for the streets'
+   camps draw the guards. It trains at the hall facing its door west (1,3),
+   fights the Lord's men, Zhentil fighters, ettins, griffons and Banites
+   about the city, then the Keep's courtyard (8,10), and goes down the
+   stairs east of it (9,10) into Geildarr's Keep.
+2. **Geildarr's Keep** (map 17): the black-caped man (11,5); Cortarra's twins
+   (11,1), answered with CAST and Detect Magic, her fight, and Siulajia
+   joining; Lord Geildarr's chamber (15,4), the skeleton and then Geildarr
+   and his guards. Up the stairs (11,10 west), and out of Llorkh by the boat
+   rentals (3,15), open now.
+3. **Secomber** (map 19), down the river and overland (maps 57 and 56): the
+   first crystal battle (13,15) and Amanitas (7,10), who gives the crown and
+   tells of the ambassadors (PROGRAM 3).
+4. **Leilon** (map 20), overland by maps 56, 54 and 53: the drugged dinner at
+   the Rutting Buck (9,7) and the escape from the barn by the sick trick
+   (12,5).
+5. Out of Leilon by the farmhouse and north (maps 53 and 52), where the
+   Waterdeep 'guards' take the party to Fell Hatchet, who has it thrown into
+   the harbor; the sea elves take it into **the caverns** (map 22). Past
+   Mandoul's gateway and its guardians, the confusing room and a locked door,
+   to the Zhentil captain's office (12,0), whose fall ends the second Lucky
+   Paper mission (cell 128h), and up the rope ladder (15,1) to **the
+   Smuggler's Dock** (map 21).
+
+Every walk is played step by step as the planning aid
+(`OPENGOLD_SECRET_FIND`, with `OPENGOLD_FIND_YES` for a town's "ENTER ...?")
+finds it. *Where it stops:* the Smuggler's Dock. Until the route reaches the
+win its check passes when it plays every beat to map 21
+(`treasure_route_stops_on_map`). The next steps, in the cluebook's order:
+Daggerford and the Way Inn (mission 3), Yartar and Triboar (4), Longsaddle and
+the Tower of Twilight (5), Mintarn (6), Orlumbor and Farr Windward (7),
+Neverwinter (8), Ruathym and Luskan (9), Mirabar (10), then Neverwinter,
+Fireshear, the Firemines and the Ice Peak's four stages to Freezefire.
 
 ## The ending
 

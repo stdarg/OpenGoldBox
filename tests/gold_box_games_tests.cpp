@@ -3668,9 +3668,9 @@ const std::vector<RouteBeat> &gateway_route()
 }
 
 // Treasures' route plays to the game's end once this is true; until then it
-// stops on this map (docs/GAMES.md, Treasures, step 5).
+// stops on this map (docs/GAMES.md, Treasures, step 6).
 constexpr bool treasure_route_ends_the_game = false;
-constexpr unsigned treasure_route_stops_on_map = 16;
+constexpr unsigned treasure_route_stops_on_map = 21;
 
 // Treasures of the Savage Frontier's story, beat by beat, as its cluebook
 // tells it: from the dwarves' fortress outside Llorkh, where the opening
@@ -3847,6 +3847,33 @@ const std::vector<RouteBeat> &treasure_route()
                        {6, 1, D::east},
                        {7, 1, D::north}});
         walk_overland(route, 52, {{4, 14, D::north}});
+        // Through the caverns past King Mandoul's gateway and its stone
+        // guardians to the Zhentil captain's office (12,0), whose fall shows
+        // who raids the farms (the second Lucky Paper mission), and up the
+        // rope ladder (15,0) to the Smuggler's Dock.
+        walk_passages(route, 22,
+                      {{0, 15, D::east},  {1, 15, D::east},  {2, 15, D::north}, {2, 14, D::north},
+                       {2, 13, D::north}, {2, 12, D::east},  {3, 12, D::east},  {4, 12, D::south},
+                       {4, 13, D::east},  {5, 13, D::east},  {6, 13, D::east},  {7, 13, D::east},
+                       {8, 13, D::north}, {8, 12, D::north}, {8, 11, D::north}, {8, 10, D::north},
+                       {8, 9, D::north},  {8, 8, D::north},  {8, 7, D::north},  {8, 6, D::east},
+                       {9, 6, D::north},  {9, 5, D::north},  {9, 4, D::north},  {9, 3, D::north},
+                       {9, 2, D::east},   {10, 2, D::east},  {11, 2, D::east},  {12, 2, D::north},
+                       {12, 1, D::east},  {13, 1, D::north}});
+        auto captain = step_beat(22, 13, 0, D::west);
+        captain.rest_first = true;
+        captain.expect_cell = {{0x128, 1}};
+        route.push_back(captain);
+        walk_passages(route, 22,
+                      {{12, 0, D::east},
+                       {13, 0, D::south},
+                       {13, 1, D::west},
+                       {12, 1, D::south},
+                       {12, 2, D::east},
+                       {13, 2, D::east},
+                       {14, 2, D::east},
+                       {15, 2, D::north}});
+        route.push_back(step_beat(22, 15, 1, D::north, {"YES"}));
         return route;
     }();
     return beats;
@@ -5850,7 +5877,7 @@ bool walk_census(GoldBoxGame game, bool route)
         if (game == GoldBoxGame::treasures_of_the_savage_frontier && !treasure_route_ends_the_game)
         {
             std::cout << "Treasures' route stops on map " << end.area_id
-                      << ", short of the game's end (docs/GAMES.md, Treasures, step 5).\n";
+                      << ", short of the game's end (docs/GAMES.md, Treasures, step 6).\n";
             return played && end.area_id == treasure_route_stops_on_map;
         }
         return played && end.dialogue.find("You have won.") != std::string::npos &&
