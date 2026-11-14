@@ -534,10 +534,7 @@ playing each event and fight; it fails on any event the session cannot play.
   services): Pool, Share and Take, Appraise, vault items, a temple's Restoration and Fix; drinks as more than a count; the encounter's monster
   picture at its range.
 - Fights:
-  - The 14 monster effects no game's effect plays yet (Monsters' effects,
-    below), the kit's monster types (+BFh) as the fight's kin for the
-    effects that name them (26, 47, 105), and the differences of the near
-    matches.
+  - The differences of the near matches (Monsters' effects, below).
   - Monsters' spells (+C6h) and an item's special effect when readied.
   - The area's wandering monster (+106h): the kit fields ten of it out of
     sight, for a Monster Summoning to gate in beside its caster; the
@@ -580,19 +577,51 @@ Since 2026-11-14 (`ua_session.cpp`, `combatant.cpp`):
   | | | | | | | 224 | 68~ |
 
   A ~ marks a near match: the gaze of 58 reaches six squares and spares no
-  one the kit's 126 or 79 spare; 60 and 103 let any monster of their level
+  one the kit's 79 spares; 60 and 103 let any monster of their level
   through, armed or not; 82 slays with the banishing quarrel; 88 and 224
   paralyse on either attack and 224 for longer; 91 breathes as Pool of
   Radiance's dragons do; 96 is acid as well as breath; 100's terror takes
   no save; 108 adds 1d6 to the blow; 117's rays need their exact
   distances; 124's charm is saved at -2; 159's holy water is the fight's;
-  170's rot takes no Charisma. The other 14 (40, 76, 80, 81, 90, 99, 125,
-  126, 137, 168, 186, 193, 195, 219: spell immunity, disease immunity,
-  half damage from weapons below +3 and +4, poison breath, the bulette's
-  attacks, +2 weapons needed, sure saves against gazes, stench, damage from
-  magical fire, the pudding's corrosion, no damage from weapons, the
-  gorgon's breath, less fire damage) are kept 600 higher
-  (`kit_effect_offset`), which no handler plays yet.
+  170's rot takes no Charisma. (Until 2026-11-14 the fight played 84's
+  charming gaze in Pool of Radiance only, so the kit's vampires never
+  charmed; they do.)
+- **The kit's own effects.** The other 14 no earlier game has; each plays
+  600 higher (`kit_effect_offset`) as the kit plays it, in
+  `combat_session.cpp` (since 2026-11-14):
+
+  | Kit | Fight | Monsters | What it does |
+  |---|---|---|---|
+  | 40 | 640 | rakshasa, rakshasa rukh | No spell below the eighth level harms it or takes hold |
+  | 76 | 676 | otyugh, neo-otyugh | No disease (34) takes hold |
+  | 80 | 680 | rakshasa | A weapon below +3 does half; claws and fists whole |
+  | 81 | 681 | rakshasa rukh | A weapon below +4 does half |
+  | 90 | 690 | green dragon | Breathes poison three times a fight, at an enemy within 3 squares, along 3 squares: its maximum Hit Points, half on a save against breath; ends its turn |
+  | 99 | 699 | bulette | Strikes 4 times with its second attack each turn, 8 one time in 4 |
+  | 125 | 725 | earth and fire elementals | A weapon below +2 does nothing, nor bare blows but a monster's of 7 Hit Dice or more |
+  | 126 | 726 | vampires, dracolisk | Meets a gaze unharmed (the petrifying, confusing and charming gazes) |
+  | 137 | 737 | ghast | At each of its turns "emits an evil stench": each enemy beside it that fails a save against spells is sickened, 2 worse at its attacks for the round (the kit's 148, 748) |
+  | 168 | 768 | mummy | Takes 1 more a die of magical fire |
+  | 186 | 786 | black pudding | Its blow eats a plus off the armor the target has readied and does no harm; banded and plate mail go to -1, other armor to 0, then the armor dissolves. The inventory keeps what is left (`CombatantView::item_pluses`) |
+  | 193 | 793 | black pudding | No blow harms it |
+  | 195 | 795 | gorgon | Breathes four times a fight, at an enemy within 6 squares, along 6 squares two wide, never through its own side: each that fails a save against petrification is stoned; ends its turn |
+  | 219 | 819 | efreeti | Takes 1 less a die of fire, never under 1 a die |
+
+  The kit hands the gorgon a second effect (203) that breathes; the fight
+  keeps the breaths on 795 itself. The bulette's flurry is the kit's as
+  its AI readies its weapons, at each of its turns; the dice 168 and 219
+  weigh are those of the spell going off (none for a breath, Bugs). Where
+  the kit gave the stench's penalty, spent the gorgon's breath and spelt
+  the pudding's words, see [ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Bugs.
+- **Monster types.** A MONST record's +BFh (the kit's type flags, which its
+  effects test) is the creature's kin (`por::CharacterRecord::creature_type_flags`,
+  `original::combatant_from_record`): 80h a dwarf's foe (the dwarf's 26
+  strikes it 1 better), 4 a giant (47 keeps a dwarf 4 harder to hit by it),
+  20h the big folk a gnome defends against (48) and 8 a ranger's foe, which
+  a ranger beside it strikes harder by its level (105, the fight's 334).
+  The kit's goblins and orcs are 88h, its giants, ogres and trolls 2Ch, its
+  kobold 8. Its other bits (1, 2, 10h and 40h) are for its spells and the
+  party's own effects, not these.
 - **"No magic" fights.** Byte 0Eh's bit 80h of a fight's event bars every
   spell (evcmds.c): `CampaignEncounter::no_magic` and
   `rules::Encounter::no_magic`; the original rules' fight gives every
@@ -607,9 +636,13 @@ Since 2026-11-14 (`ua_session.cpp`, `combatant.cpp`):
   event; the counts are saved.
 
 `opengold_ua_session_tests` checks the skeleton's, troll's and rakshasa's
-effects, the hall's no-magic kobolds and the cellar's draft every third
-step; `opengold_original_combat_tests` that no one casts in a no-magic fight,
-saved or not.
+effects, the 14 the kit alone has on their monsters, the goblin's and ogre's
+kin, the party's blows doing the black pudding no harm and the gorgon's
+breath stoning them, the hall's no-magic kobolds and the cellar's draft
+every third step; `opengold_original_combat_tests` each of the kit's own
+effects and a ranger beside a ranger's foe, and that no one casts in a
+no-magic fight, saved or not; `opengold_original_creation_tests` a black
+pudding eating a member's armor, which the inventory keeps.
 
 ### The end
 
