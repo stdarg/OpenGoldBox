@@ -250,6 +250,9 @@ struct TourSnapshot
     unsigned thunder{};
     int sprite_frame{-1}; // -1 hidden; native near/medium/far frames are 0/1/2.
     bool tour_finished{};
+    // The party has just won the game: its closing words are shown until the
+    // player goes on (the view plays the game's ending film first, if any).
+    bool game_won{};
     // The script opened the camp menu (PROGRAM 9 outside an inn): the party
     // may camp now, and the view shows its camp dialog.
     bool camp_offered{};

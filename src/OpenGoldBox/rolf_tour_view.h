@@ -163,6 +163,9 @@ class RolfTourView : public godot::Control
     godot::String error_;
     std::uint64_t shown_revision_{}, checked_ticket_{};
     unsigned played_footsteps_{}, played_thunder_{}, check_frames_{}, check_prompts_{};
+    // Whether the last snapshot shown had just won the game (its film, if
+    // any, plays once a win).
+    bool won_game_shown_{};
     // The original's sound effects from the player's game, when they have them.
     std::unique_ptr<opengold::por::SoundPlayer> original_sound_;
     unsigned rendered_sprite_id_{999};
@@ -218,6 +221,11 @@ class RolfTourView : public godot::Control
     [[nodiscard]] std::size_t current_monster_frame() const;
     void forget_monster_picture();
     void dismiss_monster_picture();
+    // The game's ending film, played over the whole window when the party
+    // wins and the film is among the game's files; any key or click ends it.
+    void play_ending_film();
+    void end_ending_film();
+    [[nodiscard]] bool ending_film_playing() const;
     void restart();
     void next();
     void choices_input(const godot::Ref<godot::InputEvent> &event);

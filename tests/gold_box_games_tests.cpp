@@ -2015,7 +2015,7 @@ bool walk_census(GoldBoxGame game, bool route)
                                                         return id && party->member(id).vitals.dead;
                                                     });
         return needs.empty() && end.phase != TourPhase::defeated &&
-               end.dialogue.find("You have won.") != std::string::npos && all_alive;
+               end.dialogue.find("You have won.") != std::string::npos && end.game_won && all_alive;
     }
     // OPENGOLD_CURSE_MAP walks that map alone.
     const char *only = std::getenv("OPENGOLD_CURSE_MAP");

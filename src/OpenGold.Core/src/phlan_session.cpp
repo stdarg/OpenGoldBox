@@ -2610,6 +2610,7 @@ bool RolfTourSession::choose(std::uint64_t ticket, std::size_t choice)
         auto reply = character_reply(selected_character_);
         if (std::exchange(victory_, false))
         {
+            snapshot_.game_won = false;
             reply.writes.push_back({game_cell(EclAddress{0x4AFD}), 255});
         }
         if (!machine_.resume_host(damage_request_, reply))
@@ -4096,6 +4097,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                     ? "Tyranthraxus is destroyed, and Phlan is free of him. You have won."
                     : "You have won.";
             victory_ = true;
+            snapshot_.game_won = true;
             damage_request_ = request.id;
             snapshot_.phase = TourPhase::awaiting_continue;
             snapshot_.choices = {"Continue"};

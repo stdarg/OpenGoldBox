@@ -26,7 +26,10 @@
 #include "close_up_art.h"
 #include "unloadable_art.h"
 #include <godot_cpp/classes/audio_stream_player.hpp>
+#include <godot_cpp/classes/aspect_ratio_container.hpp>
 #include <godot_cpp/classes/button.hpp>
+#include <godot_cpp/classes/canvas_layer.hpp>
+#include <godot_cpp/classes/color_rect.hpp>
 #include <godot_cpp/classes/option_button.hpp>
 #include <godot_cpp/classes/font.hpp>
 #include <godot_cpp/classes/engine.hpp>
@@ -42,6 +45,8 @@
 #include <godot_cpp/classes/rich_text_label.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/classes/scroll_container.hpp>
+#include <godot_cpp/classes/video_stream.hpp>
+#include <godot_cpp/classes/video_stream_player.hpp>
 #include <godot_cpp/classes/viewport_texture.hpp>
 #include <godot_cpp/classes/window.hpp>
 #include <godot_cpp/core/class_db.hpp>
@@ -1886,6 +1891,18 @@ void RolfTourView::_input(const Ref<InputEvent> &event)
 
 void RolfTourView::respond_to_input(const Ref<InputEvent> &event)
 {
+    if (ending_film_playing())
+    {
+        const Ref<InputEventKey> film_key = event;
+        const Ref<InputEventMouseButton> film_click = event;
+        if ((film_key.is_valid() && film_key->is_pressed() && !film_key->is_echo()) ||
+            (film_click.is_valid() && film_click->is_pressed()))
+        {
+            end_ending_film();
+        }
+        get_viewport()->set_input_as_handled();
+        return;
+    }
     if (required_node<Window>(*this, "RestDialog").is_visible())
     {
         return;
@@ -2548,9 +2565,72 @@ void RolfTourView::dismiss_monster_picture()
     }
 }
 
+void RolfTourView::play_ending_film()
+{
+    // A film is dropped in as endings/<the game's folder>.ogv (Theora) in the
+    // game's files; without one the closing words stand alone.
+    const auto folder = opengold::game_folder(session_->game());
+    const String path =
+        "res://endings/" + String::utf8(folder.data(), static_cast<int>(folder.size())) + ".ogv";
+    if (!ResourceLoader::get_singleton()->exists(path))
+    {
+        return;
+    }
+    const Ref<VideoStream> film = ResourceLoader::get_singleton()->load(path);
+    if (film.is_null())
+    {
+        return;
+    }
+    auto *layer = memnew(CanvasLayer);
+    layer->set_name("EndingFilm");
+    layer->set_layer(100);
+    auto *screen = memnew(ColorRect);
+    screen->set_color(Color(0, 0, 0));
+    screen->set_anchors_and_offsets_preset(Control::PRESET_FULL_RECT);
+    layer->add_child(screen);
+    auto *frame = memnew(AspectRatioContainer);
+    frame->set_anchors_and_offsets_preset(Control::PRESET_FULL_RECT);
+    screen->add_child(frame);
+    auto *player = memnew(VideoStreamPlayer);
+    player->set_expand(true);
+    player->set_stream(film);
+    frame->add_child(player);
+    add_child(layer);
+    player->connect("finished", presentation::guarded(this, &RolfTourView::end_ending_film));
+    player->play();
+    const auto picture = player->get_video_texture();
+    if (picture.is_valid() && picture->get_height() > 0)
+    {
+        frame->set_ratio(static_cast<float>(picture->get_width()) /
+                         static_cast<float>(picture->get_height()));
+    }
+}
+
+void RolfTourView::end_ending_film()
+{
+    if (auto *film = get_node_or_null("EndingFilm"))
+    {
+        remove_child(film);
+        film->queue_free();
+    }
+}
+
+bool RolfTourView::ending_film_playing() const
+{
+    return has_node("EndingFilm");
+}
+
 void RolfTourView::refresh()
 {
     layout();
+    if (session_ && session_->snapshot().game_won != won_game_shown_)
+    {
+        won_game_shown_ = session_->snapshot().game_won;
+        if (won_game_shown_)
+        {
+            play_ending_film();
+        }
+    }
     sync_monster_picture();
     if (session_)
     {

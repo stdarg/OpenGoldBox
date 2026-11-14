@@ -439,6 +439,14 @@ in the game: answering YES at a hall lists its services in the dialogue
 
 ## Interface and saves
 
+- **A film celebrates each win** (2026-11-14, the user's design). The
+  originals end on their closing words (*Pool of Radiance* on its closing
+  story). OpenGoldBox plays the game's ending film first, when one is among
+  the game's files: `src/OpenGoldBox/godot/endings/<FOLDER>.ogv` (POOLRAD,
+  CURSE, SECRET, GATEWAY, DARKNESS, TREASURE, UA), a Theora film that any key
+  or click ends. Without a film the closing words, ending "You have won.",
+  stand alone. The films are to be made with AI video and music, the heroes
+  shown in shadow or from behind ([ENDING-FILMS.md](ENDING-FILMS.md)).
 - **Startup has menus, and every title takes a click** (2026-11-14, the
   user's design). The originals start with their title pictures and go
   straight to their party creation menu; *Pool of Radiance* and *Curse* take
