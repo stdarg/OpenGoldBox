@@ -444,7 +444,7 @@ new decoders.
    The overland). Still to come: CALL 8810h and the route.
 4. *From the startup menu (2026-11-14):* the menu offers *Gateway*, asks for
    its folder (`GATEWAY`) and the rules, and shows its five title pictures
-   (3, 3, 10, 20 and 20 seconds, each on a cleared screen, a key passing one)
+   (3, 3, 10, 20 and 20 seconds, each on a cleared screen; a key on the first ends the title, a later key passes one)
    with its title music from the second, as its Intro does; the party
    screen's party plays the opening on to Yartar
    (`opengold_godot_startup_menu_gateway`).

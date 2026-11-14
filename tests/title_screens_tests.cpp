@@ -128,8 +128,8 @@ void gateway_shows_five_pictures_alone(const std::filesystem::path &folder)
 {
     const auto title =
         opengold::load_title_screens(folder, opengold::GoldBoxGame::gateway_to_the_savage_frontier);
-    check(title.screens.size() == 5 && !title.key_ends_all,
-          "Gateway shows five screens, a key passing one");
+    check(title.screens.size() == 5 && !title.key_ends_all && title.first_key_ends_all,
+          "Gateway shows five screens: a key on the first ends them all, a later one passes one");
     const unsigned seconds[]{3, 3, 10, 20, 20};
     std::ifstream in(folder / "TITLE.DAX", std::ios::binary);
     const std::vector<std::uint8_t> bytes{std::istreambuf_iterator<char>(in), {}};

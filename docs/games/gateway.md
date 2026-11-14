@@ -217,11 +217,10 @@ plays 3 and 6 as 9. The rates are the program's, in samples a second:
 
 The full introduction shows `TITLE.DAX`'s pictures 1 to 5, each alone on a
 cleared screen, for 3, 3, 10, 20 and 20 seconds; a key passes the picture
-shown. The title music (`MUSIC.DAX`'s song) starts with the second picture,
-and the last stays until the song ends when the music is on. The original's
-first key ends the whole title; OpenGoldBox's passes the first picture only,
-as the earlier games' titles do. `load_title_screens` draws them with
-`gateway::picture_image`.
+shown, except that a key on the first ends the whole title. The title music
+(`MUSIC.DAX`'s song) starts with the second picture, and the last stays until
+the song ends when the music is on (OpenGoldBox keeps it its 20 seconds).
+`load_title_screens` draws them with `gateway::picture_image`.
 
 ## The music
 

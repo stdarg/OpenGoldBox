@@ -829,7 +829,7 @@ void StartupView::advance_title()
         end_game_title();
         return;
     case Stage::original_title:
-        if (game_title_->key_ends_all)
+        if (game_title_->key_ends_all || (title_screen_ == 0 && game_title_->first_key_ends_all))
         {
             end_game_title();
             return;

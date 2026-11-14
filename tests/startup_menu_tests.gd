@@ -277,16 +277,34 @@ func check_gateway() -> void:
 	await pick("GATEWAY")
 	require(not shown_title().is_empty(), "Gateway's title must show")
 	require(not current_scene.get_node("TitleSound").playing, "Gateway's title music waits for its second picture")
-	var seen := []
-	for screen in range(5):
+	# A key on the first picture ends the whole title, as its Intro's does.
+	await press_key()
+	require(not current_scene.get_node("GameTitle").visible and current_scene.get_node("GameMenu").visible,
+		"A key on Gateway's first picture ends its title")
+	# Escape goes back to the games; Gateway again, and this time the first
+	# picture leaves by itself after its 3 seconds, then a key passes one
+	# picture at a time.
+	var escape := InputEventKey.new()
+	escape.keycode = KEY_ESCAPE
+	escape.pressed = true
+	Input.parse_input_event(escape)
+	await settle()
+	current_scene.get_node("GamePicker/Buttons/Games/GATEWAY").pressed.emit()
+	await settle()
+	var first := shown_title()
+	require(not first.is_empty(), "Gateway's title shows again")
+	await create_timer(3.5).timeout
+	await settle()
+	var seen := [first]
+	for screen in range(1, 5):
 		var shown := shown_title()
 		require(not shown.is_empty() and not seen.has(shown), "Gateway's title screen " + str(screen + 1) + " must show")
 		seen.append(shown)
-		if screen > 0:
-			require(current_scene.get_node("TitleSound").playing, "Gateway's title music plays from its second picture")
+		require(current_scene.get_node("TitleSound").playing, "Gateway's title music plays from its second picture")
 		await capture_screen("GATEWAY-title-" + str(screen + 1))
 		await press_key()
 	require(not current_scene.get_node("GameTitle").visible, "Gateway's title ends after five screens")
+
 	await create_new_party(true)
 	require(current_scene != null and current_scene.name == "CharacterCreation", "Gateway's button must lead on to the party")
 	var town: Control = await explore_with_a_fighter()

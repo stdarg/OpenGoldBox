@@ -35,6 +35,7 @@ struct TitleScript
     std::vector<TitleStep> steps;
     bool key_ends_all{};
     // Each step's pictures are drawn on a cleared screen, not over the last.
+    bool first_key_ends_all{};
     bool clears_between{};
     std::size_t music_screen{};
 };
@@ -70,6 +71,7 @@ TitleScript title_script(GoldBoxGame game)
                  {{{4, 0, 0}}, 20, {}},
                  {{{5, 0, 0}}, 20, {}}},
                 false,
+                true,
                 true,
                 1};
     default:
@@ -134,7 +136,7 @@ TitleScreens load_title_screens(const std::filesystem::path &folder, GoldBoxGame
             pictures.emplace(record.id, std::move(picture.image));
         }
     }
-    TitleScreens title{{}, script.key_ends_all, script.music_screen};
+    TitleScreens title{{}, script.key_ends_all, script.first_key_ends_all, script.music_screen};
     auto screen = black_screen();
     for (const auto &step : script.steps)
     {

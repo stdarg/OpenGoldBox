@@ -29,6 +29,9 @@ struct TitleScreens
     // Secret of the Silver Blades' title ends at the first key; the earlier
     // games' key ends only the screen shown.
     bool key_ends_all{};
+    // Gateway's title ends at a key on its first screen; a later key passes
+    // only the screen shown.
+    bool first_key_ends_all{};
     // The screen the game's title music starts with (the later games'):
     // Gateway's starts with its second picture, Secret's with its first.
     std::size_t music_screen{};
