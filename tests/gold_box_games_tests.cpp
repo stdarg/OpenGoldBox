@@ -2544,7 +2544,7 @@ std::vector<std::string> train_gateway_party()
 // Gateway's route plays to the game's end once this is true; until then it
 // stops on this map (docs/GAMES.md, phase 5 step 4).
 constexpr bool gateway_route_ends_the_game = false;
-constexpr unsigned gateway_route_stops_on_map = 14;
+constexpr unsigned gateway_route_stops_on_map = 17;
 
 // Gateway's story, beat by beat, as its cluebook tells it (plan phase 5, step
 // 4): from the inn of Yartar on.
@@ -3053,6 +3053,63 @@ const std::vector<RouteBeat> &gateway_route()
                        {14, 15, D::south}});
         walk_overland(route, 25, {{10, 0, D::east}});
         route.push_back(step_beat(25, 11, 14, D::east, {"YES"}));
+        // Out of Secomber and overland east up the Delimbiyr Vale to Llorkh,
+        // the long way round the Great Desert, as Amanitas bids.
+        walk_passages(route, 14, {{0, 13, D::west}}, true);
+        walk_overland(route, 25,
+                      {{11, 14, D::north},
+                       {11, 11, D::east},
+                       {12, 10, D::north},
+                       {12, 7, D::east},
+                       {13, 5, D::east},
+                       {14, 3, D::east},
+                       {15, 1, D::east}});
+        walk_overland(route, 26,
+                      {{0, 1, D::east},
+                       {1, 0, D::east},
+                       {2, 15, D::east},
+                       {3, 13, D::east},
+                       {4, 12, D::east},
+                       {5, 11, D::east},
+                       {6, 10, D::east},
+                       {7, 9, D::east},
+                       {8, 8, D::east},
+                       {9, 6, D::east},
+                       {10, 5, D::east},
+                       {11, 3, D::east},
+                       {12, 1, D::north},
+                       {12, 14, D::east},
+                       {13, 13, D::east}});
+        {
+            // Rested before Llorkh, whose shops trap the party into the arena.
+            auto llorkh = step_beat(26, 14, 12, D::north, {"YES"});
+            llorkh.rest_first = true;
+            llorkh.waiting = false;
+            route.push_back(llorkh);
+        }
+        // Llorkh: into the first tavern, whose floor drops the party down the
+        // ramp to the arena beneath the town.
+        walk_passages(route, 16, {{0, 11, D::north}, {0, 10, D::east}, {1, 10, D::north}}, true);
+        // The arena: out of the tunnel to its floor, where the statuettes are
+        // taken and three fights follow with no rest between them.
+        walk_passages(route, 17,
+                      {{7, 11, D::north},
+                       {7, 10, D::north},
+                       {7, 9, D::north},
+                       {7, 8, D::north},
+                       {7, 7, D::north},
+                       {7, 6, D::north}},
+                      true);
+        // Thrown into a cell, the party rests, then waits (an hour, a Look
+        // ten minutes) for the jailer, whose keys Krevish, the deftest hand,
+        // snatches (cell 4C06 set to 2).
+        {
+            RouteBeat cell{17, 12, 4, D::south, {"Krevish"}};
+            cell.rest_first = true;
+            cell.repeat_until_at_least = {{0x4C06, 2}};
+            cell.repeat_in_place = true;
+            route.push_back(cell);
+        }
         return route;
     }();
     return beats;
