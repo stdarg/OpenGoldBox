@@ -426,13 +426,57 @@ Journal), chosen by the game as the others' are (2026-11-14):
   a cleric's and a thief's improve at 19 (Bugs), a fighter's, paladin's and
   ranger's stay, a magic-user's improves at 21.
 - **Spell slots** of spell levels 1 to 7 go on to class level 29, with
-  *Secret*'s Wisdom and Intelligence gates.
+  *Secret*'s Wisdom and Intelligence gates. A magic-user's eighth-level
+  slots come at level 16 and its ninth-level ones at 18 (its
+  `classLevelTable`), needing Intelligence 16 and 18. A paladin's cleric
+  slots grow to level 20 (3 of each of levels 1 to 4) and a ranger's to 17,
+  its third-level druid slots coming at 16 and 17; a ranger knows every
+  druid and magic-user spell of a level it has slots of.
 - **Spells at creation:** once trained, a magic-user knows every spell of
   levels 1 to 3, and with fourth-level slots Charm Monsters, Confusion,
   Dimension Door, Fear, Fire Shield, Ice Storm and Minor Globe of
-  Invulnerability (its 81 to 85, 87 and 88), with fifth-level slots Cloudkill
-  and Cone of Cold (its 91 and 92), and the higher levels' sets. A
-  dual-class magic-user knows Enlarge, as in *Curse*.
+  Invulnerability (its 81 to 85, 87 and 88), with fifth-level slots Cloudkill,
+  Cone of Cold, Fire Touch and Iron Skin (its 91, 92, 118 and 119), and the
+  sixth and seventh levels' sets; with ninth-level slots it knows every
+  magic-user spell. A dual-class magic-user knows Enlarge, as in *Curse*.
+  Training offers a magic-user a spell of any level its next level casts,
+  the eighth and ninth too.
+- **Its new spells** (its `magic.pas`), in and out of fights as its table
+  allows:
+  - *Cleric:* Blade Barrier (sixth level) whirls blades on four squares for
+    three rounds a caster level, 8d8 to one in them, which magic resistance
+    may turn and a save escapes only as they rise. Energy Drain drains a
+    level of the one touched; Destruction destroys it for good unless magic
+    resistance turns it. Resurrection, in camp, raises a dead member who is
+    no elf and has Constitution left to every Hit Point, its poison gone,
+    at no cost.
+  - *A ranger's druid spells* (third level): Cure Disease and Neutralize
+    Poison, in camp, work as a cleric's; Hold Animal holds up to four,
+    saving at -4 for one, -2 for two and -1 for three; Protection from
+    Fire gives a ranger the druid's protection, which takes 12 points of
+    fire a caster level and ends when spent, and anyone else Resist Fire
+    with no end, as the original does.
+  - *Magic-user:* Fire Touch (fifth level) burns what its bearer hits for
+    2d6, halved by a save, for a round a level; Iron Skin leaves its
+    caster's Armor Class 4 better for a round a level. Mass Charm (eighth)
+    charms enemies within a square of its aim, up to twice the caster's
+    level in Hit Dice, each saving at -2, passing over a large creature.
+    Otto's Irresistible Dance must hit its touch; the dancer loses its
+    turns, saves as if it rolled 1 and has an Armor Class 4 worse, for
+    1d4+1 rounds. Mind Blank lasts a day and turns charm, confusion,
+    holding, feeblemind and fear away. Power Word Blind blinds those within
+    2 squares of its aim, the nearest first, up to 100 Hit Points of them,
+    for 1d4+1 rounds, or ten times as long under 51 (Bugs). Meteor Swarm's
+    four meteors land on the squares diagonal to its aim (on it where the
+    caster cannot see them), each striking all on its way for 10d4 and
+    bursting on all within a square for 10d4, halved by a save. Power Word
+    Kill slays its first target of 11 to 60 most Hit Points, or else every
+    one within a square of its aim of 10 or fewer. Monster Summoning gates
+    in creatures waiting off the field; no fight of OpenGoldBox's keeps any
+    (the original's only ones are its mirror fight's), so its summons is not
+    answered.
+  - Fire Touch, Iron Skin, Mind Blank and Protection from Fire may be cast
+    in camp and last into the next fight.
 - **Spell numbers** are *Secret*'s; its new spells, 101 to 109 and 118 to
   126, are numbered 200 higher too.
 - **Training** costs nothing; attacks, thief skills and the experience
@@ -450,10 +494,14 @@ Journal), chosen by the game as the others' are (2026-11-14):
   +3 and 50 darts +2. It readies each but the fourth, as the rules allow (a
   class that may not use an item, or full hands, leaves it in the pack), and
   counts what it carries (Bugs) (2026-11-14).
-- **Still to come:** spell levels 8 and 9 (its magic-users' slots from level
-  16 and its spells 120 to 126), its other new spells (Blade Barrier,
-  Restoration, Energy Drain, Destruction, Resurrection, the ranger's druid
-  spells 106 to 109, Fire Touch and Iron Skin), and
+- **Still to come:** Restoration, which gives back a drained level in the
+  class whose next level costs least and a share of the Hit Points the drain
+  took: a camp spell changes only a member's state, so the campaign needs a
+  way to take a sheet change from it; Mass Charm's test of the record's
+  charmable flag (it passes over only a large creature and the caster's
+  side for now); its fights as *Secret*'s (a *Pools of Darkness* record's
+  effects by its own numbers, `canonical_effect`, and *Secret*'s checks
+  `Session::secret` makes); and
   bringing a *Secret* party across (its LoadChar), which the original
   offers.
 
@@ -1282,5 +1330,6 @@ tuned with the AI lab once the original rules play.
 | *Curse:* the dracolich's shield against fear, enfeeblement and feeblemind is looked at only once those have landed, so it does almost nothing (`ovr013`, `AffectDracolichA`) | It is immune to them |
 | *Pools of Darkness:* a new character's count of items is set to three whatever its starting equipment gave, so a fighter's five items and a cleric's six count as three (`chargen.pas`, `CreateStartingItems`) | Counts what it carries |
 | *Pools of Darkness:* the clerics in Manshoon's tower ask how many times the party has entered Zhentil Keep and add 2 to the answer's place (0 for "1") before comparing it with the count, so no true answer passes and the party fights their elementals (ECL1:49, 816Ah) | The script adds 1: "1", "2" and "MANY" mean 1, 2 and 3 |
+| *Pools of Darkness:* Power Word Blind works out its blindness's time (1d4+1 rounds, ten times as long under 51 Hit Points) and then blinds for the spell's table time, 0, which never ends (`magic.pas`, `SpellPowerWordBlind`) | The time it works out |
 | *Pools of Darkness:* its saving-throw table gives a cleric and a thief at level 19 the row of levels 16 to 18 and 13 to 16, though the rows on either side follow the classes' steps of three and four levels (`saveTbl` in its reconstruction) | Level 20's row from 19 |
 | *Curse:* the wilderness script (ECL1 80) marks a camp with a cell Tilverton's sage and Kybor's library also set for themselves (0x4C13), so a party that paid the sage reaches the wilderness as if back from camp: it skips loading the roads from Tilverton, and the first journey goes where stale cells say | Arriving from another script, the party is not back from camp |
