@@ -31,7 +31,7 @@ The user decided these on 2026-11-12:
 | 4 | *Gateway to the Savage Frontier* | 1991 | `GATEWAY` | Every file decodes ([gateway.md](games/gateway.md)) |
 | 5 | *Pools of Darkness* | 1991 | `DARKNESS` | Every file decodes ([darkness.md](games/darkness.md)) |
 | 6 | *Treasures of the Savage Frontier* | 1992 | `TREASURE` | Every file decodes ([treasure.md](games/treasure.md)) |
-| 7 | *Forgotten Realms: Unlimited Adventures* | 1993 | `UA` | Every file decodes ([ua.md](games/ua.md)) |
+| 7 | *Forgotten Realms: Unlimited Adventures* | 1993 | `UA` | A design made with the kit plays: its walls, events and fights ([ua.md](games/ua.md)) |
 
 The developer's copies live in `/Users/edmond/GoldBox/<folder>`.
 
@@ -451,7 +451,24 @@ new decoders.
 
 ### 8. *Unlimited Adventures*
 
-1. Playing adventures made with the original construction kit.
+1. Playing adventures made with the original construction kit. *Started
+   2026-11-14* ([ua.md](games/ua.md), Playing a design): a design is read
+   from its folder over the kit's own files, and a session of its own
+   (`ua::UaSession`, beside `RolfTourSession`, since the kit's events are
+   not scripts) plays it through the view's interfaces: the same snapshot,
+   commands and answers, its fights as a `CampaignEncounter` for the
+   original rules' combat, and its 3D view drawn from its wall sets and
+   backdrops. A party made under the kit's rules (*Curse*'s tables, no
+   half-orcs, the kit's 40,001 experience and 200 platinum) starts at the
+   game record's area and entry point; text, treasure, damage, transfers,
+   menus, questions, quests, flags, experience, time, chains and fights with
+   the kit's monsters run. No design ships with the developer's copy, so
+   the tests build one from the kit's templates; `opengold_ua_walk` walks
+   every square of its areas and plays every event and fight. Still to
+   come: the other event kinds (shops, temples, training, NPCs, encounters
+   and the rest), overland maps, locked doors, the kit's battlefields and
+   icons, treasure items, the rest of its rules, saves, and the game view
+   and startup menu playing a design.
 2. An updated construction kit for making new ones.
 
 ### 9. The SRD rules for the new games

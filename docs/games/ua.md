@@ -154,6 +154,198 @@ event kind uses are empty items.
 
 Decoding is not playing. What the area bits, the event records and the form
 operations mean, and how the monster record differs from a party member's
-past its first 398 bytes, belong to phase 8. The ADPCM expansion follows the
+past its first 398 bytes, are told under Playing a design below. The ADPCM expansion follows the
 format as Creative documents it for its cards; it has not yet been compared
 with a recording of the original.
+
+## Playing a design
+
+Phase 8 step 1 ([GAMES.md](../GAMES.md)): OpenGoldBox plays an adventure made
+with the kit. Since 2026-11-14 a design loads, a party made under the kit's
+rules starts at its start, the 3D view draws its walls, and its events and
+fights run (`opengold_ua_session_tests`, `opengold_ua_walk`).
+
+### The seam
+
+A design is not a DAX campaign: its areas hold the kit's event records, not
+scripts, and nothing in it runs through the script machine. So it has a
+session of its own, `ua::UaSession` (`ua_session.h`), beside the DAX games'
+`RolfTourSession`, rather than the kit's events forced through the ECL
+machine. It speaks the view's language instead:
+
+- the same `TourSnapshot`: where the party stands, what an event says, its
+  choices and ticket, the phase (waiting for Return, a choice, a fight, done
+  or the party lost);
+- the same exploration commands (`explore`), answers (`continue_dialogue`,
+  `choose`, `input`), a fight as a `CampaignEncounter` (`pending_encounter`)
+  played by the original rules' combat and handed back with
+  `resolve_combat`, and the 3D view as an image (`observe_view`);
+- the same party: a `CampaignParty` under the original rules, whose
+  experience, money, Hit Points and clock the events change.
+
+The kit's own words (Yes, No, "The entire party is killed!") go in the
+snapshot's host dialogue and choices, which the view translates; the
+designer's texts are shown as they are. The game view (`rolf_tour_view`) is
+still bound to `RolfTourSession`; letting it drive either session is a later
+step.
+
+The code: `ua_design` (the files), `ua_view` (the 3D view), `ua_session`
+(start, movement, fights) and `ua_events` (the event loop and its kinds), in
+`src/OpenGold.Core`.
+
+### A design's files
+
+A design is a folder (`NAME.DSN`). The kit reads a numbered record from the
+design's loose file first (`GEO005.DAT` for area 5, `GAME001.DAT`,
+`MONST012.DAT`) and from its own library otherwise (`GEO.GLB`, whose index
+gives area 5 the dungeon template); a picture library likewise from the
+design's folder first. `ua::DesignFiles` reads both ways; an empty design
+folder makes the kit's templates the design.
+
+- **The game record** (`GAME`, 388 bytes): the title (32 bytes), a new
+  character's experience (+20h, a long; 40,001 in the kit), platinum, gems
+  and jewelry (+24h to +2Fh, longs; 200 platinum), the start area (+30h) and
+  its entry point (+31h, from 1), the starting equipment (+32h, 1 to 8), then
+  the key and item names and the password.
+- **Areas** are numbered 1 to 63. Areas 1 to 4 are the overland maps, 5 and
+  up dungeons in the 3D view (the number decides, not the header).
+- **The area header**: the version and size; at +4 to +6 the three wall
+  sets by slot (0 none); +7 flags (bit 0, the overhead map allowed); +8 to
+  +0Bh four backdrops; +0Ch and +0Dh the combat art sets; +0Eh eight entry
+  points (y, x, facing, a spare byte); +2Eh rest encounters; +4Eh step
+  events; +76h the name; +106h the wandering monster and +107h the area's
+  level; +110h the zone texts.
+- **A square**: four wall bytes (north, east, south, west), its event (1 to
+  100) and its bits (0 and 1 the backdrop, 2 to 4 the zone). A wall byte's
+  low four bits are its picture (0 none; 1 to 15 the set slot (v - 1) / 5
+  and the variant (v - 1) % 5 + 1); its high four bits what it does to a
+  step: 0 open, 1 open and secret, 2 locked, 3 locked and secret, 4 and 5 the
+  same against picking (wizard locks), 6 to 13 opened by keys 1 to 8 (quest
+  flags 0 to 7), 14 blocked, 15 a false door. Out of doors any wall stops the
+  party. Facings are 0, 2, 4 and 6 for north, east, south and west.
+- **Monsters** (`MONST`): a 450-byte record whose first 398 bytes are a
+  character's, then 16 items, 16 charges and 10 effects. The fight reads its
+  THAC0 (+7Fh, stored as 60 less it), Armor Class (+B3h, the same), Hit
+  Points (+81h), movement (+88h), two attacks (rates at +ABh, dice at +ADh,
+  sides at +AFh, bonuses at +B1h), saving throws (+83h), levels (+9Dh), Hit
+  Dice (+89h), morale (+93h), size (+82h), magic resistance (+C4h) and
+  experience value (+54h, a word). Their key in the original rules'
+  bestiary is `UA:MONST:n`.
+
+### The 3D view
+
+The view is the Gold Box games' 88 by 88 window, three squares deep, drawn
+far to near with the same ten pieces at the same places: far front, far
+sides, middle front and sides, near front, the party's own side walls, and a
+filler between two far front walls. The kit first draws the backdrop of the
+party's square (`BACK.TLB`; one numbered from 20h has a night picture after
+it), then each wall from its set: 8X8DB.TLB holds sets 1 to 9 and 8X8DC.TLB
+10 to 16, each 48 glyphs: its colors, the filler, two walls of nine pieces,
+and three overlays (doors) drawn over the first wall. The area wraps round
+at its edges for the view and for steps. `ua::render_view` draws it.
+
+### Events
+
+An area has 100 event records of 20 bytes; a square names one. Byte 0 is the
+kind (the event editor's forms, `SCRIPT.GLB`, name them), byte 1 the
+condition (bits 3 and up its kind, bit 0 once only, bits 1 and 2 whether the
+chain goes on after a failed or passed test), byte 2 the condition's value
+and byte 3 the event that follows. Texts are slots of the area's text pool,
+from 1; the first two carets name the selected member. The conditions: a
+quest flag set, clear, at 255 (done), at 80h (failed) or between; day or
+night; a chance in 100; searching or not; the party's facing; a class or
+race in the party.
+
+The event loop follows the kit's: an event that passes is marked done (one
+bit an event an area, kept for the whole game), runs, and its kind may
+choose the next event; otherwise byte 3's follows, unless the party moved. A
+step back puts the party on the square it came from. A menu or question may
+push its own event to come back after the branch, while the party stays.
+Moving onto a square, or Look, runs its event.
+
+The kinds played (2026-11-14): fights (1, and 33 with one group picked at
+random), text (2, up to five texts, each with Return or not), treasure (3 at
+once, 25 kept for the next fight), damage (4), the three transfers (5 within
+the area, 11 to another area or entry point, 34 the teleporter, asked or
+not), button and list menus (10 and 21), utilities (16: quest flags set,
+added, combined, or the adventure ended), sounds (17, silent for now), chain
+(23), experience (26), time passing (27), a quest's stage (35), Yes or No
+(36), tavern tales (37), special items (38, a quest flag) and an NPC's words
+(14, never heard yet since no NPC joins). Any other kind is reported as not
+played yet (`diagnostics`).
+
+A fight's event names up to six groups of a count and a monster. The fight
+is played by the original rules' combat with the kit's monsters; a won fight
+shares the monsters' experience among the members standing and hands over
+the treasure an event staged.
+
+### A party under the kit's rules
+
+The kit's creation (create.c and its tables) is *Curse*'s in its classes by
+race and its rolls (3d6 + 1, best of six); OpenGoldBox makes a party for a
+design with `original::character_rules(aging, GoldBoxGame::unlimited_adventures)`.
+Its differences from the Pool family ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md)):
+
+- No half-orcs: the races are elf, half-elf, dwarf, gnome, halfling and
+  human. *Done.*
+- A new character's experience and money come from the design's game record:
+  40,001 experience (shared among its classes, trained at once) and 200
+  platinum by default. *OpenGoldBox uses the kit's defaults; a design's own
+  values are still to come.*
+- Level caps by race: elves fighters 7 and magic-users 11; half-elves
+  clerics 5 and fighters, rangers and magic-users 8; dwarves fighters 9;
+  gnomes and halflings fighters 6; humans and thieves without limit. *Still
+  to come.*
+- THAC0: a magic-user's is 20 at levels 1 to 5 (*Curse*'s 21). Initiative is
+  1d6 and the Dexterity bonus, ties broken by a d2. A roll of 17 or more that
+  hits is a critical hit. Saving throws take the best of a character's
+  classes. *Still to come.*
+- Difficulty (five levels, Normal the third) changes the party's to-hit and
+  the monsters' Hit Points. Experience from a fight gives single classes 10%
+  more. *Still to come.*
+
+### The test design
+
+No design ships with the developer's copy of the kit (no `.DSN` folder;
+*Heirs to Skull Crag*, the kit's sample, is not in it), and nothing is
+downloaded. So `tests/ua_session_tests.cpp` builds one from the kit's own
+templates, as its design menu does: two areas from GEO.GLB's dungeon
+template and the game record from GAME.GLB, written into a temporary
+`opengold_ua_test.dsn`.
+
+- **Area 5, the hall** (the start, entry point 1 at (2,2) facing east): a
+  wall down the middle with a locked door and a door for the brass key, a
+  pillar of the second wall set and an open doorway; a welcome naming the
+  selected member chained to the brass key (a special item), a chest asked
+  about (Yes or No) holding platinum and gems, three kobolds once only, a
+  fountain's menu (experience), a dart trap, the mayor's quest and a flag it
+  sets, his thanks on that flag, a teleporter, a chain to an hour passing,
+  stairs down asked about, and goblins or orcs picked at random.
+- **Area 6, the cellar**: words on arrival, a statue's list (damage to all,
+  experience to the selected member, or nothing), and stairs back to the
+  hall's second entry point.
+
+`opengold_ua_session_tests` plays it beat by beat. `opengold_ua_walk`
+(`opengold_ua_session_tests --ua-walk`) walks every square of every area of
+it with six fighters made under the kit's rules: on each it draws the view
+facing each way, plays the square's event and takes every open step,
+playing each event and fight; it fails on any event the session cannot play.
+
+### What remains
+
+- Every other event kind: training halls, taverns, shops, temples, inns,
+  vaults, small towns, guided tours, NPCs joining and leaving, encounters
+  (the approach menu), who tries, who pays, passwords, camping.
+- Overland areas: their map and big picture (steps already move the party
+  there); zone texts, step events and rest encounters.
+- Locked doors: bashing, picking and Knock.
+- Fights: the kit's battlefields (DUNGCOM, WILDCOM; an open field stands in),
+  its combat icons (CPIC), monsters' items and effects, allies, the area's
+  wandering monster, the starting quarter, "no magic"; a monster's size on
+  the field.
+- Treasure items (ITEM.DAT) and the treasure menu; a save that halves damage
+  spares it for now.
+- A design's own starting experience, money and equipment; the kit's rules'
+  remaining differences (above).
+- Saving a game; the game view driving a `UaSession`, and a design chosen
+  from the startup menu.

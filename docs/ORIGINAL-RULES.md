@@ -297,6 +297,24 @@ reconstruction), with these differences (2026-11-14):
   reach), its temple's poison rules, and a half-elf ranger's starting age.
   Training takes one class a visit, as in *Curse*.
 
+## Unlimited Adventures
+
+*Unlimited Adventures* is SSI's C rewrite, not the Pascal engine, but its
+creation tables are *Curse*'s: the same classes by race (humans may be
+paladins and rangers, half-elves cleric/rangers; no druids), each score the
+best of six rolls of 3d6 + 1 (2026-11-14). Its differences, from its
+reconstruction ([ua.md](games/ua.md), A party under the kit's rules, has the
+whole list):
+
+- **No half-orcs.**
+- **The design starts the party:** its game record gives a new character's
+  experience (the kit's default 40,001, shared among its classes and trained
+  at once) and money (200 platinum, and gems and jewelry); OpenGoldBox uses
+  the kit's defaults for now.
+- **Still to come:** its own level caps by race, THAC0 and saving throw
+  tables, initiative ties, its critical hits on a natural 17 or more, its
+  difficulty levels and its experience bonus for single classes.
+
 ## What the original rules cover
 
 These are the parts of the reconstructed source that hold rules, about 8,000
