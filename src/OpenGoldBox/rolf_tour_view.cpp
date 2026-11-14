@@ -1609,7 +1609,11 @@ void RolfTourView::read_or_copy_scroll(const std::string &id, opengold::MemberId
     if (id.starts_with("copy:"))
     {
         campaign_->copy_scroll_spell(caster, *scroll_item_, static_cast<unsigned>(id[5] - '0'));
-        result = i18n::format(N_("{name} copies the spell into the spellbook."), {{"name", name}});
+        result =
+            campaign_->rule_module().plays_original_records()
+                ? i18n::format(N_("{name} will scribe the spell at the next rest."),
+                               {{"name", name}})
+                : i18n::format(N_("{name} copies the spell into the spellbook."), {{"name", name}});
     }
     else
     {
@@ -1723,17 +1727,14 @@ void RolfTourView::refresh_cast()
         }
         // Copying takes a bottle of Magic Ink of the spell's level or higher
         // and two hours a spell level; the original's scribing takes no ink
-        // and a rest's preparation time.
+        // and is done at the next day's rest.
         const bool original = campaign_->rule_module().plays_original_records();
         for (const auto &copy : campaign_->copyable_spells(caster, *scroll_item_))
         {
             if (original)
             {
-                const auto minutes = campaign_->rule_module().copying_time(copy.level).count();
-                add(i18n::format(N_("Scribe {spell} into the spellbook ({hours} h {minutes} min)"),
-                                 {{"spell", i18n::text(copy.name)},
-                                  {"hours", static_cast<int>(minutes / 60)},
-                                  {"minutes", static_cast<int>(minutes % 60)}}),
+                add(i18n::format(N_("Scribe {spell} into the spellbook at the next rest"),
+                                 {{"spell", i18n::text(copy.name)}}),
                     "copy:" + std::to_string(copy.entry), true);
                 continue;
             }

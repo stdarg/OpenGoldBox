@@ -27,6 +27,11 @@ The user decided these on 2026-11-11 and 2026-11-12:
   obvious one is fixed without asking first, listed in [Bugs](#bugs-in-the-original) and told
   to the user; one that may not be a bug, or has more than one fair fix, is
   put to the user first.
+- **2026-11-14 answers, later:** scribing is the original's: a spell is
+  marked and scribed at the next rest, the rest's four or six base hours
+  shared by all its spells, and a quarter hour a spell level. Haste cast at
+  caster level 16 to 31 ages its targets as any Haste does (Bugs). *Secret*'s
+  +1 to hit with swords and bows is for elves only (Bugs).
 - **2026-11-14 answers:** *Secret*'s Barkskin casts as Heal, as its table
   has it (kept as the original); a *Secret* paladin casts at its full paladin
   level (the original's fixed level 6 is a bug); *Pools of Darkness*'s
@@ -512,11 +517,6 @@ The work asked for next (2026-11-14), in order, with what each needs:
      Normal (Decisions); ask the user before designing anything new.
    - Under AD&D aging, a year added for each year the game's clock passes
      (An age that changes after creation, step 3).
-2. Questions for the user: whether scribing at once, each spell with its
-   own four hours, is kept (DEVIATIONS.md, Scribing at once); and whether
-   Haste cast at caster level 16 to 31 never aging its targets (its
-   strength's level sets the bit that marks a creature aged, `EffHasted`) is
-   a bug to fix. It is kept as the original has it for now.
 
 ## What the original rules cover
 
@@ -660,10 +660,14 @@ lines in all:
      read (known, or by Read Magic, or a cleric's scroll for a cleric) into
      its book, when the spell is not in the book and the member has slots of
      its class and level (a *Curse* ranger its magic-user spells so). It
-     takes no ink, and a rest's preparation time (`CampSpellPrepTime`): four
-     hours, six for a spell above the second level, and a quarter hour a
-     spell level. The spell leaves the scroll, which is gone with its last;
-     the book keeps it through saves and drained levels. Read Magic is cast
+     takes no ink: the spell is marked on the scroll (its spell byte's
+     pending flag, which a save keeps), not again while marked, and scribed
+     as the member's next day's rest ends (`CheckScribeDone`), the rest lasting
+     at least the party's longest preparation (`RestForSpellPrep`,
+     `CampSpellPrepTime`): four hours, six with a spell above the second
+     level, shared by all its spells, and a quarter hour a spell level. An
+     hour's rest scribes nothing. The spell leaves the scroll, which is gone
+     with its last; the book keeps it through saves and drained levels. Read Magic is cast
      in camp on its caster and lasts into the next fight. A spell read from a
      scroll in a fight leaves the scroll's others on it. The inventory's Use
      offers the scroll's spells to scribe.
@@ -1205,11 +1209,12 @@ tuned with the AI lab once the original rules play.
 | *Secret:* the spells a magic-user learns while trained at creation include, at level 6, Cure Light Wounds, a cleric's spell (`chargen.pas`, TrainingMenu) | Left out |
 | *Gateway:* Neutralize Poison at the temple stands up any member at 0 Hit Points or dead, poisoned or not, once the player pays for it anyway (`temple.pas`, `NeutralizePoison`) | Only one that is poisoned |
 | Scribing marks the first byte equal to the spell's number on any item the character carries, readable or not: when a wand or potion comes first, its byte (charges or power) is changed and the scroll's spell is never scribed (`camp.pas`, `CampScribeMenu`) | Only a spell on a scroll the character can read |
+| Haste marks the creature it has aged with bit 0x10 of its strength, which is the caster's level, so a caster of level 16 to 31 sets it already and its Haste never ages anyone (`effhndlr.pas`, `EffHasted`) | It ages them as any Haste does (the user, 2026-11-14) |
 | Enlarge cast above level 6 in *Pool of Radiance*, or above 11 in *Curse*, gives whatever Strength the last Enlarge left, as no table row sets it (`magic.pas`, `SpellEnlarge`) | The most the table gives |
 | *Pool of Radiance:* Strength cast on a creature of no class it names, and in *Curse* on a paladin or ranger, adds a die never rolled (`magic.pas`, `SpellStrength`) | A d4, and a warrior's d8 |
 | *Curse:* Entangle's hold lasts as long as the spell table's row past its end says, an unset value (`magic.pas`, `SpellEntangle`, its duration taken for spell 136) | Entangle's own 10 rounds |
 | *Secret:* the Delayed Blast Fireball asks for its delay at the keyboard whoever casts it, the computer's creatures too (`magic.pas`, `SpellDelayedBlastFireball`) | The computer bursts it at once |
-| *Secret:* its +1 to hit with long and short swords and bows goes to every race (`charhlp.pas`, `WeaponAdjust`), where the earlier games give it to elves | Elves only |
+| *Secret:* its +1 to hit with long and short swords and bows goes to every race (`charhlp.pas`, `WeaponAdjust`), where the earlier games give it to elves | Elves only (the user, 2026-11-14) |
 | *Curse*, *Gateway* and *Treasures:* training picks the class whose next level needs the most experience, but reads every class at the level of the last one it looked at (TrainingMenu) | Each class at its own level |
 | *Curse:* Hold Monster holds only what Hold Person can, as the spell its resolver exempts from the creature-type rule is Dimension Door (0x53) and not Hold Monster (0x5E) (`ovr023`, `MultiTargetedSpell`) | Any creature |
 | *Curse:* Ice Storm and Cone of Cold deal acid damage, so resisting cold does not lessen them (`ovr023`, `SpellIceStorm`, `SpellConeOfCold`) | Cold |

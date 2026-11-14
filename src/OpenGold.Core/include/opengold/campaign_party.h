@@ -534,8 +534,10 @@ class CampaignParty
     // Copies a spell from a scroll the member carries into its spellbook
     // (MAGIC-6): it takes a bottle of Magic Ink of the spell's level or higher
     // the member carries and two hours for each spell level, and the spell
-    // leaves the scroll. Under the original rules it takes no ink and a
-    // rest's preparation time (camp.pas, CampScribeMenu).
+    // leaves the scroll. Under the original rules it takes no ink: the spell
+    // is marked, and scribed as the member's next day's rest ends, which lasts
+    // at least the party's longest preparation (camp.pas, CampScribeMenu,
+    // CampSpellPrepTime; gametime.pas, CheckScribeDone).
     void copy_scroll_spell(MemberId id, std::uint64_t item, unsigned entry);
     // The spells the member can write on a scroll now (MAGIC-6), with a
     // bottle of Magic Ink it carries.
@@ -692,6 +694,12 @@ class CampaignParty
     void outside_combat() const;
     void require_rest_ticket(RestTicket ticket) const;
     void short_rest_benefits(PartyState &state, const std::vector<MemberId> &members) const;
+    // The spells marked on a member's scrolls to be scribed at its next rest
+    // (the original rules' scribing), by the scroll's inventory ID; and those
+    // scribed into its book as a rest ends, leaving their scrolls.
+    [[nodiscard]] std::vector<std::pair<std::uint64_t, rules::ScrollCopy>>
+    pending_scribing(const PartyMember &member) const;
+    void scribe_pending(PartyMember &member) const;
     void long_rest_benefits(PartyState &state, const std::vector<MemberId> &members,
                             RestTicket ticket, RestResult &result) const;
     PartyMember &edit(MemberId id);

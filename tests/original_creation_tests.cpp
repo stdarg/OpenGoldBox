@@ -498,11 +498,13 @@ por::Equipment magic_user_scroll(const std::vector<por::ItemTemplate> &types,
 }
 
 // Scribing (camp.pas, CampScribeMenu; gametime.pas, CheckScribeDone): a
-// magic-user copies a spell it can read on a scroll, of a level it has slots
-// for and not in its book, taking no ink and a rest's preparation time
-// (CampSpellPrepTime: four hours and a quarter hour a spell level); the spell
-// leaves the scroll, which is gone with its last. Read Magic cast in camp
-// reads an unknown scroll. A fight's reading leaves the scroll's other spells.
+// magic-user marks a spell it can read on a scroll, of a level it has slots
+// for and not in its book, taking no ink, and scribes it at its next day's
+// rest, which lasts the longest preparation (CampSpellPrepTime: four hours,
+// six with a spell above the second level, shared, and a quarter hour a spell
+// level); the spell leaves the scroll, which is gone with its last. A spell
+// marked is not marked twice. Read Magic cast in camp reads an unknown
+// scroll. A fight's reading leaves the scroll's other spells.
 void a_magic_user_scribes_a_scroll()
 {
     std::vector<por::ItemTemplate> types(256);
@@ -522,40 +524,61 @@ void a_magic_user_scribes_a_scroll()
 
     const auto minutes = party.state().time_minutes;
     party.copy_scroll_spell(mage, known_scroll, 0);
-    const auto &book = party.member(mage).character.sheet().original->known_spells;
-    check(std::ranges::find(book, magic_missile) != book.end(), "Magic Missile is in the book");
-    check(party.state().time_minutes == minutes + 4 * 60 + 15,
-          "A first-level spell takes four hours and a quarter");
-    const auto &left = party.member(mage).character.inventory().find(known_scroll)->get();
-    const auto record = por::item_of_original_key(left.definition_id);
-    check(record && record->effect_codes == std::array<std::uint8_t, 3>{0, sleep, fireball} &&
-              party.copyable_spells(mage, known_scroll).empty(),
-          "The scribed spell leaves the scroll, which keeps the others");
-    check(throws(
-              [&]
-              {
-                  party.copy_scroll_spell(mage, known_scroll, 1);
-              }),
-          "A known spell is not scribed");
-
+    const auto knows = [&](int number)
+    {
+        const auto &book = party.member(mage).character.sheet().original->known_spells;
+        return std::ranges::find(book, number) != book.end();
+    };
+    const auto spells_on = [&](std::uint64_t item)
+    {
+        return por::item_of_original_key(
+                   party.member(mage).character.inventory().find(item)->get().definition_id)
+            ->effect_codes;
+    };
+    constexpr std::uint8_t marked = 0x80;
+    check(!knows(magic_missile) && party.state().time_minutes == minutes &&
+              spells_on(known_scroll) ==
+                  std::array<std::uint8_t, 3>{magic_missile | marked, sleep, fireball},
+          "Magic Missile is marked to be scribed at the next rest");
+    const auto second = carried(party, mage, magic_user_scroll(types, {magic_missile, 0, 0}, true));
+    check(party.copyable_spells(mage, known_scroll).empty() &&
+              party.copyable_spells(mage, second).empty(),
+          "A spell marked is not marked again");
     const auto saved = encode_campaign(party, nullptr, "scribe-check");
     const auto module = original::rules_module(content);
     const auto loaded = decode_campaign(saved, *creation, *module, "scribe-check", nullptr);
-    const auto &loaded_book = loaded.party.roster.front().character.sheet().original->known_spells;
-    check(std::ranges::find(loaded_book, magic_missile) != loaded_book.end(),
-          "A save keeps the scribed spell");
+    const auto key_of = [](const PartyMember &member, std::uint64_t item)
+    {
+        return member.character.inventory().find(item)->get().definition_id;
+    };
+    check(key_of(loaded.party.roster.front(), known_scroll) ==
+              key_of(party.member(mage), known_scroll),
+          "A save keeps the mark");
+
+    const auto rested = party.rest(RestKind::long_rest);
+    check(rested && rested->duration_minutes == 24 * 60, "The day's rest outlasts its preparation");
+    check(knows(magic_missile) &&
+              spells_on(known_scroll) == std::array<std::uint8_t, 3>{0, sleep, fireball} &&
+              party.copyable_spells(mage, second).empty(),
+          "The rest scribes Magic Missile, which leaves the scroll");
+    const std::array<unsigned, 2> first_levels{1, 1}, higher{1, 3};
+    check(module->preparation_time(first_levels) == std::chrono::minutes{4 * 60 + 30} &&
+              module->preparation_time(higher) == std::chrono::minutes{6 * 60 + 60} &&
+              module->preparation_time({}) == std::chrono::minutes{0},
+          "Preparation shares four hours, six above the second level, and a quarter hour a level");
 
     // An unknown scroll is read once Read Magic is cast in camp.
+    party.choose_spells(mage, {{}, std::vector<std::string>{"magic_user:read_magic"}});
     const auto hidden = carried(party, mage, magic_user_scroll(types, {12, 0, 0}, false));
     check(party.copyable_spells(mage, hidden).empty(), "An unknown scroll cannot be scribed");
-    check(party.rest(), "The party rests a day");
-    party.choose_spells(mage, {{}, std::vector<std::string>{"magic_user:read_magic"}});
     party.use_camp_action(mage, mage, "cast:magic_user:read_magic");
     const auto read = party.copyable_spells(mage, hidden);
     check(read.size() == 1 && read.front().spell == "magic_user:enlarge",
           "Read Magic reads the scroll's Enlarge");
     party.copy_scroll_spell(mage, hidden, 0);
-    check(!party.member(mage).character.inventory().find(hidden),
+    check(party.rest(), "The party rests again");
+    party.choose_spells(mage, {{}, std::vector<std::string>{"magic_user:sleep"}});
+    check(!party.member(mage).character.inventory().find(hidden) && knows(12),
           "A scroll whose last spell is scribed is gone");
 
     // A fight reads Sleep from the scroll; Fireball stays on it.
@@ -1802,7 +1825,9 @@ void ages_change_after_creation()
     encounter.participants = party.participants();
     auto hasted = party.member(id).vitals;
     constexpr int haste = 39;
-    const std::array camp_haste{original::Effect{haste, 30, 5, false}};
+    // Cast at level 20, whose strength the original took for the bit that
+    // marks one aged (Bugs).
+    const std::array camp_haste{original::Effect{haste, 30, 20, false}};
     hasted.resources = original::rested_state(camp_haste);
     encounter.participants.front().state = hasted;
     rules::Participant foe;

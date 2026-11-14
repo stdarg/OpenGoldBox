@@ -82,8 +82,10 @@ constexpr int bite_hold = 74, blood_drain = 75, rot = 50, poisoned = 55, mummy_r
               delayed_blast = 500, animated = 32, snake_charm = 51, slow_poison_tick = 15,
               slow_poison = 22, revival = 78, read_magic = 16, dust = 71,
               age_in_years = original::age_in_years;
-// Haste keeps whether it has aged its creature in this bit of its strength.
-constexpr int hasted_aged = 0x10;
+// Haste keeps whether it has aged its creature in this bit of its strength,
+// which no caster's level reaches. The original's bit 0x10 is set already by
+// a caster of level 16 to 31, whose Haste so never aged (Bugs).
+constexpr int hasted_aged = 0x40;
 // Displacement keeps whether it has turned an attack aside in this bit of its strength.
 constexpr int displaced = 0x10;
 // A ring of invisibility's renewal (Pool of Radiance's 56, Secret's too), a

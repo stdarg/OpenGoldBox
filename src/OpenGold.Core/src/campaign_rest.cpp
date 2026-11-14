@@ -123,7 +123,19 @@ std::optional<RestResult> CampaignParty::rest(RestKind kind)
     {
         return std::nullopt;
     }
-    const auto minutes = policy(*rules_, kind).duration_minutes;
+    auto minutes = policy(*rules_, kind).duration_minutes;
+    // A day's rest lasts as long as the longest of its members' scribing
+    // preparations (camp.pas, RestForSpellPrep, CampSpellPrepTime).
+    for (const auto id : members)
+    {
+        std::vector<unsigned> levels;
+        for (const auto &[item, marked] : pending_scribing(member(id)))
+        {
+            levels.push_back(marked.level);
+        }
+        const auto preparation = static_cast<unsigned>(rules_->preparation_time(levels).count());
+        minutes = kind == RestKind::long_rest ? std::max(minutes, preparation) : minutes;
+    }
     auto next = state_;
     // Eligibility was captured before the rest's time passed, so a member who
     // recovers from zero HP meanwhile gains no rest benefits.
@@ -182,6 +194,7 @@ void CampaignParty::long_rest_benefits(PartyState &state, const std::vector<Memb
             continue;
         }
         rules_->recover(member.vitals, member.character.sheet());
+        scribe_pending(member);
         recharge_wands(member, state.random_state);
         const auto choices = rules_->spell_choice_options(member.character.sheet(),
                                                           rules::SpellChoiceContext::long_rest);

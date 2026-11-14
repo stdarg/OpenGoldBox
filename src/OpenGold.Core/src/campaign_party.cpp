@@ -110,6 +110,19 @@ void keep_original_scroll_spells(PartyMember &member, std::uint64_t id, unsigned
     member.character.replace_inventory(std::move(inventory));
 }
 
+// Marks a spell on an original scroll to be scribed at the next rest
+// (camp.pas, CampScribeMenu's pending flag on its record's spell byte).
+void mark_original_scroll_spell(PartyMember &member, std::uint64_t id, unsigned entry)
+{
+    constexpr std::uint8_t pending = 0x80;
+    auto &raw = member.item_sources.at(id).stored;
+    raw.effect_codes[entry] |= pending;
+    raw.raw[60 + entry] = raw.effect_codes[entry];
+    auto inventory = member.character.inventory();
+    inventory.redefine(id, por::original_item_key(raw));
+    member.character.replace_inventory(std::move(inventory));
+}
+
 // Spends the member's lowest bottle of Magic Ink that writes a spell of
 // `level` (MAGIC-6).
 void spend_magic_ink(PartyMember &member, unsigned level)
@@ -3494,7 +3507,19 @@ std::vector<CampaignParty::ScrollCopy> CampaignParty::copyable_spells(MemberId i
     const auto key = carried ? rules_definition(wizard, carried->get()) : std::string{};
     if (rules_->plays_original_records())
     {
-        return rules_->scroll_copies(wizard.character.sheet(), wizard.vitals, key);
+        // A spell marked on any scroll is being scribed already.
+        const auto pending = pending_scribing(wizard);
+        copies = rules_->scroll_copies(wizard.character.sheet(), wizard.vitals, key);
+        std::erase_if(copies,
+                      [&pending](const ScrollCopy &copy)
+                      {
+                          return std::ranges::any_of(pending,
+                                                     [&copy](const auto &marked)
+                                                     {
+                                                         return marked.second.spell == copy.spell;
+                                                     });
+                      });
+        return copies;
     }
     const auto scroll = rules::parse_scroll_key(key);
     if (!scroll || scroll->unidentified || !scroll->arcane || wizard.vitals.dead)
@@ -3538,27 +3563,54 @@ void CampaignParty::copy_scroll_spell(MemberId id, std::uint64_t item, unsigned 
     }
     auto next = state_;
     auto &wizard = member_in(next, id);
-    // The original's scribing takes no ink (camp.pas, CampScribeMenu).
-    const bool original = rules_->plays_original_records();
-    if (!original)
+    // The original's scribing takes no ink: the spell is marked, to be
+    // scribed at the next rest (camp.pas, CampScribeMenu).
+    if (rules_->plays_original_records())
     {
-        spend_magic_ink(wizard, copy->level);
+        mark_original_scroll_spell(wizard, item, entry);
+        state_ = std::move(next);
+        return;
     }
+    spend_magic_ink(wizard, copy->level);
     // Recorded with the hall training, so a save rebuilds the spellbook.
     wizard.character.train_at_hall(*rules_, "boon:scroll:" + copy->spell);
-    if (original)
-    {
-        keep_original_scroll_spells(wizard, item, ~(1U << entry));
-    }
-    else
-    {
-        const auto spells =
-            rules::parse_scroll_key(wizard.character.inventory().find(item)->get().definition_id)
-                ->spells.size();
-        keep_scroll_spells(wizard, item, ((1U << spells) - 1) & ~(1U << entry));
-    }
+    const auto spells =
+        rules::parse_scroll_key(wizard.character.inventory().find(item)->get().definition_id)
+            ->spells.size();
+    keep_scroll_spells(wizard, item, ((1U << spells) - 1) & ~(1U << entry));
     elapse(next, rules_->copying_time(copy->level));
     state_ = std::move(next);
+}
+
+std::vector<std::pair<std::uint64_t, rules::ScrollCopy>>
+CampaignParty::pending_scribing(const PartyMember &member) const
+{
+    std::vector<std::pair<std::uint64_t, rules::ScrollCopy>> pending;
+    for (const auto &carried : member.character.inventory().items())
+    {
+        for (auto &marked :
+             rules_->pending_scribing(member.character.sheet(), rules_definition(member, carried)))
+        {
+            pending.emplace_back(carried.id, std::move(marked));
+        }
+    }
+    return pending;
+}
+
+// The marked spells the member has slots for go into its book, recorded with
+// the hall training so a save rebuilds it, and leave their scrolls
+// (gametime.pas, CheckScribeDone); one it lost the slots for stays marked.
+void CampaignParty::scribe_pending(PartyMember &member) const
+{
+    for (const auto &[item, marked] : pending_scribing(member))
+    {
+        if (!rules_->copyable_spell_level(member.character.sheet(), marked.spell))
+        {
+            continue;
+        }
+        member.character.train_at_hall(*rules_, "boon:scroll:" + marked.spell);
+        keep_original_scroll_spells(member, item, ~(1U << marked.entry));
+    }
 }
 
 std::vector<rules::ScrollWriting> CampaignParty::writable_spells(MemberId id) const

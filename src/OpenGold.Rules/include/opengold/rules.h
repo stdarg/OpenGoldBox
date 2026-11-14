@@ -1460,6 +1460,23 @@ class RulesModule
     {
         return std::chrono::hours{2 * level};
     }
+
+    // The spells marked on an original scroll to be scribed at its carrier's
+    // next rest (the original rules' scribing), each by the record's spell
+    // byte; none for rules that copy at once.
+    [[nodiscard]] virtual std::vector<ScrollCopy>
+    pending_scribing(const CharacterSheet &, std::string_view /*scroll*/) const
+    {
+        return {};
+    }
+
+    // The least time a rest that scribes spells of these levels takes (the
+    // original rules' preparation time); none for no spells.
+    [[nodiscard]] virtual std::chrono::minutes
+    preparation_time(std::span<const unsigned> /*levels*/) const
+    {
+        return {};
+    }
     // The spells the member can write on a scroll (MAGIC-6): those on its
     // class's list it can cast, with a slot of the spell's level or a Mystic
     // Arcanum. No cantrip; writing spends no slot.
