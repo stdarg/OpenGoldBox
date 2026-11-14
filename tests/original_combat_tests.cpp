@@ -2359,6 +2359,106 @@ void a_cloud_sickens()
           "The cloud clears after 2 rounds");
 }
 
+// Curse's Cloudkill (SpellCloudkill, ConsiderTerrainEffects): a cloud on the
+// aim and the squares around it whose poison kills any of level 4 or less
+// at once, one of level 5 or 6 that fails to save, never one above; it
+// clears after the caster's level in rounds, and a checkpoint keeps it.
+void cloudkill_poisons()
+{
+    using original::ClassSlot;
+    auto strong = victim(50);
+    strong.level = 7;
+    auto fight =
+        arrange({{"Mage", rules::Side::party, {1, 3}, caster(ClassSlot::magic_user, 9, {191})},
+                 {"Kobold", rules::Side::opposition, {2, 3}, victim(20)},
+                 {"Orc", rules::Side::opposition, {3, 4}, victim(20)},
+                 {"Ogre", rules::Side::opposition, {3, 3}, strong},
+                 {"Outside", rules::Side::opposition, {5, 3}, victim(20)}},
+                317, {}, 100, GoldBoxGame::curse_of_the_azure_bonds);
+    auto &session = *fight.session;
+    cast_now(session, "Mage", 191,
+             [&]
+             {
+                 return aim_at_cell(session, {3, 3});
+             });
+    const auto state = session.snapshot();
+    check(view_of(state, "Kobold").dead && view_of(state, "Orc").dead &&
+              !view_of(state, "Ogre").dead && !view_of(state, "Outside").dead,
+          "Cloudkill kills the weak within it, not the strong nor those outside");
+    const auto saved = session.save();
+    check(fight.module->restore(saved)->save() == saved, "A checkpoint keeps the cloud");
+    play_until(
+        session,
+        [&](const std::string &)
+        {
+            return order(session, "end");
+        },
+        [&]
+        {
+            return logged(session, "The air clears a little.") > 0 || session.snapshot().round > 12;
+        });
+    check(logged(session, "The air clears a little.") == 1, "The cloud clears");
+}
+
+// Fire Shield's caster chooses its flames as it goes off: hot doubles fire,
+// cold doubles cold (Curse's SpellFireShield).
+void fire_shield_flames_are_chosen()
+{
+    using original::ClassSlot;
+    // The choices' items, as the session offers them.
+    enum class Flames : unsigned
+    {
+        hot = 1,
+        cold = 2
+    };
+    const auto shield_of = [](Flames flames)
+    {
+        auto fight =
+            arrange({{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 9, {185})},
+                     {"Kobold", rules::Side::opposition, {7, 7}, victim(20)}},
+                    319, {}, 100, GoldBoxGame::curse_of_the_azure_bonds);
+        auto &session = *fight.session;
+        cast_now(session, "Mage", 185,
+                 [&]
+                 {
+                     const auto legal = session.legal_commands();
+                     const auto chosen = std::find_if(
+                         legal.begin(), legal.end(),
+                         [flames](const rules::Command &c)
+                         {
+                             return c.verb == "flames" && c.item == static_cast<unsigned>(flames);
+                         });
+                     return chosen == legal.end() ? std::nullopt
+                                                  : std::optional<rules::Command>{*chosen};
+                 });
+        const auto mage = left_by_fight(session, "Mage");
+        return std::ranges::any_of(mage.effects,
+                                   [](const original::Effect &e)
+                                   {
+                                       return e.code == 250;
+                                   })
+                   ? Flames::hot
+                   : Flames::cold;
+    };
+    check(shield_of(Flames::hot) == Flames::hot && shield_of(Flames::cold) == Flames::cold,
+          "The caster's choice of flames is the shield it gets");
+
+    auto cursed = creature(30);
+    cursed.effects = {{36, 0, 1, false}};
+    auto lift =
+        arrange({{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 9, {189})},
+                 {"Cursed", rules::Side::party, {1, 3}, cursed},
+                 {"Kobold", rules::Side::opposition, {7, 7}, victim(20)}},
+                321, {}, 100, GoldBoxGame::curse_of_the_azure_bonds);
+    cast_now(*lift.session, "Mage", 189,
+             [&]
+             {
+                 return aim_at(*lift.session, "Cursed");
+             });
+    check(logged(*lift.session, "{name} is un-cursed.") == 1,
+          "A magic-user's Remove Curse lifts a curse in a fight");
+}
+
 // Dispel Magic: an effect of level 0 goes for a level-10 caster; one of
 // strength 255 (a race's own) never does (magic.pas, the dispel).
 void dispel_magic_strips()
@@ -3822,6 +3922,8 @@ int main()
         curse_monsters_breathe();
         curse_conditions_take_hold();
         a_cloud_sickens();
+        cloudkill_poisons();
+        fire_shield_flames_are_chosen();
         dispel_magic_strips();
         the_dead_rise();
         slow_poison_raises();

@@ -32,7 +32,7 @@ using rules::Side;
 
 // The original counts movement in half-moves: 2 a straight step, 3 a diagonal one.
 constexpr rules::StepCosts half_moves{2, 3, 2, 4, 0};
-constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 17";
+constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 18";
 
 enum class Condition : unsigned
 {
@@ -77,9 +77,9 @@ constexpr int bite_hold = 74, blood_drain = 75, rot = 50, poisoned = 55, mummy_r
               shield = 17, resist_fire = 20, sleep = 53, silence = 21, mirror_image = 28,
               enfeebled = 29, blind = 33, bestow_curse = 36, hasted = 39, missile_protection = 41,
               slowed = 42, protection_from_evil_aura = 45, protection_from_good_aura = 46,
-              prayer = 49, coughing = 30, nausea = 31, stinking_cloud = 40, animated = 32,
-              snake_charm = 51, slow_poison_tick = 15, slow_poison = 22, revival = 78,
-              read_magic = 16, dust = 71;
+              prayer = 49, coughing = 30, nausea = 31, stinking_cloud = 40, cloudkill = 291,
+              animated = 32, snake_charm = 51, slow_poison_tick = 15, slow_poison = 22,
+              revival = 78, read_magic = 16, dust = 71;
 // Displacement keeps whether it has turned an attack aside in this bit of its strength.
 constexpr int displaced = 0x10;
 // A ring of invisibility's renewal (Pool of Radiance's 56, Secret's too), a
@@ -562,6 +562,16 @@ int doubled_distance(Cell a, Cell b)
     return 2 * std::max(dx, dy) + std::min(dx, dy);
 }
 
+// Curse's Fire Shield, whose caster chooses its flames as it goes off, and
+// the choice: the AI's (and Quick's) at random (SpellFireShield).
+constexpr int fire_shield = 185;
+enum class Flames : unsigned
+{
+    random,
+    hot,
+    cold
+};
+
 // The spells built so far; the rest are not offered yet.
 bool spell_built(int number)
 {
@@ -570,8 +580,8 @@ bool spell_built(int number)
                                37, 38, 40, 42, 34, 43, 44, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55,
                                // Curse's (spells.cpp, curse_spells).
                                158, 166, 168, 169, 170, 171, 172, 173, 174, 176, 177, 179, 180, 181,
-                               182, 183, 184, 185, 186, 187, 188, 192, 193, 194, 195, 196, 197, 198,
-                               199, 200,
+                               182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195,
+                               196, 197, 198, 199, 200,
                                // Secret's (spells.cpp, secret_spells).
                                236, 256, 290, 296, 298, 310, 311, 312, 313, 314, 315, 316, 317};
     return std::find(built.begin(), built.end(), number) != built.end();
@@ -620,20 +630,44 @@ struct LineWalk
     }
 };
 
-// A stinking cloud on the field: the caster's, its number among the caster's
-// clouds, and the squares it covers, the corner and those east, south-east and
-// south of it where the ground can be walked (magic.pas, SpellStinkingCloud).
+// A cloud on the field: the caster's, its number among the caster's clouds of
+// its kind, and the squares it covers where the ground can be walked. A
+// stinking cloud covers its corner and the squares east, south-east and south
+// of it (magic.pas, SpellStinkingCloud); Curse's Cloudkill the square aimed
+// at, kept as its corner, and the eight around (SpellCloudkill).
+enum class CloudKind
+{
+    stinking,
+    deadly
+};
+
 struct Cloud
 {
     EntityId caster{};
     int index{};
     Cell corner;
-    std::array<bool, 4> covers{};
+    std::array<bool, 9> covers{};
+    CloudKind kind{CloudKind::stinking};
 
-    [[nodiscard]] std::array<Cell, 4> squares() const
+    [[nodiscard]] std::vector<Cell> squares() const
     {
-        return {corner, Cell{corner.x + 1, corner.y}, Cell{corner.x + 1, corner.y + 1},
-                Cell{corner.x, corner.y + 1}};
+        if (kind == CloudKind::stinking)
+        {
+            return {corner, Cell{corner.x + 1, corner.y}, Cell{corner.x + 1, corner.y + 1},
+                    Cell{corner.x, corner.y + 1}};
+        }
+        std::vector<Cell> around{corner};
+        for (int dy = -1; dy <= 1; ++dy)
+        {
+            for (int dx = -1; dx <= 1; ++dx)
+            {
+                if (dx != 0 || dy != 0)
+                {
+                    around.push_back({corner.x + dx, corner.y + dy});
+                }
+            }
+        }
+        return around;
     }
 };
 
@@ -743,7 +777,8 @@ class Session final : public rules::CombatSession
     void turn_undead(Fighter &cleric);
     void begin_cast(Fighter &caster, int spell_number);
     void start_aiming(Fighter &caster, int spell_number);
-    void resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell aim);
+    void resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell aim,
+                       Flames flames = Flames::random);
     void lose_spell(Fighter &caster);
     void spend_item(Fighter &user, int ordinal, int number);
     [[nodiscard]] std::vector<rules::Command> aiming_commands(const Fighter &caster) const;
@@ -764,14 +799,16 @@ class Session final : public rules::CombatSession
     void cast_sleep(int level, Cell aim);
     [[nodiscard]] std::vector<EntityId> path_area(const Fighter &caster, Cell aim, int max_range,
                                                   int width) const;
-    void cast_stinking_cloud(Fighter &caster, int level, Cell aim);
+    void lay_cloud(Fighter &caster, int level, Cell aim, CloudKind kind);
     void remove_with_handler(Fighter &f, std::size_t node);
     void dispel(Fighter &target, int level);
     void animate_dead(Fighter &caster, int level);
     void slow_poison(Fighter &target, int level);
     void revive(Fighter &f);
-    [[nodiscard]] bool in_cloud(const Fighter &f) const;
+    [[nodiscard]] bool in_cloud(const Fighter &f, CloudKind kind) const;
     void breathe_cloud(Fighter &f);
+    void breathe_stinking_cloud(Fighter &f);
+    void breathe_cloudkill(Fighter &f);
     bool lightning_at(Cell cell, int damage, int level, int save = 4);
     void lightning_path(Cell origin, Cell aim, int length, int damage, int level, bool bounce,
                         int save = 4);
@@ -1917,6 +1954,12 @@ void Session::start_aiming(Fighter &caster, int spell_number)
     const int area = known.area & 0x0F;
     caster.aiming = spell_number;
     caster.picked.clear();
+    // Fire Shield waits for its flames to be chosen (SpellFireShield).
+    if (spell_number == fire_shield)
+    {
+        caster.picks_left = 0;
+        return;
+    }
     if (area == 0)
     {
         resolve_spell(caster, {caster.id}, caster.cell);
@@ -1961,7 +2004,18 @@ std::vector<rules::Command> Session::aiming_commands(const Fighter &caster) cons
         c.item = static_cast<unsigned>(caster.aiming);
         return c;
     };
-    if (area >= 8 && area <= 14)
+    if (caster.aiming == fire_shield)
+    {
+        // The flames, hot or cold (SpellFireShield's menu).
+        for (const auto flames : {Flames::hot, Flames::cold})
+        {
+            auto choice = command("flames");
+            choice.label = flames == Flames::hot ? "Hot flames" : "Cold flames";
+            choice.item = static_cast<unsigned>(flames);
+            commands.push_back(choice);
+        }
+    }
+    else if (area >= 8 && area <= 14)
     {
         // A square in range and in sight, open ground (cbtacts.pas, ManualAimCursor).
         const int range = spell_range(known, caster_level(caster, known, game_of(identity_)));
@@ -2064,7 +2118,7 @@ void Session::lose_spell(Fighter &caster)
 // to its aim and shows itself, the memorized copy is spent, and its actions end.
 bool magic_resists(const Fighter &target, int caster_level, int roll_100);
 
-void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell aim)
+void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell aim, Flames flames)
 {
     const int number = caster.aiming;
     const auto &known = *game_spell(number);
@@ -2256,6 +2310,7 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         }
         break;
     case 43:
+    case 189:
         for (const auto id : targets)
         {
             auto &f = *find(id);
@@ -2267,7 +2322,10 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         }
         break;
     case 34:
-        cast_stinking_cloud(caster, level, aim);
+        lay_cloud(caster, level, aim, CloudKind::stinking);
+        break;
+    case 191:
+        lay_cloud(caster, level, aim, CloudKind::deadly);
         break;
     case 26:
         for (const auto id : targets)
@@ -2298,6 +2356,7 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         break;
     }
     case 36:
+    case 190:
         animate_dead(caster, level);
         break;
     case 57:
@@ -2494,11 +2553,12 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         break;
     case 185:
     {
-        // Fire Shield, hot or cold (picked at random for now, as Curse's
-        // Quick does), with protection from electricity.
+        // Fire Shield, hot or cold as its caster chose (the AI and Quick at
+        // random, hot on a d10 above 5), with protection from electricity.
         const int minutes = known.minutes_fixed + known.minutes_per_level * level;
-        (void)add_with_message(caster, {roll(10) > 5 ? 250 : 254, minutes, level, false}, false,
-                               false, 0, level, &known);
+        const bool hot = flames == Flames::random ? roll(10) > 5 : flames == Flames::hot;
+        (void)add_with_message(caster, {hot ? 250 : 254, minutes, level, false}, false, false, 0,
+                               level, &known);
         caster.numbers.effects.push_back({335, minutes, level, false});
         break;
     }
@@ -3490,16 +3550,18 @@ void Session::lightning_path(Cell origin, Cell aim, int length, int damage, int 
 
 // Stinking Cloud (magic.pas, SpellStinkingCloud): a cloud on the aim and the
 // squares east, south-east and south of it, lasting the caster's level in
-// rounds; those in it breathe it at once.
-void Session::cast_stinking_cloud(Fighter &caster, int level, Cell aim)
+// rounds; those in it breathe it at once. Curse's Cloudkill (SpellCloudkill)
+// lays its cloud on the aim and the eight squares around it.
+void Session::lay_cloud(Fighter &caster, int level, Cell aim, CloudKind kind)
 {
-    // The caster's clouds before the last one laid, as the original counts them.
+    // The caster's clouds of the kind before the last one laid, as the
+    // original counts them.
     int index = 0;
     for (std::size_t n = 0; n + 1 < clouds_.size(); ++n)
     {
-        index += clouds_[n].caster == caster.id ? 1 : 0;
+        index += clouds_[n].caster == caster.id && clouds_[n].kind == kind ? 1 : 0;
     }
-    Cloud cloud{caster.id, index, aim, {}};
+    Cloud cloud{caster.id, index, aim, {}, kind};
     const auto squares = cloud.squares();
     for (std::size_t n = 0; n < squares.size(); ++n)
     {
@@ -3507,8 +3569,11 @@ void Session::cast_stinking_cloud(Fighter &caster, int level, Cell aim)
             board_.contains(squares[n]) && board_.at(squares[n]) != rules::Terrain::obstacle;
     }
     clouds_.push_back(cloud);
-    caster.numbers.effects.push_back({effect::stinking_cloud, level, level + index * 16, true});
-    log({"{name} creates a noxious cloud.", {{"name", caster.name}}});
+    const bool stinking = kind == CloudKind::stinking;
+    caster.numbers.effects.push_back(
+        {stinking ? effect::stinking_cloud : effect::cloudkill, level, level + index * 16, true});
+    log({stinking ? "{name} creates a noxious cloud." : "{name} creates a poisonous cloud.",
+         {{"name", caster.name}}});
     for (const auto square : squares)
     {
         if (const auto id = standing_at(square))
@@ -3518,12 +3583,16 @@ void Session::cast_stinking_cloud(Fighter &caster, int level, Cell aim)
     }
 }
 
-bool Session::in_cloud(const Fighter &f) const
+bool Session::in_cloud(const Fighter &f, CloudKind kind) const
 {
     const auto mine = squares_of(f);
     return std::any_of(clouds_.begin(), clouds_.end(),
-                       [&mine](const Cloud &cloud)
+                       [&mine, kind](const Cloud &cloud)
                        {
+                           if (cloud.kind != kind)
+                           {
+                               return false;
+                           }
                            const auto squares = cloud.squares();
                            for (std::size_t n = 0; n < squares.size(); ++n)
                            {
@@ -3544,14 +3613,37 @@ bool Session::breathes_clouds_freely(const Fighter &f) const
     return secret() && (f.numbers.undead_level > 0 || (f.numbers.traits & trait::unliving) != 0);
 }
 
-// One in a cloud saves against paralysis: saved, it coughs for the round;
-// failed, nausea leaves it helpless for 1d4+1 rounds. One coughing, nauseous,
-// animated or immune to poison breathes it unharmed (fxengine.pas,
-// ConsiderTerrainEffects).
+// What the clouds do to one in them (fxengine.pas, ConsiderTerrainEffects).
 void Session::breathe_cloud(Fighter &f)
 {
-    if (!f.able() || !in_cloud(f) || f.has(effect::coughing) || f.has(effect::nausea) ||
-        f.has(effect::animated) || f.has(111) || f.has(125) || breathes_clouds_freely(f))
+    breathe_stinking_cloud(f);
+    breathe_cloudkill(f);
+}
+
+// Cloudkill kills one of level 0 to 4 outright with its poison; one of level
+// 5 saves against it at -4, one of level 6 at 0; one of a higher level breathes
+// it unharmed.
+void Session::breathe_cloudkill(Fighter &f)
+{
+    const int level = f.numbers.level;
+    if (!f.able() || !in_cloud(f, CloudKind::deadly) || level > 6 ||
+        (level >= 5 && saving_throw(f, 0, level == 5 ? -4 : 0)))
+    {
+        return;
+    }
+    log({"{name} is poisoned.", {{"name", f.name}}});
+    f.numbers.effects.push_back({effect::poisoned, 0, 255, false});
+    kill(f);
+}
+
+// One in a stinking cloud saves against paralysis: saved, it coughs for the
+// round; failed, nausea leaves it helpless for 1d4+1 rounds. One coughing,
+// nauseous, animated or immune to poison breathes it unharmed.
+void Session::breathe_stinking_cloud(Fighter &f)
+{
+    if (!f.able() || !in_cloud(f, CloudKind::stinking) || f.has(effect::coughing) ||
+        f.has(effect::nausea) || f.has(effect::animated) || f.has(111) || f.has(125) ||
+        breathes_clouds_freely(f))
     {
         return;
     }
@@ -4479,7 +4571,7 @@ bool Session::can_step(const Fighter &f, int direction, bool &edge) const
     }
     const bool breathes_freely = f.has(effect::animated) || f.has(effect::coughing) || f.has(111) ||
                                  f.has(125) || breathes_clouds_freely(f);
-    return breathes_freely || !in_cloud(moved);
+    return breathes_freely || !in_cloud(moved, CloudKind::stinking);
 }
 
 // The first step of the shortest way, round walls and creatures, to a square
@@ -5259,14 +5351,17 @@ void Session::expire(Fighter &f, const Effect &ended)
         revive(f);
         break;
     case effect::stinking_cloud:
+    case effect::cloudkill:
     {
-        // The caster's cloud of this number clears (effhndlr.pas, EffClearStinkingCloud).
-        const auto cloud =
-            std::find_if(clouds_.begin(), clouds_.end(),
-                         [&](const Cloud &c)
-                         {
-                             return c.caster == f.id && c.index == ended.strength / 16;
-                         });
+        // The caster's cloud of this kind and number clears (effhndlr.pas,
+        // EffClearStinkingCloud; Curse's EffClearCloudkill).
+        const auto kind = ended.code == effect::cloudkill ? CloudKind::deadly : CloudKind::stinking;
+        const auto cloud = std::find_if(clouds_.begin(), clouds_.end(),
+                                        [&](const Cloud &c)
+                                        {
+                                            return c.caster == f.id && c.kind == kind &&
+                                                   c.index == ended.strength / 16;
+                                        });
         if (cloud != clouds_.end())
         {
             clouds_.erase(cloud);
@@ -6262,6 +6357,10 @@ bool Session::submit(const rules::Command &command)
             }
         }
     }
+    else if (command.verb == "flames")
+    {
+        resolve_spell(actor, {actor.id}, actor.cell, static_cast<Flames>(command.item));
+    }
     else if (command.verb == "aim_done")
     {
         resolve_spell(actor, actor.picked, find(actor.picked.back())->cell);
@@ -6359,8 +6458,12 @@ std::string Session::save() const
         morale_threshold_, hostile_hit_points_percent_, clouds_.size());
     for (const auto &cloud : clouds_)
     {
-        out(cloud.caster, cloud.index, cloud.corner.x, cloud.corner.y, cloud.covers[0],
-            cloud.covers[1], cloud.covers[2], cloud.covers[3]);
+        out(cloud.caster, cloud.index, cloud.corner.x, cloud.corner.y,
+            static_cast<unsigned>(cloud.kind));
+        for (const bool covers : cloud.covers)
+        {
+            out(covers);
+        }
     }
     out(turn_order_.size());
     for (const auto id : turn_order_)
@@ -6449,6 +6552,12 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
         cloud.caster = in.as<EntityId>();
         cloud.index = in.as<int>();
         cloud.corner = {in.as<int>(), in.as<int>()};
+        const auto kind = in.as<unsigned>();
+        if (kind > static_cast<unsigned>(CloudKind::deadly))
+        {
+            throw std::runtime_error("Invalid original-rules combat checkpoint");
+        }
+        cloud.kind = static_cast<CloudKind>(kind);
         for (auto &covers : cloud.covers)
         {
             covers = in.as<bool>();

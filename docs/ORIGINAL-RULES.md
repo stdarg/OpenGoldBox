@@ -178,11 +178,20 @@ and a save each know which tables they use.
   3d8+3) in camp, and Raise Dead brings back a dead member who is no elf
   and has Constitution left, with 1 Hit Point and a point of Constitution
   lost, but no Hit Points off its maximum (`cast_raise`).
-- Still to come: Cloudkill, the player's choice of Fire Shield, the
-  rakshasa's death by a blessed crossbow bolt, *Curse*'s
-  other new
-  spells in fights and camp, and the paladin's and ranger's own abilities
-  (GAMES.md, phase 3 step 5).
+- **Cloudkill** (`SpellCloudkill`, `ConsiderTerrainEffects`) lays a cloud on
+  the square aimed at and the eight around it for the caster's level in
+  rounds; one in it as it is laid, as it steps in or as a round ends dies of
+  its poison at level 4 or below, saves against poison at −4 at level 5 and
+  at 0 at level 6, and breathes it unharmed above.
+- **Fire Shield**'s caster chooses hot or cold flames as it goes off (the
+  `flames` command); the AI, and Quick, pick at random.
+- The magic-user's Remove Curse and the item power that animates the dead
+  work in fights as the cleric's spells do.
+- Still to come: Entangle (it works only out of doors, which a fight does
+  not yet know), the rakshasa's death by a blessed crossbow bolt, the camp's
+  spells whose effects last beyond a fight (Neutralize Poison, Remove Curse,
+  and the like, with the conditions outside fights), and the paladin's cure
+  of disease (GAMES.md, phase 3 step 5).
 
 ## Secret of the Silver Blades
 
