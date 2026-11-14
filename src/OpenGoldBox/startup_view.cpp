@@ -929,7 +929,7 @@ void StartupView::play_title_music(opengold::GoldBoxGame game)
         opengold::log_diagnostic(opengold::LogPriority::warning, "startup", failure.what());
         return;
     }
-    // The level the game's other sounds play at.
+    // The player's music level (Options).
     title_sound_->set_volume(settings::sound_volume(settings::SoundKind::music));
     title_sound_->play(*piece);
 }
@@ -966,7 +966,7 @@ void StartupView::play_title_sound(unsigned sound)
             opengold::log_diagnostic(opengold::LogPriority::warning, "startup", failure.what());
             return;
         }
-        // The level the exploration screen plays the original's sounds at.
+        // The player's sound effects level (Options).
         title_sound_->set_volume(settings::sound_volume(settings::SoundKind::effects));
     }
     title_sound_->play(sound);
