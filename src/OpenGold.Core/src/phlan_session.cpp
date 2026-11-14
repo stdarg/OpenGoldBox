@@ -1547,6 +1547,18 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
         {
             continue;
         }
+        // A monster still charmed onto the party's side as the fight ends
+        // leaves as one that ran (the original's CombatDoneCleanup), worth
+        // neither experience nor treasure.
+        else if (unit.side == rules::Side::party && unit.id >= 1000 &&
+                 unit.id < 1000 + staged_records_.size() && !expected_party.contains(unit.id))
+        {
+            if (!enemies.insert(unit.id).second)
+            {
+                return false;
+            }
+            unpaid_records.push_back(staged_records_.at(unit.id - 1000));
+        }
         else if ((unit.side != rules::Side::party && !charmed_member) ||
                  !expected_party.contains(unit.id) || !party_ids.insert(unit.id).second ||
                  campaign_->member(unit.id).vitals != unit.persistent)

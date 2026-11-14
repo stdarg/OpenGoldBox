@@ -1955,6 +1955,101 @@ bool walk_census(GoldBoxGame game, bool route)
                 break;
             }
         }
+        // A fight no side can finish (the monsters stand where no one can
+        // reach, and every turn is a guard) is left as a player leaves it:
+        // each member walks to the field's edge and flees. It is counted.
+        if (combat.combat().snapshot().outcome == opengold::rules::Outcome::ongoing)
+        {
+            ++phases["stalemates left by fleeing"];
+            // Steps over open ground from each square to the field's edge.
+            const auto &field = session.pending_encounter()->field.geometry;
+            const auto at = [&field](int x, int y)
+            {
+                return static_cast<std::size_t>(y * field.width + x);
+            };
+            std::vector<int> steps(static_cast<std::size_t>(field.width * field.height), 9999);
+            std::vector<opengold::rules::Cell> frontier;
+            for (int y = 0; y < field.height; ++y)
+            {
+                for (int x = 0; x < field.width; ++x)
+                {
+                    const bool edge =
+                        x == 0 || y == 0 || x == field.width - 1 || y == field.height - 1;
+                    if (edge && field.terrain[at(x, y)] == opengold::rules::Terrain::open)
+                    {
+                        steps[at(x, y)] = 0;
+                        frontier.push_back({x, y});
+                    }
+                }
+            }
+            for (std::size_t n = 0; n < frontier.size(); ++n)
+            {
+                const auto from = frontier[n];
+                for (int dy = -1; dy <= 1; ++dy)
+                {
+                    for (int dx = -1; dx <= 1; ++dx)
+                    {
+                        const int x = from.x + dx, y = from.y + dy;
+                        if (x < 0 || y < 0 || x >= field.width || y >= field.height ||
+                            field.terrain[at(x, y)] != opengold::rules::Terrain::open ||
+                            steps[at(x, y)] <= steps[at(from.x, from.y)] + 1)
+                        {
+                            continue;
+                        }
+                        steps[at(x, y)] = steps[at(from.x, from.y)] + 1;
+                        frontier.push_back({x, y});
+                    }
+                }
+            }
+            const auto to_edge = [&](opengold::rules::Cell cell)
+            {
+                return cell.x < 0 || cell.y < 0 || cell.x >= field.width || cell.y >= field.height
+                           ? 9999
+                           : steps[at(cell.x, cell.y)];
+            };
+            for (int command = 0; command < 3000 && combat.combat().snapshot().outcome ==
+                                                        opengold::rules::Outcome::ongoing;
+                 ++command)
+            {
+                const auto &fighting = combat.combat();
+                const auto state = fighting.snapshot();
+                const auto actor = std::ranges::find(state.combatants, state.actor,
+                                                     &opengold::rules::CombatantView::id);
+                const bool member = actor != state.combatants.end() &&
+                                    actor->side == opengold::rules::Side::party &&
+                                    !opengold::is_ally(state.actor);
+                std::optional<opengold::rules::Command> chosen;
+                if (member)
+                {
+                    for (const auto &option : fighting.legal_commands())
+                    {
+                        if (option.verb == "flee")
+                        {
+                            chosen = option;
+                            break;
+                        }
+                        if (option.verb == "move" &&
+                            to_edge(option.destination) < to_edge(actor->cell) &&
+                            (!chosen || to_edge(option.destination) < to_edge(chosen->destination)))
+                        {
+                            chosen = option;
+                        }
+                    }
+                }
+                const auto next =
+                    chosen ? *chosen
+                    : member
+                        ? opengold::choose_quick_command(fighting, true,
+                                                         opengold::Searching::everyone)
+                        : opengold::choose_demo_command(fighting, opengold::Searching::everyone,
+                                                        opengold::default_difficulty);
+                if (!combat.submit(next))
+                {
+                    ++phases["fight stopped at " + next.verb];
+                    break;
+                }
+            }
+        }
         return combat.combat().snapshot();
     };
     // The pending fight. The route plays it with several dice from the party
@@ -2264,9 +2359,14 @@ bool walk_census(GoldBoxGame game, bool route)
                     (void)session.start_encounter();
                     continue;
                 }
+                // A fight that ends without a result fails the walk: a pass
+                // must not hide one.
                 if (!session.pending_encounter() || !fight())
                 {
-                    ++phases["fight not resolved"];
+                    needs[session.pending_encounter()
+                              ? "A fight ended without a result: " + session.snapshot().diagnostic
+                              : std::string("A fight began with no encounter")]
+                        .push_back(where);
                     attribute();
                     return;
                 }
