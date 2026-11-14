@@ -516,7 +516,14 @@ The work asked for next (2026-11-14), in order, with what each needs:
    - The original's rest of any length and its preparation time for
      memorizing (step 5; scribing takes its own, Scribing).
    - The training hall's fee and the classes each hall trains (step 3).
-   - Restoration's giving back of drained levels (step 6).
+   - Restoration's giving back of drained levels (step 6; `SpellRestoration`):
+     a drained level's share of the drained Hit Points back on the maximum,
+     current and rolled Hit Points, the class whose next level needs the
+     least experience raised and the experience raised to it (the original
+     leaves the class unset when none qualifies: a bug). It needs a level
+     history entry, the campaign's experience, and the temples that sell it
+     (*Pools of Darkness*'s and *Treasures*' Restoration, a temple service the
+     game's temple screen does not offer yet).
    - The original rules' difficulty levels (step 7): they all play at
      Normal (Decisions); ask the user before designing anything new.
    - Under AD&D aging, a year added for each year the game's clock passes
