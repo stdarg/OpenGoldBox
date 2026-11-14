@@ -601,7 +601,10 @@ new decoders.
    7,15); next, train and rest in Zhentil Keep, then the door at (15,1) to
    Kalistes' temple, the Web Dimension and on round the area map to Dark
    Phlan (darkness.md, Where it stops). *The area map is drawn (2026-11-14):* the big picture with
-   the party's marker, as the original draws it. Still to come: Restoration, skies, combat ground tiles, sound
+   the party's marker, as the original draws it. Still to come: spell levels 8 and 9
+   and the new spells (built on the branch `worktree-agent-adb112d8a4121c877`,
+   not merged: with them the route's party loses to the Temple of Tyr's
+   marauders, whose camps break its rests), skies, combat ground tiles, sound
    and music.
 6. *From the startup menu (2026-11-14):* the menu offers *Pools of
    Darkness*, asks for its folder (`DARKNESS`) and the rules, and plays the
