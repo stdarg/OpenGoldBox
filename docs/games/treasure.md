@@ -202,6 +202,12 @@ cycling, the music and sounds other than the footstep, PROGRAM 3 to 5
 (the luck readings, the Fix menu, the party's repair), the romances, and the
 route.
 
+Two of the walk's fights do not end (map 24 at 1,5 and map 38 at 3,6, and
+two in *Pools of Darkness*'s walk): a caster with no spells left and no way to
+reach the party stands across the battlefield from members with no way to
+reach it, and both sides guard until the walk's 3,000 turns run out. The walk
+counts them and goes on.
+
 ## The ending
 
 *Treasures* has no ending of its own. In Freezefire's lair (script 38, Ice
