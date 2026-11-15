@@ -4480,6 +4480,10 @@ const std::vector<RouteBeat> &darkness_route()
         to_moander.waiting = true;
         to_moander.test_experience = 500'000;
         route.push_back(to_moander);
+        // Moander (scripts 51 to 53; the cluebook's 57 to 60): the party
+        // arrives by the gate in the depression (map 52) and climbs out by
+        // its footholds (YES) onto Moander's body, an area map (script 51).
+        route.push_back(step_beat(52, 7, 10, D::north, {"YES", "NO"}));
         return route;
     }();
     return beats;

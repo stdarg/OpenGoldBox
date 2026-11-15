@@ -759,6 +759,60 @@ by what it is offered:
 - **To the Red Tower (2026-11-15).** Three squares north-east and one east
   on the area map to the red tower (journal entry 99), entered (YES): the
   garden of the Red Tower (map 70, script 70, at 4,15).
+- **The Tower of Marcus's lower tower (maps 70 and 71, script 70;
+  2026-11-15).** Its levels are parts of one map (levels 0 to 5 on map 70,
+  6 to 8 on 71, which LOAD FILES swaps in), the level in cell 17Ah; its
+  paths are walls of a type the step entry reads (table 989Fh by the wall
+  ahead, cell 32h), and the party's facing (cell 11h) says whether a path
+  goes up (west), down or out. Through the garden to the path down (7,10,
+  YES) to the dungeons of level 0, past the guards' room (the cluebook's
+  10) to Shal's cell (10,9, the cluebook's 11): the party agrees to take
+  her to the top (YES; journal entry 8). The events from 9 up run only
+  when the step comes through a door or path (cell 9Ch, set by the step
+  before from the wall ahead), as Shal's cell door. Back up through the
+  dungeons (9,0) and the levels' paths, the way the planning aid finds,
+  past the drow who do not strike (4,5) and the cleric lecturing his troops
+  (13,5); on level 6 the party rests before Moander's monsters (10,4, the
+  cluebook's 12: bits of Moander, cultists, then Black Circle mages). On
+  level 8 the sortie against Phlan (3,12): the party hears the troops
+  mustering and does not go on (NO), the held step runs the guards' event,
+  and Shal bluffs them as Petra (TRY IT? YES; cell 178h 31 with Shal): the
+  party hurries past through the wizard gate into the upper tower (script
+  67, map 67, which locks behind it).
+- **The upper tower (map 67, script 67; 2026-11-15).** Level 9 is its rows
+  0 to 4, level 10 rows 5 to 9 and level 11 rows 10 to 15. Its camps are
+  broken (script 67's camp entry: a period of 96 steps and an interruption
+  certain at its end) but in the quiet side rooms, event 27 (2,0; 5,9;
+  11,15: "IT SEEMS SAFE TO REST IN"), so the party walks on hurt between
+  them, its clerics curing the badly hurt. Each faction broken up sets a
+  bit of cell 251h; with all eight Marcus stands in his chambers. The
+  cult's altar (15,2; cut them down, YES; bit 0); down the path at 11,2 to
+  level 10; the Red Wizards' antechamber (13,5, WAIT HERE? YES: the code
+  word RED), the two Red Wizards surprised beyond its south door (13,6;
+  cell B0h 1), and the loft's door (14,7: RAP, YES; RED): the covens fight
+  each other and the party beats what is left (bit 1). The Black Circle's
+  lofts (row 5, each entered through its door from row 6, and 0,6; bit 2),
+  a rest at 5,9, the Fountains of Moander (1,8, through its door from 1,7;
+  bit 3) and the Black Circle formed outside them (1,7, stepping out
+  through the door; another bit 2). Down the path at 6,9 to level 11: the
+  manufactories of the Red Wizards (7,11 from 8,11; bit 4), the Black
+  Circle (7,14 from 6,14, ATTACK; bit 5) and the cult (9,13 from 9,14;
+  bit 6), a rest at 11,15, the Dispersion Diagram (14,15 from 13,15; bit
+  7, MOVE rather than break the beasts' circle). Through two squares of
+  the Temple of Transformation's rapt devotees (MOVE; a third and fourth
+  step wake them, cell 9Dh) to the secret underpass (11,10 west to 3,10)
+  and the Chambers of Marcus (0,12 south): his spectres, his minions and
+  Marcus himself (script 77; a stand-in, below). Shal and Petra are whole
+  again; back by the underpass to the Vessel of Moander (13,9 from 13,10):
+  it reels as the tower falls, the party leaps aboard, and the ichor ebbs
+  into a Pool of Darkness and Limbo, where Shal leaves.
+- **Limbo and Moander (2026-11-15).** Elminster's camp rests the party and
+  it trains (500,000 test experience a member, a stand-in for the tower's
+  wandering mages, cultists and bits of Moander); MOVE ON, MOANDER, and
+  the party arrives in the depression on Moander's body (map 52, script
+  52, 7,10). It climbs out by the footholds north of 7,9 (YES; the event
+  asks only with a wall ahead), onto the body (script 51), and declines to
+  climb down again (NO).
 
 Since 2026-11-15 the route's casters memorize spells of every level they
 have slots of (Pools of Darkness's levels 6 to 9 among them) and raise the
@@ -775,7 +829,12 @@ state does (Script memory, above). Until 2026-11-14 OpenGoldBox stepped on
 anyway, so stairs landed a square beyond their landing and a held step could
 wrap round the map's edge.
 
-Stand-ins (2026-11-15, late): two, the fights the test wins. The Aerie's
+Stand-ins (2026-11-15, late): three, the fights the test wins. The
+Chambers of Marcus (67: 0,12 south; script 77): the spectres fall, then the
+Minions of Bane, breathing for 27 each, and Banite clerics, whose Hold
+Person leaves members for the minions to slay, and at once Marcus with his
+Black Circle mages and minions; the best of the route's plays of the
+minions leaves too little for Marcus, whom no play beats. The Aerie's
 blue dragons' nest (33: 3,14): five blue dragons, each breathing lightning
 of its 80 Hit Points three times, leave the party of levels 12 to 14 dead
 with most dice even rested; the game has no spell against lightning, only
@@ -796,8 +855,14 @@ late): the Vaasans (37: 13,8; the party came stronger), Thorne with his
 seven red dragons (warded with Resist Fire), Myth Drannor's altar and its
 temple (the blessed bolts, above). The route's party carries the game's own
 starting equipment (ORIGINAL-RULES.md, *Pools of Darkness*). Until the route
-reaches the win it passes when it plays every beat to the Red Tower's
-garden (map 70).
+reaches the win it passes when it plays every beat to Moander's body
+(map 52).
+
+A camp the script let rest is no refusal (2026-11-15): the route's rest
+took a Darkness camp entry that sets cell 2Bh for one that refuses the
+rest, and stopped after a night; the tower's camp entry sets it as the
+period of a rest the quiet rooms let finish, so a rest that completes
+goes on until the party is whole.
 
 Myth Drannor's way out (2026-11-15, late) needed the 256-color engine's
 LOAD CHARACTER as the original has it: it reads its argument's low seven
@@ -861,21 +926,29 @@ visit (each class's award stops short of the level after next, as
 training keeps it). It reaches Kalistes at levels 15 to 18 (the
 magic-user 17, with eighth-level spells).
 
-Where it stops (2026-11-15, late): in the garden of the Red Tower (map
-70: 4,15, script 70), just inside. Next: the Tower of Marcus (the cluebook's
-51 to 56). Script 70's events are its step entry's ON GOTO on cell A8h (36
-of them); its wandering patrols come from the tables at 9862h on. The
-cluebook's way: find Shal in her cell (11, the dungeon, past the voice
-through the crack at 9) and take her along (YES to taking her to the top),
-up the lower tower's levels 0 to 8 by its paths ("THE PATH GOES UP",
-script 70's events), through the wizard gate to the upper tower (script
-67, which the gate locks behind the party), disrupt the cult's altar (3 or
-4), the Red Wizards' lofts (6, the code word RED after listening at 5), the
-Fountains of Moander (10) and the manufactories (12, 13, 14) and the
-dispersion diagram (15), so that Marcus stands in his chambers (18); then
-the leap onto the Vessel of Moander (20) as the tower falls, to Limbo. Then
-Moander (52, 53, 55),
-Mulmaster and the beholders' cave, Dark Phlan (64) and the Palace of
+Where it stops (2026-11-15, night): on Moander's body (script 51, the
+party still standing on map 52 at 7,9), just out of the depression. Next:
+Moander (the cluebook's 57 to 60). Script 51 is a body of places, not a
+map: the party's place is cell 224h, a step forward moves it by the
+tables at 8D5Dh on (cells 9Bh to A0h, one a facing; script 51's ON GOTO
+on cell A1h at 8203h), and what stands at a place is table 8E11h (36369)
+by cell 224h; "DO YOU ENTER?" takes the party down into that part of map
+52 (script 52, whose LOAD FILES and ON GOTO on cell 224h at 8077h place
+it). OPENGOLD_DARKNESS_SITES does not read this body (it sets cells 25h
+and 26h); the exact next step is a planning aid that sets cell 224h to
+each place and steps or looks from it, or OPENGOLD_SECRET_FIND with
+OPENGOLD_SECRET_KEYS=224 and OPENGOLD_FIND_YES=ENTER from the save after
+beat 2066, to find the Large Wound in Moander's arm. Map 52's events
+(script 52's step entry, ON GOTO on cell 2Dh's low six bits at 873Ch):
+11 (12,12) Aeghwaet asks for help; 14 to 17 (6,11; 11,10; 10,15; 14,13)
+Tanetal's minions mining the flesh; 13 (12,8) Aeghwaet's reward, the two
+potions the heart needs; 29 (8 to
+10,5) the heart's muscle wall, where the potion weakens it and NEW ECL 53
+enters the heart (script 53). The ear's hermit (event 7, the cluebook's
+22) trains a party. Then the heart's way as the cluebook's "Recommended
+Approach" gives it (script 53: Tanetal's fakes, the Watcher, the cornucopia,
+the unguent, the magnetic weapons, the trap), Mulmaster and the beholders'
+cave, Dark Phlan (64) and the Palace of
 Gothmenes (65, 74, 73), whose win (75) is in place. Scripts and the scripts
 they go on to (`opengold_scripts --inspect DARKNESS ECL1.DAX N`, NEW ECL):
 19 to 48; 48 to 35 and 49; 35 to 41, 68, 69; 68 to 69 and 71; 69 to 72 and

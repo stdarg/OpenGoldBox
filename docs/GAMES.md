@@ -638,6 +638,15 @@ new decoders.
    budge and the temple where Tyranthraxus is raised, then the Red Tower
    and on round the area map to Dark Phlan (darkness.md, Where it stops). The temples' Restoration is
    to come where a beat needs it.
+   *The Tower of Marcus (2026-11-15, night):* the route frees Shal from
+   her cell, climbs the lower tower with her, passes the wizard gate by her
+   bluff, breaks up the cult, the Red Wizards (the code word RED), the
+   Black Circle, the Fountains, the three manufactories and the Dispersion
+   Diagram, meets Marcus in his chambers (a stand-in: the test wins his
+   waves and him) and leaps onto the Vessel of Moander to Limbo, where it
+   trains (500,000 test experience) and goes on to Moander. *Where it
+   stops:* on Moander's body, out of the depression (darkness.md, Where it
+   stops).
    *Re-tuned on the original-rules round (2026-11-15, night):* its bows
    and crossbows shoot (Pools of Darkness's arrows and quarrels are
    *Secret*'s item types) and its dragons breathe (its gaze spiders' and
