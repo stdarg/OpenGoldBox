@@ -7475,7 +7475,8 @@ int Session::weapon_damage_defenses(const Fighter &attacker, Fighter &defender, 
         return 0;
     }
     // Pools of Darkness's rakshasa struck by a blessed bolt is slain
-    // (effhndlr.pas, EffBlessedBoltKills).
+    // (effhndlr.pas, EffBlessedBoltKills), as the kit's by its quarrel of
+    // slaying (effects.c, fx_slain_by_type).
     if (defender.has(effect::slain_by_blessed_bolt) && striker && striker->blessed_bolt)
     {
         kill(defender, "{name} is slain.");

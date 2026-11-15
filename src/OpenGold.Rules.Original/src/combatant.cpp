@@ -752,7 +752,7 @@ int kit_canonical_effect(int code) noexcept
         {70, 470},
         {73, 273},
         {79, 479},
-        {82, 330},
+        {82, 552},
         {84, 504},
         {85, 483},
         {86, 70},
@@ -1095,10 +1095,14 @@ AmmunitionTypes ammunition_types(GoldBoxGame game) noexcept
     {
         return AmmunitionTypes{30, 12, 74};
     }
-    // Unlimited Adventures' are Secret's (its charview.c, ready_check).
-    const bool secret_types = game == GoldBoxGame::secret_of_the_silver_blades ||
-                              game == GoldBoxGame::unlimited_adventures;
-    return secret_types ? AmmunitionTypes{30, 12} : AmmunitionTypes{73, 28};
+    // Unlimited Adventures' are Secret's, and its quarrels of slaying (its
+    // charview.c, ready_check; hero.c, recalc_stats).
+    if (game == GoldBoxGame::unlimited_adventures)
+    {
+        return AmmunitionTypes{30, 12, 0x4A};
+    }
+    return game == GoldBoxGame::secret_of_the_silver_blades ? AmmunitionTypes{30, 12}
+                                                            : AmmunitionTypes{73, 28};
 }
 
 bool elf_weapon(std::uint8_t type, GoldBoxGame game) noexcept

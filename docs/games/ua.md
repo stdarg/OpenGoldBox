@@ -427,7 +427,8 @@ does it (`ua_combat`, `ua_session`; the reconstruction's `cmbsetup.c`,
   class readies nothing). A bow fires the kit's arrows (type 1Eh) and a
   crossbow its quarrels (0Ch), *Secret*'s types (before 2026-11-15 the
   fight looked for *Pool of Radiance*'s, so no one's bow in a design found
-  its arrows); the quarrel of slaying (4Ah) waits (Next). Groups 4 to 6
+  its arrows), and since 2026-11-15 a crossbow fires the kit's quarrels of
+  slaying (4Ah) too, which take the quarrels' place. Groups 4 to 6
   fight for the party when byte 0Ah's
   bits 20h, 40h and 80h say so; a group picked at random (kind 33) is never
   an ally.
@@ -622,9 +623,7 @@ playing each event and fight; it fails on any event the session cannot play.
 Next, in this order (2026-11-15; monsters' spells, items' special effects,
 Appraise, the vault's items and the temple's Restoration are done):
 
-1. The near matches' differences left (Monsters' effects): 82 slays with a
-   blow of an item of type 4Ah, the kit's quarrel of slaying (`effects.c`,
-   `fx_slain_by_type`); 58's reach; 91's and 96's breaths; 117's rays; 170's
+1. The near matches' differences left (Monsters' effects): 58's reach; 91's and 96's breaths; 117's rays; 170's
    rot, 2 Charisma a month until it kills (`fx_rotting`).
 
 ### Monsters' effects, "no magic" fights and step events
@@ -643,7 +642,7 @@ Since 2026-11-14 (`ua_session.cpp`, `combatant.cpp`):
   | 6 | 335 | 70 | 470 | 98 | 310 | 170 | 87~ |
   | 8 | 8 | 73 | 273 | 100 | 482 | 171 | 82 |
   | 18 | 124 | 79 | 479 | 101 | 85 | 173 | 284 |
-  | 24 | 24 | 82 | 330~ | 102 | 86 | 174 | 282 |
+  | 24 | 24 | 82 | 552 | 102 | 86 | 174 | 282 |
   | 26 | 26 | 84 | 504 | 105 | 334 | 175 | 281 |
   | 37 | 237 | 85 | 483 | 117 | 287~ | 176 | 257 |
   | 45 | 45 | 86 | 70 | 124 | 84 | 216 | 100 |
@@ -654,11 +653,14 @@ Since 2026-11-14 (`ua_session.cpp`, `combatant.cpp`):
   | 65 | 465 | 95 | 107 | 159 | 117 |  |  |
   | 66 | 115 | 96 | 290~ | 169 | 116 |  |  |
 
-  A ~ marks a near match: the gaze of 58 reaches six squares; 82 slays with the banishing quarrel; 91
+  A ~ marks a near match: the gaze of 58 reaches six squares; 91
   breathes as Pool of Radiance's dragons do; 96 is acid as well as breath;
   117's rays need their exact distances; 170's rot takes no Charisma.
   Four play as the kit's in a design (2026-11-15): 58's gaze spares an
-  iron golem (the kit's 79) as well as one that meets gazes unharmed; 159
+  iron golem (the kit's 79) as well as one that meets gazes unharmed; 82, on the rakshasa and
+  rakshasa rukh, dies of a blow of the kit's quarrel of slaying (item type
+  4Ah, `fx_slain_by_type`) as Pools of Darkness's rakshasa of its blessed
+  bolt (552; until 2026-11-15 *Curse*'s banishment by its quarrel, 330); 159
   takes holy water as the kit's item type 36h; 100's terror grips an enemy below 6 Hit Dice that fails a
   save against spells, for 4d6 rounds (`fx_terrify`), and 124's gaze
   charms as Charm Person, saved against without the -2 Pool of Radiance's

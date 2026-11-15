@@ -70,7 +70,9 @@ struct StrikingItem
     // effect 130) away for good (effhndlr.pas, EffBanishByWeapon).
     bool banishing{};
     // Pools of Darkness's blessed bolt (item type 74), which slays a
-    // rakshasa (its effect 82; effhndlr.pas, EffBlessedBoltKills).
+    // rakshasa (its effect 82; effhndlr.pas, EffBlessedBoltKills), or the
+    // Unlimited Adventures kit's quarrel of slaying (type 4Ah), which slays
+    // one with the kit's 82 the same way (effects.c, fx_slain_by_type).
     bool blessed_bolt{};
 
     bool operator==(const StrikingItem &) const = default;
@@ -293,7 +295,8 @@ struct CarriedItem
 // The item types of a game's arrows and quarrels (charhlp.pas, RecalcStats):
 // 73 and 28 in Pool of Radiance and Curse, 30 and 12 in Secret, Pools of
 // Darkness and Unlimited Adventures; Pools of Darkness's crossbows also
-// shoot its blessed bolts (type 74) as quarrels.
+// shoot its blessed bolts (type 74) as quarrels, and the kit's its quarrels
+// of slaying (4Ah), held in blessed_bolts.
 struct AmmunitionTypes
 {
     std::uint8_t arrows{}, quarrels{};

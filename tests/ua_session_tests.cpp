@@ -2106,7 +2106,7 @@ void the_kits_monsters_and_events_play_as_the_kit_has_them(const std::filesystem
     {
         return std::ranges::find(codes, code) != codes.end();
     };
-    // The skeleton: half damage from edged weapons (Pool's 115), no fear
+    // The skeleton:half damage from edged weapons (Pool's 115), no fear
     // (Secret's 492) and no cold (Curse's 310).
     const auto skeleton = effects(18);
     check(has(skeleton, 115) && has(skeleton, 492) && has(skeleton, 310),
@@ -2125,6 +2125,10 @@ void the_kits_monsters_and_events_play_as_the_kit_has_them(const std::filesystem
         check(has(effects(number), code + opengold::original::kit_effect_offset),
               "Monster " + std::to_string(number) + " carries the kit's " + std::to_string(code));
     }
+    // The rakshasa and rakshasa rukh die of a quarrel of slaying (the kit's
+    // 82) as Pools of Darkness's rakshasa of a blessed bolt (552).
+    check(has(effects(71), 552) && has(effects(110), 552),
+          "The kit's rakshasas die of a quarrel of slaying");
     // Its monster types (+BFh) are the fight's kin: a goblin a dwarf's foe
     // and a ranger's, an ogre a giant and one a gnome defends against.
     namespace kin = opengold::original::kin;
@@ -2291,6 +2295,34 @@ void the_kits_items_work_when_readied(const std::filesystem::path &kit)
     const auto shooting = original::combatant_from_record(archer, quiver);
     check(shooting.missile && shooting.missile->loaded && shooting.missile->quantity == 20,
           "A bow shoots the kit's arrows");
+    // A crossbow fires the kit's quarrels of slaying (its type 4Ah), which
+    // slay the creatures the kit's effect 82 marks (effects.c, fx_slain_by_type).
+    const auto first_of = [&items](auto wanted)
+    {
+        const auto found = std::ranges::find_if(items.items, wanted);
+        check(found != items.items.end(), "The kit has the item");
+        auto item =
+            *ua::design_item(items, static_cast<unsigned>(found - items.items.begin()) + 1, true);
+        item.stored.readied_raw = 1;
+        return item;
+    };
+    const auto crossbow = first_of(
+        [&items](const ua::ItemRecord &record)
+        {
+            return record.type < items.types.size() &&
+                   items.types[record.type].has(opengold::por::item_property::fires_quarrels);
+        });
+    const auto slaying = first_of(
+        [](const ua::ItemRecord &record)
+        {
+            return record.type == 0x4A;
+        });
+    const std::vector<original::CarriedItem> bolts{{crossbow.stored, crossbow.base},
+                                                   {slaying.stored, slaying.base}};
+    const auto slayer = original::combatant_from_record(archer, bolts);
+    check(slayer.missile && slayer.missile->loaded && slayer.striker &&
+              slayer.striker->blessed_bolt,
+          "A crossbow shoots the kit's quarrels of slaying");
     const auto gauntlets = wielding(233, true), girdle = wielding(204, true);
     check(gauntlets.strength == 18 && gauntlets.exceptional_strength == 100 &&
               girdle.strength == 23 && wielding(233, false).strength == 12,

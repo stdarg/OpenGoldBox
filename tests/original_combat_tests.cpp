@@ -4432,6 +4432,36 @@ void a_quarrel_banishes_the_rakshasa()
     check(logged(*plain.session, "{name} is banished.") == 0, "Another blow only wounds it");
 }
 
+// The kit's monster with its effect 82 dies of a blow of its quarrel of
+// slaying (effects.c, fx_slain_by_type), as Pools of Darkness's rakshasa of
+// a blessed bolt, and of no other blow outright.
+void a_quarrel_of_slaying_slays_its_quarry()
+{
+    const auto kit = GoldBoxGame::unlimited_adventures;
+    auto quarry = creature(200);
+    quarry.effects = {{original::canonical_effect(82, kit), 0, 0xFF, true}};
+    auto archer = monster({2, 1, 4, 0}, {}, {});
+    archer.striker = original::StrikingItem{0, false, 0, false, true};
+    const auto slain = attack_until(
+        archer, quarry,
+        [](const rules::CombatSession &session)
+        {
+            return logged(session, "{name} is slain.") > 0;
+        },
+        353, kit);
+    check(logged(*slain.session, "{name} is slain.") == 1,
+          "A quarrel of slaying slays its quarry");
+    archer.striker = original::StrikingItem{0, false, 0, false, false};
+    const auto plain = attack_until(
+        archer, quarry,
+        [](const rules::CombatSession &session)
+        {
+            return logged(session, "{attacker} hits {name} for {damage}.") > 2;
+        },
+        353, kit);
+    check(logged(*plain.session, "{name} is slain.") == 0, "Another blow only wounds it");
+}
+
 // Pools of Darkness's rakshasa (its effect 82) is slain by a blessed bolt
 // (item type 74; effhndlr.pas, EffBlessedBoltKills), and a crossbow shoots
 // blessed bolts as quarrels (charhlp.pas, RecalcStats).
@@ -5364,6 +5394,7 @@ int main()
         strength_spells_strengthen();
         out_of_doors();
         a_quarrel_banishes_the_rakshasa();
+        a_quarrel_of_slaying_slays_its_quarry();
         a_blessed_bolt_slays_the_rakshasa();
         readied_items_give_their_effects();
         later_games_effects_take_their_own_numbers();
