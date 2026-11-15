@@ -431,6 +431,12 @@ void a_magic_user_memorizes_and_learns()
               }),
           "No more spells than its slots");
     party.choose_spells(mage, {{}, std::vector<std::string>{"magic_user:sleep"}});
+    // The same spells chosen again the next day keep one entry, moved to the
+    // later rest, so the nightly choices do not grow the save.
+    check(party.rest(), "The party rests another day");
+    party.choose_spells(mage, {{}, std::vector<std::string>{"magic_user:sleep"}});
+    check(party.member(mage).character.spell_edits().size() == 1,
+          "The same choice again at the same level keeps one entry");
     const auto fighting = party.participants();
     const auto numbers = original::Combatant::decode(fighting.front().character_profile);
     check(numbers && numbers->spells == std::vector<int>{21}, "It fights with Sleep memorized");

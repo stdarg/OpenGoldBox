@@ -134,7 +134,18 @@ void Character::choose_spells(const rules::RulesModule &rules, const rules::Spel
     auto candidate = sheet_;
     auto history = spell_edits_;
     rules.apply_spell_choices(candidate, choices, context, completeness);
-    history.push_back({static_cast<unsigned>(sheet_.level), rest_session, choices});
+    // The same spells chosen again at the same level change nothing on
+    // replay: the last choice only moves to this rest, so a long game's
+    // nightly choices do not grow its save without end.
+    const auto level = static_cast<unsigned>(sheet_.level);
+    if (!history.empty() && history.back().level == level && history.back().choices == choices)
+    {
+        history.back().rest_session = rest_session;
+    }
+    else
+    {
+        history.push_back({level, rest_session, choices});
+    }
     (void)rules.character_profile(candidate, {});
     sheet_ = std::move(candidate);
     spell_edits_ = std::move(history);
