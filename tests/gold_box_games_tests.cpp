@@ -4192,6 +4192,120 @@ const std::vector<RouteBeat> &darkness_route()
         // held back: the party hears the troops mustering and does not go on
         // (NO), and Shal offers her bluff (YES).
         route.push_back(step_beat(71, 3, 12, D::north, {"NO", "YES"}));
+        // The upper tower (map 67, script 67): level 9 is its rows 0 to 4,
+        // level 10 rows 5 to 9 and level 11 rows 10 to 15. Each faction the
+        // party breaks up sets a bit of cell 251h; with all eight Marcus
+        // stands in his chambers. Its camps are broken by the tower's
+        // servants but in its quiet side rooms (script 67's camp entry: no
+        // interruption on event 27), so the party walks on hurt between them,
+        // its clerics' cures cast where a member is below half.
+        const auto walk_tower =
+            [&route](std::initializer_list<std::tuple<unsigned, unsigned, D>> steps)
+        {
+            walk_passages(route, 67, steps);
+            for (auto beat = route.end() - static_cast<std::ptrdiff_t>(steps.size());
+                 beat != route.end(); ++beat)
+            {
+                beat->camp_broken = true;
+                beat->cure_first = true;
+            }
+        };
+        const auto tower_step =
+            [&route](unsigned x, unsigned y, D facing, std::vector<std::string> answers)
+        {
+            auto beat = step_beat(67, x, y, facing, std::move(answers));
+            beat.camp_broken = true;
+            beat.cure_first = true;
+            route.push_back(beat);
+        };
+        // First round to the side room at 2,0 (IT SEEMS SAFE TO REST IN),
+        // where the party rests.
+        walk_tower({{1, 0, D::west},
+                    {0, 0, D::south},
+                    {0, 1, D::south},
+                    {0, 2, D::south},
+                    {0, 3, D::east},
+                    {1, 3, D::north},
+                    {1, 2, D::north},
+                    {1, 1, D::east},
+                    {2, 1, D::north}});
+        auto upper_rest = step_beat(67, 2, 0, D::south);
+        upper_rest.rest_first = true;
+        upper_rest.rest_for_spells = true;
+        route.push_back(upper_rest);
+        // East along level 9 to the altar of the Cult of Moander (15,2, the
+        // cluebook's 3): the party cuts down the cultists coiled in the vines
+        // (YES), and the cultists charge (cell 251h bit 0).
+        walk_tower({{2, 1, D::east},
+                    {3, 1, D::north},
+                    {3, 0, D::east},
+                    {4, 0, D::east},
+                    {5, 0, D::east},
+                    {6, 0, D::east},
+                    {7, 0, D::east},
+                    {8, 0, D::south},
+                    {8, 1, D::south},
+                    {8, 2, D::south},
+                    {8, 3, D::east},
+                    {9, 3, D::east},
+                    {10, 3, D::east},
+                    {11, 3, D::east},
+                    {12, 3, D::east},
+                    {13, 3, D::north},
+                    {13, 2, D::east}});
+        tower_step(14, 2, D::east, {"YES"});
+        // West to the path down to level 10 (11,2, THE PATH GOES DOWN).
+        walk_tower({{15, 2, D::west}, {14, 2, D::west}, {13, 2, D::west}, {12, 2, D::west}});
+        tower_step(11, 2, D::west, {"YES"});
+        // Level 10: west to its quiet room (5,9), where the party rests.
+        walk_tower({{10, 7, D::north},
+                    {10, 6, D::north},
+                    {10, 5, D::west},
+                    {9, 5, D::west},
+                    {8, 5, D::west},
+                    {7, 5, D::west},
+                    {6, 5, D::west},
+                    {5, 5, D::south},
+                    {5, 6, D::south},
+                    {5, 7, D::west},
+                    {4, 7, D::west},
+                    {3, 7, D::west},
+                    {2, 7, D::south},
+                    {2, 8, D::south},
+                    {2, 9, D::east},
+                    {3, 9, D::east},
+                    {4, 9, D::east}});
+        auto quiet_room_10 = step_beat(67, 5, 9, D::west);
+        quiet_room_10.rest_first = true;
+        quiet_room_10.rest_for_spells = true;
+        route.push_back(quiet_room_10);
+        // East to the antechamber of the Red Wizards (13,5, the cluebook's
+        // 5): the party waits there (YES) and overhears the code word, RED.
+        // Through the door south it surprises two Red Wizards (13,6; cell
+        // B0h 1), and at the loft's door (14,7, the cluebook's 6) it raps
+        // (YES) and speaks the word: the coven inside falls on another, and
+        // the party beats the survivors (cell 251h bit 1). It does not step
+        // into the antechamber again, which would spoil the word (cell B0h).
+        walk_tower({{4, 9, D::west},
+                    {3, 9, D::west},
+                    {2, 9, D::north},
+                    {2, 8, D::north},
+                    {2, 7, D::north},
+                    {2, 6, D::east},
+                    {3, 6, D::east},
+                    {4, 6, D::east},
+                    {5, 6, D::north},
+                    {5, 5, D::east},
+                    {6, 5, D::east},
+                    {7, 5, D::east},
+                    {8, 5, D::east},
+                    {9, 5, D::east},
+                    {10, 5, D::east},
+                    {11, 5, D::east}});
+        tower_step(12, 5, D::east, {"YES"});
+        tower_step(13, 5, D::south, {});
+        tower_step(13, 6, D::south, {});
+        tower_step(13, 7, D::east, {"YES", "type:RED"});
         return route;
     }();
     return beats;
@@ -8196,9 +8310,14 @@ bool walk_census(GoldBoxGame game, bool route)
                 // camp entry sets cell 2Bh: the Fire Giant Cave outside its
                 // quiet rooms): its cures are cast instead.
                 const bool darkness = game == GoldBoxGame::pools_of_darkness;
+                // A camp that rested its day is no refusal, though its
+                // script set a period (the Tower of Marcus's 96 steps, broken
+                // but in its quiet rooms).
                 const bool refused =
-                    darkness && opengold::test::TourAccess::machine(session).variable(
-                                    opengold::por::EclAddress{0x2B}) != 0;
+                    darkness &&
+                    opengold::test::TourAccess::machine(session).variable(
+                        opengold::por::EclAddress{0x2B}) != 0 &&
+                    session.snapshot().dialogue.find("rest complete") == std::string::npos;
                 if (refused && resting && fights_fought == fights_before &&
                     party_hit_points() == hit_points_before)
                 {
