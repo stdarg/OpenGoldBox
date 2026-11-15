@@ -30,7 +30,7 @@ The user decided these on 2026-11-12:
 | 3 | *Secret of the Silver Blades* | 1990 | `SECRET` | Every file decodes ([secret.md](games/secret.md)) |
 | 4 | *Gateway to the Savage Frontier* | 1991 | `GATEWAY` | Every file decodes ([gateway.md](games/gateway.md)) |
 | 5 | *Pools of Darkness* | 1991 | `DARKNESS` | Its opening plays and its walk passes ([darkness.md](games/darkness.md)) |
-| 6 | *Treasures of the Savage Frontier* | 1992 | `TREASURE` | The walk passes every map and fight; the route plays to the Smuggler's Dock ([treasure.md](games/treasure.md)) |
+| 6 | *Treasures of the Savage Frontier* | 1992 | `TREASURE` | The walk passes every map and fight; the route plays from the opening to the win ([treasure.md](games/treasure.md)) |
 | 7 | *Forgotten Realms: Unlimited Adventures* | 1993 | `UA` | A design made with the kit plays: its walls, events and fights ([ua.md](games/ua.md)) |
 
 The developer's copies live in `/Users/edmond/GoldBox/<folder>`.
@@ -695,7 +695,7 @@ pictures, walls and script host, *Treasures* adding only what it changes.
    its share of the save's platinum, gems and jewelry when the option is on
    (`opengold_godot_treasure_from_gateway`). OpenGoldBox keeps a party's
    money in one purse, so a character's share is the purse divided evenly
-   among the save's player characters (a choice to confirm). *Gateway*,
+   among the save's player characters (decided 2026-11-15). *Gateway*,
    *Pools of Darkness* and *Treasures* games can be saved since then too: a
    save names their files although they number their scripts and maps
    differently and *Gateway* calls its item types `ITEMS.1`. Since 2026-11-14 a magic-user chooses its first- to
@@ -707,7 +707,7 @@ pictures, walls and script host, *Treasures* adding only what it changes.
    (script 51, maps 51 to 57, drawn from above from `OVER`'s pictures), with
    six fighters made under *Treasures*' rules, and runs each event and fight
    (treasure.md, The walk). Still to come: the music and sounds, the
-   romances, and the camp's Fix (PROGRAM 4) and Crown.
+   romances, and the camp dialog's Fix and Crown (the session has both since 2026-11-15).
    The win is in place: the event in which Freezefire dies (script 38 sets
    cell 25Ch to 1) ends as a win (`game_won`), the original having no ending
    of its own (treasure.md, The ending).
@@ -733,14 +733,19 @@ pictures, walls and script host, *Treasures* adding only what it changes.
    route). It needed COMBAT's flags after a fight, a spell cast outside
    combat answering a script, PROGRAM 3 and 5, the game's own item types,
    the overland's own steps and byte cells (treasure.md, What the route
-   needed). *Stand-ins:* the experience and money at Llorkh's hall, and the
-   test's win of three fights the route's player loses with every dice (the
-   Way Inn's last, Neverwinter's eastern base, the council's). *Where it stops:* Mirabar (map 30); until
-   the route reaches the win it passes when it plays every beat to map 30.
-   Next: the tenth mission's cell, Neverwinter and the sea to Fireshear, the
-   Firemines and the Ice Peak's four stages to Freezefire; PROGRAM 4 (the
-   camp's Fix, played for now as PROGRAM 5) and the camp's Crown are still
-   to come. The romances gate nothing (the cluebook's Falling in Love).
+   needed). Since 2026-11-15 it plays on to the win: the council's tenth
+   mission (cell 1F8h at FFh), Neverwinter's new north pier to Fireshear,
+   the grand yeti in the Firemines and the beholder at the dock, and the
+   Ice Peak's four stages, Aurilssbaarg, Bjorn's Hold, Icewolf and
+   Freezefire's lair, where the dragon's fall wins the game, each stage played from checkpoints; played whole it stops after the Fireshear voyage for now (treasure.md, Where it stops). The voyages run
+   PROGRAM 4, the original's Fix (the casters heal and cure by their spell
+   slots over a timed rest); the session's camp has the Fix and the Crown
+   (treasure.md, What the route needed), which the camp dialog does not
+   offer yet. *Stand-ins:* the experience and money at Llorkh's hall, and
+   the test's win of four fights the route's player loses with every dice
+   (the Way Inn's last, Neverwinter's eastern base, the council's, the
+   lair's black-robed men). The romances gate nothing (the cluebook's
+   Falling in Love).
 
 ### 8. *Unlimited Adventures*
 

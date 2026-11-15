@@ -4647,7 +4647,7 @@ const std::vector<RouteBeat> &gateway_route()
 
 // Treasures' route plays to the game's end once this is true; until then it
 // stops on this map (docs/GAMES.md, Treasures, step 6).
-constexpr bool treasure_route_ends_the_game = false;
+constexpr bool treasure_route_ends_the_game = true;
 constexpr unsigned treasure_route_stops_on_map = 30;
 
 // Treasures of the Savage Frontier's story, beat by beat, as its cluebook
@@ -5279,8 +5279,12 @@ const std::vector<RouteBeat> &treasure_route()
         route.push_back(quarrel);
         route.push_back({31, 7, 4, D::north, {"ACCEPT"}});
         // Out by Luskan's gate (15,15), where Jagaerda stays behind, by the
-        // east road.
-        route.push_back(step_beat(31, 15, 15, D::south, {"EAST TO MIRABAR"}));
+        // east road, rested first in the house (11,6), for the road's camps
+        // draw wandering monsters.
+        route.push_back({31, 11, 6, D::north, {}});
+        auto to_mirabar = step_beat(31, 15, 15, D::south, {"EAST TO MIRABAR"});
+        to_mirabar.rest_first = true;
+        route.push_back(to_mirabar);
         // Overland east (maps 51 and 52) to Mirabar (map 30), for its
         // council.
         walk_overland(route, 51,
@@ -5435,6 +5439,82 @@ const std::vector<RouteBeat> &treasure_route()
         auto to_ice_peak = step_beat(33, 1, 4, D::west, {"ICE PEAK"});
         to_ice_peak.rest_first = true;
         route.push_back(to_ice_peak);
+        // Aurilssbaarg (map 35), the Ice Peak's town: from the dock (2,15)
+        // north and east by the streets to the path east (15,10) to Bjorn's
+        // Hold (map 36), refusing the guards' escort to Tranjer Rolsk's trap
+        // and telling the Northmen the party fights Luskan, as the cluebook
+        // bids.
+        walk_passages(route, 35,
+                      {{2, 15, D::north},  {2, 14, D::north}, {2, 13, D::north},  {2, 12, D::north},
+                       {2, 11, D::east},   {3, 11, D::east},  {4, 11, D::east},   {5, 11, D::south},
+                       {5, 12, D::south},  {5, 13, D::east},  {6, 13, D::east},   {7, 13, D::east},
+                       {8, 13, D::north},  {8, 12, D::east},  {9, 12, D::east},   {10, 12, D::east},
+                       {11, 12, D::east},  {12, 12, D::east}, {13, 12, D::north}, {13, 11, D::east},
+                       {14, 11, D::north}, {14, 10, D::east}, {15, 10, D::east}},
+                      false, false, false, {"TELL STORY", "REFUSE"});
+        // Bjorn's Hold (map 36), where the Northmen are friends: rested
+        // indoors by the feasters' campfire (11,5), off the mountain paths,
+        // the party goes to the pier (15,3), where Northmen and Ice Hunters
+        // take it to Icewolf (map 37). The two parties of black-robed men
+        // (7,10 and beyond the hot archway at 10,8) are left alone: no later
+        // script asks whether they fell (cells 581h to 585h are Bjorn's
+        // Hold's own), and the first beats the route's party with every dice.
+        route.push_back({36, 11, 5, D::north, {}});
+        RouteBeat to_icewolf{36, 15, 3, D::north, {"READY"}};
+        to_icewolf.rest_first = true;
+        route.push_back(to_icewolf);
+        // Icewolf (map 37): the Northmen's gift, the Northhelm, worn by the
+        // first paladin (10,0); training with the Northman (15,6), a level a
+        // visit; then Bleak Sky at Morning (10,8, stepped into from the
+        // north), who asks whether it is time and lets the party through the
+        // one-way door (8,9), the last safe place, to rest and climb west
+        // and north to the Ice Peak's lair (map 38).
+        RouteBeat northhelm{37, 10, 0, D::north, {}};
+        northhelm.take_items = {{"HELM", "paladin 1"}};
+        route.push_back(northhelm);
+        for (int visit = 0; visit < 2; ++visit)
+        {
+            route.push_back({37, 15, 6, D::north, train_everyone()});
+        }
+        route.push_back(step_beat(37, 10, 7, D::south, {"IT IS TIME"}));
+        auto climb = step_beat(37, 8, 9, D::north);
+        climb.rest_first = true;
+        climb.rest_for_spells = true;
+        route.push_back(climb);
+        walk_passages(route, 37,
+                      {{8, 8, D::north}, {8, 7, D::north}, {8, 6, D::east},  {9, 6, D::north},
+                       {9, 5, D::west},  {8, 5, D::west},  {7, 5, D::north}, {7, 4, D::north},
+                       {7, 3, D::west},  {6, 3, D::west},  {5, 3, D::north}, {5, 2, D::west},
+                       {4, 2, D::north}, {4, 1, D::west},  {3, 1, D::west},  {2, 1, D::north},
+                       {2, 0, D::west},  {1, 0, D::west},  {0, 0, D::south}, {0, 1, D::west}});
+        // The Ice Peak (map 38): rested by the warm spring (3,13), where no
+        // monster breaks a camp, the party goes past the avalanche (9,10),
+        // whose stones it moves to find the tunnel, into the great cavern
+        // (7,8), and west and north into Freezefire's lair (3,6), where the
+        // black-robed men combing the hoard and then Freezefire himself,
+        // risen as the Gem is pried from his claw, fall with the dwarves'
+        // help (cell 25Ch set to 1), and the game is won.
+        // The wand of fireballs among the dead adventurers' remains (12,7)
+        // goes to the magic-user, readied for the lair.
+        RouteBeat remains{38, 12, 7, D::north, {}};
+        remains.take_wand = true;
+        route.push_back(remains);
+        route.push_back({38, 9, 10, D::north, {"ENTER TUNNEL"}});
+        auto cavern = step_beat(38, 7, 8, D::west);
+        cavern.rest_first = true;
+        cavern.rest_for_spells = true;
+        route.push_back(cavern);
+        walk_passages(route, 38,
+                      {{6, 8, D::west}, {5, 8, D::north}, {5, 7, D::west}, {4, 7, D::north}});
+        auto freezefire = step_beat(38, 4, 6, D::west);
+        freezefire.expect_cell = {{0x25C, 1}};
+        // A stand-in: the black-robed masters, mages and spies hold the
+        // party's members with Hold Person and Hold Monster and slay them
+        // helpless, rested, with the wand and with every dice the route's
+        // player tries, so the test wins whichever of the lair's fights its
+        // player loses.
+        freezefire.test_wins = true;
+        route.push_back(freezefire);
         // A camp on the overland (maps 51 to 57) draws its wandering
         // monsters night after night: the party walks on between towns
         // instead, as a player hurries to the next inn. So does one in the

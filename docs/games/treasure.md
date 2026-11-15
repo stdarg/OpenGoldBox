@@ -198,10 +198,10 @@ walk needed besides the opening's:
   scripts hold those maps.
 
 Still to come: the records that only set colors for the picture shown, the overland's color
-cycling, the music and sounds other than the footstep, PROGRAM 4 (the camp's
-Fix), the camp's Crown, the romances, and the rest of the route (below). The
-romances gate nothing: a lover fights better, or blindly when its love falls
-(the cluebook's Falling in Love).
+cycling, the music and sounds other than the footstep, the camp dialog's Fix
+and Crown buttons (the session has both, What the route needed), and the
+romances. The romances gate nothing: a lover fights better, or blindly when
+its love falls (the cluebook's Falling in Love).
 
 One of the walk's fights no side can finish (map 24 at 1,5): a caster with no
 spells left and no way to reach the party stands across the battlefield from
@@ -238,6 +238,41 @@ engine, each as the original does it:
 - **PROGRAM 5** makes the party whole: blindness, disease and poison cured,
   the dead (but elves) raised, the stoned made flesh, every Hit Point back
   (its RepairParty), then waits for the player. Freezefire's lair uses it.
+- **PROGRAM 4, the Fix** (its CampFixMenu, since 2026-11-15), which the
+  voyages run as the ship sails: nothing when no member is missing Hit
+  Points. Otherwise the party rests while its standing casters work by
+  their spell slots, not their memorized spells, which it leaves alone. The
+  healing is an average for each slot of a cure the caster knows (9 a
+  first-level slot for Cure Light Wounds, 17, 27 and 50 a fourth- to
+  sixth-level one for the Serious, Critical and Heal) and a roll for each
+  slot of those levels (1d8, 2d8+1, 3d8+3 and 4d8+3, a ranger's
+  second-level druid slots counting as first-level); the rest lasts the
+  longest caster's casting (a quarter hour a first-level slot, half an hour
+  a druid's, an hour, an hour and a quarter and an hour and a half a fourth-
+  to sixth-level one), less as the healing exceeds the wounds. After it the
+  casters cure as their slots allow: stone made flesh, poison neutralized,
+  the dead raised (resurrected, with Resurrection), curses lifted and sight
+  restored, each member in turn, then the healing is spent on the wounded in
+  the party's order. A second rest, as long as the cures still needed take
+  (an hour and three quarters a resurrection, an hour and a half a stone to
+  flesh, an hour and a quarter a raising, an hour a poison, three quarters
+  of an hour a blindness or curse), cures what the first could not. Either
+  rest is rolled for interruption as a camp is (cells 2Bh and 2Ch): from a
+  script the Fix then stops ("Your repose is suddenly interrupted!"), in
+  camp the camp's interruption script runs. It waits for a key only when it
+  has something to tell. The original's Restoration of drained levels and
+  Heal's cure of feeblemind are not cast yet; its bugs here are fixed
+  ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Bugs).
+- **The camp's Fix and Crown** (`RolfTourSession::camp_fix`, `camp_crown`):
+  Fix camps as a rest does and runs the Fix, where the original's camp menu
+  shows it (unless every rest step is interrupted). Crown, shown once the
+  party has Amanitas's crown (cell 3Fh) and until his last reading is given
+  (cell 25Ch at 2), tells the next luck reading as PROGRAM 3 does. The
+  game's camp dialog does not offer them yet.
+- **The tenth mission** is the council: no script sets its cell (130h). The
+  council's script marks it done by setting cell 1F8h to FFh, and the luck
+  reading is then 12 (go to the Ice Peak), as PROGRAM 3's order has it;
+  Neverwinter's Northpier Shipping and Fireshear's dock read that cell.
 - **Item types.** *Treasures* numbers its item types as *Pool of Radiance*
   does (its `ITEMS`): a long sword is 18, plate mail 36, a shield 37, a mace 8
   and a dagger 4.
@@ -345,16 +380,52 @@ Llorkh's hall, training the party to levels 8 and 9).
     Redleg (8,2; 10,5; 3,7; 4,9), frees him (3,8) and leaves in his boat
     (15,4), the ninth mission (cell 12Fh). Back in Luskan: Redleg's
     farewell (8,3), the captain and the sorceress (11,3), Jagaerda freed
-    (7,4), and out by the gate (15,15) on the east road.
+    (7,4), and, rested in the house (11,6), out by the gate (15,15) on the east road.
 16. **Mirabar** (map 30), by maps 51 and 52: the council (7,9) and the
     Krakens who burst in, King Steelfist (15,4) and the Marchion (1,7),
-    who sends his hammer Kriiador along.
+    who sends his hammer Kriiador along. The council done (cell 1F8h at
+    FFh, the tenth mission), the dead are raised at the Temple of Vergadain
+    (2,13) and the party rests at the Dig Inn (4,11).
+17. **Neverwinter** again, by the south gate (7,15) and maps 52, 51 and 53:
+    Northpier Shipping (4,12) books the passage, 250 platinum, and at 0700
+    the ship sails from the new north pier (2,11, facing west).
+18. **Fireshear** (map 33), its leaders taken by the yeti: from the landing
+    (6,15) through the streets and down the shaft at (0,14) to the
+    Firemines' refuge (map 34, 5,15), where it rests; back up, and down the
+    shaft at (5,12) to the mines' great chamber (7,7), where two waves of
+    yeti and ice hounds and the grand yeti fall (cell 22Dh, the
+    Shearmaster freed). Up the shaft at (1,11), rested, into the cavern on
+    the sea (1,4, stepped into facing west): the yeti and the beholder (cell
+    231h). From the dock (0,4) the dwarves sail the party free to the Ice
+    Peak.
+19. **Aurilssbaarg** (map 35): north and east through the streets to the
+    path east (15,10), refusing the guards' escort to Tranjer Rolsk's trap
+    and telling the Northmen the party fights Luskan (cell 238h at 1).
+20. **Bjorn's Hold** (map 36), the Northmen friends: rested by the
+    feasters' campfire (11,5), to the pier (15,3) and Icewolf. The two
+    parties of black-robed men (7,10; beyond the archway at 10,8) are left
+    alone: no later script asks whether they fell, and the first beats the
+    route's party with every dice.
+21. **Icewolf** (map 37): the Northhelm, the Northmen's gift (10,0), worn by
+    the first paladin; two visits to the Northman's training hall (15,6);
+    Bleak Sky at Morning (10,8), told it is time, lets the party through the
+    one-way door (8,9), where it rests and climbs west to the Ice Peak.
+22. **The Ice Peak** (map 38): the wand of fireballs from the dead
+    adventurers (12,7) for the magic-user; the avalanche's tunnel (9,10)
+    into the great cavern (7,8), where the party rests, and west and north
+    into Freezefire's lair (3,6): the black-robed men combing the hoard,
+    then Freezefire risen as the Gem is pried from his claw, with the
+    dwarves fighting beside the party. As the dragon dies the game is won
+    (The ending).
 
 *Stand-ins:* the experience and money at Llorkh's hall; the test wins the Way
 Inn's last fight (six Hosttower sorceresses charm the route's members),
 Neverwinter's eastern Kraken base (its giants, since the shared combat
-changes of 2026-11-15) and the council's (the Krakens who burst in), which
-the route's player loses with every dice it tries.
+changes of 2026-11-15), the council's (the Krakens who burst in) and the
+lair's black-robed men (their masters, mages and spies hold the members with
+Hold Person and Hold Monster and slay them helpless, the party rested and
+the wand readied), which the route's player loses with every dice it tries.
+Freezefire himself the route's player beats.
 
 Every walk is played step by step as the planning aid
 (`OPENGOLD_SECRET_FIND`, with `OPENGOLD_FIND_YES` for a town's "ENTER ...?"
@@ -362,16 +433,19 @@ and `OPENGOLD_SECRET_PREFER` for a ship's destination) finds it, and a beat
 that rests first rests a night even when the party is whole
 (`RouteBeat::rest_for_spells`), so its casters have their spells again;
 `OPENGOLD_WALLS` prints a map's walls, doors and events, and
-`OPENGOLD_CURSE_SURVEY=N` surveys map N. *Where it stops:* Mirabar, after
-the council. Until the route reaches the win its check passes when it plays
-every beat to map 30 (`treasure_route_stops_on_map`). Still to come: the
-cell that marks the tenth mission (130h stays 0 after the council; the
-luck reading tells which, as the camp's Crown would), back to Neverwinter
-and by sea to Fireshear (open after the council), the Firemines' grand yeti,
-and the Ice Peak's four stages (scripts 35 to 38) to Freezefire and the win.
-The voyages run PROGRAM 4, the camp's Fix, which OpenGoldBox still plays as
-PROGRAM 5 (every member made whole); the original's Fix has the clerics cast
-their cure spells over a timed rest (its CampFixMenu) and is still to come.
+`OPENGOLD_CURSE_SURVEY=N` surveys map N. Its check passes when "You have won."
+is shown with every member alive (`treasure_route_ends_the_game`).
+
+*Where it stops (2026-11-15):* every beat from the council to the win was
+played from checkpoints (`OPENGOLD_ROUTE_SAVE`/`RESUME`) and wins the game.
+Played whole since PROGRAM 4 runs the original's Fix, the voyages roll its
+dice and the later fights fall otherwise: the overland from Mirabar leaves
+the party hurt, Neverwinter's streets refuse it a camp before the ship, and
+in Fireshear each beat's camp heals a single Hit Point and then the party
+no longer steps (the camp stays refused, so no event runs; to be found from
+a checkpoint at the landing, beat 521). Next: find why the camp stays
+refused there, rest the party at an inn or temple of Neverwinter before
+the ship, and play the whole route to the win again.
 
 ## The ending
 
