@@ -858,11 +858,12 @@ starting equipment (ORIGINAL-RULES.md, *Pools of Darkness*). Until the route
 reaches the win it passes when it plays every beat to Moander's body
 (map 52).
 
-A camp the script let rest is no refusal (2026-11-15): the route's rest
-took a Darkness camp entry that sets cell 2Bh for one that refuses the
-rest, and stopped after a night; the tower's camp entry sets it as the
-period of a rest the quiet rooms let finish, so a rest that completes
-goes on until the party is whole.
+The route's rest takes a Darkness camp entry that sets cell 2Bh (the rest
+period) for one that refuses the rest, rests a night and cures the badly
+hurt; the tower's camp entry sets it in its quiet rooms too, where the rest
+finishes, so there the route rests on until the party is whole
+(`RouteBeat::rest_through_period`, 2026-11-15; the earlier beats keep their
+night).
 
 Myth Drannor's way out (2026-11-15, late) needed the 256-color engine's
 LOAD CHARACTER as the original has it: it reads its argument's low seven

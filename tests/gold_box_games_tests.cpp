@@ -538,6 +538,10 @@ struct RouteBeat
     // casters have their spells again, as a player rests before a known
     // fight (Treasures' Way Inn, whose fights follow one another).
     bool rest_for_spells = false;
+    // Pools of Darkness: rest until whole where the camp's script sets a
+    // rest period but lets the rest finish (the Tower of Marcus's quiet
+    // rooms), instead of taking that period for a refused camp.
+    bool rest_through_period = false;
     // Pools of Darkness: the clerics cast their cures on the badly hurt
     // before the beat instead of a camp, where a camp draws a swarm (the
     // Drow Testing Ground's Test, before its spiders' amulets are found).
@@ -4232,6 +4236,7 @@ const std::vector<RouteBeat> &darkness_route()
         auto upper_rest = step_beat(67, 2, 0, D::south);
         upper_rest.rest_first = true;
         upper_rest.rest_for_spells = true;
+        upper_rest.rest_through_period = true;
         route.push_back(upper_rest);
         // East along level 9 to the altar of the Cult of Moander (15,2, the
         // cluebook's 3): the party cuts down the cultists coiled in the vines
@@ -4278,6 +4283,7 @@ const std::vector<RouteBeat> &darkness_route()
         auto quiet_room_10 = step_beat(67, 5, 9, D::west);
         quiet_room_10.rest_first = true;
         quiet_room_10.rest_for_spells = true;
+        quiet_room_10.rest_through_period = true;
         route.push_back(quiet_room_10);
         // East to the antechamber of the Red Wizards (13,5, the cluebook's
         // 5): the party waits there (YES) and overhears the code word, RED.
@@ -4415,6 +4421,7 @@ const std::vector<RouteBeat> &darkness_route()
         auto rest_11 = step_beat(67, 11, 15, D::east);
         rest_11.rest_first = true;
         rest_11.rest_for_spells = true;
+        rest_11.rest_through_period = true;
         route.push_back(rest_11);
         // East through the door into the Dispersion Diagram (14,15, the
         // cluebook's 15): seeing it disrupts the last of Marcus's operations
@@ -8451,7 +8458,7 @@ bool walk_census(GoldBoxGame game, bool route)
         };
         // `a_night_first` rests a night even when the party is whole, so its
         // casters choose their spells anew (RouteBeat::rest_for_spells).
-        const auto rest_until_healed = [&](bool a_night_first = false)
+        const auto rest_until_healed = [&](bool a_night_first = false, bool through_period = false)
         {
             // Secret's party gives up resting where monsters break its camp
             // three times (its castle's guards come every night), and on that
@@ -8488,14 +8495,14 @@ bool walk_census(GoldBoxGame game, bool route)
                 // camp entry sets cell 2Bh: the Fire Giant Cave outside its
                 // quiet rooms): its cures are cast instead.
                 const bool darkness = game == GoldBoxGame::pools_of_darkness;
-                // A camp that rested its day is no refusal, though its
-                // script set a period (the Tower of Marcus's 96 steps, broken
-                // but in its quiet rooms).
-                const bool refused =
-                    darkness &&
-                    opengold::test::TourAccess::machine(session).variable(
-                        opengold::por::EclAddress{0x2B}) != 0 &&
-                    session.snapshot().dialogue.find("rest complete") == std::string::npos;
+                // With `through_period`, a camp that rested its day is no
+                // refusal, though its script set a period (the Tower of
+                // Marcus's 96 steps, broken but in its quiet rooms).
+                const bool refused = darkness &&
+                                     opengold::test::TourAccess::machine(session).variable(
+                                         opengold::por::EclAddress{0x2B}) != 0 &&
+                                     !(through_period && session.snapshot().dialogue.find(
+                                                             "rest complete") != std::string::npos);
                 if (refused && resting && fights_fought == fights_before &&
                     party_hit_points() == hit_points_before)
                 {
@@ -8688,7 +8695,9 @@ bool walk_census(GoldBoxGame game, bool route)
                 {
                     // A camp attacked fights: the last beat's flight is over.
                     fleeing = false;
-                    beat.waiting ? rest_in_wilderness() : rest_until_healed(beat.rest_for_spells);
+                    beat.waiting
+                        ? rest_in_wilderness()
+                        : rest_until_healed(beat.rest_for_spells, beat.rest_through_period);
                 }
                 if (beat.cure_first)
                 {
