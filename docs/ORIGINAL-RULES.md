@@ -542,13 +542,20 @@ Journal), chosen by the game as the others' are (2026-11-14):
     terrified for the fight, 2 worse to hit and 2 less harmful a blow
     (120). The original tries the fear twice as a fight starts (its fight
     start runs two conditions that both hold it), so one that saves once
-    faces it again; that is kept.
+    faces it again; that is kept. Kalistes' six weapons (116, 2026-11-15):
+    her first six attacks at a defender land, hit by hit, with a two-handed
+    sword (1d10), a bastard sword (2d4), a long sword and a scimitar (1d8
+    each), a dagger (1d4) and a spear (1d6), each +4, with 4 more and her
+    Strength's bonus in place of her record's 1d1, the weapon named; the
+    count starts again each time she attacks, and her further and second
+    attacks keep their own damage (EffMultiAttackNewWeapons, run as the
+    attacker's damage is reckoned, after Ray of Enfeeblement and dragon
+    fear).
   - *Its own, not played yet:* a giant-slaying sword (75), the blessed
     bolt that slays a rakshasa (82), the big red, green, blue and black
     dragons' breaths (83, 90, 91, 96), the bulette's rake (99), the
-    paralyzing and charming gazes (114, 124), Kalistes' new weapons
-    (116), the beholders' rays (117, which the original plays as nothing)
-    and the vorpal blade (115).
+    paralyzing and charming gazes (114, 124), the beholders' rays (117,
+    which the original plays as nothing) and the vorpal blade (115).
   - Its records' type flags, "immunities" and magic resistance are read
     (bytes 420, 421 and 491), *Secret*'s bits, so a creature is a snake, a
     mammal, a ranger's foe or unliving as in *Secret*.

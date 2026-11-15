@@ -115,16 +115,17 @@ constexpr int spell_proof = 640, disease_proof = 676, halved_below_plus_three = 
 // into, for the campaign to keep: past the kit's last effect (228), so no
 // record of the kit's names it.
 constexpr int armor_eaten = kit_effect_offset + 250;
-// Pools of Darkness's own (its 118 to 124, plus secret_effect_offset): a
-// dance, the druid's Protection from Fire, dragon fear's terror, Fire Touch,
-// Iron Skin and Mind Blank; and the caster's Blade Barrier, which no game's
-// effect numbers (604, past the conditions original_combat.h numbers 601 to
-// 603, so wasted Strength is not taken for a barrier). Its others no earlier
-// game has (its 67, 100 and 104, plus darkness_effect_offset): half harm
-// from crushing weapons, dragon fear and 4d6 of fire with a hit.
-constexpr int dancing = 518, druid_fire_protection = 519, dragon_feared = 520, fire_touch = 521,
-              iron_skin = 522, mind_blank = 523, blade_barrier = 604, halves_crushing = 537,
-              darkness_dragon_fear = 570, fire_hit = 574;
+// Pools of Darkness's own (its 116 and 118 to 124, plus
+// secret_effect_offset): Kalistes' six weapons, a dance, the druid's
+// Protection from Fire, dragon fear's terror, Fire Touch, Iron Skin and Mind
+// Blank; and the caster's Blade Barrier, which no game's effect numbers (604,
+// past the conditions original_combat.h numbers 601 to 603, so wasted
+// Strength is not taken for a barrier). Its others no earlier game has (its
+// 67, 100 and 104, plus darkness_effect_offset): half harm from crushing
+// weapons, dragon fear and 4d6 of fire with a hit.
+constexpr int six_weapons = 516, dancing = 518, druid_fire_protection = 519, dragon_feared = 520,
+              fire_touch = 521, iron_skin = 522, mind_blank = 523, blade_barrier = 604,
+              halves_crushing = 537, darkness_dragon_fear = 570, fire_hit = 574;
 } // namespace effect
 
 // What a hit carries, by the attacker's effects, in the original's order: a
@@ -1064,7 +1065,8 @@ class Session final : public rules::CombatSession
     [[nodiscard]] bool can_target(const Fighter &attacker, const Fighter &target) const;
     [[nodiscard]] bool turned_aside(Fighter &defender);
     [[nodiscard]] int weapon_damage_defenses(const Fighter &attacker, Fighter &defender, int damage,
-                                             int phase, int &primary_hits);
+                                             int phase, int primary_attacks, int &primary_hits);
+    [[nodiscard]] int six_weapons_blow(const Fighter &attacker, int primary_attacks, int damage);
     bool eat_armor(const Fighter &pudding, Fighter &target);
     void age_effects();
     [[nodiscard]] bool saving_throw(const Fighter &f, int save, int modifier,
@@ -1471,6 +1473,9 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
              {{"attacker", attacker.name}, {"name", defender.name}}});
     }
     int primary_hits = 0;
+    // The first attacks made at this defender, hit or miss (cbtacts.pas,
+    // RollAttacks' attackCounts), which pick Kalistes' weapon.
+    int primary_attacks = 0;
     for (int phase = attacker.attack_phase; phase >= 0 && defender.able(); --phase)
     {
         auto &left = attacker.attacks_left[static_cast<std::size_t>(phase)];
@@ -1485,6 +1490,7 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
         {
             --left;
             attacker.attack_phase = phase;
+            primary_attacks += phase == 0 ? 1 : 0;
             const auto natural = roll(20);
             // Attacking makes it visible (fxengine.pas, AttackRoll).
             while (attacker.has(effect::invisible))
@@ -1531,7 +1537,8 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
             {
                 damage *= attacker.numbers.thief_level / 4 + 2;
             }
-            damage = weapon_damage_defenses(attacker, defender, damage, phase, primary_hits);
+            damage = weapon_damage_defenses(attacker, defender, damage, phase, primary_attacks,
+                                            primary_hits);
             if (backstab && secret_engine())
             {
                 const int multiple = (attacker.numbers.thief_level - 1) / 4 + 2;
@@ -7228,12 +7235,48 @@ bool Session::turned_aside(Fighter &defender)
     return false;
 }
 
+// Pools of Darkness's Kalistes strikes the first six attacks of each attack
+// she makes with six weapons in turn (effhndlr.pas, EffMultiAttackNewWeapons): each
+// blow does its weapon's dice, 4 more and her Strength's bonus, in place of
+// what her record's dice did, and names the weapon. Her further attacks, and
+// any of her second form, keep their damage, as the original's count of first
+// attacks picks no weapon for them.
+int Session::six_weapons_blow(const Fighter &attacker, int primary_attacks, int damage)
+{
+    struct Weapon
+    {
+        int dice, sides;
+        std::string_view name;
+    };
+
+    constexpr std::array<Weapon, 6> weapons{{{1, 10, "Two-Handed Sword +4"},
+                                             {2, 4, "Bastard Sword +4"},
+                                             {1, 8, "Long Sword +4"},
+                                             {1, 8, "Scimitar +4"},
+                                             {1, 4, "Dagger +4"},
+                                             {1, 6, "Spear +4"}}};
+    if (primary_attacks < 1 || primary_attacks > static_cast<int>(weapons.size()))
+    {
+        return damage;
+    }
+    const auto &weapon = weapons[static_cast<std::size_t>(primary_attacks - 1)];
+    int blow =
+        4 + strength_damage_bonus(attacker.numbers.strength, attacker.numbers.exceptional_strength);
+    for (int die = 0; die < weapon.dice; ++die)
+    {
+        blow += roll(weapon.sides);
+    }
+    log({"{attacker} strikes with a {weapon}.",
+         {{"attacker", attacker.name}, {"weapon", std::string(weapon.name)}}});
+    return std::max(blow, 0);
+}
+
 // What the defender's effects make of a weapon's damage, in the original's
 // order (effhndlr.pas, WEAPON_DAMAGE_DEFENDER): evading missiles and boulders
 // from afar, a troll's regeneration beginning, halving by weapon class or
 // magic, weapons that cannot harm it, and oil or holy water.
 int Session::weapon_damage_defenses(const Fighter &attacker, Fighter &defender, int damage,
-                                    int phase, int &primary_hits)
+                                    int phase, int primary_attacks, int &primary_hits)
 {
     const auto &striker = attacker.numbers.striker;
     const int plus = striker ? striker->plus : 0;
@@ -7279,6 +7322,10 @@ int Session::weapon_damage_defenses(const Fighter &attacker, Fighter &defender, 
     if (attacker.has(effect::dragon_feared))
     {
         damage = std::max(damage - 2, 0);
+    }
+    if (attacker.has(effect::six_weapons))
+    {
+        damage = six_weapons_blow(attacker, primary_attacks, damage);
     }
     // Mirror images take blows too, as the manual says; the original let them
     // take only a spell's (an obvious bug, fixed).

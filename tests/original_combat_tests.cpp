@@ -4075,6 +4075,7 @@ void darkness_records_fight_by_their_effects()
               (creature_at(55).traits & original::trait::unliving),
           "A hill giant is a ranger's foe and a giant-bane weapon's; a wight is unliving");
     check(has(creature_at(78), 457), "Marcus is in a Globe of Invulnerability");
+    check(has(creature_at(13), 516), "Kalistes strikes with six weapons");
     check(creature_at(75).traits & original::trait::snake, "A poisonous snake is a snake");
 }
 
@@ -4132,6 +4133,40 @@ void darkness_monsters_fight_by_their_effects()
     until_turn_of(*feared.session, "Squire");
     check(!view_of(feared.session->snapshot(), "Squire").panicked,
           "The terrified fight on, worse off");
+}
+
+// Kalistes' six weapons (Pools of Darkness's effect 116): each of her first
+// six blows at a defender lands with the next weapon, its dice and 4 more
+// with her Strength's bonus, whatever her record's dice (effhndlr.pas,
+// EffMultiAttackNewWeapons).
+void darkness_kalistes_strikes_with_six_weapons()
+{
+    const auto six_weapons = original::canonical_effect(116, darkness_game);
+    const auto struck = [](const rules::CombatSession &session)
+    {
+        return logged(session, "{attacker} strikes with a {weapon}.") >= 6;
+    };
+    const auto fight =
+        attack_until(monster({12, 1, 1, 0}, {0, 0, 0, 0}, {{six_weapons, 0, 0, false}}),
+                     victim(500), struck, 47, darkness_game);
+    const auto &session = *fight.session;
+    std::vector<std::string> weapons;
+    for (const auto &entry : session.snapshot().log_entries)
+    {
+        for (const auto &argument : entry.message.arguments)
+        {
+            if (argument.name == "weapon")
+            {
+                weapons.push_back(argument.value);
+            }
+        }
+    }
+    check(weapons == std::vector<std::string>{"Two-Handed Sword +4", "Bastard Sword +4",
+                                              "Long Sword +4", "Scimitar +4", "Dagger +4",
+                                              "Spear +4"},
+          "Her six blows land with her six weapons in turn");
+    const int harm = 500 - view_of(session.snapshot(), "Victim").hit_points;
+    check(harm >= 31 && harm <= 68, "Each does its weapon's dice and 4 more, not her 1d1");
 }
 
 // Pools of Darkness plays Secret's rules where its reconstruction does as
@@ -5114,6 +5149,7 @@ int main()
         darkness_effects_take_their_own_numbers();
         darkness_records_fight_by_their_effects();
         darkness_monsters_fight_by_their_effects();
+        darkness_kalistes_strikes_with_six_weapons();
         darkness_holds_no_monster();
         std::cout << "Original-rules combat passed.\n";
     }
