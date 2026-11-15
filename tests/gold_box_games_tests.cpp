@@ -3346,6 +3346,18 @@ const std::vector<RouteBeat> &darkness_route()
              {11, 14, D::west},  {10, 14, D::west},  {9, 14, D::west},   {8, 14, D::south},
              {8, 15, D::west},   {7, 15, D::west},   {6, 15, D::west}});
         route.push_back(step_beat(81, 5, 15, D::south, {"YES", "NO"}));
+        // North-east and east along the paths, passing the other sites by,
+        // to the village beside the road (33,1), by Kalistes' Parlor.
+        RouteBeat to_roadside_village{83, 0, 0, D::north, {}};
+        to_roadside_village.passing = true;
+        to_roadside_village.area_steps = {C::northeast, C::northeast, C::northeast,
+                                          C::northeast, C::northeast, C::northeast};
+        to_roadside_village.area_steps.insert(to_roadside_village.area_steps.end(), 13, C::east);
+        route.push_back(to_roadside_village);
+        RouteBeat into_roadside_village{83, 0, 0, D::north, {"YES"}};
+        into_roadside_village.area_steps = {C::east};
+        into_roadside_village.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x25, 33};
+        route.push_back(into_roadside_village);
         return route;
     }();
     return beats;
