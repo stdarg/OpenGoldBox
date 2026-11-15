@@ -9,6 +9,7 @@
 #include <iterator>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace opengold::original
@@ -512,9 +513,45 @@ int kit_kin(const por::CharacterRecord &record)
     return kinds;
 }
 
+// Its immunities (+C0h): bit 1 a giant-slaying sword's quarry, 20h proof
+// against a vorpal blade (the kit's fxcombat.c, fx_damage_vs_immunity1 and
+// fx_vorpal).
 int kit_traits(const por::CharacterRecord &record)
 {
-    return (record.creature_type_flags & 0x08) ? trait::ranger_foe : 0;
+    int traits = (record.creature_type_flags & 0x08) ? trait::ranger_foe : 0;
+    traits |= (record.target_flags & 0x01) ? trait::giant_bane : 0;
+    traits |= (record.target_flags & 0x20) ? trait::beheading_proof : 0;
+    return traits;
+}
+
+// An Unlimited Adventures item's special effect when readied: its third
+// effect byte from 80h, its low bits saying what (the kit's charview.c,
+// item_effect). 80h gives its wielder the effect its second byte names
+// (granted_effect); 83h and 85h change its Strength (fxcore.c, fx_stat_recalc).
+constexpr std::uint8_t kit_strength_18_00 = 0x83, kit_giant_strength = 0x85;
+
+// The Strength a creature's readied items give it, where better than its
+// own (fx_stat_recalc): 18/00 with gauntlets of ogre power (83h), 18 and the
+// item's second byte with a girdle of giant strength (85h).
+std::pair<int, int> kit_item_strength(int strength, int exceptional,
+                                      std::span<const CarriedItem> carried)
+{
+    for (const auto &r : carried)
+    {
+        const auto &bytes = r.item.effect_codes;
+        if (!r.item.readied() || (bytes[2] != kit_strength_18_00 && bytes[2] != kit_giant_strength))
+        {
+            continue;
+        }
+        const int given = bytes[2] == kit_strength_18_00 ? 18 : 18 + bytes[1];
+        const int given_exceptional = given == 18 ? 100 : 0;
+        if (given > strength || (given == strength && given_exceptional > exceptional))
+        {
+            strength = given;
+            exceptional = given_exceptional;
+        }
+    }
+    return {strength, exceptional};
 }
 
 // Secret's effect that turns a gaze back on the gazer (EffPetrifyingGaze in
@@ -695,15 +732,67 @@ int darkness_canonical_effect(int code) noexcept
 // kit_effect_offset higher.
 int kit_canonical_effect(int code) noexcept
 {
-    constexpr std::array<std::pair<int, int>, 54> matched{{
-        {6, 335},   {8, 8},     {18, 124},  {24, 24},   {26, 26},   {37, 237},  {45, 45},
-        {47, 47},   {58, 458},  {59, 127},  {60, 460},  {64, 64},   {65, 465},  {66, 115},
-        {70, 470},  {73, 273},  {79, 479},  {82, 330},  {84, 504},  {85, 483},  {86, 70},
-        {88, 488},  {89, 89},   {91, 88},   {92, 492},  {93, 112},  {95, 107},  {96, 290},
-        {98, 310},  {100, 482}, {101, 85},  {102, 86},  {103, 119}, {105, 334}, {108, 303},
-        {117, 287}, {124, 84},  {132, 488}, {141, 108}, {143, 111}, {158, 109}, {159, 117},
-        {169, 116}, {170, 87},  {171, 82},  {173, 284}, {174, 282}, {175, 281}, {176, 257},
-        {216, 100}, {217, 101}, {220, 296}, {223, 480}, {224, 68},
+    constexpr std::array<std::pair<int, int>, 58> matched{{
+        {6, 335},
+        {8, 8},
+        {18, 124},
+        {24, 24},
+        {26, 26},
+        {37, 237},
+        {45, 45},
+        {47, 47},
+        {58, 458},
+        {59, 127},
+        {60, 460},
+        {64, 64},
+        {65, 465},
+        {66, 115},
+        {70, 470},
+        {73, 273},
+        {79, 479},
+        {82, 330},
+        {84, 504},
+        {85, 483},
+        {86, 70},
+        {88, 488},
+        {89, 89},
+        {91, 88},
+        {92, 492},
+        {93, 112},
+        {95, 107},
+        {96, 290},
+        {98, 310},
+        {100, 482},
+        {101, 85},
+        {102, 86},
+        {103, 119},
+        {105, 334},
+        {108, 303},
+        {117, 287},
+        {124, 84},
+        {132, 488},
+        {141, 108},
+        {143, 111},
+        {158, 109},
+        {159, 117},
+        {169, 116},
+        {170, 87},
+        {171, 82},
+        {173, 284},
+        {174, 282},
+        {175, 281},
+        {176, 257},
+        {216, 100},
+        {217, 101},
+        {220, 296},
+        {223, 480},
+        {224, 68},
+        // Its items' (docs/games/ua.md, Items' special effects): resisting
+        // cold, a curse, a ring of invisibility and a luckstone.
+        {10, 10},
+        {36, 36},
+        {56, 56},
+        {78, 478},
     }};
     const auto found = std::ranges::find(matched, code, &std::pair<int, int>::first);
     return found != matched.end() ? found->second : code + kit_effect_offset;
@@ -798,8 +887,12 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
                                 std::span<const por::EffectRecord> effects)
 {
     Combatant c;
-    const int strength = record.current_abilities.strength;
-    const int exceptional = record.current_abilities.exceptional_strength;
+    const bool kit = record.game == GoldBoxGame::unlimited_adventures;
+    const auto [strength, exceptional] =
+        kit ? kit_item_strength(record.current_abilities.strength,
+                                record.current_abilities.exceptional_strength, carried)
+            : std::pair<int, int>{record.current_abilities.strength,
+                                  record.current_abilities.exceptional_strength};
     const int dexterity = record.current_abilities.dexterity;
     const bool uses_strength = record.strength_bonus_flag_raw != 0;
     c.max_hit_points = std::max<int>(record.max_hit_points, 1);
@@ -939,7 +1032,6 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
     c.constitution = record.current_abilities.constitution;
     c.alignment = record.alignment;
     c.creature_type = record.type;
-    const bool kit = record.game == GoldBoxGame::unlimited_adventures;
     c.kin = secret ? secret_kin(record) : kit ? kit_kin(record) : kin_of(record);
     c.traits = secret ? secret_traits(record) : kit ? kit_traits(record) : 0;
     c.magic_resistance = record.magic_resistance;

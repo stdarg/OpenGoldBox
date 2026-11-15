@@ -518,8 +518,8 @@ Its differences from the Pool family ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md))
   is; a spell's casting time and Delay move a creature back in it. *Done*
   (2026-11-14, the fight's `ordered_rounds`).
 - A roll of 17 or more that hits is a critical hit, which only lets a
-  vorpal weapon behead (`fxcombat.c`, `fx_vorpal`); it waits for items'
-  special effects when readied (What remains).
+  vorpal weapon behead (`fxcombat.c`, `fx_vorpal`). *Done* (2026-11-15,
+  Items' special effects).
 - Difficulty (five levels, Normal the third) changes the party's to-hit and
   the monsters' Hit Points; the game's Difficulty plays them, OpenGoldBox's
   table or both, as the Options screen's Design difficulty says (the user,
@@ -581,7 +581,11 @@ playing each event and fight; it fails on any event the session cannot play.
   monster picture at its range.
 - Fights:
   - The differences of the near matches (Monsters' effects, below).
-  - An item's special effect when readied.
+  - The ring of wizardry's special (81h, the magic-user's fifth-level
+    spells doubled while readied) and the 86h special no shipped item has;
+    the Strength gauntlets and girdles give plays in fights only, not at a
+    locked door or in a load, and a member that takes them off in a fight
+    keeps their Strength to its end.
   - An NPC's spell book (+153h, a bit a spell from 1): a magic-user NPC
     joins knowing only what the rules give it, and memorizes at its first
     rest rather than with the spells its record holds.
@@ -591,11 +595,9 @@ playing each event and fight; it fails on any event the session cannot play.
     wandering monsters, its step events and rest encounters, play.)
   - Byte 12h's top bits (the turning level +0, 2, 10 or 41 over the
     area's) and an icon over two squares a side, which stands as two.
-- A critical hit's vorpal beheading, with items' special effects.
 
-Next, in this order (2026-11-15; monsters' spells are done): items' special
-effects when readied, which bring the vorpal beheading on a hit of 17 or
-more; the services' smaller parts (Appraise, vault items, a temple's
+Next, in this order (2026-11-15; monsters' spells and items' special
+effects are done): the services' smaller parts (Appraise, vault items, a temple's
 Restoration, building on the rules' Restoration in camp now on main); the
 near matches' differences (Monsters' effects).
 
@@ -696,6 +698,44 @@ every third step; `opengold_original_combat_tests` each of the kit's own
 effects and a ranger beside a ranger's foe, and that no one casts in a
 no-magic fight, saved or not; `opengold_original_creation_tests` a black
 pudding eating a member's armor, which the inventory keeps.
+
+### Items' special effects
+
+Since 2026-11-15 an item's special effect plays while it is readied, a
+party member's or a monster's (`original::combatant_from_record`; the
+kit's `charview.c`, `item_effect`, and `fxcore.c`, `fx_stat_recalc`). An
+item's three effect bytes are its charges, its spell or effect, and its
+special; a special from 80h says what readying it does:
+
+- **80h**: its wielder carries the effect the second byte names, for good,
+  and loses it as the item is put away, in a fight too. The kit's items
+  carry thirteen; each plays as the fight's effect that does what the
+  kit's does: displacement (89), blinking (37, the fight's 237),
+  protection from evil (45), immunity to electricity (6, 335), resisting
+  cold (10), a curse's 4 worse at attacks and saves (36), a ring of
+  invisibility hiding its wearer each round (56), a luckstone's save 1
+  better (78, Secret's 478) and no disease (76, 676); and four only the
+  kit has, 600 higher: a vorpal blade (115, 715) beheads with a primary
+  blow of a natural 17 or more, the kit's critical hit, any creature but
+  one whose immunities (+C0h) have bit 20h; a giant-slaying sword (75,
+  675) strikes one whose immunities have bit 1 (the kit's ogre
+  among them) 1 better for 6d6 and its Strength's damage
+  instead of its own dice; a ring of fire resistance (61, 661) takes no
+  harm from ordinary fire, takes 2 less a die of magical fire, never under
+  1 a die, and saves against fire 4 better; boots of speed (74, 674)
+  double movement, with Haste too. The kit's 72 does nothing.
+- **83h**: Strength 18/00 (gauntlets of ogre power), and **85h**: 18 and
+  the second byte (a girdle of giant strength; the kit's gives 23), where
+  better than the wielder's own.
+
+The kit added the giant-slaying sword's 1 to the roll after it was made,
+where it changed nothing (ORIGINAL-RULES.md, Bugs).
+
+`opengold_ua_session_tests` readies each of ITEM.DAT's items that gives an
+effect, and the gauntlets and the girdle, and puts them away;
+`opengold_original_combat_tests` beheads with a vorpal blade (and never one
+proof against it), strikes a giant-slayer's quarry, burns a ring's wearer
+with a fireball and moves in boots of speed.
 
 ### The end
 

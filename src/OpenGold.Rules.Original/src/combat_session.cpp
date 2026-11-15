@@ -111,6 +111,10 @@ constexpr int spell_proof = 640, disease_proof = 676, halved_below_plus_three = 
               needs_plus_two = 725, gaze_proof = 726, stench = 737, sickened = 748,
               hurt_more_by_magical_fire = 768, eats_armor = 786, blow_proof = 793,
               gorgon_breath = 795, fire_less_by_the_die = 819;
+// The kit's items' own, while readied (docs/games/ua.md, Items' special
+// effects): a ring of fire resistance, boots of speed, a giant-slaying sword
+// and a vorpal blade.
+constexpr int fire_resistance_ring = 661, speed_boots = 674, kit_giant_bane = 675, vorpal = 715;
 // OpenGoldBox's own mark on a creature whose armor a black pudding has eaten
 // into, for the campaign to keep: past the kit's last effect (228), so no
 // record of the kit's names it.
@@ -133,12 +137,14 @@ constexpr int six_weapons = 516, dancing = 518, druid_fire_protection = 519, dra
 // What a hit carries, by the attacker's effects, in the original's order: a
 // primary attack's hit and a secondary one's (effhndlr.pas, HIT_PHASE_1 and
 // HIT_PHASE_2).
-constexpr std::array<int, 18> primary_hit_effects{
+constexpr std::array<int, 19> primary_hit_effects{
     85, 86, 87, 68, 79, 80, 76, 73, 77,
     // Curse's (canonical_effect).
     257, 296, 322, 323, 345,
     // Secret's (fxengine.pas, its conditions 2 and 3, in its reconstruction).
-    effect::poison_touch, effect::stone_touch, effect::strong_poison_touch, effect::ghoul_touch};
+    effect::poison_touch, effect::stone_touch, effect::strong_poison_touch, effect::ghoul_touch,
+    // The kit's vorpal blade (its fxcore.c, fx_trigger_group 2).
+    effect::vorpal};
 constexpr std::array<int, 15> secondary_hit_effects{
     64, 65, 66, 67, 68, 69, 70, 79, 85, 86, 87,
     // Secret's.
@@ -626,11 +632,15 @@ bool dispel_evil_takes(const Fighter &f, GoldBoxGame game)
     return alignment == 2 || alignment == 5 || alignment == 8;
 }
 
-// Whether a Secret giant-bane weapon (its effect 75, EffHolyWater) bites on
-// the defender: one its record flags for it (target flag bit 0).
+// Whether a giant-bane weapon bites on the defender, one its record flags
+// for it (target flag bit 0): Secret's (its effect 75, EffHolyWater) or the
+// kit's giant-slaying sword (fxcombat.c, fx_damage_vs_immunity1), each 6d6
+// and the wielder's Strength bonus.
 bool giant_bane_strikes(const Fighter &attacker, const Fighter &defender, GoldBoxGame game)
 {
-    return game == GoldBoxGame::secret_of_the_silver_blades && attacker.has(effect::giant_bane) &&
+    const bool secret_bane =
+        game == GoldBoxGame::secret_of_the_silver_blades && attacker.has(effect::giant_bane);
+    return (secret_bane || attacker.has(effect::kit_giant_bane)) &&
            (defender.numbers.traits & trait::giant_bane) != 0;
 }
 
@@ -1143,11 +1153,12 @@ void Session::log(Message message)
 // A creature's movement in squares before Haste and Slow (cbtacts.pas,
 // CalcCreatureMovement): the party's side moves by the script's modifier
 // too, a byte that wraps, and a movement outside 1 to 96 is 1. Secret's
-// boots of speed double it (charhlp.pas, RecalcMovement).
+// boots of speed double it (charhlp.pas, RecalcMovement), as the kit's do
+// (hero.c, recalc_stats).
 int Session::squares_of_movement(const Fighter &f) const
 {
     int squares = f.numbers.movement;
-    if (secret() && f.has(effect::boots_of_speed))
+    if ((secret() && f.has(effect::boots_of_speed)) || f.has(effect::speed_boots))
     {
         squares *= 2;
     }
@@ -1623,6 +1634,9 @@ int attack_modifier(const Fighter &attacker, const Fighter &defender, GoldBoxGam
     }
     // Dispel Evil keeps the evil 7 worse off at its bearer (Curse, DispelEvil).
     modifier -= dispel_evil_takes(attacker, game) && defender.has(204) ? 7 : 0;
+    // A giant-bane weapon strikes its quarry 1 better. The kit added the 1
+    // after the roll, where it changed nothing (an obvious bug, fixed;
+    // fxcombat.c, fx_damage_vs_immunity1).
     modifier += giant_bane_strikes(attacker, defender, game) ? 1 : 0;
     return modifier;
 }
@@ -1954,6 +1968,15 @@ void Session::on_hit(Fighter &attacker, Fighter &defender, int phase, int primar
             break;
         case effect::strong_poison_touch:
             secret_poison(defender, -2);
+            break;
+        case effect::vorpal:
+            // A primary blow on a natural 17 or more is the kit's critical
+            // hit, which beheads but a creature proof against it (fxcore.c,
+            // fx_attack_roll; fxcombat.c, fx_vorpal).
+            if (natural >= 17 && (defender.numbers.traits & trait::beheading_proof) == 0)
+            {
+                kill(defender, "{name} is beheaded.");
+            }
             break;
         case effect::stone_touch:
             // A cockatrice's touch, saved against as petrification (EffFleshToStone).
@@ -4722,6 +4745,12 @@ void Session::nonweapon_damage(Fighter &target, int damage, int save_result, boo
     if ((element & 1) && target.has(effect::fire_less_by_the_die) && damage > 0)
     {
         damage = std::max(damage - damage_dice_, damage_dice_);
+    }
+    // The kit's ring of fire resistance: no harm from ordinary fire, and 2
+    // less a die of magical fire, never under 1 a die (effects.c, fx_fire_ring).
+    if ((element & 1) && target.has(effect::fire_resistance_ring) && damage > 0)
+    {
+        damage = (element & 8) ? std::max(damage - 2 * damage_dice_, damage_dice_) : 0;
     }
     if (saved && save_result == 1)
     {
@@ -7537,7 +7566,7 @@ int Session::weapon_damage_defenses(const Fighter &attacker, Fighter &defender, 
     }
     // A salamander's heat adds 1d6 unless the target resists fire (303).
     if (attacker.has(303) && damage > 0 && !defender.has(effect::resist_fire) &&
-        !defender.has(254) && !defender.has(61))
+        !defender.has(254) && !defender.has(61) && !defender.has(effect::fire_resistance_ring))
     {
         damage += roll(6);
     }
@@ -7662,6 +7691,7 @@ bool Session::saving_throw(const Fighter &f, int save, int modifier, const Fight
     {
         modifier += 3;
     }
+    modifier += (element & 1) && f.has(effect::fire_resistance_ring) ? 4 : 0;
     // Curse's fire shields: the hot one saves 2 better against cold, the
     // cold one against fire (HotFireShield, ColdFireShield).
     if (((element & 2) && f.has(250)) || ((element & 1) && f.has(254)))

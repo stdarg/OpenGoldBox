@@ -267,6 +267,8 @@ inline constexpr int giant_bane = 16;
 inline constexpr int person = 32;
 // It breathes a stinking cloud unharmed; Slay Living and Death Spell cannot slay it.
 inline constexpr int unliving = 64;
+// A vorpal weapon cannot behead it (the kit's immunity bit 20h).
+inline constexpr int beheading_proof = 128;
 } // namespace trait
 
 // An item a creature carries, with its type (ITEMS); it fights with those it

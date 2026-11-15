@@ -5118,6 +5118,81 @@ void the_kits_monsters_breathe()
 
 // The kit's monster types (+BFh): a ranger beside a ranger's foe adds its
 // level to the blow (105); a giant the kit does not call one takes it as it is.
+// The kit's items' effects while readied (docs/games/ua.md, Items' special
+// effects): a vorpal blade beheads with a blow of a natural 17 or more but a
+// creature proof against it (115); a giant-slaying sword strikes its quarry
+// 1 better for 6d6 (75); a ring of fire resistance takes 2 a die off magical
+// fire, never under 1 a die (61); boots of speed double movement (74).
+void the_kits_items_strike_as_the_kit_has_them()
+{
+    const auto wielder = [](int code)
+    {
+        return monster({2, 1, 1, 0}, {0, 0, 0, 0}, {kit_effect(code)});
+    };
+    const auto target_of = [](int traits)
+    {
+        auto c = creature(1000, 0);
+        c.traits = traits;
+        return c;
+    };
+    const auto beheading = [&](int traits)
+    {
+        return strike_until(
+            wielder(115), target_of(traits),
+            [](const rules::CombatSession &session)
+            {
+                return logged(session, "{name} is beheaded.") > 0;
+            },
+            53, kit_game);
+    };
+    const auto blade = beheading(0);
+    check(logged(*blade.session, "{name} is beheaded.") == 1 &&
+              logged(*blade.session, "{attacker} hits {name} for {damage}.", "Attacker") > 1,
+          "A vorpal blade beheads with the kit's critical hit, not with every blow");
+    const auto proof = beheading(original::trait::beheading_proof);
+    check(logged(*proof.session, "{name} is beheaded.") == 0 &&
+              logged(*proof.session, "{attacker} hits {name} for {damage}.", "Attacker") > 20,
+          "Never one proof against it");
+    const int bane = first_hit(wielder(75), target_of(original::trait::giant_bane), kit_game);
+    check(bane >= 6 && bane <= 36 && first_hit(wielder(75), target_of(0), kit_game) == 1,
+          "A giant-slaying sword strikes its quarry for 6d6, others as it would");
+
+    using original::ClassSlot;
+    auto ringed = victim(100);
+    ringed.effects.push_back(kit_effect(61));
+    auto burning =
+        arrange({{"Mage", rules::Side::party, {0, 0}, caster(ClassSlot::magic_user, 5, {47})},
+                 {"Plain", rules::Side::opposition, {6, 5}, victim(100)},
+                 {"Ringed", rules::Side::opposition, {5, 5}, ringed}},
+                105, {}, 100, kit_game);
+    cast_now(*burning.session, "Mage", 47,
+             [&]
+             {
+                 return aim_at_cell(*burning.session, {6, 5});
+             });
+    const auto state = burning.session->snapshot();
+    const int plain = 100 - view_of(state, "Plain").hit_points;
+    check(plain >= 5 && 100 - view_of(state, "Ringed").hit_points == std::max(plain - 10, 5),
+          "A ring of fire resistance takes 2 a die off the fireball's 5");
+
+    auto booted = creature(30, 0);
+    booted.movement = 6;
+    booted.effects.push_back(kit_effect(74));
+    auto walker = creature(30, 0);
+    walker.movement = 6;
+    auto walking = arrange({{"Booted", rules::Side::party, {0, 0}, booted},
+                            {"Walker", rules::Side::party, {0, 2}, walker},
+                            {"Foe", rules::Side::opposition, {7, 7}, creature(30, 0)}},
+                           61, {}, 100, kit_game);
+    const auto feet = [&](std::string_view name)
+    {
+        until_turn_of(*walking.session, name);
+        return view_of(walking.session->snapshot(), name).movement_feet;
+    };
+    const int booted_feet = feet("Booted");
+    check(booted_feet == 2 * feet("Walker"), "Boots of speed double their wearer's movement");
+}
+
 void the_kits_rangers_know_their_foes()
 {
     auto ranger = monster({2, 1, 1, 9}, {0, 0, 0, 0}, {{334, 0, 0, false}});
@@ -5247,6 +5322,7 @@ int main()
         the_kits_monsters_act_as_the_kit_has_them();
         the_kits_monsters_breathe();
         the_kits_rangers_know_their_foes();
+        the_kits_items_strike_as_the_kit_has_them();
         darkness_spells_fight();
         darkness_effects_take_their_own_numbers();
         darkness_records_fight_by_their_effects();

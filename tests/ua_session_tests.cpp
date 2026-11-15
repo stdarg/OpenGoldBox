@@ -2051,8 +2051,9 @@ void the_kits_monsters_and_events_play_as_the_kit_has_them(const std::filesystem
     const auto ranger_foe = opengold::original::trait::ranger_foe;
     check(goblin.kin == (kin::dwarf_foe | kin::gnome_foe) && goblin.traits == ranger_foe,
           "The kit's goblin is a dwarf's foe, a gnome's and a ranger's");
-    check(ogre.kin == (kin::giant | kin::bugbear) && ogre.traits == ranger_foe,
-          "The kit's ogre is a giant, a gnome's foe and a ranger's");
+    check(ogre.kin == (kin::giant | kin::bugbear) &&
+              ogre.traits == (ranger_foe | opengold::original::trait::giant_bane),
+          "The kit's ogre is a giant, a gnome's foe, a ranger's and a giant-slayer's");
     // The black pudding and the gorgon against the party, in the game's fight.
     const auto content = ua::load_design_content(files);
     const auto against = [&](unsigned number, const std::string &name, int commands)
@@ -2146,6 +2147,48 @@ void the_kits_monsters_and_events_play_as_the_kit_has_them(const std::filesystem
         player.play();
     }
     check(player.heard("A DRAFT CHILLS THE PARTY."), "The third step brings the draft");
+}
+
+// The kit's items' special effects while readied (docs/games/ua.md, Items'
+// special effects): each of ITEM.DAT's that gives an effect gives the fight's
+// that does as the kit's does, and only while readied; gauntlets of ogre
+// power make Strength 18/00 and a girdle of giant strength 23.
+void the_kits_items_work_when_readied(const std::filesystem::path &kit)
+{
+    const ua::DesignFiles files(
+        kit, build_test_design(kit, temporary_design("opengold_ua_readied.dsn")));
+    const auto items = ua::load_design_items(files);
+    namespace original = opengold::original;
+    const auto wielding = [&](unsigned number, bool readied)
+    {
+        auto item = *ua::design_item(items, number, true);
+        item.stored.readied_raw = readied ? 1 : 0;
+        opengold::por::CharacterRecord record;
+        record.game = GoldBoxGame::unlimited_adventures;
+        record.current_abilities.strength = 12;
+        const std::vector<original::CarriedItem> carried{{item.stored, item.base}};
+        return original::combatant_from_record(record, carried);
+    };
+    const auto gives = [&](unsigned number, int code)
+    {
+        const auto &effects = wielding(number, true).effects;
+        return std::ranges::find(effects, code, &original::Effect::code) != effects.end() &&
+               wielding(number, false).effects.empty();
+    };
+    constexpr int own = original::kit_effect_offset;
+    const std::vector<std::pair<unsigned, int>> given{
+        {214, 115 + own}, {213, 75 + own}, {235, 237},     {237, 45}, {48, 89},
+        {231, 335},       {230, 10},       {224, 36},      {234, 56}, {207, 478},
+        {232, 61 + own},  {203, 74 + own}, {205, 76 + own}};
+    for (const auto &[number, code] : given)
+    {
+        check(gives(number, code),
+              "Item " + std::to_string(number) + " readied gives " + std::to_string(code));
+    }
+    const auto gauntlets = wielding(233, true), girdle = wielding(204, true);
+    check(gauntlets.strength == 18 && gauntlets.exceptional_strength == 100 &&
+              girdle.strength == 23 && wielding(233, false).strength == 12,
+          "Gauntlets give Strength 18/00 and the girdle 23, while readied");
 }
 
 // Camping (docs/games/ua.md, Camping): a rest where no encounter waits heals
@@ -2656,6 +2699,7 @@ int main(int argc, char **argv)
         the_town_serves_the_party(*kit);
         the_view_plays_it_through_the_seam(*kit);
         a_game_saves_and_loads(*kit);
+        the_kits_items_work_when_readied(*kit);
         the_party_camps(*kit);
         a_cleric_fixes_the_party(*kit);
         the_kits_monsters_and_events_play_as_the_kit_has_them(*kit);

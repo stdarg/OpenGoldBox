@@ -693,8 +693,8 @@ whole list):
   difficulty table for the monsters (to-hit, Hit Points and Armor Class;
   [Difficulty](#difficulty)), or both, the default: the kit's Hit Points
   and party to-hit with the table's to-hit and Armor Class (ua.md, Fights).
-- **Still to come:** its critical hits on a natural 17 or more, which only a
-  vorpal weapon uses.
+- **Its critical hits** on a natural 17 or more, which only a vorpal
+  weapon uses: it beheads (2026-11-15; ua.md, Items' special effects).
 
 ## Next
 
@@ -1520,6 +1520,7 @@ scales Hit Points takes only the table's to-hit and Armor Class.
 | *Unlimited Adventures:* a gorgon spends one of its four breaths (203) at every turn of its AI, whether it breathes or not (`effects.c`, `fx_gorgon_breath`) | Only a breath spends one, as the kit's dragons' do |
 | *Unlimited Adventures:* a mummy's and an efreeti's fire by the die (168, 219) count the dice of whatever was rolled last, so a breath, which rolls none, is weighed by an earlier roll's (`effects.c`, `damage_dice_count`) | A spell's own dice; damage with none is weighed by none |
 | *Unlimited Adventures:* the black pudding "is Disolving" armor (`effects.c`, `fx_armor_acid`) | Spelt "is dissolving" |
+| *Unlimited Adventures:* a giant-slaying sword (effect 75) adds its 1 to hit to the attack roll after the roll is judged, so it never helps (`fxcombat.c`, `fx_damage_vs_immunity1`) | Its quarry is struck 1 better |
 | *Unlimited Adventures:* a monster readies its items one after another without counting what it has readied: its hands stay at the record's, and a second ring, arrows and quarrels never take their places, so it may ready two two-handed weapons and a shield, or any number of rings (`saveload.c`, `mon_load`) | Each readied item takes its hands and its place |
 | Age gives no young adult the +1 Constitution of AD&D's table, which every older age group keeps (`chargen.pas`, the ability roll). The other changes match AD&D's table added up | The Aging setting: As the original keeps it, AD&D adds it (the user, 2026-11-12) |
 | The thief skill table's Dexterity adjustments break their own order at Dexterity 10 (pick pockets −19, between −15 at 9 and −5 at 11) and 16 (open locks −5, between 0 at 15 and +10 at 17) (`gdconsts.pas`, `dexAdj`) | Corrected to −10 and +5 (the user, 2026-11-12) |
