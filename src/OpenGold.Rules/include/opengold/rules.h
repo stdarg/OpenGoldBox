@@ -760,6 +760,9 @@ struct Encounter
     // 3Dh set): the first creature carrying a crystal to fall gives it up,
     // and the others smash theirs (Snapshot::crystal).
     bool crystals{};
+    // Treasures' script set its cell 53h for this fight, where its yetis
+    // surprise the party: their fear grips it as the fight begins.
+    bool frightening_surprise{};
 };
 
 // A weapon attack as the rules resolve it: the attack roll's bonus and the

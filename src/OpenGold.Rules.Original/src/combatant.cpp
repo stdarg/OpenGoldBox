@@ -61,7 +61,8 @@ std::vector<int> numbers_of(const Combatant &c)
                                    c.striker && c.striker->silver ? 1 : 0,
                                    c.striker ? c.striker->weapon_class : 0,
                                    (c.striker && c.striker->banishing ? 1 : 0) |
-                                       (c.striker && c.striker->blessed_bolt ? 2 : 0),
+                                       (c.striker && c.striker->blessed_bolt ? 2 : 0) |
+                                       (c.striker && c.striker->thrown ? 4 : 0),
                                    c.weapon_type,
                                    c.wards_gaze ? 1 : 0,
                                    c.mirror ? 1 : 0,
@@ -209,8 +210,9 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
     c.race = *next++;
     if (*next++ != 0)
     {
-        c.striker =
-            StrikingItem{next[0], next[1] != 0, next[2], (next[3] & 1) != 0, (next[3] & 2) != 0};
+        c.striker = StrikingItem{
+            next[0],           next[1] != 0, next[2], (next[3] & 1) != 0, (next[3] & 2) != 0,
+            (next[3] & 4) != 0};
     }
     next += 4;
     c.weapon_type = *next++;
@@ -412,10 +414,13 @@ std::optional<StrikingItem> striker_of(std::span<const CarriedItem> carried,
     // Name word 177 is "Silver", in the item's third name part; a quarrel
     // with word 135 there banishes a rakshasa.
     const auto &words = strikes->item.name_components;
-    return StrikingItem{strikes->item.magic_bonus, words[2] == 177, strikes->type.damage_type,
+    return StrikingItem{strikes->item.magic_bonus,
+                        words[2] == 177,
+                        strikes->type.damage_type,
                         strikes->item.type == ammunition.quarrels && words[2] == 135,
                         ammunition.blessed_bolts != 0 &&
-                            strikes->item.type == ammunition.blessed_bolts};
+                            strikes->item.type == ammunition.blessed_bolts,
+                        strikes->type.has(bit::thrown)};
 }
 
 // A mirror (name word 118 in any part) or the wooden holy symbol (word 152

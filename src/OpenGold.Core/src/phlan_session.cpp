@@ -4108,6 +4108,11 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             // PARTY_MOVE_MODIFIER, which the fight's end clears (postcbt.pas).
             encounter_->party_move_modifier =
                 static_cast<int>(machine_.variable(game_cell(EclAddress{0x6E72})) & 0xFF);
+            // Treasures' cell 53h, which its scripts set where its yetis
+            // surprise the party (effhndlr.pas, EffFrightenAura).
+            encounter_->frightening_surprise =
+                game() == GoldBoxGame::treasures_of_the_savage_frontier &&
+                machine_.variable(EclAddress{0x53}) != 0;
             if (std::exchange(duel_, false))
             {
                 encounter_->mirror = mirror_duel_;

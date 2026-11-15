@@ -160,17 +160,22 @@ constexpr int gateway_paralyzing_gaze = 1126, fire_harms_more = 1148, drinks_blo
 // death by Stone to Flesh (134), a slug's acid (137), a hell hound's and an
 // ice hound's breath (138, 154), a quarter of an edge's harm (141), no
 // effect taken (142), a manticore's spines (143), a kampfult's crushing
-// (144), a rat's disease (145), a quick start (146), a gorgimera's stone
-// breath (148), the yetis' grabs (149 to 151), more harm from fire (153)
-// and swallowing whole (155).
+// (144), a rat's disease (145), a quick start (146), a stone golem (147), a
+// gorgimera's stone breath (148), the yetis' grabs (149 to 151) and their
+// fear when they surprise (152), more harm from fire (153) and swallowing
+// whole (155).
 // Its crystals, which a creature gives up as it falls in a crystal battle
 // (128 to 130: EffRedCrystal, EffGreenCrystal, EffBlueCrystal).
 constexpr int red_crystal = 1328;
 constexpr int halves_elements = 1333, stone_to_flesh_kills = 1334, slug_acid = 1337,
               hell_hound_breath = 1338, quarter_from_edges = 1341, effects_proof = 1342,
               manticore_spines = 1343, crushes = 1344, rat_disease = 1345, quick_start = 1346,
-              stone_breath = 1348, grabs_2d8 = 1349, grabs_4d5 = 1350, grabs_6d4 = 1351,
-              fire_harms_half_more = 1353, ice_hound_breath = 1354, swallows_on_twenty = 1355;
+              stone_golem = 1347, stone_breath = 1348, grabs_2d8 = 1349, grabs_4d5 = 1350,
+              grabs_6d4 = 1351, frightens_on_surprise = 1352, fire_harms_half_more = 1353,
+              ice_hound_breath = 1354, swallows_on_twenty = 1355;
+// A stone golem's effect's strength while it is stone (EffSlowAura); flesh,
+// it counts down to it.
+constexpr int golem_stone = 255;
 // OpenGoldBox's own mark on a Treasures creature crushing or squeezing its
 // victim (144, 149 to 151), whose combat number its strength keeps: past
 // Treasures' last effect (160), so no record of its names it. Its victim is
@@ -857,11 +862,13 @@ class Session final : public rules::CombatSession
   public:
     Session(rules::Identity identity, rules::Battlefield board, std::vector<Fighter> fighters,
             std::uint64_t seed, unsigned morale, bool outdoors, bool escape_ends_fight,
-            int party_facing, int party_move_modifier, bool crystals)
+            int party_facing, int party_move_modifier, bool crystals,
+            bool frightening_surprise)
         : identity_(std::move(identity)), board_(std::move(board)), fighters_(std::move(fighters)),
           random_{seed}, morale_threshold_(std::min(morale, 100U)), outdoors_(outdoors),
           escape_ends_fight_(escape_ends_fight), party_facing_(party_facing),
-          party_move_modifier_(party_move_modifier), crystals_(crystals)
+          party_move_modifier_(party_move_modifier), crystals_(crystals),
+          frightening_surprise_(frightening_surprise)
     {
         rules::validate_battlefield(board_);
         // Each creature starts turned along the party's facing, the party's
@@ -931,6 +938,9 @@ class Session final : public rules::CombatSession
     // cbTailFlag2 and gameState's lastCrystal).
     bool crystals_{};
     std::optional<unsigned> crystal_;
+    // Treasures' surprise that frightens (rules::Encounter), played only as
+    // the fight begins.
+    bool frightening_surprise_{};
     std::vector<por::ItemTemplate> item_types_;
 
     // The direction along the party's facing on the field: north gives
@@ -1177,6 +1187,8 @@ class Session final : public rules::CombatSession
     void iron_golem_absorbs(Fighter &golem, int damage, int element);
     void dragon_fear(const Fighter &dragon);
     void darkness_dragon_fear(const Fighter &dragon);
+    void frighten_on_surprise(const Fighter &yeti);
+    void stone_golem_turn(Fighter &golem);
     void order_turns();
     void reorder_after_cast(Fighter &caster);
     [[nodiscard]] bool breathes_clouds_freely(const Fighter &f) const;
@@ -4530,10 +4542,19 @@ void Session::cast_secret_spell(Fighter &caster, int number, int level,
         for (const auto id : targets)
         {
             auto &target = *find(id);
-            // A Treasures stone guardian dies by it (SpellStoneToFlesh).
+            // A Treasures stone guardian dies by it, and a stone golem
+            // becomes flesh for two of its turns (SpellStoneToFlesh).
             if (target.has(effect::stone_to_flesh_kills) && target.able())
             {
                 kill(target);
+                continue;
+            }
+            if (auto *golem = target.find_effect(effect::stone_golem); golem && target.able())
+            {
+                const bool stone = golem->strength == effect::golem_stone;
+                golem->strength = stone ? 1 : golem->strength;
+                log({stone ? "{name} becomes flesh." : "{name} is still flesh.",
+                     {{"name", target.name}}});
                 continue;
             }
             if (target.condition != Condition::stoned || !cell_free(target))
@@ -5131,8 +5152,10 @@ bool Session::add_with_message(Fighter &target, Effect added, bool negates, bool
     immune = immune || (target.has(effect::spell_proof) && spell_effect && known->level < 8);
     constexpr int diseased = 34;
     immune = immune || (target.has(effect::disease_proof) && code == diseased);
-    // A Treasures stone guardian takes no effect at all (its 142, NullifyAttack).
+    // A Treasures stone guardian takes no effect at all (its 142, NullifyAttack),
+    // and a stone golem none from a spell but Stone to Flesh (EffSlowAura).
     immune = immune || target.has(effect::effects_proof);
+    immune = immune || (target.has(effect::stone_golem) && known);
     if (immune || (negates && saved))
     {
         log({"{name} is unaffected.", {{"name", target.name}}});
@@ -5170,6 +5193,11 @@ void Session::nonweapon_damage(Fighter &target, int damage, int save_result, boo
         damage = 0;
     }
     if (target.has(91) && (spell_number == 15 || (element & 4)))
+    {
+        damage = 0;
+    }
+    // A Treasures stone golem takes no harm from a spell (EffSlowAura).
+    if (target.has(effect::stone_golem) && spell_number != 0)
     {
         damage = 0;
     }
@@ -6256,6 +6284,39 @@ void Session::monster_specials(Fighter &f)
     kit_specials(f);
     darkness_specials(f);
     savage_frontier_specials(f);
+    stone_golem_turn(f);
+}
+
+// A Treasures stone golem at its turn (effhndlr.pas, EffSlowAura,
+// MONSTER_SPECIAL): stone, it slows an enemy it picks for 6 rounds, one not
+// slowed already, and fights on; flesh, it counts down to stone again.
+void Session::stone_golem_turn(Fighter &golem)
+{
+    auto *stone = golem.find_effect(effect::stone_golem);
+    if (!stone || !golem.able())
+    {
+        return;
+    }
+    if (stone->strength != effect::golem_stone)
+    {
+        stone->strength = (stone->strength + 255) % 256;
+        if (stone->strength == effect::golem_stone)
+        {
+            log({"{name} returns to stone.", {{"name", golem.name}}});
+        }
+        return;
+    }
+    if (!acquire_target(golem, 255, false, true))
+    {
+        return;
+    }
+    auto &target = *find(golem.lock);
+    if (target.has(effect::slowed))
+    {
+        return;
+    }
+    log({"{name} slows {target}.", {{"name", golem.name}, {"target", target.name}}});
+    target.numbers.effects.push_back({effect::slowed, 6, 255, false});
 }
 
 // Gateway's and Treasures' monsters' own powers at their turn (their
@@ -8359,6 +8420,28 @@ void Session::combat_start()
             darkness_dragon_fear(f);
             darkness_dragon_fear(f);
         }
+        if (frightening_surprise_ && f.has(effect::frightens_on_surprise))
+        {
+            frighten_on_surprise(f);
+        }
+    }
+}
+
+// A Treasures yeti's fear when it surprises (effhndlr.pas, EffFrightenAura,
+// as a fight starts with the script's cell 53h set): each able enemy that
+// fails a save against petrification, unless afraid already, is frightened
+// and flees.
+void Session::frighten_on_surprise(const Fighter &yeti)
+{
+    for (auto &f : fighters_)
+    {
+        if (f.side == yeti.side || !f.able() || saving_throw(f, 1, 0, &yeti) || f.has(effect::fear))
+        {
+            continue;
+        }
+        f.numbers.effects.push_back({effect::fear, 2, 255, true});
+        f.turned = true;
+        log({"{name} is frightened.", {{"name", f.name}}});
     }
 }
 
@@ -8694,6 +8777,13 @@ int Session::weapon_damage_defenses(const Fighter &attacker, Fighter &defender, 
     {
         damage = 0;
     }
+    // A Treasures stone golem, while stone, takes nothing from a weapon
+    // below +2 (EffSlowAura, LimitDamageByResistance).
+    if (const auto *golem = defender.find_effect(effect::stone_golem);
+        golem && golem->strength == effect::golem_stone && turns_aside(2))
+    {
+        damage = 0;
+    }
     if (defender.has(123))
     {
         damage = plus > 0 ? damage : silver ? damage / 2 : 0;
@@ -8740,11 +8830,17 @@ int Session::weapon_damage_defenses(const Fighter &attacker, Fighter &defender, 
     {
         damage /= 2;
     }
-    // A Treasures stone guardian takes a quarter from an edge or a point
-    // (EffQuarterEdged).
+    // A Treasures stone guardian takes a quarter from an edge or a point,
+    // and nothing from a weapon whose type may be thrown, even one swung
+    // (EffResistItemTypes). The original reads that type of no item for a
+    // bare blow (Bugs).
     if (defender.has(effect::quarter_from_edges) && striker && weapon_class <= 1)
     {
         damage /= 4;
+    }
+    if (defender.has(effect::quarter_from_edges) && striker && striker->thrown)
+    {
+        damage = 0;
     }
     if (defender.has(285) && weapon_class == 1)
     {
@@ -10329,7 +10425,8 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
     auto session = std::make_unique<Session>(
         std::move(identity), std::move(encounter.battlefield), std::move(fighters), seed, threshold,
         encounter.outdoors, encounter.escape_ends_fight, encounter.party_facing,
-        encounter.party_move_modifier, encounter.crystals);
+        encounter.party_move_modifier, encounter.crystals,
+        encounter.frightening_surprise);
     session->know_item_types(content.item_types);
     session->play_gazes(gazes_played);
     return session;

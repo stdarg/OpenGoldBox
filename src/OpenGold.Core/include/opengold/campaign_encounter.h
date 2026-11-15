@@ -147,6 +147,8 @@ struct CampaignEncounter
     int party_move_modifier{};
     // A Treasures crystal battle (rules::Encounter::crystals).
     bool crystals{};
+    // Treasures' frightening surprise (rules::Encounter::frightening_surprise).
+    bool frightening_surprise{};
 };
 
 // What the difficulty does to a fight's monsters and morale, those on the party's

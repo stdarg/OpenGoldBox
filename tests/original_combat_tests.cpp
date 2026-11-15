@@ -5211,6 +5211,117 @@ void treasures_effects_play_their_own()
           "Treasures' harpy and Icewind Dale effects are Gateway's");
 }
 
+// A Treasures stone guardian (its effect 141, EffResistItemTypes) takes a
+// quarter from an edge or a point, and nothing from a weapon whose type may
+// be thrown (property 10h), even one swung in melee.
+void a_stone_guardian_turns_thrown_weapons()
+{
+    constexpr auto treasures = GoldBoxGame::treasures_of_the_savage_frontier;
+    const auto first_blow = [&](const original::StrikingItem &weapon)
+    {
+        auto striker = monster({2, 1, 1, 7}, {0, 0, 0, 0}, {});
+        striker.striker = weapon;
+        auto guardian = victim(500);
+        guardian.effects.push_back({original::canonical_effect(141, treasures), 0, 0, false});
+        auto fight = attack_until(
+            striker, guardian,
+            [](const rules::CombatSession &session)
+            {
+                return logged(session, "{attacker} hits {name} for {damage}.", "Monster") > 0;
+            },
+            47, treasures);
+        return 500 - view_of(fight.session->snapshot(), "Victim").hit_points;
+    };
+    constexpr int slashing = 0, bludgeoning = 0x80;
+    check(first_blow({0, false, bludgeoning}) == 8, "A mace does its 8");
+    check(first_blow({0, false, slashing}) == 2, "A sword does a quarter of its 8");
+    original::StrikingItem hammer{0, false, bludgeoning};
+    hammer.thrown = true;
+    check(first_blow(hammer) == 0, "A hammer of a type that may be thrown does nothing");
+    original::Combatant thrown;
+    thrown.striker = hammer;
+    check(original::Combatant::decode(thrown.encode())->striker == hammer,
+          "A profile keeps that the weapon may be thrown");
+}
+
+// A Treasures yeti's fear when it surprises (its effect 152,
+// EffFrightenAura): with the script's cell 53h set as the fight begins,
+// each enemy that fails a save is frightened; without it, none is.
+void yetis_frighten_when_they_surprise()
+{
+    constexpr auto treasures = GoldBoxGame::treasures_of_the_savage_frontier;
+    auto yeti = creature(50);
+    yeti.effects.push_back({original::canonical_effect(152, treasures), 0, 0, false});
+    const auto frightened = [&](bool surprise)
+    {
+        const auto fight = arrange({{"Victim", rules::Side::party, {3, 3}, victim(50)},
+                                    {"Yeti", rules::Side::opposition, {6, 3}, yeti}},
+                                   47, {}, 100, treasures, false, false,
+                                   [surprise](rules::Encounter &encounter)
+                                   {
+                                       encounter.frightening_surprise = surprise;
+                                   });
+        return logged(*fight.session, "{name} is frightened.") > 0;
+    };
+    check(frightened(true), "Surprised by the yeti, the victim is frightened");
+    check(!frightened(false), "Met otherwise, it is not");
+}
+
+// A Treasures stone golem (its effect 147, EffSlowAura): stone, it slows an
+// enemy at its turn and takes nothing from a weapon below +2 nor from a
+// spell; flesh (after Stone to Flesh), it takes any weapon's blow and counts
+// its turns down to stone again.
+void a_stone_golem_slows_and_turns_weapons_aside()
+{
+    constexpr auto treasures = GoldBoxGame::treasures_of_the_savage_frontier;
+    const auto golem_effect = [](int strength)
+    {
+        return original::Effect{original::canonical_effect(147, treasures), 0, strength, false};
+    };
+    const auto golem = monster({2, 1, 1, 0}, {0, 0, 0, 0}, {golem_effect(255)});
+    // The golem plays by the computer, as its specials come at its turn.
+    const auto logs = [&](const original::Combatant &attacker, std::string_view line)
+    {
+        auto fight = arrange({{"Victim", rules::Side::party, {3, 3}, victim(500)},
+                              {"Monster", rules::Side::opposition, {4, 3}, attacker}},
+                             47, {}, 100, treasures);
+        auto &session = *fight.session;
+        play_until(
+            session,
+            [&](const std::string &actor)
+            {
+                return order(session, actor == "Monster" ? "quick" : "end");
+            },
+            [&]
+            {
+                return logged(session, line) > 0 || session.snapshot().round > 10;
+            },
+            400);
+        return logged(session, line) > 0;
+    };
+    check(logs(golem, "{name} slows {target}."), "The stone golem slows its enemy");
+    check(logs(monster({2, 1, 1, 0}, {0, 0, 0, 0}, {golem_effect(1)}), "{name} returns to stone."),
+          "Flesh, it returns to stone");
+    const auto first_blow = [&](int plus, int strength)
+    {
+        auto striker = monster({2, 1, 1, 7}, {0, 0, 0, 0}, {});
+        striker.striker = original::StrikingItem{plus, false, 0x80};
+        auto target = victim(500);
+        target.effects.push_back(golem_effect(strength));
+        auto fight = attack_until(
+            striker, target,
+            [](const rules::CombatSession &session)
+            {
+                return logged(session, "{attacker} hits {name} for {damage}.", "Monster") > 0;
+            },
+            47, treasures);
+        return 500 - view_of(fight.session->snapshot(), "Victim").hit_points;
+    };
+    check(first_blow(1, 255) == 0 && first_blow(2, 255) > 0,
+          "Stone, it takes nothing from a +1 weapon and a +2's blow");
+    check(first_blow(0, 1) > 0, "Flesh, a plain weapon harms it");
+}
+
 // Secret's giant-bane weapon (its effect 75, EffHolyWater): against one its
 // record flags for it, 1 better to hit and 6d6 with the Strength bonus in
 // place of the weapon's own damage; against others the weapon's.
@@ -5900,6 +6011,9 @@ int main()
         each_game_bolts_its_own_length();
         treasures_effects_play_their_own();
         treasures_crystal_battle_yields_one_crystal();
+        a_stone_guardian_turns_thrown_weapons();
+        yetis_frighten_when_they_surprise();
+        a_stone_golem_slows_and_turns_weapons_aside();
         difficulty_changes_the_monsters();
         heights_decide_sight();
         the_party_facing_and_movement();

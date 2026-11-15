@@ -761,8 +761,17 @@ length with memorizing's time, and *Gateway*'s and *Treasures*' effects;
 since, the rest's interruptions and the kit's camp of any length (rules5).
 
 1. *Treasures*' own effects still to play (Effects of the later games):
-   the crystals (128 to 130), the romance (131), the stone golem (147) and
-   the yetis' fear on surprise (152).
+   the crystals (128 to 130, the treasure route's owner) and the romance
+   (131). The romance needs its reconstruction's `romance.pas`
+   (TagRelationshipPair, UpdateRelationship): as each fight starts, the
+   party member and the NPC its cells name (`npcNumber`, the two names)
+   take effect 131; in a fight a downed foe raises or lowers the other's
+   love (`npcLove`, `partyLove`), the loves move attack rolls, and at 100
+   the NPC fights in a frenzy (EffInLove); at each camp the loves' bands
+   of 25 show the LUCK file's entries 101 to 117, the NPC leaving at the
+   lowest, and at the highest the proposal (Accept or Reject, a rejected
+   member losing 6 Charisma). Its first step: which of *Treasures*'
+   scripts set `npcNumber` and the names, and where the route meets them.
 2. *Unlimited Adventures*' difficulty: its session calls
    `original::monster_difficulty(level, true)` with each design's own
    setting (the coordinator, 2026-11-15).
@@ -1390,12 +1399,21 @@ gear.
      takes half from the elements (133), a quarter from an edge or point
      (141), no effect at all (142) and dies by Stone to Flesh (134); its
      vilstrak moves twice as far in the first round (146); and fire harms its
-     yetis half again (153). Not played yet: the crystals its Zhentarim
-     carry (128 to 130, which set the script's crystal bits as they fall),
-     the romance (131, from its romance code), the stone golem's turns to
-     stone and back (147), the yetis' fear when they surprise (152) and a
-     weapon's 0x10 property against the stone guardian (141); the
-     greenhag's shape change (140) only changes its icon.
+     yetis half again (153). Since 2026-11-15 (rules5): the stone guardian
+     takes nothing from a weapon whose type may be thrown (property 10h, a
+     dagger, dart, hand axe, spear or javelin), even one swung in melee
+     (141, EffResistItemTypes); its stone golem, while stone, slows an enemy
+     it picks at each of its turns for 6 rounds, takes nothing from a weapon
+     below +2, and no spell's effect or harm but Stone to Flesh's, which
+     makes it flesh for two of its turns, a plain weapon harming it, before
+     it returns to stone (147, EffSlowAura); and a yeti frightens the
+     party as the fight begins where the script has set cell 53h (its
+     surprise), each member that fails a save against petrification fleeing
+     (152, EffFrightenAura, `rules::Encounter::frightening_surprise`). Not
+     played yet: the crystals its Zhentarim carry (128 to 130, which set the
+     script's crystal bits as they fall) and the romance (131, from its
+     romance code: Next); the greenhag's shape change (140) only changes its
+     icon.
    - **The party's facing** (2026-11-14; `combatst.pas`,
      `InitCreatureCombatData`; `combatai.pas`, `AiMoveStep`): the fight
      knows the way the party faced as it met its foes
@@ -1714,4 +1732,5 @@ scales Hit Points takes only the table's to-hit and Armor Class.
 | *Treasures:* the Fix's first rest counts a magic-user's Remove Curse by its third-level slots, its second by its fourth-level ones, where the spell is (`camp.pas`, `CampFixMenu`) | Fourth-level slots in both |
 | *Treasures:* the Fix says a resurrected member "has been ressurected" (`camp.pas`, `CampFixMenu`) | Spelt "resurrected" |
 | *Treasures* and *Pools of Darkness:* the computer's choice of spell sorts the memorized spells from the second, so the first memorized is never cast (their `combatai.pas`, PickCastableSpell) | Every memorized spell is weighed |
+| *Treasures:* the stone guardian's proofing against thrown weapons (effect 141) reads the weapon type's properties for a bare blow too, from no item (`effhndlr.pas`, EffResistItemTypes) | Only a weapon's type is read |
 | *Gateway:* a giant squid's constricting hold (effect 156) has its squeeze, two blows of 1d2, but the fight never calls it, so the squid only holds (`effhndlr.pas`, condition 14; `cbtacts.pas`, `AttackConstrict`) | It squeezes with them, as the owlbear's hug does |

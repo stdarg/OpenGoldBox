@@ -74,6 +74,9 @@ struct StrikingItem
     // Unlimited Adventures kit's quarrel of slaying (type 4Ah), which slays
     // one with the kit's 82 the same way (effects.c, fx_slain_by_type).
     bool blessed_bolt{};
+    // Its type may be thrown (property 10h: a dagger, dart, hand axe, spear
+    // or javelin), however it strikes.
+    bool thrown{};
 
     bool operator==(const StrikingItem &) const = default;
 };
