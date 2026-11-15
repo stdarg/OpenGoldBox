@@ -737,14 +737,17 @@ pictures, walls and script host, *Treasures* adding only what it changes.
    mission (cell 1F8h at FFh), Neverwinter's new north pier to Fireshear,
    the grand yeti in the Firemines and the beholder at the dock, and the
    Ice Peak's four stages, Aurilssbaarg, Bjorn's Hold, Icewolf and
-   Freezefire's lair, where the dragon's fall wins the game, each stage played from checkpoints; played whole it stops after the Fireshear voyage for now (treasure.md, Where it stops). The voyages run
+   Freezefire's lair, where the dragon's fall wins the game. Since
+   2026-11-15 it wins played whole, on the original-rules round: Redleg left
+   to find his boat alone, the party trained at Mintarn and Neverwinter and
+   its dead raised at their temples, and Fireshear's camps resting again
+   (treasure.md, Played whole). The voyages run
    PROGRAM 4, the original's Fix (the casters heal and cure by their spell
    slots over a timed rest); the session's camp has the Fix and the Crown
    (treasure.md, What the route needed), which the camp dialog does not
    offer yet. *Stand-ins:* the experience and money at Llorkh's hall, and
-   the test's win of four fights the route's player loses with every dice
-   (the Way Inn's last, Neverwinter's eastern base, the council's, the
-   lair's black-robed men). The romances gate nothing (the cluebook's
+   the test's win of three fights the route's player loses with every dice
+   (the Way Inn's last, the council's, the lair's black-robed men). The romances gate nothing (the cluebook's
    Falling in Love).
 
 ### 8. *Unlimited Adventures*

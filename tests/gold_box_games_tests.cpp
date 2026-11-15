@@ -5134,8 +5134,14 @@ const std::vector<RouteBeat> &treasure_route()
         // the party (8,11), its trash heap (11,11), its giants' master
         // (11,12) and its efreets (13,13); then the warehouses the invaders
         // hold (8,8; 7,7; 4,8; 2,11) and their headquarters (0,8), whose map
-        // the Tyrant reads, ending the mission (cell 12Ch). Before each the
-        // party rests in a house by the docks (6,6).
+        // the Tyrant reads, ending the mission (cell 12Ch). First the party
+        // trains at the Magical Arts hall (1,5, facing west); before each
+        // fight it has its dead raised at the Temple of Waukeen (9,5) and
+        // rests in a house by the docks (6,6).
+        for (int visit = 0; visit < 2; ++visit)
+        {
+            route.push_back({26, 1, 5, D::west, train_everyone()});
+        }
         for (const auto &[x, y, answers] :
              std::initializer_list<std::tuple<unsigned, unsigned, std::vector<std::string>>>{
                  {12, 5, {"CAME TO HELP"}},
@@ -5149,6 +5155,7 @@ const std::vector<RouteBeat> &treasure_route()
                  {2, 11, {}},
                  {0, 8, {}}})
         {
+            route.push_back({26, 9, 5, D::north, {"YES", "raise:dead", "Leave"}});
             route.push_back({26, 6, 6, D::north, {}});
             RouteBeat fight{26, x, y, D::north, answers};
             fight.rest_first = true;
@@ -5192,18 +5199,23 @@ const std::vector<RouteBeat> &treasure_route()
         // of Neverwinter (10,0) and Wimeg of Mirabar (15,15), whose freeing
         // ends the mission (cell 12Eh); then Lord Nasher (5,7). The party
         // keeps away from the city's guards, who would search it and find the
-        // ambassadors' orders the Krakens planted, and rests first in the
-        // gardener's house.
+        // ambassadors' orders the Krakens planted. Before each the party has
+        // its dead raised at the temple (9,10) and rests there: the Krakens
+        // break camps in the gardens until the ambassadors are free (the
+        // cluebook's Resting). First it trains at the Hall of Training
+        // (6,11, facing west), a level a visit, on the experience earned
+        // since Llorkh.
+        for (int visit = 0; visit < 2; ++visit)
+        {
+            route.push_back({28, 6, 11, D::west, train_everyone()});
+        }
         for (const auto &[x, y] : std::initializer_list<std::pair<unsigned, unsigned>>{
                  {6, 13}, {10, 1}, {10, 0}, {15, 11}, {15, 15}})
         {
-            route.push_back({28, 6, 13, D::north, {}});
+            route.push_back({28, 9, 10, D::north, {"YES", "raise:dead", "Leave"}});
             RouteBeat fight{28, x, y, D::north, {}};
             fight.rest_first = true;
             fight.rest_for_spells = true;
-            // A stand-in: the giants of the eastern base beat the route's
-            // player with every dice it tries, so the test wins that fight.
-            fight.test_wins = x == 15 && y == 11;
             route.push_back(fight);
         }
         route.back().expect_cell = {{0x12E, 1}};
@@ -5263,21 +5275,26 @@ const std::vector<RouteBeat> &treasure_route()
             fight.rest_for_spells = true;
             route.push_back(fight);
         }
+        // Redleg, freed, is not taken into the party: alone he finds his
+        // boat before the guards can gather, and the party leaves unscathed
+        // (the cluebook's Flint at Redleg's cell), where with him it meets
+        // the island's largest fight at the pier.
+        route.back().answers = {"RELEASE HIM", "NO"};
         // Redleg's boat under the north-east pier (15,4) carries the party off
         // Ruathym, ending the ninth mission (cell 12Fh).
         RouteBeat redleg_boat{32, 15, 4, D::north, {"GET IN BOAT"}};
         redleg_boat.expect_cell = {{0x12F, 1}};
         route.push_back(redleg_boat);
-        // Luskan again: Redleg's farewell (8,3), the captain arguing with a
-        // sorceress (11,3), and Jagaerda, captured for her help, freed to join
-        // the party once more (7,4).
+        // Luskan again: Redleg's farewell (8,3) and Jagaerda, captured for her
+        // help, freed to join the party once more (7,4). The room where a
+        // captain argues with a sorceress (11,3), whose guards and mages
+        // leave the route's party all but dead, is left alone: no mission
+        // asks for it.
         route.push_back({31, 8, 3, D::north, {}});
         route.push_back({31, 11, 6, D::north, {}});
-        RouteBeat quarrel{31, 11, 3, D::north, {}};
-        quarrel.rest_first = true;
-        quarrel.rest_for_spells = true;
-        route.push_back(quarrel);
-        route.push_back({31, 7, 4, D::north, {"ACCEPT"}});
+        RouteBeat jagaerda_freed{31, 7, 4, D::north, {"ACCEPT"}};
+        jagaerda_freed.rest_first = true;
+        route.push_back(jagaerda_freed);
         // Out by Luskan's gate (15,15), where Jagaerda stays behind, by the
         // east road, rested first in the house (11,6), for the road's camps
         // draw wandering monsters.
@@ -7192,6 +7209,13 @@ bool walk_census(GoldBoxGame game, bool route)
                 const auto fights_before = fights_fought;
                 const auto hit_points_before = party_hit_points();
                 play("camp");
+                // A map whose camp entry speaks first (Treasures' Fireshear)
+                // rests only once its words are answered: the spells are
+                // chosen then, or the next camp is refused.
+                if (party->state().spell_rest)
+                {
+                    memorize();
+                }
                 if (fights_fought != fights_before &&
                     game == GoldBoxGame::secret_of_the_silver_blades && ++interrupted >= 3)
                 {

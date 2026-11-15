@@ -360,7 +360,10 @@ Llorkh's hall, training the party to levels 8 and 9).
     cluebook allows.
 11. Back to **the Smuggler's Dock** by maps 52, 53 and 55, paying the
     gatekeeper's fee, and at sunrise the ship from the Mintarn pier (2,10).
-12. **Mintarn** (map 26): resting in a house by the docks (6,6), the Tyrant
+12. **Mintarn** (map 26): trained at the Magical Arts hall (1,5, facing
+    west), a level for every member, and before each fight its dead raised
+    at the Temple of Waukeen (9,5) and rested in a house by the docks
+    (6,6): the Tyrant
     told the party came to help (12,5), Southclaw Fort (Jagaerda joining,
     8,11; 11,11; 11,12; 13,13), the four warehouses (8,8; 7,7; 4,8; 2,11)
     and the invaders' headquarters (0,8), whose map ends the sixth mission
@@ -370,17 +373,25 @@ Llorkh's hall, training the party to levels 8 and 9).
     at his castle (11,3), the seventh mission (cell 12Dh); at 0600 the dock
     the party came in by (13,11, facing the sea) sails it to Neverwinter.
     Farr Windward is left alone.
-14. **Neverwinter** (map 28): resting in the gardener's house (6,13), the
-    Krakens' bases (10,1; 15,11) and the ambassadors Froal (10,0) and Wimeg
-    (15,15), the eighth mission (cell 12Eh), then Lord Nasher (5,7). The
-    route keeps clear of the guards who would find the planted orders.
+14. **Neverwinter** (map 28): trained at the Hall of Training (6,11,
+    facing west) where the experience allows; before each fight its dead raised at the temple on Neverwinter
+    Square (9,10), where it rests (the gardens' Krakens break camps until
+    the ambassadors are free, the cluebook's Resting): the gardener (6,13),
+    the Krakens' bases (10,1; 15,11) and the ambassadors Froal (10,0) and
+    Wimeg (15,15), the eighth mission (cell 12Eh), then Lord Nasher (5,7).
+    The route keeps clear of the guards who would find the planted orders.
 15. **Luskan** (map 31), by map 51: resting in a house (11,6), Siulajia
     freed (11,1) and Jagaerda's boat (6,6) to **Ruathym** (map 32), where,
     resting at the inn (9,8), the party clears the men around Captain
-    Redleg (8,2; 10,5; 3,7; 4,9), frees him (3,8) and leaves in his boat
-    (15,4), the ninth mission (cell 12Fh). Back in Luskan: Redleg's
-    farewell (8,3), the captain and the sorceress (11,3), Jagaerda freed
-    (7,4), and, rested in the house (11,6), out by the gate (15,15) on the east road.
+    Redleg (8,2; 10,5; 3,7; 4,9), frees him (3,8) without taking him into
+    the party, so that he finds his boat alone and the party leaves
+    unscathed, as the cluebook's Flint bids (with him, the pier's guards,
+    captains and mages fall on the party), and leaves in his boat (15,4),
+    the ninth mission (cell 12Fh). Back in Luskan: Redleg's farewell (8,3)
+    and Jagaerda freed (7,4), the room where a captain argues with a
+    sorceress (11,3) left alone (no mission asks for it, and its guards and
+    mages leave the party all but dead), and, rested in the house (11,6),
+    out by the gate (15,15) on the east road.
 16. **Mirabar** (map 30), by maps 51 and 52: the council (7,9) and the
     Krakens who burst in, King Steelfist (15,4) and the Marchion (1,7),
     who sends his hammer Kriiador along. The council done (cell 1F8h at
@@ -419,12 +430,12 @@ Llorkh's hall, training the party to levels 8 and 9).
     (The ending).
 
 *Stand-ins:* the experience and money at Llorkh's hall; the test wins the Way
-Inn's last fight (six Hosttower sorceresses charm the route's members),
-Neverwinter's eastern Kraken base (its giants, since the shared combat
-changes of 2026-11-15), the council's (the Krakens who burst in) and the
-lair's black-robed men (their masters, mages and spies hold the members with
-Hold Person and Hold Monster and slay them helpless, the party rested and
-the wand readied), which the route's player loses with every dice it tries.
+Inn's last fight (six Hosttower sorceresses charm the route's members), the
+council's (the Krakens who burst in) and the lair's black-robed men (their
+masters, mages and spies hold the members with Hold Person and Hold Monster
+and slay them helpless, the party rested and the wand readied), which the
+route's player loses with every dice it tries. Neverwinter's eastern Kraken
+base, a stand-in until 2026-11-15, the party trained at Mintarn wins.
 Freezefire himself the route's player beats.
 
 Every walk is played step by step as the planning aid
@@ -436,20 +447,28 @@ that rests first rests a night even when the party is whole
 `OPENGOLD_CURSE_SURVEY=N` surveys map N. Its check passes when "You have won."
 is shown with every member alive (`treasure_route_ends_the_game`).
 
-*Where it stops (2026-11-15):* every beat from the council to the win was
-played from checkpoints (`OPENGOLD_ROUTE_SAVE`/`RESUME`) and wins the game.
-Played whole since PROGRAM 4 runs the original's Fix, the voyages roll its
-dice and the later fights fall otherwise: the overland from Mirabar leaves
-the party hurt, Neverwinter's streets refuse it a camp before the ship, and
-in Fireshear each beat's camp heals a single Hit Point and then the party
-no longer steps (the camp stays refused, so no event runs; to be found from
-a checkpoint at the landing, beat 521). Next: find why the camp stays
-refused there, rest the party at an inn or temple of Neverwinter before
-the ship, and play the whole route to the win again. On the original-rules
-round's stronger monsters (branch `rules-round`) the whole route stops
-earlier, in Ruathym (map 32): the ranger and a cleric are dead before
-Redleg's boat (15,4, beat 465), whose fight then defeats the party; it
-needs its dead raised and a rest before the boat.
+*Played whole (2026-11-15),* on the original-rules round's stronger
+monsters, the route wins the game in one run (about ten minutes). What it
+took, as a player would play it:
+
+- **Ruathym.** Redleg, freed, is not taken into the party (the cluebook's
+  Flint): with him the pier's guards, captains and mages fell on the party
+  and beat it; without him he finds the boat alone. Luskan's room of the
+  arguing captain and sorceress (11,3), which no mission asks for, is left
+  alone.
+- **Temples and halls.** The party trains at Mintarn's and Neverwinter's
+  halls on the experience earned since Llorkh, and has its dead raised at
+  their temples before each fight; the ranger and a cleric had fallen in
+  Neverwinter and gone unraised to Ruathym.
+- **Fireshear's camps.** Its map's camp entry speaks before the rest, so the
+  rest ends only once those words are answered; the route chose the casters'
+  spells before then, and the next camp was refused for the spells still to
+  be chosen (and no step ran an event). Not an engine bug: the game's rest
+  dialog offers the spells whenever a rest has ended. The route now chooses
+  them after the camp's words too.
+- **The overland.** The route walks on hurt between towns, as before: a
+  Fix in camp on the overland, tried, rolls the wandering monsters more
+  often than it heals.
 
 ## The ending
 
