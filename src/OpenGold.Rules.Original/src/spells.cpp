@@ -252,7 +252,9 @@ constexpr std::array<NumberedSpell, 4> gateway_rows{{
 // gdconsts.pas, spellTable) changes in the rows it shares with the earlier
 // games', by the rules' numbers (canonical_spell): ranges, durations, what a
 // save does, when it may be cast, and how its AI weighs it. Its own way of
-// numbering camp targets and effects is the rules' as before.
+// numbering camp targets and effects is the rules' as before. Pools of
+// Darkness's table is the same in all these (its gdconsts.pas), so the
+// 256-color engine plays them in both games.
 struct TreasuresRow
 {
     int number;
@@ -494,7 +496,7 @@ const Spell *spell(int number) noexcept
 
 const Spell *spell(int number, GoldBoxGame game) noexcept
 {
-    if (game == GoldBoxGame::treasures_of_the_savage_frontier)
+    if (vga_engine(game))
     {
         static const auto changed = []
         {

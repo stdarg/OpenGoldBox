@@ -772,8 +772,22 @@ by what it is offered:
   before from the wall ahead), as Shal's cell door. Back up through the
   dungeons (9,0) and the levels' paths, the way the planning aid finds,
   past the drow who do not strike (4,5) and the cleric lecturing his troops
-  (13,5); on level 6 the party rests before Moander's monsters (10,4, the
-  cluebook's 12: bits of Moander, cultists, then Black Circle mages). On
+  (13,5). The guards' runners (the cluebook's 10: "a few go for help")
+  leave cell 176h at their row, and their reinforcements meet the party
+  there on the way out; the dungeons' and the garden's camps drew the
+  tower's wandering mages and monsters every time, so the party walks them
+  hurt, its clerics curing the badly hurt and the knocked out. It rests in
+  the levels' closets (event 30, "A CLOSET.", script 70's 92D1h; the camp
+  entry's table by the square's event, 9862h, lets them rest), stepping in
+  and out by their doors: level 1's (8,0, from 8,1), level 2's (7,7, from
+  7,6) and level 6's (71: 2,0, from 2,1), before Moander's monsters (10,4,
+  the cluebook's 12: bits of Moander, cultists, then Black Circle mages)
+  and again after them. Level 7's pincer (the cluebook's 16 and 17): through
+  the door at (6,9) the party hears wizards ahead and others behind; it
+  taunts the group to the west (TAUNT) and ducks into the closet north
+  (6,8, WAIT HERE? YES), where the two factions destroy each other (cell
+  177h; "BLASTED BODIES LITTER THE FLOOR" after), as the cluebook says;
+  walking on east instead met both and lost. On
   level 8 the sortie against Phlan (3,12): the party hears the troops
   mustering and does not go on (NO), the held step runs the guards' event,
   and Shal bluffs them as Petra (TRY IT? YES; cell 178h 31 with Shal): the
@@ -933,22 +947,28 @@ visit (each class's award stops short of the level after next, as
 training keeps it). It reaches Kalistes at levels 15 to 18 (the
 magic-user 17, with eighth-level spells).
 
-Open after the rebase onto origin/main of 2026-11-15 (fa1e8017,
-Treasures' Charm Person and Fix in the shared 256-color engine): the route
-no longer reaches Moander in one run. Its dice change, and the party loses
-on level 6 of the lower tower: the camp before Moander's monsters (71: 9,4)
-is interrupted by the tower's wandering mages and bits of Moander, and the
-party goes in hurt and falls (71: 11,4), or falls on the way (71: 5,4).
-Unrested walks fall on level 7's pincer, and a step east from the level 6
-arrival (1,0) is the path back down, not the quiet room. The exact next
-step: find a way into level 6's quiet room (map 71's event 30 at 2,0,
-script 70's 92D1h: IT SEEMS SAFE TO REST IN; OPENGOLD_SECRET_FIND=2,0,71
-from the save after beat 1775) and rest there with
-`rest_through_period` before Moander's monsters, as the upper tower's
-quiet rooms are used; map 70's quiet rooms (event 30 at 7,7, 15,4, 8,0 and
-14,0) can rest the party on levels 1 to 5 the same way.
+The route's dice (2026-11-15, late): each beat plays with dice of its own,
+seeded from where it plays, what it answers and how many like it came
+before (`beat_dice_seed` in the route harness, Pools of Darkness's route
+only). One stream had run the whole route, so any engine change that
+rolled a die more or less (the rebase onto Treasures' Charm Person and Fix
+did) reshuffled every beat after it, and the route fell where it had won.
+Now such a change reshuffles only the beats it touches, and a save resumed
+with `OPENGOLD_ROUTE_RESUME` plays on exactly as the whole run does. The
+dice are as fair as before: it is a player's reload before each step. The
+script machine takes a seed only between scripts, so a beat that answers a
+waiting menu (Elminster's) keeps the stream it has.
 
-Where it stops (2026-11-15, night; before that rebase): on Moander's body (script 51, the
+What that and the rest of any length (round 4) took (2026-11-15, late):
+Zhentil Keep's journey is two beats, the last step into the city after a
+rest on the area map; a member a basilisk turns to stone is brought back
+by a magic-user's Stone to Flesh, memorized first and cast in camp
+(OpenGoldBox cast it only in a fight; the later games' table lets it be
+cast out of one, and their FIX uses it too, camp.pas); the Web Dimension's
+ruins are walked unrested after Cynthia (a camp there drew Kalistes' pets,
+iron golems and giant spiders); and the lower tower is played as above.
+
+Where it stops (2026-11-15, late): on Moander's body (script 51, the
 party still standing on map 52 at 7,9), just out of the depression. Next:
 Moander (the cluebook's 57 to 60). Script 51 is a body of places, not a
 map: the party's place is cell 224h, a step forward moves it by the

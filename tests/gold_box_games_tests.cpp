@@ -546,6 +546,10 @@ struct RouteBeat
     // before the beat instead of a camp, where a camp draws a swarm (the
     // Drow Testing Ground's Test, before its spiders' amulets are found).
     bool cure_first = false;
+    // With cure_first, every member short of its Hit Points is cured, not
+    // only the badly hurt, as a player heals up before a known fight where
+    // no camp rests (Thorne's cave).
+    bool cure_to_full = false;
     // Spells the casters memorize first as they rest before the beat, as a
     // player readies the counters a known fight needs (Dispel Magic against
     // Treasures' charms and holds).
@@ -2976,6 +2980,10 @@ const std::vector<RouteBeat> &darkness_route()
         // after.
         auto thorne = step_beat(34, 3, 6, D::south, {"YES"});
         thorne.rest_first = true;
+        // The cave's camps do not rest: the clerics cure every hurt member
+        // first (the dragons met on arrival leave some hurt).
+        thorne.cure_first = true;
+        thorne.cure_to_full = true;
         thorne.ward_each_with = "resist_fire";
         thorne.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x152, 255};
         route.push_back(thorne);
@@ -8588,7 +8596,7 @@ bool walk_census(GoldBoxGame game, bool route)
         // Cave, the Dragons' Aerie), its clerics raise the dead and cast their
         // cures, the strongest first, on each member below half its Hit
         // Points, as a player would.
-        const auto cure_the_hurt = [&]
+        const auto cure_the_hurt = [&](bool to_full = false)
         {
             if (game != GoldBoxGame::pools_of_darkness)
             {
@@ -8633,8 +8641,10 @@ bool walk_census(GoldBoxGame game, bool route)
             const auto below_half = [&](opengold::MemberId id)
             {
                 const auto &member = party->member(id);
+                const int short_of =
+                    to_full ? member.vitals.hit_points : member.vitals.hit_points * 2;
                 return !member.vitals.dead && member.vitals.description != "Turned to stone." &&
-                       member.vitals.hit_points * 2 < member.character.sheet().hit_points;
+                       short_of < member.character.sheet().hit_points;
             };
             for (const auto hurt : party->state().slots)
             {
@@ -8933,7 +8943,7 @@ bool walk_census(GoldBoxGame game, bool route)
                 }
                 if (beat.cure_first)
                 {
-                    cure_the_hurt();
+                    cure_the_hurt(beat.cure_to_full);
                 }
                 if (!beat.ward_each_with.empty())
                 {
@@ -9502,17 +9512,29 @@ bool walk_census(GoldBoxGame game, bool route)
             declining = true;
             trace = false;
             std::optional<std::size_t> found;
+            // OPENGOLD_SECRET_AREA steps an area map's eight ways instead
+            // (Pools of Darkness's Moander's body, script 51), with
+            // OPENGOLD_SECRET_KEYS=25,26 keying each place by its cells.
+            const bool area = std::getenv("OPENGOLD_SECRET_AREA") != nullptr;
             for (std::size_t i = 0; i < nodes.size() && i < 20000 && !found; ++i)
             {
-                for (unsigned f = 0; f < 4 && !found; ++f)
+                for (unsigned f = 0; f < (area ? 8U : 4U) && !found; ++f)
                 {
                     session = nodes[i].session.detached_copy();
                     party->restore(nodes[i].party_state);
                     session.attach_restored_party(party);
                     const auto from = session.snapshot().pose;
-                    const auto facing = static_cast<opengold::por::MapDirection>(f);
-                    opengold::test::TourAccess::place(session, {from.x, from.y, facing});
-                    (void)session.explore(opengold::por::ExplorationCommand::forward);
+                    if (area)
+                    {
+                        (void)session.explore(static_cast<opengold::por::ExplorationCommand>(
+                            static_cast<unsigned>(opengold::por::ExplorationCommand::north) + f));
+                    }
+                    else
+                    {
+                        const auto facing = static_cast<opengold::por::MapDirection>(f);
+                        opengold::test::TourAccess::place(session, {from.x, from.y, facing});
+                        (void)session.explore(opengold::por::ExplorationCommand::forward);
+                    }
                     play("find");
                     if (!session.can_leave())
                     {

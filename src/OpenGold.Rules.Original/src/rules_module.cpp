@@ -417,10 +417,11 @@ por::CharacterRecord character_record(const CharacterSheet &sheet)
     const auto race = static_cast<Race>(original.race);
     const bool short_folk = race == Race::dwarf || race == Race::gnome || race == Race::halfling;
     record.icon_size_raw = short_folk ? 1 : 2;
-    // Treasures' fights stand every character on one square, a tall one too
-    // (its chargen.pas: the icon's height is only drawn), so no weapon
-    // strikes one as large and every size check passes it.
-    if (record.game == GoldBoxGame::treasures_of_the_savage_frontier)
+    // The 256-color engine's fights (Pools of Darkness's and Treasures')
+    // stand every character on one square, a tall one too (their
+    // chargen.pas: the icon's height is only drawn), so no weapon strikes
+    // one as large and every size check passes it.
+    if (vga_engine(record.game))
     {
         record.icon_size_raw = 1;
     }
