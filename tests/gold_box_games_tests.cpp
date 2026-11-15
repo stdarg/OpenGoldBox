@@ -3212,6 +3212,63 @@ const std::vector<RouteBeat> &darkness_route()
                        {9, 2, D::south},
                        {9, 3, D::west}});
         route.push_back(step_beat(83, 8, 3, D::south, {"BEHEAD"}));
+        // Out of the ruins by the south way (7,9) onto the web's paths
+        // (script 80, an area map as script 17 is).
+        walk_passages(route, 83,
+                      {{8, 3, D::east},
+                       {9, 3, D::south},
+                       {9, 4, D::south},
+                       {9, 5, D::south},
+                       {9, 6, D::south},
+                       {9, 7, D::west},
+                       {8, 7, D::south},
+                       {8, 8, D::south},
+                       {8, 9, D::west}});
+        route.push_back(step_beat(83, 7, 9, D::south, {"YES", "NO"}));
+        // North-east along the paths to the Drow Testing Ground's gates
+        // (13,7), which swing open for the party (script 81).
+        RouteBeat to_testing_ground{83, 0, 0, D::north, {"YES"}};
+        to_testing_ground.area_steps = {C::northeast, C::northeast, C::northeast,
+                                        C::northeast, C::northeast, C::northeast,
+                                        C::east,      C::east,      C::east};
+        route.push_back(to_testing_ground);
+        // In the Testing Ground (map 81), past the gate's guards: south
+        // through the compound, ambushing the two drow at (12,10), to the
+        // barracks (13,14, entered facing east), whose drow the party beats
+        // and where it rests (the cluebook's 19). The compound's drow priests
+        // break the camps outside the barracks: a hurt party walks on.
+        const auto testing_compound = route.size();
+        walk_passages(route, 81,
+                      {{15, 7, D::south},
+                       {15, 8, D::west},
+                       {14, 8, D::west},
+                       {13, 8, D::south},
+                       {13, 9, D::west}});
+        walk_passages(route, 81, {{12, 9, D::south}}, false, false, false, {"YES"});
+        walk_passages(route, 81,
+                      {{12, 10, D::south},
+                       {12, 11, D::south},
+                       {12, 12, D::south},
+                       {12, 13, D::south},
+                       {12, 14, D::east}});
+        for (auto beat = route.begin() + static_cast<std::ptrdiff_t>(testing_compound);
+             beat != route.end(); ++beat)
+        {
+            beat->camp_broken = true;
+        }
+        RouteBeat testing_barracks{81, 13, 14, D::east, {}};
+        testing_barracks.rest_first = true;
+        route.push_back(testing_barracks);
+        // West along the south wall to the east wall's secret door (8,14),
+        // through it (YES, YES) into the Test's first chamber (9,14).
+        walk_passages(route, 81,
+                      {{13, 14, D::west},
+                       {12, 14, D::south},
+                       {12, 15, D::west},
+                       {11, 15, D::west},
+                       {10, 15, D::west},
+                       {9, 15, D::west}});
+        route.push_back(step_beat(81, 8, 15, D::north, {"YES", "YES"}));
         return route;
     }();
     return beats;
