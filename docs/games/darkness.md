@@ -720,7 +720,7 @@ by what it is offered:
   rakshasas draining a knight (10,15, the cluebook's 9; Nacacia throws
   herself at them, the knights rally) to the ruined houses (6,13), where it
   rests; west to the rakshasas and Banites at their altar (3,14, the
-  cluebook's 10) and back to rest; then round the ruins' west side, past
+  cluebook's 10; a stand-in, below) and back to rest; then round the ruins' west side, past
   the narrow passages (YES) and the rakshasa posing as a knight, to the
   door that will not budge (4,4, facing north): the second paladin, of
   Dexterity 18, climbs over and secures a rope (CLIMB OVER, WHO). Round to
@@ -773,7 +773,10 @@ Resistance and all; a player would ward each member with Resist Fire
 first, which the route does not cast yet. So does the Aerie's blue
 dragons' nest (33: 3,14): five blue dragons, each breathing lightning of
 its 80 Hit Points three times, leave the party of levels 12 to 14 dead with
-most dice even rested. The route's party carries the game's own
+most dice even rested. And Myth Drannor's altar (66: 3,14): its eight
+Banite clerics and their rakshasas beat the party of levels 16 to 18 with
+every dice, rested and its spells fresh, though a run of the route that
+came there stronger won it once. The route's party carries the game's own
 starting equipment (ORIGINAL-RULES.md, *Pools of Darkness*). Until the
 route reaches the win it passes when it plays every beat to Myth Drannor's
 gate (map 66).

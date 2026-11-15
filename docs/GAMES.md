@@ -650,10 +650,10 @@ new decoders.
    after the Aerie, 300,000 at Zhentil Keep's hall, 400,000 in Limbo before
    the Web Dimension, trained up to two levels a visit) brings it to
    Kalistes at levels 15 to 18. Thorne and the Aerie's five blue dragons
-   are stand-ins (their breath).
+   (their breath) and Myth Drannor's altar are stand-ins.
    In Myth Drannor the ranger readies Nacacia's light crossbow and blessed
    bolts, which slay a rakshasa (effect 82, played); the party beats the
-   rakshasas draining a knight and those at the altar, climbs the door that
+   rakshasas draining a knight, climbs the door that
    will not budge and stops at the temple's door (66: 5,0), whose
    Maharajah and rakshasas beat it (darkness.md, Where it stops).
    *The area map is drawn (2026-11-14):* the big picture with the party's

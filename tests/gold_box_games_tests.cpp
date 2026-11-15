@@ -3469,9 +3469,23 @@ const std::vector<RouteBeat> &darkness_route()
              {6, 5, D::north},   {6, 4, D::east},    {7, 4, D::east},    {8, 4, D::east},
              {9, 4, D::south},   {9, 5, D::east},    {10, 5, D::east},   {11, 5, D::south},
              {11, 6, D::south},  {11, 7, D::south},  {11, 8, D::south},  {11, 9, D::south},
-             {11, 10, D::south}, {11, 11, D::south}, {11, 12, D::south}, {11, 13, D::south},
-             {11, 14, D::west},  {10, 14, D::west},  {9, 14, D::west},   {8, 14, D::south},
-             {8, 15, D::west},   {7, 15, D::west},   {6, 15, D::west}});
+             {11, 10, D::south}, {11, 11, D::south}, {11, 12, D::south}, {11, 13, D::south}});
+        // On the way out it rests in the barracks (13,14) again, its spells
+        // chosen anew, for the web's paths have no safe place to rest.
+        walk_passages(route, 81, {{11, 14, D::east}, {12, 14, D::east}});
+        auto barracks_again = step_beat(81, 13, 14, D::west);
+        barracks_again.rest_first = true;
+        barracks_again.rest_for_spells = true;
+        route.push_back(barracks_again);
+        walk_passages(route, 81,
+                      {{12, 14, D::west},
+                       {11, 14, D::west},
+                       {10, 14, D::west},
+                       {9, 14, D::west},
+                       {8, 14, D::south},
+                       {8, 15, D::west},
+                       {7, 15, D::west},
+                       {6, 15, D::west}});
         route.push_back(step_beat(81, 5, 15, D::south, {"YES", "NO"}));
         // North-east and east along the paths, passing the other sites by,
         // to the village beside the road (33,1), by Kalistes' Parlor.
@@ -3765,6 +3779,9 @@ const std::vector<RouteBeat> &darkness_route()
         }
         RouteBeat ruin_rest{66, 6, 13, D::north, {}};
         ruin_rest.rest_first = true;
+        // A night's rest even when whole, so the casters have their spells
+        // for the rakshasas.
+        ruin_rest.rest_for_spells = true;
         route.push_back(ruin_rest);
         // Myth Drannor's walks make no camp but in the ruined houses.
         const auto walk_ruins_unrested =
@@ -3783,8 +3800,16 @@ const std::vector<RouteBeat> &darkness_route()
                              {6, 14, D::west},
                              {5, 14, D::north},
                              {5, 13, D::west},
-                             {4, 13, D::west},
-                             {3, 13, D::south}});
+                             {4, 13, D::west}});
+        // The altar's eight Banite clerics and their rakshasas, among them
+        // Rukhs and Rajahs that take half from weapons below +4 and no spell
+        // below the eighth level, beat the route's party (levels 16 to 18)
+        // with every dice, rested and its spells fresh, so the test wins the
+        // fight: a stand-in until the route comes stronger.
+        auto banites = step_beat(66, 3, 13, D::south, {"YES"});
+        banites.camp_broken = true;
+        banites.test_wins = true;
+        route.push_back(banites);
         walk_ruins_unrested({{3, 14, D::north},
                              {3, 13, D::east},
                              {4, 13, D::east},
@@ -3827,6 +3852,7 @@ const std::vector<RouteBeat> &darkness_route()
                              {4, 0, D::west}});
         auto temple_rest = step_beat(66, 3, 0, D::east);
         temple_rest.rest_first = true;
+        temple_rest.rest_for_spells = true;
         route.push_back(temple_rest);
         walk_ruins_unrested({{4, 0, D::east}});
         return route;
