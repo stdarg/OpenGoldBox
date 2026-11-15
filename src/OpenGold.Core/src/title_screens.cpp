@@ -177,17 +177,17 @@ std::map<std::uint8_t, Image> title_pictures(const std::filesystem::path &folder
     return pictures;
 }
 
-// Pools of Darkness' opening film as the original's VACE plays it before the
-// game: each frame a screen for its time. A key ends the film once its title
-// card has passed, going on to the title's first picture.
-void add_opening_film(const std::filesystem::path &folder, TitleScreens &title)
+// One of Pools of Darkness' films (INTRO or FINAL) as the original's VACE
+// plays it: each frame a screen for its time. A key ends the film once a frame
+// lets it (after the opening's title card), going on past the film.
+void add_film(const std::filesystem::path &folder, const std::string &name, TitleScreens &title)
 {
     const auto film = decode_vace_film(
-        por::detail::read_archive(por::detail::resolve_archive(folder, "INTRO.ACF")),
-        por::detail::read_archive(por::detail::resolve_archive(folder, "INTRO.BMA")));
+        por::detail::read_archive(por::detail::resolve_archive(folder, name + ".ACF")),
+        por::detail::read_archive(por::detail::resolve_archive(folder, name + ".BMA")));
     if (!film || film->empty())
     {
-        throw std::runtime_error("Invalid opening film INTRO");
+        throw std::runtime_error("Invalid film " + name);
     }
     for (const auto &frame : *film)
     {
@@ -233,7 +233,7 @@ TitleScreens load_title_screens(const std::filesystem::path &folder, GoldBoxGame
     TitleScreens title;
     if (script.opens_with_film)
     {
-        add_opening_film(folder, title);
+        add_film(folder, "INTRO", title);
     }
     const auto first_picture = title.screens.size();
     const auto last_screen = first_picture + script.steps.size() - 1;
@@ -259,6 +259,16 @@ TitleScreens load_title_screens(const std::filesystem::path &folder, GoldBoxGame
                                  screen_after_key(step.key, shown, last_screen)});
     }
     return title;
+}
+
+TitleScreens load_closing_film(const std::filesystem::path &folder, GoldBoxGame game)
+{
+    TitleScreens film;
+    if (game == GoldBoxGame::pools_of_darkness)
+    {
+        add_film(folder, "FINAL", film);
+    }
+    return film;
 }
 
 } // namespace opengold

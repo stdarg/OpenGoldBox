@@ -54,6 +54,12 @@ struct TitleScreens
 [[nodiscard]] TitleScreens load_title_screens(const std::filesystem::path &folder,
                                               GoldBoxGame game);
 
+// The film the original plays after the game is won, as screens: Pools of
+// Darkness' FINAL, which its CONTROL.EXE plays once GAME.EXE ends with the
+// win, with its song P3.SMS (film_song). Empty for the other games. Throws
+// when the film does not decode.
+[[nodiscard]] TitleScreens load_closing_film(const std::filesystem::path &folder, GoldBoxGame game);
+
 } // namespace opengold
 
 #endif

@@ -231,6 +231,34 @@ void darkness_plays_its_film_then_three_pictures(const std::filesystem::path &fo
     }
 }
 
+// After the win Pools of Darkness plays its closing film, FINAL: its 58 frames
+// each for its time, with its song P3.SMS; the other games have none.
+void darkness_closes_with_its_film(const std::filesystem::path &folder)
+{
+    const auto closing =
+        opengold::load_closing_film(folder, opengold::GoldBoxGame::pools_of_darkness);
+    const auto film = opengold::decode_vace_film(file_bytes(folder / "FINAL.ACF"),
+                                                 file_bytes(folder / "FINAL.BMA"));
+    check(film && film->size() == 58 && closing.screens.size() == 58,
+          "Pools of Darkness' closing film shows FINAL's 58 frames");
+    for (const std::size_t frame : {std::size_t{0}, std::size_t{30}, std::size_t{57}})
+    {
+        const auto &shown = (*film)[frame];
+        const opengold::VgaImage pixels{320, 200, shown.pixels};
+        check(
+            shows(closing.screens[frame].screen, opengold::vga_rgba(pixels, shown.palette), 0, 0) &&
+                closing.screens[frame].seconds == shown.hold_milliseconds / 1000.0,
+            "The closing film's screen " + std::to_string(frame) +
+                " is FINAL's frame, in its colors, for its time");
+    }
+    check(closing.film_song && closing.film_song->file.filename() == "P3.SMS" &&
+              closing.film_song->number == 0,
+          "The closing film plays P3.SMS's song 0");
+    check(opengold::load_closing_film(folder, opengold::GoldBoxGame::secret_of_the_silver_blades)
+              .screens.empty(),
+          "Only Pools of Darkness has a closing film");
+}
+
 // Treasures shows pictures 1 to 3 for 25 seconds, the VGA's picture 4 for 50
 // and the credits, picture 6, for 50; a key passes one, and the title music
 // plays from the first.
@@ -299,6 +327,7 @@ int main()
         if (std::filesystem::exists(root / "DARKNESS" / "INTRO.ACF"))
         {
             darkness_plays_its_film_then_three_pictures(root / "DARKNESS");
+            darkness_closes_with_its_film(root / "DARKNESS");
         }
         if (std::filesystem::exists(root / "TREASURE" / "TITLE.DAX"))
         {
