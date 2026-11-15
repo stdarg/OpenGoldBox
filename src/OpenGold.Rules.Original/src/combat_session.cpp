@@ -1527,15 +1527,51 @@ void Session::join_arrivals()
 // ring; false, leaving it where it was, when there is none.
 bool Session::place_near(Fighter &f, Cell wanted)
 {
-    const auto fits = [this, &f]
+    // The squares its enemies can walk to: it is not shut away from them
+    // (the original places it as the fight places its side, which never
+    // leaves it walled in).
+    const auto at = [this](Cell c)
+    {
+        return static_cast<std::size_t>(c.y * board_.width + c.x);
+    };
+    std::vector<bool> reached(static_cast<std::size_t>(board_.width * board_.height));
+    std::vector<Cell> frontier;
+    for (const auto &o : fighters_)
+    {
+        if (o.side != f.side && o.able() && board_.contains(o.cell))
+        {
+            reached[at(o.cell)] = true;
+            frontier.push_back(o.cell);
+        }
+    }
+    const bool enemies_stand = !frontier.empty();
+    for (std::size_t n = 0; n < frontier.size(); ++n)
+    {
+        for (int dy = -1; dy <= 1; ++dy)
+        {
+            for (int dx = -1; dx <= 1; ++dx)
+            {
+                const Cell next{frontier[n].x + dx, frontier[n].y + dy};
+                if (board_.contains(next) && !reached[at(next)] &&
+                    board_.at(next) != rules::Terrain::obstacle)
+                {
+                    reached[at(next)] = true;
+                    frontier.push_back(next);
+                }
+            }
+        }
+    }
+    const auto fits = [&]
     {
         const auto squares = squares_of(f);
-        return cell_free(f) && std::all_of(squares.begin(), squares.end(),
-                                           [this](Cell c)
-                                           {
-                                               return board_.contains(c) &&
-                                                      board_.at(c) != rules::Terrain::obstacle;
-                                           });
+        return cell_free(f) &&
+               std::all_of(squares.begin(), squares.end(),
+                           [this](Cell c)
+                           {
+                               return board_.contains(c) &&
+                                      board_.at(c) != rules::Terrain::obstacle;
+                           }) &&
+               (!enemies_stand || reached[at(f.cell)]);
     };
     const int reach = std::max(board_.width, board_.height);
     for (int ring = 0; ring <= reach; ++ring)

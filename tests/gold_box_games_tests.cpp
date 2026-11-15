@@ -6684,27 +6684,25 @@ bool walk_census(GoldBoxGame game, bool route)
                : cell.x == 0                ? std::optional<unsigned>{3}
                                             : std::nullopt;
     };
-    const auto edge_steps =
-        [&](const opengold::rules::Battlefield &field, std::optional<unsigned> side)
+    // Steps from each square of the field to the nearest of the given
+    // squares, over open ground, or with `rough` over any but obstacles.
+    const auto steps_from = [](const opengold::rules::Battlefield &field,
+                               std::vector<opengold::rules::Cell> frontier, bool rough = false)
     {
+        const auto passable = [&field, rough](int x, int y)
+        {
+            const auto ground = field.at({x, y});
+            return rough ? ground != opengold::rules::Terrain::obstacle
+                         : ground == opengold::rules::Terrain::open;
+        };
         const auto at = [&field](int x, int y)
         {
             return static_cast<std::size_t>(y * field.width + x);
         };
         std::vector<int> steps(static_cast<std::size_t>(field.width * field.height), 9999);
-        std::vector<opengold::rules::Cell> frontier;
-        for (int y = 0; y < field.height; ++y)
+        for (const auto cell : frontier)
         {
-            for (int x = 0; x < field.width; ++x)
-            {
-                const auto leaves_by = edge_side(field, {x, y});
-                if (leaves_by && (!side || leaves_by == side) &&
-                    field.terrain[at(x, y)] == opengold::rules::Terrain::open)
-                {
-                    steps[at(x, y)] = 0;
-                    frontier.push_back({x, y});
-                }
-            }
+            steps[at(cell.x, cell.y)] = 0;
         }
         for (std::size_t n = 0; n < frontier.size(); ++n)
         {
@@ -6715,8 +6713,7 @@ bool walk_census(GoldBoxGame game, bool route)
                 {
                     const int x = from.x + dx, y = from.y + dy;
                     if (x < 0 || y < 0 || x >= field.width || y >= field.height ||
-                        field.terrain[at(x, y)] != opengold::rules::Terrain::open ||
-                        steps[at(x, y)] <= steps[at(from.x, from.y)] + 1)
+                        !passable(x, y) || steps[at(x, y)] <= steps[at(from.x, from.y)] + 1)
                     {
                         continue;
                     }
@@ -6731,6 +6728,24 @@ bool walk_census(GoldBoxGame game, bool route)
                        ? 9999
                        : steps[at(cell.x, cell.y)];
         };
+    };
+    const auto edge_steps =
+        [&](const opengold::rules::Battlefield &field, std::optional<unsigned> side)
+    {
+        std::vector<opengold::rules::Cell> edge;
+        for (int y = 0; y < field.height; ++y)
+        {
+            for (int x = 0; x < field.width; ++x)
+            {
+                const auto leaves_by = edge_side(field, {x, y});
+                if (leaves_by && (!side || leaves_by == side) &&
+                    field.at({x, y}) == opengold::rules::Terrain::open)
+                {
+                    edge.push_back({x, y});
+                }
+            }
+        }
+        return steps_from(field, std::move(edge));
     };
     // The side the party means to leave the next maze fight by
     // (RouteBeat::maze_exits), as the cluebook leads through Ascore.
@@ -6864,9 +6879,97 @@ bool walk_census(GoldBoxGame game, bool route)
                 break;
             }
         }
-        // A fight no side can finish (the monsters stand where no one can
-        // reach, and every turn is a guard) is left as a player leaves it:
-        // each member walks to the field's edge and flees. It is counted.
+        // A fight where every turn is a guard, an enemy left standing where
+        // Quick finds no way to it (Treasures' sorceresses, who never step,
+        // behind the council's walls), is played on as a player plays it:
+        // each member walks the way round to the nearest enemy standing and
+        // fights it there. It is counted.
+        if (combat.combat().snapshot().outcome == opengold::rules::Outcome::ongoing)
+        {
+            ++phases["stalemates played on by walking round"];
+            // OPENGOLD_FIGHT_CELLS tells who stands where as it begins.
+            if (std::getenv("OPENGOLD_FIGHT_CELLS"))
+            {
+                std::cout << "  stalemate:";
+                for (const auto &unit : combat.combat().snapshot().combatants)
+                {
+                    if (unit.conscious)
+                    {
+                        std::cout << " " << unit.name << "@" << unit.cell.x << "," << unit.cell.y;
+                    }
+                }
+                std::cout << "\n";
+            }
+            for (int command = 0; command < 3000 && combat.combat().snapshot().outcome ==
+                                                        opengold::rules::Outcome::ongoing;
+                 ++command)
+            {
+                const auto &fighting = combat.combat();
+                const auto state = fighting.snapshot();
+                const auto actor = std::ranges::find(state.combatants, state.actor,
+                                                     &opengold::rules::CombatantView::id);
+                const bool member = actor != state.combatants.end() &&
+                                    actor->side == opengold::rules::Side::party &&
+                                    !opengold::is_ally(state.actor);
+                std::vector<opengold::rules::Cell> enemies;
+                for (const auto &unit : state.combatants)
+                {
+                    if (unit.side == opengold::rules::Side::opposition && unit.conscious)
+                    {
+                        enemies.push_back(unit.cell);
+                    }
+                }
+                std::optional<opengold::rules::Command> chosen;
+                if (member)
+                {
+                    const auto to_enemy = steps_from(state.battlefield, enemies, true);
+                    if (std::getenv("OPENGOLD_FIGHT_CELLS") && command < 40)
+                    {
+                        std::cout << "  hunting: " << actor->name << "@" << actor->cell.x << ","
+                                  << actor->cell.y << " " << to_enemy(actor->cell) << " steps, "
+                                  << actor->status << "\n";
+                    }
+                    const auto options = fighting.legal_commands();
+                    chosen = [&]() -> std::optional<opengold::rules::Command>
+                    {
+                        for (const auto &option : options)
+                        {
+                            if (option.verb == "attack" || option.verb == "ranged")
+                            {
+                                return option;
+                            }
+                        }
+                        std::optional<opengold::rules::Command> step;
+                        for (const auto &option : options)
+                        {
+                            if (option.verb == "move" &&
+                                to_enemy(option.destination) < to_enemy(actor->cell) &&
+                                (!step ||
+                                 to_enemy(option.destination) < to_enemy(step->destination)))
+                            {
+                                step = option;
+                            }
+                        }
+                        return step;
+                    }();
+                }
+                const auto next =
+                    chosen ? *chosen
+                    : member
+                        ? opengold::choose_quick_command(fighting, true,
+                                                         opengold::Searching::everyone)
+                        : opengold::choose_demo_command(fighting, opengold::Searching::everyone,
+                                                        opengold::default_difficulty);
+                if (!combat.submit(next))
+                {
+                    ++phases["fight stopped at " + next.verb];
+                    break;
+                }
+            }
+        }
+        // A fight no side can finish still (the monsters stand where no one
+        // can reach) is left as a player leaves it: each member walks to the
+        // field's edge and flees. It is counted.
         if (combat.combat().snapshot().outcome == opengold::rules::Outcome::ongoing)
         {
             ++phases["stalemates left by fleeing"];
