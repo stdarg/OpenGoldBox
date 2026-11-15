@@ -408,7 +408,7 @@ Llorkh's hall, training the party to levels 8 and 9).
    magic-user acts, the bolts bouncing off the wall behind it; the route's
    player wins about one play in eleven, where its Fireball goes off at
    their row first, so it reloads that fight until it wins
-   (`RouteBeat::reloads`, since 2026-11-15; until then the test won it).
+   (`RouteBeat::reloads_until_won`, since 2026-11-15; until then the test won it).
 
 8. **Yartar** (map 23), overland north by maps 56 and 54: resting in a
    house off the streets (11,9), the robed Krakens at the secret door
@@ -517,7 +517,7 @@ Llorkh's hall, training the party to levels 8 and 9).
 *Stand-ins:* the experience and money at Llorkh's hall. The Way Inn's
 last fight and the lair's black-robed men, which the test won until
 2026-11-15, the route's player wins by reloading them until it does
-(`RouteBeat::reloads`: past the 120 plays every fight gets, up to 600 more
+(`RouteBeat::reloads_until_won`: past the 120 plays every fight gets, up to 600 more
 while none has won), as a player reloads a fight the enemy most often wins
 in its first round. Tried there on 2026-11-15, each over 300 plays, and
 none changing the odds: Magic Missile at a sorceress casting, Charm Person

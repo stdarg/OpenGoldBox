@@ -511,7 +511,7 @@ struct RouteBeat
     // to this many more times, until one does, as a player reloads a fight
     // the enemy most often wins in its first round (Treasures' Way Inn
     // sorceresses and the lair's black-robed men).
-    unsigned reloads = 0;
+    unsigned reloads_until_won = 0;
     // The rounds of repeat_until_at_least stay on the beat's square, as a
     // player tries a climb again.
     bool repeat_in_place = false;
@@ -6133,7 +6133,7 @@ const std::vector<RouteBeat> &treasure_route()
         // the party before its magic-user acts: about one play in eleven is
         // won (2026-11-15), so the party reloads until it wins.
         route.back().memorize_first_of = {"fireball", "charm_person", "dispel_magic"};
-        route.back().reloads = 600;
+        route.back().reloads_until_won = 600;
         route.back().expect_cell = {{0x129, 1}};
         // Down the stairs (9,13) and out of the Way Inn, then overland north
         // by maps 56 and 54 to Yartar (map 23).
@@ -6766,7 +6766,7 @@ const std::vector<RouteBeat> &treasure_route()
         // them. The ice hunters' care (PROGRAM 5) makes the party whole as
         // the game is won, as the cluebook has it ("One member surviving is
         // all the party needs to win the battle").
-        freezefire.reloads = 600;
+        freezefire.reloads_until_won = 600;
         route.push_back(freezefire);
         // A camp on the overland (maps 51 to 57) draws its wandering
         // monsters night after night: the party walks on between towns
@@ -8161,8 +8161,8 @@ bool walk_census(GoldBoxGame game, bool route)
     // The beat being played keeps every enemy from fleeing (RouteBeat::holding_foes).
     bool holding_foes = false;
     // The tries the beat being played reloads for while no try has won it
-    // (RouteBeat::reloads).
-    unsigned reloads = 0;
+    // (RouteBeat::reloads_until_won).
+    unsigned reloads_until_won = 0;
     // A planning aid (OPENGOLD_SECRET_FIND) wins every fight at once.
     bool planning = false;
     // Fights played so far (a camp counts the ones that interrupt it), and
@@ -8236,13 +8236,13 @@ bool walk_census(GoldBoxGame game, bool route)
         print_score(0, result);
         // OPENGOLD_FIGHT_TRIES=N plays N tries instead of 120, to measure a
         // tactic's chances over more dice (a planning aid). A beat that
-        // reloads until won (RouteBeat::reloads) plays on past them, up to its
+        // reloads until won (RouteBeat::reloads_until_won) plays on past them, up to its
         // count more, while no try has won.
         const char *tries = std::getenv("OPENGOLD_FIGHT_TRIES");
         const unsigned try_count = tries ? static_cast<unsigned>(std::stoul(tries)) : 120;
         constexpr int lost_fight = 1'000'000;
         while (route && !planning && (best > 0 || scoring) &&
-               (++last < try_count || (best >= lost_fight && last < try_count + reloads)))
+               (++last < try_count || (best >= lost_fight && last < try_count + reloads_until_won)))
         {
             party->restore(before);
             result = play_try(last);
@@ -9353,7 +9353,7 @@ bool walk_census(GoldBoxGame game, bool route)
                                      beat.memorize_first_of.end());
                 // A camp before the beat fights as the beat does.
                 test_winning = beat.test_wins && !playing_stand_ins;
-                reloads = beat.reloads;
+                reloads_until_won = beat.reloads_until_won;
                 if (beat.rest_first || (beat.passing && !beat.camp_broken && party_hurt() &&
                                         session.snapshot().area_id != restless_map))
                 {
@@ -9440,7 +9440,7 @@ bool walk_census(GoldBoxGame game, bool route)
                     }
                     test_winning = beat.test_wins && !playing_stand_ins;
                     holding_foes = beat.holding_foes;
-                    reloads = beat.reloads;
+                    reloads_until_won = beat.reloads_until_won;
                     maze_exits.assign(beat.maze_exits.begin(), beat.maze_exits.end());
                     if (beat.rest_choice)
                     {
