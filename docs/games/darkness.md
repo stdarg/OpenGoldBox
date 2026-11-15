@@ -668,9 +668,17 @@ OpenGoldBox left the flags as they were, so a won fight could read as lost
 and move the party back a square (the walk passed all the same).
 
 Where it stops (2026-11-15): in the Web Dimension (map 83), Cynthia
-befriended. Next, her favors (the Cavern of Fireflies' spiders, drow
-prisoners), the Web Dimension's minis (Storm, Dennia, the disgruntled
-slave), the Drow Testing
+befriended. What the scripts show of the way on: map 83 is the cluebook's
+Ruined Temple, ten squares by ten, which the planning aid walks whole;
+Cynthia stands at (8,4) (event 18, BEHEAD or REFUSE: her third favor,
+which the cluebook says to grant); the cave at (6,1) (event 20, ENTER? YES)
+is the Cavern of Fireflies, its events in script 85, as Kalistes' Temple's
+are in 72 (cell 21Ah names the event); the way out is (7,9) stepped south
+(DO YOU WANT TO LEAVE? YES), onto the web's paths (script 80, an area map
+like script 17, at 4,13), whose sites are the other minis (scripts 81 and
+82 among them: the Testing Ground, and Kalistes' Parlor on maps 82 and
+84). Next, Cynthia's favors (the cavern's spiders, drow prisoners from the
+Stockade), the minis (Storm, Dennia, the disgruntled slave), the Drow Testing
 Ground and Kalistes' Parlor, Myth Drannor and the Red Tower (scripts 66,
 70, 67), Moander (52, 53, 55), Mulmaster and the beholders' cave, Dark
 Phlan (64) and the Palace of Gothmenes (65, 74, 73), whose win (75) is in
