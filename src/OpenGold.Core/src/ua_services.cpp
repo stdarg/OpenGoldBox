@@ -132,8 +132,8 @@ using rules::Message;
 }
 
 // A temple's services in its Heal menu's order: the temple level that offers
-// each and its list price in platinum (temple.c). Restoration (level 7,
-// 1,500) is left out: the original rules have no such service yet.
+// each and its list price in platinum (temple.c). Restoration casts the
+// spell on the member (restore_levels).
 struct TempleOffer
 {
     rules::TempleService service;
@@ -141,7 +141,7 @@ struct TempleOffer
     unsigned level, price;
 };
 
-constexpr std::array<TempleOffer, 11> temple_offers{{
+constexpr std::array<TempleOffer, 12> temple_offers{{
     {rules::TempleService::cure_light_wounds, "Cure Light Wounds", 1, 20},
     {rules::TempleService::cure_blindness, "Cure Blindness", 3, 200},
     {rules::TempleService::cure_disease, "Cure Disease", 3, 200},
@@ -152,6 +152,7 @@ constexpr std::array<TempleOffer, 11> temple_offers{{
     {rules::TempleService::raise_dead, "Raise Dead", 5, 1100},
     {rules::TempleService::heal, "Heal", 6, 1000},
     {rules::TempleService::stone_to_flesh, "Stone to Flesh", 6, 400},
+    {rules::TempleService::restoration, "Restoration", 7, 1500},
     {rules::TempleService::resurrection, "Resurrection", 7, 2000},
 }};
 

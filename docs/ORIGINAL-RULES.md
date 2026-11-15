@@ -666,7 +666,8 @@ whole list):
   hundredth to a hundred times the list price): training 1,000, a temple's
   cures 20 to 2,000, a shop's items their value, identifying 20. The party
   pays them from its one purse at 1 platinum to 10 gold, as the user
-  confirmed (2026-11-14).
+  confirmed (2026-11-14). (Until 2026-11-15 the purse counted a design's
+  platinum at the earlier games' 5 gold, so its worth in gold showed half.)
 - **Its own experience table:** *Curse*'s to level 11 for every class (the
   paladin's and ranger's eleventh 1,050,000 and 650,000), then a fixed
   amount a level to level 40 (2026-11-14).

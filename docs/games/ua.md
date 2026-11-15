@@ -339,7 +339,10 @@ kit's twenty rates (`ua::rated_price`, temple.c's `rate_price`):
   price (nothing for a cursed or worthless item), Identify for 20, and
   Appraise (below).
 - **Temple** (9): the cures of its level (byte 4), from Cure Light Wounds
-  (level 1, 20) to Resurrection (7, 2,000), at byte 5's rate; Donate (byte
+  (level 1, 20) to Resurrection (7, 2,000), at byte 5's rate, Restoration
+  among them (since 2026-11-15: level 7, 1,500, after Stone to Flesh; it
+  casts the spell on a drained member, `restore_levels`, giving a level
+  back, `rules::TempleService::restoration`); Donate (byte
   7, bit 8) counts toward a tithe (bytes 8 to 11) that runs event 0Ch;
   Appraise where it charges (a rate above 0) or takes donations
   (`temple.c`, `temple_shop`).
@@ -597,7 +600,7 @@ playing each event and fight; it fails on any event the session cannot play.
 ### What remains
 
 - The services' smaller parts (DEVIATIONS.md, Unlimited Adventures'
-  services): Pool, Share and Take, a temple's Restoration and Fix; drinks
+  services): Pool, Share and Take, a temple's Fix; drinks
   as more than a count; the encounter's monster picture at its range.
 - Fights:
   - The differences of the near matches left (Monsters' effects, below).
@@ -617,17 +620,9 @@ playing each event and fight; it fails on any event the session cannot play.
     area's) and an icon over two squares a side, which stands as two.
 
 Next, in this order (2026-11-15; monsters' spells, items' special effects,
-Appraise and the vault's items are done):
+Appraise, the vault's items and the temple's Restoration are done):
 
-1. A temple's Restoration, once the temple service
-   (`rules::TempleService::restoration`, the lasting change the campaign
-   keeps for a service; commit 383e7657 of the original rules' branch)
-   that Pools of Darkness's and Treasures' temples sell is on main: the
-   kit's Heal menu offers it at level 7 for 1,500 platinum at byte 5's
-   rate, after Stone to Flesh and before Resurrection, and casts the spell
-   on the member (`temple.c`, `restore_levels`); it is the twelfth row of
-   `temple_offers` in `ua_services.cpp`.
-2. The near matches' differences left (Monsters' effects): 82 slays with a
+1. The near matches' differences left (Monsters' effects): 82 slays with a
    blow of an item of type 4Ah, the kit's quarrel of slaying (`effects.c`,
    `fx_slain_by_type`); 58's reach; 91's and 96's breaths; 117's rays; 170's
    rot, 2 Charisma a month until it kills (`fx_rotting`).

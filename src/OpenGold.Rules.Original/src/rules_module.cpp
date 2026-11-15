@@ -571,10 +571,13 @@ class OriginalModule final : public RulesModule
                                                                  Revival by) const override;
 
     // The original's coins: 20 sp, 2 ep or 1/5 pp to the gold piece
-    // (gdconsts.pas, coinValues).
+    // (gdconsts.pas, coinValues). A design's prices are platinum, which the
+    // party pays at 10 gold the piece (the user's answer, 2026-11-14).
     [[nodiscard]] std::array<std::uint64_t, 5> coin_worth() const override
     {
-        return {1, 10, 100, 200, 1000};
+        const std::uint64_t platinum =
+            content_.game == GoldBoxGame::unlimited_adventures ? 2000 : 1000;
+        return {1, 10, 100, 200, platinum};
     }
     void drain_character(CharacterSheet &sheet, VitalState &state, const Drain &drain) const;
     void restore_character(CharacterSheet &sheet, VitalState &state,

@@ -1842,6 +1842,31 @@ void the_kits_fights_end_as_the_kit_ends_them(const std::filesystem::path &kit)
           "The fallen get up with 1 Hit Point and the adventure goes on");
 }
 
+// Drains a fighter's level, as a fight's level drain leaves it: the lasting
+// change the campaign keeps, which a Restoration gives back.
+void drain_a_fighter_level(opengold::CampaignParty &party, opengold::MemberId id)
+{
+    namespace original = opengold::original;
+    const auto &module = party.rule_module();
+    const auto before = party.member(id).character.sheet();
+    auto drained = *original::Combatant::decode(module.character_profile(before, {}).data);
+    drained.class_levels[static_cast<std::size_t>(original::ClassSlot::fighter)] -= 1;
+    drained.max_hit_points -= before.hit_points / 10;
+    const opengold::rules::VitalState after{drained.max_hit_points, false, drained.encode(), {}};
+    const auto drain = module.lasting_changes(before, after);
+    check(drain.size() == 1, "The drain is a lasting change");
+    auto state = party.checkpoint();
+    for (auto &member : state.roster)
+    {
+        if (member.id == id)
+        {
+            check(member.character.advance(module, member.vitals, drain.front()),
+                  "The fighter takes the drain");
+        }
+    }
+    party.restore(std::move(state));
+}
+
 void the_town_serves_the_party(const std::filesystem::path &kit)
 {
     const ua::DesignFiles files(kit,
@@ -1898,6 +1923,24 @@ void the_town_serves_the_party(const std::filesystem::path &kit)
     check(player.heard("Thank you for your generous donation.") &&
               player.heard("THE PRIESTS BLESS YOU."),
           "A tithe of 100 platinum runs the temple's event");
+    // The temple's Restoration (temple.c, restore_levels): its level 7
+    // offers it, for 1,500 platinum at rate 10, and it gives the drained
+    // level back.
+    const auto level_before_drain = party->member(first).character.sheet().level;
+    drain_a_fighter_level(*party, first);
+    check(party->member(first).character.sheet().level == level_before_drain - 1,
+          "The fighter is drained a level");
+    party->add_coins(opengold::Coin::platinum, 1500);
+    const auto before_restoration =
+        opengold::gold_value(party->state().wealth, party->coin_rates());
+    visit(4, 1, {"Heal", "Restoration / 1500 platinum", "FIGHTER 1", "Leave"});
+    check(player.heard("FIGHTER 1 is cured.") &&
+              party->member(first).character.sheet().level == level_before_drain,
+          "The temple's Restoration gives the drained level back");
+    // 1 platinum is 10 gold in a design (the user's answer, 2026-11-14).
+    check(opengold::gold_value(party->state().wealth, party->coin_rates()) ==
+              before_restoration - 15'000,
+          "Restoration costs 1,500 platinum");
     const auto purse = party->state().wealth;
     visit(5, 1, {"Money", "Exit"});
     check(party->state().wealth[4] == 0 && party->state().wealth[5] == 0, "The vault keeps money");
