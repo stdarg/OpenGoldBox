@@ -3452,21 +3452,97 @@ const std::vector<RouteBeat> &darkness_route()
                        {5, 1, D::south}, {5, 2, D::south}, {5, 3, D::south}, {5, 4, D::west},
                        {4, 4, D::west},  {3, 4, D::west}});
         route.push_back(step_beat(83, 2, 4, D::west, {"TRY TO ENTER"}));
-        // From the foyer down the chute (6,14), which the Ward keeps clear
-        // of the pets, to the run below (map 84); through it and north past
-        // the driders to the egg rooms (2,6), where the party destroys the
-        // eggs of Kalistes' children to draw her out.
-        walk_passages(route, 82, {{7, 15, D::north}, {7, 14, D::west}});
-        route.push_back(step_beat(82, 6, 14, D::west, {"YES"}));
-        walk_passages(
-            route, 84,
-            {{5, 14, D::east},   {6, 14, D::east},   {7, 14, D::east},   {8, 14, D::east},
-             {9, 14, D::east},   {10, 14, D::east},  {11, 14, D::east},  {12, 14, D::north},
-             {12, 13, D::east},  {13, 13, D::north}, {13, 12, D::north}, {13, 11, D::north},
-             {13, 10, D::north}, {13, 9, D::north},  {13, 8, D::west},   {12, 8, D::west},
-             {11, 8, D::west},   {10, 8, D::west},   {9, 8, D::west},    {8, 8, D::north},
-             {8, 7, D::north},   {8, 6, D::north},   {8, 5, D::west},    {7, 5, D::west},
-             {6, 5, D::west},    {5, 5, D::south},   {5, 6, D::west},    {4, 6, D::west}});
+        // The cluebook's way through the Parlor: from the foyer west round
+        // to the guards' quarters beside the main doors (2,14), where the
+        // party beats the drow guards and rests (the only rooms its camps
+        // rest in).
+        walk_passages(route, 82,
+                      {{7, 15, D::north},
+                       {7, 14, D::north},
+                       {7, 13, D::north},
+                       {7, 12, D::east},
+                       {8, 12, D::north},
+                       {8, 11, D::west},
+                       {7, 11, D::west},
+                       {6, 11, D::west},
+                       {5, 11, D::west},
+                       {4, 11, D::south},
+                       {4, 12, D::south},
+                       {4, 13, D::south},
+                       {4, 14, D::west}});
+        route.push_back(step_beat(82, 3, 14, D::west));
+        auto guard_quarters = step_beat(82, 2, 14, D::east);
+        guard_quarters.rest_first = true;
+        route.push_back(guard_quarters);
+        // North and round to the kitchen (2,1), where the ogre cook is about
+        // to kill Arta, Storm's sister: the party rescues her (RESCUE) and
+        // beats the guards, pets and gaze spiders the cook calls; she shows
+        // it the trapdoor to the larder below, which it leaves for now (NO),
+        // going back to rest in the guards' quarters first.
+        const auto guard_room_to_kitchen = [&route]
+        {
+            walk_passages(route, 82,
+                          {{3, 14, D::north},
+                           {3, 13, D::north},
+                           {3, 12, D::north},
+                           {3, 11, D::west},
+                           {2, 11, D::north},
+                           {2, 10, D::north},
+                           {2, 9, D::north},
+                           {2, 8, D::east},
+                           {3, 8, D::east},
+                           {4, 8, D::north},
+                           {4, 7, D::north},
+                           {4, 6, D::north},
+                           {4, 5, D::north},
+                           {4, 4, D::north},
+                           {4, 3, D::north},
+                           {4, 2, D::north},
+                           {4, 1, D::west}});
+        };
+        guard_room_to_kitchen();
+        route.push_back(step_beat(82, 3, 1, D::west, {"RESCUE", "NO"}));
+        walk_passages(route, 82,
+                      {{2, 1, D::east},
+                       {3, 1, D::east},
+                       {4, 1, D::south},
+                       {4, 2, D::south},
+                       {4, 3, D::south},
+                       {4, 4, D::south},
+                       {4, 5, D::south},
+                       {4, 6, D::south},
+                       {4, 7, D::south},
+                       {4, 8, D::west},
+                       {3, 8, D::west},
+                       {2, 8, D::south},
+                       {2, 9, D::south},
+                       {2, 10, D::south},
+                       {2, 11, D::east},
+                       {3, 11, D::south},
+                       {3, 12, D::south},
+                       {3, 13, D::south},
+                       {3, 14, D::west}});
+        auto rested_for_the_larder = step_beat(82, 2, 14, D::east);
+        rested_for_the_larder.rest_first = true;
+        route.push_back(rested_for_the_larder);
+        // Rested, back to the kitchen and down through the trapdoor (YES) to
+        // the larder (map 84 at 2,2), where the party leaves the slaves bound
+        // (IGNORE), as they ask.
+        guard_room_to_kitchen();
+        route.push_back(step_beat(82, 3, 1, D::west, {"YES", "IGNORE"}));
+        // From the larder east and round through the lower level, past the
+        // driders' rooms, to the egg rooms (2,6), where the party destroys
+        // the eggs of Kalistes' children to draw her out.
+        walk_passages(route, 84,
+                      {{2, 1, D::south},  {2, 2, D::east},   {3, 2, D::east},  {4, 2, D::south},
+                       {4, 3, D::east},   {5, 3, D::east},   {6, 3, D::east},  {7, 3, D::east},
+                       {8, 3, D::east},   {9, 3, D::east},   {10, 3, D::east}, {11, 3, D::east},
+                       {12, 3, D::south}, {12, 4, D::south}, {12, 5, D::east}, {13, 5, D::south},
+                       {13, 6, D::south}, {13, 7, D::south}, {13, 8, D::west}, {12, 8, D::west},
+                       {11, 8, D::west},  {10, 8, D::west},  {9, 8, D::west},  {8, 8, D::north},
+                       {8, 7, D::north},  {8, 6, D::north},  {8, 5, D::west},  {7, 5, D::west},
+                       {6, 5, D::west},   {5, 5, D::south},  {5, 6, D::west},  {4, 6, D::west}},
+                      false, false, false, {"IGNORE"});
         // Kalistes comes with seven drow champions, eight drow wizards and
         // five of her pets, and once she falls the slave who shows himself
         // Tanetal's spy calls basilisks, medusae and earth elementals: the
@@ -3606,13 +3682,18 @@ const std::vector<RouteBeat> &darkness_route()
         to_myth_drannor.fleeing = true;
         to_myth_drannor.area_steps.assign(8, C::south);
         route.push_back(to_myth_drannor);
-        RouteBeat into_myth_drannor{17, 0, 0, D::north, {"YES"}};
-        into_myth_drannor.area_steps = {C::south};
-        route.push_back(into_myth_drannor);
         // Princess Nacacia asks the party into the ruins with her knights
-        // (YES), joins it and offers six items against the rakshasas (left
-        // for now); it passes through the broken gate into Myth Drannor (map
-        // 66, script 66). The route stops there.
+        // (YES), joins it and offers six items against the rakshasas: the
+        // ranger takes and readies her light crossbow and blessed bolts, which
+        // slay a rakshasa they hit (effect 82), and keeps her quarrels +4. It passes through the
+        // broken gate into Myth Drannor (map 66, script 66).
+        RouteBeat into_myth_drannor{17, 0, 0, D::north, {"YES", "YES"}};
+        into_myth_drannor.area_steps = {C::south};
+        // The gifts are unidentified: her quarrels +4 come before her
+        // blessed bolts, which the ranger readies last in their place.
+        into_myth_drannor.take_items = {
+            {"Crossbow", "ranger 3"}, {"Bolt", "ranger 3"}, {"Bolt", "ranger 3"}};
+        route.push_back(into_myth_drannor);
         return route;
     }();
     return beats;
@@ -6067,8 +6148,29 @@ bool walk_census(GoldBoxGame game, bool route)
             {
                 continue;
             }
-            const auto &items = party->member(*taker).character.inventory().items();
-            party->equip(*taker, items.back().id);
+            const auto taken = party->member(*taker).character.inventory().items().back().id;
+            try
+            {
+                party->equip(*taker, taken);
+            }
+            catch (const std::exception &)
+            {
+                // Something readied is in its place (arrows where bolts go):
+                // the member puts away the first item whose place it takes.
+                for (const auto readied : std::vector(party->member(*taker).equipped))
+                {
+                    party->unequip(*taker, readied);
+                    try
+                    {
+                        party->equip(*taker, taken);
+                        break;
+                    }
+                    catch (const std::exception &)
+                    {
+                        party->equip(*taker, readied);
+                    }
+                }
+            }
             std::cout << "  " << wanted->second << " takes and readies " << item_name << "\n";
             items_to_take.erase(wanted);
             return true;
