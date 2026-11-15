@@ -2704,7 +2704,10 @@ unsigned CampaignParty::next_level(const PartyMember &m) const
 {
     const auto level = rules_->advancement_options(m.character.sheet()).level;
     const auto hall = training_hall_for_class(m.character.creation_data().character_class);
-    return hall && level > hall_level_limit ? 0 : level;
+    // The cap is the SRD's; the original rules' own tables cap their levels
+    // (Pools of Darkness's at 40, Curse's at its classes' limits).
+    const bool srd_cap = hall && !m.character.sheet().original;
+    return srd_cap && level > hall_level_limit ? 0 : level;
 }
 
 std::vector<rules::AdvancementOption> CampaignParty::advancement_classes(MemberId id) const
