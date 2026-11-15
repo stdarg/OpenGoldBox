@@ -278,7 +278,7 @@ msgstr "Un artista marcial disciplinado. Características principales: Destreza 
 msgid "A divine scroll: a Cleric, Druid, Paladin or Ranger reads its spells. A level-13 Thief reads any scroll."
 msgstr "Un pergamino divino: un clérigo, druida, paladín o explorador lee sus conjuros. Un ladrón de nivel 13 lee cualquier pergamino."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1766
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1770
 msgid "A drain takes more levels than the character has"
 msgstr "Una pérdida de niveles quita más niveles de los que tiene el personaje"
 
@@ -923,7 +923,7 @@ msgstr "Aliado"
 msgid "Already added. Use Rejoin party for a reserved member."
 msgstr "Ya se ha añadido. Usa Volver al grupo para un miembro en reserva."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:910
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:914
 msgid "Already using another item there"
 msgstr "Ya usa otro objeto ahí"
 
@@ -2106,7 +2106,7 @@ msgstr "Lanza un conjuro o usa un rasgo fuera de combate."
 msgid "Cast spell"
 msgstr "Lanzar conjuro"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2338 src/OpenGold.Rules.Original/src/rules_module.cpp:2351 src/OpenGold.Rules.Original/src/rules_module.cpp:2363 src/OpenGoldBox/combat_view.cpp:102
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2342 src/OpenGold.Rules.Original/src/rules_module.cpp:2355 src/OpenGold.Rules.Original/src/rules_module.cpp:2367 src/OpenGoldBox/combat_view.cpp:102
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Cast {spell}"
 msgstr "Lanzar {spell}"
@@ -3208,7 +3208,7 @@ msgstr "Curar heridas (Iniciado en la magia)"
 msgid "Cure Wounds (level 2 slot)"
 msgstr "Curar heridas (espacio de nivel 2)"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2330
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2334
 msgid "Cure disease"
 msgstr "Curar enfermedad"
 
@@ -5670,7 +5670,7 @@ msgstr "Máximo de puntos de golpe reducido en {value} hasta un Restablecimiento
 msgid "Hit Point maximum lowered by {value} until a Long Rest."
 msgstr "Máximo de puntos de golpe reducido en {value} hasta un descanso largo."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:749 src/OpenGold.Rules.Original/src/rules_module.cpp:764
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:753 src/OpenGold.Rules.Original/src/rules_module.cpp:768
 msgid "Hit Points outside the character's range"
 msgstr "Puntos de golpe fuera del rango del personaje"
 
@@ -6059,7 +6059,7 @@ msgstr "Selección de formación de nivel no válida"
 msgid "Invalid original-rules combat checkpoint"
 msgstr "Punto de control de combate de las reglas originales no válido"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:722
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:726
 msgid "Invalid original-rules profile"
 msgstr "Perfil de las reglas originales no válido"
 
@@ -6128,7 +6128,7 @@ msgstr "No es el turno de {name}."
 msgid "It takes a bottle of Magic Ink of the spell's level or higher"
 msgstr "Hace falta un frasco de tinta mágica del nivel del conjuro o superior"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:884
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:888
 msgid "It's cursed"
 msgstr "Está maldito"
 
@@ -6347,7 +6347,7 @@ msgstr "Imposición de manos: curar Envenenado"
 msgid "Lay On Hands: cure Poisoned (5)"
 msgstr "Imposición de manos: curar Envenenado (5)"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2326
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2330
 msgid "Lay on hands"
 msgstr "Imponer las manos"
 
@@ -7762,7 +7762,7 @@ msgstr "Nadie más puede escapar. Tu grupo sigue luchando."
 msgid "No one in the party needs {spell}."
 msgstr "Nadie del grupo necesita {spell}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8593 src/OpenGold.Rules.Original/src/rules_module.cpp:733
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8593 src/OpenGold.Rules.Original/src/rules_module.cpp:737
 msgid "No original-rules record for "
 msgstr "No hay registro de las reglas originales para "
 
@@ -7778,7 +7778,7 @@ msgstr "No hay ningún santuario preparado: lanza primero Palabra de regreso en 
 msgid "No spell choices for this class"
 msgstr "Esta clase no tiene conjuros que elegir"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:709
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:713
 msgid "No such level under the original rules"
 msgstr "Ese nivel no existe en las reglas originales"
 
@@ -7818,7 +7818,7 @@ msgstr "Norris el Gris"
 msgid "North"
 msgstr "norte"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:784
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:788
 msgid "Not an item of the original rules"
 msgstr "No es un objeto de las reglas originales"
 
@@ -8015,7 +8015,7 @@ msgstr "Solo un miembro consciente puede usar la varita."
 msgid "Only a damaged simulacrum can be repaired"
 msgstr "Solo se puede reparar un simulacro dañado"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1698
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1702
 msgid "Only a magic-user's training learns a spell"
 msgstr "Solo el entrenamiento de un mago aprende un conjuro"
 
@@ -8956,7 +8956,7 @@ msgstr "Revivir a los muertos puede devolverlo a la vida en los diez días sigui
 msgid "Raise Dead cannot bring back {name}, who has been dead too long or is dust."
 msgstr "Revivir a los muertos no puede traer de vuelta a {name}, que lleva demasiado tiempo muerto o es polvo."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2456
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2460
 msgid "Raise Dead cannot bring this member back"
 msgstr "Alzar a los muertos no puede devolver a este miembro"
 
@@ -11408,11 +11408,11 @@ msgstr "Gracias por vuestra generosa donación."
 msgid "That attempt did not succeed."
 msgstr "Ese intento no ha tenido éxito."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2381
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2385
 msgid "That cannot be done now"
 msgstr "Eso no se puede hacer ahora"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2619
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2623
 msgid "That cannot be used now"
 msgstr "Eso no se puede usar ahora"
 
@@ -11424,7 +11424,7 @@ msgstr "Eso no es un Manual de salud corporal"
 msgid "That potion works only in combat"
 msgstr "Esa poción solo funciona en combate"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2427 src/OpenGold.Rules.Original/src/rules_module.cpp:2440 src/OpenGold.Rules.Original/src/rules_module.cpp:2448 src/OpenGold.Rules.Original/src/rules_module.cpp:2654 src/OpenGold.Rules.Original/src/rules_module.cpp:2846
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2431 src/OpenGold.Rules.Original/src/rules_module.cpp:2444 src/OpenGold.Rules.Original/src/rules_module.cpp:2452 src/OpenGold.Rules.Original/src/rules_module.cpp:2658 src/OpenGold.Rules.Original/src/rules_module.cpp:2850
 msgid "That spell cannot be cast now"
 msgstr "Ese conjuro no se puede lanzar ahora"
 
@@ -11432,11 +11432,11 @@ msgstr "Ese conjuro no se puede lanzar ahora"
 msgid "That spell cannot be copied into the spellbook"
 msgstr "Ese conjuro no se puede copiar en el libro de conjuros"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1709
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1713
 msgid "That spell cannot be learned"
 msgstr "Ese conjuro no se puede aprender"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1023
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1027
 msgid "That spell cannot be memorized"
 msgstr "Ese conjuro no se puede memorizar"
 
@@ -11444,7 +11444,7 @@ msgstr "Ese conjuro no se puede memorizar"
 msgid "That spell cannot be read from the scroll now"
 msgstr "Ahora no se puede leer ese conjuro del pergamino"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1153
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1157
 msgid "That spell cannot be scribed"
 msgstr "Ese conjuro no se puede transcribir"
 
@@ -11578,7 +11578,7 @@ msgstr "El rayo se desvía hacia {target}."
 msgid "The cantrip reaches 30 feet farther per Warlock level."
 msgstr "El truco alcanza 30 pies más por nivel de brujo."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1726
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1730
 msgid "The character has no levels in a class it trained in"
 msgstr "El personaje no tiene niveles en una clase en la que se entrenó"
 
@@ -11617,7 +11617,7 @@ msgstr "La nube se desplaza."
 msgid "The creature that hit it this turn attacks it with Disadvantage."
 msgstr "La criatura que lo impactó este turno lo ataca con desventaja."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2462
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2466
 msgid "The dead cannot be healed"
 msgstr "Los muertos no se pueden curar"
 
@@ -11866,7 +11866,7 @@ msgstr "La luz del sol pone fin a la Oscuridad mágica."
 msgid "The sword will not stay in {name}'s hand and burns for {damage} Force damage."
 msgstr "La espada no se queda en la mano de {name} y le quema con {damage} de daño de fuerza."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2172
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2176
 msgid "The temple cannot help with that"
 msgstr "El templo no puede ayudar con eso"
 
@@ -12000,7 +12000,7 @@ msgstr "El ataque adicional de Hoja sedienta se vuelve dos: ataca tres veces con
 msgid "This armor imposes Disadvantage on Dexterity (Stealth) checks."
 msgstr "Esta armadura impone desventaja en las pruebas de Destreza (Sigilo)."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1268
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1272
 msgid "This character is not ready to train"
 msgstr "Este personaje no está listo para entrenar"
 
@@ -12160,7 +12160,7 @@ msgstr "Para empezar en una clase, tus puntuaciones deben alcanzar sus mínimos.
 msgid "Too heavy to carry"
 msgstr "Demasiado pesado para cargarlo"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1028
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1032
 msgid "Too many spells of that level"
 msgstr "Demasiados conjuros de ese nivel"
 
@@ -12505,7 +12505,7 @@ msgstr "Desequipar selección"
 msgid "Unfilled cantrip choices remain pending. More choices will become available as spell support expands."
 msgstr "Las elecciones de trucos sin completar quedan pendientes. Habrá más opciones a medida que se amplíe la lista de conjuros disponibles."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:876
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:880
 msgid "Unknown equipment candidate"
 msgstr "Candidato de equipo desconocido"
 
@@ -13263,7 +13263,7 @@ msgstr "Llevado: el fuego normal no causa daño; el fuego mágico causa 2 menos 
 msgid "Write a scroll of {spell} (Magic Ink of level {level} or higher, {hours} hours)"
 msgstr "Escribir un pergamino de {spell} (tinta mágica de nivel {level} o superior, {hours} horas)"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:907
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:911
 msgid "Wrong class"
 msgstr "Clase equivocada"
 
@@ -13381,7 +13381,7 @@ msgstr "¡Atacan tu campamento!"
 msgid "Your character: {race} / {gender} / {class}"
 msgstr "Tu personaje: {race} / {gender} / {class}"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:909
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:913
 msgid "Your hands are full!"
 msgstr "¡Tienes las manos ocupadas!"
 
