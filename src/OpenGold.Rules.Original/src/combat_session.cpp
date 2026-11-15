@@ -1179,6 +1179,16 @@ class Session final : public rules::CombatSession
     bool ai_cast(Fighter &f, bool magic);
     [[nodiscard]] bool ai_decides(const Fighter &f, int number, int least_priority) const;
     bool ai_aim(Fighter &f);
+    // Treasures' own (its combatai.pas and cbtacts.pas): the spell of highest
+    // AI weight that has a target, its targets rated, and an area spell
+    // aimed where it takes the most.
+    bool treasures_ai_cast(Fighter &f, bool magic);
+    [[nodiscard]] int treasures_spell_rating(const Fighter &caster, const Fighter &target,
+                                             int number) const;
+    [[nodiscard]] bool treasures_spell_has_target(const Fighter &f, int number) const;
+    [[nodiscard]] Fighter *treasures_spell_target(Fighter &f, int number);
+    [[nodiscard]] std::optional<Cell> treasures_area_aim(const Fighter &f, int number);
+    bool treasures_ai_aim(Fighter &f);
     [[nodiscard]] Fighter *cure_search(const Fighter &f);
     bool acquire_target(Fighter &f, int range, bool relaxed, bool force_new);
     [[nodiscard]] std::vector<EntityId> enemies_within(const Fighter &f, int range,
@@ -7023,6 +7033,11 @@ bool Session::take_ai_step(Fighter &f, int direction, int &last_direction)
 // scroll) whose spell it decides on is used.
 bool Session::ai_use_item(Fighter &f)
 {
+    // Treasures' computer never uses an item (its SelectItemToUse).
+    if (treasures())
+    {
+        return false;
+    }
     const int passes = roll(7);
     const bool enemy_left = std::any_of(fighters_.begin(), fighters_.end(),
                                         [&f](const Fighter &o)
@@ -7065,6 +7080,10 @@ bool Session::ai_use_item(Fighter &f)
 // spells, the first it decides on cast as anyone casts it.
 bool Session::ai_cast(Fighter &f, bool magic)
 {
+    if (treasures())
+    {
+        return treasures_ai_cast(f, magic);
+    }
     const int passes = roll(7);
     const bool enemy_left = std::any_of(fighters_.begin(), fighters_.end(),
                                         [&f](const Fighter &o)
@@ -7099,6 +7118,378 @@ bool Session::ai_cast(Fighter &f, bool magic)
         }
     }
     return false;
+}
+
+// Treasures' computer casts (its combatai.pas, SelectSpellToCast and
+// PickCastableSpell): never while fleeing; of its memorized spells that may
+// be cast in a fight, the one of highest AI weight (a later copy first among
+// equals) that has a target worth it, and that one only if 1d100 is above
+// four times its fighter, paladin and ranger levels and 1d5 no more than the
+// spell's weight. The original's sort passes over the first memorized spell
+// (docs/ORIGINAL-RULES.md, Bugs); OpenGoldBox weighs them all.
+bool Session::treasures_ai_cast(Fighter &f, bool magic)
+{
+    if (f.fleeing || !f.cast_allowed || silenced(f) || f.has(effect::no_magic) ||
+        (f.numbers.morale < non_player && !magic))
+    {
+        return false;
+    }
+    std::vector<int> ranked;
+    for (auto copy = f.numbers.spells.rbegin(); copy != f.numbers.spells.rend(); ++copy)
+    {
+        const auto *known = game_spell(*copy);
+        if (known && known->when != 0 && spell_built(*copy))
+        {
+            ranked.push_back(*copy);
+        }
+    }
+    std::ranges::stable_sort(ranked, std::greater{},
+                             [this](int number)
+                             {
+                                 return game_spell(number)->ai_priority;
+                             });
+    const auto chosen = std::ranges::find_if(ranked,
+                                             [&](int number)
+                                             {
+                                                 return treasures_spell_has_target(f, number);
+                                             });
+    if (chosen == ranked.end())
+    {
+        return false;
+    }
+    const auto &levels = f.numbers.class_levels;
+    const int fighting = 4 * (levels[static_cast<std::size_t>(ClassSlot::fighter)] +
+                              levels[static_cast<std::size_t>(ClassSlot::paladin)] +
+                              levels[static_cast<std::size_t>(ClassSlot::ranger)]);
+    if (roll(100) <= fighting || game_spell(*chosen)->ai_priority < roll(5))
+    {
+        return false;
+    }
+    begin_cast(f, *chosen);
+    if (f.aiming && !ai_aim(f))
+    {
+        lose_spell(f);
+        end_actions(f);
+    }
+    return true;
+}
+
+// How Treasures' computer rates a creature as its spell's target (its
+// cbtacts.pas, RateSpellTarget): -10 one of the side the spell would spare,
+// 1 one the spell may take, 0 one it would do nothing to. A globe keeps off
+// the spells it stops, and magic resistance above 50 every spell.
+int Session::treasures_spell_rating(const Fighter &caster, const Fighter &target, int number) const
+{
+    constexpr auto game = GoldBoxGame::treasures_of_the_savage_frontier;
+    const auto &known = *game_spell(number);
+    const Side enemies = caster.side == Side::party ? Side::opposition : Side::party;
+    if (target.side != (known.offensive ? enemies : caster.side))
+    {
+        return -10;
+    }
+    // Its own effect numbers (canonical_effect).
+    const auto has = [&target](int code)
+    {
+        return target.has(canonical_effect(code, game));
+    };
+    constexpr int bless = 1, immune_electricity = 6, shield = 17, blind = 33, bestow_curse = 36,
+                  globe = 57, prayer = 49, held = 52, asleep = 53, minor_globe = 63,
+                  immune_fear = 92, immune_fire = 93;
+    const bool person = target.numbers.race != 0 || (target.numbers.traits & trait::person) != 0;
+    const auto fighting_beside = [&]
+    {
+        return std::any_of(fighters_.begin(), fighters_.end(),
+                           [&](const Fighter &o)
+                           {
+                               return o.side != target.side && o.able() && distance(o, target) <= 1;
+                           });
+    };
+    bool takes = false;
+    // The spells by the rules' numbers (canonical_spell).
+    switch (number)
+    {
+    case 1: // Bless, on one no enemy stands beside
+        takes = !has(bless) && !fighting_beside();
+        break;
+    case 42: // Prayer
+        takes = !caster.has(canonical_effect(prayer, game));
+        break;
+    case 3:   // Cure Light Wounds
+    case 158: // Cure Serious Wounds
+    case 171: // Cure Critical Wounds
+    case 236: // Heal
+        takes = target.hit_points < target.numbers.max_hit_points;
+        break;
+    case 296: // Charm Person or Mammal
+        takes = target.numbers.race != 0 || (target.numbers.traits & trait::mammal) != 0;
+        break;
+    case 10: // Charm Person, a person on one square
+        takes = person && !target.numbers.large;
+        break;
+    case 15:  // Magic Missile
+    case 165: // the wand of magic missiles
+        takes = !has(shield);
+        break;
+    case 21: // Sleep
+        takes = target.numbers.level < 5 && !has(asleep);
+        break;
+    case 23:
+    case 49: // Hold Person, a character or person not held
+        takes = target.numbers.race != 0 && person && !has(held);
+        break;
+    case 37: // Cure Blindness
+        takes = has(blind);
+        break;
+    case 43: // Remove Curse
+        takes = has(bestow_curse);
+        break;
+    case 47:  // Fireball
+    case 64:  // the necklace of missiles
+    case 174: // Flame Strike
+    case 315: // Delayed Blast Fireball
+        takes = !has(immune_fire);
+        break;
+    case 51: // Lightning Bolt
+        takes = !has(immune_electricity);
+        break;
+    case 176: // Slay Living
+    case 310: // Death Spell
+        takes = (target.numbers.traits & trait::unliving) == 0;
+        break;
+    case 61:  // the wand of paralyzation
+    case 182: // Confusion
+        takes = true;
+        break;
+    case 181: // Charm Monsters
+    case 194: // Hold Monster
+    case 320: // Mass Charm
+        takes = person;
+        break;
+    case 184: // Fear
+        takes = !has(immune_fear);
+        break;
+    case 191: // Cloudkill
+        takes = target.numbers.level < 6;
+        break;
+    default:
+        takes = known.effect == 0 || !target.has(known.effect);
+        break;
+    }
+    if (takes && ((known.level < 5 && has(globe)) || (known.level < 4 && has(minor_globe)) ||
+                  target.numbers.magic_resistance > 50))
+    {
+        takes = false;
+    }
+    return takes ? 1 : 0;
+}
+
+// Whether Treasures' spell has a target worth casting at (its RateSpell):
+// the caster itself for a spell on the caster, else someone in range and
+// sight it rates above 0.
+bool Session::treasures_spell_has_target(const Fighter &f, int number) const
+{
+    const auto &known = *game_spell(number);
+    if (known.area == 0)
+    {
+        return treasures_spell_rating(f, f, number) > 0;
+    }
+    const int range = spell_range(known, caster_level(f, known, game_of(identity_)));
+    return std::any_of(fighters_.begin(), fighters_.end(),
+                       [&](const Fighter &o)
+                       {
+                           return o.able() && distance(f, o) <= range &&
+                                  (o.id == f.id || sees(board_, f, o)) &&
+                                  treasures_spell_rating(f, o, number) > 0;
+                       });
+}
+
+// The one creature Treasures' computer singles out for its spell (its
+// SelectSpellTarget, PickSpellTarget): an enemy it locks onto anew, or for a
+// spell on its own side one of them at random, within range and in sight;
+// nobody when it rates that one at 0 or below.
+Fighter *Session::treasures_spell_target(Fighter &f, int number)
+{
+    const auto &known = *game_spell(number);
+    const int range = spell_range(known, caster_level(f, known, game_of(identity_)));
+    Fighter *pick = nullptr;
+    if (known.offensive)
+    {
+        pick = acquire_target(f, range, false, true) ? find(f.lock) : nullptr;
+    }
+    else
+    {
+        std::vector<Fighter *> friends;
+        for (auto &o : fighters_)
+        {
+            if (o.side == f.side && o.able() && distance(f, o) <= range &&
+                (o.id == f.id || sees(board_, f, o)))
+            {
+                friends.push_back(&o);
+            }
+        }
+        if (!friends.empty())
+        {
+            pick = friends[static_cast<std::size_t>(roll(static_cast<int>(friends.size())) - 1)];
+        }
+    }
+    return pick && treasures_spell_rating(f, *pick, number) > 0 ? pick : nullptr;
+}
+
+// Where Treasures' computer aims a spell that bursts around a square (its
+// AimAreaSpell): the square in range and sight where the creatures the
+// burst would take rate highest together, each it may take 1 and each of
+// the side it would spare -10, a tie taking the later square one time in
+// four; nowhere when no square rates above 0. The burst is the one the
+// spell has as it goes off (within).
+std::optional<Cell> Session::treasures_area_aim(const Fighter &f, int number)
+{
+    const auto &known = *game_spell(number);
+    const int range = spell_range(known, caster_level(f, known, game_of(identity_)));
+    const int radius = known.area & 7;
+    // Only a square near one the spell may take can rate above 0.
+    std::vector<Cell> takeable;
+    for (const auto &o : fighters_)
+    {
+        if (o.able() && treasures_spell_rating(f, o, number) > 0)
+        {
+            takeable.push_back(o.cell);
+        }
+    }
+    std::optional<Cell> best;
+    int best_score = 0;
+    for (int x = f.cell.x - range; x <= f.cell.x + range; ++x)
+    {
+        for (int y = f.cell.y - range; y <= f.cell.y + range; ++y)
+        {
+            const Cell cell{x, y};
+            const bool near_one =
+                std::any_of(takeable.begin(), takeable.end(),
+                            [&](Cell at)
+                            {
+                                return doubled_distance(at, cell) <= 2 * radius + 4;
+                            });
+            if (!near_one || !board_.contains(cell) ||
+                board_.at(cell) == rules::Terrain::obstacle ||
+                doubled_distance(f.cell, cell) / 2 > range || !clear_line(board_, f.cell, cell))
+            {
+                continue;
+            }
+            int score = 0;
+            for (const auto id : within(cell, radius))
+            {
+                score += treasures_spell_rating(f, *find(id), number);
+            }
+            if (score > best_score || (score == best_score && score > 0 && roll(100) <= 25))
+            {
+                best = cell;
+                best_score = score;
+            }
+        }
+    }
+    return best_score > 0 ? best : std::nullopt;
+}
+
+// Treasures' computer aims its spell (its cbtacts.pas, SelectCombatTargets):
+// a burst at the square AimAreaSpell finds; a bolt or a spell on one
+// creature at the one it singles out; a spell on several at as many picks
+// as it takes (the same one picked again spends a pick), or for Charm
+// Monsters and Faerie Fire picks until their weight passes a budget (2d4,
+// or the caster's level for Faerie Fire; a creature weighs 1 to level 1, 2
+// at 2, 4 at 3 and 8 above, or for Faerie Fire 1, and 2 a large one). False
+// when it finds no one, and the spell is aborted.
+bool Session::treasures_ai_aim(Fighter &f)
+{
+    constexpr int faerie_fire = 179;
+    const int number = f.aiming;
+    const auto &known = *game_spell(number);
+    const int area = known.area & 0x0F;
+    const auto abort = [&]
+    {
+        log({"{name} aborts the spell.", {{"name", f.name}}});
+        return false;
+    };
+    if (area == 0)
+    {
+        resolve_spell(f, {f.id}, f.cell);
+        return true;
+    }
+    if (area >= 9 && area <= 14)
+    {
+        const auto aim = treasures_area_aim(f, number);
+        if (!aim)
+        {
+            return abort();
+        }
+        resolve_spell(f, within(*aim, area & 7), *aim);
+        return true;
+    }
+    if (area == 8 || area == 15)
+    {
+        const auto *target = treasures_spell_target(f, number);
+        if (!target)
+        {
+            return abort();
+        }
+        const auto aim = target->cell;
+        resolve_spell(f, area == 8 ? within(aim, 0) : std::vector<EntityId>{target->id}, aim);
+        return true;
+    }
+    std::vector<EntityId> picked;
+    const auto picked_already = [&](const Fighter &target)
+    {
+        return std::find(picked.begin(), picked.end(), target.id) != picked.end();
+    };
+    if (area == 5)
+    {
+        int budget =
+            number == faerie_fire ? caster_level(f, known, game_of(identity_)) : roll(4) + roll(4);
+        int weight = 0;
+        while (budget > 0)
+        {
+            const auto *target = treasures_spell_target(f, number);
+            if (!target)
+            {
+                break;
+            }
+            if (picked_already(*target))
+            {
+                --budget;
+                continue;
+            }
+            picked.push_back(target->id);
+            const int level = target->numbers.level;
+            weight += number == faerie_fire ? (target->numbers.large ? 2 : 1)
+                      : level <= 1          ? 1
+                      : level == 2          ? 2
+                      : level == 3          ? 4
+                                            : 8;
+            if (picked.size() > 1 && weight > budget)
+            {
+                break;
+            }
+        }
+    }
+    else
+    {
+        for (int picks = (area & 3) + 1; picks > 0; --picks)
+        {
+            const auto *target = treasures_spell_target(f, number);
+            if (!target)
+            {
+                break;
+            }
+            if (!picked_already(*target))
+            {
+                picked.push_back(target->id);
+            }
+        }
+    }
+    if (picked.empty())
+    {
+        return abort();
+    }
+    resolve_spell(f, picked, find(picked.back())->cell);
+    return true;
 }
 
 // Whether the AI takes this spell (combatai.pas, DecideCastSpell): of high
@@ -7182,6 +7573,10 @@ Fighter *Session::cure_search(const Fighter &f)
 // helpless one for a spell that makes helpless. False when it finds none.
 bool Session::ai_aim(Fighter &f)
 {
+    if (treasures())
+    {
+        return treasures_ai_aim(f);
+    }
     const auto &known = *game_spell(f.aiming);
     const int area = known.area & 0x0F;
     if (f.aiming == 3)

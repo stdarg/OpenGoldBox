@@ -5072,7 +5072,7 @@ const std::vector<RouteBeat> &treasure_route()
         // the sorceresses charm the party faster than its casters free it,
         // with every dice the route's player tries, so the test wins the
         // fight.
-        route.back().memorize_first_of = {"charm_person", "dispel_magic"};
+        route.back().memorize_first_of = {"fireball", "charm_person", "dispel_magic"};
         route.back().test_wins = true;
         route.back().expect_cell = {{0x129, 1}};
         // Down the stairs (9,13) and out of the Way Inn, then overland north
@@ -6275,6 +6275,116 @@ bool walk_census(GoldBoxGame game, bool route)
     std::map<std::string, std::vector<std::string>> needs;
     std::map<std::string, unsigned> phases;
     bool trace = route || std::getenv("OPENGOLD_CURSE_TRACE");
+    // A Treasures player's choice against casters, as its cluebook bids (hit
+    // every enemy with a spell or a missile each round; one hit while it
+    // casts loses its spell): the magic-user's Fireball, cast or from a wand,
+    // where its burst takes the most enemies, sorceresses and mages counted
+    // thrice, and spares every member and ally; else a blow or a shot at an
+    // enemy who has begun casting, then at a caster.
+    const auto treasures_turn =
+        [](const opengold::rules::CombatSession &session) -> std::optional<opengold::rules::Command>
+    {
+        constexpr unsigned fireball = 47;
+        constexpr int burst_reach = 7; // doubled steps: Fireball's 3 squares
+        const auto state = session.snapshot();
+        const auto commands = session.legal_commands();
+        const auto caster = [](const opengold::rules::CombatantView &unit)
+        {
+            return unit.name.find("SORC") != std::string::npos ||
+                   unit.name.find("MAGE") != std::string::npos;
+        };
+        // Begun casting: its latest word in the log is that it begins.
+        const auto casting = [&](const opengold::rules::CombatantView &unit)
+        {
+            const auto own = unit.name + " ";
+            const auto latest = std::find_if(state.log_entries.rbegin(), state.log_entries.rend(),
+                                             [&](const opengold::rules::LogEntry &entry)
+                                             {
+                                                 return entry.english.starts_with(own);
+                                             });
+            return latest != state.log_entries.rend() &&
+                   latest->english.find(" begins casting ") != std::string::npos;
+        };
+        const auto burst_worth = [&](opengold::rules::Cell aim)
+        {
+            int worth = 0;
+            for (const auto &unit : state.combatants)
+            {
+                const int dx = std::abs(unit.cell.x - aim.x), dy = std::abs(unit.cell.y - aim.y);
+                if (!unit.conscious || 2 * std::max(dx, dy) + std::min(dx, dy) > burst_reach)
+                {
+                    continue;
+                }
+                worth += unit.side == opengold::rules::Side::party ? -100 : caster(unit) ? 3 : 1;
+            }
+            return worth;
+        };
+        const auto spell_of = [](const opengold::rules::Command &command)
+        {
+            return command.verb == "use" ? command.item % 256 : command.item;
+        };
+        const opengold::rules::Command *aim = nullptr;
+        for (const auto &command : commands)
+        {
+            if (command.verb == "aim" && command.item == fireball &&
+                (!aim || burst_worth(command.destination) > burst_worth(aim->destination)))
+            {
+                aim = &command;
+            }
+        }
+        if (aim && burst_worth(aim->destination) > 0)
+        {
+            return *aim;
+        }
+        if (aim)
+        {
+            const auto abort = std::ranges::find(commands, std::string_view("abort"),
+                                                 &opengold::rules::Command::verb);
+            if (abort != commands.end())
+            {
+                return *abort;
+            }
+        }
+        // Fireball, where a square of the field would take three enemies'
+        // worth and no friend.
+        const auto &field = state.battlefield;
+        bool worth_a_fireball = false;
+        for (int y = 0; y < field.height && !worth_a_fireball; ++y)
+        {
+            for (int x = 0; x < field.width && !worth_a_fireball; ++x)
+            {
+                worth_a_fireball = burst_worth({x, y}) >= 3;
+            }
+        }
+        for (const auto &command : commands)
+        {
+            if (worth_a_fireball && (command.verb == "cast" || command.verb == "use") &&
+                spell_of(command) == fireball)
+            {
+                return command;
+            }
+        }
+        const auto unit_of = [&](opengold::rules::EntityId id)
+        {
+            return std::ranges::find(state.combatants, id, &opengold::rules::CombatantView::id);
+        };
+        const opengold::rules::Command *blow = nullptr;
+        const auto rank = [&](const opengold::rules::Command &command)
+        {
+            const auto target = unit_of(command.target);
+            return casting(*target) ? 0 : caster(*target) ? 1 : 2;
+        };
+        for (const auto &command : commands)
+        {
+            if ((command.verb == "attack" || command.verb == "ranged") &&
+                unit_of(command.target) != state.combatants.end() && rank(command) < 2 &&
+                (!blow || rank(command) < rank(*blow)))
+            {
+                blow = &command;
+            }
+        }
+        return blow ? std::optional{*blow} : std::nullopt;
+    };
     // One play of the pending fight with these dice; the party ends as it left it.
     // A player's own choice for a member's turn, where it has one, as the
     // cluebook fights the Pit of Moander: the Wand of Defoliation (its power,
@@ -6692,6 +6802,11 @@ bool walk_census(GoldBoxGame game, bool route)
                                    game == GoldBoxGame::pools_of_darkness)
                             ? free_the_bound(session)
                             : std::nullopt;
+            if (!held && member && tactic == 2 &&
+                game == GoldBoxGame::treasures_of_the_savage_frontier)
+            {
+                held = treasures_turn(session);
+            }
             if (!held && member && tactic == 2)
             {
                 held = player_turn(session, picked, bolt_bearers);
@@ -6848,18 +6963,36 @@ bool walk_census(GoldBoxGame game, bool route)
                                              ? static_cast<unsigned>(std::stoul(forced_tactic))
                                              : t % 3);
         };
+        // OPENGOLD_FIGHT_SCORES plays every try and prints each one's score
+        // (a planning aid, to see how often a tactic wins).
+        const bool scoring = std::getenv("OPENGOLD_FIGHT_SCORES") != nullptr;
+        const auto print_score = [&](unsigned t, const opengold::rules::Snapshot &played)
+        {
+            if (scoring)
+            {
+                std::cout << "  try " << t << " (tactic " << t % 3 << "): score " << score(played)
+                          << "\n";
+            }
+        };
         unsigned last = 0, best_try = 0;
         auto result = planning ? opengold::rules::Snapshot{} : play_try(0);
         auto best = planning ? 1 : score(result);
-        while (route && !planning && best > 0 && ++last < 120)
+        print_score(0, result);
+        while (route && !planning && (best > 0 || scoring) && ++last < 120)
         {
             party->restore(before);
             result = play_try(last);
+            print_score(last, result);
             if (score(result) < best)
             {
                 best = score(result);
                 best_try = last;
             }
+        }
+        // OPENGOLD_FIGHT_KEEP=N keeps try N instead, to see a lost try's log.
+        if (const char *keep = std::getenv("OPENGOLD_FIGHT_KEEP"))
+        {
+            best_try = static_cast<unsigned>(std::stoul(keep));
         }
         if (last != best_try && route && !planning)
         {
@@ -7333,6 +7466,15 @@ bool walk_census(GoldBoxGame game, bool route)
                     needs["A shop with nothing to sell"].push_back(where);
                 }
                 ++phases["shops with goods"];
+                if (trace)
+                {
+                    std::cout << where << ": the shop sells";
+                    for (const auto &offered : session.shop_stock())
+                    {
+                        std::cout << " " << offered.label() << ";";
+                    }
+                    std::cout << "\n";
+                }
                 // "buy:NAME" buys each member an item whose name holds NAME
                 // and readies it, as a player outfits the party (Secret's
                 // armoury sells the mirrors that turn gazes back).
@@ -7340,12 +7482,6 @@ bool walk_census(GoldBoxGame game, bool route)
                 {
                     const auto wanted = answers.front().substr(4);
                     answers.erase(answers.begin());
-                    std::cout << where << ": the shop sells";
-                    for (const auto &offered : session.shop_stock())
-                    {
-                        std::cout << " " << offered.label() << ";";
-                    }
-                    std::cout << "\n";
                     const auto slots = party->state().slots;
                     for (std::size_t slot = 0; slot < slots.size(); ++slot)
                     {
