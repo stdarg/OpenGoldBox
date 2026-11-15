@@ -385,16 +385,16 @@ void add_treasures_overland(const por::detail::AreaFiles &files, por::PhlanResou
     {
         return picture.frames.empty() || picture.frames.front().width == 0;
     };
-    for (const auto &[map, picture] : pictures)
+    for (const auto &[record, picture] : pictures)
     {
-        for (const auto &[palette, colors] : pictures)
+        if (colors_only(picture))
         {
-            if (!colors_only(picture) && colors_only(colors))
-            {
-                root.overland_pictures.emplace(
-                    map * 256 + palette,
-                    vga_rgba(picture.frames.front(), vga_color_table(colors.palette)));
-            }
+            root.overland_colors.emplace(record, vga_color_table(picture.palette));
+        }
+        else
+        {
+            root.overland_pictures.emplace(record, por::PhlanResources::OverlandPicture{
+                                                       picture.frames.front(), picture.cycle});
         }
     }
     constexpr unsigned automap_symbols = 202, first_arrow = 16;

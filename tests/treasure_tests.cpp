@@ -208,6 +208,13 @@ void the_overland_is_drawn_from_above()
     check(session.explore(ExplorationCommand::turn_left) &&
               session.observe_view().rgba != view.rgba,
           "The party's arrow turns with it");
+    // Its map's colors turn as time passes (the picture's color cycle).
+    const auto still = session.observe_view();
+    const auto revision = session.snapshot().picture_revision;
+    check(!session.turn_colors(0.0) && session.turn_colors(5.0) &&
+              session.snapshot().picture_revision != revision &&
+              session.observe_view().rgba != still.rgba,
+          "The overland's colors turn as time passes");
 }
 
 // A Gateway character comes to Treasures as its LoadChar takes one in: its

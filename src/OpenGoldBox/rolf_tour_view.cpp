@@ -2199,7 +2199,10 @@ void RolfTourView::advance_frame(double delta)
                 original_sound_->play(original_fireball_sound);
             }
         }
-        if (session_->snapshot().revision != shown_revision_)
+        // Treasures' overland colors turn while it is shown.
+        auto *treasures = dax();
+        const bool colors_turned = treasures && !checking_ && treasures->turn_colors(delta);
+        if (session_->snapshot().revision != shown_revision_ || colors_turned)
         {
             refresh();
         }

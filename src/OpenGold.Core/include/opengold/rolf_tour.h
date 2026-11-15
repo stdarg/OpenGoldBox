@@ -5,6 +5,7 @@
 #include "opengold/map_catalog.h"
 #include "opengold/overland.h"
 #include "opengold/formats.h"
+#include "opengold/vga_picture.h"
 #include "opengold/wall_art.h"
 #include "opengold/wall_art_replacements.h"
 #include "opengold/creature_catalog.h"
@@ -111,10 +112,19 @@ struct PhlanResources
     // its program lists them (docs/games/darkness.md, Shops and treasure).
     std::map<unsigned, Equipment> item_definitions;
     std::vector<std::vector<std::uint8_t>> stores;
+
     // On the town only: Treasures of the Savage Frontier's overland maps'
-    // pictures (OVER), by map x 256 + the record giving their colors, and the
-    // party's arrow on them, by facing.
-    std::map<unsigned, Image> overland_pictures;
+    // pictures (OVER), by map, each with the color cycle it turns; the color
+    // tables of the records that only set colors, by record; and the party's
+    // arrow on them, by facing.
+    struct OverlandPicture
+    {
+        VgaImage pixels;
+        std::optional<VgaColorCycle> cycle;
+    };
+
+    std::map<unsigned, OverlandPicture> overland_pictures;
+    std::map<unsigned, VgaColorTable> overland_colors;
     std::array<Image, 4> overland_arrows;
     // Pools of Darkness's marker of the party's square on its area map
     // (CURSOR record 1, drawn through color 13).
@@ -456,6 +466,11 @@ class RolfTourSession
     }
 
     void advance(double seconds);
+    // Treasures' overland colors turn as time passes, a step each time the
+    // map's color cycle's delay in hundredths of a second has passed (its
+    // MenuCore.UpdateAnimation); true when they turned and the view is to be
+    // drawn again.
+    bool turn_colors(double seconds);
     bool continue_dialogue(std::uint64_t ticket);
     bool choose(std::uint64_t ticket, std::size_t choice);
     bool input(std::uint64_t ticket, std::string_view value);
@@ -872,6 +887,10 @@ class RolfTourSession
     // Treasures' overland picture its script loaded last.
     std::array<unsigned, 3> wall_slots_{};
     unsigned treasures_overland_picture_{};
+    // How far Treasures' overland colors have turned, and the time since
+    // their last turn (turn_colors).
+    unsigned overland_color_steps_{};
+    double overland_color_seconds_{};
     std::map<unsigned, std::bitset<256>> visited_areas_;
     std::map<unsigned, std::bitset<256>> seen_areas_;
     std::vector<rules::Participant> staged_enemies_;

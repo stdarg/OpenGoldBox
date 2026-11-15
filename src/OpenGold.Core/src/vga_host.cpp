@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <cmath>
 
 namespace opengold::por
 {
@@ -481,6 +482,30 @@ bool RolfTourSession::treasures_overland() const
            machine_.variable(overland_shown) != 0;
 }
 
+bool RolfTourSession::turn_colors(double seconds)
+{
+    if (!treasures_overland())
+    {
+        return false;
+    }
+    const auto picture = town_->overland_pictures.find(treasures_overland_picture_);
+    if (picture == town_->overland_pictures.end() || !picture->second.cycle ||
+        picture->second.cycle->delay == 0)
+    {
+        return false;
+    }
+    const double step_seconds = picture->second.cycle->delay / 100.0;
+    overland_color_seconds_ += seconds;
+    if (overland_color_seconds_ < step_seconds)
+    {
+        return false;
+    }
+    overland_color_seconds_ = std::fmod(overland_color_seconds_, step_seconds);
+    ++overland_color_steps_;
+    ++snapshot_.picture_revision;
+    return true;
+}
+
 Image RolfTourSession::treasures_overland_view() const
 {
     // The window of 11 by 11 squares of the map's picture around the party,
@@ -489,12 +514,16 @@ Image RolfTourSession::treasures_overland_view() const
     constexpr EclAddress overland_palette{0x42};
     constexpr unsigned cells = 11, cell_pixels = 8, highest_corner = 16 - cells;
     const auto palette = machine_.variable(overland_palette) + 1U;
-    const auto found = town_->overland_pictures.find(treasures_overland_picture_ * 256 + palette);
-    if (found == town_->overland_pictures.end())
+    const auto picture = town_->overland_pictures.find(treasures_overland_picture_);
+    const auto colors = town_->overland_colors.find(palette);
+    if (picture == town_->overland_pictures.end() || colors == town_->overland_colors.end())
     {
         throw EclError("Unknown overland picture " + std::to_string(treasures_overland_picture_));
     }
-    const auto &map = found->second;
+    const auto &cycle = picture->second.cycle;
+    const auto map =
+        vga_rgba(picture->second.pixels,
+                 cycle ? cycled(colors->second, *cycle, overland_color_steps_) : colors->second);
     const auto pose = snapshot_.pose;
     const auto left = std::min(pose.x > 5 ? pose.x - 5 : 0U, highest_corner);
     const auto top = std::min(pose.y > 5 ? pose.y - 5 : 0U, highest_corner);
