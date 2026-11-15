@@ -2657,13 +2657,21 @@ const std::vector<RouteBeat> &darkness_route()
              {13, 4, D::west},   {12, 4, D::west},   {11, 4, D::west},   {10, 4, D::south},
              {10, 5, D::west},   {9, 5, D::west},    {8, 5, D::west},    {7, 5, D::west},
              {6, 5, D::north},   {6, 4, D::north},   {6, 3, D::east},    {7, 3, D::east},
-             {8, 3, D::east},    {9, 3, D::east},    {10, 3, D::east},   {11, 3, D::east},
-             {12, 3, D::east},   {13, 3, D::east},   {14, 3, D::east},   {15, 3, D::north},
-             {15, 2, D::north},  {15, 1, D::north},  {15, 0, D::west},   {14, 0, D::west},
-             {13, 0, D::west},   {12, 0, D::west},   {11, 0, D::west},   {10, 0, D::west},
-             {9, 0, D::west},    {8, 0, D::west},    {7, 0, D::west},    {6, 0, D::west},
-             {5, 0, D::west},    {4, 0, D::south},   {4, 1, D::west},    {3, 1, D::west},
-             {2, 1, D::south},   {2, 2, D::south},   {2, 3, D::south}});
+             {8, 3, D::east},    {9, 3, D::east},    {10, 3, D::east},   {11, 3, D::east}});
+        // Past the giants who pour out behind it, the party rests in the
+        // room north of the passage (13,2): the cave's camps rest only in its
+        // quiet rooms (events 34 to 36; the cluebook's location 13).
+        walk_passages(route, 32, {{12, 3, D::north}, {12, 2, D::east}});
+        auto cave_rest = step_beat(32, 13, 2, D::west);
+        cave_rest.rest_first = true;
+        route.push_back(cave_rest);
+        walk_passages(route, 32,
+                      {{12, 2, D::south}, {12, 3, D::east},  {13, 3, D::east},  {14, 3, D::east},
+                       {15, 3, D::north}, {15, 2, D::north}, {15, 1, D::north}, {15, 0, D::west},
+                       {14, 0, D::west},  {13, 0, D::west},  {12, 0, D::west},  {11, 0, D::west},
+                       {10, 0, D::west},  {9, 0, D::west},   {8, 0, D::west},   {7, 0, D::west},
+                       {6, 0, D::west},   {5, 0, D::west},   {4, 0, D::south},  {4, 1, D::west},
+                       {3, 1, D::west},   {2, 1, D::south},  {2, 2, D::south},  {2, 3, D::south}});
         // Ungleow pulls away from her giants and asks the party to sit down:
         // it attacks, and beats her and her guards (cell 134h bit 0).
         auto ungleow = step_beat(32, 2, 4, D::south, {"ATTACK"});
@@ -2690,6 +2698,18 @@ const std::vector<RouteBeat> &darkness_route()
         RouteBeat to_aerie{17, 0, 0, D::north, {"YES"}};
         to_aerie.area_steps = {C::northwest};
         route.push_back(to_aerie);
+        // The Aerie's camps rest only in its disused rooms (events 20 and 21;
+        // the cluebook's location 9): from (14,4) the party steps into the
+        // north-east one (13,5), rests and steps back, as a player rests
+        // between the nests' fights.
+        const auto rest_in_aerie_room = [&route]
+        {
+            walk_passages(route, 33, {{14, 4, D::west}, {13, 4, D::south}});
+            auto room = step_beat(33, 13, 5, D::north);
+            room.rest_first = true;
+            route.push_back(room);
+            walk_passages(route, 33, {{13, 4, D::east}});
+        };
         // In the Aerie (map 33) the party beats the white and green dragons at
         // its doors, and takes the four keys to the dimensional gate from the
         // dragons' nests, in the order the planning aid finds them.
@@ -2715,9 +2735,16 @@ const std::vector<RouteBeat> &darkness_route()
              {12, 10, D::north}, {12, 9, D::north},  {12, 8, D::west},   {11, 8, D::west},
              {10, 8, D::west},   {9, 8, D::north},   {9, 7, D::east},    {10, 7, D::east},
              {11, 7, D::east},   {12, 7, D::east},   {13, 7, D::east},   {14, 7, D::east},
-             {15, 7, D::north},  {15, 6, D::north},  {15, 5, D::north},  {15, 4, D::west},
-             {14, 4, D::north},  {14, 3, D::north},  {14, 2, D::north},  {14, 1, D::north},
-             {14, 0, D::west},   {13, 0, D::south},  {13, 1, D::west}});
+             {15, 7, D::north},  {15, 6, D::north},  {15, 5, D::north},  {15, 4, D::west}});
+        rest_in_aerie_room();
+        walk_passages(route, 33,
+                      {{14, 4, D::north},
+                       {14, 3, D::north},
+                       {14, 2, D::north},
+                       {14, 1, D::north},
+                       {14, 0, D::west},
+                       {13, 0, D::south},
+                       {13, 1, D::west}});
         // The black dragons pay homage to the duel's victor: the party attacks, and finds the iron
         // key in their treasure (bit 2).
         auto iron_key = step_beat(33, 12, 1, D::west, {"YES"});
@@ -2725,30 +2752,42 @@ const std::vector<RouteBeat> &darkness_route()
         iron_key.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x144, 12};
         route.push_back(iron_key);
         walk_passages(route, 33,
-                      {{11, 1, D::east},  {12, 1, D::north}, {12, 0, D::east},  {13, 0, D::east},
-                       {14, 0, D::south}, {14, 1, D::south}, {14, 2, D::south}, {14, 3, D::south},
-                       {14, 4, D::east},  {15, 4, D::south}, {15, 5, D::south}, {15, 6, D::south},
-                       {15, 7, D::west},  {14, 7, D::west},  {13, 7, D::west},  {12, 7, D::west},
-                       {11, 7, D::west},  {10, 7, D::west},  {9, 7, D::west},   {8, 7, D::west},
-                       {7, 7, D::west},   {6, 7, D::west},   {5, 7, D::west},   {4, 7, D::west},
-                       {3, 7, D::west},   {2, 7, D::west},   {1, 7, D::north},  {1, 6, D::north},
-                       {1, 5, D::west},   {0, 5, D::north},  {0, 4, D::north},  {0, 3, D::north},
-                       {0, 2, D::north},  {0, 1, D::east},   {1, 1, D::east},   {2, 1, D::east}});
+                      {{11, 1, D::east},
+                       {12, 1, D::north},
+                       {12, 0, D::east},
+                       {13, 0, D::east},
+                       {14, 0, D::south},
+                       {14, 1, D::south},
+                       {14, 2, D::south},
+                       {14, 3, D::south}});
+        rest_in_aerie_room();
+        walk_passages(route, 33,
+                      {{14, 4, D::east}, {15, 4, D::south}, {15, 5, D::south}, {15, 6, D::south},
+                       {15, 7, D::west}, {14, 7, D::west},  {13, 7, D::west},  {12, 7, D::west},
+                       {11, 7, D::west}, {10, 7, D::west},  {9, 7, D::west},   {8, 7, D::west},
+                       {7, 7, D::west},  {6, 7, D::west},   {5, 7, D::west},   {4, 7, D::west},
+                       {3, 7, D::west},  {2, 7, D::west},   {1, 7, D::north},  {1, 6, D::north},
+                       {1, 5, D::west},  {0, 5, D::north},  {0, 4, D::north},  {0, 3, D::north},
+                       {0, 2, D::north}, {0, 1, D::east},   {1, 1, D::east},   {2, 1, D::east}});
         // The Modthryth's followers recruit the white dragons for the next dracolich; one wears the
         // silver key (bit 0).
         auto silver_key = step_beat(33, 3, 1, D::east);
         silver_key.rest_first = true;
         silver_key.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x144, 13};
         route.push_back(silver_key);
+        // The party rests in the north-west disused room (3,2) on its way.
+        walk_passages(route, 33, {{4, 1, D::south}, {4, 2, D::west}});
+        auto north_west_room = step_beat(33, 3, 2, D::south);
+        north_west_room.rest_first = true;
+        route.push_back(north_west_room);
         walk_passages(route, 33,
-                      {{4, 1, D::south},  {4, 2, D::west},   {3, 2, D::south},  {3, 3, D::south},
-                       {3, 4, D::south},  {3, 5, D::west},   {2, 5, D::south},  {2, 6, D::south},
-                       {2, 7, D::east},   {3, 7, D::east},   {4, 7, D::east},   {5, 7, D::east},
-                       {6, 7, D::south},  {6, 8, D::west},   {5, 8, D::west},   {4, 8, D::west},
-                       {3, 8, D::south},  {3, 9, D::west},   {2, 9, D::south},  {2, 10, D::south},
-                       {2, 11, D::west},  {1, 11, D::west},  {0, 11, D::south}, {0, 12, D::south},
-                       {0, 13, D::south}, {0, 14, D::south}, {0, 15, D::east},  {1, 15, D::north},
-                       {1, 14, D::east},  {2, 14, D::east}});
+                      {{3, 3, D::south},  {3, 4, D::south},  {3, 5, D::west},   {2, 5, D::south},
+                       {2, 6, D::south},  {2, 7, D::east},   {3, 7, D::east},   {4, 7, D::east},
+                       {5, 7, D::east},   {6, 7, D::south},  {6, 8, D::west},   {5, 8, D::west},
+                       {4, 8, D::west},   {3, 8, D::south},  {3, 9, D::west},   {2, 9, D::south},
+                       {2, 10, D::south}, {2, 11, D::west},  {1, 11, D::west},  {0, 11, D::south},
+                       {0, 12, D::south}, {0, 13, D::south}, {0, 14, D::south}, {0, 15, D::east},
+                       {1, 15, D::north}, {1, 14, D::east},  {2, 14, D::east}});
         // The the blue dragons' nest, the steel key hidden behind a rock (bit 1).
         auto steel_key = step_beat(33, 3, 14, D::east);
         steel_key.rest_first = true;
@@ -2757,14 +2796,27 @@ const std::vector<RouteBeat> &darkness_route()
         // Back west and north to the doors before the dimensional gate (7,2):
         // the four keys unlock them (cell 144h FFh).
         walk_passages(route, 33,
-                      {{4, 14, D::west},  {3, 14, D::south}, {3, 15, D::west},  {2, 15, D::west},
-                       {1, 15, D::west},  {0, 15, D::north}, {0, 14, D::north}, {0, 13, D::north},
-                       {0, 12, D::north}, {0, 11, D::north}, {0, 10, D::north}, {0, 9, D::north},
-                       {0, 8, D::east},   {1, 8, D::east},   {2, 8, D::east},   {3, 8, D::east},
-                       {4, 8, D::east},   {5, 8, D::east},   {6, 8, D::north},  {6, 7, D::north},
-                       {6, 6, D::east},   {7, 6, D::north},  {7, 5, D::north},  {7, 4, D::west},
-                       {6, 4, D::west},   {5, 4, D::north},  {5, 3, D::east},   {6, 3, D::east},
-                       {7, 3, D::north}});
+                      {{4, 14, D::west},
+                       {3, 14, D::south},
+                       {3, 15, D::west},
+                       {2, 15, D::west},
+                       {1, 15, D::west},
+                       {0, 15, D::north},
+                       {0, 14, D::north},
+                       {0, 13, D::north}});
+        // On the way it rests in the south-west disused room (2,12), before
+        // Modthryth's dracoliches.
+        walk_passages(route, 33, {{0, 12, D::east}, {1, 12, D::east}});
+        auto south_west_room = step_beat(33, 2, 12, D::west);
+        south_west_room.rest_first = true;
+        route.push_back(south_west_room);
+        walk_passages(route, 33,
+                      {{1, 12, D::west}, {0, 12, D::north}, {0, 11, D::north}, {0, 10, D::north},
+                       {0, 9, D::north}, {0, 8, D::east},   {1, 8, D::east},   {2, 8, D::east},
+                       {3, 8, D::east},  {4, 8, D::east},   {5, 8, D::east},   {6, 8, D::north},
+                       {6, 7, D::north}, {6, 6, D::east},   {7, 6, D::north},  {7, 5, D::north},
+                       {7, 4, D::west},  {6, 4, D::west},   {5, 4, D::north},  {5, 3, D::east},
+                       {6, 3, D::east},  {7, 3, D::north}});
         auto locks = step_beat(33, 7, 2, D::north, {"USE KEYS"});
         locks.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x144, 255};
         route.push_back(locks);
@@ -5449,9 +5501,13 @@ bool walk_census(GoldBoxGame game, bool route)
                     }
                     const auto rank = [&](const std::string &id)
                     {
-                        // With someone dead, a cleric takes Raise Dead (or Resurrection) first.
-                        if (anyone_dead && (id.find("raise_dead") != std::string::npos ||
-                                            id.find("resurrection") != std::string::npos))
+                        // With someone dead, a cleric takes Raise Dead (or Resurrection)
+                        // first; Pools of Darkness's route keeps them ready always, for
+                        // its maps that let no camp rest (cure_the_hurt).
+                        const bool keeps_raising =
+                            anyone_dead || (game == GoldBoxGame::pools_of_darkness && route);
+                        if (keeps_raising && (id.find("raise_dead") != std::string::npos ||
+                                              id.find("resurrection") != std::string::npos))
                         {
                             return -1;
                         }
@@ -6529,6 +6585,95 @@ bool walk_census(GoldBoxGame game, bool route)
         };
         // The map where Secret's party last gave up resting.
         unsigned restless_map = 0xFFFF;
+        const auto party_hit_points = [&]
+        {
+            int total = 0;
+            for (const auto id : party->state().slots)
+            {
+                total += id ? party->member(id).vitals.hit_points : 0;
+            }
+            return total;
+        };
+        // Where Pools of Darkness's script lets no camp rest (the Fire Giant
+        // Cave, the Dragons' Aerie), its clerics raise the dead and cast their
+        // cures, the strongest first, on each member below half its Hit
+        // Points, as a player would.
+        const auto cure_the_hurt = [&]
+        {
+            if (game != GoldBoxGame::pools_of_darkness)
+            {
+                return;
+            }
+            for (const auto dead : party->state().slots)
+            {
+                for (const auto healer : party->state().slots)
+                {
+                    if (!dead || !healer || !party->member(dead).vitals.dead ||
+                        party->member(healer).vitals.dead ||
+                        party->member(healer).vitals.hit_points <= 0)
+                    {
+                        continue;
+                    }
+                    const auto actions = party->camp_actions(healer);
+                    const auto raise =
+                        std::ranges::find_if(actions,
+                                             [](const opengold::rules::CampAction &action)
+                                             {
+                                                 return action.id.ends_with("resurrection") ||
+                                                        action.id.ends_with("raise_dead");
+                                             });
+                    if (raise == actions.end())
+                    {
+                        continue;
+                    }
+                    try
+                    {
+                        std::cout << "  " << party->member(healer).character.sheet().name
+                                  << " casts " << raise->id << " on "
+                                  << party->member(dead).character.sheet().name << "\n";
+                        party->use_camp_action(healer, dead, raise->id);
+                    }
+                    catch (const std::exception &)
+                    {
+                    }
+                }
+            }
+            const auto below_half = [&](opengold::MemberId id)
+            {
+                const auto &member = party->member(id);
+                return !member.vitals.dead && member.vitals.hit_points > 0 &&
+                       member.vitals.hit_points * 2 < member.character.sheet().hit_points;
+            };
+            for (const auto hurt : party->state().slots)
+            {
+                for (const char *cure :
+                     {"heal", "cure_critical_wounds", "cure_serious_wounds", "cure_light_wounds"})
+                {
+                    for (const auto healer : party->state().slots)
+                    {
+                        while (hurt && healer && below_half(hurt) &&
+                               party->member(healer).vitals.hit_points > 0)
+                        {
+                            const auto actions = party->camp_actions(healer);
+                            const auto found =
+                                std::ranges::find_if(actions,
+                                                     [&](const opengold::rules::CampAction &action)
+                                                     {
+                                                         return action.id.ends_with(cure);
+                                                     });
+                            if (found == actions.end())
+                            {
+                                break;
+                            }
+                            std::cout << "  " << party->member(healer).character.sheet().name
+                                      << " casts " << found->id << " on "
+                                      << party->member(hurt).character.sheet().name << "\n";
+                            party->use_camp_action(healer, hurt, found->id);
+                        }
+                    }
+                }
+            }
+        };
         // `a_night_first` rests a night even when the party is whole, so its
         // casters choose their spells anew (RouteBeat::rest_for_spells).
         const auto rest_until_healed = [&](bool a_night_first = false)
@@ -6548,11 +6693,23 @@ bool walk_census(GoldBoxGame game, bool route)
                 // has it, before a camp's interruption or the map's script.
                 memorize();
                 const auto fights_before = fights_fought;
+                const auto hit_points_before = party_hit_points();
                 play("camp");
                 if (fights_fought != fights_before &&
                     game == GoldBoxGame::secret_of_the_silver_blades && ++interrupted >= 3)
                 {
                     restless_map = session.snapshot().area_id;
+                    break;
+                }
+                // A camp its script did not let rest (Pools of Darkness's
+                // camp entry sets cell 2Bh: the Fire Giant Cave outside its
+                // quiet rooms): its cures are cast instead.
+                const bool refused = opengold::test::TourAccess::machine(session).variable(
+                                         opengold::por::EclAddress{0x2B}) != 0;
+                if (game == GoldBoxGame::pools_of_darkness && resting && refused &&
+                    fights_fought == fights_before && party_hit_points() == hit_points_before)
+                {
+                    cure_the_hurt();
                     break;
                 }
             }
