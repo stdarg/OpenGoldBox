@@ -421,7 +421,11 @@ does it (`ua_combat`, `ua_session`; the reconstruction's `cmbsetup.c`,
   and its items (the tail at +18Eh: ITEM.DAT numbers, unidentified, with
   their charges at +19Eh from the kit's table of 0 to 100), each readied in
   turn where its hands, its places and its classes allow (a monster of no
-  class readies nothing). Groups 4 to 6 fight for the party when byte 0Ah's
+  class readies nothing). A bow fires the kit's arrows (type 1Eh) and a
+  crossbow its quarrels (0Ch), *Secret*'s types (before 2026-11-15 the
+  fight looked for *Pool of Radiance*'s, so no one's bow in a design found
+  its arrows); the quarrel of slaying (4Ah) waits (Next). Groups 4 to 6
+  fight for the party when byte 0Ah's
   bits 20h, 40h and 80h say so; a group picked at random (kind 33) is never
   an ally.
 - **Spells.** A MONST record's memorized spells (+C6h, up to 141, the kit's

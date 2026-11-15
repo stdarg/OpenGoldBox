@@ -2228,6 +2228,26 @@ void the_kits_items_work_when_readied(const std::filesystem::path &kit)
         check(gives(number, code),
               "Item " + std::to_string(number) + " readied gives " + std::to_string(code));
     }
+    // A bow fires the kit's arrows (its type 1Eh, Secret's 30).
+    const auto bow = std::ranges::find_if(
+        items.items,
+        [&items](const ua::ItemRecord &record)
+        {
+            return record.type < items.types.size() &&
+                   items.types[record.type].has(opengold::por::item_property::fires_arrows);
+        });
+    check(bow != items.items.end(), "The kit has a bow");
+    auto bow_item =
+        *ua::design_item(items, static_cast<unsigned>(bow - items.items.begin()) + 1, true);
+    auto arrows = *ua::design_item(items, 1, true);
+    bow_item.stored.readied_raw = arrows.stored.readied_raw = 1;
+    opengold::por::CharacterRecord archer;
+    archer.game = GoldBoxGame::unlimited_adventures;
+    const std::vector<original::CarriedItem> quiver{{bow_item.stored, bow_item.base},
+                                                    {arrows.stored, arrows.base}};
+    const auto shooting = original::combatant_from_record(archer, quiver);
+    check(shooting.missile && shooting.missile->loaded && shooting.missile->quantity == 20,
+          "A bow shoots the kit's arrows");
     const auto gauntlets = wielding(233, true), girdle = wielding(204, true);
     check(gauntlets.strength == 18 && gauntlets.exceptional_strength == 100 &&
               girdle.strength == 23 && wielding(233, false).strength == 12,

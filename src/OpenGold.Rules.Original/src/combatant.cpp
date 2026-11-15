@@ -1095,8 +1095,10 @@ AmmunitionTypes ammunition_types(GoldBoxGame game) noexcept
     {
         return AmmunitionTypes{30, 12, 74};
     }
-    return game == GoldBoxGame::secret_of_the_silver_blades ? AmmunitionTypes{30, 12}
-                                                            : AmmunitionTypes{73, 28};
+    // Unlimited Adventures' are Secret's (its charview.c, ready_check).
+    const bool secret_types = game == GoldBoxGame::secret_of_the_silver_blades ||
+                              game == GoldBoxGame::unlimited_adventures;
+    return secret_types ? AmmunitionTypes{30, 12} : AmmunitionTypes{73, 28};
 }
 
 bool elf_weapon(std::uint8_t type, GoldBoxGame game) noexcept

@@ -291,9 +291,9 @@ struct CarriedItem
                                               std::span<const por::EffectRecord> effects = {});
 
 // The item types of a game's arrows and quarrels (charhlp.pas, RecalcStats):
-// 73 and 28 in Pool of Radiance and Curse, 30 and 12 in Secret and Pools of
-// Darkness, whose crossbows also shoot its blessed bolts (type 74) as
-// quarrels.
+// 73 and 28 in Pool of Radiance and Curse, 30 and 12 in Secret, Pools of
+// Darkness and Unlimited Adventures; Pools of Darkness's crossbows also
+// shoot its blessed bolts (type 74) as quarrels.
 struct AmmunitionTypes
 {
     std::uint8_t arrows{}, quarrels{};
