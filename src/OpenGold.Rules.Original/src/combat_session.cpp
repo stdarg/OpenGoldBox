@@ -114,7 +114,7 @@ constexpr int spell_proof = 640, disease_proof = 676, halved_below_plus_three = 
               halved_below_plus_four = 681, poison_breath = 690, bulette_attacks = 699,
               needs_plus_two = 725, gaze_proof = 726, stench = 737, sickened = 748,
               hurt_more_by_magical_fire = 768, eats_armor = 786, blow_proof = 793,
-              gorgon_breath = 795, fire_less_by_the_die = 819;
+              gorgon_breath = 795, fire_less_by_the_die = 819, eye_rays = 717;
 // The kit's items' own, while readied (docs/games/ua.md, Items' special
 // effects): a ring of fire resistance, boots of speed, a giant-slaying sword
 // and a vorpal blade.
@@ -5741,6 +5741,10 @@ void Session::kit_specials(Fighter &f)
     {
         return;
     }
+    if (f.has(effect::eye_rays))
+    {
+        beholder_rays(f);
+    }
     if (auto *breath = f.find_effect(effect::poison_breath); breath && f.able() && f.initiative > 0)
     {
         breath->strength = std::min(breath->strength, 3);
@@ -6251,25 +6255,34 @@ void Session::curse_specials(Fighter &f)
 // A beholder's eyes (Curse's attack_or_kill): up to four tries, each power
 // once a fight, by the target's distance: a disintegrating ray at exactly 2
 // squares, a petrifying one at 3, death at 4, a 2d8+1 wound at 5; then Fear,
-// Slow and Sleep.
+// Slow and Sleep. The kit's (cbaction.c, eye_rays; its 117) lock onto an
+// enemy anew anywhere on the field as they open, and use each power once a
+// turn, a ray within its distance; its wound is Cause Serious Wounds.
 void Session::beholder_rays(Fighter &f)
 {
+    const bool kit_eyes = kit();
+    int used_this_turn = 0;
     for (int tries = 0; tries < 4 && f.able(); ++tries)
     {
-        if (!acquire_target(f, 12, false, false))
+        const bool fresh_lock = kit_eyes && tries == 0;
+        if (!acquire_target(f, kit_eyes ? 255 : 12, false, fresh_lock))
         {
             return;
         }
         auto &target = *find(f.lock);
         const int range = distance(f, target);
-        const int used = uses(f, 287);
+        const int used = kit_eyes ? used_this_turn : uses(f, 287);
         const auto power = [&](int bit)
         {
             if (used & bit)
             {
                 return false;
             }
-            if (auto *count = f.find_effect(387))
+            if (kit_eyes)
+            {
+                used_this_turn |= bit;
+            }
+            else if (auto *count = f.find_effect(387))
             {
                 count->strength |= bit;
             }
@@ -6279,7 +6292,11 @@ void Session::beholder_rays(Fighter &f)
             }
             return true;
         };
-        if (range == 2 && power(1))
+        const auto reaches = [&](int squares)
+        {
+            return kit_eyes ? range <= squares : range == squares;
+        };
+        if (reaches(2) && power(1))
         {
             log({"{name} fires a disintegrating ray.", {{"name", f.name}}});
             if (!saving_throw(target, 3, 0, &f))
@@ -6292,20 +6309,15 @@ void Session::beholder_rays(Fighter &f)
                 went_down(target);
             }
         }
-        else if (range == 3 && power(2))
+        else if (reaches(3) && power(2))
         {
             log({"{name} fires a petrifying ray.", {{"name", f.name}}});
             if (!saving_throw(target, 1, 0, &f))
             {
-                target.condition = Condition::stoned;
-                target.hit_points = 0;
-                target.initiative = 0;
-                log({"{name} is stoned.", {{"name", target.name}}});
-                end_effects_at_zero(target);
-                went_down(target);
+                turn_to_stone(target);
             }
         }
-        else if (range == 4 && power(4))
+        else if (reaches(4) && power(4))
         {
             log({"{name} fires a death ray.", {{"name", f.name}}});
             if (!saving_throw(target, 0, 0, &f))
@@ -6314,10 +6326,13 @@ void Session::beholder_rays(Fighter &f)
                 kill(target);
             }
         }
-        else if (range == 5 && power(8))
+        else if (reaches(5) && power(8))
         {
             log({"{name} fires a wounding ray.", {{"name", f.name}}});
-            nonweapon_damage(target, roll(8) + roll(8) + 1, 0, false, 8, 12, 0, false);
+            constexpr int cause_serious_wounds = 66;
+            const int wound =
+                kit_eyes ? canonical_spell(cause_serious_wounds, game_of(identity_)) : 0;
+            nonweapon_damage(target, roll(8) + roll(8) + 1, 0, false, 8, 12, wound, false);
         }
         else
         {

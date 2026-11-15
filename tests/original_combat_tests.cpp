@@ -5225,6 +5225,44 @@ void the_kits_blue_dragon_breathes_lightning()
           "It never breathes at one immune to electricity");
 }
 
+// The kit's beholder's eyes (its 117; cbaction.c, eye_rays): up to four a
+// turn at the enemy it locks onto, each once a turn, a ray within its
+// distance: disintegration within 2 squares, stone within 3, death within 4,
+// a wound within 5, then its spells.
+void the_kits_beholder_fires_its_rays()
+{
+    const auto eyes = original::canonical_effect(117, kit_game);
+    check(eyes == 717, "The kit's 117 is its own");
+    const auto beholder = special({{eyes, 0, 255, false}}, 60);
+    auto near = arrange({{"Fighter", rules::Side::party, {2, 3}, victim(500)},
+                         {"Beholder", rules::Side::opposition, {0, 3}, beholder}},
+                        265, {}, 100, kit_game);
+    until_turn_of(*near.session, "Beholder");
+    near.session->submit(order(*near.session, "quick"));
+    check(logged(*near.session, "{name} fires a disintegrating ray.") == 1 &&
+              view_of(near.session->snapshot(), "Fighter").status == "gone",
+          "Within 2 squares its first ray disintegrates one that fails its save");
+
+    auto sure = victim(500);
+    sure.saving_throws = {2, 2, 2, 2, 2};
+    auto far = arrange({{"Fighter", rules::Side::party, {3, 3}, sure},
+                        {"Beholder", rules::Side::opposition, {0, 3}, beholder}},
+                       269, {}, 100, kit_game);
+    until_turn_of(*far.session, "Beholder");
+    far.session->submit(order(*far.session, "quick"));
+    const auto fired = [&](std::string_view ray)
+    {
+        return logged(*far.session, std::string("{name} fires a ") + std::string(ray) + " ray.");
+    };
+    check(fired("disintegrating") == 0 && fired("petrifying") == 1 && fired("death") == 1 &&
+              fired("wounding") == 1 &&
+              view_of(far.session->snapshot(), "Fighter").hit_points < 500,
+          "At 3 squares it fires the stone, death and wounding rays, each once");
+    until_turn_of(*far.session, "Beholder");
+    far.session->submit(order(*far.session, "quick"));
+    check(fired("petrifying") == 2 && fired("death") == 2, "Its rays fire again at its next turn");
+}
+
 // The kit's monster types (+BFh): a ranger beside a ranger's foe adds its
 // level to the blow (105); a giant the kit does not call one takes it as it is.
 // The kit's items' effects while readied (docs/games/ua.md, Items' special
@@ -5541,6 +5579,7 @@ int main()
         the_kits_monsters_act_as_the_kit_has_them();
         the_kits_monsters_breathe();
         the_kits_blue_dragon_breathes_lightning();
+        the_kits_beholder_fires_its_rays();
         the_kits_rangers_know_their_foes();
         the_kits_items_strike_as_the_kit_has_them();
         the_kits_monsters_differ_as_the_kit_has_them();

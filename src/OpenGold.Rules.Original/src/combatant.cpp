@@ -740,9 +740,9 @@ int darkness_canonical_effect(int code) noexcept
 int kit_canonical_effect(int code) noexcept
 {
     // The kit's need of a +1 or +3 weapon (103, 60), its paralysing blows
-    // (88, 224) and its 2d6 of fire with a blow (108) differ from every
-    // game's, and are its own.
-    constexpr std::array<std::pair<int, int>, 53> matched{{
+    // (88, 224), its 2d6 of fire with a blow (108) and its beholder's rays
+    // (117) differ from every game's, and are its own.
+    constexpr std::array<std::pair<int, int>, 52> matched{{
         {6, 335},
         {8, 8},
         {18, 124},
@@ -774,7 +774,6 @@ int kit_canonical_effect(int code) noexcept
         {101, 85},
         {102, 86},
         {105, 334},
-        {117, 287},
         {124, 84},
         {132, 488},
         {141, 108},
