@@ -1932,7 +1932,11 @@ std::vector<AdvancementChoice> OriginalModule::lasting_changes(const CharacterSh
     }
     std::vector<AdvancementChoice> changes;
     const auto carried = carried_state(after.resources, game_of(sheet.identity));
-    if (const auto &last = carried.last_fight)
+    const auto &marks = carried.last_fight ? carried.last_fight->effects : carried.conditions;
+    // Restoration is given outside fights, where a last fight's levels below
+    // the sheet's are a training since, not a drain.
+    const bool restoring_now = std::ranges::find(marks, restoring, &Effect::code) != marks.end();
+    if (const auto &last = carried.last_fight; last && !restoring_now)
     {
         Drain drain;
         bool drained = false;

@@ -3352,7 +3352,10 @@ void CampaignParty::temple_service(MemberId target, rules::TempleService service
         {
             take_revival_changes(patient, rules::Revival::temple);
         }
-        keep_lasting_changes(*rules_, patient);
+        if (service == rules::TempleService::restoration)
+        {
+            keep_lasting_changes(*rules_, patient);
+        }
     }
     if (service == rules::TempleService::remove_curse)
     {

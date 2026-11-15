@@ -517,6 +517,9 @@ struct RouteBeat
     // The map's monsters break every camp (Pools of Darkness's Temple of Tyr
     // until it is freed): a passing party walks on hurt instead of resting.
     bool camp_broken = false;
+    // A day's rest before the beat even when the party is whole, as a player
+    // rests to memorize a spell the beat needs.
+    bool memorize_first = false;
     // Play the beat again (up to 40 times) until this cell holds these bits:
     // the Fire Giant Cave's endless corridor until its spell is broken.
     std::optional<std::pair<std::uint16_t, std::uint16_t>> repeat_until_bits;
@@ -4317,6 +4320,7 @@ const std::vector<RouteBeat> &treasure_route()
         RouteBeat twins{17, 11, 1, D::north, {"CAST"}};
         twins.rest_first = true;
         twins.cast_after = {"detect_magic", "detect_evil", "dispel_magic"};
+        twins.memorize_first = true;
         route.push_back(twins);
         RouteBeat geildarr{17, 15, 4, D::north, {}};
         geildarr.rest_first = true;
@@ -6494,6 +6498,12 @@ bool walk_census(GoldBoxGame game, bool route)
                     // A camp attacked fights: the last beat's flight is over.
                     fleeing = false;
                     beat.waiting ? rest_in_wilderness() : rest_until_healed(beat.rest_for_spells);
+                }
+                if (beat.memorize_first && session.can_leave() &&
+                    session.camp(opengold::RestKind::long_rest))
+                {
+                    memorize();
+                    play("camp");
                 }
                 if (session.snapshot().phase == TourPhase::defeated)
                 {
