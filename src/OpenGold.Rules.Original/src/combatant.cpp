@@ -740,9 +740,10 @@ int darkness_canonical_effect(int code) noexcept
 int kit_canonical_effect(int code) noexcept
 {
     // The kit's need of a +1 or +3 weapon (103, 60), its paralysing blows
-    // (88, 224), its 2d6 of fire with a blow (108) and its beholder's rays
-    // (117) differ from every game's, and are its own.
-    constexpr std::array<std::pair<int, int>, 52> matched{{
+    // (88, 224), its 2d6 of fire with a blow (108), its beholder's rays
+    // (117) and its rot (170), which takes Charisma month by month, differ
+    // from every game's, and are its own.
+    constexpr std::array<std::pair<int, int>, 51> matched{{
         {6, 335},
         {8, 8},
         {18, 124},
@@ -781,7 +782,6 @@ int kit_canonical_effect(int code) noexcept
         {158, 109},
         {159, 117},
         {169, 116},
-        {170, 87},
         {171, 82},
         {173, 284},
         {174, 282},
@@ -1138,8 +1138,13 @@ bool lasting_condition(const Effect &effect, GoldBoxGame game) noexcept
     const int code = effect.code;
     const bool pool_rot =
         game == GoldBoxGame::pool_of_radiance && (code == rot || code == mummy_rot);
+    // The kit's rot: no healing (its 215, the fight's 50), the months it
+    // rots, and the Charisma it has taken.
+    const bool kit_rot = game == GoldBoxGame::unlimited_adventures &&
+                         (code == rot || code == kit_rotting || code == charisma_rotted);
     const bool helpless_for_good = code == helpless && effect.minutes == 0;
-    return pool_rot || helpless_for_good || std::ranges::find(lasting, code) != lasting.end();
+    return pool_rot || kit_rot || helpless_for_good ||
+           std::ranges::find(lasting, code) != lasting.end();
 }
 
 HammerMaking hammer_making(GoldBoxGame game) noexcept

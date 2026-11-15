@@ -1317,12 +1317,16 @@ class RulesModule
 
     // What the campaign's clock going from minute `from` to `to` changes on a
     // character for good (under the original rules' AD&D aging, a year of age
-    // for each year of the clock), as level history entries it takes in
-    // order; none by default.
-    [[nodiscard]] virtual std::vector<AdvancementChoice>
-    clock_changes(const CharacterSheet &sheet, std::uint64_t from, std::uint64_t to) const
+    // for each year of the clock; Unlimited Adventures' rot, the Charisma it
+    // took), its state as the time left it (pass_time), as level history
+    // entries it takes in order; none by default.
+    [[nodiscard]] virtual std::vector<AdvancementChoice> clock_changes(const CharacterSheet &sheet,
+                                                                       const VitalState &state,
+                                                                       std::uint64_t from,
+                                                                       std::uint64_t to) const
     {
         (void)sheet;
+        (void)state;
         (void)from;
         (void)to;
         return {};

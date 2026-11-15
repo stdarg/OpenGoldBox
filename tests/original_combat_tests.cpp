@@ -5263,6 +5263,39 @@ void the_kits_beholder_fires_its_rays()
     check(fired("petrifying") == 2 && fired("death") == 2, "Its rays fire again at its next turn");
 }
 
+// The kit's mummy rots its victim (its 170; effects.c, fx_disease_touch): no
+// healing for 10 days (the fight's 50) and 1d6 months of rot, its strength
+// the months by 32s, once; the months pass outside the fight.
+void the_kits_mummy_rots()
+{
+    const auto touch = original::canonical_effect(170, kit_game);
+    check(touch == 770, "The kit's 170 is its own");
+    const auto mummy = monster({2, 1, 1, 0}, {0, 0, 0, 0}, {{touch, 0, 255, false}});
+    const auto rotted = [](const rules::CombatSession &session)
+    {
+        return logged(session, "{name} is diseased.") > 0;
+    };
+    auto fight = attack_until(mummy, victim(), rotted, 47, kit_game);
+    const auto left = left_by_fight(*fight.session, "Victim");
+    const auto lasting = [&](int code)
+    {
+        return std::ranges::find(left.effects, code, &original::Effect::code);
+    };
+    const auto rot = lasting(original::kit_rotting);
+    check(rotted(*fight.session) && lasting(50) != left.effects.end() &&
+              lasting(50)->minutes == 14400 && rot != left.effects.end() && rot->minutes == 43200 &&
+              rot->strength % 32 == 31 && rot->strength / 32 >= 1 && rot->strength / 32 <= 6,
+          "The kit's mummy's touch rots for 1d6 months, without healing for 10 days");
+    auto again = attack_until(
+        mummy, victim(),
+        [](const rules::CombatSession &session)
+        {
+            return session.snapshot().round > 8;
+        },
+        47, kit_game);
+    check(logged(*again.session, "{name} is diseased.") == 1, "It rots its victim once");
+}
+
 // The kit's monster types (+BFh): a ranger beside a ranger's foe adds its
 // level to the blow (105); a giant the kit does not call one takes it as it is.
 // The kit's items' effects while readied (docs/games/ua.md, Items' special
@@ -5580,6 +5613,7 @@ int main()
         the_kits_monsters_breathe();
         the_kits_blue_dragon_breathes_lightning();
         the_kits_beholder_fires_its_rays();
+        the_kits_mummy_rots();
         the_kits_rangers_know_their_foes();
         the_kits_items_strike_as_the_kit_has_them();
         the_kits_monsters_differ_as_the_kit_has_them();

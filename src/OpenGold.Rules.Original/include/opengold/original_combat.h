@@ -317,7 +317,8 @@ struct AmmunitionTypes
 
 // The conditions that outlast a fight and a day's rest until they are cured
 // or run out, by the fight's numbers: blindness (33), disease (34, 43, 44,
-// and Pool of Radiance's rot, 50 and 57), the helplessness a disease brings
+// Pool of Radiance's rot, 50 and 57, and Unlimited Adventures', 50 and 772,
+// with the Charisma it took, 851), the helplessness a disease brings
 // for good (31 with no end), poison (55, and Slow Poison's 15 and 22), Bestow
 // Curse (36), feeblemind (268), Enlarge (12) and Strength (38), and the
 // effects of the spells cast in camp before a fight (Bless 1, the
@@ -352,6 +353,15 @@ struct HammerMaking
 [[nodiscard]] bool is_spiritual_hammer(const por::ItemRecord &item, GoldBoxGame game) noexcept;
 // The marker of the Strength a disease has wasted outside fights.
 inline constexpr int strength_wasted = 601;
+// Unlimited Adventures' rot (the kit's 172, kit_effect_offset higher): its
+// strength counts the months it has left by 32s, and each month that passes
+// takes 2 Charisma, the last month the victim's life (effects.c, fx_rotting).
+inline constexpr int kit_rotting = kit_effect_offset + 172;
+// The Charisma the kit's rot has taken that the sheet has yet to lose,
+// OpenGoldBox's own marker (its strength the points): the clock's change
+// takes it off the sheet's score (RulesModule::clock_changes). Past the
+// kit's last effect (228), so no record of the kit's names it.
+inline constexpr int charisma_rotted = kit_effect_offset + 251;
 // A party member's age in years, OpenGoldBox's own marker (its strength): a
 // member's numbers carry it into a fight, where Haste and Youth change it,
 // and the game keeps the change in the member's level history

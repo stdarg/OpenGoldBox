@@ -3087,7 +3087,7 @@ CampaignParty::Elapsed CampaignParty::elapsed(const PartyState &state,
         // and the items that go with the time.
         std::optional<Character> changed;
         for (const auto &change :
-             rules_->clock_changes(sheet, state.time_minutes, result.time_minutes))
+             rules_->clock_changes(sheet, vitals, state.time_minutes, result.time_minutes))
         {
             if (!changed)
             {

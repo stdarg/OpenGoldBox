@@ -620,19 +620,11 @@ playing each event and fight; it fails on any event the session cannot play.
   - Byte 12h's top bits (the turning level +0, 2, 10 or 41 over the
     area's) and an icon over two squares a side, which stands as two.
 
-Next, in this order (2026-11-15; monsters' spells, items' special effects,
-Appraise, the vault's items, the temple's Restoration, the quarrel of slaying,
-the kit's 72 and 58's, 91's, 96's and 117's near matches are done):
-
-1. 170's rot as the kit's (`effects.c`, `fx_disease_touch`, `fx_rotting`):
-   unless the target has 50 or 215 (D7h), it takes 215 for 14,400 minutes
-   (no healing) and 172 (ACh) for a month (43,200 minutes) with strength
-   1d6 x 32 + 31; each month it rots, losing 2 Charisma (never below 3),
-   and after the last month (strength / 32 down to 1) it dies, gone for good
-   ("Dies rots away", status 8). The fight lays Pool of Radiance's 50 and
-   57 now (87); the campaign's `pass_time` would need the monthly
-   Charisma loss and the death, which no game's rules play yet (Pool of
-   Radiance's mummy rot only ends after its month).
+Next (2026-11-15): monsters' spells, items' special effects, Appraise, the
+vault's items, the temple's Restoration, the quarrel of slaying, the kit's
+72, and its 58's, 91's, 96's, 117's and 170's near matches are done, so every
+effect the kit's monsters carry plays as the kit's; what is left is the list
+above.
 
 ### Monsters' effects, "no magic" fights and step events
 
@@ -642,25 +634,24 @@ Since 2026-11-14 (`ua_session.cpp`, `combatant.cpp`):
   kit loads them, for good at strength FFh, each as the original rules'
   effect that does what the kit's does (`original::canonical_effect`, as
   for *Curse* and *Secret*; judged from the reconstruction's `effects.c`,
-  `fxcore.c` and `fxcombat.c`). The kit's monsters carry 68 kinds; 48 match
+  `fxcore.c` and `fxcombat.c`). The kit's monsters carry 68 kinds; 47 match
   an effect the fight plays:
 
   | Kit | Fight | Kit | Fight | Kit | Fight | Kit | Fight |
   |---|---|---|---|---|---|---|---|
   | 6 | 335 | 66 | 115 | 95 | 107 | 159 | 117 |
   | 8 | 8 | 70 | 470 | 96 | 290 | 169 | 116 |
-  | 18 | 124 | 73 | 273 | 98 | 310 | 170 | 87~ |
-  | 24 | 24 | 79 | 479 | 100 | 482 | 171 | 82 |
-  | 26 | 26 | 82 | 552 | 101 | 85 | 173 | 284 |
-  | 37 | 237 | 84 | 504 | 102 | 86 | 174 | 282 |
-  | 45 | 45 | 85 | 483 | 105 | 334 | 175 | 281 |
-  | 47 | 47 | 86 | 70 | 124 | 84 | 176 | 257 |
-  | 58 | 458 | 89 | 89 | 132 | 488 | 216 | 100 |
-  | 59 | 127 | 91 | 561 | 141 | 108 | 217 | 101 |
-  | 64 | 64 | 92 | 492 | 143 | 111 | 220 | 296 |
-  | 65 | 465 | 93 | 112 | 158 | 109 | 223 | 480 |
+  | 18 | 124 | 73 | 273 | 98 | 310 | 171 | 82 |
+  | 24 | 24 | 79 | 479 | 100 | 482 | 173 | 284 |
+  | 26 | 26 | 82 | 552 | 101 | 85 | 174 | 282 |
+  | 37 | 237 | 84 | 504 | 102 | 86 | 175 | 281 |
+  | 45 | 45 | 85 | 483 | 105 | 334 | 176 | 257 |
+  | 47 | 47 | 86 | 70 | 124 | 84 | 216 | 100 |
+  | 58 | 458 | 89 | 89 | 132 | 488 | 217 | 101 |
+  | 59 | 127 | 91 | 561 | 141 | 108 | 220 | 296 |
+  | 64 | 64 | 92 | 492 | 143 | 111 | 223 | 480 |
+  | 65 | 465 | 93 | 112 | 158 | 109 |  |  |
 
-  A ~ marks a near match: 170's rot takes no Charisma.
   Five play as the kit's in a design (2026-11-15): 91 breathes lightning
   as Pools of Darkness's blue dragon does (561; `fx_lightning_breath` is its
   `EffBreatheLightning`): three a fight from the first round, every turn it
@@ -689,7 +680,7 @@ Since 2026-11-14 (`ua_session.cpp`, `combatant.cpp`):
   vampires give (`fx_spell_gaze`). (Until 2026-11-14 the fight played 84's
   charming gaze in Pool of Radiance only, so the kit's vampires never
   charmed; they do.)
-- **The kit's own effects.** The other 20 no earlier game has, or has
+- **The kit's own effects.** The other 21 no earlier game has, or has
   otherwise; each plays
   600 higher (`kit_effect_offset`) as the kit plays it, in
   `combat_session.cpp` (since 2026-11-14; the last five since 2026-11-15,
@@ -717,6 +708,7 @@ Since 2026-11-14 (`ua_session.cpp`, `combatant.cpp`):
   | 224 | 824 | monster 20 | Its first attack's blow paralyses for 10 rounds, unless saved against paralysis; never an elf |
   | 108 | 708 | monster 55 | Its second attack's blow burns for 2d6 of magical fire, half on a save against spells |
   | 117 | 717 | monster 45 | Its eyes, at each of its AI's turns (`eye_rays`): up to four tries at the enemy it locks onto anew anywhere on the field, each power once a turn, a ray within its distance: within 2 squares disintegration (a save against breath, or gone), within 3 stone (against petrification), within 4 death (against death), within 5 Cause Serious Wounds (2d8 + 1); then Fear, Slow and Sleep cast at it. Until 2026-11-15 it played *Curse*'s beholder's (287): each power once a fight, each ray only at its exact distance |
+  | 170 | 770 | monster 24 (the mummy) | Its blow rots one not rotting already (`fx_disease_touch`): no healing for 10 days (the kit's 215, the fight's 50) and rot for 1d6 months (172, 772), its strength the months by 32s. As the campaign's clock passes (`pass_time`, `fx_rotting`), each month takes 2 Charisma, never below 3, off the sheet for good, and the last month leaves the member dead ("Dies rots away"). Cure Disease takes the rot, not the Charisma lost. Until 2026-11-15 it laid Pool of Radiance's rot (87), which took no Charisma and ran out after its month |
 
   The kit hands the gorgon a second effect (203) that breathes; the fight
   keeps the breaths on 795 itself. The bulette's flurry is the kit's as
@@ -747,7 +739,7 @@ Since 2026-11-14 (`ua_session.cpp`, `combatant.cpp`):
   event; the counts are saved.
 
 `opengold_ua_session_tests` checks the skeleton's, troll's and rakshasa's
-effects, the 20 the kit alone has on their monsters, the goblin's and ogre's
+effects, the 21 the kit alone has on their monsters, the goblin's and ogre's
 kin, the party's blows doing the black pudding no harm and the gorgon's
 breath stoning them, the hall's no-magic kobolds and the cellar's draft
 every third step; `opengold_original_combat_tests` each of the kit's own

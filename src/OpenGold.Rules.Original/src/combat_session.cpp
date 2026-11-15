@@ -114,7 +114,8 @@ constexpr int spell_proof = 640, disease_proof = 676, halved_below_plus_three = 
               halved_below_plus_four = 681, poison_breath = 690, bulette_attacks = 699,
               needs_plus_two = 725, gaze_proof = 726, stench = 737, sickened = 748,
               hurt_more_by_magical_fire = 768, eats_armor = 786, blow_proof = 793,
-              gorgon_breath = 795, fire_less_by_the_die = 819, eye_rays = 717;
+              gorgon_breath = 795, fire_less_by_the_die = 819, eye_rays = 717, rot_touch = 770,
+              kit_rotting = original::kit_rotting;
 // The kit's items' own, while readied (docs/games/ua.md, Items' special
 // effects): a ring of fire resistance, boots of speed, a giant-slaying sword
 // and a vorpal blade.
@@ -146,20 +147,20 @@ constexpr int six_weapons = 516, dancing = 518, druid_fire_protection = 519, dra
 // What a hit carries, by the attacker's effects, in the original's order: a
 // primary attack's hit and a secondary one's (effhndlr.pas, HIT_PHASE_1 and
 // HIT_PHASE_2).
-constexpr std::array<int, 20> primary_hit_effects{
+constexpr std::array<int, 21> primary_hit_effects{
     85, 86, 87, 68, 79, 80, 76, 73, 77,
     // Curse's (canonical_effect).
     257, 296, 322, 323, 345,
     // Secret's (fxengine.pas, its conditions 2 and 3, in its reconstruction).
     effect::poison_touch, effect::stone_touch, effect::strong_poison_touch, effect::ghoul_touch,
-    // The kit's vorpal blade and ghoul (its fxcore.c, fx_trigger_group 2).
-    effect::vorpal, effect::ghoul_paralysis};
-constexpr std::array<int, 17> secondary_hit_effects{
+    // The kit's vorpal blade, ghoul and mummy (its fxcore.c, fx_trigger_group 2).
+    effect::vorpal, effect::ghoul_paralysis, effect::rot_touch};
+constexpr std::array<int, 18> secondary_hit_effects{
     64, 65, 66, 67, 68, 69, 70, 79, 85, 86, 87,
     // Secret's.
     effect::poison_touch, effect::stone_touch, effect::strong_poison_touch, effect::ghoul_touch,
     // The kit's (fx_trigger_group 3).
-    effect::adjacent_paralysis, effect::fire_blow};
+    effect::adjacent_paralysis, effect::fire_blow, effect::rot_touch};
 
 // An item a creature carries, which it may ready or put away in a fight
 // (viewchar.pas, ToggleReadyItem): its record, readied or not, with what is
@@ -2080,6 +2081,22 @@ void Session::on_hit(Fighter &attacker, Fighter &defender, int phase, int primar
                 log({"{name} is diseased.", {{"name", defender.name}}});
             }
             break;
+        case effect::rot_touch:
+            // The kit's mummy rot (effects.c, fx_disease_touch): no healing
+            // for 10 days (its 215, the fight's 50), and rotting a month at a
+            // time for 1d6 months, its strength the months by 32s, which
+            // takes Charisma and at last the victim's life as time passes
+            // (OriginalModule::pass_time). The kit also spared one that held
+            // its effect 50, Pool of Radiance's rot's number, which is a hot
+            // Fire Shield in the kit's (Bugs).
+            if (!defender.has(effect::rot))
+            {
+                defender.numbers.effects.push_back({effect::rot, 14400, 255, true});
+                defender.numbers.effects.push_back(
+                    {effect::kit_rotting, 43200, roll(6) * 32 + 31, true});
+                log({"{name} is diseased.", {{"name", defender.name}}});
+            }
+            break;
         case 76:
             // A stirge drinks 12 to 15 Hit Points' worth, its strength the
             // victim's, which cannot move meanwhile (effhndlr.pas, EffBloodAttach).
@@ -2803,7 +2820,8 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
             }
             else if (f.has(effect::rot) || f.has(34) || f.has(43))
             {
-                for (const int code : {34, 43, 44, 31, effect::rot, effect::mummy_rot})
+                for (const int code :
+                     {34, 43, 44, 31, effect::rot, effect::mummy_rot, effect::kit_rotting})
                 {
                     f.remove(code);
                 }

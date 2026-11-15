@@ -2395,6 +2395,78 @@ void time_passes_between_rests()
     check(dead.dead, "The poison kills as the spell runs out on the road");
 }
 
+// Unlimited Adventures' rot as the clock passes (effects.c, fx_rotting):
+// each month takes 2 Charisma, never below 3, which the clock's change takes
+// off the sheet, and the last month leaves the member dead; a cure takes the
+// rot, not the Charisma lost.
+void the_kits_rot_takes_charisma_month_by_month()
+{
+    const auto module = original::rules_module();
+    const auto ua = GoldBoxGame::unlimited_adventures;
+    auto member = original_character(ua, "fighter", "lawful_good", 97);
+    member.scores[rules::Ability::charisma] = member.base[rules::Ability::charisma] = 9;
+    constexpr int month = 43200;
+    // Two months to rot, its strength the months by 32s (1d6 x 32 + 31).
+    auto rotting =
+        left_with(member, {{50, 14400, 255, true}, {original::kit_rotting, month, 95, true}});
+    const auto charisma = [&]
+    {
+        return member.scores[rules::Ability::charisma];
+    };
+    const auto take_the_clock = [&](std::uint64_t from, std::uint64_t to)
+    {
+        module->pass_time(rotting, member, from, to);
+        for (const auto &change : module->clock_changes(member, rotting, from, to))
+        {
+            check(module->advance_character(member, rotting, change), "The rot's change is kept");
+        }
+    };
+    take_the_clock(0, month - 1);
+    check(charisma() == 9 && !carries(member, rotting, 50) &&
+              carries(member, rotting, original::kit_rotting),
+          "Before its first month the rot takes nothing, its 10 days without healing past");
+    take_the_clock(month - 1, month);
+    check(charisma() == 7 && !rotting.dead && carries(member, rotting, original::kit_rotting) &&
+              !carries(member, rotting, original::charisma_rotted),
+          "A month on it has taken 2 Charisma");
+    take_the_clock(month, 2 * month);
+    check(charisma() == 5 && rotting.dead && !carries(member, rotting, original::kit_rotting),
+          "At its last month it takes 2 more and the member's life");
+
+    auto lowly = original_character(ua, "fighter", "lawful_good", 97);
+    lowly.scores[rules::Ability::charisma] = lowly.base[rules::Ability::charisma] = 4;
+    auto long_rot = left_with(lowly, {{original::kit_rotting, month, 6 * 32 + 31, true}});
+    module->pass_time(long_rot, lowly, 0, 3 * month);
+    for (const auto &change : module->clock_changes(lowly, long_rot, 0, 3 * month))
+    {
+        check(module->advance_character(lowly, long_rot, change), "The rot's change is kept");
+    }
+    check(lowly.scores[rules::Ability::charisma] == 3 && !long_rot.dead &&
+              carries(lowly, long_rot, original::kit_rotting),
+          "Three months at once take Charisma to 3, and no lower");
+    RandomState random{101};
+    module->temple_service(long_rot, lowly, rules::TempleService::cure_disease, random);
+    check(!carries(lowly, long_rot, original::kit_rotting) &&
+              lowly.scores[rules::Ability::charisma] == 3,
+          "Cure Disease takes the rot, not the Charisma it took");
+
+    // The campaign's clock plays it: a month on the road, the rot's last.
+    const std::shared_ptr<const rules::CharacterRules> kit_rules =
+        original::character_rules(original::default_aging, ua);
+    CampaignParty party(original::rules_module({{}, {}, ua}), kit_rules);
+    const auto id = party.add_pc(made_fighter(kit_rules));
+    auto state = party.state();
+    auto &rotter = *std::ranges::find(state.roster, id, &PartyMember::id);
+    rotter.vitals = left_with(rotter.character.sheet(), {{original::kit_rotting, month, 31, true}});
+    const int before = rotter.character.sheet().scores[rules::Ability::charisma];
+    party.restore(std::move(state));
+    party.advance_time(std::chrono::minutes{month});
+    check(party.member(id).vitals.dead &&
+              party.member(id).character.sheet().scores[rules::Ability::charisma] ==
+                  std::max(before - 2, 3),
+          "A month on the road, the rot's last takes 2 Charisma and the member's life");
+}
+
 // Readying mid-fight (viewchar.pas, ToggleReadyItem; charhlp.pas,
 // RecalcStats): a party member puts its sword away and readies its bow,
 // which its hands did not leave room for, and shoots; the fight keeps it
@@ -2664,6 +2736,7 @@ int main()
         items_are_readied_mid_fight();
         a_black_pudding_eats_armor();
         time_passes_between_rests();
+        the_kits_rot_takes_charisma_month_by_month();
         curse_clerics_heal_and_raise_in_camp();
         secret_clerics_heal_in_camp();
         darkness_spells_in_camp();

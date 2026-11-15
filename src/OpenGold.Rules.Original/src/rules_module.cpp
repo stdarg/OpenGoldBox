@@ -174,6 +174,31 @@ std::optional<int> decode_age(std::string_view data)
     return years;
 }
 
+// The Charisma the kit's rot took (effects.c, fx_rotting), as a level
+// history entry: "charisma" and the points lost.
+constexpr std::string_view charisma_word = "charisma";
+
+std::string encode_charisma_loss(int points)
+{
+    return std::string(charisma_word) + ' ' + std::to_string(points);
+}
+
+std::optional<int> decode_charisma_loss(std::string_view data)
+{
+    if (!data.starts_with(charisma_word))
+    {
+        return std::nullopt;
+    }
+    std::istringstream in{std::string(data.substr(charisma_word.size()))};
+    int points{};
+    std::string rest;
+    if (!(in >> points) || (in >> rest) || points <= 0)
+    {
+        throw std::invalid_argument("Unreadable original-rules Charisma loss");
+    }
+    return points;
+}
+
 std::optional<Drain> decode_drain(std::string_view data)
 {
     if (!data.starts_with(drain_word))
@@ -587,6 +612,7 @@ class OriginalModule final : public RulesModule
                                                            unsigned experience) const override;
     void raise_character(CharacterSheet &sheet, VitalState &state, Revival by) const;
     void age_character(CharacterSheet &sheet, int years) const;
+    static void lose_charisma(CharacterSheet &sheet, VitalState &state, int points);
     [[nodiscard]] unsigned experience_share(const CharacterSheet &sheet,
                                             unsigned award) const override;
     void recover(VitalState &state, const CharacterSheet &sheet) const override;
@@ -594,8 +620,10 @@ class OriginalModule final : public RulesModule
                    std::uint64_t to) const override;
     [[nodiscard]] bool item_lasts(const VitalState &state, const CharacterSheet &sheet,
                                   std::string_view definition) const override;
-    [[nodiscard]] std::vector<AdvancementChoice>
-    clock_changes(const CharacterSheet &sheet, std::uint64_t from, std::uint64_t to) const override;
+    [[nodiscard]] std::vector<AdvancementChoice> clock_changes(const CharacterSheet &sheet,
+                                                               const VitalState &state,
+                                                               std::uint64_t from,
+                                                               std::uint64_t to) const override;
     [[nodiscard]] RecoveryInfo recovery_info(const CharacterSheet &,
                                              const VitalState &) const override;
     void grant_temporary_hit_points(VitalState &, const CharacterSheet &,
@@ -1355,6 +1383,12 @@ std::vector<int> disease_codes(GoldBoxGame game)
     {
         codes.insert(codes.end(), {50, 57});
     }
+    // The kit's cures take its rot (spellfx.c, disease_cure; temple.c,
+    // cure_disease: its 215 and 172), not the Charisma it took.
+    if (game == GoldBoxGame::unlimited_adventures)
+    {
+        codes.insert(codes.end(), {50, kit_rotting});
+    }
     return codes;
 }
 
@@ -1705,6 +1739,11 @@ bool OriginalModule::advance_character(CharacterSheet &sheet, VitalState &state,
         age_character(sheet, *years);
         return true;
     }
+    if (const auto points = decode_charisma_loss(choice.rules_data))
+    {
+        lose_charisma(sheet, state, *points);
+        return true;
+    }
     if (const auto given_back = decode_restoration(choice.rules_data))
     {
         restore_character(sheet, state, *given_back);
@@ -1843,6 +1882,16 @@ void OriginalModule::restore_character(CharacterSheet &sheet, VitalState &state,
         state.hit_points += given_back.hit_points;
     }
     sheet = std::move(next);
+}
+
+// The Charisma the kit's rot took comes off the sheet, never below 3, and the
+// member is no longer marked for it.
+void OriginalModule::lose_charisma(CharacterSheet &sheet, VitalState &state, int points)
+{
+    constexpr int lowest = 3;
+    const int score = std::max(sheet.scores[Ability::charisma] - points, lowest);
+    sheet.scores[Ability::charisma] = sheet.base[Ability::charisma] = score;
+    (void)cure(sheet, state, std::array{charisma_rotted});
 }
 
 // Restoration leaves the experience the member had when it lost only the
@@ -2049,6 +2098,60 @@ bool ages_with_the_clock(const CharacterSheet &sheet) noexcept
 {
     return sheet.original && sheet.original->aging_changes_scores;
 }
+
+// Unlimited Adventures' rot as months pass (effects.c, fx_rotting): each
+// month that runs out takes 2 Charisma, never below 3, for the sheet to lose
+// (charisma_rotted, clock_changes); the rot lasts the months its strength
+// counts by 32s, and the last one leaves the member dead ("Dies rots away").
+void rot_away(const CharacterSheet &sheet, VitalState &state, std::vector<Effect> &conditions,
+              int passed)
+{
+    constexpr int month = 43200, charisma_a_month = 2, lowest_charisma = 3, month_strength = 32;
+    const auto rotting = std::ranges::find(conditions, kit_rotting, &Effect::code);
+    if (rotting == conditions.end())
+    {
+        return;
+    }
+    rotting->minutes -= passed;
+    int months = 0;
+    bool rotted_away = false;
+    while (rotting->minutes <= 0 && !rotted_away)
+    {
+        ++months;
+        if (rotting->strength / month_strength > 1)
+        {
+            rotting->strength -= month_strength;
+            rotting->minutes += month;
+        }
+        else
+        {
+            rotted_away = true;
+        }
+    }
+    if (rotted_away)
+    {
+        conditions.erase(rotting);
+        state.dead = true;
+        state.hit_points = 0;
+    }
+    if (months == 0)
+    {
+        return;
+    }
+    auto taken = std::ranges::find(conditions, charisma_rotted, &Effect::code);
+    if (taken == conditions.end())
+    {
+        conditions.push_back({charisma_rotted, 0, 0, false});
+        taken = std::prev(conditions.end());
+    }
+    const int own = sheet.scores[Ability::charisma];
+    taken->strength =
+        std::min(taken->strength + charisma_a_month * months, std::max(own - lowest_charisma, 0));
+    if (taken->strength == 0)
+    {
+        conditions.erase(taken);
+    }
+}
 } // namespace
 
 // Time passing for a member outside a fight, as the original's clock counts
@@ -2088,11 +2191,13 @@ void OriginalModule::pass_time(VitalState &state, const CharacterSheet &sheet, s
             // What wasted through this time: only a disease that
             // had taken hold already.
             waste_away(sheet, state, effects, boundaries(60), boundaries(10));
+            rot_away(sheet, state, effects, passed);
             std::vector<Effect> taking_hold;
             std::erase_if(effects,
                           [&](Effect &e)
                           {
-                              if (e.minutes == 0 || !lasting_condition(e, game))
+                              if (e.minutes == 0 || e.code == kit_rotting ||
+                                  !lasting_condition(e, game))
                               {
                                   return false;
                               }
@@ -2128,18 +2233,32 @@ void OriginalModule::pass_time(VitalState &state, const CharacterSheet &sheet, s
 // Under AD&D aging a character grows a year older for each year the clock
 // passes (the Aging setting, docs/ORIGINAL-RULES.md); the original's clock
 // ages no one until its year count overflows (gametime.pas, ValidateClock).
+// The Charisma the kit's rot took as the clock passed (pass_time) comes off
+// the sheet for good.
 std::vector<AdvancementChoice> OriginalModule::clock_changes(const CharacterSheet &sheet,
+                                                             const VitalState &state,
                                                              std::uint64_t from,
                                                              std::uint64_t to) const
 {
-    const int years = years_passed(from, to);
-    if (!ages_with_the_clock(sheet) || years == 0)
+    std::vector<AdvancementChoice> changes;
+    if (const int years = years_passed(from, to); ages_with_the_clock(sheet) && years != 0)
     {
-        return {};
+        AdvancementChoice change;
+        change.rules_data = encode_age(years);
+        changes.push_back(std::move(change));
     }
-    AdvancementChoice change;
-    change.rules_data = encode_age(years);
-    return {change};
+    if (!sheet.original || state.resources.empty())
+    {
+        return changes;
+    }
+    const auto conditions = conditions_of(sheet, state);
+    if (const auto *rotted = condition(conditions, charisma_rotted); rotted && rotted->strength > 0)
+    {
+        AdvancementChoice change;
+        change.rules_data = encode_charisma_loss(rotted->strength);
+        changes.push_back(std::move(change));
+    }
+    return changes;
 }
 
 // Spiritual Hammer's hammer stays while its spell lasts, which outlasts the

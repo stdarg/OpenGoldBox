@@ -282,6 +282,10 @@ Departures from the original game's own rules, when OpenGoldBox plays by them
   curing spells as the game's camp casts them, on the most wounded or the
   one each would cure, where the kit pools its healing and rolls it
   together.
+- **Unlimited Adventures' rot** (2026-11-15). The kit's mummy rot says
+  "Rots..." as each month takes its Charisma and "Dies rots away" as it
+  kills; outside a fight OpenGoldBox shows neither: the sheet shows the
+  Charisma lost, and the member dead.
 - **Unlimited Adventures' party icons** (2026-11-14). The kit gives a party
   member the combat icon made in its own icon editor (`CBODY.TLB` and
   `COMSPR.TLB`). A party made in OpenGoldBox has the combat icon its
