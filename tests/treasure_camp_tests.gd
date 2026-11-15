@@ -81,6 +81,9 @@ func continue_treasures() -> void:
 	game_menu.get_node("Buttons/Continue").pressed.emit()
 	for wait in range(4): await settle()
 	require(current_scene != null and current_scene.name == "CharacterCreation", "Continue opens the game")
+	var roster: ItemList = node("PartyPanel/Roster")
+	require(roster.item_count == 6, "The saved party loads")
+	if not node("PartyPanel").is_visible_in_tree(): await press("Party")
 	await press("PartyPanel/ActionRow2/Explore")
 	for wait in range(60):
 		if town() != null and exploring(): break
