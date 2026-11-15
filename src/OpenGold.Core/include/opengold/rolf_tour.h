@@ -475,6 +475,16 @@ class RolfTourSession
     }
     // Both kinds run the original pre-camp and interruption services.
     bool camp(RestKind kind);
+    // Treasures' camp menu (camp.pas, CampMainMenu). Fix camps as a rest
+    // does, but the party rests only while its casters cure and heal it
+    // (fix_party). Crown asks Amanitas, through the crown he gave, for the
+    // next luck reading, while the party has it (cell 3Fh) and its last
+    // reading has not been given (cell 25Ch at 2). False when the camp
+    // cannot do so now.
+    [[nodiscard]] bool camp_offers_fix() const;
+    bool camp_fix();
+    [[nodiscard]] bool camp_offers_crown() const;
+    bool camp_crown();
     // The party leaves a camp a script offered without resting. In Curse's
     // wilderness its menu returns, as the original runs the script again.
     void decline_camp();
@@ -969,10 +979,15 @@ class RolfTourSession
 
     EventStage event_stage_{EventStage::none};
     RestKind camp_kind_{RestKind::long_rest};
+    // The camp running is Treasures' Fix (camp_fix), not a rest.
+    bool camp_fixing_{};
     // Five-minute rest steps since the last interruption check. Like the
     // original engine's counter, it carries over between rests; it is saved.
     unsigned rest_checks_{};
-    [[nodiscard]] std::optional<unsigned> rest_interruption(unsigned interval, unsigned chance);
+    // Over a rest of `minutes` (the camp's rest by default).
+    [[nodiscard]] std::optional<unsigned>
+    rest_interruption(unsigned interval, unsigned chance,
+                      std::optional<unsigned> minutes = std::nullopt);
     void announce_camp_attack();
     [[nodiscard]] bool in_curse_wilderness() const;
     [[nodiscard]] bool camp_warded() const;
@@ -1061,6 +1076,21 @@ class RolfTourSession
     void treasures_program(const EclRequest &request, unsigned number);
     [[nodiscard]] std::string next_luck_reading();
     void repair_party();
+
+    // Treasures' Fix (its CampFixMenu), PROGRAM 4 and the camp's: the party
+    // rests while its casters, by their spell slots, cure what they can and
+    // spend their healing on the wounded. What it did, and the minutes rested
+    // before an interruption ended it, if one did. vga_host.cpp.
+    struct FixOutcome
+    {
+        std::vector<opengold::rules::Message> words;
+        std::optional<unsigned> interrupted_after;
+    };
+
+    [[nodiscard]] FixOutcome fix_party();
+    // One of the Fix's two rests: its minutes pass unless an interruption
+    // roll ends it first (the minutes then rested).
+    [[nodiscard]] std::optional<unsigned> fix_rest(unsigned minutes);
     // The 256-color engine's LOAD FILES: a map (below 7Fh, indoors only) and a
     // wall set (255 keeps the current one); vga_host.cpp.
     [[nodiscard]] EclHostReply vga_load_files(unsigned map, unsigned walls);

@@ -975,6 +975,7 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
     snapshot_.secret_door_searches.clear();
     snapshot_.secret_door_found = false;
     snapshot_.camp_offered = false;
+    snapshot_.host_dialogue.clear();
     if (diagnostic_log_enabled())
     {
         log_diagnostic(LogPriority::info, "event",
@@ -2101,7 +2102,27 @@ void RolfTourSession::finish_event()
         };
         if (chance == 255)
         {
+            camp_fixing_ = false;
             add_camp_line("Rest is not allowed here.");
+        }
+        else if (std::exchange(camp_fixing_, false))
+        {
+            // Treasures' camp Fix: an interruption ends it as it ends a rest.
+            auto outcome = fix_party();
+            for (const auto &word : outcome.words)
+            {
+                add_camp_line(english(word));
+            }
+            snapshot_.host_dialogue = std::move(outcome.words);
+            if (outcome.interrupted_after)
+            {
+                event_stage_ = EventStage::camp_interrupted;
+                if (!machine_.start(3))
+                {
+                    throw EclError("Cannot enter camp interruption script");
+                }
+                return;
+            }
         }
         else
         {
@@ -2281,7 +2302,8 @@ bool RolfTourSession::overland_step()
 // area's check interval (0x6DD2); on reaching it, the count restarts and d100 at
 // or below the chance (0x6DD3) interrupts. The count carries over between rests.
 // Returns the minutes rested before an interruption, or nothing when none occurs.
-std::optional<unsigned> RolfTourSession::rest_interruption(unsigned interval, unsigned chance)
+std::optional<unsigned> RolfTourSession::rest_interruption(unsigned interval, unsigned chance,
+                                                           std::optional<unsigned> minutes)
 {
     if (!interval)
     {
@@ -2290,8 +2312,9 @@ std::optional<unsigned> RolfTourSession::rest_interruption(unsigned interval, un
     const auto &rules = campaign_->rule_module();
     const auto policy =
         camp_kind_ == RestKind::short_rest ? rules.short_rest_policy() : rules.long_rest_policy();
+    const unsigned duration = minutes.value_or(policy.duration_minutes);
     constexpr unsigned step_minutes = 5;
-    for (unsigned rested = step_minutes; rested <= policy.duration_minutes; rested += step_minutes)
+    for (unsigned rested = step_minutes; rested <= duration; rested += step_minutes)
     {
         if (++rest_checks_ < interval)
         {
@@ -2852,6 +2875,7 @@ bool RolfTourSession::choose(std::uint64_t ticket, std::size_t choice)
             return false;
         }
         damage_request_ = 0;
+        snapshot_.host_dialogue.clear();
         snapshot_.phase = TourPhase::running;
     }
     else if (encounter_menu_)
@@ -4552,7 +4576,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             return true;
         }
         if (game() == GoldBoxGame::treasures_of_the_savage_frontier &&
-            (arg(0) == 3 || arg(0) == 5) && campaign_)
+            (arg(0) >= 3 && arg(0) <= 5) && campaign_)
         {
             read_character();
             treasures_program(request, arg(0));

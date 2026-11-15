@@ -1875,5 +1875,12 @@
   "{name} is selected.",
   "Drop {name} from the party?",
   "No one can fix the party now.",
-  "The party is fixed."
+  "The party is fixed.",
+  "{name} is changed back to flesh",
+  "{name} is detoxified",
+  "{name} has been resurrected",
+  "{name} has been raised from the dead",
+  "{name} is relieved of a curse",
+  "{name} regains sight",
+  "Your repose is suddenly interrupted!"
 ]

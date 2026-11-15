@@ -3455,6 +3455,26 @@ bool CampaignParty::heal_living_members()
     return healed;
 }
 
+int CampaignParty::restore_hit_points(MemberId id, int amount)
+{
+    editable();
+    if (member(id).vitals.dead || amount <= 0)
+    {
+        return 0;
+    }
+    const int restored =
+        std::min(amount, hit_point_maximum(id) - std::max(member(id).vitals.hit_points, 0));
+    if (restored <= 0)
+    {
+        return 0;
+    }
+    auto &m = edit(id);
+    auto vitals = m.vitals;
+    rules_->set_hit_points(vitals, m.character.sheet(), std::max(vitals.hit_points, 0) + restored);
+    m.vitals = std::move(vitals);
+    return restored;
+}
+
 std::vector<rules::StatusEffectView> CampaignParty::status_effects(MemberId id) const
 {
     const auto &m = member(id);

@@ -511,6 +511,9 @@ class CampaignParty
     // Every living member's Hit Points to its maximum (Gateway's PROGRAM 12h);
     // true when any member was below it.
     [[nodiscard]] bool heal_living_members();
+    // Up to `amount` Hit Points back to a living member, short of its
+    // maximum (Treasures' Fix); the Hit Points given.
+    [[nodiscard]] int restore_hit_points(MemberId id, int amount);
     // The member's status effects, such as Aid or a used Relentless Endurance.
     [[nodiscard]] std::vector<rules::StatusEffectView> status_effects(MemberId id) const;
     // Spells and features an active member can use outside combat (CLASS-3).

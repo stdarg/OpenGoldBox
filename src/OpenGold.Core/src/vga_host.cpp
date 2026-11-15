@@ -561,8 +561,42 @@ void RolfTourSession::cast_outside_combat(MemberId caster, MemberId patient,
 
 void RolfTourSession::treasures_program(const EclRequest &request, unsigned number)
 {
-    constexpr unsigned luck_reading = 3;
-    if (number == luck_reading)
+    constexpr unsigned luck_reading = 3, fix = 4;
+    if (number == fix)
+    {
+        // The Fix waits only to tell what it did.
+        auto outcome = fix_party();
+        if (outcome.interrupted_after)
+        {
+            outcome.words.push_back({"Your repose is suddenly interrupted!", {}});
+        }
+        auto reply = character_reply(selected_character_);
+        for (const auto &write : clock_reply().writes)
+        {
+            reply.writes.push_back(write);
+        }
+        if (outcome.words.empty())
+        {
+            if (!machine_.resume_host(request.id, reply))
+            {
+                throw EclError("Fix reply rejected");
+            }
+            return;
+        }
+        damage_writes_ = reply.writes;
+        snapshot_.host_dialogue = outcome.words;
+        snapshot_.dialogue.clear();
+        for (const auto &word : outcome.words)
+        {
+            auto line = word.source;
+            if (const auto at = line.find("{name}"); at != std::string::npos)
+            {
+                line.replace(at, 6, word.arguments.front().value);
+            }
+            snapshot_.dialogue += (snapshot_.dialogue.empty() ? "" : "\n") + line;
+        }
+    }
+    else if (number == luck_reading)
     {
         snapshot_.dialogue = next_luck_reading();
     }
@@ -648,6 +682,293 @@ void RolfTourSession::repair_party()
         }
     }
     (void)campaign_->heal_living_members();
+}
+
+bool RolfTourSession::camp_offers_fix() const
+{
+    // The original's menu hides Rest and Fix only where every rest step is
+    // interrupted; OpenGoldBox's camp refuses a rest where none is allowed.
+    constexpr std::uint16_t every_step = 1, always = 100;
+    return game() == GoldBoxGame::treasures_of_the_savage_frontier && campaign_ && can_leave() &&
+           (machine_.variable(game_cell(ecl_rest_interruption_chance)) < always ||
+            machine_.variable(game_cell(ecl_rest_check_interval)) != every_step);
+}
+
+bool RolfTourSession::camp_fix()
+{
+    if (!camp_offers_fix())
+    {
+        return false;
+    }
+    camp_fixing_ = true;
+    if (!camp(RestKind::long_rest))
+    {
+        camp_fixing_ = false;
+        return false;
+    }
+    return true;
+}
+
+bool RolfTourSession::camp_offers_crown() const
+{
+    constexpr EclAddress crown{0x3F}, luck_state{0x25C};
+    constexpr std::uint16_t last_reading_given = 2;
+    return game() == GoldBoxGame::treasures_of_the_savage_frontier && campaign_ && can_leave() &&
+           machine_.variable(crown) != 0 && machine_.variable(luck_state) != last_reading_given;
+}
+
+bool RolfTourSession::camp_crown()
+{
+    if (!camp_offers_crown())
+    {
+        return false;
+    }
+    log_player("asks the crown for the luck");
+    snapshot_.host_dialogue.clear();
+    snapshot_.dialogue = next_luck_reading();
+    for (const auto &write : std::exchange(damage_writes_, {}))
+    {
+        machine_.bind_variable(write.address, write.value);
+    }
+    ++snapshot_.revision;
+    return true;
+}
+
+std::optional<unsigned> RolfTourSession::fix_rest(unsigned minutes)
+{
+    if (minutes == 0)
+    {
+        return std::nullopt;
+    }
+    const auto interval = machine_.variable(game_cell(ecl_rest_check_interval)),
+               chance = machine_.variable(game_cell(ecl_rest_interruption_chance));
+    const auto interrupted = rest_interruption(interval, chance, minutes);
+    pass_time(std::chrono::minutes{interrupted.value_or(minutes)});
+    synchronize_clock();
+    return interrupted;
+}
+
+RolfTourSession::FixOutcome RolfTourSession::fix_party()
+{
+    using rules::TempleService;
+    FixOutcome outcome;
+    const auto members = campaign_->state().slots;
+    const auto missing_hit_points = [&]
+    {
+        int missing = 0;
+        for (const auto id : members)
+        {
+            if (id)
+            {
+                missing += campaign_->hit_point_maximum(id) -
+                           std::max(campaign_->member(id).vitals.hit_points, 0);
+            }
+        }
+        return missing;
+    };
+    // The original's Fix does nothing for a party missing no Hit Points.
+    const int missing = missing_hit_points();
+    if (missing == 0)
+    {
+        return outcome;
+    }
+    const auto knows = [&](MemberId id, std::string_view spell_id)
+    {
+        const auto number = opengold::original::spell_number(spell_id, game());
+        const auto &known = campaign_->member(id).character.sheet().original->known_spells;
+        return number && std::ranges::find(known, *number) != known.end();
+    };
+    // A member casts while it stands: alive, awake and not stone.
+    const auto standing = [&](MemberId id)
+    {
+        if (!id || !campaign_->member(id).character.sheet().original)
+        {
+            return false;
+        }
+        const auto &vitals = campaign_->member(id).vitals;
+        return !vitals.dead && vitals.hit_points > 0 &&
+               !campaign_->temple_service_helps(id, TempleService::stone_to_flesh);
+    };
+    const auto slots = [](int count)
+    {
+        return static_cast<unsigned>(std::max(count, 0));
+    };
+
+    // The cures a member's slots allow; the slot arrays count from level 1.
+    struct Cures
+    {
+        unsigned raise_dead = 0, resurrection = 0, neutralize_poison = 0, remove_curse = 0,
+                 cure_blindness = 0, stone_to_flesh = 0;
+    } cures;
+
+    // The healing the casters can give: an average for each slot of a cure
+    // they know, and later a roll for each slot of every cure level.
+    int healing = 0;
+    unsigned light = 0, serious = 0, critical = 0, heals = 0, longest = 0;
+    for (const auto id : members)
+    {
+        if (!standing(id))
+        {
+            continue;
+        }
+        const auto &numbers = *campaign_->member(id).character.sheet().original;
+        const auto &cleric = numbers.cleric_slots;
+        const auto &mage = numbers.magic_user_slots;
+        healing += (knows(id, "cleric:cure_light_wounds") ? cleric[0] * 9 : 0) +
+                   (knows(id, "cleric:cure_serious_wounds") ? cleric[3] * 17 : 0) +
+                   (knows(id, "cleric:cure_critical_wounds") ? cleric[4] * 27 : 0) +
+                   (knows(id, "cleric:heal") ? cleric[5] * 50 : 0);
+        cures.neutralize_poison += knows(id, "cleric:neutralize_poison") ? slots(cleric[3]) : 0;
+        cures.raise_dead += knows(id, "cleric:raise_dead") ? slots(cleric[4]) : 0;
+        cures.remove_curse += (knows(id, "cleric:remove_curse") ? slots(cleric[2]) : 0) +
+                              (knows(id, "magic_user:remove_curse") ? slots(mage[3]) : 0);
+        cures.stone_to_flesh += knows(id, "magic_user:stone_to_flesh") ? slots(mage[5]) : 0;
+        cures.cure_blindness += knows(id, "cleric:cure_blindness") ? slots(cleric[2]) : 0;
+        cures.resurrection += knows(id, "cleric:resurrection") ? slots(cleric[5]) : 0;
+        if (campaign_->member(id).character.sheet().scores[rules::Ability::wisdom] <= 3)
+        {
+            continue;
+        }
+        // The casting time: a quarter hour for each first-level slot, half an
+        // hour for each second-level druid slot, an hour, an hour and a
+        // quarter and an hour and a half for each fourth- to sixth-level one.
+        light += slots(cleric[0]) + slots(numbers.druid_slots[1]);
+        serious += slots(cleric[3]);
+        critical += slots(cleric[4]);
+        heals += slots(cleric[5]);
+        longest = std::max(longest, slots(cleric[0]) * 15 + slots(numbers.druid_slots[1]) * 30 +
+                                        slots(cleric[3]) * 60 + slots(cleric[4]) * 75 +
+                                        slots(cleric[5]) * 90);
+    }
+    // Healing more than the party needs takes as much less time.
+    if (healing > missing)
+    {
+        longest /= static_cast<unsigned>(healing / missing);
+    }
+    const auto name_of = [&](MemberId id)
+    {
+        return campaign_->member(id).character.sheet().name;
+    };
+    const auto say = [&](std::string source, MemberId id)
+    {
+        outcome.words.push_back({std::move(source), {{"name", name_of(id)}}});
+    };
+    // Each cure goes to the members it helps, in the party's order, while
+    // its count lasts.
+    const auto cure_party = [&]
+    {
+        for (const auto id : members)
+        {
+            if (!id)
+            {
+                continue;
+            }
+            const auto cure = [&](unsigned &count, TempleService service, std::string words)
+            {
+                if (count == 0 || !campaign_->temple_service_helps(id, service))
+                {
+                    return;
+                }
+                campaign_->temple_service(id, service, 0);
+                --count;
+                say(std::move(words), id);
+            };
+            cure(cures.stone_to_flesh, TempleService::stone_to_flesh,
+                 "{name} is changed back to flesh");
+            cure(cures.neutralize_poison, TempleService::neutralize_poison, "{name} is detoxified");
+            if (cures.resurrection > 0)
+            {
+                cure(cures.resurrection, TempleService::resurrection,
+                     "{name} has been resurrected");
+            }
+            else
+            {
+                cure(cures.raise_dead, TempleService::raise_dead,
+                     "{name} has been raised from the dead");
+            }
+            cure(cures.remove_curse, TempleService::remove_curse, "{name} is relieved of a curse");
+            cure(cures.cure_blindness, TempleService::cure_blindness, "{name} regains sight");
+        }
+    };
+    outcome.interrupted_after = fix_rest(longest);
+    if (outcome.interrupted_after)
+    {
+        return outcome;
+    }
+    const auto roll = [this](unsigned dice)
+    {
+        int total = 0;
+        for (unsigned die = 0; die < dice; ++die)
+        {
+            total += static_cast<int>(machine_.engine_random(8)) + 1;
+        }
+        return total;
+    };
+    for (unsigned slot = 0; slot < light; ++slot)
+    {
+        healing += roll(1);
+    }
+    for (unsigned slot = 0; slot < serious; ++slot)
+    {
+        healing += roll(2) + 1;
+    }
+    for (unsigned slot = 0; slot < critical; ++slot)
+    {
+        healing += roll(3) + 3;
+    }
+    for (unsigned slot = 0; slot < heals; ++slot)
+    {
+        healing += roll(4) + 3;
+    }
+    cure_party();
+    for (const auto id : members)
+    {
+        if (id)
+        {
+            healing -= campaign_->restore_hit_points(id, healing);
+        }
+    }
+    // A second rest for the cures the first left undone, as many of each as
+    // are needed and the slots allow.
+    unsigned dead = 0, stoned = 0, poisoned = 0, blind = 0, cursed = 0;
+    for (const auto id : members)
+    {
+        if (!id)
+        {
+            continue;
+        }
+        dead += campaign_->temple_service_helps(id, TempleService::raise_dead) ? 1 : 0;
+        stoned += campaign_->temple_service_helps(id, TempleService::stone_to_flesh) ? 1 : 0;
+        poisoned += campaign_->temple_service_helps(id, TempleService::neutralize_poison) ? 1 : 0;
+        blind += campaign_->temple_service_helps(id, TempleService::cure_blindness) ? 1 : 0;
+        cursed += campaign_->temple_service_helps(id, TempleService::remove_curse) ? 1 : 0;
+    }
+    for (const auto id : members)
+    {
+        if (!standing(id))
+        {
+            continue;
+        }
+        const auto &numbers = *campaign_->member(id).character.sheet().original;
+        cures.resurrection += slots(numbers.cleric_slots[6]);
+        cures.stone_to_flesh += slots(numbers.magic_user_slots[5]);
+        cures.raise_dead += slots(numbers.cleric_slots[4]);
+        cures.neutralize_poison += slots(numbers.cleric_slots[3]);
+        cures.remove_curse += slots(numbers.magic_user_slots[3]) + slots(numbers.cleric_slots[2]);
+        cures.cure_blindness += slots(numbers.cleric_slots[2]);
+    }
+    const unsigned raising = cures.resurrection > 0 ? std::min(cures.resurrection, dead) * 105
+                                                    : std::min(cures.raise_dead, dead) * 75;
+    const unsigned curing = raising + std::min(cures.stone_to_flesh, stoned) * 90 +
+                            std::min(cures.neutralize_poison, poisoned) * 60 +
+                            std::min(cures.cure_blindness, blind) * 45 +
+                            std::min(cures.remove_curse, cursed) * 45;
+    outcome.interrupted_after = fix_rest(curing);
+    if (!outcome.interrupted_after)
+    {
+        cure_party();
+    }
+    return outcome;
 }
 
 void RolfTourSession::vga_play_sound(unsigned sound)

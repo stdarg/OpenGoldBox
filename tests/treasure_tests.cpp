@@ -298,6 +298,70 @@ void a_gateway_character_comes_across()
           "With the option on it keeps its own platinum, gems and jewelry");
 }
 
+// The camp's Fix (camp.pas, CampFixMenu): the party rests while its cleric's
+// spell slots heal the wounded, a quarter hour for each first-level slot, and
+// spends no memorized spell. The camp's Crown tells the luck once the party
+// has Amanitas's crown (cell 3Fh).
+void the_camp_fixes_the_party()
+{
+    const auto folder = treasures_folder();
+    if (folder.empty())
+    {
+        return;
+    }
+    using opengold::test::TourAccess;
+    auto session = opengold::load_campaign(folder, treasures_game);
+    const auto party = treasures_party(folder);
+    session.campaign_party(party);
+    const auto settle = [&session]
+    {
+        for (int step = 0; step < 50 && session.snapshot().phase == TourPhase::running; ++step)
+        {
+            session.advance(1.0);
+        }
+        for (int screen = 0;
+             screen < 12 && session.snapshot().phase == TourPhase::awaiting_continue; ++screen)
+        {
+            check(session.choose(session.snapshot().continue_ticket, 0), "A key goes on");
+            for (int step = 0; step < 50 && session.snapshot().phase == TourPhase::running; ++step)
+            {
+                session.advance(1.0);
+            }
+        }
+    };
+    settle();
+    check(session.can_leave(), "The opening ends in the fortress");
+    const auto fighter = party->state().slots[0];
+    auto wounded = party->checkpoint();
+    for (auto &member : wounded.roster)
+    {
+        if (member.id == fighter)
+        {
+            member.vitals.hit_points = 1;
+        }
+    }
+    party->restore(std::move(wounded));
+    // No interruption: the rest is not rolled for.
+    TourAccess::set_variable(session, opengold::por::EclAddress{0x2B}, 0);
+    const auto cleric = party->state().slots[3];
+    const auto spells_before = party->camp_actions(cleric).size();
+    const auto minutes_before = party->state().time_minutes;
+    check(session.camp_offers_fix() && session.camp_fix(), "The camp's Fix begins");
+    settle();
+    check(party->member(fighter).vitals.hit_points > 1,
+          "The cleric's slots heal the fighter: " + session.snapshot().dialogue);
+    check(party->state().time_minutes > minutes_before &&
+              party->state().time_minutes <= minutes_before + 24 * 60,
+          "The Fix takes the time of its casting, not a night");
+    check(party->camp_actions(cleric).size() == spells_before, "The Fix spends no memorized spell");
+
+    check(!session.camp_offers_crown(), "No crown, no reading");
+    TourAccess::set_variable(session, opengold::por::EclAddress{0x3F}, 1);
+    check(session.camp_offers_crown() && session.camp_crown() &&
+              !session.snapshot().dialogue.empty(),
+          "The crown tells the luck: " + session.snapshot().dialogue);
+}
+
 } // namespace
 
 int main()
@@ -305,6 +369,7 @@ int main()
     try
     {
         the_opening_reaches_the_fortress();
+        the_camp_fixes_the_party();
         the_overland_is_drawn_from_above();
         a_gateway_character_comes_across();
         std::cout << "Treasures passed.\n";

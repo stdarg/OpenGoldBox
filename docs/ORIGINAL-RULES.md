@@ -92,6 +92,11 @@ The user decided these on 2026-11-11 and 2026-11-12:
   option, *Gateway's money* in Options. On, a character brought from
   *Gateway* keeps its own platinum, gems and jewelry; off, it starts with
   *Treasures*' 200 platinum.
+- **A Gateway save's money split evenly** (2026-11-15): with the *Gateway's
+  money* option on, *Add from Gateway* gives each character brought in an
+  even share of its save's platinum, gems and jewelry, divided among the
+  save's player characters, since OpenGoldBox keeps a party's money in one
+  purse.
 
 ## Curse of the Azure Bonds
 
@@ -1578,3 +1583,7 @@ scales Hit Points takes only the table's to-hit and Armor Class.
 | *Pools of Darkness:* Power Word Blind works out its blindness's time (1d4+1 rounds, ten times as long under 51 Hit Points) and then blinds for the spell's table time, 0, which never ends (`magic.pas`, `SpellPowerWordBlind`) | The time it works out |
 | *Pools of Darkness:* its saving-throw table gives a cleric and a thief at level 19 the row of levels 16 to 18 and 13 to 16, though the rows on either side follow the classes' steps of three and four levels (`saveTbl` in its reconstruction) | Level 20's row from 19 |
 | *Curse:* the wilderness script (ECL1 80) marks a camp with a cell Tilverton's sage and Kybor's library also set for themselves (0x4C13), so a party that paid the sage reaches the wilderness as if back from camp: it skips loading the roads from Tilverton, and the first journey goes where stale cells say | Arriving from another script, the party is not back from camp |
+| *Treasures:* the Fix's second rest gives a raising its time only when no one has Resurrection, and then sets the raisings left to none, so the dead it was timed for are never raised (`camp.pas`, `CampFixMenu`, ComputeCureTime) | The raisings it was timed for are cast |
+| *Treasures:* the Fix's Cure Blindness lifts the blindness of whichever member is current, not of the member it cures, and is never spent (`camp.pas`, `CampFixMenu`) | The blind member regains sight, one cure a member |
+| *Treasures:* the Fix's first rest counts a magic-user's Remove Curse by its third-level slots, its second by its fourth-level ones, where the spell is (`camp.pas`, `CampFixMenu`) | Fourth-level slots in both |
+| *Treasures:* the Fix says a resurrected member "has been ressurected" (`camp.pas`, `CampFixMenu`) | Spelt "resurrected" |
