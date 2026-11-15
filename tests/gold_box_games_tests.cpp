@@ -4904,6 +4904,74 @@ const std::vector<RouteBeat> &darkness_route()
                     {10, 1, D::south},
                     {10, 2, D::south}});
         route.push_back(step_beat(53, 10, 4, D::west, {"YES"}));
+        // UNGUENT PROBE
+        walk_heart({{9, 4, D::east},  {10, 4, D::north}, {10, 2, D::west}, {9, 2, D::west},
+                    {8, 2, D::west},  {7, 2, D::west},   {6, 2, D::south}, {6, 4, D::south},
+                    {6, 5, D::west},  {5, 5, D::west},   {4, 5, D::west},  {3, 5, D::west},
+                    {2, 5, D::south}, {2, 6, D::south},  {2, 7, D::east},  {3, 7, D::east},
+                    {4, 7, D::south}, {4, 8, D::south},  {4, 9, D::south}, {4, 10, D::east},
+                    {5, 10, D::east}, {6, 10, D::east},  {7, 10, D::east}, {8, 10, D::north},
+                    {8, 9, D::north}, {8, 8, D::north},  {8, 7, D::north}, {8, 6, D::north},
+                    {8, 5, D::north}, {8, 4, D::north}});
+        auto golems = step_beat(53, 8, 3, D::east);
+        golems.cure_first = true;
+        golems.camp_broken = true;
+        golems.test_wins = true;
+        route.push_back(golems);
+        walk_heart({{9, 3, D::east}, {10, 3, D::east}});
+        route.push_back(step_beat(53, 11, 3, D::east, {"YES"}));
+        // SHOCK PROBE
+        walk_heart({{15, 3, D::west},  {11, 3, D::west},  {10, 3, D::west},  {9, 3, D::west},
+                    {8, 3, D::south},  {8, 4, D::south},  {8, 5, D::south},  {8, 6, D::south},
+                    {8, 7, D::south},  {8, 8, D::south},  {8, 9, D::south},  {8, 10, D::west},
+                    {7, 10, D::west},  {6, 10, D::west},  {5, 10, D::west},  {4, 10, D::west},
+                    {3, 10, D::west},  {2, 10, D::south}, {2, 11, D::south}, {2, 12, D::east},
+                    {3, 12, D::east},  {4, 12, D::south}, {4, 13, D::south}, {4, 14, D::east},
+                    {5, 14, D::east},  {6, 14, D::east},  {7, 14, D::east},  {8, 14, D::east},
+                    {9, 14, D::north}, {9, 13, D::north}, {9, 12, D::north}, {9, 11, D::north}});
+        route.push_back(step_beat(53, 9, 10, D::east));
+        walk_heart({{10, 10, D::west}, {9, 10, D::south}, {9, 11, D::south}, {9, 12, D::south}});
+        pace_heart(9, 13, D::south, after_lub);
+        walk_heart({{9, 14, D::north}, {9, 13, D::north},  {9, 12, D::north}, {9, 11, D::north},
+                    {9, 10, D::east},  {10, 10, D::north}, {10, 9, D::north}, {10, 7, D::north},
+                    {10, 6, D::east},  {11, 6, D::north},  {11, 5, D::north}, {11, 4, D::west},
+                    {10, 4, D::north}, {10, 2, D::west},   {9, 2, D::west},   {8, 2, D::west},
+                    {7, 2, D::west},   {6, 2, D::south},   {6, 4, D::south},  {6, 5, D::south},
+                    {6, 6, D::south},  {6, 7, D::south},   {6, 8, D::east},   {7, 8, D::east},
+                    {9, 8, D::east},   {10, 8, D::east}});
+        route.push_back(step_beat(53, 11, 8, D::east, {"YES"}));
+        // CHASE PROBE
+        // The last step from (x, y) plays with other dice, as a player
+        // reloads where agents of Tanetal no play beats came on the party.
+        const auto reload_at = [&route](unsigned x, unsigned y, unsigned times)
+        {
+            const auto beat = std::find_if(route.rbegin(), route.rend(),
+                                           [&](const RouteBeat &b)
+                                           {
+                                               return b.map == 53 && b.x == x && b.y == y;
+                                           });
+            beat->reloads = times;
+        };
+        walk_heart({{9, 0, D::south},   {9, 1, D::east},   {10, 1, D::south},  {10, 2, D::south},
+                    {10, 4, D::east},   {11, 4, D::south}, {11, 5, D::west},   {10, 5, D::south},
+                    {10, 6, D::south},  {10, 7, D::south}, {10, 9, D::south},  {10, 10, D::south},
+                    {10, 11, D::south}, {10, 12, D::east}, {11, 12, D::east},  {12, 12, D::east},
+                    {13, 12, D::east},  {14, 12, D::east}, {15, 12, D::north}, {15, 11, D::north},
+                    {15, 10, D::north}, {15, 9, D::north}});
+        reload_at(10, 1, 1);
+        reload_at(10, 12, 1);
+        route.push_back(step_beat(53, 15, 8, D::north, {"YES"}));
+        walk_heart({{15, 7, D::north}, {15, 6, D::north}});
+        route.push_back(step_beat(53, 15, 5, D::north, {}));
+        walk_heart({{15, 4, D::south},  {15, 5, D::south},  {15, 6, D::south},  {15, 7, D::south},
+                    {15, 8, D::south},  {15, 9, D::south},  {15, 10, D::south}, {15, 11, D::south},
+                    {15, 12, D::south}, {15, 13, D::south}, {15, 14, D::south}, {15, 15, D::west},
+                    {14, 15, D::west},  {13, 15, D::west},  {12, 15, D::north}, {12, 14, D::north},
+                    {12, 13, D::north}, {12, 12, D::west},  {11, 12, D::west},  {10, 12, D::west},
+                    {9, 12, D::south},  {9, 13, D::south},  {9, 14, D::south},  {9, 15, D::west},
+                    {8, 15, D::west},   {7, 15, D::west},   {6, 15, D::west},   {5, 15, D::west},
+                    {4, 15, D::west}});
+        route.push_back(step_beat(53, 3, 15, D::west, {"YES"}));
         return route;
     }();
     return beats;
