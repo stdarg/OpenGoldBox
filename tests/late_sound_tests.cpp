@@ -8,8 +8,10 @@
 #include "opengold/game_census.h"
 #include "opengold/gateway_formats.h"
 #include "opengold/music_bank.h"
+#include "opengold/sound_bank.h"
 #include "test_support.h"
 
+#include <cmath>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -319,6 +321,19 @@ void real_files_decode()
         const auto first = opengold::gateway::decode_later_sound_sample(1, record(sounds, 1));
         check(first && first->samples.size() == 2468 - 104 && first->rate == 9861,
               "Effect 1 plays without its 104-byte header, at its own 9861 a second");
+        // The game's sound n plays record n - 1: its fights' blows (7 a hit,
+        // 9 a miss), Fireball (11) and Lightning Bolt (8).
+        const auto effects = opengold::por::SoundBank::load(
+            root / "TREASURE", GoldBoxGame::treasures_of_the_savage_frontier);
+        bool all_sound = effects.clips().size() == 11;
+        for (unsigned id = 2; id <= 12; ++id)
+        {
+            all_sound =
+                all_sound && effects.at(id).audible && !effects.at(id).pcm.samples().empty();
+        }
+        check(all_sound, "Treasures' sound bank holds its eleven effects as sounds 2 to 12");
+        check(std::abs(effects.at(2).pcm.duration() - (2468.0 - 104) / 9861) < 0.01,
+              "Sound 2 plays record 1 at its own rate");
     }
     if (opengold::identify_game(root / "SECRET") == GoldBoxGame::secret_of_the_silver_blades)
     {

@@ -790,22 +790,44 @@ void CombatView::_ready()
         prepare_combat();
         layout();
         refresh();
-        const auto directory = presentation::path_from_godot(settings::game_path());
+        // The fight's sounds are the chosen game's own; one whose sounds
+        // are not decoded yet fights to Pool of Radiance's, as before.
+        const auto game = settings::chosen_game();
+        auto directory = presentation::path_from_godot(settings::game_folder(game));
+        auto sound_game = game;
+        if (game != GoldBoxGame::pools_of_darkness &&
+            game != GoldBoxGame::treasures_of_the_savage_frontier &&
+            game != GoldBoxGame::pool_of_radiance &&
+            game != GoldBoxGame::curse_of_the_azure_bonds &&
+            game != GoldBoxGame::secret_of_the_silver_blades)
+        {
+            directory = presentation::path_from_godot(settings::game_path());
+            sound_game = GoldBoxGame::pool_of_radiance;
+        }
         if (std::filesystem::is_directory(directory))
         {
-            attack_sound_ = std::make_unique<por::SoundPlayer>(
-                por::SoundBank::load(directory),
-                std::make_unique<GodotSoundOutput>(
-                    required_node<AudioStreamPlayer>(*this, "AttackAudio")));
-            effect_sound_ = std::make_unique<por::SoundPlayer>(
-                por::SoundBank::load(directory),
-                std::make_unique<GodotSoundOutput>(
-                    required_node<AudioStreamPlayer>(*this, "EffectAudio")));
-            death_sound_ = std::make_unique<por::SoundPlayer>(
-                por::SoundBank::load(directory),
-                std::make_unique<GodotSoundOutput>(
-                    required_node<AudioStreamPlayer>(*this, "DeathAudio")));
-            apply_sound_volume();
+            try
+            {
+                const auto player = [&](const char *node)
+                {
+                    return std::make_unique<por::SoundPlayer>(
+                        por::SoundBank::load(directory, sound_game),
+                        std::make_unique<GodotSoundOutput>(
+                            required_node<AudioStreamPlayer>(*this, node)));
+                };
+                attack_sound_ = player("AttackAudio");
+                effect_sound_ = player("EffectAudio");
+                death_sound_ = player("DeathAudio");
+                apply_sound_volume();
+            }
+            catch (const std::runtime_error &failure)
+            {
+                // A game whose sounds cannot be read fights silent.
+                opengold::log_diagnostic(opengold::LogPriority::warning, "combat", failure.what());
+                attack_sound_.reset();
+                effect_sound_.reset();
+                death_sound_.reset();
+            }
         }
         required_node<Label>(*this, "Help")
             .set_text(i18n::text(N_(
@@ -2272,6 +2294,24 @@ void CombatView::act(Command command)
                      command.verb == "inflict_wounds_2")
             {
                 sound = 2;
+            }
+            // Under the original rules a spell sounds as it goes off: Fireball
+            // its own, Lightning Bolt its own, any other the casting's
+            // (magic.pas, CastSpell).
+            for (auto entry = after.log_entries.begin() +
+                              static_cast<std::ptrdiff_t>(
+                                  std::min(before.log_entries.size(), after.log_entries.size()));
+                 entry != after.log_entries.end(); ++entry)
+            {
+                if (entry->message.source != "{name} casts {spell}.")
+                {
+                    continue;
+                }
+                const auto spell = std::ranges::find(entry->message.arguments, std::string("spell"),
+                                                     &MessageArgument::name);
+                const std::string name =
+                    spell == entry->message.arguments.end() ? "" : spell->value;
+                sound = name == "Fireball" ? 11 : name == "Lightning Bolt" ? 8 : 2;
             }
             launch_missile(command, before, after);
             launch_spell_effects(command, before, after);

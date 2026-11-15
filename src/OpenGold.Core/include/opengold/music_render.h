@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <optional>
+#include <string>
 #include <vector>
 
 #include "opengold/music_bank.h"
@@ -21,6 +22,11 @@ namespace opengold
 // std::runtime_error when the archive or the record cannot be read.
 [[nodiscard]] MusicBank load_music_bank(const std::filesystem::path &game_directory,
                                         GoldBoxGame game, unsigned piece);
+
+// An archive of a game's folder, read whole, by its name in either case.
+// Throws std::runtime_error when it cannot be opened.
+[[nodiscard]] std::vector<std::uint8_t> read_game_archive(const std::filesystem::path &directory,
+                                                          const std::string &name);
 
 // The piece a game plays over its title pictures; nullopt for the games
 // without the music driver.

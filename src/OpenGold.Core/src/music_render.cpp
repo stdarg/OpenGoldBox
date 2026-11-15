@@ -298,8 +298,10 @@ std::int16_t to_pcm(double sample)
         std::clamp(std::lround(sample * output_gain), -32768L, 32767L));
 }
 
-std::vector<std::uint8_t> read_archive(const std::filesystem::path &directory,
-                                       const std::string &name)
+} // namespace
+
+std::vector<std::uint8_t> read_game_archive(const std::filesystem::path &directory,
+                                            const std::string &name)
 {
     auto path = directory / name;
     if (!std::filesystem::exists(path))
@@ -320,14 +322,12 @@ std::vector<std::uint8_t> read_archive(const std::filesystem::path &directory,
     return {std::istreambuf_iterator<char>(input), {}};
 }
 
-} // namespace
-
 MusicBank load_music_bank(const std::filesystem::path &game_directory, GoldBoxGame game,
                           unsigned piece)
 {
     const std::string name =
         game == GoldBoxGame::secret_of_the_silver_blades ? "SOUND.DAX" : "MUSIC.DAX";
-    const auto archive = decode_dax_archive(read_archive(game_directory, name));
+    const auto archive = decode_dax_archive(read_game_archive(game_directory, name));
     if (!archive)
     {
         throw std::runtime_error(name + " is not a readable archive");

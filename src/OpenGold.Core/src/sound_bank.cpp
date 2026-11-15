@@ -1,5 +1,6 @@
 #include "opengold/sound_bank.h"
 
+#include "opengold/gateway_formats.h"
 #include "opengold/music_render.h"
 
 #include <algorithm>
@@ -36,9 +37,54 @@ SoundBank::SoundBank(std::vector<SoundEffect> effects)
     }
 }
 
+namespace
+{
+// A digitized effect as mono signed PCM at the speaker's rate: its unsigned
+// 8-bit samples centred and stepped through at their own rate.
+std::vector<std::int16_t> resampled(const gateway::SoundSample &effect)
+{
+    const auto count =
+        static_cast<std::size_t>(effect.samples.size() * PcmBuffer::sample_rate() / effect.rate);
+    std::vector<std::int16_t> pcm;
+    pcm.reserve(count);
+    for (std::size_t n = 0; n < count; ++n)
+    {
+        const auto source =
+            std::min(n * effect.rate / PcmBuffer::sample_rate(), effect.samples.size() - 1);
+        constexpr int centre = 128, scale = 256;
+        pcm.push_back(static_cast<std::int16_t>((effect.samples[source] - centre) * scale));
+    }
+    return pcm;
+}
+} // namespace
+
 SoundBank SoundBank::load(const std::filesystem::path &game_directory, GoldBoxGame game)
 {
-    return SoundBank(load_sound_effects(game_directory, game));
+    if (game != GoldBoxGame::pools_of_darkness &&
+        game != GoldBoxGame::treasures_of_the_savage_frontier)
+    {
+        return SoundBank(load_sound_effects(game_directory, game));
+    }
+    // Pools of Darkness and Treasures load ZOUNDS.DAX's records 1 to 11 as
+    // they start; their sound n plays record n - 1 (docs/games/later-sound.md).
+    const auto archive = decode_dax_archive(read_game_archive(game_directory, "ZOUNDS.DAX"));
+    if (!archive)
+    {
+        throw std::runtime_error("ZOUNDS.DAX is not a readable archive");
+    }
+    SoundBank bank(std::vector<SoundEffect>{});
+    for (const auto &record : archive.records)
+    {
+        const auto effect = gateway::decode_later_sound_sample(record.id, record.bytes);
+        if (!effect || effect->samples.empty() || effect->rate == 0)
+        {
+            continue;
+        }
+        const unsigned id = record.id + 1U;
+        bank.clips_.push_back(
+            {id, "Sound " + std::to_string(id), false, true, PcmBuffer(resampled(*effect))});
+    }
+    return bank;
 }
 
 SoundBank SoundBank::load_music(const std::filesystem::path &game_directory, GoldBoxGame game,
