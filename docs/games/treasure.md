@@ -241,6 +241,11 @@ engine, each as the original does it:
 - **Item types.** *Treasures* numbers its item types as *Pool of Radiance*
   does (its `ITEMS`): a long sword is 18, plate mail 36, a shield 37, a mace 8
   and a dagger 4.
+- **Byte cells.** *Treasures* stores an arithmetic result in as many bytes
+  as its destination names (its WriteGbvm): a byte cell counting down from 0
+  reads 255, as Luskan's script waits for. *Pools of Darkness* shares the
+  routine; OpenGoldBox keeps it to *Treasures* until that game's route
+  needs it.
 - **The overland's own steps.** The engine keeps the square the party stood
   on before every step, whether or not it moves (its main loop sets savedX
   and savedY, cells 17h and 18h, before ResolveMovement). On the overland
@@ -301,15 +306,71 @@ Llorkh's hall, training the party to levels 8 and 9).
    that last fight with every dice it tries (six Hosttower sorceresses charm
    its members), so the test wins it.
 
+8. **Yartar** (map 23), overland north by maps 56 and 54: resting in a
+   house off the streets (11,9), the robed Krakens at the secret door
+   (11,14) and the Kraken base (14,15), whose papers blame Triboar.
+9. **Triboar** (map 24), by map 54, telling its guards the party has not come
+   from Yartar: resting in a house (13,7), into the Kraken complex by its
+   secret door (4,0), its offal heap (0,1), the ogres (3,4) and the
+   Waterbaron's captors (1,7), whose fall ends the fourth mission (cell
+   12Ah); the Lord Protector hears the Waterbaron (12,2).
+10. **Longsaddle** (map 25), by maps 54 and 52: resting indoors (8,7) and
+    going on in the morning, the rancher in the market (7,12) in its hours;
+    the Krakens' ranches, Legson's (12,0) and its cellar (10,1), the Big Star
+    (2,2) and its barn (3,1), the ettins' (2,9) and their pit (3,8), the ranch
+    asking the party's business (14,10; 13,11) and its trap-door (15,12),
+    the Harpells' mansion (10,4); then the ranchers who point to the barn
+    (3,13) and the barn of statues (1,15), where Malchor Harpell ends the
+    fifth mission (cell 12Bh). The Tower of Twilight is left alone, as the
+    cluebook allows.
+11. Back to **the Smuggler's Dock** by maps 52, 53 and 55, paying the
+    gatekeeper's fee, and at sunrise the ship from the Mintarn pier (2,10).
+12. **Mintarn** (map 26): resting in a house by the docks (6,6), the Tyrant
+    told the party came to help (12,5), Southclaw Fort (Jagaerda joining,
+    8,11; 11,11; 11,12; 13,13), the four warehouses (8,8; 7,7; 4,8; 2,11)
+    and the invaders' headquarters (0,8), whose map ends the sixth mission
+    (cell 12Ch). At 0600 the passenger dock (7,0, facing the sea) sails the
+    party to Orlumbor as pirates carry Siulajia off to Luskan.
+13. **Orlumbor** (map 27): the Temple of Talos (10,15) and Wrighttson told
+    at his castle (11,3), the seventh mission (cell 12Dh); at 0600 the dock
+    the party came in by (13,11, facing the sea) sails it to Neverwinter.
+    Farr Windward is left alone.
+14. **Neverwinter** (map 28): resting in the gardener's house (6,13), the
+    Krakens' bases (10,1; 15,11) and the ambassadors Froal (10,0) and Wimeg
+    (15,15), the eighth mission (cell 12Eh), then Lord Nasher (5,7). The
+    route keeps clear of the guards who would find the planted orders.
+15. **Luskan** (map 31), by map 51: resting in a house (11,6), Siulajia
+    freed (11,1) and Jagaerda's boat (6,6) to **Ruathym** (map 32), where,
+    resting at the inn (9,8), the party clears the men around Captain
+    Redleg (8,2; 10,5; 3,7; 4,9), frees him (3,8) and leaves in his boat
+    (15,4), the ninth mission (cell 12Fh). Back in Luskan: Redleg's
+    farewell (8,3), the captain and the sorceress (11,3), Jagaerda freed
+    (7,4), and out by the gate (15,15) on the east road.
+16. **Mirabar** (map 30), by maps 51 and 52: the council (7,9) and the
+    Krakens who burst in, King Steelfist (15,4) and the Marchion (1,7),
+    who sends his hammer Kriiador along.
+
+*Stand-ins:* the experience and money at Llorkh's hall; the test wins the Way
+Inn's last fight (six Hosttower sorceresses charm the route's members) and
+the council's (the Krakens who burst in), which the route's player loses with
+every dice it tries.
+
 Every walk is played step by step as the planning aid
-(`OPENGOLD_SECRET_FIND`, with `OPENGOLD_FIND_YES` for a town's "ENTER ...?")
-finds it; `OPENGOLD_WALLS` prints a map's walls, doors and events.
-*Where it stops:* the Way Inn. Until the route reaches the win its check
-passes when it plays every beat to map 40 (`treasure_route_stops_on_map`).
-The next steps, in the cluebook's order: Yartar and Triboar (4), Longsaddle and
-the Tower of Twilight (5), Mintarn (6), Orlumbor and Farr Windward (7),
-Neverwinter (8), Ruathym and Luskan (9), Mirabar (10), then Neverwinter,
-Fireshear, the Firemines and the Ice Peak's four stages to Freezefire.
+(`OPENGOLD_SECRET_FIND`, with `OPENGOLD_FIND_YES` for a town's "ENTER ...?"
+and `OPENGOLD_SECRET_PREFER` for a ship's destination) finds it, and a beat
+that rests first rests a night even when the party is whole
+(`RouteBeat::rest_for_spells`), so its casters have their spells again;
+`OPENGOLD_WALLS` prints a map's walls, doors and events, and
+`OPENGOLD_CURSE_SURVEY=N` surveys map N. *Where it stops:* Mirabar, after
+the council. Until the route reaches the win its check passes when it plays
+every beat to map 30 (`treasure_route_stops_on_map`). Still to come: the
+cell that marks the tenth mission (130h stays 0 after the council; the
+luck reading tells which, as the camp's Crown would), back to Neverwinter
+and by sea to Fireshear (open after the council), the Firemines' grand yeti,
+and the Ice Peak's four stages (scripts 35 to 38) to Freezefire and the win.
+The voyages run PROGRAM 4, the camp's Fix, which OpenGoldBox still plays as
+PROGRAM 5 (every member made whole); the original's Fix has the clerics cast
+their cure spells over a timed rest (its CampFixMenu) and is still to come.
 
 ## The ending
 

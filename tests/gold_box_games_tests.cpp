@@ -3965,7 +3965,7 @@ const std::vector<RouteBeat> &gateway_route()
 // Treasures' route plays to the game's end once this is true; until then it
 // stops on this map (docs/GAMES.md, Treasures, step 6).
 constexpr bool treasure_route_ends_the_game = false;
-constexpr unsigned treasure_route_stops_on_map = 31;
+constexpr unsigned treasure_route_stops_on_map = 30;
 
 // Treasures of the Savage Frontier's story, beat by beat, as its cluebook
 // tells it: from the dwarves' fortress outside Llorkh, where the opening
@@ -4581,7 +4581,50 @@ const std::vector<RouteBeat> &treasure_route()
         RouteBeat redleg_boat{32, 15, 4, D::north, {"GET IN BOAT"}};
         redleg_boat.expect_cell = {{0x12F, 1}};
         route.push_back(redleg_boat);
-        // ROUTE-NEXT
+        // Luskan again: Redleg's farewell (8,3), the captain arguing with a
+        // sorceress (11,3), and Jagaerda, captured for her help, freed to join
+        // the party once more (7,4).
+        route.push_back({31, 8, 3, D::north, {}});
+        route.push_back({31, 11, 6, D::north, {}});
+        RouteBeat quarrel{31, 11, 3, D::north, {}};
+        quarrel.rest_first = true;
+        quarrel.rest_for_spells = true;
+        route.push_back(quarrel);
+        route.push_back({31, 7, 4, D::north, {"ACCEPT"}});
+        // Out by Luskan's gate (15,15), where Jagaerda stays behind, by the
+        // east road.
+        route.push_back(step_beat(31, 15, 15, D::south, {"EAST TO MIRABAR"}));
+        // Overland east (maps 51 and 52) to Mirabar (map 30), for its
+        // council.
+        walk_overland(route, 51,
+                      {{9, 5, D::north},
+                       {9, 4, D::east},
+                       {10, 4, D::east},
+                       {11, 4, D::east},
+                       {12, 4, D::east},
+                       {13, 4, D::east},
+                       {14, 4, D::east}});
+        walk_overland(route, 52,
+                      {{1, 4, D::north},
+                       {1, 3, D::north},
+                       {1, 2, D::east},
+                       {2, 2, D::east},
+                       {3, 2, D::east},
+                       {4, 2, D::east}});
+        route.push_back(step_beat(52, 5, 2, D::east, {"YES"}));
+        // Mirabar (map 30): the council (7,9), shown that Luskan and the
+        // Hosttower mislead it, and the Krakens who burst in (the tenth
+        // Lucky Paper mission);
+        // then King Steelfist's help for the last quest (15,4) and the
+        // Marchion's hammer, Kriiador, taken along (1,7).
+        RouteBeat council{30, 7, 9, D::north, {}};
+        // A stand-in: the Krakens who burst into the council beat the
+        // route's player with every dice it tries, so the test wins the
+        // fight.
+        council.test_wins = true;
+        route.push_back(council);
+        route.push_back({30, 15, 4, D::north, {"YES"}});
+        route.push_back({30, 1, 7, D::north, {"YES"}});
         // A camp on the overland (maps 51 to 57) draws its wandering
         // monsters night after night: the party walks on between towns
         // instead, as a player hurries to the next inn.
@@ -6433,15 +6476,16 @@ bool walk_census(GoldBoxGame game, bool route)
         // to plan a route by.
         if (const char *walls_of = std::getenv("OPENGOLD_WALLS"))
         {
-            if (std::stoul(walls_of) > 1)
+            if (std::strtoul(walls_of, nullptr, 10) > 1)
             {
                 if (game == GoldBoxGame::treasures_of_the_savage_frontier)
                 {
-                    prepare_treasures_entry(session, static_cast<unsigned>(std::stoul(walls_of)));
+                    prepare_treasures_entry(
+                        session, static_cast<unsigned>(std::strtoul(walls_of, nullptr, 10)));
                 }
-                opengold::test::TourAccess::enter(session,
-                                                  static_cast<unsigned>(std::stoul(walls_of)),
-                                                  {0, 0, opengold::por::MapDirection::north});
+                opengold::test::TourAccess::enter(
+                    session, static_cast<unsigned>(std::strtoul(walls_of, nullptr, 10)),
+                    {0, 0, opengold::por::MapDirection::north});
                 play("walls");
             }
             const auto &map = session.map();
@@ -6464,15 +6508,16 @@ bool walk_census(GoldBoxGame game, bool route)
             survey && end.phase != TourPhase::defeated)
         {
             // OPENGOLD_CURSE_SURVEY=N (N > 1) walks into map N first.
-            if (std::stoul(survey) > 1)
+            if (std::strtoul(survey, nullptr, 10) > 1)
             {
                 if (game == GoldBoxGame::treasures_of_the_savage_frontier)
                 {
-                    prepare_treasures_entry(session, static_cast<unsigned>(std::stoul(survey)));
+                    prepare_treasures_entry(
+                        session, static_cast<unsigned>(std::strtoul(survey, nullptr, 10)));
                 }
-                opengold::test::TourAccess::enter(session,
-                                                  static_cast<unsigned>(std::stoul(survey)),
-                                                  {0, 0, opengold::por::MapDirection::north});
+                opengold::test::TourAccess::enter(
+                    session, static_cast<unsigned>(std::strtoul(survey, nullptr, 10)),
+                    {0, 0, opengold::por::MapDirection::north});
                 play("survey");
             }
             const auto map = session.snapshot().area_id;
