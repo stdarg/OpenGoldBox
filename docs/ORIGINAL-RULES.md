@@ -729,6 +729,12 @@ length with memorizing's time, and *Gateway*'s and *Treasures*' effects.
    passed; the rest that goes on for memorizing rolls no rest encounter;
    and the *Unlimited Adventures* camp still rests by whole days
    (`UaSession::rest_for`).
+   The routes on 2026-11-15 (rules4): *Pool of Radiance*'s, *Curse*'s,
+   *Secret*'s, *Gateway*'s, *Pools of Darkness*'s and the kit's win.
+   *Treasures*' loses Siulajia's fight on map 22 (beat 155) to the hell
+   hounds' breath, which now plays (138), and with that breath left out
+   later on map 39 to the Zhentarim: its route's owner finds the player's
+   answer.
 2. *Treasures*' own effects still to play (Effects of the later games):
    the crystals (128 to 130), the romance (131), the stone golem (147) and
    the yetis' fear on surprise (152).
