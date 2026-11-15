@@ -392,7 +392,8 @@ Llorkh's hall, training the party to levels 8 and 9).
     sorceress (11,3) left alone (no mission asks for it, and its guards and
     mages leave the party all but dead), and, rested in the house (11,6),
     out by the gate (15,15) on the east road.
-16. **Mirabar** (map 30), by maps 51 and 52: the council (7,9) and the
+16. **Mirabar** (map 30), by maps 51 and 52: rested at the Dig Inn (4,11)
+    after the road, the council (7,9) and the
     Krakens who burst in, King Steelfist (15,4) and the Marchion (1,7),
     who sends his hammer Kriiador along. The council done (cell 1F8h at
     FFh, the tenth mission), the dead are raised at the Temple of Vergadain
@@ -469,6 +470,15 @@ took, as a player would play it:
 - **The overland.** The route walks on hurt between towns, as before: a
   Fix in camp on the overland, tried, rolls the wandering monsters more
   often than it heals.
+
+*Next (where the work stopped, 2026-11-15):* the three stand-ins left. The
+council's Krakens beat the party even rested at the Dig Inn and whole. The
+original's counters the route's player does not use yet: Dispel Magic (and
+Charm Person cast on a charmed member, which frees it in the original's
+SpellCharmPerson) against the Way Inn's charms, and Remove Paralysis against
+the lair's holds; the route's casters would need to memorize them and its
+player to cast them on the members held or charmed. Then the camp dialog's
+Fix and Crown buttons, and the Fix's Restoration and cure of feeblemind.
 
 ## The ending
 

@@ -5325,7 +5325,11 @@ const std::vector<RouteBeat> &treasure_route()
         // Lucky Paper mission);
         // then King Steelfist's help for the last quest (15,4) and the
         // Marchion's hammer, Kriiador, taken along (1,7).
+        // The party, hurt on the road, rests first at the Dig Inn (4,11).
+        route.push_back({30, 4, 11, D::north, {"YES"}});
         RouteBeat council{30, 7, 9, D::north, {}};
+        council.rest_first = true;
+        council.rest_for_spells = true;
         // A stand-in: the Krakens who burst into the council beat the
         // route's player with every dice it tries, so the test wins the
         // fight.
@@ -7212,7 +7216,8 @@ bool walk_census(GoldBoxGame game, bool route)
                 // A map whose camp entry speaks first (Treasures' Fireshear)
                 // rests only once its words are answered: the spells are
                 // chosen then, or the next camp is refused.
-                if (party->state().spell_rest)
+                if (game == GoldBoxGame::treasures_of_the_savage_frontier &&
+                    party->state().spell_rest)
                 {
                     memorize();
                 }
