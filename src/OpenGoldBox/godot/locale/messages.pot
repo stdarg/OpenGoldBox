@@ -278,7 +278,7 @@ msgstr ""
 msgid "A divine scroll: a Cleric, Druid, Paladin or Ranger reads its spells. A level-13 Thief reads any scroll."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1859
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1861
 msgid "A drain takes more levels than the character has"
 msgstr ""
 
@@ -2147,7 +2147,7 @@ msgstr ""
 msgid "Cast spell"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2649 src/OpenGold.Rules.Original/src/rules_module.cpp:2662 src/OpenGold.Rules.Original/src/rules_module.cpp:2674 src/OpenGoldBox/combat_view.cpp:102
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2651 src/OpenGold.Rules.Original/src/rules_module.cpp:2664 src/OpenGold.Rules.Original/src/rules_module.cpp:2676 src/OpenGoldBox/combat_view.cpp:102
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Cast {spell}"
 msgstr ""
@@ -3257,7 +3257,7 @@ msgstr ""
 msgid "Cure Wounds (level 2 slot)"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2641
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2643
 msgid "Cure disease"
 msgstr ""
 
@@ -6420,7 +6420,7 @@ msgstr ""
 msgid "Lay On Hands: cure Poisoned (5)"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2637
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2639
 msgid "Lay on hands"
 msgstr ""
 
@@ -8100,7 +8100,7 @@ msgstr ""
 msgid "Only a damaged simulacrum can be repaired"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1791
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1793
 msgid "Only a magic-user's training learns a spell"
 msgstr ""
 
@@ -9049,7 +9049,7 @@ msgstr ""
 msgid "Raise Dead cannot bring back {name}, who has been dead too long or is dust."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2767
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2769
 msgid "Raise Dead cannot bring this member back"
 msgstr ""
 
@@ -11513,11 +11513,11 @@ msgstr ""
 msgid "That attempt did not succeed."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2692
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2694
 msgid "That cannot be done now"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2930
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2941
 msgid "That cannot be used now"
 msgstr ""
 
@@ -11529,7 +11529,7 @@ msgstr ""
 msgid "That potion works only in combat"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2738 src/OpenGold.Rules.Original/src/rules_module.cpp:2751 src/OpenGold.Rules.Original/src/rules_module.cpp:2759 src/OpenGold.Rules.Original/src/rules_module.cpp:2965 src/OpenGold.Rules.Original/src/rules_module.cpp:3157
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2740 src/OpenGold.Rules.Original/src/rules_module.cpp:2753 src/OpenGold.Rules.Original/src/rules_module.cpp:2761 src/OpenGold.Rules.Original/src/rules_module.cpp:2976 src/OpenGold.Rules.Original/src/rules_module.cpp:3168
 msgid "That spell cannot be cast now"
 msgstr ""
 
@@ -11537,7 +11537,7 @@ msgstr ""
 msgid "That spell cannot be copied into the spellbook"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1802
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1804
 msgid "That spell cannot be learned"
 msgstr ""
 
@@ -11687,7 +11687,7 @@ msgstr ""
 msgid "The casters heal and cure the party as it rests"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1819
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1821
 msgid "The character has no levels in a class it trained in"
 msgstr ""
 
@@ -11726,7 +11726,7 @@ msgstr ""
 msgid "The creature that hit it this turn attacks it with Disadvantage."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2773
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2775
 msgid "The dead cannot be healed"
 msgstr ""
 
@@ -11998,7 +11998,7 @@ msgstr ""
 msgid "The sword will not stay in {name}'s hand and burns for {damage} Force damage."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2465
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2467
 msgid "The temple cannot help with that"
 msgstr ""
 
