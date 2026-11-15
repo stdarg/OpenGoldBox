@@ -248,6 +248,65 @@ constexpr std::array<NumberedSpell, 4> gateway_rows{{
       false, 0}},
 }};
 
+// What Treasures of the Savage Frontier's table (its reconstruction's
+// gdconsts.pas, spellTable) changes in the rows it shares with the earlier
+// games', by the rules' numbers (canonical_spell): ranges, durations, what a
+// save does, when it may be cast, and how its AI weighs it. Its own way of
+// numbering camp targets and effects is the rules' as before.
+struct TreasuresRow
+{
+    int number;
+    int range_fixed, range_per_level, minutes_fixed, minutes_per_level, save_result, when,
+        ai_priority;
+};
+
+constexpr std::array<TreasuresRow, 44> treasures_changes{{
+    {1, 6, 0, 6, 0, 0, 2, 1},     // Bless
+    {2, 6, 0, 6, 0, 0, 1, 1},     // Curse
+    {3, 0, 0, 0, 0, 0, 2, 0},     // Cure Light Wounds
+    {4, 255, 0, 0, 0, 0, 1, 1},   // Cause Light Wounds
+    {7, 0, 0, 0, 3, 0, 2, 1},     // Protection from Good
+    {9, 0, 0, 0, 0, 0, 1, 2},     // Burning Hands
+    {10, 12, 0, 60, 60, 1, 1, 5}, // Charm Person
+    {15, 6, 4, 0, 0, 0, 1, 5},    // Magic Missile
+    {17, 0, 0, 0, 2, 0, 2, 1},    // Protection from Good
+    {19, 0, 0, 0, 5, 0, 2, 2},    // Shield
+    {20, 255, 0, 0, 0, 0, 1, 2},  // Shocking Grasp
+    {21, 3, 4, 0, 5, 0, 1, 4},    // Sleep
+    {24, 0, 0, 0, 10, 0, 2, 0},   // Resist Fire
+    {25, 12, 0, 0, 2, 1, 1, 2},   // Silence, 15' Radius
+    {26, 0, 0, 0, 60, 0, 0, 0},   // Slow Poison
+    {33, 1, 1, 0, 1, 1, 1, 1},    // Ray of Enfeeblement
+    {34, 3, 0, 0, 1, 3, 1, 4},    // Stinking Cloud
+    {41, 6, 0, 0, 0, 0, 2, 1},    // Dispel Magic
+    {42, 0, 0, 0, 1, 0, 2, 5},    // Prayer
+    {44, 255, 0, 0, 10, 1, 1, 2}, // Bestow Curse
+    {45, 0, 0, 0, 1, 0, 1, 4},    // Blink
+    {46, 12, 0, 0, 1, 0, 2, 1},   // Dispel Magic
+    {47, 10, 4, 0, 0, 2, 1, 7},   // Fireball
+    {48, 6, 0, 3, 1, 0, 2, 5},    // Haste
+    {51, 4, 4, 0, 0, 2, 1, 7},    // Lightning Bolt
+    {55, 9, 4, 3, 1, 0, 1, 4},    // Slow
+    {158, 0, 0, 0, 0, 0, 2, 0},   // Cure Serious Wounds
+    {166, 0, 0, 0, 0, 0, 1, 3},   // Cause Serious Wounds
+    {169, 3, 0, 0, 10, 0, 2, 1},  // Protection from Evil, 10' Radius
+    {172, 255, 0, 0, 0, 1, 1, 4}, // Cause Critical Wounds
+    {173, 0, 0, 0, 1, 0, 1, 5},   // Dispel Evil
+    {175, 0, 0, 0, 0, 0, 0, 0},   // Raise Dead
+    {178, 8, 0, 10, 0, 1, 1, 1},  // Entangle
+    {179, 8, 0, 0, 4, 1, 1, 1},   // Faerie Fire
+    {183, 0, 12, 0, 0, 0, 1, 0},  // Dimension Door
+    {185, 0, 0, 2, 1, 0, 2, 7},   // Fire Shield
+    {186, 0, 4, 0, 1, 1, 1, 4},   // Fumble
+    {187, 0, 4, 0, 0, 0, 1, 7},   // Ice Storm
+    {188, 0, 16, 0, 1, 0, 2, 6},  // Minor Globe of Invulnerability
+    {193, 16, 0, 0, 0, 1, 1, 5},  // Feeblemind
+    {194, 0, 2, 0, 1, 1, 1, 7},   // Hold Monster
+    {200, 3, 0, 0, 3, 1, 1, 4},   // Bestow Curse
+    {236, 0, 0, 0, 0, 0, 2, 2},   // Heal
+    {313, 0, 4, 0, 0, 0, 2, 0},   // Stone to Flesh
+}};
+
 // Curse's spells that its characters can know, in its table's order: Pool of
 // Radiance's 56, then its own.
 constexpr std::array<int, 30> curse_castable{158, 166, 167, 168, 169, 170, 171, 172, 173, 174,
@@ -435,6 +494,34 @@ const Spell *spell(int number) noexcept
 
 const Spell *spell(int number, GoldBoxGame game) noexcept
 {
+    if (game == GoldBoxGame::treasures_of_the_savage_frontier)
+    {
+        static const auto changed = []
+        {
+            std::array<NumberedSpell, treasures_changes.size()> rows{};
+            for (std::size_t n = 0; n < rows.size(); ++n)
+            {
+                const auto &change = treasures_changes[n];
+                auto row = *spell(change.number);
+                row.range_fixed = change.range_fixed;
+                row.range_per_level = change.range_per_level;
+                row.minutes_fixed = change.minutes_fixed;
+                row.minutes_per_level = change.minutes_per_level;
+                row.save_result = change.save_result;
+                row.when = change.when;
+                row.ai_priority = change.ai_priority;
+                rows[n] = {change.number, row};
+            }
+            return rows;
+        }();
+        for (const auto &entry : changed)
+        {
+            if (entry.number == number)
+            {
+                return &entry.spell;
+            }
+        }
+    }
     if (game == GoldBoxGame::gateway_to_the_savage_frontier)
     {
         for (const auto &entry : gateway_rows)

@@ -3509,6 +3509,16 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         }
         const auto &area = area_resources();
         const bool ally = fights_for_party(area, record);
+        // Treasures' LOAD MONSTER holds its creatures back while cell 44h is
+        // set: they join the fight as that round ends, the ninth at the
+        // latest (its EclLoadMonster and JoinDelayedCombatants).
+        constexpr EclAddress treasures_arrival_round{0x44};
+        constexpr unsigned latest_arrival = 9;
+        const unsigned arrival =
+            game() == GoldBoxGame::treasures_of_the_savage_frontier
+                ? std::min(static_cast<unsigned>(machine_.variable(treasures_arrival_round)),
+                           latest_arrival)
+                : 0;
         const auto *exported = exported_creature(area, record);
         const auto name = creature_name(area, record, exported);
         for (unsigned i = 0; ally && i < count; ++i)
@@ -3518,6 +3528,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             auto staged =
                 stage_area_creature(area, record, icon, exported, id, name, rules::Side::party,
                                     difficulty_, plays_original_records(), game());
+            staged.fighter.arrival_round = arrival;
             staged_allies_.push_back(std::move(staged.fighter));
             staged_ally_art_.push_back(std::move(staged.art));
         }
@@ -3528,6 +3539,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 area, record, icon, exported, id,
                 name + " " + std::to_string(staged_enemies_.size() + 1), rules::Side::opposition,
                 difficulty_, plays_original_records(), game());
+            staged.fighter.arrival_round = arrival;
             staged_enemies_.push_back(std::move(staged.fighter));
             staged_art_.push_back(std::move(staged.art));
             staged_records_.push_back(record);

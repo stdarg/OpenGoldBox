@@ -2106,6 +2106,79 @@ void treasures_charm_person_frees_the_charmed()
           "A second Charm Person frees it");
 }
 
+// Treasures' Hold Person holds any character, whatever its size, and never
+// a monster, though its flags call it a person (its ApplyEffectToTargets).
+void treasures_hold_person_holds_characters_only()
+{
+    using original::ClassSlot;
+    auto tall = victim(20);
+    tall.race = 7;
+    tall.large = true;
+    auto brute = victim(20);
+    brute.traits = original::trait::person;
+    auto fight =
+        arrange({{"Cleric", rules::Side::party, {0, 3}, caster(ClassSlot::cleric, 3, {23, 23})},
+                 {"Fighter", rules::Side::opposition, {4, 3}, tall},
+                 {"Brute", rules::Side::opposition, {4, 5}, brute}},
+                101, {}, 100, GoldBoxGame::treasures_of_the_savage_frontier);
+    auto &session = *fight.session;
+    for (const auto *target : {"Fighter", "Brute"})
+    {
+        cast_now(session, "Cleric", 23,
+                 [&]
+                 {
+                     return aim_at(session, target);
+                 });
+        session.submit(order(session, "aim_done"));
+    }
+    check(view_of(session.snapshot(), "Fighter").status == "helpless",
+          "Treasures' Hold Person holds a tall character");
+    check(view_of(session.snapshot(), "Brute").status.empty(), "It does not hold a monster");
+}
+
+// Treasures' scripts hold creatures back (its LOAD MONSTER, cell 44h): one
+// joins the fight as its round ends, where it would have stood or beside it
+// (its JoinDelayedCombatants).
+void treasures_creatures_join_late()
+{
+    auto fight = arrange({{"Guard", rules::Side::party, {0, 0}, victim(50)},
+                          {"Early", rules::Side::opposition, {7, 7}, victim(50)},
+                          {"Late", rules::Side::opposition, {6, 7}, victim(50)},
+                          {"Blocker", rules::Side::opposition, {6, 6}, victim(50)}},
+                         61, {}, 100, GoldBoxGame::treasures_of_the_savage_frontier, false, false,
+                         [](rules::Encounter &encounter)
+                         {
+                             encounter.participants[2].arrival_round = 1;
+                         });
+    auto &session = *fight.session;
+    check(view_of(session.snapshot(), "Late").fled, "The late one is not there at first");
+    play_until(
+        session,
+        [&](const std::string &)
+        {
+            return order(session, "end");
+        },
+        [&]
+        {
+            return session.snapshot().round > 1;
+        });
+    const auto late = view_of(session.snapshot(), "Late");
+    check(!late.fled && late.cell.x == 6 && late.cell.y == 7 &&
+              logged(session, "{name} joins the battle.") == 1,
+          "It joins the fight as the first round ends, where it would have stood");
+}
+
+// Treasures' own spell table: Charm Person lasts an hour and an hour a level
+// and its AI weighs it 5 (its gdconsts.pas).
+void treasures_spell_table()
+{
+    const auto *charm = original::spell(10, GoldBoxGame::treasures_of_the_savage_frontier);
+    check(charm->minutes_fixed == 60 && charm->minutes_per_level == 60 && charm->ai_priority == 5,
+          "Treasures' Charm Person lasts as its table says");
+    check(original::spell(10, GoldBoxGame::pool_of_radiance)->minutes_fixed == 0,
+          "Pool of Radiance's keeps its own");
+}
+
 // Hold Person holds a man but not a large creature (magic.pas, the hold).
 void hold_person_holds()
 {
@@ -5561,6 +5634,9 @@ int main()
         cure_light_wounds_stops_bleeding();
         races_know_their_foes();
         hold_person_holds();
+        treasures_hold_person_holds_characters_only();
+        treasures_spell_table();
+        treasures_creatures_join_late();
         fireball_burns_all_around();
         haste_doubles_attacks();
         mirror_images_take_blows();

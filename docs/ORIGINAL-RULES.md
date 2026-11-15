@@ -638,6 +638,15 @@ Its differences (2026-11-14):
   "immunities", byte 421) on one square, and frees one charmed already, with
   no save: a party's magic-user uncharms a member the enemy has charmed.
   Charm Monsters and Charm Person or Mammal do not free.
+- **Its spell table** (its `gdconsts.pas`, 2026-11-15): 44 rows it shares
+  with the earlier games differ in range, duration, save, when cast and AI
+  weight (Charm Person lasts an hour and an hour a level; Fireball and
+  Lightning Bolt reach 4 squares a level; the computer never casts a cure).
+  Hold Person, Charm Monsters, Hold Monster and Mass Charm take only those
+  its flags call persons, Hold Person no monster, whatever their size; a
+  character stands on one square (its `chargen.pas`), so no weapon strikes
+  one as large. A script may hold a fight's creatures back for a round or
+  more (cell 44h, [treasure.md](games/treasure.md), What the route needed).
 - **Detect Magic** may be cast outside combat, as in the originals, spent
   with nothing more to lay: *Treasures*' scripts may wait for a spell
   (Cortarra, [treasure.md](games/treasure.md), What the route needed).

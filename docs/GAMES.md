@@ -751,12 +751,14 @@ pictures, walls and script host, *Treasures* adding only what it changes.
    What the route needed; `opengold_godot_treasure_camp`). *Treasures*'
    Charm Person frees a charmed member and, since 2026-11-15, takes the
    party's members as the original's does (OpenGoldBox had counted every
-   tall character too large for it). *Stand-ins:* the experience and money
-   at Llorkh's hall, and the test's win of three fights the route's player
-   loses with every dice, whose sorceresses and black-robed men charm
-   faster than Charm Person and Dispel Magic free: the Way Inn's last, the
-   council's Krakens and the lair's black-robed men. The route's player
-   beats Freezefire. The romances gate nothing (the cluebook's Falling in
+   tall character too large for it). Since 2026-11-15 the fights use
+   *Treasures*' own spell table, its characters stand on one square, and
+   the creatures its scripts hold back join a round or more later; the
+   route's player wins the council's Krakens. *Stand-ins:* the experience
+   and money at Llorkh's hall, and the test's win of two fights the route's
+   player loses with every dice, whose casters bolt, charm and hold the
+   party before it reaches them: the Way Inn's last and the lair's
+   black-robed men. The route's player beats Freezefire. The romances gate nothing (the cluebook's Falling in
    Love).
 
 ### 8. *Unlimited Adventures*

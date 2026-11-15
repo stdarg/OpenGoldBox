@@ -294,6 +294,33 @@ engine, each as the original does it:
   reads 255, as Luskan's script waits for. *Pools of Darkness* shares the
   routine; OpenGoldBox keeps it to *Treasures* until that game's route
   needs it.
+- **Treasures' own spell table** (since 2026-11-15). Its 126 spells are
+  *Pools of Darkness*' numbers, but its table (its gdconsts.pas,
+  spellTable) changes 44 rows that OpenGoldBox read from the earlier
+  games': ranges (Fireball, Lightning Bolt, Slow, Fumble and Ice Storm reach
+  4 squares a level, Magic Missile and Sleep too), durations (Charm Person
+  lasts an hour and an hour a level), what a save does (Curse has none,
+  Silence's negates), when a spell may be cast (Slow Poison in camp only)
+  and how the AI weighs it (Charm Person 5, Sleep and Stinking Cloud 4,
+  Dispel Magic 1, the cures 0, so the computer never casts them).
+  `original::spell(n, game)` gives *Treasures*' rows; Barkskin keeps the
+  rules decided for it.
+- **A character stands on one square** (its chargen.pas sets
+  iconDimensions to 1; the height of its icon is only drawn). OpenGoldBox
+  counted a tall one as large, so a weapon struck it with its dice against
+  large creatures and Hold Person never held it. Since 2026-11-15 no
+  character of *Treasures* is large.
+- **Spells for persons only.** Hold Person, Charm Monsters, Hold Monster and
+  Mass Charm take only a creature its flags call a person (record byte
+  421, bit 2, which every character has), and Hold Person never a monster
+  (its ApplyEffectToTargets); its size is no matter.
+- **Creatures held back** (its LOAD MONSTER and JoinDelayedCombatants). A
+  script that sets cell 44h before LOAD MONSTER holds those creatures back:
+  they join the fight as that round ends (the ninth at the latest), unless
+  the fight is over. The council's Krakens, sorceresses and dwarves come in
+  three waves, the lair's black-robed men in six. A creature held back
+  joins where the fight would have placed it, or on the free square
+  nearest it ([DEVIATIONS.md](../DEVIATIONS.md)).
 - **The overland's own steps.** The engine keeps the square the party stood
   on before every step, whether or not it moves (its main loop sets savedX
   and savedY, cells 17h and 18h, before ResolveMovement). On the overland
@@ -353,9 +380,11 @@ Llorkh's hall, training the party to levels 8 and 9).
    hall (2,7), and upstairs the alliance's meeting (14,13), the alarm room
    (4,15) and Dauravyn Redbeard's captors (7,15), whose fall ends the third
    Lucky Paper mission (cell 129h). *A stand-in:* the route's player loses
-   that last fight with every dice it tries (six Hosttower sorceresses charm
-   its members faster than Charm Person and Dispel Magic free them), so the
-   test wins it.
+   that last fight with every dice it tries (six Hosttower sorceresses
+   lightning-bolt, fireball and charm its members within two rounds, while
+   its fighters are held up by the margoyles and neo-otyughs), so the test
+   wins it. Since 2026-11-15 the route played whole wins it itself, two
+   members dead, but loses it when the fights before went otherwise.
 
 8. **Yartar** (map 23), overland north by maps 56 and 54: resting in a
    house off the streets (11,9), the robed Krakens at the secret door
@@ -397,7 +426,10 @@ Llorkh's hall, training the party to levels 8 and 9).
     Wimeg (15,15), the eighth mission (cell 12Eh), then Lord Nasher (5,7).
     The route keeps clear of the guards who would find the planted orders.
 15. **Luskan** (map 31), by map 51: resting in a house (11,6), Siulajia
-    freed (11,1) and Jagaerda's boat (6,6) to **Ruathym** (map 32), where,
+    freed (11,1), each member warded with Protection from Evil and Dispel
+    Magic memorized against her Banites' Hold Person, whose held are slain
+    at the next blow (since 2026-11-15, when Hold Person took the tall
+    members too) and Jagaerda's boat (6,6) to **Ruathym** (map 32), where,
     resting at the inn (9,8), the party clears the men around Captain
     Redleg (8,2; 10,5; 3,7; 4,9), frees him (3,8) without taking him into
     the party, so that he finds his boat alone and the party leaves
@@ -410,8 +442,9 @@ Llorkh's hall, training the party to levels 8 and 9).
     out by the gate (15,15) on the east road.
 16. **Mirabar** (map 30), by maps 51 and 52: rested at the Dig Inn (4,11)
     after the road, the council (7,9) and the
-    Krakens who burst in (*a stand-in:* their Hosttower sorceresses charm
-    the party faster than it frees itself, so the test wins it), King Steelfist (15,4) and the Marchion (1,7),
+    Krakens and sorceresses who burst in, in three waves as the dwarves
+    come to help (won by the route's player since 2026-11-15), King
+    Steelfist (15,4) and the Marchion (1,7),
     who sends his hammer Kriiador along. The council done (cell 1F8h at
     FFh, the tenth mission), the dead are raised at the Temple of Vergadain
     (2,13) and the party rests at the Dig Inn (4,11).
@@ -429,7 +462,9 @@ Llorkh's hall, training the party to levels 8 and 9).
     Peak.
 19. **Aurilssbaarg** (map 35): north and east through the streets to the
     path east (15,10), refusing the guards' escort to Tranjer Rolsk's trap
-    and telling the Northmen the party fights Luskan (cell 238h at 1).
+    and telling the Northmen the party fights Luskan (cell 238h at 1),
+    without camping in the streets, where the black-robed men and Luskan's
+    guards hunting the party fall on a camp (the cluebook bids it hurry).
 20. **Bjorn's Hold** (map 36), the Northmen friends: rested by the
     feasters' campfire (11,5), to the pier (15,3) and Icewolf. The two
     parties of black-robed men (7,10; beyond the archway at 10,8) are left
@@ -445,31 +480,28 @@ Llorkh's hall, training the party to levels 8 and 9).
     into Freezefire's lair (3,6): the black-robed men combing the hoard,
     then Freezefire risen as the Gem is pried from his claw, with the
     dwarves fighting beside the party. As the dragon dies the game is won
-    (The ending). *A stand-in:* the black-robed men hold and charm the
-    party faster than it frees itself, so the test wins that fight; the
-    route's player beats Freezefire.
+    (The ending). *A stand-in:* the black-robed spies and mages hold the
+    party's members (Hold Person, Hold Monster) and the masters slay the
+    held, faster than Dispel Magic frees them, so the test wins that fight;
+    the route's player beats Freezefire.
 
 *Stand-ins:* the experience and money at Llorkh's hall, and the test's win
-of three fights against Hosttower sorceresses and black-robed men that the
-route's player loses with every dice it tries: the Way Inn's last, the
-council's Krakens and the lair's black-robed men. Each charms (and the
-black-robed men hold) the party's members faster than its casters free
-them. The route's player frees a member charmed onto the other side with
+of two fights the route's player loses with every dice it tries: the Way
+Inn's last, against six Hosttower sorceresses, and the lair's black-robed
+men. The route's player frees a member charmed onto the other side with
 Charm Person, which in *Treasures* ends a charm with no save (its
-SpellCharmPerson, since 2026-11-15), or with Dispel Magic, which also ends
-a hold, its casters memorizing them first (`RouteBeat::memorize_first_of`).
-On 2026-11-15 the council and the black-robed men were won without the
-test for a while, but only because OpenGoldBox's Charm Person never took a
-character (Bugs): every character of normal height counted as too large
-for it. With the original's rule the sorceresses' and black-robed men's
-Charm Person takes the party's members too, and those two fights are
-stand-ins again. Freezefire, risen at once after the black-robed men, is
-beaten by the route's player since 2026-11-15 (a stand-in before). The
-route's player also wins Neverwinter's eastern Kraken base (trained at
-Mintarn). Tried and dropped at the Way Inn: Silence, 15' Radius at the
-sorceresses and Charm Person at them, as the cluebook bids in the lair;
-neither won it. Also tried in the lair: healing before the black-robed
-men's last falls, as the cluebook bids; the fight was lost before it.
+SpellCharmPerson), or with Dispel Magic, which also ends a hold, its
+casters memorizing them first (`RouteBeat::memorize_first_of`). The
+council's Krakens were a stand-in until 2026-11-15, when OpenGoldBox took
+up *Treasures*' own spell table, its characters' one square and its
+creatures held back (What the route needed): the route's player then won
+it with every member alive. The same rules made the lair harder: with every
+character on one square the black-robed men's Hold Person takes the tall
+members too, as the original's does. Tried and dropped at the Way Inn:
+Silence, 15' Radius at the sorceresses and Charm Person at them, as the
+cluebook bids in the lair; neither won it. Also tried in the lair: healing
+before the black-robed men's last falls, as the cluebook bids; the fight
+was lost before it.
 
 Every walk is played step by step as the planning aid
 (`OPENGOLD_SECRET_FIND`, with `OPENGOLD_FIND_YES` for a town's "ENTER ...?"
@@ -477,7 +509,8 @@ and `OPENGOLD_SECRET_PREFER` for a ship's destination) finds it, and a beat
 that rests first rests a night even when the party is whole
 (`RouteBeat::rest_for_spells`), so its casters have their spells again;
 `OPENGOLD_WALLS` prints a map's walls, doors and events, and
-`OPENGOLD_CURSE_SURVEY=N` surveys map N. Its check passes when "You have won."
+`OPENGOLD_CURSE_SURVEY=N` surveys map N, and `OPENGOLD_ROUTE_PLAY_STAND_INS`
+plays a stand-in's fights as any other, the test winning none. Its check passes when "You have won."
 is shown with every member alive (`treasure_route_ends_the_game`).
 
 *Played whole (2026-11-15),* on the original-rules round's stronger
@@ -503,20 +536,26 @@ took, as a player would play it:
   Fix in camp on the overland, tried, rolls the wandering monsters more
   often than it heals.
 
-*Next (where the work stopped, 2026-11-15):* the three charm fights. A
-character stands on one square in *Treasures* (its chargen.pas sets
-iconDimensions to 1), but OpenGoldBox counts any tall icon as large
-(`Combatant::large`, from the icon's height), which only Charm Person reads
-the original's way so far; Hold Person and the other size checks still
-treat tall characters as large and should be checked against the
-reconstruction next (it may make the black-robed men's holds land more).
-Then the fights themselves: the cluebook advises Charm Person and Charm
-Monsters at the enemy's casters first, then Hold Monster; the route's
-player could try aiming them by hand at the sorceresses (the quick
-commands aim the magic-user's Charm Person at margoyles it cannot take).
-Still to come besides: the color records, the overland's color cycling,
-the music and sounds other than the footstep, and the camp's display of
-the crystals the party holds (its CampMainMenu).
+*Next (where the work stopped, 2026-11-15):* the two fights left. Both
+are lost to casters whose spells go off before the party reaches them; the
+cluebook's answer is to hit every enemy with a spell or a missile each round
+(a caster hit while it casts loses the spell) and, from Fireshear on, a
+composite long bow +1 and arrows +1 for every member who can use them
+(Fireshear's arms shop sells them once the grand yeti is dead). The
+route's party carries only melee weapons: give it bows from a shop on the
+way (the Way Inn's or Daggerford's for the Way Inn, Fireshear's for the
+lair), and let the route's player (`player_turn`) shoot or strike first a
+caster who has begun casting, and aim the magic-user's Fireball at the
+sorceresses where it spares the party. Check too the AI's choice of spell:
+*Treasures*' computer casts its memorized spell of highest AI weight that
+has a target (its combatai.pas, PickCastableSpell and SelectSpellToCast),
+where OpenGoldBox's picks at random as *Pool of Radiance*'s does. *Pools of
+Darkness* shares the spell table and the one-square characters (its
+gdconsts.pas and chargen.pas) and should take them up, its route checked.
+Still to come besides: replacing the Llorkh test experience if a route can
+earn it, the color records, the overland's color cycling, the music and
+sounds other than the footstep, and the camp's display of the crystals the
+party holds (its CampMainMenu).
 
 ## The ending
 
@@ -536,6 +575,10 @@ in [ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Bugs):
 
 | Bug | Fixed |
 |---|---|
+| *Treasures* read the spell rows it shares with the earlier games from their tables: Charm Person lasted forever, Fireball and Lightning Bolt reached a square a level, and the computer weighed spells by *Pool of Radiance*'s numbers (2026-11-15) | Its own table's rows (its gdconsts.pas) |
+| Every tall character counted as large: weapons struck it with their dice against large creatures, and Hold Person never held it (2026-11-15) | A character stands on one square, as its chargen.pas has it |
+| Hold Monster, Charm Monsters and Mass Charm took any monster, and Hold Person judged by type and size (2026-11-15) | Only those its flags call persons; Hold Person no monster |
+| LOAD MONSTER brought every creature at once where a script held some back (cell 44h) (2026-11-15) | They join the fight as their round ends |
 | Charm Person judged a target by *Pool of Radiance*'s rule (a creature type above 1, or a tall icon): every character of normal height counted as large, so neither side's Charm Person took or freed one, and monsters went by their type, not their flags (2026-11-15) | *Treasures*' own rule: a character always, a monster its flags call a person (bit 2 of its "immunities", record byte 421) on one square; one charmed already is freed |
 | The Fix's Resurrection raised no one, the original rules having no such service, and while a cleric had it Raise Dead was not cast either (2026-11-15) | The dead but elves are resurrected, losing nothing |
 | A temple's Heal cured nothing besides wounds in *Treasures*, whose Heal lifts blindness and feeblemind (its `temple.pas`, CureWounds) (2026-11-15) | It lifts them |

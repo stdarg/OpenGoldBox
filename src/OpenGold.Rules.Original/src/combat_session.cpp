@@ -32,7 +32,7 @@ using rules::Side;
 
 // The original counts movement in half-moves: 2 a straight step, 3 a diagonal one.
 constexpr rules::StepCosts half_moves{2, 3, 2, 4, 0};
-constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 22";
+constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 23";
 
 enum class Condition : unsigned
 {
@@ -246,6 +246,9 @@ struct Fighter
     std::vector<EntityId> picked;
     // Its side before a charm took it over.
     Side own_side{Side::party};
+    // The round it joins the fight as it ends, kept off the field (fled)
+    // until then; 0 once it is there (rules::Participant::arrival_round).
+    int arrival_round{};
     // Whether it may still use an item this round (silence and coughing stop
     // it), and the item it is using now, by its ordinal, -1 for none.
     bool item_use_allowed{true};
@@ -981,6 +984,8 @@ class Session final : public rules::CombatSession
     [[nodiscard]] int weapon_priority(const Fighter &f, const Held &weapon, int other_hands) const;
     void next_actor();
     void end_round();
+    void join_arrivals();
+    [[nodiscard]] bool place_near(Fighter &f, Cell wanted);
     void end_actions(Fighter &fighter);
     void note_attack(const Fighter &attacker, Fighter &defender);
     void make_attack(Fighter &attacker, Fighter &defender, bool from_behind);
@@ -1086,6 +1091,7 @@ class Session final : public rules::CombatSession
     void reorder_after_cast(Fighter &caster);
     [[nodiscard]] bool breathes_clouds_freely(const Fighter &f) const;
     [[nodiscard]] bool refuses_spell(const Fighter &target, int number) const;
+    [[nodiscard]] bool treasures_refuses_spell(const Fighter &target, int number) const;
     void beholder_rays(Fighter &f);
     [[nodiscard]] int uses(Fighter &f, int code);
     void spend_use(Fighter &f, int code);
@@ -1421,8 +1427,67 @@ void Session::end_round()
     settle_outcome();
     if (outcome_ == rules::Outcome::ongoing)
     {
+        join_arrivals();
         begin_round();
     }
+}
+
+// Those held back whose round has come join the fight where they would have
+// stood, or on the free square nearest it (combat.pas,
+// JoinDelayedCombatants; combatst.pas, JoinBattle). One with no room stays
+// away.
+void Session::join_arrivals()
+{
+    for (auto &f : fighters_)
+    {
+        if (f.arrival_round == 0 || static_cast<unsigned>(f.arrival_round) > round_)
+        {
+            continue;
+        }
+        f.arrival_round = 0;
+        if (place_near(f, f.cell))
+        {
+            f.condition = Condition::okay;
+            log({"{name} joins the battle.", {{"name", f.name}}});
+        }
+    }
+}
+
+// Puts the fighter on the open, free square nearest the wanted one, ring by
+// ring; false, leaving it where it was, when there is none.
+bool Session::place_near(Fighter &f, Cell wanted)
+{
+    const auto fits = [this, &f]
+    {
+        const auto squares = squares_of(f);
+        return cell_free(f) && std::all_of(squares.begin(), squares.end(),
+                                           [this](Cell c)
+                                           {
+                                               return board_.contains(c) &&
+                                                      board_.at(c) != rules::Terrain::obstacle;
+                                           });
+    };
+    const int reach = std::max(board_.width, board_.height);
+    for (int ring = 0; ring <= reach; ++ring)
+    {
+        for (int dy = -ring; dy <= ring; ++dy)
+        {
+            for (int dx = -ring; dx <= ring; ++dx)
+            {
+                if (std::max(std::abs(dx), std::abs(dy)) != ring)
+                {
+                    continue;
+                }
+                f.cell = {wanted.x + dx, wanted.y + dy};
+                if (fits())
+                {
+                    return true;
+                }
+            }
+        }
+    }
+    f.cell = wanted;
+    return false;
 }
 
 // Its actions end: no initiative, guard or movement left, though the attacks
@@ -2699,8 +2764,11 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         for (auto id = targets.rbegin(); id != targets.rend(); ++id)
         {
             auto &f = *find(*id);
-            const bool held_off = secret_engine() ? f.numbers.race == 0
-                                                  : f.numbers.creature_type > 1 || f.numbers.large;
+            // Treasures' holds no monster either, and its size is no matter
+            // (treasures_refuses_spell).
+            const bool held_off = secret_engine() || treasures()
+                                      ? f.numbers.race == 0
+                                      : f.numbers.creature_type > 1 || f.numbers.large;
             if (held_off)
             {
                 log({"{name} is unaffected.", {{"name", f.name}}});
@@ -3990,6 +4058,10 @@ bool Session::refuses_spell(const Fighter &target, int number) const
 {
     constexpr int charm_person = 10, slay_living = 176, charm_person_or_mammal = 296,
                   death_spell = 310;
+    if (treasures())
+    {
+        return treasures_refuses_spell(target, number);
+    }
     if (!secret_engine())
     {
         return false;
@@ -4011,6 +4083,31 @@ bool Session::refuses_spell(const Fighter &target, int number) const
     case slay_living:
     case death_spell:
         return (traits & trait::unliving) != 0;
+    default:
+        return false;
+    }
+}
+
+// Treasures' spells that take only a creature its flags call a person (bit 2
+// of its "immunities", which every character has): Hold Person, Charm
+// Monsters, Hold Monster and Mass Charm (its magic.pas, ApplyEffectToTargets
+// and SpellMassCharm). Hold Person never takes a monster, flagged or not.
+// Charm Person judges its targets itself (resolve_spell).
+bool Session::treasures_refuses_spell(const Fighter &target, int number) const
+{
+    constexpr int cleric_hold_person = 23, mage_hold_person = 49, charm_monsters = 181,
+                  hold_monster = 194, mass_charm = 320;
+    const bool monster = target.numbers.race == 0;
+    const bool person = (target.numbers.traits & trait::person) != 0;
+    switch (number)
+    {
+    case cleric_hold_person:
+    case mage_hold_person:
+        return monster;
+    case charm_monsters:
+    case hold_monster:
+    case mass_charm:
+        return monster && !person;
     default:
         return false;
     }
@@ -8043,13 +8140,13 @@ void Session::settle_outcome()
     // DetermineCombatResults).
     if (!side_standing(Side::party))
     {
-        const bool got_away = std::any_of(fighters_.begin(), fighters_.end(),
-                                          [](const Fighter &f)
-                                          {
-                                              return f.side == Side::party &&
-                                                     f.condition == Condition::fled &&
-                                                     f.numbers.morale < non_player;
-                                          });
+        const bool got_away =
+            std::any_of(fighters_.begin(), fighters_.end(),
+                        [](const Fighter &f)
+                        {
+                            return f.side == Side::party && f.condition == Condition::fled &&
+                                   f.arrival_round == 0 && f.numbers.morale < non_player;
+                        });
         outcome_ = got_away ? rules::Outcome::fled : rules::Outcome::defeat;
     }
     else if (!side_standing(Side::opposition))
@@ -8674,7 +8771,8 @@ std::string Session::save() const
             f.direction, f.flank_count, f.flank_spread, f.guarding, f.fleeing, f.turned,
             f.tried_turning, f.cast_allowed, f.pending_spell, f.aiming, f.picks_left, f.blast_delay,
             static_cast<unsigned>(f.own_side), f.item_use_allowed, f.using_item, f.stance, f.lock,
-            f.before_animation ? f.before_animation->encode() : std::string(), f.picked.size());
+            f.arrival_round, f.before_animation ? f.before_animation->encode() : std::string(),
+            f.picked.size());
         for (const auto id : f.picked)
         {
             out(id);
@@ -8925,6 +9023,7 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
         f.using_item = in.as<int>();
         f.stance = in.as<int>();
         f.lock = in.as<EntityId>();
+        f.arrival_round = in.as<int>();
         if (const auto before = in.text(); !before.empty())
         {
             f.before_animation = Combatant::decode(before);
@@ -9214,6 +9313,11 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
         {
             f.condition = Condition::unconscious;
             f.hit_points = 0;
+        }
+        else if (p.arrival_round > 0)
+        {
+            f.condition = Condition::fled;
+            f.arrival_round = static_cast<int>(p.arrival_round);
         }
         fighters.push_back(std::move(f));
     }

@@ -286,6 +286,12 @@ Departures from the original game's own rules, when OpenGoldBox plays by them
   "Rots..." as each month takes its Charisma and "Dies rots away" as it
   kills; outside a fight OpenGoldBox shows neither: the sheet shows the
   Charisma lost, and the member dead.
+- **Where Treasures' creatures held back come in** (2026-11-15). A
+  *Treasures* script that holds creatures back (cell 44h) also names where
+  they come in, a square and a direction for each side (cells 45h to 4Ah),
+  from which the original walks a spiral of free places. OpenGoldBox places
+  each where the fight would have placed it at the start, or on the free
+  square nearest it.
 - **Unlimited Adventures' party icons** (2026-11-14). The kit gives a party
   member the combat icon made in its own icon editor (`CBODY.TLB` and
   `COMSPR.TLB`). A party made in OpenGoldBox has the combat icon its

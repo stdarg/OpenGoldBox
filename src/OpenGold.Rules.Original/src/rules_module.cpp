@@ -417,6 +417,13 @@ por::CharacterRecord character_record(const CharacterSheet &sheet)
     const auto race = static_cast<Race>(original.race);
     const bool short_folk = race == Race::dwarf || race == Race::gnome || race == Race::halfling;
     record.icon_size_raw = short_folk ? 1 : 2;
+    // Treasures' fights stand every character on one square, a tall one too
+    // (its chargen.pas: the icon's height is only drawn), so no weapon
+    // strikes one as large and every size check passes it.
+    if (record.game == GoldBoxGame::treasures_of_the_savage_frontier)
+    {
+        record.icon_size_raw = 1;
+    }
     for (const auto &id : sheet.prepared_spells)
     {
         if (const auto number = spell_number(id, game_of(sheet.identity)))

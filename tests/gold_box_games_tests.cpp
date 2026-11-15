@@ -5408,6 +5408,12 @@ const std::vector<RouteBeat> &treasure_route()
         RouteBeat siulajia{31, 11, 1, D::north, {}};
         siulajia.rest_first = true;
         siulajia.rest_for_spells = true;
+        // Her Banites' Hold Person takes the party's members, and a held one
+        // is slain at the next blow: the clerics ward each member with
+        // Protection from Evil (2 better saves against the evil) and keep
+        // Dispel Magic to free the held, as a player readies a known fight.
+        siulajia.ward_each_with = "protection_from_evil";
+        siulajia.memorize_first_of = {"dispel_magic"};
         route.push_back(siulajia);
         route.push_back({31, 11, 6, D::north, {}});
         RouteBeat jagaerda{31, 6, 6, D::north, {"YES"}};
@@ -5483,12 +5489,10 @@ const std::vector<RouteBeat> &treasure_route()
         council.rest_first = true;
         council.rest_for_spells = true;
         // Its Hosttower sorceresses charm: Charm Person and Dispel Magic free
-        // the charmed. A stand-in again since their Charm Person takes the
-        // party's members, as the original's does (treasure.md, Bugs): they
-        // charm the party faster than its casters free it, with every dice
-        // the route's player tries, so the test wins the fight.
+        // the charmed. The Krakens and sorceresses burst in a round or two
+        // apart, as the dwarves come to help (cell 44h), and the party beats
+        // them with Treasures' own spell table.
         council.memorize_first_of = {"charm_person", "dispel_magic"};
-        council.test_wins = true;
         route.push_back(council);
         route.push_back({30, 15, 4, D::north, {"YES"}});
         route.push_back({30, 1, 7, D::north, {"YES"}});
@@ -5701,12 +5705,15 @@ const std::vector<RouteBeat> &treasure_route()
         // instead, as a player hurries to the next inn. So does one in the
         // sea elves' caverns (map 22), whose ghouls, wights, otyughs and
         // carrion crawlers break every night's rest: the party walks on to
-        // the Zhentil captain's office, resting only before it.
-        constexpr unsigned first_overland = 51, last_overland = 57, caverns = 22;
+        // the Zhentil captain's office, resting only before it. So does a
+        // camp in Aurilssbaarg's streets, which the black-robed men and
+        // Luskan's guards hunting the party fall on (the cluebook bids it
+        // hurry through): the party walks on to Bjorn's Hold's campfire.
+        constexpr unsigned first_overland = 51, last_overland = 57, caverns = 22, aurilssbaarg = 35;
         for (auto &beat : route)
         {
-            beat.camp_broken =
-                (beat.map >= first_overland && beat.map <= last_overland) || beat.map == caverns;
+            beat.camp_broken = (beat.map >= first_overland && beat.map <= last_overland) ||
+                               beat.map == caverns || beat.map == aurilssbaarg;
         }
         return route;
     }();
@@ -6784,6 +6791,9 @@ bool walk_census(GoldBoxGame game, bool route)
     // The beat being played lets the test win a fight its player loses
     // (RouteBeat::test_wins).
     bool test_winning = false;
+    // OPENGOLD_ROUTE_PLAY_STAND_INS plays a stand-in's fights as any other,
+    // the test winning none (a planning aid).
+    const bool playing_stand_ins = std::getenv("OPENGOLD_ROUTE_PLAY_STAND_INS") != nullptr;
     // The beat being played keeps every enemy from fleeing (RouteBeat::holding_foes).
     bool holding_foes = false;
     // A planning aid (OPENGOLD_SECRET_FIND) wins every fight at once.
@@ -7885,7 +7895,7 @@ bool walk_census(GoldBoxGame game, bool route)
                 wanted_spells.insert(wanted_spells.end(), beat.memorize_first_of.begin(),
                                      beat.memorize_first_of.end());
                 // A camp before the beat fights as the beat does.
-                test_winning = beat.test_wins;
+                test_winning = beat.test_wins && !playing_stand_ins;
                 if (beat.rest_first || (beat.passing && !beat.camp_broken && party_hurt() &&
                                         session.snapshot().area_id != restless_map))
                 {
@@ -7968,7 +7978,7 @@ bool walk_census(GoldBoxGame game, bool route)
                     {
                         session.set_searching(*beat.searching);
                     }
-                    test_winning = beat.test_wins;
+                    test_winning = beat.test_wins && !playing_stand_ins;
                     holding_foes = beat.holding_foes;
                     maze_exits.assign(beat.maze_exits.begin(), beat.maze_exits.end());
                     if (beat.rest_choice)

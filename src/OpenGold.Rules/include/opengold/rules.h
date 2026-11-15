@@ -689,6 +689,10 @@ struct Participant
     // decides whether a broken creature that cannot run surrenders.
     unsigned morale{};
     unsigned intelligence{10};
+    // It joins the fight as this round ends, where it would have stood (0:
+    // there from the start): Treasures of the Savage Frontier's scripts hold
+    // some of a fight's creatures back (its LOAD MONSTER, cell 44h).
+    unsigned arrival_round{};
     // What the difficulty does to a monster (DIFF-2): its Hit Points in percent,
     // and what it adds to its weapon attack rolls.
     unsigned hit_points_percent{100};
