@@ -13,6 +13,7 @@
 #include "game_wall_art.h"
 #include "rolf_tour_view.h"
 #include "opengold/campaign_session.h"
+#include "opengold/diagnostic_log.h"
 #include "inventory_label.h"
 #include "opengold/campaign_party.h"
 #include "opengold/npc_portraits.h"
@@ -47,6 +48,7 @@
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/classes/scroll_container.hpp>
 #include <godot_cpp/classes/video_stream.hpp>
+#include <godot_cpp/classes/texture_rect.hpp>
 #include <godot_cpp/classes/video_stream_player.hpp>
 #include <godot_cpp/classes/viewport_texture.hpp>
 #include <godot_cpp/classes/window.hpp>
@@ -2017,8 +2019,12 @@ void RolfTourView::respond_to_input(const Ref<InputEvent> &event)
     {
         const Ref<InputEventKey> film_key = event;
         const Ref<InputEventMouseButton> film_click = event;
-        if ((film_key.is_valid() && film_key->is_pressed() && !film_key->is_echo()) ||
-            (film_click.is_valid() && film_click->is_pressed()))
+        // The original's own film takes a key only on screens it lets end it.
+        const bool key_ends_it =
+            !closing_film_ || closing_film_->screens.at(closing_screen_).after_key.has_value();
+        if (key_ends_it &&
+            ((film_key.is_valid() && film_key->is_pressed() && !film_key->is_echo()) ||
+             (film_click.is_valid() && film_click->is_pressed())))
         {
             end_ending_film();
         }
@@ -2145,6 +2151,7 @@ void RolfTourView::_process(double delta)
                               [&]
                               {
                                   advance_frame(delta);
+                                  advance_closing_film(delta);
                               });
 }
 
@@ -2690,8 +2697,14 @@ void RolfTourView::dismiss_monster_picture()
 
 void RolfTourView::play_ending_film()
 {
-    // A film is dropped in as endings/<the game's folder>.ogv (Theora) in the
-    // game's files; without one the closing words stand alone.
+    // The original's own closing film plays where it has one (Pools of
+    // Darkness' FINAL, which its CONTROL.EXE plays after the win).
+    if (play_closing_film())
+    {
+        return;
+    }
+    // Otherwise a film is dropped in as endings/<the game's folder>.ogv
+    // (Theora) in the game's files; without one the closing words stand alone.
     const auto folder = opengold::game_folder(dax_session().game());
     const String path =
         "res://endings/" + String::utf8(folder.data(), static_cast<int>(folder.size())) + ".ogv";
@@ -2729,8 +2742,100 @@ void RolfTourView::play_ending_film()
     }
 }
 
+// The game's closing film from the player's game, each screen for its time
+// with its song at the player's music level; false when the game has none or
+// it cannot be read.
+bool RolfTourView::play_closing_film()
+{
+    const auto game = dax_session().game();
+    const auto folder = presentation::path_from_godot(settings::game_path());
+    try
+    {
+        auto film = opengold::load_closing_film(folder, game);
+        if (film.screens.empty())
+        {
+            return false;
+        }
+        closing_film_ = std::move(film);
+    }
+    catch (const std::runtime_error &failure)
+    {
+        opengold::log_diagnostic(opengold::LogPriority::warning, "ending", failure.what());
+        return false;
+    }
+    auto *layer = memnew(CanvasLayer);
+    layer->set_name("EndingFilm");
+    layer->set_layer(100);
+    auto *screen = memnew(ColorRect);
+    screen->set_name("Screen");
+    screen->set_color(Color(0, 0, 0));
+    screen->set_anchors_and_offsets_preset(Control::PRESET_FULL_RECT);
+    layer->add_child(screen);
+    auto *picture = memnew(TextureRect);
+    picture->set_name("Picture");
+    picture->set_anchors_and_offsets_preset(Control::PRESET_FULL_RECT);
+    picture->set_expand_mode(TextureRect::EXPAND_IGNORE_SIZE);
+    picture->set_stretch_mode(TextureRect::STRETCH_KEEP_ASPECT_CENTERED);
+    picture->set_texture_filter(CanvasItem::TEXTURE_FILTER_NEAREST);
+    screen->add_child(picture);
+    auto *song_output = memnew(AudioStreamPlayer);
+    song_output->set_name("Song");
+    layer->add_child(song_output);
+    add_child(layer);
+    closing_screen_ = 0;
+    show_closing_screen();
+    if (const auto &song = closing_film_->film_song)
+    {
+        try
+        {
+            constexpr unsigned song_clip = 1;
+            closing_song_ =
+                std::make_unique<SoundPlayer>(SoundBank::load_song(song->file, game, song->number),
+                                              std::make_unique<GodotSoundOutput>(*song_output));
+            closing_song_->set_volume(settings::sound_volume(settings::SoundKind::music));
+            closing_song_->play(song_clip);
+        }
+        catch (const std::runtime_error &failure)
+        {
+            // The film plays silent when its song cannot be read.
+            opengold::log_diagnostic(opengold::LogPriority::warning, "ending", failure.what());
+        }
+    }
+    return true;
+}
+
+void RolfTourView::show_closing_screen()
+{
+    const auto &shown = closing_film_->screens.at(closing_screen_);
+    required_node<TextureRect>(*this, "EndingFilm/Screen/Picture")
+        .set_texture(presentation::image_texture(shown.screen));
+    closing_seconds_left_ = shown.seconds;
+}
+
+// Each screen of the closing film stays its time; the film ends after its last.
+void RolfTourView::advance_closing_film(double delta)
+{
+    if (!closing_film_ || !ending_film_playing())
+    {
+        return;
+    }
+    closing_seconds_left_ -= delta;
+    if (closing_seconds_left_ > 0)
+    {
+        return;
+    }
+    if (++closing_screen_ >= closing_film_->screens.size())
+    {
+        end_ending_film();
+        return;
+    }
+    show_closing_screen();
+}
+
 void RolfTourView::end_ending_film()
 {
+    closing_film_.reset();
+    closing_song_.reset();
     // Freed at the frame's end, as the film's own finished signal may call this.
     if (auto *film = get_node_or_null("EndingFilm"))
     {

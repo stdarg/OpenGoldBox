@@ -6,6 +6,7 @@
 #include "opengold/rolf_tour.h"
 #include "portrait_catalog.h"
 #include "opengold/sound_player.h"
+#include "opengold/title_screens.h"
 #include <godot_cpp/classes/control.hpp>
 #include <godot_cpp/classes/image.hpp>
 #include <godot_cpp/classes/input_event.hpp>
@@ -190,6 +191,12 @@ class RolfTourView : public godot::Control
     // Whether the last snapshot shown had just won the game (its film, if
     // any, plays once a win).
     bool won_game_shown_{};
+    // The original's own closing film while it plays (Pools of Darkness'
+    // FINAL): its screens, the one shown, that screen's time left, and its song.
+    std::optional<opengold::TitleScreens> closing_film_;
+    std::size_t closing_screen_{};
+    double closing_seconds_left_{};
+    std::unique_ptr<opengold::por::SoundPlayer> closing_song_;
     // The original's sound effects from the player's game, when they have them.
     std::unique_ptr<opengold::por::SoundPlayer> original_sound_;
     unsigned rendered_sprite_id_{999};
@@ -252,6 +259,9 @@ class RolfTourView : public godot::Control
     // The game's ending film, played over the whole window when the party
     // wins and the film is among the game's files; any key or click ends it.
     void play_ending_film();
+    [[nodiscard]] bool play_closing_film();
+    void show_closing_screen();
+    void advance_closing_film(double delta);
     void end_ending_film();
     [[nodiscard]] bool ending_film_playing() const;
     void restart();
