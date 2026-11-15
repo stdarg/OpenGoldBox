@@ -5905,7 +5905,10 @@ void Session::petrifying_gaze(Fighter &gazer)
     }
     // The kit's and Pools of Darkness's immunity to gazes spares it
     // (effhndlr.pas, EffImmuneGaze).
-    if (!saving_throw(*victim, 1, 0, &gazer) && !victim->has(effect::gaze_proof))
+    // The kit spares an iron golem too (its 79; effects.c, fx_stone_gaze).
+    const bool spared =
+        victim->has(effect::gaze_proof) || (kit() && victim->has(effect::iron_golem));
+    if (!saving_throw(*victim, 1, 0, &gazer) && !spared)
     {
         turn_to_stone(*victim);
     }
@@ -7630,7 +7633,10 @@ int Session::weapon_damage_defenses(const Fighter &attacker, Fighter &defender, 
     {
         damage = roll(8) + roll(8) + roll(8);
     }
-    if (defender.has(117) && attacker.numbers.weapon_type == 85)
+    // The kit's holy water is its item type 36h (effects.c,
+    // fx_weapon_type36_damage).
+    const int holy_water = kit() ? 0x36 : 85;
+    if (defender.has(117) && attacker.numbers.weapon_type == holy_water)
     {
         damage = roll(6) + 1;
     }

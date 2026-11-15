@@ -5274,6 +5274,31 @@ void the_kits_monsters_differ_as_the_kit_has_them()
                           263, {}, 100, kit_game);
     check(logged(*feared.session, "{name} is affected by {spell}.") == 2,
           "The kit's terror grips those below 6 Hit Dice that fail their save");
+
+    // Its stoning gaze (58, the fight's 458) spares an iron golem (79, 479).
+    const auto gazed_at = [](original::Combatant target)
+    {
+        auto fight = arrange({{"Fighter", rules::Side::party, {0, 3}, target},
+                              {"Gorgon",
+                               rules::Side::opposition,
+                               {5, 3},
+                               special({{original::canonical_effect(58, kit_game), 0, 0, false}})}},
+                             197, {}, 100, kit_game);
+        until_turn_of(*fight.session, "Gorgon");
+        fight.session->submit(order(*fight.session, "quick"));
+        return view_of(fight.session->snapshot(), "Fighter").status;
+    };
+    auto golem = victim();
+    golem.effects.push_back({original::canonical_effect(79, kit_game), 0, 0, false});
+    check(gazed_at(victim()) == "stoned" && gazed_at(golem).empty(),
+          "The kit's stoning gaze spares an iron golem");
+    // Its holy water is its item type 36h (159, the fight's 117).
+    auto vial = hitter(std::nullopt, 1);
+    vial.weapon_type = 0x36;
+    auto undead = creature(1000, 0);
+    undead.effects.push_back({original::canonical_effect(159, kit_game), 0, 0, false});
+    const int holy = first_hit(vial, undead, kit_game);
+    check(holy >= 2 && holy <= 7, "The kit's holy water burns the undead for 1d6+1");
 }
 
 void the_kits_rangers_know_their_foes()

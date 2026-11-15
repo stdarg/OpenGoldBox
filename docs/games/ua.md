@@ -617,7 +617,7 @@ Appraise and the vault's items are done): a temple's Restoration, building
 on the rules' Restoration in camp and the temple service
 (`rules::TempleService::restoration`) that Pools of Darkness's and
 Treasures' temples sell, once that is on main; the near matches'
-differences left (58, 82, 91, 96, 117, 159 and 170; Monsters' effects).
+differences left (58's reach, 82, 91, 96, 117 and 170; Monsters' effects).
 
 ### Monsters' effects, "no magic" fights and step events
 
@@ -643,15 +643,15 @@ Since 2026-11-14 (`ua_session.cpp`, `combatant.cpp`):
   | 58 | 458~ | 91 | 88~ | 141 | 108 | 220 | 296 |
   | 59 | 127 | 92 | 492 | 143 | 111 | 223 | 480 |
   | 64 | 64 | 93 | 112 | 158 | 109 |  |  |
-  | 65 | 465 | 95 | 107 | 159 | 117~ |  |  |
+  | 65 | 465 | 95 | 107 | 159 | 117 |  |  |
   | 66 | 115 | 96 | 290~ | 169 | 116 |  |  |
 
-  A ~ marks a near match: the gaze of 58 reaches six squares and spares no
-  one the kit's 79 spares; 82 slays with the banishing quarrel; 91
+  A ~ marks a near match: the gaze of 58 reaches six squares; 82 slays with the banishing quarrel; 91
   breathes as Pool of Radiance's dragons do; 96 is acid as well as breath;
-  117's rays need their exact distances; 159's holy water is the fight's;
-  170's rot takes no Charisma. Two play as the kit's in a design
-  (2026-11-15): 100's terror grips an enemy below 6 Hit Dice that fails a
+  117's rays need their exact distances; 170's rot takes no Charisma.
+  Four play as the kit's in a design (2026-11-15): 58's gaze spares an
+  iron golem (the kit's 79) as well as one that meets gazes unharmed; 159
+  takes holy water as the kit's item type 36h; 100's terror grips an enemy below 6 Hit Dice that fails a
   save against spells, for 4d6 rounds (`fx_terrify`), and 124's gaze
   charms as Charm Person, saved against without the -2 Pool of Radiance's
   vampires give (`fx_spell_gaze`). (Until 2026-11-14 the fight played 84's
