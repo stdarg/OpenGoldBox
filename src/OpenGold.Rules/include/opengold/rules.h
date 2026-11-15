@@ -1175,6 +1175,15 @@ class RulesModule
     {
         (void)abilities;
     }
+
+    // Plays in later fights the gazes a game registers but its original
+    // never runs (Pools of Darkness's paralyzing and charming gazes, its
+    // effects 114 and 124: the game's option, off by default). A module
+    // without them has nothing to play.
+    virtual void play_unplayed_gazes(bool played)
+    {
+        (void)played;
+    }
     [[nodiscard]] virtual CharacterProfile
     character_profile(const CharacterSheet &, std::span<const std::string>) const = 0;
     [[nodiscard]] virtual EquipmentInfo equipment_info(std::string_view) const = 0;

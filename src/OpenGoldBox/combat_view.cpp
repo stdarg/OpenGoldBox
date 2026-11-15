@@ -538,6 +538,7 @@ std::unique_ptr<rules::RulesModule> fight_rules(const GameRules &rules)
 {
     auto module = make_rules_module(rules, game_rules_files());
     module->switch_off_abilities(settings::monster_abilities_off());
+    module->play_unplayed_gazes(settings::darkness_gazes());
     return module;
 }
 } // namespace

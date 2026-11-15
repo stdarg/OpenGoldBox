@@ -173,6 +173,10 @@ constexpr int halves_elements = 1333, stone_to_flesh_kills = 1334, slug_acid = 1
 // Treasures' last effect (160), so no record of its names it. Its victim is
 // held still (Curse's 136, Treasures' 156).
 constexpr int squeezing = vga_effect_offset + 201, held_still = 336;
+// Pools of Darkness's paralyzing gaze (its 114, plus darkness_effect_offset)
+// and charming gaze (its 124, plus secret_effect_offset), which its original
+// registers but no fight runs.
+constexpr int darkness_paralyzing_gaze = 584, darkness_charming_gaze = 524;
 } // namespace effect
 
 // What a hit carries, by the attacker's effects, in the original's order: a
@@ -911,6 +915,8 @@ class Session final : public rules::CombatSession
     bool outdoors_{};
     // Gateway's maze fights: a member's escape ends them (rules::Encounter).
     bool escape_ends_fight_{};
+    // Pools of Darkness's gazes are played (play_gazes).
+    bool gazes_played_{};
     // The side the member who ended such a fight ran off.
     std::optional<unsigned> escape_side_;
     // The party's facing and the script's change to its movement
@@ -957,6 +963,16 @@ class Session final : public rules::CombatSession
     // other damage, which has no dice to weigh.
     int damage_dice_{};
 
+  public:
+    // Pools of Darkness's paralyzing and charming gazes (its 114 and 124)
+    // work when `played`, as their handlers describe; otherwise they do
+    // nothing, as in the original, whose fights never run them.
+    void play_gazes(bool played)
+    {
+        gazes_played_ = played;
+    }
+
+  private:
     [[nodiscard]] bool secret() const
     {
         return game_of(identity_) == GoldBoxGame::secret_of_the_silver_blades;
@@ -1106,6 +1122,7 @@ class Session final : public rules::CombatSession
     void lightning_path(Cell origin, Cell aim, int length, int damage, int level, bool bounce,
                         int save = 4, int element = 12, int spell_number = 51);
     void monster_specials(Fighter &f);
+    void darkness_gazes(Fighter &f);
     void curse_specials(Fighter &f);
     void secret_specials(Fighter &f);
     void kit_specials(Fighter &f);
@@ -6010,6 +6027,49 @@ bool Session::ai_move_attack(Fighter &f)
     return true;
 }
 
+// Pools of Darkness's gazes, played only where the game's option asks
+// (docs/CONFIGURATION.md, darkness_gazes): the paralyzing gaze holds its
+// lock for 10 rounds unless it saves against paralysis at +3 or meets gazes
+// unharmed, a mirror turning a reflectable gaze back on the gazer
+// (effhndlr.pas, EffParalyzeGaze); the charming gaze casts Charm Person at
+// it, saved against as the spell is (magic.pas, EffGazeCharm).
+void Session::darkness_gazes(Fighter &f)
+{
+    auto *lock = find(f.lock);
+    const auto in_sight = [&]
+    {
+        return f.able() && lock && lock->able() && lock->side != f.side && can_target(f, *lock) &&
+               sees(board_, f, *lock);
+    };
+    if (f.has(effect::darkness_paralyzing_gaze) && in_sight())
+    {
+        log({"{name} gazes.", {{"name", f.name}}});
+        Fighter *victim = lock;
+        if (f.has(effect::reflectable_gaze) && lock->numbers.mirror)
+        {
+            log({"{name} reflects it.", {{"name", lock->name}}});
+            victim = &f;
+        }
+        if (!saving_throw(*victim, 1, 3, &f) && !victim->has(effect::gaze_proof))
+        {
+            log({"{name} is paralyzed.", {{"name", victim->name}}});
+            victim->numbers.effects.push_back({effect::paralysis, 10, 12, false});
+        }
+    }
+    lock = find(f.lock);
+    if (f.has(effect::darkness_charming_gaze) && in_sight())
+    {
+        log({"{name} gazes.", {{"name", f.name}}});
+        const bool saved = saving_throw(*lock, 4, 0, &f) || lock->has(effect::gaze_proof);
+        if (add_with_message(*lock,
+                             {effect::charm, 0, (f.side == Side::opposition ? 128 : 0) + 12, true},
+                             true, saved, 0, 12, game_spell(10)))
+        {
+            charm(*lock, f.side);
+        }
+    }
+}
+
 // A monster's own specials as its AI moves and attacks (combatai.pas,
 // MONSTER_SPECIAL): the petrifying gaze, the charming gaze, the lightning
 // breath and the ankheg's acid, at its lock.
@@ -6070,6 +6130,10 @@ void Session::monster_specials(Fighter &f)
         {
             charm(*lock, f.side);
         }
+    }
+    if (darkness() && gazes_played_)
+    {
+        darkness_gazes(f);
     }
     if (const auto *breath = f.find_effect(88); breath && (round_ == 1 || roll(100) > 50))
     {
@@ -10092,7 +10156,7 @@ void strengthen(Combatant &numbers, const rules::OriginalStrength &strength)
 
 std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
                                                      rules::Encounter encounter, std::uint64_t seed,
-                                                     const Content &content)
+                                                     const Content &content, bool gazes_played)
 {
     std::vector<Fighter> fighters;
     for (auto &p : encounter.participants)
@@ -10199,13 +10263,17 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
                                              encounter.outdoors, encounter.escape_ends_fight,
                                              encounter.party_facing, encounter.party_move_modifier);
     session->know_item_types(content.item_types);
+    session->play_gazes(gazes_played);
     return session;
 }
 
-std::unique_ptr<rules::CombatSession>
-restore_session(rules::Identity identity, std::string_view checkpoint, const Content &content)
+std::unique_ptr<rules::CombatSession> restore_session(rules::Identity identity,
+                                                      std::string_view checkpoint,
+                                                      const Content &content, bool gazes_played)
 {
-    return Session::restored(std::move(identity), checkpoint, content);
+    auto session = Session::restored(std::move(identity), checkpoint, content);
+    session->play_gazes(gazes_played);
+    return session;
 }
 
 } // namespace opengold::original::detail

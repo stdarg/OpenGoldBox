@@ -201,6 +201,8 @@ void GameMenuView::open_options()
         .select(settings::original_shops(opengold::GoldBoxGame::pool_of_radiance) ? 0 : 1);
     required_node<OptionButton>(*this, "Options/Gameplay/TreasuresMoney")
         .select(settings::gateway_money_kept() ? 0 : 1);
+    required_node<OptionButton>(*this, "Options/Gameplay/DarknessGazes")
+        .select(settings::darkness_gazes() ? 0 : 1);
     required_node<OptionButton>(*this, "Options/Gameplay/DesignDifficulty")
         .select(static_cast<int>(settings::design_difficulty()));
     const auto language = settings::language();
@@ -269,7 +271,8 @@ void GameMenuView::build_options()
                     &GameMenuView::unidentified_magic_selected},
           std::pair{"Options/Gameplay/KeepQuick", &GameMenuView::keep_quick_selected},
           std::pair{"Options/Gameplay/OriginalShops", &GameMenuView::original_shops_selected},
-          std::pair{"Options/Gameplay/TreasuresMoney", &GameMenuView::treasures_money_selected}})
+          std::pair{"Options/Gameplay/TreasuresMoney", &GameMenuView::treasures_money_selected},
+          std::pair{"Options/Gameplay/DarknessGazes", &GameMenuView::darkness_gazes_selected}})
     {
         auto &choice = required_node<OptionButton>(*this, path);
         choice.add_item(i18n::text(N_("On")));
@@ -514,6 +517,11 @@ void GameMenuView::original_shops_selected(std::int64_t index)
 void GameMenuView::treasures_money_selected(std::int64_t index)
 {
     settings::save_gateway_money_kept(index == 0);
+}
+
+void GameMenuView::darkness_gazes_selected(std::int64_t index)
+{
+    settings::save_darkness_gazes(index == 0);
 }
 
 void GameMenuView::design_difficulty_selected(std::int64_t index)

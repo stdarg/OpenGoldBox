@@ -329,6 +329,18 @@ bool save_gateway_money_kept(bool kept)
     return save("gateway_money", folder.c_str(), kept ? "on" : "off");
 }
 
+bool darkness_gazes()
+{
+    const std::string folder(opengold::game_folder(opengold::GoldBoxGame::pools_of_darkness));
+    return read("darkness_gazes", folder.c_str()).to_lower() == "on";
+}
+
+bool save_darkness_gazes(bool played)
+{
+    const std::string folder(opengold::game_folder(opengold::GoldBoxGame::pools_of_darkness));
+    return save("darkness_gazes", folder.c_str(), played ? "on" : "off");
+}
+
 namespace
 {
 // The names settings.cfg spells design_difficulty's choices with, in order.

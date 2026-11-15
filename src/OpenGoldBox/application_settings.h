@@ -61,6 +61,11 @@ bool save_original_shops(opengold::GoldBoxGame game, bool original);
 // otherwise it starts with Treasures' 200 platinum.
 bool gateway_money_kept();
 bool save_gateway_money_kept(bool kept);
+// [darkness_gazes] DARKNESS: "on" plays Pools of Darkness's paralyzing and
+// charming gazes (its effects 114 and 124), which the original registers but
+// never runs; otherwise they do nothing, as in the original.
+bool darkness_gazes();
+bool save_darkness_gazes(bool played);
 // [design_difficulty] UA: how the difficulty plays in an Unlimited Adventures
 // design, "design" (the kit's own levels), "table" (OpenGoldBox's table) or
 // "both", the default.

@@ -11,13 +11,15 @@ namespace opengold::original::detail
 // A fight under the original rules (combat_session.cpp). A participant fights
 // with the numbers its character profile encodes, or its definition's in the
 // bestiary.
-[[nodiscard]] std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
-                                                                   rules::Encounter encounter,
-                                                                   std::uint64_t seed,
-                                                                   const Content &content);
-// A fight saved with CombatSession::save; its items' types are the game's.
 [[nodiscard]] std::unique_ptr<rules::CombatSession>
-restore_session(rules::Identity identity, std::string_view checkpoint, const Content &content);
+create_session(rules::Identity identity, rules::Encounter encounter, std::uint64_t seed,
+               const Content &content, bool gazes_played = false);
+// A fight saved with CombatSession::save; its items' types are the game's.
+// `gazes_played` plays Pools of Darkness's paralyzing and charming gazes.
+[[nodiscard]] std::unique_ptr<rules::CombatSession> restore_session(rules::Identity identity,
+                                                                    std::string_view checkpoint,
+                                                                    const Content &content,
+                                                                    bool gazes_played = false);
 
 } // namespace opengold::original::detail
 #endif

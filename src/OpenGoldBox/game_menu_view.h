@@ -73,6 +73,7 @@ class GameMenuView : public godot::Control
     void original_shops_selected(std::int64_t index);
     // Whether a character brought from Gateway into Treasures keeps its money.
     void treasures_money_selected(std::int64_t index);
+    void darkness_gazes_selected(std::int64_t index);
     // How the difficulty plays in an Unlimited Adventures design.
     void design_difficulty_selected(std::int64_t index);
     // "Do not equip unidentified magic items" is offered only while auto-equip is on.

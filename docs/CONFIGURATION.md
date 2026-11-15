@@ -29,6 +29,9 @@ legendary="hard"
 [original_shops]
 POOLRAD="on"
 
+[darkness_gazes]
+DARKNESS="off"
+
 [design_difficulty]
 UA="both"
 
@@ -79,7 +82,7 @@ files receive the default. See
 
 The in-game menu's **Options** screen (Escape) sets these settings and writes
 them at once: under Gameplay `difficulty`, `encounter_challenge`, the
-`[gear]` section, `keep_quick`, `[original_shops]`, `[design_difficulty]` and the `[monsters]` section below; under Interface `language`, which takes effect the
+`[gear]` section, `keep_quick`, `[original_shops]`, `[darkness_gazes]`, `[design_difficulty]` and the `[monsters]` section below; under Interface `language`, which takes effect the
 next time the game starts, `combat_zoom`, read when a fight opens, the
 `[art]` section below, which takes effect at once, and `[sound]`.
 
@@ -135,6 +138,16 @@ Pool of Radiance's New Phlan adds the Rogue's Shop, behind its secret door,
 and OpenGoldBox's gear (magic ink, the rogue's kits and poisons) at
 OpenGoldBox's prices. Only Pool of Radiance has modified shops so far. It is
 read when a game starts or loads.
+
+`[darkness_gazes] DARKNESS` is the Options screen's Darkness's gazes
+(the user, 2026-11-15). *Pools of Darkness*'s paralyzing gaze (its effect
+114, the gaze spider's) and charming gaze (its 124, the vampires') have
+handlers its original registers but no fight runs. `on` plays them as those
+handlers describe: the paralyzing gaze holds its target for 10 rounds unless
+it saves against paralysis at +3, and the charming gaze casts Charm Person.
+`off`, the default, also used for any value but `on`, leaves them doing
+nothing, as in the original. The combat screen reads it when a fight
+starts.
 
 `[design_difficulty] UA` is the Options screen's Design difficulty: how
 `difficulty` plays in an *Unlimited Adventures* design (the user, 2026-11-15;

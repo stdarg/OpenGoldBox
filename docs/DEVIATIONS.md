@@ -310,6 +310,15 @@ Departures from the original game's own rules, when OpenGoldBox plays by them
   `COMSPR.TLB`). A party made in OpenGoldBox has the combat icon its
   creation gives it, from the DAX games' art, as on their combat screens;
   the design's monsters keep the kit's own icons (`CPIC.TLB`).
+- **Pools of Darkness's gazes, an option** (the user, 2026-11-15). The
+  original registers handlers for the gaze spider's paralyzing gaze (its
+  effect 114) and the vampires' charming gaze (its 124) but no condition of
+  its fights runs them, so they never gaze. The Options screen's Darkness's
+  gazes (`[darkness_gazes]`, [CONFIGURATION.md](CONFIGURATION.md)) plays
+  them, on, as those handlers describe: the paralyzing gaze holds its
+  target for 10 rounds unless it saves against paralysis at +3 or meets
+  gazes unharmed, a mirror turning it back on the gazer; the charming gaze
+  casts Charm Person. Off, the default, they do nothing, as in the original.
 
 ## Party and parley
 

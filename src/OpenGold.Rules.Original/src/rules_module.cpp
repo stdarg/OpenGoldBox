@@ -656,6 +656,11 @@ class OriginalModule final : public RulesModule
     [[nodiscard]] RestPolicy short_rest_policy() const override;
     void set_hit_points(VitalState &, const CharacterSheet &, int) const override;
 
+    void play_unplayed_gazes(bool played) override
+    {
+        gazes_played_ = played;
+    }
+
     [[nodiscard]] bool offers_temple_service(TempleService service) const override
     {
         return service != TempleService::resurrection && service != TempleService::cure_feeblemind;
@@ -712,6 +717,8 @@ class OriginalModule final : public RulesModule
     [[nodiscard]] std::vector<CarriedItem> readied(std::span<const std::string> gear) const;
 
     Content content_;
+    // Pools of Darkness's gazes are played in later fights (the game's option).
+    bool gazes_played_{};
 };
 
 } // namespace
@@ -723,12 +730,12 @@ Identity OriginalModule::identity() const
 
 std::unique_ptr<CombatSession> OriginalModule::create(Encounter encounter, std::uint64_t seed) const
 {
-    return detail::create_session(identity(), std::move(encounter), seed, content_);
+    return detail::create_session(identity(), std::move(encounter), seed, content_, gazes_played_);
 }
 
 std::unique_ptr<CombatSession> OriginalModule::restore(std::string_view checkpoint) const
 {
-    return detail::restore_session(identity(), checkpoint, content_);
+    return detail::restore_session(identity(), checkpoint, content_, gazes_played_);
 }
 
 CharacterProfile OriginalModule::character_profile(const CharacterSheet &sheet,

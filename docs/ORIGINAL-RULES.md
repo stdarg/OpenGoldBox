@@ -573,7 +573,9 @@ Journal), chosen by the game as the others' are (2026-11-14):
     paralyzing and charming gazes (114, 124) have handlers
     (EffParalyzeGaze, EffGazeCharm) that the original registers but no
     condition of its fights runs, so the gaze spider and the vampires never
-    gaze: OpenGoldBox plays them as nothing too (2026-11-15).
+    gaze: OpenGoldBox plays them as nothing too (2026-11-15), unless the
+    Options screen's Darkness's gazes is on (DEVIATIONS.md, the user's
+    decision of 2026-11-15).
   - *Its own, not played yet:* a giant-slaying sword (75), the bulette's
     rake (99), the beholders' rays (117, which the original plays as
     nothing) and the vorpal blade (115).

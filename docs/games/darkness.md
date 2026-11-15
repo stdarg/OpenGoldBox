@@ -914,6 +914,12 @@ member's like the item (the same record and name; a stack in the original,
 with fewer than two charges) joins it, up to 255 a stack. The game's Items
 screen has no Join button yet; the route joins its blessed bolts.
 
+The gaze spider's paralyzing gaze and the vampires' charming gaze (effects
+114 and 124) are an option since 2026-11-15, the user's decision: the
+original registers their handlers but never runs them, so off (the
+default, which the route plays) they do nothing, and on they work as the
+handlers describe (CONFIGURATION.md, `[darkness_gazes]`; DEVIATIONS.md).
+
 The route walks straight to its goals, where a player meets the wandering
 monsters of every area (the cluebook names them for each) and, in the Web
 Dimension, gains "as much experience as you can" before Kalistes. So the

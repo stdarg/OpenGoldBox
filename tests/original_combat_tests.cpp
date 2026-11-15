@@ -379,12 +379,13 @@ Fight arrange(const std::vector<Placed> &placed, std::uint64_t seed,
               GoldBoxGame game = GoldBoxGame::pool_of_radiance, bool outdoors = false,
               bool no_magic = false,
               const std::function<void(rules::Encounter &)> &adjust = nullptr,
-              std::vector<por::ItemTemplate> item_types = {})
+              std::vector<por::ItemTemplate> item_types = {}, bool gazes_played = false)
 {
     original::Content content;
     content.game = game;
     content.item_types = std::move(item_types);
     Fight fight{original::rules_module(std::move(content)), nullptr};
+    fight.module->play_unplayed_gazes(gazes_played);
     rules::Encounter encounter;
     encounter.morale = morale;
     encounter.outdoors = outdoors;
@@ -4396,7 +4397,8 @@ void darkness_dragons_breathe_and_spiders_gaze()
     check(logged(*beside.session, "{name} breathes.") == 1 && burnt_members == 1,
           "The black dragon's acid is one square wide");
 
-    // The gazes the original registers but never runs stay still.
+    // The gazes the original registers but never runs stay still, the
+    // game's option off.
     auto spider =
         arrange_darkness({{"Fighter", rules::Side::party, {2, 3}, victim(50)},
                           {"Gazer",
@@ -4410,6 +4412,46 @@ void darkness_dragons_breathe_and_spiders_gaze()
     spider.session->submit(order(*spider.session, "quick"));
     check(logged(*spider.session, "{name} gazes.") == 0,
           "A gaze spider and a vampire never gaze, as in the original");
+}
+
+// With the game's option Darkness's gazes on (the user, 2026-11-15), the
+// gaze spider's paralyzing gaze (its 114) holds the enemy it locks onto
+// unless it saves (effhndlr.pas, EffParalyzeGaze), and the vampire's
+// charming gaze (its 124) casts Charm Person at it (magic.pas,
+// EffGazeCharm); with it off they do nothing, as in the original.
+void darkness_gazes_work_with_the_option_on()
+{
+    const auto gazing = [](int code, bool played, std::uint64_t seed)
+    {
+        auto fight = arrange(
+            {{"Fighter", rules::Side::party, {2, 3}, victim(500)},
+             {"Gazer",
+              rules::Side::opposition,
+              {4, 3},
+              special({{original::canonical_effect(code, darkness_game), 0, 0, false}}, 40)}},
+            seed, {}, 100, darkness_game, false, false, nullptr, {}, played);
+        ai_plays(
+            *fight.session, "Gazer",
+            []
+            {
+                return false;
+            },
+            6);
+        return fight;
+    };
+    int paralyzed = 0, charmed = 0, gazed_off = 0;
+    for (std::uint64_t seed = 1; seed <= 12; ++seed)
+    {
+        const auto spider = gazing(114, true, seed);
+        paralyzed += logged(*spider.session, "{name} is paralyzed.");
+        const auto vampire = gazing(124, true, seed);
+        charmed += view_of(vampire.session->snapshot(), "Fighter").side == rules::Side::opposition;
+        gazed_off += logged(*gazing(114, false, seed).session, "{name} gazes.") +
+                     logged(*gazing(124, false, seed).session, "{name} gazes.");
+    }
+    check(paralyzed > 0, "With the option on, the gaze spider's gaze paralyzes");
+    check(charmed > 0, "With the option on, the vampire's gaze charms");
+    check(gazed_off == 0, "With the option off, neither gazes, as in the original");
 }
 
 // Pools of Darkness plays Secret's rules where its reconstruction does as
@@ -5880,6 +5922,7 @@ int main()
         darkness_monsters_fight_by_their_effects();
         darkness_kalistes_strikes_with_six_weapons();
         darkness_dragons_breathe_and_spiders_gaze();
+        darkness_gazes_work_with_the_option_on();
         darkness_holds_no_monster();
         std::cout << "Original-rules combat passed.\n";
     }
