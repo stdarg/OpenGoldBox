@@ -32677,8 +32677,10 @@ class Module final : public RulesModule
             break;
         }
         case TempleService::heal:
-            // Curse's Heal helps no one under the SRD until its SRD version
-            // (docs/GAMES.md, phase 9), so the check above has refused it.
+        case TempleService::restoration:
+            // Curse's Heal and the later games' Restoration help no one under
+            // the SRD until their SRD versions (docs/GAMES.md, phase 9), so
+            // the check above has refused them.
             break;
         }
         state = vitals(patient);

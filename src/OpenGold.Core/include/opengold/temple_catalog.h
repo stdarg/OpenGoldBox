@@ -39,9 +39,11 @@ struct TempleServiceInfo
 };
 
 // Every service, in the original's order, with the original's prices, which
-// were the same at every temple; Resurrection is OpenGoldBox's, and Heal
-// Curse's (offered after Cure Critical Wounds).
-inline constexpr std::array<TempleServiceInfo, 11> temple_services{{
+// were the same at every temple; Resurrection is OpenGoldBox's, Heal
+// Curse's (offered after Cure Critical Wounds), and Restoration Pools of
+// Darkness's and Treasures', whose temples ask nothing for it (their
+// temple.pas has no prices).
+inline constexpr std::array<TempleServiceInfo, 12> temple_services{{
     {rules::TempleService::cure_blindness, "cure_blindness", "Cure Blindness", 1000},
     {rules::TempleService::cure_disease, "cure_disease", "Cure Disease", 1000},
     {rules::TempleService::cure_light_wounds, "cure_light_wounds", "Cure Light Wounds", 100},
@@ -54,6 +56,7 @@ inline constexpr std::array<TempleServiceInfo, 11> temple_services{{
     {rules::TempleService::stone_to_flesh, "stone_to_flesh", "Stone to Flesh", 2000},
     {rules::TempleService::resurrection, "resurrection", "Resurrection", 11000},
     {rules::TempleService::heal, "heal", "Heal", 5000},
+    {rules::TempleService::restoration, "restoration", "Restoration", 0},
 }};
 
 [[nodiscard]] constexpr const TempleServiceInfo &temple_service_info(rules::TempleService service)
@@ -76,13 +79,16 @@ temple_service_named(std::string_view id)
 
 // A temple the data does not name offers every service of the game at the
 // original's price: Curse's adds Heal after Cure Critical Wounds (ovr005,
-// temple_heal in its reconstruction).
-[[nodiscard]] inline std::vector<TempleOffering> original_temple_offerings(bool offers_heal = false)
+// temple_heal in its reconstruction), and Pools of Darkness's and
+// Treasures' Restoration last (their HealMenu).
+[[nodiscard]] inline std::vector<TempleOffering>
+original_temple_offerings(bool offers_heal = false, bool offers_restoration = false)
 {
     std::vector<TempleOffering> offerings;
     for (const auto &info : temple_services)
     {
-        if (info.service == rules::TempleService::heal)
+        if (info.service == rules::TempleService::heal ||
+            (info.service == rules::TempleService::restoration && !offers_restoration))
         {
             continue;
         }

@@ -3,6 +3,7 @@
 #include "opengold/character_pool.h"
 #include "opengold/creature_catalog.h"
 #include "opengold/coin_purse.h"
+#include "opengold/temple_catalog.h"
 #include "opengold/training_hall.h"
 #include "opengold/original_combat.h"
 #include "opengold/original.h"
@@ -2147,6 +2148,25 @@ void darkness_restoration_gives_levels_back()
               kept->character.sheet().hit_points == restored.character.sheet().hit_points &&
               kept->character.sheet().original->peak_class_levels[2] == 14,
           "A save keeps the level given back");
+
+    // The temple's Restoration (temple.pas, Restoration) gives the second
+    // drained level back, for nothing; not to one never drained.
+    check(party.temple_service_helps(fighter, rules::TempleService::restoration) &&
+              !party.temple_service_helps(cleric, rules::TempleService::restoration),
+          "The temple offers Restoration to the drained");
+    party.temple_service(fighter, rules::TempleService::restoration, 0);
+    check(party.member(fighter).character.sheet().original->class_levels[2] == 14 &&
+              !party.temple_service_helps(fighter, rules::TempleService::restoration),
+          "The temple's Restoration gives the last drained level back");
+    const auto offered = original_temple_offerings(true, true);
+    check(offered.back().service == rules::TempleService::restoration &&
+              offered.back().price_gp == 0 &&
+              std::ranges::none_of(original_temple_offerings(true),
+                                   [](const TempleOffering &offering)
+                                   {
+                                       return offering.service == rules::TempleService::restoration;
+                                   }),
+          "Pools of Darkness's and Treasures' temples offer it last and free, no other");
 
     // On the cleric, never drained, it is spent and does nothing.
     check(party.rest(), "The party rests again");

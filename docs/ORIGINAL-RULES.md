@@ -566,8 +566,12 @@ Journal), chosen by the game as the others' are (2026-11-14):
   games' (*Secret* has none, *Pools of Darkness* has it), and so does the
   AI's step into a cloud (its `AiCanStep` neither saves nor counts movement
   as *Secret*'s does).
-- **Still to come:** the temples' Restoration, a service the game's temple
-  screen does not offer yet; Mass Charm's test of the record's
+- **The temple's Restoration** (2026-11-15; temple.pas, `Restoration`,
+  eleventh in its `HealMenu`) gives a drained member back a level as the
+  spell does, for nothing, as *Pools of Darkness*'s and *Treasures*'
+  temples ask nothing (`rules::TempleService::restoration`); it is offered
+  only to one a drain has taken below its peak.
+- **Still to come:** Mass Charm's test of the record's
   charmable flag (it passes over only a large creature and the caster's
   side for now); the monsters' effects not played yet (above); its own
   turning (paladins from level 3, a limit of tries a fight) and cloud
@@ -665,8 +669,8 @@ whole list):
 
 The work asked for next (2026-11-14, brought up to date 2026-11-15), in
 order, with what each needs. Done since: the difficulty levels, the halls'
-class masks, AD&D aging by the clock, Spiritual Hammer's lasting hammer and
-the later games' effect numbers.
+class masks, AD&D aging by the clock, the temples' Restoration, Spiritual
+Hammer's lasting hammer and the later games' effect numbers.
 
 1. The other "Still to come" items above that are no one game's campaign or
    route work, in their order in this file:
@@ -695,9 +699,12 @@ the later games' effect numbers.
      (`RolfTourSession` in phlan_session.cpp, `rest_interruption`;
      ua_session.cpp; vga_host.cpp, other sessions' files, small hooks only)
      and the rest dialog's length (days, hours, minutes) in the Godot view.
-   - The temples' Restoration (step 6; *Pools of Darkness*'s and
-     *Treasures*'), a service the game's temple screen does not offer yet;
-     the spell in camp gives drained levels back (Pools of Darkness).
+2. *Gateway*'s alike-numbered effects that differ from *Curse*'s and
+   *Gateway*'s and *Treasures*' own effects (Effects of the later games),
+   which do nothing yet.
+3. *Unlimited Adventures*' difficulty: its session calls
+   `original::monster_difficulty(level, true)` with each design's own
+   setting (the coordinator, 2026-11-15).
 
 ## What the original rules cover
 

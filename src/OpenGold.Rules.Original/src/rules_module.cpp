@@ -2223,6 +2223,8 @@ bool OriginalModule::temple_service_helps(const CharacterSheet &sheet, const Vit
         return !state.dead && has_any(sheet, state, std::array{bestow_curse});
     case TempleService::stone_to_flesh:
         return !state.dead && state.description == stoned_description;
+    case TempleService::restoration:
+        return !state.dead && restoration_of(sheet).has_value();
     default:
         return false;
     }
@@ -2303,6 +2305,19 @@ void OriginalModule::temple_service(VitalState &state, const CharacterSheet &she
     case TempleService::remove_curse:
         (void)cure(sheet, state, std::array{bestow_curse});
         break;
+    case TempleService::restoration:
+        // Marked for the level the game gives back, as the spell does
+        // (temple.pas, Restoration; lasting_changes).
+        change_conditions(sheet, state,
+                          [](std::vector<Effect> &effects)
+                          {
+                              if (std::ranges::find(effects, restoring, &Effect::code) ==
+                                  effects.end())
+                              {
+                                  effects.push_back({restoring, 0, 0, false});
+                              }
+                          });
+        return;
     case TempleService::stone_to_flesh:
         // A statue comes back into play okay at 1 Hit Point (temple.pas,
         // StoneToFlesh).

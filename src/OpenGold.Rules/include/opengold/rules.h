@@ -417,7 +417,9 @@ enum class TempleService : std::uint8_t
     stone_to_flesh,
     resurrection,
     // Curse's Heal: every Hit Point but 1d4.
-    heal
+    heal,
+    // Pools of Darkness's and Treasures': a drained level given back.
+    restoration
 };
 
 // What brought a dead member back: a temple's service or a spell cast in camp.
