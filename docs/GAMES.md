@@ -694,8 +694,8 @@ pictures, walls and script host, *Treasures* adding only what it changes.
    combat answering a script, PROGRAM 3 and 5, the game's own item types,
    the overland's own steps and byte cells (treasure.md, What the route
    needed). *Stand-ins:* the experience and money at Llorkh's hall, and the
-   test's win of two fights the route's player loses with every dice (the
-   Way Inn's last, the council's). *Where it stops:* Mirabar (map 30); until
+   test's win of three fights the route's player loses with every dice (the
+   Way Inn's last, Neverwinter's eastern base, the council's). *Where it stops:* Mirabar (map 30); until
    the route reaches the win it passes when it plays every beat to map 30.
    Next: the tenth mission's cell, Neverwinter and the sea to Fireshear, the
    Firemines and the Ice Peak's four stages to Freezefire; PROGRAM 4 (the

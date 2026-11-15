@@ -351,9 +351,10 @@ Llorkh's hall, training the party to levels 8 and 9).
     who sends his hammer Kriiador along.
 
 *Stand-ins:* the experience and money at Llorkh's hall; the test wins the Way
-Inn's last fight (six Hosttower sorceresses charm the route's members) and
-the council's (the Krakens who burst in), which the route's player loses with
-every dice it tries.
+Inn's last fight (six Hosttower sorceresses charm the route's members),
+Neverwinter's eastern Kraken base (its giants, since the shared combat
+changes of 2026-11-15) and the council's (the Krakens who burst in), which
+the route's player loses with every dice it tries.
 
 Every walk is played step by step as the planning aid
 (`OPENGOLD_SECRET_FIND`, with `OPENGOLD_FIND_YES` for a town's "ENTER ...?"

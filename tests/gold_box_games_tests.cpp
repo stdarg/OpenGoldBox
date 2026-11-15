@@ -4517,6 +4517,9 @@ const std::vector<RouteBeat> &treasure_route()
             RouteBeat fight{28, x, y, D::north, {}};
             fight.rest_first = true;
             fight.rest_for_spells = true;
+            // A stand-in: the giants of the eastern base beat the route's
+            // player with every dice it tries, so the test wins that fight.
+            fight.test_wins = x == 15 && y == 11;
             route.push_back(fight);
         }
         route.back().expect_cell = {{0x12E, 1}};
