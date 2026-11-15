@@ -875,6 +875,18 @@ void darkness_spells_in_camp()
                   priest.scores[rules::Ability::constitution],
           "Resurrection raises to every Hit Point and costs no Constitution");
 
+    // Stone to Flesh, which the table lets be cast out of a fight, brings a
+    // statue back at 1 Hit Point (magic.pas, SpellStoneToFlesh).
+    auto sculptor = made("magic_user");
+    sculptor.prepared_spells = {"magic_user:stone_to_flesh"};
+    rules::VitalState sculptor_state{sculptor.hit_points, false, {}, {}};
+    rules::VitalState statue{0, false, {}, std::string(original::stoned_description)};
+    module->use_camp_action(sculptor, sculptor_state, priest, statue,
+                            "cast:magic_user:stone_to_flesh", random);
+    check(statue.description.empty() && statue.hit_points == 1 &&
+              module->camp_actions(sculptor, sculptor_state).empty(),
+          "Stone to Flesh is cast in camp on a statue");
+
     // A ranger casts its druid spells from level 16 (its third-level slots).
     auto ranger = made("ranger");
     ranger.original->class_levels[4] = 16;

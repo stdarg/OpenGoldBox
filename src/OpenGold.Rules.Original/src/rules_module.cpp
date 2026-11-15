@@ -1349,13 +1349,14 @@ constexpr int cure_light_wounds = 3, cure_serious_wounds = 158, cure_critical_wo
               cure_blindness = 37, cure_disease = 39, remove_curse = 43,
               magic_user_remove_curse = 189, neutralize_poison = 167, enlarge = 12, reduce = 13,
               strength_spell = 35, slow_poison = 26, resurrection = 305, druid_cure_disease = 306,
-              druid_neutralize_poison = 307, restoration = 302;
+              druid_neutralize_poison = 307, restoration = 302, stone_to_flesh = 313;
 // The spells a member may cast in camp: the cures, Curse's Raise Dead and
 // Neutralize Poison, Secret's Heal and Barkskin, which its table casts as
 // Heal, Slow Poison, the Strength spells, whose effects last into the next
-// fight, and Pools of Darkness's Resurrection, Restoration and its ranger's
-// Cure Disease and Neutralize Poison.
-constexpr std::array<int, 20> camp_spells{cure_light_wounds,
+// fight, Pools of Darkness's Resurrection, Restoration and its ranger's
+// Cure Disease and Neutralize Poison, and Stone to Flesh, which the later
+// games' table lets be cast out of a fight.
+constexpr std::array<int, 21> camp_spells{cure_light_wounds,
                                           cure_serious_wounds,
                                           cure_critical_wounds,
                                           raise_dead,
@@ -1374,7 +1375,8 @@ constexpr std::array<int, 20> camp_spells{cure_light_wounds,
                                           resurrection,
                                           restoration,
                                           druid_cure_disease,
-                                          druid_neutralize_poison};
+                                          druid_neutralize_poison,
+                                          stone_to_flesh};
 constexpr std::string_view cast_prefix = "cast:";
 // A paladin's laying on of hands, once between a day's rests; the member's
 // state keeps that it was used (as the paladinDailyHealCast effect).
@@ -2826,6 +2828,15 @@ void OriginalModule::use_camp_action(const CharacterSheet &user, VitalState &use
         return;
     case slow_poison:
         hold_poison_back(user, target, target_state);
+        return;
+    case stone_to_flesh:
+        // A statue comes back okay at 1 Hit Point (magic.pas,
+        // SpellStoneToFlesh); on a member of flesh the spell is spent.
+        if (target_state.description == stoned_description)
+        {
+            target_state.description.clear();
+            target_state.hit_points = 1;
+        }
         return;
     case enlarge:
     case reduce:
