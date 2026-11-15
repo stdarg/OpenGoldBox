@@ -2976,9 +2976,12 @@ const std::vector<RouteBeat> &darkness_route()
         // Thorne, an ancient red dragon, and his seven red dragons breathe
         // fire (his 24d10+12, three times): the clerics and the first paladin
         // cast the Resist Fire memorized in Limbo on each member first, as a
-        // player wards the party, and it beats them, members dead and raised
-        // after.
+        // player wards the party. A stand-in: since the dragons cast as the
+        // original's computer does (their spell of highest AI weight first,
+        // Fireball), their fireballs and breath beat the party of levels 13
+        // to 15 in every play the route tries, so the test wins the fight.
         auto thorne = step_beat(34, 3, 6, D::south, {"YES"});
+        thorne.test_wins = true;
         thorne.rest_first = true;
         // The cave's camps do not rest: the clerics cure every hurt member
         // first (the dragons met on arrival leave some hurt).
@@ -4707,11 +4710,9 @@ const std::vector<RouteBeat> &darkness_route()
                     {11, 13, D::north},
                     {11, 12, D::north},
                     {11, 11, D::north}});
-        // A stand-in: the second, a swarm of six bits of Moander (81 Hit
-        // Points, two blows of up to 23, a poisoning one), beats the route's
-        // party of levels 18 to 20 in every play it tries, its weapons
-        // harming them little, so the test wins it.
-        route.back().test_wins = true;
+        // The second, a swarm of six bits of Moander (81 Hit Points, two
+        // blows of up to 23, a poisoning one), the party beats since the
+        // computer casts as the original's does.
         walk_wound({{11, 10, D::south},
                     {11, 11, D::south},
                     {11, 12, D::south},
@@ -4774,6 +4775,44 @@ const std::vector<RouteBeat> &darkness_route()
         route.push_back(rest_entrance);
         walk_passages(route, 52, {{8, 1, D::south}, {8, 2, D::south}, {8, 3, D::south}});
         route.push_back(step_beat(52, 8, 4, D::south, {"USE POTIONS", "YES"}));
+        // Moander's heart (map 53, script 53; its words in script 55): a
+        // camp there draws Tanetal (the cluebook), so the party walks hurt,
+        // its clerics curing. The heart's story comes to a party wandering
+        // its muscle tissue (event 0: 1 step in 20, then 1 in 10), each part
+        // a bit of cell 24Ah: the army's remains (32), the Watcher's first
+        // scolding (4), Tanetal slaying two soldiers (1). The party paces
+        // the tissue east of where it swam in (4,14 to 4,15) until each has
+        // come, as a player wanders it.
+        route.push_back(step_beat(53, 2, 15, D::east));
+        for (const std::uint16_t bit : {32, 4, 1})
+        {
+            auto pace = step_beat(53, 4, 14, D::south);
+            pace.repeat_in_place = true;
+            pace.cure_first = true;
+            pace.camp_broken = true;
+            pace.repeat_until_bits = std::pair<std::uint16_t, std::uint16_t>{0x24A, bit};
+            route.push_back(pace);
+        }
+        // The heart's walks: the clerics cure the badly hurt, no camp.
+        const auto walk_heart =
+            [&route](std::initializer_list<std::tuple<unsigned, unsigned, D>> steps)
+        {
+            walk_passages(route, 53, steps);
+            for (auto beat = route.end() - static_cast<std::ptrdiff_t>(steps.size());
+                 beat != route.end(); ++beat)
+            {
+                beat->camp_broken = true;
+                beat->cure_first = true;
+            }
+        };
+        // West across the vena cava to the Watcher's spot at 1,13 (event
+        // 26, the cluebook's 13; her spots serve her story in turn, cell
+        // 242h): she tells the party to mix Aeghwaet's potions, which frees
+        // it of the slime (YES; cell 241h 1).
+        walk_heart({{4, 15, D::north}, {4, 14, D::north}, {4, 13, D::west}, {3, 13, D::west}});
+        auto potions = step_beat(53, 2, 13, D::west, {"YES"});
+        potions.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x241, 1};
+        route.push_back(potions);
         return route;
     }();
     return beats;
