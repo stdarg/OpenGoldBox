@@ -3175,6 +3175,43 @@ const std::vector<RouteBeat> &darkness_route()
                           "type:SILK"}};
         to_web.waiting = true;
         route.push_back(to_web);
+        // Cynthia's first favor: drow prisoners. North round the temple's
+        // ruins and west to the drow patrol at (4,4), which the party
+        // captures (CAPTURE; cell 221h bit 5).
+        walk_passages(route, 83,
+                      {{8, 4, D::north},
+                       {8, 3, D::east},
+                       {9, 3, D::north},
+                       {9, 2, D::north},
+                       {9, 1, D::north},
+                       {9, 0, D::west},
+                       {8, 0, D::west},
+                       {7, 0, D::west},
+                       {6, 0, D::west},
+                       {5, 0, D::south},
+                       {5, 1, D::south},
+                       {5, 2, D::south},
+                       {5, 3, D::south}});
+        route.push_back(step_beat(83, 5, 4, D::west, {"CAPTURE"}));
+        // The second: spiders. Back north to the cave (6,1), the Cavern of
+        // Fireflies (script 85), where the party takes a nest of pale spiders.
+        walk_passages(route, 83,
+                      {{4, 4, D::east}, {5, 4, D::north}, {5, 3, D::north}, {5, 2, D::north}});
+        route.push_back(step_beat(83, 5, 1, D::east, {"YES", "YES"}));
+        // Back to Cynthia (8,4) with both: her spiders disguise the drow as
+        // the party, whose deaths Kalistes sees, and she asks the third favor,
+        // that the party kill her, which the cluebook says to grant (BEHEAD).
+        walk_passages(route, 83,
+                      {{5, 1, D::north},
+                       {5, 0, D::east},
+                       {6, 0, D::east},
+                       {7, 0, D::east},
+                       {8, 0, D::east},
+                       {9, 0, D::south},
+                       {9, 1, D::south},
+                       {9, 2, D::south},
+                       {9, 3, D::west}});
+        route.push_back(step_beat(83, 8, 3, D::south, {"BEHEAD"}));
         return route;
     }();
     return beats;
