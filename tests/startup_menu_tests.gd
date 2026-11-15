@@ -622,6 +622,7 @@ func check_ua() -> void:
 		"Options offer Design difficulty, Both chosen")
 	require((gameplay.get_node("DifficultyNote") as Label).text.contains("Design difficulty"),
 		"The Difficulty's note sends a design's player to Design difficulty")
+	await capture_screen("ua-options")
 	design_difficulty.select(0)
 	design_difficulty.item_selected.emit(0)
 	var config := ConfigFile.new()
