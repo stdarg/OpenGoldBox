@@ -3151,10 +3151,17 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
     case 51:
     {
         // Lightning Bolt: the caster's level in d6, one roll, at the aim and
-        // then along a bolt of 8 squares (magic.pas, SpellLightningBolt).
+        // then along a bolt of 8 squares in Pool of Radiance, 9 in Treasures
+        // and 7 in the other games (magic.pas, SpellLightningBolt; the kit's
+        // spellfx.c, spell_lightning_bolt). OpenGoldBox ran Pool of
+        // Radiance's bolt in every game (Bugs).
+        const auto game = game_of(identity_);
+        const int length = game == GoldBoxGame::pool_of_radiance                   ? 8
+                           : game == GoldBoxGame::treasures_of_the_savage_frontier ? 9
+                                                                                   : 7;
         const int damage = roll_dice(level, 6);
         lightning_at(aim, damage, level);
-        lightning_path(caster.cell, aim, 8, damage, level, true);
+        lightning_path(caster.cell, aim, length, damage, level, true);
         break;
     }
     case 47:

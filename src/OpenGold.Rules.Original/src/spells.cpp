@@ -522,6 +522,21 @@ const Spell *spell(int number, GoldBoxGame game) noexcept
             }
         }
     }
+    // Secret's, the 256-color engine's and the kit's Lightning Bolt reaches 4
+    // squares a level, not 1 (their spell tables, row 51; the kit's
+    // spelltab.c).
+    constexpr int lightning_bolt = 51;
+    if (number == lightning_bolt &&
+        (game == GoldBoxGame::secret_of_the_silver_blades || darkness_table(game)))
+    {
+        static const Spell far_bolt = []
+        {
+            auto bolt = spells[lightning_bolt - 1];
+            bolt.range_per_level = 4;
+            return bolt;
+        }();
+        return &far_bolt;
+    }
     if (game == GoldBoxGame::gateway_to_the_savage_frontier)
     {
         for (const auto &entry : gateway_rows)

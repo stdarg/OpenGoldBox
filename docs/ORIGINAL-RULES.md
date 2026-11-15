@@ -1296,6 +1296,14 @@ gear.
      crawler, whose 88 is a paralyzing touch, breathed lightning.
      *Gateway*'s route raises at Sundabar's temple the member its shambling
      mounds smother.
+   - **Lightning Bolt by game** (2026-11-15; each game's `magic.pas`,
+     `SpellLightningBolt`, and spell table row 51; the kit's `spellfx.c`
+     and `spelltab.c`): its bolt runs 8 squares in *Pool of Radiance*, 9 in
+     *Treasures* and 7 in *Curse*, *Secret*, *Gateway*, *Pools of
+     Darkness* and the kit; it reaches 4 squares and 1 a caster level to
+     *Gateway*, 4 a level in *Secret*, the 256-color games and the kit.
+     OpenGoldBox ran *Pool of Radiance*'s in every game (its own bug,
+     fixed; `original::spell(51, game)`).
    - ***Gateway*'s alike-numbered effects** (2026-11-15; its `effhndlr.pas`,
      `cbtacts.pas`, against *Curse*'s, handler by handler and condition by
      condition): its shambling mound engulfs on 1 to 4 of a d10 at each hit

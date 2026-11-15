@@ -2338,6 +2338,48 @@ void lightning_runs_on()
     check(view_of(state, "Aside").hit_points == 100, "One off the line is spared");
 }
 
+// Each game's Lightning Bolt (its magic.pas, SpellLightningBolt, and spell
+// table): Pool of Radiance's bolt runs 8 squares, Treasures' 9 and the
+// others' 7; it reaches 4 squares and 1 a level, from Secret on (and in the
+// kit) 4 a level.
+void each_game_bolts_its_own_length()
+{
+    using original::ClassSlot;
+    const auto far_hit = [](GoldBoxGame game)
+    {
+        auto fight =
+            arrange({{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 5, {51})},
+                     {"Near", rules::Side::opposition, {1, 3}, victim(100)},
+                     {"Far", rules::Side::opposition, {9, 3}, victim(100)}},
+                    127, {}, 100, game, false, false,
+                    [](rules::Encounter &encounter)
+                    {
+                        encounter.battlefield = {
+                            16, 8, std::vector<rules::Terrain>(128, rules::Terrain::open)};
+                    });
+        auto &session = *fight.session;
+        cast_now(session, "Mage", 51,
+                 [&]
+                 {
+                     return aim_at_cell(session, {1, 3});
+                 });
+        return view_of(session.snapshot(), "Far").hit_points < 100;
+    };
+    check(far_hit(GoldBoxGame::pool_of_radiance) &&
+              far_hit(GoldBoxGame::treasures_of_the_savage_frontier) &&
+              !far_hit(GoldBoxGame::curse_of_the_azure_bonds) &&
+              !far_hit(GoldBoxGame::gateway_to_the_savage_frontier),
+          "Pool of Radiance's and Treasures' bolts reach 8 squares past the aim, Curse's and "
+          "Gateway's do not");
+    check(original::spell(51, GoldBoxGame::curse_of_the_azure_bonds)->range_per_level == 1 &&
+              original::spell(51, GoldBoxGame::gateway_to_the_savage_frontier)->range_per_level ==
+                  1 &&
+              original::spell(51, GoldBoxGame::secret_of_the_silver_blades)->range_per_level == 4 &&
+              original::spell(51, GoldBoxGame::pools_of_darkness)->range_per_level == 4 &&
+              original::spell(51, GoldBoxGame::unlimited_adventures)->range_per_level == 4,
+          "Lightning Bolt reaches 1 square a level to Gateway, 4 from Secret on");
+}
+
 // Curse's effects by the fight's numbers: those that work as Pool of
 // Radiance's of the same number keep it, fumbling is helplessness, and the
 // rest move 200 up, so a dracolich's paralyzing touch (122) is not Pool of
@@ -5722,6 +5764,7 @@ int main()
         readied_items_give_their_effects();
         later_games_effects_take_their_own_numbers();
         gateway_effects_play_their_own();
+        each_game_bolts_its_own_length();
         treasures_effects_play_their_own();
         difficulty_changes_the_monsters();
         heights_decide_sight();
