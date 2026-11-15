@@ -570,6 +570,10 @@ struct RouteBeat
     // a crossbow and the blessed bolts left after a fight shot the last of
     // the readied ones and took up the sword again.
     std::vector<std::pair<int, std::string>> ready_types;
+    // Pools of Darkness: the beat plays with other dice, as a player reloads
+    // and steps again where a wandering monster no play of the party beats
+    // came on it (the heart's agents of Tanetal); 0 keeps the beat's own.
+    unsigned reloads = 0;
 };
 
 // The dice a beat starts with, for a route that gives each beat its own (Pools
@@ -604,6 +608,10 @@ std::uint64_t beat_dice_seed(const RouteBeat &beat, unsigned occurrence)
         mix(std::to_string(static_cast<int>(step)));
     }
     mix(std::to_string(occurrence));
+    if (beat.reloads != 0)
+    {
+        mix("reload " + std::to_string(beat.reloads));
+    }
     return hash;
 }
 
@@ -4813,6 +4821,89 @@ const std::vector<RouteBeat> &darkness_route()
         auto potions = step_beat(53, 2, 13, D::west, {"YES"});
         potions.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x241, 1};
         route.push_back(potions);
+        // The heart beats every 60 steps (cell 9Bh counts them; 243h holds
+        // the beat): DUB at 30, when one in an atrium or its vessels (events
+        // 20 to 23) is drained into a ventricle, and LUB at 60, when one in a
+        // ventricle or the vessels it drains (events 10 to 18) is flushed
+        // from the heart. A player times the vessels by the beat, as the
+        // mouth's warnings let one: the party paces muscle tissue until the
+        // beat it waits for has passed (cell 9Ah: 1 after a LUB, 2 after a
+        // DUB).
+        const auto pace_heart = [&route](unsigned x, unsigned y, D facing, std::uint16_t beat)
+        {
+            auto pace = step_beat(53, x, y, facing);
+            pace.repeat_in_place = true;
+            pace.cure_first = true;
+            pace.camp_broken = true;
+            pace.repeat_until_bits = std::pair<std::uint16_t, std::uint16_t>{0x9A, beat};
+            route.push_back(pace);
+        };
+        constexpr std::uint16_t after_lub = 1, after_dub = 2;
+        // North up the vena cava (2,13 to 2,1) between two DUBs, and east
+        // along the pulmonary trunk's loop (6,1 to 10,1) before the LUB, to
+        // Tanetal's cache (11,1, event 9; the cluebook's 8): the
+        // weapon-making tools (YES; cell 24Ah bit 128).
+        pace_heart(0, 13, D::south, after_dub);
+        walk_heart({{0, 14, D::north}, {0, 13, D::east},  {1, 13, D::east},  {2, 13, D::north},
+                    {2, 12, D::north}, {2, 11, D::north}, {2, 10, D::north}, {2, 9, D::north},
+                    {2, 8, D::north},  {2, 7, D::north},  {2, 6, D::north},  {2, 5, D::north},
+                    {2, 4, D::north},  {2, 3, D::north},  {2, 2, D::north},  {2, 1, D::east},
+                    {3, 1, D::east},   {4, 1, D::east},   {5, 1, D::east},   {6, 1, D::east},
+                    {7, 1, D::east},   {8, 1, D::east},   {9, 1, D::east}});
+        auto tools = step_beat(53, 10, 1, D::east, {"YES"});
+        tools.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x24A, 173};
+        route.push_back(tools);
+        // ARROW PROBE
+        pace_heart(11, 0, D::south, after_lub);
+        walk_heart({{11, 1, D::west},
+                    {10, 1, D::west},
+                    {9, 1, D::west},
+                    {8, 1, D::west},
+                    {7, 1, D::west},
+                    {6, 1, D::west},
+                    {5, 1, D::west},
+                    {4, 1, D::west},
+                    {3, 1, D::west},
+                    {2, 1, D::south},
+                    {2, 2, D::south},
+                    {2, 3, D::south},
+                    {2, 4, D::east},
+                    {3, 4, D::east}});
+        route.push_back(step_beat(53, 4, 4, D::south, {"YES", "YES", "YES", "YES", "NO"}));
+        // FAKE PROBE
+        {
+            auto pace = step_beat(53, 3, 5, D::south, {"ATTACK"});
+            pace.repeat_in_place = true;
+            pace.cure_first = true;
+            pace.camp_broken = true;
+            pace.repeat_until_bits = std::pair<std::uint16_t, std::uint16_t>{0x24C, 34};
+            route.push_back(pace);
+        }
+        // WATCHER2 PROBE
+        walk_heart({{3, 6, D::north}, {3, 5, D::east}, {4, 5, D::east}});
+        pace_heart(5, 5, D::south, after_lub);
+        walk_heart({{5, 6, D::east}});
+        route.push_back(step_beat(53, 6, 6, D::east, {"YES"}));
+        pace_heart(7, 5, D::south, after_lub);
+        walk_heart({{7, 6, D::west},
+                    {6, 6, D::west},
+                    {5, 6, D::west},
+                    {4, 6, D::west},
+                    {3, 6, D::north},
+                    {3, 5, D::north}});
+        pace_heart(3, 5, D::north, after_dub);
+        walk_heart({{3, 4, D::west}, {2, 4, D::north}, {2, 3, D::north}, {2, 2, D::north}});
+        route.back().reloads = 1;
+        walk_heart({{2, 1, D::east}, {3, 1, D::east}, {4, 1, D::east}});
+        pace_heart(4, 1, D::east, after_lub);
+        walk_heart({{5, 1, D::east}, {6, 1, D::east}, {7, 1, D::east}});
+        route.push_back(step_beat(53, 8, 1, D::north, {"YES"}));
+        walk_heart({{8, 0, D::south},
+                    {8, 1, D::east},
+                    {9, 1, D::east},
+                    {10, 1, D::south},
+                    {10, 2, D::south}});
+        route.push_back(step_beat(53, 10, 4, D::west, {"YES"}));
         return route;
     }();
     return beats;
@@ -8554,6 +8645,17 @@ bool walk_census(GoldBoxGame game, bool route)
                 // The route takes a wand for its magic-user, readied for a fight
                 // (the original's AI uses only readied items), as a player would.
                 const auto &pile = session.treasure_pile();
+                // OPENGOLD_ROUTE_PILES prints what each treasure holds (a
+                // planning aid, to name the items a beat takes).
+                if (std::getenv("OPENGOLD_ROUTE_PILES"))
+                {
+                    std::cout << "  pile:";
+                    for (const auto &item : pile)
+                    {
+                        std::cout << " [" << item.label() << "]";
+                    }
+                    std::cout << "\n";
+                }
                 const auto wand =
                     std::ranges::find_if(pile,
                                          [](const opengold::por::Equipment &item)
