@@ -5034,8 +5034,11 @@ const std::vector<RouteBeat> &treasure_route()
                        {7, 12, D::south},
                        {7, 13, D::south},
                        {7, 14, D::east},
-                       {8, 14, D::south},
-                       {8, 15, D::south}});
+                       {8, 14, D::south}});
+        // Rested at the inn again before leaving by the edge (8,15), where
+        // the streets' patrols find a worn party.
+        route.push_back({39, 14, 7, D::north, {"YES"}});
+        walk_passages(route, 39, {{8, 15, D::south}});
         // Overland east and south to the Way Inn (map 40).
         walk_overland(route, 56,
                       {{1, 12, D::east},

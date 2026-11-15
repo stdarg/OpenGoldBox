@@ -343,8 +343,10 @@ Llorkh's hall, training the party to levels 8 and 9).
    55 and 56): resting at the Inn of the Safe Crossing (14,7) before each, the
    alliance's men at the door (12,13), the mages at their pot (11,14), the
    troops resting (6,7), the fire giants (0,0) and the headquarters (6,9),
-   whose fall frees the town's men; at once to the south edge (8,15), where
-   the Zhentarim slipping away to the Way Inn are caught.
+   whose fall frees the town's men; at once to the south edge, where the
+   Zhentarim slipping away to the Way Inn are caught (8,14), then back to
+   the inn to rest before leaving by the edge (8,15), where the streets'
+   patrols beat a worn party (since 2026-11-15).
 7. **The Way Inn** (map 40), overland by map 56: resting a night in a room
    (13,1, upstairs 14,14) before each, so the casters have their spells
    again, the storeroom (12,2), the barracks (4,4), the inn's door (7,6), its
