@@ -5312,6 +5312,129 @@ const std::vector<RouteBeat> &treasure_route()
         route.push_back(council);
         route.push_back({30, 15, 4, D::north, {"YES"}});
         route.push_back({30, 1, 7, D::north, {"YES"}});
+        // The council done, the tenth mission is told done by cell 1F8h at
+        // FFh (no script sets cell 130h): the luck reading is now 12, and
+        // Neverwinter's north pier opens for Fireshear. The party has its
+        // dead raised at the Temple of Vergadain (2,13) and rests at the Dig
+        // Inn (4,11).
+        RouteBeat council_done{30, 2, 13, D::north, {"YES", "raise:dead", "Leave"}};
+        council_done.expect_cell = {{0x1F8, 0xFF}};
+        route.push_back(council_done);
+        route.push_back({30, 4, 11, D::north, {"YES"}});
+        // Out of Mirabar's south gate (7,15) and overland west and south
+        // (maps 52, 51 and 53) to Neverwinter's east gate (map 28).
+        walk_passages(route, 30,
+                      {{4, 11, D::east},
+                       {5, 11, D::east},
+                       {6, 11, D::south},
+                       {6, 12, D::south},
+                       {6, 13, D::east},
+                       {7, 13, D::south},
+                       {7, 14, D::south},
+                       {7, 15, D::south}});
+        walk_overland(route, 52,
+                      {{6, 3, D::south},
+                       {6, 4, D::south},
+                       {6, 5, D::south},
+                       {6, 6, D::south},
+                       {6, 7, D::south},
+                       {6, 8, D::south},
+                       {6, 9, D::south},
+                       {6, 10, D::west},
+                       {5, 10, D::west},
+                       {4, 10, D::west},
+                       {3, 10, D::west},
+                       {2, 10, D::west},
+                       {1, 10, D::west},
+                       {0, 10, D::south}});
+        walk_overland(route, 51,
+                      {{14, 11, D::south},
+                       {14, 12, D::south},
+                       {14, 13, D::west},
+                       {13, 13, D::south},
+                       {13, 14, D::south}});
+        route.push_back(step_beat(53, 2, 1, D::west, {"YES"}));
+        // Neverwinter (map 28): Northpier Shipping (4,12) books the passage
+        // to Fireshear, 250 platinum, and at 0700 the ship sails from the new
+        // north pier (2,11, facing west). The party rests first in the
+        // gardener's house (6,13).
+        route.push_back({28, 4, 12, D::north, {"YES"}});
+        route.push_back({28, 6, 13, D::north, {}});
+        auto to_fireshear = step_beat(28, 2, 11, D::west, {"YES"});
+        to_fireshear.rest_first = true;
+        to_fireshear.wait_until_minute = 7 * 60;
+        route.push_back(to_fireshear);
+        // Fireshear (map 33), its leaders taken by the yeti: from the landing
+        // (6,15) west through the streets to the mine shaft at (0,14), down
+        // into the Firemines (map 34) at (5,15), where the yeti leave the
+        // party to rest (the cluebook's Firemines).
+        walk_passages(route, 33,
+                      {{6, 15, D::north}, {6, 14, D::east},  {7, 14, D::north}, {7, 13, D::east},
+                       {8, 13, D::north}, {8, 12, D::north}, {8, 11, D::west},  {7, 11, D::north},
+                       {7, 10, D::west},  {6, 10, D::north}, {6, 9, D::west},   {5, 9, D::west},
+                       {4, 9, D::west},   {3, 9, D::south},  {3, 10, D::south}, {3, 11, D::south},
+                       {3, 12, D::west},  {2, 12, D::south}, {2, 13, D::west},  {1, 13, D::west}});
+        route.push_back(step_beat(33, 0, 13, D::south, {"DESCEND", "AVOID"}));
+        RouteBeat mines_rest{34, 5, 15, D::north, {"AVOID"}};
+        mines_rest.rest_first = true;
+        mines_rest.rest_for_spells = true;
+        route.push_back(mines_rest);
+        // That refuge leads nowhere else: rested, the party climbs back up
+        // (to 0,14), goes east to the shaft at (5,12) and down to the mines
+        // (9,12), and on to their great chamber (7,7), where the yeti and
+        // their ice hounds charge in two waves, the grand yeti with the
+        // second. His fall frees the Shearmaster and Fireshear's other
+        // leaders (cell 22Dh).
+        route.push_back(step_beat(34, 5, 15, D::east, {"CLIMB UP", "AVOID"}));
+        walk_passages(route, 33,
+                      {{0, 14, D::north},
+                       {0, 13, D::east},
+                       {1, 13, D::east},
+                       {2, 13, D::east},
+                       {3, 13, D::east},
+                       {4, 13, D::north}});
+        route.push_back(step_beat(33, 4, 12, D::east, {"DESCEND", "AVOID"}));
+        walk_passages(route, 34,
+                      {{9, 12, D::south},
+                       {9, 13, D::west},
+                       {8, 13, D::north},
+                       {8, 12, D::north},
+                       {8, 11, D::north},
+                       {8, 10, D::north},
+                       {8, 9, D::north},
+                       {8, 8, D::west}});
+        RouteBeat grand_yeti = step_beat(34, 7, 8, D::north);
+        grand_yeti.expect_cell = {{0x22D, 1}};
+        route.push_back(grand_yeti);
+        // West through the mines and up the shaft at (1,11) to Fireshear
+        // (2,5), whose streets are safe now; resting first, the party steps
+        // west into the cavern on the sea (1,4), where the yeti and then the
+        // beholder make their last stand, freeing the dock (cell 231h).
+        walk_passages(route, 34,
+                      {{7, 7, D::west},
+                       {6, 7, D::south},
+                       {6, 8, D::west},
+                       {5, 8, D::west},
+                       {4, 8, D::south},
+                       {4, 9, D::west},
+                       {3, 9, D::west},
+                       {2, 9, D::west},
+                       {1, 9, D::south},
+                       {1, 10, D::south}});
+        route.push_back(step_beat(34, 1, 11, D::west, {"CLIMB UP", "AVOID"}));
+        walk_passages(
+            route, 33,
+            {{2, 5, D::east}, {3, 5, D::east}, {4, 5, D::north}, {4, 4, D::west}, {3, 4, D::west}});
+        auto beholder = step_beat(33, 2, 4, D::west);
+        beholder.rest_first = true;
+        beholder.rest_for_spells = true;
+        beholder.expect_cell = {{0x231, 1}};
+        route.push_back(beholder);
+        // From the dock (0,4, facing the sea) the Fireshear dwarves take the
+        // party free to the Ice Peak's Aurilssbaarg (map 35), rested first.
+        auto to_ice_peak = step_beat(33, 1, 4, D::west, {"ICE PEAK"});
+        to_ice_peak.rest_first = true;
+        route.push_back(to_ice_peak);
         // A camp on the overland (maps 51 to 57) draws its wandering
         // monsters night after night: the party walks on between towns
         // instead, as a player hurries to the next inn. So does one in the
