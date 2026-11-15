@@ -199,7 +199,9 @@ walk needed besides the opening's:
 
 Still to come: the records that only set colors for the picture shown, the overland's color
 cycling, the music and sounds other than the footstep, PROGRAM 4 (the camp's
-Fix), the camp's Crown, the romances, and the rest of the route (below).
+Fix), the camp's Crown, the romances, and the rest of the route (below). The
+romances gate nothing: a lover fights better, or blindly when its love falls
+(the cluebook's Falling in Love).
 
 One of the walk's fights no side can finish (map 24 at 1,5): a caster with no
 spells left and no way to reach the party stands across the battlefield from
@@ -239,6 +241,15 @@ engine, each as the original does it:
 - **Item types.** *Treasures* numbers its item types as *Pool of Radiance*
   does (its `ITEMS`): a long sword is 18, plate mail 36, a shield 37, a mace 8
   and a dagger 4.
+- **The overland's own steps.** The engine keeps the square the party stood
+  on before every step, whether or not it moves (its main loop sets savedX
+  and savedY, cells 17h and 18h, before ResolveMovement). On the overland
+  most squares are walled; the overland's search entry, finding the party
+  where it stood, moves it itself by the square's terrain (the event's low
+  four bits) and the ways out its high four bits allow: along the river in a
+  boat, around mountains and deep water on foot. Until 2026-11-15
+  OpenGoldBox kept the square only on a step taken, so the party could not
+  leave the Smuggler's Dock overland.
 
 ## The route
 
@@ -275,12 +286,27 @@ Llorkh's hall, training the party to levels 8 and 9).
    Paper mission (cell 128h), and up the rope ladder (15,1) to **the
    Smuggler's Dock** (map 21).
 
+6. **Daggerford** (map 39), out of the dock's east gate and overland (maps
+   55 and 56): resting at the Inn of the Safe Crossing (14,7) before each, the
+   alliance's men at the door (12,13), the mages at their pot (11,14), the
+   troops resting (6,7), the fire giants (0,0) and the headquarters (6,9),
+   whose fall frees the town's men; at once to the south edge (8,15), where
+   the Zhentarim slipping away to the Way Inn are caught.
+7. **The Way Inn** (map 40), overland by map 56: resting a night in a room
+   (13,1, upstairs 14,14) before each, so the casters have their spells
+   again, the storeroom (12,2), the barracks (4,4), the inn's door (7,6), its
+   hall (2,7), and upstairs the alliance's meeting (14,13), the alarm room
+   (4,15) and Dauravyn Redbeard's captors (7,15), whose fall ends the third
+   Lucky Paper mission (cell 129h). *A stand-in:* the route's player loses
+   that last fight with every dice it tries (six Hosttower sorceresses charm
+   its members), so the test wins it.
+
 Every walk is played step by step as the planning aid
 (`OPENGOLD_SECRET_FIND`, with `OPENGOLD_FIND_YES` for a town's "ENTER ...?")
-finds it. *Where it stops:* the Smuggler's Dock. Until the route reaches the
-win its check passes when it plays every beat to map 21
-(`treasure_route_stops_on_map`). The next steps, in the cluebook's order:
-Daggerford and the Way Inn (mission 3), Yartar and Triboar (4), Longsaddle and
+finds it; `OPENGOLD_WALLS` prints a map's walls, doors and events.
+*Where it stops:* the Way Inn. Until the route reaches the win its check
+passes when it plays every beat to map 40 (`treasure_route_stops_on_map`).
+The next steps, in the cluebook's order: Yartar and Triboar (4), Longsaddle and
 the Tower of Twilight (5), Mintarn (6), Orlumbor and Farr Windward (7),
 Neverwinter (8), Ruathym and Luskan (9), Mirabar (10), then Neverwinter,
 Fireshear, the Firemines and the Ice Peak's four stages to Freezefire.

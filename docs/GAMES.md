@@ -677,13 +677,18 @@ pictures, walls and script host, *Treasures* adding only what it changes.
    Amanitas's crown and word, PROGRAM 3), to Leilon (the drugged dinner and
    the barn), is thrown into Waterdeep's harbor, crosses the sea elves'
    caverns, kills the Zhentil captain (the second Lucky Paper mission) and
-   climbs out to the Smuggler's Dock (treasure.md, The route). It needed
-   COMBAT's flags after a fight, a spell cast outside combat answering a
-   script, PROGRAM 3 and 5, and the game's own item types (treasure.md, What
-   the route needed). *Where it stops:* the Smuggler's Dock (map 21); until
-   the route reaches the win it passes when it plays every beat to map 21.
-   Next: Daggerford and the Way Inn, then the other eight Lucky Paper
-   missions, Mirabar, Fireshear, the Firemines and the Ice Peak.
+   climbs out to the Smuggler's Dock, and since 2026-11-15 walks overland
+   to Daggerford, frees it, catches its runaways and frees the Way Inn's
+   master (the third Lucky Paper mission) (treasure.md, The route). It
+   needed COMBAT's flags after a fight, a spell cast outside combat
+   answering a script, PROGRAM 3 and 5, the game's own item types, and the
+   overland's own steps (treasure.md, What the route needed). *Stand-ins:*
+   the experience and money at Llorkh's hall, and the test's win of the Way
+   Inn's last fight, which the route's player loses to six sorceresses'
+   charms with every dice. *Where it stops:* the Way Inn (map 40); until the
+   route reaches the win it passes when it plays every beat to map 40.
+   Next: Yartar and Triboar, then the other Lucky Paper missions, Mirabar,
+   Fireshear, the Firemines and the Ice Peak.
 
 ### 8. *Unlimited Adventures*
 

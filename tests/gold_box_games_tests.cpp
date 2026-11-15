@@ -531,6 +531,10 @@ struct RouteBeat
     // the name of the member who takes and readies it, as a player gears the
     // party for a fight to come (Thorne's Ring of Fire Resistance).
     std::vector<std::pair<std::string, std::string>> take_items;
+    // With rest_first, a night's rest even when every member is whole, so the
+    // casters have their spells again, as a player rests before a known
+    // fight (Treasures' Way Inn, whose fights follow one another).
+    bool rest_for_spells = false;
 };
 
 // Answers that train each of the route's members a level at a hall: its
@@ -3961,7 +3965,7 @@ const std::vector<RouteBeat> &gateway_route()
 // Treasures' route plays to the game's end once this is true; until then it
 // stops on this map (docs/GAMES.md, Treasures, step 6).
 constexpr bool treasure_route_ends_the_game = false;
-constexpr unsigned treasure_route_stops_on_map = 21;
+constexpr unsigned treasure_route_stops_on_map = 40;
 
 // Treasures of the Savage Frontier's story, beat by beat, as its cluebook
 // tells it: from the dwarves' fortress outside Llorkh, where the opening
@@ -4165,6 +4169,77 @@ const std::vector<RouteBeat> &treasure_route()
                        {14, 2, D::east},
                        {15, 2, D::north}});
         route.push_back(step_beat(22, 15, 1, D::north, {"YES"}));
+        // Out of the dock's east gate and overland, as OPENGOLD_SECRET_FIND
+        // finds the way, south and east to Daggerford (map 39).
+        route.push_back(step_beat(21, 15, 9, D::east));
+        walk_overland(route, 55,
+                      {{9, 7, D::south},
+                       {9, 8, D::east},
+                       {10, 8, D::east},
+                       {11, 8, D::south},
+                       {11, 9, D::east},
+                       {12, 9, D::east},
+                       {13, 9, D::east},
+                       {14, 9, D::east}});
+        walk_overland(route, 56, {{1, 9, D::south}});
+        route.push_back(step_beat(56, 1, 10, D::south, {"YES"}));
+        // Daggerford (map 39), the cluebook's mission 3: the alliance's men
+        // at the door (12,13), the mages at their pot (11,14), the troops
+        // resting (6,7) and the fire giants (0,0), then their headquarters
+        // (6,9), whose fall frees the men of the town; before each the party
+        // rests at the Inn of the Safe Crossing (14,7), for the streets'
+        // camps draw the guards.
+        for (const auto &[x, y] : std::initializer_list<std::pair<unsigned, unsigned>>{
+                 {12, 13}, {11, 14}, {6, 7}, {0, 0}, {6, 9}})
+        {
+            route.push_back({39, 14, 7, D::north, {"YES"}});
+            route.push_back({39, x, y, D::north, {}});
+        }
+        // At once to the town's south edge (8,15), where the party catches
+        // the Zhentarim slipping away to warn the Way Inn.
+        walk_passages(route, 39,
+                      {{6, 9, D::south},
+                       {6, 10, D::south},
+                       {6, 11, D::east},
+                       {7, 11, D::south},
+                       {7, 12, D::south},
+                       {7, 13, D::south},
+                       {7, 14, D::east},
+                       {8, 14, D::south},
+                       {8, 15, D::south}});
+        // Overland east and south to the Way Inn (map 40).
+        walk_overland(route, 56,
+                      {{1, 12, D::east},
+                       {2, 12, D::east},
+                       {3, 12, D::east},
+                       {4, 12, D::east},
+                       {5, 12, D::south},
+                       {5, 13, D::south}});
+        route.push_back(step_beat(56, 5, 14, D::south, {"YES"}));
+        // The Way Inn (map 40): the storeroom (12,2), the barracks (4,4), the
+        // inn's door (7,6) and its hall (2,7); up the stairs, the alliance's
+        // meeting (14,13), the room facing the stairs (4,15), and the Zhentil
+        // lord holding Dauravyn Redbeard (7,15), whose freeing ends the third
+        // Lucky Paper mission (cell 129h). Before each the party rests in a
+        // room beside the storeroom (13,1) or, upstairs, the meeting's
+        // (14,14): a camp in the yard draws the guards.
+        for (const auto &[x, y] : std::initializer_list<std::pair<unsigned, unsigned>>{
+                 {12, 2}, {4, 4}, {7, 6}, {2, 7}, {14, 13}, {4, 15}, {7, 15}})
+        {
+            const bool upstairs = y >= 9;
+            route.push_back({40, 14 - (upstairs ? 0U : 1U), upstairs ? 14U : 1U, D::north, {}});
+            RouteBeat fight{40, x, y, D::north, {}};
+            fight.rest_first = true;
+            fight.rest_for_spells = true;
+            route.push_back(fight);
+        }
+        // A stand-in: Redbeard's captors (a Zhentil lord, neo-otyughs,
+        // greater margoyles and six Hosttower sorceresses casting Charm
+        // Monsters on the party) beat the route's player with every dice it
+        // tries, so the test wins the fight.
+        route.back().test_wins = true;
+        route.back().expect_cell = {{0x129, 1}};
+        // ROUTE-NEXT
         // A camp on the overland (maps 51 to 57) draws its wandering
         // monsters night after night: the party walks on between towns
         // instead, as a player hurries to the next inn.
@@ -5607,7 +5682,9 @@ bool walk_census(GoldBoxGame game, bool route)
         };
         // The map where Secret's party last gave up resting.
         unsigned restless_map = 0xFFFF;
-        const auto rest_until_healed = [&]
+        // `a_night_first` rests a night even when the party is whole, so its
+        // casters choose their spells anew (RouteBeat::rest_for_spells).
+        const auto rest_until_healed = [&](bool a_night_first = false)
         {
             // Secret's party gives up resting where monsters break its camp
             // three times (its castle's guards come every night), and on that
@@ -5615,7 +5692,8 @@ bool walk_census(GoldBoxGame game, bool route)
             unsigned interrupted = 0;
             for (int day = 0; day < 90 && session.can_leave(); ++day)
             {
-                if (party_whole() || !session.camp(opengold::RestKind::long_rest))
+                const bool resting = (a_night_first && day == 0) || !party_whole();
+                if (!resting || !session.camp(opengold::RestKind::long_rest))
                 {
                     break;
                 }
@@ -5742,7 +5820,7 @@ bool walk_census(GoldBoxGame game, bool route)
                 {
                     // A camp attacked fights: the last beat's flight is over.
                     fleeing = false;
-                    beat.waiting ? rest_in_wilderness() : rest_until_healed();
+                    beat.waiting ? rest_in_wilderness() : rest_until_healed(beat.rest_for_spells);
                 }
                 if (session.snapshot().phase == TourPhase::defeated)
                 {
@@ -6006,6 +6084,32 @@ bool walk_census(GoldBoxGame game, bool route)
                     }
                 }
                 std::cout << "\n";
+            }
+        }
+        // OPENGOLD_WALLS prints each square's walls, doors and event on the
+        // map the route ended on, or on map N with OPENGOLD_WALLS=N (N > 1),
+        // to plan a route by.
+        if (const char *walls_of = std::getenv("OPENGOLD_WALLS"))
+        {
+            if (std::stoul(walls_of) > 1)
+            {
+                opengold::test::TourAccess::enter(session,
+                                                  static_cast<unsigned>(std::stoul(walls_of)),
+                                                  {0, 0, opengold::por::MapDirection::north});
+                play("walls");
+            }
+            const auto &map = session.map();
+            for (unsigned y = 0; y < 16; ++y)
+            {
+                for (unsigned x = 0; x < 16; ++x)
+                {
+                    const auto &c = map.at(x, y);
+                    std::cout << "walls " << x << "," << y << " w" << int(c.walls[0]) << "."
+                              << int(c.walls[1]) << "." << int(c.walls[2]) << "." << int(c.walls[3])
+                              << " d" << int(c.doors[0]) << "." << int(c.doors[1]) << "."
+                              << int(c.doors[2]) << "." << int(c.doors[3]) << " e"
+                              << int(c.event_raw) << "\n";
+                }
             }
         }
         // OPENGOLD_CURSE_SURVEY walks the map the route ended on, printing each

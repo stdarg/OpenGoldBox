@@ -923,12 +923,21 @@ bool RolfTourSession::move_party(ExplorationCommand command)
         const bool stopped = gateway_overland()
                                  ? a.doors[index(side)] != 1
                                  : blocked(a.walls[index(side)], a.doors[index(side)]);
-        if (stopped)
+        // Treasures keeps the square the party stood on before every step,
+        // whether or not it moves (its main loop sets savedX and savedY
+        // before ResolveMovement): its overland's script, finding the party
+        // still there, moves it by the square's terrain itself.
+        const bool keeps_every_step = game() == GoldBoxGame::treasures_of_the_savage_frontier;
+        if (stopped && !keeps_every_step)
         {
             return false;
         }
         machine_.bind_variable(game_cell(EclAddress{0x49F0}), static_cast<std::uint16_t>(pose.x));
         machine_.bind_variable(game_cell(EclAddress{0x49F1}), static_cast<std::uint16_t>(pose.y));
+        if (stopped)
+        {
+            return false;
+        }
         pose.x = wrapped_x;
         pose.y = wrapped_y;
         pick_tried_ = false;
