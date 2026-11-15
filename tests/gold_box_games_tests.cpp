@@ -2135,7 +2135,7 @@ std::vector<std::string> train_darkness_party(int levels, std::vector<std::strin
 // Pools of Darkness's route plays to the game's end once this is true; until
 // then it stops on this map (docs/GAMES.md, Pools of Darkness, step 5).
 constexpr bool darkness_route_ends_the_game = false;
-constexpr unsigned darkness_route_stops_on_map = 53;
+constexpr unsigned darkness_route_stops_on_map = 52;
 
 // Pools of Darkness's story, beat by beat, as its cluebook tells it: from New
 // Phlan's docks, where Rolf has walked the party out.
@@ -4802,6 +4802,17 @@ const std::vector<RouteBeat> &darkness_route()
             route.push_back(pace);
         }
         // The heart's walks: the clerics cure the badly hurt, no camp.
+        // The last step from (x, y) plays with other dice, as a player
+        // reloads where agents of Tanetal no play beats came on the party.
+        const auto reload_at = [&route](unsigned x, unsigned y, unsigned times)
+        {
+            const auto beat = std::find_if(route.rbegin(), route.rend(),
+                                           [&](const RouteBeat &b)
+                                           {
+                                               return b.map == 53 && b.x == x && b.y == y;
+                                           });
+            beat->reloads = times;
+        };
         const auto walk_heart =
             [&route](std::initializer_list<std::tuple<unsigned, unsigned, D>> steps)
         {
@@ -4853,7 +4864,12 @@ const std::vector<RouteBeat> &darkness_route()
         auto tools = step_beat(53, 10, 1, D::east, {"YES"});
         tools.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x24A, 173};
         route.push_back(tools);
-        // ARROW PROBE
+        // After the LUB, back west to the vena cava and south to the arrow
+        // in the old wound (4,5, event 5; the cluebook's 7): the tools fashion
+        // a magic weapon four times (YES), the fifth try would sting (NO);
+        // Moander's pulse quickens (cell 243h 14: a beat every 14 steps) and
+        // his dreams trouble the heart (cell 241h 2). The party leaves the
+        // weapons: its own are better.
         pace_heart(11, 0, D::south, after_lub);
         walk_heart({{11, 1, D::west},
                     {10, 1, D::west},
@@ -4870,7 +4886,9 @@ const std::vector<RouteBeat> &darkness_route()
                     {2, 4, D::east},
                     {3, 4, D::east}});
         route.push_back(step_beat(53, 4, 4, D::south, {"YES", "YES", "YES", "YES", "NO"}));
-        // FAKE PROBE
+        // Pacing the tissue west of the arrow until a Tanetal comes and the
+        // party, with its new weapons, attacks him (ATTACK): a fake, of bits
+        // of Moander (cell 24Ch bits 2 and 32).
         {
             auto pace = step_beat(53, 3, 5, D::south, {"ATTACK"});
             pace.repeat_in_place = true;
@@ -4879,7 +4897,16 @@ const std::vector<RouteBeat> &darkness_route()
             pace.repeat_until_bits = std::pair<std::uint16_t, std::uint16_t>{0x24C, 34};
             route.push_back(pace);
         }
-        // WATCHER2 PROBE
+        // East to the Watcher's second spot (7,6, event 30; the cluebook's
+        // 11), between LUBs across the vessel (6,6): bits of Moander make off
+        // with her unguent, and she asks for the golden cornucopia. Then
+        // back west, up the vena cava between DUBs (one step reloaded, where
+        // agents of Tanetal no play beats came on the party), along the
+        // pulmonary trunk's loop after a LUB to the cornucopia (8,0, event 7;
+        // the cluebook's 2: YES, the party carries it together), and down
+        // to her third spot (9,4, event 29): she and the party lull Moander
+        // to sleep (YES; a beat every 80 steps), and she gives it the tuning
+        // fork that unmasks the fakes (cell 241h 3).
         walk_heart({{3, 6, D::north}, {3, 5, D::east}, {4, 5, D::east}});
         pace_heart(5, 5, D::south, after_lub);
         walk_heart({{5, 6, D::east}});
@@ -4893,7 +4920,7 @@ const std::vector<RouteBeat> &darkness_route()
                     {3, 5, D::north}});
         pace_heart(3, 5, D::north, after_dub);
         walk_heart({{3, 4, D::west}, {2, 4, D::north}, {2, 3, D::north}, {2, 2, D::north}});
-        route.back().reloads = 1;
+        reload_at(2, 2, 1);
         walk_heart({{2, 1, D::east}, {3, 1, D::east}, {4, 1, D::east}});
         pace_heart(4, 1, D::east, after_lub);
         walk_heart({{5, 1, D::east}, {6, 1, D::east}, {7, 1, D::east}});
@@ -4904,7 +4931,13 @@ const std::vector<RouteBeat> &darkness_route()
                     {10, 1, D::south},
                     {10, 2, D::south}});
         route.push_back(step_beat(53, 10, 4, D::west, {"YES"}));
-        // UNGUENT PROBE
+        // Round by the right atrium and ventricle and up the pulmonary artery
+        // (the cluebook's way) to its iron golems (9,3, event 3; the
+        // cluebook's 3), which tear the party's weapons away and magnetize
+        // them. A stand-in: six iron golems and four fellows, whom fire heals and
+        // the party's blows harm little, beat it in every play the route
+        // tries, so the test wins the fight. East along the artery, its
+        // current carries the party to the unguent (15,3; the cluebook's 4).
         walk_heart({{9, 4, D::east},  {10, 4, D::north}, {10, 2, D::west}, {9, 2, D::west},
                     {8, 2, D::west},  {7, 2, D::west},   {6, 2, D::south}, {6, 4, D::south},
                     {6, 5, D::west},  {5, 5, D::west},   {4, 5, D::west},  {3, 5, D::west},
@@ -4920,7 +4953,13 @@ const std::vector<RouteBeat> &darkness_route()
         route.push_back(golems);
         walk_heart({{9, 3, D::east}, {10, 3, D::east}});
         route.push_back(step_beat(53, 11, 3, D::east, {"YES"}));
-        // SHOCK PROBE
+        // Back west and round by the ventricles to the Watcher's fourth spot
+        // (10,10, event 27; the cluebook's 14): the unguent given, she finds
+        // the party's weapons magnetic. After a LUB, up the artery and round
+        // by the aorta into the left ventricle (12,8; the cluebook's 6),
+        // where Tanetal has not yet seen it: shocking the wall (YES) flushes
+        // him and the party from the heart, and the Talisman of Bane slips
+        // free; the party wedges itself in the pulmonary trunk (9,0).
         walk_heart({{15, 3, D::west},  {11, 3, D::west},  {10, 3, D::west},  {9, 3, D::west},
                     {8, 3, D::south},  {8, 4, D::south},  {8, 5, D::south},  {8, 6, D::south},
                     {8, 7, D::south},  {8, 8, D::south},  {8, 9, D::south},  {8, 10, D::west},
@@ -4940,18 +4979,13 @@ const std::vector<RouteBeat> &darkness_route()
                     {6, 6, D::south},  {6, 7, D::south},   {6, 8, D::east},   {7, 8, D::east},
                     {9, 8, D::east},   {10, 8, D::east}});
         route.push_back(step_beat(53, 11, 8, D::east, {"YES"}));
-        // CHASE PROBE
-        // The last step from (x, y) plays with other dice, as a player
-        // reloads where agents of Tanetal no play beats came on the party.
-        const auto reload_at = [&route](unsigned x, unsigned y, unsigned times)
-        {
-            const auto beat = std::find_if(route.rbegin(), route.rend(),
-                                           [&](const RouteBeat &b)
-                                           {
-                                               return b.map == 53 && b.x == x && b.y == y;
-                                           });
-            beat->reloads = times;
-        };
+        // The Watcher's fifth business, at her last spot (15,7, event 28; the
+        // cluebook's 15): her trap in the right ventricle (YES, help her).
+        // The chase (events 32 to 38, cell A2h counting them; the cluebook's
+        // 16) starts at 15,4 and follows her calls: south to 15,15, west to
+        // 12,15, north to 12,12, west to 9,12, south to 9,15 and west to
+        // 2,15, where Tanetal is in the artery to the north: shocking the
+        // wall (YES) drains the party after him into the right ventricle.
         walk_heart({{9, 0, D::south},   {9, 1, D::east},   {10, 1, D::south},  {10, 2, D::south},
                     {10, 4, D::east},   {11, 4, D::south}, {11, 5, D::west},   {10, 5, D::south},
                     {10, 6, D::south},  {10, 7, D::south}, {10, 9, D::south},  {10, 10, D::south},
@@ -4972,14 +5006,42 @@ const std::vector<RouteBeat> &darkness_route()
                     {8, 15, D::west},   {7, 15, D::west},   {6, 15, D::west},   {5, 15, D::west},
                     {4, 15, D::west}});
         route.push_back(step_beat(53, 3, 15, D::west, {"YES"}));
-        // FINAL PROBE
+        // Tanetal's last stand in the right ventricle (5,12, event 8; the
+        // cluebook's 10): he slays the Watcher and his minions rise. A
+        // stand-in: Tanetal, his golems and bits of Moander leave four
+        // members dead in the best of the route's plays, so the test wins
+        // the fight. The party takes the Talisman of Bane (cell 245h 1).
         walk_heart({{7, 10, D::west}, {6, 10, D::south}, {6, 11, D::south}});
         auto showdown = step_beat(53, 6, 12, D::west, {"YES"});
         showdown.cure_first = true;
         showdown.cure_to_full = true;
         showdown.camp_broken = true;
+        showdown.test_wins = true;
         showdown.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x245, 1};
         route.push_back(showdown);
+        // Out of the heart by the vena cava's end (2,15, south: ARE YOU SURE
+        // YOU WANT TO LEAVE THE HEART? YES), onto Moander's body by the wound
+        // in its side (20,3).
+        walk_heart({{5, 12, D::north},
+                    {5, 11, D::north},
+                    {5, 10, D::west},
+                    {4, 10, D::west},
+                    {3, 10, D::west},
+                    {2, 10, D::south},
+                    {2, 11, D::south},
+                    {2, 12, D::south},
+                    {2, 13, D::south},
+                    {2, 14, D::south}});
+        route.push_back(step_beat(53, 2, 15, D::south, {"YES"}));
+        // Over the body to the great wound in its arm (15,13: DO YOU ENTER?
+        // YES), where Aeghwaet heals the party (YES; his temple raises any
+        // dead).
+        RouteBeat back_to_wound{53, 0, 0, D::north, {"YES", "YES", "raise:dead", "Leave"}};
+        back_to_wound.area_steps = {C::southeast, C::southeast, C::south,     C::southwest,
+                                    C::southwest, C::southwest, C::southwest, C::southwest,
+                                    C::southwest, C::southwest};
+        back_to_wound.fleeing = true;
+        route.push_back(back_to_wound);
         return route;
     }();
     return beats;
