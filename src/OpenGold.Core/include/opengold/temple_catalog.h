@@ -43,7 +43,7 @@ struct TempleServiceInfo
 // Curse's (offered after Cure Critical Wounds), and Restoration Pools of
 // Darkness's and Treasures', whose temples ask nothing for it (their
 // temple.pas has no prices).
-inline constexpr std::array<TempleServiceInfo, 12> temple_services{{
+inline constexpr std::array<TempleServiceInfo, 13> temple_services{{
     {rules::TempleService::cure_blindness, "cure_blindness", "Cure Blindness", 1000},
     {rules::TempleService::cure_disease, "cure_disease", "Cure Disease", 1000},
     {rules::TempleService::cure_light_wounds, "cure_light_wounds", "Cure Light Wounds", 100},
@@ -57,6 +57,7 @@ inline constexpr std::array<TempleServiceInfo, 12> temple_services{{
     {rules::TempleService::resurrection, "resurrection", "Resurrection", 11000},
     {rules::TempleService::heal, "heal", "Heal", 5000},
     {rules::TempleService::restoration, "restoration", "Restoration", 0},
+    {rules::TempleService::cure_feeblemind, "cure_feeblemind", "Cure Feeblemind", 0},
 }};
 
 [[nodiscard]] constexpr const TempleServiceInfo &temple_service_info(rules::TempleService service)
@@ -88,6 +89,7 @@ original_temple_offerings(bool offers_heal = false, bool offers_restoration = fa
     for (const auto &info : temple_services)
     {
         if (info.service == rules::TempleService::heal ||
+            info.service == rules::TempleService::cure_feeblemind ||
             (info.service == rules::TempleService::restoration && !offers_restoration))
         {
             continue;

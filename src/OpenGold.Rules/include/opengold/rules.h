@@ -419,7 +419,10 @@ enum class TempleService : std::uint8_t
     // Curse's Heal: every Hit Point but 1d4.
     heal,
     // Pools of Darkness's and Treasures': a drained level given back.
-    restoration
+    restoration,
+    // Treasures' Fix spends a Heal on feeblemind alone, and on blindness with
+    // it, healing no Hit Points (camp.pas, CampFixMenu). No temple offers it.
+    cure_feeblemind
 };
 
 // What brought a dead member back: a temple's service or a spell cast in camp.

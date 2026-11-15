@@ -8,6 +8,7 @@
 #include "opengold/ecl_machine.h"
 #include "opengold/game_census.h"
 #include "opengold/original.h"
+#include "opengold/original_combat.h"
 #include "opengold/original_content.h"
 #include "opengold/pool_radiance.h"
 #include "opengold/treasures_import.h"
@@ -360,6 +361,163 @@ void the_camp_fixes_the_party()
     check(session.camp_offers_crown() && session.camp_crown() &&
               !session.snapshot().dialogue.empty(),
           "The crown tells the luck: " + session.snapshot().dialogue);
+
+    // OPENGOLD_TREASURE_CAMP_FIXTURE saves the camp, the fighter wounded
+    // again and the crown held, for the camp dialog's check
+    // (treasure_camp.cmake).
+    if (const char *fixture = std::getenv("OPENGOLD_TREASURE_CAMP_FIXTURE"))
+    {
+        auto hurt = party->checkpoint();
+        for (auto &member : hurt.roster)
+        {
+            if (member.id == fighter)
+            {
+                member.vitals.hit_points = 1;
+            }
+        }
+        party->restore(std::move(hurt));
+        opengold::write_campaign_file(
+            fixture,
+            opengold::encode_campaign(*party, &session, opengold::campaign_asset_identity(folder),
+                                      treasures_game));
+    }
+}
+
+// The Fix's second rest (camp.pas, CampFixMenu): a cleric's seventh-level
+// slots each give a drained level back by Restoration, and its sixth-level
+// ones cure feeblemind, with blindness, as Heal does, healing nothing.
+// Treasures' clerics stop at level 10, short of those slots, so the party is
+// made under Pools of Darkness's rules, Treasures' engine's, which let a
+// cleric reach them.
+void the_fix_restores_and_cures_feeblemind()
+{
+    const auto folder = treasures_folder();
+    if (folder.empty())
+    {
+        return;
+    }
+    using opengold::MemberId;
+    using opengold::RandomState;
+    using opengold::test::TourAccess;
+    auto session = opengold::load_campaign(folder, treasures_game);
+    constexpr auto darkness = GoldBoxGame::pools_of_darkness;
+    opengold::original::Content content;
+    content.game = darkness;
+    std::shared_ptr<const opengold::rules::CharacterRules> creation =
+        opengold::original::character_rules(opengold::original::default_aging, darkness);
+    const auto party = std::make_shared<opengold::CampaignParty>(
+        opengold::original::rules_module(content), creation);
+    const auto &module = party->rule_module();
+    // A cleric of Wisdom 18, which seventh-level spells need, trained until
+    // it has them.
+    MemberId cleric{};
+    for (std::uint64_t seed = 1; seed < 400 && !cleric; ++seed)
+    {
+        opengold::rules::CharacterDraft draft;
+        draft.race = "human";
+        draft.gender = "female";
+        draft.alignment = "neutral_good";
+        draft.character_class = "cleric";
+        draft.name = "Ilsa";
+        RandomState random{seed};
+        creation->roll_in_place(draft, random);
+        const opengold::Character candidate(*creation, draft, {});
+        if (candidate.sheet().scores[opengold::rules::Ability::wisdom] >= 18)
+        {
+            cleric = party->add_pc(candidate);
+        }
+    }
+    check(cleric != MemberId{}, "A cleric of Wisdom 18 is rolled");
+    const auto made = [&](const std::string &klass, unsigned seed)
+    {
+        opengold::CharacterCreator creator(creation, seed);
+        creator.select(opengold::rules::CreationField::race, "human");
+        creator.select(opengold::rules::CreationField::character_class, klass);
+        creator.name(klass);
+        opengold::test::walk_original_creation(creator);
+        return party->add_pc(creator.create_character());
+    };
+    const auto fighter = made("fighter", 71);
+    const auto mage = made("magic_user", 75);
+    const auto before = party->member(fighter).character.sheet();
+    // The fighter loses two levels to a drain; the magic-user is
+    // feebleminded and blind; the cleric is wounded, so the Fix runs.
+    auto drained =
+        *opengold::original::Combatant::decode(module.character_profile(before, {}).data);
+    drained.class_levels[2] -= 2;
+    drained.max_hit_points -= before.hit_points / 3;
+    const opengold::rules::VitalState after{drained.max_hit_points, false, drained.encode(), {}};
+    const auto drain = module.lasting_changes(before, after);
+    check(drain.size() == 1, "The drain is a lasting change");
+    constexpr int blind = 33, feebleminded = 268;
+    auto state = party->checkpoint();
+    RandomState random{41};
+    for (auto &member : state.roster)
+    {
+        if (member.id == fighter)
+        {
+            check(member.character.advance(module, member.vitals, drain.front()),
+                  "The fighter takes the drain");
+        }
+        if (member.id == mage)
+        {
+            const std::vector<opengold::original::Effect> conditions{{feebleminded, 0, 0, false},
+                                                                     {blind, 0, 0, false}};
+            member.vitals.resources = opengold::original::rested_state(conditions);
+        }
+        while (member.id == cleric && member.character.sheet().original->cleric_slots[6] == 0 &&
+               member.character.sheet().original->class_levels[0] < 20)
+        {
+            const auto &sheet = member.character.sheet();
+            auto training = module.default_advancement(sheet);
+            module.roll_advancement(sheet, 10'000'000, training, random);
+            check(member.character.advance(module, member.vitals, training), "The cleric trains");
+        }
+        if (member.id == cleric)
+        {
+            member.vitals.hit_points = 1;
+        }
+    }
+    party->restore(std::move(state));
+    check(party->member(cleric).character.sheet().original->cleric_slots[6] > 0,
+          "The cleric casts seventh-level spells");
+    check(party->temple_service_helps(mage, opengold::rules::TempleService::cure_feeblemind),
+          "The magic-user is feebleminded");
+    session.campaign_party(party);
+    for (int step = 0; step < 50 && session.snapshot().phase == TourPhase::running; ++step)
+    {
+        session.advance(1.0);
+    }
+    for (int screen = 0; screen < 12 && session.snapshot().phase == TourPhase::awaiting_continue;
+         ++screen)
+    {
+        check(session.choose(session.snapshot().continue_ticket, 0), "A key goes on");
+        for (int step = 0; step < 50 && session.snapshot().phase == TourPhase::running; ++step)
+        {
+            session.advance(1.0);
+        }
+    }
+    TourAccess::set_variable(session, opengold::por::EclAddress{0x2B}, 0);
+    check(session.camp_offers_fix() && session.camp_fix(), "The camp's Fix begins");
+    for (int step = 0; step < 50 && session.snapshot().phase == TourPhase::running; ++step)
+    {
+        session.advance(1.0);
+    }
+    // One seventh-level slot, one level back.
+    const auto slots_of_seventh =
+        static_cast<int>(party->member(cleric).character.sheet().original->cleric_slots[6]);
+    const auto &restored = *party->member(fighter).character.sheet().original;
+    check(restored.class_levels[2] ==
+              before.original->class_levels[2] - 2 + std::min(slots_of_seventh, 2),
+          "Restoration gives a level back for each seventh-level slot: " +
+              std::to_string(restored.class_levels[2]) + " of " +
+              std::to_string(before.original->class_levels[2]) + ", " +
+              std::to_string(slots_of_seventh) + " slots");
+    check(!party->temple_service_helps(mage, opengold::rules::TempleService::cure_feeblemind) &&
+              !party->temple_service_helps(mage, opengold::rules::TempleService::cure_blindness),
+          "Heal's slot cures the magic-user's feeblemind and blindness");
+    check(session.snapshot().dialogue.find("magic_user is healed") != std::string::npos,
+          "The Fix tells of it: " + session.snapshot().dialogue);
 }
 
 } // namespace
@@ -370,6 +528,7 @@ int main()
     {
         the_opening_reaches_the_fortress();
         the_camp_fixes_the_party();
+        the_fix_restores_and_cures_feeblemind();
         the_overland_is_drawn_from_above();
         a_gateway_character_comes_across();
         std::cout << "Treasures passed.\n";

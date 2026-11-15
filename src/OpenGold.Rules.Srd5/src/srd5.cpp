@@ -32678,9 +32678,11 @@ class Module final : public RulesModule
         }
         case TempleService::heal:
         case TempleService::restoration:
-            // Curse's Heal and the later games' Restoration help no one under
-            // the SRD until their SRD versions (docs/GAMES.md, phase 9), so
-            // the check above has refused them.
+        case TempleService::cure_feeblemind:
+            // Curse's Heal, the later games' Restoration and Treasures' Fix's
+            // cure of feeblemind help no one under the SRD until their SRD
+            // versions (docs/GAMES.md, phase 9), so the check above has
+            // refused them.
             break;
         }
         state = vitals(patient);

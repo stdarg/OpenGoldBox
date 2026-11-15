@@ -612,7 +612,7 @@ class OriginalModule final : public RulesModule
 
     [[nodiscard]] bool offers_temple_service(TempleService service) const override
     {
-        return service != TempleService::resurrection;
+        return service != TempleService::resurrection && service != TempleService::cure_feeblemind;
     }
     [[nodiscard]] bool temple_service_helps(const CharacterSheet &sheet, const VitalState &state,
                                             TempleService service) const override;
@@ -1356,6 +1356,24 @@ std::vector<int> disease_codes(GoldBoxGame game)
         codes.insert(codes.end(), {50, 57});
     }
     return codes;
+}
+
+// What a temple's Heal cures besides wounds: in Secret blindness, disease and
+// feeblemind, in Treasures blindness and feeblemind (their temple.pas,
+// CureWounds), elsewhere nothing.
+std::vector<int> heal_cures(GoldBoxGame game)
+{
+    if (game == GoldBoxGame::secret_of_the_silver_blades)
+    {
+        auto cured = disease_codes(game);
+        cured.insert(cured.end(), {blind, feebleminded});
+        return cured;
+    }
+    if (game == GoldBoxGame::treasures_of_the_savage_frontier)
+    {
+        return {blind, feebleminded};
+    }
+    return {};
 }
 
 // The spells a member has memorized and not cast: its last fight's, or after
@@ -2189,9 +2207,10 @@ RestPolicy OriginalModule::short_rest_policy() const
 // Wounds heal 1d8, 2d8+1 and 3d8+3, and Raise Dead brings the dead back with 1
 // Hit Point, its poison gone. Cure Blindness, Cure Disease, Neutralize Poison
 // and Remove Curse take their conditions away; in Secret and Gateway
-// Neutralize Poison stands one poison killed up again, and Secret's Heal
-// cures blindness, disease and feeblemind too. It raises no one by
-// Resurrection. Stone to Flesh brings a statue back with 1 Hit Point.
+// Neutralize Poison stands one poison killed up again, and Secret's and
+// Treasures' Heal cure more (heal_cures). No temple raises by Resurrection or
+// cures feeblemind alone; Treasures' Fix does (offers_temple_service). Stone
+// to Flesh brings a statue back with 1 Hit Point.
 bool OriginalModule::temple_service_helps(const CharacterSheet &sheet, const VitalState &state,
                                           TempleService service) const
 {
@@ -2212,11 +2231,17 @@ bool OriginalModule::temple_service_helps(const CharacterSheet &sheet, const Vit
         {
             return false;
         }
-        auto cured = disease_codes(game);
-        cured.insert(cured.end(), {blind, feebleminded});
-        const bool cures =
-            game == GoldBoxGame::secret_of_the_silver_blades && has_any(sheet, state, cured);
+        const bool cures = has_any(sheet, state, heal_cures(game));
         return !state.dead && (state.hit_points < sheet.hit_points || cures);
+    }
+    case TempleService::cure_feeblemind:
+        return !state.dead && has_any(sheet, state, std::array{feebleminded});
+    case TempleService::resurrection:
+    {
+        // Only the Fix casts it (offers_temple_service): the dead but elves.
+        constexpr int elf = static_cast<int>(Race::elf);
+        return state.dead && original_numbers(sheet).race != elf &&
+               state.description != stoned_description;
     }
     case TempleService::raise_dead:
         return state.dead;
@@ -2267,14 +2292,19 @@ void OriginalModule::temple_service(VitalState &state, const CharacterSheet &she
         break;
     case TempleService::heal:
         // Curse's Heal: all but 1d4 Hit Points (ovr005, temple_heal); Secret's
-        // cures blindness, disease and feeblemind too (temple.pas, CureWounds).
-        if (game == GoldBoxGame::secret_of_the_silver_blades)
-        {
-            auto cured = disease_codes(game);
-            cured.insert(cured.end(), {blind, feebleminded});
-            (void)cure(sheet, state, cured);
-        }
+        // and Treasures' cure too (heal_cures).
+        (void)cure(sheet, state, heal_cures(game));
         state.hit_points = std::max(state.hit_points, sheet.hit_points - roll_die(random_state, 4));
+        break;
+    case TempleService::cure_feeblemind:
+        (void)cure(sheet, state, std::array{feebleminded, blind});
+        break;
+    case TempleService::resurrection:
+        // Raised with every Hit Point and its poison gone, losing nothing
+        // (magic.pas, SpellResurrection).
+        (void)cure(sheet, state, poison_codes);
+        stand_unpoisoned(sheet, state);
+        state.hit_points = sheet.hit_points;
         break;
     case TempleService::raise_dead:
     {

@@ -666,8 +666,9 @@ std::string RolfTourSession::next_luck_reading()
 
 void RolfTourSession::repair_party()
 {
-    // Every member's blindness, disease and poison cured, the dead but elves
-    // raised and the stoned made flesh, and every Hit Point back.
+    // Every member's feeblemind, blindness, disease and poison cured, the
+    // dead but elves resurrected, the stoned made flesh, every drained level
+    // restored, and every Hit Point back.
     using rules::TempleService;
     for (const auto id : campaign_->state().slots)
     {
@@ -675,14 +676,18 @@ void RolfTourSession::repair_party()
         {
             continue;
         }
-        for (const auto service : {TempleService::cure_blindness, TempleService::cure_disease,
-                                   TempleService::neutralize_poison, TempleService::raise_dead,
-                                   TempleService::stone_to_flesh})
+        for (const auto service : {TempleService::cure_feeblemind, TempleService::cure_blindness,
+                                   TempleService::cure_disease, TempleService::neutralize_poison,
+                                   TempleService::resurrection, TempleService::stone_to_flesh})
         {
             if (campaign_->temple_service_helps(id, service))
             {
                 campaign_->temple_service(id, service, 0);
             }
+        }
+        while (campaign_->temple_service_helps(id, TempleService::restoration))
+        {
+            campaign_->temple_service(id, TempleService::restoration, 0);
         }
     }
     (void)campaign_->heal_living_members();
@@ -801,8 +806,20 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
     struct Cures
     {
         unsigned raise_dead = 0, resurrection = 0, neutralize_poison = 0, remove_curse = 0,
-                 cure_blindness = 0, stone_to_flesh = 0;
+                 cure_blindness = 0, stone_to_flesh = 0, heal = 0, restoration = 0;
     } cures;
+
+    // The levels a member has lost and Restoration would give back.
+    const auto levels_drained = [&](MemberId id)
+    {
+        const auto &numbers = *campaign_->member(id).character.sheet().original;
+        unsigned drained = 0;
+        for (std::size_t at = 0; at < numbers.class_levels.size(); ++at)
+        {
+            drained += slots(numbers.peak_class_levels[at] - numbers.class_levels[at]);
+        }
+        return drained;
+    };
 
     // The healing the casters can give: an average for each slot of a cure
     // they know, and later a roll for each slot of every cure level.
@@ -828,6 +845,7 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
         cures.stone_to_flesh += knows(id, "magic_user:stone_to_flesh") ? slots(mage[5]) : 0;
         cures.cure_blindness += knows(id, "cleric:cure_blindness") ? slots(cleric[2]) : 0;
         cures.resurrection += knows(id, "cleric:resurrection") ? slots(cleric[5]) : 0;
+        cures.heal += knows(id, "cleric:heal") ? slots(cleric[5]) : 0;
         if (campaign_->member(id).character.sheet().scores[rules::Ability::wisdom] <= 3)
         {
             continue;
@@ -876,6 +894,18 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
                 --count;
                 say(std::move(words), id);
             };
+            // Restoration gives back a level for each slot; a Heal cures
+            // feeblemind, and blindness with it, leaving Cure Blindness's
+            // slot for another.
+            while (cures.restoration > 0 &&
+                   campaign_->temple_service_helps(id, TempleService::restoration))
+            {
+                campaign_->temple_service(id, TempleService::restoration, 0);
+                --cures.restoration;
+            }
+            const bool feebleminded = cures.heal > 0 && campaign_->temple_service_helps(
+                                                            id, TempleService::cure_feeblemind);
+            cure(cures.heal, TempleService::cure_feeblemind, "{name} is healed");
             cure(cures.stone_to_flesh, TempleService::stone_to_flesh,
                  "{name} is changed back to flesh");
             cure(cures.neutralize_poison, TempleService::neutralize_poison, "{name} is detoxified");
@@ -890,7 +920,10 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
                      "{name} has been raised from the dead");
             }
             cure(cures.remove_curse, TempleService::remove_curse, "{name} is relieved of a curse");
-            cure(cures.cure_blindness, TempleService::cure_blindness, "{name} regains sight");
+            if (!feebleminded)
+            {
+                cure(cures.cure_blindness, TempleService::cure_blindness, "{name} regains sight");
+            }
         }
     };
     outcome.interrupted_after = fix_rest(longest, dice);
@@ -933,13 +966,16 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
     }
     // A second rest for the cures the first left undone, as many of each as
     // are needed and the slots allow.
-    unsigned dead = 0, stoned = 0, poisoned = 0, blind = 0, cursed = 0;
+    unsigned dead = 0, stoned = 0, poisoned = 0, blind = 0, cursed = 0, feebleminded = 0,
+             drained = 0;
     for (const auto id : members)
     {
         if (!id)
         {
             continue;
         }
+        drained += levels_drained(id);
+        feebleminded += campaign_->temple_service_helps(id, TempleService::cure_feeblemind) ? 1 : 0;
         dead += campaign_->temple_service_helps(id, TempleService::raise_dead) ? 1 : 0;
         stoned += campaign_->temple_service_helps(id, TempleService::stone_to_flesh) ? 1 : 0;
         poisoned += campaign_->temple_service_helps(id, TempleService::neutralize_poison) ? 1 : 0;
@@ -953,7 +989,9 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
             continue;
         }
         const auto &numbers = *campaign_->member(id).character.sheet().original;
+        cures.restoration += slots(numbers.cleric_slots[6]);
         cures.resurrection += slots(numbers.cleric_slots[6]);
+        cures.heal += slots(numbers.cleric_slots[5]);
         cures.stone_to_flesh += slots(numbers.magic_user_slots[5]);
         cures.raise_dead += slots(numbers.cleric_slots[4]);
         cures.neutralize_poison += slots(numbers.cleric_slots[3]);
@@ -962,10 +1000,11 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
     }
     const unsigned raising = cures.resurrection > 0 ? std::min(cures.resurrection, dead) * 105
                                                     : std::min(cures.raise_dead, dead) * 75;
-    const unsigned curing = raising + std::min(cures.stone_to_flesh, stoned) * 90 +
-                            std::min(cures.neutralize_poison, poisoned) * 60 +
-                            std::min(cures.cure_blindness, blind) * 45 +
-                            std::min(cures.remove_curse, cursed) * 45;
+    const unsigned curing =
+        raising + std::min(cures.restoration, drained) * 105 +
+        std::min(cures.heal, feebleminded) * 90 + std::min(cures.stone_to_flesh, stoned) * 90 +
+        std::min(cures.neutralize_poison, poisoned) * 60 +
+        std::min(cures.cure_blindness, blind) * 45 + std::min(cures.remove_curse, cursed) * 45;
     outcome.interrupted_after = fix_rest(curing, dice);
     if (!outcome.interrupted_after)
     {
