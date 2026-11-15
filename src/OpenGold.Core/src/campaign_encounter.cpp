@@ -1,4 +1,5 @@
 #include "opengold/campaign_encounter.h"
+#include "opengold/original_rules.h"
 #include <algorithm>
 
 namespace opengold
@@ -28,6 +29,21 @@ void apply_difficulty(CampaignEncounter &encounter, Difficulty difficulty, unsig
         {
             enemy.morale = shifted_morale(enemy.morale, strength.morale_shift, 1);
         }
+    }
+}
+
+void apply_original_difficulty(CampaignEncounter &encounter, Difficulty difficulty,
+                               GoldBoxGame game)
+{
+    const auto level = static_cast<original::DifficultyLevel>(difficulty);
+    const auto strength = original_monster_strength(difficulty);
+    // Secret's and the later games' Hit Points by their own levels.
+    const auto hit_points_percent = original::scales_monster_hit_points(game)
+                                        ? original::game_hit_points_percent(level)
+                                        : strength.hit_points_percent;
+    for (auto &enemy : encounter.enemies)
+    {
+        enemy.original_strength = {hit_points_percent, strength.to_hit, strength.armor_class_bonus};
     }
 }
 } // namespace opengold

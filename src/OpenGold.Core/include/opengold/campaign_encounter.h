@@ -3,6 +3,7 @@
 #include "opengold/difficulty.h"
 #include "opengold/dungeon_battlefield.h"
 #include "opengold/formats.h"
+#include "opengold/gold_box_game.h"
 #include "opengold/rules.h"
 #include <cstdint>
 #include <map>
@@ -149,5 +150,12 @@ struct CampaignEncounter
 // What the difficulty does to a fight's monsters and morale, those on the party's
 // side left alone (DIFF-2).
 void apply_difficulty(CampaignEncounter &encounter, Difficulty difficulty, unsigned party_level);
+
+// What the difficulty does to a fight's monsters under the original rules
+// (original_monster_strength): their THAC0, Hit Points and Armor Class, the
+// Hit Points by the game's own levels where its LOAD MONSTER scales them.
+// Those on the party's side, the party and the encounter stay the original's.
+void apply_original_difficulty(CampaignEncounter &encounter, Difficulty difficulty,
+                               GoldBoxGame game);
 } // namespace opengold
 #endif

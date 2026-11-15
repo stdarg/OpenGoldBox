@@ -4595,6 +4595,45 @@ void readied_items_give_their_effects()
           "Gateway's and Unlimited Adventures' cloaks of displacement displace their wearers");
 }
 
+// The original rules' difficulty changes the monsters only (Difficulty,
+// 2026-11-15): their to-hit, Hit Points and Armor Class, Normal nothing; a game
+// that scales Hit Points by its own levels keeps that scaling.
+void difficulty_changes_the_monsters()
+{
+    using original::DifficultyLevel;
+    check(original::game_hit_points_percent(DifficultyLevel::easy) == 75 &&
+              original::game_hit_points_percent(DifficultyLevel::normal) == 100 &&
+              original::game_hit_points_percent(DifficultyLevel::nightmare) == 150 &&
+              original::game_hit_points_percent(DifficultyLevel::infernal) == 200,
+          "LOAD MONSTER's quarters: Squire to Champion, and Infernal twice");
+    check(original::scales_monster_hit_points(secret_game) &&
+              original::scales_monster_hit_points(GoldBoxGame::treasures_of_the_savage_frontier) &&
+              !original::scales_monster_hit_points(GoldBoxGame::pool_of_radiance) &&
+              !original::scales_monster_hit_points(GoldBoxGame::curse_of_the_azure_bonds),
+          "Secret and the later games scale Hit Points themselves");
+    for (const rules::OriginalStrength strength :
+         {rules::OriginalStrength{75, -2, -2}, rules::OriginalStrength{},
+          rules::OriginalStrength{200, 3, 3}})
+    {
+        auto monster = creature(41);
+        monster.thac0 = 15;
+        monster.armor_class = monster.rear_armor_class = 4;
+        auto fight = arrange({{"Fighter", rules::Side::party, {1, 3}, creature(30)},
+                              {"Kobold", rules::Side::opposition, {6, 3}, monster}},
+                             5, {}, 100, GoldBoxGame::pool_of_radiance, false, false,
+                             [&strength](rules::Encounter &encounter)
+                             {
+                                 encounter.participants.back().original_strength = strength;
+                             });
+        const auto &kobold = view_of(fight.session->snapshot(), "Kobold");
+        const auto &fighter = view_of(fight.session->snapshot(), "Fighter");
+        check(kobold.max_hit_points == 41 * static_cast<int>(strength.hit_points_percent) / 100 &&
+                  kobold.armor_class == 4 - strength.armor_class_bonus &&
+                  fighter.max_hit_points == 30,
+              "The monster's Hit Points and Armor Class follow the level, the party's not");
+    }
+}
+
 // Gateway's effects by the fight's numbers are Curse's, but for its own; Pools
 // of Darkness' and Treasures' are Secret's, but for those their engine moved
 // and its own (canonical_effect, docs/ORIGINAL-RULES.md).
@@ -5021,6 +5060,7 @@ int main()
         a_quarrel_banishes_the_rakshasa();
         readied_items_give_their_effects();
         later_games_effects_take_their_own_numbers();
+        difficulty_changes_the_monsters();
         heights_decide_sight();
         the_party_facing_and_movement();
         spiritual_hammer_gives_its_hammer();

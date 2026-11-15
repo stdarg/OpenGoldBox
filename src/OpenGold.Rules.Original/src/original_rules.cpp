@@ -2155,6 +2155,20 @@ bool attack_hits(int natural_roll, int thac0, int armor_class, int modifier) noe
     return natural_roll >= 20 || natural_roll + modifier >= thac0 - armor_class;
 }
 
+bool scales_monster_hit_points(GoldBoxGame game) noexcept
+{
+    return game == GoldBoxGame::secret_of_the_silver_blades ||
+           game == GoldBoxGame::gateway_to_the_savage_frontier ||
+           game == GoldBoxGame::pools_of_darkness ||
+           game == GoldBoxGame::treasures_of_the_savage_frontier;
+}
+
+unsigned game_hit_points_percent(DifficultyLevel level) noexcept
+{
+    constexpr std::array<unsigned, 5> quarters{3, 4, 5, 6, 8};
+    return 25 * quarters[static_cast<std::size_t>(level)];
+}
+
 int hit_damage(int dice_total, int modifier) noexcept
 {
     return std::max(dice_total + modifier, 0);

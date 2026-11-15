@@ -3951,7 +3951,15 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             // The script sets the encounter's morale before COMBAT.
             encounter_->morale =
                 std::min<unsigned>(machine_.variable(game_cell(ecl_encounter_morale)), 100);
-            apply_difficulty(*encounter_, difficulty_, average_party_level(living_member_levels()));
+            if (plays_original_records())
+            {
+                apply_original_difficulty(*encounter_, difficulty_, game());
+            }
+            else
+            {
+                apply_difficulty(*encounter_, difficulty_,
+                                 average_party_level(living_member_levels()));
+            }
             announce_camp_attack();
             combat_request_ = request.id;
             // The original shows the approached monster's close-up until a key press.

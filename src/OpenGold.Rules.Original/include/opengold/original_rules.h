@@ -460,5 +460,25 @@ struct CasterSlots
 // byte, so a total below zero wrapped to more than 250; it is 0 here
 // (docs/DEVIATIONS.md, the user, 2026-11-12).
 [[nodiscard]] int hit_damage(int dice_total, int modifier) noexcept;
+
+// The game's difficulty levels, easiest first, as its settings order them.
+enum class DifficultyLevel : unsigned
+{
+    easy,
+    normal,
+    hard,
+    nightmare,
+    infernal
+};
+
+// Whether a game's LOAD MONSTER scales its hostile monsters' Hit Points by its
+// level setting (Secret's, Gateway's, Pools of Darkness's and Treasures' eclvm.pas).
+[[nodiscard]] bool scales_monster_hit_points(GoldBoxGame game) noexcept;
+
+// The percent of their Hit Points those games give their monsters at a level:
+// a quarter for each of the original's levels above Novice and two more
+// (its (level + 2) / 4, the original's Squire to Champion as Easy to
+// Nightmare), and Infernal twice the Hit Points, two levels past Champion.
+[[nodiscard]] unsigned game_hit_points_percent(DifficultyLevel level) noexcept;
 } // namespace opengold::original
 #endif

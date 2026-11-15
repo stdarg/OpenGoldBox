@@ -382,7 +382,7 @@ void GameMenuView::show_srd_balance()
                 ? i18n::text(N_(
                       "In this design, the difficulty plays as Design difficulty below sets it."))
                 : i18n::text(N_(
-                      "Under the original rules, every difficulty plays as the original game did.")));
+                      "Under the original rules, Normal plays as the original game did; the other levels change only the monsters' to-hit, Hit Points and Armor Class.")));
 }
 
 void GameMenuView::restore_ability_defaults()

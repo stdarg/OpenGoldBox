@@ -18,10 +18,11 @@ The user decided these on 2026-11-11 and 2026-11-12:
 - **The difficulty levels keep their names** (Easy, Normal, Hard, Nightmare,
   Infernal), but each set of rules has its own effects for them. The balance
   settings built so far (DIFF-2's table, `encounter_challenge`, the `[monsters]`
-  ability switches) belong to the SRD rules. Under the original rules the
-  game plays at Normal, the original's own play (2026-11-14), but in an
-  *Unlimited Adventures* design, which plays its own levels, OpenGoldBox's
-  difficulty table or both (2026-11-15); see [Difficulty](#difficulty).
+  ability switches) belong to the SRD rules. Under the original rules
+  Normal is the original's own play (2026-11-14), and the other levels
+  change the monsters only (2026-11-15), but in an *Unlimited Adventures*
+  design, which plays its own levels, OpenGoldBox's difficulty table or
+  both; see [Difficulty](#difficulty).
 - **Look takes ten minutes** in every game, as each original's map menu
   L does (AdvanceTime(1, 2)), asked for on 2026-11-14.
 - **Obvious bugs in the original are fixed, not kept.** Since 2026-11-14 an
@@ -44,10 +45,21 @@ The user decided these on 2026-11-11 and 2026-11-12:
   The choice stays hidden, with the SRD rules in effect, until the original
   rules can play a fight.
 - **Races:** the original rules offer only the original's six races.
-- **Until the original rules' difficulty levels are built** (step 7), every
-  level plays the original as it was. The Options screen shows
-  `encounter_challenge` and the `[monsters]` ability switches only under the
-  SRD rules.
+- **The original rules' difficulty levels** (2026-11-15) change the
+  monsters only; the party is unchanged, and Normal is the original exactly:
+
+  | | Easy | Normal | Hard | Nightmare | Infernal |
+  |---|---|---|---|---|---|
+  | Monsters' to-hit (THAC0) | −2 | — | +1 | +2 | +3 |
+  | Monsters' Hit Points | 75% | — | 125% | 150% | 200% |
+  | Monsters' Armor Class | 2 worse | — | 1 better | 2 better | 3 better |
+
+  Monster counts, spells, abilities and experience don't change. Where the
+  original already scales its monsters' Hit Points by its own levels
+  (*Secret* and the later games' LOAD MONSTER), those levels' own scaling
+  gives the Hit Points and the table adds only to-hit and Armor Class. The
+  routes play at Normal. The Options screen shows `encounter_challenge` and
+  the `[monsters]` ability switches only under the SRD rules.
 - **Dexterity above 18 is worth more in a fight** (2026-11-12): each step of
   its Armor Class and missile bonuses comes two points sooner than in the
   original, so an elf's natural 19 beats 18. Every departure from the original
@@ -371,8 +383,7 @@ chosen by the game as *Curse*'s are. In progress (2026-11-13):
   readied, strikes one its record flags for it (target flag bit 0) 1
   better, for 6d6 and the wielder's Strength bonus in place
   of the weapon's own damage, before the defenses and a backstab's multiple.
-- **Still to come:** the hit points LOAD MONSTER scales by difficulty (the
-  original rules have no difficulty yet, Difficulty).
+- Its LOAD MONSTER's Hit Points by difficulty are played (Difficulty).
 
 ## Gateway to the Savage Frontier
 
@@ -685,8 +696,6 @@ The work asked for next (2026-11-14), in order, with what each needs:
    - The temples' Restoration (step 6; *Pools of Darkness*'s and
      *Treasures*'), a service the game's temple screen does not offer yet;
      the spell in camp gives drained levels back (Pools of Darkness).
-   - The original rules' difficulty levels (step 7): they all play at
-     Normal (Decisions); ask the user before designing anything new.
    - Under AD&D aging, a year added for each year the game's clock passes
      (An age that changes after creation, step 3).
 
@@ -1400,9 +1409,31 @@ never speeds a creature up:
 
 ## Difficulty
 
-The original had no difficulty levels: the camp's Alter menu offers only
-Order, Drop, Speed, Icon and Pics. It does have the levers its designers used
-to tune fights:
+The game's difficulty setting (`settings.cfg`'s difficulty, the Options
+screen) chooses a level; under the original rules it changes the monsters a
+fight meets and nothing else (Decisions, 2026-11-15): their THAC0, Hit Points
+and Armor Class. One function holds the table, `original_monster_strength`
+(difficulty.h), which *Unlimited Adventures* also uses with each design's
+own setting. The game applies it as a script's COMBAT starts
+(`apply_original_difficulty`), to the monsters of the opposing side only, and
+the fight gives each its Hit Points by the percent (at least 1), its THAC0
+and both its Armor Classes (`rules::Participant::original_strength`; the
+SRD's `hit_points_percent` and `attack_bonus` stay the SRD's).
+
+- **Hit Points by the game's own levels:** *Secret*, *Gateway*, *Pools of
+  Darkness* and *Treasures* scale a hostile monster's Hit Points as LOAD
+  MONSTER loads it by their camp's level setting (Novice to Champion; cell
+  4CF4h in *Secret*, *Gateway*'s DIFFICULTY, the game state's level in the
+  256-color games): (level + 2) / 4 of them, at least 1
+  (`original::scales_monster_hit_points`, `game_hit_points_percent`). Squire,
+  Veteran (their default), Adept and Champion are Easy, Normal, Hard and
+  Nightmare, which their quarters match; Infernal goes two levels past
+  Champion, twice the Hit Points. Their Novice, half the Hit Points, has no
+  level here.
+- *Pool of Radiance* and *Curse* had no levels: the camp's Alter menu offers
+  only Order, Drop, Speed, Icon and Pics. The table's Hit Points are theirs.
+
+The originals also have the levers their designers used to tune fights:
 
 - **Party strength.** The scripts read the party's strength (the PARTY STRENGTH
   command: Hit Points, Armor Class, THAC0 and cleric and magic-user levels) and
@@ -1411,8 +1442,7 @@ to tune fights:
   movement for a fight.
 - **Morale.** Monsters flee or surrender when their morale breaks.
 
-The original rules' levels will be built from these levers, and their numbers
-tuned with the AI lab once the original rules play.
+The levels leave these as the scripts set them.
 
 **OpenGoldBox's difficulty table** (the user, 2026-11-15) changes the
 monsters only: Easy -2 to hit, 75% Hit Points and Armor Class 2 worse;
@@ -1498,6 +1528,7 @@ scales Hit Points takes only the table's to-hit and Armor Class.
 | *Secret:* the Delayed Blast Fireball asks for its delay at the keyboard whoever casts it, the computer's creatures too (`magic.pas`, `SpellDelayedBlastFireball`) | The computer bursts it at once |
 | *Secret:* its +1 to hit with long and short swords and bows goes to every race (`charhlp.pas`, `WeaponAdjust`), where the earlier games give it to elves | Elves only (the user, 2026-11-14) |
 | *Secret*, *Pools of Darkness* and *Treasures:* Spiritual Hammer readies its hammer when no weapon is readied, but its search for the new hammer steps past it, so it never readies it (`effhndlr.pas`, `EffSpiritualHammer`) | Readied to the empty hand |
+| *Pools of Darkness* and *Treasures:* LOAD MONSTER keeps a monster's scaled Hit Points in a byte, so Adept or Champion wraps a monster of more than 204 or 170 around to a few (`eclvm.pas`, `EclLoadMonster`) | No wrap |
 | *Curse*, *Gateway* and *Treasures:* training picks the class whose next level needs the most experience, but reads every class at the level of the last one it looked at (TrainingMenu) | Each class at its own level |
 | *Curse:* Hold Monster holds only what Hold Person can, as the spell its resolver exempts from the creature-type rule is Dimension Door (0x53) and not Hold Monster (0x5E) (`ovr023`, `MultiTargetedSpell`) | Any creature |
 | *Curse:* Ice Storm and Cone of Cold deal acid damage, so resisting cold does not lessen them (`ovr023`, `SpellIceStorm`, `SpellConeOfCold`) | Cold |
