@@ -3269,6 +3269,29 @@ const std::vector<RouteBeat> &darkness_route()
                        {10, 15, D::west},
                        {9, 15, D::west}});
         route.push_back(step_beat(81, 8, 15, D::north, {"YES", "YES"}));
+        // The Test's first trial, Strength (10,14): a member strong enough
+        // breaks the wall down.
+        route.push_back(step_beat(81, 9, 14, D::east,
+                                  {"paladin 1", "YES", "paladin 2", "YES", "ranger 3", "YES",
+                                   "cleric 4", "YES", "cleric 5"}));
+        // Courage (11,11): the party pushes on through its dread. Battle
+        // Readiness (11,7): it beats the driders. Magical Ability (8,4): it
+        // beats the drow mages. Intelligence (7,4): it answers the riddle
+        // with the name of its last foe, BANE.
+        walk_passages(route, 81, {{10, 14, D::north}, {10, 13, D::east}, {11, 13, D::north}});
+        route.push_back(step_beat(81, 11, 12, D::north, {"PUSH FORWARD"}));
+        walk_passages(route, 81,
+                      {{11, 11, D::north},
+                       {11, 10, D::north},
+                       {11, 9, D::north},
+                       {11, 8, D::north},
+                       {11, 7, D::north},
+                       {11, 6, D::north},
+                       {11, 5, D::west},
+                       {10, 5, D::west},
+                       {9, 5, D::north},
+                       {9, 4, D::west}});
+        route.push_back(step_beat(81, 8, 4, D::west, {"type:BANE"}));
         return route;
     }();
     return beats;
