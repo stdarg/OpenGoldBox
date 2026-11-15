@@ -628,6 +628,9 @@ whole list):
 - **Its level caps by race are *Curse*'s,** to level 40 (2026-11-14).
 - **Its THAC0 and saving throws are *Pools of Darkness*'s,** to level 21
   (2026-11-14), the kit's own empty thief row fixed (Bugs).
+- **Its races' innate effects are the kit's** (the user, 2026-11-15): no
+  save against poison by Constitution, and a gnome strikes its foes but has
+  no defense against giants (ua.md).
 - **Its fights order each round once,** ties on a d2, as *Secret*'s do
   (2026-11-14).
 - **Still to come:** its critical hits on a natural 17 or more, which only a

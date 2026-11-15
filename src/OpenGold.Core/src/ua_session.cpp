@@ -211,6 +211,8 @@ constexpr std::array<std::uint8_t, 7> original_races{2, 4, 1, 3, 5, 7, 0};
     // Its monster types, which the kit's effects test (a dwarf's foe, a
     // giant, a ranger's foe; original::combatant_from_record).
     record.creature_type_flags = raw[0xBF];
+    // Its immunities, of which bit 4 makes it a gnome's foe.
+    record.target_flags = raw[0xC0];
     // The kit sizes a creature by its icon, keeping the record's top bit
     // (evcmds.c, monster_add).
     record.icon_size_raw = static_cast<std::uint8_t>((raw[0x82] & 0x80) | icon_size_code(icon));

@@ -480,11 +480,14 @@ int secret_traits(const por::CharacterRecord &record)
 // An Unlimited Adventures monster's kinds of foe and traits, from its
 // monster types (the kit's MONST record, +BFh; fxcombat.c and effects.c): a
 // dwarf's foe (80h, its effect 26), a giant (4, 47), the big folk a gnome
-// defends against (20h, 48) and a ranger's foe (8, 105).
+// defends against (20h, 48) and a ranger's foe (8, 105); and from its
+// immunities (+C0h, kept as the target flags) a gnome's foe (4, the kit's
+// gnome's effect 7).
 int kit_kin(const por::CharacterRecord &record)
 {
     const auto types = record.creature_type_flags;
     int kinds = 0;
+    kinds |= (record.target_flags & 0x04) ? kin::gnome_foe : 0;
     kinds |= (types & 0x80) ? kin::dwarf_foe : 0;
     kinds |= (types & 0x04) ? kin::giant : 0;
     kinds |= (types & 0x20) ? kin::bugbear : 0;

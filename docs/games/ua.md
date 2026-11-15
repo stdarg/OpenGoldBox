@@ -469,6 +469,14 @@ Its differences from the Pool family ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md))
   and saves take the best of a character's classes. *Done* (2026-11-14,
   `thac0`, `saving_throws`), with the kit's empty thief row fixed
   ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Bugs).
+- Races' innate effects are the kit's (`create.c`, `race_start`), the user's
+  answer (2026-11-15): a dwarf strikes its foes, defends against giants and
+  saves by Constitution against magic (26, 47, 97); a gnome strikes its
+  foes (the kit's 7, the fight's 18), defends against the big folk and
+  saves the same (48, 97); a halfling saves so (97); no one saves by
+  Constitution against poison, and a gnome has no defense against giants,
+  where *Curse* gives both. A monster with immunity bit 4 (+C0h) is a
+  gnome's foe. *Done* (`character_combatant`, `kit_kin`).
 - Initiative is 1d6 and the Dexterity bonus, and the round's order is made
   once as it begins, a tie going first on a d2 (`combat.c`), as *Secret*'s
   is; a spell's casting time and Delay move a creature back in it. *Done*
@@ -548,12 +556,9 @@ playing each event and fight; it fails on any event the session cannot play.
   (the party's to-hit +2, +1, 0, -1 or -2 and the monsters' Hit Points
   scaled by Level x (Level + 1) / 4) or stays at Normal as every game does
   under the original rules.
-- A question for the user: a party member's racial effects are *Curse*'s
-  (dwarves 26, 47 and 97; gnomes 18, 47 and 48), where the kit gives gnomes
-  48 and 7 but not 47 or 18.
 - A critical hit's vorpal beheading, with items' special effects.
 
-Next, in this order: the two questions above once answered; then monsters'
+Next, in this order: the difficulty question above once answered; then monsters'
 spells (+C6h) and items' special effects when readied (which bring the
 vorpal beheading); then the services' smaller parts.
 

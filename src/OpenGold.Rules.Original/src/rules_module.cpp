@@ -418,15 +418,19 @@ Combatant character_combatant(const CharacterSheet &sheet,
     // 124). A dwarf's and a gnome's bonus against their foes (26, 18), their
     // defense against giants (47), and a gnome's against bugbears (48).
     // Secret gives no one the save against poison and a gnome no defense
-    // against giants (its chargen.pas).
+    // against giants (its chargen.pas), nor does Unlimited Adventures (the
+    // kit's create.c, race_start), whose gnome strikes its foes (its effect
+    // 7) as the gnome's 18 does.
     constexpr int dwarf = 1, elf = 2, gnome = 3, half_elf = 4, halfling = 5;
     constexpr int dwarf_attack = 26, gnome_attack = 18, giant_defense = 47, bugbear_defense = 48;
     const auto innate = [&c](int code)
     {
         c.effects.push_back({code, 0, 255, false});
     };
-    const bool secret = game_of(sheet.identity) == GoldBoxGame::secret_of_the_silver_blades;
-    if (!secret && (c.race == dwarf || c.race == halfling))
+    const bool secret_or_kit =
+        game_of(sheet.identity) == GoldBoxGame::secret_of_the_silver_blades ||
+        game_of(sheet.identity) == GoldBoxGame::unlimited_adventures;
+    if (!secret_or_kit && (c.race == dwarf || c.race == halfling))
     {
         innate(90);
     }
@@ -443,7 +447,7 @@ Combatant character_combatant(const CharacterSheet &sheet,
         innate(gnome_attack);
         innate(bugbear_defense);
     }
-    if (c.race == dwarf || (c.race == gnome && !secret))
+    if (c.race == dwarf || (c.race == gnome && !secret_or_kit))
     {
         innate(giant_defense);
     }

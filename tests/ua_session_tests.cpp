@@ -806,6 +806,69 @@ void the_kits_tables_rule_its_characters()
           "The kit's level caps by race follow Strength and Intelligence");
 }
 
+// The kit's races fight with its own innate effects (create.c, race_start):
+// a dwarf strikes its foes (26), defends against giants (47) and saves by
+// Constitution against magic (97); a gnome strikes its foes (the kit's 7, the
+// fight's 18), defends against the big folk (48) and saves as a dwarf; no
+// one saves by Constitution against poison (90), and a gnome has no defense
+// against giants. A monster the kit makes immune by bit 4 is a gnome's foe.
+void the_kits_races_fight_as_the_kit_has_them(const std::filesystem::path &kit)
+{
+    namespace original = opengold::original;
+    const ua::DesignFiles files(kit, {});
+    const auto content = ua::load_design_content(files);
+    std::shared_ptr<const opengold::rules::CharacterRules> creation =
+        original::character_rules(original::default_aging, GoldBoxGame::unlimited_adventures);
+    opengold::CampaignParty party(original::rules_module(content), creation);
+    for (const auto *race : {"dwarf", "gnome"})
+    {
+        opengold::CharacterCreator creator(creation, 7);
+        creator.select(opengold::rules::CreationField::race, race);
+        creator.select(opengold::rules::CreationField::character_class, "fighter");
+        creator.name(race);
+        for (const bool roll : {false, false, false, true, false, false})
+        {
+            if (roll)
+            {
+                creator.roll();
+            }
+            creator.next();
+        }
+        (void)party.add_pc(creator.create_character());
+    }
+    const auto ids =
+        std::vector<opengold::MemberId>{party.state().slots[0], party.state().slots[1]};
+    // The innate effects as the fight takes the member up (its profile).
+    const auto codes = [&party, &ids](std::size_t n)
+    {
+        std::set<int> found;
+        const auto profile =
+            party.rule_module().character_profile(party.member(ids[n]).character.sheet(), {});
+        const auto decoded = original::Combatant::decode(profile.data);
+        check(decoded.has_value(), "The member's fighting numbers read back");
+        for (const auto &effect : decoded->effects)
+        {
+            found.insert(effect.code);
+        }
+        return found;
+    };
+    const auto dwarf = codes(0), gnome = codes(1);
+    check(dwarf.contains(26) && dwarf.contains(47) && dwarf.contains(97) && !dwarf.contains(90),
+          "A dwarf has the kit's 26, 47 and 97, and no save against poison");
+    check(gnome.contains(18) && gnome.contains(48) && gnome.contains(97) && !gnome.contains(47) &&
+              !gnome.contains(90),
+          "A gnome has the kit's 7 (the fight's 18), 48 and 97, and no defense against giants");
+    std::vector<std::string> foes;
+    for (const auto &[key, monster] : content.bestiary)
+    {
+        if (monster.kin & original::kin::gnome_foe)
+        {
+            foes.push_back(key);
+        }
+    }
+    check(!foes.empty(), "The kit makes some monsters a gnome's foe");
+}
+
 // Unlimited Adventures' experience carries every class on past level 9 (the
 // kit's own table), and a ranger past level 8 learns a magic-user spell as
 // its ranger level rises, and only then: the kit's training gave one to a
@@ -1846,8 +1909,8 @@ void the_kits_monsters_and_events_play_as_the_kit_has_them(const std::filesystem
     };
     const auto goblin = numbers(2), ogre = numbers(8);
     const auto ranger_foe = opengold::original::trait::ranger_foe;
-    check(goblin.kin == kin::dwarf_foe && goblin.traits == ranger_foe,
-          "The kit's goblin is a dwarf's foe and a ranger's");
+    check(goblin.kin == (kin::dwarf_foe | kin::gnome_foe) && goblin.traits == ranger_foe,
+          "The kit's goblin is a dwarf's foe, a gnome's and a ranger's");
     check(ogre.kin == (kin::giant | kin::bugbear) && ogre.traits == ranger_foe,
           "The kit's ogre is a giant, a gnome's foe and a ranger's");
     // The black pudding and the gorgon against the party, in the game's fight.
@@ -2419,6 +2482,7 @@ int main(int argc, char **argv)
         {
             return the_design_plays_to_its_end(*kit) ? 0 : 1;
         }
+        the_kits_races_fight_as_the_kit_has_them(*kit);
         the_wilds_show_the_kits_big_picture(*kit);
         a_large_area_maps_around_the_party(*kit);
         the_kits_doors_open_as_the_kit_opens_them(*kit);
