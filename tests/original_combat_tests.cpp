@@ -5176,6 +5176,55 @@ void the_kits_monsters_breathe()
     check(logged(*breaths.session, "{name} breathes.") == 4, "Four breaths a fight, and no more");
 }
 
+// The kit's blue dragon breathes as Pools of Darkness's does (its 91, the
+// fight's 561; fxcombat.c, fx_lightning_breath): three a fight, at an enemy
+// its Lightning Bolt would be aimed at, its maximum Hit Points to the aim and
+// along a bolt of 9 squares past it, never at one immune to electricity.
+void the_kits_blue_dragon_breathes_lightning()
+{
+    const auto blue = original::canonical_effect(91, kit_game);
+    check(blue == 561, "The kit's 91 is Pools of Darkness's blue dragon's breath");
+    const auto dragon = special({{blue, 0, 255, false}}, 40);
+    const auto wide = [](rules::Encounter &encounter)
+    {
+        encounter.battlefield = {16, 8, std::vector<rules::Terrain>(128, rules::Terrain::open)};
+    };
+    auto bolt = arrange({{"Fighter", rules::Side::party, {2, 3}, victim(500)},
+                         {"Dragon", rules::Side::opposition, {0, 3}, dragon},
+                         {"Ninth", rules::Side::opposition, {11, 3}, victim(500)},
+                         {"Tenth", rules::Side::opposition, {12, 3}, victim(500)}},
+                        263, {}, 100, kit_game, false, false, wide);
+    until_turn_of(*bolt.session, "Dragon");
+    bolt.session->submit(order(*bolt.session, "quick"));
+    const auto hit_points = [&](std::string_view name)
+    {
+        return view_of(bolt.session->snapshot(), name).hit_points;
+    };
+    check(logged(*bolt.session, "{name} breathes.") == 1 && hit_points("Fighter") == 460 &&
+              hit_points("Ninth") == 460 && hit_points("Tenth") == 500,
+          "The blue dragon's bolt runs 9 squares past its aim, its own side's in it too");
+
+    const auto never = []
+    {
+        return false;
+    };
+    auto breaths = arrange({{"Fighter", rules::Side::party, {2, 3}, victim(5000)},
+                            {"Dragon", rules::Side::opposition, {5, 3}, dragon}},
+                           265, {}, 100, kit_game);
+    ai_plays(*breaths.session, "Dragon", never, 8);
+    check(logged(*breaths.session, "{name} breathes.") == 3,
+          "The kit's blue dragon breathes three times a fight, and no more");
+
+    auto grounded = victim(5000);
+    grounded.effects.push_back({335, 0, 0, false});
+    auto spared = arrange({{"Fighter", rules::Side::party, {2, 3}, grounded},
+                           {"Dragon", rules::Side::opposition, {5, 3}, dragon}},
+                          265, {}, 100, kit_game);
+    ai_plays(*spared.session, "Dragon", never, 3);
+    check(logged(*spared.session, "{name} breathes.") == 0,
+          "It never breathes at one immune to electricity");
+}
+
 // The kit's monster types (+BFh): a ranger beside a ranger's foe adds its
 // level to the blow (105); a giant the kit does not call one takes it as it is.
 // The kit's items' effects while readied (docs/games/ua.md, Items' special
@@ -5491,6 +5540,7 @@ int main()
         the_kits_defenses_weigh_the_spell();
         the_kits_monsters_act_as_the_kit_has_them();
         the_kits_monsters_breathe();
+        the_kits_blue_dragon_breathes_lightning();
         the_kits_rangers_know_their_foes();
         the_kits_items_strike_as_the_kit_has_them();
         the_kits_monsters_differ_as_the_kit_has_them();

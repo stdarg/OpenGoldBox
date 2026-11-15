@@ -1039,15 +1039,17 @@ class Session final : public rules::CombatSession
     void breathe_cloud(Fighter &f);
     void breathe_stinking_cloud(Fighter &f);
     void breathe_cloudkill(Fighter &f);
-    bool lightning_at(Cell cell, int damage, int level, int save = 4);
+    bool lightning_at(Cell cell, int damage, int level, int save = 4, int element = 12,
+                      int spell_number = 51);
     void lightning_path(Cell origin, Cell aim, int length, int damage, int level, bool bounce,
-                        int save = 4);
+                        int save = 4, int element = 12, int spell_number = 51);
     void monster_specials(Fighter &f);
     void curse_specials(Fighter &f);
     void secret_specials(Fighter &f);
     void kit_specials(Fighter &f);
     void darkness_specials(Fighter &f);
     bool lightning_breath(Fighter &dragon);
+    [[nodiscard]] const Fighter *lightning_bolt_aim(Fighter &caster);
     void kit_turn_start(Fighter &f);
     void petrifying_gaze(Fighter &gazer);
     bool secret_breath(Fighter &dragon, int code, int length, int element, int width = 3,
@@ -4987,14 +4989,16 @@ EntityId Session::standing_at(Cell cell) const
 }
 
 // Lightning strikes a square: one standing there saves against spells for
-// half; a wall turns the bolt (magic.pas, LightningAttackAt).
-bool Session::lightning_at(Cell cell, int damage, int level, int save)
+// half; a wall turns the bolt (magic.pas, LightningAttackAt). Lightning Bolt's
+// is electricity and magic (element 12); a breath's is not a spell.
+bool Session::lightning_at(Cell cell, int damage, int level, int save, int element,
+                           int spell_number)
 {
     if (const auto id = standing_at(cell))
     {
         auto &target = *find(id);
-        const bool saved = saving_throw(target, save, 0, nullptr, 12);
-        nonweapon_damage(target, damage, 2, saved, 12, level, 51, false);
+        const bool saved = saving_throw(target, save, 0, nullptr, element);
+        nonweapon_damage(target, damage, 2, saved, element, level, spell_number, false);
     }
     return board_.contains(cell) && board_.at(cell) == rules::Terrain::obstacle;
 }
@@ -5006,7 +5010,7 @@ bool Session::lightning_at(Cell cell, int damage, int level, int save)
 // Each leg takes the whole distance walked so far from what is left, as the
 // original counts it.
 void Session::lightning_path(Cell origin, Cell aim, int length, int damage, int level, bool bounce,
-                             int save)
+                             int save, int element, int spell_number)
 {
     if (origin == aim)
     {
@@ -5040,7 +5044,7 @@ void Session::lightning_path(Cell origin, Cell aim, int length, int damage, int 
             {
                 budget = 0;
             }
-            blocked = lightning_at(walk.at, damage, level, save);
+            blocked = lightning_at(walk.at, damage, level, save, element, spell_number);
             if (blocked)
             {
                 target = walk.at;
@@ -5724,7 +5728,8 @@ void Session::monster_specials(Fighter &f)
 }
 
 // The kit's monsters' breath as their AI attacks (aiturn.c, ai_attack;
-// fxcombat.c and effects.c): a green dragon breathes poison three times a
+// fxcombat.c and effects.c): a blue dragon breathes lightning as Pools of
+// Darkness's does (its 91, the fight's 561); a green dragon breathes poison three times a
 // fight, its maximum Hit Points along 3 squares at an enemy within them, half
 // on a save against breath (90); a gorgon four times, along 6 squares two
 // wide at an enemy within them but never through its own side, turning to
@@ -5732,6 +5737,10 @@ void Session::monster_specials(Fighter &f)
 // its turn.
 void Session::kit_specials(Fighter &f)
 {
+    if (kit() && f.has(effect::blue_breath) && f.able() && f.initiative > 0 && lightning_breath(f))
+    {
+        return;
+    }
     if (auto *breath = f.find_effect(effect::poison_breath); breath && f.able() && f.initiative > 0)
     {
         breath->strength = std::min(breath->strength, 3);
@@ -6018,11 +6027,13 @@ void Session::darkness_specials(Fighter &f)
     }
 }
 
-// A Pools of Darkness blue dragon's lightning (magic.pas, EffBreatheLightning):
-// three a fight from the first round, aimed at an enemy as a Lightning Bolt
-// is, its maximum Hit Points to each creature along 9 squares, half on a save
-// against spells. With no enemy to aim at it holds its breath. It ends its
-// turn.
+// A blue dragon's lightning, Pools of Darkness's and the kit's alike
+// (magic.pas, EffBreatheLightning; fxcombat.c, fx_lightning_breath): three a
+// fight from the first round, aimed as the dragon would aim a Lightning Bolt,
+// its maximum Hit Points to the aim and to each creature along a bolt of 9
+// squares that does not bounce, half on a save against spells. The breath is
+// electricity, not magic (element 24h), and no spell. With no enemy to aim at
+// it holds its breath. It ends its turn.
 bool Session::lightning_breath(Fighter &dragon)
 {
     auto *breath = dragon.find_effect(effect::blue_breath);
@@ -6034,7 +6045,7 @@ bool Session::lightning_breath(Fighter &dragon)
     {
         return false;
     }
-    const auto *target = secret_target(dragon, 9, true);
+    const auto *target = lightning_bolt_aim(dragon);
     if (!target)
     {
         return false;
@@ -6042,11 +6053,29 @@ bool Session::lightning_breath(Fighter &dragon)
     --breath->strength;
     log({"{name} breathes.", {{"name", dragon.name}}});
     const Cell aim = target->cell;
+    constexpr int electric_breath = 0x24;
     const int damage = dragon.numbers.max_hit_points, level = dragon.numbers.level;
-    lightning_at(aim, damage, level);
-    lightning_path(dragon.cell, aim, 8, damage, level, false);
+    lightning_at(aim, damage, level, 4, electric_breath, 0);
+    lightning_path(dragon.cell, aim, 9, damage, level, false, 4, electric_breath, 0);
     end_actions(dragon);
     return true;
+}
+
+// The enemy a monster's Lightning Bolt is aimed at, as Pools of Darkness's and
+// the kit's AI aim it (cbtacts.pas and cbaction.c, aim_target and
+// rank_target): within the spell's range there, 4 squares and 4 a caster
+// level (their spell tables' row; the spell table here keeps Pool of
+// Radiance's 1 a level), and none immune to electricity or within a Globe of
+// Invulnerability or a Minor Globe, nor one of magic resistance above 130.
+const Fighter *Session::lightning_bolt_aim(Fighter &caster)
+{
+    constexpr int lightning_bolt = 51;
+    const int level = caster_level(caster, *game_spell(lightning_bolt), game_of(identity_));
+    const auto *target = secret_target(caster, 4 + 4 * level, false);
+    const bool proof = target && (target->has(335) || target->has(263) ||
+                                  target->has(effect::globe_of_invulnerability) ||
+                                  target->numbers.magic_resistance > 130);
+    return proof ? nullptr : target;
 }
 
 // A Secret dragon's fear as a fight starts (effhndlr.pas, EffDragonFear, in

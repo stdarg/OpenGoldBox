@@ -2129,6 +2129,10 @@ void the_kits_monsters_and_events_play_as_the_kit_has_them(const std::filesystem
     // 82) as Pools of Darkness's rakshasa of a blessed bolt (552).
     check(has(effects(71), 552) && has(effects(110), 552),
           "The kit's rakshasas die of a quarrel of slaying");
+    // Monsters 37 and 41 breathe lightning as Pools of Darkness's blue dragon
+    // does (the kit's 91, its 561).
+    check(has(effects(37), 561) && has(effects(41), 561),
+          "The kit's lightning breathers breathe as Pools of Darkness's blue dragon");
     // Its monster types (+BFh) are the fight's kin: a goblin a dwarf's foe
     // and a ranger's, an ogre a giant and one a gnome defends against.
     namespace kin = opengold::original::kin;

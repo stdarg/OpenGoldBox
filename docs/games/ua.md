@@ -622,23 +622,15 @@ playing each event and fight; it fails on any event the session cannot play.
 
 Next, in this order (2026-11-15; monsters' spells, items' special effects,
 Appraise, the vault's items, the temple's Restoration, the quarrel of slaying,
-the kit's 72 and 58's and 96's near matches are done):
+the kit's 72 and 58's, 91's and 96's near matches are done):
 
-1. 91's lightning breath as the kit's (`fxcombat.c`, `fx_lightning_breath`):
-   three a fight, the count set to 3 as each fight begins, every turn it
-   has a target (not Pool of Radiance's first round, then half the time),
-   aimed as Lightning Bolt (spell 51: range 4 and 4 a level, `spelltab.c`),
-   a bolt of 9 that does not bounce (`bolt_run(9, hp_max, 0)`, `spellfx.c`)
-   of electricity (element 24h), its maximum Hit Points; it ends its turn.
-   Read `bolt_run` for the save and the path before playing it as the kit's
-   own (691) in `kit_specials`.
-2. 117's rays as the kit's (`cbaction.c`, `eye_rays`): up to four a turn
+1. 117's rays as the kit's (`cbaction.c`, `eye_rays`): up to four a turn
    at the target in sight, each kind once: within 2 squares
    disintegration (save against breath, 3, or gone), within 3 flesh to
    stone (save 1), within 4 death (save 0, or killed), within 5 Cause
    Serious Wounds (2d8 + 1), then the spells 84, 55 and 21 cast at it
    (Pools of Darkness's numbers).
-3. 170's rot as the kit's (`effects.c`, `fx_disease_touch`, `fx_rotting`):
+2. 170's rot as the kit's (`effects.c`, `fx_disease_touch`, `fx_rotting`):
    unless the target has 50 or 215 (D7h), it takes 215 for 14,400 minutes
    (no healing) and 172 (ACh) for a month (43,200 minutes) with strength
    1d6 x 32 + 31; each month it rots, losing 2 Charisma (never below 3),
@@ -669,16 +661,24 @@ Since 2026-11-14 (`ua_session.cpp`, `combatant.cpp`):
   | 37 | 237 | 85 | 483 | 117 | 287~ | 176 | 257 |
   | 45 | 45 | 86 | 70 | 124 | 84 | 216 | 100 |
   | 47 | 47 | 89 | 89 | 132 | 488 | 217 | 101 |
-  | 58 | 458 | 91 | 88~ | 141 | 108 | 220 | 296 |
+  | 58 | 458 | 91 | 561 | 141 | 108 | 220 | 296 |
   | 59 | 127 | 92 | 492 | 143 | 111 | 223 | 480 |
   | 64 | 64 | 93 | 112 | 158 | 109 |  |  |
   | 65 | 465 | 95 | 107 | 159 | 117 |  |  |
   | 66 | 115 | 96 | 290 | 169 | 116 |  |  |
 
-  A ~ marks a near match: 91
-  breathes as Pool of Radiance's dragons do;
+  A ~ marks a near match:
   117's rays need their exact distances; 170's rot takes no Charisma.
-  Four play as the kit's in a design (2026-11-15): 58's gaze spares an
+  Five play as the kit's in a design (2026-11-15): 91 breathes lightning
+  as Pools of Darkness's blue dragon does (561; `fx_lightning_breath` is its
+  `EffBreatheLightning`): three a fight from the first round, every turn it
+  has an enemy to aim at as its Lightning Bolt would be aimed (within 4
+  squares and 4 a caster level, none immune to electricity, in a globe or
+  of magic resistance above 130), its maximum Hit Points to the aim and to
+  each creature along 9 squares past it, its own side's too, half on a save
+  against spells; the bolt does not bounce, is electricity but no spell
+  (element 24h), and ends its turn (until 2026-11-15 it breathed as Pool of
+  Radiance's dragons, half the time after the first round); 58's gaze spares an
   iron golem (the kit's 79) as well as one that meets gazes unharmed, and
   turns back on its gazer (59) from one with the kit's 72, as from a
   mirror (`fx_stone_gaze`); it reaches 6 squares, the range of the spell it
@@ -758,7 +758,7 @@ effects, the 19 the kit alone has on their monsters, the goblin's and ogre's
 kin, the party's blows doing the black pudding no harm and the gorgon's
 breath stoning them, the hall's no-magic kobolds and the cellar's draft
 every third step; `opengold_original_combat_tests` each of the kit's own
-effects and a ranger beside a ranger's foe, and that no one casts in a
+effects, the blue dragon's bolt and a ranger beside a ranger's foe, and that no one casts in a
 no-magic fight, saved or not; `opengold_original_creation_tests` a black
 pudding eating a member's armor, which the inventory keeps.
 

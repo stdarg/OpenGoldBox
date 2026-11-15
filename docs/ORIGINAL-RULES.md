@@ -563,8 +563,12 @@ Journal), chosen by the game as the others' are (2026-11-14):
     fire (83) along 9 squares three wide for 24d10+12, a black dragon's acid
     (96) along 6 squares one wide for its maximum Hit Points, half on a save
     against breath (EffDragonBreath); a blue dragon's lightning (91) as a
-    Lightning Bolt aimed at an enemy, 9 squares of its maximum Hit Points,
-    half on a save against spells (EffBreatheLightning); a green dragon's
+    Lightning Bolt aimed at an enemy (within 4 squares and 4 a caster level,
+    none immune to electricity or in a globe), 9 squares of its maximum Hit
+    Points past the aim, electricity but no spell, half on a save against
+    spells (EffBreatheLightning; until 2026-11-15 the bolt ran 8 squares,
+    aimed within 9, and struck as a Lightning Bolt would, which a Minor
+    Globe stopped); a green dragon's
     poison (90) as the kit's green dragon's (EffBreathePoison). The
     paralyzing and charming gazes (114, 124) have handlers
     (EffParalyzeGaze, EffGazeCharm) that the original registers but no
