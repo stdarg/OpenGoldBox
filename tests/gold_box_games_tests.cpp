@@ -2043,7 +2043,7 @@ const std::vector<RouteBeat> &secret_route()
 // Pools of Darkness's route plays to the game's end once this is true; until
 // then it stops on this map (docs/GAMES.md, Pools of Darkness, step 5).
 constexpr bool darkness_route_ends_the_game = false;
-constexpr unsigned darkness_route_stops_on_map = 69;
+constexpr unsigned darkness_route_stops_on_map = 19;
 
 // Pools of Darkness's story, beat by beat, as its cluebook tells it: from New
 // Phlan's docks, where Rolf has walked the party out.
@@ -3456,6 +3456,74 @@ const std::vector<RouteBeat> &darkness_route()
                              "magic_user 6", "Leave", "MOVE ON", "REALMS", "YES", "NO"}};
         to_realms.waiting = true;
         route.push_back(to_realms);
+        // Back in the Realms, down the temple's middle aisle and out by its
+        // main doors (8,15) to the Descent to the Depths (map 35 at 2,7).
+        walk_passages(route, 69,
+                      {{8, 5, D::south},
+                       {8, 6, D::south},
+                       {8, 7, D::south},
+                       {8, 8, D::south},
+                       {8, 9, D::south},
+                       {8, 10, D::south},
+                       {8, 11, D::south},
+                       {8, 12, D::south},
+                       {8, 13, D::south},
+                       {8, 14, D::south}});
+        route.push_back(step_beat(69, 8, 15, D::south, {"YES"}));
+        // West round the stronghold's edge, which wraps to its east side,
+        // and north up the eastern way to the path up to Manshoon's tower
+        // (12,6, the path's walls north: "THE PATH LEADS UP").
+        walk_passages(route, 35, {{2, 7, D::west},    {1, 7, D::west},    {0, 7, D::west},
+                                  {15, 7, D::west},   {14, 7, D::south},  {14, 8, D::east},
+                                  {15, 8, D::south},  {15, 9, D::south},  {15, 10, D::west},
+                                  {14, 10, D::north}, {14, 9, D::west},   {13, 9, D::west},
+                                  {12, 9, D::north},  {12, 8, D::north},  {12, 7, D::north},
+                                  {12, 6, D::south},  {12, 7, D::south},  {12, 8, D::south},
+                                  {12, 9, D::south},  {12, 10, D::south}, {12, 11, D::south},
+                                  {12, 12, D::south}, {12, 13, D::south}, {12, 14, D::south}});
+        route.push_back(step_beat(35, 12, 15, D::west, {"YES"}));
+        // Through the skirmishers' rooms (the cluebook's 14), whose archers
+        // shoot from behind: the party goes on each time (GO ON? YES).
+        walk_passages(route, 35,
+                      {{11, 15, D::west},
+                       {10, 15, D::west},
+                       {9, 15, D::north},
+                       {9, 14, D::east},
+                       {10, 14, D::east},
+                       {11, 14, D::north}});
+        walk_passages(route, 35,
+                      {{11, 13, D::north},
+                       {11, 12, D::west},
+                       {10, 12, D::south},
+                       {10, 13, D::west},
+                       {9, 13, D::west},
+                       {8, 13, D::west}},
+                      false, false, false, {"YES"});
+        // West to the ladder up (7,12, YES) and on to the wagons that take
+        // slaves up to the keep (2,5), the cluebook's 3.
+        route.push_back(step_beat(35, 7, 13, D::north));
+        route.push_back(step_beat(35, 7, 12, D::west, {"YES"}));
+        walk_passages(route, 35,
+                      {{6, 12, D::north}, {6, 11, D::north}, {6, 10, D::west},  {5, 10, D::west},
+                       {4, 10, D::west},  {3, 10, D::west},  {2, 10, D::west},  {1, 10, D::south},
+                       {1, 11, D::west},  {0, 11, D::north}, {0, 10, D::north}, {0, 9, D::north},
+                       {0, 8, D::east},   {1, 8, D::east},   {2, 8, D::east},   {3, 8, D::east},
+                       {4, 8, D::north},  {4, 7, D::north},  {4, 6, D::north},  {4, 5, D::west},
+                       {3, 5, D::west}});
+        route.push_back(step_beat(35, 2, 5, D::north, {"YES"}));
+        // Out of the wagon inside Zhentil Keep's gate (map 19 at 7,8),
+        // unseen, and south through the city's south half off the map by its
+        // gate (8,15) to the area map.
+        walk_passages(route, 19,
+                      {{7, 8, D::east},
+                       {8, 8, D::south},
+                       {8, 9, D::south},
+                       {8, 10, D::south},
+                       {8, 11, D::south},
+                       {8, 12, D::south},
+                       {8, 13, D::south},
+                       {8, 14, D::south}});
+        route.push_back(step_beat(19, 8, 15, D::south, {"YES", "NO"}));
         return route;
     }();
     return beats;
@@ -6603,6 +6671,17 @@ bool walk_census(GoldBoxGame game, bool route)
                         const unsigned x = beat.repeat_in_place
                                                ? beat.x
                                                : (beat.x + static_cast<unsigned>(round)) % 16;
+                        // OPENGOLD_ROUTE_JUMPS names each beat that puts the
+                        // party on a square of its map other than the one it
+                        // stands on, a step the beats before it did not walk.
+                        const auto &stands = session.snapshot();
+                        if (std::getenv("OPENGOLD_ROUTE_JUMPS") && round == 0 &&
+                            stands.area_id == beat.map &&
+                            (stands.pose.x != x || stands.pose.y != beat.y))
+                        {
+                            std::cout << "  jump to " << where << " from " << stands.pose.x << ","
+                                      << stands.pose.y << "\n";
+                        }
                         opengold::test::TourAccess::place(session, {x, beat.y, beat.facing});
                         if (session.explore(beat.step ? opengold::por::ExplorationCommand::forward
                                                       : opengold::por::ExplorationCommand::look))
