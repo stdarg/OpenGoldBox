@@ -708,34 +708,18 @@ int gateway_canonical_effect(int code) noexcept
     return canonical_effect(code, GoldBoxGame::curse_of_the_azure_bonds);
 }
 
-// Pools of Darkness' and Treasures' effects by the fight's numbers (their
-// effhndlr.pas, judged by what each does): Secret's, but for those the
-// 256-color engine gave other work: 66 halves the lightest weapons' damage as
-// Curse's 115 does, 101 and 102 drain levels as Pool of Radiance's 85 and 86,
-// 117 is Curse's eye rays (287), Treasures' 156 holds its bearer still as Curse's 136 does; the
-// rest listed are the engine's own, which no earlier game's effect does. The two games number their
-// effects alike to 126, and Treasures goes on to 160.
-int vga_canonical_effect(int code, GoldBoxGame game) noexcept
+// Treasures' effects by the fight's numbers (its effhndlr.pas, judged by
+// what each does): Pools of Darkness's, whose engine it runs on, to 127; past
+// them its own, which no earlier game's effect does, but for 156, which holds
+// its bearer still as Curse's 136 does.
+int treasures_canonical_effect(int code) noexcept
 {
-    constexpr std::array<std::pair<int, int>, 4> moved{
-        {{66, 115}, {101, 85}, {102, 86}, {117, 287}}};
-    const auto found = std::ranges::find(moved, code, &std::pair<int, int>::first);
-    if (found != moved.end())
-    {
-        return found->second;
-    }
-    constexpr std::array own{40, 67, 76, 80, 81, 82, 99, 100, 104, 108};
-    const bool treasures = game == GoldBoxGame::treasures_of_the_savage_frontier;
-    if (treasures && code == 156)
+    constexpr int holds_still = 156;
+    if (code == holds_still)
     {
         return 336;
     }
-    if (std::ranges::find(own, code) != own.end() || (code >= 114 && code <= 127) ||
-        (treasures && code > 127))
-    {
-        return code + vga_effect_offset;
-    }
-    return secret_canonical_effect(code);
+    return code > 127 ? code + vga_effect_offset : darkness_canonical_effect(code);
 }
 
 } // namespace
@@ -750,9 +734,9 @@ int canonical_effect(int code, GoldBoxGame game) noexcept
     {
         return gateway_canonical_effect(code);
     }
-    if (vga_engine(game))
+    if (game == GoldBoxGame::treasures_of_the_savage_frontier)
     {
-        return vga_canonical_effect(code, game);
+        return treasures_canonical_effect(code);
     }
     if (game == GoldBoxGame::unlimited_adventures && code != 0)
     {

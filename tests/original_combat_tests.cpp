@@ -4652,24 +4652,11 @@ void later_games_effects_take_their_own_numbers()
               original::canonical_effect(126, gateway) == 126 + original::gateway_effect_offset &&
               original::canonical_effect(158, gateway) == 158 + original::gateway_effect_offset,
           "Gateway's own effects take numbers of their own");
-    for (const auto game : {darkness, treasures})
+    for (int code = 1; code <= 127; ++code)
     {
-        for (const int code : {4, 6, 7, 13, 18, 32, 57, 58, 59, 64, 79, 89, 93, 98, 103, 111})
-        {
-            check(original::canonical_effect(code, game) ==
-                      original::canonical_effect(code, secret_game),
-                  "The 256-color games' effect " + std::to_string(code) + " is Secret's");
-        }
-        check(original::canonical_effect(66, game) == 115 &&
-                  original::canonical_effect(101, game) == 85 &&
-                  original::canonical_effect(102, game) == 86 &&
-                  original::canonical_effect(117, game) == 287,
-              "The engine's moved effects take the earlier games' numbers that work alike");
-        check(original::canonical_effect(40, game) == 40 + original::vga_effect_offset &&
-                  original::canonical_effect(99, game) == 99 + original::vga_effect_offset &&
-                  original::canonical_effect(108, game) == 108 + original::vga_effect_offset &&
-                  original::canonical_effect(126, game) == 126 + original::vga_effect_offset,
-              "The engine's own effects take numbers of their own");
+        check(original::canonical_effect(code, treasures) ==
+                  original::canonical_effect(code, darkness),
+              "Treasures' effect " + std::to_string(code) + " is Pools of Darkness's");
     }
     check(original::canonical_effect(156, treasures) == 336 &&
               original::canonical_effect(140, treasures) == 140 + original::vga_effect_offset,
