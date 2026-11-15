@@ -2826,15 +2826,67 @@ const std::vector<RouteBeat> &darkness_route()
         to_zhentil_keep.area_steps = {C::southwest, C::southwest, C::southwest, C::southwest,
                                       C::west};
         route.push_back(to_zhentil_keep);
-        // Paid in at the gate, the party walks north through the city to the
-        // gate of the courtyard below Manshoon's tower (8,7) and goes on into
-        // the tower's halls (script 48).
+        // Paid in at the gate, the party walks west through the city's south
+        // half (map 19's north half is Mulmaster's, script 26) to the training
+        // hall's sign (3,11). North through the door the clerk guards (3,10,
+        // facing north) it pays the 10 gems he asks of those not on the
+        // approved list, and in the hall (3,9) each member with the experience
+        // trains (event 5, PROGRAM 0).
         walk_passages(route, 19,
                       {{8, 15, D::north},
                        {8, 14, D::north},
                        {8, 13, D::north},
                        {8, 12, D::north},
-                       {8, 11, D::north},
+                       {8, 11, D::west},
+                       {7, 11, D::west},
+                       {6, 11, D::west},
+                       {5, 11, D::west},
+                       {4, 11, D::west}});
+        route.push_back(step_beat(19, 3, 11, D::north, {"YES"}));
+        route.push_back(step_beat(19, 3, 10, D::north,
+                                  {"paladin 1", "paladin 2", "ranger 3", "cleric 4", "cleric 5",
+                                   "magic_user 6", "Leave"}));
+        // East along the streets to the Purple Plume Tavern (12,14), entered
+        // from its sign (13,14) facing west: the party stays and rests there,
+        // where no patrol breaks a camp while the guards have not been roused
+        // (cell A7h; the cluebook's "mostly safe").
+        walk_passages(route, 19,
+                      {{3, 10, D::south},
+                       {3, 11, D::east},
+                       {4, 11, D::east},
+                       {5, 11, D::east},
+                       {6, 11, D::east},
+                       {7, 11, D::east},
+                       {8, 11, D::east},
+                       {9, 11, D::east},
+                       {10, 11, D::east},
+                       {11, 11, D::east},
+                       {12, 11, D::east},
+                       {13, 11, D::east},
+                       {14, 11, D::south},
+                       {14, 12, D::south},
+                       {14, 13, D::south},
+                       {14, 14, D::west}});
+        route.push_back(step_beat(19, 13, 14, D::west, {"YES"}));
+        RouteBeat tavern{19, 12, 14, D::west, {"YES"}};
+        tavern.rest_first = true;
+        route.push_back(tavern);
+        // Out of the tavern and north through the city to the gate of the
+        // courtyard below Manshoon's tower (8,7), where the party goes on into
+        // the tower's halls (script 48).
+        walk_passages(route, 19,
+                      {{12, 14, D::east},
+                       {13, 14, D::east},
+                       {14, 14, D::north},
+                       {14, 13, D::north},
+                       {14, 12, D::north},
+                       {14, 11, D::north},
+                       {14, 10, D::west},
+                       {13, 10, D::west},
+                       {12, 10, D::west},
+                       {11, 10, D::west},
+                       {10, 10, D::west},
+                       {9, 10, D::west},
                        {8, 10, D::north},
                        {8, 9, D::north}});
         route.push_back(step_beat(19, 8, 8, D::north, {"YES"}));
