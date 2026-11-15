@@ -786,9 +786,8 @@ since, the rest's interruptions and the kit's camp of any length (rules5).
    player's answer for that fight (fire or Hold at the mounds, a ward, or
    a camp elsewhere before it), tried with `--gateway-route`.
    *Secret*'s route wins since it rests on through six broken camps, not
-   three. The *Pools of Darkness* route (its owner's) now loses on map 66
-   (5,0) to the rakshasas that rush to defend Tyranthraxus, where it won
-   before; the *Treasures* route (its owner's) lost before this round.
+   three. *Pool of Radiance*'s, *Curse*'s, the kit's and, after Darkness
+   part 13, *Pools of Darkness*'s routes win.
 
 ## What the original rules cover
 
