@@ -506,6 +506,21 @@ Journal), chosen by the game as the others' are (2026-11-14):
     answered.
   - Fire Touch, Iron Skin, Mind Blank and Protection from Fire may be cast
     in camp and last into the next fight.
+- **Its spell table** (its `gdconsts.pas`, 2026-11-15, late) is the
+  256-color engine's: in the 44 rows *Treasures* changes from the earlier
+  games' (range, duration, save, when cast, AI weight; *Treasures*, below)
+  it holds the same values, so both games play them. Stone to Flesh may be
+  cast in camp (its when-cast 2; the camp's FIX uses it too, `camp.pas`):
+  a statue comes back at 1 Hit Point (`SpellStoneToFlesh`). A character
+  stands on one square (its `chargen.pas` sets every icon's dimensions to
+  1), so no weapon strikes one as large. Its table differs from the earlier
+  games' in 13 rows more, which neither game plays yet: Reduce's effect,
+  Prayer's and Elixir of Youth's party target, Blink's target and effect,
+  Entangle's effect, Barkskin's duration and target, Globe of
+  Invulnerability's area, the Potion of Giant Strength's effect, the
+  Javelin of Lightning's range, the Potion of Healing's effect, the Wand of
+  Paralyzation's and Wand of Magic Missiles' AI weights and the Scroll of
+  Protection's duration.
 - **Spell numbers** are *Secret*'s; its new spells, 101 to 109 and 118 to
   126, are numbered 200 higher too.
 - **Training** costs nothing; attacks, thief skills and the experience

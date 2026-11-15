@@ -827,6 +827,24 @@ by what it is offered:
   52, 7,10). It climbs out by the footholds north of 7,9 (YES; the event
   asks only with a wall ahead), onto the body (script 51), and declines to
   climb down again (NO).
+- **Moander's body and the Large Wound (scripts 51 and 52; 2026-11-15,
+  late).** Script 51 is an area map of 38 by 15 places (cells 25h and 26h,
+  as script 17's; script 51's table by row at 8A3Fh gives each square's
+  ground, 20 and up a place, its event table 8E11h by place). From the
+  depression (12,4) the party walks six steps south-east and three
+  south-west to the great wound in Moander's arm (15,13; the cluebook's
+  Large Wound), fleeing what roams the body, and enters (DO YOU ENTER?
+  YES): script 52 places it in the wound's part of map 52 at (12,15). Its
+  camps rest only with Aeghwaet once he is helped (the cluebook), so it
+  walks hurt, its clerics curing. North to Aeghwaet (12,12, event 11),
+  who asks it to rid his home of Tanetal's minions (YES; cell 232h bit 7);
+  the minions' four fights (events 14 to 17 at 6,11, 11,10, 10,15 and
+  14,13) come in the order cell 233h keeps wherever they are met, each a
+  bit of cell 239h (30 with all four): Bane minions mining the flesh, a
+  swarm of bits of Moander (a stand-in, below), mages with elementals and
+  elementals excavating. Back at (12,8, event 13, from 13,8 westward)
+  Aeghwaet gives a small reward, then the two potions the heart needs
+  (cell 23Bh 1), and his healing (YES; his temple's menu).
 
 Since 2026-11-15 the route's casters memorize spells of every level they
 have slots of (Pools of Darkness's levels 6 to 9 among them) and raise the
@@ -843,7 +861,11 @@ state does (Script memory, above). Until 2026-11-14 OpenGoldBox stepped on
 anyway, so stairs landed a square beyond their landing and a held step could
 wrap round the map's edge.
 
-Stand-ins (2026-11-15, late): three, the fights the test wins. The
+Stand-ins (2026-11-15, late): four, the fights the test wins. The Large
+Wound's swarm of six bits of Moander (52: 11,10, the minions' second
+fight): 81 Hit Points each, two blows of up to 23, one poisoning, beat the
+route's party of levels 18 to 20 in every play (its weapons harm them
+little; the bits are plants no Hold Person holds). The
 Chambers of Marcus (67: 0,12 south; script 77): the spectres fall, then the
 Minions of Bane, breathing for 27 each, and Banite clerics, whose Hold
 Person leaves members for the minions to slay, and at once Marcus with his
@@ -968,19 +990,20 @@ cast out of one, and their FIX uses it too, camp.pas); the Web Dimension's
 ruins are walked unrested after Cynthia (a camp there drew Kalistes' pets,
 iron golems and giant spiders); and the lower tower is played as above.
 
-Where it stops (2026-11-15, late): on Moander's body (script 51, the
-party still standing on map 52 at 7,9), just out of the depression. Next:
-Moander (the cluebook's 57 to 60). Script 51 is a body of places, not a
-map: the party's place is cell 224h, a step forward moves it by the
-tables at 8D5Dh on (cells 9Bh to A0h, one a facing; script 51's ON GOTO
-on cell A1h at 8203h), and what stands at a place is table 8E11h (36369)
-by cell 224h; "DO YOU ENTER?" takes the party down into that part of map
-52 (script 52, whose LOAD FILES and ON GOTO on cell 224h at 8077h place
-it). OPENGOLD_DARKNESS_SITES does not read this body (it sets cells 25h
-and 26h); the exact next step is a planning aid that sets cell 224h to
-each place and steps or looks from it, or OPENGOLD_SECRET_FIND with
-OPENGOLD_SECRET_KEYS=224 and OPENGOLD_FIND_YES=ENTER from the save after
-beat 2066, to find the Large Wound in Moander's arm. Map 52's events
+Where it stops (2026-11-15, late): with Aeghwaet in the Large Wound (map
+52 at 12,8, script 52), the heart's two potions held (cell 23Bh 1). The
+exact next step: leave the wound (its entrance, 12,15: DO YOU WANT TO
+LEAVE?, NEW ECL 51), walk the body to the wound in Moander's side (the
+cluebook's Entrance to Heart, its locations 24 to 26): the survey
+(OPENGOLD_DARKNESS_SITES) shows "A WOUND CUTS DEEP INTO MOANDER'S SIDE" at
+21,3 (place 8), and place 0's "A WOUND CUTS INTO MOANDER'S SIDE" nowhere,
+so try 21,3 first; OPENGOLD_SECRET_FIND='*' with OPENGOLD_SECRET_AREA=1,
+OPENGOLD_SECRET_KEYS=25,26 and OPENGOLD_SECRET_GOAL=25=21,26=3 from the
+save after the last beat finds the steps), enter, rest there (the cluebook
+lets the party rest in the Entrance to Heart), and find the muscle wall
+(event 29; OPENGOLD_ROUTE_EVENTS from the save there prints the squares
+and their walls), where the potion weakens it
+and CUT THROUGH (YES) enters the heart (NEW ECL 53). Map 52's events
 (script 52's step entry, ON GOTO on cell 2Dh's low six bits at 873Ch):
 11 (12,12) Aeghwaet asks for help; 14 to 17 (6,11; 11,10; 10,15; 14,13)
 Tanetal's minions mining the flesh; 13 (12,8) Aeghwaet's reward, the two

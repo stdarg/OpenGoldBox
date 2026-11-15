@@ -644,9 +644,12 @@ new decoders.
    Black Circle, the Fountains, the three manufactories and the Dispersion
    Diagram, meets Marcus in his chambers (a stand-in: the test wins his
    waves and him) and leaps onto the Vessel of Moander to Limbo, where it
-   trains (500,000 test experience) and goes on to Moander. *Where it
-   stops:* on Moander's body, out of the depression (darkness.md, Where it
-   stops).
+   trains (500,000 test experience) and goes on to Moander.
+   *Moander (2026-11-15, late):* each beat now plays with dice of its own
+   (darkness.md, The route's dice); the route crosses Moander's body to the
+   Large Wound, helps Aeghwaet against Tanetal's minions (the bits of
+   Moander's swarm a stand-in) and takes his two potions. *Where it
+   stops:* with Aeghwaet in the wound (darkness.md, Where it stops).
    *Re-tuned on the original-rules round (2026-11-15, night):* its bows
    and crossbows shoot (Pools of Darkness's arrows and quarrels are
    *Secret*'s item types) and its dragons breathe (its gaze spiders' and
