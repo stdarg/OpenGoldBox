@@ -95,6 +95,24 @@ void the_new_commands_run()
           "and ends the script there");
 }
 
+// SUBTRACT stores its result in as many bytes as its destination's operand
+// names, as the original's WriteGbvm does: 1 from a byte cell at 0 leaves
+// 255 there, from a word cell 65535.
+void arithmetic_stores_by_the_destinations_width()
+{
+    const EclAddress counter{0x0100};
+    for (const std::uint8_t tag : {std::uint8_t{1}, std::uint8_t{3}})
+    {
+        // SUBTRACT 1 from the counter, into the counter.
+        EclMachine machine(script({0x05, 0x00, 0x01, tag, 0x00, 0x01, tag, 0x00, 0x01}));
+        machine.bind_variable(counter, 0);
+        check(machine.start(4) && machine.run().state == EclState::completed,
+              "The script subtracts and ends");
+        check(machine.variable(counter) == (tag == 1 ? 255 : 65535),
+              "A byte cell keeps a byte and a word cell a word");
+    }
+}
+
 // The item words are in GAME.EXE: 125 slots of 21 bytes.
 void the_item_words_are_in_the_game_program()
 {
@@ -263,6 +281,7 @@ int main()
     try
     {
         the_new_commands_run();
+        arithmetic_stores_by_the_destinations_width();
         the_item_words_are_in_the_game_program();
         the_opening_reaches_new_phlan();
         every_map_has_its_script();
