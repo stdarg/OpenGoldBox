@@ -3965,7 +3965,7 @@ const std::vector<RouteBeat> &gateway_route()
 // Treasures' route plays to the game's end once this is true; until then it
 // stops on this map (docs/GAMES.md, Treasures, step 6).
 constexpr bool treasure_route_ends_the_game = false;
-constexpr unsigned treasure_route_stops_on_map = 28;
+constexpr unsigned treasure_route_stops_on_map = 31;
 
 // Treasures of the Savage Frontier's story, beat by beat, as its cluebook
 // tells it: from the dwarves' fortress outside Llorkh, where the opening
@@ -4521,6 +4521,66 @@ const std::vector<RouteBeat> &treasure_route()
         }
         route.back().expect_cell = {{0x12E, 1}};
         route.push_back({28, 5, 7, D::north, {}});
+        // Out of Neverwinter's north gate and overland (map 51) to Luskan
+        // (map 31).
+        walk_passages(route, 28,
+                      {{3, 4, D::north},
+                       {3, 3, D::west},
+                       {2, 3, D::west},
+                       {1, 3, D::north},
+                       {1, 2, D::north},
+                       {1, 1, D::east},
+                       {2, 1, D::east},
+                       {3, 1, D::east},
+                       {4, 1, D::east},
+                       {5, 1, D::east},
+                       {6, 1, D::east},
+                       {7, 1, D::north},
+                       {7, 0, D::north}});
+        walk_overland(route, 51,
+                      {{12, 14, D::north},
+                       {12, 13, D::north},
+                       {12, 12, D::north},
+                       {12, 11, D::north},
+                       {12, 10, D::north},
+                       {12, 9, D::north},
+                       {12, 8, D::north},
+                       {12, 7, D::west},
+                       {11, 7, D::west},
+                       {10, 7, D::west}});
+        route.push_back(step_beat(51, 9, 7, D::north, {"YES"}));
+        // Luskan (map 31), first visit: Siulajia freed from her guards
+        // (11,1); then Jagaerda (6,6), whose boat takes the party to Ruathym
+        // to rescue Captain Redleg. The party rests first in a house (11,6),
+        // off the streets.
+        route.push_back({31, 11, 6, D::north, {}});
+        RouteBeat siulajia{31, 11, 1, D::north, {}};
+        siulajia.rest_first = true;
+        siulajia.rest_for_spells = true;
+        route.push_back(siulajia);
+        route.push_back({31, 11, 6, D::north, {}});
+        RouteBeat jagaerda{31, 6, 6, D::north, {"YES"}};
+        jagaerda.rest_first = true;
+        route.push_back(jagaerda);
+        // Ruathym (map 32), the ninth mission: the Luskan men at their table
+        // (8,2), the cloaked men's blockade orders (10,5), the two captains
+        // (3,7) and the chamber beside Redleg's cell (4,9); then Captain
+        // Redleg himself (3,8), freed of his charm. Before each the party
+        // rests at the inn (9,8).
+        for (const auto &[x, y] : std::initializer_list<std::pair<unsigned, unsigned>>{
+                 {8, 2}, {10, 5}, {3, 7}, {4, 9}, {3, 8}})
+        {
+            route.push_back({32, 9, 8, D::north, {"YES"}});
+            RouteBeat fight{32, x, y, D::north, {}};
+            fight.rest_first = true;
+            fight.rest_for_spells = true;
+            route.push_back(fight);
+        }
+        // Redleg's boat under the north-east pier (15,4) carries the party off
+        // Ruathym, ending the ninth mission (cell 12Fh).
+        RouteBeat redleg_boat{32, 15, 4, D::north, {"GET IN BOAT"}};
+        redleg_boat.expect_cell = {{0x12F, 1}};
+        route.push_back(redleg_boat);
         // ROUTE-NEXT
         // A camp on the overland (maps 51 to 57) draws its wandering
         // monsters night after night: the party walks on between towns

@@ -677,7 +677,12 @@ void EclMachine::execute(const EclInstruction &i)
         {
             v = lhs | rhs;
         }
-        write(dest, static_cast<std::uint16_t>(v & 65535));
+        // Treasures stores a result in as many bytes as its destination's
+        // operand names (its WriteGbvm): a byte cell counting down from 0
+        // reads 255, as Luskan's script waits for.
+        const bool byte_cell =
+            program_->game() == GoldBoxGame::treasures_of_the_savage_frontier && a[2].tag < 2;
+        write(dest, static_cast<std::uint16_t>(v & (byte_cell ? 255 : 65535)));
         if (i.opcode == 47 || i.opcode == 48)
         {
             conditions_ = equality(v == 0);
