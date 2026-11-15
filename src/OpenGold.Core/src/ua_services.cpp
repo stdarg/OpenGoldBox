@@ -610,6 +610,7 @@ void UaSession::shop_menu(const EventRecord &event, ServiceEnd end)
     }
     choices.push_back({"Sell", {}});
     choices.push_back({"Identify", {}});
+    choices.push_back({"Appraise", {}});
     choices.push_back({"Exit", {}});
     const bool buys = !shop_stock_.empty();
     ask_kit(std::move(choices),
@@ -627,6 +628,14 @@ void UaSession::shop_menu(const EventRecord &event, ServiceEnd end)
                 else if (action == 2)
                 {
                     shop_sell(event, end, true);
+                }
+                else if (action == 3)
+                {
+                    appraise(
+                        [this, event, end]
+                        {
+                            shop_menu(event, end);
+                        });
                 }
                 else
                 {
@@ -789,22 +798,39 @@ void UaSession::temple_menu(const EventRecord &event, bool in_town, ServiceEnd e
         say_kit({"What is your wish?", {}});
     }
     const bool donations = (event[7] & 8) != 0;
+    // The kit appraises at a temple that charges (byte 5's rate above 0) or
+    // takes donations (temple.c, temple_shop).
+    const bool appraises = event[5] != 0 || donations;
     std::vector<Message> choices{{"Heal", {}}};
     if (donations)
     {
         choices.push_back({"Donate", {}});
     }
+    if (appraises)
+    {
+        choices.push_back({"Appraise", {}});
+    }
     choices.push_back({"Leave", {}});
     ask_kit(std::move(choices),
-            [this, event, in_town, end, donations](std::size_t choice)
+            [this, event, in_town, end, donations, appraises](std::size_t choice)
             {
+                const std::size_t donate_at = donations ? 1 : 0;
+                const std::size_t appraise_at = donate_at + (appraises ? 1 : 0);
                 if (choice == 0)
                 {
                     temple_heal(event, in_town, end);
                 }
-                else if (donations && choice == 1)
+                else if (donations && choice == donate_at)
                 {
                     donate(event, in_town, end);
+                }
+                else if (appraises && choice == appraise_at)
+                {
+                    appraise(
+                        [this, event, in_town, end]
+                        {
+                            temple_menu(event, in_town, end);
+                        });
                 }
                 else
                 {
@@ -909,6 +935,142 @@ void UaSession::donate(const EventRecord &event, bool in_town, ServiceEnd end)
                 });
 }
 
+// Appraise (money.c, appraise): the party's gems and jewels one at a time,
+// each valued by the kit's tables, then sold for its value in platinum or
+// kept by the selected member.
+void UaSession::appraise(std::function<void()> back)
+{
+    const auto &wealth = party_->state().wealth;
+    const auto gems = wealth[static_cast<std::size_t>(Coin::gems)];
+    const auto jewels = wealth[static_cast<std::size_t>(Coin::jewelry)];
+    if (gems == 0 && jewels == 0)
+    {
+        say_kit({"No Gems or Jewelry", {}});
+        wait_for_return(std::move(back));
+        return;
+    }
+    say_kit({"You have a fine collection of:", {}});
+    say_kit({"gems : {count}", {{"count", std::to_string(gems)}}});
+    say_kit({"jewelry : {count}", {{"count", std::to_string(jewels)}}});
+    std::vector<Message> choices;
+    std::vector<bool> kinds;
+    if (gems != 0)
+    {
+        choices.push_back({"Gems", {}});
+        kinds.push_back(true);
+    }
+    if (jewels != 0)
+    {
+        choices.push_back({"Jewelry", {}});
+        kinds.push_back(false);
+    }
+    choices.push_back({"Exit", {}});
+    ask_kit(std::move(choices),
+            [this, kinds, back = std::move(back)](std::size_t choice)
+            {
+                if (choice >= kinds.size())
+                {
+                    back();
+                    return;
+                }
+                appraise_one(kinds[choice], back);
+            });
+}
+
+namespace
+{
+
+// A gem's value in platinum by a d100 (money.c, appraise).
+[[nodiscard]] unsigned gem_value(unsigned roll)
+{
+    constexpr std::array<std::pair<unsigned, unsigned>, 6> table{
+        {{25, 5}, {50, 25}, {70, 50}, {90, 250}, {99, 500}, {100, 2500}}};
+    return std::ranges::find_if(table,
+                                [roll](const auto &row)
+                                {
+                                    return roll <= row.first;
+                                })
+        ->second;
+}
+
+// A jewel's: a d100 picks a base and a span, the value the base and a roll
+// below the span.
+struct JewelValue
+{
+    unsigned highest_roll, base, span;
+};
+
+constexpr std::array<JewelValue, 7> jewel_values{{{10, 50, 450},
+                                                  {20, 100, 500},
+                                                  {40, 150, 750},
+                                                  {50, 250, 1500},
+                                                  {70, 500, 2500},
+                                                  {90, 1000, 3000},
+                                                  {100, 1000, 5000}}};
+
+// What a kept gem or jewel is: an item of type 2Fh named "Gem" or "Jewelry"
+// (the item words 7Ah and 7Bh), weighing 1 and worth twice its value, so a
+// shop pays the value back.
+constexpr std::uint8_t kept_gem_type = 0x2F, gem_word = 0x7A, jewelry_word = 0x7B;
+// Its weight of 1 in hundredths of a pound, ten coins to the pound.
+constexpr unsigned kept_gem_hundredths = 10;
+
+} // namespace
+
+void UaSession::appraise_one(bool gem, std::function<void()> back)
+{
+    auto wealth = party_->state().wealth;
+    --wealth[static_cast<std::size_t>(gem ? Coin::gems : Coin::jewelry)];
+    party_->set_wealth(wealth);
+    unsigned value = 0;
+    if (gem)
+    {
+        value = gem_value(roll(100));
+    }
+    else
+    {
+        const unsigned dice = roll(100);
+        const auto &row = *std::ranges::find_if(jewel_values,
+                                                [dice](const JewelValue &v)
+                                                {
+                                                    return dice <= v.highest_roll;
+                                                });
+        value = row.base + roll(row.span) - 1;
+    }
+    const auto valued = std::to_string(value);
+    say_kit({gem ? "The gem is valued at {value} platinum."
+                 : "The jewel is valued at {value} platinum.",
+             {{"value", valued}}});
+    por::ItemRecord stored;
+    stored.type = kept_gem_type;
+    stored.name_components = {0, 0, gem ? gem_word : jewelry_word};
+    stored.weight = 1;
+    stored.value = static_cast<std::uint16_t>(std::min(value * 2, 0xFFFFU));
+    const auto kept = item_from_record(stored);
+    // Only a member who can carry one more keeps it.
+    const auto keeper = party_->selected();
+    const bool can_keep = party_->carried_weight(keeper) + kept_gem_hundredths <=
+                          party_->carrying_capacity(keeper) * 100;
+    std::vector<Message> choices{{"Sell", {}}};
+    if (can_keep)
+    {
+        choices.push_back({"Keep", {}});
+    }
+    ask_kit(std::move(choices),
+            [this, value, kept, keeper, back = std::move(back)](std::size_t choice)
+            {
+                if (choice == 1)
+                {
+                    party_->take_item(keeper, kept);
+                }
+                else
+                {
+                    party_->add_coins(Coin::platinum, value);
+                }
+                appraise(back);
+            });
+}
+
 // Kind 24: a vault the party's money is left in and taken from.
 void UaSession::vault_event(const EventRecord &event, bool in_town, ServiceEnd end)
 {
@@ -923,38 +1085,178 @@ void UaSession::vault_event(const EventRecord &event, bool in_town, ServiceEnd e
     vault_menu(end);
 }
 
+namespace
+{
+
+// The vault's coins, by the party's purse.
+constexpr std::array<Coin, 3> vault_coins{Coin::platinum, Coin::gems, Coin::jewelry};
+// The most items a vault holds (charview.c, the vault's Items).
+constexpr std::size_t vault_capacity = 50;
+
+} // namespace
+
+// The vault (shop.c, vault_menu): Money leaves the party's money in it,
+// Items one of the selected member's items, and Take brings back what it
+// holds.
 void UaSession::vault_menu(ServiceEnd end)
 {
-    constexpr std::array<Coin, 3> kept{Coin::platinum, Coin::gems, Coin::jewelry};
     say_kit({"The vault holds {platinum} platinum, {gems} gems and {jewelry} jewelry.",
              {{"platinum", std::to_string(vault_[0])},
               {"gems", std::to_string(vault_[1])},
               {"jewelry", std::to_string(vault_[2])}}});
-    ask_kit({{"Money", {}}, {"Take", {}}, {"Exit", {}}},
-            [this, end, kept](std::size_t choice)
+    if (!vault_items_.empty())
+    {
+        say_kit({"And {count} items.", {{"count", std::to_string(vault_items_.size())}}});
+    }
+    ask_kit({{"Money", {}}, {"Items", {}}, {"Take", {}}, {"Exit", {}}},
+            [this, end](std::size_t choice)
             {
+                if (choice == 1)
+                {
+                    vault_leave_item(end);
+                    return;
+                }
                 if (choice == 2)
+                {
+                    vault_take(end);
+                    return;
+                }
+                if (choice == 3)
                 {
                     end(0);
                     return;
                 }
                 auto wealth = party_->state().wealth;
-                for (std::size_t n = 0; n < kept.size(); ++n)
+                for (std::size_t n = 0; n < vault_coins.size(); ++n)
                 {
-                    auto &carried = wealth[static_cast<std::size_t>(kept[n])];
-                    auto &stored = vault_[n];
-                    if (choice == 0)
-                    {
-                        stored += carried;
-                        carried = 0;
-                    }
-                    else
-                    {
-                        carried += stored;
-                        stored = 0;
-                    }
+                    auto &carried = wealth[static_cast<std::size_t>(vault_coins[n])];
+                    vault_[n] += carried;
+                    carried = 0;
                 }
                 party_->set_wealth(wealth);
+                vault_menu(end);
+            });
+}
+
+// One of the selected member's items left in the vault, while it has room.
+void UaSession::vault_leave_item(ServiceEnd end)
+{
+    const auto owner = party_->selected();
+    const auto &member = party_->member(owner);
+    std::vector<Message> choices;
+    std::vector<std::uint64_t> ids;
+    for (const auto &item : member.character.inventory().items())
+    {
+        if (member.item_sources.contains(item.id))
+        {
+            choices.push_back({"{item}", {{"item", item.name}}});
+            ids.push_back(item.id);
+        }
+    }
+    choices.push_back({"Exit", {}});
+    ask_kit(std::move(choices),
+            [this, end, owner, ids](std::size_t choice)
+            {
+                if (choice >= ids.size())
+                {
+                    vault_menu(end);
+                    return;
+                }
+                if (vault_items_.size() >= vault_capacity)
+                {
+                    say_kit({"Vault is full!", {}});
+                    wait_for_return(
+                        [this, end]
+                        {
+                            vault_menu(end);
+                        });
+                    return;
+                }
+                const auto &source = party_->member(owner).item_sources.at(ids[choice]);
+                say_kit({"Your {item} will be left in the vault.", {{"item", source.label()}}});
+                auto stored = source.stored;
+                stored.readied_raw = 0;
+                vault_items_.push_back(stored);
+                party_->drop(owner, ids[choice]);
+                wait_for_return(
+                    [this, end]
+                    {
+                        vault_menu(end);
+                    });
+            });
+}
+
+// Take (postcmbt.c, loot_take, on the vault's pool): its money, or with
+// items there too, the money or an item, as the treasure menu asks.
+void UaSession::vault_take(ServiceEnd end)
+{
+    const auto take_money = [this]
+    {
+        auto wealth = party_->state().wealth;
+        for (std::size_t n = 0; n < vault_coins.size(); ++n)
+        {
+            wealth[static_cast<std::size_t>(vault_coins[n])] += vault_[n];
+            vault_[n] = 0;
+        }
+        party_->set_wealth(wealth);
+    };
+    if (vault_items_.empty())
+    {
+        take_money();
+        vault_menu(end);
+        return;
+    }
+    say_kit({"Take:", {}});
+    ask_kit({{"Money", {}}, {"Items", {}}, {"Exit", {}}},
+            [this, end, take_money](std::size_t choice)
+            {
+                if (choice == 0)
+                {
+                    take_money();
+                }
+                if (choice == 1)
+                {
+                    vault_take_item(end);
+                    return;
+                }
+                vault_menu(end);
+            });
+}
+
+// An item of the vault's, by name, to the selected member; an overloaded
+// member takes nothing.
+void UaSession::vault_take_item(ServiceEnd end)
+{
+    std::vector<Message> choices;
+    for (const auto &stored : vault_items_)
+    {
+        choices.push_back({"{item}", {{"item", item_from_record(stored).label()}}});
+    }
+    choices.push_back({"Exit", {}});
+    ask_kit(std::move(choices),
+            [this, end](std::size_t choice)
+            {
+                if (choice >= vault_items_.size())
+                {
+                    vault_menu(end);
+                    return;
+                }
+                const auto taker = party_->selected();
+                try
+                {
+                    party_->take_item(taker, item_from_record(vault_items_[choice]));
+                }
+                catch (const std::runtime_error &)
+                {
+                    say_kit({"{name} is overloaded.", {{"name", member_name(taker)}}});
+                    wait_for_return(
+                        [this, end]
+                        {
+                            vault_menu(end);
+                        });
+                    return;
+                }
+                vault_items_.erase(vault_items_.begin() + static_cast<std::ptrdiff_t>(choice));
                 vault_menu(end);
             });
 }

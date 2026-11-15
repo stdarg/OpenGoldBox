@@ -336,11 +336,26 @@ kit's twenty rates (`ua::rated_price`, temple.c's `rate_price`):
   12h, or no one to fight) and Leave.
 - **Shop** (8): its stock from four masks of ITEM.DAT rows (shop.c's
   table), at byte 5's rate; Buy for the selected member, Sell at half the
-  price (nothing for a cursed or worthless item), Identify for 20.
+  price (nothing for a cursed or worthless item), Identify for 20, and
+  Appraise (below).
 - **Temple** (9): the cures of its level (byte 4), from Cure Light Wounds
   (level 1, 20) to Resurrection (7, 2,000), at byte 5's rate; Donate (byte
-  7, bit 8) counts toward a tithe (bytes 8 to 11) that runs event 0Ch.
-- **Vault** (24): the party's money left and taken back, kept for the game.
+  7, bit 8) counts toward a tithe (bytes 8 to 11) that runs event 0Ch;
+  Appraise where it charges (a rate above 0) or takes donations
+  (`temple.c`, `temple_shop`).
+- **Appraise** (since 2026-11-15; `money.c`, `appraise`): the party's gems
+  and jewels one at a time, a gem valued by a d100 at 5, 25, 50, 250, 500
+  or 2,500 platinum, a jewel by a d100's band at 50 to 6,000; each is sold
+  for its value or, while the selected member can carry it, kept: an item
+  of type 2Fh named Gem or Jewelry (the item words 7Ah and 7Bh, the two
+  after the kit's table), worth twice the value, so a shop pays the value
+  back. The kit lost a jewel kept by a member who carried nothing
+  (ORIGINAL-RULES.md, Bugs).
+- **Vault** (24): Money leaves the party's money in it, Items one of the
+  selected member's items (50 at most, since 2026-11-15; `shop.c`,
+  `vault_menu`, and `charview.c`), and Take brings back the money, or with
+  items there, Money or an item by name for the selected member; kept for
+  the game.
 - **Inn** (29): the kit's camp menu (Camping, below), where no rest
   encounter breaks a rest and the menu comes back after one; Exit goes on
   with the event.
@@ -567,7 +582,9 @@ The game record starts a new character with 20,000 experience, 75
 platinum, 2 gems, a jewel and the first set of equipment, and the chest's
 treasure holds an item and a random scroll.
 
-`opengold_ua_session_tests` plays it beat by beat. `opengold_ua_walk`
+`opengold_ua_session_tests` plays it beat by beat, the town's shop
+appraising a gem sold and a jewel kept, and its vault keeping that jewel in
+a saved game and giving it back. `opengold_ua_walk`
 (`opengold_ua_session_tests --ua-walk`) walks every square of every area of
 it with six fighters made under the kit's rules: on each it draws the view
 facing each way, plays the square's event and takes every open step,
@@ -576,9 +593,8 @@ playing each event and fight; it fails on any event the session cannot play.
 ### What remains
 
 - The services' smaller parts (DEVIATIONS.md, Unlimited Adventures'
-  services): Pool, Share and Take, Appraise, vault items, a temple's
-  Restoration and Fix; drinks as more than a count; the encounter's
-  monster picture at its range.
+  services): Pool, Share and Take, a temple's Restoration and Fix; drinks
+  as more than a count; the encounter's monster picture at its range.
 - Fights:
   - The differences of the near matches (Monsters' effects, below).
   - The ring of wizardry's special (81h, the magic-user's fifth-level
@@ -596,10 +612,12 @@ playing each event and fight; it fails on any event the session cannot play.
   - Byte 12h's top bits (the turning level +0, 2, 10 or 41 over the
     area's) and an icon over two squares a side, which stands as two.
 
-Next, in this order (2026-11-15; monsters' spells and items' special
-effects are done): the services' smaller parts (Appraise, vault items, a temple's
-Restoration, building on the rules' Restoration in camp now on main); the
-near matches' differences (Monsters' effects).
+Next, in this order (2026-11-15; monsters' spells, items' special effects,
+Appraise and the vault's items are done): a temple's Restoration, building
+on the rules' Restoration in camp and the temple service
+(`rules::TempleService::restoration`) that Pools of Darkness's and
+Treasures' temples sell, once that is on main; the near matches'
+differences (Monsters' effects).
 
 ### Monsters' effects, "no magic" fights and step events
 
@@ -794,8 +812,8 @@ map (`ua_session.cpp`; the reconstruction's `rest.c` and `camp.c`).
   party has stood on. An area larger than 16 by 16 squares shows a window
   of 16 by 16 that keeps the party in its middle and stays within the area,
   as the kit's map scrolls (`map_scroll`); the squares stood on are kept
-  for the whole area, and saved (the session's state `UA-STATE 2`; a state
-  saved before reads as its first 16 by 16).
+  for the whole area, and saved (the session's state `UA-STATE 2` and
+  after; a state saved before reads as its first 16 by 16).
 
 `opengold_ua_session_tests` rests in the hall (healed, the rules' time
 passed) and in the cellar, whose rats break the rest at its first hour,
@@ -907,7 +925,8 @@ the kit's `SavGamA..J.csv`:
   party's square and facing, the square a step back returns to, the quest
   flags, every area's events done, the squares stood on, the step
   events' counts, Search mode, the clock
-  while no party plays, the session's dice, the tithe given, the vault, the
+  while no party plays, the session's dice, the tithe given, the vault and
+  the items left in it (`UA-STATE 3`; an older state's vault has none), the
   tavern's next tale and drink, and the tavern tales heard on this square.
   Campaign format 51 (`DesignSave`); older saves load as before.
 - **When:** only while nothing waits for the player (`can_leave`), as in the

@@ -402,6 +402,23 @@ DesignItems load_design_items(const DesignFiles &files)
             words ? std::move(*words) : std::vector<std::string>{}};
 }
 
+namespace
+{
+
+// An item of the design's types as its record keeps it, named in the kit's
+// words.
+[[nodiscard]] por::Equipment equipment_from(const DesignItems &items, por::ItemRecord stored)
+{
+    por::Equipment item;
+    item.stored = stored;
+    item.base = items.types.at(stored.type);
+    item.bonuses = por::equipment_bonuses(item.stored, item.base);
+    name_item(item, items.words);
+    return item;
+}
+
+} // namespace
+
 std::optional<por::Equipment> design_item(const DesignItems &items, unsigned number,
                                           bool identified)
 {
@@ -415,8 +432,7 @@ std::optional<por::Equipment> design_item(const DesignItems &items, unsigned num
     {
         return std::nullopt;
     }
-    por::Equipment item;
-    auto &stored = item.stored;
+    por::ItemRecord stored;
     stored.type = record.type;
     stored.name_components = record.name_words;
     stored.magic_bonus = record.magic_bonus;
@@ -427,10 +443,12 @@ std::optional<por::Equipment> design_item(const DesignItems &items, unsigned num
     stored.value = record.value;
     stored.stack_size = record.count;
     stored.effect_codes = record.effects;
-    item.base = items.types[record.type];
-    item.bonuses = por::equipment_bonuses(stored, item.base);
-    name_item(item, items.words);
-    return item;
+    return equipment_from(items, stored);
+}
+
+por::Equipment UaSession::item_from_record(const por::ItemRecord &stored) const
+{
+    return equipment_from(items_, stored);
 }
 
 original::StartingStock starting_stock(const GameSettings &game)

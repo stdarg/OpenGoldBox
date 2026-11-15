@@ -454,8 +454,15 @@ class UaSession final : public ExplorationSession
     void temple_heal(const EventRecord &event, bool in_town, ServiceEnd end);
     void cure(rules::TempleService service, unsigned price, MemberId id);
     void donate(const EventRecord &event, bool in_town, ServiceEnd end);
+    void appraise(std::function<void()> back);
+    void appraise_one(bool gem, std::function<void()> back);
     void vault_event(const EventRecord &event, bool in_town, ServiceEnd end);
     void vault_menu(ServiceEnd end);
+    void vault_leave_item(ServiceEnd end);
+    void vault_take(ServiceEnd end);
+    void vault_take_item(ServiceEnd end);
+    // An item as its record keeps it, of the design's types and words.
+    [[nodiscard]] por::Equipment item_from_record(const por::ItemRecord &stored) const;
     void inn_event(const EventRecord &event, bool in_town, ServiceEnd end);
     void town_event(const EventRecord &event);
     void tour_event(const EventRecord &event);
@@ -612,8 +619,10 @@ class UaSession final : public ExplorationSession
     std::vector<unsigned> shop_stock_;
     // Platinum given to temples toward a tithe's goal, kept for the game.
     std::uint32_t donated_{};
-    // The vault's platinum, gems and jewelry, kept for the game.
+    // The vault's platinum, gems and jewelry, and the items left in it (50
+    // at most), kept for the game.
     std::array<std::uint32_t, 3> vault_{};
+    std::vector<por::ItemRecord> vault_items_;
     // A guided tour's two texts, once each at their step.
     std::array<bool, 2> tour_text_shown_{};
     // An encounter's range, and the surprise the fight it leads to takes.

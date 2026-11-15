@@ -132,7 +132,8 @@ struct ItemRecord
 decode_items(std::span<const std::uint8_t> bytes);
 
 // The words items are named with (an ItemRecord's name_words), from 0 (none)
-// to 121, read from the kit's program, CKIT.EXE, as the DAX games' are from
+// to 121, and 122 and 123 after the table ("Gem" and "Jewelry", which name an
+// appraised gem or jewel kept), read from the kit's program, CKIT.EXE, as the DAX games' are from
 // theirs: the program's table of far pointers to its strings, found by its
 // first two words, "Battle Axe" and "Hand Axe". nullopt when there is none.
 [[nodiscard]] std::optional<std::vector<std::string>>

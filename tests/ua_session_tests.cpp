@@ -1079,7 +1079,8 @@ void the_design_loads_and_plays(const std::filesystem::path &kit)
     // The items carry the kit's names: item 17h identified, the scroll's
     // spells hidden until it is.
     const auto items = ua::load_design_items(files);
-    check(items.words.size() == 122 && items.words[1] == "Battle Axe",
+    check(items.words.size() == 124 && items.words[1] == "Battle Axe" &&
+              items.words[122] == "Gem" && items.words[123] == "Jewelry",
           "The kit's item words are read from its program");
     const auto chest_item = ua::design_item(items, 0x17, true);
     check(chest_item && menu()[0] == chest_item->label() &&
@@ -1902,6 +1903,47 @@ void the_town_serves_the_party(const std::filesystem::path &kit)
     check(party->state().wealth[4] == 0 && party->state().wealth[5] == 0, "The vault keeps money");
     visit(5, 1, {"Take", "Exit"});
     check(party->state().wealth == purse, "The vault gives it back");
+    // Appraise at the shop: a gem sold for its value in platinum, a jewel
+    // kept as an item worth twice it.
+    party->add_coins(opengold::Coin::gems, 2);
+    party->add_coins(opengold::Coin::jewelry, 1);
+    const auto before_appraisal = party->state().wealth;
+    const auto unappraised = pieces();
+    visit(3, 1, {"Appraise", "Gems", "Sell", "Jewelry", "Keep", "Exit", "Exit"});
+    const auto &appraised = party->state().wealth;
+    check(player.heard("You have a fine collection of:") && player.heard("The gem is valued at") &&
+              player.heard("The jewel is valued at"),
+          "The shop appraises a gem and a jewel");
+    check(appraised[5] == before_appraisal[5] - 1 && appraised[6] == before_appraisal[6] - 1 &&
+              appraised[4] >= before_appraisal[4] + 5,
+          "The gem is sold and the jewel kept");
+    const auto kept_jewel = [&party, first]
+    {
+        const auto &member = party->member(first);
+        for (const auto &item : member.character.inventory().items())
+        {
+            if (item.name == "Jewelry")
+            {
+                return member.item_sources.at(item.id).stored.value;
+            }
+        }
+        return std::uint16_t{0};
+    };
+    check(pieces() == unappraised + 1 && kept_jewel() >= 100, "The kept jewel is an item");
+    // The vault keeps an item, in a saved game too, and gives it back.
+    visit(5, 1, {"Items", "Jewelry", "Exit"});
+    check(player.heard("Your Jewelry will be left in the vault.") && pieces() == unappraised &&
+              kept_jewel() == 0,
+          "The vault keeps an item");
+    auto resumed = ua::UaSession::resume(files, session.saved_state());
+    resumed.campaign_party(party);
+    Player returning{resumed, party, content};
+    resumed.place(7, 5, 1, MapDirection::north);
+    returning.answers = {"Take", "Items", "Jewelry", "Exit"};
+    resumed.look();
+    returning.play();
+    check(pieces() == unappraised + 1 && kept_jewel() >= 100,
+          "A saved game's vault gives the item back");
     visit(6, 1, {"Rest", "Rest"});
     check(player.heard("The party makes camp.") && player.heard("The party rests."),
           "The inn opens the kit's camp menu, where the party rests");

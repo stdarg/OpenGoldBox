@@ -1882,5 +1882,17 @@
   "{name} has been raised from the dead",
   "{name} is relieved of a curse",
   "{name} regains sight",
-  "Your repose is suddenly interrupted!"
+  "Your repose is suddenly interrupted!",
+  "Appraise",
+  "No Gems or Jewelry",
+  "You have a fine collection of:",
+  "gems : {count}",
+  "jewelry : {count}",
+  "Gems",
+  "The gem is valued at {value} platinum.",
+  "The jewel is valued at {value} platinum.",
+  "Keep",
+  "And {count} items.",
+  "Vault is full!",
+  "Your {item} will be left in the vault."
 ]

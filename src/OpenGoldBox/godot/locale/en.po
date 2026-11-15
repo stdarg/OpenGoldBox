@@ -986,6 +986,11 @@ msgid "An oathbound warrior. Primary abilities: Strength and Charisma. Hit Die: 
 msgstr "An oathbound warrior. Primary abilities: Strength and Charisma. Hit Die: d10."
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "And {count} items."
+msgstr "And {count} items."
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Animal Handling"
 msgstr "Animal Handling"
 
@@ -1044,6 +1049,10 @@ msgstr "Apply spell choices"
 #: src/OpenGoldBox/training_replacement_controls.h:40
 msgid "Apply training"
 msgstr "Apply training"
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Appraise"
+msgstr "Appraise"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Approach"
@@ -5142,6 +5151,10 @@ msgstr "Gauntlets"
 msgid "Gauntlets of Ogre Power"
 msgstr "Gauntlets of Ogre Power"
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Gems"
+msgstr "Gems"
+
 #: src/OpenGoldBox/godot/scenes/character_creation.tscn:112 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:143
 msgid "Gender"
 msgstr "Gender"
@@ -6260,6 +6273,10 @@ msgstr "Jewelry"
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Keen Senses"
 msgstr "Keen Senses"
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Keep"
+msgstr "Keep"
 
 #: src/OpenGoldBox/godot/scenes/game_menu.tscn:234
 msgid "Keep Quick after a fight"
@@ -7751,6 +7768,10 @@ msgstr "No Bonus Actions or Reactions, and a d10 decides what it does each turn.
 #: src/OpenGoldBox/earlier_game_dialog.cpp:210
 msgid "No Gateway to the Savage Frontier game saved under the original rules was found."
 msgstr "No Gateway to the Savage Frontier game saved under the original rules was found."
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "No Gems or Jewelry"
+msgstr "No Gems or Jewelry"
 
 #: src/OpenGoldBox/earlier_game_dialog.cpp:211
 msgid "No Pool of Radiance game saved under the original rules was found."
@@ -11722,6 +11743,11 @@ msgstr "The fifth edition's System Reference Document, with the original's adven
 msgid "The free Circle spell returns with a Long Rest."
 msgstr "The free Circle spell returns with a Long Rest."
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "The gem is valued at {value} platinum."
+msgstr "The gem is valued at {value} platinum."
+
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:16341
 msgid "The ground shakes."
 msgstr "The ground shakes."
@@ -11748,6 +11774,11 @@ msgstr "The hound bites at {name}."
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "The item is identified."
 msgstr "The item is identified."
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "The jewel is valued at {value} platinum."
+msgstr "The jewel is valued at {value} platinum."
 
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:22584
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
@@ -12759,6 +12790,10 @@ msgid "Vault"
 msgstr "Vault"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Vault is full!"
+msgstr "Vault is full!"
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Versatile"
 msgstr "Versatile"
 
@@ -13424,6 +13459,10 @@ msgstr "You find a secret door in the west wall."
 msgid "You get away."
 msgstr "You get away."
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "You have a fine collection of:"
+msgstr "You have a fine collection of:"
+
 #: src/OpenGoldBox/rolf_tour_view.cpp:2252
 msgid "You have lost the fight."
 msgstr "You have lost the fight."
@@ -13476,6 +13515,11 @@ msgstr "Your party is fleeing."
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Your repose is suddenly interrupted!"
 msgstr "Your repose is suddenly interrupted!"
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "Your {item} will be left in the vault."
+msgstr "Your {item} will be left in the vault."
 
 #: src/OpenGold.Rules.Original/src/spells.cpp:176
 msgid "Youth"
@@ -13593,6 +13637,11 @@ msgstr "fire giants"
 msgid "forced Dodge"
 msgstr "forced Dodge"
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "gems : {count}"
+msgstr "gems : {count}"
+
 #: src/OpenGoldBox/monster_ability_options.h:62
 msgid "ghouls"
 msgstr "ghouls"
@@ -13632,6 +13681,11 @@ msgstr "hits"
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "indigo"
 msgstr "indigo"
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "jewelry : {count}"
+msgstr "jewelry : {count}"
 
 #: src/OpenGoldBox/monster_ability_options.h:25
 msgid "knights, bandit captains, veterans, buccaneer mates"

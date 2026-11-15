@@ -14,10 +14,12 @@ namespace opengold::ua
 namespace
 {
 
-// The first line of a saved state, naming its layout: 2 keeps every square
-// the party has stood on in its area; 1, saved before areas larger than 16
-// by 16 had a map, kept the first 16 by 16.
-constexpr std::string_view state_tag = "UA-STATE 2", first_state_tag = "UA-STATE 1";
+// The first line of a saved state, naming its layout: 3 keeps the items
+// left in the vault; 2, saved before the vault kept items, every square the
+// party has stood on in its area; 1, saved before areas larger than 16 by 16
+// had a map, kept the first 16 by 16.
+constexpr std::string_view state_tag = "UA-STATE 3", second_state_tag = "UA-STATE 2",
+                           first_state_tag = "UA-STATE 1";
 
 void require(bool ok, const char *message)
 {
@@ -67,6 +69,53 @@ template <class T> T next(std::istream &in)
     return value;
 }
 
+// An item left in the vault, its record's numbers in a line.
+void write_item(std::ostream &out, const por::ItemRecord &item)
+{
+    out << unsigned{item.type};
+    for (const auto word : item.name_components)
+    {
+        out << ' ' << unsigned{word};
+    }
+    out << ' ' << item.weight << ' ' << item.value << ' ' << int{item.magic_bonus} << ' '
+        << int{item.save_bonus} << ' ' << unsigned{item.hidden_name_words} << ' '
+        << unsigned{item.cursed_raw} << ' ' << unsigned{item.stack_size};
+    for (const auto code : item.effect_codes)
+    {
+        out << ' ' << unsigned{code};
+    }
+    out << '\n';
+}
+
+template <class T> T next_in(std::istream &in, int lowest, int highest)
+{
+    const auto value = next<int>(in);
+    require(value >= lowest && value <= highest, "A saved vault item is out of range");
+    return static_cast<T>(value);
+}
+
+por::ItemRecord read_item(std::istream &in)
+{
+    por::ItemRecord item;
+    item.type = next_in<std::uint8_t>(in, 0, 0xFF);
+    for (auto &word : item.name_components)
+    {
+        word = next_in<std::uint8_t>(in, 0, 0xFF);
+    }
+    item.weight = next_in<std::uint16_t>(in, 0, 0xFFFF);
+    item.value = next_in<std::uint16_t>(in, 0, 0xFFFF);
+    item.magic_bonus = next_in<std::int8_t>(in, -128, 127);
+    item.save_bonus = next_in<std::int8_t>(in, -128, 127);
+    item.hidden_name_words = next_in<std::uint8_t>(in, 0, 0xFF);
+    item.cursed_raw = next_in<std::uint8_t>(in, 0, 0xFF);
+    item.stack_size = next_in<std::uint8_t>(in, 0, 0xFF);
+    for (auto &code : item.effect_codes)
+    {
+        code = next_in<std::uint8_t>(in, 0, 0xFF);
+    }
+    return item;
+}
+
 por::MapDirection facing_from(unsigned number)
 {
     require(number < 4, "The saved design's facing is not a direction");
@@ -108,7 +157,11 @@ std::string UaSession::saved_state() const
     {
         out << ' ' << std::quoted(tale);
     }
-    out << '\n';
+    out << '\n' << vault_items_.size() << '\n';
+    for (const auto &item : vault_items_)
+    {
+        write_item(out, item);
+    }
     return out.str();
 }
 
@@ -118,7 +171,7 @@ UaSession UaSession::resume(DesignFiles files, std::string_view state)
     in.imbue(std::locale::classic());
     std::string tag;
     std::getline(in, tag);
-    require(tag == state_tag || tag == first_state_tag,
+    require(tag == state_tag || tag == second_state_tag || tag == first_state_tag,
             "The saved design's state is not one this build reads");
     auto session = start(std::move(files));
     const auto area = next<unsigned>(in);
@@ -190,6 +243,17 @@ UaSession UaSession::resume(DesignFiles files, std::string_view state)
         in >> std::quoted(tale);
         require(static_cast<bool>(in), "The saved design's state is cut short");
         session.tavern_tales_.push_back(std::move(tale));
+    }
+    if (tag == state_tag)
+    {
+        const auto kept = next<std::size_t>(in);
+        require(kept <= 50, "The saved vault holds too many items");
+        for (std::size_t n = 0; n < kept; ++n)
+        {
+            const auto item = read_item(in);
+            require(item.type < session.items_.types.size(), "A saved vault item has no type");
+            session.vault_items_.push_back(item);
+        }
     }
     in >> std::ws;
     require(in.eof(), "The saved design's state has more than it should");
