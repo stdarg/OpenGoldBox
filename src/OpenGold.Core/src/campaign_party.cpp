@@ -2488,9 +2488,11 @@ void CampaignParty::award_experience(unsigned amount, std::string reward_id, Mem
             member.experience += share;
         }
     }
+    // A fight that also killed every member awards no one, as the original's
+    // AwardExperience shares among the living only (postcbt.pas).
     if (!awarded)
     {
-        throw std::runtime_error("Reward requires a living active member");
+        return;
     }
     next.claimed_rewards.push_back(std::move(reward_id));
     state_ = std::move(next);

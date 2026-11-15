@@ -1668,7 +1668,14 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
     // A lost duel is not the party's defeat: the champion is left with 1 Hit
     // Point and the script hears 128 (coab ovr006).
     const bool duel_lost = champion && result.outcome == rules::Outcome::defeat;
-    if (result.outcome == rules::Outcome::defeat && !duel_lost)
+    // A fight won as the last member died leaves no one to go on: the party
+    // is lost, as the original's game ends with its party dead.
+    const bool none_left = std::ranges::none_of(campaign_->state().slots,
+                                                [this](opengold::MemberId id)
+                                                {
+                                                    return id && !campaign_->member(id).vitals.dead;
+                                                });
+    if ((result.outcome == rules::Outcome::defeat && !duel_lost) || (!champion && none_left))
     {
         snapshot_.phase = TourPhase::defeated;
         ++snapshot_.revision;
