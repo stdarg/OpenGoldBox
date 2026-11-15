@@ -155,9 +155,9 @@ class CharacterCreationView : public godot::Control
     unsigned party_check_stage_{};
     unsigned pool_check_stage_{};
     void show_pool();
-    // Curse's Add Character from Pool of Radiance, offered when the party
-    // plays Curse under the original rules.
-    void show_pool_of_radiance();
+    // Curse's Add Character from Pool of Radiance and Treasures' from
+    // Gateway, offered when the party plays them under the original rules.
+    void show_earlier_game();
     [[nodiscard]] bool bringing_across() const;
     // The leader speaks for the party and deals with shopkeepers.
     void make_roster_leader();

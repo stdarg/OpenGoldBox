@@ -12,7 +12,7 @@
 #include "game_rules.h"
 #include "character_creation_view.h"
 #include "character_pool_dialog.h"
-#include "pool_of_radiance_dialog.h"
+#include "earlier_game_dialog.h"
 #include "town_sheet_dialog.h"
 #include "character_sheet_text.h"
 #include "equipment_choice_dialog.h"
@@ -151,9 +151,8 @@ void CharacterCreationView::setup_party()
                 report_failure(failure);
             });
     required_node<Button>(*this, "PartyPanel/FromPool")
-        .connect("pressed",
-                 presentation::guarded(this, &CharacterCreationView::show_pool_of_radiance));
-    required_node<PoolOfRadianceDialog>(*this, "FromPoolModal")
+        .connect("pressed", presentation::guarded(this, &CharacterCreationView::show_earlier_game));
+    required_node<EarlierGameDialog>(*this, "FromPoolModal")
         .connect_host(
             [this]() -> CampaignParty &
             {
@@ -390,18 +389,18 @@ void CharacterCreationView::show_pool()
     }
 }
 
-void CharacterCreationView::show_pool_of_radiance()
+void CharacterCreationView::show_earlier_game()
 {
     if (bringing_across())
     {
-        required_node<PoolOfRadianceDialog>(*this, "FromPoolModal").open();
+        required_node<EarlierGameDialog>(*this, "FromPoolModal").open();
     }
 }
 
 bool CharacterCreationView::bringing_across() const
 {
     return game_rules_of(*campaign_).set == GameRules::Set::original &&
-           original::game_of(campaign_->identity()) == GoldBoxGame::curse_of_the_azure_bonds;
+           earlier_game_of(original::game_of(campaign_->identity())).has_value();
 }
 
 void CharacterCreationView::party_layout()
@@ -670,8 +669,14 @@ void CharacterCreationView::refresh_party()
         required_node<Button>(*this, gs(std::string("PartyPanel/ActionRow2/") + name))
             .set_disabled(state.roster.empty());
     }
-    // Curse adds characters from Pool of Radiance; its party's rules take them in.
-    required_node<Button>(*this, "PartyPanel/FromPool").set_visible(bringing_across());
+    // Curse adds characters from Pool of Radiance and Treasures from Gateway;
+    // the party's rules take them in.
+    auto &from_earlier_game = required_node<Button>(*this, "PartyPanel/FromPool");
+    from_earlier_game.set_visible(bringing_across());
+    from_earlier_game.set_text(i18n::text(original::game_of(campaign_->identity()) ==
+                                                  GoldBoxGame::treasures_of_the_savage_frontier
+                                              ? N_("Add from Gateway")
+                                              : N_("Add from Pool of Radiance")));
     // Only an active member who is not already the leader can be made leader.
     const auto chosen = state.roster.empty() ? MemberId{} : state.roster[roster_index_].id;
     required_node<Button>(*this, "PartyPanel/MakeLeader")

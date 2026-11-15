@@ -25,7 +25,7 @@ msgstr "   Oro del grupo {gold}   PX {xp}"
 msgid "   THAC0 {thac0}"
 msgstr "   GAC0 {thac0}"
 
-#: src/OpenGoldBox/party_preview.cpp:599
+#: src/OpenGoldBox/party_preview.cpp:598
 msgid " (Reserve)"
 msgstr " (Reserva)"
 
@@ -718,11 +718,19 @@ msgstr "Añadir y Restar cambian las horas."
 msgid "Add and Subtract change the minutes."
 msgstr "Añadir y Restar cambian los minutos."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1565
+#: src/OpenGoldBox/earlier_game_dialog.cpp:180
+msgid "Add character from Gateway to the Savage Frontier"
+msgstr "Añadir un personaje de Gateway to the Savage Frontier"
+
+#: src/OpenGoldBox/earlier_game_dialog.cpp:181 src/OpenGoldBox/godot/scenes/character_creation.tscn:1565
 msgid "Add character from Pool of Radiance"
 msgstr "Añadir un personaje de Pool of Radiance"
 
-#: src/OpenGoldBox/godot/scenes/party_panel.tscn:237
+#: src/OpenGoldBox/party_preview.cpp:678
+msgid "Add from Gateway"
+msgstr "Añadir de Gateway"
+
+#: src/OpenGoldBox/godot/scenes/party_panel.tscn:237 src/OpenGoldBox/party_preview.cpp:679
 msgid "Add from Pool of Radiance"
 msgstr "Añadir de Pool of Radiance"
 
@@ -730,7 +738,7 @@ msgstr "Añadir de Pool of Radiance"
 msgid "Add proficiency to Initiative; optionally swap Initiative with an eligible ally before the first turn."
 msgstr "Suma tu bonificador por competencia a Iniciativa; puedes intercambiarla con un aliado apto antes del primer turno."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1169 src/OpenGoldBox/godot/scenes/character_creation.tscn:1496 src/OpenGoldBox/godot/scenes/character_creation.tscn:1616 src/OpenGoldBox/party_preview.cpp:1123
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1169 src/OpenGoldBox/godot/scenes/character_creation.tscn:1496 src/OpenGoldBox/godot/scenes/character_creation.tscn:1616 src/OpenGoldBox/party_preview.cpp:1128
 msgid "Add to party"
 msgstr "Añadir al grupo"
 
@@ -907,7 +915,7 @@ msgstr "Género: todos"
 msgid "All races"
 msgstr "Todas las razas"
 
-#: src/OpenGoldBox/character_pool_dialog.cpp:149 src/OpenGoldBox/pool_of_radiance_dialog.cpp:216
+#: src/OpenGoldBox/character_pool_dialog.cpp:149 src/OpenGoldBox/earlier_game_dialog.cpp:276
 msgid "All six PC positions are occupied."
 msgstr "Las seis plazas de personajes jugadores están ocupadas."
 
@@ -1774,15 +1782,23 @@ msgstr "Arma de aliento"
 msgid "Breath weapons"
 msgstr "Armas de aliento"
 
-#: src/OpenGoldBox/pool_of_radiance_dialog.cpp:217
+#: src/OpenGoldBox/earlier_game_dialog.cpp:270
 msgid "Brings its levels, experience and items, and 300 platinum; its money stays behind."
 msgstr "Trae sus niveles, su experiencia y sus objetos, y 300 de platino; su dinero se queda atrás."
+
+#: src/OpenGoldBox/earlier_game_dialog.cpp:273
+msgid "Brings its levels, experience and the items Treasures knows, and 200 platinum; its money stays behind."
+msgstr "Trae sus niveles, su experiencia y los objetos que Treasures conoce, y 200 de platino; su dinero se queda atrás."
+
+#: src/OpenGoldBox/earlier_game_dialog.cpp:272
+msgid "Brings its levels, experience and the items Treasures knows, and its share of the party's platinum, gems and jewelry."
+msgstr "Trae sus niveles, su experiencia y los objetos que Treasures conoce, y su parte del platino, las gemas y las joyas del grupo."
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Bronze"
 msgstr "Bronce"
 
-#: src/OpenGoldBox/pool_of_radiance_dialog.cpp:214
+#: src/OpenGoldBox/earlier_game_dialog.cpp:275
 msgid "Brought into the party."
 msgstr "Se ha unido al grupo."
 
@@ -2386,11 +2402,15 @@ msgstr "Elige un objetivo para Hender, u omite el efecto."
 msgid "Choose a Fighting Style"
 msgstr "Elige un Estilo de combate"
 
+#: src/OpenGoldBox/earlier_game_dialog.cpp:207
+msgid "Choose a Gateway to the Savage Frontier save, then a character to bring into the party."
+msgstr "Elige una partida guardada de Gateway to the Savage Frontier y después un personaje para traer al grupo."
+
 #: src/OpenGoldBox/nick_controls.h:35
 msgid "Choose a Nick weapon and attack. This uses the Light extra attack for this turn and does not spend your Bonus Action."
 msgstr "Elige un arma con Mellar y un ataque. Usa el ataque adicional de Ligera de este turno sin gastar tu Acción adicional."
 
-#: src/OpenGoldBox/pool_of_radiance_dialog.cpp:162
+#: src/OpenGoldBox/earlier_game_dialog.cpp:208
 msgid "Choose a Pool of Radiance save, then a character to bring into the party."
 msgstr "Elige una partida guardada de Pool of Radiance y después un personaje para traer al grupo."
 
@@ -2402,7 +2422,7 @@ msgstr "Elige un destino para Empujar, u omite el efecto."
 msgid "Choose a character and press Create Character."
 msgstr "Elige un personaje y pulsa Crear personaje."
 
-#: src/OpenGoldBox/pool_of_radiance_dialog.cpp:189
+#: src/OpenGoldBox/earlier_game_dialog.cpp:245
 msgid "Choose a character to bring into the party."
 msgstr "Elige un personaje para traer al grupo."
 
@@ -3124,7 +3144,7 @@ msgstr "Crear muertos vivientes"
 msgid "Create a character before saving"
 msgstr "Crea un personaje antes de guardarlo"
 
-#: src/OpenGoldBox/party_preview.cpp:612
+#: src/OpenGoldBox/party_preview.cpp:611
 msgid "Create a character, finish its sheet, then Add to party.\n\nA party holds six characters, and up to two others may join it on the way. Removed members remain in the roster."
 msgstr "Crea un personaje, termina su hoja y pulsa Añadir al grupo.\n\nUn grupo admite seis personajes, y hasta otros dos pueden unirse por el camino. Los miembros retirados permanecen en la lista."
 
@@ -3369,11 +3389,11 @@ msgstr "Reducir el zoom del campo de batalla en 10 puntos porcentuales"
 msgid "Decrease battlefield zoom by 100 percentage points"
 msgstr "Reducir el zoom del campo de batalla en 100 puntos porcentuales"
 
-#: src/OpenGoldBox/party_preview.cpp:1984
+#: src/OpenGoldBox/party_preview.cpp:1989
 msgid "Defeat"
 msgstr "Derrota"
 
-#: src/OpenGoldBox/party_preview.cpp:2068
+#: src/OpenGoldBox/party_preview.cpp:2073
 msgid "Defeat test"
 msgstr "Prueba de derrota"
 
@@ -3924,7 +3944,7 @@ msgstr "Dureza enana: +{hp} PG máximos."
 msgid "Dwarves are stout, hardy folk, as enduring as the stone they work.\n\nRacial traits:\n- Dwarven Toughness: 1 more Hit Point at every level.\n- Dwarven Resilience: Resistance to Poison damage, and Advantage on saves against being Poisoned."
 msgstr "Los enanos son gente robusta y resistente, tan duradera como la piedra que trabajan.\n\nRasgos raciales:\n- Dureza enana: 1 punto de golpe más en cada nivel.\n- Resiliencia enana: resistencia al daño de veneno y ventaja en las salvaciones contra quedar envenenado."
 
-#: src/OpenGoldBox/party_preview.cpp:660
+#: src/OpenGoldBox/party_preview.cpp:659
 msgid "Each new character brings 3d6 × 10 gold pieces. Save game keeps this party to play on later."
 msgstr "Cada personaje nuevo trae 3d6 × 10 piezas de oro. Guardar partida conserva este grupo para seguir jugando más tarde."
 
@@ -4211,7 +4231,7 @@ msgstr "Equipado"
 msgid "Equipped / "
 msgstr "Equipado / "
 
-#: src/OpenGoldBox/party_preview.cpp:1216 src/OpenGoldBox/rolf_tour_view.cpp:1172
+#: src/OpenGoldBox/party_preview.cpp:1221 src/OpenGoldBox/rolf_tour_view.cpp:1172
 msgid "Equipped."
 msgstr "Equipado."
 
@@ -4295,7 +4315,7 @@ msgstr "Exhalar (Aliento de dragón)"
 msgid "Exit"
 msgstr "Salir"
 
-#: src/OpenGoldBox/party_preview.cpp:1992
+#: src/OpenGoldBox/party_preview.cpp:1997
 msgid "Exit to OS"
 msgstr "Salir del juego"
 
@@ -4634,7 +4654,7 @@ msgstr "Termina las elecciones de conjuros del descanso largo antes de modificar
 msgid "Finish Long Rest spell choices before combat"
 msgstr "Termina las elecciones de conjuros del descanso largo antes del combate"
 
-#: src/OpenGoldBox/party_preview.cpp:1767
+#: src/OpenGoldBox/party_preview.cpp:1772
 msgid "Finish combat, dialogue or shopping before returning to the party."
 msgstr "Termina el combate, el diálogo o las compras antes de volver al grupo."
 
@@ -6027,7 +6047,7 @@ msgstr "Plaga de insectos"
 msgid "Insight"
 msgstr "Perspicacia"
 
-#: src/OpenGoldBox/party_preview.cpp:1766
+#: src/OpenGoldBox/party_preview.cpp:1771
 msgid "Inspect your party and equipment."
 msgstr "Examina tu grupo y su equipo."
 
@@ -6703,7 +6723,7 @@ msgstr "Cargar"
 msgid "Load Character"
 msgstr "Cargar personaje"
 
-#: src/OpenGoldBox/party_preview.cpp:1988
+#: src/OpenGoldBox/party_preview.cpp:1993
 msgid "Load a saved game to continue."
 msgstr "Carga una partida guardada para continuar."
 
@@ -7716,7 +7736,11 @@ msgstr "No"
 msgid "No Bonus Actions or Reactions, and a d10 decides what it does each turn. A Wisdom save at the end of each of its turns ends it."
 msgstr "Sin acciones adicionales ni reacciones, y un d10 decide lo que hace cada turno. Una salvación de Sabiduría al final de cada uno de sus turnos lo termina."
 
-#: src/OpenGoldBox/pool_of_radiance_dialog.cpp:161
+#: src/OpenGoldBox/earlier_game_dialog.cpp:210
+msgid "No Gateway to the Savage Frontier game saved under the original rules was found."
+msgstr "No se ha encontrado ninguna partida de Gateway to the Savage Frontier guardada con las reglas originales."
+
+#: src/OpenGoldBox/earlier_game_dialog.cpp:211
 msgid "No Pool of Radiance game saved under the original rules was found."
 msgstr "No se ha encontrado ninguna partida de Pool of Radiance guardada con las reglas originales."
 
@@ -9354,7 +9378,7 @@ msgstr "Talento fiable: el d20 de {roll} de {name} cuenta como 10."
 msgid "Religion"
 msgstr "Religión"
 
-#: src/OpenGoldBox/party_preview.cpp:1992
+#: src/OpenGoldBox/party_preview.cpp:1997
 msgid "Reload a Saved Game"
 msgstr "Cargar una partida"
 
@@ -10994,7 +11018,7 @@ msgstr "Destello estelar"
 msgid "Start"
 msgstr "Empezar"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:377 src/OpenGoldBox/party_preview.cpp:1122
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:377 src/OpenGoldBox/party_preview.cpp:1127
 msgid "Start over"
 msgstr "Empezar de nuevo"
 
@@ -11649,7 +11673,7 @@ msgstr "Los muertos no pueden leer"
 msgid "The dead rise when the minute of casting ends."
 msgstr "Los muertos se alzan cuando termina el minuto de lanzamiento."
 
-#: src/OpenGoldBox/party_preview.cpp:1823
+#: src/OpenGoldBox/party_preview.cpp:1828
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "The default party could not be made: {problem}"
 msgstr "No se pudo crear el grupo predeterminado: {problem}"
@@ -12057,7 +12081,7 @@ msgstr "Esta parte no aparece en ninguna pose. Elige otra cabeza o cuerpo para u
 msgid "This save belongs to {game}, whose game files are not set."
 msgstr "Esta partida guardada es de {game}, cuyos archivos no están configurados."
 
-#: src/OpenGoldBox/pool_of_radiance_dialog.cpp:188
+#: src/OpenGoldBox/earlier_game_dialog.cpp:244
 msgid "This save holds no player characters."
 msgstr "Esta partida guardada no tiene personajes jugadores."
 
@@ -13417,7 +13441,7 @@ msgstr "Tu arma cuerpo a cuerpo es tu arma de pacto: competencia, Carisma para s
 msgid "Your party flees the battle."
 msgstr "Tu grupo huye de la batalla."
 
-#: src/OpenGoldBox/party_preview.cpp:1986
+#: src/OpenGoldBox/party_preview.cpp:1991
 msgid "Your party has been defeated."
 msgstr "Tu grupo ha sido derrotado."
 
@@ -14139,7 +14163,7 @@ msgstr "{name} / Modificadores"
 msgid "{name} / Saving Throws"
 msgstr "{name} / Salvaciones"
 
-#: src/OpenGoldBox/pool_of_radiance_dialog.cpp:86
+#: src/OpenGoldBox/earlier_game_dialog.cpp:104
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} / {class} / Level {levels}"
 msgstr "{name} / {class} / Nivel {levels}"

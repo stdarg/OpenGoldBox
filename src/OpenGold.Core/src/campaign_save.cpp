@@ -1225,13 +1225,26 @@ std::string campaign_asset_identity(const std::filesystem::path &directory)
                 c -= 32;
             }
         }
-        if (name.ends_with(".DAX") || name == "ITEMS")
+        // Gateway names its item types ITEMS.1 (item_types_file).
+        if (name.ends_with(".DAX") || name == "ITEMS" || name == "ITEMS.1")
         {
             require(!files.contains(name), "Ambiguous original asset filename");
             files.emplace(name, fingerprint(read_campaign_file(entry.path())));
         }
     }
-    require(files.contains("ECL3.DAX") && files.contains("GEO3.DAX") && files.contains("ITEMS"),
+    // The games number their script and map files differently (Treasures
+    // has only ECL1 and GEO1, Gateway ECL2 to ECL6): any one of each will do.
+    const auto has_any = [&](std::string_view stem)
+    {
+        return std::ranges::any_of(files,
+                                   [&](const auto &file)
+                                   {
+                                       return file.first.starts_with(stem) &&
+                                              file.first.ends_with(".DAX");
+                                   });
+    };
+    require(has_any("ECL") && has_any("GEO") &&
+                (files.contains("ITEMS") || files.contains("ITEMS.1")),
             "Missing campaign assets");
     std::ostringstream out;
     for (auto &[name, hash] : files)

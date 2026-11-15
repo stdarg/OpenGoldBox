@@ -596,8 +596,10 @@ Its differences (2026-11-14):
   the *Gateway's money* option on (Decisions), the money given to
   `bring_across` comes into the purse; off, the default, the character
   arrives with *Treasures*' 200 platinum, as a *Pool of Radiance* character
-  arrives in *Curse* with its 300. The party screen's choice of *Gateway*
-  saves, which will pass the character's money, is still to come.
+  arrives in *Curse* with its 300. The party screen's *Add from Gateway*
+  (2026-11-15) passes the character's share of its save's platinum, gems
+  and jewelry, the purse divided evenly among the save's player characters,
+  since OpenGoldBox keeps a party's money in one purse.
 
 ## Unlimited Adventures
 

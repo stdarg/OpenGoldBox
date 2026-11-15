@@ -1,21 +1,25 @@
-#ifndef OPENGOLDBOX_POOL_OF_RADIANCE_DIALOG_H
-#define OPENGOLDBOX_POOL_OF_RADIANCE_DIALOG_H
+#ifndef OPENGOLDBOX_EARLIER_GAME_DIALOG_H
+#define OPENGOLDBOX_EARLIER_GAME_DIALOG_H
 #include "opengold/campaign_party.h"
+#include "opengold/gold_box_game.h"
 #include <godot_cpp/classes/window.hpp>
 #include <cstdint>
 #include <exception>
 #include <filesystem>
 #include <functional>
+#include <optional>
 #include <vector>
 
-// Curse's Add Character to Party, From Where: Pool ("Pool adds a character
-// whose last adventure was in Pool of Radiance"): the Pool of Radiance saves
-// made under the original rules, the player characters of the one chosen, and
-// each brought into the campaign's party as its rules take it in
-// (CampaignParty::bring_across). The controls come from the creation scene.
-class PoolOfRadianceDialog : public godot::Window
+// The party screen's choice of the game before's saves: Curse's Add Character
+// to Party, From Where: Pool ("Pool adds a character whose last adventure was
+// in Pool of Radiance"), and Treasures' characters from Gateway to the Savage
+// Frontier. It lists that game's saves made under the original rules, the
+// player characters of the one chosen, and brings each into the campaign's
+// party as its rules take it in (CampaignParty::bring_across). The controls
+// come from the creation scene.
+class EarlierGameDialog : public godot::Window
 {
-    GDCLASS(PoolOfRadianceDialog, godot::Window)
+    GDCLASS(EarlierGameDialog, godot::Window)
   public:
     using CampaignAccess = std::function<opengold::CampaignParty &()>;
 
@@ -23,7 +27,7 @@ class PoolOfRadianceDialog : public godot::Window
     // The host's campaign, read at each use because loading a save replaces
     // it, and what follows a member brought in.
     void connect_host(CampaignAccess campaign, std::function<void()> member_added);
-    // Lists the Pool of Radiance saves and shows the dialog.
+    // Lists the earlier game's saves and shows the dialog.
     void open();
     // Reads the chosen save and lists its player characters.
     void select_save(std::int64_t index);
@@ -44,6 +48,9 @@ class PoolOfRadianceDialog : public godot::Window
     void connect_controls();
     // Turns Add on or off for the chosen character and says why.
     void show_member_state();
+    // The game whose characters come into the campaign's: Pool of Radiance
+    // for Curse, Gateway for Treasures.
+    [[nodiscard]] opengold::GoldBoxGame earlier_game() const;
     CampaignAccess campaign_;
     std::function<void()> member_added_;
     std::vector<std::filesystem::path> saves_;
@@ -52,5 +59,12 @@ class PoolOfRadianceDialog : public godot::Window
     std::vector<opengold::PartyMember> members_;
     std::vector<bool> brought_;
     std::size_t member_index_{};
+    // A Gateway character's share of its save's platinum, gems and jewelry,
+    // which Treasures' Gateway's-money option lets it keep.
+    std::optional<opengold::CampaignParty::BroughtMoney> money_share_;
 };
+
+// The game whose characters a campaign of `game` brings across on its party
+// screen under the original rules, if any.
+[[nodiscard]] std::optional<opengold::GoldBoxGame> earlier_game_of(opengold::GoldBoxGame game);
 #endif

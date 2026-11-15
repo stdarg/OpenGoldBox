@@ -2,6 +2,7 @@
 // opening plays on the real files when OPENGOLD_GOLDBOX_DIR names the folder
 // holding TREASURE.
 #include "opengold/campaign_party.h"
+#include "opengold/campaign_save.h"
 #include "opengold/campaign_session.h"
 #include "opengold/character_creator.h"
 #include "opengold/ecl_machine.h"
@@ -246,6 +247,19 @@ void a_gateway_character_comes_across()
     first.take_item(id, item(battle_axe));
     first.take_item(id, item(lost_type));
     const auto &veteran = first.member(id);
+    // OPENGOLD_GATEWAY_SAVE_FIXTURE writes the veteran's party, with money, as
+    // a Gateway save for the party screen's check (treasure_from_gateway.cmake).
+    if (const char *fixture = std::getenv("OPENGOLD_GATEWAY_SAVE_FIXTURE"))
+    {
+        auto wealth = first.state().wealth;
+        wealth[static_cast<std::size_t>(opengold::Coin::platinum)] = 1234;
+        wealth[static_cast<std::size_t>(opengold::Coin::gems)] = 6;
+        wealth[static_cast<std::size_t>(opengold::Coin::jewelry)] = 2;
+        first.set_wealth(wealth);
+        opengold::write_campaign_file(
+            fixture,
+            opengold::encode_campaign(first, nullptr, opengold::campaign_asset_identity(gateway)));
+    }
 
     std::shared_ptr<const opengold::rules::CharacterRules> creation =
         opengold::original::character_rules(opengold::original::default_aging, treasures_game);

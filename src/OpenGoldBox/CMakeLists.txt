@@ -71,7 +71,7 @@ configure_file("${export_config}" "${game_project}/export_presets.cfg" @ONLY)
 
 add_library(opengoldbox_game SHARED rolf_tour_view.cpp combat_view.cpp character_creation_view.cpp
     portrait_picker.cpp portrait_catalog.cpp party_preview.cpp equipment_choice_dialog.cpp level_up_view.cpp level_up_dialog.cpp level_up_lab_view.cpp campaign_save_view.cpp save_slots.cpp
-    character_pool_dialog.cpp pool_of_radiance_dialog.cpp town_sheet_dialog.cpp portrait_dialog.cpp original_portrait_parts.cpp character_sheet_view.cpp character_sheet_text.cpp godot_sound_output.cpp register_types.cpp game_classes.cpp campaign_combat.cpp startup_view.cpp game_lifecycle.cpp crash_reports.cpp game_log.cpp game_menu_view.cpp game_menu_host.cpp screenshot_service.cpp localization.cpp application_settings.cpp game_rules.cpp)
+    character_pool_dialog.cpp earlier_game_dialog.cpp town_sheet_dialog.cpp portrait_dialog.cpp original_portrait_parts.cpp character_sheet_view.cpp character_sheet_text.cpp godot_sound_output.cpp register_types.cpp game_classes.cpp campaign_combat.cpp startup_view.cpp game_lifecycle.cpp crash_reports.cpp game_log.cpp game_menu_view.cpp game_menu_host.cpp screenshot_service.cpp localization.cpp application_settings.cpp game_rules.cpp)
 target_link_libraries(opengoldbox_game PRIVATE opengold_core opengold_rules_srd5 opengold_rules_original godot-cpp)
 # The commit being built, for the head of the game's log; checked on every build.
 add_custom_target(opengoldbox_commit
@@ -689,6 +689,18 @@ if(OPENGOLD_BUILD_TESTS)
             FIXTURES_REQUIRED godot_project TIMEOUT 320 LABELS godot
             SKIP_REGULAR_EXPRESSION "Skipped: ")
     endforeach()
+    # Treasures' party screen brings a character from a Gateway save, with
+    # its money when the Gateway's-money option is on. Skipped without
+    # Treasures' and Gateway's files.
+    add_test(NAME opengold_godot_treasure_from_gateway COMMAND "${CMAKE_COMMAND}"
+        "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
+        "-DFIXTURE_WRITER=$<TARGET_FILE:opengold_treasure_tests>"
+        "-DWORK=${CMAKE_BINARY_DIR}/settings-checks/treasure_from_gateway"
+        "-DEXPECTED=Treasures from Gateway passed"
+        -P "${PROJECT_SOURCE_DIR}/tests/treasure_from_gateway.cmake")
+    set_tests_properties(opengold_godot_treasure_from_gateway PROPERTIES
+        FIXTURES_REQUIRED godot_project TIMEOUT 320 LABELS godot
+        SKIP_REGULAR_EXPRESSION "Skipped: ")
     # The main check leaves Spanish saved for a second process to restore.
     opengold_settings_check(language language_dialog_tests "Language dialog passed"
         -DARGS=--reset-lang -DRESTART_ARGS=--language-restore

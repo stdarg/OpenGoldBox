@@ -648,8 +648,17 @@ pictures, walls and script host, *Treasures* adding only what it changes.
    on its engine's tables (ORIGINAL-RULES.md, *Treasures*). A *Gateway*
    character comes across as its LoadChar takes one in, its items renumbered
    (`gateway_items_for_treasures`), keeping its own platinum, gems and
-   jewelry when the *Gateway's money* option is on; the party screen's choice
-   of saves is to come. Since 2026-11-14 a magic-user chooses its first- to
+   jewelry when the *Gateway's money* option is on. Since 2026-11-15 the
+   party screen offers *Add from Gateway* under the original rules, as
+   *Curse*'s offers *Pool of Radiance*'s characters: a *Gateway* save made
+   under the original rules, its player characters, and each brought in with
+   its share of the save's platinum, gems and jewelry when the option is on
+   (`opengold_godot_treasure_from_gateway`). OpenGoldBox keeps a party's
+   money in one purse, so a character's share is the purse divided evenly
+   among the save's player characters (a choice to confirm). *Gateway*,
+   *Pools of Darkness* and *Treasures* games can be saved since then too: a
+   save names their files although they number their scripts and maps
+   differently and *Gateway* calls its item types `ITEMS.1`. Since 2026-11-14 a magic-user chooses its first- to
    third-level spells on a page after the roll, slots x 4 / 3 of each, and
    knows Read Magic (ORIGINAL-RULES.md, Decisions).
 4. Walking every map and playing every event and fight (the walk).
