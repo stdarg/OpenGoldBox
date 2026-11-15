@@ -640,6 +640,18 @@ enum class Side : std::uint8_t
     opposition = 1
 };
 
+// What the difficulty does to a creature under the original rules
+// (docs/ORIGINAL-RULES.md, Difficulty), which leave DIFF-2's
+// Participant::hit_points_percent and attack_bonus to the SRD: its Hit Points
+// in percent (at least 1), what it adds to its attack rolls (its THAC0 that
+// much lower), and how much better (lower) its Armor Class is.
+struct OriginalStrength
+{
+    unsigned hit_points_percent{100};
+    int to_hit{};
+    int armor_class_bonus{};
+};
+
 struct Participant
 {
     EntityId id{};
@@ -663,6 +675,7 @@ struct Participant
     // and what it adds to its weapon attack rolls.
     unsigned hit_points_percent{100};
     int attack_bonus{};
+    OriginalStrength original_strength;
     // Item keys of the weapons a human-shaped creature holds (#274): their
     // dice, damage type and range replace its stat block's, which keeps its
     // own bonuses. An empty key keeps the stat block's. A ranged key that is

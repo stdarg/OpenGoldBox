@@ -133,6 +133,11 @@ struct CampaignEncounter
     std::vector<BandMember> band;
     // Easy's safety net (DIFF-2).
     bool spares_the_party{};
+    // What the difficulty adds to the attack rolls of the party's side, its
+    // members and allies, under the original rules
+    // (rules::OriginalStrength::to_hit; an Unlimited Adventures design's
+    // levels).
+    int party_to_hit{};
     // Gateway's maze fights, which one member's escape ends
     // (rules::Encounter::escape_ends_fight).
     bool escape_ends_fight{};

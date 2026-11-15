@@ -201,6 +201,8 @@ void GameMenuView::open_options()
         .select(settings::original_shops(opengold::GoldBoxGame::pool_of_radiance) ? 0 : 1);
     required_node<OptionButton>(*this, "Options/Gameplay/TreasuresMoney")
         .select(settings::gateway_money_kept() ? 0 : 1);
+    required_node<OptionButton>(*this, "Options/Gameplay/DesignDifficulty")
+        .select(static_cast<int>(settings::design_difficulty()));
     const auto language = settings::language();
     const auto found = std::find_if(language_codes.begin(), language_codes.end(),
                                     [&](const char *code)
@@ -274,6 +276,16 @@ void GameMenuView::build_options()
         choice.add_item(i18n::text(N_("Off")));
         choice.connect("item_selected", presentation::guarded(this, selected));
     }
+    // How the difficulty plays in an Unlimited Adventures design, in
+    // ua::DesignDifficulty's order.
+    auto &design_difficulty =
+        required_node<OptionButton>(*this, "Options/Gameplay/DesignDifficulty");
+    for (const char *choice : {N_("The design's"), N_("OpenGoldBox's"), N_("Both")})
+    {
+        design_difficulty.add_item(i18n::text(choice));
+    }
+    design_difficulty.connect(
+        "item_selected", presentation::guarded(this, &GameMenuView::design_difficulty_selected));
     auto &rows = required_node<Control>(*this, "Options/Gameplay/Abilities/Rows");
     for (std::size_t row = 0; row < i18n::monster_ability_options.size(); ++row)
     {
@@ -350,7 +362,8 @@ void GameMenuView::ability_selected(std::int64_t index, std::int64_t row)
 
 // The encounter challenge and the monster abilities balance the SRD rules
 // only: under the original rules every difficulty plays the original's fights
-// as they were (docs/ORIGINAL-RULES.md).
+// as they were (docs/ORIGINAL-RULES.md), but in an Unlimited Adventures
+// design, where Design difficulty says how it plays.
 void GameMenuView::show_srd_balance()
 {
     auto &gameplay = required_node<Control>(*this, "Options/Gameplay");
@@ -365,6 +378,9 @@ void GameMenuView::show_srd_balance()
             srd_rules_
                 ? i18n::text(N_(
                       "From Hard: monsters use their potions, wands and scrolls, and temples cast no Resurrection. Each monster ability below has its own lowest difficulty."))
+            : settings::chosen_game() == opengold::GoldBoxGame::unlimited_adventures
+                ? i18n::text(N_(
+                      "In this design, the difficulty plays as Design difficulty below sets it."))
                 : i18n::text(N_(
                       "Under the original rules, every difficulty plays as the original game did.")));
 }
@@ -498,6 +514,11 @@ void GameMenuView::original_shops_selected(std::int64_t index)
 void GameMenuView::treasures_money_selected(std::int64_t index)
 {
     settings::save_gateway_money_kept(index == 0);
+}
+
+void GameMenuView::design_difficulty_selected(std::int64_t index)
+{
+    settings::save_design_difficulty(static_cast<opengold::ua::DesignDifficulty>(index));
 }
 
 void GameMenuView::show_unidentified_magic(bool shown)

@@ -2,6 +2,7 @@
 #define OPENGOLDBOX_APPLICATION_SETTINGS_H
 #include "game_rules.h"
 #include "opengold/difficulty.h"
+#include "opengold/ua_design.h"
 #include <godot_cpp/variant/string.hpp>
 #include <godot_cpp/variant/packed_string_array.hpp>
 #include <filesystem>
@@ -60,6 +61,11 @@ bool save_original_shops(opengold::GoldBoxGame game, bool original);
 // otherwise it starts with Treasures' 200 platinum.
 bool gateway_money_kept();
 bool save_gateway_money_kept(bool kept);
+// [design_difficulty] UA: how the difficulty plays in an Unlimited Adventures
+// design, "design" (the kit's own levels), "table" (OpenGoldBox's table) or
+// "both", the default.
+opengold::ua::DesignDifficulty design_difficulty();
+bool save_design_difficulty(opengold::ua::DesignDifficulty plays);
 // [gear] auto_equip: "off" leaves gained gear in the pack; otherwise a better
 // weapon, armor, shield or worn item goes on (EQUIP-1). unidentified_magic: "equip" lets
 // auto-equip put on an unidentified magic item; otherwise it stays packed.

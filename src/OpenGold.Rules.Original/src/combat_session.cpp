@@ -8532,6 +8532,29 @@ void take_monster_gear(Fighter &f, const MonsterGear &gear)
         f.worked_from.push_back(static_cast<int>(at));
     }
 }
+
+// What the difficulty does to a creature as its fight begins
+// (rules::OriginalStrength). A thrown weapon's empty-handed THAC0 moves with
+// its THAC0, for when the last one is thrown.
+void strengthen(Combatant &numbers, const rules::OriginalStrength &strength)
+{
+    if (strength.hit_points_percent != 100)
+    {
+        const auto scaled = [percent = static_cast<int>(strength.hit_points_percent)](int points)
+        {
+            return std::max(points * percent / 100, 1);
+        };
+        numbers.hit_points = scaled(numbers.hit_points);
+        numbers.max_hit_points = scaled(numbers.max_hit_points);
+    }
+    numbers.thac0 -= strength.to_hit;
+    if (numbers.missile)
+    {
+        numbers.missile->empty_handed_thac0 -= strength.to_hit;
+    }
+    numbers.armor_class -= strength.armor_class_bonus;
+    numbers.rear_armor_class -= strength.armor_class_bonus;
+}
 } // namespace
 
 std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
@@ -8592,6 +8615,7 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
         {
             throw std::runtime_error("No original-rules record for " + p.definition);
         }
+        strengthen(f.numbers, p.original_strength);
         f.hit_points = p.state ? p.state->hit_points : f.numbers.hit_points;
         if (p.state && p.state->dead)
         {

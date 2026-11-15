@@ -60,6 +60,21 @@ class DesignFiles
 // A design's folder, as the kit names it: NAME.DSN.
 [[nodiscard]] bool is_design_folder(const std::filesystem::path &folder);
 
+// How the game's Difficulty plays in a design (the user, 2026-11-15; the
+// Options screen's choice; ua_session.h, design_strength).
+enum class DesignDifficulty : std::uint8_t
+{
+    // The kit's own five levels.
+    design,
+    // OpenGoldBox's difficulty table, for the monsters only.
+    table,
+    // The kit's levels, the table adding its to-hit and Armor Class for the
+    // monsters.
+    both
+};
+
+inline constexpr DesignDifficulty default_design_difficulty = DesignDifficulty::both;
+
 } // namespace opengold::ua
 
 #endif

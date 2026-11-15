@@ -267,6 +267,31 @@ bool ready(ReadySlots &slots, const por::ItemTemplate &type, std::uint8_t item_t
 
 } // namespace
 
+DesignStrength design_strength(Difficulty difficulty, DesignDifficulty plays)
+{
+    // The kit's level for each difficulty: Easy its lowest, Normal its
+    // default 3 (newgame.c), and each level above a step up, to the kit's 5.
+    constexpr std::array<int, 5> kit_levels{1, 3, 4, 5, 5};
+    const int level = kit_levels[static_cast<std::size_t>(difficulty)];
+    DesignStrength strength;
+    if (plays != DesignDifficulty::table)
+    {
+        strength.party_to_hit = 3 - level;
+        strength.foes.hit_points_percent = static_cast<unsigned>(level + 1) * 25;
+    }
+    if (plays != DesignDifficulty::design)
+    {
+        const auto table = original_monster_strength(difficulty);
+        strength.foes.to_hit = table.to_hit;
+        strength.foes.armor_class_bonus = table.armor_class_bonus;
+        if (plays == DesignDifficulty::table)
+        {
+            strength.foes.hit_points_percent = table.hit_points_percent;
+        }
+    }
+    return strength;
+}
+
 std::string monster_key(unsigned number)
 {
     return "UA:MONST:" + std::to_string(number);
@@ -1177,6 +1202,8 @@ void UaSession::begin_combat(const EventRecord &event, bool pick_one)
     encounter.morale = std::min(100U, event[7] & 0x7FU);
     // Byte 0Eh's bit 80h: no one casts in this fight (evcmds.c).
     encounter.no_magic = (event[0xE] & 0x80) != 0;
+    const auto strength = design_strength(difficulty_, design_difficulty_);
+    encounter.party_to_hit = strength.party_to_hit;
     rules::EntityId next_enemy = first_monster_id, next_ally = first_ally_id;
     fielded_monsters_.clear();
     // The kit fields at most 50 monsters.
@@ -1210,6 +1237,7 @@ void UaSession::begin_combat(const EventRecord &event, bool pick_one)
                 encounter.allies.push_back(std::move(fighter));
                 continue;
             }
+            fighter.original_strength = strength.foes;
             encounter.enemies.push_back(std::move(fighter));
             fielded_monsters_.emplace(id, group.number);
         }

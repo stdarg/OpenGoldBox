@@ -150,6 +150,22 @@ monster_combatant(const Monster &monster, const DesignItems &items, rules::Footp
 // record's gems, jewelry and equipment, readied where it can be.
 void outfit_new_character(CampaignParty &party, MemberId id, const DesignFiles &files);
 
+// What the difficulty does to a design's fight: what the party's side, its
+// members and allies, adds to its attack rolls, and what it does to each
+// monster against the party.
+struct DesignStrength
+{
+    int party_to_hit{};
+    rules::OriginalStrength foes;
+};
+
+// The kit's five levels give the party's side +2, +1, 0, -1 and -2 to hit
+// (fxcore.c, fx_attack_roll) and the foes' Hit Points x (level + 1) / 4
+// (evcmds.c, monster_add). Easy plays its level 1, Normal its 3, Hard its 4,
+// Nightmare and Infernal its 5; its level 2 has no difficulty of the game's.
+// The table is original_monster_strength's (difficulty.h).
+[[nodiscard]] DesignStrength design_strength(Difficulty difficulty, DesignDifficulty plays);
+
 class UaSession final : public ExplorationSession
 {
   public:
@@ -172,6 +188,14 @@ class UaSession final : public ExplorationSession
     // The party plays the design; its members' fights run through `party`'s
     // rules. The start square's event runs once the party is there.
     void campaign_party(std::shared_ptr<CampaignParty> party) override;
+
+    // The game's difficulty and how it plays in the design (design_strength),
+    // from the next fight on. A design starts at Normal, playing both.
+    void difficulty(Difficulty difficulty, DesignDifficulty plays) noexcept
+    {
+        difficulty_ = difficulty;
+        design_difficulty_ = plays;
+    }
 
     [[nodiscard]] const por::TourSnapshot &snapshot() const noexcept override
     {
@@ -555,6 +579,8 @@ class UaSession final : public ExplorationSession
     std::vector<por::Equipment> loot_;
     // The fight's loss ends the adventure (an event may say it does not).
     bool party_can_lose_{true};
+    Difficulty difficulty_{default_difficulty};
+    DesignDifficulty design_difficulty_{default_design_difficulty};
     // What a treasure event put in the pile: money (the Purse's places) and
     // ITEM.DAT numbers.
     std::array<unsigned, 7> treasure_wealth_{};

@@ -17,6 +17,7 @@
 #include "opengold/ua_session.h"
 #include "test_support.h"
 
+#include <array>
 #include <cctype>
 #include <cstdlib>
 #include <filesystem>
@@ -1460,13 +1461,21 @@ std::size_t terrain_count(const opengold::CampaignEncounter &encounter,
     return static_cast<std::size_t>(std::ranges::count(encounter.field.geometry.terrain, terrain));
 }
 
-// The fight the hall's square (x, y) starts, the party facing `facing`.
-opengold::CampaignEncounter hall_fight(const ua::DesignFiles &files,
-                                       const opengold::original::Content &content, unsigned x,
-                                       unsigned y, MapDirection facing)
+// The fight the hall's square (x, y) starts, the party facing `facing`, at
+// `difficulty` played as `plays` says.
+opengold::CampaignEncounter
+hall_fight(const ua::DesignFiles &files, const opengold::original::Content &content, unsigned x,
+           unsigned y, MapDirection facing,
+           opengold::Difficulty difficulty = opengold::default_difficulty,
+           ua::DesignDifficulty plays = ua::default_design_difficulty,
+           std::shared_ptr<opengold::CampaignParty> party = {})
 {
     auto session = ua::UaSession::start(files);
-    auto party = new_party(content);
+    session.difficulty(difficulty, plays);
+    if (!party)
+    {
+        party = new_party(content);
+    }
     session.campaign_party(party);
     Player{session, party, content}.play();
     session.place(5, x, y, facing);
@@ -1604,6 +1613,131 @@ void the_kits_fights_look_as_the_kit_draws_them(const std::filesystem::path &kit
         check(hands <= 2, name + " readies what two hands hold");
     }
     check(armed > 20, "Many of the kit's monsters fight with their weapons");
+}
+
+// A fighter as its fight fields it: Hit Points, THAC0 and Armor Class.
+struct Fielded
+{
+    int hit_points{}, max_hit_points{}, thac0{}, armor_class{};
+};
+
+// Each combatant of `encounter` as its fight begins, by id.
+std::map<opengold::rules::EntityId, Fielded>
+fielded(const opengold::CampaignEncounter &encounter,
+        const std::shared_ptr<opengold::CampaignParty> &party,
+        const opengold::original::Content &content)
+{
+    opengold::CombatDemo combat(opengold::original::rules_module(content));
+    combat.campaign_party(party);
+    combat.encounter(encounter, 7);
+    std::map<opengold::rules::EntityId, Fielded> found;
+    for (const auto &view : combat.combat().snapshot().combatants)
+    {
+        const auto numbers = opengold::original::Combatant::decode(view.persistent.resources);
+        check(numbers.has_value(), "A fighter's numbers read back");
+        found[view.id] = {view.hit_points, view.max_hit_points, numbers->thac0, view.armor_class};
+    }
+    return found;
+}
+
+// How a design plays the game's difficulty (docs/games/ua.md, Fights): the
+// kit's five levels (the party's side +2 to -2 to hit, a monster's Hit
+// Points x (level + 1) / 4), OpenGoldBox's table for the monsters (to-hit,
+// Hit Points and Armor Class), or both (the kit's Hit Points and the
+// party's to-hit, the table's to-hit and Armor Class), at Easy, Normal and
+// Infernal, in the hall's fight of two kobolds and a goblin on the party's
+// side, as the original rules' fight fields them.
+void a_design_plays_the_difficulty(const std::filesystem::path &kit)
+{
+    using opengold::Difficulty;
+    using ua::DesignDifficulty;
+    const auto design = build_test_design(kit, temporary_design("opengold_ua_difficulty.dsn"));
+    const ua::DesignFiles files(kit, design);
+    const auto content = ua::load_design_content(files);
+    const auto &kobold = content.bestiary.at(ua::monster_key(1));
+    check(kobold.max_hit_points == 3 && kobold.thac0 == 20 && kobold.armor_class == 7,
+          "A kobold has 3 Hit Points, THAC0 20 and Armor Class 7");
+    // Each fight a party of its own, the same each time.
+    const auto fight_at = [&](Difficulty difficulty, DesignDifficulty plays)
+    {
+        auto party = new_party(content);
+        const auto encounter =
+            hall_fight(files, content, 3, 14, MapDirection::north, difficulty, plays, party);
+        check(encounter.enemies.size() == 2 && encounter.allies.size() == 1,
+              "Two kobolds meet the party, a goblin on its side");
+        check(party->state().slots[0] == new_party(content)->state().slots[0],
+              "Each party's first member has the same id");
+        return std::pair{encounter, fielded(encounter, party, content)};
+    };
+    const auto [normal_fight, normal] = fight_at(Difficulty::normal, DesignDifficulty::design);
+    const auto member = new_party(content)->state().slots[0];
+    const auto ally = normal_fight.allies.front().id;
+
+    struct Expected
+    {
+        Difficulty difficulty;
+        DesignDifficulty plays;
+        int kobold_hit_points, kobold_thac0, kobold_armor_class, party_to_hit;
+    };
+
+    // Easy is the kit's level 1, Normal 3, Infernal 5.
+    constexpr std::array<Expected, 9> table{{
+        {Difficulty::easy, DesignDifficulty::design, 3 * 2 / 4, 20, 7, 2},
+        {Difficulty::normal, DesignDifficulty::design, 3, 20, 7, 0},
+        {Difficulty::infernal, DesignDifficulty::design, 3 * 6 / 4, 20, 7, -2},
+        {Difficulty::easy, DesignDifficulty::table, 3 * 75 / 100, 22, 9, 0},
+        {Difficulty::normal, DesignDifficulty::table, 3, 20, 7, 0},
+        {Difficulty::infernal, DesignDifficulty::table, 3 * 2, 17, 4, 0},
+        {Difficulty::easy, DesignDifficulty::both, 3 * 2 / 4, 22, 9, 2},
+        {Difficulty::normal, DesignDifficulty::both, 3, 20, 7, 0},
+        {Difficulty::infernal, DesignDifficulty::both, 3 * 6 / 4, 17, 4, -2},
+    }};
+    for (const auto &expected : table)
+    {
+        const auto name =
+            std::string(opengold::difficulty_names[static_cast<std::size_t>(expected.difficulty)]) +
+            " played as " + std::to_string(static_cast<int>(expected.plays));
+        const auto [encounter, fighters] = fight_at(expected.difficulty, expected.plays);
+        for (const auto &enemy : encounter.enemies)
+        {
+            const auto &fighter = fighters.at(enemy.id);
+            check(fighter.max_hit_points == expected.kobold_hit_points &&
+                      fighter.hit_points == expected.kobold_hit_points,
+                  name + ": a kobold's Hit Points are " +
+                      std::to_string(expected.kobold_hit_points) + ", not " +
+                      std::to_string(fighter.max_hit_points));
+            check(fighter.thac0 == expected.kobold_thac0 &&
+                      fighter.armor_class == expected.kobold_armor_class,
+                  name + ": a kobold's THAC0 is " + std::to_string(expected.kobold_thac0) +
+                      " and its Armor Class " + std::to_string(expected.kobold_armor_class) +
+                      ", not " + std::to_string(fighter.thac0) + " and " +
+                      std::to_string(fighter.armor_class));
+        }
+        // The party's side, its members and the goblin, hits as much easier
+        // as the kit's level says; its Armor Class and Hit Points stay.
+        for (const auto id : {member, ally})
+        {
+            const auto &fighter = fighters.at(id);
+            check(fighter.thac0 == normal.at(id).thac0 - expected.party_to_hit &&
+                      fighter.armor_class == normal.at(id).armor_class &&
+                      fighter.max_hit_points == normal.at(id).max_hit_points,
+                  name + ": the party's side is " + std::to_string(expected.party_to_hit) +
+                      " to hit, its Armor Class and Hit Points as they were");
+        }
+    }
+    const auto between = [](Difficulty difficulty, DesignDifficulty plays)
+    {
+        return ua::design_strength(difficulty, plays);
+    };
+    check(between(Difficulty::hard, DesignDifficulty::table).foes.hit_points_percent == 125 &&
+              between(Difficulty::hard, DesignDifficulty::design).party_to_hit == -1 &&
+              between(Difficulty::hard, DesignDifficulty::design).foes.hit_points_percent == 125,
+          "Hard plays the table's 125% and the kit's level 4");
+    check(between(Difficulty::nightmare, DesignDifficulty::both).foes.to_hit == 2 &&
+              between(Difficulty::nightmare, DesignDifficulty::both).foes.hit_points_percent ==
+                  150 &&
+              between(Difficulty::nightmare, DesignDifficulty::both).party_to_hit == -2,
+          "Nightmare plays the table's +2 and the kit's level 5");
 }
 
 std::size_t items_carried(const opengold::CampaignParty &party)
@@ -2490,6 +2624,7 @@ int main(int argc, char **argv)
         the_design_loads_and_plays(*kit);
         the_kits_fights_look_as_the_kit_draws_them(*kit);
         the_kits_fights_end_as_the_kit_ends_them(*kit);
+        a_design_plays_the_difficulty(*kit);
         the_town_serves_the_party(*kit);
         the_view_plays_it_through_the_seam(*kit);
         a_game_saves_and_loads(*kit);

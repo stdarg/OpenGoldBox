@@ -156,6 +156,8 @@ class RolfTourView : public godot::Control
     [[nodiscard]] opengold::por::RolfTourSession &dax_session() const;
     // Auto-equip as the Options screen sets it (EQUIP-1): nothing for off.
     [[nodiscard]] static std::optional<opengold::UnidentifiedMagic> auto_equip_setting();
+    // A design plays the difficulty as the Options screen sets it.
+    void apply_design_difficulty();
     std::shared_ptr<opengold::CampaignParty> campaign_;
     std::array<godot::Ref<godot::ImageTexture>, 3> sprites_;
     godot::Ref<godot::ImageTexture> wall_view_;

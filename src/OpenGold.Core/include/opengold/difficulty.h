@@ -123,6 +123,26 @@ inline constexpr unsigned full_strength_party_level = 2;
     return strength;
 }
 
+// OpenGoldBox's difficulty table under the original rules (the user,
+// 2026-11-15): what each level does to the party's foes. Normal changes
+// nothing.
+struct OriginalMonsterStrength
+{
+    int to_hit{};
+    unsigned hit_points_percent{100};
+    // How much better (lower) its Armor Class is.
+    int armor_class_bonus{};
+};
+
+// The table's row for `difficulty`.
+[[nodiscard]] constexpr OriginalMonsterStrength
+original_monster_strength(Difficulty difficulty) noexcept
+{
+    constexpr std::array<OriginalMonsterStrength, 5> table{
+        {{-2, 75, -2}, {}, {1, 125, 1}, {2, 150, 2}, {3, 200, 3}}};
+    return table[static_cast<std::size_t>(difficulty)];
+}
+
 // Easy's safety net (DIFF-2): flight always succeeds, and a won fight leaves no
 // member dead or down.
 [[nodiscard]] constexpr bool spares_the_party(Difficulty difficulty) noexcept

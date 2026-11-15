@@ -679,6 +679,7 @@ void RolfTourView::restart()
                 opengold::ua::UaSession::start(opengold::ua::DesignFiles(
                     presentation::path_from_godot(settings::game_folder(settings::chosen_game())),
                     presentation::path_from_godot(settings::design_folder()))));
+            apply_design_difficulty();
             session_->campaign_party(campaign_);
         }
         else
@@ -919,6 +920,14 @@ std::optional<opengold::UnidentifiedMagic> RolfTourView::auto_equip_setting()
                                                : opengold::UnidentifiedMagic::equip;
 }
 
+void RolfTourView::apply_design_difficulty()
+{
+    if (auto *design = dynamic_cast<opengold::ua::UaSession *>(session_.get()))
+    {
+        design->difficulty(settings::difficulty(), settings::design_difficulty());
+    }
+}
+
 void RolfTourView::apply_settings()
 {
     if (auto *campaign = dax())
@@ -927,6 +936,7 @@ void RolfTourView::apply_settings()
         campaign->encounter_challenge(settings::encounter_challenge());
         campaign->set_auto_equip(auto_equip_setting());
     }
+    apply_design_difficulty();
 }
 
 void RolfTourView::apply_sound_volume()

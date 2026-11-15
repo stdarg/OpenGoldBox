@@ -14,6 +14,7 @@
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/variant/dictionary.hpp>
 #include <algorithm>
+#include <array>
 #include <functional>
 #include <map>
 #include <optional>
@@ -326,6 +327,33 @@ bool save_gateway_money_kept(bool kept)
     const std::string folder(
         opengold::game_folder(opengold::GoldBoxGame::treasures_of_the_savage_frontier));
     return save("gateway_money", folder.c_str(), kept ? "on" : "off");
+}
+
+namespace
+{
+// The names settings.cfg spells design_difficulty's choices with, in order.
+constexpr std::array<const char *, 3> design_difficulty_names{"design", "table", "both"};
+} // namespace
+
+opengold::ua::DesignDifficulty design_difficulty()
+{
+    const std::string folder(opengold::game_folder(opengold::GoldBoxGame::unlimited_adventures));
+    const auto name = read("design_difficulty", folder.c_str()).to_lower();
+    for (std::size_t n = 0; n < design_difficulty_names.size(); ++n)
+    {
+        if (name == design_difficulty_names[n])
+        {
+            return static_cast<opengold::ua::DesignDifficulty>(n);
+        }
+    }
+    return opengold::ua::default_design_difficulty;
+}
+
+bool save_design_difficulty(opengold::ua::DesignDifficulty plays)
+{
+    const std::string folder(opengold::game_folder(opengold::GoldBoxGame::unlimited_adventures));
+    return save("design_difficulty", folder.c_str(),
+                design_difficulty_names[static_cast<std::size_t>(plays)]);
 }
 
 bool save_original_wall_art(bool original)

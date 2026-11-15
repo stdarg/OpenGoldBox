@@ -655,10 +655,12 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
         ally.side = Side::party;
         participants.push_back(std::move(ally));
     }
-    // Mutual surprise cancels out: Surprise::both marks neither side.
+    // Mutual surprise cancels out: Surprise::both marks neither side. The
+    // party's side takes the difficulty's to-hit (party_to_hit).
     for (auto &participant : participants)
     {
         participant.surprised = encounter.surprise == Surprise::party;
+        participant.original_strength.to_hit += encounter.party_to_hit;
     }
     for (auto &enemy : encounter.enemies)
     {

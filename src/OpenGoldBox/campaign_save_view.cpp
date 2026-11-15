@@ -404,6 +404,7 @@ void RolfTourView::restore_design(std::shared_ptr<CampaignParty> party,
     design->campaign_party(party);
     campaign_ = std::move(party);
     session_ = std::move(design);
+    apply_design_difficulty();
     forget_monster_picture();
     shown_revision_ = 0;
     rendered_pose_.reset();
