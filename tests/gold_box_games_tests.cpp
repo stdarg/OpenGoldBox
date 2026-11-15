@@ -3398,6 +3398,61 @@ const std::vector<RouteBeat> &darkness_route()
         eggs.test_wins = true;
         eggs.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x208, 1};
         route.push_back(eggs);
+        // Out with the ring: east through the lower level to the stairs up
+        // (13,4, YES), and through the upper level to the foyer and out by
+        // the main doors (7,15) to the web's paths.
+        walk_passages(route, 84,
+                      {{2, 6, D::east},   {3, 6, D::east},   {4, 6, D::east},  {5, 6, D::north},
+                       {5, 5, D::east},   {6, 5, D::east},   {7, 5, D::east},  {8, 5, D::south},
+                       {8, 6, D::south},  {8, 7, D::south},  {8, 8, D::east},  {9, 8, D::east},
+                       {10, 8, D::east},  {11, 8, D::east},  {12, 8, D::east}, {13, 8, D::north},
+                       {13, 7, D::north}, {13, 6, D::north}, {13, 5, D::east}, {14, 5, D::east},
+                       {15, 5, D::north}, {15, 4, D::west}});
+        route.push_back(step_beat(84, 14, 4, D::west, {"YES"}));
+        walk_passages(route, 82,
+                      {{13, 3, D::north}, {13, 2, D::west},  {12, 2, D::south}, {12, 3, D::south},
+                       {12, 4, D::south}, {12, 5, D::south}, {12, 6, D::south}, {12, 7, D::south},
+                       {12, 8, D::west},  {11, 8, D::west},  {10, 8, D::west},  {9, 8, D::south},
+                       {9, 9, D::south},  {9, 10, D::south}, {9, 11, D::west},  {8, 11, D::south},
+                       {8, 12, D::south}, {8, 13, D::south}, {8, 14, D::south}, {8, 15, D::west}});
+        route.push_back(step_beat(82, 7, 15, D::south, {"YES", "NO"}));
+        // South-west and west along the paths back to the ruined temple
+        // (4,13), and in it to the black pool where Cynthia stood (8,4),
+        // which returns the party to Limbo (YES).
+        RouteBeat to_ruined_temple{83, 0, 0, D::north, {}};
+        to_ruined_temple.passing = true;
+        to_ruined_temple.area_steps.assign(12, C::southwest);
+        to_ruined_temple.area_steps.insert(to_ruined_temple.area_steps.end(), 17, C::west);
+        route.push_back(to_ruined_temple);
+        RouteBeat into_ruined_temple{83, 0, 0, D::north, {"YES"}};
+        into_ruined_temple.area_steps = {C::west};
+        into_ruined_temple.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x25, 4};
+        route.push_back(into_ruined_temple);
+        walk_passages(route, 83,
+                      {{7, 9, D::east},
+                       {8, 9, D::north},
+                       {8, 8, D::north},
+                       {8, 7, D::east},
+                       {9, 7, D::north},
+                       {9, 6, D::north},
+                       {9, 5, D::north},
+                       {9, 4, D::north},
+                       {9, 3, D::west}});
+        route.push_back(step_beat(83, 8, 3, D::south, {"YES", "stop:REST"}));
+        // Elminster rejoices at the Crystal Ring (journal entry 82); his camp
+        // rests the party, it trains, and he returns it to the Realms by the
+        // way it left them, Kalistes' Temple's portal (69: 8,5).
+        RouteBeat ring_rest{18, 0, 0, D::north, {}};
+        ring_rest.rest_choice = "REST";
+        route.push_back(ring_rest);
+        RouteBeat to_realms{18,
+                            0,
+                            0,
+                            D::north,
+                            {"TRAIN", "paladin 1", "paladin 2", "ranger 3", "cleric 4", "cleric 5",
+                             "magic_user 6", "Leave", "MOVE ON", "REALMS", "YES", "NO"}};
+        to_realms.waiting = true;
+        route.push_back(to_realms);
         return route;
     }();
     return beats;
