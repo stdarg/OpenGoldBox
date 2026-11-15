@@ -246,6 +246,41 @@ void keep_item_plus(PartyMember &member, std::uint64_t id, int plus)
     member.character.replace_inventory(std::move(inventory));
 }
 
+// An item a fight made that outlasts it (the original's Spiritual Hammer)
+// joins the member's inventory, readied as the fight left it.
+void keep_gained_item(PartyMember &member, const rules::GainedItem &gained)
+{
+    const auto record = por::item_of_original_key(gained.definition);
+    auto inventory = member.character.inventory();
+    const auto id = inventory.add({.definition_id = gained.definition,
+                                   .name = gained.name,
+                                   .original_type = record ? record->type : -1});
+    member.character.replace_inventory(std::move(inventory));
+    if (gained.readied)
+    {
+        member.equipped.push_back(id);
+    }
+}
+
+// The member's inventory without the items that go as time passes (the
+// original's Spiritual Hammer as its spell ends), when any goes.
+std::optional<Inventory> lasting_inventory(const rules::RulesModule &rules,
+                                           const PartyMember &member,
+                                           const rules::VitalState &vitals)
+{
+    auto inventory = member.character.inventory();
+    bool lost = false;
+    for (const auto &item : member.character.inventory().items())
+    {
+        if (!rules.item_lasts(vitals, member.character.sheet(), item.definition_id))
+        {
+            inventory.remove(item.id, item.quantity);
+            lost = true;
+        }
+    }
+    return lost ? std::optional{std::move(inventory)} : std::nullopt;
+}
+
 // Remove Curse lets a member put down its cursed items, which are then lost:
 // the original's Remove Curse let a character drop a cursed object (MAGIC-1).
 void put_down_cursed_items(const rules::RulesModule &rules, PartyMember &member)
@@ -2945,6 +2980,7 @@ CampaignParty::Elapsed CampaignParty::elapsed(const PartyState &state,
         throw std::runtime_error("Campaign clock overflow");
     }
     Elapsed result{{},
+                   {},
                    state.random_state,
                    state.time_minutes + minutes,
                    static_cast<unsigned>(remainder % 60000)};
@@ -2971,6 +3007,10 @@ CampaignParty::Elapsed CampaignParty::elapsed(const PartyState &state,
         auto &vitals = *participant.state;
         const auto &sheet = member_in(state, participant.id).character.sheet();
         rules_->pass_time(vitals, sheet, state.time_minutes, result.time_minutes);
+        if (auto inventory = lasting_inventory(*rules_, member_in(state, participant.id), vitals))
+        {
+            result.inventories.emplace_back(participant.id, std::move(*inventory));
+        }
         result.vitals.emplace_back(participant.id, std::move(vitals));
     }
     return result;
@@ -2986,6 +3026,28 @@ void CampaignParty::apply(PartyState &state, Elapsed &&elapsed) noexcept
             {
                 member.vitals = std::move(vitals);
             }
+        }
+    }
+    for (auto &[id, inventory] : elapsed.inventories)
+    {
+        for (auto &member : state.roster)
+        {
+            if (member.id != id)
+            {
+                continue;
+            }
+            member.character.replace_inventory(std::move(inventory));
+            const auto &kept = member.character.inventory();
+            std::erase_if(member.equipped,
+                          [&kept](std::uint64_t item)
+                          {
+                              return !kept.find(item);
+                          });
+            std::erase_if(member.item_sources,
+                          [&kept](const auto &source)
+                          {
+                              return !kept.find(source.first);
+                          });
         }
     }
     state.random_state = elapsed.random;
@@ -4261,7 +4323,8 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
             const bool items_changed = !actor.thrown_gear_left.empty() || actor.curse_lifted ||
                                        !actor.item_uses_left.empty() ||
                                        actor.readied_items.has_value() ||
-                                       !actor.item_pluses.empty();
+                                       !actor.item_pluses.empty() ||
+                                       !actor.items_gained.empty();
             if (changed && !items_changed)
             {
                 thrown.push_back(std::move(*changed));
@@ -4298,6 +4361,10 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
                 for (const auto &[item, plus] : actor.item_pluses)
                 {
                     keep_item_plus(member, item, plus);
+                }
+                for (const auto &gained : actor.items_gained)
+                {
+                    keep_gained_item(member, gained);
                 }
                 if (actor.curse_lifted)
                 {

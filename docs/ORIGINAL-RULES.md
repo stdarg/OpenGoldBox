@@ -1322,8 +1322,14 @@ gear.
      as `ToggleReadyItem` allows, and stay put away; *Secret*'s and the later
      games' (type 6) come readied to a hand with no weapon, and put away end
      the spell. When the spell ends, by its time, Dispel Magic or the hammer
-     put away, the hammer is gone. It is no item of the party's: the fight
-     never gives it to the inventory (DEVIATIONS.md).
+     put away, the hammer is gone. A spell still running as the fight ends
+     outlasts it by its minutes (2026-11-15), as the original's effect does:
+     the hammer joins its caster's items, readied as the fight left it
+     (`CombatantView::items_gained`), and goes as the spell runs out with the
+     campaign's clock (`RulesModule::item_lasts`) or in a later fight. The
+     original knows the hammer by its type and name word (`is_spiritual_hammer`).
+     *Secret* and the later games mean to ready it to an empty weapon hand but
+     never do (Bugs).
    - 8c. *Done 2026-11-12:* turning undead, once a fight for one with cleric
      levels: one d20 for the whole attempt against up to 1d12 undead enemies
      in sight, the lowest kinds first and the nearest of those, by the
@@ -1491,6 +1497,7 @@ scales Hit Points takes only the table's to-hit and Armor Class.
 | *Curse:* Entangle's hold lasts as long as the spell table's row past its end says, an unset value (`magic.pas`, `SpellEntangle`, its duration taken for spell 136) | Entangle's own 10 rounds |
 | *Secret:* the Delayed Blast Fireball asks for its delay at the keyboard whoever casts it, the computer's creatures too (`magic.pas`, `SpellDelayedBlastFireball`) | The computer bursts it at once |
 | *Secret:* its +1 to hit with long and short swords and bows goes to every race (`charhlp.pas`, `WeaponAdjust`), where the earlier games give it to elves | Elves only (the user, 2026-11-14) |
+| *Secret*, *Pools of Darkness* and *Treasures:* Spiritual Hammer readies its hammer when no weapon is readied, but its search for the new hammer steps past it, so it never readies it (`effhndlr.pas`, `EffSpiritualHammer`) | Readied to the empty hand |
 | *Curse*, *Gateway* and *Treasures:* training picks the class whose next level needs the most experience, but reads every class at the level of the last one it looked at (TrainingMenu) | Each class at its own level |
 | *Curse:* Hold Monster holds only what Hold Person can, as the spell its resolver exempts from the creature-type rule is Dimension Door (0x53) and not Hold Monster (0x5E) (`ovr023`, `MultiTargetedSpell`) | Any creature |
 | *Curse:* Ice Storm and Cone of Cold deal acid damage, so resisting cold does not lessen them (`ovr023`, `SpellIceStorm`, `SpellConeOfCold`) | Cold |

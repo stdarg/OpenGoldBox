@@ -589,6 +589,8 @@ class OriginalModule final : public RulesModule
     void recover(VitalState &state, const CharacterSheet &sheet) const override;
     void pass_time(VitalState &state, const CharacterSheet &sheet, std::uint64_t from,
                    std::uint64_t to) const override;
+    [[nodiscard]] bool item_lasts(const VitalState &state, const CharacterSheet &sheet,
+                                  std::string_view definition) const override;
     [[nodiscard]] RecoveryInfo recovery_info(const CharacterSheet &,
                                              const VitalState &) const override;
     void grant_temporary_hit_points(VitalState &, const CharacterSheet &,
@@ -2070,6 +2072,21 @@ void OriginalModule::pass_time(VitalState &state, const CharacterSheet &sheet, s
                 state.hit_points = 0;
             }
         });
+}
+
+// Spiritual Hammer's hammer stays while its spell lasts, which outlasts the
+// fight by its minutes, and goes as the spell ends (EffSpiritualHammer, as
+// its effect is removed); every other item stays.
+bool OriginalModule::item_lasts(const VitalState &state, const CharacterSheet &sheet,
+                                std::string_view definition) const
+{
+    constexpr int spiritual_hammer = 23;
+    const auto item = por::item_of_original_key(definition);
+    if (!item || !sheet.original || !is_spiritual_hammer(*item, game_of(sheet.identity)))
+    {
+        return true;
+    }
+    return condition(conditions_of(sheet, state), spiritual_hammer) != nullptr;
 }
 
 // The original has no Hit Dice or resources a rest restores; every living

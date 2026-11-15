@@ -4529,6 +4529,14 @@ void spiritual_hammer_gives_its_hammer()
     until_turn_of(secret_fight, "Cleric");
     check(!offered_hammer(secret_fight, "unready") && !hammer_blow(secret_fight),
           "Its 3 rounds over, the hammer is gone");
+    check(view_of(secret_fight.snapshot(), "Cleric").items_gained.empty(),
+          "A hammer gone with its spell does not outlast the fight");
+    const auto kept = view_of(curse_fight.snapshot(), "Cleric").items_gained;
+    const auto record =
+        kept.empty() ? std::nullopt : por::item_of_original_key(kept.front().definition);
+    check(kept.size() == 1 && kept.front().name == "Spiritual Hammer" && record &&
+              original::is_spiritual_hammer(*record, GoldBoxGame::curse_of_the_azure_bonds),
+          "While its spell lasts, the hammer outlasts the fight as an item its caster carries");
 }
 
 // A readied item lays its own effect on its bearer (viewchar.pas,

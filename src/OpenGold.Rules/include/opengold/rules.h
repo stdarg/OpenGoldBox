@@ -627,6 +627,13 @@ struct HeldItemView
     bool stowed{};
 };
 
+// An item a fight made, by its definition and name, readied or not.
+struct GainedItem
+{
+    std::string definition, name;
+    bool readied{};
+};
+
 struct CarriedEquipment
 {
     std::uint64_t inventory_id{};
@@ -856,6 +863,9 @@ struct CombatantView
     // Items whose magic the fight changed, by inventory ID: their plus now
     // (a black pudding eats into armor); the campaign keeps it.
     std::vector<std::pair<std::uint64_t, int>> item_pluses;
+    // Items the fight made that outlast it (the original's Spiritual Hammer):
+    // the campaign adds them to the inventory, readied as the fight left them.
+    std::vector<GainedItem> items_gained;
     // Regenerates Hit Points each turn unless Acid or Fire stops it (stopped: it
     // already took Acid or Fire since its last turn); burning; covered in oil
     // (its next Fire damage deals 5 more); carries or wields a Torch.
@@ -1390,6 +1400,18 @@ class RulesModule
         (void)sheet;
         (void)from;
         (void)to;
+    }
+
+    // Whether a carried item stays with its member as it is now: an item a
+    // spell made (the original's Spiritual Hammer) goes when its spell ends.
+    // Every item stays by default.
+    [[nodiscard]] virtual bool item_lasts(const VitalState &state, const CharacterSheet &sheet,
+                                          std::string_view definition) const
+    {
+        (void)state;
+        (void)sheet;
+        (void)definition;
+        return true;
     }
     virtual void validate_character_state(const CharacterSheet &, const VitalState &) const = 0;
     [[nodiscard]] virtual RestPolicy long_rest_policy() const = 0;

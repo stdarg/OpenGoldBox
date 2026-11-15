@@ -688,6 +688,8 @@ class CampaignParty
     struct Elapsed
     {
         std::vector<std::pair<MemberId, rules::VitalState>> vitals;
+        // The inventories of members whose items went as the time passed.
+        std::vector<std::pair<MemberId, Inventory>> inventories;
         RandomState random;
         std::uint64_t time_minutes{};
         unsigned subminute_milliseconds{};

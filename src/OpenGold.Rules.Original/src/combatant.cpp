@@ -1013,8 +1013,8 @@ bool elf_weapon(std::uint8_t type, GoldBoxGame game) noexcept
 
 bool lasting_condition(const Effect &effect, GoldBoxGame game) noexcept
 {
-    constexpr std::array<int, 34> lasting{
-        33, 34, 43, 44, 55, 15, 22, 36, 268, 340, 341, 12, 38, strength_wasted,
+    constexpr std::array<int, 35> lasting{
+        33, 34, 43, 44, 55, 15, 22, 36, 268, 340, 341, 12, 38, strength_wasted, 23,
         // The spells cast in camp before a fight (camp.pas, NoncombatCastMenu),
         // Pools of Darkness's Protection from Fire, Fire Touch, Iron Skin and
         // Mind Blank among them.
@@ -1025,6 +1025,27 @@ bool lasting_condition(const Effect &effect, GoldBoxGame game) noexcept
         game == GoldBoxGame::pool_of_radiance && (code == rot || code == mummy_rot);
     const bool helpless_for_good = code == helpless && effect.minutes == 0;
     return pool_rot || helpless_for_good || std::ranges::find(lasting, code) != lasting.end();
+}
+
+HammerMaking hammer_making(GoldBoxGame game) noexcept
+{
+    if (game == GoldBoxGame::pool_of_radiance)
+    {
+        return {20, 243, 137, false, false};
+    }
+    if (game == GoldBoxGame::curse_of_the_azure_bonds ||
+        game == GoldBoxGame::gateway_to_the_savage_frontier ||
+        game == GoldBoxGame::unlimited_adventures)
+    {
+        return {20, 243, 0xA0, true, false};
+    }
+    return {6, 121, 0x80, false, true};
+}
+
+bool is_spiritual_hammer(const por::ItemRecord &item, GoldBoxGame game) noexcept
+{
+    const auto making = hammer_making(game);
+    return item.type == making.type && item.name_components[2] == making.name_word;
 }
 
 namespace

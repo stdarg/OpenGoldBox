@@ -308,9 +308,30 @@ struct AmmunitionTypes
 // 39 and Prayer 49), cast in camp or left from a fight; what a paladin has
 // spent, the day's laying on of
 // hands (340) and the week's cures of disease (341, its strength the cures
-// spent); and the Strength a disease has wasted (601, OpenGoldBox's own, its
-// strength the points).
+// spent); the Strength a disease has wasted (601, OpenGoldBox's own, its
+// strength the points); and Spiritual Hammer (23), whose hammer goes with it.
 [[nodiscard]] bool lasting_condition(const Effect &effect, GoldBoxGame game) noexcept;
+
+// Spiritual Hammer's hammer as each game makes it (effhndlr.pas,
+// EffSpiritualHammer): a hammer +1 named "Spiritual Hammer", whose effect
+// byte is the spell's effect (23); Pool of Radiance's special byte names the
+// handler that ends the spell as it is put away (137), Curse's and Gateway's
+// none that does anything (A0h), Secret's and the later games' gives the
+// spell's effect (80h). Secret's and the later games' hammer is item type 6,
+// the earlier games' 20.
+struct HammerMaking
+{
+    std::uint8_t type{}, name_word{}, special{};
+    // Readied as it comes: always in Curse and Gateway, in Secret and after
+    // when no weapon is readied, never in Pool of Radiance.
+    bool readied_always{}, readied_unarmed{};
+};
+
+[[nodiscard]] HammerMaking hammer_making(GoldBoxGame game) noexcept;
+
+// Whether an item is Spiritual Hammer's hammer, which the original knows by
+// its type and name word (EffSpiritualHammer).
+[[nodiscard]] bool is_spiritual_hammer(const por::ItemRecord &item, GoldBoxGame game) noexcept;
 // The marker of the Strength a disease has wasted outside fights.
 inline constexpr int strength_wasted = 601;
 // A party member's age in years, OpenGoldBox's own marker (its strength): a

@@ -3375,39 +3375,6 @@ void Session::toggle_readied(Fighter &f, std::size_t index)
     settle_hammers();
 }
 
-namespace
-{
-// Spiritual Hammer's hammer as each game makes it (effhndlr.pas,
-// EffSpiritualHammer): a hammer +1 named "Spiritual Hammer", whose effect
-// byte is the spell's effect (23); Pool of Radiance's special byte names the
-// handler that ends the spell as it is put away (137), Curse's and Gateway's
-// none that does anything (A0h), Secret's and the later games' gives the
-// spell's effect (80h). Secret's and the later games' hammer is item type 6,
-// the earlier games' 20.
-struct HammerMaking
-{
-    std::uint8_t type{}, name_word{}, special{};
-    // Readied as it comes: always in Curse and Gateway, in Secret and after
-    // when no weapon is readied, never in Pool of Radiance.
-    bool readied_always{}, readied_unarmed{};
-};
-
-HammerMaking hammer_making(GoldBoxGame game)
-{
-    if (game == GoldBoxGame::pool_of_radiance)
-    {
-        return {20, 243, 137, false, false};
-    }
-    if (game == GoldBoxGame::curse_of_the_azure_bonds ||
-        game == GoldBoxGame::gateway_to_the_savage_frontier ||
-        game == GoldBoxGame::unlimited_adventures)
-    {
-        return {20, 243, 0xA0, true, false};
-    }
-    return {6, 121, 0x80, false, true};
-}
-} // namespace
-
 // The caster of Spiritual Hammer gains its hammer while the spell lasts,
 // unless it has one or carries 16 items (effhndlr.pas, EffSpiritualHammer).
 void Session::conjure_hammer(Fighter &caster)
@@ -7896,6 +7863,14 @@ rules::Snapshot Session::snapshot() const
             std::vector<std::pair<int, std::uint64_t>> readied;
             for (const auto &item : held)
             {
+                // A hammer the fight conjured outlasts it with its spell
+                // (EffSpiritualHammer), as an item the member carries.
+                if (!item.inventory_id && item.conjured && !item.gone)
+                {
+                    view.items_gained.push_back({por::original_item_key(item.carried.item),
+                                                 item.name, item.carried.item.readied()});
+                    continue;
+                }
                 if (!item.inventory_id)
                 {
                     continue;
@@ -8777,6 +8752,8 @@ void take_gear(Fighter &f, const rules::Participant &p, const Content &content)
             continue;
         }
         Held h{{*item, content.item_types[item->type]}, carried.inventory_id, carried.name};
+        // A hammer an earlier fight conjured goes as its spell does.
+        h.conjured = is_spiritual_hammer(*item, content.game);
         const auto count = static_cast<int>(carried.quantity);
         if (count > 1 && held_count(h.carried) != count)
         {
