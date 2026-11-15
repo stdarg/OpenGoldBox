@@ -675,6 +675,33 @@ by what it is offered:
   black pool at (8,4) (YES) to Limbo, where Elminster rejoices at the ring
   (journal entry 82), rests and trains the party and returns it to the
   Realms by the way it left them, Kalistes' Temple's last portal (69: 8,5).
+- **The way out (2026-11-15).** From the portal down the temple's middle
+  aisle and out by its main doors (8,15, YES to leaving), which open on the
+  Descent to the Depths (map 35 at 2,7) behind the guards the party never
+  met. Map 35's walls name its ways by their type, read by the step entry's
+  table (9B7Fh): type 1 a path (facing east it leads down, else up: north of
+  row 7 to map 48, on row 7 to 69, south of it to 68) and type 2 a ladder.
+  West off the map's edge, which wraps to its east side, past the spider
+  idol (15,7) and north to the long hall's near ladder (12,6), where the
+  drow draw it up behind the party (cell 194h keeps the row; the cluebook's
+  15: "the party must use the ladder at the other end"); south down the hall
+  to the far one (12,15, facing west, YES). On through the skirmishers'
+  rooms (the cluebook's 14), whose archers shoot from behind and hold the
+  step unless the party goes on (GO ON? YES), up the ladder at (7,12), and
+  west and north to the empty wagons (2,5, facing north; the cluebook's 3):
+  the party gets in and waits (YES), and the wagon carries it up into
+  Zhentil Keep, where it sneaks away unseen (YES) inside the gate (map 19 at
+  7,8). Manshoon's tower (48), the way down, is left aside. South through
+  the city to its gate (8,15): stepping off the map asks "YOU ARE ABOUT TO
+  LEAVE. CONTINUE?" (YES; cell 21h), and outside on the area map the party
+  declines to enter again (NO).
+- **To Myth Drannor (2026-11-15).** Nine squares south down the area map's
+  west edge, fleeing the basilisks and dracolisks that roam there (one
+  turned the magic-user to stone when the route fought them), to the ruins
+  (0,13), where Princess Nacacia welcomes the party in her glen, asks it
+  into the ruins with her knights (YES), joins it and offers six items
+  against the rakshasas (TREASURE of `ITEM0` definitions 144, 151, 46 and
+  more), and leads it in by the broken gate (map 66, script 66, at 15,4).
 
 Since 2026-11-15 the route's casters memorize spells of every level they
 have slots of (Pools of Darkness's levels 6 to 9 among them) and raise the
@@ -696,17 +723,29 @@ warriors, hold the party with Hold Monster before it acts and slay the held
 with every dice the route tries, so the test wins that fight. A player
 would gear the party with the cave's treasure and ward it first; the
 route's player takes no treasure but wands. And Kalistes' egg room (84:
-2,6, 2026-11-15): the wizards' Hold Monster and Ice Storm, the pets'
-Disintegrate and Charm Monsters and the spy's stoning creatures beat the
-route's party (levels 13 to 16, near whole) with every dice it tries, so
-the test wins her fight and the spy's after it; a player would come
-stronger, from the minis' armor and fights, with Storm. Thorne (34: 3,7),
-which from the 2026-11-15 morning the test won as well, is the route's own
-since that day: its player takes and wears the Ring of Fire Resistance
-from the hoard in room 4, as the cluebook's would, and wins. The route's
-party carries the game's own starting equipment (ORIGINAL-RULES.md, *Pools
-of Darkness*). Until the route reaches the win it passes when it plays
-every beat to Kalistes' Temple (map 69), back from the Web Dimension.
+2,6, 2026-11-15): Kalistes, seven drow champions, eight drow wizards and
+five pets, and the spy's basilisks, medusae and earth elementals after.
+Since her six weapons are played (ORIGINAL-RULES.md, *Pools of Darkness*;
+each of her six blows a round 12 to 21 with her Strength of 19) the fight is
+harder still: the best of the route's 120 plays (40 dice, three tactics)
+leaves the whole party dead, its members held by the wizards' and
+champions' Hold Monster and slain helpless, hit by Ice Storm and
+Disintegrate. What a player could bring does not change that much: Storm
+(the Web Dimension's dwarf, 113 Hit Points) is one more fighter; the minis'
++4 scale, banded and elfin chain are no better than the party's plate mail
++3; Mind Blank, which turns holding, is an eighth-level spell the
+magic-user (level 15, 87,000 experience short of 16) cannot cast yet, and
+would shield one member. The player of the original comes far stronger,
+from the many wandering fights a route that walks straight to its goals
+does not have (the route's party gained 650,000 experience in all from the
+opening to here); so the test wins both fights, a stand-in until the route
+can come as strong. Thorne (34: 3,7), which from the 2026-11-15 morning
+the test won as well, is the route's own since that day: its player takes
+and wears the Ring of Fire Resistance from the hoard in room 4, as the
+cluebook's would, and wins. The route's party carries the game's own
+starting equipment (ORIGINAL-RULES.md, *Pools of Darkness*). Until the
+route reaches the win it passes when it plays every beat to Myth Drannor's
+gate (map 66).
 
 What the route needed besides (2026-11-14): a Darkness party saves and
 loads, its levels to 40, on the area map (whose script, 17, does not load
@@ -726,22 +765,32 @@ party won or came through and "not equal" when it fled. Until 2026-11-14
 OpenGoldBox left the flags as they were, so a won fight could read as lost
 and move the party back a square (the walk passed all the same).
 
-Where it stops (2026-11-15, evening): back in the Realms with the
-Crystal Ring, at Kalistes' Temple's last portal (69: 8,5), the route's
-beat 1329 (a save there: OPENGOLD_ROUTE_SAVE after the whole route). The
-way on to the area map is the way the party came down, in reverse:
-through the temple to its secret entry (0,0) and west into the slave pens
-(68: 15,1), up the drow stronghold (35; its "THE PATH LEADS" squares go up
-to 48 north of row 7, down to 68 and 69 south of it, each asked), the
-halls of Manshoon's tower (48) and Zhentil Keep (19) out to the area map.
-The planning aid with `OPENGOLD_SECRET_PREFER=YES` reaches maps 68 and 35
-from the portal but not 48. Then Myth Drannor (0,13 on the area map) and
-the Red Tower (scripts 66, 70, 67), Moander (52, 53, 55), Mulmaster and
-the beholders' cave, Dark Phlan (64) and the Palace of Gothmenes (65, 74,
-73), whose win (75) is in place. Scripts and the scripts they go on to (`opengold_scripts --inspect
-DARKNESS ECL1.DAX N`, NEW ECL): 19 to 48; 48 to 35 and 49; 35 to 41, 68,
-69; 68 to 69 and 71; 69 to 72 and 18; 66 and 70 from the area map; 70 to
-67 and 76; 67 to 75 and 77; 64 to 65 and 74; 65 to 73, 74, 75.
+Where it stops (2026-11-15, night): inside Myth Drannor's broken gate
+(66: 15,4) with Nacacia, the route's beat 1412. The way on (the cluebook's
+Nacacia and Myth Drannor): the temple where the Rakshasa Maharajah raises
+Tyranthraxus is the event 15 at (5,1), behind the door that will not budge
+(4,4, facing north: the step entry runs it for a wall of type 6 ahead on a
+square with no event), which a member of Dexterity 17 or a thief's climb of
+99 climbs (CLIMB OVER, WHO), Strength 23 bashes or Knock opens; the temple's
+fight ends with cell 1D8h at 255. On the way the planning aid's path round
+the ruins' west side meets the rakshasas and Banites at their altar (3,13,
+the cluebook's 10), which beat the route's party with every dice: their
+Rukhs and Rajahs take half from weapons below +4, the party's best, and no
+spell below the eighth level touches them. What a player does there is in
+the scripts: Nacacia's six items, readied (a light crossbow and its blessed
+bolts among them), and the blessed bolts' kill of a rakshasa, Pools of
+Darkness's effect 82 (effhndlr.pas, EffBlessedBoltKills: a hit from an item
+of type 74 slays it), which is not played yet; the bolts are fired from the
+bolt slot, so OpenGoldBox's quarrel lookup by type 28 must take type 74
+too. Then the Red Tower (scripts 70 and 67), Moander (52, 53, 55),
+Mulmaster and the beholders' cave, Dark Phlan (64) and the Palace of
+Gothmenes (65, 74, 73), whose win (75) is in place. Scripts and the scripts
+they go on to (`opengold_scripts --inspect DARKNESS ECL1.DAX N`, NEW ECL):
+19 to 48; 48 to 35 and 49; 35 to 41, 68, 69; 68 to 69 and 71; 69 to 72 and
+18; 66 and 70 from the area map; 70 to 67 and 76; 67 to 75 and 77; 64 to
+65 and 74; 65 to 73, 74, 75. `OPENGOLD_ROUTE_JUMPS` names a beat that puts
+the party on a square it does not stand on (a step the beats before it did
+not walk).
 `OPENGOLD_ROUTE_BEATS` and `OPENGOLD_SECRET_FIND` plan each step: the
 planning aid answers NO, so it never takes stairs a question offers; find
 the stairs' squares by their walls of type 7 and step them in a beat. A

@@ -597,7 +597,10 @@ new decoders.
    the best play wins it with members dead, and (2026-11-15) Kalistes'
    fight in her egg room and the spy's after it (her drow wizards' Hold
    Monster and Ice Storm, her pets' Disintegrate and the spy's stoning
-   creatures beat the party of levels 13 to 16). Thorne, which the test won for
+   creatures beat the party of levels 13 to 16; since her six weapons are
+   played the best of 120 plays leaves the party dead, and neither Storm,
+   the minis' armor nor Mind Blank, which the magic-user cannot cast yet,
+   would turn it: darkness.md, The win and the route). Thorne, which the test won for
    a while on 2026-11-15, is the route's own again: it takes and wears the
    Ring of Fire Resistance from his hoard (room 4) and wins. Each script starts its wandering
    monsters afresh, as the original's does (cells 97h to C8h, 2026-11-14), so
@@ -606,8 +609,7 @@ new decoders.
    scribe's office (9,4), as the cluebook says. The route's casters memorize
    spells of all nine levels (2026-11-15). The route's party
    carries the game's own starting equipment. Until the route reaches the
-   win it passes when it plays every beat to Kalistes' Temple (map 69), back
-   from the Web Dimension.
+   win it passes when it plays every beat to Myth Drannor's gate (map 66).
    *Kalistes' Temple (2026-11-15):* in the slave pens the party helps
    Silk, beats the prison guards and frees her Swanmays (script 71), and
    rests in her room and the quiet room (1,8); in the temple it takes the
@@ -624,11 +626,17 @@ new decoders.
    under the Ward it enters Kalistes' Parlor, drops down the chute and
    destroys her eggs, and with the Crystal Ring goes back by the ruined
    temple's black pool to Limbo, where it rests and trains, and returns to
-   the Realms at Kalistes' Temple's portal (69: 8,5). *Where it stops
-   (2026-11-15, evening):* there. Next: the climb back to the area map
-   through the slave pens, the drow stronghold, Manshoon's tower and
-   Zhentil Keep, then Myth Drannor and the Red Tower and on round the area
-   map to Dark Phlan (darkness.md, Where it stops). The temples' Restoration is
+   the Realms at Kalistes' Temple's portal (69: 8,5). *The way out
+   (2026-11-15):* by the temple's main doors to the Descent to the Depths,
+   up the long hall's far ladder (the near one drawn up), through the
+   skirmishers' rooms to the empty wagons, which carry the party unseen
+   into Zhentil Keep, and out of its gate to the area map; south to Myth
+   Drannor, where Nacacia joins it and leads it in. *Where it stops
+   (2026-11-15, night):* inside Myth Drannor's gate (66: 15,4). Next: the
+   rakshasas, for which the blessed bolts' kill (Pools of Darkness's effect
+   82) is to be played and Nacacia's items taken, the door that will not
+   budge and the temple where Tyranthraxus is raised, then the Red Tower
+   and on round the area map to Dark Phlan (darkness.md, Where it stops). The temples' Restoration is
    to come where a beat needs it.
    *The area map is drawn (2026-11-14):* the big picture with the party's
    marker, as the original draws it. *Spell levels 8 and 9 and the new

@@ -2043,7 +2043,7 @@ const std::vector<RouteBeat> &secret_route()
 // Pools of Darkness's route plays to the game's end once this is true; until
 // then it stops on this map (docs/GAMES.md, Pools of Darkness, step 5).
 constexpr bool darkness_route_ends_the_game = false;
-constexpr unsigned darkness_route_stops_on_map = 19;
+constexpr unsigned darkness_route_stops_on_map = 66;
 
 // Pools of Darkness's story, beat by beat, as its cluebook tells it: from New
 // Phlan's docks, where Rolf has walked the party out.
@@ -3524,6 +3524,20 @@ const std::vector<RouteBeat> &darkness_route()
                        {8, 13, D::south},
                        {8, 14, D::south}});
         route.push_back(step_beat(19, 8, 15, D::south, {"YES", "NO"}));
+        // South down the area map's west edge to the ruins of Myth Drannor
+        // (0,13), fleeing the basilisks and dracolisks that roam there.
+        RouteBeat to_myth_drannor{17, 0, 0, D::north, {}};
+        to_myth_drannor.passing = true;
+        to_myth_drannor.fleeing = true;
+        to_myth_drannor.area_steps.assign(8, C::south);
+        route.push_back(to_myth_drannor);
+        RouteBeat into_myth_drannor{17, 0, 0, D::north, {"YES"}};
+        into_myth_drannor.area_steps = {C::south};
+        route.push_back(into_myth_drannor);
+        // Princess Nacacia asks the party into the ruins with her knights
+        // (YES), joins it and offers six items against the rakshasas (left
+        // for now); it passes through the broken gate into Myth Drannor (map
+        // 66, script 66). The route stops there.
         return route;
     }();
     return beats;
