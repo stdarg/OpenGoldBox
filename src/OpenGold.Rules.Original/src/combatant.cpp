@@ -677,11 +677,11 @@ int darkness_canonical_effect(int code) noexcept
     constexpr int own = secret_effect_offset, past = darkness_effect_offset,
                   kit = kit_effect_offset;
     constexpr std::array<std::pair<int, int>, 22> moved{{
-        {40, 40 + kit},    {66, 115},       {67, 67 + past},   {75, 75 + past},  {80, 80 + kit},
-        {81, 81 + kit},    {82, 82 + past}, {83, 83 + past},   {84, 104 + own},  {85, 83 + own},
-        {125, 125 + kit},  {126, 126 + kit},
-        {90, 90 + past}, {91, 91 + past}, {96, 96 + past},   {99, 99 + past},  {100, 100 + past},
-        {101, 85},       {102, 86},       {104, 104 + past}, {108, 121 + own}, {114, 114 + past},
+        {40, 40 + kit},   {66, 115},         {67, 67 + past}, {75, 75 + past}, {80, 80 + kit},
+        {81, 81 + kit},   {82, 82 + past},   {83, 83 + past}, {84, 104 + own}, {85, 83 + own},
+        {125, 125 + kit}, {126, 126 + kit},  {90, 690},       {91, 91 + past}, {96, 96 + past},
+        {99, 99 + past},  {100, 100 + past}, {101, 85},       {102, 86},       {104, 104 + past},
+        {108, 121 + own}, {114, 114 + past},
     }};
     const auto found = std::ranges::find(moved, code, &std::pair<int, int>::first);
     return found != moved.end() ? found->second : secret_canonical_effect(code);

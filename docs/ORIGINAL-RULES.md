@@ -552,12 +552,22 @@ Journal), chosen by the game as the others' are (2026-11-14):
     attacker's damage is reckoned, after Ray of Enfeeblement and dragon
     fear). The blessed bolt (82, 2026-11-15): a rakshasa struck by a bolt
     of item type 74, its blessed bolts, is slain, whatever the blow's
-    damage (EffBlessedBoltKills, as the defender weighs the weapon).
-  - *Its own, not played yet:* a giant-slaying sword (75), the big red,
-    green, blue and black
-    dragons' breaths (83, 90, 91, 96), the bulette's rake (99), the
-    paralyzing and charming gazes (114, 124), the beholders' rays (117,
-    which the original plays as nothing) and the vorpal blade (115).
+    damage (EffBlessedBoltKills, as the defender weighs the weapon). The
+    dragons' breaths (2026-11-15), each three times a fight from the first
+    round, never through the dragon's own side: the biggest red dragon's
+    fire (83) along 9 squares three wide for 24d10+12, a black dragon's acid
+    (96) along 6 squares one wide for its maximum Hit Points, half on a save
+    against breath (EffDragonBreath); a blue dragon's lightning (91) as a
+    Lightning Bolt aimed at an enemy, 9 squares of its maximum Hit Points,
+    half on a save against spells (EffBreatheLightning); a green dragon's
+    poison (90) as the kit's green dragon's (EffBreathePoison). A gaze
+    spider's gaze (114) holds an enemy for 10 rounds unless it saves against
+    paralysis at +3, a mirror turning it back (EffParalyzeGaze); a vampire's
+    (124) charms one as Charm Person does (EffGazeCharm). The original never
+    runs the two gazes (Bugs).
+  - *Its own, not played yet:* a giant-slaying sword (75), the bulette's
+    rake (99), the beholders' rays (117, which the original plays as
+    nothing) and the vorpal blade (115).
   - Its records' type flags, "immunities" and magic resistance are read
     (bytes 420, 421 and 491), *Secret*'s bits, so a creature is a snake, a
     mammal, a ranger's foe or unliving as in *Secret*.
@@ -1563,6 +1573,7 @@ scales Hit Points takes only the table's to-hit and Armor Class.
 | *Curse:* Faerie Fire improves its target's Armor Class by 2, and sets any of 2 or better to 0, instead of making it easier to hit (`ovr013`, `FaerieFire`) | 2 worse |
 | *Curse:* Charm Monsters, like Hold Monster, takes only what Charm Person can (`ovr023`, `MultiTargetedSpell`) | Any creature |
 | *Curse:* the dracolich's shield against fear, enfeeblement and feeblemind is looked at only once those have landed, so it does almost nothing (`ovr013`, `AffectDracolichA`) | It is immune to them |
+| *Pools of Darkness:* the paralyzing gaze (114) and the charming gaze (124) have handlers, but no condition of the fight runs them, so the gaze spider and the vampires never gaze (`effhndlr.pas`, `EffParalyzeGaze`; `magic.pas`, `EffGazeCharm`) | They gaze as the monster's own powers run, after the dragons' breaths |
 | *Pools of Darkness:* a new character's count of items is set to three whatever its starting equipment gave, so a fighter's five items and a cleric's six count as three (`chargen.pas`, `CreateStartingItems`) | Counts what it carries |
 | *Pools of Darkness:* the clerics in Manshoon's tower ask how many times the party has entered Zhentil Keep and add 2 to the answer's place (0 for "1") before comparing it with the count, so no true answer passes and the party fights their elementals (ECL1:49, 816Ah) | The script adds 1: "1", "2" and "MANY" mean 1, 2 and 3 |
 | *Pools of Darkness:* Power Word Blind works out its blindness's time (1d4+1 rounds, ten times as long under 51 Hit Points) and then blinds for the spell's table time, 0, which never ends (`magic.pas`, `SpellPowerWordBlind`) | The time it works out |

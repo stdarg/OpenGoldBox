@@ -121,12 +121,15 @@ constexpr int armor_eaten = kit_effect_offset + 250;
 // Blank; and the caster's Blade Barrier, which no game's effect numbers (604,
 // past the conditions original_combat.h numbers 601 to 603, so wasted
 // Strength is not taken for a barrier). Its others no earlier game has (its
-// 67, 82, 100 and 104, plus darkness_effect_offset): half harm from crushing
-// weapons, death by a blessed bolt, dragon fear and 4d6 of fire with a hit.
+// 67, 82, 83, 91, 96, 100, 104 and 114, plus darkness_effect_offset): half
+// harm from crushing weapons, death by a blessed bolt, the big red, blue and
+// black dragons' breaths, dragon fear, 4d6 of fire with a hit and the
+// paralyzing gaze; its charming gaze is its 124 plus secret_effect_offset.
 constexpr int six_weapons = 516, dancing = 518, druid_fire_protection = 519, dragon_feared = 520,
-              fire_touch = 521, iron_skin = 522, mind_blank = 523, blade_barrier = 604,
-              halves_crushing = 537, slain_by_blessed_bolt = 552, darkness_dragon_fear = 570,
-              fire_hit = 574;
+              fire_touch = 521, iron_skin = 522, mind_blank = 523, charming_gaze = 524,
+              blade_barrier = 604, halves_crushing = 537, slain_by_blessed_bolt = 552,
+              big_red_breath = 553, blue_breath = 561, black_breath = 566,
+              darkness_dragon_fear = 570, fire_hit = 574, paralyzing_gaze = 584;
 } // namespace effect
 
 // What a hit carries, by the attacker's effects, in the original's order: a
@@ -1019,9 +1022,12 @@ class Session final : public rules::CombatSession
     void curse_specials(Fighter &f);
     void secret_specials(Fighter &f);
     void kit_specials(Fighter &f);
+    void darkness_specials(Fighter &f);
+    bool lightning_breath(Fighter &dragon);
     void kit_turn_start(Fighter &f);
     void petrifying_gaze(Fighter &gazer);
-    bool secret_breath(Fighter &dragon, int code, int length, int element);
+    bool secret_breath(Fighter &dragon, int code, int length, int element, int width = 3,
+                       std::optional<int> damage = std::nullopt);
     [[nodiscard]] Fighter *secret_target(Fighter &f, int range, bool skip_helpless);
     void turn_to_stone(Fighter &victim);
     void cast_secret_spell(Fighter &caster, int number, int level,
@@ -5625,6 +5631,7 @@ void Session::monster_specials(Fighter &f)
     curse_specials(f);
     secret_specials(f);
     kit_specials(f);
+    darkness_specials(f);
 }
 
 // The kit's monsters' breath as their AI attacks (aiturn.c, ai_attack;
@@ -5840,10 +5847,11 @@ void Session::petrifying_gaze(Fighter &gazer)
 // A Secret dragon's breath (magic.pas, EffDragonBreath, in its reconstruction):
 // three a fight, the effect's strength counting them down from the first
 // round; aimed at an enemy within 6 squares that is not helpless, along a
-// path of the length three wide, never while any creature of its own side
-// stands in it; its maximum Hit Points to each, half on a save against
-// breath. A breath ends its turn.
-bool Session::secret_breath(Fighter &dragon, int code, int length, int element)
+// path of the length, three wide (or as wide as given), never while any
+// creature of its own side stands in it; its maximum Hit Points to each (or
+// the damage given), half on a save against breath. A breath ends its turn.
+bool Session::secret_breath(Fighter &dragon, int code, int length, int element, int width,
+                            std::optional<int> damage)
 {
     auto *breath = dragon.find_effect(code);
     if (round_ == 1 || breath->strength > 3)
@@ -5859,7 +5867,7 @@ bool Session::secret_breath(Fighter &dragon, int code, int length, int element)
     {
         return false;
     }
-    const auto targets = path_area(dragon, target->cell, length, 3);
+    const auto targets = path_area(dragon, target->cell, length, width);
     const bool spares_friends = std::ranges::none_of(targets,
                                                      [&](EntityId id)
                                                      {
@@ -5871,12 +5879,123 @@ bool Session::secret_breath(Fighter &dragon, int code, int length, int element)
     }
     --breath->strength;
     log({"{name} breathes.", {{"name", dragon.name}}});
+    const int harm = damage.value_or(dragon.numbers.max_hit_points);
     for (const auto id : targets)
     {
         auto &victim = *find(id);
-        nonweapon_damage(victim, dragon.numbers.max_hit_points, 2,
-                         saving_throw(victim, 3, 0, &dragon, element), element, 12, 0, false);
+        nonweapon_damage(victim, harm, 2, saving_throw(victim, 3, 0, &dragon, element), element, 12,
+                         0, false);
     }
+    end_actions(dragon);
+    return true;
+}
+
+// Pools of Darkness's monsters' own powers as their AI attacks (fxengine.pas,
+// MONSTER_SPECIAL, in its order, and magic.pas): the biggest red dragon
+// breathes fire 9 squares long and three wide for 24d10+12, a blue one
+// lightning, a black one acid 6 squares long and one wide, each three times a
+// fight as Secret's dragons do (EffDragonBreath, EffBreatheLightning); its
+// green dragon breathes as the kit's (poison_breath). A gaze spider's gaze
+// holds one enemy for 10 rounds unless it saves against paralysis at +3, a
+// mirror turning it back on the spider (EffParalyzeGaze), and a vampire's
+// charms one as Charm Person does (EffGazeCharm). The original registers the
+// two gazes' handlers but runs neither (an obvious bug, fixed: they gaze).
+void Session::darkness_specials(Fighter &f)
+{
+    if (!darkness() || !f.able() || f.initiative <= 0)
+    {
+        return;
+    }
+    if (f.has(effect::big_red_breath))
+    {
+        int fire = 12;
+        for (int die = 0; die < 24; ++die)
+        {
+            fire += roll(10);
+        }
+        if (secret_breath(f, effect::big_red_breath, 9, 0x21, 3, fire))
+        {
+            return;
+        }
+    }
+    if (f.has(effect::blue_breath) && lightning_breath(f))
+    {
+        return;
+    }
+    if (f.has(effect::black_breath) && secret_breath(f, effect::black_breath, 6, 0x20, 1))
+    {
+        return;
+    }
+    if (f.has(effect::paralyzing_gaze))
+    {
+        if (auto *target = secret_target(f, 12, true))
+        {
+            log({"{name} gazes.", {{"name", f.name}}});
+            Fighter *victim = target;
+            if (f.has(effect::reflectable_gaze) && target->numbers.mirror)
+            {
+                log({"{name} reflects it.", {{"name", target->name}}});
+                victim = &f;
+            }
+            const bool saved = saving_throw(*victim, 1, 3, &f) || victim->has(effect::gaze_proof);
+            if (!saved)
+            {
+                log({"{name} is paralyzed.", {{"name", victim->name}}});
+                victim->numbers.effects.push_back({effect::paralysis, 10, 12, false});
+            }
+        }
+    }
+    if (f.has(effect::charming_gaze) && f.able())
+    {
+        auto *target = secret_target(f, 12, true);
+        if (target && target->side != f.side)
+        {
+            log({"{name} gazes.", {{"name", f.name}}});
+            constexpr int charm_person = 10;
+            if (refuses_spell(*target, charm_person))
+            {
+                log({"{name} is unaffected.", {{"name", target->name}}});
+            }
+            else if (add_with_message(*target,
+                                      {effect::charm, 0,
+                                       (f.side == Side::opposition ? 128 : 0) + f.numbers.level,
+                                       true},
+                                      true, saving_throw(*target, 4, 0, &f), 0, f.numbers.level,
+                                      game_spell(charm_person)))
+            {
+                charm(*target, f.side);
+            }
+        }
+    }
+}
+
+// A Pools of Darkness blue dragon's lightning (magic.pas, EffBreatheLightning):
+// three a fight from the first round, aimed at an enemy as a Lightning Bolt
+// is, its maximum Hit Points to each creature along 9 squares, half on a save
+// against spells. With no enemy to aim at it holds its breath. It ends its
+// turn.
+bool Session::lightning_breath(Fighter &dragon)
+{
+    auto *breath = dragon.find_effect(effect::blue_breath);
+    if (round_ == 1 || breath->strength > 3)
+    {
+        breath->strength = 3;
+    }
+    if (breath->strength <= 0)
+    {
+        return false;
+    }
+    const auto *target = secret_target(dragon, 9, true);
+    if (!target)
+    {
+        return false;
+    }
+    --breath->strength;
+    log({"{name} breathes.", {{"name", dragon.name}}});
+    const Cell aim = target->cell;
+    const int damage = dragon.numbers.max_hit_points, level = dragon.numbers.level;
+    lightning_at(aim, damage, level);
+    lightning_path(dragon.cell, aim, 8, damage, level, false);
     end_actions(dragon);
     return true;
 }

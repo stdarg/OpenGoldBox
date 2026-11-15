@@ -4169,6 +4169,79 @@ void darkness_kalistes_strikes_with_six_weapons()
     check(harm >= 31 && harm <= 68, "Each does its weapon's dice and 4 more, not her 1d1");
 }
 
+// Pools of Darkness's dragons breathe three times a fight (magic.pas,
+// EffDragonBreath, EffBreatheLightning): the biggest red fire for 24d10+12, a
+// black acid along a path one square wide, a blue lightning; a gaze spider's
+// gaze holds (EffParalyzeGaze) and a vampire's charms (EffGazeCharm), the
+// gazes the original never ran.
+void darkness_dragons_breathe_and_spiders_gaze()
+{
+    const auto breathing = [](int code, std::uint64_t seed)
+    {
+        auto fight = arrange_darkness(
+            {{"Fighter", rules::Side::party, {2, 3}, victim(5000)},
+             {"Dragon",
+              rules::Side::opposition,
+              {5, 3},
+              special({{original::canonical_effect(code, darkness_game), 0, 0, false}}, 40)}},
+            seed);
+        ai_plays(
+            *fight.session, "Dragon",
+            []
+            {
+                return false;
+            },
+            8);
+        return fight;
+    };
+    const auto big_red = breathing(83, 251);
+    const int burnt = 5000 - view_of(big_red.session->snapshot(), "Fighter").hit_points;
+    check(logged(*big_red.session, "{name} breathes.") == 3 && burnt >= 3 * 18 && burnt > 3 * 40,
+          "The biggest red dragon breathes 24d10+12 three times a fight");
+    check(logged(*breathing(91, 251).session, "{name} breathes.") == 3,
+          "A blue dragon breathes lightning three times a fight");
+    check(logged(*breathing(96, 251).session, "{name} breathes.") == 3,
+          "A black dragon breathes acid three times a fight");
+    auto beside = arrange_darkness(
+        {{"Fighter", rules::Side::party, {2, 3}, victim(500)},
+         {"Squire", rules::Side::party, {2, 4}, victim(500)},
+         {"Dragon",
+          rules::Side::opposition,
+          {5, 3},
+          special({{original::canonical_effect(96, darkness_game), 0, 0, false}}, 40)}},
+        251);
+    until_turn_of(*beside.session, "Dragon");
+    beside.session->submit(order(*beside.session, "quick"));
+    const int burnt_members = (view_of(beside.session->snapshot(), "Squire").hit_points < 500) +
+                              (view_of(beside.session->snapshot(), "Fighter").hit_points < 500);
+    check(logged(*beside.session, "{name} breathes.") == 1 && burnt_members == 1,
+          "The black dragon's acid is one square wide");
+
+    const auto gazing = [](int code, std::uint64_t seed)
+    {
+        auto target = creature(50);
+        target.saving_throws = {21, 21, 21, 21, 21};
+        target.race = 5;
+        auto fight = arrange_darkness(
+            {{"Fighter", rules::Side::party, {2, 3}, target},
+             {"Gazer",
+              rules::Side::opposition,
+              {5, 3},
+              special({{original::canonical_effect(code, darkness_game), 0, 0, false}}, 40)}},
+            seed);
+        until_turn_of(*fight.session, "Gazer");
+        fight.session->submit(order(*fight.session, "quick"));
+        return fight;
+    };
+    auto held = gazing(114, 257);
+    check(logged(*held.session, "{name} is paralyzed.") == 1,
+          "A gaze spider's gaze holds one that fails its save");
+    auto charmed = gazing(124, 257);
+    check(logged(*charmed.session, "{name} gazes.") == 1 &&
+              view_of(charmed.session->snapshot(), "Fighter").side == rules::Side::opposition,
+          "A vampire's gaze charms one that fails its save");
+}
+
 // Pools of Darkness plays Secret's rules where its reconstruction does as
 // Secret's: Hold Person never holds a monster (magic.pas,
 // ApplyEffectToTargets), however small.
@@ -5189,6 +5262,7 @@ int main()
         darkness_records_fight_by_their_effects();
         darkness_monsters_fight_by_their_effects();
         darkness_kalistes_strikes_with_six_weapons();
+        darkness_dragons_breathe_and_spiders_gaze();
         darkness_holds_no_monster();
         std::cout << "Original-rules combat passed.\n";
     }
