@@ -568,6 +568,41 @@ struct RouteBeat
     std::vector<std::pair<int, std::string>> ready_types;
 };
 
+// The dice a beat starts with, for a route that gives each beat its own (Pools
+// of Darkness's): from where the beat plays, what it answers and how many like
+// it came before. One stream ran the whole route, so an engine change that
+// rolled a die more or less anywhere reshuffled every beat after it; with a
+// seed a beat, such a change reshuffles only the beats it touches, as a player
+// reloading a save before each step gets fresh dice (reseed_after_load). The
+// dice stay as fair as before.
+std::uint64_t beat_dice_seed(const RouteBeat &beat, unsigned occurrence)
+{
+    // FNV-1a over the beat's words, each ended by a separator.
+    std::uint64_t hash = 0xcbf29ce484222325ULL;
+    const auto mix = [&hash](std::string_view text)
+    {
+        for (const char letter : text)
+        {
+            hash = (hash ^ static_cast<unsigned char>(letter)) * 0x100000001b3ULL;
+        }
+        hash = (hash ^ 0xFFU) * 0x100000001b3ULL;
+    };
+    mix(std::to_string(beat.map));
+    mix(std::to_string(beat.x));
+    mix(std::to_string(beat.y));
+    mix(std::to_string(static_cast<int>(beat.facing)));
+    for (const auto &answer : beat.answers)
+    {
+        mix(answer);
+    }
+    for (const auto step : beat.area_steps)
+    {
+        mix(std::to_string(static_cast<int>(step)));
+    }
+    mix(std::to_string(occurrence));
+    return hash;
+}
+
 // Answers that train each of the route's members a level at a hall: its
 // name, then the hall's own Train (the first choice).
 std::vector<std::string> train_everyone()
@@ -2973,11 +3008,20 @@ const std::vector<RouteBeat> &darkness_route()
                        {8, 9, D::south},  {8, 10, D::south}, {8, 11, D::south}, {8, 12, D::south},
                        {8, 13, D::south}, {8, 14, D::south}});
         route.push_back(step_beat(33, 8, 15, D::south, {"YES", "NO"}));
-        // South-west round the area map to Zhentil Keep's gate (0,4).
+        // South-west round the area map to Zhentil Keep's gate (0,4), fleeing
+        // the basilisks that roam the west where they let it, and resting
+        // whole before the last step, as a player would before the city,
+        // whose camps rouse its guards: a basilisk's gaze turned two
+        // members to stone on the way, which Stone to Flesh undoes in camp.
         RouteBeat to_zhentil_keep{17, 0, 0, D::north, {}};
-        to_zhentil_keep.area_steps = {C::southwest, C::southwest, C::southwest, C::southwest,
-                                      C::west};
+        to_zhentil_keep.area_steps = {C::southwest, C::southwest, C::southwest, C::southwest};
+        to_zhentil_keep.fleeing = true;
         route.push_back(to_zhentil_keep);
+        RouteBeat into_zhentil_keep{17, 0, 0, D::north, {}};
+        into_zhentil_keep.area_steps = {C::west};
+        into_zhentil_keep.fleeing = true;
+        into_zhentil_keep.rest_first = true;
+        route.push_back(into_zhentil_keep);
         // Paid in at the gate, the party walks west through the city's south
         // half (map 19's north half is Mulmaster's, script 26) to the training
         // hall's sign (3,11). North through the door the clerk guards (3,10,
@@ -4043,7 +4087,11 @@ const std::vector<RouteBeat> &darkness_route()
         // With Shal, back past the guards' room and up the dungeons' path
         // (9,0, THE PATH GOES UP) to the garden, and up the lower tower's
         // levels 1 to 8 by their paths, the way the planning aid finds
-        // (each path a YES; level 6 up on the tower's second map, 71).
+        // (each path a YES; level 6 up on the tower's second map, 71). The
+        // guards' reinforcements meet the party on the way out of the
+        // dungeons (cell 176h, the row their runners left by), and every
+        // camp there drew the tower's wandering mages and monsters, so it
+        // walks on hurt, its clerics curing the badly hurt.
         walk_passages(route, 70,
                       {{10, 9, D::east},
                        {11, 9, D::east},
@@ -4059,8 +4107,19 @@ const std::vector<RouteBeat> &darkness_route()
                        {11, 15, D::west},
                        {10, 15, D::west},
                        {9, 15, D::south}});
+        for (auto beat = route.end() - 14; beat != route.end(); ++beat)
+        {
+            beat->camp_broken = true;
+            beat->cure_first = true;
+        }
         route.push_back(step_beat(70, 9, 0, D::west, {"YES"}));
+        // Through the garden, whose camps drew the tower's monsters too.
         walk_passages(route, 70, {{7, 10, D::west}, {6, 10, D::west}, {5, 10, D::west}});
+        for (auto beat = route.end() - 3; beat != route.end(); ++beat)
+        {
+            beat->camp_broken = true;
+            beat->cure_first = true;
+        }
         route.push_back(step_beat(70, 4, 10, D::west, {"YES"}));
         walk_passages(route, 70,
                       {{13, 0, D::south},
@@ -4130,13 +4189,30 @@ const std::vector<RouteBeat> &darkness_route()
                        {11, 5, D::north},
                        {11, 4, D::west}});
         route.push_back(step_beat(70, 10, 4, D::west, {"YES"}));
+        // Level 6: round by the quiet room north of the arrival (2,0, event
+        // 30: IT SEEMS SAFE TO REST IN; the tower's other camps are
+        // interrupted), where the party rests until whole, its spells
+        // memorized, as in the upper tower's side rooms.
+        const auto rest_in_level_six_room = [&route]
+        {
+            walk_passages(route, 71,
+                          {{1, 3, D::north}, {1, 2, D::north}, {1, 1, D::east}, {2, 1, D::north}});
+            auto quiet_room = step_beat(71, 2, 0, D::south);
+            quiet_room.rest_first = true;
+            quiet_room.rest_for_spells = true;
+            quiet_room.rest_through_period = true;
+            route.push_back(quiet_room);
+            walk_passages(route, 71, {{2, 1, D::west}, {1, 1, D::south}, {1, 2, D::south}});
+        };
         walk_passages(route, 71,
                       {{1, 0, D::west},
                        {0, 0, D::south},
                        {0, 1, D::south},
                        {0, 2, D::south},
-                       {0, 3, D::east},
-                       {1, 3, D::east},
+                       {0, 3, D::east}});
+        rest_in_level_six_room();
+        walk_passages(route, 71,
+                      {{1, 3, D::east},
                        {2, 3, D::east},
                        {3, 3, D::south},
                        {3, 4, D::east},
@@ -4151,12 +4227,41 @@ const std::vector<RouteBeat> &darkness_route()
                        {9, 3, D::south}});
         // Rested and its spells memorized, it walks into the bits of Moander,
         // the cultists who follow them and the Black Circle's mages (10,4,
-        // the cluebook's 12).
+        // the cluebook's 12), and back to the quiet room to rest again.
         auto moanders_monsters = step_beat(71, 9, 4, D::east);
         moanders_monsters.passing = true;
-        moanders_monsters.rest_first = true;
-        moanders_monsters.rest_for_spells = true;
         route.push_back(moanders_monsters);
+        walk_passages(route, 71,
+                      {{10, 4, D::west},
+                       {9, 4, D::north},
+                       {9, 3, D::north},
+                       {9, 2, D::west},
+                       {8, 2, D::south},
+                       {8, 3, D::west},
+                       {7, 3, D::south},
+                       {7, 4, D::west},
+                       {6, 4, D::west},
+                       {5, 4, D::west},
+                       {4, 4, D::west},
+                       {3, 4, D::north},
+                       {3, 3, D::west},
+                       {2, 3, D::west}});
+        rest_in_level_six_room();
+        walk_passages(route, 71,
+                      {{1, 3, D::east},
+                       {2, 3, D::east},
+                       {3, 3, D::south},
+                       {3, 4, D::east},
+                       {4, 4, D::east},
+                       {5, 4, D::east},
+                       {6, 4, D::east},
+                       {7, 4, D::north},
+                       {7, 3, D::east},
+                       {8, 3, D::north},
+                       {8, 2, D::east},
+                       {9, 2, D::south},
+                       {9, 3, D::south},
+                       {9, 4, D::east}});
         walk_passages(route, 71,
                       {{10, 4, D::east},
                        {11, 4, D::north},
@@ -6424,6 +6529,54 @@ bool walk_census(GoldBoxGame game, bool route)
     // The spell the next beat casts on each member (RouteBeat::ward_each_with),
     // of which the casters memorize a copy for each member between them.
     std::string ward_spell;
+    // Pools of Darkness's members turned to stone.
+    const auto statues = [&]
+    {
+        std::vector<opengold::MemberId> members;
+        for (const auto id : party->state().slots)
+        {
+            if (id && !party->member(id).vitals.dead &&
+                party->member(id).vitals.description == "Turned to stone.")
+            {
+                members.push_back(id);
+            }
+        }
+        return members;
+    };
+    // A magic-user with Stone to Flesh memorized brings a statue back, as a
+    // player would in camp (magic.pas, SpellStoneToFlesh).
+    const auto unstone_the_statues = [&]
+    {
+        if (game != GoldBoxGame::pools_of_darkness)
+        {
+            return;
+        }
+        for (const auto statue : statues())
+        {
+            for (const auto caster : party->state().slots)
+            {
+                if (!caster || party->member(caster).vitals.dead)
+                {
+                    continue;
+                }
+                const auto actions = party->camp_actions(caster);
+                const auto spell =
+                    std::ranges::find_if(actions,
+                                         [](const opengold::rules::CampAction &action)
+                                         {
+                                             return action.id.ends_with("stone_to_flesh");
+                                         });
+                if (spell != actions.end())
+                {
+                    std::cout << "  " << party->member(caster).character.sheet().name << " casts "
+                              << spell->id << " on " << party->member(statue).character.sheet().name
+                              << "\n";
+                    party->use_camp_action(caster, statue, spell->id);
+                    break;
+                }
+            }
+        }
+    };
     // Each day's spells: the strongest a caster knows at each of its levels.
     const auto memorize = [&]
     {
@@ -6617,6 +6770,7 @@ bool walk_census(GoldBoxGame game, bool route)
             raise_the_dead();
             restore_the_drained();
             wake_the_fallen();
+            unstone_the_statues();
             return;
         }
         // Those the last Long Rest left choosing; choose_spells takes each off.
@@ -6673,6 +6827,12 @@ bool walk_census(GoldBoxGame game, bool route)
                         {
                             return -1;
                         }
+                        // With someone turned to stone, Stone to Flesh first.
+                        if (!statues().empty() && game == GoldBoxGame::pools_of_darkness &&
+                            id.find("stone_to_flesh") != std::string::npos)
+                        {
+                            return -1;
+                        }
                         if (std::ranges::any_of(wanted_spells,
                                                 [&](const std::string &wanted)
                                                 {
@@ -6719,6 +6879,7 @@ bool walk_census(GoldBoxGame game, bool route)
         raise_the_dead();
         restore_the_drained();
         wake_the_fallen();
+        unstone_the_statues();
     };
     const auto item_definitions = game == GoldBoxGame::pools_of_darkness
                                       ? opengold::load_item_definitions(folder, game)
@@ -8420,10 +8581,12 @@ bool walk_census(GoldBoxGame game, bool route)
                     }
                 }
             }
+            // A member knocked out (0 Hit Points) is cured too, as
+            // wake_the_fallen does in camp.
             const auto below_half = [&](opengold::MemberId id)
             {
                 const auto &member = party->member(id);
-                return !member.vitals.dead && member.vitals.hit_points > 0 &&
+                return !member.vitals.dead && member.vitals.description != "Turned to stone." &&
                        member.vitals.hit_points * 2 < member.character.sheet().hit_points;
             };
             for (const auto hurt : party->state().slots)
@@ -8565,6 +8728,12 @@ bool walk_census(GoldBoxGame game, bool route)
             session.attach_restored_party(party);
         }
         std::size_t beat_number = 0;
+        // Pools of Darkness's route gives each beat dice of its own
+        // (beat_dice_seed), so a resumed save plays on as the whole run does;
+        // the other routes keep their one stream.
+        const bool dice_per_beat = game == GoldBoxGame::pools_of_darkness;
+        // How many beats like each (by beat_dice_seed's first seed) came before.
+        std::map<std::uint64_t, unsigned> beats_seen;
         // A beat that throws ends the route, named with the beat it was in.
         std::string current_beat = "the route's start";
         // A member casts the first of these spells anyone has memorized,
@@ -8672,6 +8841,7 @@ bool walk_census(GoldBoxGame game, bool route)
                     break;
                 }
                 ++beat_number;
+                const auto beat_seed = beat_dice_seed(beat, beats_seen[beat_dice_seed(beat, 0)]++);
                 if (beat_number <= beats_resumed)
                 {
                     continue;
@@ -8682,6 +8852,21 @@ bool walk_census(GoldBoxGame game, bool route)
                 if (session.snapshot().phase == TourPhase::defeated)
                 {
                     break;
+                }
+                if (dice_per_beat)
+                {
+                    // A script waiting at a menu (Elminster's in Limbo) keeps
+                    // its dice: the machine takes a seed only between scripts.
+                    const auto machine_state = opengold::test::TourAccess::machine(session).state();
+                    if (machine_state == opengold::por::EclState::idle ||
+                        machine_state == opengold::por::EclState::completed)
+                    {
+                        session.reseed_dice(
+                            static_cast<std::uint32_t>(beat_seed ^ (beat_seed >> 32)));
+                    }
+                    auto reseeded = party->state();
+                    reseeded.random_state = opengold::RandomState{beat_seed};
+                    party->restore(std::move(reseeded));
                 }
                 ward_spell =
                     beat.ward_each_with.empty() ? beat.ward_memorized : beat.ward_each_with;
