@@ -5228,6 +5228,68 @@ const std::vector<RouteBeat> &darkness_route()
             iron_wall.test_wins = true;
             route.push_back(iron_wall);
         }
+        // The outer palace (map 65, script 65): its secret doors (walls of
+        // type 5) open only to a party searching (cell 19h at 1; the
+        // cluebook's 2, "use LOOK"), and a step taken searching runs the
+        // objects of power instead of the square's event: the party names
+        // who bears each object (WHO) and walks the palace's winding way in
+        // search mode, EXIT leaving the objects as they are.
+        const auto walk_palace =
+            [&route](std::initializer_list<std::tuple<unsigned, unsigned, D>> steps)
+        {
+            walk_passages(route, 65, steps, true, false, false, {"EXIT"});
+        };
+        walk_palace({{0, 0, D::east},  {1, 0, D::south}, {1, 1, D::east},  {2, 1, D::east},
+                     {3, 1, D::north}, {3, 0, D::east},  {4, 0, D::east},  {5, 0, D::east},
+                     {6, 0, D::east},  {7, 0, D::south}, {7, 1, D::south}, {7, 2, D::south},
+                     {7, 3, D::west},  {6, 3, D::west},  {5, 3, D::north}, {5, 2, D::east},
+                     {6, 2, D::north}, {6, 1, D::west},  {5, 1, D::west},  {4, 1, D::south},
+                     {4, 2, D::south}});
+        // "Sasha" and the Phlanerians (4,4, event 0; the cluebook's 4), met
+        // with searching off, the clerics curing first (the palace's
+        // wandering monsters break a camp): the party will not tell where
+        // Elminster is (NO, NO), which gives Gothmenes' search its longest
+        // time (cell 1CDh 77, the Tantalus Clock's strikes), and the
+        // rakshasas are revealed. The bolts' bearers ready their crossbows
+        // and quarrels (item types 27 and 12). A stand-in: two Maharajahs and
+        // seven Rajahs, whom no spell below the eighth level touches, cast an
+        // Ice Storm each a round and leave the party dead in every play, so
+        // the test wins the fight.
+        {
+            auto sasha = step_beat(65, 4, 3, D::south, {"NO", "NO"});
+            sasha.searching = false;
+            sasha.cure_first = true;
+            sasha.cure_to_full = true;
+            sasha.camp_broken = true;
+            sasha.test_wins = true;
+            for (const char *bearer : {"paladin 1", "paladin 2", "ranger 3"})
+            {
+                sasha.ready_types.emplace_back(27, bearer);
+                sasha.ready_types.emplace_back(12, bearer);
+            }
+            route.push_back(sasha);
+        }
+        // On in search mode to the inner palace's entrance (8,8, event 11;
+        // the cluebook's 9), stepped onto with searching off: Gothmenes
+        // winds the Tantalus Clock and leaves (script 74).
+        walk_palace({{4, 4, D::east},
+                     {5, 4, D::east},
+                     {6, 4, D::south},
+                     {6, 5, D::east},
+                     {7, 5, D::north},
+                     {7, 4, D::east},
+                     {8, 4, D::east},
+                     {9, 4, D::east},
+                     {10, 4, D::south},
+                     {10, 5, D::south},
+                     {10, 6, D::west},
+                     {9, 6, D::west},
+                     {8, 6, D::south}});
+        {
+            auto inner_palace = step_beat(65, 8, 7, D::south);
+            inner_palace.searching = false;
+            route.push_back(inner_palace);
+        }
         return route;
     }();
     return beats;
