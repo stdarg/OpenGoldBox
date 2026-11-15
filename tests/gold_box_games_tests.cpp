@@ -6998,10 +6998,12 @@ bool walk_census(GoldBoxGame game, bool route)
                 // A camp its script did not let rest (Pools of Darkness's
                 // camp entry sets cell 2Bh: the Fire Giant Cave outside its
                 // quiet rooms): its cures are cast instead.
-                const bool refused = opengold::test::TourAccess::machine(session).variable(
-                                         opengold::por::EclAddress{0x2B}) != 0;
-                if (game == GoldBoxGame::pools_of_darkness && resting && refused &&
-                    fights_fought == fights_before && party_hit_points() == hit_points_before)
+                const bool darkness = game == GoldBoxGame::pools_of_darkness;
+                const bool refused =
+                    darkness && opengold::test::TourAccess::machine(session).variable(
+                                    opengold::por::EclAddress{0x2B}) != 0;
+                if (refused && resting && fights_fought == fights_before &&
+                    party_hit_points() == hit_points_before)
                 {
                     cure_the_hurt();
                     break;
