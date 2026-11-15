@@ -263,12 +263,12 @@ Departures from the original game's own rules, when OpenGoldBox plays by them
   member's own coins, since its members carry their own; OpenGoldBox's party
   has one purse (Party gold, below), so those are left out and every price
   is paid from it, who pays pays from it, and a treasure's money goes into
-  it whole. A shop sells, buys and identifies for the
-  selected member, and appraises the party's gems and jewels. A temple cures one member a service: a member who
-  does not need it is turned away rather than asked whether to pay anyway,
-  and Restoration and the free Fix of a high temple wait for the rules to
-  have them. A vault keeps the party's money and its members' items. An item's name
-  leaves out the count the kit puts before a stack's name, and its plural:
+  it whole. A shop sells, buys and identifies for the selected member, and
+  appraises the party's gems and jewels. A temple cures one member a
+  service: a member who does not need it is turned away rather than asked
+  whether to pay anyway, and Restoration and the free Fix of a high temple
+  wait for the rules to have them. A vault keeps the party's money and its
+  members' items. An item's name leaves out the count the kit puts before a stack's name, and its plural:
   the inventory shows the quantity. A design's NPC who is a monster (race 6)
   joins as a human.
 - **Unlimited Adventures' camp** (2026-11-14). The kit's camp menu offers
