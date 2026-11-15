@@ -142,25 +142,64 @@ constexpr int six_weapons = 516, dancing = 518, druid_fire_protection = 519, dra
               fire_touch = 521, iron_skin = 522, mind_blank = 523, blade_barrier = 604,
               halves_crushing = 537, slain_by_blessed_bolt = 552, big_red_breath = 553,
               blue_breath = 561, black_breath = 566, darkness_dragon_fear = 570, fire_hit = 574;
+// Gateway to the Savage Frontier's own (its code plus gateway_effect_offset;
+// effhndlr.pas in its reconstruction): a paralyzing gaze (126), harm from
+// fire (148), a stirge's drinking hold (149, holding with 150), more harm
+// from weapons of Icewind Dale (151) and of stonecutting (153), half harm
+// against glacier armor (152), a charming touch (154), a constricting hold
+// (155, holding with 156), surrender when last (158), a diseasing touch
+// (159) and regeneration of 1 a round (161). Treasures' Harpy, glacier,
+// Icewind Dale and stonecutting effects are these (canonical_effect).
+constexpr int gateway_paralyzing_gaze = 1126, fire_harms_more = 1148, drinks_blood = 1149,
+              drinking_blood = 1150, icewind_dale_harms = 1151, glacier_halves = 1152,
+              stonecutting_harms = 1153, charming_touch = 1154, constricts = 1155,
+              constricting = 1156, surrenders_when_last = 1158, disease_touch = 1159,
+              regenerates_one = 1161;
+// Treasures of the Savage Frontier's own (its code plus vga_effect_offset;
+// effhndlr.pas in its reconstruction): half harm from the elements (133),
+// death by Stone to Flesh (134), a slug's acid (137), a hell hound's and an
+// ice hound's breath (138, 154), a quarter of an edge's harm (141), no
+// effect taken (142), a manticore's spines (143), a kampfult's crushing
+// (144), a rat's disease (145), a quick start (146), a gorgimera's stone
+// breath (148), the yetis' grabs (149 to 151), more harm from fire (153)
+// and swallowing whole (155).
+constexpr int halves_elements = 1333, stone_to_flesh_kills = 1334, slug_acid = 1337,
+              hell_hound_breath = 1338, quarter_from_edges = 1341, effects_proof = 1342,
+              manticore_spines = 1343, crushes = 1344, rat_disease = 1345, quick_start = 1346,
+              stone_breath = 1348, grabs_2d8 = 1349, grabs_4d5 = 1350, grabs_6d4 = 1351,
+              fire_harms_half_more = 1353, ice_hound_breath = 1354, swallows_on_twenty = 1355;
+// OpenGoldBox's own mark on a Treasures creature crushing or squeezing its
+// victim (144, 149 to 151), whose combat number its strength keeps: past
+// Treasures' last effect (160), so no record of its names it. Its victim is
+// held still (Curse's 136, Treasures' 156).
+constexpr int squeezing = vga_effect_offset + 201, held_still = 336;
 } // namespace effect
 
 // What a hit carries, by the attacker's effects, in the original's order: a
 // primary attack's hit and a secondary one's (effhndlr.pas, HIT_PHASE_1 and
 // HIT_PHASE_2).
-constexpr std::array<int, 21> primary_hit_effects{
+constexpr std::array<int, 34> primary_hit_effects{
     85, 86, 87, 68, 79, 80, 76, 73, 77,
     // Curse's (canonical_effect).
     257, 296, 322, 323, 345,
     // Secret's (fxengine.pas, its conditions 2 and 3, in its reconstruction).
     effect::poison_touch, effect::stone_touch, effect::strong_poison_touch, effect::ghoul_touch,
     // The kit's vorpal blade, ghoul and mummy (its fxcore.c, fx_trigger_group 2).
-    effect::vorpal, effect::ghoul_paralysis, effect::rot_touch};
-constexpr std::array<int, 18> secondary_hit_effects{
+    effect::vorpal, effect::ghoul_paralysis, effect::rot_touch,
+    // Gateway's: its poison and paralysis ride the first attack too (its
+    // effhndlr.pas, condition 2), and its own holds, charm and disease.
+    64, 67, effect::drinks_blood, effect::charming_touch, effect::constricts, effect::disease_touch,
+    // Treasures' (its condition 2).
+    effect::crushes, effect::rat_disease, effect::grabs_2d8, effect::grabs_4d5, effect::grabs_6d4,
+    effect::swallows_on_twenty};
+constexpr std::array<int, 22> secondary_hit_effects{
     64, 65, 66, 67, 68, 69, 70, 79, 85, 86, 87,
     // Secret's.
     effect::poison_touch, effect::stone_touch, effect::strong_poison_touch, effect::ghoul_touch,
     // The kit's (fx_trigger_group 3).
-    effect::adjacent_paralysis, effect::fire_blow, effect::rot_touch};
+    effect::adjacent_paralysis, effect::fire_blow, effect::rot_touch,
+    // Treasures' (its condition 3).
+    effect::grabs_2d8, effect::grabs_4d5, effect::grabs_6d4, effect::swallows_on_twenty};
 
 // An item a creature carries, which it may ready or put away in a fight
 // (viewchar.pas, ToggleReadyItem): its record, readied or not, with what is
@@ -938,6 +977,11 @@ class Session final : public rules::CombatSession
         return game_of(identity_) == GoldBoxGame::treasures_of_the_savage_frontier;
     }
 
+    [[nodiscard]] bool gateway() const
+    {
+        return game_of(identity_) == GoldBoxGame::gateway_to_the_savage_frontier;
+    }
+
     // Whether the fight plays Secret's rules where Pools of Darkness's
     // reconstruction does as Secret's does (docs/ORIGINAL-RULES.md, Pools of
     // Darkness); Treasures', on the same engine, is not checked yet.
@@ -1002,7 +1046,19 @@ class Session final : public rules::CombatSession
     void slay_helpless(Fighter &attacker, Fighter &defender);
     void end_effects_at_zero(Fighter &f);
     void release(Fighter &holder, int code);
-    void on_hit(Fighter &attacker, Fighter &defender, int phase, int primary_hits, int natural);
+    void on_hit(Fighter &attacker, Fighter &defender, int phase, int primary_hits, int natural,
+                int attack_roll);
+    void savage_frontier_specials(Fighter &f);
+    // A disease that takes hold at once: Strength and Hit Points waste away
+    // (effhndlr.pas, EffDiseased), the disease itself kept too when `lasting`.
+    void diseased_now(Fighter &victim, int level, bool lasting);
+    // Whether the creature's readied weapon, or its readied armor, has this
+    // name word in any of its parts.
+    [[nodiscard]] bool weapon_named(const Fighter &f, int word) const;
+    [[nodiscard]] bool armor_named(const Fighter &f, int word) const;
+    // A hold of a Gateway or Treasures creature begins: the holder keeps its
+    // victim's number in `hold`, and the victim cannot move.
+    void hold_fast(Fighter &holder, Fighter &victim, int hold, int victim_effect);
     void poison(Fighter &victim, int modifier);
     void paralyze(Fighter &victim, int minutes, int modifier);
     void kill(Fighter &victim, std::string_view message = "{name} is killed.");
@@ -1230,7 +1286,11 @@ void Session::begin_round()
                 f.initiative = 0;
             }
         }
-        f.half_moves = f.has(effect::immobile) ? 0 : half_moves_of(f);
+        // A Treasures vilstrak moves twice as far in the first round
+        // (its 146, at condition 18).
+        f.half_moves = f.has(effect::immobile)                     ? 0
+                       : f.has(effect::quick_start) && round_ <= 1 ? 2 * half_moves_of(f)
+                                                                   : half_moves_of(f);
         f.cast_allowed = true;
         f.item_use_allowed = true;
         f.using_item = -1;
@@ -1653,7 +1713,10 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
             // In Secret only a blow that did damage carries anything (RollAttacks).
             if (defender.able() && (damage > 0 || !secret_engine()))
             {
-                on_hit(attacker, defender, phase, primary_hits, natural);
+                // The original's attack roll, its bonuses in, a natural
+                // 20 counting as 100 (cbtacts.pas, RollAttacks).
+                on_hit(attacker, defender, phase, primary_hits, natural,
+                       natural == 20 ? 100 : natural + modifier);
             }
             // Fire Touch burns what its bearer hits for 2d6, halved by a save
             // (effhndlr.pas, EffFireTouch); Pools of Darkness's fire with a hit
@@ -2018,14 +2081,52 @@ void Session::release(Fighter &holder, int code)
     {
         victim->remove(effect::immobile);
         victim->remove(effect::suffocating);
+        if (code == effect::squeezing)
+        {
+            victim->remove(effect::held_still);
+        }
     }
     holder.remove(code);
+}
+
+void Session::hold_fast(Fighter &holder, Fighter &victim, int hold, int victim_effect)
+{
+    holder.numbers.effects.push_back({hold, 0, static_cast<int>(victim.id), true});
+    victim.numbers.effects.push_back({victim_effect, 0, 0, false});
+    victim.half_moves = 0;
+}
+
+bool Session::weapon_named(const Fighter &f, int word) const
+{
+    constexpr std::uint8_t weapon_slot = 0;
+    return std::ranges::any_of(held_now(f),
+                               [word](const Held &h)
+                               {
+                                   return !h.gone && h.carried.item.readied() &&
+                                          h.carried.type.worn_location == weapon_slot &&
+                                          std::ranges::find(h.carried.item.name_components, word) !=
+                                              h.carried.item.name_components.end();
+                               });
+}
+
+bool Session::armor_named(const Fighter &f, int word) const
+{
+    constexpr std::uint8_t armor_slot = 2;
+    return std::ranges::any_of(held_now(f),
+                               [word](const Held &h)
+                               {
+                                   return !h.gone && h.carried.item.readied() &&
+                                          h.carried.type.worn_location == armor_slot &&
+                                          std::ranges::find(h.carried.item.name_components, word) !=
+                                              h.carried.item.name_components.end();
+                               });
 }
 
 // What a hit that leaves its target standing carries (cbtacts.pas, RollAttacks;
 // effhndlr.pas). The original stacked a new hold at each hit of a holding
 // bite; one hold at a time here (an obvious bug, fixed).
-void Session::on_hit(Fighter &attacker, Fighter &defender, int phase, int primary_hits, int natural)
+void Session::on_hit(Fighter &attacker, Fighter &defender, int phase, int primary_hits, int natural,
+                     int attack_roll)
 {
     const auto effects = phase == 0 ? std::span<const int>(primary_hit_effects)
                                     : std::span<const int>(secondary_hit_effects);
@@ -2035,10 +2136,98 @@ void Session::on_hit(Fighter &attacker, Fighter &defender, int phase, int primar
         {
             continue;
         }
+        // Gateway's poison rides only the first attack, its paralysis both;
+        // the other games' the second only (effhndlr.pas, conditions 2 and 3).
+        if ((code == 64 && (phase == 0) != gateway()) || (code == 67 && phase == 0 && !gateway()))
+        {
+            continue;
+        }
         switch (code)
         {
         case 64:
             poison(defender, 0);
+            break;
+        case effect::drinks_blood:
+            // A Gateway stirge takes hold on 1 to 4 of a d10 (cbtacts.pas,
+            // AttackDrainBlood).
+            if (roll(10) <= 4 && !attacker.has(effect::drinking_blood) &&
+                !defender.has(effect::immobile))
+            {
+                hold_fast(attacker, defender, effect::drinking_blood, effect::immobile);
+                log({"{attacker} attaches to {name}.",
+                     {{"attacker", attacker.name}, {"name", defender.name}}});
+            }
+            break;
+        case effect::constricts:
+            // A Gateway squid's arms take hold on 1 to 4 of a d10
+            // (cbtacts.pas, AttackConstrict).
+            if (roll(10) <= 4 && !attacker.has(effect::constricting) &&
+                !defender.has(effect::immobile))
+            {
+                hold_fast(attacker, defender, effect::constricting, effect::immobile);
+                log({"{attacker} constricts {name}.",
+                     {{"attacker", attacker.name}, {"name", defender.name}}});
+            }
+            break;
+        case effect::charming_touch:
+        {
+            // A harpy's touch charms to its side unless saved against as a
+            // spell (effhndlr.pas, EffCharmGaze; Treasures' EffHarpyTouch).
+            if (defender.has(effect::charm))
+            {
+                break;
+            }
+            if (!saving_throw(defender, 4, 0, &attacker))
+            {
+                defender.numbers.effects.push_back(
+                    {effect::charm, 0, (attacker.side == Side::opposition ? 128 : 0) + 3, true});
+                charm(defender, attacker.side);
+                log({"{name} is charmed.", {{"name", defender.name}}});
+            }
+            break;
+        }
+        case effect::disease_touch:
+            // Gateway's mummy's touch diseases unless saved against: Strength
+            // and Hit Points waste away at once (EffDiseaseTouch).
+            if (!saving_throw(defender, 0, 0, &attacker))
+            {
+                diseased_now(defender, attacker.numbers.level, false);
+            }
+            break;
+        case effect::rat_disease:
+            // A Treasures rat's bite diseases one time in 20 unless saved
+            // against (EffRatDisease).
+            if (roll(100) <= 5 && !defender.has(34) && !saving_throw(defender, 0, 0, &attacker))
+            {
+                diseased_now(defender, attacker.numbers.level, true);
+            }
+            break;
+        case effect::crushes:
+            // A kampfult's hit holds its victim to be crushed (EffKampfultCrush).
+            if (!attacker.has(effect::squeezing))
+            {
+                hold_fast(attacker, defender, effect::squeezing, effect::held_still);
+                log({"{name} is being crushed.", {{"name", defender.name}}});
+            }
+            break;
+        case effect::grabs_2d8:
+        case effect::grabs_4d5:
+        case effect::grabs_6d4:
+            // A yeti grabs on an attack roll of 20 or more (T20GrabHelper).
+            if (attack_roll >= 20 && !attacker.has(effect::squeezing))
+            {
+                hold_fast(attacker, defender, effect::squeezing, effect::held_still);
+                log({"{attacker} grabs {name}.",
+                     {{"attacker", attacker.name}, {"name", defender.name}}});
+            }
+            break;
+        case effect::swallows_on_twenty:
+            // A Treasures remorhaz swallows on an attack roll of 20 or more,
+            // after the blow (EffSwallowWhole).
+            if (attack_roll >= 20)
+            {
+                swallow_whole(attacker, defender);
+            }
             break;
         case effect::poison_touch:
             // Secret's poison rides the second attack form. A creature with
@@ -2210,7 +2399,9 @@ void Session::on_hit(Fighter &attacker, Fighter &defender, int phase, int primar
         case 296:
             // An owlbear hugs on an attack roll of 18 or more and holds its
             // victim (Curse, AffectOwlbearHugAttackCheck).
-            if (natural >= 18 && !attacker.has(effect::hugging))
+            // Gateway's owlbear never hugs one held already (AttackHug).
+            if (natural >= 18 && !attacker.has(effect::hugging) &&
+                (!gateway() || !defender.has(effect::immobile)))
             {
                 attacker.numbers.effects.push_back(
                     {effect::hugging, 0, static_cast<int>(defender.id), true});
@@ -2223,8 +2414,10 @@ void Session::on_hit(Fighter &attacker, Fighter &defender, int phase, int primar
         case 257:
             // A shambling mound whose two blows both hit engulfs its victim,
             // which suffocates in 2d4 of its turns (Curse, engulfs).
-            if (primary_hits == 2 && !defender.has(effect::immobile) &&
-                !defender.has(effect::suffocating) && !attacker.has(effect::engulfing))
+            // Gateway's on 1 to 4 of a d10 at each hit (its AttackEngulf).
+            if ((gateway() ? roll(10) <= 4 : primary_hits == 2) &&
+                !defender.has(effect::immobile) && !defender.has(effect::suffocating) &&
+                !attacker.has(effect::engulfing))
             {
                 attacker.numbers.effects.push_back(
                     {effect::engulfing, 0, static_cast<int>(defender.id), true});
@@ -2250,6 +2443,23 @@ void Session::on_hit(Fighter &attacker, Fighter &defender, int phase, int primar
             break;
         }
     }
+}
+
+void Session::diseased_now(Fighter &victim, int level, bool lasting)
+{
+    constexpr int diseased = 34, wasting_strength = 43, wasting_hit_points = 44;
+    if (lasting)
+    {
+        victim.numbers.effects.push_back({diseased, 0, level, false});
+    }
+    for (const int wasting : {wasting_strength, wasting_hit_points})
+    {
+        if (!victim.has(wasting))
+        {
+            victim.numbers.effects.push_back({wasting, 0, level, false});
+        }
+    }
+    log({"{name} is diseased.", {{"name", victim.name}}});
 }
 
 // A poisoned touch kills unless saved against (save 0, paralysis and poison).
@@ -4190,6 +4400,12 @@ void Session::cast_secret_spell(Fighter &caster, int number, int level,
         for (const auto id : targets)
         {
             auto &target = *find(id);
+            // A Treasures stone guardian dies by it (SpellStoneToFlesh).
+            if (target.has(effect::stone_to_flesh_kills) && target.able())
+            {
+                kill(target);
+                continue;
+            }
             if (target.condition != Condition::stoned || !cell_free(target))
             {
                 log({"{name} is unaffected.", {{"name", target.name}}});
@@ -4785,6 +5001,8 @@ bool Session::add_with_message(Fighter &target, Effect added, bool negates, bool
     immune = immune || (target.has(effect::spell_proof) && spell_effect && known->level < 8);
     constexpr int diseased = 34;
     immune = immune || (target.has(effect::disease_proof) && code == diseased);
+    // A Treasures stone guardian takes no effect at all (its 142, NullifyAttack).
+    immune = immune || target.has(effect::effects_proof);
     if (immune || (negates && saved))
     {
         log({"{name} is unaffected.", {{"name", target.name}}});
@@ -4824,6 +5042,21 @@ void Session::nonweapon_damage(Fighter &target, int damage, int save_result, boo
     if (target.has(91) && (spell_number == 15 || (element & 4)))
     {
         damage = 0;
+    }
+    // Gateway's fire harms more by 1d6, and 1d6 again unsaved; Treasures'
+    // by half (EffFireVulnerable); a Treasures stone guardian takes half from
+    // the elements and magic (EffHalfElemental).
+    if ((element & 1) && target.has(effect::fire_harms_more))
+    {
+        damage += roll(6) + (saved ? 0 : roll(6));
+    }
+    if ((element & 1) && target.has(effect::fire_harms_half_more))
+    {
+        damage += damage / 2;
+    }
+    if ((element & 0x0F) && target.has(effect::halves_elements))
+    {
+        damage /= 2;
     }
     if ((element & 2) && target.has(effect::resist_cold))
     {
@@ -5730,7 +5963,12 @@ bool Session::ai_move_attack(Fighter &f)
 void Session::monster_specials(Fighter &f)
 {
     auto *lock = find(f.lock);
-    if (f.has(83) && lock && lock->able())
+    // Gateway's gazes only at one it sees within 20 squares, not one hidden
+    // (its EffPetrifyingGaze).
+    const bool gaze_reaches =
+        !gateway() || (lock && !lock->has(effect::invisible) && !lock->has(effect::dust) &&
+                       distance(f, *lock) <= 20 && sees(board_, f, *lock));
+    if (f.has(83) && lock && lock->able() && gaze_reaches)
     {
         // The petrifying gaze, at any range; a mirror turns a gaze that can be
         // reflected back on the gazer (effhndlr.pas, EffPetrifyingGaze).
@@ -5840,6 +6078,73 @@ void Session::monster_specials(Fighter &f)
     secret_specials(f);
     kit_specials(f);
     darkness_specials(f);
+    savage_frontier_specials(f);
+}
+
+// Gateway's and Treasures' monsters' own powers at their turn (their
+// effhndlr.pas, MONSTER_SPECIAL): Gateway's paralyzing gaze; Treasures' hell
+// hound's fire and ice hound's cold, a manticore's spines and a gorgimera's
+// stone breath.
+void Session::savage_frontier_specials(Fighter &f)
+{
+    if (!f.able())
+    {
+        return;
+    }
+    auto *lock = find(f.lock);
+    // At its lock, at any range: held for good unless saved against as
+    // petrification (Gateway's EffParalyzingGaze).
+    if (f.has(effect::gateway_paralyzing_gaze) && lock && lock->able())
+    {
+        log({"{name} gazes.", {{"name", f.name}}});
+        if (!saving_throw(*lock, 1, 0, &f))
+        {
+            log({"{name} is paralyzed.", {{"name", lock->name}}});
+            lock->numbers.effects.push_back({effect::paralysis, 0, 12, false});
+        }
+    }
+    // 7 of fire or cold at one beside it, saved against for half
+    // (EffHellHoundBreath, EffIceHoundBreath); the turn goes on.
+    for (const auto [code, element] :
+         {std::pair{effect::hell_hound_breath, 0x21}, std::pair{effect::ice_hound_breath, 0x22}})
+    {
+        if (f.has(code) && acquire_target(f, 12, false, false) && (lock = find(f.lock)) &&
+            distance(f, *lock) <= 1)
+        {
+            log({element == 0x21 ? "{name} breathes fire." : "{name} breathes ice.",
+                 {{"name", f.name}}});
+            nonweapon_damage(*lock, 7, 2, saving_throw(*lock, 3, 0, &f, element & 3), element, 12,
+                             0, false);
+        }
+    }
+    // Six spines of 1d6 at one it sees within 10 squares (EffManticoreSpikes).
+    if (f.has(effect::manticore_spines) && acquire_target(f, 10, false, true) &&
+        (lock = find(f.lock)) && sees(board_, f, *lock))
+    {
+        log({"{name} fires its spines.", {{"name", f.name}}});
+        auto &blow = f.numbers.attacks[0];
+        const auto own = blow;
+        blow = {own.rate_per_two_rounds, 1, 6, 0};
+        f.attacks_left = {6, 0};
+        f.attack_phase = 0;
+        make_attack(f, *lock, false);
+        blow = own;
+        end_actions(f);
+        return;
+    }
+    // Twice a fight, at one within 2 squares: stoned unless saved against as
+    // petrification or proof against gazes (EffStoneBreath).
+    if (f.has(effect::stone_breath) && uses(f, effect::stone_breath) < 2 &&
+        acquire_target(f, 2, false, true) && (lock = find(f.lock)))
+    {
+        spend_use(f, effect::stone_breath);
+        log({"{name} breathes.", {{"name", f.name}}});
+        if (!lock->has(effect::gaze_proof) && !saving_throw(*lock, 1, 0, &f))
+        {
+            turn_to_stone(*lock);
+        }
+        end_actions(f);
+    }
 }
 
 // The kit's monsters' breath as their AI attacks (aiturn.c, ai_attack;
@@ -6335,14 +6640,18 @@ void Session::curse_specials(Fighter &f)
     // A giant slug spits acid as far as 6 squares, 3 times in 10, for its
     // Hit Points, saved against for half (AffectSpitAcid); Curse left it
     // untyped, as Pool of Radiance's ankheg (an obvious bug, fixed: acid).
-    if (f.has(286) && acquire_target(f, 12, false, false) && (lock = find(f.lock)) &&
-        distance(f, *lock) <= 6)
+    // Gateway's for 1d12 (its EffSpitAcidBreath), Treasures' for 1d13+3
+    // (its EffSpitAcid).
+    if ((f.has(286) || f.has(effect::slug_acid)) && acquire_target(f, 12, false, false) &&
+        (lock = find(f.lock)) && distance(f, *lock) <= 6)
     {
         if (roll(100) <= 30)
         {
             log({"{name} spits acid.", {{"name", f.name}}});
-            nonweapon_damage(*lock, f.numbers.max_hit_points, 2, saving_throw(*lock, 3, 0, &f, 16),
-                             16, 12, 0, false);
+            const int damage = gateway()                  ? roll(12)
+                               : f.has(effect::slug_acid) ? roll(13) + 3
+                                                          : f.numbers.max_hit_points;
+            nonweapon_damage(*lock, damage, 2, saving_throw(*lock, 3, 0, &f, 16), 16, 12, 0, false);
         }
         else
         {
@@ -7055,6 +7364,12 @@ void Session::curse_turn_start(Fighter &f)
     {
         f.half_moves = 0;
     }
+    // Gateway's held, engulfed or hugged cannot cast (its EffImmobile, at
+    // ACTION_START).
+    if (gateway() && f.has(effect::immobile))
+    {
+        f.cast_allowed = false;
+    }
     if (f.has(268))
     {
         f.cast_allowed = false;
@@ -7133,11 +7448,21 @@ void Session::attached_turn(Fighter &f)
         kill(f);
         return;
     }
+
     // A shambling mound crushes its engulfed victim with two blows of 2d8;
     // an owlbear squeezes its hugged one with one (Curse; its owlbear's
     // squeeze was never called, docs/ORIGINAL-RULES.md, Bugs).
-    for (const auto [code, blows] :
-         {std::pair{effect::engulfing, 2}, std::pair{effect::hugging, 1}})
+    // Gateway's owlbear squeezes with two (its BiteAndHold), its stirge
+    // drinks with two blows of 1d4, and its squid squeezes with two of 1d2
+    // (its 156 was never called, docs/ORIGINAL-RULES.md, Bugs).
+    struct Squeeze
+    {
+        int code, blows, sides;
+    };
+
+    for (const auto [code, blows, sides] :
+         {Squeeze{effect::engulfing, 2, 8}, Squeeze{effect::hugging, gateway() ? 2 : 1, 8},
+          Squeeze{effect::drinking_blood, 2, 4}, Squeeze{effect::constricting, 2, 2}})
     {
         const auto *hold = f.find_effect(code);
         if (!hold)
@@ -7152,7 +7477,7 @@ void Session::attached_turn(Fighter &f)
         }
         auto &blow = f.numbers.attacks[0];
         const auto own = blow;
-        blow = {own.rate_per_two_rounds, 2, 8, 0};
+        blow = {own.rate_per_two_rounds, sides == 8 ? 2 : 1, sides, 0};
         f.attacks_left = {blows, 0};
         f.attack_phase = 0;
         make_attack(f, *victim, false);
@@ -7161,6 +7486,39 @@ void Session::attached_turn(Fighter &f)
         if (!victim->able())
         {
             release(f, code);
+        }
+        return;
+    }
+    // A Treasures kampfult crushes its victim for 5, a yeti squeezes for
+    // 2d8, 4d5 or 6d4 (EffKampfultCrush, T20GrabHelper).
+    if (const auto *hold = f.find_effect(effect::squeezing))
+    {
+        auto *victim = find(static_cast<EntityId>(hold->strength));
+        if (!f.able() || !victim || !victim->able())
+        {
+            release(f, effect::squeezing);
+            return;
+        }
+        const auto dice = [this](int count, int sides)
+        {
+            int total = 0;
+            for (int die = 0; die < count; ++die)
+            {
+                total += roll(sides);
+            }
+            return total;
+        };
+        const int damage = f.has(effect::crushes)     ? 5
+                           : f.has(effect::grabs_6d4) ? dice(6, 4)
+                           : f.has(effect::grabs_4d5) ? dice(4, 5)
+                                                      : dice(2, 8);
+        log({"{attacker} squeezes {name} for {damage}.",
+             {{"attacker", f.name}, {"name", victim->name}, {"damage", std::to_string(damage)}}});
+        inflict(*victim, damage);
+        end_actions(f);
+        if (!victim->able())
+        {
+            release(f, effect::squeezing);
         }
         return;
     }
@@ -7372,7 +7730,8 @@ void Session::combat_start()
         {
             f.numbers.effects.push_back({effect::invisible, 255, 255, false});
         }
-        if (f.has(effect::fights_while_down))
+        // Gateway's fight start fires neither (its condition 8).
+        if (f.has(effect::fights_while_down) && !gateway())
         {
             went_down(f);
         }
@@ -7419,7 +7778,8 @@ void Session::combat_start()
         }
         // A ring of invisibility hides its wearer for the round (effhndlr.pas,
         // EffRenewInvisibility): Secret's Dreadlord starts every fight unseen.
-        if (f.has(effect::renew_invisibility))
+        // Gateway's ring first hides at the round's end.
+        if (f.has(effect::renew_invisibility) && !gateway())
         {
             f.numbers.effects.push_back({effect::invisible, 1, 12, false});
         }
@@ -7449,6 +7809,11 @@ void Session::round_end_effects()
         if (f.has(effect::regeneration))
         {
             f.hit_points = std::min(f.hit_points + 3, f.numbers.max_hit_points);
+        }
+        // Gateway's Vaalgamon regenerates 1 (EffRegenerateOne).
+        if (f.has(effect::regenerates_one) && f.hit_points < f.numbers.max_hit_points)
+        {
+            f.hit_points = std::min(f.hit_points + 1, f.numbers.max_hit_points);
         }
         if (f.has(effect::camouflage) && roll(100) <= 95)
         {
@@ -7780,13 +8145,43 @@ int Session::weapon_damage_defenses(const Fighter &attacker, Fighter &defender, 
     }
     // Curse's defenses (ovr013): normal weapons do nothing and +1 or +2
     // half (260); every blow does half (281); a piercing one 1 (285).
-    if (defender.has(260))
+    // Gateway's holy water harms such a mummy in full (its
+    // EffRequirePlusThreeWeapon).
+    const bool holy_water_blow = gateway() && attacker.numbers.weapon_type == 85;
+    if (defender.has(260) && !holy_water_blow)
     {
         damage = plus == 0 ? 0 : plus < 3 ? damage / 2 : damage;
     }
     if (defender.has(281))
     {
         damage /= 2;
+    }
+    // Gateway's and Treasures' weapons of Icewind Dale and of stonecutting do
+    // double to the creatures they bane, and their glacier armor turns half a
+    // fire creature's blow (EffVulnerableToIcewindDale,
+    // EffVulnerableToStonecutting, EffGlacierArmor): name words 144, 250 and
+    // 137 in Gateway, 127, 129 and 128 in Treasures.
+    const bool frontier = gateway() || treasures();
+    if (frontier && defender.has(effect::icewind_dale_harms) &&
+        weapon_named(attacker, gateway() ? 144 : 127))
+    {
+        damage *= 2;
+    }
+    if (frontier && defender.has(effect::stonecutting_harms) &&
+        weapon_named(attacker, gateway() ? 250 : 129))
+    {
+        damage *= 2;
+    }
+    if (frontier && attacker.has(effect::glacier_halves) &&
+        armor_named(defender, gateway() ? 137 : 128))
+    {
+        damage /= 2;
+    }
+    // A Treasures stone guardian takes a quarter from an edge or a point
+    // (EffQuarterEdged).
+    if (defender.has(effect::quarter_from_edges) && striker && weapon_class <= 1)
+    {
+        damage /= 4;
     }
     if (defender.has(285) && weapon_class == 1)
     {
@@ -7988,8 +8383,25 @@ int Session::highest_enemy_movement(const Fighter &f) const
 bool Session::check_morale(Fighter &f)
 {
     f.fleeing = false;
+    // Gateway's black dragon gives up below 20 Hit Points when the last of
+    // its side (effhndlr.pas, EffSurrender, at MORALE_CHECK).
+    if (f.has(effect::surrenders_when_last) && f.hit_points < 20 &&
+        std::ranges::none_of(
+            fighters_,
+            [&f](const Fighter &other)
+            {
+                return other.id != f.id && other.side == f.side && other.able();
+            }))
+    {
+        put_out_of_play(f, Condition::surrendered);
+        log({"{name} surrenders.", {{"name", f.name}}});
+        return true;
+    }
     release(f, effect::bite_hold);
     release(f, effect::blood_drain);
+    release(f, effect::drinking_blood);
+    release(f, effect::constricting);
+    release(f, effect::squeezing);
     if (f.turned)
     {
         f.fleeing = true;

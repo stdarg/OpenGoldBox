@@ -4936,6 +4936,106 @@ void later_games_effects_take_their_own_numbers()
           "A creature keeps the engine's own effects through its profile");
 }
 
+// Gateway's effects that share Curse's numbers but not its rules (its
+// effhndlr.pas): a shambling mound engulfs on 1 to 4 of a d10 at any hit, not
+// on two hits; poison rides the first attack. And its own: a stirge's and a
+// squid's holds, a harpy's charming touch, a mummy's disease, Vaalgamon's
+// regeneration and a black dragon's surrender when last.
+void gateway_effects_play_their_own()
+{
+    constexpr auto gateway = GoldBoxGame::gateway_to_the_savage_frontier;
+    constexpr auto curse = GoldBoxGame::curse_of_the_azure_bonds;
+    const auto with = [](int code, int rate = 2)
+    {
+        auto c = creature(500);
+        c.attacks[0] = {rate, 1, 2, 0};
+        c.effects.push_back({code, 0, 0, false});
+        return c;
+    };
+    const auto logs = [&](const original::Combatant &attacker, std::string_view line,
+                          GoldBoxGame game, std::string_view who = {})
+    {
+        auto fight = attack_until(
+            attacker, victim(500),
+            [line, who](const rules::CombatSession &session)
+            {
+                return logged(session, line, who) > 0;
+            },
+            47, game);
+        return logged(*fight.session, line, who) > 0;
+    };
+    check(logs(with(257), "{attacker} engulfs {name}.", gateway, "Monster") &&
+              !logs(with(257), "{attacker} engulfs {name}.", curse, "Monster"),
+          "Gateway's shambling mound engulfs at a single blow; Curse's needs two");
+    check(logs(with(64), "{name} is poisoned.", gateway) &&
+              !logs(with(64), "{name} is poisoned.", curse),
+          "Gateway's poison rides the first attack, Curse's the second");
+    check(logs(with(original::canonical_effect(149, gateway)), "{attacker} attaches to {name}.",
+               gateway, "Monster"),
+          "A Gateway stirge takes hold");
+    check(logs(with(original::canonical_effect(155, gateway)), "{attacker} constricts {name}.",
+               gateway, "Monster"),
+          "A Gateway squid constricts");
+    check(logs(with(original::canonical_effect(154, gateway)), "{name} is charmed.", gateway),
+          "A Gateway harpy's touch charms");
+    check(logs(with(original::canonical_effect(159, gateway)), "{name} is diseased.", gateway),
+          "A Gateway mummy's touch diseases");
+
+    auto dragon = with(original::canonical_effect(158, gateway));
+    dragon.hit_points = 15;
+    check(logs(dragon, "{name} surrenders.", gateway),
+          "Gateway's black dragon, last of its side, surrenders below 20 Hit Points");
+
+    auto vaalgamon = with(original::canonical_effect(161, gateway));
+    vaalgamon.hit_points = 400;
+    auto fight = attack_until(
+        vaalgamon, victim(500),
+        [](const rules::CombatSession &session)
+        {
+            return session.snapshot().round > 3;
+        },
+        47, gateway);
+    check(view_of(fight.session->snapshot(), "Monster").hit_points > 400, "Vaalgamon regenerates");
+}
+
+// Treasures' own effects (its effhndlr.pas): a kampfult crushes what it
+// hits, a yeti grabs and a remorhaz swallows whole at an attack roll of 20.
+void treasures_effects_play_their_own()
+{
+    constexpr auto treasures = GoldBoxGame::treasures_of_the_savage_frontier;
+    const auto with = [](int code)
+    {
+        auto c = creature(500);
+        c.attacks[0] = {20, 1, 2, 0};
+        c.effects.push_back({code, 0, 0, false});
+        return c;
+    };
+    const auto logs = [&](const original::Combatant &attacker, std::string_view line)
+    {
+        auto fight = attack_until(
+            attacker, victim(500),
+            [line](const rules::CombatSession &session)
+            {
+                return logged(session, line) > 0;
+            },
+            47, treasures);
+        return logged(*fight.session, line) > 0;
+    };
+    check(logs(with(original::canonical_effect(144, treasures)), "{name} is being crushed.") &&
+              logs(with(original::canonical_effect(144, treasures)),
+                   "{attacker} squeezes {name} for {damage}."),
+          "A kampfult crushes what it holds");
+    check(logs(with(original::canonical_effect(149, treasures)), "{attacker} grabs {name}."),
+          "A yeti grabs at an attack roll of 20");
+    check(logs(with(original::canonical_effect(155, treasures)), "{name} is swallowed whole."),
+          "A remorhaz swallows whole");
+    check(original::canonical_effect(132, treasures) ==
+                  original::canonical_effect(154, GoldBoxGame::gateway_to_the_savage_frontier) &&
+              original::canonical_effect(136, treasures) ==
+                  original::canonical_effect(151, GoldBoxGame::gateway_to_the_savage_frontier),
+          "Treasures' harpy and Icewind Dale effects are Gateway's");
+}
+
 // Secret's giant-bane weapon (its effect 75, EffHolyWater): against one its
 // record flags for it, 1 better to hit and 6d6 with the Strength bonus in
 // place of the weapon's own damage; against others the weapon's.
@@ -5621,6 +5721,8 @@ int main()
         a_blessed_bolt_slays_the_rakshasa();
         readied_items_give_their_effects();
         later_games_effects_take_their_own_numbers();
+        gateway_effects_play_their_own();
+        treasures_effects_play_their_own();
         difficulty_changes_the_monsters();
         heights_decide_sight();
         the_party_facing_and_movement();

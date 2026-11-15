@@ -318,3 +318,13 @@ music, in a later build that divides the song's tempo by 84 to time its notes
 (the song's tempo 2D00h gives 137 units a tick; its tracks last 3973 ticks).
 The layout is in [later-sound.md](later-sound.md); `decode_music_bank`
 reads the bank.
+
+## Bugs
+
+OpenGoldBox's own bugs found in *Gateway* and fixed (the original's are in
+[ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Bugs):
+
+| Bug | Fixed |
+|---|---|
+| The effects *Gateway* numbers as *Curse* does were all played by *Curse*'s rules, where nine of them differ: the shambling mound's engulfing, the owlbear's hug and squeeze, a held creature's casting, the petrifying gaze's reach, the giant slug's acid, the hits poison and paralysis ride, holy water against the mummy and the fight's start (2026-11-15) | Each by *Gateway*'s own rules ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), *Gateway*'s alike-numbered effects) |
+| *Gateway*'s own effects (126, 148 to 159 and 161) did nothing: its stirges, squids and harpies only struck, and its black dragon never surrendered (2026-11-15) | They play ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), *Gateway*'s own effects) |

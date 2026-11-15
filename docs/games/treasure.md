@@ -583,3 +583,4 @@ in [ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Bugs):
 | The Fix's Resurrection raised no one, the original rules having no such service, and while a cleric had it Raise Dead was not cast either (2026-11-15) | The dead but elves are resurrected, losing nothing |
 | A temple's Heal cured nothing besides wounds in *Treasures*, whose Heal lifts blindness and feeblemind (its `temple.pas`, CureWounds) (2026-11-15) | It lifts them |
 | PROGRAM 5 left feeblemind and drained levels and raised the dead by Raise Dead, at its cost in Constitution (its RepairParty resurrects and restores) (2026-11-15) | As RepairParty |
+| *Treasures*' own effects (128 to 160) did nothing: its kampfults, yetis, remorhazes, harpies, manticores and stone guardians only struck (2026-11-15) | Most play ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), *Treasures*' own effects); the crystals, the romance, the stone golem and the yetis' fear on surprise are still to come |

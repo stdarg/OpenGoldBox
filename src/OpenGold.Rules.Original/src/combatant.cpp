@@ -823,13 +823,23 @@ int gateway_canonical_effect(int code) noexcept
 // Treasures' effects by the fight's numbers (its effhndlr.pas, judged by
 // what each does): Pools of Darkness's, whose engine it runs on, to 127; past
 // them its own, which no earlier game's effect does, but for 156, which holds
-// its bearer still as Curse's 136 does.
+// its bearer still as Curse's 136 does, and four that do as Gateway's: the
+// harpy's charming touch (132, Gateway's 154), glacier armor (135, its 152),
+// harm from weapons of Icewind Dale (136, its 151) and of stonecutting (139,
+// its 153), each by Treasures' own name words.
 int treasures_canonical_effect(int code) noexcept
 {
-    constexpr int holds_still = 156;
-    if (code == holds_still)
+    constexpr std::array<std::pair<int, int>, 5> moved{{
+        {156, 336},
+        {132, 154 + gateway_effect_offset},
+        {135, 152 + gateway_effect_offset},
+        {136, 151 + gateway_effect_offset},
+        {139, 153 + gateway_effect_offset},
+    }};
+    const auto found = std::ranges::find(moved, code, &std::pair<int, int>::first);
+    if (found != moved.end())
     {
-        return 336;
+        return found->second;
     }
     return code > 127 ? code + vga_effect_offset : darkness_canonical_effect(code);
 }

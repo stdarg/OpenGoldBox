@@ -720,38 +720,18 @@ whole list):
 The work asked for next (2026-11-14, brought up to date 2026-11-15), in
 order, with what each needs. Done since: the difficulty levels, the halls'
 class masks, AD&D aging by the clock, the temples' Restoration, Spiritual
-Hammer's lasting hammer and the later games' effect numbers.
+Hammer's lasting hammer, the later games' effect numbers, the rest of any
+length with memorizing's time, and *Gateway*'s and *Treasures*' effects.
 
-1. The other "Still to come" items above that are no one game's campaign or
-   route work, in their order in this file:
-   - The original's rest of any length and its preparation time for
-     memorizing (step 5; scribing takes its own, Scribing). What the
-     original does (`gametime.pas`, `CampRest`, `CampRestMenu`,
-     `AdvanceSpellPrep`, `AdvanceSpellPrepBase`, `CheckRestingHeal`;
-     `camp.pas`, `RestForSpellPrep`, `CampSpellPrepTime`,
-     `CampMemorizeMenu`): Memorize marks spells pending (bit 0x80 of the
-     memorized slot) before the rest; Rest proposes the party's longest
-     preparation (4 hours, 6 with a pending spell above level 2, plus a
-     quarter hour a pending level, memorizing and scribing alike), which
-     the player raises or lowers by days, hours and five minutes, and stops
-     at any key. It rests in five-minute steps: each step passes the
-     clock, every 288 steps (a day) each member heals 1, each member's base
-     hours count down by the hour and then its pending spells finish one at
-     a time, a scribed spell first, 15 minutes a level each, and the area's
-     rest encounter may break it. What OpenGoldBox does now: the camp's
-     long rest is a day (at least the scribing preparation), the short rest
-     an hour, and spells are chosen after the long rest
-     (`CampaignParty::rest`, `long_rest_benefits` in campaign_rest.cpp,
-     `OriginalModule::long_rest_policy`). It needs a rest length on the
-     campaign's rest (`CampaignParty::rest` and its RestPolicy) with the
-     heal by whole days of rest, memorizing chosen before it and finished by
-     each member's preparation, the camps that call it
-     (`RolfTourSession` in phlan_session.cpp, `rest_interruption`;
-     ua_session.cpp; vga_host.cpp, other sessions' files, small hooks only)
-     and the rest dialog's length (days, hours, minutes) in the Godot view.
-2. *Gateway*'s alike-numbered effects that differ from *Curse*'s and
-   *Gateway*'s and *Treasures*' own effects (Effects of the later games),
-   which do nothing yet.
+1. What the rest of any length leaves (Rest of any length and memorizing's
+   time, plan step 5): an interrupted rest still grants nothing, where the
+   original heals the days it lasted and finishes the spells whose time
+   passed; the rest that goes on for memorizing rolls no rest encounter;
+   and the *Unlimited Adventures* camp still rests by whole days
+   (`UaSession::rest_for`).
+2. *Treasures*' own effects still to play (Effects of the later games):
+   the crystals (128 to 130), the romance (131), the stone golem (147) and
+   the yetis' fear on surprise (152).
 3. *Unlimited Adventures*' difficulty: its session calls
    `original::monster_difficulty(level, true)` with each design's own
    setting (the coordinator, 2026-11-15).
@@ -912,8 +892,33 @@ lines in all:
      in camp on its caster and lasts into the next fight. A spell read from a
      scroll in a fight leaves the scroll's others on it. The inventory's Use
      offers the scroll's spells to scribe.
-   - Still to come: the original's rest of any length and its preparation
-     time for memorizing (`CampSpellPrepTime`).
+   - **Rest of any length and memorizing's time** (2026-11-15;
+     `gametime.pas`, `CampRest`, `CampRestMenu`, `CheckRestingHeal`,
+     `AdvanceSpellPrep`, `AdvanceSpellPrepBase`; `camp.pas`,
+     `RestForSpellPrep`, `CampSpellPrepTime`). Every game from *Pool of
+     Radiance* to *Treasures*, and the *Unlimited Adventures* kit (`rest.c`,
+     `camp.c`, `prep_time`), rests the same way: the camp proposes the
+     party's longest preparation, which the player raises or lowers by days,
+     hours and five minutes, to 99 days; the party rests in five-minute
+     steps, each whole day healing every member 1 Hit Point (not the dead, a
+     statue or one wasting away); a member's preparation is four hours, six
+     with a spell above the second level, shared by everything it memorizes
+     and scribes, and a quarter hour a spell level, the spells finishing one
+     at a time once the base hours are over. Only a spell memorized into an
+     empty slot takes the time: a spell memorized and not cast stays. (*Secret*
+     counts a spell of level 0 memorized as one of level 1, and *Treasures*
+     counts only members in play.) Under the original rules
+     OpenGoldBox's camp shows the rest time in days, hours and minutes
+     (`RolfTourSession::camp(std::chrono::minutes)`,
+     `CampaignParty::rest(std::chrono::minutes)`, `proposed_rest`), heals by
+     the rest's whole days (`recover_days`), and asks each caster for its
+     spells as the rest ends, as its camp always has: the rest goes on until
+     the spells it memorizes anew are memorized (`rest_to_memorize`,
+     `memorizing_levels`), each further whole day healing the party, and a
+     caster that memorizes nothing gets nothing back (`keep_rest_spells`).
+     The camp's Long Rest without a time, which the routes and the default
+     parties use, still rests a day. Departures:
+     [DEVIATIONS.md](DEVIATIONS.md#the-original-rules) (The rest's spells).
    - **The Strength spells** (2026-11-14; `magic.pas`, `SpellEnlarge`,
      `SpellReduce`, `SpellStrength`, `SpellGiantStrength`; `fxengine.pas`,
      `RecalcAbility`): Enlarge gives 18/00, 18/01, 18/51, 18/76, 18/91 and
@@ -1288,13 +1293,52 @@ gear.
      them its own (128 to 160, `vga_effect_offset` higher), but for 156,
      which holds its bearer still as *Curse*'s 136 does. Before, these games'
      records were read by *Pool of Radiance*'s numbers: *Treasures*' carrion
-     crawler, whose 88 is a paralyzing touch, breathed lightning. The fight
-     plays only the effects it knows by these numbers; *Gateway*'s and
-     *Treasures*' own do nothing yet, nor do the ways *Gateway*'s
-     alike-numbered ones differ from *Curse*'s (its shambling mound engulfs on
-     1 to 4 of a d10, not on two hits; its hug makes two attacks). *Gateway*'s
-     route raises at Sundabar's temple the member its shambling mounds now
-     smother.
+     crawler, whose 88 is a paralyzing touch, breathed lightning.
+     *Gateway*'s route raises at Sundabar's temple the member its shambling
+     mounds smother.
+   - ***Gateway*'s alike-numbered effects** (2026-11-15; its `effhndlr.pas`,
+     `cbtacts.pas`, against *Curse*'s, handler by handler and condition by
+     condition): its shambling mound engulfs on 1 to 4 of a d10 at each hit
+     of its first attack, not on two hits (57); its owlbear squeezes with two
+     blows of 2d8 (144) and hugs none held already (96); one held, engulfed
+     or hugged cannot cast (58, at its turn's start); its petrifying gaze
+     reaches only one it sees within 20 squares, not one invisible (83); its
+     giant slug spits 1d12 (86); its poison rides the first attack (64) and
+     its paralysis both (67); holy water harms its mummy in full (60); and
+     its fight's start neither hides a ring's wearer nor stands up one that
+     fights on while down (56, 99).
+   - ***Gateway*'s own effects** (2026-11-15): its stirge takes hold on 1 to
+     4 of a d10 and drinks with two blows of 1d4 (149, 150); its squid
+     constricts so and squeezes with two of 1d2 (155, 156; Bugs); its harpy's
+     touch charms unless saved against as a spell (154); its mummy's touch
+     diseases at once (159); Vaalgamon regenerates 1 a round (161); its
+     black dragon surrenders below 20 Hit Points when the last of its side
+     (158); a weapon of Icewind Dale (name word 144) or of stonecutting (250)
+     does double to the creatures marked for it (151, 153), and glacier
+     armor (137) halves a fire creature's blow (152); fire harms one
+     vulnerable 1d6 more, and 1d6 again unsaved (148); and its paralyzing
+     gaze holds its lock unless saved against as petrification (126).
+     Not played: the flame tongue's bonus against dragons (157), which no
+     record of the game carries.
+   - ***Treasures*' own effects** (2026-11-15): its harpy (132), glacier
+     armor (135, word 128) and weapons of Icewind Dale (136, word 127) and of
+     stonecutting (139, word 129) are *Gateway*'s; its kampfult crushes
+     what it hits for 5 a turn (144); its yetis grab at an attack roll of
+     20, squeezing 2d8, 4d5 or 6d4 a turn (149 to 151), and its remorhaz
+     swallows whole so (155); its giant rat diseases one bite in 20 (145);
+     its slug spits 1d13+3 (137); its hell hound breathes 7 of fire and its
+     ice hound 7 of cold at one beside it (138, 154); its manticore fires six
+     spines of 1d6 at one it sees within 10 squares (143); its gorgimera
+     breathes stone twice a fight within 2 squares (148); its stone guardian
+     takes half from the elements (133), a quarter from an edge or point
+     (141), no effect at all (142) and dies by Stone to Flesh (134); its
+     vilstrak moves twice as far in the first round (146); and fire harms its
+     yetis half again (153). Not played yet: the crystals its Zhentarim
+     carry (128 to 130, which set the script's crystal bits as they fall),
+     the romance (131, from its romance code), the stone golem's turns to
+     stone and back (147), the yetis' fear when they surprise (152) and a
+     weapon's 0x10 property against the stone guardian (141); the
+     greenhag's shape change (140) only changes its icon.
    - **The party's facing** (2026-11-14; `combatst.pas`,
      `InitCreatureCombatData`; `combatai.pas`, `AiMoveStep`): the fight
      knows the way the party faced as it met its foes
@@ -1612,3 +1656,4 @@ scales Hit Points takes only the table's to-hit and Armor Class.
 | *Treasures:* the Fix's Cure Blindness lifts the blindness of whichever member is current, not of the member it cures, and is never spent (`camp.pas`, `CampFixMenu`) | The blind member regains sight, one cure a member |
 | *Treasures:* the Fix's first rest counts a magic-user's Remove Curse by its third-level slots, its second by its fourth-level ones, where the spell is (`camp.pas`, `CampFixMenu`) | Fourth-level slots in both |
 | *Treasures:* the Fix says a resurrected member "has been ressurected" (`camp.pas`, `CampFixMenu`) | Spelt "resurrected" |
+| *Gateway:* a giant squid's constricting hold (effect 156) has its squeeze, two blows of 1d2, but the fight never calls it, so the squid only holds (`effhndlr.pas`, condition 14; `cbtacts.pas`, `AttackConstrict`) | It squeezes with them, as the owlbear's hug does |
