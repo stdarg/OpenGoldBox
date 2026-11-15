@@ -390,8 +390,9 @@ Llorkh's hall, training the party to levels 8 and 9).
    that last fight with every dice it tries (six Hosttower sorceresses
    lightning-bolt, fireball and charm its members within two rounds, while
    its fighters are held up by the margoyles and neo-otyughs), so the test
-   wins it. Since 2026-11-15 the route played whole wins it itself, two
-   members dead, but loses it when the fights before went otherwise.
+   wins it. With *Treasures*' own AI (2026-11-15) the sorceresses open with
+   Lightning Bolts, and the route's player wins only where the magic-user's
+   Fireball, aimed at their row, goes off first: about one try in forty.
 
 8. **Yartar** (map 23), overland north by maps 56 and 54: resting in a
    house off the streets (11,9), the robed Krakens at the secret door
@@ -490,8 +491,9 @@ Llorkh's hall, training the party to levels 8 and 9).
     dwarves fighting beside the party. As the dragon dies the game is won
     (The ending). *A stand-in:* the black-robed spies and mages hold the
     party's members (Hold Person, Hold Monster) and the masters slay the
-    held, faster than Dispel Magic frees them, so the test wins that fight;
-    the route's player beats Freezefire.
+    held, faster than Dispel Magic frees them, so the test wins that fight
+    (also where the dwarves win it over the members' bodies, since
+    2026-11-15); the route's player beats Freezefire.
 
 *Stand-ins:* the experience and money at Llorkh's hall, and the test's win
 of two fights the route's player loses with every dice it tries: the Way
@@ -542,28 +544,48 @@ took, as a player would play it:
   them after the camp's words too.
 - **The overland.** The route walks on hurt between towns, as before: a
   Fix in camp on the overland, tried, rolls the wandering monsters more
-  often than it heals.
+  often than it heals. Since the round-4 rules (2026-11-15) it answers the
+  overland's ENEMIES ATTACK with FLEE (the script lets it go 2 times in 5),
+  and where a band it cannot flee kills a member or beats the party (the
+  fire giants and their mages after Mirabar), it meets the step again with
+  the new dice a reload gives (`reseed_dice`), as a player reloads; a run
+  off the field is its first tactic there, and a member left on a fled
+  field counts as lost.
+- **The round-4 rules** (2026-11-15). The Zhentil captain's hell hounds
+  breathe 7 of fire every turn and the caverns' camps are broken by them
+  and his guards, so the clerics memorize Resist Fire in Leilon and ward
+  every member before him, curing the hurt instead of camping; Neverwinter's
+  eastern base's fire giant mages are met warded the same way. Mirabar's
+  council held a sorceress who joined inside its table, out of reach: a
+  creature held back now joins where its enemies can walk to (Bugs), and a
+  fight where every turn is a guard is played on by walking the members
+  round to the nearest enemy before it is left.
 
-*Next (where the work stopped, 2026-11-15):* the two fights left. Both
-are lost to casters whose spells go off before the party reaches them; the
-cluebook's answer is to hit every enemy with a spell or a missile each round
-(a caster hit while it casts loses the spell) and, from Fireshear on, a
-composite long bow +1 and arrows +1 for every member who can use them
-(Fireshear's arms shop sells them once the grand yeti is dead). The
-route's party carries only melee weapons: give it bows from a shop on the
-way (the Way Inn's or Daggerford's for the Way Inn, Fireshear's for the
-lair), and let the route's player (`player_turn`) shoot or strike first a
-caster who has begun casting, and aim the magic-user's Fireball at the
-sorceresses where it spares the party. Check too the AI's choice of spell:
-*Treasures*' computer casts its memorized spell of highest AI weight that
-has a target (its combatai.pas, PickCastableSpell and SelectSpellToCast),
-where OpenGoldBox's picks at random as *Pool of Radiance*'s does. *Pools of
-Darkness* shares the spell table and the one-square characters (its
-gdconsts.pas and chargen.pas) and should take them up, its route checked.
-Still to come besides: replacing the Llorkh test experience if a route can
-earn it, the color records, the overland's color cycling, the music and
-sounds other than the footstep, and the camp's display of the crystals the
-party holds (its CampMainMenu).
+*Next (where the work stopped, 2026-11-15, after the round-4 rules):*
+the two fights left, the Way Inn's last and the lair's black-robed men.
+Since *Treasures*' computer casts as its own does (its spell of highest
+weight first), the sorceresses open every fight with Lightning Bolts and
+Fireballs, and the route's player wins the Way Inn's last only when the
+magic-user's first Fireball goes off before them (about one try in forty,
+none dead). Still to try there: Stinking Cloud, which goes off at once
+(casting time 2, none lost to a blow), once the magic-user stands within its
+3 squares of the sorceresses' row, bows from a shop on the way (the Way
+Inn's Limantour Saddlery, store 16, or Daggerford's Thielklain's House of
+Steel, store 1; a plain long bow scores too low beside a sword +2 for
+Quick's EquipWeaponAndArmor to shoot it, so the player must ready and shoot
+it), and the clerics' Silence, 15' Radius on the row. In the lair the
+dwarves now win over the members' bodies; the cluebook bids charm and hold
+spells there (Hold Monster, Charm Person on those its flags call persons).
+The original skips the first memorized spell in choosing (Bugs);
+OpenGoldBox weighs them all, a choice to put to the user. *Pools of
+Darkness* shares the spell table, the AI and the one-square characters and
+should take them up, its route checked. Still to come besides: replacing
+the Llorkh test experience if a route can earn it, the color records, the
+music and sounds other than the footstep (`MUSIC.DAX`'s bank and
+`ZOUNDS.DAX`, PLAY SOUND 2 to 14 and from 80h), and the camp's display of
+the crystals the party holds (its CampMainMenu, cell 3Ch: 1 red, 2 green, 4
+blue), which needs the crystal effects 128 to 130 (at 0 Hit Points, while
+cell 3Dh is set) that no fight plays yet.
 
 ## The ending
 
