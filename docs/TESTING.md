@@ -12,7 +12,8 @@ build.cmd debug    # the same with the unoptimized Debug preset
 
 It checks `errorlevel` between every step, so a compile failure stops it before
 any test runs. The default preset is optimized (RelWithDebInfo), and tests run
-in parallel: the suite takes under a minute. The Debug preset takes 15 to 20
+in parallel: the fast native gate normally takes under a minute. With original
+game data available, story-route checks can add tens of minutes. The Debug preset takes 15 to 20
 minutes, almost all of it `opengold_status_effect_tests` under MSVC's checked
 iterators; run it occasionally, not for every change. No test relies on
 `assert()`, so the optimized build loses no checks.
@@ -266,3 +267,42 @@ parser fuzz targets remain future opportunities.
   roster/log updates and save/load controls at the supported window sizes.
 
 See [status effects](STATUS-EFFECTS.md) for the implementation and review command.
+
+### Windows full-suite audit (2026-11-15)
+
+The audited source is `fb066c11` plus the Windows test-fix patch. Changes arriving
+on `origin/main` during this run are outside this snapshot. The native, game,
+Godot-demo and DOS-probe build trees register 333 distinct CTest names; repeated
+fixtures and identical native checks are counted once. Original-data checks use
+all seven installed games through `OPENGOLD_GOLDBOX_DIR`.
+
+- Initial full runs were followed by rebuilt, focused regressions for every
+  affected target. The shared spell-picker fix requires all five story routes.
+- Game integration, Windows package smoke, monster-record export, demos/catalog,
+  localization (4,091 messages), Python tooling (21 cases), and sprite workflow
+  (72 assertions) passed.
+- The SRD Party Tester sweep passed for 444 characters, 6,216 level-ups and
+  576 battles. Combat Tester smoke, six custom monsters, 29 maps, Quick,
+  save/load and graphical capture passed; the Creature Stats Editor check passed.
+- Combat Tester splash staging was checked with fresh and existing import
+  caches, including a real Godot import and another 15-level smoke run.
+
+The initial entry points were `build.cmd`, `build-opengoldbox.cmd` and
+`demos/build-rolf.cmd`. After rebuilding the final affected targets, the story
+regressions used these commands in the configured developer shell:
+
+```powershell
+ctest --test-dir build --rerun-failed --output-on-failure -j3
+ctest --test-dir build/game --output-on-failure -j4 -R '^opengold_(curse|secret|darkness|gateway)_route$'
+ctest --test-dir build/game --verbose --output-on-failure -j2 -R '^opengold_(secret|darkness)_route$'
+```
+
+Secret and Darkness have explicit one-hour test limits, matching Treasures:
+complete original-data runs exceeded CTest's default 1,500-second timeout.
+
+All 333 distinct checks passed. Final rebuilt story-route regressions passed for
+Curse, Secret, Darkness, Gateway and Treasures; the Secret/Darkness rerun used the
+corrected per-test limits and completed in 1,315.74 and 1,349.91 seconds.
+
+This is Windows execution evidence; the shared macOS/Linux packaging commands
+were reviewed but were not executed on those platforms.

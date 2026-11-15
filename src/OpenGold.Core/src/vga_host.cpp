@@ -966,7 +966,7 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
     }
     // A second rest for the cures the first left undone, as many of each as
     // are needed and the slots allow.
-    unsigned dead = 0, stoned = 0, poisoned = 0, blind = 0, cursed = 0, feebleminded = 0,
+    unsigned dead_members = 0, stoned = 0, poisoned = 0, blind = 0, cursed = 0, feebleminded = 0,
              drained = 0;
     for (const auto id : members)
     {
@@ -976,7 +976,7 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
         }
         drained += levels_drained(id);
         feebleminded += campaign_->temple_service_helps(id, TempleService::cure_feeblemind) ? 1 : 0;
-        dead += campaign_->temple_service_helps(id, TempleService::raise_dead) ? 1 : 0;
+        dead_members += campaign_->temple_service_helps(id, TempleService::raise_dead) ? 1 : 0;
         stoned += campaign_->temple_service_helps(id, TempleService::stone_to_flesh) ? 1 : 0;
         poisoned += campaign_->temple_service_helps(id, TempleService::neutralize_poison) ? 1 : 0;
         blind += campaign_->temple_service_helps(id, TempleService::cure_blindness) ? 1 : 0;
@@ -998,8 +998,9 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
         cures.remove_curse += slots(numbers.magic_user_slots[3]) + slots(numbers.cleric_slots[2]);
         cures.cure_blindness += slots(numbers.cleric_slots[2]);
     }
-    const unsigned raising = cures.resurrection > 0 ? std::min(cures.resurrection, dead) * 105
-                                                    : std::min(cures.raise_dead, dead) * 75;
+    const unsigned raising = cures.resurrection > 0
+                                 ? std::min(cures.resurrection, dead_members) * 105
+                                 : std::min(cures.raise_dead, dead_members) * 75;
     const unsigned curing =
         raising + std::min(cures.restoration, drained) * 105 +
         std::min(cures.heal, feebleminded) * 90 + std::min(cures.stone_to_flesh, stoned) * 90 +

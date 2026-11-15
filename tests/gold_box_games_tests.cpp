@@ -31,6 +31,7 @@
 #include "test_support.h"
 
 #include <cstdio>
+#include <cctype>
 #include <cstdlib>
 #include <deque>
 #include <filesystem>
@@ -219,6 +220,17 @@ void the_machine_runs_curse_scripts()
     check(machine.variable(opengold::por::EclAddress{0x4000}) == 7, "SAVE wrote the variable");
 }
 
+char uppercase(unsigned char letter)
+{
+    return static_cast<char>(std::toupper(letter));
+}
+
+constexpr std::pair<std::uint16_t, std::uint16_t> script_cell(std::uint16_t address,
+                                                              std::uint16_t value)
+{
+    return {address, value};
+}
+
 // Every cell Curse's source names lies where moving Pool of Radiance's zones puts it.
 void curse_script_memory_is_pool_of_radiance_moved()
 {
@@ -226,25 +238,25 @@ void curse_script_memory_is_pool_of_radiance_moved()
     using opengold::por::game_address;
     constexpr auto curse = GoldBoxGame::curse_of_the_azure_bonds;
     const std::vector<std::pair<std::uint16_t, std::uint16_t>> cells{
-        {0x49C5, 0x4BC5}, // The 3D map loaded.
-        {0x49C9, 0x4BC9}, // The clock's hour.
-        {0x49E6, 0x4BE6}, // A 3D map is loaded.
-        {0x49F2, 0x4BF2}, // The script before the last NEW ECL.
-        {0x6DC1, 0x7EC1}, // The monsters' distance.
-        {0x6DC6, 0x7EC6}, // Morale.
-        {0x6DC9, 0x7EC9}, // The party's next step blocked.
-        {0x6DCA, 0x7ECA}, // Search flags.
-        {0x6DCB, 0x7ECB}, // Surprise.
-        {0x6DD2, 0x7ED2}, // Rest checks.
-        {0x6DD5, 0x7ED5}, // Leaving the map.
-        {0x6DE1, 0x7EE1}, // The portrait's head.
-        {0x6DE6, 0x7EE6}, // The mirror duel.
-        {0x6E33, 0x7F33}, // An ally attacked.
-        {0x6E3E, 0x7F3E}, // The party's size.
-        {0x6E70, 0x7F70}, // Monsters' to-hit.
-        {0x6E72, 0x7F72}, // The party's movement in combat.
-        {0x9700, 0x7A00}, // The strings.
-        {0xC04B, 0xC04B}, // The party's position stays.
+        script_cell(0x49C5, 0x4BC5), // The 3D map loaded.
+        script_cell(0x49C9, 0x4BC9), // The clock's hour.
+        script_cell(0x49E6, 0x4BE6), // A 3D map is loaded.
+        script_cell(0x49F2, 0x4BF2), // The script before the last NEW ECL.
+        script_cell(0x6DC1, 0x7EC1), // The monsters' distance.
+        script_cell(0x6DC6, 0x7EC6), // Morale.
+        script_cell(0x6DC9, 0x7EC9), // The party's next step blocked.
+        script_cell(0x6DCA, 0x7ECA), // Search flags.
+        script_cell(0x6DCB, 0x7ECB), // Surprise.
+        script_cell(0x6DD2, 0x7ED2), // Rest checks.
+        script_cell(0x6DD5, 0x7ED5), // Leaving the map.
+        script_cell(0x6DE1, 0x7EE1), // The portrait's head.
+        script_cell(0x6DE6, 0x7EE6), // The mirror duel.
+        script_cell(0x6E33, 0x7F33), // An ally attacked.
+        script_cell(0x6E3E, 0x7F3E), // The party's size.
+        script_cell(0x6E70, 0x7F70), // Monsters' to-hit.
+        script_cell(0x6E72, 0x7F72), // The party's movement in combat.
+        script_cell(0x9700, 0x7A00), // The strings.
+        script_cell(0xC04B, 0xC04B), // The party's position stays.
     };
     for (const auto &[pool, expected] : cells)
     {
@@ -615,7 +627,7 @@ const std::vector<RouteBeat> &curse_route()
          false,
          false,
          true,
-         std::pair<std::uint16_t, std::uint16_t>{0x4C9C, 1}},
+         script_cell(0x4C9C, 1)},
         {0, 0, 0, D::north, {"TRAIL", "stop:JOURNEY"}, false, false, true},
         {0, 0, 0, D::north, {"stop:JOURNEY"}, true, false, true},
         // On to Hap, resting at each stop: by boat on the Ashaben (kept clear of
@@ -650,7 +662,7 @@ const std::vector<RouteBeat> &curse_route()
          std::nullopt,
          0,
          0,
-         std::pair<std::uint16_t, std::uint16_t>{0x4C47, 4},
+         script_cell(0x4C47, 4),
          true},
         {50, 8, 4, D::north, {}}, // The efreeti and the dark elves in the barn.
         // Out through Hap's gate, following the efreeti's map to the caves.
@@ -694,7 +706,7 @@ const std::vector<RouteBeat> &curse_route()
          false,
          false,
          false,
-         std::pair<std::uint16_t, std::uint16_t>{0x4C59, 1},
+         script_cell(0x4C59, 1),
          0,
          0,
          std::nullopt,
@@ -827,7 +839,7 @@ const std::vector<RouteBeat> &curse_route()
          false,
          false,
          false,
-         {{0x4C5B, 1}, {0x4C2D, 1}}},
+         {script_cell(0x4C5B, 1), script_cell(0x4C2D, 1)}},
         // The cultists' last stand by the Pit's way out (ten cultists, five
         // large vegepygmies, five shambling mounds), which the test wins for
         // now, and out of the Pit by its door to the west.
@@ -925,7 +937,7 @@ const std::vector<RouteBeat> &curse_route()
          true,
          false,
          false,
-         {{0x4C03, 0}},
+         {script_cell(0x4C03, 0)},
          true},
         // Out of the caves, stepping off the map south of 11,15 (event 19 and
         // LEAVE_MAP), where Olive takes Dimswart away, back to the wilderness.
@@ -1168,7 +1180,7 @@ const std::vector<RouteBeat> &secret_route()
         // Eldamar (cell 4C53); its gateway takes the party to the Well.
         auto lair = step_beat(32, 0, 3, D::north, {"ATTACK", "YES"});
         lair.rest_first = true;
-        lair.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C53, 255};
+        lair.expect_cell = script_cell(0x4C53, 255);
         route.push_back(lair);
         // From the Well's north-west corner into the ruins (sector 6), and
         // through sector 8 to the Black Circle Headquarters' main entrance;
@@ -1229,7 +1241,7 @@ const std::vector<RouteBeat> &secret_route()
         route.push_back(step_beat(49, 3, 6, D::south, {"ATTACK"}));
         route.push_back(step_beat(49, 5, 15, D::south, {"ENTER"}));
         auto derf = step_beat(50, 14, 3, D::north, {"TALK", "NO"});
-        derf.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C85, 1};
+        derf.expect_cell = script_cell(0x4C85, 1);
         route.push_back(derf);
         // Back out of the temple and through the passage to the wheel lift.
         route.push_back(step_beat(50, 8, 0, D::north));
@@ -1522,7 +1534,7 @@ const std::vector<RouteBeat> &secret_route()
         route.push_back(step_beat(49, 3, 6, D::south));
         route.push_back(step_beat(49, 5, 15, D::south, {"ENTER"}));
         auto staff = step_beat(50, 14, 3, D::north);
-        staff.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C86, 1};
+        staff.expect_cell = script_cell(0x4C86, 1);
         route.push_back(staff);
         route.push_back(step_beat(50, 8, 0, D::north));
         route.push_back(step_beat(49, 5, 12, D::north));
@@ -2048,7 +2060,7 @@ const std::vector<RouteBeat> &secret_route()
                       true, true, false, {"YES", "BRASS"});
         RouteBeat secret_door{98, 1, 3, D::north, {}};
         secret_door.repeat_in_place = true;
-        secret_door.repeat_until_at_least = std::pair<std::uint16_t, std::uint16_t>{0x4CDC, 128};
+        secret_door.repeat_until_at_least = script_cell(0x4CDC, 128);
         secret_door.test_wins = true;
         route.push_back(secret_door);
         // Through it, the chamber of the Dreadlord's soul: the party explores
@@ -2057,7 +2069,7 @@ const std::vector<RouteBeat> &secret_route()
         // game is won.
         RouteBeat soul_gem = step_beat(98, 1, 3, D::north, {"EXPLORE ROOM"});
         soul_gem.test_wins = true;
-        soul_gem.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CD9, 1};
+        soul_gem.expect_cell = script_cell(0x4CD9, 1);
         route.push_back(soul_gem);
         return route;
     }();
@@ -2106,7 +2118,7 @@ const std::vector<RouteBeat> &darkness_route()
         // any dungeon: a step west.
         RouteBeat west{17, 0, 0, D::north, {}};
         west.area_steps = {opengold::por::ExplorationCommand::west};
-        west.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x25, 25};
+        west.expect_cell = script_cell(0x25, 25);
         route.push_back(west);
         // North-west across the Lands of Thar, past Melvaunt's army and the
         // farmhouse, to the stockade of Taydome's Keep (19,1), where Sasha is
@@ -2136,7 +2148,7 @@ const std::vector<RouteBeat> &darkness_route()
                        {4, 10, D::south},
                        {4, 11, D::east}});
         auto bostell = step_beat(22, 5, 11, D::north, {"BREAK CHAINS"});
-        bostell.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x128, 1};
+        bostell.expect_cell = script_cell(0x128, 1);
         route.push_back(bostell);
         // Back north and east through the halls, past the study where Kimarr
         // plots (11,6), to the room where his giants hold Quil (9,5): the
@@ -2152,7 +2164,7 @@ const std::vector<RouteBeat> &darkness_route()
                        {11, 6, D::west},  {10, 6, D::west}});
         auto quil = step_beat(22, 9, 6, D::north, {"NO", "YES", "NO"});
         quil.rest_first = true;
-        quil.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x123, 1};
+        quil.expect_cell = script_cell(0x123, 1);
         route.push_back(quil);
         // East along the mountains to the Silver Blades' cave (27,2), where
         // Vala digs for the four items that rule the elementals.
@@ -2257,7 +2269,7 @@ const std::vector<RouteBeat> &darkness_route()
                        {12, 8, D::east}});
         route[to_breach].rest_first = true;
         auto vaasans = step_beat(37, 13, 8, D::east, {"YES"});
-        vaasans.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x1AB, 128};
+        vaasans.expect_cell = script_cell(0x1AB, 128);
         route.push_back(vaasans);
         // Back west along the passage and out of the cave (0,8), onto the
         // area map by its door (27,2).
@@ -2310,7 +2322,7 @@ const std::vector<RouteBeat> &darkness_route()
         walk_passages(route, 50,
                       {{2, 5, D::north}, {2, 4, D::north}, {2, 3, D::north}, {2, 2, D::east}});
         auto altar = step_beat(50, 3, 2, D::north, {"SCRUB PAINT"});
-        altar.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x17F, 2};
+        altar.expect_cell = script_cell(0x17F, 2);
         route.push_back(altar);
         // East and south to the stairs down (6,5), the wall of type 7 east of
         // it, and down into the catacombs (script 54, the map's lower half),
@@ -2351,21 +2363,21 @@ const std::vector<RouteBeat> &darkness_route()
                        {12, 13, D::south},
                        {12, 14, D::east}});
         auto brimwulf = step_beat(50, 13, 14, D::north, {"OPEN COFFIN", "STAND AWAY", "YES"});
-        brimwulf.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0xAB, 1};
+        brimwulf.expect_cell = script_cell(0xAB, 1);
         route.push_back(brimwulf);
         // Through the secret door beyond him to the small altar (12,10): the
         // ritual journal entry 11 gives, its third way (cell 17Fh bit 0),
         // so fewer elementals guard the tests.
         walk_passages(route, 50, {{13, 13, D::north}, {13, 12, D::north}, {13, 11, D::west}});
         auto ritual = step_beat(50, 12, 11, D::north, {"LIGHT INCENSE"});
-        ritual.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x17F, 3};
+        ritual.expect_cell = script_cell(0x17F, 3);
         route.push_back(ritual);
         // The earth rises at (10,10); beaten, it leaves the Vessel of Purity,
         // which the party takes (cell 17Fh bit 3).
         walk_passages(route, 50, {{12, 10, D::south}, {12, 11, D::west}, {11, 11, D::west}});
         auto vessel = step_beat(50, 10, 11, D::north, {"TAKE BOWL"});
         vessel.rest_first = true;
-        vessel.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x17F, 11};
+        vessel.expect_cell = script_cell(0x17F, 11);
         route.push_back(vessel);
         // Ilmater's symbol (12,8) ignites; the fire elemental's dying flame
         // passes into the bowl, the Spirit Flame (cell 17Fh bit 4).
@@ -2376,7 +2388,7 @@ const std::vector<RouteBeat> &darkness_route()
                        {9, 8, D::east},
                        {10, 8, D::east}});
         auto flame = step_beat(50, 11, 8, D::east);
-        flame.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x17F, 27};
+        flame.expect_cell = script_cell(0x17F, 27);
         route.push_back(flame);
         // The armory (14,10): the flame lights the Lamp of Vigilance,
         // Brimwulf tells the party to rekindle the four braziers and ring the
@@ -2384,7 +2396,7 @@ const std::vector<RouteBeat> &darkness_route()
         // the shelves of arms Priam sought.
         walk_passages(route, 50, {{12, 8, D::east}, {13, 8, D::south}, {13, 9, D::south}});
         auto lamp = step_beat(50, 13, 10, D::east, {"YES"});
-        lamp.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x17F, 59};
+        lamp.expect_cell = script_cell(0x17F, 59);
         route.push_back(lamp);
         route.push_back(step_beat(50, 14, 10, D::east));
         // Back west and up the stairs at (8,9) to the catacombs' west half
@@ -2428,7 +2440,7 @@ const std::vector<RouteBeat> &darkness_route()
                        {10, 1, D::west},
                        {9, 1, D::north}});
         auto first_brazier = step_beat(50, 9, 0, D::west, {"LIGHT BRAZIER"});
-        first_brazier.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x17D, 77};
+        first_brazier.expect_cell = script_cell(0x17D, 77);
         route.push_back(first_brazier);
         // The north-east tower (15,0).
         walk_passages(route, 50,
@@ -2443,7 +2455,7 @@ const std::vector<RouteBeat> &darkness_route()
                        {13, 1, D::east},
                        {14, 1, D::north}});
         auto second_brazier = step_beat(50, 14, 0, D::east, {"LIGHT BRAZIER"});
-        second_brazier.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x17D, 205};
+        second_brazier.expect_cell = script_cell(0x17D, 205);
         route.push_back(second_brazier);
         // The south-east tower (15,7).
         walk_passages(route, 50,
@@ -2454,7 +2466,7 @@ const std::vector<RouteBeat> &darkness_route()
                        {15, 4, D::south},
                        {15, 5, D::south}});
         auto third_brazier = step_beat(50, 15, 6, D::south, {"LIGHT BRAZIER"});
-        third_brazier.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x17D, 237};
+        third_brazier.expect_cell = script_cell(0x17D, 237);
         route.push_back(third_brazier);
         // The south-west tower (8,7): the darkness is swept from the temple.
         walk_passages(route, 50,
@@ -2469,7 +2481,7 @@ const std::vector<RouteBeat> &darkness_route()
                        {10, 6, D::west},
                        {9, 6, D::south}});
         auto fourth_brazier = step_beat(50, 9, 7, D::west, {"LIGHT BRAZIER"});
-        fourth_brazier.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x17D, 253};
+        fourth_brazier.expect_cell = script_cell(0x17D, 253);
         route.push_back(fourth_brazier);
         // The bell tower (12,3): with every brazier lit the bells ring clear,
         // and the shades of Laurellin and Brimwulf, neither slain, are reunited
@@ -2483,7 +2495,7 @@ const std::vector<RouteBeat> &darkness_route()
                        {10, 4, D::north},
                        {10, 3, D::east}});
         auto bells = step_beat(50, 11, 3, D::east, {"PULL ROPES", "STEP AWAY"});
-        bells.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x181, 1};
+        bells.expect_cell = script_cell(0x181, 1);
         route.push_back(bells);
         for (auto beat = route.begin() + static_cast<std::ptrdiff_t>(temple_unfreed);
              beat != route.end(); ++beat)
@@ -2536,14 +2548,14 @@ const std::vector<RouteBeat> &darkness_route()
                        {7, 9, D::north},
                        {7, 8, D::east}});
         auto kardal = step_beat(21, 8, 8, D::east, {"YES", "YES"});
-        kardal.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x114, 3};
+        kardal.expect_cell = script_cell(0x114, 3);
         route.push_back(kardal);
         // The cloud giants at their gaming table (9,10), rested first: beaten,
         // they earn the party its notoriety (bit 2).
         walk_passages(route, 21, {{9, 8, D::south}});
         auto cloud_giants = step_beat(21, 9, 9, D::south);
         cloud_giants.rest_first = true;
-        cloud_giants.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x114, 7};
+        cloud_giants.expect_cell = script_cell(0x114, 7);
         route.push_back(cloud_giants);
         // Back past the tavern to the inner steading's barred door (7,8): the
         // hill giants pull the party through, and the shaman sends for it
@@ -2568,7 +2580,7 @@ const std::vector<RouteBeat> &darkness_route()
                        {9, 5, D::north},
                        {9, 4, D::north}});
         auto dagger = step_beat(21, 9, 3, D::west);
-        dagger.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x114, 31};
+        dagger.expect_cell = script_cell(0x114, 31);
         route.push_back(dagger);
         // Down the trail to Kardal (6,4), whom the party rescues from his
         // captors, rested first; he tells it of the Fire Giants (journal entry
@@ -2576,7 +2588,7 @@ const std::vector<RouteBeat> &darkness_route()
         walk_passages(route, 21, {{8, 3, D::west}, {7, 3, D::west}});
         auto rescue = step_beat(21, 6, 3, D::south, {"RESCUE HIM"});
         rescue.rest_first = true;
-        rescue.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x114, 63};
+        rescue.expect_cell = script_cell(0x114, 63);
         route.push_back(rescue);
         // A door slams in the distance (3,4), and a rear guard of hill giants
         // and ogres blocks the way south (3,6). A paladin challenges their
@@ -2627,7 +2639,7 @@ const std::vector<RouteBeat> &darkness_route()
         walk_passages(route, 21, {{11, 1, D::east}});
         auto shaman = step_beat(21, 12, 1, D::east);
         shaman.rest_first = true;
-        shaman.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x116, 255};
+        shaman.expect_cell = script_cell(0x116, 255);
         route.push_back(shaman);
         // His vault (12,0) is locked, and no one forces its door; past it,
         // the door in the steading's north wall (15,0) leads to the Fire Giant
@@ -2663,7 +2675,7 @@ const std::vector<RouteBeat> &darkness_route()
         auto corridor = step_beat(32, 11, 15, D::east, {"YES", "YES", "THROW IT AWAY"});
         corridor.passing = true;
         corridor.repeat_in_place = true;
-        corridor.repeat_until_bits = std::pair<std::uint16_t, std::uint16_t>{0x132, 1};
+        corridor.repeat_until_bits = script_cell(0x132, 1);
         route.push_back(corridor);
         // Out of the corridor's east end and round by the fire giants who
         // block the way (13,12), north through the room that teleports the
@@ -2711,14 +2723,14 @@ const std::vector<RouteBeat> &darkness_route()
                       {{2, 5, D::west}, {1, 5, D::west}, {0, 5, D::north}, {0, 4, D::north}});
         auto cave_dragons = step_beat(32, 0, 3, D::north);
         cave_dragons.rest_first = true;
-        cave_dragons.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x133, 3};
+        cave_dragons.expect_cell = script_cell(0x133, 3);
         route.push_back(cave_dragons);
         // West from (0,1) the party sees the dragons flying off to the north-
         // west and follows them; the tunnel seals behind it, and it comes out
         // on the area map below the Dragons' Aerie (7,1).
         walk_passages(route, 32, {{0, 2, D::north}});
         auto follow_dragons = step_beat(32, 0, 1, D::west, {"YES"});
-        follow_dragons.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x25, 7};
+        follow_dragons.expect_cell = script_cell(0x25, 7);
         route.push_back(follow_dragons);
         // North-west, a dragon flies into an opening in the mountains: the
         // party enters the Dragons' Aerie.
@@ -2752,7 +2764,7 @@ const std::vector<RouteBeat> &darkness_route()
         // copper key (cell 144h bit 3).
         auto copper_key = step_beat(33, 12, 15, D::west);
         copper_key.rest_first = true;
-        copper_key.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x144, 8};
+        copper_key.expect_cell = script_cell(0x144, 8);
         route.push_back(copper_key);
         walk_passages(
             route, 33,
@@ -2776,7 +2788,7 @@ const std::vector<RouteBeat> &darkness_route()
         // key in their treasure (bit 2).
         auto iron_key = step_beat(33, 12, 1, D::west, {"YES"});
         iron_key.rest_first = true;
-        iron_key.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x144, 12};
+        iron_key.expect_cell = script_cell(0x144, 12);
         route.push_back(iron_key);
         walk_passages(route, 33,
                       {{11, 1, D::east},
@@ -2800,7 +2812,7 @@ const std::vector<RouteBeat> &darkness_route()
         // silver key (bit 0).
         auto silver_key = step_beat(33, 3, 1, D::east);
         silver_key.rest_first = true;
-        silver_key.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x144, 13};
+        silver_key.expect_cell = script_cell(0x144, 13);
         route.push_back(silver_key);
         // The party rests in the north-west disused room (3,2) on its way.
         walk_passages(route, 33, {{4, 1, D::south}, {4, 2, D::west}});
@@ -2841,7 +2853,7 @@ const std::vector<RouteBeat> &darkness_route()
         auto steel_key = step_beat(33, 3, 14, D::east);
         steel_key.rest_first = true;
         steel_key.test_wins = true;
-        steel_key.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x144, 15};
+        steel_key.expect_cell = script_cell(0x144, 15);
         route.push_back(steel_key);
         // Back west and north to the doors before the dimensional gate (7,2):
         // the four keys unlock them (cell 144h FFh).
@@ -2865,13 +2877,13 @@ const std::vector<RouteBeat> &darkness_route()
                        {6, 4, D::west},   {5, 4, D::north},  {5, 3, D::east},   {6, 3, D::east},
                        {7, 3, D::north}});
         auto locks = step_beat(33, 7, 2, D::north, {"USE KEYS"});
-        locks.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x144, 255};
+        locks.expect_cell = script_cell(0x144, 255);
         route.push_back(locks);
         // Through them Modthryth stands beside his dracoliches, which the
         // party beats (cell 141h FFh), rested first.
         auto dracolich = step_beat(33, 7, 2, D::north);
         dracolich.rest_first = true;
-        dracolich.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x141, 255};
+        dracolich.expect_cell = script_cell(0x141, 255);
         route.push_back(dracolich);
         // Round to the dimensional gate (7,0), entered facing west: the party
         // steps through to Thorne's cave.
@@ -2938,7 +2950,7 @@ const std::vector<RouteBeat> &darkness_route()
         auto thorne = step_beat(34, 3, 6, D::south, {"YES"});
         thorne.rest_first = true;
         thorne.ward_each_with = "resist_fire";
-        thorne.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x152, 255};
+        thorne.expect_cell = script_cell(0x152, 255);
         route.push_back(thorne);
         // Back the way it came to the dimensional gate (0,13), stepped
         // through westward, and from Limbo on to the Realms.
@@ -3151,7 +3163,7 @@ const std::vector<RouteBeat> &darkness_route()
             route, 68,
             {{14, 12, D::north}, {14, 11, D::west}, {13, 11, D::west}, {12, 11, D::west}});
         auto swanmays = step_beat(68, 11, 11, D::west);
-        swanmays.expect_cell = std::pair<std::uint16_t, std::uint16_t>{606, 3};
+        swanmays.expect_cell = script_cell(606, 3);
         route.push_back(swanmays);
         walk_passages(route, 68,
                       {{10, 11, D::east},
@@ -3288,7 +3300,7 @@ const std::vector<RouteBeat> &darkness_route()
                        {8, 9, D::north},
                        {8, 8, D::north}});
         auto statue = step_beat(69, 8, 7, D::north, {"type:HANDS"});
-        statue.expect_cell = std::pair<std::uint16_t, std::uint16_t>{632, 1};
+        statue.expect_cell = script_cell(632, 1);
         route.push_back(statue);
         walk_passages(route, 69, {{8, 6, D::north}});
         route.push_back(step_beat(69, 8, 5, D::north, {"YES", "stop:REST"}));
@@ -3455,7 +3467,7 @@ const std::vector<RouteBeat> &darkness_route()
         // the amulets that repel spiders, which the party takes (cell 1FFh).
         walk_passages(route, 81, {{4, 12, D::south}, {4, 13, D::south}, {4, 14, D::east}});
         auto amulets = step_beat(81, 5, 14, D::east);
-        amulets.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x1FF, 1};
+        amulets.expect_cell = script_cell(0x1FF, 1);
         route.push_back(amulets);
         // North to the altar room (8,9), where Hem's fate is decided and Daris
         // flees with the Ward; the party follows.
@@ -3472,7 +3484,7 @@ const std::vector<RouteBeat> &darkness_route()
         // Kalistes' Pet, and his enormous spiders (cell 1F7h).
         walk_passages(route, 81, {{8, 9, D::west}, {7, 9, D::west}, {6, 9, D::north}});
         auto ward = step_beat(81, 6, 8, D::east, {"YES"});
-        ward.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x1F7, 1};
+        ward.expect_cell = script_cell(0x1F7, 1);
         route.push_back(ward);
         // Back through the Test's chambers, resting where it is hurt (the
         // cluebook: in any section of the Test it has completed), and out by
@@ -3516,7 +3528,7 @@ const std::vector<RouteBeat> &darkness_route()
         route.push_back(to_roadside_village);
         RouteBeat into_roadside_village{83, 0, 0, D::north, {"YES"}};
         into_roadside_village.area_steps = {C::east};
-        into_roadside_village.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x25, 33};
+        into_roadside_village.expect_cell = script_cell(0x25, 33);
         route.push_back(into_roadside_village);
         // Round the village to the Parlor's wall of gossamer (1,4), where
         // Locaste marches in by her own Ward; the party tries to enter as
@@ -3638,7 +3650,7 @@ const std::vector<RouteBeat> &darkness_route()
         // leaves the Crystal Ring (cell 208h).
         auto eggs = step_beat(84, 3, 6, D::west, {"DESTROY"});
         eggs.test_wins = true;
-        eggs.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x208, 1};
+        eggs.expect_cell = script_cell(0x208, 1);
         route.push_back(eggs);
         // Out with the ring: east through the lower level to the stairs up
         // (13,4, YES), and through the upper level to the foyer and out by
@@ -3668,7 +3680,7 @@ const std::vector<RouteBeat> &darkness_route()
         route.push_back(to_ruined_temple);
         RouteBeat into_ruined_temple{83, 0, 0, D::north, {"YES"}};
         into_ruined_temple.area_steps = {C::west};
-        into_ruined_temple.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x25, 4};
+        into_ruined_temple.expect_cell = script_cell(0x25, 4);
         route.push_back(into_ruined_temple);
         walk_passages(route, 83,
                       {{7, 9, D::east},
@@ -3963,7 +3975,7 @@ const std::vector<RouteBeat> &darkness_route()
         auto maharajah = step_beat(66, 5, 0, D::south, {"SMASH GLOBES"});
         maharajah.camp_broken = true;
         ready_the_bolts(maharajah, true);
-        maharajah.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x1D8, 255};
+        maharajah.expect_cell = script_cell(0x1D8, 255);
         route.push_back(maharajah);
         // Nacacia smiles and bids the party back to the glen: it walks back
         // over the door it climbed, past the altar and round to the broken
@@ -4057,7 +4069,7 @@ const std::vector<RouteBeat> &gateway_route()
         {
             auto cleric = step_beat(3, 9, 0, D::south);
             cleric.rest_first = true;
-            cleric.expect_cell = {{0x4C93, 1}};
+            cleric.expect_cell = {script_cell(0x4C93, 1)};
             route.push_back(cleric);
         }
         // Out of the temple and the eastern gate, and overland east to
@@ -4173,7 +4185,7 @@ const std::vector<RouteBeat> &gateway_route()
         {
             auto amanitas = step_beat(5, 4, 13, D::east);
             amanitas.rest_first = true;
-            amanitas.expect_cell = {{0x4C32, 1}};
+            amanitas.expect_cell = {script_cell(0x4C32, 1)};
             route.push_back(amanitas);
         }
         // Out of Everlund and overland west to Yartar, as Amanitas bids.
@@ -4225,7 +4237,7 @@ const std::vector<RouteBeat> &gateway_route()
         // unlocks it (cell 4C08), tried again after a fall, as a player would.
         {
             auto grating = step_beat(2, 12, 15, D::west, {"YES", "Krevish"});
-            grating.repeat_until_at_least = {{0x4C08, 1}};
+            grating.repeat_until_at_least = {script_cell(0x4C08, 1)};
             grating.repeat_in_place = true;
             route.push_back(grating);
         }
@@ -4357,7 +4369,7 @@ const std::vector<RouteBeat> &gateway_route()
         {
             auto east = step_beat(9, 14, 1, D::north);
             east.rest_first = true;
-            east.expect_cell = {{0x4C27, 1}};
+            east.expect_cell = {script_cell(0x4C27, 1)};
             route.push_back(east);
         }
         // Out of the Hosttower, where Brinshaar turns on the party, back through
@@ -4449,7 +4461,7 @@ const std::vector<RouteBeat> &gateway_route()
         // leave the statuette of the West (bit 2 of cell 4C27).
         {
             RouteBeat chest{13, 3, 9, D::west, {}};
-            chest.repeat_until_at_least = {{0x4C27, 3}};
+            chest.repeat_until_at_least = {script_cell(0x4C27, 3)};
             chest.repeat_in_place = true;
             chest.holding_foes = true;
             route.push_back(chest);
@@ -4478,7 +4490,7 @@ const std::vector<RouteBeat> &gateway_route()
         {
             auto ambush = step_beat(6, 1, 2, D::north);
             ambush.rest_first = true;
-            ambush.expect_cell = {{0x4C2A, 1}};
+            ambush.expect_cell = {script_cell(0x4C2A, 1)};
             route.push_back(ambush);
         }
         // Out of Neverwinter's south gate and overland east and south, past
@@ -4579,7 +4591,7 @@ const std::vector<RouteBeat> &gateway_route()
         {
             RouteBeat cell{17, 12, 4, D::south, {"Krevish"}};
             cell.rest_first = true;
-            cell.repeat_until_at_least = {{0x4C06, 2}};
+            cell.repeat_until_at_least = {script_cell(0x4C06, 2)};
             cell.repeat_in_place = true;
             route.push_back(cell);
         }
@@ -4606,7 +4618,7 @@ const std::vector<RouteBeat> &gateway_route()
                        {2, 2, D::west}},
                       true);
         // The statuette of the North (bit 3 of cell 4C27) joins the other two.
-        route.back().expect_cell = {{0x4C27, 7}};
+        route.back().expect_cell = {script_cell(0x4C27, 7)};
         // Out of Llorkh and overland west to the foot of the Star Mounts, where
         // the aarakocra fly the party up to Ceptienne's aerie.
         {
@@ -4671,7 +4683,7 @@ const std::vector<RouteBeat> &gateway_route()
                        {6, 9, D::north},  {6, 8, D::west},   {5, 8, D::south},  {5, 9, D::south},
                        {5, 10, D::west},  {4, 10, D::north}, {4, 9, D::north},  {4, 8, D::west}},
                       true);
-        route.back().expect_cell = {{0x4C27, 15}};
+        route.back().expect_cell = {script_cell(0x4C27, 15)};
         // Rested in her chamber, back to the alcove where the aarakocra wait to
         // fly the party down, and overland north-east to Sundabar.
         {
@@ -4986,7 +4998,7 @@ const std::vector<RouteBeat> &treasure_route()
                        {12, 1, D::east},  {13, 1, D::north}});
         auto captain = step_beat(22, 13, 0, D::west);
         captain.rest_first = true;
-        captain.expect_cell = {{0x128, 1}};
+        captain.expect_cell = {script_cell(0x128, 1)};
         route.push_back(captain);
         walk_passages(route, 22,
                       {{12, 0, D::east},
@@ -5074,7 +5086,7 @@ const std::vector<RouteBeat> &treasure_route()
         // fight.
         route.back().memorize_first_of = {"charm_person", "dispel_magic"};
         route.back().test_wins = true;
-        route.back().expect_cell = {{0x129, 1}};
+        route.back().expect_cell = {script_cell(0x129, 1)};
         // Down the stairs (9,13) and out of the Way Inn, then overland north
         // by maps 56 and 54 to Yartar (map 23).
         walk_passages(route, 40,
@@ -5174,7 +5186,7 @@ const std::vector<RouteBeat> &treasure_route()
             fight.rest_for_spells = true;
             route.push_back(fight);
         }
-        route.back().expect_cell = {{0x12A, 1}};
+        route.back().expect_cell = {script_cell(0x12A, 1)};
         // The Lord Protector of Triboar hears the Waterbaron (12,2); the party
         // rests first.
         route.push_back({24, 13, 7, D::north, {}});
@@ -5240,7 +5252,7 @@ const std::vector<RouteBeat> &treasure_route()
             ranch.wait_until_minute = 9 * 60;
             route.push_back(ranch);
         }
-        route.back().expect_cell = {{0x12B, 1}};
+        route.back().expect_cell = {script_cell(0x12B, 1)};
         // Back overland south (maps 52, 53 and 55) to the Smuggler's Dock,
         // paying its gatekeeper's fee, for the ship to Mintarn.
         walk_passages(route, 25,
@@ -5314,7 +5326,7 @@ const std::vector<RouteBeat> &treasure_route()
             fight.rest_for_spells = true;
             route.push_back(fight);
         }
-        route.back().expect_cell = {{0x12C, 1}};
+        route.back().expect_cell = {script_cell(0x12C, 1)};
         // At 0600 the sailor on the passenger dock (7,0, facing the sea) books
         // the party's passage to Orlumbor (map 27); as it boards, pirates
         // carry Siulajia off to Luskan, and the party sails on.
@@ -5336,7 +5348,7 @@ const std::vector<RouteBeat> &treasure_route()
         route.push_back({27, 3, 3, D::north, {}});
         RouteBeat wrighttson{27, 11, 3, D::north, {}};
         wrighttson.rest_first = true;
-        wrighttson.expect_cell = {{0x12D, 1}};
+        wrighttson.expect_cell = {script_cell(0x12D, 1)};
         route.push_back(wrighttson);
         // At 0600 a ship at the dock where the party came in (13,11, facing
         // the sea) sails it to Neverwinter (map 28).
@@ -5370,7 +5382,7 @@ const std::vector<RouteBeat> &treasure_route()
             fight.rest_for_spells = true;
             route.push_back(fight);
         }
-        route.back().expect_cell = {{0x12E, 1}};
+        route.back().expect_cell = {script_cell(0x12E, 1)};
         route.push_back({28, 5, 7, D::north, {}});
         // Out of Neverwinter's north gate and overland (map 51) to Luskan
         // (map 31).
@@ -5435,7 +5447,7 @@ const std::vector<RouteBeat> &treasure_route()
         // Redleg's boat under the north-east pier (15,4) carries the party off
         // Ruathym, ending the ninth mission (cell 12Fh).
         RouteBeat redleg_boat{32, 15, 4, D::north, {"GET IN BOAT"}};
-        redleg_boat.expect_cell = {{0x12F, 1}};
+        redleg_boat.expect_cell = {script_cell(0x12F, 1)};
         route.push_back(redleg_boat);
         // Luskan again: Redleg's farewell (8,3) and Jagaerda, captured for her
         // help, freed to join the party once more (7,4). The room where a
@@ -5498,7 +5510,7 @@ const std::vector<RouteBeat> &treasure_route()
         // dead raised at the Temple of Vergadain (2,13) and rests at the Dig
         // Inn (4,11).
         RouteBeat council_done{30, 2, 13, D::north, {"YES", "raise:dead", "Leave"}};
-        council_done.expect_cell = {{0x1F8, 0xFF}};
+        council_done.expect_cell = {script_cell(0x1F8, 0xFF)};
         route.push_back(council_done);
         route.push_back({30, 4, 11, D::north, {"YES"}});
         // Out of Mirabar's south gate (7,15) and overland west and south
@@ -5584,7 +5596,7 @@ const std::vector<RouteBeat> &treasure_route()
                        {8, 9, D::north},
                        {8, 8, D::west}});
         RouteBeat grand_yeti = step_beat(34, 7, 8, D::north);
-        grand_yeti.expect_cell = {{0x22D, 1}};
+        grand_yeti.expect_cell = {script_cell(0x22D, 1)};
         route.push_back(grand_yeti);
         // West through the mines and up the shaft at (1,11) to Fireshear
         // (2,5), whose streets are safe now; resting first, the party steps
@@ -5608,7 +5620,7 @@ const std::vector<RouteBeat> &treasure_route()
         auto beholder = step_beat(33, 2, 4, D::west);
         beholder.rest_first = true;
         beholder.rest_for_spells = true;
-        beholder.expect_cell = {{0x231, 1}};
+        beholder.expect_cell = {script_cell(0x231, 1)};
         route.push_back(beholder);
         // From the dock (0,4, facing the sea) the Fireshear dwarves take the
         // party free to the Ice Peak's Aurilssbaarg (map 35), rested first.
@@ -5685,7 +5697,7 @@ const std::vector<RouteBeat> &treasure_route()
         walk_passages(route, 38,
                       {{6, 8, D::west}, {5, 8, D::north}, {5, 7, D::west}, {4, 7, D::north}});
         auto freezefire = step_beat(38, 4, 6, D::west);
-        freezefire.expect_cell = {{0x25C, 1}};
+        freezefire.expect_cell = {script_cell(0x25C, 1)};
         // The black-robed masters, mages and spies hold and charm the party's
         // members (Hold Person, Hold Monster and Charm Person); the route's
         // player frees them with Dispel Magic (memorized in the cavern). A
@@ -6163,13 +6175,17 @@ bool walk_census(GoldBoxGame game, bool route)
                         {
                             return -1;
                         }
-                        const auto found =
-                            std::ranges::find_if(favorites,
-                                                 [&](std::string_view name)
-                                                 {
-                                                     return id.find(name) != std::string::npos;
-                                                 });
-                        return static_cast<int>(found - favorites.begin());
+                        // Keep priorities as indices. Under MSVC, subtracting the
+                        // found iterator from this captured constexpr table's begin
+                        // produced negative favorite ranks and displaced requested spells.
+                        for (std::size_t priority = 0; priority < favorites.size(); ++priority)
+                        {
+                            if (id.find(favorites[priority]) != std::string::npos)
+                            {
+                                return static_cast<int>(priority);
+                            }
+                        }
+                        return static_cast<int>(favorites.size());
                     };
                     std::ranges::stable_sort(candidates, {}, rank);
                     const auto level_slots =
@@ -6672,8 +6688,8 @@ bool walk_census(GoldBoxGame game, bool route)
                                                     opengold::rules::Outcome::ongoing;
              ++command)
         {
-            const auto &session = combat.combat();
-            const auto state = session.snapshot();
+            const auto &combat_session = combat.combat();
+            const auto state = combat_session.snapshot();
             const auto actor = std::ranges::find(state.combatants, state.actor,
                                                  &opengold::rules::CombatantView::id);
             const bool member = actor != state.combatants.end() &&
@@ -6683,11 +6699,11 @@ bool walk_census(GoldBoxGame game, bool route)
             // whose dispel ends a charm or a hold.
             auto held = member && (game == GoldBoxGame::treasures_of_the_savage_frontier ||
                                    game == GoldBoxGame::pools_of_darkness)
-                            ? free_the_bound(session)
+                            ? free_the_bound(combat_session)
                             : std::nullopt;
             if (!held && member && tactic == 2)
             {
-                held = player_turn(session, picked, bolt_bearers);
+                held = player_turn(combat_session, picked, bolt_bearers);
             }
             // In a maze fight each member makes for the side the party means to
             // leave by and runs off it there.
@@ -6695,7 +6711,7 @@ bool walk_census(GoldBoxGame game, bool route)
             {
                 const auto &field = state.battlefield;
                 const auto to_exit = edge_steps(field, wanted_exit);
-                for (const auto &option : session.legal_commands())
+                for (const auto &option : combat_session.legal_commands())
                 {
                     if (option.verb == "flee" && edge_side(field, actor->cell) == wanted_exit)
                     {
@@ -6711,12 +6727,13 @@ bool walk_census(GoldBoxGame game, bool route)
                 }
             }
             const auto chosen =
-                held     ? *held
-                : member ? opengold::choose_quick_command(
-                               session, tactic != 1 || actor->name.starts_with("magic_user"),
-                               opengold::Searching::everyone)
-                         : opengold::choose_demo_command(session, opengold::Searching::everyone,
-                                                         opengold::default_difficulty);
+                held ? *held
+                : member
+                    ? opengold::choose_quick_command(
+                          combat_session, tactic != 1 || actor->name.starts_with("magic_user"),
+                          opengold::Searching::everyone)
+                    : opengold::choose_demo_command(combat_session, opengold::Searching::everyone,
+                                                    opengold::default_difficulty);
             if (!combat.submit(chosen))
             {
                 ++phases["fight stopped at " + chosen.verb];
@@ -6981,7 +6998,7 @@ bool walk_census(GoldBoxGame game, bool route)
     {
         const auto upper = [](std::string text)
         {
-            std::ranges::transform(text, text.begin(), ::toupper);
+            std::ranges::transform(text, text.begin(), uppercase);
             return text;
         };
         const auto slots = party->state().slots;
@@ -7162,10 +7179,10 @@ bool walk_census(GoldBoxGame game, bool route)
                             pick = 0;
                         }
                     }
-                    const auto flee = std::ranges::find(s.choices, "FLEE");
-                    if (fleeing && flee != s.choices.end())
+                    const auto flee_choice = std::ranges::find(s.choices, "FLEE");
+                    if (fleeing && flee_choice != s.choices.end())
                     {
-                        pick = static_cast<std::size_t>(flee - s.choices.begin());
+                        pick = static_cast<std::size_t>(flee_choice - s.choices.begin());
                     }
                 }
                 // A magic-user learns the spell a player would take.
@@ -7345,7 +7362,7 @@ bool walk_census(GoldBoxGame game, bool route)
                             [&](const opengold::por::Equipment &offered)
                             {
                                 auto name = offered.label();
-                                std::ranges::transform(name, name.begin(), ::toupper);
+                                std::ranges::transform(name, name.begin(), uppercase);
                                 return name.find(wanted) != std::string::npos;
                             });
                         if (!slots[slot] || item == stock.end())
@@ -7380,7 +7397,7 @@ bool walk_census(GoldBoxGame game, bool route)
                                          [](const opengold::por::Equipment &item)
                                          {
                                              auto name = item.label();
-                                             std::ranges::transform(name, name.begin(), ::toupper);
+                                             std::ranges::transform(name, name.begin(), uppercase);
                                              return name.find("WAND") != std::string::npos;
                                          });
                 const auto slots = party->state().slots;
@@ -7788,6 +7805,21 @@ bool walk_census(GoldBoxGame game, bool route)
                 }
             }
             needs["No one can cast what the beat asks"].push_back(current_beat);
+            std::cout << "  Spell selection pending: " << party->state().spell_rest.has_value()
+                      << '\n';
+            for (const auto id : party->state().slots)
+            {
+                if (id)
+                {
+                    const auto &sheet = party->member(id).character.sheet();
+                    std::cout << "  " << sheet.name << " prepared:";
+                    for (const auto &spell : sheet.prepared_spells)
+                    {
+                        std::cout << ' ' << spell;
+                    }
+                    std::cout << '\n';
+                }
+            }
         };
         // The member named readies its largest stack of the item type
         // (RouteBeat::ready_types).
@@ -8095,11 +8127,11 @@ bool walk_census(GoldBoxGame game, bool route)
                 std::cout << (session.snapshot().camp_offered ? " (camp offered)" : "") << "\n";
                 if (std::getenv("OPENGOLD_CURSE_CELL"))
                 {
-                    const auto cell =
+                    const auto requested_cell =
                         static_cast<std::uint16_t>(std::stoul(std::getenv("OPENGOLD_CURSE_CELL")));
-                    std::cout << "  cell " << cell << " = "
+                    std::cout << "  cell " << requested_cell << " = "
                               << opengold::test::TourAccess::machine(session).variable(
-                                     opengold::por::EclAddress{cell})
+                                     opengold::por::EclAddress{requested_cell})
                               << "\n";
                 }
                 // OPENGOLD_ROUTE_SAVES=PREFIX saves the game after each of the
@@ -8393,7 +8425,7 @@ bool walk_census(GoldBoxGame game, bool route)
                     cells.emplace_back(
                         static_cast<std::uint16_t>(std::stoul(item.substr(0, equals), nullptr, 16)),
                         equals == std::string::npos
-                            ? 0
+                            ? std::uint16_t{0}
                             : static_cast<std::uint16_t>(std::stoul(item.substr(equals + 1))));
                 }
                 return cells;

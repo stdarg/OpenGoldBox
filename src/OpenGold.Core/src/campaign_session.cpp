@@ -556,9 +556,9 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
         add_treasures_overland(files, *root);
     }
     const auto loads = script_loads(catalog, game);
-    for (const auto &[id, program] : catalog.all())
+    for (const auto &[id, script_program] : catalog.all())
     {
-        root->programs.emplace(id.record, program);
+        root->programs.emplace(id.record, script_program);
         root->script_banks.emplace(id.record, loads.at(id.record).disk);
     }
     if (game == GoldBoxGame::pools_of_darkness)

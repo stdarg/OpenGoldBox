@@ -151,8 +151,8 @@ set(wall_art_project_commands
     # The Combat Sprite Catalog's creature data (data/monsters, #274) is read
     # by the core, not imported by Godot, so its copy is replaced whole and
     # hidden from the importer.
-    COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_project}/data/monsters"
-    COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/monsters" "${game_project}/data/monsters"
+    COMMAND "${CMAKE_COMMAND}" "-DDESTINATION=${game_project}/data/monsters"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/stage_monster_records.cmake"
     COMMAND "${CMAKE_COMMAND}" -E touch "${game_project}/data/monsters/.gdignore")
 
 # The data the Creature Stats Editor's edits change (dev_tools/docs/creature-
@@ -755,7 +755,8 @@ if(WIN32)
         COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_output}/data/art/walls"
         COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_output}/data/art/missiles"
         COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_output}/data/art/closeups"
-        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/monsters" "${game_output}/data/monsters"
+        COMMAND "${CMAKE_COMMAND}" "-DDESTINATION=${game_output}/data/monsters"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/stage_monster_records.cmake"
         COMMAND "${CMAKE_COMMAND}" -E make_directory "${game_output}/data/art"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${combat_body_source}" "${game_output}/data/art/combat-body-looks.tsv"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${combat_weapon_source}" "${game_output}/data/art/combat-weapon-options.tsv"
@@ -779,7 +780,8 @@ elseif(APPLE)
         COMMAND "${CMAKE_COMMAND}" -E rm -rf "${export_path}/Contents/Resources/data/art/walls"
         COMMAND "${CMAKE_COMMAND}" -E rm -rf "${export_path}/Contents/Resources/data/art/missiles"
         COMMAND "${CMAKE_COMMAND}" -E rm -rf "${export_path}/Contents/Resources/data/art/closeups"
-        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/monsters" "${export_path}/Contents/Resources/data/monsters"
+        COMMAND "${CMAKE_COMMAND}" "-DDESTINATION=${export_path}/Contents/Resources/data/monsters"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/stage_monster_records.cmake"
         COMMAND "${CMAKE_COMMAND}" -E make_directory "${export_path}/Contents/Resources/data/art"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${combat_body_source}" "${export_path}/Contents/Resources/data/art/combat-body-looks.tsv"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${combat_weapon_source}" "${export_path}/Contents/Resources/data/art/combat-weapon-options.tsv"
@@ -800,7 +802,8 @@ else()
         COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_output}/data/art/walls"
         COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_output}/data/art/missiles"
         COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_output}/data/art/closeups"
-        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/monsters" "${game_output}/data/monsters"
+        COMMAND "${CMAKE_COMMAND}" "-DDESTINATION=${game_output}/data/monsters"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/stage_monster_records.cmake"
         COMMAND "${CMAKE_COMMAND}" -E make_directory "${game_output}/data/art"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${combat_body_source}" "${game_output}/data/art/combat-body-looks.tsv"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${combat_weapon_source}" "${game_output}/data/art/combat-weapon-options.tsv"

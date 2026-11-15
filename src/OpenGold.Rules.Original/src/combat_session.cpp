@@ -595,7 +595,10 @@ class Reader
         {
             return number<std::uint64_t>();
         }
-        return static_cast<T>(number<long long>());
+        else
+        {
+            return static_cast<T>(number<long long>());
+        }
     }
 
     std::string text()
@@ -8213,7 +8216,7 @@ rules::Snapshot Session::snapshot() const
             {
                 std::ranges::sort(readied);
                 auto &ids = view.readied_items.emplace();
-                for (const auto &[order, id] : readied)
+                for (const auto &[readied_order, id] : readied)
                 {
                     ids.push_back(id);
                 }
@@ -8883,7 +8886,7 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
     {
         throw std::runtime_error("Invalid original-rules combat checkpoint");
     }
-    for (std::size_t n = 0; n < count; ++n)
+    for (std::size_t fighter_index = 0; fighter_index < count; ++fighter_index)
     {
         Fighter f;
         f.id = in.as<EntityId>();

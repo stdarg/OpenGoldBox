@@ -415,7 +415,8 @@ Fight arrange(const std::vector<Placed> &placed, std::uint64_t seed,
     return fight;
 }
 
-const rules::CombatantView &view_of(const rules::Snapshot &state, std::string_view name)
+// Own the view: callers often pass a temporary snapshot.
+rules::CombatantView view_of(const rules::Snapshot &state, std::string_view name)
 {
     return *std::find_if(state.combatants.begin(), state.combatants.end(),
                          [name](const rules::CombatantView &v)

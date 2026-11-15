@@ -524,7 +524,7 @@ String PartyTestBridge::start_fight(const Dictionary &configuration)
                 auto staged = por::stage_area_creature(
                     home, choice.record, choice.icon, exported, id,
                     ally ? name : name + " " + std::to_string(encounter.enemies.size() + 1),
-                    ally ? rules::Side::party : rules::Side::opposition, *difficulty);
+                    ally ? rules::Side::party : rules::Side::opposition, *difficulty, false);
                 if (!ally)
                 {
                     footprints.push_back(staged.fighter.footprint);

@@ -2598,11 +2598,11 @@ void items_are_readied_mid_fight()
     for (int step = 0; step < 40 && !kobold_acted; ++step)
     {
         const auto commands = session->legal_commands();
-        const bool kobold = session->snapshot().actor == 1000;
-        const auto next = std::ranges::find(commands, std::string(kobold ? "quick" : "end"),
+        const bool kobold_turn = session->snapshot().actor == 1000;
+        const auto next = std::ranges::find(commands, std::string(kobold_turn ? "quick" : "end"),
                                             &rules::Command::verb);
         check(session->submit(*next), "The fight goes on");
-        kobold_acted = kobold;
+        kobold_acted = kobold_turn;
     }
     const auto snapshot = session->snapshot();
     const auto &view = *std::ranges::find(snapshot.combatants, archer, &rules::CombatantView::id);

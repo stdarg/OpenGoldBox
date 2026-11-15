@@ -21,8 +21,13 @@ project_dir="$build_dir/project"
 mkdir -p "$project_dir"
 rsync -a --delete --exclude='.godot' --exclude='bin' \
     "$repo_dir/src/OpenGoldBox/godot/" "$project_dir/"
-mkdir -p "$project_dir/bin" "$project_dir/data/art" "$project_dir/data/rules" "$project_dir/combat_tester"
+mkdir -p "$project_dir/bin" "$project_dir/bin/splashes" "$project_dir/data/art" "$project_dir/data/rules" "$project_dir/combat_tester"
 mkdir -p "$project_dir/bin/portraits"
+splashes=(OpenGoldBoxSplashBackground OpenGoldBoxEngineLettering OpenGoldBoxGameLettering
+    OpenGoldBoxEngineLettering.es OpenGoldBoxGameLettering.es OpenGoldBoxIcon)
+for splash in "${splashes[@]}"; do
+    cp "$repo_dir/art/$splash.png" "$project_dir/bin/splashes/"
+done
 cp "$tool_dir/godot/combat_tester.gdextension" "$project_dir/bin/zz_combat_tester.gdextension"
 cp "$tool_dir/godot/"*.gd "$tool_dir/godot/setup.tscn" "$project_dir/combat_tester/"
 cp "$tool_dir/godot/icon.png" "$project_dir/combat_tester/icon.png"
@@ -34,11 +39,17 @@ cp "$repo_dir/data/art/combat-body-looks.tsv" "$repo_dir/data/art/combat-weapon-
 rsync -a --delete "$repo_dir/data/rules/srd-5.2.1/" "$project_dir/data/rules/srd-5.2.1/"
 rsync -a --delete "$repo_dir/data/monsters/" "$project_dir/data/monsters/"
 rsync -a "$repo_dir/data/art/portraits/" "$project_dir/bin/portraits/"
-if [[ ! -s "$project_dir/.godot/extension_list.cfg" ]]; then
+import_ready() {
+    [[ -s "$project_dir/.godot/extension_list.cfg" ]] || return 1
+    for splash in "${splashes[@]}"; do
+        [[ -s "$project_dir/bin/splashes/$splash.png.import" ]] || return 1
+    done
+}
+if ! import_ready; then
     # Godot can crash as the import exits; the import is done once it lists
-    # the extension.
+    # the extension and has imported each staged splash.
     "$godot_bin" --headless --editor --path "$project_dir" --import --quit ||
-        [[ -s "$project_dir/.godot/extension_list.cfg" ]]
+        import_ready
 fi
 
 # The new art, as a player who downloaded it and chose its folder.
