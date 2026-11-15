@@ -1310,6 +1310,19 @@ class RulesModule
         return experience;
     }
 
+    // What the campaign's clock going from minute `from` to `to` changes on a
+    // character for good (under the original rules' AD&D aging, a year of age
+    // for each year of the clock), as level history entries it takes in
+    // order; none by default.
+    [[nodiscard]] virtual std::vector<AdvancementChoice>
+    clock_changes(const CharacterSheet &sheet, std::uint64_t from, std::uint64_t to) const
+    {
+        (void)sheet;
+        (void)from;
+        (void)to;
+        return {};
+    }
+
     // What being brought back from death left on a character for good (the
     // original rules' Constitution and Hit Points lost to Raise Dead), as
     // level history entries the character takes in order; none by default.

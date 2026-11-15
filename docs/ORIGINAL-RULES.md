@@ -695,8 +695,6 @@ The work asked for next (2026-11-14), in order, with what each needs:
    - The temples' Restoration (step 6; *Pools of Darkness*'s and
      *Treasures*'), a service the game's temple screen does not offer yet;
      the spell in camp gives drained levels back (Pools of Darkness).
-   - Under AD&D aging, a year added for each year the game's clock passes
-     (An age that changes after creation, step 3).
 
 ## What the original rules cover
 
@@ -805,8 +803,11 @@ lines in all:
      change (`lasting_changes`), as it does Youth used out of a fight. Under
      the original's aging the scores stay; under AD&D aging each age group
      reached or left changes them again, between 3 and the race's maximum
-     (exceptional Strength is lost below 18). Still to come under AD&D aging:
-     a year added for each year the game's clock passes.
+     (exceptional Strength is lost below 18). Under AD&D aging each year the
+     campaign's clock passes (12 months of 30 days, the original's calendar)
+     adds a year, an "age" entry like Haste's (`RulesModule::clock_changes`,
+     2026-11-15); the original's own clock ages no one until its year count
+     overflows (`ValidateClock`), so under its aging the clock adds none.
    - Later: the training hall's fee and the classes each hall trains (step
      6), and a magic-user's new spell at each level (step 5). The Character
      Pool has no original-rules characters yet.

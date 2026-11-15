@@ -692,8 +692,9 @@ class CampaignParty
     struct Elapsed
     {
         std::vector<std::pair<MemberId, rules::VitalState>> vitals;
-        // The inventories of members whose items went as the time passed.
-        std::vector<std::pair<MemberId, Inventory>> inventories;
+        // The characters the time changed: their age grown with the clock
+        // (AD&D aging), or items gone with it.
+        std::vector<std::pair<MemberId, Character>> characters;
         RandomState random;
         std::uint64_t time_minutes{};
         unsigned subminute_milliseconds{};

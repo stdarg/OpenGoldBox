@@ -262,17 +262,17 @@ void keep_gained_item(PartyMember &member, const rules::GainedItem &gained)
     }
 }
 
-// The member's inventory without the items that go as time passes (the
+// The character's inventory without the items that go as time passes (the
 // original's Spiritual Hammer as its spell ends), when any goes.
 std::optional<Inventory> lasting_inventory(const rules::RulesModule &rules,
-                                           const PartyMember &member,
+                                           const Character &character,
                                            const rules::VitalState &vitals)
 {
-    auto inventory = member.character.inventory();
+    auto inventory = character.inventory();
     bool lost = false;
-    for (const auto &item : member.character.inventory().items())
+    for (const auto &item : character.inventory().items())
     {
-        if (!rules.item_lasts(vitals, member.character.sheet(), item.definition_id))
+        if (!rules.item_lasts(vitals, character.sheet(), item.definition_id))
         {
             inventory.remove(item.id, item.quantity);
             lost = true;
@@ -3018,9 +3018,33 @@ CampaignParty::Elapsed CampaignParty::elapsed(const PartyState &state,
         auto &vitals = *participant.state;
         const auto &sheet = member_in(state, participant.id).character.sheet();
         rules_->pass_time(vitals, sheet, state.time_minutes, result.time_minutes);
-        if (auto inventory = lasting_inventory(*rules_, member_in(state, participant.id), vitals))
+        // What the clock changes on the member for good (AD&D aging's years)
+        // and the items that go with the time.
+        std::optional<Character> changed;
+        for (const auto &change :
+             rules_->clock_changes(sheet, state.time_minutes, result.time_minutes))
         {
-            result.inventories.emplace_back(participant.id, std::move(*inventory));
+            if (!changed)
+            {
+                changed = member_in(state, participant.id).character;
+            }
+            if (!changed->advance(*rules_, vitals, change))
+            {
+                throw std::runtime_error("The clock's change cannot be kept");
+            }
+        }
+        const auto &character = changed ? *changed : member_in(state, participant.id).character;
+        if (auto inventory = lasting_inventory(*rules_, character, vitals))
+        {
+            if (!changed)
+            {
+                changed = character;
+            }
+            changed->replace_inventory(std::move(*inventory));
+        }
+        if (changed)
+        {
+            result.characters.emplace_back(participant.id, std::move(*changed));
         }
         result.vitals.emplace_back(participant.id, std::move(vitals));
     }
@@ -3039,7 +3063,7 @@ void CampaignParty::apply(PartyState &state, Elapsed &&elapsed) noexcept
             }
         }
     }
-    for (auto &[id, inventory] : elapsed.inventories)
+    for (auto &[id, character] : elapsed.characters)
     {
         for (auto &member : state.roster)
         {
@@ -3047,7 +3071,7 @@ void CampaignParty::apply(PartyState &state, Elapsed &&elapsed) noexcept
             {
                 continue;
             }
-            member.character.replace_inventory(std::move(inventory));
+            member.character = std::move(character);
             const auto &kept = member.character.inventory();
             std::erase_if(member.equipped,
                           [&kept](std::uint64_t item)

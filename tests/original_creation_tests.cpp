@@ -2289,6 +2289,23 @@ void ages_change_after_creation()
         check(follows, aging == original::Aging::add ? "Under AD&D aging the scores follow"
                                                      : "Under the original's aging they stay");
     }
+
+    // Under AD&D aging each year of the clock (12 months of 30 days) adds a
+    // year; under the original's the clock ages no one.
+    for (const auto aging : {original::Aging::add, original::Aging::original})
+    {
+        std::shared_ptr<const rules::CharacterRules> rules = original::character_rules(aging);
+        CampaignParty aging_party(original::rules_module(), rules);
+        const auto member = aging_party.add_pc(made_fighter(rules));
+        const int born = aging_party.member(member).character.sheet().original->age;
+        aging_party.advance_time(std::chrono::minutes{360 * 24 * 60 - 1});
+        const int before_a_year = aging_party.member(member).character.sheet().original->age;
+        aging_party.advance_time(std::chrono::minutes{2 * 360 * 24 * 60 + 1});
+        const int added = aging_party.member(member).character.sheet().original->age - born;
+        check(before_a_year == born && added == (aging == original::Aging::add ? 3 : 0),
+              aging == original::Aging::add ? "Under AD&D aging a year of the clock adds a year"
+                                            : "Under the original's aging the clock adds none");
+    }
 }
 
 // A fight's command of this verb for this item, if offered.

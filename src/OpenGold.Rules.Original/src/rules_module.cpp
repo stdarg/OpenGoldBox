@@ -591,6 +591,8 @@ class OriginalModule final : public RulesModule
                    std::uint64_t to) const override;
     [[nodiscard]] bool item_lasts(const VitalState &state, const CharacterSheet &sheet,
                                   std::string_view definition) const override;
+    [[nodiscard]] std::vector<AdvancementChoice>
+    clock_changes(const CharacterSheet &sheet, std::uint64_t from, std::uint64_t to) const override;
     [[nodiscard]] RecoveryInfo recovery_info(const CharacterSheet &,
                                              const VitalState &) const override;
     void grant_temporary_hit_points(VitalState &, const CharacterSheet &,
@@ -2008,6 +2010,22 @@ void OriginalModule::recover(VitalState &state, const CharacterSheet &sheet) con
     state.resources = rested_state(conditions_of(sheet, state));
 }
 
+namespace
+{
+// The years the campaign's clock passes from minute `from` to `to`, by the
+// original's calendar: 12 months of 30 days (gdconsts.pas, unitScale).
+int years_passed(std::uint64_t from, std::uint64_t to) noexcept
+{
+    constexpr std::uint64_t year_minutes = 12ULL * 30 * 24 * 60;
+    return to <= from ? 0 : static_cast<int>(to / year_minutes - from / year_minutes);
+}
+
+bool ages_with_the_clock(const CharacterSheet &sheet) noexcept
+{
+    return sheet.original && sheet.original->aging_changes_scores;
+}
+} // namespace
+
 // Time passing for a member outside a fight, as the original's clock counts
 // it (gametime.pas): its lasting conditions run down, camp spells, Slow
 // Poison and the paladin's day and week among them; a disease whose time
@@ -2030,10 +2048,18 @@ void OriginalModule::pass_time(VitalState &state, const CharacterSheet &sheet, s
     };
     const auto game = game_of(sheet.identity);
     bool slow_poison_ended = false;
+    // The age a member carries grows with the clock as its sheet does
+    // (clock_changes), so a later change of age starts from it.
+    const int years = ages_with_the_clock(sheet) ? years_passed(from, to) : 0;
     change_conditions(
         sheet, state,
         [&](std::vector<Effect> &effects)
         {
+            if (const auto age = std::ranges::find(effects, age_in_years, &Effect::code);
+                age != effects.end())
+            {
+                age->strength += years;
+            }
             // What wasted through this time: only a disease that
             // had taken hold already.
             waste_away(sheet, state, effects, boundaries(60), boundaries(10));
@@ -2072,6 +2098,23 @@ void OriginalModule::pass_time(VitalState &state, const CharacterSheet &sheet, s
                 state.hit_points = 0;
             }
         });
+}
+
+// Under AD&D aging a character grows a year older for each year the clock
+// passes (the Aging setting, docs/ORIGINAL-RULES.md); the original's clock
+// ages no one until its year count overflows (gametime.pas, ValidateClock).
+std::vector<AdvancementChoice> OriginalModule::clock_changes(const CharacterSheet &sheet,
+                                                             std::uint64_t from,
+                                                             std::uint64_t to) const
+{
+    const int years = years_passed(from, to);
+    if (!ages_with_the_clock(sheet) || years == 0)
+    {
+        return {};
+    }
+    AdvancementChoice change;
+    change.rules_data = encode_age(years);
+    return {change};
 }
 
 // Spiritual Hammer's hammer stays while its spell lasts, which outlasts the
