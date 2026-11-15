@@ -596,7 +596,7 @@ playing each event and fight; it fails on any event the session cannot play.
   services): Pool, Share and Take, a temple's Restoration and Fix; drinks
   as more than a count; the encounter's monster picture at its range.
 - Fights:
-  - The differences of the near matches (Monsters' effects, below).
+  - The differences of the near matches left (Monsters' effects, below).
   - The ring of wizardry's special (81h, the magic-user's fifth-level
     spells doubled while readied) and the 86h special no shipped item has;
     the Strength gauntlets and girdles give plays in fights only, not at a
@@ -617,7 +617,7 @@ Appraise and the vault's items are done): a temple's Restoration, building
 on the rules' Restoration in camp and the temple service
 (`rules::TempleService::restoration`) that Pools of Darkness's and
 Treasures' temples sell, once that is on main; the near matches'
-differences (Monsters' effects).
+differences left (58, 82, 91, 96, 117, 159 and 170; Monsters' effects).
 
 ### Monsters' effects, "no magic" fights and step events
 
@@ -627,41 +627,41 @@ Since 2026-11-14 (`ua_session.cpp`, `combatant.cpp`):
   kit loads them, for good at strength FFh, each as the original rules'
   effect that does what the kit's does (`original::canonical_effect`, as
   for *Curse* and *Secret*; judged from the reconstruction's `effects.c`,
-  `fxcore.c` and `fxcombat.c`). The kit's monsters carry 68 kinds; 54 match
+  `fxcore.c` and `fxcombat.c`). The kit's monsters carry 68 kinds; 49 match
   an effect the fight plays:
 
   | Kit | Fight | Kit | Fight | Kit | Fight | Kit | Fight |
   |---|---|---|---|---|---|---|---|
-  | 6 | 335 | 64 | 64 | 92 | 492 | 141 | 108 |
-  | 8 | 8 | 65 | 465 | 93 | 112 | 143 | 111 |
-  | 18 | 124 | 66 | 115 | 95 | 107 | 158 | 109 |
-  | 24 | 24 | 70 | 470 | 96 | 290~ | 159 | 117~ |
-  | 26 | 26 | 73 | 273 | 98 | 310 | 169 | 116 |
-  | 37 | 237 | 79 | 479 | 100 | 482~ | 170 | 87~ |
-  | 45 | 45 | 82 | 330~ | 101 | 85 | 171 | 82 |
-  | 47 | 47 | 84 | 504 | 102 | 86 | 173 | 284 |
-  | 58 | 458~ | 85 | 483 | 103 | 119~ | 174 | 282 |
-  | 59 | 127 | 86 | 70 | 105 | 334 | 175 | 281 |
-  | 60 | 460~ | 88 | 488~ | 108 | 303~ | 176 | 257 |
-  | | | 89 | 89 | 117 | 287~ | 216 | 100 |
-  | | | 91 | 88~ | 124 | 84~ | 217 | 101 |
-  | | | | | 132 | 488 | 220 | 296 |
-  | | | | | | | 223 | 480 |
-  | | | | | | | 224 | 68~ |
+  | 6 | 335 | 70 | 470 | 98 | 310 | 170 | 87~ |
+  | 8 | 8 | 73 | 273 | 100 | 482 | 171 | 82 |
+  | 18 | 124 | 79 | 479 | 101 | 85 | 173 | 284 |
+  | 24 | 24 | 82 | 330~ | 102 | 86 | 174 | 282 |
+  | 26 | 26 | 84 | 504 | 105 | 334 | 175 | 281 |
+  | 37 | 237 | 85 | 483 | 117 | 287~ | 176 | 257 |
+  | 45 | 45 | 86 | 70 | 124 | 84 | 216 | 100 |
+  | 47 | 47 | 89 | 89 | 132 | 488 | 217 | 101 |
+  | 58 | 458~ | 91 | 88~ | 141 | 108 | 220 | 296 |
+  | 59 | 127 | 92 | 492 | 143 | 111 | 223 | 480 |
+  | 64 | 64 | 93 | 112 | 158 | 109 |  |  |
+  | 65 | 465 | 95 | 107 | 159 | 117~ |  |  |
+  | 66 | 115 | 96 | 290~ | 169 | 116 |  |  |
 
   A ~ marks a near match: the gaze of 58 reaches six squares and spares no
-  one the kit's 79 spares; 60 and 103 let any monster of their level
-  through, armed or not; 82 slays with the banishing quarrel; 88 and 224
-  paralyse on either attack and 224 for longer; 91 breathes as Pool of
-  Radiance's dragons do; 96 is acid as well as breath; 100's terror takes
-  no save; 108 adds 1d6 to the blow; 117's rays need their exact
-  distances; 124's charm is saved at -2; 159's holy water is the fight's;
-  170's rot takes no Charisma. (Until 2026-11-14 the fight played 84's
+  one the kit's 79 spares; 82 slays with the banishing quarrel; 91
+  breathes as Pool of Radiance's dragons do; 96 is acid as well as breath;
+  117's rays need their exact distances; 159's holy water is the fight's;
+  170's rot takes no Charisma. Two play as the kit's in a design
+  (2026-11-15): 100's terror grips an enemy below 6 Hit Dice that fails a
+  save against spells, for 4d6 rounds (`fx_terrify`), and 124's gaze
+  charms as Charm Person, saved against without the -2 Pool of Radiance's
+  vampires give (`fx_spell_gaze`). (Until 2026-11-14 the fight played 84's
   charming gaze in Pool of Radiance only, so the kit's vampires never
   charmed; they do.)
-- **The kit's own effects.** The other 14 no earlier game has; each plays
+- **The kit's own effects.** The other 19 no earlier game has, or has
+  otherwise; each plays
   600 higher (`kit_effect_offset`) as the kit plays it, in
-  `combat_session.cpp` (since 2026-11-14):
+  `combat_session.cpp` (since 2026-11-14; the last five since 2026-11-15,
+  near matches until then):
 
   | Kit | Fight | Monsters | What it does |
   |---|---|---|---|
@@ -679,6 +679,11 @@ Since 2026-11-14 (`ua_session.cpp`, `combatant.cpp`):
   | 193 | 793 | black pudding | No blow harms it |
   | 195 | 795 | gorgon | Breathes four times a fight, at an enemy within 6 squares, along 6 squares two wide, never through its own side: each that fails a save against petrification is stoned; ends its turn |
   | 219 | 819 | efreeti | Takes 1 less a die of fire, never under 1 a die |
+  | 60 | 660 | monster 70 | A weapon below +3 does nothing, nor bare blows but a monster's of 9 Hit Dice or more (`fx_need_plus`, as 125) |
+  | 103 | 703 | monsters 22 to 27 and eight others | A weapon below +1 does nothing, nor bare blows but a monster's of 5 Hit Dice or more |
+  | 88 | 688 | monsters 16, 27, 41 and 69 | Its second attack's blow paralyses one beside it for 10 rounds, unless saved against paralysis |
+  | 224 | 824 | monster 20 | Its first attack's blow paralyses for 10 rounds, unless saved against paralysis; never an elf |
+  | 108 | 708 | monster 55 | Its second attack's blow burns for 2d6 of magical fire, half on a save against spells |
 
   The kit hands the gorgon a second effect (203) that breathes; the fight
   keeps the breaths on 795 itself. The bulette's flurry is the kit's as
@@ -709,7 +714,7 @@ Since 2026-11-14 (`ua_session.cpp`, `combatant.cpp`):
   event; the counts are saved.
 
 `opengold_ua_session_tests` checks the skeleton's, troll's and rakshasa's
-effects, the 14 the kit alone has on their monsters, the goblin's and ogre's
+effects, the 19 the kit alone has on their monsters, the goblin's and ogre's
 kin, the party's blows doing the black pudding no harm and the gorgon's
 breath stoning them, the hall's no-magic kobolds and the cellar's draft
 every third step; `opengold_original_combat_tests` each of the kit's own

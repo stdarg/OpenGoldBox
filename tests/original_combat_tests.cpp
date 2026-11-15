@@ -5193,6 +5193,89 @@ void the_kits_items_strike_as_the_kit_has_them()
     check(booted_feet == 2 * feet("Walker"), "Boots of speed double their wearer's movement");
 }
 
+// The kit's monsters where its effects differ from every game's
+// (docs/games/ua.md, Monsters' effects): the need of a +1 or +3 weapon, as
+// its +2 (103, 60); a ghoul's paralysing blow, never on an elf (224), and a
+// second blow's beside it (88); 2d6 of fire with a second blow (108); and
+// its terror, for those below 6 Hit Dice that fail a
+// save against spells (100).
+void the_kits_monsters_differ_as_the_kit_has_them()
+{
+    const auto hitter = [](std::optional<original::StrikingItem> striker, int level)
+    {
+        auto c = monster({2, 1, 1, 9}, {0, 0, 0, 0}, {});
+        c.striker = striker;
+        c.race = striker ? 7 : 0;
+        c.level = level;
+        return c;
+    };
+    const auto defended = [](int code)
+    {
+        auto c = creature(1000, 0);
+        c.effects.push_back(kit_effect(code));
+        return c;
+    };
+    const auto plus = [](int magic)
+    {
+        return original::StrikingItem{magic, false, 0};
+    };
+    check(first_hit(hitter(plus(0), 1), defended(103), kit_game) == 0 &&
+              first_hit(hitter(plus(1), 1), defended(103), kit_game) == 10 &&
+              first_hit(hitter(std::nullopt, 4), defended(103), kit_game) == 0 &&
+              first_hit(hitter(std::nullopt, 5), defended(103), kit_game) == 10,
+          "A +1 weapon or a monster of 5 Hit Dice harms what needs +1");
+    check(first_hit(hitter(plus(2), 1), defended(60), kit_game) == 0 &&
+              first_hit(hitter(plus(3), 1), defended(60), kit_game) == 10 &&
+              first_hit(hitter(std::nullopt, 8), defended(60), kit_game) == 0 &&
+              first_hit(hitter(std::nullopt, 9), defended(60), kit_game) == 10,
+          "A +3 weapon or a monster of 9 Hit Dice harms what needs +3");
+
+    const auto paralyzes = [](const original::Combatant &attacker, int race)
+    {
+        auto target = victim(500);
+        target.race = race;
+        auto fight = strike_until(
+            attacker, target,
+            [](const rules::CombatSession &session)
+            {
+                return logged(session, "{name} is paralyzed.") > 0;
+            },
+            53, kit_game);
+        return logged(*fight.session, "{name} is paralyzed.") > 0;
+    };
+    const auto ghoul = monster({2, 1, 1, 0}, {0, 0, 0, 0}, {kit_effect(224)});
+    check(paralyzes(ghoul, 7) && !paralyzes(ghoul, 2),
+          "A ghoul's blow paralyzes, but never an elf");
+    const auto holder = monster({0, 0, 0, 0}, {2, 1, 1, 0}, {kit_effect(88)});
+    check(paralyzes(holder, 7), "A paralysing second blow holds one beside it");
+
+    const auto burner = monster({0, 0, 0, 0}, {2, 1, 1, 0}, {kit_effect(108)});
+    auto burnt = strike_until(
+        burner, victim(500),
+        [](const rules::CombatSession &session)
+        {
+            return logged(session, "{attacker} hits {name} for {damage}.", "Attacker") >= 4;
+        },
+        53, kit_game);
+    const int blows = logged(*burnt.session, "{attacker} hits {name} for {damage}.", "Attacker");
+    const int lost = 500 - view_of(burnt.session->snapshot(), "Target").hit_points;
+    check(blows >= 4 && lost >= blows * 3, "A burning second blow burns for 2d6 more");
+
+    auto squire = victim(50), knight = victim(50), lord = victim(50), brave = creature(50, 1);
+    knight.level = 5;
+    lord.level = 6;
+    auto dragon = creature(60, 9);
+    dragon.effects = {{482, 0, 0, false}};
+    auto feared = arrange({{"Squire", rules::Side::party, {1, 3}, squire},
+                           {"Knight", rules::Side::party, {1, 5}, knight},
+                           {"Lord", rules::Side::party, {1, 1}, lord},
+                           {"Brave", rules::Side::party, {1, 7}, brave},
+                           {"Dragon", rules::Side::opposition, {6, 3}, dragon}},
+                          263, {}, 100, kit_game);
+    check(logged(*feared.session, "{name} is affected by {spell}.") == 2,
+          "The kit's terror grips those below 6 Hit Dice that fail their save");
+}
+
 void the_kits_rangers_know_their_foes()
 {
     auto ranger = monster({2, 1, 1, 9}, {0, 0, 0, 0}, {{334, 0, 0, false}});
@@ -5323,6 +5406,7 @@ int main()
         the_kits_monsters_breathe();
         the_kits_rangers_know_their_foes();
         the_kits_items_strike_as_the_kit_has_them();
+        the_kits_monsters_differ_as_the_kit_has_them();
         darkness_spells_fight();
         darkness_effects_take_their_own_numbers();
         darkness_records_fight_by_their_effects();

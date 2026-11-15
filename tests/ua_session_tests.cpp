@@ -2075,7 +2075,8 @@ void the_kits_monsters_and_events_play_as_the_kit_has_them(const std::filesystem
     // carry them (opengold_original_combat_tests plays each).
     const std::vector<std::pair<unsigned, int>> own{
         {71, 40},  {53, 76},  {71, 80},  {110, 81}, {38, 90},  {47, 99},  {57, 125},
-        {26, 126}, {21, 137}, {24, 168}, {52, 186}, {52, 193}, {43, 195}, {56, 219}};
+        {26, 126}, {21, 137}, {24, 168}, {52, 186}, {52, 193}, {43, 195}, {56, 219},
+        {22, 103}, {70, 60},  {16, 88},  {20, 224}, {55, 108}};
     for (const auto &[number, code] : own)
     {
         check(has(effects(number), code + opengold::original::kit_effect_offset),

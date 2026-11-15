@@ -53,6 +53,10 @@ enum class Condition : unsigned
 // below it are the player's characters, who never check (combatai.pas, CheckMorale).
 constexpr unsigned non_player = 0x80;
 
+// The original's race number of an elf (its records' races run from 1, a
+// dwarf, to 7, a human; 0 is a monster).
+constexpr int elf_race = 2;
+
 // The effects that leave a creature helpless: nausea, snake charm, paralysis
 // and sleep (charhlp.pas, IsHelpless).
 constexpr std::array<int, 4> helpless_effects{31, 51, 52, 53};
@@ -115,6 +119,11 @@ constexpr int spell_proof = 640, disease_proof = 676, halved_below_plus_three = 
 // effects): a ring of fire resistance, boots of speed, a giant-slaying sword
 // and a vorpal blade.
 constexpr int fire_resistance_ring = 661, speed_boots = 674, kit_giant_bane = 675, vorpal = 715;
+// The kit's monsters' own: the need of a +3 and a +1 weapon, paralysis by a
+// second blow beside its target and by a ghoul's first, and 2d6 of magical
+// fire with a second blow.
+constexpr int needs_plus_three_kit = 660, needs_plus_one = 703, adjacent_paralysis = 688,
+              ghoul_paralysis = 824, fire_blow = 708;
 // OpenGoldBox's own mark on a creature whose armor a black pudding has eaten
 // into, for the campaign to keep: past the kit's last effect (228), so no
 // record of the kit's names it.
@@ -137,18 +146,20 @@ constexpr int six_weapons = 516, dancing = 518, druid_fire_protection = 519, dra
 // What a hit carries, by the attacker's effects, in the original's order: a
 // primary attack's hit and a secondary one's (effhndlr.pas, HIT_PHASE_1 and
 // HIT_PHASE_2).
-constexpr std::array<int, 19> primary_hit_effects{
+constexpr std::array<int, 20> primary_hit_effects{
     85, 86, 87, 68, 79, 80, 76, 73, 77,
     // Curse's (canonical_effect).
     257, 296, 322, 323, 345,
     // Secret's (fxengine.pas, its conditions 2 and 3, in its reconstruction).
     effect::poison_touch, effect::stone_touch, effect::strong_poison_touch, effect::ghoul_touch,
-    // The kit's vorpal blade (its fxcore.c, fx_trigger_group 2).
-    effect::vorpal};
-constexpr std::array<int, 15> secondary_hit_effects{
+    // The kit's vorpal blade and ghoul (its fxcore.c, fx_trigger_group 2).
+    effect::vorpal, effect::ghoul_paralysis};
+constexpr std::array<int, 17> secondary_hit_effects{
     64, 65, 66, 67, 68, 69, 70, 79, 85, 86, 87,
     // Secret's.
-    effect::poison_touch, effect::stone_touch, effect::strong_poison_touch, effect::ghoul_touch};
+    effect::poison_touch, effect::stone_touch, effect::strong_poison_touch, effect::ghoul_touch,
+    // The kit's (fx_trigger_group 3).
+    effect::adjacent_paralysis, effect::fire_blow};
 
 // An item a creature carries, which it may ready or put away in a fight
 // (viewchar.pas, ToggleReadyItem): its record, readied or not, with what is
@@ -1978,6 +1989,31 @@ void Session::on_hit(Fighter &attacker, Fighter &defender, int phase, int primar
                 kill(defender, "{name} is beheaded.");
             }
             break;
+        case effect::ghoul_paralysis:
+            // The kit's ghoul holds 10 rounds unless saved against, an elf
+            // never (effects.c, fx_ghoul_paralysis).
+            if (defender.numbers.race != elf_race)
+            {
+                paralyze(defender, 10, 0);
+            }
+            break;
+        case effect::adjacent_paralysis:
+            // The kit's second blow that holds one beside it 10 rounds
+            // unless saved against (fx_adjacent_paralysis).
+            if (distance(attacker, defender) < 2)
+            {
+                paralyze(defender, 10, 0);
+            }
+            break;
+        case effect::fire_blow:
+        {
+            // The kit's burning second blow: 2d6 of magical fire, halved by
+            // a save against spells (fxcombat.c, fx_fire_damage_2d6).
+            const bool saved = saving_throw(defender, 4, 0, &attacker, 9);
+            nonweapon_damage(defender, roll(6) + roll(6), 2, saved, 9, attacker.numbers.level, 0,
+                             false);
+            break;
+        }
         case effect::stone_touch:
             // A cockatrice's touch, saved against as petrification (EffFleshToStone).
             if (!saving_throw(defender, 1, 0, &attacker))
@@ -5591,7 +5627,11 @@ void Session::monster_specials(Fighter &f)
         // meets gazes unharmed. The original's reach was an unset value; it
         // reaches what the gazer sees here (an obvious bug, fixed).
         log({"{name} gazes.", {{"name", f.name}}});
-        const bool saved = saving_throw(*lock, 4, -2, &f) || lock->has(effect::gaze_proof);
+        // The kit's gaze casts Charm Person, saved against as the spell is
+        // (fxcombat.c, fx_spell_gaze).
+        const int gaze_modifier = kit() ? 0 : -2;
+        const bool saved =
+            saving_throw(*lock, 4, gaze_modifier, &f) || lock->has(effect::gaze_proof);
         if (add_with_message(*lock,
                              {effect::charm, 0, (f.side == Side::opposition ? 128 : 0) + 12, true},
                              true, saved, 0, 12, game_spell(10)))
@@ -5989,15 +6029,20 @@ bool Session::lightning_breath(Fighter &dragon)
 // afraid already is terrified and runs for the rest of the fight.
 void Session::dragon_fear(const Fighter &dragon)
 {
+    // The kit's terror (effects.c, fx_terrify) reaches one below 6 Hit Dice,
+    // saved against as a spell, for 4d6 rounds.
+    const int fearless_from = kit() ? 6 : 5;
     for (auto &f : fighters_)
     {
         if (f.side == dragon.side || !f.able() || f.has(effect::fearless) || f.has(effect::fear) ||
-            f.numbers.level >= 5)
+            f.numbers.level >= fearless_from)
         {
             continue;
         }
-        if (add_with_message(f, {effect::fear, 0, 255, true}, true, false, 0, dragon.numbers.level,
-                             game_spell(184)))
+        const bool saved = kit() && saving_throw(f, 4, 0, &dragon);
+        const int rounds = kit() ? roll(6) + roll(6) + roll(6) + roll(6) : 0;
+        if (add_with_message(f, {effect::fear, rounds, 255, true}, true, saved, 0,
+                             dragon.numbers.level, game_spell(184)))
         {
             f.turned = true;
         }
@@ -7517,8 +7562,18 @@ int Session::weapon_damage_defenses(const Fighter &attacker, Fighter &defender, 
     {
         damage /= 2;
     }
-    const bool strong_monster = attacker.numbers.race == 0 && attacker.numbers.level >= 7;
-    if (defender.has(effect::needs_plus_two) && (striker ? plus < 2 : !strong_monster))
+    // The kit's need of a weapon of +n (fx_need_plus): one below it does
+    // nothing, nor bare blows but a monster's of (n - 1) * 2 + 5 Hit Dice or
+    // more: +1 (103), +2 (125), +3 (60).
+    const auto turns_aside = [&](int needed)
+    {
+        const bool strong_monster =
+            attacker.numbers.race == 0 && attacker.numbers.level >= (needed - 1) * 2 + 5;
+        return striker ? plus < needed : !strong_monster;
+    };
+    if ((defender.has(effect::needs_plus_one) && turns_aside(1)) ||
+        (defender.has(effect::needs_plus_two) && turns_aside(2)) ||
+        (defender.has(effect::needs_plus_three_kit) && turns_aside(3)))
     {
         damage = 0;
     }

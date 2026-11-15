@@ -732,7 +732,10 @@ int darkness_canonical_effect(int code) noexcept
 // kit_effect_offset higher.
 int kit_canonical_effect(int code) noexcept
 {
-    constexpr std::array<std::pair<int, int>, 58> matched{{
+    // The kit's need of a +1 or +3 weapon (103, 60), its paralysing blows
+    // (88, 224) and its 2d6 of fire with a blow (108) differ from every
+    // game's, and are its own.
+    constexpr std::array<std::pair<int, int>, 53> matched{{
         {6, 335},
         {8, 8},
         {18, 124},
@@ -743,7 +746,6 @@ int kit_canonical_effect(int code) noexcept
         {47, 47},
         {58, 458},
         {59, 127},
-        {60, 460},
         {64, 64},
         {65, 465},
         {66, 115},
@@ -754,7 +756,6 @@ int kit_canonical_effect(int code) noexcept
         {84, 504},
         {85, 483},
         {86, 70},
-        {88, 488},
         {89, 89},
         {91, 88},
         {92, 492},
@@ -765,9 +766,7 @@ int kit_canonical_effect(int code) noexcept
         {100, 482},
         {101, 85},
         {102, 86},
-        {103, 119},
         {105, 334},
-        {108, 303},
         {117, 287},
         {124, 84},
         {132, 488},
@@ -786,7 +785,6 @@ int kit_canonical_effect(int code) noexcept
         {217, 101},
         {220, 296},
         {223, 480},
-        {224, 68},
         // Its items' (docs/games/ua.md, Items' special effects): resisting
         // cold, a curse, a ring of invisibility and a luckstone.
         {10, 10},
