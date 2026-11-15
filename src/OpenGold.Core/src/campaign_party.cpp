@@ -2926,8 +2926,8 @@ void CampaignParty::choose_spells(MemberId id, const rules::SpellChoices &choice
     (void)preview_spell_choices(id, choices);
     // Under rules that rest any length the rest goes on while the member
     // memorizes what its choice adds, and only then are its spells back.
-    rest_to_memorize(id, choices);
-    auto candidate = preview_spell_choices(id, choices);
+    const auto memorized = rest_to_memorize(id, choices);
+    auto candidate = preview_spell_choices(id, memorized);
     if (rules_->rests_any_length())
     {
         rules_->end_rest(candidate.vitals, candidate.character.sheet());
@@ -2950,6 +2950,8 @@ void CampaignParty::keep_rest_spells(MemberId id)
     {
         throw std::runtime_error("No Long Rest spell choice to decline");
     }
+    // A member that memorizes nothing still scribes what it marked.
+    (void)rest_to_memorize(id, {});
     std::erase(state_.spell_rest->members, id);
     if (state_.spell_rest->members.empty())
     {
@@ -3831,9 +3833,11 @@ CampaignParty::pending_scribing(const PartyMember &member) const
 // The marked spells the member has slots for go into its book, recorded with
 // the hall training so a save rebuilds it, and leave their scrolls
 // (gametime.pas, CheckScribeDone); one it lost the slots for stays marked.
-void CampaignParty::scribe_pending(PartyMember &member) const
+void CampaignParty::scribe_pending(PartyMember &member, std::size_t count) const
 {
-    for (const auto &[item, marked] : pending_scribing(member))
+    auto pending = pending_scribing(member);
+    pending.resize(std::min(count, pending.size()));
+    for (const auto &[item, marked] : pending)
     {
         if (!rules_->copyable_spell_level(member.character.sheet(), marked.spell))
         {

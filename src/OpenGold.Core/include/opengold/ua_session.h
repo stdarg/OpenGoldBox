@@ -207,9 +207,8 @@ class UaSession final : public ExplorationSession
     void restart() override;
 
     // Nothing in a design moves by itself between the player's answers.
-    void advance(double) override
-    {
-    }
+    // A camp waiting for its casters' spells ends once they are chosen.
+    void advance(double) override;
 
     void set_searching(bool searching) override
     {
@@ -400,6 +399,12 @@ class UaSession final : public ExplorationSession
     // A rest of `minutes`, which a rest encounter may break; true when it
     // was not broken.
     bool rest_for(unsigned minutes);
+    // The rest encounter that would break the rest going on for its
+    // casters' spells, rolled ahead and taken back (the rolls come again as
+    // it goes on), tells the party's rest.
+    void foresee_rest_encounter();
+    // The rest is over: its encounter comes, or it ends in peace.
+    void end_rest(std::optional<unsigned> event);
     void rest_in_service();
     void alter_menu();
     void order_menu();
@@ -562,6 +567,20 @@ class UaSession final : public ExplorationSession
     // Minutes rested toward the next rest encounter roll (the kit's
     // encounter_ticks), from a camp's start.
     unsigned rest_ticks_{};
+    // The clock at the rest step rolling for an encounter, which the kit
+    // advances before each roll; none outside a rest.
+    std::optional<std::uint64_t> rest_clock_;
+
+    // The camp waits while its casters choose their spells (rest.c,
+    // camp_rest): the clock as the rest's own time ended, and the encounter
+    // that broke it already, if one did.
+    struct CampMemorizing
+    {
+        std::uint64_t rest_end_minutes{};
+        std::optional<unsigned> event;
+    };
+
+    std::optional<CampMemorizing> camp_memorizing_;
     // The steps counted toward each of the area's eight step events (the
     // kit's cursor_obj 1FDh), from the party's arrival in the area.
     std::array<unsigned, 8> step_counts_{};

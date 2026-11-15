@@ -2157,27 +2157,84 @@ void RolfTourSession::finish_event()
                 return;
             }
         }
+        else if (camp_memorizing_)
+        {
+            // The casters chose their spells, and the rest went on for them:
+            // an interruption within that time comes now (gametime.pas,
+            // CampRest rolls it each step), with the same dice foreseen.
+            const auto waited = *std::exchange(camp_memorizing_, std::nullopt);
+            const auto went_on =
+                static_cast<unsigned>(campaign_->state().time_minutes - waited.rest_end_minutes);
+            const auto broken = went_on
+                                    ? rest_interruption(interval, chance, went_on,
+                                                        [this](unsigned count)
+                                                        {
+                                                            return machine_.engine_random(count);
+                                                        })
+                                    : std::nullopt;
+            if (waited.interrupted || broken)
+            {
+                if (broken)
+                {
+                    log_diagnostic(LogPriority::info, "camp",
+                                   "interrupted after " +
+                                       std::to_string(waited.rest.duration_minutes + *broken) +
+                                       " minutes");
+                }
+                interrupt_camp();
+                return;
+            }
+            add_camp_line(rest_complete_line(waited.rest, true));
+            for (const auto &w : character_reply(selected_character_).writes)
+            {
+                machine_.bind_variable(w.address, w.value);
+            }
+            synchronize_clock();
+        }
         else
         {
-            // An interrupted rest grants nothing and leaves nothing to resume;
-            // the party rests again.
+            const bool any_length = campaign_->rule_module().rests_any_length();
             if (const auto rested = rest_interruption(interval, chance))
             {
                 log_diagnostic(LogPriority::info, "camp",
                                "interrupted after " + std::to_string(*rested) + " minutes");
-                campaign_->advance_time(std::chrono::minutes{*rested});
-                synchronize_clock();
-                event_stage_ = EventStage::camp_interrupted;
-                if (!machine_.start(3))
+                // Under rules that rest any length the time rested heals and
+                // finishes the spells whose preparation it covered
+                // (gametime.pas, CampRest); otherwise an interrupted rest
+                // grants nothing and leaves nothing to resume.
+                const auto granted =
+                    any_length ? campaign_->rest(std::chrono::minutes{*rested}) : std::nullopt;
+                if (!granted)
                 {
-                    throw EclError("Cannot enter camp interruption script");
+                    campaign_->advance_time(std::chrono::minutes{*rested});
                 }
+                else if (campaign_->state().spell_rest)
+                {
+                    campaign_->interrupt_rest_at(std::chrono::minutes{*rested});
+                }
+                synchronize_clock();
+                if (granted && campaign_->state().spell_rest)
+                {
+                    camp_memorizing_ =
+                        CampMemorizing{true, campaign_->state().time_minutes, *granted};
+                    ++snapshot_.revision;
+                    return;
+                }
+                interrupt_camp();
                 return;
             }
-            if (const auto rested = camp_rest())
+            const auto rested = camp_rest();
+            if (rested && any_length && campaign_->state().spell_rest)
             {
-                add_camp_line(
-                    rest_complete_line(*rested, campaign_->rule_module().rests_any_length()));
+                foresee_rest_interruption(interval, chance);
+                synchronize_clock();
+                camp_memorizing_ = CampMemorizing{false, campaign_->state().time_minutes, *rested};
+                ++snapshot_.revision;
+                return;
+            }
+            if (rested)
+            {
+                add_camp_line(rest_complete_line(*rested, any_length));
             }
             else
             {
@@ -2355,6 +2412,39 @@ std::optional<unsigned> RolfTourSession::rest_interruption(unsigned interval, un
                              {
                                  return machine_.engine_random(count);
                              });
+}
+
+void RolfTourSession::foresee_rest_interruption(unsigned interval, unsigned chance)
+{
+    const auto rested = campaign_->state().spell_rest->rested_minutes;
+    const auto longest = static_cast<std::uint64_t>(campaign_->longest_rest_to_memorize().count());
+    if (longest <= rested)
+    {
+        return;
+    }
+    const auto dice = machine_.dice_state();
+    const auto checks = rest_checks_;
+    const auto foreseen =
+        rest_interruption(interval, chance, static_cast<unsigned>(longest - rested),
+                          [this](unsigned count)
+                          {
+                              return machine_.engine_random(count);
+                          });
+    machine_.restore_dice(dice);
+    rest_checks_ = checks;
+    if (foreseen)
+    {
+        campaign_->interrupt_rest_at(std::chrono::minutes{rested + *foreseen});
+    }
+}
+
+void RolfTourSession::interrupt_camp()
+{
+    event_stage_ = EventStage::camp_interrupted;
+    if (!machine_.start(3))
+    {
+        throw EclError("Cannot enter camp interruption script");
+    }
 }
 
 std::optional<unsigned> RolfTourSession::rest_interruption(unsigned interval, unsigned chance,

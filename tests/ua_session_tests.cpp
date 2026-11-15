@@ -2497,6 +2497,46 @@ void a_cleric_fixes_the_party(const std::filesystem::path &kit)
               party->state().time_minutes > before,
           "The cleric's cures heal the wounded fighter while the party rests: " +
               session.snapshot().dialogue);
+
+    // The camp's Rest offers the time the cleric's cures cast take to
+    // memorize again (camp.c, study_rest), not a day, and rests it whole:
+    // the camp waits for the spells, then the rest is over.
+    const auto preparation = party->proposed_rest();
+    check(preparation > std::chrono::hours{4} && preparation < std::chrono::hours{6},
+          "Memorizing the cures cast takes four hours and a quarter or a half");
+    check(session.choose(session.snapshot().continue_ticket, 0) &&
+              session.snapshot().choices ==
+                  std::vector<std::string>{"Rest", "Alter", "Fix", "Exit"},
+          "The camp menu comes back after the Fix");
+    choose_choice(session, "Rest");
+    check(session.snapshot().dialogue.find("Rest time: 0 days, 4 hours, " +
+                                           std::to_string(preparation.count() % 60) +
+                                           " minutes.") != std::string::npos,
+          "The rest menu offers the preparation: " + session.snapshot().dialogue);
+    const auto resting = party->state().time_minutes;
+    choose_choice(session, "Rest");
+    check(party->state().spell_rest && !session.can_leave() &&
+              party->state().time_minutes == resting + preparation.count(),
+          "The rest lasts the preparation, and the camp waits for the spells");
+    session.advance(0);
+    check(!session.can_leave(), "It waits while the spells are not chosen");
+    while (party->state().spell_rest)
+    {
+        const auto id = party->state().spell_rest->members.front();
+        if (id == cleric)
+        {
+            const auto cure = opengold::original::spell_id(3);
+            party->choose_spells(cleric, {{}, std::vector<std::string>{cure, cure + "#2"}});
+        }
+        else
+        {
+            party->keep_rest_spells(id);
+        }
+    }
+    session.advance(0);
+    check(session.can_leave() && session.snapshot().dialogue == "The party rests." &&
+              party->state().time_minutes == resting + preparation.count(),
+          "The cures memorized within it, the rest is over: " + session.snapshot().dialogue);
     player.play();
 }
 

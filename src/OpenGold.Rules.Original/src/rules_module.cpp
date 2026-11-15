@@ -632,9 +632,9 @@ class OriginalModule final : public RulesModule
 
     void recover_days(VitalState &state, const CharacterSheet &sheet, unsigned days) const override;
     void end_rest(VitalState &state, const CharacterSheet &sheet) const override;
-    [[nodiscard]] std::vector<unsigned>
-    memorizing_levels(const CharacterSheet &sheet, const VitalState &state,
-                      const SpellChoices &choices) const override;
+    [[nodiscard]] std::vector<MemorizedAnew>
+    memorizing_anew(const CharacterSheet &sheet, const VitalState &state,
+                    const SpellChoices &choices) const override;
     void pass_time(VitalState &state, const CharacterSheet &sheet, std::uint64_t from,
                    std::uint64_t to) const override;
     [[nodiscard]] bool item_lasts(const VitalState &state, const CharacterSheet &sheet,
@@ -703,8 +703,8 @@ class OriginalModule final : public RulesModule
                                                         std::string_view scroll) const override;
     [[nodiscard]] std::vector<ScrollCopy> pending_scribing(const CharacterSheet &,
                                                            std::string_view scroll) const override;
-    [[nodiscard]] std::chrono::minutes
-    preparation_time(std::span<const unsigned> levels) const override;
+    [[nodiscard]] std::vector<std::chrono::minutes>
+    preparation_finishes(std::span<const unsigned> levels) const override;
     [[nodiscard]] std::vector<ScrollWriting> writable_spells(const CharacterSheet &) const override;
     [[nodiscard]] bool can_cast_exploration_spell(const CharacterSheet &, const VitalState &,
                                                   std::string_view) const override;
@@ -2134,10 +2134,12 @@ void OriginalModule::end_rest(VitalState &state, const CharacterSheet &sheet) co
 
 // The spells a choice memorizes into empty slots (camp.pas,
 // CampMemorizeMenu's pending spells): each the choice holds beyond the copies
-// of it still memorized and not cast, by its level (CampSpellPrepTime).
-std::vector<unsigned> OriginalModule::memorizing_levels(const CharacterSheet &sheet,
-                                                        const VitalState &state,
-                                                        const SpellChoices &choices) const
+// of it still memorized and not cast, by its level (CampSpellPrepTime). The
+// rest finishes them by spell number, the order its memorized spells are
+// sorted in (SortMemorizedSpells; gametime.pas, CheckMemorizeDone).
+std::vector<MemorizedAnew> OriginalModule::memorizing_anew(const CharacterSheet &sheet,
+                                                           const VitalState &state,
+                                                           const SpellChoices &choices) const
 {
     if (!sheet.original || !choices.prepared)
     {
@@ -2145,9 +2147,10 @@ std::vector<unsigned> OriginalModule::memorizing_levels(const CharacterSheet &sh
     }
     const auto game = game_of(sheet.identity);
     auto unspent = spells_left(sheet, state);
-    std::vector<unsigned> levels;
-    for (const auto &id : *choices.prepared)
+    std::vector<std::pair<int, MemorizedAnew>> anew;
+    for (std::size_t entry = 0; entry < choices.prepared->size(); ++entry)
     {
+        const auto &id = (*choices.prepared)[entry];
         const auto number = spell_number(id.substr(0, id.find('#')), game);
         if (!number)
         {
@@ -2158,9 +2161,16 @@ std::vector<unsigned> OriginalModule::memorizing_levels(const CharacterSheet &sh
             unspent.erase(kept);
             continue;
         }
-        levels.push_back(static_cast<unsigned>(spell(*number)->level));
+        anew.emplace_back(*number,
+                          MemorizedAnew{entry, static_cast<unsigned>(spell(*number)->level)});
     }
-    return levels;
+    std::ranges::stable_sort(anew, {}, &std::pair<int, MemorizedAnew>::first);
+    std::vector<MemorizedAnew> spells;
+    for (const auto &[number, spell] : anew)
+    {
+        spells.push_back(spell);
+    }
+    return spells;
 }
 
 namespace
@@ -3112,26 +3122,26 @@ std::vector<ScrollCopy> OriginalModule::pending_scribing(const CharacterSheet &s
     return pending;
 }
 
-// A rest's preparation for its scribing (camp.pas, CampSpellPrepTime): four
-// hours, six with a spell above the second level, shared by all, and a
-// quarter hour a spell level.
-std::chrono::minutes OriginalModule::preparation_time(std::span<const unsigned> levels) const
+// A rest's preparation for its scribing and memorizing (camp.pas,
+// CampSpellPrepTime; gametime.pas, AdvanceSpellPrepBase, AdvanceSpellPrep):
+// four hours, six with a spell above the second level, shared by all, then
+// each spell a quarter hour a level after the one before.
+std::vector<std::chrono::minutes>
+OriginalModule::preparation_finishes(std::span<const unsigned> levels) const
 {
-    if (levels.empty())
-    {
-        return {};
-    }
     const bool high = std::ranges::any_of(levels,
                                           [](unsigned level)
                                           {
                                               return level > 2;
                                           });
-    unsigned quarters = 0;
+    std::chrono::minutes done = std::chrono::hours{high ? 6 : 4};
+    std::vector<std::chrono::minutes> finishes;
     for (const auto level : levels)
     {
-        quarters += level;
+        done += std::chrono::minutes{15 * level};
+        finishes.push_back(done);
     }
-    return std::chrono::hours{high ? 6 : 4} + std::chrono::minutes{15 * quarters};
+    return finishes;
 }
 
 std::vector<ScrollWriting> OriginalModule::writable_spells(const CharacterSheet &) const

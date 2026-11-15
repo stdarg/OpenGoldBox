@@ -757,24 +757,13 @@ The work asked for next (2026-11-14, brought up to date 2026-11-15), in
 order, with what each needs. Done since: the difficulty levels, the halls'
 class masks, AD&D aging by the clock, the temples' Restoration, Spiritual
 Hammer's lasting hammer, the later games' effect numbers, the rest of any
-length with memorizing's time, and *Gateway*'s and *Treasures*' effects.
+length with memorizing's time, and *Gateway*'s and *Treasures*' effects;
+since, the rest's interruptions and the kit's camp of any length (rules5).
 
-1. What the rest of any length leaves (Rest of any length and memorizing's
-   time, plan step 5): an interrupted rest still grants nothing, where the
-   original heals the days it lasted and finishes the spells whose time
-   passed; the rest that goes on for memorizing rolls no rest encounter;
-   and the *Unlimited Adventures* camp still rests by whole days
-   (`UaSession::rest_for`).
-   The routes on 2026-11-15 (rules4): *Pool of Radiance*'s, *Curse*'s,
-   *Secret*'s, *Gateway*'s, *Pools of Darkness*'s and the kit's win.
-   *Treasures*' loses Siulajia's fight on map 22 (beat 155) to the hell
-   hounds' breath, which now plays (138), and with that breath left out
-   later on map 39 to the Zhentarim: its route's owner finds the player's
-   answer.
-2. *Treasures*' own effects still to play (Effects of the later games):
+1. *Treasures*' own effects still to play (Effects of the later games):
    the crystals (128 to 130), the romance (131), the stone golem (147) and
    the yetis' fear on surprise (152).
-3. *Unlimited Adventures*' difficulty: its session calls
+2. *Unlimited Adventures*' difficulty: its session calls
    `original::monster_difficulty(level, true)` with each design's own
    setting (the coordinator, 2026-11-15).
 
@@ -959,7 +948,25 @@ lines in all:
      `memorizing_levels`), each further whole day healing the party, and a
      caster that memorizes nothing gets nothing back (`keep_rest_spells`).
      The camp's Long Rest without a time, which the routes and the default
-     parties use, still rests a day. Departures:
+     parties use, still rests a day. Since 2026-11-15 (rules5) a member's
+     scribing and memorizing share one preparation, its base hours counted
+     once: the scribing first, then the spells memorized anew by spell
+     number, each done a quarter hour a level after the one before
+     (`preparation_finishes`, `memorizing_anew`), the scribing done as the
+     member chooses its spells. The camp rolls its rest encounter every
+     check's steps through the rest's own time and the time it goes on for
+     its spells: it rolls that time ahead on the engine's dice and takes the
+     rolls back (`foresee_rest_interruption`), waits while the casters
+     choose (`CampMemorizing`), and rolls again as the rest went on, the
+     same dice coming up. An interruption ends the rest
+     (`interrupt_rest_at`): its whole days heal, and a member has the spells
+     whose preparation was done by then and not the others, as the
+     original's camp clears what is still pending as it closes
+     (`CampMainMenu`, `ResetPartySpellActivities`); one that could finish
+     none is not asked. The kit's camp rests so too (`UaSession::rest_for`):
+     any length, its Rest offering the party's longest preparation
+     (`camp.c`, `study_rest`), the clock at each step for an encounter's
+     test of the hour. Departures:
      [DEVIATIONS.md](DEVIATIONS.md#the-original-rules) (The rest's spells).
    - **The Strength spells** (2026-11-14; `magic.pas`, `SpellEnlarge`,
      `SpellReduce`, `SpellStrength`, `SpellGiantStrength`; `fxengine.pas`,

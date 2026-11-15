@@ -275,21 +275,17 @@ Departures from the original game's own rules, when OpenGoldBox plays by them
   spells to memorize before the rest, whose time the camp proposes from
   them; OpenGoldBox's camp asks for them as the rest ends, as its camp
   always has, and rests on while they need more time, so the spells and the
-  clock come out as the original's. The rest that goes on rolls no rest
-  encounter. An interrupted rest grants nothing, where the original heals
-  the whole days that passed and finishes the spells whose time came. With
+  clock come out as the original's: the camp waits for them, and a rest
+  encounter the rest's time brings comes once they are chosen. With
   nothing to prepare the camp proposes a day, where the original proposes
-  no time. A member that scribes and memorizes at one rest needs the longer
-  of the two preparations, where the original adds them, their base hours
-  once.
+  no time. A spell marked for scribing that an interrupted rest left undone
+  stays marked for the next rest, where the original's camp clears the
+  mark as it closes (2026-11-15).
 - **Unlimited Adventures' camp** (2026-11-14). The kit's camp menu offers
   Rest, Alter and Fix as the kit does; its View, Magic, Load and Save are
   the game's own screens, and Alter's Speed, Icon and Level the game's own
   settings (the party's combat icons are its creation's; the original rules
-  play at Normal). A rest of the time the player sets heals and memorizes
-  by the rules' day: each whole day is one, the part of a day left over
-  only passes, where the kit memorizes spell by spell as their time passes
-  and heals every 24 hours. Fix casts the party's memorized healing and
+  play at Normal). Fix casts the party's memorized healing and
   curing spells as the game's camp casts them, on the most wounded or the
   one each would cure, where the kit pools its healing and rolls it
   together.

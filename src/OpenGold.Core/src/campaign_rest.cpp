@@ -175,15 +175,8 @@ std::optional<RestResult> CampaignParty::rest_for(RestKind kind,
     {
         return std::nullopt;
     }
-    auto minutes =
+    const auto minutes =
         length ? static_cast<unsigned>(length->count()) : policy(*rules_, kind).duration_minutes;
-    // A rest lasts as long as the longest of its members' scribing
-    // preparations (camp.pas, RestForSpellPrep, CampSpellPrepTime).
-    for (const auto id : members)
-    {
-        const auto scribing = static_cast<unsigned>(preparation(member(id), {}).count());
-        minutes = kind == RestKind::long_rest ? std::max(minutes, scribing) : minutes;
-    }
     auto next = state_;
     // Eligibility was captured before the rest's time passed, so a member who
     // recovers from zero HP meanwhile gains no rest benefits.
@@ -206,34 +199,151 @@ std::optional<RestResult> CampaignParty::rest_for(RestKind kind,
     return result;
 }
 
-void CampaignParty::rest_to_memorize(MemberId id, const rules::SpellChoices &choices)
+void CampaignParty::interrupt_rest_at(std::chrono::minutes since_start)
+{
+    if (!rules_->rests_any_length() || !state_.spell_rest || since_start.count() <= 0 ||
+        static_cast<std::uint64_t>(since_start.count()) < state_.spell_rest->rested_minutes)
+    {
+        throw std::runtime_error("No rest waits for its spells to be interrupted then");
+    }
+    auto &rest = *state_.spell_rest;
+    rest.interrupted_minutes = static_cast<std::uint64_t>(since_start.count());
+    // Interrupted as its own time ends, the rest goes on no more: one whose
+    // first spell, scribed or memorized, was not done by then gets none.
+    // Interrupted later, the rest reaches it only if a member's choice keeps
+    // it going.
+    if (rest.interrupted_minutes != rest.rested_minutes)
+    {
+        return;
+    }
+    std::erase_if(rest.members,
+                  [&](MemberId id)
+                  {
+                      std::vector<unsigned> levels;
+                      for (const auto &[item, marked] : pending_scribing(member(id)))
+                      {
+                          levels.push_back(marked.level);
+                      }
+                      levels.push_back(1);
+                      return rules_->preparation_finishes(levels).front() > since_start;
+                  });
+    if (rest.members.empty())
+    {
+        state_.spell_rest.reset();
+    }
+}
+
+std::chrono::minutes CampaignParty::longest_rest_to_memorize() const
+{
+    if (!state_.spell_rest)
+    {
+        return {};
+    }
+    std::chrono::minutes longest{state_.spell_rest->rested_minutes};
+    for (const auto id : state_.spell_rest->members)
+    {
+        const auto &resting = member(id);
+        std::vector<unsigned> levels;
+        for (const auto &[item, marked] : pending_scribing(resting))
+        {
+            levels.push_back(marked.level);
+        }
+        if (const auto &numbers = resting.character.sheet().original)
+        {
+            for (const auto &slots :
+                 {numbers->cleric_slots, numbers->druid_slots, numbers->magic_user_slots})
+            {
+                for (std::size_t level = 0; level < slots.size(); ++level)
+                {
+                    levels.insert(levels.end(), static_cast<std::size_t>(std::max(slots[level], 0)),
+                                  static_cast<unsigned>(level + 1));
+                }
+            }
+        }
+        longest = std::max(longest, rules_->preparation_time(levels));
+    }
+    return longest;
+}
+
+// The member's preparation runs from the rest's start (gametime.pas,
+// CampRest, AdvanceSpellPrepBase, AdvanceSpellPrep): its base hours, then its
+// scribing (CheckScribeDone) and its memorizing (CheckMemorizeDone) one spell
+// at a time. The rest goes on until the last is done, unless interrupted
+// first; what is not done then is not had.
+rules::SpellChoices CampaignParty::rest_to_memorize(MemberId id, const rules::SpellChoices &choices)
 {
     if (!rules_->rests_any_length() || !state_.spell_rest->rested_minutes)
     {
-        return;
+        return choices;
     }
-    const auto rested = state_.spell_rest->rested_minutes;
-    const auto needed = static_cast<std::uint64_t>(preparation(member(id), choices).count());
-    if (needed <= rested)
+    const auto &resting = member(id);
+    const auto scribing = pending_scribing(resting);
+    const auto anew = rules_->memorizing_anew(resting.character.sheet(), resting.vitals, choices);
+    std::vector<unsigned> levels;
+    for (const auto &[item, marked] : scribing)
     {
-        return;
+        levels.push_back(marked.level);
     }
-    const auto more = needed - rested;
+    for (const auto &spell : anew)
+    {
+        levels.push_back(spell.level);
+    }
+    const auto finishes = rules_->preparation_finishes(levels);
+    const auto &rest = *state_.spell_rest;
+    const auto limit = rest.interrupted_minutes ? rest.interrupted_minutes
+                                                : std::numeric_limits<std::uint64_t>::max();
+    const auto done = [&](std::size_t spell)
+    {
+        return static_cast<std::uint64_t>(finishes[spell].count()) <= limit;
+    };
     auto next = state_;
-    elapse(next, std::chrono::minutes{more});
-    const auto days = static_cast<unsigned>((rested + more) / day_minutes - rested / day_minutes);
-    for (const auto member_id : next.slots)
+    const auto rested = rest.rested_minutes;
+    const auto needed =
+        finishes.empty() ? 0 : std::min(static_cast<std::uint64_t>(finishes.back().count()), limit);
+    if (needed > rested)
     {
-        if (member_id)
+        const auto more = needed - rested;
+        elapse(next, std::chrono::minutes{more});
+        const auto days =
+            static_cast<unsigned>((rested + more) / day_minutes - rested / day_minutes);
+        for (const auto member_id : next.slots)
         {
-            auto &resting = member_in(next, member_id);
-            rules_->recover_days(resting.vitals, resting.character.sheet(), days);
+            if (member_id)
+            {
+                auto &healing = member_in(next, member_id);
+                rules_->recover_days(healing.vitals, healing.character.sheet(), days);
+            }
         }
+        next.spell_rest->rested_minutes += more;
+        next.spell_rest->completed_minutes = next.time_minutes;
+        next.spell_rest->completed_subminute_milliseconds = next.subminute_milliseconds;
     }
-    next.spell_rest->rested_minutes += more;
-    next.spell_rest->completed_minutes = next.time_minutes;
-    next.spell_rest->completed_subminute_milliseconds = next.subminute_milliseconds;
+    std::size_t scribed = 0;
+    while (scribed < scribing.size() && done(scribed))
+    {
+        ++scribed;
+    }
+    scribe_pending(member_in(next, id), scribed);
+    auto memorized = choices;
+    if (memorized.prepared)
+    {
+        std::vector<bool> dropped(memorized.prepared->size());
+        for (std::size_t spell = 0; spell < anew.size(); ++spell)
+        {
+            dropped[anew[spell].entry] = !done(scribing.size() + spell);
+        }
+        std::vector<std::string> kept;
+        for (std::size_t entry = 0; entry < dropped.size(); ++entry)
+        {
+            if (!dropped[entry])
+            {
+                kept.push_back((*memorized.prepared)[entry]);
+            }
+        }
+        memorized.prepared = std::move(kept);
+    }
     state_ = std::move(next);
+    return memorized;
 }
 
 void CampaignParty::short_rest_benefits(PartyState &state,
@@ -272,7 +382,8 @@ void CampaignParty::long_rest_benefits(PartyState &state, const std::vector<Memb
             continue;
         }
         // Rules that rest any length heal by the rest's whole days, and a
-        // caster's spells come back only as it memorizes them (choose_spells).
+        // caster's spells come back only as it memorizes them (choose_spells),
+        // its scribing done with them, their preparation shared.
         const bool any_length = rules_->rests_any_length();
         if (any_length)
         {
@@ -283,10 +394,13 @@ void CampaignParty::long_rest_benefits(PartyState &state, const std::vector<Memb
         {
             rules_->recover(member.vitals, member.character.sheet());
         }
-        scribe_pending(member);
-        recharge_wands(member, state.random_state);
         const auto choices = rules_->spell_choice_options(member.character.sheet(),
                                                           rules::SpellChoiceContext::long_rest);
+        if (!any_length || (!choices.may_prepare && !choices.may_replace))
+        {
+            scribe_pending(member);
+        }
+        recharge_wands(member, state.random_state);
         if (any_length && !choices.may_prepare && !choices.may_replace)
         {
             rules_->end_rest(member.vitals, member.character.sheet());

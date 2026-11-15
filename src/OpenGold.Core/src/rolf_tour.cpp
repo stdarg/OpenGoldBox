@@ -742,6 +742,7 @@ void RolfTourSession::reset_run()
     visited_areas_.clear();
     seen_areas_.clear();
     rest_checks_ = 0;
+    camp_memorizing_.reset();
     const auto revision = snapshot_.revision + 1;
     snapshot_ = {};
     snapshot_.revision = revision;
@@ -913,6 +914,7 @@ void RolfTourSession::roll_back_event()
     entrances_ = std::move(saved.entrances);
     wand_traps_ = std::move(saved.wand_traps);
     rest_checks_ = saved.rest_checks;
+    camp_memorizing_.reset();
     travel_mode_ = saved.travel_mode;
     const auto revision = snapshot_.revision + 1;
     snapshot_ = std::move(saved.snapshot);
@@ -1232,6 +1234,15 @@ void RolfTourSession::advance(double seconds)
     }
     try
     {
+        // A camp waiting for its casters' spells ends once they are chosen.
+        if (camp_memorizing_)
+        {
+            if (!campaign_ || !campaign_->state().spell_rest)
+            {
+                finish_event();
+            }
+            return;
+        }
         if (delayed_request_)
         {
             remaining_delay_ -= std::min(seconds, 1.0);

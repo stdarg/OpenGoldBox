@@ -814,12 +814,13 @@ map (`ua_session.cpp`; the reconstruction's `rest.c` and `camp.c`).
   game's own screens; DEVIATIONS.md, Unlimited Adventures' camp).
   - **Rest** opens the rest menu (`rest.c`, `rest_menu`): the time to rest
     in days, hours and minutes, Days, Hours or Minutes choosing which Add
-    and Subtract change (a minute step is 5), to 99 days; it starts at a
-    day, the time memorizing takes under the rules, as the kit starts at
-    its time to memorize. Each whole day of an unbroken rest is the rules'
-    day of rest, its healing and memorizing, the members keeping their
-    spells on all but the last, whose spells the player chooses; the rest
-    of the time just passes.
+    and Subtract change (a minute step is 5), to 99 days; it starts at the
+    party's longest preparation, as the kit starts at its time to memorize
+    (`camp.c`, `study_rest`), or a day with none to make. The rest is the
+    rules' rest of any length (2026-11-15; ORIGINAL-RULES.md, Rest of any
+    length and memorizing's time): each whole day heals, and it goes on
+    while the casters memorize the spells they choose as it ends, the camp
+    waiting for them.
   - **Alter**: Order moves the selected member up or down the party, round
     from one end to the other as the kit's does; Drop takes it out of the
     party, asked first, never the last member.
@@ -833,8 +834,12 @@ map (`ua_session.cpp`; the reconstruction's `rest.c` and `camp.c`).
 - A rest passes in five-minute steps, as the kit's `camp_rest` does, each a
   chance for the rest encounter of the zone the party stands in: the area header's four bytes a zone from +2Eh, the
   minutes between rolls (a word), the event, and the chance in 100 every
-  that many minutes (80h and up, the event's own test at every step). A
-  broken rest gives nothing: the time rested passes, "The party's repose is
+  that many minutes (80h and up, the event's own test at every step), the
+  clock at that step for the event's test of the hour. The time the rest
+  goes on for its spells rolls too (rolled ahead and taken back, so the
+  casters choose first, then rolled again). A broken rest is the rules'
+  rest of the time it lasted: its whole days heal and the casters have the
+  spells whose preparation was done; then "The party's repose is
   interrupted!", and the event runs. A chance with no minutes between rolls
   divided by zero in the kit; it never rolls (ORIGINAL-RULES.md, Bugs).
 - **The overhead map** shows a dungeon whose header allows it (bit 0 of

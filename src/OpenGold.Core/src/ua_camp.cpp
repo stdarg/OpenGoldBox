@@ -81,9 +81,6 @@ bool UaSession::camp_menu()
     }
     snapshot_.dialogue.clear();
     snapshot_.host_dialogue.clear();
-    // The rest the menu offers first is the time memorizing takes: the
-    // rules' day (camp.c, study_rest).
-    rest_minutes_ = day_minutes;
     rest_unit_ = RestUnit::hours;
     kit_camp_menu();
     refresh_snapshot();
@@ -100,8 +97,15 @@ void UaSession::kit_camp_menu()
                 switch (choice)
                 {
                 case 0:
+                {
+                    // The rest offered first is the time memorizing takes
+                    // (camp.c, study_rest): the party's longest
+                    // preparation, in five-minute steps.
+                    const auto proposed = static_cast<unsigned>(party_->proposed_rest().count());
+                    rest_minutes_ = std::min((proposed + 4) / 5 * 5, longest_rest);
                     rest_time_menu();
                     return;
+                }
                 case 1:
                     alter_menu();
                     return;
@@ -176,74 +180,132 @@ void UaSession::rest_time_menu()
 }
 
 // A rest of `minutes` (rest.c, camp_rest): five-minute steps, each a chance
-// for the rest encounter of the party's zone to break it. An unbroken rest
-// passes its time; each whole day of it is the rules' day of rest, the
-// members keeping their spells on all but the last, whose memorizing the
-// player chooses.
+// for the rest encounter of the party's zone to break it. The rest, broken
+// or not, is the rules' rest of the time it lasted: its whole days heal, and
+// it goes on while its casters memorize the spells they choose, which the
+// encounter may break as well. Its encounter comes once they have chosen.
 bool UaSession::rest_for(unsigned minutes)
 {
     rest_ticks_ = 0;
-    for (unsigned rested = 5; rested <= minutes; rested += 5)
+    const auto start = party_->state().time_minutes;
+    std::optional<unsigned> event;
+    unsigned rested = minutes;
+    for (unsigned step = 5; step <= minutes && !event; step += 5)
     {
-        const auto event = rest_encounter();
-        if (!event)
-        {
-            continue;
-        }
-        // The rest stops there and grants nothing; the encounter's event runs.
+        rest_clock_ = start + step;
+        event = rest_encounter();
+        rested = event ? step : minutes;
+    }
+    rest_clock_.reset();
+    const auto granted = rested >= 5 ? party_->rest(std::chrono::minutes{rested}) : std::nullopt;
+    if (!granted)
+    {
         advance_minutes(rested);
-        say_kit({"The party's repose is interrupted!", {}});
-        wait_for_return(
-            [this, n = *event]
-            {
-                run_events(n);
-                refresh_snapshot();
-            });
-        refresh_snapshot();
-        return false;
     }
-    advance_minutes(minutes % day_minutes);
-    for (unsigned day = 0; day < minutes / day_minutes; ++day)
+    else if (event && party_->state().spell_rest)
     {
-        if (!party_->rest(RestKind::long_rest))
+        party_->interrupt_rest_at(std::chrono::minutes{rested});
+    }
+    else if (party_->state().spell_rest)
+    {
+        foresee_rest_encounter();
+    }
+    if (party_->state().spell_rest)
+    {
+        camp_memorizing_ = CampMemorizing{party_->state().time_minutes, event};
+        snapshot_.phase = por::TourPhase::running;
+        ++snapshot_.revision;
+        return !event;
+    }
+    end_rest(event);
+    return !event;
+}
+
+void UaSession::foresee_rest_encounter()
+{
+    const auto rested = party_->state().spell_rest->rested_minutes;
+    const auto longest = static_cast<std::uint64_t>(party_->longest_rest_to_memorize().count());
+    const auto dice = dice_;
+    const auto ticks = rest_ticks_;
+    const bool chain = chain_allowed_;
+    std::optional<std::uint64_t> foreseen;
+    for (std::uint64_t step = 5; rested + step <= longest && !foreseen; step += 5)
+    {
+        rest_clock_ = party_->state().time_minutes + step;
+        if (rest_encounter())
         {
-            break;
-        }
-        while (day + 1 < minutes / day_minutes && party_->state().spell_rest)
-        {
-            party_->keep_rest_spells(party_->state().spell_rest->members.front());
+            foreseen = step;
         }
     }
-    say_kit({"The party rests.", {}});
+    rest_clock_.reset();
+    dice_ = dice;
+    rest_ticks_ = ticks;
+    chain_allowed_ = chain;
+    if (foreseen)
+    {
+        party_->interrupt_rest_at(std::chrono::minutes{rested + *foreseen});
+    }
+}
+
+void UaSession::advance(double)
+{
+    if (!camp_memorizing_ || !party_ || party_->state().spell_rest)
+    {
+        return;
+    }
+    // The rest went on for the spells chosen: an encounter within that time
+    // comes now, with the same dice foreseen.
+    const auto waited = *std::exchange(camp_memorizing_, std::nullopt);
+    auto event = waited.event;
+    const auto went_on = party_->state().time_minutes - waited.rest_end_minutes;
+    for (std::uint64_t step = 5; step <= went_on && !event; step += 5)
+    {
+        rest_clock_ = waited.rest_end_minutes + step;
+        event = rest_encounter();
+    }
+    rest_clock_.reset();
+    end_rest(event);
+}
+
+void UaSession::end_rest(std::optional<unsigned> event)
+{
+    if (!event)
+    {
+        say_kit({"The party rests.", {}});
+        refresh_snapshot();
+        return;
+    }
+    say_kit({"The party's repose is interrupted!", {}});
+    wait_for_return(
+        [this, n = *event]
+        {
+            run_events(n);
+            refresh_snapshot();
+        });
     refresh_snapshot();
-    return true;
 }
 
 // At an inn the rest is safe, and the camp menu comes back after it (camp.c,
 // camp_menu while a service event runs); the casters keep their spells.
 void UaSession::rest_in_service()
 {
-    advance_minutes(rest_minutes_ % day_minutes);
-    for (unsigned day = 0; day < rest_minutes_ / day_minutes; ++day)
+    if (rest_minutes_ < 5 || !party_->rest(std::chrono::minutes{rest_minutes_}))
     {
-        if (!party_->rest(RestKind::long_rest))
+        advance_minutes(rest_minutes_);
+    }
+    // Each caster memorizes again the spells it cast, the rest going on for
+    // them (rests_any_length).
+    while (party_->state().spell_rest)
+    {
+        const auto id = party_->state().spell_rest->members.front();
+        try
         {
-            break;
+            party_->choose_spells(id, {{}, party_->member(id).character.sheet().prepared_spells});
         }
-        // Each caster memorizes again the spells it cast (rests_any_length).
-        while (party_->state().spell_rest)
+        catch (const std::exception &)
         {
-            const auto id = party_->state().spell_rest->members.front();
-            try
-            {
-                party_->choose_spells(id,
-                                      {{}, party_->member(id).character.sheet().prepared_spells});
-            }
-            catch (const std::exception &)
-            {
-                // Spells a drained level no longer allows: it memorizes none.
-                party_->keep_rest_spells(id);
-            }
+            // Spells a drained level no longer allows: it memorizes none.
+            party_->keep_rest_spells(id);
         }
     }
     say_kit({"The party rests.", {}});

@@ -526,6 +526,14 @@ struct ScrollCopy
     std::string name;
 };
 
+// A spell a rest's choice memorizes anew: its place in the choice's prepared
+// spells and its level.
+struct MemorizedAnew
+{
+    std::size_t entry{};
+    unsigned level{};
+};
+
 // A party member a whole-party camp action may affect: its sheet is read and
 // its state changed. References, so neither can be null, and the action takes
 // a non-const span, so the call shows that party state changes (Effective C++
@@ -1439,17 +1447,30 @@ class RulesModule
         (void)sheet;
     }
 
-    // The levels of the spells `choices` memorizes anew: those beyond the
-    // member's spells memorized and not cast, whose memorizing takes the
-    // preparation time (preparation_time).
-    [[nodiscard]] virtual std::vector<unsigned> memorizing_levels(const CharacterSheet &sheet,
-                                                                  const VitalState &state,
-                                                                  const SpellChoices &choices) const
+    // The spells `choices` memorizes anew: those beyond the member's spells
+    // memorized and not cast, whose memorizing takes the preparation time
+    // (preparation_finishes), in the order the rest finishes them.
+    [[nodiscard]] virtual std::vector<MemorizedAnew>
+    memorizing_anew(const CharacterSheet &sheet, const VitalState &state,
+                    const SpellChoices &choices) const
     {
         (void)sheet;
         (void)state;
         (void)choices;
         return {};
+    }
+
+    // The levels of the spells memorizing_anew finds, in its order.
+    [[nodiscard]] std::vector<unsigned> memorizing_levels(const CharacterSheet &sheet,
+                                                          const VitalState &state,
+                                                          const SpellChoices &choices) const
+    {
+        std::vector<unsigned> levels;
+        for (const auto &spell : memorizing_anew(sheet, state, choices))
+        {
+            levels.push_back(spell.level);
+        }
+        return levels;
     }
 
     [[nodiscard]] virtual RecoveryInfo recovery_info(const CharacterSheet &,
@@ -1617,12 +1638,20 @@ class RulesModule
         return {};
     }
 
-    // The least time a rest that scribes spells of these levels takes (the
-    // original rules' preparation time); none for no spells.
-    [[nodiscard]] virtual std::chrono::minutes
-    preparation_time(std::span<const unsigned> /*levels*/) const
+    // When a rest that scribes or memorizes spells of these levels, in this
+    // order, has done each, from the rest's start (the original rules'
+    // preparation time); none for no spells.
+    [[nodiscard]] virtual std::vector<std::chrono::minutes>
+    preparation_finishes(std::span<const unsigned> /*levels*/) const
     {
         return {};
+    }
+
+    // The least time such a rest takes: when its last spell is done.
+    [[nodiscard]] std::chrono::minutes preparation_time(std::span<const unsigned> levels) const
+    {
+        const auto finishes = preparation_finishes(levels);
+        return finishes.empty() ? std::chrono::minutes{} : finishes.back();
     }
     // The spells the member can write on a scroll (MAGIC-6): those on its
     // class's list it can cast, with a slot of the spell's level or a Mystic

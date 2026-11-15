@@ -1026,6 +1026,27 @@ class RolfTourSession
     // Over a rest of `minutes`, rolled with `dice`.
     [[nodiscard]] std::optional<unsigned> rest_interruption(unsigned interval, unsigned chance,
                                                             unsigned minutes, const Dice &dice);
+
+    // The camp waits while its casters choose their spells, under rules that
+    // rest any length (gametime.pas, CampRest): the rest, interrupted already
+    // or not, goes on for their preparation, and a rest encounter comes once
+    // they have chosen.
+    struct CampMemorizing
+    {
+        // An interruption ended the rest's own time.
+        bool interrupted{};
+        // The campaign's clock as the rest's own time ended.
+        std::uint64_t rest_end_minutes{};
+        RestResult rest;
+    };
+
+    std::optional<CampMemorizing> camp_memorizing_;
+    // Where the rest going on for its casters' spells would be interrupted,
+    // rolled ahead on the engine's dice and taken back (the rolls come again
+    // as the rest goes on), tells the party's rest.
+    void foresee_rest_interruption(unsigned interval, unsigned chance);
+    // The rest's encounter comes: the camp's interruption script.
+    void interrupt_camp();
     void announce_camp_attack();
     [[nodiscard]] bool in_curse_wilderness() const;
     [[nodiscard]] bool camp_warded() const;

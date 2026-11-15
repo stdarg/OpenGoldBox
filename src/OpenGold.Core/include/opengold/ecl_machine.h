@@ -177,6 +177,18 @@ class EclMachine
     // share the same saved RNG so a reload reproduces them. Returns [0, count).
     unsigned engine_random(unsigned count);
 
+    // The dice's state, to roll ahead and take the rolls back (a rest's
+    // interruption foreseen before its spells are chosen).
+    [[nodiscard]] std::mt19937 dice_state() const
+    {
+        return random_;
+    }
+
+    void restore_dice(const std::mt19937 &state)
+    {
+        random_ = state;
+    }
+
     [[nodiscard]] EclState state() const noexcept
     {
         return state_;

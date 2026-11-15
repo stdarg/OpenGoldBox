@@ -8,6 +8,7 @@
 #include "opengold/training_hall.h"
 #include <chrono>
 #include <functional>
+#include <limits>
 
 namespace opengold::por
 {
@@ -69,6 +70,11 @@ struct ShortRestSession
     // preparation within the rest (rests_any_length); 0 in a save from
     // before it was kept, which limits nothing.
     std::uint64_t rested_minutes{};
+    // The minute of the rest, from its start, an interruption ends it at
+    // (gametime.pas, CampRest): the rest goes on for its spells no later,
+    // and those whose preparation is not done by then are not had. 0 when
+    // nothing interrupts it.
+    std::uint64_t interrupted_minutes{};
 };
 
 struct RestResult
@@ -492,10 +498,22 @@ class CampaignParty
     // A rest completes in one step; an interrupted rest is never started here.
     [[nodiscard]] std::optional<RestResult> rest(RestKind kind);
     // A long rest of `length`, for rules that rest any length
-    // (rests_any_length): five minutes to 99 days, 23 hours and 55 minutes,
-    // lengthened to the party's preparation for its scribing. Throws for
-    // other rules or lengths.
+    // (rests_any_length): five minutes to 99 days, 23 hours and 55 minutes.
+    // It goes on as its members scribe and memorize (choose_spells). Throws
+    // for other rules or lengths.
     [[nodiscard]] std::optional<RestResult> rest(std::chrono::minutes length);
+    // The rest whose spells are being chosen is interrupted `since_start`
+    // after it began, under rules that rest any length: it goes on no
+    // later, and a member gets only the spells its preparation finished by
+    // then. Interrupted as its own time ends, a member who finished none is
+    // asked for none. Throws when no such rest waits or the interruption
+    // comes before its end.
+    void interrupt_rest_at(std::chrono::minutes since_start);
+    // How long, from its start, the rest whose spells are being chosen may
+    // go on: until the longest preparation of a member who memorized all its
+    // slots anew and scribed what it marked; the rest's own length when that
+    // is shorter, or when no rest waits for its spells.
+    [[nodiscard]] std::chrono::minutes longest_rest_to_memorize() const;
     // The rest the camp proposes, for rules that rest any length: the
     // party's longest preparation for its scribing and for memorizing again
     // the spells its members cast (camp.pas, RestForSpellPrep), or a day
@@ -736,10 +754,12 @@ class CampaignParty
     void short_rest_benefits(PartyState &state, const std::vector<MemberId> &members) const;
     // The spells marked on a member's scrolls to be scribed at its next rest
     // (the original rules' scribing), by the scroll's inventory ID; and those
-    // scribed into its book as a rest ends, leaving their scrolls.
+    // scribed into its book as a rest ends, leaving their scrolls: all, or
+    // the first `count` the rest had time for.
     [[nodiscard]] std::vector<std::pair<std::uint64_t, rules::ScrollCopy>>
     pending_scribing(const PartyMember &member) const;
-    void scribe_pending(PartyMember &member) const;
+    void scribe_pending(PartyMember &member,
+                        std::size_t count = std::numeric_limits<std::size_t>::max()) const;
     void long_rest_benefits(PartyState &state, const std::vector<MemberId> &members,
                             RestTicket ticket, RestResult &result) const;
     [[nodiscard]] std::optional<RestResult> rest_for(RestKind kind,
@@ -748,10 +768,14 @@ class CampaignParty
     // memorizing of `choices`, for rules that rest any length.
     [[nodiscard]] std::chrono::minutes preparation(const PartyMember &member,
                                                    const rules::SpellChoices &choices) const;
-    // The rest goes on until the member's memorizing of `choices` is done:
-    // the clock passes what its preparation needs beyond the rest's length,
-    // each whole day of the rest that adds healing the party.
-    void rest_to_memorize(MemberId id, const rules::SpellChoices &choices);
+    // The rest goes on until the member's scribing and its memorizing of
+    // `choices` are done, or until its interruption: the clock passes what
+    // the preparation needs beyond the rest's length, each whole day of the
+    // rest that adds healing the party. The member scribes the spells whose
+    // time came; the result is `choices` without the spells it had no time
+    // to memorize.
+    [[nodiscard]] rules::SpellChoices rest_to_memorize(MemberId id,
+                                                       const rules::SpellChoices &choices);
     PartyMember &edit(MemberId id);
     void join(MemberId id, bool npc);
     void take_revival_changes(PartyMember &raised, rules::Revival by) const;

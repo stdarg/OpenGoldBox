@@ -1000,7 +1000,9 @@ void UaSession::advance_minutes(unsigned minutes)
 
 unsigned UaSession::hour() const
 {
-    const auto minutes = party_ ? party_->state().time_minutes : clock_minutes_;
+    const auto minutes = rest_clock_ ? *rest_clock_
+                         : party_    ? party_->state().time_minutes
+                                     : clock_minutes_;
     return static_cast<unsigned>(minutes / 60 % 24);
 }
 
@@ -1604,8 +1606,8 @@ void UaSession::refresh_snapshot()
 {
     ++snapshot_.revision;
     // A lost party and a refused fight end the adventure where it stands.
-    if (!running_ && pending_.wait == Wait::nothing && snapshot_.phase != TourPhase::defeated &&
-        snapshot_.phase != TourPhase::faulted)
+    if (!running_ && !camp_memorizing_ && pending_.wait == Wait::nothing &&
+        snapshot_.phase != TourPhase::defeated && snapshot_.phase != TourPhase::faulted)
     {
         snapshot_.phase = TourPhase::completed;
     }

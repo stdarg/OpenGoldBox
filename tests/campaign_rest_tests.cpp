@@ -959,7 +959,7 @@ std::string payload(std::string body)
         hash ^= c;
         hash *= 1099511628211ULL;
     }
-    return "OPENGOLD-CAMPAIGN 52\n" + std::to_string(hash) + '\n' + body;
+    return "OPENGOLD-CAMPAIGN 53\n" + std::to_string(hash) + '\n' + body;
 }
 
 void malformed_continuation()
@@ -969,14 +969,16 @@ void malformed_continuation()
     (void)party.rest(RestKind::short_rest);
     const auto good = saved(party);
     auto body = good.substr(good.find('\n', good.find('\n') + 1) + 1);
-    // The Short Rest continuation (its rest's length, kept for the original
-    // rules' memorizing, 0) is followed by no spell or training rest records.
-    const std::string tail = "2 1 1 1 60 0 1 1 0 ", later = "0 0 0 0 ";
+    // The Short Rest continuation (its rest's length and its interruption,
+    // kept for the original rules' memorizing, 0 and 0) is followed by no
+    // spell or training rest records.
+    const std::string tail = "2 1 1 1 60 0 1 1 0 0 ", later = "0 0 0 0 ";
     check(body.ends_with(tail + later), "Independent fixture locates the Short Rest continuation");
     const auto prefix = body.substr(0, body.size() - tail.size() - later.size());
-    for (const auto bad : {"0 0 ", "1 1 1 1 60 0 1 1 0 ", "2 1 0 1 60 0 1 1 0 ",
-                           "2 1 1 0 60 0 1 1 0 ", "2 1 1 1 59 0 1 1 0 ", "2 1 1 1 60 1 1 1 0 ",
-                           "2 1 1 1 60 0 0 0 ", "2 1 1 1 60 0 2 1 1 0 ", "2 1 1 1 60 0 1 999 0 "})
+    for (const auto bad :
+         {"0 0 ", "1 1 1 1 60 0 1 1 0 0 ", "2 1 0 1 60 0 1 1 0 0 ", "2 1 1 0 60 0 1 1 0 0 ",
+          "2 1 1 1 59 0 1 1 0 0 ", "2 1 1 1 60 1 1 1 0 0 ", "2 1 1 1 60 0 0 0 0 ",
+          "2 1 1 1 60 0 2 1 1 0 0 ", "2 1 1 1 60 0 1 999 0 0 "})
     {
         rejects(
             [&]

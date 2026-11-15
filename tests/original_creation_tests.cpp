@@ -659,7 +659,9 @@ void a_magic_user_scribes_a_scroll()
           "A save keeps the mark");
 
     const auto rested = party.rest(RestKind::long_rest);
-    check(rested && rested->duration_minutes == 24 * 60, "The day's rest outlasts its preparation");
+    check(rested && rested->duration_minutes == 24 * 60 && !knows(magic_missile),
+          "The day's rest scribes as its magic-user chooses its spells");
+    party.choose_spells(mage, {{}, std::vector<std::string>{"magic_user:read_magic"}});
     check(knows(magic_missile) &&
               spells_on(known_scroll) == std::array<std::uint8_t, 3>{0, sleep, fireball} &&
               party.copyable_spells(mage, second).empty(),
@@ -671,7 +673,6 @@ void a_magic_user_scribes_a_scroll()
           "Preparation shares four hours, six above the second level, and a quarter hour a level");
 
     // An unknown scroll is read once Read Magic is cast in camp.
-    party.choose_spells(mage, {{}, std::vector<std::string>{"magic_user:read_magic"}});
     const auto hidden = carried(party, mage, magic_user_scroll(types, {12, 0, 0}, false));
     check(party.copyable_spells(mage, hidden).empty(), "An unknown scroll cannot be scribed");
     party.use_camp_action(mage, mage, "cast:magic_user:read_magic");
@@ -736,6 +737,233 @@ void a_magic_user_scribes_a_scroll()
         party.member(mage).character.inventory().find(known_scroll)->get().definition_id);
     check(after_fight && after_fight->effect_codes == std::array<std::uint8_t, 3>{0, 0, fireball},
           "A spell read in a fight leaves the scroll, and Fireball stays");
+}
+
+// A magic-user with Magic Missile marked on a scroll, to scribe at its next
+// rest, under the original rules.
+struct ScribingMage
+{
+    std::shared_ptr<CampaignParty> party;
+    MemberId mage{};
+
+    [[nodiscard]] bool knows(int number) const
+    {
+        const auto &book = party->member(mage).character.sheet().original->known_spells;
+        return std::ranges::find(book, number) != book.end();
+    }
+
+    [[nodiscard]] std::vector<int> memorized() const
+    {
+        return original::Combatant::decode(party->participants().front().character_profile)->spells;
+    }
+};
+
+ScribingMage scribing_mage()
+{
+    std::vector<por::ItemTemplate> types(256);
+    types[61].worn_location = 11;
+    types[61].class_restrictions = 0xFF;
+    const original::Content content{{}, types};
+    std::shared_ptr<const rules::CharacterRules> creation = original::character_rules();
+    ScribingMage mage{std::make_shared<CampaignParty>(original::rules_module(content), creation)};
+    mage.mage = member_with(*mage.party, creation, "magic_user", "Mira");
+    constexpr std::uint8_t magic_missile = 15;
+    const auto scroll =
+        carried(*mage.party, mage.mage, magic_user_scroll(types, {magic_missile, 0, 0}, true));
+    mage.party->copy_scroll_spell(mage.mage, scroll, 0);
+    return mage;
+}
+
+constexpr int magic_missile_number = 15, sleep_number = 21;
+
+const rules::SpellChoices sleep_choice{{}, std::vector<std::string>{"magic_user:sleep"}};
+
+// The original's preparation (gametime.pas, CampRest, AdvanceSpellPrepBase,
+// AdvanceSpellPrep; camp.pas, CampSpellPrepTime): a member's scribing and
+// memorizing share one preparation, its base hours counted once, and finish
+// one spell at a time, the scribing first. An interruption ends the rest:
+// its whole days heal and the spells whose time came are had, the others
+// not (CampMainMenu's ResetPartySpellActivities).
+void an_interrupted_rest_keeps_what_its_time_gave()
+{
+    {
+        // Scribing Magic Missile and memorizing Sleep: four hours, then a
+        // quarter hour each.
+        auto mage = scribing_mage();
+        const auto start = mage.party->state().time_minutes;
+        check(mage.party->rest(std::chrono::minutes{5}) &&
+                  mage.party->longest_rest_to_memorize() == std::chrono::minutes{4 * 60 + 30},
+              "A level 1 magic-user scribing a spell may need four and a half hours");
+        mage.party->choose_spells(mage.mage, sleep_choice);
+        check(mage.party->state().time_minutes == start + 4 * 60 + 30 &&
+                  mage.knows(magic_missile_number) &&
+                  mage.memorized() == std::vector<int>{sleep_number},
+              "Scribing and memorizing add their spells' quarter hours to one four hours");
+    }
+    {
+        auto mage = scribing_mage();
+        auto state = mage.party->checkpoint();
+        state.roster.front().vitals.hit_points = 1;
+        mage.party->restore(state);
+        const auto start = mage.party->state().time_minutes;
+        const std::chrono::minutes rested{2 * 24 * 60 + 4 * 60 + 20};
+        (void)mage.party->rest(rested);
+        mage.party->interrupt_rest_at(rested);
+        check(mage.party->state().spell_rest &&
+                  mage.party->member(mage.mage).vitals.hit_points ==
+                      std::min(3, mage.party->member(mage.mage).character.sheet().hit_points),
+              "Interrupted after two days, the rest heals 2 Hit Points");
+        mage.party->choose_spells(mage.mage, sleep_choice);
+        check(mage.party->state().time_minutes == start + 2 * 24 * 60 + 4 * 60 + 20 &&
+                  mage.knows(magic_missile_number) &&
+                  mage.memorized() == std::vector<int>{sleep_number},
+              "Its spells, done in four and a half hours, are had; the rest goes on no more");
+    }
+    {
+        auto mage = scribing_mage();
+        const auto start = mage.party->state().time_minutes;
+        (void)mage.party->rest(std::chrono::minutes{4 * 60 + 20});
+        mage.party->interrupt_rest_at(std::chrono::minutes{4 * 60 + 20});
+        mage.party->choose_spells(mage.mage, sleep_choice);
+        check(mage.party->state().time_minutes == start + 4 * 60 + 20 &&
+                  mage.knows(magic_missile_number) && mage.memorized().empty(),
+              "Interrupted after four hours and twenty minutes, the rest has scribed Magic "
+              "Missile at four and a quarter, but not memorized Sleep");
+    }
+    {
+        auto mage = scribing_mage();
+        (void)mage.party->rest(std::chrono::minutes{60});
+        mage.party->interrupt_rest_at(std::chrono::minutes{60});
+        check(!mage.party->state().spell_rest && !mage.knows(magic_missile_number),
+              "Interrupted after an hour, the rest finishes no spell and asks for none");
+    }
+    {
+        // The interruption foreseen after the rest's own hour: the rest goes
+        // on for the spells until it comes.
+        auto mage = scribing_mage();
+        const auto start = mage.party->state().time_minutes;
+        (void)mage.party->rest(std::chrono::minutes{60});
+        mage.party->interrupt_rest_at(std::chrono::minutes{4 * 60 + 20});
+        check(mage.party->state().spell_rest.has_value(), "It still asks for the spells");
+        mage.party->choose_spells(mage.mage, sleep_choice);
+        check(mage.party->state().time_minutes == start + 4 * 60 + 20 &&
+                  mage.knows(magic_missile_number) && mage.memorized().empty(),
+              "The rest goes on to the interruption, which comes before Sleep is memorized");
+    }
+}
+
+// Entries 1, 2, 4 and 5 set the camp's rest check (0x6DD2) and its chance
+// (0x6DD3), as the original's pre-camp entry does; entry 3, the camp's
+// interruption, does nothing.
+std::shared_ptr<const por::EclProgram> camp_script(std::uint8_t interval, std::uint8_t chance)
+{
+    const std::vector<std::uint8_t> pre{9, 0,      interval, 1,    0xd2, 0x6d, 9,
+                                        0, chance, 1,        0xd3, 0x6d, 0};
+    std::vector<std::uint8_t> bytes{0, 0};
+    for (unsigned n = 0; n < 5; ++n)
+    {
+        bytes.insert(bytes.end(), {1, 1, 0x15, 0x99});
+    }
+    bytes.push_back(0);
+    const unsigned arrival = 0x9915 + static_cast<unsigned>(pre.size());
+    bytes[16] = arrival & 255;
+    bytes[17] = static_cast<std::uint8_t>(arrival >> 8);
+    bytes.insert(bytes.end(), pre.begin(), pre.end());
+    bytes.push_back(0);
+    return std::make_shared<const por::EclProgram>(por::EclProgram::decode(bytes, "camp profile"));
+}
+
+void settle(por::RolfTourSession &town)
+{
+    for (unsigned n = 0; n < 100 && town.snapshot().phase == por::TourPhase::running; ++n)
+    {
+        town.advance(.5);
+    }
+    check(town.snapshot().phase != por::TourPhase::faulted, "The camp's script does not fault");
+}
+
+std::unique_ptr<por::RolfTourSession> camp_of(const ScribingMage &mage, std::uint8_t interval,
+                                              std::uint8_t chance)
+{
+    auto script = camp_script(interval, chance);
+    auto resources = std::make_shared<por::PhlanResources>();
+    resources->programs[0] = script;
+    auto town = std::make_unique<por::RolfTourSession>(por::GeoMap{}, std::move(script),
+                                                       std::array<Image, 3>{}, 0x9914,
+                                                       por::WallArtSet{}, resources);
+    town->campaign_party(mage.party);
+    settle(*town);
+    return town;
+}
+
+[[nodiscard]] bool says_interrupted(const por::RolfTourSession &town)
+{
+    return town.snapshot().dialogue.ends_with("The rest was interrupted. Rest again to recover.");
+}
+
+// The camp rolls a rest encounter every check's steps (gametime.pas, CampRest)
+// over the rest's own time and over the time it goes on for its spells: the
+// camp waits for the spells, and the encounter comes after them.
+void a_camp_is_interrupted_while_it_rests_and_memorizes()
+{
+    constexpr std::uint8_t always = 100, four_hours_twenty = 52, five_hours = 60;
+    {
+        auto mage = scribing_mage();
+        auto town = camp_of(mage, four_hours_twenty, always);
+        const auto start = mage.party->state().time_minutes;
+        check(town->camp(std::chrono::minutes{24 * 60}), "The party camps for a day");
+        settle(*town);
+        check(mage.party->state().spell_rest && !town->can_leave() &&
+                  mage.party->state().time_minutes == start + 4 * 60 + 20,
+              "Interrupted after four hours and twenty minutes, the camp waits for the spells");
+        mage.party->choose_spells(mage.mage, sleep_choice);
+        settle(*town);
+        check(town->can_leave() && says_interrupted(*town) && mage.knows(magic_missile_number) &&
+                  mage.memorized().empty() &&
+                  mage.party->state().time_minutes == start + 4 * 60 + 20,
+              "Then the creatures come: Magic Missile was scribed, Sleep not memorized");
+    }
+    {
+        auto mage = scribing_mage();
+        auto town = camp_of(mage, four_hours_twenty, always);
+        const auto start = mage.party->state().time_minutes;
+        check(town->camp(std::chrono::minutes{60}), "The party camps for an hour");
+        settle(*town);
+        check(mage.party->state().spell_rest && !town->can_leave() &&
+                  mage.party->state().time_minutes == start + 60,
+              "The hour passes uninterrupted, and the camp waits for the spells");
+        mage.party->choose_spells(mage.mage, sleep_choice);
+        settle(*town);
+        check(town->can_leave() && says_interrupted(*town) && mage.knows(magic_missile_number) &&
+                  mage.memorized().empty() &&
+                  mage.party->state().time_minutes == start + 4 * 60 + 20,
+              "The rest going on for the spells is interrupted at four hours and twenty minutes");
+    }
+    {
+        auto mage = scribing_mage();
+        auto town = camp_of(mage, five_hours, always);
+        const auto start = mage.party->state().time_minutes;
+        check(town->camp(std::chrono::minutes{60}), "The party camps for an hour");
+        settle(*town);
+        mage.party->choose_spells(mage.mage, sleep_choice);
+        settle(*town);
+        check(town->can_leave() && !says_interrupted(*town) &&
+                  mage.memorized() == std::vector<int>{sleep_number} &&
+                  mage.party->state().time_minutes == start + 4 * 60 + 30,
+              "Done in four and a half hours, the rest ends before the check at five");
+        check(town->camp(std::chrono::minutes{60}), "The party camps again");
+        settle(*town);
+        check(says_interrupted(*town) && mage.party->state().time_minutes == start + 5 * 60,
+              "The steps rested count on toward the next check: it comes half an hour in");
+    }
+    {
+        auto mage = scribing_mage();
+        auto town = camp_of(mage, 12, always);
+        check(town->camp(std::chrono::minutes{24 * 60}), "The party camps for a day");
+        settle(*town);
+        check(town->can_leave() && says_interrupted(*town) && !mage.party->state().spell_rest,
+              "Interrupted after an hour, the camp asks for no spells");
+    }
 }
 
 // A cleric's Cure Light Wounds in camp heals a member 1d8, up to its Hit
@@ -2833,6 +3061,8 @@ int main()
         a_magic_user_memorizes_and_learns();
         a_magic_user_scribes_a_scroll();
         a_rest_lasts_any_length_and_memorizing_takes_time();
+        an_interrupted_rest_keeps_what_its_time_gave();
+        a_camp_is_interrupted_while_it_rests_and_memorizes();
         a_cleric_cures_in_camp();
         the_temple_heals_and_raises();
         conditions_outlast_fights();
