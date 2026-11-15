@@ -5376,6 +5376,13 @@ const std::vector<RouteBeat> &treasure_route()
             RouteBeat fight{28, x, y, D::north, {}};
             fight.rest_first = true;
             fight.rest_for_spells = true;
+            // The eastern base's fire giant mages shield themselves in fire
+            // and fireball the party: the clerics ward each member with
+            // Resist Fire.
+            if (x == 15 && y == 11)
+            {
+                fight.ward_each_with = "resist_fire";
+            }
             route.push_back(fight);
         }
         route.back().expect_cell = {{0x12E, 1}};
@@ -6815,7 +6822,11 @@ bool walk_census(GoldBoxGame game, bool route)
             {
                 held = treasures_turn(session);
             }
-            if (!held && member && tactic == 2)
+            // Treasures' Hold Person takes no monster, and its Quick casts by
+            // its own AI, which aims its holds where they take: the other
+            // games' choices do not serve it.
+            if (!held && member && tactic == 2 &&
+                game != GoldBoxGame::treasures_of_the_savage_frontier)
             {
                 held = player_turn(session, picked, bolt_bearers);
             }
