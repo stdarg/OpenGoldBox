@@ -3305,6 +3305,29 @@ const std::vector<RouteBeat> &darkness_route()
                        {4, 9, D::south},
                        {4, 10, D::south}});
         route.push_back(step_beat(81, 4, 11, D::south, {"APPROACH"}));
+        // The Test passed, the table beyond (6,14) holds magic daggers and
+        // the amulets that repel spiders, which the party takes (cell 1FFh).
+        walk_passages(route, 81, {{4, 12, D::south}, {4, 13, D::south}, {4, 14, D::east}});
+        auto amulets = step_beat(81, 5, 14, D::east);
+        amulets.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x1FF, 1};
+        route.push_back(amulets);
+        // North to the altar room (8,9), where Hem's fate is decided and Daris
+        // flees with the Ward; the party follows.
+        walk_passages(route, 81,
+                      {{6, 14, D::north},
+                       {6, 13, D::east},
+                       {7, 13, D::north},
+                       {7, 12, D::north},
+                       {7, 11, D::east},
+                       {8, 11, D::north},
+                       {8, 10, D::north}});
+        // After Daris, round by (6,9) to his guards (7,8), whom the party
+        // beats; it picks up the Ward of Safe Passage (YES) and beats Shest,
+        // Kalistes' Pet, and his enormous spiders (cell 1F7h).
+        walk_passages(route, 81, {{8, 9, D::west}, {7, 9, D::west}, {6, 9, D::north}});
+        auto ward = step_beat(81, 6, 8, D::east, {"YES"});
+        ward.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x1F7, 1};
+        route.push_back(ward);
         return route;
     }();
     return beats;
