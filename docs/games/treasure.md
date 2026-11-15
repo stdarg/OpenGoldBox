@@ -445,7 +445,11 @@ in Fireshear each beat's camp heals a single Hit Point and then the party
 no longer steps (the camp stays refused, so no event runs; to be found from
 a checkpoint at the landing, beat 521). Next: find why the camp stays
 refused there, rest the party at an inn or temple of Neverwinter before
-the ship, and play the whole route to the win again.
+the ship, and play the whole route to the win again. On the original-rules
+round's stronger monsters (branch `rules-round`) the whole route stops
+earlier, in Ruathym (map 32): the ranger and a cleric are dead before
+Redleg's boat (15,4, beat 465), whose fight then defeats the party; it
+needs its dead raised and a rest before the boat.
 
 ## The ending
 
