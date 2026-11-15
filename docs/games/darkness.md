@@ -765,6 +765,19 @@ party won or came through and "not equal" when it fled. Until 2026-11-14
 OpenGoldBox left the flags as they were, so a won fight could read as lost
 and move the party back a square (the walk passed all the same).
 
+On the original-rules round (its effect numbers, stronger monsters,
+2026-11-15, late): the vampires that roam the Moonsea's north shore drain
+two levels a bite, so the route flees them on the way to the Hill Giant
+Steading, and its camps cast Restoration on a drained member when a cleric
+has it (none of its clerics has seventh-level spells yet). It then passes
+the drow legions in the Descent (35: 4,11) again, but in Kalistes' pets'
+run (84: 9,14) the Ward no longer keeps the pets back ("THEY ARE TOO MANY,
+AND AFTER AN UNSEEN EXCHANGE"): the magic-user falls, and the party, which
+cannot rest on the Parlor's lower level, loses a fight at 12,13 with every
+dice; that is where the route stops on that round, to be re-tuned (the
+cluebook's way in by the kitchen's trapdoor, with Arta, and the guards'
+quarters upstairs to rest in, are the player's other way).
+
 Where it stops (2026-11-15, night): inside Myth Drannor's broken gate
 (66: 15,4) with Nacacia, the route's beat 1412. The way on (the cluebook's
 Nacacia and Myth Drannor): the temple where the Rakshasa Maharajah raises

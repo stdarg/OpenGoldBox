@@ -2469,7 +2469,11 @@ const std::vector<RouteBeat> &darkness_route()
         // West across the Moonsea's north shore, by the crater of Phlan, to
         // the Hill Giant Steading near Dragonhorn Gap (9,2): the party talks
         // its way past the gate's giants as would-be mercenaries (map 21).
+        // It flees the vampires that roam the shore, whose bites drain two
+        // levels (since 2026-11-15, the 256-color games' effect numbers).
         RouteBeat to_steading{17, 0, 0, D::north, {"YES", "TALK"}};
+        to_steading.passing = true;
+        to_steading.fleeing = true;
         to_steading.area_steps = {C::northwest, C::west, C::west,      C::west,
                                   C::west,      C::west, C::west,      C::west,
                                   C::west,      C::west, C::northwest, C::northwest};
@@ -5250,6 +5254,64 @@ bool walk_census(GoldBoxGame game, bool route)
             return members;
         };
         const bool anyone_dead = !dead().empty();
+        // Members with levels drained and not given back (Pools of
+        // Darkness's Restoration gives one back a cast).
+        const auto drained = [&]
+        {
+            std::vector<opengold::MemberId> members;
+            for (const auto id : party->state().slots)
+            {
+                if (!id || party->member(id).vitals.dead)
+                {
+                    continue;
+                }
+                const auto &sheet = party->member(id).character.sheet();
+                if (sheet.original && sheet.original->drained_levels > 0)
+                {
+                    members.push_back(id);
+                }
+            }
+            return members;
+        };
+        const bool anyone_drained = game == GoldBoxGame::pools_of_darkness && !drained().empty();
+        // A cleric with Restoration memorized gives a drained member a level
+        // back, as a player would in camp, each cast one level.
+        const auto restore_the_drained = [&]
+        {
+            if (game != GoldBoxGame::pools_of_darkness)
+            {
+                return;
+            }
+            for (const auto lost : drained())
+            {
+                for (const auto cleric : party->state().slots)
+                {
+                    if (!cleric || party->member(cleric).vitals.dead)
+                    {
+                        continue;
+                    }
+                    const auto actions = party->camp_actions(cleric);
+                    const auto restore = std::ranges::find_if(
+                        actions,
+                        [](const opengold::rules::CampAction &action)
+                        {
+                            return action.id.find("restoration") != std::string::npos;
+                        });
+                    if (restore == actions.end())
+                    {
+                        continue;
+                    }
+                    try
+                    {
+                        party->use_camp_action(cleric, lost, restore->id);
+                        break;
+                    }
+                    catch (const std::exception &)
+                    {
+                    }
+                }
+            }
+        };
         // A cleric with Raise Dead (or Resurrection) memorized raises the dead, as a player would
         // in camp (Curse's Raise Dead; an elf cannot be raised).
         const auto raise_the_dead = [&]
@@ -5335,6 +5397,7 @@ bool walk_census(GoldBoxGame game, bool route)
         if (!party->state().spell_rest)
         {
             raise_the_dead();
+            restore_the_drained();
             wake_the_fallen();
             return;
         }
@@ -5373,6 +5436,11 @@ bool walk_census(GoldBoxGame game, bool route)
                         {
                             return -1;
                         }
+                        // With someone drained, Restoration first too.
+                        if (anyone_drained && id.find("restoration") != std::string::npos)
+                        {
+                            return -1;
+                        }
                         if (std::ranges::any_of(wanted_spells,
                                                 [&](const std::string &wanted)
                                                 {
@@ -5401,6 +5469,7 @@ bool walk_census(GoldBoxGame game, bool route)
             party->choose_spells(id, {{}, prepared});
         }
         raise_the_dead();
+        restore_the_drained();
         wake_the_fallen();
     };
     const auto item_definitions = game == GoldBoxGame::pools_of_darkness
