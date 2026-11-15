@@ -430,14 +430,21 @@ Llorkh's hall, training the party to levels 8 and 9).
     dwarves fighting beside the party. As the dragon dies the game is won
     (The ending).
 
-*Stand-ins:* the experience and money at Llorkh's hall; the test wins the Way
-Inn's last fight (six Hosttower sorceresses charm the route's members), the
-council's (the Krakens who burst in) and the lair's black-robed men (their
-masters, mages and spies hold the members with Hold Person and Hold Monster
-and slay them helpless, the party rested and the wand readied), which the
-route's player loses with every dice it tries. Neverwinter's eastern Kraken
-base, a stand-in until 2026-11-15, the party trained at Mintarn wins.
-Freezefire himself the route's player beats.
+*Stand-ins:* the experience and money at Llorkh's hall, and the test's win
+of two fights the route's player loses with every dice it tries: the Way
+Inn's last (six Hosttower sorceresses charm the members faster than the
+casters free them, every third-level slot holding Dispel Magic) and
+Freezefire, risen at once after the lair's black-robed men with no rest
+between (the worn party falls; in earlier plays, before the casters
+memorized Dispel Magic for the lair, the route's player beat him and lost
+to the black-robed men instead). The route's player frees a member charmed
+onto the other side or held helpless with Dispel Magic, which ends a charm
+or a hold as the original's dispel does, and its casters memorize it
+first before the Way Inn's last fight, the council and the lair
+(`RouteBeat::memorize_first_of`). So it wins Neverwinter's eastern Kraken
+base (trained at Mintarn), the council's Krakens and Hosttower
+sorceresses (rested at the Dig Inn), and the lair's black-robed men, all
+stand-ins until 2026-11-15.
 
 Every walk is played step by step as the planning aid
 (`OPENGOLD_SECRET_FIND`, with `OPENGOLD_FIND_YES` for a town's "ENTER ...?"
@@ -471,14 +478,12 @@ took, as a player would play it:
   Fix in camp on the overland, tried, rolls the wandering monsters more
   often than it heals.
 
-*Next (where the work stopped, 2026-11-15):* the three stand-ins left. The
-council's Krakens beat the party even rested at the Dig Inn and whole. The
-original's counters the route's player does not use yet: Dispel Magic (and
-Charm Person cast on a charmed member, which frees it in the original's
-SpellCharmPerson) against the Way Inn's charms, and Remove Paralysis against
-the lair's holds; the route's casters would need to memorize them and its
-player to cast them on the members held or charmed. Then the camp dialog's
-Fix and Crown buttons, and the Fix's Restoration and cure of feeblemind.
+*Next (where the work stopped, 2026-11-15):* the two stand-ins left. The
+original's Charm Person cast on a charmed member frees it (its
+SpellCharmPerson); OpenGoldBox's combat does not do that yet, and the
+route's player could add it to Dispel Magic at the Way Inn. Then the camp
+dialog's Fix and Crown buttons, and the Fix's Restoration and cure of
+feeblemind.
 
 ## The ending
 

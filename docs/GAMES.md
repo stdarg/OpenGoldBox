@@ -746,8 +746,10 @@ pictures, walls and script host, *Treasures* adding only what it changes.
    slots over a timed rest); the session's camp has the Fix and the Crown
    (treasure.md, What the route needed), which the camp dialog does not
    offer yet. *Stand-ins:* the experience and money at Llorkh's hall, and
-   the test's win of three fights the route's player loses with every dice
-   (the Way Inn's last, the council's, the lair's black-robed men). The romances gate nothing (the cluebook's
+   the test's win of two fights the route's player loses with every dice
+   (the Way Inn's last, whose sorceresses charm faster than Dispel Magic
+   frees, and Freezefire, fought right after the lair's black-robed men
+   with no rest between). The romances gate nothing (the cluebook's
    Falling in Love).
 
 ### 8. *Unlimited Adventures*
