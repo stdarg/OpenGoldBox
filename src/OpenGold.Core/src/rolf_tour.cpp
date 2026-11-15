@@ -1239,6 +1239,12 @@ void RolfTourSession::advance(double seconds)
         {
             if (!campaign_ || !campaign_->state().spell_rest)
             {
+                // The script's cells show the members as the camp left them,
+                // so the event's end reads back no stale one.
+                for (const auto &w : character_reply(selected_character_).writes)
+                {
+                    machine_.bind_variable(w.address, w.value);
+                }
                 finish_event();
             }
             return;

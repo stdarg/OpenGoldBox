@@ -2163,8 +2163,8 @@ void RolfTourSession::finish_event()
             // an interruption within that time comes now (gametime.pas,
             // CampRest rolls it each step), with the same dice foreseen.
             const auto waited = *std::exchange(camp_memorizing_, std::nullopt);
-            const auto went_on =
-                static_cast<unsigned>(campaign_->state().time_minutes - waited.rest_end_minutes);
+            const auto went_on = static_cast<unsigned>(campaign_->last_rest_minutes() -
+                                                       waited.rest.duration_minutes);
             const auto broken = went_on
                                     ? rest_interruption(interval, chance, went_on,
                                                         [this](unsigned count)

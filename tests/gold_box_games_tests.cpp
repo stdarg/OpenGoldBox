@@ -9408,8 +9408,10 @@ bool walk_census(GoldBoxGame game, bool route)
         const auto rest_until_healed = [&](bool a_night_first = false, bool through_period = false)
         {
             // Secret's party gives up resting where monsters break its camp
-            // three times (its castle's guards come every night), and on that
-            // map rests no more while it only passes by.
+            // six times (its castle's guards come every night), and on that
+            // map rests no more while it only passes by. A broken rest keeps
+            // the days and spells its time gave (2026-11-15), so the party
+            // rests on through more of them.
             unsigned interrupted = 0;
             unsigned idle_camps = 0;
             for (int day = 0; day < 90 && session.can_leave(); ++day)
@@ -9434,7 +9436,7 @@ bool walk_census(GoldBoxGame game, bool route)
                     memorize();
                 }
                 if (fights_fought != fights_before &&
-                    game == GoldBoxGame::secret_of_the_silver_blades && ++interrupted >= 3)
+                    game == GoldBoxGame::secret_of_the_silver_blades && ++interrupted >= 6)
                 {
                     restless_map = session.snapshot().area_id;
                     break;

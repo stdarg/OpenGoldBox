@@ -519,6 +519,14 @@ class CampaignParty
     // the spells its members cast (camp.pas, RestForSpellPrep), or a day
     // when there is none to make.
     [[nodiscard]] std::chrono::minutes proposed_rest() const;
+
+    // How long, from its start, the last rest whose spells were chosen went
+    // on for them (rests_any_length), so a camp rolls its encounters over
+    // that time and not over a cure cast meanwhile; 0 before one ends.
+    [[nodiscard]] std::uint64_t last_rest_minutes() const noexcept
+    {
+        return last_rest_minutes_;
+    }
     // Spends Hit Dice one at a time until the member is at full HP or out of dice.
     [[nodiscard]] std::vector<rules::HitDieResult> heal_with_hit_dice(RestTicket ticket,
                                                                       MemberId id);
@@ -715,6 +723,9 @@ class CampaignParty
     std::unique_ptr<rules::RulesModule> rules_;
     std::shared_ptr<const rules::CharacterRules> creation_;
     PartyState state_;
+    // The last rest's length with its memorizing (last_rest_minutes), kept
+    // only while its camp ends: not part of the party's state.
+    std::uint64_t last_rest_minutes_{};
     NpcPositions npc_positions_{NpcPositions::npcs_only};
     bool combat_{};
     bool combat_registered_{};

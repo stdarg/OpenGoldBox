@@ -212,7 +212,7 @@ bool UaSession::rest_for(unsigned minutes)
     }
     if (party_->state().spell_rest)
     {
-        camp_memorizing_ = CampMemorizing{party_->state().time_minutes, event};
+        camp_memorizing_ = CampMemorizing{party_->state().time_minutes, rested, event};
         snapshot_.phase = por::TourPhase::running;
         ++snapshot_.revision;
         return !event;
@@ -257,7 +257,7 @@ void UaSession::advance(double)
     // comes now, with the same dice foreseen.
     const auto waited = *std::exchange(camp_memorizing_, std::nullopt);
     auto event = waited.event;
-    const auto went_on = party_->state().time_minutes - waited.rest_end_minutes;
+    const auto went_on = party_->last_rest_minutes() - waited.rested_minutes;
     for (std::uint64_t step = 5; step <= went_on && !event; step += 5)
     {
         rest_clock_ = waited.rest_end_minutes + step;

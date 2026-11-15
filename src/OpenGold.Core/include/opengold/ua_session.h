@@ -572,11 +572,11 @@ class UaSession final : public ExplorationSession
     std::optional<std::uint64_t> rest_clock_;
 
     // The camp waits while its casters choose their spells (rest.c,
-    // camp_rest): the clock as the rest's own time ended, and the encounter
-    // that broke it already, if one did.
+    // camp_rest): the clock as the rest's own time ended, that time, and the
+    // encounter that broke it already, if one did.
     struct CampMemorizing
     {
-        std::uint64_t rest_end_minutes{};
+        std::uint64_t rest_end_minutes{}, rested_minutes{};
         std::optional<unsigned> event;
     };
 

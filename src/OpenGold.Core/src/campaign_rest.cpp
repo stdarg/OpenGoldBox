@@ -229,6 +229,7 @@ void CampaignParty::interrupt_rest_at(std::chrono::minutes since_start)
                   });
     if (rest.members.empty())
     {
+        last_rest_minutes_ = state_.spell_rest->rested_minutes;
         state_.spell_rest.reset();
     }
 }

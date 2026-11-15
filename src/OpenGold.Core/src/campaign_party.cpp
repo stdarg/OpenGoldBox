@@ -2937,6 +2937,7 @@ void CampaignParty::choose_spells(MemberId id, const rules::SpellChoices &choice
     std::erase(state_.spell_rest->members, id);
     if (state_.spell_rest->members.empty())
     {
+        last_rest_minutes_ = state_.spell_rest->rested_minutes;
         state_.spell_rest.reset();
     }
 }
@@ -2955,6 +2956,7 @@ void CampaignParty::keep_rest_spells(MemberId id)
     std::erase(state_.spell_rest->members, id);
     if (state_.spell_rest->members.empty())
     {
+        last_rest_minutes_ = state_.spell_rest->rested_minutes;
         state_.spell_rest.reset();
     }
 }
