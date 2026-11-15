@@ -2084,7 +2084,7 @@ std::vector<std::string> train_darkness_party(int levels, std::vector<std::strin
 // Pools of Darkness's route plays to the game's end once this is true; until
 // then it stops on this map (docs/GAMES.md, Pools of Darkness, step 5).
 constexpr bool darkness_route_ends_the_game = false;
-constexpr unsigned darkness_route_stops_on_map = 70;
+constexpr unsigned darkness_route_stops_on_map = 67;
 
 // Pools of Darkness's story, beat by beat, as its cluebook tells it: from New
 // Phlan's docks, where Rolf has walked the party out.
@@ -4000,6 +4000,198 @@ const std::vector<RouteBeat> &darkness_route()
         RouteBeat into_red_tower{17, 0, 0, D::north, {"YES"}};
         into_red_tower.area_steps = {C::east};
         route.push_back(into_red_tower);
+        // The Tower of Marcus (map 70, script 70; the cluebook's 51 to 56):
+        // its levels are parts of one map, the level in cell 17Ah. Through
+        // the garden of walking trees to the path down at 7,10 (THE PATH
+        // GOES DOWN, YES) to the dungeons of level 0.
+        walk_passages(route, 70,
+                      {{4, 15, D::north},
+                       {4, 14, D::north},
+                       {4, 13, D::east},
+                       {5, 13, D::east},
+                       {6, 13, D::east},
+                       {7, 13, D::east},
+                       {8, 13, D::north},
+                       {8, 12, D::west},
+                       {7, 12, D::north},
+                       {7, 11, D::west},
+                       {6, 11, D::north},
+                       {6, 10, D::east}});
+        route.push_back(step_beat(70, 7, 10, D::east, {"YES"}));
+        // North through the dungeons (it wraps to the map's south edge) and
+        // past the guards to Shal's cell (10,9, the cluebook's 11): the
+        // party agrees to take her to the top of the tower (YES).
+        walk_passages(route, 70,
+                      {{9, 0, D::north},
+                       {9, 15, D::north},
+                       {9, 14, D::north},
+                       {9, 13, D::north},
+                       {9, 12, D::north},
+                       {9, 11, D::east},
+                       {10, 11, D::east},
+                       {11, 11, D::east},
+                       {12, 11, D::north},
+                       {12, 10, D::east},
+                       {13, 10, D::north},
+                       {13, 9, D::west},
+                       {12, 9, D::west}});
+        route.push_back(step_beat(70, 11, 9, D::west, {"YES"}));
+        // With Shal, back past the guards' room and up the dungeons' path
+        // (9,0, THE PATH GOES UP) to the garden, and up the lower tower's
+        // levels 1 to 8 by their paths, the way the planning aid finds
+        // (each path a YES; level 6 up on the tower's second map, 71).
+        walk_passages(route, 70,
+                      {{10, 9, D::east},
+                       {11, 9, D::east},
+                       {12, 9, D::east},
+                       {13, 9, D::south},
+                       {13, 10, D::west},
+                       {12, 10, D::south},
+                       {12, 11, D::south},
+                       {12, 12, D::south},
+                       {12, 13, D::south},
+                       {12, 14, D::south},
+                       {12, 15, D::west},
+                       {11, 15, D::west},
+                       {10, 15, D::west},
+                       {9, 15, D::south}});
+        route.push_back(step_beat(70, 9, 0, D::west, {"YES"}));
+        walk_passages(route, 70, {{7, 10, D::west}, {6, 10, D::west}, {5, 10, D::west}});
+        route.push_back(step_beat(70, 4, 10, D::west, {"YES"}));
+        walk_passages(route, 70,
+                      {{13, 0, D::south},
+                       {13, 1, D::south},
+                       {13, 2, D::south},
+                       {13, 3, D::west},
+                       {12, 3, D::west},
+                       {11, 3, D::west},
+                       {10, 3, D::north},
+                       {10, 2, D::west},
+                       {9, 2, D::north},
+                       {9, 1, D::east},
+                       {10, 1, D::north}});
+        route.push_back(step_beat(70, 10, 0, D::west, {"YES"}));
+        walk_passages(route, 70,
+                      {{1, 4, D::west},
+                       {0, 4, D::south},
+                       {0, 5, D::south},
+                       {0, 6, D::south},
+                       {0, 7, D::east},
+                       {1, 7, D::east},
+                       {2, 7, D::north},
+                       {2, 6, D::north},
+                       {2, 5, D::east},
+                       {3, 5, D::east},
+                       {4, 5, D::east},
+                       {5, 5, D::north},
+                       {5, 4, D::west},
+                       {4, 4, D::west},
+                       {3, 4, D::west}});
+        route.push_back(step_beat(70, 2, 4, D::west, {"YES"}));
+        walk_passages(route, 70,
+                      {{1, 0, D::west},
+                       {0, 0, D::south},
+                       {0, 1, D::south},
+                       {0, 2, D::south},
+                       {0, 3, D::east},
+                       {1, 3, D::east},
+                       {2, 3, D::north},
+                       {2, 2, D::east},
+                       {3, 2, D::east},
+                       {4, 2, D::east},
+                       {5, 2, D::east},
+                       {6, 2, D::south},
+                       {6, 3, D::east},
+                       {7, 3, D::north},
+                       {7, 2, D::north},
+                       {7, 1, D::north},
+                       {7, 0, D::west}});
+        route.push_back(step_beat(70, 6, 0, D::west, {"YES"}));
+        walk_passages(route, 70,
+                      {{13, 4, D::south},
+                       {13, 5, D::south},
+                       {13, 6, D::south},
+                       {13, 7, D::west},
+                       {12, 7, D::west},
+                       {11, 7, D::west},
+                       {10, 7, D::west},
+                       {9, 7, D::west},
+                       {8, 7, D::north},
+                       {8, 6, D::north},
+                       {8, 5, D::east},
+                       {9, 5, D::east},
+                       {10, 5, D::south},
+                       {10, 6, D::east},
+                       {11, 6, D::north},
+                       {11, 5, D::north},
+                       {11, 4, D::west}});
+        route.push_back(step_beat(70, 10, 4, D::west, {"YES"}));
+        walk_passages(route, 71,
+                      {{1, 0, D::west},
+                       {0, 0, D::south},
+                       {0, 1, D::south},
+                       {0, 2, D::south},
+                       {0, 3, D::east},
+                       {1, 3, D::east},
+                       {2, 3, D::east},
+                       {3, 3, D::south},
+                       {3, 4, D::east},
+                       {4, 4, D::east},
+                       {5, 4, D::east},
+                       {6, 4, D::east},
+                       {7, 4, D::north},
+                       {7, 3, D::east},
+                       {8, 3, D::north},
+                       {8, 2, D::east},
+                       {9, 2, D::south},
+                       {9, 3, D::south}});
+        // Rested and its spells memorized, it walks into the bits of Moander,
+        // the cultists who follow them and the Black Circle's mages (10,4,
+        // the cluebook's 12).
+        auto moanders_monsters = step_beat(71, 9, 4, D::east);
+        moanders_monsters.passing = true;
+        moanders_monsters.rest_first = true;
+        moanders_monsters.rest_for_spells = true;
+        route.push_back(moanders_monsters);
+        walk_passages(route, 71,
+                      {{10, 4, D::east},
+                       {11, 4, D::north},
+                       {11, 3, D::north},
+                       {11, 2, D::north},
+                       {11, 1, D::north},
+                       {11, 0, D::west}});
+        route.push_back(step_beat(71, 10, 0, D::west, {"YES"}));
+        walk_passages(route, 71,
+                      {{10, 5, D::west},  {9, 5, D::west},   {8, 5, D::south},  {8, 6, D::west},
+                       {7, 6, D::west},   {6, 6, D::west},   {5, 6, D::north},  {5, 5, D::west},
+                       {4, 5, D::west},   {3, 5, D::west},   {2, 5, D::west},   {1, 5, D::west},
+                       {0, 5, D::south},  {0, 6, D::south},  {0, 7, D::east},   {1, 7, D::south},
+                       {1, 8, D::west},   {0, 8, D::south},  {0, 9, D::east},   {1, 9, D::east},
+                       {2, 9, D::east},   {3, 9, D::east},   {4, 9, D::east},   {5, 9, D::east},
+                       {6, 9, D::east},   {7, 9, D::east},   {8, 9, D::east},   {9, 9, D::east},
+                       {10, 9, D::north}, {10, 8, D::north}, {10, 7, D::north}, {10, 6, D::east},
+                       {11, 6, D::east},  {12, 6, D::north}, {12, 5, D::west}});
+        route.push_back(step_beat(71, 11, 5, D::west, {"YES"}));
+        // Level 8: west round the guard rooms to the sortie against Phlan
+        // (the cluebook's 22), where Shal bluffs the many guards before the
+        // wizard gate by impersonating Petra (TRY IT? YES), and the party
+        // hurries past through the gate (23) into the upper tower (script
+        // 67), which locks behind it.
+        walk_passages(
+            route, 71,
+            {{11, 10, D::west},  {10, 10, D::south}, {10, 11, D::east},  {11, 11, D::east},
+             {12, 11, D::south}, {12, 12, D::south}, {12, 13, D::south}, {12, 14, D::west},
+             {11, 14, D::west},  {10, 14, D::west},  {9, 14, D::west},   {8, 14, D::north},
+             {8, 13, D::north},  {8, 12, D::north},  {8, 11, D::north},  {8, 10, D::west},
+             {7, 10, D::south},  {7, 11, D::west},   {6, 11, D::south},  {6, 12, D::south},
+             {6, 13, D::south},  {6, 14, D::west},   {5, 14, D::west},   {4, 14, D::west},
+             {3, 14, D::west},   {2, 14, D::west},   {1, 14, D::west},   {0, 14, D::north},
+             {0, 13, D::north},  {0, 12, D::north},  {0, 11, D::east},   {1, 11, D::south},
+             {1, 12, D::east},   {2, 12, D::east}});
+        // The guards' event (3,12) runs as a step through their door is
+        // held back: the party hears the troops mustering and does not go on
+        // (NO), and Shal offers her bluff (YES).
+        route.push_back(step_beat(71, 3, 12, D::north, {"NO", "YES"}));
         return route;
     }();
     return beats;
