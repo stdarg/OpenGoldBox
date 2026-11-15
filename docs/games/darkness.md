@@ -662,10 +662,17 @@ by what it is offered:
   it to the Parlor's wall of gossamer (1,4), where the spiders shy from the
   Ward (TRY TO ENTER; script 85's event 4 sets cell 21Bh, and script 83 sends
   the party to the Parlor's foyer, map 82 at 7,15). Locaste, without her
-  Ward, is devoured (journal entry 14). Down the chute (6,14), which the
-  Ward keeps clear of the pets (YES), into the pets' run below (map 84),
-  east and north past the driders and pets, which keep from the Ward, to
-  the egg room (2,6), where the party destroys the eggs (DESTROY): Kalistes
+  Ward, is devoured (journal entry 14). Since 2026-11-15 the party goes
+  the cluebook's way rather than down the chute into the pets' run: west
+  round the foyer to the guards' quarters beside the main doors (2,14),
+  whose drow it beats and where it rests ("YOU CAN REST HERE"; the
+  Parlor's camps rest nowhere else); north to the kitchen (2,1), where it
+  rescues Arta from the ogre cook (RESCUE) and beats the guards, pets and
+  gaze spiders he calls; back to the quarters to rest (NO to the trapdoor
+  the first time, walking back without a camp), then down the kitchen's
+  trapdoor (YES) to the larder (map 84 at 2,1), leaving the bound slaves
+  as they ask (IGNORE), and east and round the lower level to the egg room
+  (2,6), where the party destroys the eggs (DESTROY): Kalistes
   comes with seven drow champions, eight drow wizards and five pets, and
   once she falls the slave who is Tanetal's spy calls basilisks, medusae
   and earth elementals (journal entry 40). The party holds the Crystal Ring
@@ -702,6 +709,24 @@ by what it is offered:
   into the ruins with her knights (YES), joins it and offers six items
   against the rakshasas (TREASURE of `ITEM0` definitions 144, 151, 46 and
   more), and leads it in by the broken gate (map 66, script 66, at 15,4).
+  The gifts are a light crossbow +4, quarrels +4 and four stacks of blessed
+  bolts (types 27, 12 and 74), unidentified: the ranger takes the crossbow
+  and readies it in place of his sword and shield, and readies the blessed
+  bolts in place of the quarrels (2026-11-15).
+- **Myth Drannor (map 66, 2026-11-15).** The ruins' camps rest only on
+  events 16 and up (the cluebook's locations 17, the ruined houses);
+  elsewhere a camp draws the roaming basilisks and dracolisks nine times in
+  ten, so the party walks without camping. South and round by the
+  rakshasas draining a knight (10,15, the cluebook's 9; Nacacia throws
+  herself at them, the knights rally) to the ruined houses (6,13), where it
+  rests; west to the rakshasas and Banites at their altar (3,14, the
+  cluebook's 10) and back to rest; then round the ruins' west side, past
+  the narrow passages (YES) and the rakshasa posing as a knight, to the
+  door that will not budge (4,4, facing north): the second paladin, of
+  Dexterity 18, climbs over and secures a rope (CLIMB OVER, WHO). Round to
+  the house west of the temple (3,0), where it rests, and to the temple's
+  door (5,0). The route's own tactic (the player's choices) shoots a
+  rakshasa it can from afar, where a blessed bolt slays it.
 
 Since 2026-11-15 the route's casters memorize spells of every level they
 have slots of (Pools of Darkness's levels 6 to 9 among them) and raise the
@@ -718,7 +743,9 @@ state does (Script memory, above). Until 2026-11-14 OpenGoldBox stepped on
 anyway, so stairs landed a square beyond their landing and a held step could
 wrap round the map's edge.
 
-Two stand-ins. The Vaasans who get through, seven mages and twelve
+Two stand-ins (still so on 2026-11-15, night, with the experience
+stand-in above: the Kalistes fight was not retried yet). The Vaasans who
+get through, seven mages and twelve
 warriors, hold the party with Hold Monster before it acts and slay the held
 with every dice the route tries, so the test wins that fight. A player
 would gear the party with the cave's treasure and ward it first; the
@@ -739,10 +766,11 @@ would shield one member. The player of the original comes far stronger,
 from the many wandering fights a route that walks straight to its goals
 does not have (the route's party gained 650,000 experience in all from the
 opening to here); so the test wins both fights, a stand-in until the route
-can come as strong. Thorne (34: 3,7), which from the 2026-11-15 morning
-the test won as well, is the route's own since that day: its player takes
-and wears the Ring of Fire Resistance from the hoard in room 4, as the
-cluebook's would, and wins. The route's party carries the game's own
+can come as strong. Thorne (34: 3,7) the test wins again since the
+dragons' breaths are played (2026-11-15, night): his 24d10+12 of fire,
+three times, burns the party to death with every dice, Ring of Fire
+Resistance and all; a player would ward each member with Resist Fire
+first, which the route does not cast yet. The route's party carries the game's own
 starting equipment (ORIGINAL-RULES.md, *Pools of Darkness*). Until the
 route reaches the win it passes when it plays every beat to Myth Drannor's
 gate (map 66).
@@ -769,33 +797,41 @@ On the original-rules round (its effect numbers, stronger monsters,
 2026-11-15, late): the vampires that roam the Moonsea's north shore drain
 two levels a bite, so the route flees them on the way to the Hill Giant
 Steading, and its camps cast Restoration on a drained member when a cleric
-has it (none of its clerics has seventh-level spells yet). It then passes
-the drow legions in the Descent (35: 4,11) again, but in Kalistes' pets'
-run (84: 9,14) the Ward no longer keeps the pets back ("THEY ARE TOO MANY,
-AND AFTER AN UNSEEN EXCHANGE"): the magic-user falls, and the party, which
-cannot rest on the Parlor's lower level, loses a fight at 12,13 with every
-dice; that is where the route stops on that round, to be re-tuned (the
-cluebook's way in by the kitchen's trapdoor, with Arta, and the guards'
-quarters upstairs to rest in, are the player's other way).
+has it. Its bows and crossbows shoot (arrows and quarrels are *Secret*'s
+item types 30 and 12 in Pools of Darkness; OpenGoldBox had looked for the
+earlier games' 73 and 28, so no bow found its arrows), and its dragons
+breathe (ORIGINAL-RULES.md, *Pools of Darkness*). With them the route rests where the scripts let it, as a
+player does: the Fire Giant Cave's camps rest only in its quiet rooms
+(script 32's camp entry: events 34 and up, the cluebook's location 13),
+so the party rests in the room north of the passage (13,2); the Aerie's
+only in its disused rooms (events 20 and 21, the cluebook's 9), so between
+the nests it steps into the north-east one (13,5) twice and rests in the
+north-west (3,2) and south-west (2,12) ones, the last before the blue
+dragons and again before the dracoliches. Where a camp is refused (the
+camp entry sets cell 2Bh) its clerics raise the dead and cast their cures
+instead, and they keep Raise Dead ready. Kalistes' Parlor is entered the
+cluebook's way, by the kitchen's trapdoor (The win and the route, above).
 
-Where it stops (2026-11-15, night): inside Myth Drannor's broken gate
-(66: 15,4) with Nacacia, the route's beat 1412. The way on (the cluebook's
-Nacacia and Myth Drannor): the temple where the Rakshasa Maharajah raises
-Tyranthraxus is the event 15 at (5,1), behind the door that will not budge
-(4,4, facing north: the step entry runs it for a wall of type 6 ahead on a
-square with no event), which a member of Dexterity 17 or a thief's climb of
-99 climbs (CLIMB OVER, WHO), Strength 23 bashes or Knock opens; the temple's
-fight ends with cell 1D8h at 255. On the way the planning aid's path round
-the ruins' west side meets the rakshasas and Banites at their altar (3,13,
-the cluebook's 10), which beat the route's party with every dice: their
-Rukhs and Rajahs take half from weapons below +4, the party's best, and no
-spell below the eighth level touches them. What a player does there is in
-the scripts: Nacacia's six items, readied (a light crossbow and its blessed
-bolts among them), and the blessed bolts' kill of a rakshasa, Pools of
-Darkness's effect 82 (effhndlr.pas, EffBlessedBoltKills: a hit from an item
-of type 74 slays it), which is not played yet; the bolts are fired from the
-bolt slot, so OpenGoldBox's quarrel lookup by type 28 must take type 74
-too. Then the Red Tower (scripts 70 and 67), Moander (52, 53, 55),
+The route walks straight to its goals, where a player meets the wandering
+monsters of every area (the cluebook names them for each) and, in the Web
+Dimension, gains "as much experience as you can" before Kalistes. So the
+test gives each member experience at the training points a player would
+come to stronger, a stand-in for those fights (2026-11-15): 300,000 in
+Limbo after the Aerie, 300,000 at Zhentil Keep's hall and 400,000 in
+Limbo before the Web Dimension, and the party trains up to two levels a
+visit (each class's award stops short of the level after next, as
+training keeps it). It reaches Kalistes at levels 15 to 18 (the
+magic-user 17, with eighth-level spells).
+
+Where it stops (2026-11-15, night): at the door of the temple in Myth
+Drannor (66: 5,0), where the Rakshasa Maharajah raises Tyranthraxus (the
+cluebook's 16). The party smashes the knights' globes (SMASH GLOBES) and
+Tyranthraxus' form falls to dust, but the Maharajah (117 Hit Points),
+three Rukhs, two Rajahs and seven rakshasas who rush in beat it with every
+dice the route tries; the temple's fight ends with cell 1D8h at 255. Their
+Rukhs and Rajahs take half from weapons below +4 and no spell below the
+eighth level touches them; the ranger's blessed bolts slay any he hits
+from afar. Then the Red Tower (scripts 70 and 67), Moander (52, 53, 55),
 Mulmaster and the beholders' cave, Dark Phlan (64) and the Palace of
 Gothmenes (65, 74, 73), whose win (75) is in place. Scripts and the scripts
 they go on to (`opengold_scripts --inspect DARKNESS ECL1.DAX N`, NEW ECL):

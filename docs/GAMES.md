@@ -638,6 +638,23 @@ new decoders.
    budge and the temple where Tyranthraxus is raised, then the Red Tower
    and on round the area map to Dark Phlan (darkness.md, Where it stops). The temples' Restoration is
    to come where a beat needs it.
+   *Re-tuned on the original-rules round (2026-11-15, night):* its bows
+   and crossbows shoot (Pools of Darkness's arrows and quarrels are
+   *Secret*'s item types) and its dragons breathe (its gaze spiders' and
+   vampires' gazes, which the original never runs, stay still); the route rests where the scripts let it (the Fire Giant
+   Cave's quiet room, the Aerie's disused rooms, Kalistes' guard quarters,
+   Myth Drannor's ruined houses), its clerics raise and cure where a camp is
+   refused, and it enters Kalistes' Parlor the cluebook's way, rescuing Arta
+   in the kitchen and dropping through the trapdoor. A stand-in of test
+   experience for the wandering monsters a player meets (300,000 in Limbo
+   after the Aerie, 300,000 at Zhentil Keep's hall, 400,000 in Limbo before
+   the Web Dimension, trained up to two levels a visit) brings it to
+   Kalistes at levels 15 to 18. Thorne is a stand-in again (his breath).
+   In Myth Drannor the ranger readies Nacacia's light crossbow and blessed
+   bolts, which slay a rakshasa (effect 82, played); the party beats the
+   rakshasas draining a knight and those at the altar, climbs the door that
+   will not budge and stops at the temple's door (66: 5,0), whose
+   Maharajah and rakshasas beat it (darkness.md, Where it stops).
    *The area map is drawn (2026-11-14):* the big picture with the party's
    marker, as the original draws it. *Spell levels 8 and 9 and the new
    spells (2026-11-15):* merged, with Restoration giving back a drained

@@ -4171,9 +4171,8 @@ void darkness_kalistes_strikes_with_six_weapons()
 
 // Pools of Darkness's dragons breathe three times a fight (magic.pas,
 // EffDragonBreath, EffBreatheLightning): the biggest red fire for 24d10+12, a
-// black acid along a path one square wide, a blue lightning; a gaze spider's
-// gaze holds (EffParalyzeGaze) and a vampire's charms (EffGazeCharm), the
-// gazes the original never ran.
+// black acid along a path one square wide, a blue lightning; the gaze
+// spider's and the vampires' gazes, which the original never runs, stay still.
 void darkness_dragons_breathe_and_spiders_gaze()
 {
     const auto breathing = [](int code, std::uint64_t seed)
@@ -4217,29 +4216,20 @@ void darkness_dragons_breathe_and_spiders_gaze()
     check(logged(*beside.session, "{name} breathes.") == 1 && burnt_members == 1,
           "The black dragon's acid is one square wide");
 
-    const auto gazing = [](int code, std::uint64_t seed)
-    {
-        auto target = creature(50);
-        target.saving_throws = {21, 21, 21, 21, 21};
-        target.race = 5;
-        auto fight = arrange_darkness(
-            {{"Fighter", rules::Side::party, {2, 3}, target},
-             {"Gazer",
-              rules::Side::opposition,
-              {5, 3},
-              special({{original::canonical_effect(code, darkness_game), 0, 0, false}}, 40)}},
-            seed);
-        until_turn_of(*fight.session, "Gazer");
-        fight.session->submit(order(*fight.session, "quick"));
-        return fight;
-    };
-    auto held = gazing(114, 257);
-    check(logged(*held.session, "{name} is paralyzed.") == 1,
-          "A gaze spider's gaze holds one that fails its save");
-    auto charmed = gazing(124, 257);
-    check(logged(*charmed.session, "{name} gazes.") == 1 &&
-              view_of(charmed.session->snapshot(), "Fighter").side == rules::Side::opposition,
-          "A vampire's gaze charms one that fails its save");
+    // The gazes the original registers but never runs stay still.
+    auto spider =
+        arrange_darkness({{"Fighter", rules::Side::party, {2, 3}, victim(50)},
+                          {"Gazer",
+                           rules::Side::opposition,
+                           {5, 3},
+                           special({{original::canonical_effect(114, darkness_game), 0, 0, false},
+                                    {original::canonical_effect(124, darkness_game), 0, 0, false}},
+                                   40)}},
+                         257);
+    until_turn_of(*spider.session, "Gazer");
+    spider.session->submit(order(*spider.session, "quick"));
+    check(logged(*spider.session, "{name} gazes.") == 0,
+          "A gaze spider and a vampire never gaze, as in the original");
 }
 
 // Pools of Darkness plays Secret's rules where its reconstruction does as

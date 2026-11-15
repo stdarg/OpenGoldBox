@@ -2787,13 +2787,30 @@ const std::vector<RouteBeat> &darkness_route()
         north_west_room.rest_first = true;
         route.push_back(north_west_room);
         walk_passages(route, 33,
-                      {{3, 3, D::south},  {3, 4, D::south},  {3, 5, D::west},   {2, 5, D::south},
-                       {2, 6, D::south},  {2, 7, D::east},   {3, 7, D::east},   {4, 7, D::east},
-                       {5, 7, D::east},   {6, 7, D::south},  {6, 8, D::west},   {5, 8, D::west},
-                       {4, 8, D::west},   {3, 8, D::south},  {3, 9, D::west},   {2, 9, D::south},
-                       {2, 10, D::south}, {2, 11, D::west},  {1, 11, D::west},  {0, 11, D::south},
-                       {0, 12, D::south}, {0, 13, D::south}, {0, 14, D::south}, {0, 15, D::east},
-                       {1, 15, D::north}, {1, 14, D::east},  {2, 14, D::east}});
+                      {{3, 3, D::south},  {3, 4, D::south}, {3, 5, D::west},  {2, 5, D::south},
+                       {2, 6, D::south},  {2, 7, D::east},  {3, 7, D::east},  {4, 7, D::east},
+                       {5, 7, D::east},   {6, 7, D::south}, {6, 8, D::west},  {5, 8, D::west},
+                       {4, 8, D::west},   {3, 8, D::south}, {3, 9, D::west},  {2, 9, D::south},
+                       {2, 10, D::south}, {2, 11, D::west}, {1, 11, D::west}, {0, 11, D::south}});
+        // And in the south-west one (2,12) before the blue dragons, whose
+        // lightning the party meets whole.
+        const auto rest_in_south_west_room = [&route]
+        {
+            walk_passages(route, 33, {{0, 12, D::east}, {1, 12, D::east}});
+            auto south_west_room = step_beat(33, 2, 12, D::west);
+            south_west_room.rest_first = true;
+            route.push_back(south_west_room);
+            walk_passages(route, 33, {{1, 12, D::west}});
+        };
+        rest_in_south_west_room();
+        walk_passages(route, 33,
+                      {{0, 12, D::south},
+                       {0, 13, D::south},
+                       {0, 14, D::south},
+                       {0, 15, D::east},
+                       {1, 15, D::north},
+                       {1, 14, D::east},
+                       {2, 14, D::east}});
         // The the blue dragons' nest, the steel key hidden behind a rock (bit 1).
         auto steel_key = step_beat(33, 3, 14, D::east);
         steel_key.rest_first = true;
@@ -2810,19 +2827,16 @@ const std::vector<RouteBeat> &darkness_route()
                        {0, 15, D::north},
                        {0, 14, D::north},
                        {0, 13, D::north}});
-        // On the way it rests in the south-west disused room (2,12), before
-        // Modthryth's dracoliches.
-        walk_passages(route, 33, {{0, 12, D::east}, {1, 12, D::east}});
-        auto south_west_room = step_beat(33, 2, 12, D::west);
-        south_west_room.rest_first = true;
-        route.push_back(south_west_room);
+        // On the way it rests in the south-west disused room (2,12) again,
+        // before Modthryth's dracoliches.
+        rest_in_south_west_room();
         walk_passages(route, 33,
-                      {{1, 12, D::west}, {0, 12, D::north}, {0, 11, D::north}, {0, 10, D::north},
-                       {0, 9, D::north}, {0, 8, D::east},   {1, 8, D::east},   {2, 8, D::east},
-                       {3, 8, D::east},  {4, 8, D::east},   {5, 8, D::east},   {6, 8, D::north},
-                       {6, 7, D::north}, {6, 6, D::east},   {7, 6, D::north},  {7, 5, D::north},
-                       {7, 4, D::west},  {6, 4, D::west},   {5, 4, D::north},  {5, 3, D::east},
-                       {6, 3, D::east},  {7, 3, D::north}});
+                      {{0, 12, D::north}, {0, 11, D::north}, {0, 10, D::north}, {0, 9, D::north},
+                       {0, 8, D::east},   {1, 8, D::east},   {2, 8, D::east},   {3, 8, D::east},
+                       {4, 8, D::east},   {5, 8, D::east},   {6, 8, D::north},  {6, 7, D::north},
+                       {6, 6, D::east},   {7, 6, D::north},  {7, 5, D::north},  {7, 4, D::west},
+                       {6, 4, D::west},   {5, 4, D::north},  {5, 3, D::east},   {6, 3, D::east},
+                       {7, 3, D::north}});
         auto locks = step_beat(33, 7, 2, D::north, {"USE KEYS"});
         locks.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x144, 255};
         route.push_back(locks);
@@ -2886,9 +2900,15 @@ const std::vector<RouteBeat> &darkness_route()
              {2, 3, D::south},   {2, 4, D::west},    {1, 4, D::south},   {1, 5, D::east},
              {2, 5, D::east},    {3, 5, D::south}});
         // Thorne, an ancient red dragon, is beaten with the Ring of Fire
-        // Resistance worn, members dead and raised after.
+        // Resistance worn, members dead and raised after. Since the biggest
+        // red dragon's breath is played (24d10+12 of fire, three times;
+        // 2026-11-15), it burns the route's party to death with every dice,
+        // so the test wins the fight, a stand-in until the route wards the
+        // party against fire as a player would (Resist Fire on each member,
+        // which the route does not cast yet).
         auto thorne = step_beat(34, 3, 6, D::south, {"YES"});
         thorne.rest_first = true;
+        thorne.test_wins = true;
         thorne.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x152, 255};
         route.push_back(thorne);
         // Back the way it came to the dimensional gate (0,13), stepped

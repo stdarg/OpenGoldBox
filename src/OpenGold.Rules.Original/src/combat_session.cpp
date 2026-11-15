@@ -121,15 +121,13 @@ constexpr int armor_eaten = kit_effect_offset + 250;
 // Blank; and the caster's Blade Barrier, which no game's effect numbers (604,
 // past the conditions original_combat.h numbers 601 to 603, so wasted
 // Strength is not taken for a barrier). Its others no earlier game has (its
-// 67, 82, 83, 91, 96, 100, 104 and 114, plus darkness_effect_offset): half
-// harm from crushing weapons, death by a blessed bolt, the big red, blue and
-// black dragons' breaths, dragon fear, 4d6 of fire with a hit and the
-// paralyzing gaze; its charming gaze is its 124 plus secret_effect_offset.
+// 67, 82, 83, 91, 96, 100 and 104, plus darkness_effect_offset): half harm
+// from crushing weapons, death by a blessed bolt, the big red, blue and black
+// dragons' breaths, dragon fear and 4d6 of fire with a hit.
 constexpr int six_weapons = 516, dancing = 518, druid_fire_protection = 519, dragon_feared = 520,
-              fire_touch = 521, iron_skin = 522, mind_blank = 523, charming_gaze = 524,
-              blade_barrier = 604, halves_crushing = 537, slain_by_blessed_bolt = 552,
-              big_red_breath = 553, blue_breath = 561, black_breath = 566,
-              darkness_dragon_fear = 570, fire_hit = 574, paralyzing_gaze = 584;
+              fire_touch = 521, iron_skin = 522, mind_blank = 523, blade_barrier = 604,
+              halves_crushing = 537, slain_by_blessed_bolt = 552, big_red_breath = 553,
+              blue_breath = 561, black_breath = 566, darkness_dragon_fear = 570, fire_hit = 574;
 } // namespace effect
 
 // What a hit carries, by the attacker's effects, in the original's order: a
@@ -5895,11 +5893,9 @@ bool Session::secret_breath(Fighter &dragon, int code, int length, int element, 
 // breathes fire 9 squares long and three wide for 24d10+12, a blue one
 // lightning, a black one acid 6 squares long and one wide, each three times a
 // fight as Secret's dragons do (EffDragonBreath, EffBreatheLightning); its
-// green dragon breathes as the kit's (poison_breath). A gaze spider's gaze
-// holds one enemy for 10 rounds unless it saves against paralysis at +3, a
-// mirror turning it back on the spider (EffParalyzeGaze), and a vampire's
-// charms one as Charm Person does (EffGazeCharm). The original registers the
-// two gazes' handlers but runs neither (an obvious bug, fixed: they gaze).
+// green dragon breathes as the kit's (poison_breath). Its paralyzing and
+// charming gazes (114, 124) have handlers the original registers but never
+// runs, so the gaze spider and the vampires never gaze, as there.
 void Session::darkness_specials(Fighter &f)
 {
     if (!darkness() || !f.able() || f.initiative <= 0)
@@ -5925,47 +5921,6 @@ void Session::darkness_specials(Fighter &f)
     if (f.has(effect::black_breath) && secret_breath(f, effect::black_breath, 6, 0x20, 1))
     {
         return;
-    }
-    if (f.has(effect::paralyzing_gaze))
-    {
-        if (auto *target = secret_target(f, 12, true))
-        {
-            log({"{name} gazes.", {{"name", f.name}}});
-            Fighter *victim = target;
-            if (f.has(effect::reflectable_gaze) && target->numbers.mirror)
-            {
-                log({"{name} reflects it.", {{"name", target->name}}});
-                victim = &f;
-            }
-            const bool saved = saving_throw(*victim, 1, 3, &f) || victim->has(effect::gaze_proof);
-            if (!saved)
-            {
-                log({"{name} is paralyzed.", {{"name", victim->name}}});
-                victim->numbers.effects.push_back({effect::paralysis, 10, 12, false});
-            }
-        }
-    }
-    if (f.has(effect::charming_gaze) && f.able())
-    {
-        auto *target = secret_target(f, 12, true);
-        if (target && target->side != f.side)
-        {
-            log({"{name} gazes.", {{"name", f.name}}});
-            constexpr int charm_person = 10;
-            if (refuses_spell(*target, charm_person))
-            {
-                log({"{name} is unaffected.", {{"name", target->name}}});
-            }
-            else if (add_with_message(*target,
-                                      {effect::charm, 0,
-                                       (f.side == Side::opposition ? 128 : 0) + f.numbers.level,
-                                       true},
-                                      true, saving_throw(*target, 4, 0, &f), 0, f.numbers.level,
-                                      game_spell(charm_person)))
-            {
-                charm(*target, f.side);
-            }
-        }
     }
 }
 
