@@ -3965,7 +3965,7 @@ const std::vector<RouteBeat> &gateway_route()
 // Treasures' route plays to the game's end once this is true; until then it
 // stops on this map (docs/GAMES.md, Treasures, step 6).
 constexpr bool treasure_route_ends_the_game = false;
-constexpr unsigned treasure_route_stops_on_map = 40;
+constexpr unsigned treasure_route_stops_on_map = 27;
 
 // Treasures of the Savage Frontier's story, beat by beat, as its cluebook
 // tells it: from the dwarves' fortress outside Llorkh, where the opening
@@ -4239,6 +4239,262 @@ const std::vector<RouteBeat> &treasure_route()
         // tries, so the test wins the fight.
         route.back().test_wins = true;
         route.back().expect_cell = {{0x129, 1}};
+        // Down the stairs (9,13) and out of the Way Inn, then overland north
+        // by maps 56 and 54 to Yartar (map 23).
+        walk_passages(route, 40,
+                      {{7, 15, D::east},
+                       {8, 15, D::east},
+                       {9, 15, D::east},
+                       {10, 15, D::east},
+                       {11, 15, D::north},
+                       {11, 14, D::north},
+                       {11, 13, D::west}});
+        route.push_back(step_beat(40, 10, 13, D::west, {"YES"}));
+        walk_passages(route, 40,
+                      {{9, 5, D::south},
+                       {9, 6, D::west},
+                       {8, 6, D::north},
+                       {8, 5, D::north},
+                       {8, 4, D::north},
+                       {8, 3, D::north},
+                       {8, 2, D::west},
+                       {7, 2, D::north},
+                       {7, 1, D::north},
+                       {7, 0, D::north}});
+        walk_overland(route, 56,
+                      {{5, 14, D::north},
+                       {5, 13, D::north},
+                       {5, 12, D::west},
+                       {4, 12, D::west},
+                       {3, 12, D::west},
+                       {2, 12, D::west},
+                       {1, 12, D::north},
+                       {1, 11, D::north},
+                       {1, 10, D::north},
+                       {1, 9, D::north},
+                       {1, 8, D::north},
+                       {1, 7, D::north},
+                       {1, 6, D::north},
+                       {1, 5, D::north},
+                       {1, 4, D::north},
+                       {1, 3, D::north},
+                       {1, 2, D::north},
+                       {1, 1, D::north}});
+        walk_overland(route, 54,
+                      {{6, 14, D::north},
+                       {6, 13, D::north},
+                       {6, 12, D::north},
+                       {6, 11, D::north},
+                       {6, 10, D::north},
+                       {6, 9, D::north},
+                       {6, 8, D::west},
+                       {5, 8, D::west},
+                       {4, 8, D::west},
+                       {3, 8, D::north},
+                       {3, 7, D::north},
+                       {3, 6, D::north},
+                       {3, 5, D::north},
+                       {3, 4, D::north},
+                       {3, 3, D::east},
+                       {4, 3, D::east}});
+        route.push_back(step_beat(54, 5, 3, D::east, {"YES"}));
+        // Yartar (map 23), the fourth mission's start: the robed Krakens at
+        // the secret door (11,14) and the Kraken base (14,15), whose papers
+        // blame Triboar for the Waterbaron's kidnapping; before each the party
+        // rests in a house off the streets (11,9), where the guards leave it
+        // alone.
+        for (const auto &[x, y] :
+             std::initializer_list<std::pair<unsigned, unsigned>>{{11, 14}, {14, 15}})
+        {
+            route.push_back({23, 11, 9, D::north, {}});
+            RouteBeat fight{23, x, y, D::north, {}};
+            fight.rest_first = true;
+            fight.rest_for_spells = true;
+            route.push_back(fight);
+        }
+        // Out of Yartar's west gate and overland (map 54) to Triboar (map
+        // 24), telling its guards the party has not come from Yartar.
+        walk_passages(route, 23, {{14, 15, D::west},  {13, 15, D::west},  {12, 15, D::west},
+                                  {11, 15, D::north}, {11, 14, D::north}, {11, 13, D::north},
+                                  {11, 12, D::west},  {10, 12, D::west},  {9, 12, D::west},
+                                  {8, 12, D::north},  {8, 11, D::north},  {8, 10, D::north},
+                                  {8, 9, D::north},   {8, 8, D::west},    {7, 8, D::west},
+                                  {6, 8, D::west},    {5, 8, D::west},    {4, 8, D::west},
+                                  {3, 8, D::west},    {2, 8, D::west},    {1, 8, D::west},
+                                  {0, 8, D::west}});
+        walk_overland(route, 54, {{5, 3, D::west}, {4, 3, D::west}});
+        route.push_back(step_beat(54, 3, 3, D::west, {"YES", "NO"}));
+        // Triboar (map 24): into the Kraken complex by its secret door (4,0),
+        // past the offal heap (0,1) and the ogres (3,4), to the Waterbaron
+        // (1,7), whose freeing ends the fourth Lucky Paper mission (cell
+        // 12Ah); before each the party rests in a house (13,7), off the
+        // streets and out of the complex.
+        for (const auto &[x, y] :
+             std::initializer_list<std::pair<unsigned, unsigned>>{{4, 0}, {0, 1}, {3, 4}, {1, 7}})
+        {
+            route.push_back({24, 13, 7, D::north, {}});
+            RouteBeat fight{24, x, y, D::north, {}};
+            fight.rest_first = true;
+            fight.rest_for_spells = true;
+            route.push_back(fight);
+        }
+        route.back().expect_cell = {{0x12A, 1}};
+        // The Lord Protector of Triboar hears the Waterbaron (12,2); the party
+        // rests first.
+        route.push_back({24, 13, 7, D::north, {}});
+        RouteBeat protector{24, 12, 2, D::north, {}};
+        protector.rest_first = true;
+        route.push_back(protector);
+        // Out of Triboar and overland north and west (maps 54 and 52) to
+        // Longsaddle (map 25).
+        walk_passages(route, 24,
+                      {{12, 3, D::south},
+                       {12, 4, D::south},
+                       {12, 5, D::south},
+                       {12, 6, D::south},
+                       {12, 7, D::south},
+                       {12, 8, D::south},
+                       {12, 9, D::east},
+                       {13, 9, D::east},
+                       {14, 9, D::east},
+                       {15, 9, D::east}});
+        walk_overland(route, 54,
+                      {{3, 3, D::north}, {3, 2, D::west}, {2, 2, D::north}, {2, 1, D::north}});
+        walk_overland(route, 52,
+                      {{13, 14, D::north},
+                       {13, 13, D::north},
+                       {13, 12, D::north},
+                       {13, 11, D::west},
+                       {12, 11, D::west}});
+        route.push_back(step_beat(52, 11, 11, D::west, {"YES"}));
+        // Longsaddle (map 25), the fifth mission: in market hours the
+        // Krakens threatening a rancher (7,12); then the ranches the Krakens
+        // hold, Legson's (12,0) and its cellar (10,1), the Big Star (2,2) and
+        // its barn (3,1), the ettins' (2,9) and their pit (3,8), the ranch
+        // whose men ask the party's business (14,10; 13,11) and its griffons'
+        // trap-door (15,12), and the Harpells' mansion (10,4), taken by spies;
+        // last the ranchers who point to the barn (3,13), and the barn of
+        // statues (1,15), where Malchor Harpell thanks the
+        // party, ending the mission (cell 12Bh). Before each the party rests
+        // indoors (8,7), away from the market, and goes on in the morning.
+        route.push_back({25, 8, 7, D::north, {}});
+        RouteBeat market{25, 7, 12, D::north, {}};
+        market.rest_first = true;
+        market.wait_until_minute = 9 * 60;
+        route.push_back(market);
+        for (const auto &[x, y, answers] :
+             std::initializer_list<std::tuple<unsigned, unsigned, std::vector<std::string>>>{
+                 {12, 0, {}},
+                 {10, 1, {}},
+                 {2, 2, {}},
+                 {3, 1, {}},
+                 {2, 9, {}},
+                 {3, 8, {}},
+                 {14, 10, {"YES"}},
+                 {13, 11, {"YES"}},
+                 {15, 12, {}},
+                 {10, 4, {"INVESTIGATE"}},
+                 {3, 13, {}},
+                 {1, 15, {}}})
+        {
+            route.push_back({25, 8, 7, D::north, {}});
+            RouteBeat ranch{25, x, y, D::north, answers};
+            ranch.rest_first = true;
+            ranch.rest_for_spells = true;
+            ranch.wait_until_minute = 9 * 60;
+            route.push_back(ranch);
+        }
+        route.back().expect_cell = {{0x12B, 1}};
+        // Back overland south (maps 52, 53 and 55) to the Smuggler's Dock,
+        // paying its gatekeeper's fee, for the ship to Mintarn.
+        walk_passages(route, 25,
+                      {{1, 15, D::north},
+                       {1, 14, D::east},
+                       {2, 14, D::east},
+                       {3, 14, D::north},
+                       {3, 13, D::east},
+                       {4, 13, D::east},
+                       {5, 13, D::south},
+                       {5, 14, D::south},
+                       {5, 15, D::south}});
+        walk_overland(route, 52, {{10, 12, D::south}, {10, 13, D::south}, {10, 14, D::south}});
+        walk_overland(route, 53,
+                      {{13, 1, D::south},
+                       {13, 2, D::south},
+                       {13, 3, D::south},
+                       {13, 4, D::south},
+                       {13, 5, D::south},
+                       {13, 6, D::south},
+                       {13, 7, D::south},
+                       {13, 8, D::south},
+                       {13, 9, D::south},
+                       {13, 10, D::south},
+                       {13, 11, D::south},
+                       {13, 12, D::south},
+                       {13, 13, D::south},
+                       {13, 14, D::south}});
+        walk_overland(route, 55,
+                      {{8, 1, D::south},
+                       {8, 2, D::south},
+                       {8, 3, D::south},
+                       {8, 4, D::south},
+                       {8, 5, D::south}});
+        route.push_back(step_beat(55, 8, 6, D::south, {"TRAVELLING", "ACCEPT"}));
+        // At sunrise the ship at the Mintarn pier (2,10, stepped onto from
+        // the east) takes the party to Mintarn (map 26) for 80 platinum.
+        auto to_mintarn = step_beat(21, 3, 10, D::west, {"ACCEPT"});
+        to_mintarn.wait_until_minute = 6 * 60;
+        route.push_back(to_mintarn);
+        // Mintarn (map 26), the sixth mission: the Tyrant hears the party has
+        // come to help (12,5); Southclaw Fort, where Princess Jagaerda joins
+        // the party (8,11), its trash heap (11,11), its giants' master
+        // (11,12) and its efreets (13,13); then the warehouses the invaders
+        // hold (8,8; 7,7; 4,8; 2,11) and their headquarters (0,8), whose map
+        // the Tyrant reads, ending the mission (cell 12Ch). Before each the
+        // party rests in a house by the docks (6,6).
+        for (const auto &[x, y, answers] :
+             std::initializer_list<std::tuple<unsigned, unsigned, std::vector<std::string>>>{
+                 {12, 5, {"CAME TO HELP"}},
+                 {8, 11, {"YES"}},
+                 {11, 11, {}},
+                 {11, 12, {}},
+                 {13, 13, {}},
+                 {8, 8, {}},
+                 {7, 7, {}},
+                 {4, 8, {}},
+                 {2, 11, {}},
+                 {0, 8, {}}})
+        {
+            route.push_back({26, 6, 6, D::north, {}});
+            RouteBeat fight{26, x, y, D::north, answers};
+            fight.rest_first = true;
+            fight.rest_for_spells = true;
+            route.push_back(fight);
+        }
+        route.back().expect_cell = {{0x12C, 1}};
+        // At 0600 the sailor on the passenger dock (7,0, facing the sea) books
+        // the party's passage to Orlumbor (map 27); as it boards, pirates
+        // carry Siulajia off to Luskan, and the party sails on.
+        route.push_back({26, 6, 6, D::north, {}});
+        RouteBeat to_orlumbor{26, 7, 0, D::north, {"ORLUMBOR", "LEAVE"}};
+        to_orlumbor.rest_first = true;
+        to_orlumbor.wait_until_minute = 6 * 60;
+        route.push_back(to_orlumbor);
+        // Orlumbor (map 27), the seventh mission: the alliance's meeting in
+        // the hidden Temple of Talos (10,15), whose plans show the warships
+        // off the coast are the pirates', and Tulgar Wrighttson told of them
+        // at his castle (11,3), ending the mission (cell 12Dh). The party
+        // rests first in the harbor office (3,3).
+        route.push_back({27, 3, 3, D::north, {}});
+        RouteBeat talos{27, 10, 15, D::north, {}};
+        talos.rest_first = true;
+        talos.rest_for_spells = true;
+        route.push_back(talos);
+        route.push_back({27, 3, 3, D::north, {}});
+        RouteBeat wrighttson{27, 11, 3, D::north, {}};
+        wrighttson.rest_first = true;
+        wrighttson.expect_cell = {{0x12D, 1}};
+        route.push_back(wrighttson);
         // ROUTE-NEXT
         // A camp on the overland (maps 51 to 57) draws its wandering
         // monsters night after night: the party walks on between towns
@@ -6093,6 +6349,10 @@ bool walk_census(GoldBoxGame game, bool route)
         {
             if (std::stoul(walls_of) > 1)
             {
+                if (game == GoldBoxGame::treasures_of_the_savage_frontier)
+                {
+                    prepare_treasures_entry(session, static_cast<unsigned>(std::stoul(walls_of)));
+                }
                 opengold::test::TourAccess::enter(session,
                                                   static_cast<unsigned>(std::stoul(walls_of)),
                                                   {0, 0, opengold::por::MapDirection::north});
@@ -6114,9 +6374,22 @@ bool walk_census(GoldBoxGame game, bool route)
         }
         // OPENGOLD_CURSE_SURVEY walks the map the route ended on, printing each
         // square's event, to plan the route's next beats by.
-        if (std::getenv("OPENGOLD_CURSE_SURVEY") && end.phase != TourPhase::defeated)
+        if (const char *survey = std::getenv("OPENGOLD_CURSE_SURVEY");
+            survey && end.phase != TourPhase::defeated)
         {
-            const auto map = end.area_id;
+            // OPENGOLD_CURSE_SURVEY=N (N > 1) walks into map N first.
+            if (std::stoul(survey) > 1)
+            {
+                if (game == GoldBoxGame::treasures_of_the_savage_frontier)
+                {
+                    prepare_treasures_entry(session, static_cast<unsigned>(std::stoul(survey)));
+                }
+                opengold::test::TourAccess::enter(session,
+                                                  static_cast<unsigned>(std::stoul(survey)),
+                                                  {0, 0, opengold::por::MapDirection::north});
+                play("survey");
+            }
+            const auto map = session.snapshot().area_id;
             declining = true;
             for (unsigned y = 0; y < 16 && session.snapshot().area_id == map; ++y)
             {
