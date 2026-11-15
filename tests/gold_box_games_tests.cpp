@@ -2137,9 +2137,10 @@ std::vector<std::string> train_darkness_party(int levels, std::vector<std::strin
     return before;
 }
 
-// Pools of Darkness's route plays to the game's end once this is true; until
-// then it stops on this map (docs/GAMES.md, Pools of Darkness, step 5).
-constexpr bool darkness_route_ends_the_game = false;
+// Pools of Darkness's route plays to the game's end, Gothmenes fallen and
+// Bane's crystal dust (since 2026-11-16; docs/GAMES.md, Pools of Darkness,
+// step 5); were this false, it would stop on this map.
+constexpr bool darkness_route_ends_the_game = true;
 constexpr unsigned darkness_route_stops_on_map = 52;
 
 // Pools of Darkness's story, beat by beat, as its cluebook tells it: from New
@@ -5289,6 +5290,49 @@ const std::vector<RouteBeat> &darkness_route()
             auto inner_palace = step_beat(65, 8, 7, D::south);
             inner_palace.searching = false;
             route.push_back(inner_palace);
+        }
+        // The inner palace (script 73): the Tantalus Clock strikes every
+        // second step (cell 1CEh), no wandering monster comes while it ticks
+        // (the cluebook), and Bane's Crystal shows in the Pool of Death only
+        // once it has struck more than 50 times. The party paces the
+        // entrance hall (8,8 to 8,7) until then, as a player waits, and
+        // Gothmenes returns at the 77th strike.
+        for (const std::uint16_t strikes : {18, 36, 52})
+        {
+            auto pace = step_beat(65, 8, 8, D::north);
+            pace.repeat_in_place = true;
+            pace.camp_broken = true;
+            pace.repeat_until_at_least = std::pair<std::uint16_t, std::uint16_t>{0x1CE, strikes};
+            route.push_back(pace);
+        }
+        // Round to the pool's north edge (9,8; the cluebook's 16), where a
+        // step south into it (script 73's entry before a step, the wall of
+        // type 1 ahead) asks who tries: the Crystal Ring's bearer (YES)
+        // puts the ring on rather than reach in with it in a pocket (NO,
+        // YES) and takes Bane's Crystal (script 75).
+        walk_passages(route, 65, {{8, 8, D::north}, {8, 7, D::east}, {9, 7, D::south}});
+        route.push_back(step_beat(65, 9, 8, D::south, {"YES", "NO", "YES"}));
+        // Six strikes later Gothmenes returns with Elminster in his whip and
+        // summons the party to the pool (script 65); it will not trade the
+        // crystal for the wizard (NO, NO), Elminster breaks free to duel the
+        // Balor, and Gothmenes' servants rise from the pool (script 75). The
+        // crystal's bearer countermands the summons (YES; the cluebook's 17:
+        // it drives back many of the servants and leaves its bearer near
+        // death); the dracoliches, bits of Moander, Bane minions and Pets of
+        // Kalistes, then Xoham and his beholders, are beaten, Elminster is
+        // swept into the pool, and the party will not bargain for the
+        // crystal's word (AGREE? NO): Gothmenes, with the few minions who
+        // still answer him, fights to the death, and the crystal crumbles.
+        // A stand-in: the route's party, short of the original player's
+        // strength, falls to the servants in every play, so the test wins
+        // the finale's fights.
+        {
+            auto finale = step_beat(65, 9, 7, D::south, {"NO", "NO", "YES", "NO"});
+            finale.repeat_in_place = true;
+            finale.camp_broken = true;
+            finale.test_wins = true;
+            finale.repeat_until_at_least = std::pair<std::uint16_t, std::uint16_t>{0x16, 75};
+            route.push_back(finale);
         }
         return route;
     }();
@@ -10305,7 +10349,12 @@ bool walk_census(GoldBoxGame game, bool route)
                       << ", short of the game's end (docs/GAMES.md, Treasures, step 6).\n";
             return played && end.area_id == treasure_route_stops_on_map;
         }
-        return played && end.dialogue.find("You have won.") != std::string::npos &&
+        // Pools of Darkness's script 75 goes on past the win to Elminster's
+        // last words and the party's return to Phlan, so its route ends
+        // there, the win shown on the way.
+        const bool ends_on_the_win = game != GoldBoxGame::pools_of_darkness;
+        return played &&
+               (!ends_on_the_win || end.dialogue.find("You have won.") != std::string::npos) &&
                game_won_shown && all_alive;
     }
     // OPENGOLD_CURSE_MAP walks that map alone.
