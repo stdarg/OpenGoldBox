@@ -515,12 +515,14 @@ Journal), chosen by the game as the others' are (2026-11-14):
     (66) is *Pool of Radiance*'s skeletons', the red and white dragons'
     breaths (84, 85) *Secret*'s fire and cold breaths, the drains of one
     and two levels (101, 102) *Pool of Radiance*'s, and 2d6 of fire with
-    each hit (108) its own Fire Touch.
-  - *Its own, played:* the Rakshasa's protection (40: no spell below the
-    eighth level), half harm from crushing weapons (67) and from weapons
-    below +3 (80) and +4 (81), the need of a +2 weapon (125: a monster's
-    own blows harm it from 7 Hit Dice), gaze immunity (126: no gaze stones
-    or confuses it), 4d6 of fire with each hit (104), and dragon fear
+    each hit (108) its own Fire Touch. The Rakshasa's protection (40: no
+    spell below the eighth level), half harm from weapons below +3 (80)
+    and +4 (81), the need of a +2 weapon (125: a monster's own blows harm
+    it from 7 Hit Dice) and gaze immunity (126: no gaze stones or confuses
+    it) do as the *Unlimited Adventures* kit's effects of the same numbers
+    and are played as those (2026-11-15).
+  - *Its own, played:* half harm from crushing weapons (67), 4d6 of fire
+    with each hit (104), and dragon fear
     (100): each enemy that fails a save against petrification at -4 is
     terrified for the fight, 2 worse to hit and 2 less harmful a blow
     (120). The original tries the fear twice as a fight starts (its fight

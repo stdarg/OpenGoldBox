@@ -118,9 +118,9 @@ constexpr int armor_eaten = kit_effect_offset + 250;
 // dance, the druid's Protection from Fire, dragon fear's terror, Fire Touch,
 // Iron Skin and Mind Blank; and the caster's Blade Barrier, which no game's
 // effect numbers (604, past the conditions original_combat.h numbers 601 to
-// 603, so wasted Strength is not taken for a barrier). Its others no earlier game has (its 67, 100 and 104, plus
-// darkness_effect_offset): half harm from crushing weapons, dragon fear and
-// 4d6 of fire with a hit.
+// 603, so wasted Strength is not taken for a barrier). Its others no earlier
+// game has (its 67, 100 and 104, plus darkness_effect_offset): half harm
+// from crushing weapons, dragon fear and 4d6 of fire with a hit.
 constexpr int dancing = 518, druid_fire_protection = 519, dragon_feared = 520, fire_touch = 521,
               iron_skin = 522, mind_blank = 523, blade_barrier = 604, halves_crushing = 537,
               darkness_dragon_fear = 570, fire_hit = 574;
