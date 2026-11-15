@@ -3292,6 +3292,19 @@ const std::vector<RouteBeat> &darkness_route()
                        {9, 5, D::north},
                        {9, 4, D::west}});
         route.push_back(step_beat(81, 8, 4, D::west, {"type:BANE"}));
+        // Seeing through Illusion (4,6): the party walks on through the wall
+        // of flame (YES, YES). Temptation (4,12): it approaches the young elf
+        // holding the Ward, a drider, and beats him and his kind.
+        walk_passages(route, 81,
+                      {{7, 4, D::south}, {7, 5, D::west}, {6, 5, D::west}, {5, 5, D::south}});
+        route.push_back(step_beat(81, 5, 6, D::west, {"YES", "YES"}));
+        walk_passages(route, 81,
+                      {{4, 6, D::south},
+                       {4, 7, D::south},
+                       {4, 8, D::south},
+                       {4, 9, D::south},
+                       {4, 10, D::south}});
+        route.push_back(step_beat(81, 4, 11, D::south, {"APPROACH"}));
         return route;
     }();
     return beats;
