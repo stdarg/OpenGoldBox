@@ -2084,7 +2084,7 @@ std::vector<std::string> train_darkness_party(int levels, std::vector<std::strin
 // Pools of Darkness's route plays to the game's end once this is true; until
 // then it stops on this map (docs/GAMES.md, Pools of Darkness, step 5).
 constexpr bool darkness_route_ends_the_game = false;
-constexpr unsigned darkness_route_stops_on_map = 66;
+constexpr unsigned darkness_route_stops_on_map = 70;
 
 // Pools of Darkness's story, beat by beat, as its cluebook tells it: from New
 // Phlan's docks, where Rolf has walked the party out.
@@ -3970,6 +3970,41 @@ const std::vector<RouteBeat> &darkness_route()
         ready_the_bolts(maharajah, true);
         maharajah.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x1D8, 255};
         route.push_back(maharajah);
+        // Nacacia smiles and bids the party back to the glen: it walks back
+        // over the door it climbed, past the altar and round to the broken
+        // gate (15,4), the way the planning aid finds, and leaves Myth
+        // Drannor stepping east from it (YES; script 66's step entry asks
+        // on event 1 facing east).
+        walk_ruins_unrested(
+            {{5, 1, D::north},  {5, 0, D::east},  {6, 0, D::east},   {7, 0, D::south},
+             {7, 1, D::south},  {7, 2, D::south}, {7, 3, D::south},  {7, 4, D::west},
+             {6, 4, D::west},   {5, 4, D::north}, {5, 3, D::west},   {4, 3, D::south},
+             {4, 4, D::south},  {4, 5, D::south}, {4, 6, D::west},   {3, 6, D::west},
+             {2, 6, D::west},   {1, 6, D::west},  {0, 6, D::south},  {0, 7, D::east},
+             {1, 7, D::south},  {1, 8, D::south}, {1, 9, D::south},  {1, 10, D::south},
+             {1, 11, D::south}, {1, 12, D::west}, {0, 12, D::south}, {0, 13, D::east},
+             {1, 13, D::south}, {1, 14, D::east}, {2, 14, D::east},  {3, 14, D::north},
+             {3, 13, D::north}, {3, 12, D::east}, {4, 12, D::north}, {4, 11, D::north},
+             {4, 10, D::north}, {4, 9, D::north}, {4, 8, D::north},  {4, 7, D::east},
+             {5, 7, D::east},   {6, 7, D::east},  {7, 7, D::north},  {7, 6, D::north},
+             {7, 5, D::east},   {8, 5, D::north}, {8, 4, D::east},   {9, 4, D::east},
+             {10, 4, D::east},  {11, 4, D::east}, {12, 4, D::east},  {13, 4, D::east},
+             {14, 4, D::east}});
+        // Nacacia fell in the temple, so the knights carry her body away and
+        // see the party out (ECL1:66 0x8668); outside it declines to enter
+        // again (NO).
+        route.push_back(step_beat(66, 15, 4, D::east, {"YES", "NO"}));
+        // North-east across the area map to the red tower (5,10), fleeing
+        // what roams there, and in (YES): the garden of the Red Tower (map 70,
+        // script 70).
+        RouteBeat to_red_tower{17, 0, 0, D::north, {}};
+        to_red_tower.passing = true;
+        to_red_tower.fleeing = true;
+        to_red_tower.area_steps = {C::northeast, C::northeast, C::northeast};
+        route.push_back(to_red_tower);
+        RouteBeat into_red_tower{17, 0, 0, D::north, {"YES"}};
+        into_red_tower.area_steps = {C::east};
+        route.push_back(into_red_tower);
         return route;
     }();
     return beats;

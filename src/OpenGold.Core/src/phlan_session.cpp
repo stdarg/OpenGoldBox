@@ -3287,7 +3287,18 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             reply = character_reply(selected_character_);
             break;
         }
-        if (arg(0) >= 128)
+        // The 256-color engine's LOAD CHARACTER reads only its argument's
+        // low seven bits (eclvm.pas, EclLoadCharacter, in Pools of
+        // Darkness's and Treasures' reconstructions): FIND NPC's high bit
+        // left on selects the member, as Myth Drannor's way out does with
+        // Nacacia (ECL1:66 0x8658).
+        if (arg(0) >= 128 && vga_engine(game()))
+        {
+            read_character();
+            selected_character_ = PartySlot{static_cast<unsigned>(arg(0) & 127)};
+            reply = character_reply(selected_character_);
+        }
+        else if (arg(0) >= 128)
         {
             if (static_cast<unsigned>(arg(0) & 127) != selected_character_.index)
             {
