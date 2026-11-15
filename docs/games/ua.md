@@ -436,7 +436,8 @@ does it (`ua_combat`, `ua_session`; the reconstruction's `cmbsetup.c`,
   [CONFIGURATION.md](../CONFIGURATION.md)):
   - **The design's**: the kit's levels, Easy its level 1, Normal its 3,
     Hard its 4, Nightmare and Infernal its 5 (its level 2 has no
-    difficulty of the game's).
+    difficulty of the game's; the user's choice, 2026-11-15: Easy stays the
+    kit's easiest, and the two hardest share its hardest).
   - **OpenGoldBox's**: the difficulty table, for the monsters only: Easy
     -2 to hit, 75% Hit Points, Armor Class 2 worse; Normal as recorded;
     Hard +1, 125%, 1 better; Nightmare +2, 150%, 2 better; Infernal +3,
@@ -582,9 +583,7 @@ Next, in this order (2026-11-15): monsters' spells (+C6h); items' special
 effects when readied, which bring the vorpal beheading on a hit of 17 or
 more; the services' smaller parts (Appraise, vault items, a temple's
 Restoration, building on the rules' Restoration in camp now on main); the
-near matches' differences (Monsters' effects); and a question for the user,
-which game Difficulty level stands for the kit's level 2 (Easy is 1, Hard 4,
-Nightmare and Infernal both 5 under the design's own difficulty).
+near matches' differences (Monsters' effects).
 
 ### Monsters' effects, "no magic" fights and step events
 
