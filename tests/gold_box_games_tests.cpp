@@ -5175,6 +5175,59 @@ const std::vector<RouteBeat> &darkness_route()
             train_darkness_party(2, {"TRAIN"}, {"MOVE ON", "BANE'S LAND", "YES"})};
         to_dark_phlan.waiting = true;
         route.push_back(to_dark_phlan);
+        // Dark Phlan (map 64, script 64): the drow who carry Sasha off are
+        // beaten where the party arrives (13,0; the cluebook's 1). The crowd
+        // carries it to Cadorna's announcement (11,1, LISTEN; the cluebook's
+        // 16), and it goes south to the inn (12,11, YES; the cluebook's 2),
+        // whose rooms are the only ones its camps rest in (script 64's camp
+        // entry: events 2 and 3), and rests (13,11).
+        walk_passages(route, 64,
+                      {{13, 0, D::south},
+                       {13, 1, D::west},
+                       {12, 1, D::west},
+                       {11, 1, D::south},
+                       {12, 5, D::south},
+                       {12, 6, D::south},
+                       {12, 7, D::south},
+                       {12, 8, D::south},
+                       {12, 9, D::south},
+                       {12, 10, D::west},
+                       {11, 10, D::south}});
+        route.push_back(step_beat(64, 11, 11, D::east, {"YES"}));
+        {
+            auto inn = step_beat(64, 12, 11, D::east);
+            inn.passing = true;
+            route.push_back(inn);
+            auto inn_rest = step_beat(64, 13, 11, D::west);
+            inn_rest.passing = true;
+            inn_rest.rest_first = true;
+            inn_rest.rest_for_spells = true;
+            route.push_back(inn_rest);
+        }
+        // West through the city to its west gate (the cluebook's 12), where
+        // Gothmenes sends a welcoming party of minions (1,5; the cluebook's
+        // 18), and out to the Iron Wall (column 14, met facing west).
+        walk_passages(route, 64,
+                      {{12, 11, D::west}, {11, 11, D::west}, {10, 11, D::south}, {10, 12, D::west},
+                       {9, 12, D::west},  {8, 12, D::west},  {7, 12, D::north},  {7, 11, D::north},
+                       {7, 10, D::west},  {6, 10, D::west},  {5, 10, D::north},  {5, 9, D::north},
+                       {5, 8, D::north},  {5, 7, D::north},  {5, 6, D::north},   {5, 5, D::west},
+                       {4, 5, D::west},   {3, 5, D::west},   {2, 5, D::west},    {1, 5, D::west},
+                       {0, 5, D::west}});
+        // The Horn of Doom (USE HORN OF DOOM): Gothmenes swoops down and his
+        // minions fall on the party; beaten, it blows the horn once for each
+        // member (6; the cluebook's 12), the wall shatters, and through it
+        // (YES) lies the Palace of Gothmenes (script 65, the Crystal Ring
+        // held). A stand-in: fourteen Minions of Bane, each casting Ice Storm
+        // and Hold Monster and breathing for 22, leave the whole party dead in
+        // two rounds in every one of the route's 120 plays, so the test wins
+        // the fight.
+        {
+            auto iron_wall =
+                step_beat(64, 15, 5, D::west, {"USE HORN OF DOOM", "YES", "type:6", "YES"});
+            iron_wall.test_wins = true;
+            route.push_back(iron_wall);
+        }
         return route;
     }();
     return beats;
