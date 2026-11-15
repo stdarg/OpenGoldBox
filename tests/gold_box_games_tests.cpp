@@ -3370,6 +3370,34 @@ const std::vector<RouteBeat> &darkness_route()
                        {5, 1, D::south}, {5, 2, D::south}, {5, 3, D::south}, {5, 4, D::west},
                        {4, 4, D::west},  {3, 4, D::west}});
         route.push_back(step_beat(83, 2, 4, D::west, {"TRY TO ENTER"}));
+        // From the foyer down the chute (6,14), which the Ward keeps clear
+        // of the pets, to the run below (map 84); through it and north past
+        // the driders to the egg rooms (2,6), where the party destroys the
+        // eggs of Kalistes' children to draw her out.
+        walk_passages(route, 82, {{7, 15, D::north}, {7, 14, D::west}});
+        route.push_back(step_beat(82, 6, 14, D::west, {"YES"}));
+        walk_passages(
+            route, 84,
+            {{5, 14, D::east},   {6, 14, D::east},   {7, 14, D::east},   {8, 14, D::east},
+             {9, 14, D::east},   {10, 14, D::east},  {11, 14, D::east},  {12, 14, D::north},
+             {12, 13, D::east},  {13, 13, D::north}, {13, 12, D::north}, {13, 11, D::north},
+             {13, 10, D::north}, {13, 9, D::north},  {13, 8, D::west},   {12, 8, D::west},
+             {11, 8, D::west},   {10, 8, D::west},   {9, 8, D::west},    {8, 8, D::north},
+             {8, 7, D::north},   {8, 6, D::north},   {8, 5, D::west},    {7, 5, D::west},
+             {6, 5, D::west},    {5, 5, D::south},   {5, 6, D::west},    {4, 6, D::west}});
+        // Kalistes comes with seven drow champions, eight drow wizards and
+        // five of her pets, and once she falls the slave who shows himself
+        // Tanetal's spy calls basilisks, medusae and earth elementals: the
+        // wizards' Hold Monster and Ice Storm, the pets' Disintegrate and
+        // Charm Monsters and the stoning gazes beat the route's party
+        // (levels 13 to 16) with every dice it tries, so the test wins both
+        // fights, a stand-in until the route's player wins them (a player
+        // would come stronger from the minis, with Storm). Beaten, she
+        // leaves the Crystal Ring (cell 208h).
+        auto eggs = step_beat(84, 3, 6, D::west, {"DESTROY"});
+        eggs.test_wins = true;
+        eggs.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x208, 1};
+        route.push_back(eggs);
         return route;
     }();
     return beats;
