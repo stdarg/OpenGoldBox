@@ -5117,6 +5117,64 @@ const std::vector<RouteBeat> &darkness_route()
             chancellor.rest_first = true;
             route.push_back(chancellor);
         }
+        const auto cave_way = [&route](unsigned x, unsigned y, D facing)
+        {
+            route.push_back(step_beat(36, x, y, facing, {"YES"}));
+        };
+        cave_way(5, 8, D::south);
+        cave_way(5, 9, D::south);
+        cave_way(0, 3, D::west);
+        walk_passages(route, 36,
+                      {{14, 5, D::north},
+                       {14, 4, D::west},
+                       {13, 4, D::west},
+                       {12, 4, D::west},
+                       {11, 4, D::south},
+                       {11, 5, D::east},
+                       {12, 5, D::south},
+                       {12, 6, D::south},
+                       {12, 7, D::south}});
+        cave_way(12, 8, D::north);
+        walk_passages(route, 36, {{14, 9, D::north}, {14, 8, D::east}});
+        cave_way(15, 8, D::east);
+        walk_passages(route, 36, {{0, 8, D::east}});
+        walk_passages(route, 36, {{1, 8, D::north}});
+        cave_way(1, 7, D::east);
+        walk_passages(route, 36, {{6, 9, D::east}, {7, 9, D::south}, {7, 10, D::south}});
+        cave_way(7, 11, D::east);
+        {
+            auto rest_sentinels = step_beat(36, 8, 11, D::east);
+            rest_sentinels.passing = true;
+            rest_sentinels.rest_first = true;
+            rest_sentinels.rest_for_spells = true;
+            rest_sentinels.rest_through_period = true;
+            route.push_back(rest_sentinels);
+        }
+        walk_passages(route, 36,
+                      {{9, 11, D::east},
+                       {10, 11, D::east},
+                       {11, 11, D::east},
+                       {12, 11, D::east},
+                       {13, 11, D::east},
+                       {14, 11, D::east},
+                       {15, 11, D::east},
+                       {0, 11, D::east},
+                       {1, 11, D::east}});
+        cave_way(2, 11, D::east);
+        cave_way(2, 11, D::east);
+        walk_passages(route, 36, {{3, 11, D::south}, {3, 12, D::east}});
+        route.push_back(step_beat(36, 4, 12, D::east, {"YES", "stop:REST"}));
+        // Limbo: Elminster finds the party ready for the Dark Dimension. His
+        // camp rests it, it trains, and it goes on to Bane's land (MOVE ON,
+        // BANE'S LAND, YES; script 64, Dark Phlan).
+        RouteBeat dark_rest{18, 0, 0, D::north, {}};
+        dark_rest.rest_choice = "REST";
+        route.push_back(dark_rest);
+        RouteBeat to_dark_phlan{
+            18, 0, 0, D::north,
+            train_darkness_party(2, {"TRAIN"}, {"MOVE ON", "BANE'S LAND", "YES"})};
+        to_dark_phlan.waiting = true;
+        route.push_back(to_dark_phlan);
         return route;
     }();
     return beats;
@@ -9175,6 +9233,7 @@ bool walk_census(GoldBoxGame game, bool route)
             // three times (its castle's guards come every night), and on that
             // map rests no more while it only passes by.
             unsigned interrupted = 0;
+            unsigned idle_camps = 0;
             for (int day = 0; day < 90 && session.can_leave(); ++day)
             {
                 const bool resting = (a_night_first && day == 0) || !party_whole();
@@ -9214,8 +9273,13 @@ bool walk_census(GoldBoxGame game, bool route)
                                          opengold::por::EclAddress{0x2B}) != 0 &&
                                      !(through_period && session.snapshot().dialogue.find(
                                                              "rest complete") != std::string::npos);
-                if (refused && resting && fights_fought == fights_before &&
-                    party_hit_points() == hit_points_before)
+                // With `through_period` a camp whose wanderers only pass by
+                // (the Cave of the Beholder's chanting minions) is made again,
+                // as a player camps again; twenty such in a row are a refusal.
+                const bool idle = refused && resting && fights_fought == fights_before &&
+                                  party_hit_points() == hit_points_before;
+                idle_camps = idle ? idle_camps + 1 : 0;
+                if (idle && (!through_period || idle_camps >= 20))
                 {
                     cure_the_hurt();
                     break;
