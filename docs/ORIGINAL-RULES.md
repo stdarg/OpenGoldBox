@@ -449,7 +449,16 @@ Journal), chosen by the game as the others' are (2026-11-14):
     level of the one touched; Destruction destroys it for good unless magic
     resistance turns it. Resurrection, in camp, raises a dead member who is
     no elf and has Constitution left to every Hit Point, its poison gone,
-    at no cost.
+    at no cost. Restoration, in camp, gives a drained member back one
+    level: of the classes below the level a drain first took them from, the
+    one whose next level needs the least experience (the later class on a
+    tie) rises a level; the Hit Points the drains took, divided by the
+    levels still lost, come back on its maximum and current Hit Points (on
+    its rolled ones less the class's Constitution bonus, divided among the
+    classes ever drained, below the levels of fixed Hit Points); and its
+    experience is raised to what the restored level needs, as a drain here
+    takes none. On a member never drained it does nothing. The level goes
+    into the member's level history (2026-11-15).
   - *A ranger's druid spells* (third level): Cure Disease and Neutralize
     Poison, in camp, work as a cleric's; Hold Animal holds up to four,
     saving at -4 for one, -2 for two and -1 for three; Protection from
@@ -494,10 +503,8 @@ Journal), chosen by the game as the others' are (2026-11-14):
   +3 and 50 darts +2. It readies each but the fourth, as the rules allow (a
   class that may not use an item, or full hands, leaves it in the pack), and
   counts what it carries (Bugs) (2026-11-14).
-- **Still to come:** Restoration, which gives back a drained level in the
-  class whose next level costs least and a share of the Hit Points the drain
-  took: a camp spell changes only a member's state, so the campaign needs a
-  way to take a sheet change from it; Mass Charm's test of the record's
+- **Still to come:** the temples' Restoration, a service the game's temple
+  screen does not offer yet; Mass Charm's test of the record's
   charmable flag (it passes over only a large creature and the caster's
   side for now); its fights as *Secret*'s (a *Pools of Darkness* record's
   effects by its own numbers, `canonical_effect`, and *Secret*'s checks
@@ -595,14 +602,9 @@ The work asked for next (2026-11-14), in order, with what each needs:
    - The original's rest of any length and its preparation time for
      memorizing (step 5; scribing takes its own, Scribing).
    - The training hall's fee and the classes each hall trains (step 3).
-   - Restoration's giving back of drained levels (step 6; `SpellRestoration`):
-     a drained level's share of the drained Hit Points back on the maximum,
-     current and rolled Hit Points, the class whose next level needs the
-     least experience raised and the experience raised to it (the original
-     leaves the class unset when none qualifies: a bug). It needs a level
-     history entry, the campaign's experience, and the temples that sell it
-     (*Pools of Darkness*'s and *Treasures*' Restoration, a temple service the
-     game's temple screen does not offer yet).
+   - The temples' Restoration (step 6; *Pools of Darkness*'s and
+     *Treasures*'), a service the game's temple screen does not offer yet;
+     the spell in camp gives drained levels back (Pools of Darkness).
    - The original rules' difficulty levels (step 7): they all play at
      Normal (Decisions); ask the user before designing anything new.
    - Under AD&D aging, a year added for each year the game's clock passes
@@ -863,8 +865,8 @@ lines in all:
    - **Level drain lasts** (`effhndlr.pas`, the level drain): the levels and
      Hit Points a fight drains stay drained, kept in the character's level
      history; the original's count of them goes down by one for each class a
-     later training raises (`TrainingMenu`). Restoration's giving them back is
-     still to come.
+     later training raises (`TrainingMenu`). *Pools of Darkness*'s
+     Restoration gives them back one at a time (Pools of Darkness).
    - **A charmed member** who ends a fight on the monsters' side is still the
      party's.
 7. **The monsters' tactics and the original rules' difficulty levels.** The

@@ -201,6 +201,85 @@ std::optional<Drain> decode_drain(std::string_view data)
     return drain;
 }
 
+// A drained level Restoration gives back (magic.pas, SpellRestoration), as a
+// level history entry: "restore", the class slot, and the Hit Points and
+// Hit Points rolled given back with it.
+struct Restoration
+{
+    ClassSlot slot{};
+    int hit_points{}, rolled_hit_points{};
+};
+
+constexpr std::string_view restore_word = "restore";
+
+std::string encode_restoration(const Restoration &restoration)
+{
+    return std::string(restore_word) + ' ' +
+           std::to_string(static_cast<unsigned>(restoration.slot)) + ' ' +
+           std::to_string(restoration.hit_points) + ' ' +
+           std::to_string(restoration.rolled_hit_points);
+}
+
+std::optional<Restoration> decode_restoration(std::string_view data)
+{
+    if (!data.starts_with(restore_word))
+    {
+        return std::nullopt;
+    }
+    std::istringstream in{std::string(data.substr(restore_word.size()))};
+    unsigned slot{};
+    Restoration restoration;
+    std::string rest;
+    if (!(in >> slot >> restoration.hit_points >> restoration.rolled_hit_points) || (in >> rest) ||
+        slot >= class_slot_count || restoration.hit_points < 0 || restoration.rolled_hit_points < 0)
+    {
+        throw std::invalid_argument("Unreadable original-rules restoration");
+    }
+    restoration.slot = static_cast<ClassSlot>(slot);
+    return restoration;
+}
+
+// What Restoration would give back (magic.pas, SpellRestoration): a level of
+// the class below its peak whose next level needs the least experience (the
+// later class on a tie), with the drained Hit Points' share of each level
+// lost; nothing when no class is below its peak.
+std::optional<Restoration> restoration_of(const CharacterSheet &sheet)
+{
+    const auto &numbers = original_numbers(sheet);
+    const auto game = game_of(sheet.identity);
+    int levels_lost = 0, drained_classes = 0;
+    int least_needed = std::numeric_limits<int>::max();
+    std::optional<ClassSlot> chosen;
+    for (std::size_t at = 0; at < class_slot_count; ++at)
+    {
+        const int level = numbers.class_levels[at], peak = numbers.peak_class_levels[at];
+        drained_classes += peak > 0 ? 1 : 0;
+        if (level >= peak)
+        {
+            continue;
+        }
+        levels_lost += peak - level;
+        const auto slot = static_cast<ClassSlot>(at);
+        const int needed =
+            experience_for_level(slot, level + 1, game).value_or(std::numeric_limits<int>::max());
+        if (needed <= least_needed)
+        {
+            least_needed = needed;
+            chosen = slot;
+        }
+    }
+    if (!chosen)
+    {
+        return std::nullopt;
+    }
+    const int hit_points = numbers.drained_hit_points / levels_lost;
+    const int restored_level = level_in(numbers.class_levels, *chosen) + 1;
+    return Restoration{*chosen, hit_points,
+                       restored_rolled_hit_points(*chosen, restored_level, hit_points,
+                                                  sheet.scores[Ability::constitution],
+                                                  drained_classes, game)};
+}
+
 // The slots a character has for a spell's class and level.
 int slots_for(const CharacterSheet::Original &numbers, const Spell &known)
 {
@@ -494,6 +573,11 @@ class OriginalModule final : public RulesModule
         return {1, 10, 100, 200, 1000};
     }
     void drain_character(CharacterSheet &sheet, VitalState &state, const Drain &drain) const;
+    void restore_character(CharacterSheet &sheet, VitalState &state,
+                           const Restoration &given_back) const;
+    [[nodiscard]] unsigned experience_after_lasting_change(const CharacterSheet &after,
+                                                           const AdvancementChoice &change,
+                                                           unsigned experience) const override;
     void raise_character(CharacterSheet &sheet, VitalState &state, Revival by) const;
     void age_character(CharacterSheet &sheet, int years) const;
     [[nodiscard]] unsigned experience_share(const CharacterSheet &sheet,
@@ -1201,13 +1285,13 @@ constexpr int cure_light_wounds = 3, cure_serious_wounds = 158, cure_critical_wo
               cure_blindness = 37, cure_disease = 39, remove_curse = 43,
               magic_user_remove_curse = 189, neutralize_poison = 167, enlarge = 12, reduce = 13,
               strength_spell = 35, slow_poison = 26, resurrection = 305, druid_cure_disease = 306,
-              druid_neutralize_poison = 307;
+              druid_neutralize_poison = 307, restoration = 302;
 // The spells a member may cast in camp: the cures, Curse's Raise Dead and
 // Neutralize Poison, Secret's Heal and Barkskin, which its table casts as
 // Heal, Slow Poison, the Strength spells, whose effects last into the next
-// fight, and Pools of Darkness's Resurrection and its ranger's Cure Disease
-// and Neutralize Poison.
-constexpr std::array<int, 19> camp_spells{cure_light_wounds,
+// fight, and Pools of Darkness's Resurrection, Restoration and its ranger's
+// Cure Disease and Neutralize Poison.
+constexpr std::array<int, 20> camp_spells{cure_light_wounds,
                                           cure_serious_wounds,
                                           cure_critical_wounds,
                                           raise_dead,
@@ -1224,6 +1308,7 @@ constexpr std::array<int, 19> camp_spells{cure_light_wounds,
                                           strength_spell,
                                           slow_poison,
                                           resurrection,
+                                          restoration,
                                           druid_cure_disease,
                                           druid_neutralize_poison};
 constexpr std::string_view cast_prefix = "cast:";
@@ -1591,6 +1676,11 @@ bool OriginalModule::advance_character(CharacterSheet &sheet, VitalState &state,
         age_character(sheet, *years);
         return true;
     }
+    if (const auto given_back = decode_restoration(choice.rules_data))
+    {
+        restore_character(sheet, state, *given_back);
+        return true;
+    }
     const auto training = decode_training(choice.rules_data);
     // The spell a magic-user learns, when the level is one of its own; and
     // Unlimited Adventures' ranger past level 8, when its ranger level rises.
@@ -1675,6 +1765,11 @@ void OriginalModule::drain_character(CharacterSheet &sheet, VitalState &state,
         {
             throw std::invalid_argument("A drain takes more levels than the character has");
         }
+        if (lost > 0)
+        {
+            numbers.peak_class_levels[at] =
+                std::max(numbers.peak_class_levels[at], numbers.class_levels[at]);
+        }
         numbers.class_levels[at] -= lost;
         total += lost;
         const auto id = class_slot_id(static_cast<ClassSlot>(at));
@@ -1695,6 +1790,49 @@ void OriginalModule::drain_character(CharacterSheet &sheet, VitalState &state,
     numbers.drained_hit_points += drain.hit_points;
     state.hit_points = std::min(state.hit_points, next.hit_points);
     sheet = std::move(next);
+}
+
+// Restoration gives a drained level back: the class rises a level, and the
+// Hit Points come back on the maximum and the current ones; the level is no
+// longer counted drained, and the member is no longer marked for it.
+void OriginalModule::restore_character(CharacterSheet &sheet, VitalState &state,
+                                       const Restoration &given_back) const
+{
+    auto next = sheet;
+    auto &numbers = *next.original;
+    ++level_in(numbers.class_levels, given_back.slot);
+    next.level_classes.emplace_back(class_slot_id(given_back.slot));
+    ++next.level;
+    recount_levels(next);
+    next.hit_points += given_back.hit_points;
+    numbers.rolled_hit_points += given_back.rolled_hit_points;
+    numbers.drained_levels = std::max(0, numbers.drained_levels - 1);
+    numbers.drained_hit_points = std::max(0, numbers.drained_hit_points - given_back.hit_points);
+    (void)cure(next, state, std::array{restoring});
+    if (!state.dead)
+    {
+        state.hit_points += given_back.hit_points;
+    }
+    sheet = std::move(next);
+}
+
+// Restoration leaves the experience the member had when it lost only the
+// level given back, else what the restored level needs (magic.pas,
+// SpellRestoration). A drain here takes no experience, so the member keeps
+// its own, raised to the restored level's when that is more.
+unsigned OriginalModule::experience_after_lasting_change(const CharacterSheet &after,
+                                                         const AdvancementChoice &change,
+                                                         unsigned experience) const
+{
+    const auto given_back = decode_restoration(change.rules_data);
+    if (!given_back)
+    {
+        return experience;
+    }
+    const auto needed = original::experience_for_level(
+        given_back->slot, level_in(original_numbers(after).class_levels, given_back->slot),
+        game_of(after.identity));
+    return std::max(experience, static_cast<unsigned>(std::max(0, needed.value_or(0))));
 }
 
 // A character's age changes by `years`. Under AD&D aging its scores follow,
@@ -1775,7 +1913,8 @@ std::vector<AdvancementChoice> OriginalModule::revival_changes(const CharacterSh
 }
 
 // What a fight, or an item used outside one, left that the character keeps:
-// the levels drained, and the years its age changed by (age_in_years).
+// the levels drained, the level Restoration gives back (restoring), and the
+// years its age changed by (age_in_years).
 std::vector<AdvancementChoice> OriginalModule::lasting_changes(const CharacterSheet &sheet,
                                                                const VitalState &after) const
 {
@@ -1804,6 +1943,15 @@ std::vector<AdvancementChoice> OriginalModule::lasting_changes(const CharacterSh
         }
     }
     const auto &effects = carried.last_fight ? carried.last_fight->effects : carried.conditions;
+    if (std::ranges::find(effects, restoring, &Effect::code) != effects.end())
+    {
+        if (const auto given_back = restoration_of(sheet))
+        {
+            AdvancementChoice change;
+            change.rules_data = encode_restoration(*given_back);
+            changes.push_back(std::move(change));
+        }
+    }
     const auto age = std::ranges::find(effects, age_in_years, &Effect::code);
     if (age != effects.end() && age->strength != sheet.original->age)
     {
@@ -2348,6 +2496,22 @@ void OriginalModule::use_camp_action(const CharacterSheet &user, VitalState &use
         return;
     case cure_blindness:
         (void)cure(target, target_state, std::array{blind});
+        return;
+    case restoration:
+        // Marked for the level the game gives back (lasting_changes); on one
+        // with no level drained it does nothing, as the original's.
+        if (restoration_of(target))
+        {
+            change_conditions(target, target_state,
+                              [](std::vector<Effect> &effects)
+                              {
+                                  if (std::ranges::find(effects, restoring, &Effect::code) ==
+                                      effects.end())
+                                  {
+                                      effects.push_back({restoring, 0, 0, false});
+                                  }
+                              });
+        }
         return;
     case slow_poison:
         hold_poison_back(user, target, target_state);

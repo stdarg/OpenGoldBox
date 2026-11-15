@@ -1262,6 +1262,18 @@ class RulesModule
         return {};
     }
 
+    // The experience a member has after taking a lasting change: the original
+    // rules' Restoration raises it to what the level given back needs
+    // (`after` is the sheet with the change taken); unchanged by default.
+    [[nodiscard]] virtual unsigned experience_after_lasting_change(const CharacterSheet &after,
+                                                                   const AdvancementChoice &change,
+                                                                   unsigned experience) const
+    {
+        (void)after;
+        (void)change;
+        return experience;
+    }
+
     // What being brought back from death left on a character for good (the
     // original rules' Constitution and Hit Points lost to Raise Dead), as
     // level history entries the character takes in order; none by default.

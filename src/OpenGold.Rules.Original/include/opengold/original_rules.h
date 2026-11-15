@@ -359,6 +359,13 @@ enum class ThiefSkill : unsigned
 // What training adds to the Hit Points rolled: the roll divided among the
 // classes, at least 1 (chargen.pas, TrainingMenu).
 [[nodiscard]] int training_rolled_hit_points(Profession profession, int rolled);
+// What Restoration adds to the Hit Points rolled with a level of a class
+// (magic.pas, SpellRestoration): the Hit Points it gives back, less the
+// class's Constitution bonus divided among the classes ever drained while the
+// level is one whose Hit Die is rolled.
+[[nodiscard]] int restored_rolled_hit_points(ClassSlot slot, int restored_level, int hit_points,
+                                             int constitution, int drained_classes,
+                                             GoldBoxGame game);
 // The maximum Hit Points a character a temple raised loses (temple.pas,
 // RaiseDead), reckoned with the Constitution it is left with: what its
 // maximum holds above its rolled Hit Points, divided by its Constitution's

@@ -3771,6 +3771,18 @@ void CampaignParty::use_camp_action(MemberId user, MemberId target, std::string_
         {
             take_revival_changes(patient, rules::Revival::spell);
         }
+        // What it changes for good goes into the level history (the original
+        // rules' Restoration: the drained level it gives back).
+        for (const auto &change :
+             rules_->lasting_changes(patient.character.sheet(), patient.vitals))
+        {
+            if (!patient.character.advance(*rules_, patient.vitals, change))
+            {
+                throw std::runtime_error("A spell's lasting change cannot be kept");
+            }
+            patient.experience = rules_->experience_after_lasting_change(
+                patient.character.sheet(), change, patient.experience);
+        }
         next.wealth = pay_gold(next.wealth, gold, coin_rates()).purse;
         if (action.starts_with("remove_curse") || action.ends_with(":remove_curse"))
         {

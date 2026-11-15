@@ -155,6 +155,10 @@ struct CharacterSheet
         // Levels and Hit Points drained and not yet given back by training or
         // Restoration (the original's drainedLevels and drainedHps).
         int drained_levels{}, drained_hit_points{};
+        // The level each class had before a drain first lowered it, which
+        // Restoration gives back up to (the original's peakClassLevels); 0
+        // for a class never drained. Rebuilt with the drains it replays.
+        std::array<int, 8> peak_class_levels{};
         // The Hit Points its dice gave, without its Constitution's bonus (the
         // original's hpRolled), which Raise Dead's loss is reckoned from.
         int rolled_hit_points{};

@@ -304,6 +304,10 @@ inline constexpr int strength_wasted = 601;
 // and the game keeps the change in the member's level history
 // (RulesModule::lasting_changes).
 inline constexpr int age_in_years = 602;
+// A member Restoration was cast on in camp, OpenGoldBox's own marker: the
+// game gives the level back in the member's level history
+// (RulesModule::lasting_changes), which takes the marker away.
+inline constexpr int restoring = 603;
 
 // What a party member's state carries between fights
 // (rules::VitalState::resources): the numbers its last fight left it, its

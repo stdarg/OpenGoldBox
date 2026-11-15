@@ -768,8 +768,8 @@ void darkness_spells_in_camp()
     auto priest = made("cleric");
     priest.prepared_spells = {"cleric:resurrection", "cleric:restoration"};
     rules::VitalState own{priest.hit_points, false, {}, {}};
-    check(module->camp_actions(priest, own).size() == 1,
-          "Resurrection is cast in camp (Restoration not yet)");
+    check(module->camp_actions(priest, own).size() == 2,
+          "Resurrection and Restoration are cast in camp");
     rules::VitalState dead{0, true, {}, {}};
     module->use_camp_action(priest, own, priest, dead, "cast:cleric:resurrection", random);
     auto raised = priest;
@@ -2035,6 +2035,118 @@ void a_drain_lasts_beyond_the_fight()
           "Training gives the drained level back");
 }
 
+// Pools of Darkness's Restoration in camp (magic.pas, SpellRestoration):
+// a drained member gets a level of its drained class back at a time, with
+// the drained Hit Points' share of a level and the experience that level
+// needs; the level is the member's in a save. On one never drained it does
+// nothing.
+void darkness_restoration_gives_levels_back()
+{
+    const auto darkness = GoldBoxGame::pools_of_darkness;
+    original::Content content;
+    content.game = darkness;
+    std::shared_ptr<const rules::CharacterRules> creation =
+        original::character_rules(original::default_aging, darkness);
+    CampaignParty party(original::rules_module(content), creation);
+    const auto &module = party.rule_module();
+    // A cleric of Wisdom 18, which its seventh-level spells need, trained
+    // until it has them.
+    MemberId cleric{};
+    for (std::uint64_t seed = 1; seed < 400 && !cleric; ++seed)
+    {
+        rules::CharacterDraft draft;
+        draft.race = "human";
+        draft.gender = "female";
+        draft.alignment = "neutral_good";
+        draft.character_class = "cleric";
+        draft.name = "Ilsa";
+        RandomState random{seed};
+        creation->roll_in_place(draft, random);
+        const Character candidate(*creation, draft, {});
+        if (candidate.sheet().scores[rules::Ability::wisdom] >= 18)
+        {
+            cleric = party.add_pc(candidate);
+        }
+    }
+    check(cleric != MemberId{}, "A cleric of Wisdom 18 is rolled");
+    const auto fighter = party.add_pc(made_fighter(creation));
+    const auto before = party.member(fighter).character.sheet();
+    check(before.original->class_levels[2] == 14, "The fighter starts at level 14");
+
+    // A fight drains two levels and a third of its Hit Points, and its
+    // experience is set low to see Restoration raise it.
+    auto drained = *original::Combatant::decode(module.character_profile(before, {}).data);
+    drained.class_levels[2] -= 2;
+    const int lost_hit_points = before.hit_points / 3;
+    drained.max_hit_points -= lost_hit_points;
+    rules::VitalState after{drained.max_hit_points, false, drained.encode(), {}};
+    const auto drain = module.lasting_changes(before, after);
+    check(drain.size() == 1, "The drain is a lasting change");
+    auto state = party.checkpoint();
+    RandomState random{41};
+    for (auto &member : state.roster)
+    {
+        if (member.id == fighter)
+        {
+            check(member.character.advance(module, member.vitals, drain.front()),
+                  "The fighter takes the drain");
+            member.experience = 0;
+        }
+        // Trained past the halls' level 15, as a level history may hold.
+        while (member.id == cleric && member.character.sheet().original->cleric_slots[6] == 0 &&
+               member.character.sheet().original->class_levels[0] < 20)
+        {
+            const auto &sheet = member.character.sheet();
+            auto training = module.default_advancement(sheet);
+            module.roll_advancement(sheet, 10'000'000, training, random);
+            check(member.character.advance(module, member.vitals, training), "The cleric trains");
+        }
+    }
+    party.restore(std::move(state));
+    check(party.member(cleric).character.sheet().original->cleric_slots[6] > 0,
+          "The cleric casts seventh-level spells");
+    const auto &low = party.member(fighter).character.sheet();
+    check(low.original->class_levels[2] == 12 && low.original->peak_class_levels[2] == 14,
+          "The fighter is level 12, its peak 14");
+
+    check(party.rest(), "The party rests a day");
+    party.choose_spells(cleric, {{}, std::vector<std::string>{"cleric:restoration"}});
+    const int current = party.member(fighter).vitals.hit_points;
+    party.use_camp_action(cleric, fighter, "cast:cleric:restoration");
+    const auto &restored = party.member(fighter);
+    const int share = lost_hit_points / 2;
+    check(restored.character.sheet().original->class_levels[2] == 13 &&
+              restored.character.sheet().hit_points ==
+                  before.hit_points - lost_hit_points + share &&
+              restored.vitals.hit_points == current + share,
+          "Restoration gives a level and its share of the Hit Points back");
+    check(restored.experience == static_cast<unsigned>(*original::experience_for_level(
+                                     original::ClassSlot::fighter, 13, darkness)),
+          "and the experience level 13 needs");
+    check(restored.character.advancements().back().rules_data.starts_with("restore 2 "),
+          "The level given back is in the level history");
+    check(original::carried_state(restored.vitals.resources, darkness).conditions.empty(),
+          "Nothing is left marked on the fighter");
+
+    const auto saved = encode_campaign(party, nullptr, "restoration-check");
+    const auto loaded = decode_campaign(saved, *creation, module, "restoration-check", nullptr);
+    const auto kept = std::ranges::find(loaded.party.roster, fighter, &PartyMember::id);
+    check(kept != loaded.party.roster.end() &&
+              kept->character.sheet().original->class_levels[2] == 13 &&
+              kept->character.sheet().hit_points == restored.character.sheet().hit_points &&
+              kept->character.sheet().original->peak_class_levels[2] == 14,
+          "A save keeps the level given back");
+
+    // On the cleric, never drained, it is spent and does nothing.
+    check(party.rest(), "The party rests again");
+    party.choose_spells(cleric, {{}, std::vector<std::string>{"cleric:restoration"}});
+    const auto history = party.member(cleric).character.advancements().size();
+    party.use_camp_action(cleric, cleric, "cast:cleric:restoration");
+    check(party.member(cleric).character.advancements().size() == history &&
+              party.camp_actions(cleric).empty(),
+          "On a member never drained Restoration does nothing");
+}
+
 // An age that changes after creation goes into the level history: Haste ages
 // a member a year the first time it works on it (effhndlr.pas, EffHasted),
 // and Youth (Secret's SpellYouth) takes 1d4+1 years off, not below 18. Only
@@ -2477,6 +2589,7 @@ int main()
         a_potion_heals_outside_a_fight();
         an_npc_joins_as_its_record();
         a_drain_lasts_beyond_the_fight();
+        darkness_restoration_gives_levels_back();
         ages_change_after_creation();
         items_are_readied_mid_fight();
         a_black_pudding_eats_armor();

@@ -1650,6 +1650,20 @@ int training_rolled_hit_points(Profession profession, int rolled)
     return std::max(1, rolled / static_cast<int>(classes_of(profession).size()));
 }
 
+int restored_rolled_hit_points(ClassSlot slot, int restored_level, int hit_points, int constitution,
+                               int drained_classes, GoldBoxGame game)
+{
+    if (restored_level >= curse_hit_dice_levels[index(slot)] || drained_classes < 1)
+    {
+        return hit_points;
+    }
+    // The class's own bonus (charhlp.pas, ClassConAdj), as a single class of
+    // it, whose profession has the class's number, has it.
+    const int bonus =
+        constitution_hit_point_bonus(static_cast<Profession>(slot), constitution, game);
+    return std::max(0, hit_points - bonus / drained_classes);
+}
+
 // The original sums a bonus a level that is not the one training adds: a
 // fighter's level counts the Constitution above 14, any other class's 1 at
 // 14 or 15 and 2 above; the division is kept as the original reckons it.
