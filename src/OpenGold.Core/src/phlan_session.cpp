@@ -568,6 +568,11 @@ void RolfTourSession::configure_town()
     if (vga_engine(game()))
     {
         machine_.enable_host(vga_play_sound_command);
+        // Address 0 lies outside the 256-color engine's script memory: it
+        // reads 0 and keeps nothing (its GbvmZone), as Kalistes' Temple's OR
+        // that stores to it after the inner chamber's fight needs (ECL1:72,
+        // 988Bh).
+        machine_.ignore_cells(EclAddress{0}, EclAddress{0});
     }
     if (game() == GoldBoxGame::treasures_of_the_savage_frontier)
     {

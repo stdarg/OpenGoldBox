@@ -589,7 +589,8 @@ new decoders.
    answers Manshoon's clerics truly and goes down through the drow
    stronghold to the temple's halls, and (2026-11-15) unrested through the
    slave pens, over the spiked pit's bridge and past the iron golem, to the
-   secret door into Kalistes' Temple (script 69). The win is
+   secret door into Kalistes' Temple (script 69), and through the temple
+   to Limbo. The win is
    PROGRAM 1 after Gothmenes falls (darkness.md, The win and the route).
    *Stand-ins:* the test wins the fight with the Vaasans who get through
    Vala's breach (their mages hold the party with Hold Monster), also where
@@ -603,15 +604,16 @@ new decoders.
    spells of all nine levels (2026-11-15). The route's party
    carries the game's own starting equipment. Until the route reaches the
    win it passes when it plays every beat to Kalistes' Temple (map 69).
-   *Where it stops (2026-11-15):* in Kalistes' Temple (map 69), stepped
-   in through the slave pens' secret door, the party badly hurt. Since
-   2026-11-15 it trains in Zhentil Keep's hall (3,9, past the clerk's 10
-   gems at 3,10) and stays at the Purple Plume Tavern (12,14), both in the
-   city's south half (map 19's north half is Mulmaster's, script 26).
-   Next: Kalistes' Temple's priests' quarters, oracle, inner chamber and
-   portal, the Web Dimension and on round the area map to Dark Phlan
-   (darkness.md, Where it stops). The temples' Restoration is to come where
-   a beat needs it.
+   *Kalistes' Temple (2026-11-15):* the party rests in the slave pens'
+   quiet room (1,8), takes the priests' map, beats the barracks' squad and
+   rests there, hears the oracle, wins the inner chamber's fight, destroys
+   the statue's hands and steps through the portal to Limbo, where it rests
+   and trains. *Where it stops (2026-11-15):* in Limbo after the temple.
+   Next: the slave pens again for Silk and the Swanmays (only then does the
+   Eyes of Kalistes, Cynthia, befriend the party as it enters the Web
+   Dimension, script 83), then the Web Dimension and on round the area map
+   to Dark Phlan (darkness.md, Where it stops). The temples' Restoration is
+   to come where a beat needs it.
    *The area map is drawn (2026-11-14):* the big picture with the party's
    marker, as the original draws it. *Spell levels 8 and 9 and the new
    spells (2026-11-15):* merged, with Restoration giving back a drained

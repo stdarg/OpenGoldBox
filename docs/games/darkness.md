@@ -572,15 +572,38 @@ by what it is offered:
 - **The Descent to the Depths (map 35, script 35)** to the path down at
   (7,14) into the drow temple's halls (map 68, script 68).
 - **The slave pens (map 68, the cluebook's Silk and the Slaves of the
-  Drow),** walked without a camp, as the drow patrols fall on any outside
-  the cluebook's two quiet rooms (a camp at the stairs met twelve drow
-  sorcerers, champions and a drider and lost): from (7,15) north through
-  the barracks and west under the arches, over the spiked pit's bridge
-  (0,1, CROSS BRIDGE), through the teleporting room, past the iron golem's
-  room (12,1, entered) and the fountain (14,1, waded) to the secret door at
-  (15,1), stepped through eastward into Kalistes' Temple (script 69), where
-  it stops (2026-11-15). The way is the planning aid's with
-  `OPENGOLD_SECRET_PREFER=CROSS,YES`.
+  Drow),** where the drow patrols fall on any camp outside the cluebook's
+  quiet rooms (a camp at the stairs met twelve drow sorcerers, champions and
+  a drider and lost): from (7,15) north through the barracks, where a patrol
+  falls on the party (7,10), and west along the arches to the quiet room
+  (1,8, entered facing west: "IT SEEMS SAFE TO REST HERE", cell 9Ah; the
+  cluebook's location 4), where it rests. Then north and west over the
+  spiked pit's bridge (0,1, CROSS BRIDGE) past the doors' lightning, through
+  the teleporting room, past the iron golem's room (12,1, entered) and the
+  fountain (14,1, waded) to the secret door at (15,1), stepped through
+  eastward into Kalistes' Temple (script 69). The way is the planning aid's
+  with `OPENGOLD_SECRET_PREFER=CROSS,YES`.
+- **Kalistes' Temple (map 69, scripts 69 and 72; 72 holds the events the
+  temple's table of cell 27Bh sends it, and sends the party back).** Its
+  camps are broken (cell A2h) outside the barracks. In by the secret entry
+  (0,0), east and south to the priests' quarters (8,2, entered facing
+  north), where two priests mark a map and leave it (YES: it shows Hillsfar,
+  the Plains of Thar and Thentia). Past the guard who locks the party in
+  (9,1, WAIT) and the priest who takes it for assassins (NO), to the
+  barracks (13,1, from 12,1 facing east), whose drow squad the party
+  attacks (ATTACK); beaten, it rests there (cell A2h 1; the cluebook's 16).
+  South along the east corridor to the oracle (9,10, entered facing north;
+  journal entry 93), which the priests at the inner chamber's doors wait for
+  (cell 277h; the step entry holds the party back until then). Up the middle
+  aisle into the inner chamber (8,6, facing north): the party disrupts the
+  ceremony and beats eight drow priests, four sorceresses, two Pets of
+  Kalistes and two phase spiders (members dead), and destroys what the
+  oracle named (INPUT: HANDS; cell 278h 1), closing the portals to the
+  Realms. Through the last portal (8,4, YES) it steps into Limbo, where
+  Elminster's camp rests it until whole, its dead raised, and it trains,
+  where it stops (2026-11-15). Script 72 stores one OR to address 0
+  (988Bh), which the original ignores (its GbvmZone): OpenGoldBox's later
+  engine now reads address 0 as 0 and keeps nothing.
 
 Since 2026-11-15 the route's casters memorize spells of every level they
 have slots of (Pools of Darkness's levels 6 to 9 among them) and raise the
@@ -627,17 +650,17 @@ party won or came through and "not equal" when it fled. Until 2026-11-14
 OpenGoldBox left the flags as they were, so a won fight could read as lost
 and move the party back a square (the walk passed all the same).
 
-Where it stops (2026-11-15): in Kalistes' Temple (map 69), stepped in
-through the slave pens' secret door, the party badly hurt (members dead or
-knocked out). Zhentil Keep's training hall and tavern were found in the
-city's south half by map 19's walls and script 19's events (above); the
-"Who will train?" the survey met at (12,1) is script 19's event 5 on the
-map's north half, which only Mulmaster's script (26) walks. Next, in the
-slave pens Silk (the cluebook's 4) and her quiet rooms (4 and 26). In
-Kalistes' Temple the cluebook's way: the secret entry, the priests'
-quarters' map (12), the oracle (13), and the inner chamber (15), where
-the statue's hands are destroyed and the portal to the Web Dimension
-entered; rest in the barracks (16) once cleared. Then the Web Dimension, the Drow Testing
+Where it stops (2026-11-15): in Limbo after Kalistes' Temple, rested and
+trained, the statue's hands destroyed. Next, the Web Dimension (script 83,
+map 83): the Eyes of Kalistes (Cynthia) meets the party as it arrives and
+befriends it only when cell 25Eh is 3, which script 71 sets when the party,
+having agreed to help Silk in the slave pens (cell 25Eh 1), opens the
+Swanmays' cell with the prison guards' keys (cell 261h bit 6; the
+cluebook's locations 7 and 8); otherwise LEAVE sends it back to Limbo, and
+STAY or FIGHT sets her against it (cells 21Dh bit 2, 221h bit 5) and
+spiders fall on it. So the slave pens are to be walked again for Silk,
+her prisoners and her reward (drow weapons, the amulet past the iron
+golem). Then the Web Dimension's minis, the Drow Testing
 Ground and Kalistes' Parlor, Myth Drannor and the Red Tower (scripts 66,
 70, 67), Moander (52, 53, 55), Mulmaster and the beholders' cave, Dark
 Phlan (64) and the Palace of Gothmenes (65, 74, 73), whose win (75) is in

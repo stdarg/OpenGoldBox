@@ -2988,10 +2988,29 @@ const std::vector<RouteBeat> &darkness_route()
                        {9, 13, D::north}, {9, 12, D::north}, {9, 11, D::north}, {9, 10, D::west},
                        {8, 10, D::west},  {7, 10, D::north}, {7, 9, D::north},  {7, 8, D::west},
                        {6, 8, D::north},  {6, 7, D::east},   {7, 7, D::east},   {8, 7, D::east},
-                       {9, 7, D::north},  {9, 6, D::north},  {9, 5, D::north},  {9, 4, D::north},
-                       {9, 3, D::west},   {8, 3, D::west},   {7, 3, D::west},   {6, 3, D::west},
-                       {5, 3, D::west},   {4, 3, D::west},   {3, 3, D::west},   {2, 3, D::north},
-                       {2, 2, D::west},   {1, 2, D::west}});
+                       {9, 7, D::north},  {9, 6, D::north},  {9, 5, D::west},   {8, 5, D::west},
+                       {7, 5, D::west},   {6, 5, D::west},   {5, 5, D::west},   {4, 5, D::west},
+                       {3, 5, D::west},   {2, 5, D::south},  {2, 6, D::south},  {2, 7, D::south},
+                       {2, 8, D::west}});
+        RouteBeat quiet_room{68, 1, 8, D::west, {}};
+        quiet_room.rest_first = true;
+        route.push_back(quiet_room);
+        walk_passages(route, 68,
+                      {{1, 8, D::east},
+                       {2, 8, D::north},
+                       {2, 7, D::north},
+                       {2, 6, D::north},
+                       {2, 5, D::east},
+                       {3, 5, D::east},
+                       {4, 5, D::east},
+                       {5, 5, D::north},
+                       {5, 4, D::north},
+                       {5, 3, D::west},
+                       {4, 3, D::west},
+                       {3, 3, D::west},
+                       {2, 3, D::north},
+                       {2, 2, D::west},
+                       {1, 2, D::west}});
         route.push_back(step_beat(68, 0, 2, D::north, {"CROSS BRIDGE"}));
         walk_passages(route, 68,
                       {{2, 1, D::east},
@@ -3009,6 +3028,94 @@ const std::vector<RouteBeat> &darkness_route()
         // rooms: a hurt party walks on.
         for (auto beat = route.begin() + static_cast<std::ptrdiff_t>(slave_pens);
              beat != route.end(); ++beat)
+        {
+            beat->camp_broken = true;
+        }
+        // Kalistes' Temple (map 69): in through the secret entry (0,0) east
+        // and south to the priests' quarters (8,2), where two priests leave
+        // a map of where the monsters will be sent, which the party takes.
+        // Its camps are broken (cell A2h) outside the barracks: a hurt party
+        // walks on.
+        const auto temple = route.size();
+        walk_passages(route, 69,
+                      {{0, 0, D::east},
+                       {1, 0, D::east},
+                       {2, 0, D::east},
+                       {3, 0, D::east},
+                       {4, 0, D::east},
+                       {5, 0, D::east},
+                       {6, 0, D::south},
+                       {6, 1, D::south},
+                       {6, 2, D::south},
+                       {6, 3, D::east},
+                       {7, 3, D::east}});
+        route.push_back(step_beat(69, 8, 3, D::north, {"YES"}));
+        // East past the guard who locks the party in and the priest who
+        // takes it for assassins, to the barracks (13,1), whose drow squad
+        // the party attacks; beaten, it rests there, the one room of the
+        // temple whose camps no one breaks (cell A2h; the cluebook's 16).
+        walk_passages(route, 69,
+                      {{8, 2, D::north},
+                       {8, 1, D::east},
+                       {9, 1, D::east},
+                       {10, 1, D::east},
+                       {11, 1, D::east}});
+        route.push_back(step_beat(69, 12, 1, D::east, {"ATTACK"}));
+        RouteBeat barracks{69, 13, 1, D::east, {}};
+        barracks.rest_first = true;
+        route.push_back(barracks);
+        // South along the temple's east corridor to the oracle (9,10),
+        // entered facing north, which tells the drow to guard their lady
+        // and what of hers the party must destroy (journal entry 93).
+        walk_passages(route, 69,
+                      {{13, 1, D::west},
+                       {12, 1, D::south},
+                       {12, 2, D::west},
+                       {11, 2, D::south},
+                       {11, 3, D::south},
+                       {11, 4, D::south},
+                       {11, 5, D::south},
+                       {11, 6, D::south},
+                       {11, 7, D::south},
+                       {11, 8, D::south},
+                       {11, 9, D::south},
+                       {11, 10, D::south},
+                       {11, 11, D::west},
+                       {10, 11, D::west}});
+        route.push_back(step_beat(69, 9, 11, D::north));
+        // North up the middle aisle into the inner chamber (8,6), entered
+        // facing north: the party disrupts the ceremony and beats its drow,
+        // Pets of Kalistes and giant and phase spiders, then destroys what
+        // the oracle named, the statue's HANDS (cell 278h), closing the
+        // portals to the Realms. Through the last portal (8,4) it steps into
+        // Limbo, on its way to Kalistes' dimension.
+        walk_passages(route, 69,
+                      {{9, 10, D::south},
+                       {9, 11, D::west},
+                       {8, 11, D::north},
+                       {8, 10, D::north},
+                       {8, 9, D::north},
+                       {8, 8, D::north}});
+        auto statue = step_beat(69, 8, 7, D::north, {"type:HANDS"});
+        statue.expect_cell = std::pair<std::uint16_t, std::uint16_t>{632, 1};
+        route.push_back(statue);
+        walk_passages(route, 69, {{8, 6, D::north}});
+        route.push_back(step_beat(69, 8, 5, D::north, {"YES", "stop:REST"}));
+        // In Limbo Elminster's camp heals the party night after night, its
+        // dead raised, and it trains.
+        RouteBeat web_rest{18, 0, 0, D::north, {}};
+        web_rest.rest_choice = "REST";
+        route.push_back(web_rest);
+        RouteBeat to_web{18,
+                         0,
+                         0,
+                         D::north,
+                         {"TRAIN", "paladin 1", "paladin 2", "ranger 3", "cleric 4", "cleric 5",
+                          "magic_user 6", "Leave"}};
+        to_web.waiting = true;
+        route.push_back(to_web);
+        for (auto beat = route.begin() + static_cast<std::ptrdiff_t>(temple);
+             beat != route.end() - 1; ++beat)
         {
             beat->camp_broken = true;
         }
