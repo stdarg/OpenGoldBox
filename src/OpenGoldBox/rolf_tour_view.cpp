@@ -2297,6 +2297,14 @@ String rest_notice(const std::string &resource, const std::string &text)
                 i18n::format(N_("{name} is left behind and lost."),
                              {{"name", lines[n].substr(0, lines[n].length() - lost.length())}});
         }
+        else if (lines[n].begins_with("The party rests ") && lines[n].ends_with(" minutes."))
+        {
+            // "The party rests D days, H hours and M minutes."
+            const auto numbers = lines[n].replace(",", " ").split(" ", false);
+            lines[n] = i18n::format(
+                N_("The party rests {days} days, {hours} hours and {minutes} minutes."),
+                {{"days", numbers[3]}, {"hours", numbers[5]}, {"minutes", numbers[8]}});
+        }
         else if (lines[n].ends_with(gains) && lines[n] != "The party gains experience.")
         {
             lines[n] =

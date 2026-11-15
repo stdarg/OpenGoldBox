@@ -501,6 +501,89 @@ void a_magic_user_memorizes_and_learns()
     check(std::ranges::find(after, 15) != after.end(), "It learns Magic Missile");
 }
 
+// The original's rest (gametime.pas, CampRest, CheckRestingHeal,
+// AdvanceSpellPrep; camp.pas, CampSpellPrepTime, RestForSpellPrep): the camp
+// rests any time from five minutes to 99 days, each whole day of it healing
+// 1 Hit Point. A spell memorized into an empty slot takes the preparation
+// time, four hours (six above the second level) shared and a quarter hour a
+// level, within the rest: OpenGoldBox asks for the spells as the rest ends
+// and rests on while they need more. Spells kept memorized and not cast take
+// none, and a member who memorizes nothing gets none back.
+void a_rest_lasts_any_length_and_memorizing_takes_time()
+{
+    std::shared_ptr<const rules::CharacterRules> creation = original::character_rules();
+    const auto module = original::rules_module();
+    CampaignParty party(original::rules_module(), creation);
+    const auto mage = member_with(party, creation, "magic_user", "Mira");
+    check(module->rests_any_length(), "The original rules rest any length");
+    check(party.proposed_rest() == std::chrono::minutes{24 * 60},
+          "With nothing to prepare the camp proposes a day");
+    check(throws(
+              [&]
+              {
+                  (void)party.rest(std::chrono::minutes{0});
+              }) &&
+              throws(
+                  [&]
+                  {
+                      (void)party.rest(std::chrono::minutes{100 * 24 * 60});
+                  }),
+          "A rest lasts five minutes to 99 days, 23 hours and 55 minutes");
+
+    const auto start = party.state().time_minutes;
+    const auto hour = party.rest(std::chrono::minutes{60});
+    check(hour && hour->duration_minutes == 60 && party.state().time_minutes == start + 60 &&
+              party.state().spell_rest && party.state().spell_rest->rested_minutes == 60,
+          "The party rests an hour, and its magic-user may memorize");
+    party.choose_spells(mage, {{}, std::vector<std::string>{"magic_user:sleep"}});
+    check(party.state().time_minutes == start + 4 * 60 + 15 && !party.state().spell_rest,
+          "Memorizing Sleep takes four hours and a quarter: the rest goes on");
+    const auto fighting = party.participants();
+    const auto numbers = original::Combatant::decode(fighting.front().character_profile);
+    check(numbers && numbers->spells == std::vector<int>{21}, "It fights with Sleep memorized");
+
+    const auto memorized = party.state().time_minutes;
+    check(party.rest(std::chrono::minutes{5}).has_value(), "The party rests five minutes");
+    party.choose_spells(mage, {{}, std::vector<std::string>{"magic_user:sleep"}});
+    check(party.state().time_minutes == memorized + 5,
+          "Sleep still memorized and not cast needs no time");
+
+    // Sleep cast: memorizing it again takes the time; memorizing nothing
+    // leaves the slot empty.
+    const auto &sheet = party.member(mage).character.sheet();
+    auto cast = *numbers;
+    cast.spells.clear();
+    auto spent = party.member(mage).vitals;
+    spent.resources = cast.encode();
+    const rules::SpellChoices sleep{{}, std::vector<std::string>{"magic_user:sleep"}},
+        shield{{}, std::vector<std::string>{"magic_user:shield"}};
+    check(module->memorizing_levels(sheet, spent, sleep) == std::vector<unsigned>{1} &&
+              module->memorizing_levels(sheet, party.member(mage).vitals, sleep).empty() &&
+              module->memorizing_levels(sheet, party.member(mage).vitals, shield) ==
+                  std::vector<unsigned>{1},
+          "Only a spell not already memorized and uncast is memorized anew");
+
+    // Each whole day heals 1 Hit Point, but not the dead.
+    auto wounded = party.member(mage).vitals;
+    wounded.hit_points = 1;
+    auto dead = wounded;
+    dead.dead = true;
+    module->recover_days(wounded, sheet, 2);
+    module->recover_days(dead, sheet, 2);
+    check(wounded.hit_points == std::min(3, sheet.hit_points) && dead.hit_points == 1,
+          "Two days heal 2 Hit Points, the dead none");
+    const auto before_days = party.state().time_minutes;
+    const auto days = party.rest(std::chrono::minutes{2 * 24 * 60 + 35});
+    check(days && days->duration_minutes == 2 * 24 * 60 + 35 &&
+              party.state().time_minutes == before_days + 2 * 24 * 60 + 35,
+          "A rest of two days and 35 minutes passes them");
+    party.keep_rest_spells(mage);
+    check(party.state().time_minutes == before_days + 2 * 24 * 60 + 35 &&
+              original::Combatant::decode(party.participants().front().character_profile)->spells ==
+                  std::vector<int>{21},
+          "Memorizing nothing takes no time and keeps the spell not cast");
+}
+
 // A magic-user's scroll of three spells, its name words hidden or known.
 por::Equipment magic_user_scroll(const std::vector<por::ItemTemplate> &types,
                                  std::array<std::uint8_t, 3> spells, bool identified)
@@ -2717,6 +2800,7 @@ int main()
         arrows_spent_leave_the_inventory();
         a_magic_user_memorizes_and_learns();
         a_magic_user_scribes_a_scroll();
+        a_rest_lasts_any_length_and_memorizing_takes_time();
         a_cleric_cures_in_camp();
         the_temple_heals_and_raises();
         conditions_outlast_fights();

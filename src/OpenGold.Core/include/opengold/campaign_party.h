@@ -65,6 +65,10 @@ struct ShortRestSession
     std::uint64_t completed_minutes{};
     unsigned completed_subminute_milliseconds{};
     std::vector<MemberId> members;
+    // How long the rest lasted, for rules whose memorizing takes its
+    // preparation within the rest (rests_any_length); 0 in a save from
+    // before it was kept, which limits nothing.
+    std::uint64_t rested_minutes{};
 };
 
 struct RestResult
@@ -487,6 +491,16 @@ class CampaignParty
     [[nodiscard]] std::vector<MemberRestInfo> rest_info(RestKind kind) const;
     // A rest completes in one step; an interrupted rest is never started here.
     [[nodiscard]] std::optional<RestResult> rest(RestKind kind);
+    // A long rest of `length`, for rules that rest any length
+    // (rests_any_length): five minutes to 99 days, 23 hours and 55 minutes,
+    // lengthened to the party's preparation for its scribing. Throws for
+    // other rules or lengths.
+    [[nodiscard]] std::optional<RestResult> rest(std::chrono::minutes length);
+    // The rest the camp proposes, for rules that rest any length: the
+    // party's longest preparation for its scribing and for memorizing again
+    // the spells its members cast (camp.pas, RestForSpellPrep), or a day
+    // when there is none to make.
+    [[nodiscard]] std::chrono::minutes proposed_rest() const;
     // Spends Hit Dice one at a time until the member is at full HP or out of dice.
     [[nodiscard]] std::vector<rules::HitDieResult> heal_with_hit_dice(RestTicket ticket,
                                                                       MemberId id);
@@ -728,6 +742,16 @@ class CampaignParty
     void scribe_pending(PartyMember &member) const;
     void long_rest_benefits(PartyState &state, const std::vector<MemberId> &members,
                             RestTicket ticket, RestResult &result) const;
+    [[nodiscard]] std::optional<RestResult> rest_for(RestKind kind,
+                                                     std::optional<std::chrono::minutes> length);
+    // The member's preparation for its scribing (pending_scribing) and its
+    // memorizing of `choices`, for rules that rest any length.
+    [[nodiscard]] std::chrono::minutes preparation(const PartyMember &member,
+                                                   const rules::SpellChoices &choices) const;
+    // The rest goes on until the member's memorizing of `choices` is done:
+    // the clock passes what its preparation needs beyond the rest's length,
+    // each whole day of the rest that adds healing the party.
+    void rest_to_memorize(MemberId id, const rules::SpellChoices &choices);
     PartyMember &edit(MemberId id);
     void join(MemberId id, bool npc);
     void take_revival_changes(PartyMember &raised, rules::Revival by) const;

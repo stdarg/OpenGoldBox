@@ -3,6 +3,7 @@
 
 #include "opengold/rolf_tour.h"
 
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -44,6 +45,14 @@ class ExplorationSession
     // The party camps for a rest of `kind`, as the adventure lets it; false
     // when it may not rest now. A rest the adventure interrupts says so.
     virtual bool camp(RestKind kind) = 0;
+
+    // The party camps for a long rest of `length`, under rules that rest any
+    // length; false when the adventure has no such camp.
+    virtual bool camp_for(std::chrono::minutes length)
+    {
+        (void)length;
+        return false;
+    }
     // The player left the camp without resting.
     virtual void decline_camp() = 0;
 
@@ -153,6 +162,11 @@ class DaxExplorationSession final : public ExplorationSession
     bool camp(RestKind kind) override
     {
         return session_.camp(kind);
+    }
+
+    bool camp_for(std::chrono::minutes length) override
+    {
+        return session_.camp(length);
     }
 
     void decline_camp() override

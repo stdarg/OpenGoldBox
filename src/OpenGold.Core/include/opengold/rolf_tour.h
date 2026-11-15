@@ -475,6 +475,10 @@ class RolfTourSession
     }
     // Both kinds run the original pre-camp and interruption services.
     bool camp(RestKind kind);
+    // A long rest of `length`, under rules that rest any length
+    // (CampaignParty::rest(std::chrono::minutes)), as the original's camp
+    // rests for the time its rest menu shows.
+    bool camp(std::chrono::minutes length);
     // Treasures' camp menu (camp.pas, CampMainMenu). Fix camps as a rest
     // does, but the party rests only while its casters cure and heal it
     // (fix_party). Crown asks Amanitas, through the crown he gave, for the
@@ -979,6 +983,9 @@ class RolfTourSession
 
     EventStage event_stage_{EventStage::none};
     RestKind camp_kind_{RestKind::long_rest};
+    // The length camp(std::chrono::minutes) asked for; none for a rest of
+    // camp_kind_'s own length.
+    std::optional<std::chrono::minutes> camp_length_;
     // The camp running is Treasures' Fix (camp_fix), not a rest.
     bool camp_fixing_{};
     // Five-minute rest steps since the last interruption check. Like the
@@ -987,6 +994,12 @@ class RolfTourSession
     // Dice of [0, count): the engine's between scripts, the request's
     // (host_random) while a script waits on the host.
     using Dice = std::function<unsigned(unsigned)>;
+    bool start_camp(RestKind kind, std::optional<std::chrono::minutes> length);
+    // The campaign's rest for the camp running: camp_kind_'s, of camp_length_
+    // when one was asked for.
+    [[nodiscard]] std::optional<RestResult> camp_rest();
+    // How long the camp running rests before its preparation lengthens it.
+    [[nodiscard]] unsigned camp_minutes() const;
     [[nodiscard]] std::optional<unsigned> rest_interruption(unsigned interval, unsigned chance);
     // Over a rest of `minutes`, rolled with `dice`.
     [[nodiscard]] std::optional<unsigned> rest_interruption(unsigned interval, unsigned chance,

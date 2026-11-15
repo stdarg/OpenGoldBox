@@ -623,6 +623,17 @@ class OriginalModule final : public RulesModule
     [[nodiscard]] unsigned experience_share(const CharacterSheet &sheet,
                                             unsigned award) const override;
     void recover(VitalState &state, const CharacterSheet &sheet) const override;
+
+    [[nodiscard]] bool rests_any_length() const override
+    {
+        return true;
+    }
+
+    void recover_days(VitalState &state, const CharacterSheet &sheet, unsigned days) const override;
+    void end_rest(VitalState &state, const CharacterSheet &sheet) const override;
+    [[nodiscard]] std::vector<unsigned>
+    memorizing_levels(const CharacterSheet &sheet, const VitalState &state,
+                      const SpellChoices &choices) const override;
     void pass_time(VitalState &state, const CharacterSheet &sheet, std::uint64_t from,
                    std::uint64_t to) const override;
     [[nodiscard]] bool item_lasts(const VitalState &state, const CharacterSheet &sheet,
@@ -2080,15 +2091,66 @@ void OriginalModule::recover(VitalState &state, const CharacterSheet &sheet) con
     {
         return;
     }
+    recover_days(state, sheet, 1);
+    end_rest(state, sheet);
+}
+
+// Each day of rest heals 1 Hit Point (gametime.pas, CheckRestingHeal, every
+// 288 five-minute steps), but not a statue, the dead or one wasting away.
+void OriginalModule::recover_days(VitalState &state, const CharacterSheet &sheet,
+                                  unsigned days) const
+{
     constexpr int wasting_hit_points = 44;
-    if (!state.dead && !condition(conditions_of(sheet, state), wasting_hit_points))
+    if (days == 0 || state.description == stoned_description || state.dead ||
+        condition(conditions_of(sheet, state), wasting_hit_points))
     {
-        state.hit_points = std::min(state.hit_points + 1, sheet.hit_points);
+        return;
     }
-    // The day's rest memorizes again the spells cast: the next fight starts
-    // from the sheet's. The lasting conditions stay, the day's time having
-    // passed for them (pass_time).
+    state.hit_points = static_cast<int>(
+        std::min<long long>(static_cast<long long>(state.hit_points) + days, sheet.hit_points));
+}
+
+// The rest memorized the sheet's spells: the next fight starts from them.
+// The lasting conditions stay, the rest's time having passed for them
+// (pass_time).
+void OriginalModule::end_rest(VitalState &state, const CharacterSheet &sheet) const
+{
+    if (state.description == stoned_description)
+    {
+        return;
+    }
     state.resources = rested_state(conditions_of(sheet, state));
+}
+
+// The spells a choice memorizes into empty slots (camp.pas,
+// CampMemorizeMenu's pending spells): each the choice holds beyond the copies
+// of it still memorized and not cast, by its level (CampSpellPrepTime).
+std::vector<unsigned> OriginalModule::memorizing_levels(const CharacterSheet &sheet,
+                                                        const VitalState &state,
+                                                        const SpellChoices &choices) const
+{
+    if (!sheet.original || !choices.prepared)
+    {
+        return {};
+    }
+    const auto game = game_of(sheet.identity);
+    auto unspent = spells_left(sheet, state);
+    std::vector<unsigned> levels;
+    for (const auto &id : *choices.prepared)
+    {
+        const auto number = spell_number(id.substr(0, id.find('#')), game);
+        if (!number)
+        {
+            continue;
+        }
+        if (const auto kept = std::ranges::find(unspent, *number); kept != unspent.end())
+        {
+            unspent.erase(kept);
+            continue;
+        }
+        levels.push_back(static_cast<unsigned>(spell(*number)->level));
+    }
+    return levels;
 }
 
 namespace

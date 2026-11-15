@@ -2923,7 +2923,15 @@ PartyMember CampaignParty::preview_spell_choices(MemberId id,
 
 void CampaignParty::choose_spells(MemberId id, const rules::SpellChoices &choices)
 {
+    (void)preview_spell_choices(id, choices);
+    // Under rules that rest any length the rest goes on while the member
+    // memorizes what its choice adds, and only then are its spells back.
+    rest_to_memorize(id, choices);
     auto candidate = preview_spell_choices(id, choices);
+    if (rules_->rests_any_length())
+    {
+        rules_->end_rest(candidate.vitals, candidate.character.sheet());
+    }
     // The preview did everything that can throw; what is left cannot.
     edit(id) = std::move(candidate);
     std::erase(state_.spell_rest->members, id);

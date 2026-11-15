@@ -230,9 +230,20 @@ void UaSession::rest_in_service()
         {
             break;
         }
+        // Each caster memorizes again the spells it cast (rests_any_length).
         while (party_->state().spell_rest)
         {
-            party_->keep_rest_spells(party_->state().spell_rest->members.front());
+            const auto id = party_->state().spell_rest->members.front();
+            try
+            {
+                party_->choose_spells(id,
+                                      {{}, party_->member(id).character.sheet().prepared_spells});
+            }
+            catch (const std::exception &)
+            {
+                // Spells a drained level no longer allows: it memorizes none.
+                party_->keep_rest_spells(id);
+            }
         }
     }
     say_kit({"The party rests.", {}});

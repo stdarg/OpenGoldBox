@@ -8,6 +8,8 @@ namespace opengold
 {
 namespace
 {
+constexpr std::uint64_t day_minutes = 24 * 60;
+
 rules::RestPolicy policy(const rules::RulesModule &rules, RestKind kind)
 {
     switch (kind)
@@ -110,6 +112,56 @@ RestTicket new_ticket(PartyState &state)
 
 std::optional<RestResult> CampaignParty::rest(RestKind kind)
 {
+    return rest_for(kind, std::nullopt);
+}
+
+std::optional<RestResult> CampaignParty::rest(std::chrono::minutes length)
+{
+    if (!rules_->rests_any_length())
+    {
+        throw std::runtime_error("These rules rest only a short or a long rest");
+    }
+    // The original's rest menu keeps 99 days at most (gametime.pas,
+    // ValidateRestTime) and counts in five-minute steps.
+    constexpr std::chrono::minutes step{5}, longest{99 * 24 * 60 + 23 * 60 + 55};
+    if (length < step || length > longest)
+    {
+        throw std::runtime_error("A rest lasts from 5 minutes to 99 days, 23 hours and 55 minutes");
+    }
+    return rest_for(RestKind::long_rest, length);
+}
+
+std::chrono::minutes CampaignParty::preparation(const PartyMember &member,
+                                                const rules::SpellChoices &choices) const
+{
+    std::vector<unsigned> levels;
+    for (const auto &[item, marked] : pending_scribing(member))
+    {
+        levels.push_back(marked.level);
+    }
+    const auto memorizing =
+        rules_->memorizing_levels(member.character.sheet(), member.vitals, choices);
+    levels.insert(levels.end(), memorizing.begin(), memorizing.end());
+    return rules_->preparation_time(levels);
+}
+
+std::chrono::minutes CampaignParty::proposed_rest() const
+{
+    std::chrono::minutes longest{};
+    for (const auto id : state_.slots)
+    {
+        if (id && !member(id).vitals.dead)
+        {
+            const auto &sheet = member(id).character.sheet();
+            longest = std::max(longest, preparation(member(id), {{}, sheet.prepared_spells}));
+        }
+    }
+    return longest.count() > 0 ? longest : std::chrono::minutes{day_minutes};
+}
+
+std::optional<RestResult> CampaignParty::rest_for(RestKind kind,
+                                                  std::optional<std::chrono::minutes> length)
+{
     editable();
     std::vector<MemberId> members;
     for (const auto &info : rest_info(kind))
@@ -123,18 +175,14 @@ std::optional<RestResult> CampaignParty::rest(RestKind kind)
     {
         return std::nullopt;
     }
-    auto minutes = policy(*rules_, kind).duration_minutes;
-    // A day's rest lasts as long as the longest of its members' scribing
+    auto minutes =
+        length ? static_cast<unsigned>(length->count()) : policy(*rules_, kind).duration_minutes;
+    // A rest lasts as long as the longest of its members' scribing
     // preparations (camp.pas, RestForSpellPrep, CampSpellPrepTime).
     for (const auto id : members)
     {
-        std::vector<unsigned> levels;
-        for (const auto &[item, marked] : pending_scribing(member(id)))
-        {
-            levels.push_back(marked.level);
-        }
-        const auto preparation = static_cast<unsigned>(rules_->preparation_time(levels).count());
-        minutes = kind == RestKind::long_rest ? std::max(minutes, preparation) : minutes;
+        const auto scribing = static_cast<unsigned>(preparation(member(id), {}).count());
+        minutes = kind == RestKind::long_rest ? std::max(minutes, scribing) : minutes;
     }
     auto next = state_;
     // Eligibility was captured before the rest's time passed, so a member who
@@ -156,6 +204,36 @@ std::optional<RestResult> CampaignParty::rest(RestKind kind)
     }
     state_ = std::move(next);
     return result;
+}
+
+void CampaignParty::rest_to_memorize(MemberId id, const rules::SpellChoices &choices)
+{
+    if (!rules_->rests_any_length() || !state_.spell_rest->rested_minutes)
+    {
+        return;
+    }
+    const auto rested = state_.spell_rest->rested_minutes;
+    const auto needed = static_cast<std::uint64_t>(preparation(member(id), choices).count());
+    if (needed <= rested)
+    {
+        return;
+    }
+    const auto more = needed - rested;
+    auto next = state_;
+    elapse(next, std::chrono::minutes{more});
+    const auto days = static_cast<unsigned>((rested + more) / day_minutes - rested / day_minutes);
+    for (const auto member_id : next.slots)
+    {
+        if (member_id)
+        {
+            auto &resting = member_in(next, member_id);
+            rules_->recover_days(resting.vitals, resting.character.sheet(), days);
+        }
+    }
+    next.spell_rest->rested_minutes += more;
+    next.spell_rest->completed_minutes = next.time_minutes;
+    next.spell_rest->completed_subminute_milliseconds = next.subminute_milliseconds;
+    state_ = std::move(next);
 }
 
 void CampaignParty::short_rest_benefits(PartyState &state,
@@ -193,17 +271,35 @@ void CampaignParty::long_rest_benefits(PartyState &state, const std::vector<Memb
         {
             continue;
         }
-        rules_->recover(member.vitals, member.character.sheet());
+        // Rules that rest any length heal by the rest's whole days, and a
+        // caster's spells come back only as it memorizes them (choose_spells).
+        const bool any_length = rules_->rests_any_length();
+        if (any_length)
+        {
+            rules_->recover_days(member.vitals, member.character.sheet(),
+                                 static_cast<unsigned>(result.duration_minutes / day_minutes));
+        }
+        else
+        {
+            rules_->recover(member.vitals, member.character.sheet());
+        }
         scribe_pending(member);
         recharge_wands(member, state.random_state);
         const auto choices = rules_->spell_choice_options(member.character.sheet(),
                                                           rules::SpellChoiceContext::long_rest);
+        if (any_length && !choices.may_prepare && !choices.may_replace)
+        {
+            rules_->end_rest(member.vitals, member.character.sheet());
+        }
         if (choices.may_prepare || choices.may_replace)
         {
             if (!state.spell_rest)
             {
-                state.spell_rest =
-                    ShortRestSession{ticket, state.time_minutes, state.subminute_milliseconds, {}};
+                state.spell_rest = ShortRestSession{ticket,
+                                                    state.time_minutes,
+                                                    state.subminute_milliseconds,
+                                                    {},
+                                                    result.duration_minutes};
             }
             state.spells_after_short_rest = false;
             state.spell_rest->members.push_back(id);

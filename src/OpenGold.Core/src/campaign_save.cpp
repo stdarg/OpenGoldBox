@@ -22,7 +22,7 @@ constexpr std::size_t limit = 16 * 1024 * 1024;
 // format 45, the same fields saved before characters chose original portraits:
 // it still loads, and its members on head 1 and body 1 (the default, never
 // chosen) are listed for a random original portrait.
-constexpr unsigned campaign_format = 51;
+constexpr unsigned campaign_format = 52;
 constexpr unsigned unchosen_portraits_format = 45;
 // The first format with a creation draft's rules data (the original rules'
 // rolls); earlier saves are all SRD, whose drafts have none.
@@ -39,6 +39,9 @@ constexpr unsigned advancement_rules_data_format = 50;
 // The first format that keeps an Unlimited Adventures design's play (its
 // folder and its session's state); earlier saves have no design.
 constexpr unsigned design_format = 51;
+// The first format that keeps how long the rest whose spells wait to be
+// chosen lasted (the original rules' memorizing); earlier saves keep none.
+constexpr unsigned rest_length_format = 52;
 constexpr std::string_view campaign_magic = "OPENGOLD-CAMPAIGN ";
 
 void require(bool ok, const char *message)
@@ -408,6 +411,10 @@ template <bool Reading> struct SaveCodec
     void field(Visited<ShortRestSession> v)
     {
         fields(v.ticket, v.completed_minutes, v.completed_subminute_milliseconds, v.members);
+        if (format >= rest_length_format)
+        {
+            field(v.rested_minutes);
+        }
     }
 
     void rest(Visited<PartyState> v)

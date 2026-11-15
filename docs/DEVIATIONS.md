@@ -271,6 +271,17 @@ Departures from the original game's own rules, when OpenGoldBox plays by them
   members' items. An item's name leaves out the count the kit puts before a stack's name, and its plural:
   the inventory shows the quantity. A design's NPC who is a monster (race 6)
   joins as a human.
+- **The rest's spells** (2026-11-15). The original's casters choose the
+  spells to memorize before the rest, whose time the camp proposes from
+  them; OpenGoldBox's camp asks for them as the rest ends, as its camp
+  always has, and rests on while they need more time, so the spells and the
+  clock come out as the original's. The rest that goes on rolls no rest
+  encounter. An interrupted rest grants nothing, where the original heals
+  the whole days that passed and finishes the spells whose time came. With
+  nothing to prepare the camp proposes a day, where the original proposes
+  no time. A member that scribes and memorizes at one rest needs the longer
+  of the two preparations, where the original adds them, their base hours
+  once.
 - **Unlimited Adventures' camp** (2026-11-14). The kit's camp menu offers
   Rest, Alter and Fix as the kit does; its View, Magic, Load and Save are
   the game's own screens, and Alter's Speed, Icon and Level the game's own

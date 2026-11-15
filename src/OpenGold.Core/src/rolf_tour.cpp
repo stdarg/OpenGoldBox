@@ -1377,6 +1377,17 @@ void RolfTourSession::reseed_dice(std::uint32_t seed)
 
 bool RolfTourSession::camp(RestKind kind)
 {
+    return start_camp(kind, std::nullopt);
+}
+
+bool RolfTourSession::camp(std::chrono::minutes length)
+{
+    return campaign_ && campaign_->rule_module().rests_any_length() &&
+           start_camp(RestKind::long_rest, length);
+}
+
+bool RolfTourSession::start_camp(RestKind kind, std::optional<std::chrono::minutes> length)
+{
     if (kind != RestKind::short_rest && kind != RestKind::long_rest)
     {
         return false;
@@ -1388,6 +1399,7 @@ bool RolfTourSession::camp(RestKind kind)
         return false;
     }
     camp_kind_ = kind;
+    camp_length_ = length;
     log_player(kind == RestKind::long_rest ? "camps for a Long Rest" : "camps for a Short Rest");
     // The camp's outcome is the news, not what the last event said.
     snapshot_.dialogue.clear();

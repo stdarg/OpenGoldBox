@@ -1397,6 +1397,45 @@ class RulesModule
     virtual bool advance_character(CharacterSheet &sheet, VitalState &state,
                                    const AdvancementChoice &) const = 0;
     virtual void recover(VitalState &state, const CharacterSheet &sheet) const = 0;
+
+    // Whether a long rest lasts as long as the player chooses, heals by its
+    // whole days and gives a caster its spells only as it memorizes them,
+    // each taking the rules' preparation time (the original rules' camp).
+    // The campaign then calls recover_days() and end_rest() instead of
+    // recover().
+    [[nodiscard]] virtual bool rests_any_length() const
+    {
+        return false;
+    }
+
+    // A rest's whole days, each healing as the rules' day of rest does.
+    virtual void recover_days(VitalState &state, const CharacterSheet &sheet, unsigned days) const
+    {
+        (void)state;
+        (void)sheet;
+        (void)days;
+    }
+
+    // The rest is over for the member: its spells are those it memorized.
+    virtual void end_rest(VitalState &state, const CharacterSheet &sheet) const
+    {
+        (void)state;
+        (void)sheet;
+    }
+
+    // The levels of the spells `choices` memorizes anew: those beyond the
+    // member's spells memorized and not cast, whose memorizing takes the
+    // preparation time (preparation_time).
+    [[nodiscard]] virtual std::vector<unsigned> memorizing_levels(const CharacterSheet &sheet,
+                                                                  const VitalState &state,
+                                                                  const SpellChoices &choices) const
+    {
+        (void)sheet;
+        (void)state;
+        (void)choices;
+        return {};
+    }
+
     [[nodiscard]] virtual RecoveryInfo recovery_info(const CharacterSheet &,
                                                      const VitalState &) const = 0;
     // A granting feature must establish entitlement and spend its costs before

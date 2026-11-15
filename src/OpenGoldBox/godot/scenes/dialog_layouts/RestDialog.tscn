@@ -21,6 +21,34 @@ offset_top = 18.0
 offset_right = 696.0
 offset_bottom = 54.0
 
+[node name="LengthLabel" type="Label" parent="."]
+visible = false
+offset_left = 24.0
+offset_top = 18.0
+offset_right = 184.0
+offset_bottom = 52.0
+
+[node name="Days" type="OptionButton" parent="."]
+visible = false
+offset_left = 190.0
+offset_top = 18.0
+offset_right = 350.0
+offset_bottom = 54.0
+
+[node name="Hours" type="OptionButton" parent="."]
+visible = false
+offset_left = 362.0
+offset_top = 18.0
+offset_right = 522.0
+offset_bottom = 54.0
+
+[node name="Minutes" type="OptionButton" parent="."]
+visible = false
+offset_left = 534.0
+offset_top = 18.0
+offset_right = 696.0
+offset_bottom = 54.0
+
 [node name="Members" type="ItemList" parent="."]
 offset_left = 24.0
 offset_top = 68.0

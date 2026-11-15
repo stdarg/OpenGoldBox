@@ -429,6 +429,23 @@ std::string script_damage_type(unsigned script, std::uint16_t address)
 // The letters of a line of rune glyphs ending at a zero byte. Elvish runes
 // take two glyph tiles a letter, A at tile 0x40 and S on from 0x67; dwarvish
 // runes one tile a letter, A at 0x79 (the Pyramid's NOKNOK, Valjevo's RHODIA).
+// What the camp says when its rest is over: under rules that rest any
+// length, how long the party rested.
+std::string rest_complete_line(const RestResult &rested, bool any_length)
+{
+    if (any_length && rested.kind == RestKind::long_rest)
+    {
+        constexpr std::uint64_t day = 24 * 60, hour = 60;
+        return "The party rests " + std::to_string(rested.duration_minutes / day) + " days, " +
+               std::to_string(rested.duration_minutes % day / hour) + " hours and " +
+               std::to_string(rested.duration_minutes % hour) + " minutes.";
+    }
+    return rested.kind == RestKind::short_rest
+               ? "Short rest complete: one hour passed; eligible members can spend Hit Dice."
+               : "Long rest complete: eight hours passed; eligible members recovered HP and "
+                 "supported resources.";
+}
+
 std::string rune_text(const EclMachine &machine, EclAddress address)
 {
     constexpr std::uint16_t dwarvish_a = 0x79;
@@ -2146,12 +2163,10 @@ void RolfTourSession::finish_event()
                 }
                 return;
             }
-            if (campaign_->rest(camp_kind_))
+            if (const auto rested = camp_rest())
             {
                 add_camp_line(
-                    camp_kind_ == RestKind::short_rest
-                        ? "Short rest complete: one hour passed; eligible members can spend Hit Dice."
-                        : "Long rest complete: eight hours passed; eligible members recovered HP and supported resources.");
+                    rest_complete_line(*rested, campaign_->rule_module().rests_any_length()));
             }
             else
             {
@@ -2183,12 +2198,10 @@ void RolfTourSession::finish_event()
         rest_warded_ = false;
         snapshot_.dialogue += (snapshot_.dialogue.empty() ? "" : "\n") +
                               std::string("The Magic Circle keeps the creatures away.");
-        if (campaign_->rest(camp_kind_))
+        if (const auto rested = camp_rest())
         {
             snapshot_.dialogue +=
-                camp_kind_ == RestKind::short_rest
-                    ? "\nShort rest complete: one hour passed; eligible members can spend Hit Dice."
-                    : "\nLong rest complete: eight hours passed; eligible members recovered HP and supported resources.";
+                "\n" + rest_complete_line(*rested, campaign_->rule_module().rests_any_length());
         }
         synchronize_clock();
     }
@@ -2307,12 +2320,26 @@ bool RolfTourSession::overland_step()
 // area's check interval (0x6DD2); on reaching it, the count restarts and d100 at
 // or below the chance (0x6DD3) interrupts. The count carries over between rests.
 // Returns the minutes rested before an interruption, or nothing when none occurs.
+std::optional<RestResult> RolfTourSession::camp_rest()
+{
+    return camp_length_ ? campaign_->rest(*camp_length_) : campaign_->rest(camp_kind_);
+}
+
+unsigned RolfTourSession::camp_minutes() const
+{
+    if (camp_length_)
+    {
+        return static_cast<unsigned>(camp_length_->count());
+    }
+    const auto &rules = campaign_->rule_module();
+    return (camp_kind_ == RestKind::short_rest ? rules.short_rest_policy()
+                                               : rules.long_rest_policy())
+        .duration_minutes;
+}
+
 std::optional<unsigned> RolfTourSession::rest_interruption(unsigned interval, unsigned chance)
 {
-    const auto &rules = campaign_->rule_module();
-    const auto policy =
-        camp_kind_ == RestKind::short_rest ? rules.short_rest_policy() : rules.long_rest_policy();
-    return rest_interruption(interval, chance, policy.duration_minutes,
+    return rest_interruption(interval, chance, camp_minutes(),
                              [this](unsigned count)
                              {
                                  return machine_.engine_random(count);

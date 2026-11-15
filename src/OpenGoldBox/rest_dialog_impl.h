@@ -10,6 +10,8 @@
 #include "guarded_handlers.h"
 #include <godot_cpp/classes/option_button.hpp>
 #include <godot_cpp/classes/popup_menu.hpp>
+#include <chrono>
+#include <tuple>
 
 void RolfTourView::setup_rest()
 {
@@ -48,6 +50,20 @@ void RolfTourView::setup_rest()
     kind->add_item(rest_text(N_("Long Rest")), 1);
     kind->select(1);
     kind->connect("item_selected", presentation::guarded(this, &RolfTourView::rest_selected));
+    // Under the original rules the camp rests for a time the player sets in
+    // days, hours and five minutes (gametime.pas, CampRestMenu) instead.
+    presentation::dialog_control<Label>(*w, "LengthLabel")->set_text(rest_text(N_("Rest time")));
+    for (const auto &[name, unit, count, step] :
+         {std::tuple{"Days", N_("{count} days"), 100, 1},
+          std::tuple{"Hours", N_("{count} hours"), 24, 1},
+          std::tuple{"Minutes", N_("{count} minutes"), 12, 5}})
+    {
+        auto *choice = presentation::dialog_control<OptionButton>(*w, name);
+        for (int n = 0; n < count; ++n)
+        {
+            choice->add_item(i18n::format(unit, {{"count", String::num_int64(n * step)}}), n);
+        }
+    }
     auto *list = presentation::dialog_control<ItemList>(*w, "Members");
     list->connect("item_selected", presentation::guarded(this, &RolfTourView::rest_selected));
     auto *info = presentation::dialog_control<RichTextLabel>(*w, "Info");
@@ -97,10 +113,38 @@ void RolfTourView::camp()
     }
     rest_save_open_ = false;
     rest_result_ = String();
-    refresh_rest();
     auto *w = &presentation::required_node<Window>(*this, "RestDialog");
+    const bool any_length = campaign_->rule_module().rests_any_length();
+    if (any_length)
+    {
+        // The rest the camp proposes: the party's longest preparation
+        // (camp.pas, RestForSpellPrep), or a day.
+        constexpr std::int64_t day = 24 * 60, hour = 60, step = 5;
+        const auto proposed =
+            std::min<std::int64_t>(campaign_->proposed_rest().count(), 99 * day + 23 * hour + 55);
+        const auto rounded = (proposed + step - 1) / step * step;
+        presentation::required_node<OptionButton>(*w, "Days")
+            .select(static_cast<int>(rounded / day));
+        presentation::required_node<OptionButton>(*w, "Hours")
+            .select(static_cast<int>(rounded % day / hour));
+        presentation::required_node<OptionButton>(*w, "Minutes")
+            .select(static_cast<int>(rounded % hour / step));
+    }
+    refresh_rest();
     w->popup_centered();
-    presentation::required_node<OptionButton>(*w, "Kind").grab_focus();
+    presentation::required_node<OptionButton>(*w, any_length ? "Days" : "Kind").grab_focus();
+}
+
+std::chrono::minutes RolfTourView::rest_length() const
+{
+    const auto &w = presentation::required_node<Window>(*this, "RestDialog");
+    const auto chosen = [&](const char *name)
+    {
+        return static_cast<std::int64_t>(
+            presentation::required_node<OptionButton>(w, name).get_selected());
+    };
+    return std::chrono::minutes{chosen("Days") * 24 * 60 + chosen("Hours") * 60 +
+                                chosen("Minutes") * 5};
 }
 
 void RolfTourView::rest_selected(std::int64_t)
@@ -135,6 +179,19 @@ void RolfTourView::refresh_rest()
     const bool spending = state.short_rest.has_value();
     auto *kind = &presentation::required_node<OptionButton>(*w, "Kind");
     kind->set_disabled(spending);
+    const bool any_length = campaign_->rule_module().rests_any_length();
+    if (any_length)
+    {
+        kind->select(1);
+    }
+    for (const char *name : {"KindLabel", "Kind"})
+    {
+        presentation::required_node<Control>(*w, name).set_visible(!any_length);
+    }
+    for (const char *name : {"LengthLabel", "Days", "Hours", "Minutes"})
+    {
+        presentation::required_node<Control>(*w, name).set_visible(any_length);
+    }
     if (spending)
     {
         kind->select(0);
@@ -275,9 +332,19 @@ void RolfTourView::rest_start()
             presentation::required_node<OptionButton>(*w, "Kind").get_selected_id() == 0
                 ? opengold::RestKind::short_rest
                 : opengold::RestKind::long_rest;
+        if (session_ && campaign_ && campaign_->rule_module().rests_any_length() &&
+            rest_length() < std::chrono::minutes{5})
+        {
+            throw std::runtime_error(
+                N_("A rest lasts from 5 minutes to 99 days, 23 hours and 55 minutes"));
+        }
         w->hide();
         rest_result_ = String();
-        if (session_)
+        if (session_ && campaign_ && campaign_->rule_module().rests_any_length())
+        {
+            session_->camp_for(rest_length());
+        }
+        else if (session_)
         {
             session_->camp(kind);
         }

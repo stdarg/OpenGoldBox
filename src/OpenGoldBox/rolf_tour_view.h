@@ -287,6 +287,8 @@ class RolfTourView : public godot::Control
     void check_camp_adrenaline_rush(opengold::MemberId orc);
     unsigned rest_check_stage_{};
     void refresh_rest();
+    // The rest time the dialog shows, under rules that rest any length.
+    [[nodiscard]] std::chrono::minutes rest_length() const;
     void rest_selected(std::int64_t index);
     void rest_start();
     // Treasures' camp menu also offers Fix and Crown (camp.pas, CampMainMenu).
