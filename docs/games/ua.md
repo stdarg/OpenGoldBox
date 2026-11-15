@@ -578,9 +578,13 @@ playing each event and fight; it fails on any event the session cannot play.
     area's) and an icon over two squares a side, which stands as two.
 - A critical hit's vorpal beheading, with items' special effects.
 
-Next, in this order: monsters'
-spells (+C6h) and items' special effects when readied (which bring the
-vorpal beheading); then the services' smaller parts.
+Next, in this order (2026-11-15): monsters' spells (+C6h); items' special
+effects when readied, which bring the vorpal beheading on a hit of 17 or
+more; the services' smaller parts (Appraise, vault items, a temple's
+Restoration, building on the rules' Restoration in camp now on main); the
+near matches' differences (Monsters' effects); and a question for the user,
+which game Difficulty level stands for the kit's level 2 (Easy is 1, Hard 4,
+Nightmare and Infernal both 5 under the design's own difficulty).
 
 ### Monsters' effects, "no magic" fights and step events
 
