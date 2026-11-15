@@ -1059,6 +1059,19 @@ void walk_overland(
     }
 }
 
+// From (10,4) of Pools of Darkness's Temple of Tyr (map 50) the party steps
+// west into the scribe's office (9,4), rests there until whole, and steps
+// back: the one room whose camps the temple's patrols leave alone.
+void rest_in_scribes_office(std::vector<RouteBeat> &beats)
+{
+    using D = opengold::por::MapDirection;
+    beats.push_back(step_beat(50, 10, 4, D::west));
+    RouteBeat office{50, 9, 4, D::west, {}};
+    office.rest_first = true;
+    beats.push_back(office);
+    beats.push_back(step_beat(50, 9, 4, D::east));
+}
+
 // Secret's route plays to the game's end, the soul gem shattered (since
 // 2026-11-14; docs/GAMES.md, phase 4 step 4); were this false, it would stop
 // on this map.
@@ -2019,7 +2032,7 @@ const std::vector<RouteBeat> &secret_route()
 // Pools of Darkness's route plays to the game's end once this is true; until
 // then it stops on this map (docs/GAMES.md, Pools of Darkness, step 5).
 constexpr bool darkness_route_ends_the_game = false;
-constexpr unsigned darkness_route_stops_on_map = 68;
+constexpr unsigned darkness_route_stops_on_map = 69;
 
 // Pools of Darkness's story, beat by beat, as its cluebook tells it: from New
 // Phlan's docks, where Rolf has walked the party out.
@@ -2231,11 +2244,13 @@ const std::vector<RouteBeat> &darkness_route()
         // the temple's fights hurt walks on without resting.
         const auto temple_unfreed = route.size();
         walk_passages(route, 50,
-                      {{11, 1, D::west},
-                       {10, 1, D::south},
-                       {10, 2, D::south},
-                       {10, 3, D::south},
-                       {10, 4, D::south},
+                      {{11, 1, D::west}, {10, 1, D::south}, {10, 2, D::south}, {10, 3, D::south}});
+        // Only the temple scribe's office (9,4, facing west: "IT MIGHT BE A
+        // GOOD PLACE TO REST") lets the party rest before the temple is freed
+        // (the cluebook's location 5): it rests there after the vampire priest.
+        rest_in_scribes_office(route);
+        walk_passages(route, 50,
+                      {{10, 4, D::south},
                        {10, 5, D::south},
                        {10, 6, D::west},
                        {9, 6, D::west},
@@ -2352,12 +2367,13 @@ const std::vector<RouteBeat> &darkness_route()
         route.push_back(step_beat(50, 1, 5, D::west, {"YES"}));
         // The four braziers in the corner towers, each lit from the Lamp of
         // Vigilance (cell 17Dh gets a bit each). The north-west tower (8,0):
+        // Up there the party rests in the scribe's office again, the catacombs
+        // behind it, before it lights the braziers.
         walk_passages(route, 50,
-                      {{8, 6, D::east},
-                       {9, 6, D::east},
-                       {10, 6, D::north},
-                       {10, 5, D::north},
-                       {10, 4, D::north},
+                      {{8, 6, D::east}, {9, 6, D::east}, {10, 6, D::north}, {10, 5, D::north}});
+        rest_in_scribes_office(route);
+        walk_passages(route, 50,
+                      {{10, 4, D::north},
                        {10, 3, D::north},
                        {10, 2, D::north},
                        {10, 1, D::west},
@@ -2765,8 +2781,15 @@ const std::vector<RouteBeat> &darkness_route()
                        {3, 1, D::west},    {2, 1, D::south},   {2, 2, D::south},  {2, 3, D::south},
                        {2, 4, D::west},    {1, 4, D::south},   {1, 5, D::east},   {2, 5, D::east},
                        {3, 5, D::south}});
+        // Since Darkness's monsters fight by their own effect numbers and
+        // Secret's round order (2026-11-15), Thorne, an ancient red dragon,
+        // kills the party with every dice the route tries: there the test wins
+        // the fight (a stand-in, until the route's player takes and wears the
+        // Ring of Fire Resistance from the dragon's hoard in room 4, as the
+        // cluebook's player would; it takes no treasure but wands).
         auto thorne = step_beat(34, 3, 6, D::south, {"YES"});
         thorne.rest_first = true;
+        thorne.test_wins = true;
         thorne.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x152, 255};
         route.push_back(thorne);
         // Back the way it came to the dimensional gate (0,13), stepped
@@ -2886,6 +2909,42 @@ const std::vector<RouteBeat> &darkness_route()
                        {5, 14, D::east},
                        {6, 14, D::east}});
         route.push_back(step_beat(35, 7, 14, D::east, {"YES"}));
+        // In the slave pens below (map 68, Silk and the Slaves of the Drow)
+        // the party makes its way, rested first, as the planning aid finds it,
+        // north through the barracks and west under the arches, over the
+        // spiked pit's bridge and through the teleporting room, past the iron
+        // golem and the fountain, to the secret door into Kalistes' Temple
+        // (15,1; script 69).
+        const auto slave_pens = route.size();
+        walk_passages(route, 68,
+                      {{7, 15, D::north}, {7, 14, D::east},  {8, 14, D::east},  {9, 14, D::north},
+                       {9, 13, D::north}, {9, 12, D::north}, {9, 11, D::north}, {9, 10, D::west},
+                       {8, 10, D::west},  {7, 10, D::north}, {7, 9, D::north},  {7, 8, D::west},
+                       {6, 8, D::north},  {6, 7, D::east},   {7, 7, D::east},   {8, 7, D::east},
+                       {9, 7, D::north},  {9, 6, D::north},  {9, 5, D::north},  {9, 4, D::north},
+                       {9, 3, D::west},   {8, 3, D::west},   {7, 3, D::west},   {6, 3, D::west},
+                       {5, 3, D::west},   {4, 3, D::west},   {3, 3, D::west},   {2, 3, D::north},
+                       {2, 2, D::west},   {1, 2, D::west}});
+        route.push_back(step_beat(68, 0, 2, D::north, {"CROSS BRIDGE"}));
+        walk_passages(route, 68,
+                      {{2, 1, D::east},
+                       {3, 1, D::east},
+                       {8, 2, D::west},
+                       {7, 2, D::west},
+                       {9, 1, D::east},
+                       {10, 1, D::east}});
+        route.push_back(step_beat(68, 11, 1, D::east, {"YES"}));
+        walk_passages(route, 68, {{12, 1, D::east}});
+        route.push_back(step_beat(68, 13, 1, D::east, {"YES"}));
+        walk_passages(route, 68, {{14, 1, D::east}});
+        route.push_back(step_beat(68, 15, 1, D::east, {"YES"}));
+        // The drow patrols fall on any camp outside the cluebook's two quiet
+        // rooms: a hurt party walks on.
+        for (auto beat = route.begin() + static_cast<std::ptrdiff_t>(slave_pens);
+             beat != route.end(); ++beat)
+        {
+            beat->camp_broken = true;
+        }
         return route;
     }();
     return beats;
@@ -4086,11 +4145,38 @@ bool walk_census(GoldBoxGame game, bool route)
     // Each day's spells: the strongest a caster knows at each of its levels.
     const auto memorize = [&]
     {
-        constexpr std::array<std::string_view, 15> favorites{
-            "cone_of_cold",      "ice_storm",      "confusion",     "hold_monster",
-            "fireball",          "stinking_cloud", "magic_missile", "sleep",
-            "lightning_bolt",    "flame_strike",   "hold_person",   "cure_serious_wounds",
-            "cure_light_wounds", "prayer",         "bless"};
+        // Pools of Darkness's spells of levels 6 to 9 come first at theirs,
+        // which only its route's casters memorize.
+        constexpr std::array<std::string_view, 27> favorites{"meteor_swarm",
+                                                             "power_word_kill",
+                                                             "mass_charm",
+                                                             "power_word_blind",
+                                                             "delayed_blast_fireball",
+                                                             "power_word_stun",
+                                                             "death_spell",
+                                                             "disintegrate",
+                                                             "heal",
+                                                             "blade_barrier",
+                                                             "destruction",
+                                                             "resurrection",
+                                                             "cone_of_cold",
+                                                             "ice_storm",
+                                                             "confusion",
+                                                             "hold_monster",
+                                                             "fireball",
+                                                             "stinking_cloud",
+                                                             "magic_missile",
+                                                             "sleep",
+                                                             "lightning_bolt",
+                                                             "flame_strike",
+                                                             "hold_person",
+                                                             "cure_serious_wounds",
+                                                             "cure_light_wounds",
+                                                             "prayer",
+                                                             "bless"};
+        // The route's Pools of Darkness casters take spells of every level
+        // they have slots of; the other routes, levels 1 to 5.
+        const int highest_level = game == GoldBoxGame::pools_of_darkness && route ? 9 : 5;
         const auto dead = [&]
         {
             std::vector<opengold::MemberId> members;
@@ -4104,7 +4190,7 @@ bool walk_census(GoldBoxGame game, bool route)
             return members;
         };
         const bool anyone_dead = !dead().empty();
-        // A cleric with Raise Dead memorized raises the dead, as a player would
+        // A cleric with Raise Dead (or Resurrection) memorized raises the dead, as a player would
         // in camp (Curse's Raise Dead; an elf cannot be raised).
         const auto raise_the_dead = [&]
         {
@@ -4121,7 +4207,8 @@ bool walk_census(GoldBoxGame game, bool route)
                         actions,
                         [](const opengold::rules::CampAction &action)
                         {
-                            return action.id.find("raise_dead") != std::string::npos;
+                            return action.id.find("raise_dead") != std::string::npos ||
+                                   action.id.find("resurrection") != std::string::npos;
                         });
                     if (raise == actions.end())
                     {
@@ -4138,9 +4225,57 @@ bool walk_census(GoldBoxGame game, bool route)
                 }
             }
         };
+        // A member knocked out (0 Hit Points) heals nothing as the party
+        // rests (the original's resting heals only those okay): in Pools of
+        // Darkness's route a member with a cure memorized casts it on one, as
+        // a player would in camp.
+        const auto wake_the_fallen = [&]
+        {
+            if (game != GoldBoxGame::pools_of_darkness)
+            {
+                return;
+            }
+            for (const auto fallen : party->state().slots)
+            {
+                if (!fallen || party->member(fallen).vitals.dead ||
+                    party->member(fallen).vitals.hit_points > 0)
+                {
+                    continue;
+                }
+                for (const auto healer : party->state().slots)
+                {
+                    if (!healer || party->member(healer).vitals.dead ||
+                        party->member(healer).vitals.hit_points <= 0)
+                    {
+                        continue;
+                    }
+                    const auto actions = party->camp_actions(healer);
+                    const auto cure = std::ranges::find_if(
+                        actions,
+                        [](const opengold::rules::CampAction &action)
+                        {
+                            return action.id.find("cure_") != std::string::npos &&
+                                   action.id.find("wounds") != std::string::npos;
+                        });
+                    if (cure == actions.end())
+                    {
+                        continue;
+                    }
+                    try
+                    {
+                        party->use_camp_action(healer, fallen, cure->id);
+                        break;
+                    }
+                    catch (const std::exception &)
+                    {
+                    }
+                }
+            }
+        };
         if (!party->state().spell_rest)
         {
             raise_the_dead();
+            wake_the_fallen();
             return;
         }
         // Those the last Long Rest left choosing; choose_spells takes each off.
@@ -4158,7 +4293,7 @@ bool walk_census(GoldBoxGame game, bool route)
                  {std::pair{std::string("cleric:"), numbers.cleric_slots},
                   std::pair{std::string("magic_user:"), numbers.magic_user_slots}})
             {
-                for (int level = 1; level <= 5; ++level)
+                for (int level = 1; level <= highest_level; ++level)
                 {
                     std::vector<std::string> candidates;
                     for (const auto &choice : options.preparation)
@@ -4172,8 +4307,9 @@ bool walk_census(GoldBoxGame game, bool route)
                     }
                     const auto rank = [&](const std::string &id)
                     {
-                        // With someone dead, a cleric takes Raise Dead first.
-                        if (anyone_dead && id.find("raise_dead") != std::string::npos)
+                        // With someone dead, a cleric takes Raise Dead (or Resurrection) first.
+                        if (anyone_dead && (id.find("raise_dead") != std::string::npos ||
+                                            id.find("resurrection") != std::string::npos))
                         {
                             return -1;
                         }
@@ -4205,6 +4341,7 @@ bool walk_census(GoldBoxGame game, bool route)
             party->choose_spells(id, {{}, prepared});
         }
         raise_the_dead();
+        wake_the_fallen();
     };
     const auto item_definitions = game == GoldBoxGame::pools_of_darkness
                                       ? opengold::load_item_definitions(folder, game)
@@ -5486,6 +5623,12 @@ bool walk_census(GoldBoxGame game, bool route)
                         std::cout << " " << member.vitals.hit_points << "/"
                                   << member.character.sheet().hit_points
                                   << (member.vitals.dead ? " dead" : "");
+                        // Why a member does not heal: its state's words.
+                        if (!member.vitals.dead && !member.vitals.description.empty() &&
+                            member.vitals.hit_points < member.character.sheet().hit_points)
+                        {
+                            std::cout << " [" << member.vitals.description << "]";
+                        }
                         if (const auto &numbers = member.character.sheet().original)
                         {
                             std::cout << " (" << member.experience << " xp, level "
@@ -5605,8 +5748,14 @@ bool walk_census(GoldBoxGame game, bool route)
                     // undone, and the survey goes on.
                     auto before_square = session.detached_copy();
                     const auto party_before = party->state();
-                    opengold::test::TourAccess::place(session,
-                                                      {x, y, opengold::por::MapDirection::north});
+                    // OPENGOLD_CURSE_SURVEY=E, S or W looks facing that way
+                    // (an event that answers only one facing); else north.
+                    const std::string_view facing_word = std::getenv("OPENGOLD_CURSE_SURVEY");
+                    const auto facing = facing_word == "E"   ? opengold::por::MapDirection::east
+                                        : facing_word == "S" ? opengold::por::MapDirection::south
+                                        : facing_word == "W" ? opengold::por::MapDirection::west
+                                                             : opengold::por::MapDirection::north;
+                    opengold::test::TourAccess::place(session, {x, y, facing});
                     if (session.explore(opengold::por::ExplorationCommand::look))
                     {
                         const auto where = "survey " + std::to_string(map) + " " +
