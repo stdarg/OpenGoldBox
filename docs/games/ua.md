@@ -623,7 +623,7 @@ playing each event and fight; it fails on any event the session cannot play.
 Next, in this order (2026-11-15; monsters' spells, items' special effects,
 Appraise, the vault's items and the temple's Restoration are done):
 
-1. The near matches' differences left (Monsters' effects): 58's reach; 91's and 96's breaths; 117's rays; 170's
+1. The near matches' differences left (Monsters' effects): 91's and 96's breaths; 117's rays; 170's
    rot, 2 Charisma a month until it kills (`fx_rotting`).
 
 ### Monsters' effects, "no magic" fights and step events
@@ -647,17 +647,20 @@ Since 2026-11-14 (`ua_session.cpp`, `combatant.cpp`):
   | 37 | 237 | 85 | 483 | 117 | 287~ | 176 | 257 |
   | 45 | 45 | 86 | 70 | 124 | 84 | 216 | 100 |
   | 47 | 47 | 89 | 89 | 132 | 488 | 217 | 101 |
-  | 58 | 458~ | 91 | 88~ | 141 | 108 | 220 | 296 |
+  | 58 | 458 | 91 | 88~ | 141 | 108 | 220 | 296 |
   | 59 | 127 | 92 | 492 | 143 | 111 | 223 | 480 |
   | 64 | 64 | 93 | 112 | 158 | 109 |  |  |
   | 65 | 465 | 95 | 107 | 159 | 117 |  |  |
   | 66 | 115 | 96 | 290~ | 169 | 116 |  |  |
 
-  A ~ marks a near match: the gaze of 58 reaches six squares; 91
+  A ~ marks a near match: 91
   breathes as Pool of Radiance's dragons do; 96 is acid as well as breath;
   117's rays need their exact distances; 170's rot takes no Charisma.
   Four play as the kit's in a design (2026-11-15): 58's gaze spares an
-  iron golem (the kit's 79) as well as one that meets gazes unharmed; 82, on the rakshasa and
+  iron golem (the kit's 79) as well as one that meets gazes unharmed, and
+  turns back on its gazer (59) from one with the kit's 72, as from a
+  mirror (`fx_stone_gaze`); it reaches 6 squares, the range of the spell it
+  aims as (130, `spelltab.c`), as the fight's does; 82, on the rakshasa and
   rakshasa rukh, dies of a blow of the kit's quarrel of slaying (item type
   4Ah, `fx_slain_by_type`) as Pools of Darkness's rakshasa of its blessed
   bolt (552; until 2026-11-15 *Curse*'s banishment by its quarrel, 330); 159
@@ -756,7 +759,9 @@ special; a special from 80h says what readying it does:
   instead of its own dice; a ring of fire resistance (61, 661) takes no
   harm from ordinary fire, takes 2 less a die of magical fire, never under
   1 a die, and saves against fire 4 better; boots of speed (74, 674)
-  double movement, with Haste too. The kit's 72 does nothing.
+  double movement, with Haste too. The kit's 72 turns a gaze back on a
+  gazer whose gaze can be turned (since 2026-11-15; until then it did
+  nothing), as *Secret*'s mirror does (`Combatant::mirror`).
 - **83h**: Strength 18/00 (gauntlets of ogre power), and **85h**: 18 and
   the second byte (a girdle of giant strength; the kit's gives 23), where
   better than the wielder's own.

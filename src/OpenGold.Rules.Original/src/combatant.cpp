@@ -1057,7 +1057,9 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
                                return item.item.readied() &&
                                       std::find(words.begin(), words.end(), 118) != words.end();
                            });
-    if (secret)
+    // The kit's gaze turns back on a gazer from one with its effect 72, as
+    // Secret's does (effects.c, fx_stone_gaze).
+    if (secret || kit)
     {
         c.mirror = std::ranges::any_of(carried, reflects_gazes) ||
                    std::ranges::any_of(effects,

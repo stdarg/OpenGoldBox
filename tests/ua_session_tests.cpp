@@ -2275,6 +2275,18 @@ void the_kits_items_work_when_readied(const std::filesystem::path &kit)
         check(gives(number, code),
               "Item " + std::to_string(number) + " readied gives " + std::to_string(code));
     }
+    // The kit's effect 72 turns a gaze back on the gazer (effects.c,
+    // fx_stone_gaze), as a mirror does.
+    const auto mirror =
+        std::ranges::find_if(items.items,
+                             [](const ua::ItemRecord &record)
+                             {
+                                 return record.effects[1] == 72 && record.effects[2] == 0x80;
+                             });
+    check(mirror != items.items.end(), "The kit has an item that turns gazes back");
+    const auto mirror_number = static_cast<unsigned>(mirror - items.items.begin()) + 1;
+    check(wielding(mirror_number, true).mirror && !wielding(mirror_number, false).mirror,
+          "Readied, it turns gazes back");
     // A bow fires the kit's arrows (its type 1Eh, Secret's 30).
     const auto bow = std::ranges::find_if(
         items.items,
