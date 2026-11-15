@@ -647,6 +647,19 @@ Its differences (2026-11-14):
   character stands on one square (its `chargen.pas`), so no weapon strikes
   one as large. A script may hold a fight's creatures back for a round or
   more (cell 44h, [treasure.md](games/treasure.md), What the route needed).
+- **The computer's spells** (its `combatai.pas` and `cbtacts.pas`,
+  2026-11-15): a monster, or a member on Quick with Quick magic on, casts
+  the memorized spell of highest AI weight (a later copy first among equals)
+  that has a target worth it (RateSpellTarget: an enemy the spell can
+  touch, not one already held or asleep, nor behind a globe or magic
+  resistance above 50), and only if 1d100 is above four times its fighter,
+  paladin and ranger levels and 1d5 no more than the weight; the earlier
+  games pick at random. A spell on one creature goes at an enemy locked onto
+  anew, and is lost when that one rates nothing; a burst goes where the
+  creatures it takes rate highest together, each enemy 1 and each friend
+  -10, so the computer never fireballs its own side. It never uses an item
+  (its SelectItemToUse does nothing). The original's sort passes over the
+  first memorized spell (Bugs).
 - **Detect Magic** may be cast outside combat, as in the originals, spent
   with nothing more to lay: *Treasures*' scripts may wait for a spell
   (Cortarra, [treasure.md](games/treasure.md), What the route needed).
@@ -1670,4 +1683,5 @@ scales Hit Points takes only the table's to-hit and Armor Class.
 | *Treasures:* the Fix's Cure Blindness lifts the blindness of whichever member is current, not of the member it cures, and is never spent (`camp.pas`, `CampFixMenu`) | The blind member regains sight, one cure a member |
 | *Treasures:* the Fix's first rest counts a magic-user's Remove Curse by its third-level slots, its second by its fourth-level ones, where the spell is (`camp.pas`, `CampFixMenu`) | Fourth-level slots in both |
 | *Treasures:* the Fix says a resurrected member "has been ressurected" (`camp.pas`, `CampFixMenu`) | Spelt "resurrected" |
+| *Treasures:* the computer's choice of spell sorts the memorized spells from the second, so the first memorized is never cast (`combatai.pas`, PickCastableSpell) | Every memorized spell is weighed |
 | *Gateway:* a giant squid's constricting hold (effect 156) has its squeeze, two blows of 1d2, but the fight never calls it, so the squid only holds (`effhndlr.pas`, condition 14; `cbtacts.pas`, `AttackConstrict`) | It squeezes with them, as the owlbear's hug does |

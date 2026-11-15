@@ -302,7 +302,9 @@ Departures from the original game's own rules, when OpenGoldBox plays by them
   they come in, a square and a direction for each side (cells 45h to 4Ah),
   from which the original walks a spiral of free places. OpenGoldBox places
   each where the fight would have placed it at the start, or on the free
-  square nearest it.
+  square nearest it from which its enemies can be walked to (since
+  2026-11-15: Mirabar's council put a sorceress inside its table, out of
+  everyone's reach, and the fight never ended).
 - **Unlimited Adventures' party icons** (2026-11-14). The kit gives a party
   member the combat icon made in its own icon editor (`CBODY.TLB` and
   `COMSPR.TLB`). A party made in OpenGoldBox has the combat icon its

@@ -6750,6 +6750,8 @@ bool walk_census(GoldBoxGame game, bool route)
     // The side the party means to leave the next maze fight by
     // (RouteBeat::maze_exits), as the cluebook leads through Ascore.
     std::optional<unsigned> wanted_exit;
+    // The beat being played flees what it meets (RouteBeat::fleeing).
+    bool fleeing = false;
     const auto fight_once = [&](std::uint64_t seed, unsigned tactic)
     {
         opengold::CombatDemo combat(opengold::original::rules_module(content));
@@ -6815,8 +6817,13 @@ bool walk_census(GoldBoxGame game, bool route)
         // on Quick with Quick magic on (or, as a player may set it, only the
         // magic-user's), everyone else at the default difficulty.
         std::vector<opengold::rules::EntityId> picked;
-        for (int command = 0; command < 3000 && combat.combat().snapshot().outcome ==
-                                                    opengold::rules::Outcome::ongoing;
+        // Treasures' party on its way past a band it could not flee in the
+        // asking (the overland's) runs off the field with the first tactic.
+        const bool running =
+            game == GoldBoxGame::treasures_of_the_savage_frontier && fleeing && tactic == 0;
+        for (int command = 0;
+             !running && command < 3000 &&
+             combat.combat().snapshot().outcome == opengold::rules::Outcome::ongoing;
              ++command)
         {
             const auto &session = combat.combat();
@@ -6884,7 +6891,7 @@ bool walk_census(GoldBoxGame game, bool route)
         // behind the council's walls), is played on as a player plays it:
         // each member walks the way round to the nearest enemy standing and
         // fights it there. It is counted.
-        if (combat.combat().snapshot().outcome == opengold::rules::Outcome::ongoing)
+        if (!running && combat.combat().snapshot().outcome == opengold::rules::Outcome::ongoing)
         {
             ++phases["stalemates played on by walking round"];
             // OPENGOLD_FIGHT_CELLS tells who stands where as it begins.
@@ -7035,8 +7042,9 @@ bool walk_census(GoldBoxGame game, bool route)
     bool holding_foes = false;
     // A planning aid (OPENGOLD_SECRET_FIND) wins every fight at once.
     bool planning = false;
-    // Fights played so far (a camp counts the ones that interrupt it).
-    unsigned fights_fought = 0;
+    // Fights played so far (a camp counts the ones that interrupt it), and
+    // those whose kept play lost a member or the fight.
+    unsigned fights_fought = 0, fights_lost = 0;
     // The maze exits the beat being played has yet to take (RouteBeat::maze_exits).
     std::deque<unsigned> maze_exits;
     const auto fight = [&]
@@ -7056,8 +7064,11 @@ bool walk_census(GoldBoxGame game, bool route)
             {
                 if (unit.side == opengold::rules::Side::party)
                 {
-                    // A member turned to stone is as lost as a dead one.
-                    lost += (unit.dead || unit.status == "stoned" ? 1000 : 0) +
+                    // A member turned to stone is as lost as a dead one, and
+                    // so is one left on the field the party fled.
+                    const bool left_behind =
+                        result.outcome == opengold::rules::Outcome::fled && !unit.fled;
+                    lost += (unit.dead || unit.status == "stoned" || left_behind ? 1000 : 0) +
                             unit.max_hit_points - std::max(unit.hit_points, 0);
                 }
                 // An enemy that got away is a fight lost where its flight
@@ -7124,11 +7135,14 @@ bool walk_census(GoldBoxGame game, bool route)
         // Where the test wins fights, it also wins one the best play wins
         // only at the cost of a member dead or turned to stone: the party
         // would be lost on the way (Secret's and Pools of Darkness's routes'
-        // stand-in; Darkness's Vaasans leave most of the party dead).
+        // stand-in; Darkness's Vaasans leave most of the party dead; in
+        // Treasures' lair the dwarves win once the black-robed men have
+        // killed every member).
         const bool costly =
             test_winning &&
             (game == GoldBoxGame::secret_of_the_silver_blades ||
-             game == GoldBoxGame::pools_of_darkness) &&
+             game == GoldBoxGame::pools_of_darkness ||
+             game == GoldBoxGame::treasures_of_the_savage_frontier) &&
             std::ranges::any_of(result.combatants,
                                 [](const opengold::rules::CombatantView &unit)
                                 {
@@ -7170,6 +7184,12 @@ bool walk_census(GoldBoxGame game, bool route)
             }
         }
         ++phases["fights ended " + std::to_string(static_cast<int>(result.outcome))];
+        constexpr int a_member_lost = 1000, the_fight_lost = 1'000'000;
+        if (result.outcome == opengold::rules::Outcome::defeat ||
+            score(result) % the_fight_lost >= a_member_lost)
+        {
+            ++fights_lost;
+        }
         return session.resolve_combat(result);
     };
     std::size_t diagnosed = 0;
@@ -7186,8 +7206,6 @@ bool walk_census(GoldBoxGame game, bool route)
     bool game_won_shown = false;
     // The beat being played only passes by (RouteBeat::passing).
     bool passing = false;
-    // The beat being played flees what it meets (RouteBeat::fleeing).
-    bool fleeing = false;
     // The beat being played avoids the monsters it meets (RouteBeat::avoiding).
     bool avoiding = false;
     // Readies the member's item, putting away the one item, or else the two,
@@ -7401,6 +7419,14 @@ bool walk_census(GoldBoxGame game, bool route)
                                    party->member(id).vitals.hit_points * 2 <
                                        party->member(id).character.sheet().hit_points;
                         }))
+                {
+                    pick = static_cast<std::size_t>(flee - s.choices.begin());
+                }
+                // Treasures' party walking the overland flees the bands that
+                // fall on it (sixteen fire giants and their mages after
+                // Mirabar), as a player hurries on to the next town.
+                else if (game == GoldBoxGame::treasures_of_the_savage_frontier && fleeing &&
+                         where != "camp" && flee != s.choices.end())
                 {
                     pick = static_cast<std::size_t>(flee - s.choices.begin());
                 }
@@ -8288,11 +8314,35 @@ bool walk_census(GoldBoxGame game, bool route)
                             std::cout << "  jump to " << where << " from " << stands.pose.x << ","
                                       << stands.pose.y << "\n";
                         }
-                        opengold::test::TourAccess::place(session, {x, beat.y, beat.facing});
-                        if (session.explore(beat.step ? opengold::por::ExplorationCommand::forward
-                                                      : opengold::por::ExplorationCommand::look))
+                        // Treasures' overland: a band that kills a member or
+                        // beats the party is met as a player meets it after
+                        // reloading, the step played again with the new dice
+                        // a reload gives (reseed_dice), up to 20 times.
+                        const bool reloading =
+                            game == GoldBoxGame::treasures_of_the_savage_frontier && beat.fleeing;
+                        for (unsigned reload = 0;; ++reload)
                         {
-                            play(where);
+                            auto before_step =
+                                reloading ? std::optional(session.detached_copy()) : std::nullopt;
+                            const auto party_before = party->state();
+                            const unsigned lost_before = fights_lost;
+                            opengold::test::TourAccess::place(session, {x, beat.y, beat.facing});
+                            if (session.explore(beat.step
+                                                    ? opengold::por::ExplorationCommand::forward
+                                                    : opengold::por::ExplorationCommand::look))
+                            {
+                                play(where);
+                            }
+                            if (!reloading || fights_lost == lost_before || reload >= 20)
+                            {
+                                break;
+                            }
+                            ++phases["overland steps reloaded"];
+                            session = std::move(*before_step);
+                            party->restore(party_before);
+                            session.attach_restored_party(party);
+                            session.reseed_dice(
+                                static_cast<std::uint32_t>(beat_number * 64 + reload));
                         }
                     }
                     if (!beat.cast_after.empty())

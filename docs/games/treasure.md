@@ -27,8 +27,11 @@ differs:
 
 **The four bytes after a picture's EGA colors** hold a color cycle when the
 first of them is 1: the other three are the first color that turns, how many
-turn, and the delay between steps. The overland maps use it; *Pools of
-Darkness* ignores these bytes.
+turn, and the delay between steps in hundredths of a second: at each
+step every color of the run takes the one before it, the first the last's
+(its CyclePaletteRange). The overland maps use it, and OpenGoldBox turns
+their colors while the overland is shown (since 2026-11-15,
+`RolfTourSession::turn_colors`); *Pools of Darkness* ignores these bytes.
 
 **Records that only set colors.** `PIC1` records 38, 47, 48, 57, 68 and 70 and
 `PIC1A` records 78, 81, 89, 90, 100 and 119 are still pictures of no rows and
@@ -320,7 +323,8 @@ engine, each as the original does it:
   the fight is over. The council's Krakens, sorceresses and dwarves come in
   three waves, the lair's black-robed men in six. A creature held back
   joins where the fight would have placed it, or on the free square
-  nearest it ([DEVIATIONS.md](../DEVIATIONS.md)).
+  nearest it that is not walled off from its enemies
+  ([DEVIATIONS.md](../DEVIATIONS.md)).
 - **The overland's own steps.** The engine keeps the square the party stood
   on before every step, whether or not it moves (its main loop sets savedX
   and savedY, cells 17h and 18h, before ResolveMovement). On the overland
@@ -356,13 +360,16 @@ Llorkh's hall, training the party to levels 8 and 9).
    first crystal battle (13,15) and Amanitas (7,10), who gives the crown and
    tells of the ambassadors (PROGRAM 3).
 4. **Leilon** (map 20), overland by maps 56, 54 and 53: the drugged dinner at
-   the Rutting Buck (9,7) and the escape from the barn by the sick trick
-   (12,5).
+   the Rutting Buck (9,7), rested for, the clerics memorizing Resist Fire
+   for every member, and the escape from the barn by the sick trick (12,5).
 5. Out of Leilon by the farmhouse and north (maps 53 and 52), where the
    Waterdeep 'guards' take the party to Fell Hatchet, who has it thrown into
    the harbor; the sea elves take it into **the caverns** (map 22). Past
    Mandoul's gateway and its guardians, the confusing room and a locked door,
-   to the Zhentil captain's office (12,0), whose fall ends the second Lucky
+   to the Zhentil captain's office (12,0), its members warded with Resist
+   Fire against his hell hounds' breath and the badly hurt cured, without a
+   camp (the hounds and guards break every one in the caverns), whose fall
+   ends the second Lucky
    Paper mission (cell 128h), and up the rope ladder (15,1) to **the
    Smuggler's Dock** (map 21).
 
@@ -422,7 +429,8 @@ Llorkh's hall, training the party to levels 8 and 9).
     facing west) where the experience allows; before each fight its dead raised at the temple on Neverwinter
     Square (9,10), where it rests (the gardens' Krakens break camps until
     the ambassadors are free, the cluebook's Resting): the gardener (6,13),
-    the Krakens' bases (10,1; 15,11) and the ambassadors Froal (10,0) and
+    the Krakens' bases (10,1; 15,11, its fire giant mages met with every
+    member warded with Resist Fire) and the ambassadors Froal (10,0) and
     Wimeg (15,15), the eighth mission (cell 12Eh), then Lord Nasher (5,7).
     The route keeps clear of the guards who would find the planted orders.
 15. **Luskan** (map 31), by map 51: resting in a house (11,6), Siulajia
@@ -585,3 +593,5 @@ in [ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Bugs):
 | PROGRAM 5 left feeblemind and drained levels and raised the dead by Raise Dead, at its cost in Constitution (its RepairParty resurrects and restores) (2026-11-15) | As RepairParty |
 | *Treasures*' own effects (128 to 160) did nothing: its kampfults, yetis, remorhazes, harpies, manticores and stone guardians only struck (2026-11-15) | Most play ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), *Treasures*' own effects); the crystals, the romance, the stone golem and the yetis' fear on surprise are still to come |
 | Lightning Bolt ran *Pool of Radiance*'s bolt of 8 squares, reaching 4 squares and 1 a level, in every game (2026-11-15) | *Treasures*' own: 9 squares, reaching 4 and 4 a level ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Lightning Bolt by game) |
+| The computer chose its spells as *Pool of Radiance*'s does, three random picks a pass, and used its items (2026-11-15) | *Treasures*' own: the spell of highest AI weight with a target, bursts aimed where they take the most enemies, no items (its combatai.pas) |
+| A creature held back could join on a square walled off from its enemies, where no one reached it and the fight never ended (Mirabar's council, 2026-11-15) | It joins on the nearest free square its enemies can walk to |
