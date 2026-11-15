@@ -121,11 +121,12 @@ constexpr int armor_eaten = kit_effect_offset + 250;
 // Blank; and the caster's Blade Barrier, which no game's effect numbers (604,
 // past the conditions original_combat.h numbers 601 to 603, so wasted
 // Strength is not taken for a barrier). Its others no earlier game has (its
-// 67, 100 and 104, plus darkness_effect_offset): half harm from crushing
-// weapons, dragon fear and 4d6 of fire with a hit.
+// 67, 82, 100 and 104, plus darkness_effect_offset): half harm from crushing
+// weapons, death by a blessed bolt, dragon fear and 4d6 of fire with a hit.
 constexpr int six_weapons = 516, dancing = 518, druid_fire_protection = 519, dragon_feared = 520,
               fire_touch = 521, iron_skin = 522, mind_blank = 523, blade_barrier = 604,
-              halves_crushing = 537, darkness_dragon_fear = 570, fire_hit = 574;
+              halves_crushing = 537, slain_by_blessed_bolt = 552, darkness_dragon_fear = 570,
+              fire_hit = 574;
 } // namespace effect
 
 // What a hit carries, by the attacker's effects, in the original's order: a
@@ -3236,7 +3237,8 @@ std::vector<Held> Session::held_now(const Fighter &f) const
             auto &shot = held[static_cast<std::size_t>(shot_at)];
             const auto type = shot.carried.item.type;
             const bool arrows = c.type.has(bit::fires_arrows) && type == ammunition.arrows;
-            const bool quarrels = c.type.has(bit::fires_quarrels) && type == ammunition.quarrels;
+            const bool quarrels =
+                c.type.has(bit::fires_quarrels) && ammunition.shot_as_quarrel(type);
             const bool shoots = missile->thrown
                                     ? shot_at == at
                                     : shot.carried.item.readied() && (arrows || quarrels);
@@ -3595,18 +3597,26 @@ void Session::equip_best(Fighter &f)
         const auto &type = after[*best_ranged].carried.type;
         constexpr std::uint8_t sling = bit::fires_ammunition | bit::dexterity_missile;
         const auto ammunition = ammunition_types(game_of(identity_));
-        const auto readied_of = [&after](std::uint8_t wanted)
+        const auto readied_of = [&after](auto wanted)
         {
             return std::ranges::any_of(after,
                                        [wanted](const Held &h)
                                        {
                                            return !h.gone && h.carried.item.readied() &&
-                                                  h.carried.item.type == wanted;
+                                                  wanted(h.carried.item.type);
                                        });
         };
+        const auto arrows = [&ammunition](std::uint8_t t)
+        {
+            return t == ammunition.arrows;
+        };
+        const auto quarrels = [&ammunition](std::uint8_t t)
+        {
+            return ammunition.shot_as_quarrel(t);
+        };
         supplied = type.has(bit::thrown) || type.properties == sling ||
-                   (type.has(bit::fires_arrows) && readied_of(ammunition.arrows)) ||
-                   (type.has(bit::fires_quarrels) && readied_of(ammunition.quarrels));
+                   (type.has(bit::fires_arrows) && readied_of(arrows)) ||
+                   (type.has(bit::fires_quarrels) && readied_of(quarrels));
         thrown_with_strength =
             type.range > 1 && type.has(bit::thrown) && type.has(bit::strength_bonus);
     }
@@ -7313,6 +7323,13 @@ int Session::weapon_damage_defenses(const Fighter &attacker, Fighter &defender, 
         put_out_of_play(defender, Condition::gone);
         return 0;
     }
+    // Pools of Darkness's rakshasa struck by a blessed bolt is slain
+    // (effhndlr.pas, EffBlessedBoltKills).
+    if (defender.has(effect::slain_by_blessed_bolt) && striker && striker->blessed_bolt)
+    {
+        kill(defender, "{name} is slain.");
+        return 0;
+    }
     // Ray of Enfeeblement takes a quarter of the attacker's damage (effhndlr.pas, EffEnfeeble).
     if (attacker.has(effect::enfeebled))
     {
@@ -8734,7 +8751,7 @@ void take_counts(Fighter &f, const std::vector<rules::CarriedEquipment> &invento
                  const Content &content)
 {
     namespace bit = por::item_property;
-    const auto [arrows_type, quarrels_type] = ammunition_types(content.game);
+    const auto ammunition = ammunition_types(content.game);
     for (const auto &carried : inventory)
     {
         const auto record = por::item_of_original_key(carried.definition);
@@ -8766,11 +8783,11 @@ void take_counts(Fighter &f, const std::vector<rules::CarriedEquipment> &invento
             continue;
         }
         const auto &launcher = content.item_types[static_cast<std::size_t>(f.numbers.weapon_type)];
-        const bool shot =
-            missile->thrown
-                ? record->type == f.numbers.weapon_type
-                : (launcher.has(bit::fires_arrows) && record->type == arrows_type) ||
-                      (launcher.has(bit::fires_quarrels) && record->type == quarrels_type);
+        const bool shot = missile->thrown ? record->type == f.numbers.weapon_type
+                                          : (launcher.has(bit::fires_arrows) &&
+                                             record->type == ammunition.arrows) ||
+                                                (launcher.has(bit::fires_quarrels) &&
+                                                 ammunition.shot_as_quarrel(record->type));
         if (shot)
         {
             f.shot_item = carried.inventory_id;

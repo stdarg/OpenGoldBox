@@ -69,6 +69,9 @@ struct StrikingItem
     // A quarrel named with Curse's word 135, which sends a rakshasa (its
     // effect 130) away for good (effhndlr.pas, EffBanishByWeapon).
     bool banishing{};
+    // Pools of Darkness's blessed bolt (item type 74), which slays a
+    // rakshasa (its effect 82; effhndlr.pas, EffBlessedBoltKills).
+    bool blessed_bolt{};
 
     bool operator==(const StrikingItem &) const = default;
 };
@@ -286,10 +289,19 @@ struct CarriedItem
                                               std::span<const por::EffectRecord> effects = {});
 
 // The item types of a game's arrows and quarrels (charhlp.pas, RecalcStats):
-// 73 and 28 in Pool of Radiance and Curse, 30 and 12 in Secret.
+// 73 and 28 in Pool of Radiance and Curse, 30 and 12 in Secret and Pools of
+// Darkness, whose crossbows also shoot its blessed bolts (type 74) as
+// quarrels.
 struct AmmunitionTypes
 {
     std::uint8_t arrows{}, quarrels{};
+    // 0 in a game without them.
+    std::uint8_t blessed_bolts{};
+
+    [[nodiscard]] bool shot_as_quarrel(std::uint8_t type) const noexcept
+    {
+        return type == quarrels || (blessed_bolts != 0 && type == blessed_bolts);
+    }
 };
 
 [[nodiscard]] AmmunitionTypes ammunition_types(GoldBoxGame game) noexcept;

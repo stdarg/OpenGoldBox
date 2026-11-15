@@ -4369,6 +4369,44 @@ void a_quarrel_banishes_the_rakshasa()
     check(logged(*plain.session, "{name} is banished.") == 0, "Another blow only wounds it");
 }
 
+// Pools of Darkness's rakshasa (its effect 82) is slain by a blessed bolt
+// (item type 74; effhndlr.pas, EffBlessedBoltKills), and a crossbow shoots
+// blessed bolts as quarrels (charhlp.pas, RecalcStats).
+void a_blessed_bolt_slays_the_rakshasa()
+{
+    const auto slain_by_blessed_bolt = original::canonical_effect(82, darkness_game);
+    auto rakshasa = creature(200);
+    rakshasa.effects = {{slain_by_blessed_bolt, 0, 0, false}};
+    auto archer = monster({2, 1, 4, 0}, {}, {});
+    archer.striker = original::StrikingItem{.blessed_bolt = true};
+    const auto slain = attack_until(
+        archer, rakshasa,
+        [](const rules::CombatSession &session)
+        {
+            return logged(session, "{name} is slain.") > 0;
+        },
+        353, darkness_game);
+    check(logged(*slain.session, "{name} is slain.") == 1 &&
+              view_of(slain.session->snapshot(), "Victim").hit_points == 0,
+          "A blessed bolt slays the rakshasa");
+    archer.striker = original::StrikingItem{.plus = 4};
+    const auto wounded = attack_until(
+        archer, rakshasa,
+        [](const rules::CombatSession &session)
+        {
+            return logged(session, "{attacker} hits {name} for {damage}.") > 2;
+        },
+        353, darkness_game);
+    check(logged(*wounded.session, "{name} is slain.") == 0, "Another bolt only wounds it");
+
+    const auto ammunition = original::ammunition_types(darkness_game);
+    check(ammunition.arrows == 30 && ammunition.shot_as_quarrel(12) &&
+              ammunition.shot_as_quarrel(74) &&
+              !original::ammunition_types(GoldBoxGame::secret_of_the_silver_blades)
+                   .shot_as_quarrel(74),
+          "Pools of Darkness's crossbow shoots quarrels and blessed bolts");
+}
+
 // Sight weighs the original's heights (pathing.pas, WalkLine): a square
 // blocks it when its blocking is above the clearance of the square looked
 // from, so ground that stops a step may not stop an arrow, and one on high
@@ -5080,6 +5118,7 @@ int main()
         strength_spells_strengthen();
         out_of_doors();
         a_quarrel_banishes_the_rakshasa();
+        a_blessed_bolt_slays_the_rakshasa();
         readied_items_give_their_effects();
         later_games_effects_take_their_own_numbers();
         difficulty_changes_the_monsters();

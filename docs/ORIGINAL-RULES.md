@@ -550,15 +550,21 @@ Journal), chosen by the game as the others' are (2026-11-14):
     count starts again each time she attacks, and her further and second
     attacks keep their own damage (EffMultiAttackNewWeapons, run as the
     attacker's damage is reckoned, after Ray of Enfeeblement and dragon
-    fear).
-  - *Its own, not played yet:* a giant-slaying sword (75), the blessed
-    bolt that slays a rakshasa (82), the big red, green, blue and black
+    fear). The blessed bolt (82, 2026-11-15): a rakshasa struck by a bolt
+    of item type 74, its blessed bolts, is slain, whatever the blow's
+    damage (EffBlessedBoltKills, as the defender weighs the weapon).
+  - *Its own, not played yet:* a giant-slaying sword (75), the big red,
+    green, blue and black
     dragons' breaths (83, 90, 91, 96), the bulette's rake (99), the
     paralyzing and charming gazes (114, 124), the beholders' rays (117,
     which the original plays as nothing) and the vorpal blade (115).
   - Its records' type flags, "immunities" and magic resistance are read
     (bytes 420, 421 and 491), *Secret*'s bits, so a creature is a snake, a
     mammal, a ranger's foe or unliving as in *Secret*.
+- **Arrows and quarrels** are *Secret*'s item types, 30 and 12, and its
+  crossbows shoot its blessed bolts (type 74) as quarrels, from the one bolt
+  place (`charhlp.pas`, `RecalcStats`, 2026-11-15). Until then OpenGoldBox
+  looked for the earlier games' 73 and 28, so a bow found no arrows.
 - **Its fights play *Secret*'s rules where its reconstruction does as
   *Secret*'s** (`combat.pas`, `cbtacts.pas`, `magic.pas`, 2026-11-15): the
   round's order made once as it begins, a delay going last, a spell begun

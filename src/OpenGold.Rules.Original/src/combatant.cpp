@@ -59,7 +59,8 @@ std::vector<int> numbers_of(const Combatant &c)
                                    c.striker ? c.striker->plus : 0,
                                    c.striker && c.striker->silver ? 1 : 0,
                                    c.striker ? c.striker->weapon_class : 0,
-                                   c.striker && c.striker->banishing ? 1 : 0,
+                                   (c.striker && c.striker->banishing ? 1 : 0) |
+                                       (c.striker && c.striker->blessed_bolt ? 2 : 0),
                                    c.weapon_type,
                                    c.wards_gaze ? 1 : 0,
                                    c.mirror ? 1 : 0,
@@ -207,7 +208,8 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
     c.race = *next++;
     if (*next++ != 0)
     {
-        c.striker = StrikingItem{next[0], next[1] != 0, next[2], next[3] != 0};
+        c.striker =
+            StrikingItem{next[0], next[1] != 0, next[2], (next[3] & 1) != 0, (next[3] & 2) != 0};
     }
     next += 4;
     c.weapon_type = *next++;
@@ -290,6 +292,20 @@ const CarriedItem *readied_of_type(std::span<const CarriedItem> carried, std::ui
     return found == carried.end() ? nullptr : &*found;
 }
 
+// The readied stack a crossbow shoots: quarrels, or Pools of Darkness's
+// blessed bolts.
+const CarriedItem *readied_quarrels(std::span<const CarriedItem> carried,
+                                    const AmmunitionTypes &ammunition)
+{
+    const auto found =
+        std::find_if(carried.begin(), carried.end(),
+                     [&ammunition](const CarriedItem &c)
+                     {
+                         return c.item.readied() && ammunition.shot_as_quarrel(c.item.type);
+                     });
+    return found == carried.end() ? nullptr : &*found;
+}
+
 // Name word 186 is "Holding": a readied bag of holding carries 5,000 coins'
 // weight for nothing (charhlp.pas, RecalcStats).
 constexpr std::uint8_t holding_word = 186;
@@ -346,7 +362,7 @@ Missile missile_of(const por::CharacterRecord &record, std::span<const CarriedIt
         }
         if (type.has(bit::fires_quarrels))
         {
-            shot = readied_of_type(carried, ammunition.quarrels);
+            shot = readied_quarrels(carried, ammunition);
         }
     }
     m.needs_no_ammunition =
@@ -387,7 +403,7 @@ std::optional<StrikingItem> striker_of(std::span<const CarriedItem> carried,
     if (!weapon->type.has(bit::thrown) && weapon->type.has(bit::fires_ammunition))
     {
         const auto *shot =
-            weapon->type.has(bit::fires_quarrels) ? readied_of_type(carried, ammunition.quarrels)
+            weapon->type.has(bit::fires_quarrels) ? readied_quarrels(carried, ammunition)
             : weapon->type.has(bit::fires_arrows) ? readied_of_type(carried, ammunition.arrows)
                                                   : nullptr;
         strikes = shot ? shot : weapon;
@@ -396,7 +412,9 @@ std::optional<StrikingItem> striker_of(std::span<const CarriedItem> carried,
     // with word 135 there banishes a rakshasa.
     const auto &words = strikes->item.name_components;
     return StrikingItem{strikes->item.magic_bonus, words[2] == 177, strikes->type.damage_type,
-                        strikes->item.type == ammunition.quarrels && words[2] == 135};
+                        strikes->item.type == ammunition.quarrels && words[2] == 135,
+                        ammunition.blessed_bolts != 0 &&
+                            strikes->item.type == ammunition.blessed_bolts};
 }
 
 // A mirror (name word 118 in any part) or the wooden holy symbol (word 152
@@ -817,7 +835,7 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
         }
         int plus = weapon->item.magic_bonus;
         const auto ammunition = ammunition_types(record.game);
-        const auto *bolts = readied_of_type(carried, ammunition.quarrels);
+        const auto *bolts = readied_quarrels(carried, ammunition);
         const auto *arrows = readied_of_type(carried, ammunition.arrows);
         if (type.has(bit::fires_quarrels) && bolts)
         {
@@ -982,6 +1000,10 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
 
 AmmunitionTypes ammunition_types(GoldBoxGame game) noexcept
 {
+    if (game == GoldBoxGame::pools_of_darkness)
+    {
+        return AmmunitionTypes{30, 12, 74};
+    }
     return game == GoldBoxGame::secret_of_the_silver_blades ? AmmunitionTypes{30, 12}
                                                             : AmmunitionTypes{73, 28};
 }
@@ -1109,7 +1131,7 @@ std::optional<ReadyRefusal> readying_refusal(const CarriedItem &chosen,
     const auto place = chosen.type.worn_location;
     const auto ammunition = ammunition_types(game);
     const bool shot =
-        chosen.item.type == ammunition.arrows || chosen.item.type == ammunition.quarrels;
+        chosen.item.type == ammunition.arrows || ammunition.shot_as_quarrel(chosen.item.type);
     unsigned hands = chosen.type.hands, rings = 0;
     for (const auto &other : readied)
     {
@@ -1117,7 +1139,10 @@ std::optional<ReadyRefusal> readying_refusal(const CarriedItem &chosen,
         const auto other_place = other.type.worn_location;
         rings += other_place == first_ring_slot ? 1 : 0;
         const bool same_place = place <= boots_slot && other_place == place;
-        const bool same_stack = shot && other.item.type == chosen.item.type;
+        // Quarrels and blessed bolts fill the one bolt place.
+        const bool same_stack = shot && (other.item.type == chosen.item.type ||
+                                         (ammunition.shot_as_quarrel(other.item.type) &&
+                                          ammunition.shot_as_quarrel(chosen.item.type)));
         if (same_place || same_stack)
         {
             return ReadyRefusal::place_taken;
