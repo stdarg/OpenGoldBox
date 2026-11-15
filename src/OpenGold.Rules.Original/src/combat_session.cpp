@@ -32,7 +32,7 @@ using rules::Side;
 
 // The original counts movement in half-moves: 2 a straight step, 3 a diagonal one.
 constexpr rules::StepCosts half_moves{2, 3, 2, 4, 0};
-constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 23";
+constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 24";
 
 enum class Condition : unsigned
 {
@@ -163,6 +163,9 @@ constexpr int gateway_paralyzing_gaze = 1126, fire_harms_more = 1148, drinks_blo
 // (144), a rat's disease (145), a quick start (146), a gorgimera's stone
 // breath (148), the yetis' grabs (149 to 151), more harm from fire (153)
 // and swallowing whole (155).
+// Its crystals, which a creature gives up as it falls in a crystal battle
+// (128 to 130: EffRedCrystal, EffGreenCrystal, EffBlueCrystal).
+constexpr int red_crystal = 1328;
 constexpr int halves_elements = 1333, stone_to_flesh_kills = 1334, slug_acid = 1337,
               hell_hound_breath = 1338, quarter_from_edges = 1341, effects_proof = 1342,
               manticore_spines = 1343, crushes = 1344, rat_disease = 1345, quick_start = 1346,
@@ -854,11 +857,11 @@ class Session final : public rules::CombatSession
   public:
     Session(rules::Identity identity, rules::Battlefield board, std::vector<Fighter> fighters,
             std::uint64_t seed, unsigned morale, bool outdoors, bool escape_ends_fight,
-            int party_facing, int party_move_modifier)
+            int party_facing, int party_move_modifier, bool crystals)
         : identity_(std::move(identity)), board_(std::move(board)), fighters_(std::move(fighters)),
           random_{seed}, morale_threshold_(std::min(morale, 100U)), outdoors_(outdoors),
           escape_ends_fight_(escape_ends_fight), party_facing_(party_facing),
-          party_move_modifier_(party_move_modifier)
+          party_move_modifier_(party_move_modifier), crystals_(crystals)
     {
         rules::validate_battlefield(board_);
         // Each creature starts turned along the party's facing, the party's
@@ -923,6 +926,11 @@ class Session final : public rules::CombatSession
     // (rules::Encounter).
     int party_facing_{};
     int party_move_modifier_{};
+    // A crystal battle (rules::Encounter::crystals), and the crystal given
+    // up in it, after which the others are smashed (combat.pas, its
+    // cbTailFlag2 and gameState's lastCrystal).
+    bool crystals_{};
+    std::optional<unsigned> crystal_;
     std::vector<por::ItemTemplate> item_types_;
 
     // The direction along the party's facing on the field: north gives
@@ -1069,6 +1077,7 @@ class Session final : public rules::CombatSession
     void inflict(Fighter &target, int damage);
     void slay_helpless(Fighter &attacker, Fighter &defender);
     void end_effects_at_zero(Fighter &f);
+    void give_up_crystal(Fighter &f);
     void release(Fighter &holder, int code);
     void on_hit(Fighter &attacker, Fighter &defender, int phase, int primary_hits, int natural,
                 int attack_roll);
@@ -2135,6 +2144,49 @@ void Session::end_effects_at_zero(Fighter &f)
         else
         {
             f.remove(code);
+        }
+    }
+    // Its effects at 0 Hit Points then play (fxengine.pas, condition
+    // ZERO_HIT_POINTS); one gone off the field has none.
+    if (f.condition != Condition::fled && f.condition != Condition::surrendered)
+    {
+        give_up_crystal(f);
+    }
+}
+
+// In a crystal battle the first creature carrying a crystal to fall gives
+// it to the party, and every other one still fighting smashes its own, so
+// that one battle yields one crystal (effhndlr.pas, EffRedCrystal and
+// ShowCrystalSmash; the cluebook's Crystals).
+void Session::give_up_crystal(Fighter &f)
+{
+    if (!crystals_ || crystal_)
+    {
+        return;
+    }
+    const auto carried = [](const Fighter &bearer) -> std::optional<unsigned>
+    {
+        for (unsigned colour = 0; colour < 3; ++colour)
+        {
+            if (bearer.has(effect::red_crystal + static_cast<int>(colour)))
+            {
+                return colour;
+            }
+        }
+        return std::nullopt;
+    };
+    const auto colour = carried(f);
+    if (!colour)
+    {
+        return;
+    }
+    crystal_ = colour;
+    f.remove(effect::red_crystal + static_cast<int>(*colour));
+    for (const auto &other : fighters_)
+    {
+        if (other.able() && carried(other))
+        {
+            log({"{name} smashes a crystal.", {{"name", other.name}}});
         }
     }
 }
@@ -9137,6 +9189,7 @@ rules::Snapshot Session::snapshot() const
     state.actor = actor_;
     state.outcome = outcome_;
     state.escape_side = escape_side_;
+    state.crystal = crystal_;
     state.battlefield = board_;
     state.log_entries = log_;
     std::vector<const Fighter *> order;
@@ -9664,7 +9717,8 @@ std::string Session::save() const
     }
     out(random_.value, round_, revision_, actor_, static_cast<unsigned>(outcome_),
         morale_threshold_, outdoors_, escape_ends_fight_, escape_side_.value_or(4), party_facing_,
-        party_move_modifier_, hostile_hit_points_percent_, clouds_.size());
+        party_move_modifier_, crystals_, crystal_.value_or(3), hostile_hit_points_percent_,
+        clouds_.size());
     for (const auto &cloud : clouds_)
     {
         out(cloud.caster, cloud.index, cloud.corner.x, cloud.corner.y,
@@ -9847,6 +9901,11 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
     }
     session->party_facing_ = in.as<int>();
     session->party_move_modifier_ = in.as<int>();
+    session->crystals_ = in.as<bool>();
+    if (const auto colour = in.as<unsigned>(); colour < 3)
+    {
+        session->crystal_ = colour;
+    }
     session->hostile_hit_points_percent_ = in.as<int>();
     const auto clouds = in.as<std::size_t>();
     if (clouds > 64)
@@ -10267,10 +10326,10 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
             f.numbers.morale = non_player + threshold / 2;
         }
     }
-    auto session = std::make_unique<Session>(std::move(identity), std::move(encounter.battlefield),
-                                             std::move(fighters), seed, threshold,
-                                             encounter.outdoors, encounter.escape_ends_fight,
-                                             encounter.party_facing, encounter.party_move_modifier);
+    auto session = std::make_unique<Session>(
+        std::move(identity), std::move(encounter.battlefield), std::move(fighters), seed, threshold,
+        encounter.outdoors, encounter.escape_ends_fight, encounter.party_facing,
+        encounter.party_move_modifier, encounter.crystals);
     session->know_item_types(content.item_types);
     session->play_gazes(gazes_played);
     return session;

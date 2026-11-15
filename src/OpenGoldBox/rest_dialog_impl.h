@@ -292,6 +292,23 @@ void RolfTourView::refresh_rest()
         }
     }
     const bool use_visible = refresh_rest_use(infos, spending);
+    // Treasures' camp names the crystals the party holds (camp.pas,
+    // CampMainMenu).
+    if (const auto *vga = dax(); vga && vga->camp_crystals() != 0)
+    {
+        const unsigned held = vga->camp_crystals();
+        String crystals = rest_text(N_("The party has acquired the...")) + "\n";
+        for (const auto &[bit, name] :
+             {std::pair{1U, N_("Red crystal")}, std::pair{2U, N_("Green crystal")},
+              std::pair{4U, N_("Blue crystal")}})
+        {
+            if ((held & bit) != 0)
+            {
+                crystals += "    " + rest_text(name) + "\n";
+            }
+        }
+        details = crystals + "\n" + details;
+    }
     presentation::required_node<RichTextLabel>(*w, "Info").set_text(details);
     presentation::required_node<Label>(*w, "Result").set_text(rest_result_);
     auto &layout = presentation::required_node<Node>(*w, "Layout");

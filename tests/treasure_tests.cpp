@@ -368,10 +368,15 @@ void the_camp_fixes_the_party()
     check(session.camp_offers_crown() && session.camp_crown() &&
               !session.snapshot().dialogue.empty(),
           "The crown tells the luck: " + session.snapshot().dialogue);
+    // The camp names the crystals the party holds (cell 3Ch: 1 red, 2
+    // green, 4 blue).
+    check(session.camp_crystals() == 0, "No crystal yet");
+    TourAccess::set_variable(session, opengold::por::EclAddress{0x3C}, 5);
+    check(session.camp_crystals() == 5, "The red and blue crystals held");
 
     // OPENGOLD_TREASURE_CAMP_FIXTURE saves the camp, the fighter wounded
-    // again and the crown held, for the camp dialog's check
-    // (treasure_camp.cmake).
+    // again, the crown and the red and blue crystals held, for the camp
+    // dialog's check (treasure_camp.cmake).
     if (const char *fixture = std::getenv("OPENGOLD_TREASURE_CAMP_FIXTURE"))
     {
         auto hurt = party->checkpoint();

@@ -755,6 +755,15 @@ bool RolfTourSession::camp_offers_crown() const
            machine_.variable(crown) != 0 && machine_.variable(luck_state) != last_reading_given;
 }
 
+unsigned RolfTourSession::camp_crystals() const
+{
+    constexpr EclAddress crystals_held{0x3C};
+    constexpr unsigned every_crystal = 7;
+    return game() == GoldBoxGame::treasures_of_the_savage_frontier
+               ? machine_.variable(crystals_held) & every_crystal
+               : 0;
+}
+
 bool RolfTourSession::camp_crown()
 {
     if (!camp_offers_crown())

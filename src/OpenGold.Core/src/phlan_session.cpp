@@ -1849,6 +1849,17 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
             results.push_back(
                 {game_cell(ecl_party_facing), static_cast<std::uint16_t>(*result.escape_side)});
         }
+        // A Treasures crystal battle's crystal joins those the party holds
+        // (cell 3Ch: 1 red, 2 green, 4 blue), and cell 3Eh tells the script
+        // which it was (effhndlr.pas, EffRedCrystal).
+        if (result.crystal)
+        {
+            constexpr EclAddress crystals_held{0x3C}, last_crystal{0x3E};
+            results.push_back(
+                {crystals_held, static_cast<std::uint16_t>(machine_.variable(crystals_held) |
+                                                           1U << *result.crystal)});
+            results.push_back({last_crystal, static_cast<std::uint16_t>(*result.crystal)});
+        }
         // The items the monsters leave wait for the party to take them; the
         // script hears the result once the party leaves the treasure.
         if (!treasure_pile_.empty())
@@ -3999,6 +4010,11 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             constexpr EclAddress gateway_combat_mode{0x4D01};
             encounter_->escape_ends_fight = game() == GoldBoxGame::gateway_to_the_savage_frontier &&
                                             machine_.variable(gateway_combat_mode) == 1;
+            // Treasures' crystal battles, which their scripts mark by cell
+            // 3Dh (gameState's crystalsActive).
+            constexpr EclAddress treasures_crystals_active{0x3D};
+            encounter_->crystals = game() == GoldBoxGame::treasures_of_the_savage_frontier &&
+                                   machine_.variable(treasures_crystals_active) != 0;
             // PARTY_MOVE_MODIFIER, which the fight's end clears (postcbt.pas).
             encounter_->party_move_modifier =
                 static_cast<int>(machine_.variable(game_cell(EclAddress{0x6E72})) & 0xFF);

@@ -5118,6 +5118,61 @@ void gateway_effects_play_their_own()
     check(view_of(fight.session->snapshot(), "Monster").hit_points > 400, "Vaalgamon regenerates");
 }
 
+// Treasures' crystal battles (its effhndlr.pas, EffRedCrystal and
+// ShowCrystalSmash): the first creature carrying a crystal to fall gives it
+// up, and the others smash theirs; outside such a battle no crystal is won.
+void treasures_crystal_battle_yields_one_crystal()
+{
+    constexpr auto treasures = GoldBoxGame::treasures_of_the_savage_frontier;
+    auto fighter = creature(50);
+    fighter.thac0 = -20;
+    fighter.attacks[0] = {2, 1, 2, 40};
+    const auto bearer = [&](int code)
+    {
+        auto c = creature(5);
+        c.effects.push_back({original::canonical_effect(code, treasures), 0, 0, false});
+        return c;
+    };
+    const auto battle = [&](bool crystals)
+    {
+        return arrange({{"Fighter", rules::Side::party, {3, 3}, fighter},
+                        {"Red", rules::Side::opposition, {2, 2}, bearer(128)},
+                        {"Green", rules::Side::opposition, {4, 3}, bearer(129)},
+                        {"Blue", rules::Side::opposition, {2, 4}, bearer(130)}},
+                       47, {}, 100, treasures, false, false,
+                       [crystals](rules::Encounter &encounter)
+                       {
+                           encounter.crystals = crystals;
+                       });
+    };
+    auto fight = battle(true);
+    auto &session = *fight.session;
+    until_turn_of(session, "Fighter");
+    session.submit(order(session, "melee", "Green"));
+    check(view_of(session.snapshot(), "Green").hit_points <= 0 && session.snapshot().crystal == 1U,
+          "The green crystal's bearer falls first: the party has its crystal");
+    const auto smashes = [&](std::string_view name)
+    {
+        const auto line = std::string(name) + " smashes a crystal.";
+        return std::ranges::count(session.snapshot().log_entries, line, &rules::LogEntry::english);
+    };
+    check(smashes("Red") == 1 && smashes("Blue") == 1 && smashes("Green") == 0,
+          "The other bearers smash theirs");
+    until_turn_of(session, "Fighter");
+    session.submit(order(session, "melee", "Red"));
+    check(view_of(session.snapshot(), "Red").hit_points <= 0 && session.snapshot().crystal == 1U,
+          "A second bearer's fall gives no other crystal");
+    const auto restored = fight.module->restore(session.save());
+    check(restored && restored->snapshot().crystal == 1U, "A saved fight keeps the crystal won");
+
+    auto ordinary = battle(false);
+    until_turn_of(*ordinary.session, "Fighter");
+    ordinary.session->submit(order(*ordinary.session, "melee", "Green"));
+    check(!ordinary.session->snapshot().crystal &&
+              logged(*ordinary.session, "{name} smashes a crystal.") == 0,
+          "Outside a crystal battle no crystal is won");
+}
+
 // Treasures' own effects (its effhndlr.pas): a kampfult crushes what it
 // hits, a yeti grabs and a remorhaz swallows whole at an attack roll of 20.
 void treasures_effects_play_their_own()
@@ -5844,6 +5899,7 @@ int main()
         gateway_effects_play_their_own();
         each_game_bolts_its_own_length();
         treasures_effects_play_their_own();
+        treasures_crystal_battle_yields_one_crystal();
         difficulty_changes_the_monsters();
         heights_decide_sight();
         the_party_facing_and_movement();

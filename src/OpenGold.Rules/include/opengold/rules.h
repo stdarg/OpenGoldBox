@@ -748,6 +748,10 @@ struct Encounter
     // What the script adds to the party's movement in this fight (the
     // original's PARTY_MOVE_MODIFIER, a byte that wraps).
     int party_move_modifier{};
+    // Treasures of the Savage Frontier's crystal battles (its script cell
+    // 3Dh set): the first creature carrying a crystal to fall gives it up,
+    // and the others smash theirs (Snapshot::crystal).
+    bool crystals{};
 };
 
 // A weapon attack as the rules resolve it: the attack roll's bonus and the
@@ -1041,6 +1045,9 @@ struct Snapshot
     // The side of the field (0 north, 1 east, 2 south, 3 west) a party member
     // ran off to end a fight that one escape ends (Encounter::escape_ends_fight).
     std::optional<unsigned> escape_side;
+    // The crystal the party took in a crystal battle (Encounter::crystals):
+    // 0 red, 1 green, 2 blue.
+    std::optional<unsigned> crystal;
     // Squares a spell makes Heavily Obscured, such as Fog Cloud's.
     std::vector<Cell> obscured;
     // Squares inside Silence.

@@ -1,10 +1,11 @@
 extends SceneTree
 
 # Treasures' camp on the real town screen (camp.pas, CampMainMenu): the camp
-# dialog offers Fix and, while the party holds Amanitas's crown, Crown. Crown
-# tells the luck; Fix heals the wounded member as the casters' slots allow.
-# Run by tests/treasure_camp.cmake with --camp-save=<a Treasures save of a
-# party in the fortress, a member wounded and the crown held>.
+# dialog names the crystals the party holds and offers Fix and, while the
+# party holds Amanitas's crown, Crown. Crown tells the luck; Fix heals the
+# wounded member as the casters' slots allow. Run by tests/treasure_camp.cmake
+# with --camp-save=<a Treasures save of a party in the fortress, a member
+# wounded, the crown and the red and blue crystals held>.
 
 const SAVE_NAME := "Fortress camp"
 
@@ -118,6 +119,9 @@ func run_checks() -> void:
 	for button in ["Start", "Fix", "Crown", "Finish"]:
 		var shown: Button = dialog.get_node(button)
 		require(shown.visible and not shown.disabled, "The camp dialog offers " + button)
+	var info: String = dialog.get_node("Info").get_parsed_text()
+	require(info.contains("The party has acquired the...") and info.contains("Red crystal") and info.contains("Blue crystal") and not info.contains("Green crystal"),
+		"The camp names the crystals held: " + info)
 	await press("CampaignTown/RestDialog/Crown")
 	require(not dialog.visible, "Crown puts the dialog away")
 	var reading := dialogue()
@@ -130,5 +134,5 @@ func run_checks() -> void:
 	await play_on()
 	require(exploring(), "The party explores after the Fix: " + dialogue())
 	require(party_hp() > hurt, "The Fix heals the wounded member: " + str(hurt) + " -> " + str(party_hp()) + "; " + dialogue())
-	print("Treasures camp passed: Crown tells the luck, Fix heals the party.")
+	print("Treasures camp passed: the crystals named, Crown tells the luck, Fix heals the party.")
 	quit(0)

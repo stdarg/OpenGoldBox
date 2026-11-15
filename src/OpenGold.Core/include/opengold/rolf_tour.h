@@ -504,6 +504,9 @@ class RolfTourSession
     bool camp_fix();
     [[nodiscard]] bool camp_offers_crown() const;
     bool camp_crown();
+    // The crystals the party holds, which Treasures' camp shows (cell 3Ch:
+    // bit 0 red, 1 green, 2 blue); 0 in the other games.
+    [[nodiscard]] unsigned camp_crystals() const;
     // The party leaves a camp a script offered without resting. In Curse's
     // wilderness its menu returns, as the original runs the script again.
     void decline_camp();

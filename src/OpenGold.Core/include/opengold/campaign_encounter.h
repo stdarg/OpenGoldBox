@@ -145,6 +145,8 @@ struct CampaignEncounter
     // What the script adds to the party's movement in this fight
     // (rules::Encounter::party_move_modifier).
     int party_move_modifier{};
+    // A Treasures crystal battle (rules::Encounter::crystals).
+    bool crystals{};
 };
 
 // What the difficulty does to a fight's monsters and morale, those on the party's
