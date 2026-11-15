@@ -546,6 +546,22 @@ struct RouteBeat
     // player readies the counters a known fight needs (Dispel Magic against
     // Treasures' charms and holds).
     std::vector<std::string> memorize_first_of;
+    // Pools of Darkness: a spell the casters memorize a copy of for each
+    // member as they rest before the beat, and cast on each member then, as
+    // a player wards the party before a known fight (Resist Fire before
+    // Thorne's breath).
+    std::string ward_each_with;
+    // The members the ward is cast on, by name; every member when empty.
+    std::vector<std::string> ward_members;
+    // Pools of Darkness: a spell the casters memorize a copy of for each
+    // member as they rest in the beat, for a later beat's ward where no camp
+    // rests (Thorne's cave, whose camps fail until he falls).
+    std::string ward_memorized;
+    // Pools of Darkness: items each member readies again before the beat, by
+    // their original item type, the largest stack first, as a player readies
+    // a crossbow and the blessed bolts left after a fight shot the last of
+    // the readied ones and took up the sword again.
+    std::vector<std::pair<int, std::string>> ready_types;
 };
 
 // Answers that train each of the route's members a level at a hall: its
@@ -2217,11 +2233,9 @@ const std::vector<RouteBeat> &darkness_route()
         // Rested, east with the four items to the chamber the giants fortify
         // (14,8): the party uses the staves, the elementals seal the breaches,
         // Vala charges after the Vaasan army, and the party beats the Vaasans
-        // who got through (cell 1ABh 128). Their seven mages hold the party
-        // with Hold Monster before it can act and twelve warriors slay the
-        // held, with every dice the route tries: there the test wins the fight
-        // (a stand-in, until the route's player gears and wards the party as a
-        // player would, with the cave's treasure and its own protections).
+        // who got through (cell 1ABh 128), seven mages who cast Hold Monster
+        // and twelve warriors; the route's player has won it since
+        // 2026-11-15 (until then a stand-in the test won).
         const auto to_breach = route.size();
         walk_passages(route, 37,
                       {{1, 13, D::east},
@@ -2244,7 +2258,6 @@ const std::vector<RouteBeat> &darkness_route()
         route[to_breach].rest_first = true;
         auto vaasans = step_beat(37, 13, 8, D::east, {"YES"});
         vaasans.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x1AB, 128};
-        vaasans.test_wins = true;
         route.push_back(vaasans);
         // Back west along the passage and out of the cave (0,8), onto the
         // area map by its door (27,2).
@@ -2871,8 +2884,12 @@ const std::vector<RouteBeat> &darkness_route()
         // to the Aerie, 300,000 (a stand-in), and the party trains as far as
         // it goes.
         route.push_back(step_beat(33, 8, 0, D::west, {"YES", "stop:REST"}));
+        // Its clerics and paladins memorize Resist Fire for every member, as
+        // a player readies the ward against Thorne's breath: no camp in his
+        // cave rests until he falls (script 34's camp entry).
         RouteBeat limbo_rest{18, 0, 0, D::north, {}};
         limbo_rest.rest_choice = "REST";
+        limbo_rest.ward_memorized = "resist_fire";
         route.push_back(limbo_rest);
         RouteBeat limbo{18, 0, 0, D::north,
                         train_darkness_party(2, {"TRAIN"}, {"MOVE ON", "THORNE"})};
@@ -2913,16 +2930,14 @@ const std::vector<RouteBeat> &darkness_route()
              {4, 1, D::west},    {3, 1, D::west},    {2, 1, D::south},   {2, 2, D::south},
              {2, 3, D::south},   {2, 4, D::west},    {1, 4, D::south},   {1, 5, D::east},
              {2, 5, D::east},    {3, 5, D::south}});
-        // Thorne, an ancient red dragon, is beaten with the Ring of Fire
-        // Resistance worn, members dead and raised after. Since the biggest
-        // red dragon's breath is played (24d10+12 of fire, three times;
-        // 2026-11-15), it burns the route's party to death with every dice,
-        // so the test wins the fight, a stand-in until the route wards the
-        // party against fire as a player would (Resist Fire on each member,
-        // which the route does not cast yet).
+        // Thorne, an ancient red dragon, and his seven red dragons breathe
+        // fire (his 24d10+12, three times): the clerics and the first paladin
+        // cast the Resist Fire memorized in Limbo on each member first, as a
+        // player wards the party, and it beats them, members dead and raised
+        // after.
         auto thorne = step_beat(34, 3, 6, D::south, {"YES"});
         thorne.rest_first = true;
-        thorne.test_wins = true;
+        thorne.ward_each_with = "resist_fire";
         thorne.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x152, 255};
         route.push_back(thorne);
         // Back the way it came to the dimensional gate (0,13), stepped
@@ -3760,34 +3775,14 @@ const std::vector<RouteBeat> &darkness_route()
         into_myth_drannor.area_steps = {C::south};
         // The gifts are unidentified: her quarrels +4 come before her
         // blessed bolts, which the ranger readies last in their place.
-        into_myth_drannor.take_items = {
-            {"Crossbow", "ranger 3"}, {"Bolt", "ranger 3"}, {"Bolt", "ranger 3"}};
+        into_myth_drannor.take_items = {{"Crossbow", "ranger 3"}, {"Bolt", "ranger 3"},
+                                        {"Bolt", "ranger 3"},     {"Bolt", "ranger 3"},
+                                        {"Bolt", "ranger 3"},     {"Bolt", "ranger 3"}};
         route.push_back(into_myth_drannor);
-        // In the ruins (map 66) the party walks south to the ruined houses
-        // (6,13), where its camps may rest (the script's events 16 and up;
-        // the cluebook's locations 17), and rests.
-        walk_passages(
-            route, 66,
-            {{15, 4, D::south},  {15, 5, D::south},  {15, 6, D::west},   {14, 6, D::west},
-             {13, 6, D::south},  {13, 7, D::south},  {13, 8, D::south},  {13, 9, D::west},
-             {12, 9, D::west},   {11, 9, D::south},  {11, 10, D::south}, {11, 11, D::south},
-             {11, 12, D::south}, {11, 13, D::south}, {11, 14, D::south}, {11, 15, D::west},
-             {10, 15, D::west},  {9, 15, D::west},   {8, 15, D::west},   {7, 15, D::west},
-             {6, 15, D::north},  {6, 14, D::north}},
-            false, false, false, {"YES"});
-        // Elsewhere its camps draw the basilisks and dracolisks that roam
-        // the ruins nine times in ten: the party walks on hurt.
-        for (auto beat = route.end() - 22; beat != route.end(); ++beat)
-        {
-            beat->camp_broken = true;
-        }
-        RouteBeat ruin_rest{66, 6, 13, D::north, {}};
-        ruin_rest.rest_first = true;
-        // A night's rest even when whole, so the casters have their spells
-        // for the rakshasas.
-        ruin_rest.rest_for_spells = true;
-        route.push_back(ruin_rest);
-        // Myth Drannor's walks make no camp but in the ruined houses.
+        // Myth Drannor's walks make no camp but in the ruined houses (the
+        // script's events 16 and up; the cluebook's locations 17): elsewhere
+        // its camps draw the basilisks and dracolisks that roam the ruins
+        // nine times in ten, so the party walks on hurt.
         const auto walk_ruins_unrested =
             [&route](std::initializer_list<std::tuple<unsigned, unsigned, D>> steps)
         {
@@ -3798,6 +3793,56 @@ const std::vector<RouteBeat> &darkness_route()
                 beat->camp_broken = true;
             }
         };
+        // In the ruins (map 66) the party walks south and east to the room of
+        // smashed artifacts (15,9, the cluebook's 6), entered by its door
+        // facing east in search mode, where it finds a stash of archery
+        // supplies: a light crossbow +3, quarrels +4 and four stacks of
+        // blessed bolts, which the second paladin takes and readies (the
+        // quarrels first, the blessed bolts in their place), so that two
+        // members shoot the rakshasas the bolts slay.
+        walk_ruins_unrested({{15, 4, D::south},
+                             {15, 5, D::south},
+                             {15, 6, D::west},
+                             {14, 6, D::west},
+                             {13, 6, D::south},
+                             {13, 7, D::south},
+                             {13, 8, D::south},
+                             {13, 9, D::east}});
+        auto archery = step_beat(66, 14, 9, D::east);
+        archery.camp_broken = true;
+        archery.searching = true;
+        archery.take_items = {{"Crossbow", "paladin 2"}, {"Bolt", "paladin 2"},
+                              {"Bolt", "paladin 2"},     {"Bolt", "paladin 2"},
+                              {"Bolt", "paladin 2"},     {"Bolt", "paladin 2"}};
+        route.push_back(archery);
+        auto searched = step_beat(66, 15, 9, D::west);
+        searched.camp_broken = true;
+        searched.passing = true;
+        searched.searching = false;
+        route.push_back(searched);
+        // Back west and south to the ruined houses (6,13), where it rests.
+        walk_ruins_unrested({{14, 9, D::west},
+                             {13, 9, D::west},
+                             {12, 9, D::west},
+                             {11, 9, D::south},
+                             {11, 10, D::south},
+                             {11, 11, D::south},
+                             {11, 12, D::south},
+                             {11, 13, D::south},
+                             {11, 14, D::south},
+                             {11, 15, D::west},
+                             {10, 15, D::west},
+                             {9, 15, D::west},
+                             {8, 15, D::west},
+                             {7, 15, D::west},
+                             {6, 15, D::north},
+                             {6, 14, D::north}});
+        RouteBeat ruin_rest{66, 6, 13, D::north, {}};
+        ruin_rest.rest_first = true;
+        // A night's rest even when whole, so the casters have their spells
+        // for the rakshasas.
+        ruin_rest.rest_for_spells = true;
+        route.push_back(ruin_rest);
         // West to the rakshasas and Banites at their altar (3,14, the
         // cluebook's 10), and back to the houses to rest.
         walk_ruins_unrested({{6, 13, D::south},
@@ -3817,6 +3862,35 @@ const std::vector<RouteBeat> &darkness_route()
         walk_ruins_unrested({{3, 14, D::north},
                              {3, 13, D::east},
                              {4, 13, D::east},
+                             {5, 13, D::south},
+                             {5, 14, D::east},
+                             {6, 14, D::north}});
+        route.push_back(ruin_rest);
+        // North to the spectres' room (3,10, the cluebook's 11), entered by
+        // its door facing west: beaten, they leave an elf's remains, whose
+        // armor the party takes (YES), and with it a light crossbow +2, quarrels
+        // +4 and two stacks of blessed bolts, which the first paladin takes and
+        // readies, so three members shoot the bolts. Back to the houses to
+        // rest, the spectres' drains given back.
+        walk_ruins_unrested({{6, 13, D::south},
+                             {6, 14, D::west},
+                             {5, 14, D::north},
+                             {5, 13, D::north},
+                             {5, 12, D::north},
+                             {5, 11, D::north},
+                             {5, 10, D::west}});
+        auto grave = step_beat(66, 4, 10, D::west, {"YES"});
+        grave.camp_broken = true;
+        grave.take_items = {{"Crossbow", "paladin 1"},
+                            {"Bolt", "paladin 1"},
+                            {"Bolt", "paladin 1"},
+                            {"Bolt", "paladin 1"}};
+        route.push_back(grave);
+        walk_ruins_unrested({{3, 10, D::east},
+                             {4, 10, D::east},
+                             {5, 10, D::south},
+                             {5, 11, D::south},
+                             {5, 12, D::south},
                              {5, 13, D::south},
                              {5, 14, D::east},
                              {6, 14, D::north}});
@@ -3857,8 +3931,30 @@ const std::vector<RouteBeat> &darkness_route()
         auto temple_rest = step_beat(66, 3, 0, D::east);
         temple_rest.rest_first = true;
         temple_rest.rest_for_spells = true;
+        // The magic-user memorizes Mind Blank for the two bearers of the most
+        // bolts, cast on them at the temple's door.
+        temple_rest.ward_memorized = "mind_blank";
         route.push_back(temple_rest);
         walk_ruins_unrested({{4, 0, D::east}});
+        // Into the temple (5,1, the cluebook's 16), where the Rakshasa
+        // Maharajah raises Tyranthraxus: the party smashes the knights'
+        // globes and beats the Maharajah, three Rukhs, two Rajahs and seven
+        // rakshasas who rush in (cell 1D8h FFh).
+        auto maharajah = step_beat(66, 5, 0, D::south, {"SMASH GLOBES"});
+        maharajah.camp_broken = true;
+        // Mind Blank turns the rakshasas' Hold Person and charms away from the
+        // ranger and the second paladin, who carry the most blessed bolts.
+        maharajah.ward_each_with = "mind_blank";
+        maharajah.ward_members = {"ranger 3", "paladin 2"};
+        // The bolts' bearers ready their crossbows and blessed bolts again
+        // (item types 27 and 74), where the last fight left them swords.
+        for (const char *bearer : {"paladin 1", "paladin 2", "ranger 3"})
+        {
+            maharajah.ready_types.emplace_back(27, bearer);
+            maharajah.ready_types.emplace_back(74, bearer);
+        }
+        maharajah.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x1D8, 255};
+        route.push_back(maharajah);
         return route;
     }();
     return beats;
@@ -5752,6 +5848,9 @@ bool walk_census(GoldBoxGame game, bool route)
     // Spells the next beat casts outside combat (RouteBeat::cast_after),
     // which each caster takes first.
     std::vector<std::string> wanted_spells;
+    // The spell the next beat casts on each member (RouteBeat::ward_each_with),
+    // of which the casters memorize a copy for each member between them.
+    std::string ward_spell;
     // Each day's spells: the strongest a caster knows at each of its levels.
     const auto memorize = [&]
     {
@@ -5948,7 +6047,17 @@ bool walk_census(GoldBoxGame game, bool route)
             return;
         }
         // Those the last Long Rest left choosing; choose_spells takes each off.
-        for (const auto id : std::vector(party->state().spell_rest->members))
+        const auto choosing = std::vector(party->state().spell_rest->members);
+        // Each caster who can memorize the ward takes a copy for every
+        // member, as far as its slots go, so that between them there is
+        // one for each whatever their slots.
+        const auto ward_copies = static_cast<std::size_t>(
+            std::ranges::count_if(party->state().slots,
+                                  [&](opengold::MemberId id)
+                                  {
+                                      return id && !party->member(id).vitals.dead;
+                                  }));
+        for (const auto id : choosing)
         {
             const auto options = party->spell_choice_options(id);
             const auto &numbers = *party->member(id).character.sheet().original;
@@ -6008,11 +6117,27 @@ bool walk_census(GoldBoxGame game, bool route)
                         return static_cast<int>(found - favorites.begin());
                     };
                     std::ranges::stable_sort(candidates, {}, rank);
-                    for (int n = 0; n < slots[static_cast<std::size_t>(level - 1)] &&
-                                    n < static_cast<int>(candidates.size());
-                         ++n)
+                    const auto level_slots =
+                        static_cast<std::size_t>(slots[static_cast<std::size_t>(level - 1)]);
+                    // The ward's copies ("#2", "#3" after the first) first,
+                    // then the other spells by rank.
+                    std::size_t taken = 0;
+                    std::vector<std::string> others;
+                    for (const auto &candidate : candidates)
                     {
-                        prepared.push_back(candidates[static_cast<std::size_t>(n)]);
+                        if (ward_spell.empty() || candidate.find(ward_spell) == std::string::npos)
+                        {
+                            others.push_back(candidate);
+                        }
+                        else if (taken < ward_copies && taken < level_slots)
+                        {
+                            prepared.push_back(candidate);
+                            ++taken;
+                        }
+                    }
+                    for (std::size_t n = 0; taken < level_slots && n < others.size(); ++n, ++taken)
+                    {
+                        prepared.push_back(others[n]);
                     }
                 }
             }
@@ -6094,9 +6219,10 @@ bool walk_census(GoldBoxGame game, bool route)
     // Blast) at the nearest enemy within its three squares, Hold Monster at
     // the strongest enemy not yet helpless, Hold Person at the strongest
     // person (not a shambling mound); Quick for the rest.
-    const auto player_turn = [](const opengold::rules::CombatSession &session,
-                                std::vector<opengold::rules::EntityId> &picked)
-        -> std::optional<opengold::rules::Command>
+    const auto player_turn =
+        [](const opengold::rules::CombatSession &session,
+           std::vector<opengold::rules::EntityId> &picked,
+           const std::set<std::string> &bolt_bearers) -> std::optional<opengold::rules::Command>
     {
         constexpr unsigned blast = 198, hold_monster = 194, hold_person = 23, mage_hold_person = 49;
         const auto spell_of = [](const opengold::rules::Command &command)
@@ -6107,9 +6233,14 @@ bool walk_census(GoldBoxGame game, bool route)
         {
             return spell == hold_person || spell == mage_hold_person;
         };
+        // The magic-user's spells of the eighth and ninth levels, the only
+        // ones that touch Pools of Darkness's rakshasas: Meteor Swarm, Power
+        // Word Kill, Mass Charm and Power Word Blind.
+        constexpr std::array<unsigned, 4> rakshasa_spells{324, 325, 320, 323};
         const auto ours = [&](unsigned spell)
         {
-            return spell == blast || spell == hold_monster || holds_people(spell);
+            return spell == blast || spell == hold_monster || holds_people(spell) ||
+                   std::ranges::find(rakshasa_spells, spell) != rakshasa_spells.end();
         };
         const auto state = session.snapshot();
         const auto unit_of = [&](opengold::rules::EntityId id)
@@ -6141,13 +6272,82 @@ bool walk_census(GoldBoxGame game, bool route)
         };
         const auto commands = session.legal_commands();
         // Pools of Darkness's rakshasas are shot from afar, where a blessed
-        // bolt slays one (its effect 82), as Nacacia bids.
+        // bolt slays one (its effect 82), as Nacacia bids: the Rajahs, whose
+        // Lightning Bolts and Ice Storms harm the most, then the rakshasas
+        // casting Magic Missiles, the Maharajah and last the Rukhs, who only
+        // strike.
+        const auto shooting_rank = [](const std::string &name)
+        {
+            return name.starts_with("RAKSHASA RAJAH")  ? 0
+                   : name.starts_with("RAKSHASA MAH")  ? 2
+                   : name.starts_with("RAKSHASA RUKH") ? 3
+                                                       : 1;
+        };
+        const opengold::rules::Command *shot = nullptr;
         for (const auto &command : commands)
         {
             if (command.verb == "ranged" && unit_of(command.target) != state.combatants.end() &&
-                unit_of(command.target)->name.starts_with("RAKSHASA"))
+                unit_of(command.target)->name.starts_with("RAKSHASA") &&
+                (!shot || shooting_rank(unit_of(command.target)->name) <
+                              shooting_rank(unit_of(shot->target)->name)))
             {
-                return command;
+                shot = &command;
+            }
+        }
+        if (shot)
+        {
+            return *shot;
+        }
+        // A member with a crossbow readied cannot shoot with an enemy next to
+        // it, nor beyond its range: against the rakshasas it steps where no
+        // enemy stands next to it, nearer the nearest rakshasa, as a player
+        // keeps the bolts' bearers clear to shoot.
+        const auto rakshasa_near = [&](opengold::rules::Cell cell)
+        {
+            int nearest = 99;
+            for (const auto &unit : state.combatants)
+            {
+                if (unit.side == opengold::rules::Side::opposition && unit.conscious &&
+                    unit.name.starts_with("RAKSHASA"))
+                {
+                    nearest = std::min(nearest, std::max(std::abs(cell.x - unit.cell.x),
+                                                         std::abs(cell.y - unit.cell.y)));
+                }
+            }
+            return nearest;
+        };
+        const auto enemy_beside = [&](opengold::rules::Cell cell)
+        {
+            return std::ranges::any_of(state.combatants,
+                                       [&](const opengold::rules::CombatantView &unit)
+                                       {
+                                           return unit.side == opengold::rules::Side::opposition &&
+                                                  unit.conscious && unit.id != state.actor &&
+                                                  std::max(std::abs(cell.x - unit.cell.x),
+                                                           std::abs(cell.y - unit.cell.y)) <= 1;
+                                       });
+        };
+        if (actor != state.combatants.end() && bolt_bearers.contains(actor->name) &&
+            rakshasa_near(actor->cell) < 99)
+        {
+            const opengold::rules::Command *step = nullptr;
+            for (const auto &command : commands)
+            {
+                if (command.verb != "move" || enemy_beside(command.destination))
+                {
+                    continue;
+                }
+                const bool clears = enemy_beside(actor->cell);
+                const bool nears = rakshasa_near(command.destination) < rakshasa_near(actor->cell);
+                if ((clears || nears) && (!step || rakshasa_near(command.destination) <
+                                                       rakshasa_near(step->destination)))
+                {
+                    step = &command;
+                }
+            }
+            if (step)
+            {
+                return *step;
             }
         }
         const opengold::rules::Command *best = nullptr;
@@ -6173,8 +6373,20 @@ bool walk_census(GoldBoxGame game, bool route)
             }
         }
         picked.clear();
-        for (const unsigned wanted : {blast, hold_monster, hold_person, mage_hold_person})
+        for (const unsigned wanted :
+             {324U, 325U, 320U, 323U, blast, hold_monster, hold_person, mage_hold_person})
         {
+            const bool rakshasas =
+                std::ranges::any_of(state.combatants,
+                                    [](const opengold::rules::CombatantView &unit)
+                                    {
+                                        return unit.side == opengold::rules::Side::opposition &&
+                                               unit.name.starts_with("RAKSHASA");
+                                    });
+            if (wanted > 300 && !rakshasas)
+            {
+                continue;
+            }
             const bool target = std::ranges::any_of(state.combatants,
                                                     [&](const opengold::rules::CombatantView &unit)
                                                     {
@@ -6319,8 +6531,54 @@ bool walk_census(GoldBoxGame game, bool route)
             {
                 std::cout << " " << unit.name << " " << unit.hit_points << "/"
                           << unit.max_hit_points;
+                // OPENGOLD_FIGHT_CELLS adds where each stands.
+                if (std::getenv("OPENGOLD_FIGHT_CELLS"))
+                {
+                    std::cout << "@" << unit.cell.x << "," << unit.cell.y;
+                }
             }
             std::cout << "\n";
+        }
+        // The members with a light crossbow readied (Pools of Darkness's item
+        // type 27), who shoot the blessed bolts at the rakshasas.
+        std::set<std::string> bolt_bearers;
+        for (const auto id : party->state().slots)
+        {
+            if (!id)
+            {
+                continue;
+            }
+            const auto &member = party->member(id);
+            // OPENGOLD_FIGHT_GEAR prints each member's memorized spells and
+            // items as a fight begins (a planning aid).
+            const bool gear = std::getenv("OPENGOLD_FIGHT_GEAR") != nullptr;
+            if (gear)
+            {
+                std::cout << "  gear: " << member.character.sheet().name << " spells";
+                for (const auto &spell : member.character.sheet().prepared_spells)
+                {
+                    std::cout << " " << spell;
+                }
+                std::cout << "\n";
+            }
+            for (const auto &item : member.character.inventory().items())
+            {
+                if (gear)
+                {
+                    std::cout << "  gear: " << member.character.sheet().name << " " << item.name
+                              << " type " << item.original_type << " x" << item.quantity
+                              << (std::ranges::find(member.equipped, item.id) !=
+                                          member.equipped.end()
+                                      ? " readied"
+                                      : "")
+                              << "\n";
+                }
+                if (item.original_type == 27 &&
+                    std::ranges::find(member.equipped, item.id) != member.equipped.end())
+                {
+                    bolt_bearers.insert(member.character.sheet().name);
+                }
+            }
         }
         // Each turn chosen as the game's combat view chooses it: the party all
         // on Quick with Quick magic on (or, as a player may set it, only the
@@ -6342,7 +6600,7 @@ bool walk_census(GoldBoxGame game, bool route)
                             : std::nullopt;
             if (!held && member && tactic == 2)
             {
-                held = player_turn(session, picked);
+                held = player_turn(session, picked, bolt_bearers);
             }
             // In a maze fight each member makes for the side the party means to
             // leave by and runs off it there.
@@ -6484,9 +6742,14 @@ bool walk_census(GoldBoxGame game, bool route)
         };
         // Try t plays seed 7 + t / 3 with tactic t % 3: everyone casting, the
         // magic-user alone casting, or a player's own choices (player_turn).
+        // OPENGOLD_FIGHT_TACTIC=N plays every try with tactic N, to see
+        // how one tactic fares (a planning aid).
+        const char *forced_tactic = std::getenv("OPENGOLD_FIGHT_TACTIC");
         const auto play_try = [&](unsigned t)
         {
-            return fight_once(7 + t / 3, t % 3);
+            return fight_once(7 + t / 3, forced_tactic
+                                             ? static_cast<unsigned>(std::stoul(forced_tactic))
+                                             : t % 3);
         };
         unsigned last = 0, best_try = 0;
         auto result = planning ? opengold::rules::Snapshot{} : play_try(0);
@@ -6575,6 +6838,55 @@ bool walk_census(GoldBoxGame game, bool route)
     bool fleeing = false;
     // The beat being played avoids the monsters it meets (RouteBeat::avoiding).
     bool avoiding = false;
+    // Readies the member's item, putting away the one item, or else the two,
+    // whose place it takes (quarrels where bolts go, a sword and shield where
+    // a crossbow goes), as a player readies gear.
+    const auto ready_in_place = [&](opengold::MemberId taker, std::uint64_t taken)
+    {
+        try
+        {
+            party->equip(taker, taken);
+        }
+        catch (const std::exception &)
+        {
+            // Something readied is in its place (quarrels where bolts go,
+            // a sword and shield where a crossbow goes): the member puts
+            // away the one item, or else the two, whose place it takes.
+            const auto readied = std::vector(party->member(taker).equipped);
+            const auto fits_without = [&](std::vector<std::uint64_t> away)
+            {
+                for (const auto item : away)
+                {
+                    party->unequip(taker, item);
+                }
+                try
+                {
+                    party->equip(taker, taken);
+                    return true;
+                }
+                catch (const std::exception &)
+                {
+                    for (const auto item : away)
+                    {
+                        party->equip(taker, item);
+                    }
+                    return false;
+                }
+            };
+            bool fitted = false;
+            for (std::size_t a = 0; a < readied.size() && !fitted; ++a)
+            {
+                fitted = fits_without({readied[a]});
+            }
+            for (std::size_t a = 0; a < readied.size() && !fitted; ++a)
+            {
+                for (std::size_t b = a + 1; b < readied.size() && !fitted; ++b)
+                {
+                    fitted = fits_without({readied[a], readied[b]});
+                }
+            }
+        }
+    };
     // Takes the first of the beat's items still to take that the treasure
     // holds, for the member named with it, and readies it, as a player gears
     // the party: true when one was taken.
@@ -6612,48 +6924,30 @@ bool walk_census(GoldBoxGame game, bool route)
                 continue;
             }
             const auto taken = party->member(*taker).character.inventory().items().back().id;
+            ready_in_place(*taker, taken);
+            // Like stacks are joined into the one readied (the items menu's
+            // JOIN), as a player joins the blessed bolts so that a fight
+            // shoots them all.
+            const auto &holder = party->member(*taker);
+            const auto definition =
+                holder.character.inventory().find(taken)
+                    ? holder.character.inventory().find(taken)->get().definition_id
+                    : std::string{};
+            std::uint64_t joined = taken;
+            for (const auto readied : holder.equipped)
+            {
+                const auto entry = holder.character.inventory().find(readied);
+                if (entry && entry->get().definition_id == definition)
+                {
+                    joined = readied;
+                }
+            }
             try
             {
-                party->equip(*taker, taken);
+                party->join_like_items(*taker, joined);
             }
             catch (const std::exception &)
             {
-                // Something readied is in its place (quarrels where bolts go,
-                // a sword and shield where a crossbow goes): the member puts
-                // away the one item, or else the two, whose place it takes.
-                const auto readied = std::vector(party->member(*taker).equipped);
-                const auto fits_without = [&](std::vector<std::uint64_t> away)
-                {
-                    for (const auto item : away)
-                    {
-                        party->unequip(*taker, item);
-                    }
-                    try
-                    {
-                        party->equip(*taker, taken);
-                        return true;
-                    }
-                    catch (const std::exception &)
-                    {
-                        for (const auto item : away)
-                        {
-                            party->equip(*taker, item);
-                        }
-                        return false;
-                    }
-                };
-                bool fitted = false;
-                for (std::size_t a = 0; a < readied.size() && !fitted; ++a)
-                {
-                    fitted = fits_without({readied[a]});
-                }
-                for (std::size_t a = 0; a < readied.size() && !fitted; ++a)
-                {
-                    for (std::size_t b = a + 1; b < readied.size() && !fitted; ++b)
-                    {
-                        fitted = fits_without({readied[a], readied[b]});
-                    }
-                }
             }
             std::cout << "  " << wanted->second << " takes and readies " << item_name << "\n";
             items_to_take.erase(wanted);
@@ -6794,7 +7088,23 @@ bool walk_census(GoldBoxGame game, bool route)
                         "Hold Monster",  "Cone of Cold", "Ice Storm",      "Fireball",
                         "Haste",         "Slow",         "Lightning Bolt", "Stinking Cloud",
                         "Magic Missile", "Sleep",        "Enlarge",        "Shield"};
-                    for (const auto name : learned)
+                    // Pools of Darkness's magic-user takes the strongest of
+                    // its new levels first: only the eighth and ninth touch
+                    // its rakshasas.
+                    constexpr std::array<std::string_view, 7> darkness_first{
+                        "Meteor Swarm",
+                        "Mind Blank",
+                        "Mass Charm",
+                        "Power Word Kill",
+                        "Power Word Blind",
+                        "Delayed Blast Fireball",
+                        "Globe of Invulnerability"};
+                    std::vector<std::string_view> wanted(learned.begin(), learned.end());
+                    if (game == GoldBoxGame::pools_of_darkness)
+                    {
+                        wanted.insert(wanted.begin(), darkness_first.begin(), darkness_first.end());
+                    }
+                    for (const auto name : wanted)
                     {
                         const auto found = std::ranges::find(s.choices, name);
                         if (found != s.choices.end())
@@ -7392,6 +7702,76 @@ bool walk_census(GoldBoxGame game, bool route)
             }
             needs["No one can cast what the beat asks"].push_back(current_beat);
         };
+        // The member named readies its largest stack of the item type
+        // (RouteBeat::ready_types).
+        const auto ready_type = [&](int type, const std::string &name)
+        {
+            for (const auto id : party->state().slots)
+            {
+                if (!id || party->member(id).character.sheet().name != name)
+                {
+                    continue;
+                }
+                const opengold::InventoryItem *largest = nullptr;
+                for (const auto &item : party->member(id).character.inventory().items())
+                {
+                    if (item.original_type == type &&
+                        (!largest || item.quantity > largest->quantity))
+                    {
+                        largest = &item;
+                    }
+                }
+                if (largest && std::ranges::find(party->member(id).equipped, largest->id) ==
+                                   party->member(id).equipped.end())
+                {
+                    std::cout << "  " << name << " readies " << largest->name << "\n";
+                    ready_in_place(id, largest->id);
+                }
+            }
+        };
+        // Each living member gets the spell from whoever has it memorized,
+        // cast in camp (RouteBeat::ward_each_with).
+        const auto ward_each_member =
+            [&](const std::string &spell_id, const std::vector<std::string> &members)
+        {
+            const auto has_ward = [&](opengold::MemberId id)
+            {
+                return id && !party->member(id).vitals.dead &&
+                       party->member(id).vitals.hit_points > 0 &&
+                       std::ranges::any_of(party->camp_actions(id),
+                                           [&](const opengold::rules::CampAction &action)
+                                           {
+                                               return action.id.ends_with(spell_id);
+                                           });
+            };
+            for (const auto target : party->state().slots)
+            {
+                if (!target || party->member(target).vitals.dead ||
+                    (!members.empty() &&
+                     std::ranges::find(members, party->member(target).character.sheet().name) ==
+                         members.end()))
+                {
+                    continue;
+                }
+                const auto caster = std::ranges::find_if(party->state().slots, has_ward);
+                if (caster == party->state().slots.end())
+                {
+                    needs["No one has the ward memorized for every member"].push_back(current_beat);
+                    return;
+                }
+                const auto actions = party->camp_actions(*caster);
+                const auto action =
+                    std::ranges::find_if(actions,
+                                         [&](const opengold::rules::CampAction &camp_action)
+                                         {
+                                             return camp_action.id.ends_with(spell_id);
+                                         });
+                std::cout << "  " << party->member(*caster).character.sheet().name << " casts "
+                          << action->id << " on " << party->member(target).character.sheet().name
+                          << "\n";
+                party->use_camp_action(*caster, target, action->id);
+            }
+        };
         try
         {
             for (const auto &beat : route_for(game))
@@ -7412,6 +7792,8 @@ bool walk_census(GoldBoxGame game, bool route)
                 {
                     break;
                 }
+                ward_spell =
+                    beat.ward_each_with.empty() ? beat.ward_memorized : beat.ward_each_with;
                 wanted_spells = beat.cast_after;
                 wanted_spells.insert(wanted_spells.end(), beat.memorize_first_of.begin(),
                                      beat.memorize_first_of.end());
@@ -7427,6 +7809,14 @@ bool walk_census(GoldBoxGame game, bool route)
                 if (beat.cure_first)
                 {
                     cure_the_hurt();
+                }
+                if (!beat.ward_each_with.empty())
+                {
+                    ward_each_member(beat.ward_each_with, beat.ward_members);
+                }
+                for (const auto &[type, name] : beat.ready_types)
+                {
+                    ready_type(type, name);
                 }
                 if (beat.memorize_first && session.can_leave() &&
                     session.camp(opengold::RestKind::long_rest))
@@ -7593,7 +7983,7 @@ bool walk_census(GoldBoxGame game, bool route)
                 {
                     std::cout << "  words: " << session.snapshot().dialogue.substr(0, 150) << "\n";
                 }
-                std::cout << "  party after " << where << ":";
+                std::cout << "  party after " << where << " (" << beat_number << "):";
                 for (const auto id : party->state().slots)
                 {
                     if (id)
@@ -7624,6 +8014,25 @@ bool walk_census(GoldBoxGame game, bool route)
                               << opengold::test::TourAccess::machine(session).variable(
                                      opengold::por::EclAddress{cell})
                               << "\n";
+                }
+                // OPENGOLD_ROUTE_SAVES=PREFIX saves the game after each of the
+                // beats OPENGOLD_ROUTE_SAVE_AT names (N,N,...), as PREFIXN.sav,
+                // for OPENGOLD_ROUTE_RESUME.
+                if (const char *prefix = std::getenv("OPENGOLD_ROUTE_SAVES");
+                    prefix && session.can_leave())
+                {
+                    const auto at = std::string(",") +
+                                    (std::getenv("OPENGOLD_ROUTE_SAVE_AT")
+                                         ? std::getenv("OPENGOLD_ROUTE_SAVE_AT")
+                                         : "") +
+                                    ",";
+                    if (at.find("," + std::to_string(beat_number) + ",") != std::string::npos)
+                    {
+                        std::ofstream file(prefix + std::to_string(beat_number) + ".sav",
+                                           std::ios::binary);
+                        file << beat_number << '\n'
+                             << opengold::encode_campaign(*party, &session, assets, game);
+                    }
                 }
             }
         }

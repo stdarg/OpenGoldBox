@@ -2292,6 +2292,53 @@ void CampaignParty::drop(MemberId id, std::uint64_t item)
     edit(id) = std::move(holder);
 }
 
+void CampaignParty::join_like_items(MemberId id, std::uint64_t item)
+{
+    editable();
+    auto holder = member(id);
+    // The original joins a stack (its record's count above 0) whose charges
+    // are fewer than two; potions and wands stay apart.
+    const auto joinable = [&holder](std::uint64_t entry)
+    {
+        const auto source = holder.item_sources.find(entry);
+        return source != holder.item_sources.end() && source->second.stored.stack_size > 0 &&
+               source->second.stored.effect_codes[0] < 2;
+    };
+    const auto selected = holder.character.inventory().find(item);
+    if (!selected || !joinable(item))
+    {
+        throw std::runtime_error("That cannot be joined");
+    }
+    const auto like = selected->get();
+    auto inventory = holder.character.inventory();
+    const std::vector<InventoryItem> entries(inventory.items().begin(), inventory.items().end());
+    constexpr std::uint32_t most = 255;
+    std::uint64_t kept = item;
+    std::uint32_t total = like.quantity;
+    for (const auto &entry : entries)
+    {
+        if (entry.id == item || entry.definition_id != like.definition_id ||
+            entry.name != like.name || !joinable(entry.id))
+        {
+            continue;
+        }
+        if (total + entry.quantity <= most)
+        {
+            total += entry.quantity;
+            inventory.remove(entry.id, entry.quantity);
+            std::erase(holder.equipped, entry.id);
+            holder.item_sources.erase(entry.id);
+            continue;
+        }
+        inventory.set_quantity(kept, most);
+        total = entry.quantity - (most - total);
+        kept = entry.id;
+    }
+    inventory.set_quantity(kept, total);
+    holder.character.replace_inventory(std::move(inventory));
+    edit(id) = std::move(holder);
+}
+
 CoinRates CampaignParty::coin_rates() const
 {
     return {rules_->coin_worth()};

@@ -388,6 +388,12 @@ class CampaignParty
     // Drop: the whole entry is gone for good, taken off first when equipped.
     // Throws, changing nothing, for a cursed item, worn or packed (SELL-1).
     void drop(MemberId id, std::uint64_t item);
+    // The original's JOIN (viewchar.pas, JoinItem): every other stack of the
+    // member's like the item (the same record and name, a stack in the
+    // original with fewer than two charges) joins it, up to 255 a stack, the
+    // rest staying in the last stack touched. Throws for an item that is
+    // not such a stack.
+    void join_like_items(MemberId id, std::uint64_t item);
     // The party's coins' rates, by its rules, and what its purse is worth in
     // gold at them.
     [[nodiscard]] CoinRates coin_rates() const;

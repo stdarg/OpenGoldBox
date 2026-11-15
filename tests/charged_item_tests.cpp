@@ -102,6 +102,38 @@ void conversion()
           "A wand counts charges and the necklace missiles; potions count themselves");
 }
 
+// The items menu's JOIN (viewchar.pas, JoinItem): like stacks join into one,
+// a charged item stays apart.
+void joining()
+{
+    CampaignParty party(module());
+    const auto id = party.add_pc(fighter());
+    constexpr std::uint8_t arrows = 73;
+    check(party.award_loot({},
+                           {original(arrows, 0, 0, 10), original(79, 23, 88),
+                            original(arrows, 0, 0, 12), original(arrows, 0, 0, 5)},
+                           "test:join"),
+          "Collect three stacks of arrows and a wand");
+    const auto before = party.member(id).character.inventory().items();
+    const auto first = before[before.size() - 4].id, wand = before[before.size() - 3].id;
+    party.join_like_items(id, first);
+    const auto after = party.member(id).character.inventory().items();
+    check(after.size() == before.size() - 2 &&
+              party.member(id).character.inventory().find(first)->get().quantity == 27 &&
+              party.member(id).character.inventory().find(wand)->get().quantity == 23,
+          "The arrows join into one stack of 27; the wand keeps its charges");
+    bool refused = false;
+    try
+    {
+        party.join_like_items(id, wand);
+    }
+    catch (const std::exception &)
+    {
+        refused = true;
+    }
+    check(refused, "A wand's charges are not a stack to join");
+}
+
 // Loot keeps its charges in the party and in a save.
 void campaign()
 {
@@ -687,6 +719,7 @@ int main()
     {
         conversion();
         campaign();
+        joining();
         potions();
         wands();
         areas();
