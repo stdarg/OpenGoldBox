@@ -270,7 +270,11 @@ the answer), CLEAR AND EXIT (it clears the text box and ends the script),
 ACTION MENU (a horizontal menu after "What do you do?") and 29h (nothing). The
 script host answers the others. CALL names three engine routines by number,
 not by address: 1 redraws the view, 2 steps the party forward and 3 shows a
-portrait's next frame; any other number does nothing.
+portrait's next frame; any other number does nothing. ADD, SUBTRACT,
+MULTIPLY, DIVIDE, AND and OR store their result in as many bytes as the
+destination's operand names (its WriteGbvm): one for a byte cell, so 1 taken
+from a cell at 0 leaves 255 there, and two for a word (2026-11-15, with
+*Treasures*).
 
 ### Script memory
 
@@ -614,13 +618,63 @@ by what it is offered:
 - **The Web Dimension (map 83, script 83),** from Limbo (MOVE ON, KALISTES
   LAND): the Eyes of Kalistes, Cynthia, asks who helped the party at the
   temple, and only when Silk's Swanmays are free (cell 25Eh 3) can it name
-  her (YES; INPUT: SILK). Silk's sister, she asks three favors: spiders from
-  the Cavern of Fireflies and drow prisoners first. The party stands at
-  (8,4), where the route stops (2026-11-15). Without Silk, LEAVE sends it
-  back to Limbo, and STAY or FIGHT sets Cynthia against it (cells 21Dh bit
-  2, 221h bit 5) and spiders fall on it. Script 72 stores one OR to address 0
-  (988Bh), which the original ignores (its GbvmZone): OpenGoldBox's later
-  engine now reads address 0 as 0 and keeps nothing.
+  her (YES; INPUT: SILK). Silk's sister, she asks three favors. The party
+  captures the drow patrol at (4,4) (CAPTURE; cell 221h bit 5), enters the
+  cave at (6,1), the Cavern of Fireflies (script 85, which runs the event
+  cell 21Ah names and sends the party back), and takes its nest of pale
+  spiders (YES, YES; cell 221h bit 4); back at (8,4) Cynthia's spiders
+  disguise the drow as the party for Kalistes' eyes, she names the Ward of
+  Safe Passage and the amulets the party needs, and asks it to kill her
+  (BEHEAD). Without Silk, LEAVE sends it back to Limbo, and STAY or FIGHT
+  sets Cynthia against it (cells 21Dh bit 2, 221h bit 5) and spiders fall on
+  it. Script 72 stores one OR to address 0 (988Bh), which the original
+  ignores (its GbvmZone): OpenGoldBox's later engine now reads address 0 as
+  0 and keeps nothing. Out by (7,9) stepped south (YES, then NO to entering
+  again) onto the web's paths: script 80, an area map like script 17
+  (picture 241), whose sites are the minis, all on map 83 with an event
+  table each by cell 1E8h (0 the ruined temple at 4,13, 1 the stockade at
+  19,3, 2 the ramparts of lava at 13,11, 3 the forest village at 23,10, 4
+  the ruined city at 37,6, 5 the village beside the road at 33,1, 6 the
+  spiderlike structure at 5,5), with the Testing Ground's gates at 13,7
+  and the Parlor's wall at 34,1. The route walks the minis by; the cluebook
+  calls them a help, not a need.
+- **The Drow Testing Ground (map 81, scripts 81 and 86),** six squares
+  north-east and three east of the ruined temple. Past the gate's guards,
+  south through the compound, ambushing two drow (12,10, YES), to the
+  barracks (13,14, entered facing east), whose drow it attacks and where it
+  rests ("BODIES LITTER THE FLOOR. YOU MAY REST HERE."; the compound's drow
+  priests break every other camp, so the walk there is unrested). Through
+  the east wall's secret door (8,14, YES, YES) into the Test (9,14): a
+  member strong enough breaks the wall (10,14; WHO, Strength at least 15 to
+  18 by a roll, the others trying again), the party pushes on through its
+  dread (11,11, PUSH FORWARD), beats the driders (11,7) and the drow mages
+  (8,4), answers the riddle with BANE (7,4), walks on through the wall of
+  flame (4,6, YES, YES), and approaches Hem (4,12, APPROACH), a drider, and
+  beats him and his kind. The table beyond (6,14) holds six magic daggers
+  and the amulets that repel spiders (cell 1FFh 1). At the altar (8,9;
+  journal entry 37) Daris flees with the Ward; the party follows round by
+  (6,9), beats his guards at (7,8) and picks the Ward up (YES): Shest, the
+  Pet of Kalistes, and his enormous spiders fall too (cell 1F7h 1). Back
+  through the Test, resting where it is hurt (the cluebook: any section it
+  has completed), and out by the compound's south way (5,15, YES).
+- **Kalistes' Parlor (maps 82 and 84, script 82),** by the paths (six
+  north-east, fourteen east) to the village beside the road (33,1) and round
+  it to the Parlor's wall of gossamer (1,4), where the spiders shy from the
+  Ward (TRY TO ENTER; script 85's event 4 sets cell 21Bh, and script 83 sends
+  the party to the Parlor's foyer, map 82 at 7,15). Locaste, without her
+  Ward, is devoured (journal entry 14). Down the chute (6,14), which the
+  Ward keeps clear of the pets (YES), into the pets' run below (map 84),
+  east and north past the driders and pets, which keep from the Ward, to
+  the egg room (2,6), where the party destroys the eggs (DESTROY): Kalistes
+  comes with seven drow champions, eight drow wizards and five pets, and
+  once she falls the slave who is Tanetal's spy calls basilisks, medusae
+  and earth elementals (journal entry 40). The party holds the Crystal Ring
+  (cell 208h 1). Up the stairs (13,4 on map 84, YES), through the upper
+  level and out by the main doors (7,15, YES); twelve squares south-west
+  and eighteen west along the paths to the ruined temple, and through the
+  black pool at (8,4) (YES) to Limbo, where Elminster rejoices at the ring
+  (journal entry 82), rests and trains the party and returns it to the
+  Realms by the way it left them, Kalistes' Temple's last portal (69: 8,5).
 
 Since 2026-11-15 the route's casters memorize spells of every level they
 have slots of (Pools of Darkness's levels 6 to 9 among them) and raise the
@@ -637,17 +691,22 @@ state does (Script memory, above). Until 2026-11-14 OpenGoldBox stepped on
 anyway, so stairs landed a square beyond their landing and a held step could
 wrap round the map's edge.
 
-One stand-in: the Vaasans who get through, seven mages and twelve
+Two stand-ins. The Vaasans who get through, seven mages and twelve
 warriors, hold the party with Hold Monster before it acts and slay the held
 with every dice the route tries, so the test wins that fight. A player
 would gear the party with the cave's treasure and ward it first; the
-route's player takes no treasure but wands. Thorne (34: 3,7), which from
-the 2026-11-15 morning the test won as well, is the route's own since that
-day: its player takes and wears the Ring of Fire Resistance from the hoard
-in room 4, as the cluebook's would, and wins. The route's party carries
-the game's own starting equipment (ORIGINAL-RULES.md, *Pools of Darkness*).
-Until the route reaches the win it passes when it plays every beat to
-the Web Dimension (map 83).
+route's player takes no treasure but wands. And Kalistes' egg room (84:
+2,6, 2026-11-15): the wizards' Hold Monster and Ice Storm, the pets'
+Disintegrate and Charm Monsters and the spy's stoning creatures beat the
+route's party (levels 13 to 16, near whole) with every dice it tries, so
+the test wins her fight and the spy's after it; a player would come
+stronger, from the minis' armor and fights, with Storm. Thorne (34: 3,7),
+which from the 2026-11-15 morning the test won as well, is the route's own
+since that day: its player takes and wears the Ring of Fire Resistance
+from the hoard in room 4, as the cluebook's would, and wins. The route's
+party carries the game's own starting equipment (ORIGINAL-RULES.md, *Pools
+of Darkness*). Until the route reaches the win it passes when it plays
+every beat to Kalistes' Temple (map 69), back from the Web Dimension.
 
 What the route needed besides (2026-11-14): a Darkness party saves and
 loads, its levels to 40, on the area map (whose script, 17, does not load
@@ -667,22 +726,19 @@ party won or came through and "not equal" when it fled. Until 2026-11-14
 OpenGoldBox left the flags as they were, so a won fight could read as lost
 and move the party back a square (the walk passed all the same).
 
-Where it stops (2026-11-15): in the Web Dimension (map 83), Cynthia
-befriended. What the scripts show of the way on: map 83 is the cluebook's
-Ruined Temple, ten squares by ten, which the planning aid walks whole;
-Cynthia stands at (8,4) (event 18, BEHEAD or REFUSE: her third favor,
-which the cluebook says to grant); the cave at (6,1) (event 20, ENTER? YES)
-is the Cavern of Fireflies, its events in script 85, as Kalistes' Temple's
-are in 72 (cell 21Ah names the event); the way out is (7,9) stepped south
-(DO YOU WANT TO LEAVE? YES), onto the web's paths (script 80, an area map
-like script 17, at 4,13), whose sites are the other minis (scripts 81 and
-82 among them: the Testing Ground, and Kalistes' Parlor on maps 82 and
-84). Next, Cynthia's favors (the cavern's spiders, drow prisoners from the
-Stockade), the minis (Storm, Dennia, the disgruntled slave), the Drow Testing
-Ground and Kalistes' Parlor, Myth Drannor and the Red Tower (scripts 66,
-70, 67), Moander (52, 53, 55), Mulmaster and the beholders' cave, Dark
-Phlan (64) and the Palace of Gothmenes (65, 74, 73), whose win (75) is in
-place. Scripts and the scripts they go on to (`opengold_scripts --inspect
+Where it stops (2026-11-15, evening): back in the Realms with the
+Crystal Ring, at Kalistes' Temple's last portal (69: 8,5), the route's
+beat 1329 (a save there: OPENGOLD_ROUTE_SAVE after the whole route). The
+way on to the area map is the way the party came down, in reverse:
+through the temple to its secret entry (0,0) and west into the slave pens
+(68: 15,1), up the drow stronghold (35; its "THE PATH LEADS" squares go up
+to 48 north of row 7, down to 68 and 69 south of it, each asked), the
+halls of Manshoon's tower (48) and Zhentil Keep (19) out to the area map.
+The planning aid with `OPENGOLD_SECRET_PREFER=YES` reaches maps 68 and 35
+from the portal but not 48. Then Myth Drannor (0,13 on the area map) and
+the Red Tower (scripts 66, 70, 67), Moander (52, 53, 55), Mulmaster and
+the beholders' cave, Dark Phlan (64) and the Palace of Gothmenes (65, 74,
+73), whose win (75) is in place. Scripts and the scripts they go on to (`opengold_scripts --inspect
 DARKNESS ECL1.DAX N`, NEW ECL): 19 to 48; 48 to 35 and 49; 35 to 41, 68,
 69; 68 to 69 and 71; 69 to 72 and 18; 66 and 70 from the area map; 70 to
 67 and 76; 67 to 75 and 77; 64 to 65 and 74; 65 to 73, 74, 75.

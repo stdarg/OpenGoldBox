@@ -594,7 +594,10 @@ new decoders.
    PROGRAM 1 after Gothmenes falls (darkness.md, The win and the route).
    *Stand-ins:* the test wins the fight with the Vaasans who get through
    Vala's breach (their mages hold the party with Hold Monster), also where
-   the best play wins it with members dead. Thorne, which the test won for
+   the best play wins it with members dead, and (2026-11-15) Kalistes'
+   fight in her egg room and the spy's after it (her drow wizards' Hold
+   Monster and Ice Storm, her pets' Disintegrate and the spy's stoning
+   creatures beat the party of levels 13 to 16). Thorne, which the test won for
    a while on 2026-11-15, is the route's own again: it takes and wears the
    Ring of Fire Resistance from his hoard (room 4) and wins. Each script starts its wandering
    monsters afresh, as the original's does (cells 97h to C8h, 2026-11-14), so
@@ -603,7 +606,8 @@ new decoders.
    scribe's office (9,4), as the cluebook says. The route's casters memorize
    spells of all nine levels (2026-11-15). The route's party
    carries the game's own starting equipment. Until the route reaches the
-   win it passes when it plays every beat to the Web Dimension (map 83).
+   win it passes when it plays every beat to Kalistes' Temple (map 69), back
+   from the Web Dimension.
    *Kalistes' Temple (2026-11-15):* in the slave pens the party helps
    Silk, beats the prison guards and frees her Swanmays (script 71), and
    rests in her room and the quiet room (1,8); in the temple it takes the
@@ -611,10 +615,20 @@ new decoders.
    oracle, wins the inner chamber's fight, destroys the statue's hands and
    steps through the portal to Limbo, where it rests and trains; then into
    the Web Dimension (script 83), where Cynthia, the Eyes of Kalistes,
-   befriends it for her sister Silk's sake. *Where it stops (2026-11-15):*
-   there, at (8,4). Next: Cynthia's favors and the Web Dimension's minis,
-   the Drow Testing Ground and Kalistes' Parlor, and on round the area map
-   to Dark Phlan (darkness.md, Where it stops). The temples' Restoration is
+   befriends it for her sister Silk's sake. *The Web Dimension
+   (2026-11-15):* the party captures drow and takes the Cavern of
+   Fireflies' spiders for Cynthia, who fakes its death and asks to be
+   killed (BEHEAD); along the web's paths (script 80) in the Drow Testing
+   Ground it beats the barracks and rests there, passes the Test's seven
+   trials and beats Daris' guards and Shest for the Ward of Safe Passage;
+   under the Ward it enters Kalistes' Parlor, drops down the chute and
+   destroys her eggs, and with the Crystal Ring goes back by the ruined
+   temple's black pool to Limbo, where it rests and trains, and returns to
+   the Realms at Kalistes' Temple's portal (69: 8,5). *Where it stops
+   (2026-11-15, evening):* there. Next: the climb back to the area map
+   through the slave pens, the drow stronghold, Manshoon's tower and
+   Zhentil Keep, then Myth Drannor and the Red Tower and on round the area
+   map to Dark Phlan (darkness.md, Where it stops). The temples' Restoration is
    to come where a beat needs it.
    *The area map is drawn (2026-11-14):* the big picture with the party's
    marker, as the original draws it. *Spell levels 8 and 9 and the new
