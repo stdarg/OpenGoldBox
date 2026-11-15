@@ -254,13 +254,22 @@ constexpr std::array<int, 30> curse_castable{158, 166, 167, 168, 169, 170, 171, 
                                              175, 176, 177, 178, 179, 180, 181, 182, 183, 184,
                                              185, 186, 187, 188, 189, 191, 192, 193, 194, 200};
 
+// Pools of Darkness's table of 126 spells, which Treasures shares and
+// Unlimited Adventures' kit keeps, its spells numbered as Pools of
+// Darkness's from 1 to 126 (its spelltab.c, docs/games/ua.md, Monsters'
+// spells).
+[[nodiscard]] constexpr bool darkness_table(GoldBoxGame game) noexcept
+{
+    return vga_engine(game) || game == GoldBoxGame::unlimited_adventures;
+}
+
 } // namespace
 
 int canonical_spell(int number, GoldBoxGame game) noexcept
 {
     // Pools of Darkness numbers its spells as Secret does, and its new ones
     // (101 to 109, 118 to 126) take numbers Secret leaves free.
-    if (game == GoldBoxGame::secret_of_the_silver_blades || vga_engine(game))
+    if (game == GoldBoxGame::secret_of_the_silver_blades || darkness_table(game))
     {
         // Secret keeps Curse's numbers but where its own spells took them.
         constexpr std::array<int, 6> own{36, 56, 63, 90, 96, 98};
@@ -277,18 +286,18 @@ int canonical_spell(int number, GoldBoxGame game) noexcept
 std::vector<int> castable_spells(GoldBoxGame game)
 {
     std::vector<int> numbers;
-    if (game == GoldBoxGame::secret_of_the_silver_blades || vga_engine(game))
+    if (game == GoldBoxGame::secret_of_the_silver_blades || darkness_table(game))
     {
         // Secret's table in its order: Curse's spells, with its own where
         // they took their numbers (Heal for Animate Dead, Harm for
         // Restoration) and after them; the 256-color engine's (Pools of
         // Darkness's and Treasures', the same table) goes on to 126.
-        const int table_size = vga_engine(game) ? 126 : 117;
+        const int table_size = darkness_table(game) ? 126 : 117;
         for (int number = 1; number <= table_size; ++number)
         {
             // Secret's rows 101 to 109 cast nothing; Pools of Darkness's
             // new spells took them.
-            const bool secret_blank = !vga_engine(game) && number >= 101 && number <= 109;
+            const bool secret_blank = !darkness_table(game) && number >= 101 && number <= 109;
             if (secret_blank)
             {
                 continue;

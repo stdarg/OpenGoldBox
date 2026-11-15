@@ -899,9 +899,15 @@ void a_ranger_learns_spells_as_a_ranger()
         return party.member(id).character.sheet().original->class_levels[ranger_slot];
     };
     check(ranger_level() == 6, "The kit's 40,001 experience makes a ranger of level 6");
+    // The magic-user spells it knows; its druid spells come with its slots.
     const auto known_spells = [&party, id]
     {
-        return party.member(id).character.sheet().original->known_spells.size();
+        return std::ranges::count_if(party.member(id).character.sheet().original->known_spells,
+                                     [](int number)
+                                     {
+                                         return opengold::original::spell(number)->caster_class ==
+                                                opengold::original::SpellClass::magic_user;
+                                     });
     };
     // Experience a level at a time, as the rules cap a gain short of two.
     unsigned awards = 0;
@@ -2088,6 +2094,28 @@ void the_kits_monsters_and_events_play_as_the_kit_has_them(const std::filesystem
                                   return entry.message.source == "{name} is stoned.";
                               }),
           "The kit's gorgon breathes the party to stone");
+    // Its spellcasters' memorized spells (+C6h), by the kit's numbers, which
+    // are Pools of Darkness's: the magic-user of level 15 has Fireball, Cone
+    // of Cold, Iron Skin and Delayed Blast Fireball; the cleric of level 20
+    // Heal, Harm and Destruction.
+    const auto memorized = [&](unsigned number)
+    {
+        return numbers(number).spells;
+    };
+    const auto mage = memorized(94), priest = memorized(99);
+    check(has(mage, 47) && has(mage, 192) && has(mage, 319) && has(mage, 315) && mage.size() == 28,
+          "The kit's high magic-user memorizes its spells");
+    check(has(priest, 236) && has(priest, 256) && has(priest, 304) && !has(priest, 36),
+          "The kit's high cleric memorizes Heal, Harm and Destruction");
+    check(memorized(1).empty(), "A kobold has no spells");
+    const auto mage_fight = against(86, "MAGE", 400);
+    check(std::ranges::any_of(mage_fight.log_entries,
+                              [](const opengold::rules::LogEntry &entry)
+                              {
+                                  return entry.message.source == "{name} casts {spell}." &&
+                                         entry.message.arguments[0].value.starts_with("MAGE");
+                              }),
+          "The kit's magic-users cast their spells at the party");
     // The no-magic fight.
     auto session = ua::UaSession::start(files);
     auto party = new_party(content);

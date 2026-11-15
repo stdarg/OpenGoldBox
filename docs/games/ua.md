@@ -409,6 +409,16 @@ does it (`ua_combat`, `ua_session`; the reconstruction's `cmbsetup.c`,
   class readies nothing). Groups 4 to 6 fight for the party when byte 0Ah's
   bits 20h, 40h and 80h say so; a group picked at random (kind 33) is never
   an ally.
+- **Spells.** A MONST record's memorized spells (+C6h, up to 141, the kit's
+  numbers; aiturn.c, `spells_sort`) are the creature's, and the original
+  rules' fight AI casts them as it casts any monster's; a no-magic fight
+  bars them. The kit's spell table is *Pools of Darkness*'s (its
+  `spelltab.c`, the *Dark Queen of Krynn*'s with the Realms' spells), so a
+  design's spells, its monsters', its NPCs' and its items', are numbered
+  as *Pools of Darkness*'s, and its characters learn and cast that
+  table's spells, 1 to 126 (Heal, Harm, Blade Barrier and the rest; before
+  2026-11-15 they had *Curse*'s list, and a monster's 36 would have been
+  Animate Dead).
 - **Where they stand.** The event's distance (byte 0Eh's bits 60h), cut
   short by a wall ahead in a dungeon. With a quarter set (byte 10h's top
   bits north, east and south, byte 12h's bit 20h west) the enemies are dealt
@@ -453,7 +463,8 @@ does it (`ua_combat`, `ua_session`; the reconstruction's `cmbsetup.c`,
   session the settings as a design starts or loads and as the menu closes.
 
 `opengold_ua_session_tests` checks each on the test design's fights and
-every monster of the kit, and each Design difficulty at Easy, Normal and
+every monster of the kit, the high magic-user's and cleric's spells and a
+kit magic-user casting at the party, and each Design difficulty at Easy, Normal and
 Infernal as the fight fields the kobolds and the party's side;
 `opengold_godot_startup_menu_ua` sees the Design difficulty row kept and the
 kobolds on the kit's field in their icons.
@@ -570,7 +581,10 @@ playing each event and fight; it fails on any event the session cannot play.
   monster picture at its range.
 - Fights:
   - The differences of the near matches (Monsters' effects, below).
-  - Monsters' spells (+C6h) and an item's special effect when readied.
+  - An item's special effect when readied.
+  - An NPC's spell book (+153h, a bit a spell from 1): a magic-user NPC
+    joins knowing only what the rules give it, and memorizes at its first
+    rest rather than with the spells its record holds.
   - The area's wandering monster (+106h): the kit fields ten of it out of
     sight, for a Monster Summoning to gate in beside its caster; the
     original rules have no summoning, so it waits for them. (The kit's other
@@ -579,7 +593,7 @@ playing each event and fight; it fails on any event the session cannot play.
     area's) and an icon over two squares a side, which stands as two.
 - A critical hit's vorpal beheading, with items' special effects.
 
-Next, in this order (2026-11-15): monsters' spells (+C6h); items' special
+Next, in this order (2026-11-15; monsters' spells are done): items' special
 effects when readied, which bring the vorpal beheading on a hit of 17 or
 more; the services' smaller parts (Appraise, vault items, a temple's
 Restoration, building on the rules' Restoration in camp now on main); the

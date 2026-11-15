@@ -682,6 +682,9 @@ whole list):
   no defense against giants (ua.md).
 - **Its fights order each round once,** ties on a d2, as *Secret*'s do
   (2026-11-14).
+- **Its spells are *Pools of Darkness*'s table,** 1 to 126 by the same
+  numbers (its `spelltab.c`): its characters learn them and its monsters
+  cast those their records hold (2026-11-15; ua.md, Fights).
 - **Its difficulty** (the user, 2026-11-15: "C, but make it a configurable
   option"): the game's Difficulty plays in a design as the Options screen's
   Design difficulty says, the kit's five levels (the party's side +2 to -2
