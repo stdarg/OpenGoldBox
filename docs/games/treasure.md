@@ -200,8 +200,9 @@ walk needed besides the opening's:
   alone) loads the opening's map and the overland's too; the game's own
   scripts hold those maps.
 
-Still to come: the records that only set colors for the picture shown, the overland's color
-cycling, the music and sounds other than the footstep, and the romances
+Still to come: the records that only set colors for the picture shown, the music and sounds
+other than the footstep and the fights' (which play `ZOUNDS.DAX`'s effects
+since 2026-11-15, Bugs), and the romances
 (the camp dialog's Fix and Crown since 2026-11-15, What the route needed). The romances gate nothing: a lover fights better, or blindly when
 its love falls (the cluebook's Falling in Love).
 
@@ -289,9 +290,20 @@ engine, each as the original does it:
   council's script marks it done by setting cell 1F8h to FFh, and the luck
   reading is then 12 (go to the Ice Peak), as PROGRAM 3's order has it;
   Neverwinter's Northpier Shipping and Fireshear's dock read that cell.
-- **Item types.** *Treasures* numbers its item types as *Pool of Radiance*
-  does (its `ITEMS`): a long sword is 18, plate mail 36, a shield 37, a mace 8
-  and a dagger 4.
+- **Item types.** *Treasures* numbers its item types as its item words
+  (its `ITEMS` and itemNameParts): a long sword is 18, plate mail 36, a
+  shield 37, a mace 8 and a dagger 4. The earlier games' generic labels
+  number them otherwise, so since 2026-11-15 every item of its lists and
+  definitions is named by its own words, magic or not (Bugs).
+- **The crystal battles** (since 2026-11-15). A script that fights over the
+  Lucky Papers sets cell 3Dh before COMBAT; each enemy agent carries a
+  crystal (effects 128 red, 129 green, 130 blue). The first of them to fall
+  gives the party its crystal, and every other one still fighting "smashes a
+  crystal" (its EffRedCrystal and ShowCrystalSmash, the cluebook's Crystals):
+  cell 3Ch gains its bit (1, 2 or 4) and cell 3Eh tells which (0 to 2),
+  which the script reads after the fight. The camp names the crystals held
+  above the members' details (its CampMainMenu: "The party has acquired
+  the..."), as `RolfTourSession::camp_crystals` gives them.
 - **Byte cells.** *Treasures* stores an arithmetic result in as many bytes
   as its destination names (its WriteGbvm): a byte cell counting down from 0
   reads 255, as Luskan's script waits for. *Pools of Darkness* shares the
@@ -584,34 +596,33 @@ took, as a player would play it:
   fight where every turn is a guard is played on by walking the members
   round to the nearest enemy before it is left.
 
-*Next (where the work stopped, 2026-11-15, after the round-4 rules):*
-the two fights left, the Way Inn's last and the lair's black-robed men.
-Since *Treasures*' computer casts as its own does (its spell of highest
-weight first), the sorceresses open every fight with Lightning Bolts and
-Fireballs, and the route's player wins the Way Inn's last only when the
-magic-user's first Fireball goes off before them (about one try in forty,
-none dead). Still to try there: Stinking Cloud, which goes off at once
-(casting time 2, none lost to a blow), once the magic-user stands within its
-3 squares of the sorceresses' row, bows from a shop on the way (the Way
-Inn's Limantour Saddlery, store 16, or Daggerford's Thielklain's House of
-Steel, store 1; a plain long bow scores too low beside a sword +2 for
-Quick's EquipWeaponAndArmor to shoot it, so the player must ready and shoot
-it), and the clerics' Silence, 15' Radius on the row. In the lair the
-dwarves now win over the members' bodies; the cluebook bids charm and hold
-spells there (Hold Monster, Charm Person on those its flags call persons).
-The original skips the first memorized spell in choosing (Bugs);
-OpenGoldBox weighs them all, a choice to put to the user. *Pools of
-Darkness* shares the spell table, the AI and the one-square characters and
-should take them up, its route checked. Still to come besides: replacing
-the Llorkh test experience if a route can earn it, the color records, the
-sounds the program itself plays in a fight (`ZOUNDS.DAX`'s records 1 to
-11: its magic.pas sounds Fireball and Lightning Bolt, its combat the blows):
-no script of *Treasures* plays any sound but the footstep (PLAY SOUND 10 in
-every script, never a piece of music), and `MUSIC.DAX`'s one bank plays
-over the title already, and the camp's display of
-the crystals the party holds (its CampMainMenu, cell 3Ch: 1 red, 2 green, 4
-blue), which needs the crystal effects 128 to 130 (at 0 Hit Points, while
-cell 3Dh is set) that no fight plays yet.
+*Next (where the work stopped, 2026-11-15, treasure8):* the route wins the
+game with one stand-in left, the experience and money at Llorkh's hall
+(probably unearnable: a party brought from *Gateway* carries them). Found and
+left:
+
+- **Lightning Bolt's path in the 256-color games** (its magic.pas,
+  LightningPath; *Pools of Darkness*' the same): the bolt walks its 9
+  squares counting each step once, a first bounce within 8 of the caster
+  doubles the distance walked, and it bounces only indoors (location 1, not
+  the overland). OpenGoldBox runs *Pool of Radiance*'s for every game, which
+  takes the whole distance walked from what is left at every creature (so
+  its bolts end sooner), adds 8 at a near bounce and bounces out of doors
+  too. Taking up *Treasures*' own makes its bolts longer: the Way Inn's
+  sorceresses would hit harder, so measure that fight again
+  (`OPENGOLD_FIGHT_TRIES`) after the change.
+- *Pools of Darkness* numbers its item types as *Treasures* does and should
+  name its items by their words too (`names_every_item`, Bugs), its route
+  checked; it shares the spell table, the AI and the one-square characters
+  as well.
+- The original's sort of the memorized spells passes over the first slot
+  (Bugs); every *Treasures* spellcaster's record begins at the second, so
+  the choice changes nothing in its fights.
+- Still to come: the records that only set colors (Pictures and graphics;
+  the routine that loads them is not found yet in the reconstruction), the
+  scripts' footstep (PLAY SOUND 10, record 9, a click of 132 samples) from
+  `ZOUNDS.DAX` instead of the synthesized one, the romance (131, rules5),
+  the stone golem (147) and the yetis' fear on surprise (152).
 
 ## The ending
 
@@ -639,7 +650,10 @@ in [ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Bugs):
 | The Fix's Resurrection raised no one, the original rules having no such service, and while a cleric had it Raise Dead was not cast either (2026-11-15) | The dead but elves are resurrected, losing nothing |
 | A temple's Heal cured nothing besides wounds in *Treasures*, whose Heal lifts blindness and feeblemind (its `temple.pas`, CureWounds) (2026-11-15) | It lifts them |
 | PROGRAM 5 left feeblemind and drained levels and raised the dead by Raise Dead, at its cost in Constitution (its RepairParty resurrects and restores) (2026-11-15) | As RepairParty |
-| *Treasures*' own effects (128 to 160) did nothing: its kampfults, yetis, remorhazes, harpies, manticores and stone guardians only struck (2026-11-15) | Most play ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), *Treasures*' own effects); the crystals, the romance, the stone golem and the yetis' fear on surprise are still to come |
+| *Treasures*' own effects (128 to 160) did nothing: its kampfults, yetis, remorhazes, harpies, manticores and stone guardians only struck (2026-11-15) | Most play ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), *Treasures*' own effects); the romance, the stone golem and the yetis' fear on surprise are still to come |
+| No fight played the crystals (128 to 130): a crystal battle's script never heard of a crystal won, and the camp never named those held (2026-11-15) | The first bearer to fall gives its crystal (cells 3Ch and 3Eh) and the others smash theirs; the camp names those held (What the route needed) |
+| A plain item of *Treasures*, a shop's or a treasure's, was named by the earlier games' item types: the Way Inn's saddlery sold "bows" that were belts, boots, cloaks and robes, and its firepots and flasks of oil were "Boulders" (2026-11-15) | Every item of its lists and definitions is named by its own words |
+| Its fights played *Pool of Radiance*'s sounds, none as a spell went off, and *Pools of Darkness*'s and *Treasures*' sound effects were never loaded (2026-11-15) | `ZOUNDS.DAX`'s effects, sound n record n - 1, as their program plays them: a hit (7), a miss (9), a fall (5), a step (10), Fireball (11), Lightning Bolt (8) and any other spell (2) as it goes off (magic.pas, CastSpell) |
 | Lightning Bolt ran *Pool of Radiance*'s bolt of 8 squares, reaching 4 squares and 1 a level, in every game (2026-11-15) | *Treasures*' own: 9 squares, reaching 4 and 4 a level ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Lightning Bolt by game) |
 | The computer chose its spells as *Pool of Radiance*'s does, three random picks a pass, and used its items (2026-11-15) | *Treasures*' own: the spell of highest AI weight with a target, bursts aimed where they take the most enemies, no items (its combatai.pas) |
 | A creature held back could join on a square walled off from its enemies, where no one reached it and the fight never ended (Mirabar's council, 2026-11-15) | It joins on the nearest free square its enemies can walk to |

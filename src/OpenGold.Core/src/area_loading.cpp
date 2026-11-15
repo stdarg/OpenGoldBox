@@ -114,6 +114,17 @@ const std::vector<std::uint8_t> &AreaFiles::record(const std::string &archive_na
     throw EclError("Missing required Phlan wall/tile record " + std::to_string(id));
 }
 
+namespace
+{
+// Treasures numbers its item types otherwise than the generic labels
+// (item_type_name), a long sword 18 and plate mail 36: an item there is named
+// by its own words, magic or not (its itemNameParts).
+bool names_every_item(GoldBoxGame game) noexcept
+{
+    return game == GoldBoxGame::treasures_of_the_savage_frontier;
+}
+} // namespace
+
 std::map<unsigned, std::vector<Equipment>> AreaFiles::item_lists(const std::string &name) const
 {
     std::map<unsigned, std::vector<Equipment>> lists;
@@ -139,8 +150,9 @@ std::map<unsigned, std::vector<Equipment>> AreaFiles::item_lists(const std::stri
             equipment.bonuses = equipment_bonuses(item, equipment.base);
             // Fixed lists name their magic items as the original does ("Long
             // Sword +2 Flame Tongue"); without START.EXE's words they keep the
-            // generic label and bonus.
-            if (is_magic(item) && !item_words_.empty())
+            // generic label and bonus. Treasures names every item by its
+            // words: its item types are not numbered as the generic labels.
+            if ((is_magic(item) || names_every_item(game_)) && !item_words_.empty())
             {
                 equipment.decoded_name = item_name(item, item_words_);
                 equipment.unidentified_name = item_name(item, item_words_, item.hidden_name_words);
@@ -176,7 +188,7 @@ std::map<unsigned, Equipment> AreaFiles::item_definitions(const std::string &nam
         equipment.stored = item;
         equipment.base = templates_[item.type];
         equipment.bonuses = equipment_bonuses(item, equipment.base);
-        if (is_magic(item) && !item_words_.empty())
+        if ((is_magic(item) || names_every_item(game_)) && !item_words_.empty())
         {
             equipment.decoded_name = item_name(item, item_words_);
             equipment.unidentified_name = item_name(item, item_words_, item.hidden_name_words);
