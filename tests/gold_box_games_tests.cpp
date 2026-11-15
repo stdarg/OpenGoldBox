@@ -3328,6 +3328,24 @@ const std::vector<RouteBeat> &darkness_route()
         auto ward = step_beat(81, 6, 8, D::east, {"YES"});
         ward.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x1F7, 1};
         route.push_back(ward);
+        // Back through the Test's chambers, resting where it is hurt (the
+        // cluebook: in any section of the Test it has completed), and out by
+        // the compound's south way (5,15) to the web's paths.
+        walk_passages(
+            route, 81,
+            {{7, 8, D::west},    {6, 8, D::south},   {6, 9, D::east},    {7, 9, D::east},
+             {8, 9, D::south},   {8, 10, D::south},  {8, 11, D::west},   {7, 11, D::south},
+             {7, 12, D::south},  {7, 13, D::south},  {7, 14, D::west},   {6, 14, D::west},
+             {5, 14, D::west},   {4, 14, D::north},  {4, 13, D::north},  {4, 12, D::north},
+             {4, 11, D::north},  {4, 10, D::north},  {4, 9, D::north},   {4, 8, D::north},
+             {4, 7, D::north},   {4, 6, D::north},   {4, 5, D::east},    {5, 5, D::east},
+             {6, 5, D::north},   {6, 4, D::east},    {7, 4, D::east},    {8, 4, D::east},
+             {9, 4, D::south},   {9, 5, D::east},    {10, 5, D::east},   {11, 5, D::south},
+             {11, 6, D::south},  {11, 7, D::south},  {11, 8, D::south},  {11, 9, D::south},
+             {11, 10, D::south}, {11, 11, D::south}, {11, 12, D::south}, {11, 13, D::south},
+             {11, 14, D::west},  {10, 14, D::west},  {9, 14, D::west},   {8, 14, D::south},
+             {8, 15, D::west},   {7, 15, D::west},   {6, 15, D::west}});
+        route.push_back(step_beat(81, 5, 15, D::south, {"YES", "NO"}));
         return route;
     }();
     return beats;
