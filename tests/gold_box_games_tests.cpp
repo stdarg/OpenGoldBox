@@ -5061,15 +5061,14 @@ const std::vector<RouteBeat> &darkness_route()
         // In the depression the gate (7,10, event 10, the wall south of it
         // ahead; the cluebook's Depression 1): the party steps through (YES)
         // to Limbo, where Elminster greets the Talisman of Bane, his camp rests
-        // the party and it trains. DOWN ROPE returns it to the Realms' area
+        // the party and it trains. REALMS takes it down his rope to the area
         // map below the Red Tower's pool (5,12), its stored goods left (NO).
         route.push_back(step_beat(52, 7, 9, D::south, {"YES", "stop:REST"}));
         RouteBeat talisman_rest{18, 0, 0, D::north, {}};
         talisman_rest.rest_choice = "REST";
         route.push_back(talisman_rest);
-        RouteBeat down_rope{
-            18, 0, 0, D::north,
-            train_darkness_party(2, {"TRAIN"}, {"MOVE ON", "DOWN ROPE", "YES", "NO"})};
+        RouteBeat down_rope{18, 0, 0, D::north,
+                            train_darkness_party(2, {"TRAIN"}, {"MOVE ON", "REALMS", "YES", "NO"})};
         down_rope.waiting = true;
         route.push_back(down_rope);
         // East across the area map to the black city of Mulmaster (31,11),
@@ -5101,6 +5100,12 @@ const std::vector<RouteBeat> &darkness_route()
         // pens' monsters, and a beholder offers it Arcam's interview (YES):
         // it is led down into the Cave of the Beholder (script 36).
         route.push_back(step_beat(19, 5, 6, D::east, {"YES"}));
+        // The Cave of the Beholder (map 36, script 36): south from the
+        // ladder past the mustering troops (5,4) to the spectacle (5,5,
+        // journal entry 39), where the Chancellor offers a task against
+        // Arcam's rivals (script 42) and the party refuses it at every price
+        // (NO four times): his mercenaries attack and fall. Rested, it beats
+        // the Chancellor covering Arcam's retreat (5,8).
         walk_passages(route, 36,
                       {{0, 0, D::east},
                        {1, 0, D::east},
@@ -5122,6 +5127,12 @@ const std::vector<RouteBeat> &darkness_route()
         {
             route.push_back(step_beat(36, x, y, facing, {"YES"}));
         };
+        // South, an escaped prisoner (5,9) leads the party out by the tunnel
+        // to the surface (0,3, GO UP? YES), and the tunnel on the area map
+        // brings it back in at 14,5: the planning aid's way round the
+        // labyrinth, west and south through Arcam's empty chamber, by the
+        // ramps (12,8; 1,7) and the passage (15,8), to the Sentinel Halls
+        // (8,11, script 38; the cluebook's 26).
         cave_way(5, 8, D::south);
         cave_way(5, 9, D::south);
         cave_way(0, 3, D::west);
@@ -5143,6 +5154,14 @@ const std::vector<RouteBeat> &darkness_route()
         cave_way(1, 7, D::east);
         walk_passages(route, 36, {{6, 9, D::east}, {7, 9, D::south}, {7, 10, D::south}});
         cave_way(7, 11, D::east);
+        // The Sentinel Halls rest once Bane's minions have chanted past
+        // three times (script 38's camp entry, cell A4h), so the party camps
+        // again where they only pass by. East along row 11 the dragon
+        // sentinel hears the Horn of Doom and the spider sentinel sees the
+        // Crystal Ring (their dragons and spiders beaten), and at 2,11 the
+        // fist senses the Talisman of Bane and opens (its minions beaten);
+        // stepped east again it lets the party through, and at 4,12 the Pool
+        // of Darkness (YES) leads to Limbo.
         {
             auto rest_sentinels = step_beat(36, 8, 11, D::east);
             rest_sentinels.passing = true;

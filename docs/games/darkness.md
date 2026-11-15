@@ -887,6 +887,90 @@ by what it is offered:
   the party. A step where agents of Tanetal no play of the party beats came
   on it is played again with other dice (`RouteBeat::reloads`, a player's
   reload): three in the heart.
+- **The depression's gate (2026-11-16).** Out of the wound (YES, then NO)
+  and over the body three squares north-east and six north-west to the
+  depression (12,4; DO YOU ENTER? YES, map 52 at 7,9). Its gate is event 10
+  (7,10), met with the wall south of it ahead (script 52, 8833h): DO YOU
+  STEP THROUGH THE GATE? YES, and in Limbo Elminster greets the Talisman
+  (journal entry 41), his camp rests the party and it trains. Script 18's
+  gates are four, cell 99h the one the party came by (the Aerie, the drow
+  temple, Moander, Arcam's cave), each naming the way back and the way on
+  (cells 2EFh and 30Dh): from Moander's, REALMS goes down Elminster's
+  rope from the Red Tower's pool to the area map (5,12), the party's
+  stored goods left (NO).
+- **Mulmaster (map 19's north half, script 26; 2026-11-16).** Twenty-five
+  squares east along row 12, passing the wayhouse and the village (NO),
+  and north-east into the black city (31,11; YES). MOVE ON past the gate's
+  guards (0,3); in the alleys Banites chant the labyrinth's way (journal
+  entry 24). The party has offended no one, so the arena (6,6, event 21,
+  entered from its grating at 5,6) holds a round or two (cell A6h: a random
+  1 to 3, one more with cell A1h's bit), the pens' monsters each time; the
+  beholder's interview (WILL YOU COME? YES) takes it down into the Cave of
+  the Beholder (script 36, map 36 at 0,0; cell F8h bit 1).
+- **The Cave of the Beholder (map 36, scripts 36, 38 and 42; 2026-11-16).**
+  Script 36's step entry reads the wall ahead (cell 32h into 9Dh): type 2 a
+  ramp (GO ON?), type 4 facing south the labyrinth's door, type 1 events 50
+  to 54 that move the party, and its event table by cell A5h. South from
+  the ladder to the mustering troops (5,4: the Chancellor's guard of
+  margoyles and two mercenary teams, cell 1A3h) and the spectacle (5,5,
+  journal entry 39): the Chancellor offers a task against Arcam's rivals
+  (script 42: Manshoon in Zhentil Keep), which the party refuses with each
+  higher price (NO four times; YOUR TASK IS TO DIE), and it beats his
+  mercenaries; rested at 5,7, it beats the Chancellor covering Arcam's
+  retreat (5,8; cell 19Bh bit 0). South, an escaped prisoner (5,9) leads it
+  out by the tunnel to the surface (0,3: GO UP? YES), and the tunnel on the
+  area map brings it back in at 14,5, the way the planning aid finds round
+  the labyrinth: west and south through Arcam's chamber, the ramps at 12,8
+  and 1,7 and the passage at 15,8, to the Sentinel Halls (8,11, script 38;
+  the cluebook's 26). There its camps rest once Bane's minions have
+  chanted past three times (cell A4h; the route camps again where they
+  only pass by), and east along row 11 the dragon sentinel hears the Horn
+  of Doom (dragons, beaten), the spider sentinel sees the Crystal Ring
+  (spiders, beaten), and at 2,11 the fist senses the Talisman (cell 245h)
+  and opens (cell 1A2h 1; its minions beaten); stepped east again it lets
+  the party through, and south and east at 4,12 the Pool of Darkness (event
+  7, the wall of type 1 ahead; DO YOU ENTER? YES) leads to Limbo. Arcam
+  himself is not met: the scripts send the party on without him, and
+  Elminster finds it ready for the Dark Dimension.
+- **Dark Phlan (map 64, script 64; 2026-11-16).** From Limbo, MOVE ON,
+  BANE'S LAND, YES: the drow carrying Sasha off are beaten where the party
+  arrives (13,0), the crowd carries it to Cadorna's announcement (11,1,
+  LISTEN; journal entry 76), and it rests at the inn (12,11, YES; the
+  camps rest only on its events 2 and 3). West through the city, Gothmenes'
+  welcoming minions met at its west gate (1,5), and on past the map's
+  western edge to the Iron Wall (column 14, met facing west; event 1):
+  USE HORN OF DOOM, Gothmenes' minions beaten (a stand-in, below), the
+  horn blown once for each member (the INPUT: 6, cell 20h), and through the
+  ruins (YES) with the Crystal Ring held (cell 208h) to the palace (script
+  65).
+- **The Palace of Gothmenes (map 65, scripts 65, 73, 74 and 75;
+  2026-11-16).** Its secret doors (walls of type 5) let a party through
+  only while it searches (cell 19h at 1; cell B1h), and a step taken
+  searching runs the objects of power (who bears each, the first time)
+  instead of the square's event, so the route walks the palace's winding
+  way in search mode, EXIT leaving the objects as they are. At 4,4 it
+  stops searching and meets "Sasha" and the Phlanerians (event 0; the
+  cluebook's 4): it will not tell where Elminster is (NO, NO), which sets
+  the Tantalus Clock's strikes to 77 (cell 1CDh; telling sets 66, and a
+  party that never meets her has none, so Gothmenes returns at once), and
+  the rakshasas are revealed (a stand-in). At the inner palace's entrance
+  (8,8, event 11) Gothmenes winds the clock and leaves (script 74, then 73).
+  The clock strikes every second step (cell 1CEh), no wandering monster
+  comes while it ticks, and Bane's Crystal shows in the pool only past the
+  50th strike, so the party paces the entrance hall, then from the pool's
+  edge (9,8, stepping south) the ring's bearer tries (YES), puts the ring
+  on rather than reach in with it in a pocket (NO, YES) and takes the
+  crystal (cell 1CFh FFh): the clock is set to run six more strikes. When
+  it stops Gothmenes returns with Elminster in his whip and summons the
+  party to the pool (script 65): it will not trade (NO, NO), the bearer
+  countermands the summons (YES; at the cost of nearly all its Hit Points
+  many servants are driven back), and in script 75 the dracoliches, bits of
+  Moander, minions and Pets of Kalistes, then Xoham and his beholders,
+  then Gothmenes (the party will not bargain for the crystal's word,
+  AGREE? NO, so only a few minions answer him) fall (a stand-in), and the
+  crystal crumbles: "Gothmenes has fallen, and Bane's crystal is dust. You
+  have won." Elminster speaks from far away and the party stands again in
+  peaceful Phlan (script 24), where the route ends.
 
 Since 2026-11-15 the route's casters memorize spells of every level they
 have slots of (Pools of Darkness's levels 6 to 9 among them) and raise the
@@ -903,7 +987,15 @@ state does (Script memory, above). Until 2026-11-14 OpenGoldBox stepped on
 anyway, so stairs landed a square beyond their landing and a held step could
 wrap round the map's edge.
 
-Stand-ins (2026-11-16): six, the fights the test wins. Thorne and his
+Stand-ins (2026-11-16): nine, the fights the test wins. The last three
+are the end's: the Iron Wall's minions (64: 15,5; fourteen Minions of
+Bane, each casting Ice Storm and Hold Monster and breathing for 22, leave
+the party of levels 19 to 22 dead in two rounds in every one of the 120
+plays), the palace's rakshasas (65: 4,4; two Maharajahs and seven Rajahs,
+whom no spell below the eighth level touches, an Ice Storm each a round),
+and the finale (script 75: the pool's dracoliches, bits of Moander,
+minions and Pets of Kalistes, then Xoham's beholders, then Gothmenes).
+Thorne and his
 seven red dragons (34: 3,6): since the computer casts as the original's
 does (its spell of highest AI weight with a target first: the dragons'
 Fireball, below), their fireballs, fear and breath beat the party of
@@ -940,15 +1032,19 @@ altar and its temple (the blessed bolts, above) and, since 2026-11-16, the
 Large Wound's swarm of bits of Moander; Thorne, won until the computer cast
 as the original's does, is a stand-in again. The route's party carries the
 game's own starting equipment (ORIGINAL-RULES.md, *Pools of Darkness*).
-Until the route reaches the win it passes when it plays every beat, through
-Moander's heart, back to the Large Wound (map 52).
+The route plays to the win (2026-11-16, `darkness_route_ends_the_game`): it
+passes when every beat plays, the win is shown and no member is dead; it
+ends in Phlan, where script 75 leaves the party after Elminster's last
+words.
 
 The route's rest takes a Darkness camp entry that sets cell 2Bh (the rest
 period) for one that refuses the rest, rests a night and cures the badly
 hurt; the tower's camp entry sets it in its quiet rooms too, where the rest
 finishes, so there the route rests on until the party is whole
 (`RouteBeat::rest_through_period`, 2026-11-15; the earlier beats keep their
-night).
+night). With it, a camp whose wanderers only pass by (the Sentinel Halls'
+chanting minions, who stop breaking camps once they have passed three
+times) is made again, up to twenty in a row (2026-11-16).
 
 Myth Drannor's way out (2026-11-15, late) needed the 256-color engine's
 LOAD CHARACTER as the original has it: it reads its argument's low seven
@@ -1045,41 +1141,13 @@ PickCastableSpell, RateSpellTarget, AimAreaSpell, and a SelectItemToUse that
 uses nothing), so the memorized spell of highest AI weight that has a
 target is cast first (ORIGINAL-RULES.md, *Pools of Darkness*).
 
-Where it stops (2026-11-16): back with Aeghwaet in the Large Wound (map
-52 at 12,15, script 52), the party whole and the Talisman of Bane held
-(cell 245h 1). The exact next step: Mulmaster. Leave the wound (12,15:
-DO YOU WANT TO LEAVE? YES, then NO), walk the body back to the depression
-(the planning aid with OPENGOLD_SECRET_AREA=1 and OPENGOLD_SECRET_KEYS=25,26
-finds the place; it was reached at the climb out, 7,10 on map 52), step
-through its gate to Limbo (DO YOU STEP THROUGH THE GATE? YES; the
-cluebook's Depression 1), and from Elminster's menu on to Mulmaster (its
-arena, location 4: the fights, then Arcam's interview), the Cave of the
-Beholder (Arcam, the labyrinth by the chant of journal entry 46, the
-Sentinel Halls whose fist opens for the Talisman), Dark Phlan (64) and
-the Palace of Gothmenes (65, 74, 73), whose win (75) is in place. Before
-the heart, what follows (kept for the record): leave the wound (its entrance, 12,15: DO YOU WANT TO
-LEAVE?, NEW ECL 51), walk the body to the wound in Moander's side (the
-cluebook's Entrance to Heart, its locations 24 to 26): the survey
-(OPENGOLD_DARKNESS_SITES) shows "A WOUND CUTS DEEP INTO MOANDER'S SIDE" at
-21,3 (place 8), and place 0's "A WOUND CUTS INTO MOANDER'S SIDE" nowhere,
-so try 21,3 first; OPENGOLD_SECRET_FIND='*' with OPENGOLD_SECRET_AREA=1,
-OPENGOLD_SECRET_KEYS=25,26 and OPENGOLD_SECRET_GOAL=25=21,26=3 from the
-save after the last beat finds the steps), enter, rest there (the cluebook
-lets the party rest in the Entrance to Heart), and find the muscle wall
-(event 29; OPENGOLD_ROUTE_EVENTS from the save there prints the squares
-and their walls), where the potion weakens it
-and CUT THROUGH (YES) enters the heart (NEW ECL 53). Map 52's events
-(script 52's step entry, ON GOTO on cell 2Dh's low six bits at 873Ch):
-11 (12,12) Aeghwaet asks for help; 14 to 17 (6,11; 11,10; 10,15; 14,13)
-Tanetal's minions mining the flesh; 13 (12,8) Aeghwaet's reward, the two
-potions the heart needs; 29 (8 to
-10,5) the heart's muscle wall, where the potion weakens it and NEW ECL 53
-enters the heart (script 53). The ear's hermit (event 7, the cluebook's
-22) trains a party. Then the heart's way as the cluebook's "Recommended
-Approach" gives it (script 53: Tanetal's fakes, the Watcher, the cornucopia,
-the unguent, the magnetic weapons, the trap), Mulmaster and the beholders'
-cave, Dark Phlan (64) and the Palace of
-Gothmenes (65, 74, 73), whose win (75) is in place. Scripts and the scripts
+Where it stops (2026-11-16, night): at the win, in Phlan (map 17, script 24)
+after Gothmenes falls. What is left is to win the stand-ins by play: the
+party the route brings is weaker than an original player's, who meets the
+wandering monsters of every area (the end's palace, cave and city have
+theirs: beholders, death tyrants, vampires, Bane minions) and their
+treasure, and the Cave of the Beholder's missions for the Chancellor and
+its captives, which the route skips. Scripts and the scripts
 they go on to (`opengold_scripts --inspect DARKNESS ECL1.DAX N`, NEW ECL):
 19 to 48; 48 to 35 and 49; 35 to 41, 68, 69; 68 to 69 and 71; 69 to 72 and
 18; 66 and 70 from the area map; 70 to 67 and 76; 67 to 75 and 77; 64 to

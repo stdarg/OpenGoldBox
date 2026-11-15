@@ -29,7 +29,7 @@ The user decided these on 2026-11-12:
 | 2 | *Curse of the Azure Bonds* | 1989 | `CURSE` | Played to its end by the route test, with stand-ins ([curse.md](games/curse.md)) |
 | 3 | *Secret of the Silver Blades* | 1990 | `SECRET` | Played to its win by the route test, with stand-ins ([secret.md](games/secret.md)) |
 | 4 | *Gateway to the Savage Frontier* | 1991 | `GATEWAY` | Played to its win by the route test, with stand-ins of experience, gold, gear and waits; no fight is won by the test ([gateway.md](games/gateway.md)) |
-| 5 | *Pools of Darkness* | 1991 | `DARKNESS` | The route test plays through Moander's heart to the Talisman of Bane; Mulmaster, Dark Phlan and Gothmenes still to come ([darkness.md](games/darkness.md)) |
+| 5 | *Pools of Darkness* | 1991 | `DARKNESS` | Played to its win by the route test, with stand-ins ([darkness.md](games/darkness.md)) |
 | 6 | *Treasures of the Savage Frontier* | 1992 | `TREASURE` | Played to its win by the route test; no fight is won by the test, only Llorkh's experience and money are given ([treasure.md](games/treasure.md)) |
 | 7 | *Forgotten Realms: Unlimited Adventures* | 1993 | `UA` | Designs made with the kit play to their win: walls, events and fights ([ua.md](games/ua.md)) |
 
@@ -671,11 +671,23 @@ new decoders.
    (as *Treasures*'), so Thorne's dragons cast Fireball first and he is a
    stand-in again; the route climbs the Tower of Marcus, crosses Moander's
    body, clears the Large Wound and plays Moander's heart by its beat, the
-   Watcher's five spots and the chase, to the Talisman of Bane, and stops
-   back in the Large Wound (52: 12,15; darkness.md, Where it stops). Its
-   stand-ins: Thorne, the Aerie's blue dragons, Kalistes' egg room, the
-   Chambers of Marcus, the heart's magnetic golems and Tanetal's last
-   stand.
+   Watcher's five spots and the chase, to the Talisman of Bane, back to the
+   Large Wound. *To the win (2026-11-16):* through the depression's gate to
+   Limbo and down Elminster's rope to the Realms; east across the area map
+   to Mulmaster, whose arena it wins for Arcam's interview; down into the
+   Cave of the Beholder, where it refuses the Chancellor's task and beats
+   his mercenaries and him, goes out by the beholders' tunnel and back in,
+   and passes the Sentinel Halls (the dragons and spiders the Horn of Doom
+   and the Crystal Ring call, the fist the Talisman opens) to the Pool of
+   Darkness; from Limbo to Dark Phlan, where it rests at the inn, breaks
+   the Iron Wall with the Horn of Doom and enters the Palace of Gothmenes,
+   walks its secret ways in search mode, refuses to tell "Sasha" where
+   Elminster is, waits out the Tantalus Clock, takes Bane's Crystal from
+   the Pool of Death with the Crystal Ring, and Gothmenes falls: the game
+   is won (`game_won`; darkness.md, The win and the route). Its stand-ins:
+   Thorne, the Aerie's blue dragons, Kalistes' egg room, the Chambers of
+   Marcus, the heart's magnetic golems, Tanetal's last stand, the Iron
+   Wall's minions, the palace's rakshasas and the finale.
    *The area map is drawn (2026-11-14):* the big picture with the party's
    marker, as the original draws it. *Spell levels 8 and 9 and the new
    spells (2026-11-15):* merged, with Restoration giving back a drained
