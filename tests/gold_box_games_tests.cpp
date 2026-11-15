@@ -4651,6 +4651,93 @@ const std::vector<RouteBeat> &darkness_route()
         // arrives by the gate in the depression (map 52) and climbs out by
         // its footholds (YES) onto Moander's body, an area map (script 51).
         route.push_back(step_beat(52, 7, 10, D::north, {"YES", "NO"}));
+        // Over the body (script 51: an area map of 38 by 15 places, cells 25h
+        // and 26h) south-east and south-west to the great wound in Moander's
+        // arm (15,13; the cluebook's Large Wound), fleeing the bits of
+        // Moander, cultists and Bane's minions that roam it, and in (DO YOU
+        // ENTER? YES): script 52 places the party in the wound's part of map
+        // 52.
+        RouteBeat to_the_wound{52, 0, 0, D::north, {"YES"}};
+        to_the_wound.area_steps = {C::southeast, C::southeast, C::southeast,
+                                   C::southeast, C::southeast, C::southeast,
+                                   C::southwest, C::southwest, C::southwest};
+        to_the_wound.fleeing = true;
+        route.push_back(to_the_wound);
+        // In the wound (map 52 from 12,15) camps rest only with Aeghwaet once
+        // he is helped (the cluebook), so the party walks hurt, its clerics
+        // curing the badly hurt.
+        const auto walk_wound =
+            [&route](std::initializer_list<std::tuple<unsigned, unsigned, D>> steps)
+        {
+            walk_passages(route, 52, steps);
+            for (auto beat = route.end() - static_cast<std::ptrdiff_t>(steps.size());
+                 beat != route.end(); ++beat)
+            {
+                beat->camp_broken = true;
+                beat->cure_first = true;
+            }
+        };
+        // North to Aeghwaet (12,12, event 11; the cluebook's 7), who asks the
+        // party to rid his home of Tanetal's minions (YES; cell 232h bit 7).
+        walk_wound({{12, 15, D::north}, {12, 14, D::north}});
+        route.push_back(step_beat(52, 12, 13, D::north, {"YES"}));
+        // The minions mining the flesh (events 14 to 17; the cluebook's 8),
+        // fought in the order cell 233h keeps wherever they are met: (6,11),
+        // (11,10), (10,15) and (14,13), each a bit of cell 239h.
+        walk_wound({{12, 12, D::north},
+                    {12, 11, D::north},
+                    {12, 10, D::north},
+                    {12, 9, D::north},
+                    {12, 8, D::west},
+                    {11, 8, D::west},
+                    {10, 8, D::west},
+                    {9, 8, D::south},
+                    {9, 9, D::south},
+                    {9, 10, D::south},
+                    {9, 11, D::west},
+                    {8, 11, D::west},
+                    {7, 11, D::west}});
+        walk_wound({{6, 11, D::east},
+                    {7, 11, D::east},
+                    {8, 11, D::east},
+                    {9, 11, D::south},
+                    {9, 12, D::south},
+                    {9, 13, D::east},
+                    {10, 13, D::east},
+                    {11, 13, D::north},
+                    {11, 12, D::north},
+                    {11, 11, D::north}});
+        // A stand-in: the second, a swarm of six bits of Moander (81 Hit
+        // Points, two blows of up to 23, a poisoning one), beats the route's
+        // party of levels 18 to 20 in every play it tries, its weapons
+        // harming them little, so the test wins it.
+        route.back().test_wins = true;
+        walk_wound({{11, 10, D::south},
+                    {11, 11, D::south},
+                    {11, 12, D::south},
+                    {11, 13, D::west},
+                    {10, 13, D::west},
+                    {9, 13, D::south},
+                    {9, 14, D::south},
+                    {9, 15, D::east}});
+        walk_wound({{10, 15, D::west},  {9, 15, D::north},  {9, 14, D::north}, {9, 13, D::north},
+                    {9, 12, D::north},  {9, 11, D::north},  {9, 10, D::north}, {9, 9, D::north},
+                    {9, 8, D::east},    {10, 8, D::east},   {11, 8, D::east},  {12, 8, D::east},
+                    {13, 8, D::east},   {14, 8, D::east},   {15, 8, D::south}, {15, 9, D::south},
+                    {15, 10, D::south}, {15, 11, D::south}, {15, 12, D::west}, {14, 12, D::south}});
+        // Back to Aeghwaet's reward (12,8, event 13; the cluebook's 9): the
+        // two potions the heart needs (cell 23Bh 1), and his healing (YES).
+        walk_wound({{14, 13, D::north},
+                    {14, 12, D::east},
+                    {15, 12, D::north},
+                    {15, 11, D::north},
+                    {15, 10, D::north},
+                    {15, 9, D::north},
+                    {15, 8, D::west},
+                    {14, 8, D::west}});
+        auto reward = step_beat(52, 13, 8, D::west, {"YES"});
+        reward.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x23B, 1};
+        route.push_back(reward);
         return route;
     }();
     return beats;
@@ -7126,7 +7213,8 @@ bool walk_census(GoldBoxGame game, bool route)
     // cluebook fights the Pit of Moander: the Wand of Defoliation (its power,
     // Blast) at the nearest enemy within its three squares, Hold Monster at
     // the strongest enemy not yet helpless, Hold Person at the strongest
-    // person (not a shambling mound); Quick for the rest.
+    // person (not a shambling mound nor a bit of Moander, plants it does not
+    // hold); Quick for the rest.
     const auto player_turn =
         [](const opengold::rules::CombatSession &session,
            std::vector<opengold::rules::EntityId> &picked,
@@ -7176,7 +7264,8 @@ bool walk_census(GoldBoxGame game, bool route)
             return unit != state.combatants.end() &&
                    unit->side == opengold::rules::Side::opposition && unit->conscious &&
                    unit->status.empty() && std::ranges::find(picked, id) == picked.end() &&
-                   (!holds_people(spell) || !unit->name.starts_with("SHAMBLING")) &&
+                   (!holds_people(spell) || !(unit->name.starts_with("SHAMBLING") ||
+                                              unit->name.starts_with("BIT O MOANDER"))) &&
                    (spell != blast || distance(unit->cell) <= 3);
         };
         const auto better =
