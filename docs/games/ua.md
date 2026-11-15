@@ -621,10 +621,32 @@ playing each event and fight; it fails on any event the session cannot play.
     area's) and an icon over two squares a side, which stands as two.
 
 Next, in this order (2026-11-15; monsters' spells, items' special effects,
-Appraise, the vault's items and the temple's Restoration are done):
+Appraise, the vault's items, the temple's Restoration, the quarrel of slaying,
+the kit's 72 and 58's and 96's near matches are done):
 
-1. The near matches' differences left (Monsters' effects): 91's and 96's breaths; 117's rays; 170's
-   rot, 2 Charisma a month until it kills (`fx_rotting`).
+1. 91's lightning breath as the kit's (`fxcombat.c`, `fx_lightning_breath`):
+   three a fight, the count set to 3 as each fight begins, every turn it
+   has a target (not Pool of Radiance's first round, then half the time),
+   aimed as Lightning Bolt (spell 51: range 4 and 4 a level, `spelltab.c`),
+   a bolt of 9 that does not bounce (`bolt_run(9, hp_max, 0)`, `spellfx.c`)
+   of electricity (element 24h), its maximum Hit Points; it ends its turn.
+   Read `bolt_run` for the save and the path before playing it as the kit's
+   own (691) in `kit_specials`.
+2. 117's rays as the kit's (`cbaction.c`, `eye_rays`): up to four a turn
+   at the target in sight, each kind once: within 2 squares
+   disintegration (save against breath, 3, or gone), within 3 flesh to
+   stone (save 1), within 4 death (save 0, or killed), within 5 Cause
+   Serious Wounds (2d8 + 1), then the spells 84, 55 and 21 cast at it
+   (Pools of Darkness's numbers).
+3. 170's rot as the kit's (`effects.c`, `fx_disease_touch`, `fx_rotting`):
+   unless the target has 50 or 215 (D7h), it takes 215 for 14,400 minutes
+   (no healing) and 172 (ACh) for a month (43,200 minutes) with strength
+   1d6 x 32 + 31; each month it rots, losing 2 Charisma (never below 3),
+   and after the last month (strength / 32 down to 1) it dies, gone for good
+   ("Dies rots away", status 8). The fight lays Pool of Radiance's 50 and
+   57 now (87); the campaign's `pass_time` would need the monthly
+   Charisma loss and the death, which no game's rules play yet (Pool of
+   Radiance's mummy rot only ends after its month).
 
 ### Monsters' effects, "no magic" fights and step events
 
@@ -651,10 +673,10 @@ Since 2026-11-14 (`ua_session.cpp`, `combatant.cpp`):
   | 59 | 127 | 92 | 492 | 143 | 111 | 223 | 480 |
   | 64 | 64 | 93 | 112 | 158 | 109 |  |  |
   | 65 | 465 | 95 | 107 | 159 | 117 |  |  |
-  | 66 | 115 | 96 | 290~ | 169 | 116 |  |  |
+  | 66 | 115 | 96 | 290 | 169 | 116 |  |  |
 
   A ~ marks a near match: 91
-  breathes as Pool of Radiance's dragons do; 96 is acid as well as breath;
+  breathes as Pool of Radiance's dragons do;
   117's rays need their exact distances; 170's rot takes no Charisma.
   Four play as the kit's in a design (2026-11-15): 58's gaze spares an
   iron golem (the kit's 79) as well as one that meets gazes unharmed, and
@@ -663,7 +685,12 @@ Since 2026-11-14 (`ua_session.cpp`, `combatant.cpp`):
   aims as (130, `spelltab.c`), as the fight's does; 82, on the rakshasa and
   rakshasa rukh, dies of a blow of the kit's quarrel of slaying (item type
   4Ah, `fx_slain_by_type`) as Pools of Darkness's rakshasa of its blessed
-  bolt (552; until 2026-11-15 *Curse*'s banishment by its quarrel, 330); 159
+  bolt (552; until 2026-11-15 *Curse*'s banishment by its quarrel, 330); 96
+  breathes acid as *Curse*'s black dragon does, three times a fight along 6
+  squares one wide at an enemy within 6 (aimed as Hold Person, 23), never
+  through its own side, its maximum Hit Points, half on a save against
+  breath, ending its turn (`fx_breath_weapon`; the acid bit *Curse* adds,
+  10h, changes no harm in the fight); 159
   takes holy water as the kit's item type 36h; 100's terror grips an enemy below 6 Hit Dice that fails a
   save against spells, for 4d6 rounds (`fx_terrify`), and 124's gaze
   charms as Charm Person, saved against without the -2 Pool of Radiance's
