@@ -589,8 +589,8 @@ new decoders.
    answers Manshoon's clerics truly and goes down through the drow
    stronghold to the temple's halls, and (2026-11-15) unrested through the
    slave pens, over the spiked pit's bridge and past the iron golem, to the
-   secret door into Kalistes' Temple (script 69), and through the temple
-   to Limbo. The win is
+   secret door into Kalistes' Temple (script 69), through the temple to
+   Limbo and into the Web Dimension. The win is
    PROGRAM 1 after Gothmenes falls (darkness.md, The win and the route).
    *Stand-ins:* the test wins the fight with the Vaasans who get through
    Vala's breach (their mages hold the party with Hold Monster), also where
@@ -603,15 +603,17 @@ new decoders.
    scribe's office (9,4), as the cluebook says. The route's casters memorize
    spells of all nine levels (2026-11-15). The route's party
    carries the game's own starting equipment. Until the route reaches the
-   win it passes when it plays every beat to Kalistes' Temple (map 69).
-   *Kalistes' Temple (2026-11-15):* the party rests in the slave pens'
-   quiet room (1,8), takes the priests' map, beats the barracks' squad and
-   rests there, hears the oracle, wins the inner chamber's fight, destroys
-   the statue's hands and steps through the portal to Limbo, where it rests
-   and trains. *Where it stops (2026-11-15):* in Limbo after the temple.
-   Next: the slave pens again for Silk and the Swanmays (only then does the
-   Eyes of Kalistes, Cynthia, befriend the party as it enters the Web
-   Dimension, script 83), then the Web Dimension and on round the area map
+   win it passes when it plays every beat to the Web Dimension (map 83).
+   *Kalistes' Temple (2026-11-15):* in the slave pens the party helps
+   Silk, beats the prison guards and frees her Swanmays (script 71), and
+   rests in her room and the quiet room (1,8); in the temple it takes the
+   priests' map, beats the barracks' squad and rests there, hears the
+   oracle, wins the inner chamber's fight, destroys the statue's hands and
+   steps through the portal to Limbo, where it rests and trains; then into
+   the Web Dimension (script 83), where Cynthia, the Eyes of Kalistes,
+   befriends it for her sister Silk's sake. *Where it stops (2026-11-15):*
+   there, at (8,4). Next: Cynthia's favors and the Web Dimension's minis,
+   the Drow Testing Ground and Kalistes' Parlor, and on round the area map
    to Dark Phlan (darkness.md, Where it stops). The temples' Restoration is
    to come where a beat needs it.
    *The area map is drawn (2026-11-14):* the big picture with the party's

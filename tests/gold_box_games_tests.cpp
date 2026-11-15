@@ -2036,7 +2036,7 @@ const std::vector<RouteBeat> &secret_route()
 // Pools of Darkness's route plays to the game's end once this is true; until
 // then it stops on this map (docs/GAMES.md, Pools of Darkness, step 5).
 constexpr bool darkness_route_ends_the_game = false;
-constexpr unsigned darkness_route_stops_on_map = 69;
+constexpr unsigned darkness_route_stops_on_map = 83;
 
 // Pools of Darkness's story, beat by beat, as its cluebook tells it: from New
 // Phlan's docks, where Rolf has walked the party out.
@@ -2984,14 +2984,59 @@ const std::vector<RouteBeat> &darkness_route()
         // (15,1; script 69).
         const auto slave_pens = route.size();
         walk_passages(route, 68,
-                      {{7, 15, D::north}, {7, 14, D::east},  {8, 14, D::east},  {9, 14, D::north},
-                       {9, 13, D::north}, {9, 12, D::north}, {9, 11, D::north}, {9, 10, D::west},
-                       {8, 10, D::west},  {7, 10, D::north}, {7, 9, D::north},  {7, 8, D::west},
-                       {6, 8, D::north},  {6, 7, D::east},   {7, 7, D::east},   {8, 7, D::east},
-                       {9, 7, D::north},  {9, 6, D::north},  {9, 5, D::west},   {8, 5, D::west},
-                       {7, 5, D::west},   {6, 5, D::west},   {5, 5, D::west},   {4, 5, D::west},
-                       {3, 5, D::west},   {2, 5, D::south},  {2, 6, D::south},  {2, 7, D::south},
-                       {2, 8, D::west}});
+                      {{7, 15, D::north},
+                       {7, 14, D::east},
+                       {8, 14, D::east},
+                       {9, 14, D::north},
+                       {9, 13, D::north},
+                       {9, 12, D::west},
+                       {8, 12, D::south}});
+        route.push_back(step_beat(68, 8, 13, D::west, {"APPROACH", "YES"}));
+        RouteBeat silk{68, 7, 13, D::west, {}};
+        silk.rest_first = true;
+        route.push_back(silk);
+        walk_passages(route, 68,
+                      {{7, 13, D::east},
+                       {8, 13, D::north},
+                       {8, 12, D::east},
+                       {9, 12, D::east},
+                       {10, 12, D::south},
+                       {10, 13, D::east},
+                       {11, 13, D::east},
+                       {12, 13, D::east},
+                       {13, 13, D::east}});
+        route.push_back(step_beat(68, 14, 13, D::north, {"YES"}));
+        walk_passages(
+            route, 68,
+            {{14, 12, D::north}, {14, 11, D::west}, {13, 11, D::west}, {12, 11, D::west}});
+        auto swanmays = step_beat(68, 11, 11, D::west);
+        swanmays.expect_cell = std::pair<std::uint16_t, std::uint16_t>{606, 3};
+        route.push_back(swanmays);
+        walk_passages(route, 68,
+                      {{10, 11, D::east},
+                       {11, 11, D::east},
+                       {12, 11, D::east},
+                       {13, 11, D::east},
+                       {14, 11, D::south},
+                       {14, 12, D::south},
+                       {14, 13, D::west},
+                       {13, 13, D::west},
+                       {12, 13, D::west},
+                       {11, 13, D::west},
+                       {10, 13, D::north},
+                       {10, 12, D::west},
+                       {9, 12, D::west},
+                       {8, 12, D::south},
+                       {8, 13, D::west}});
+        route.push_back(silk);
+        walk_passages(route, 68,
+                      {{7, 13, D::east},  {8, 13, D::north}, {8, 12, D::east}, {9, 12, D::north},
+                       {9, 11, D::north}, {9, 10, D::west},  {8, 10, D::west}, {7, 10, D::north},
+                       {7, 9, D::north},  {7, 8, D::west},   {6, 8, D::north}, {6, 7, D::east},
+                       {7, 7, D::east},   {8, 7, D::east},   {9, 7, D::north}, {9, 6, D::north},
+                       {9, 5, D::west},   {8, 5, D::west},   {7, 5, D::west},  {6, 5, D::west},
+                       {5, 5, D::west},   {4, 5, D::west},   {3, 5, D::west},  {2, 5, D::south},
+                       {2, 6, D::south},  {2, 7, D::south},  {2, 8, D::west}});
         RouteBeat quiet_room{68, 1, 8, D::west, {}};
         quiet_room.rest_first = true;
         route.push_back(quiet_room);
@@ -3064,6 +3109,11 @@ const std::vector<RouteBeat> &darkness_route()
         RouteBeat barracks{69, 13, 1, D::east, {}};
         barracks.rest_first = true;
         route.push_back(barracks);
+        for (auto beat = route.begin() + static_cast<std::ptrdiff_t>(temple);
+             beat != route.end() - 1; ++beat)
+        {
+            beat->camp_broken = true;
+        }
         // South along the temple's east corridor to the oracle (9,10),
         // entered facing north, which tells the drow to guard their lady
         // and what of hers the party must destroy (journal entry 93).
@@ -3102,7 +3152,11 @@ const std::vector<RouteBeat> &darkness_route()
         walk_passages(route, 69, {{8, 6, D::north}});
         route.push_back(step_beat(69, 8, 5, D::north, {"YES", "stop:REST"}));
         // In Limbo Elminster's camp heals the party night after night, its
-        // dead raised, and it trains.
+        // dead raised; it trains and moves on to Kalistes' land, the Web
+        // Dimension (map 83, script 83). There the Eyes of Kalistes, Cynthia,
+        // asks who helped the party at the temple: SILK, her sister, whose
+        // Swanmays it freed (cell 25Eh 3), and she asks three favors, spiders
+        // from the Cavern of Fireflies and drow prisoners first.
         RouteBeat web_rest{18, 0, 0, D::north, {}};
         web_rest.rest_choice = "REST";
         route.push_back(web_rest);
@@ -3111,14 +3165,10 @@ const std::vector<RouteBeat> &darkness_route()
                          0,
                          D::north,
                          {"TRAIN", "paladin 1", "paladin 2", "ranger 3", "cleric 4", "cleric 5",
-                          "magic_user 6", "Leave"}};
+                          "magic_user 6", "Leave", "MOVE ON", "KALISTES LAND", "YES", "YES",
+                          "type:SILK"}};
         to_web.waiting = true;
         route.push_back(to_web);
-        for (auto beat = route.begin() + static_cast<std::ptrdiff_t>(temple);
-             beat != route.end() - 1; ++beat)
-        {
-            beat->camp_broken = true;
-        }
         return route;
     }();
     return beats;

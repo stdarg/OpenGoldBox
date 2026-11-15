@@ -574,7 +574,17 @@ by what it is offered:
 - **The slave pens (map 68, the cluebook's Silk and the Slaves of the
   Drow),** where the drow patrols fall on any camp outside the cluebook's
   quiet rooms (a camp at the stairs met twelve drow sorcerers, champions and
-  a drider and lost): from (7,15) north through the barracks, where a patrol
+  a drider and lost): from (7,15) round to Silk (7,13, entered facing west
+  from 8,13), whom it approaches and agrees to help (APPROACH, YES; cell
+  25Eh 1): she joins it, and the room is safe to rest in (cell 9Ah 1; the
+  cluebook's location 4). East through the door at (12,13) into the prison
+  wing, whose events are script 71's (script 68 sends the party there
+  stepping east from 12,13, and 71 back stepping west from 13,13): the
+  prison guards (14,12, entered facing north) fall to the party's attack
+  (YES) and leave a ring of keys (cell 262h bit 1), and in the cell at
+  (10,11), entered facing west, Silk finds her Swanmays and leaves with
+  them and the other prisoners (cell 25Eh 3; journal entry 89). Back to
+  Silk's room to rest, and north through the barracks, where a patrol
   falls on the party (7,10), and west along the arches to the quiet room
   (1,8, entered facing west: "IT SEEMS SAFE TO REST HERE", cell 9Ah; the
   cluebook's location 4), where it rests. Then north and west over the
@@ -600,8 +610,15 @@ by what it is offered:
   Kalistes and two phase spiders (members dead), and destroys what the
   oracle named (INPUT: HANDS; cell 278h 1), closing the portals to the
   Realms. Through the last portal (8,4, YES) it steps into Limbo, where
-  Elminster's camp rests it until whole, its dead raised, and it trains,
-  where it stops (2026-11-15). Script 72 stores one OR to address 0
+  Elminster's camp rests it until whole, its dead raised, and it trains.
+- **The Web Dimension (map 83, script 83),** from Limbo (MOVE ON, KALISTES
+  LAND): the Eyes of Kalistes, Cynthia, asks who helped the party at the
+  temple, and only when Silk's Swanmays are free (cell 25Eh 3) can it name
+  her (YES; INPUT: SILK). Silk's sister, she asks three favors: spiders from
+  the Cavern of Fireflies and drow prisoners first. The party stands at
+  (8,4), where the route stops (2026-11-15). Without Silk, LEAVE sends it
+  back to Limbo, and STAY or FIGHT sets Cynthia against it (cells 21Dh bit
+  2, 221h bit 5) and spiders fall on it. Script 72 stores one OR to address 0
   (988Bh), which the original ignores (its GbvmZone): OpenGoldBox's later
   engine now reads address 0 as 0 and keeps nothing.
 
@@ -630,7 +647,7 @@ day: its player takes and wears the Ring of Fire Resistance from the hoard
 in room 4, as the cluebook's would, and wins. The route's party carries
 the game's own starting equipment (ORIGINAL-RULES.md, *Pools of Darkness*).
 Until the route reaches the win it passes when it plays every beat to
-Kalistes' Temple (map 69).
+the Web Dimension (map 83).
 
 What the route needed besides (2026-11-14): a Darkness party saves and
 loads, its levels to 40, on the area map (whose script, 17, does not load
@@ -650,17 +667,10 @@ party won or came through and "not equal" when it fled. Until 2026-11-14
 OpenGoldBox left the flags as they were, so a won fight could read as lost
 and move the party back a square (the walk passed all the same).
 
-Where it stops (2026-11-15): in Limbo after Kalistes' Temple, rested and
-trained, the statue's hands destroyed. Next, the Web Dimension (script 83,
-map 83): the Eyes of Kalistes (Cynthia) meets the party as it arrives and
-befriends it only when cell 25Eh is 3, which script 71 sets when the party,
-having agreed to help Silk in the slave pens (cell 25Eh 1), opens the
-Swanmays' cell with the prison guards' keys (cell 261h bit 6; the
-cluebook's locations 7 and 8); otherwise LEAVE sends it back to Limbo, and
-STAY or FIGHT sets her against it (cells 21Dh bit 2, 221h bit 5) and
-spiders fall on it. So the slave pens are to be walked again for Silk,
-her prisoners and her reward (drow weapons, the amulet past the iron
-golem). Then the Web Dimension's minis, the Drow Testing
+Where it stops (2026-11-15): in the Web Dimension (map 83), Cynthia
+befriended. Next, her favors (the Cavern of Fireflies' spiders, drow
+prisoners), the Web Dimension's minis (Storm, Dennia, the disgruntled
+slave), the Drow Testing
 Ground and Kalistes' Parlor, Myth Drannor and the Red Tower (scripts 66,
 70, 67), Moander (52, 53, 55), Mulmaster and the beholders' cave, Dark
 Phlan (64) and the Palace of Gothmenes (65, 74, 73), whose win (75) is in
