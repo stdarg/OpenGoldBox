@@ -5100,6 +5100,23 @@ const std::vector<RouteBeat> &darkness_route()
         // pens' monsters, and a beholder offers it Arcam's interview (YES):
         // it is led down into the Cave of the Beholder (script 36).
         route.push_back(step_beat(19, 5, 6, D::east, {"YES"}));
+        walk_passages(route, 36,
+                      {{0, 0, D::east},
+                       {1, 0, D::east},
+                       {2, 0, D::east},
+                       {3, 0, D::east},
+                       {4, 0, D::south},
+                       {4, 1, D::south},
+                       {4, 2, D::east},
+                       {5, 2, D::south},
+                       {5, 3, D::south},
+                       {5, 4, D::south}});
+        route.push_back(step_beat(36, 5, 5, D::south, {"NO", "NO", "NO", "NO"}));
+        {
+            auto chancellor = step_beat(36, 5, 7, D::south);
+            chancellor.rest_first = true;
+            route.push_back(chancellor);
+        }
         return route;
     }();
     return beats;
