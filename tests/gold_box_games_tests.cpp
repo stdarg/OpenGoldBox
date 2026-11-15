@@ -3522,6 +3522,12 @@ const std::vector<RouteBeat> &darkness_route()
                        {3, 12, D::south},
                        {3, 13, D::south},
                        {3, 14, D::west}});
+        // The Parlor's camps rest only in the guards' quarters: the party
+        // walks back hurt, without stopping.
+        for (auto beat = route.end() - 19; beat != route.end(); ++beat)
+        {
+            beat->camp_broken = true;
+        }
         auto rested_for_the_larder = step_beat(82, 2, 14, D::east);
         rested_for_the_larder.rest_first = true;
         route.push_back(rested_for_the_larder);
@@ -3694,6 +3700,33 @@ const std::vector<RouteBeat> &darkness_route()
         into_myth_drannor.take_items = {
             {"Crossbow", "ranger 3"}, {"Bolt", "ranger 3"}, {"Bolt", "ranger 3"}};
         route.push_back(into_myth_drannor);
+        // In the ruins (map 66) the party walks south to the ruined houses
+        // (6,13), where its camps may rest (the script's events 16 and up;
+        // the cluebook's locations 17), and rests.
+        walk_passages(
+            route, 66,
+            {{15, 4, D::south},  {15, 5, D::south},  {15, 6, D::west},   {14, 6, D::west},
+             {13, 6, D::south},  {13, 7, D::south},  {13, 8, D::south},  {13, 9, D::west},
+             {12, 9, D::west},   {11, 9, D::south},  {11, 10, D::south}, {11, 11, D::south},
+             {11, 12, D::south}, {11, 13, D::south}, {11, 14, D::south}, {11, 15, D::west},
+             {10, 15, D::west},  {9, 15, D::west},   {8, 15, D::west},   {7, 15, D::west},
+             {6, 15, D::north},  {6, 14, D::north}},
+            false, false, false, {"YES"});
+        // Elsewhere its camps draw the basilisks and dracolisks that roam
+        // the ruins nine times in ten: the party walks on hurt.
+        for (auto beat = route.end() - 22; beat != route.end(); ++beat)
+        {
+            beat->camp_broken = true;
+        }
+        RouteBeat ruin_rest{66, 6, 13, D::north, {}};
+        ruin_rest.rest_first = true;
+        route.push_back(ruin_rest);
+        // The door will not budge: a member of Dexterity 17 climbs over and
+        // secures a rope (CLIMB OVER, WHO), each member trying in turn.
+        route.push_back(step_beat(66, 4, 4, D::north,
+                                  {"CLIMB OVER", "paladin 1", "CLIMB OVER", "paladin 2",
+                                   "CLIMB OVER", "ranger 3", "CLIMB OVER", "cleric 4", "CLIMB OVER",
+                                   "cleric 5", "CLIMB OVER", "magic_user 6"}));
         return route;
     }();
     return beats;
@@ -5746,6 +5779,16 @@ bool walk_census(GoldBoxGame game, bool route)
                        : unit_of(a.target)->hit_points > unit_of(b.target)->hit_points;
         };
         const auto commands = session.legal_commands();
+        // Pools of Darkness's rakshasas are shot from afar, where a blessed
+        // bolt slays one (its effect 82), as Nacacia bids.
+        for (const auto &command : commands)
+        {
+            if (command.verb == "ranged" && unit_of(command.target) != state.combatants.end() &&
+                unit_of(command.target)->name.starts_with("RAKSHASA"))
+            {
+                return command;
+            }
+        }
         const opengold::rules::Command *best = nullptr;
         for (const auto &command : commands)
         {
@@ -6155,19 +6198,40 @@ bool walk_census(GoldBoxGame game, bool route)
             }
             catch (const std::exception &)
             {
-                // Something readied is in its place (arrows where bolts go):
-                // the member puts away the first item whose place it takes.
-                for (const auto readied : std::vector(party->member(*taker).equipped))
+                // Something readied is in its place (quarrels where bolts go,
+                // a sword and shield where a crossbow goes): the member puts
+                // away the one item, or else the two, whose place it takes.
+                const auto readied = std::vector(party->member(*taker).equipped);
+                const auto fits_without = [&](std::vector<std::uint64_t> away)
                 {
-                    party->unequip(*taker, readied);
+                    for (const auto item : away)
+                    {
+                        party->unequip(*taker, item);
+                    }
                     try
                     {
                         party->equip(*taker, taken);
-                        break;
+                        return true;
                     }
                     catch (const std::exception &)
                     {
-                        party->equip(*taker, readied);
+                        for (const auto item : away)
+                        {
+                            party->equip(*taker, item);
+                        }
+                        return false;
+                    }
+                };
+                bool fitted = false;
+                for (std::size_t a = 0; a < readied.size() && !fitted; ++a)
+                {
+                    fitted = fits_without({readied[a]});
+                }
+                for (std::size_t a = 0; a < readied.size() && !fitted; ++a)
+                {
+                    for (std::size_t b = a + 1; b < readied.size() && !fitted; ++b)
+                    {
+                        fitted = fits_without({readied[a], readied[b]});
                     }
                 }
             }
