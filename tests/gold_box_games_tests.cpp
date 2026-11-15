@@ -3398,7 +3398,10 @@ const std::vector<RouteBeat> &darkness_route()
                        {9, 3, D::west}});
         route.push_back(step_beat(83, 8, 3, D::south, {"BEHEAD"}));
         // Out of the ruins by the south way (7,9) onto the web's paths
-        // (script 80, an area map as script 17 is).
+        // (script 80, an area map as script 17 is), unrested: a camp in the
+        // ruins drew Kalistes' pets, iron golems and giant spiders, which
+        // beat the party a drow patrol had hurt, so the clerics cure the
+        // badly hurt instead.
         walk_passages(route, 83,
                       {{8, 3, D::east},
                        {9, 3, D::south},
@@ -3409,6 +3412,11 @@ const std::vector<RouteBeat> &darkness_route()
                        {8, 7, D::south},
                        {8, 8, D::south},
                        {8, 9, D::west}});
+        for (auto beat = route.end() - 9; beat != route.end(); ++beat)
+        {
+            beat->camp_broken = true;
+            beat->cure_first = true;
+        }
         route.push_back(step_beat(83, 7, 9, D::south, {"YES", "NO"}));
         // North-east along the paths to the Drow Testing Ground's gates
         // (13,7), which swing open for the party (script 81).
@@ -4131,8 +4139,23 @@ const std::vector<RouteBeat> &darkness_route()
                        {10, 3, D::north},
                        {10, 2, D::west},
                        {9, 2, D::north},
-                       {9, 1, D::east},
-                       {10, 1, D::north}});
+                       {9, 1, D::west},
+                       {8, 1, D::north}});
+        // The quiet rooms of the lower tower's levels (map 70's event 30:
+        // IT SEEMS SAFE TO REST IN; elsewhere its camps drew the tower's
+        // mages and monsters): the party steps in, rests until whole, its
+        // spells memorized, and steps out by the way it came.
+        const auto rest_in_quiet_room = [&route](unsigned map, unsigned x, unsigned y, D out)
+        {
+            auto quiet_room = step_beat(map, x, y, out);
+            quiet_room.rest_first = true;
+            quiet_room.rest_for_spells = true;
+            quiet_room.rest_through_period = true;
+            route.push_back(quiet_room);
+        };
+        // Level 1's (8,0).
+        rest_in_quiet_room(70, 8, 0, D::south);
+        walk_passages(route, 70, {{8, 1, D::east}, {9, 1, D::east}, {10, 1, D::north}});
         route.push_back(step_beat(70, 10, 0, D::west, {"YES"}));
         walk_passages(route, 70,
                       {{1, 4, D::west},
@@ -4142,6 +4165,20 @@ const std::vector<RouteBeat> &darkness_route()
                        {0, 7, D::east},
                        {1, 7, D::east},
                        {2, 7, D::north},
+                       {2, 6, D::east},
+                       {3, 6, D::east},
+                       {4, 6, D::east},
+                       {5, 6, D::east},
+                       {6, 6, D::east},
+                       {7, 6, D::south}});
+        // Level 2's quiet room (7,7), before the drow and the cleric's troops.
+        rest_in_quiet_room(70, 7, 7, D::north);
+        walk_passages(route, 70,
+                      {{7, 6, D::west},
+                       {6, 6, D::west},
+                       {5, 6, D::west},
+                       {4, 6, D::west},
+                       {3, 6, D::west},
                        {2, 6, D::north},
                        {2, 5, D::east},
                        {3, 5, D::east},
@@ -4189,19 +4226,12 @@ const std::vector<RouteBeat> &darkness_route()
                        {11, 5, D::north},
                        {11, 4, D::west}});
         route.push_back(step_beat(70, 10, 4, D::west, {"YES"}));
-        // Level 6: round by the quiet room north of the arrival (2,0, event
-        // 30: IT SEEMS SAFE TO REST IN; the tower's other camps are
-        // interrupted), where the party rests until whole, its spells
-        // memorized, as in the upper tower's side rooms.
-        const auto rest_in_level_six_room = [&route]
+        // Level 6: round by the quiet room north of the arrival (2,0).
+        const auto rest_in_level_six_room = [&route, &rest_in_quiet_room]
         {
             walk_passages(route, 71,
                           {{1, 3, D::north}, {1, 2, D::north}, {1, 1, D::east}, {2, 1, D::north}});
-            auto quiet_room = step_beat(71, 2, 0, D::south);
-            quiet_room.rest_first = true;
-            quiet_room.rest_for_spells = true;
-            quiet_room.rest_through_period = true;
-            route.push_back(quiet_room);
+            rest_in_quiet_room(71, 2, 0, D::south);
             walk_passages(route, 71, {{2, 1, D::west}, {1, 1, D::south}, {1, 2, D::south}});
         };
         walk_passages(route, 71,
@@ -4271,15 +4301,32 @@ const std::vector<RouteBeat> &darkness_route()
                        {11, 0, D::west}});
         route.push_back(step_beat(71, 10, 0, D::west, {"YES"}));
         walk_passages(route, 71,
-                      {{10, 5, D::west},  {9, 5, D::west},   {8, 5, D::south},  {8, 6, D::west},
-                       {7, 6, D::west},   {6, 6, D::west},   {5, 6, D::north},  {5, 5, D::west},
-                       {4, 5, D::west},   {3, 5, D::west},   {2, 5, D::west},   {1, 5, D::west},
-                       {0, 5, D::south},  {0, 6, D::south},  {0, 7, D::east},   {1, 7, D::south},
-                       {1, 8, D::west},   {0, 8, D::south},  {0, 9, D::east},   {1, 9, D::east},
-                       {2, 9, D::east},   {3, 9, D::east},   {4, 9, D::east},   {5, 9, D::east},
-                       {6, 9, D::east},   {7, 9, D::east},   {8, 9, D::east},   {9, 9, D::east},
-                       {10, 9, D::north}, {10, 8, D::north}, {10, 7, D::north}, {10, 6, D::east},
-                       {11, 6, D::east},  {12, 6, D::north}, {12, 5, D::west}});
+                      {{10, 5, D::west}, {9, 5, D::west},  {8, 5, D::south}, {8, 6, D::west},
+                       {7, 6, D::west},  {6, 6, D::west},  {5, 6, D::north}, {5, 5, D::west},
+                       {4, 5, D::west},  {3, 5, D::west},  {2, 5, D::west},  {1, 5, D::west},
+                       {0, 5, D::south}, {0, 6, D::south}, {0, 7, D::east},  {1, 7, D::south},
+                       {1, 8, D::west},  {0, 8, D::south}, {0, 9, D::east},  {1, 9, D::east},
+                       {2, 9, D::east},  {3, 9, D::east},  {4, 9, D::east}});
+        // Level 7's pincer (the cluebook's 16 and 17): through the door at
+        // (6,9) the party hears wizards ahead and others behind; it taunts
+        // the group to the west (TAUNT) and ducks into the closet north
+        // (6,8, WAIT HERE? YES), where the two factions destroy each other
+        // (cell 177h), and walks on past their bodies.
+        route.push_back(step_beat(71, 5, 9, D::east, {"TAUNT"}));
+        route.push_back(step_beat(71, 6, 9, D::north, {"YES"}));
+        walk_passages(route, 71,
+                      {{6, 8, D::south},
+                       {6, 9, D::east},
+                       {7, 9, D::east},
+                       {8, 9, D::east},
+                       {9, 9, D::east},
+                       {10, 9, D::north},
+                       {10, 8, D::north},
+                       {10, 7, D::north},
+                       {10, 6, D::east},
+                       {11, 6, D::east},
+                       {12, 6, D::north},
+                       {12, 5, D::west}});
         route.push_back(step_beat(71, 11, 5, D::west, {"YES"}));
         // Level 8: west round the guard rooms to the sortie against Phlan
         // (the cluebook's 22), where Shal bluffs the many guards before the
