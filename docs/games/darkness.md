@@ -933,7 +933,22 @@ visit (each class's award stops short of the level after next, as
 training keeps it). It reaches Kalistes at levels 15 to 18 (the
 magic-user 17, with eighth-level spells).
 
-Where it stops (2026-11-15, night): on Moander's body (script 51, the
+Open after the rebase onto origin/main of 2026-11-15 (fa1e8017,
+Treasures' Charm Person and Fix in the shared 256-color engine): the route
+no longer reaches Moander in one run. Its dice change, and the party loses
+on level 6 of the lower tower: the camp before Moander's monsters (71: 9,4)
+is interrupted by the tower's wandering mages and bits of Moander, and the
+party goes in hurt and falls (71: 11,4), or falls on the way (71: 5,4).
+Unrested walks fall on level 7's pincer, and a step east from the level 6
+arrival (1,0) is the path back down, not the quiet room. The exact next
+step: find a way into level 6's quiet room (map 71's event 30 at 2,0,
+script 70's 92D1h: IT SEEMS SAFE TO REST IN; OPENGOLD_SECRET_FIND=2,0,71
+from the save after beat 1775) and rest there with
+`rest_through_period` before Moander's monsters, as the upper tower's
+quiet rooms are used; map 70's quiet rooms (event 30 at 7,7, 15,4, 8,0 and
+14,0) can rest the party on levels 1 to 5 the same way.
+
+Where it stops (2026-11-15, night; before that rebase): on Moander's body (script 51, the
 party still standing on map 52 at 7,9), just out of the depression. Next:
 Moander (the cluebook's 57 to 60). Script 51 is a body of places, not a
 map: the party's place is cell 224h, a step forward moves it by the
