@@ -4908,11 +4908,15 @@ const std::vector<RouteBeat> &treasure_route()
         route.push_back({30, 1, 7, D::north, {"YES"}});
         // A camp on the overland (maps 51 to 57) draws its wandering
         // monsters night after night: the party walks on between towns
-        // instead, as a player hurries to the next inn.
-        constexpr unsigned first_overland = 51, last_overland = 57;
+        // instead, as a player hurries to the next inn. So does one in the
+        // sea elves' caverns (map 22), whose ghouls, wights, otyughs and
+        // carrion crawlers break every night's rest: the party walks on to
+        // the Zhentil captain's office, resting only before it.
+        constexpr unsigned first_overland = 51, last_overland = 57, caverns = 22;
         for (auto &beat : route)
         {
-            beat.camp_broken = beat.map >= first_overland && beat.map <= last_overland;
+            beat.camp_broken =
+                (beat.map >= first_overland && beat.map <= last_overland) || beat.map == caverns;
         }
         return route;
     }();
