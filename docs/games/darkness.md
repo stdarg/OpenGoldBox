@@ -543,16 +543,22 @@ by what it is offered:
   original camps and goes on with the script (its EclProgram ends the
   script only on the area map); here it rests a night and the script goes
   on, the route choosing REST until the party is whole, its spells chosen
-  after each night. TRAIN opens the hall, which in Darkness names no price
-  ("Who will train?"). MOVE ON, THORNE.
+  after each night; the clerics and paladins memorize Resist Fire, a copy
+  for every member between them, for Thorne (2026-11-15). TRAIN opens the
+  hall, which in Darkness names no price ("Who will train?"). MOVE ON,
+  THORNE.
 - **Thorne's cave (map 34),** before the Horn of Doom's third blast: the
   shortest way the planning aid finds to Thorne (3,7), turning aside once
   into the cluebook's room 4 (15,12, entered facing south), where the party
   attacks the red dragon stuffing its treasure into a hole (ATTACK; cell
   153h bit 7) and the leading paladin takes and wears the hoard's one ring,
   the Ring of Fire Resistance (unidentified; the route's `take_items`).
-  Thorne, whom the party will not leave (YES), is beaten (cell 152h FFh),
-  members dead and raised after; he leaves the Horn of Doom. Back
+  Thorne, whom the party will not leave (YES), and his seven red dragons
+  are beaten (cell 152h FFh), members dead and raised after; he leaves the
+  Horn of Doom. No camp in the cave rests until he falls (script 34's camp
+  entry), so the Resist Fire memorized in Limbo is cast on each member
+  before the fight, halving his breath's 24d10+12 (the route's
+  `ward_each_with`; 2026-11-15). Back
   to the gate (0,13, westward), and from Limbo (REALMS) Elminster returns
   the party to the Aerie's gate, the script it came from (cell 9Ah). It
   walks out by the Aerie's entrance (8,15), declining the cave again.
@@ -716,17 +722,43 @@ by what it is offered:
 - **Myth Drannor (map 66, 2026-11-15).** The ruins' camps rest only on
   events 16 and up (the cluebook's locations 17, the ruined houses);
   elsewhere a camp draws the roaming basilisks and dracolisks nine times in
-  ten, so the party walks without camping. South and round by the
-  rakshasas draining a knight (10,15, the cluebook's 9; Nacacia throws
-  herself at them, the knights rally) to the ruined houses (6,13), where it
-  rests; west to the rakshasas and Banites at their altar (3,14, the
-  cluebook's 10; a stand-in, below) and back to rest; then round the ruins' west side, past
-  the narrow passages (YES) and the rakshasa posing as a knight, to the
-  door that will not budge (4,4, facing north): the second paladin, of
-  Dexterity 18, climbs over and secures a rope (CLIMB OVER, WHO). Round to
-  the house west of the temple (3,0), where it rests, and to the temple's
-  door (5,0). The route's own tactic (the player's choices) shoots a
-  rakshasa it can from afar, where a blessed bolt slays it.
+  ten, so the party walks without camping. The cluebook's word is that
+  blessed bolts kill the rakshasas, which no spell below the eighth level
+  touches; a plain one takes half from weapons +1 and +2, a Rukh, Rajah or
+  the Maharajah nothing from +1 and half from +2 and +3. So the route gathers
+  every crossbow and blessed bolt the ruins hold, as a player would: south
+  and east to the room of smashed artifacts (15,9, the cluebook's 6),
+  entered by its door facing east in search mode (script 66's event 6
+  reads the facing and cell 19h), where the second paladin takes the stash's
+  light crossbow +3, quarrels +4 and four stacks of blessed bolts; west along
+  the street north of the knights the rakshasas drain (the cluebook's 9,
+  left alone, its fight would spend the bolts), to the spectres' room (3,10,
+  the cluebook's 11, entered westward), where the first paladin takes the
+  elf's armor and with it a light crossbow +2, quarrels +4 and two stacks of
+  blessed bolts (YES). Each bearer's blessed bolts (two to a stack) are
+  joined into one stack, the items menu's JOIN (below), so a fight shoots
+  them all. Rested at the ruined houses (6,13), the casters taking Dispel
+  Magic first, it beats the Banites and rakshasas at their altar (3,14, the
+  cluebook's 10; the only way to the ruins' west side), and goes round the
+  west side, past the narrow passages (YES) and the rakshasa posing as a
+  knight, to the door that will not budge (4,4, facing north): the second
+  paladin, of Dexterity 18, climbs over and secures a rope (CLIMB OVER,
+  WHO). Round to the house west of the temple (3,0), where it rests, and
+  into the temple (5,1), where it smashes the knights' globes (SMASH
+  GLOBES) and beats the Maharajah, three Rukhs, two Rajahs and seven
+  rakshasas (cell 1D8h FFh). Before each of the two fights the bolts'
+  bearers ready their crossbows and the blessed bolts again (`ready_types`,
+  where the last fight left them their swords); the route's player shoots
+  the Rajahs, then the Maharajah and the Rukhs, then the rakshasas, steps a
+  bearer clear of the enemy next to it (a launcher shoots nothing with an
+  enemy adjacent, as cbtacts.pas has it), and frees a held member with
+  Dispel Magic. Nacacia falls there; at the gate (15,4, stepped from facing
+  east: "DO YOU WANT TO LEAVE MYTH DRANNOR?", YES) the knights carry her body
+  away and see the party out (her glen and its chest are for a living
+  Nacacia).
+- **To the Red Tower (2026-11-15).** Three squares north-east and one east
+  on the area map to the red tower (journal entry 99), entered (YES): the
+  garden of the Red Tower (map 70, script 70, at 4,15).
 
 Since 2026-11-15 the route's casters memorize spells of every level they
 have slots of (Pools of Darkness's levels 6 to 9 among them) and raise the
@@ -743,43 +775,35 @@ state does (Script memory, above). Until 2026-11-14 OpenGoldBox stepped on
 anyway, so stairs landed a square beyond their landing and a held step could
 wrap round the map's edge.
 
-Two stand-ins (still so on 2026-11-15, night, with the experience
-stand-in above: the Kalistes fight was not retried yet). The Vaasans who
-get through, seven mages and twelve
-warriors, hold the party with Hold Monster before it acts and slay the held
-with every dice the route tries, so the test wins that fight. A player
-would gear the party with the cave's treasure and ward it first; the
-route's player takes no treasure but wands. And Kalistes' egg room (84:
-2,6, 2026-11-15): Kalistes, seven drow champions, eight drow wizards and
-five pets, and the spy's basilisks, medusae and earth elementals after.
-Since her six weapons are played (ORIGINAL-RULES.md, *Pools of Darkness*;
-each of her six blows a round 12 to 21 with her Strength of 19) the fight is
-harder still: the best of the route's 120 plays (40 dice, three tactics)
-leaves the whole party dead, its members held by the wizards' and
-champions' Hold Monster and slain helpless, hit by Ice Storm and
-Disintegrate. What a player could bring does not change that much: Storm
-(the Web Dimension's dwarf, 113 Hit Points) is one more fighter; the minis'
-+4 scale, banded and elfin chain are no better than the party's plate mail
-+3; Mind Blank, which turns holding, is an eighth-level spell the
-magic-user (level 15, 87,000 experience short of 16) cannot cast yet, and
-would shield one member. The player of the original comes far stronger,
-from the many wandering fights a route that walks straight to its goals
-does not have (the route's party gained 650,000 experience in all from the
-opening to here); so the test wins both fights, a stand-in until the route
-can come as strong. Thorne (34: 3,7) the test wins again since the
-dragons' breaths are played (2026-11-15, night): his 24d10+12 of fire,
-three times, burns the party to death with every dice, Ring of Fire
-Resistance and all; a player would ward each member with Resist Fire
-first, which the route does not cast yet. So does the Aerie's blue
-dragons' nest (33: 3,14): five blue dragons, each breathing lightning of
-its 80 Hit Points three times, leave the party of levels 12 to 14 dead with
-most dice even rested. And Myth Drannor's altar (66: 3,14): its eight
-Banite clerics and their rakshasas beat the party of levels 16 to 18 with
-every dice, rested and its spells fresh, though a run of the route that
-came there stronger won it once. The route's party carries the game's own
-starting equipment (ORIGINAL-RULES.md, *Pools of Darkness*). Until the
-route reaches the win it passes when it plays every beat to Myth Drannor's
-gate (map 66).
+Stand-ins (2026-11-15, late): two, the fights the test wins. The Aerie's
+blue dragons' nest (33: 3,14): five blue dragons, each breathing lightning
+of its 80 Hit Points three times, leave the party of levels 12 to 14 dead
+with most dice even rested; the game has no spell against lightning, only
+the Protection from Dragon Breath of a potion the party has not found. And
+Kalistes' egg room (84: 2,6): Kalistes, seven drow champions, eight drow
+wizards and five pets, and the spy's basilisks, medusae and earth elementals
+after. Since her six weapons are played (ORIGINAL-RULES.md, *Pools of
+Darkness*; each of her six blows a round 12 to 21 with her Strength of 19)
+the best of the route's 120 plays (40 dice, three tactics) leaves the whole
+party dead, its members held by the wizards' and champions' Hold Monster and
+slain helpless, hit by Ice Storm and Disintegrate. Mind Blank, which turns
+holding, is beyond the route's magic-user: its Intelligence, below 16, gives it
+no eighth-level slot (TrimHighSpellSlots), so its training never offers
+such a spell, as for a party made in the original The player of the original comes far
+stronger, from the many wandering fights a route that walks straight to its
+goals does not have. The fights the route's player now wins (2026-11-15,
+late): the Vaasans (37: 13,8; the party came stronger), Thorne with his
+seven red dragons (warded with Resist Fire), Myth Drannor's altar and its
+temple (the blessed bolts, above). The route's party carries the game's own
+starting equipment (ORIGINAL-RULES.md, *Pools of Darkness*). Until the route
+reaches the win it passes when it plays every beat to the Red Tower's
+garden (map 70).
+
+Myth Drannor's way out (2026-11-15, late) needed the 256-color engine's
+LOAD CHARACTER as the original has it: it reads its argument's low seven
+bits only (eclvm.pas, EclLoadCharacter), where OpenGoldBox read the high
+bit as *Pool of Radiance*'s store of the record and refused the script
+(ECL1:66 0x8658, after FIND NPC); *Treasures* shares the engine.
 
 What the route needed besides (2026-11-14): a Darkness party saves and
 loads, its levels to 40, on the area map (whose script, 17, does not load
@@ -818,26 +842,39 @@ camp entry sets cell 2Bh) its clerics raise the dead and cast their cures
 instead, and they keep Raise Dead ready. Kalistes' Parlor is entered the
 cluebook's way, by the kitchen's trapdoor (The win and the route, above).
 
+The items menu's JOIN (viewchar.pas, JoinItem) is in the party since
+2026-11-15 (`CampaignParty::join_like_items`): every other stack of the
+member's like the item (the same record and name; a stack in the original,
+with fewer than two charges) joins it, up to 255 a stack. The game's Items
+screen has no Join button yet; the route joins its blessed bolts.
+
 The route walks straight to its goals, where a player meets the wandering
 monsters of every area (the cluebook names them for each) and, in the Web
 Dimension, gains "as much experience as you can" before Kalistes. So the
 test gives each member experience at the training points a player would
 come to stronger, a stand-in for those fights (2026-11-15): 300,000 in
-Limbo after the Aerie, 300,000 at Zhentil Keep's hall and 400,000 in
-Limbo before the Web Dimension, and the party trains up to two levels a
+Limbo after the Aerie, 300,000 at Zhentil Keep's hall, 400,000 in
+Limbo before the Web Dimension and 500,000 at Zhentil Keep's hall again on
+the way out to Myth Drannor (the Web Dimension's paths and the Descent),
+and the party trains up to two levels a
 visit (each class's award stops short of the level after next, as
 training keeps it). It reaches Kalistes at levels 15 to 18 (the
 magic-user 17, with eighth-level spells).
 
-Where it stops (2026-11-15, night): at the door of the temple in Myth
-Drannor (66: 5,0), where the Rakshasa Maharajah raises Tyranthraxus (the
-cluebook's 16). The party smashes the knights' globes (SMASH GLOBES) and
-Tyranthraxus' form falls to dust, but the Maharajah (117 Hit Points),
-three Rukhs, two Rajahs and seven rakshasas who rush in beat it with every
-dice the route tries; the temple's fight ends with cell 1D8h at 255. Their
-Rukhs and Rajahs take half from weapons below +4 and no spell below the
-eighth level touches them; the ranger's blessed bolts slay any he hits
-from afar. Then the Red Tower (scripts 70 and 67), Moander (52, 53, 55),
+Where it stops (2026-11-15, late): in the garden of the Red Tower (map
+70: 4,15, script 70), just inside. Next: the Tower of Marcus (the cluebook's
+51 to 56). Script 70's events are its step entry's ON GOTO on cell A8h (36
+of them); its wandering patrols come from the tables at 9862h on. The
+cluebook's way: find Shal in her cell (11, the dungeon, past the voice
+through the crack at 9) and take her along (YES to taking her to the top),
+up the lower tower's levels 0 to 8 by its paths ("THE PATH GOES UP",
+script 70's events), through the wizard gate to the upper tower (script
+67, which the gate locks behind the party), disrupt the cult's altar (3 or
+4), the Red Wizards' lofts (6, the code word RED after listening at 5), the
+Fountains of Moander (10) and the manufactories (12, 13, 14) and the
+dispersion diagram (15), so that Marcus stands in his chambers (18); then
+the leap onto the Vessel of Moander (20) as the tower falls, to Limbo. Then
+Moander (52, 53, 55),
 Mulmaster and the beholders' cave, Dark Phlan (64) and the Palace of
 Gothmenes (65, 74, 73), whose win (75) is in place. Scripts and the scripts
 they go on to (`opengold_scripts --inspect DARKNESS ECL1.DAX N`, NEW ECL):
@@ -845,7 +882,12 @@ they go on to (`opengold_scripts --inspect DARKNESS ECL1.DAX N`, NEW ECL):
 18; 66 and 70 from the area map; 70 to 67 and 76; 67 to 75 and 77; 64 to
 65 and 74; 65 to 73, 74, 75. `OPENGOLD_ROUTE_JUMPS` names a beat that puts
 the party on a square it does not stand on (a step the beats before it did
-not walk).
+not walk). `OPENGOLD_ROUTE_SAVES=PREFIX` with `OPENGOLD_ROUTE_SAVE_AT=N,N`
+saves after those beats (PREFIXN.sav, for `OPENGOLD_ROUTE_RESUME`) in one
+run; `OPENGOLD_FIGHT_TACTIC=N` plays every try with one tactic,
+`OPENGOLD_FIGHT_CELLS` adds where each fighter stands to the fight lines
+and `OPENGOLD_FIGHT_GEAR` prints each member's memorized spells and items as
+a fight begins.
 `OPENGOLD_ROUTE_BEATS` and `OPENGOLD_SECRET_FIND` plan each step: the
 planning aid answers NO, so it never takes stairs a question offers; find
 the stairs' squares by their walls of type 7 and step them in a beat. A

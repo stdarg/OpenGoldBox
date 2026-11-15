@@ -649,13 +649,15 @@ new decoders.
    experience for the wandering monsters a player meets (300,000 in Limbo
    after the Aerie, 300,000 at Zhentil Keep's hall, 400,000 in Limbo before
    the Web Dimension, trained up to two levels a visit) brings it to
-   Kalistes at levels 15 to 18. Thorne and the Aerie's five blue dragons
-   (their breath) and Myth Drannor's altar are stand-ins.
-   In Myth Drannor the ranger readies Nacacia's light crossbow and blessed
-   bolts, which slay a rakshasa (effect 82, played); the party beats the
-   rakshasas draining a knight, climbs the door that
-   will not budge and stops at the temple's door (66: 5,0), whose
-   Maharajah and rakshasas beat it (darkness.md, Where it stops).
+   Kalistes at levels 15 to 18. *Since 2026-11-15, late:* the route wards
+   the party before a known fight (Resist Fire, memorized in Limbo, on each
+   member before Thorne), gathers Myth Drannor's crossbows and blessed bolts
+   (the archery stash, the elf's grave) and joins the bolts (the items
+   menu's JOIN, now in the party), trains again at Zhentil Keep's hall
+   (500,000 test experience) and wins Myth Drannor's altar and temple, the
+   Vaasans and Thorne too; the Aerie's blue dragons and Kalistes' egg room
+   are the stand-ins left. It leaves Myth Drannor by its gate and stops in
+   the Red Tower's garden (70: 4,15; darkness.md, Where it stops).
    *The area map is drawn (2026-11-14):* the big picture with the party's
    marker, as the original draws it. *Spell levels 8 and 9 and the new
    spells (2026-11-15):* merged, with Restoration giving back a drained

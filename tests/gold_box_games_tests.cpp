@@ -3937,12 +3937,7 @@ const std::vector<RouteBeat> &darkness_route()
         // 1D7h bit 1).
         route.push_back(step_beat(66, 4, 4, D::north, {"CLIMB OVER", "paladin 2"}));
         // Beyond it, round to the house west of the temple (3,0), where the
-        // party rests, to the temple's door (5,0). The route stops there: in
-        // the temple (5,1, the cluebook's 16), where the Rakshasa Maharajah
-        // raises Tyranthraxus, the party smashes the knights' globes (SMASH
-        // GLOBES) and Tyranthraxus' form falls to dust, but the Maharajah
-        // and the rakshasas who rush in beat it with every dice (cell 1D8h
-        // stays 0; darkness.md, Where it stops).
+        // party rests, to the temple's door (5,0).
         walk_ruins_unrested({{4, 3, D::east},
                              {5, 3, D::south},
                              {5, 4, D::east},
