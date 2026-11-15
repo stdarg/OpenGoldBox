@@ -4887,12 +4887,17 @@ const std::vector<RouteBeat> &treasure_route()
         // and Zhentil agents over their Lucky Papers; then Amanitas's house
         // (7,10), where Erek leads the party in and Amanitas gives it his
         // crown and sends it to Leilon.
-        RouteBeat crystal{19, 13, 15, D::north, {}};
-        crystal.rest_first = true;
-        route.push_back(crystal);
-        RouteBeat amanitas{19, 7, 10, D::north, {"YES"}};
-        amanitas.rest_first = true;
-        route.push_back(amanitas);
+        // Before each the party rests at the Inn of the Eccentric Owl (0,11,
+        // facing south), for the town's guards break a camp in the streets
+        // (the cluebook's Resting: inside any building). The crystal
+        // battle's four Hosttower sorceresses open with Lightning Bolts: the
+        // magic-user memorizes its Fireballs first and burns them.
+        RouteBeat owl{19, 0, 11, D::south, {"YES"}};
+        owl.memorize_first_of = {"fireball"};
+        route.push_back(owl);
+        route.push_back({19, 13, 15, D::north, {}});
+        route.push_back({19, 0, 11, D::south, {"YES"}});
+        route.push_back({19, 7, 10, D::north, {"YES"}});
         // Out of Secomber's west gate and overland, by the steps
         // OPENGOLD_SECRET_FIND finds, north and west to Leilon (map 20).
         walk_passages(route, 19,
@@ -6303,6 +6308,15 @@ bool walk_census(GoldBoxGame game, bool route)
         constexpr int burst_reach = 7; // doubled steps: Fireball's 3 squares
         const auto state = session.snapshot();
         const auto commands = session.legal_commands();
+        if (std::getenv("OPENGOLD_DEBUG_TURN"))
+        {
+            std::cout << "  turn of " << state.actor << ":";
+            for (const auto &c : commands)
+            {
+                std::cout << " " << c.verb << ":" << c.item;
+            }
+            std::cout << "\n";
+        }
         const auto caster = [](const opengold::rules::CombatantView &unit)
         {
             return unit.name.find("SORC") != std::string::npos ||
