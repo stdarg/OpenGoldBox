@@ -2040,6 +2040,23 @@ const std::vector<RouteBeat> &secret_route()
     return beats;
 }
 
+// Answers that train each of Pools of Darkness's route's members at a hall, as
+// many levels as its experience allows up to `levels` (a member trains a
+// level a choice; one without the experience is told so), then Leave; with
+// `before` in front and `after` behind (Elminster's menu in Limbo).
+std::vector<std::string> train_darkness_party(int levels, std::vector<std::string> before = {},
+                                              const std::vector<std::string> &after = {})
+{
+    for (const char *member :
+         {"paladin 1", "paladin 2", "ranger 3", "cleric 4", "cleric 5", "magic_user 6"})
+    {
+        before.insert(before.end(), static_cast<std::size_t>(levels), member);
+    }
+    before.emplace_back("Leave");
+    before.insert(before.end(), after.begin(), after.end());
+    return before;
+}
+
 // Pools of Darkness's route plays to the game's end once this is true; until
 // then it stops on this map (docs/GAMES.md, Pools of Darkness, step 5).
 constexpr bool darkness_route_ends_the_game = false;
@@ -2761,18 +2778,20 @@ const std::vector<RouteBeat> &darkness_route()
         // steps through to Thorne's cave.
         walk_passages(route, 33, {{7, 1, D::east}, {8, 1, D::north}});
         // It comes out in Limbo, where Elminster offers his help: the party
-        // rests, trains, and moves on to Thorne's cave.
+        // rests, trains, and moves on to Thorne's cave. The route walks
+        // straight to its goals, where a player meets wandering monsters on
+        // the way (the cluebook's "Wandering Monsters" of every area): the
+        // test gives each member experience for those of the Lands of Thar
+        // to the Aerie, 300,000 (a stand-in), and the party trains as far as
+        // it goes.
         route.push_back(step_beat(33, 8, 0, D::west, {"YES", "stop:REST"}));
         RouteBeat limbo_rest{18, 0, 0, D::north, {}};
         limbo_rest.rest_choice = "REST";
         route.push_back(limbo_rest);
-        RouteBeat limbo{18,
-                        0,
-                        0,
-                        D::north,
-                        {"TRAIN", "paladin 1", "paladin 2", "ranger 3", "cleric 4", "cleric 5",
-                         "magic_user 6", "Leave", "MOVE ON", "THORNE"}};
+        RouteBeat limbo{18, 0, 0, D::north,
+                        train_darkness_party(2, {"TRAIN"}, {"MOVE ON", "THORNE"})};
         limbo.waiting = true;
+        limbo.test_experience = 300'000;
         route.push_back(limbo);
         // In Thorne's cave (map 34) the party beats the red dragons at the
         // gate and goes straight for Thorne's chamber, by the way the
@@ -2865,9 +2884,11 @@ const std::vector<RouteBeat> &darkness_route()
                        {5, 11, D::west},
                        {4, 11, D::west}});
         route.push_back(step_beat(19, 3, 11, D::north, {"YES"}));
-        route.push_back(step_beat(19, 3, 10, D::north,
-                                  {"paladin 1", "paladin 2", "ranger 3", "cleric 4", "cleric 5",
-                                   "magic_user 6", "Leave"}));
+        // The wandering monsters of Thorne's cave and the Moonsea's shore
+        // a player meets on the way are a stand-in: 300,000 experience each.
+        auto zhentil_hall = step_beat(19, 3, 10, D::north, train_darkness_party(2));
+        zhentil_hall.test_experience = 300'000;
+        route.push_back(zhentil_hall);
         // East along the streets to the Purple Plume Tavern (12,14), entered
         // from its sign (13,14) facing west: the party stays and rests there,
         // where no patrol breaks a camp while the guards have not been roused
@@ -3173,14 +3194,16 @@ const std::vector<RouteBeat> &darkness_route()
         RouteBeat web_rest{18, 0, 0, D::north, {}};
         web_rest.rest_choice = "REST";
         route.push_back(web_rest);
-        RouteBeat to_web{18,
-                         0,
-                         0,
-                         D::north,
-                         {"TRAIN", "paladin 1", "paladin 2", "ranger 3", "cleric 4", "cleric 5",
-                          "magic_user 6", "Leave", "MOVE ON", "KALISTES LAND", "YES", "YES",
-                          "type:SILK"}};
+        // The drow stronghold's and the temple's wandering drow, and the Web
+        // Dimension's minis, where the cluebook bids the party "gain as much
+        // experience as you can" before Kalistes, are a stand-in: 400,000
+        // experience each, trained here.
+        RouteBeat to_web{
+            18, 0, 0, D::north,
+            train_darkness_party(2, {"TRAIN"},
+                                 {"MOVE ON", "KALISTES LAND", "YES", "YES", "type:SILK"})};
         to_web.waiting = true;
+        to_web.test_experience = 400'000;
         route.push_back(to_web);
         // Cynthia's first favor: drow prisoners. North round the temple's
         // ruins and west to the drow patrol at (4,4), which the party
@@ -3452,12 +3475,8 @@ const std::vector<RouteBeat> &darkness_route()
         RouteBeat ring_rest{18, 0, 0, D::north, {}};
         ring_rest.rest_choice = "REST";
         route.push_back(ring_rest);
-        RouteBeat to_realms{18,
-                            0,
-                            0,
-                            D::north,
-                            {"TRAIN", "paladin 1", "paladin 2", "ranger 3", "cleric 4", "cleric 5",
-                             "magic_user 6", "Leave", "MOVE ON", "REALMS", "YES", "NO"}};
+        RouteBeat to_realms{18, 0, 0, D::north,
+                            train_darkness_party(2, {"TRAIN"}, {"MOVE ON", "REALMS", "YES", "NO"})};
         to_realms.waiting = true;
         route.push_back(to_realms);
         // Back in the Realms, down the temple's middle aisle and out by its

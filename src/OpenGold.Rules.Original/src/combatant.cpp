@@ -666,9 +666,10 @@ int secret_canonical_effect(int code) noexcept
 // need of a +2 weapon (125) and immunity to gazes (126) do as the
 // Unlimited Adventures kit's of the same numbers, and take them. Half damage
 // from crushing weapons (67), a giant-slaying sword (75), the blessed bolt
-// that slays (82), the big red, green, blue and black dragons'
-// breaths (83, 90, 91, 96), the bulette's rake (99), its dragon fear (100),
-// 4d6 of fire with a hit (104) and the paralyzing gaze (114) are its own;
+// that slays (82), the big red, blue and black dragons' breaths (83, 91,
+// 96), the bulette's rake (99), its dragon fear (100), 4d6 of fire with a
+// hit (104) and the paralyzing gaze (114) are its own; the green dragon's
+// poison breath (90) is the kit's;
 // half damage from cutting and piercing weapons is Pool of Radiance's (115),
 // the red and white dragons' breaths Secret's fire and cold (its 104 and 83), the
 // drains Pool of Radiance's (85, 86) and 2d6 of fire with a hit Fire Touch.
