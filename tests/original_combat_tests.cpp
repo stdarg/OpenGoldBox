@@ -2983,6 +2983,41 @@ void a_monster_casts()
           "The shaman's missiles strike the fighter");
 }
 
+// Treasures' computer casts its spell of highest AI weight that has a
+// target: Lightning Bolt (7) before Charm Person and Magic Missile (5), which
+// it memorized first (its combatai.pas, PickCastableSpell).
+void treasures_ai_casts_its_weightiest_spell()
+{
+    using original::ClassSlot;
+    auto sorceress = caster(ClassSlot::magic_user, 5, {10, 15, 51});
+    sorceress.morale = 0x80 + 50;
+    auto fight = arrange({{"Fighter", rules::Side::party, {0, 3}, creature(50)},
+                          {"Sorceress", rules::Side::opposition, {6, 3}, sorceress}},
+                         181, {}, 100, GoldBoxGame::treasures_of_the_savage_frontier);
+    auto &session = *fight.session;
+    const auto first_spell = [&]
+    {
+        for (const auto &entry : session.snapshot().log_entries)
+        {
+            if (entry.english.starts_with("Sorceress begins casting ") ||
+                entry.english.starts_with("Sorceress casts "))
+            {
+                return entry.english;
+            }
+        }
+        return std::string();
+    };
+    all_quick(
+        session,
+        [&]
+        {
+            return !first_spell().empty();
+        },
+        10);
+    check(first_spell().find("Lightning Bolt") != std::string::npos,
+          "The sorceress casts Lightning Bolt first: " + first_spell());
+}
+
 // The AI steps only onto an empty square, so a monster behind another in a
 // corridor waits rather than share its square (combatai.pas, AiMoveStep).
 void the_ai_never_shares_a_square()
@@ -5808,6 +5843,7 @@ int main()
         the_ai_fights_to_the_end();
         a_lone_mage_stays();
         a_monster_casts();
+        treasures_ai_casts_its_weightiest_spell();
         quick_magic_lets_the_party_cast();
         the_ai_never_shares_a_square();
         the_ai_walks_around_walls();
