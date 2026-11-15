@@ -46,6 +46,18 @@ offset_top = 580.0
 offset_right = 204.0
 offset_bottom = 620.0
 
+[node name="Fix" type="Button" parent="."]
+offset_left = 214.0
+offset_top = 580.0
+offset_right = 340.0
+offset_bottom = 620.0
+
+[node name="Crown" type="Button" parent="."]
+offset_left = 350.0
+offset_top = 580.0
+offset_right = 472.0
+offset_bottom = 620.0
+
 [node name="Heal" type="Button" parent="."]
 offset_left = 24.0
 offset_top = 580.0

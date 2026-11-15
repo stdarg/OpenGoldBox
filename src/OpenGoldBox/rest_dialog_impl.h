@@ -61,6 +61,10 @@ void RolfTourView::setup_rest()
         return b;
     };
     button("Start", N_("Start"), presentation::guarded(this, &RolfTourView::rest_start));
+    button("Fix", N_("Fix"), presentation::guarded(this, &RolfTourView::rest_fix))
+        ->set_tooltip_text(rest_text(N_("The casters heal and cure the party as it rests")));
+    button("Crown", N_("Crown"), presentation::guarded(this, &RolfTourView::rest_crown))
+        ->set_tooltip_text(rest_text(N_("Ask Amanitas, through his crown, for the luck")));
     button("Heal", N_("Heal with Hit Dice"), presentation::guarded(this, &RolfTourView::rest_heal));
     button("Save", N_("Save game"), presentation::guarded(this, &RolfTourView::rest_save));
     button("Finish", N_("Cancel"), presentation::guarded(this, &RolfTourView::rest_finish));
@@ -244,6 +248,11 @@ void RolfTourView::refresh_rest()
         .set_disabled(recovery->get_item_count() == 0);
     presentation::required_node<Button>(*w, "Start").set_visible(!spending);
     presentation::required_node<Button>(*w, "Start").set_disabled(!eligible);
+    const auto *treasures = dax();
+    presentation::required_node<Button>(*w, "Fix").set_visible(!spending && treasures &&
+                                                               treasures->camp_offers_fix());
+    presentation::required_node<Button>(*w, "Crown")
+        .set_visible(!spending && treasures && treasures->camp_offers_crown());
     presentation::required_node<Button>(*w, "Heal").set_visible(spending);
     presentation::required_node<Button>(*w, "Heal").set_disabled(!healable);
     presentation::required_node<Button>(*w, "Save")
@@ -280,6 +289,33 @@ void RolfTourView::rest_start()
         refresh_rest();
         presentation::required_node<Window>(*this, "RestDialog").popup_centered();
     }
+}
+
+void RolfTourView::rest_fix()
+{
+    auto *w = &presentation::required_node<Window>(*this, "RestDialog");
+    w->hide();
+    rest_result_ = String();
+    if (auto *treasures = dax(); !treasures || !treasures->camp_fix())
+    {
+        rest_result_ = rest_text(N_("The party cannot fix itself here."));
+        refresh_rest();
+        w->popup_centered();
+        return;
+    }
+    refresh();
+}
+
+void RolfTourView::rest_crown()
+{
+    auto *w = &presentation::required_node<Window>(*this, "RestDialog");
+    w->hide();
+    rest_result_ = String();
+    if (auto *treasures = dax())
+    {
+        (void)treasures->camp_crown();
+    }
+    refresh();
 }
 
 void RolfTourView::rest_heal()

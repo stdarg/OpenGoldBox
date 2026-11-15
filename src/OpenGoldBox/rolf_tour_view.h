@@ -289,6 +289,9 @@ class RolfTourView : public godot::Control
     void refresh_rest();
     void rest_selected(std::int64_t index);
     void rest_start();
+    // Treasures' camp menu also offers Fix and Crown (camp.pas, CampMainMenu).
+    void rest_fix();
+    void rest_crown();
     void rest_heal();
     void rest_recover();
     void rest_use();
