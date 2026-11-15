@@ -141,6 +141,11 @@ std::optional<VgaPicture> decode_vga_picture(std::span<const std::uint8_t> recor
     picture.x = read_u16(record, 2);
     picture.y = read_u16(record, 4);
     picture.palette = std::move(palette->palette);
+    if (!tile_colors && record[palette->end] == 1)
+    {
+        picture.cycle = VgaColorCycle{record[palette->end + 1], record[palette->end + 2],
+                                      record[palette->end + 3]};
+    }
     picture.frames.reserve(frame_count);
     for (std::size_t frame = 0; frame < frame_count; ++frame)
     {
@@ -244,6 +249,19 @@ VgaColorTable vga_color_table(const VgaPaletteRange &colors)
         table[colors.first + n] = colors.colors[n];
     }
     return table;
+}
+
+VgaColorTable cycled(VgaColorTable colors, const VgaColorCycle &cycle, unsigned steps)
+{
+    const std::size_t count = std::min<std::size_t>(cycle.count, colors.size() - cycle.first);
+    if (count < 2)
+    {
+        return colors;
+    }
+    const auto run = colors.begin() + cycle.first;
+    std::rotate(run, run + static_cast<std::ptrdiff_t>(count - steps % count),
+                run + static_cast<std::ptrdiff_t>(count));
+    return colors;
 }
 
 Image vga_rgba(const VgaImage &image, const VgaColorTable &colors,

@@ -35,6 +35,15 @@ struct VgaImage
     std::vector<std::uint8_t> pixels;
 };
 
+// A run of the color table that turns while the picture is shown
+// (Treasures' overland maps): every `delay` hundredths of a second each of
+// `count` entries from `first` takes the color of the one before it, the
+// first the last's (its portrait.pas, CyclePaletteRange).
+struct VgaColorCycle
+{
+    std::uint8_t first{}, count{}, delay{};
+};
+
 // A still picture, or a strip of same-sized frames such as a set of 8x8 tiles.
 struct VgaPicture
 {
@@ -42,6 +51,8 @@ struct VgaPicture
     std::uint16_t y{};
     VgaPaletteRange palette;
     std::vector<VgaImage> frames; // A record that only sets colors has 0 x 0 frames.
+    // The four bytes after the colors, when their first is 1 (Treasures).
+    std::optional<VgaColorCycle> cycle;
 };
 
 // A decompressed record of TITLE, BIGPIC, BACK, SKYGRND, CPIC, CHEAD, CBODY,
@@ -77,6 +88,9 @@ decode_vga_animation(std::span<const std::uint8_t> record);
 // first, then the run the picture sets over them; the rest black.
 using VgaColorTable = std::array<VgaColor, 256>;
 [[nodiscard]] VgaColorTable vga_color_table(const VgaPaletteRange &colors);
+// The table after `steps` turns of a color cycle.
+[[nodiscard]] VgaColorTable cycled(VgaColorTable colors, const VgaColorCycle &cycle,
+                                   unsigned steps);
 
 // A picture's pixels in the colors of the table, each 0 to 63 scaled to 0 to
 // 255; pixels of the see-through color, if one is given, are left clear.
