@@ -3965,7 +3965,7 @@ const std::vector<RouteBeat> &gateway_route()
 // Treasures' route plays to the game's end once this is true; until then it
 // stops on this map (docs/GAMES.md, Treasures, step 6).
 constexpr bool treasure_route_ends_the_game = false;
-constexpr unsigned treasure_route_stops_on_map = 27;
+constexpr unsigned treasure_route_stops_on_map = 28;
 
 // Treasures of the Savage Frontier's story, beat by beat, as its cluebook
 // tells it: from the dwarves' fortress outside Llorkh, where the opening
@@ -4495,6 +4495,32 @@ const std::vector<RouteBeat> &treasure_route()
         wrighttson.rest_first = true;
         wrighttson.expect_cell = {{0x12D, 1}};
         route.push_back(wrighttson);
+        // At 0600 a ship at the dock where the party came in (13,11, facing
+        // the sea) sails it to Neverwinter (map 28).
+        route.push_back({27, 3, 3, D::north, {}});
+        RouteBeat to_neverwinter{27, 13, 11, D::east, {"NEVERWINTER"}};
+        to_neverwinter.rest_first = true;
+        to_neverwinter.wait_until_minute = 6 * 60;
+        route.push_back(to_neverwinter);
+        // Neverwinter (map 28), the eighth mission: the gardener whose
+        // gardens the Krakens hold (6,13); their bases behind the secret door
+        // (10,1) and in the east (15,11), with the ambassadors they hide, Froal
+        // of Neverwinter (10,0) and Wimeg of Mirabar (15,15), whose freeing
+        // ends the mission (cell 12Eh); then Lord Nasher (5,7). The party
+        // keeps away from the city's guards, who would search it and find the
+        // ambassadors' orders the Krakens planted, and rests first in the
+        // gardener's house.
+        for (const auto &[x, y] : std::initializer_list<std::pair<unsigned, unsigned>>{
+                 {6, 13}, {10, 1}, {10, 0}, {15, 11}, {15, 15}})
+        {
+            route.push_back({28, 6, 13, D::north, {}});
+            RouteBeat fight{28, x, y, D::north, {}};
+            fight.rest_first = true;
+            fight.rest_for_spells = true;
+            route.push_back(fight);
+        }
+        route.back().expect_cell = {{0x12E, 1}};
+        route.push_back({28, 5, 7, D::north, {}});
         // ROUTE-NEXT
         // A camp on the overland (maps 51 to 57) draws its wandering
         // monsters night after night: the party walks on between towns
