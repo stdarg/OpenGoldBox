@@ -2108,7 +2108,12 @@ void RolfTourSession::finish_event()
         else if (std::exchange(camp_fixing_, false))
         {
             // Treasures' camp Fix: an interruption ends it as it ends a rest.
-            auto outcome = fix_party();
+            auto outcome = fix_party(
+                [this](unsigned count)
+                {
+                    return machine_.engine_random(count);
+                });
+            synchronize_clock();
             for (const auto &word : outcome.words)
             {
                 add_camp_line(english(word));
@@ -2302,17 +2307,25 @@ bool RolfTourSession::overland_step()
 // area's check interval (0x6DD2); on reaching it, the count restarts and d100 at
 // or below the chance (0x6DD3) interrupts. The count carries over between rests.
 // Returns the minutes rested before an interruption, or nothing when none occurs.
+std::optional<unsigned> RolfTourSession::rest_interruption(unsigned interval, unsigned chance)
+{
+    const auto &rules = campaign_->rule_module();
+    const auto policy =
+        camp_kind_ == RestKind::short_rest ? rules.short_rest_policy() : rules.long_rest_policy();
+    return rest_interruption(interval, chance, policy.duration_minutes,
+                             [this](unsigned count)
+                             {
+                                 return machine_.engine_random(count);
+                             });
+}
+
 std::optional<unsigned> RolfTourSession::rest_interruption(unsigned interval, unsigned chance,
-                                                           std::optional<unsigned> minutes)
+                                                           unsigned duration, const Dice &dice)
 {
     if (!interval)
     {
         return std::nullopt;
     }
-    const auto &rules = campaign_->rule_module();
-    const auto policy =
-        camp_kind_ == RestKind::short_rest ? rules.short_rest_policy() : rules.long_rest_policy();
-    const unsigned duration = minutes.value_or(policy.duration_minutes);
     constexpr unsigned step_minutes = 5;
     for (unsigned rested = step_minutes; rested <= duration; rested += step_minutes)
     {
@@ -2321,7 +2334,7 @@ std::optional<unsigned> RolfTourSession::rest_interruption(unsigned interval, un
             continue;
         }
         rest_checks_ = 0;
-        if (machine_.engine_random(100) + 1 <= chance)
+        if (dice(100) + 1 <= chance)
         {
             return rested;
         }

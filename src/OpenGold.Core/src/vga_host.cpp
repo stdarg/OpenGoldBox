@@ -565,7 +565,11 @@ void RolfTourSession::treasures_program(const EclRequest &request, unsigned numb
     if (number == fix)
     {
         // The Fix waits only to tell what it did.
-        auto outcome = fix_party();
+        auto outcome = fix_party(
+            [this, &request](unsigned count)
+            {
+                return machine_.host_random(request.id, count);
+            });
         if (outcome.interrupted_after)
         {
             outcome.words.push_back({"Your repose is suddenly interrupted!", {}});
@@ -734,7 +738,7 @@ bool RolfTourSession::camp_crown()
     return true;
 }
 
-std::optional<unsigned> RolfTourSession::fix_rest(unsigned minutes)
+std::optional<unsigned> RolfTourSession::fix_rest(unsigned minutes, const Dice &dice)
 {
     if (minutes == 0)
     {
@@ -742,13 +746,12 @@ std::optional<unsigned> RolfTourSession::fix_rest(unsigned minutes)
     }
     const auto interval = machine_.variable(game_cell(ecl_rest_check_interval)),
                chance = machine_.variable(game_cell(ecl_rest_interruption_chance));
-    const auto interrupted = rest_interruption(interval, chance, minutes);
-    pass_time(std::chrono::minutes{interrupted.value_or(minutes)});
-    synchronize_clock();
+    const auto interrupted = rest_interruption(interval, chance, minutes, dice);
+    campaign_->advance_time(std::chrono::minutes{interrupted.value_or(minutes)});
     return interrupted;
 }
 
-RolfTourSession::FixOutcome RolfTourSession::fix_party()
+RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
 {
     using rules::TempleService;
     FixOutcome outcome;
@@ -890,17 +893,17 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party()
             cure(cures.cure_blindness, TempleService::cure_blindness, "{name} regains sight");
         }
     };
-    outcome.interrupted_after = fix_rest(longest);
+    outcome.interrupted_after = fix_rest(longest, dice);
     if (outcome.interrupted_after)
     {
         return outcome;
     }
-    const auto roll = [this](unsigned dice)
+    const auto roll = [&dice](unsigned count)
     {
         int total = 0;
-        for (unsigned die = 0; die < dice; ++die)
+        for (unsigned die = 0; die < count; ++die)
         {
-            total += static_cast<int>(machine_.engine_random(8)) + 1;
+            total += static_cast<int>(dice(8)) + 1;
         }
         return total;
     };
@@ -963,7 +966,7 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party()
                             std::min(cures.neutralize_poison, poisoned) * 60 +
                             std::min(cures.cure_blindness, blind) * 45 +
                             std::min(cures.remove_curse, cursed) * 45;
-    outcome.interrupted_after = fix_rest(curing);
+    outcome.interrupted_after = fix_rest(curing, dice);
     if (!outcome.interrupted_after)
     {
         cure_party();

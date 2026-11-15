@@ -984,10 +984,13 @@ class RolfTourSession
     // Five-minute rest steps since the last interruption check. Like the
     // original engine's counter, it carries over between rests; it is saved.
     unsigned rest_checks_{};
-    // Over a rest of `minutes` (the camp's rest by default).
-    [[nodiscard]] std::optional<unsigned>
-    rest_interruption(unsigned interval, unsigned chance,
-                      std::optional<unsigned> minutes = std::nullopt);
+    // Dice of [0, count): the engine's between scripts, the request's
+    // (host_random) while a script waits on the host.
+    using Dice = std::function<unsigned(unsigned)>;
+    [[nodiscard]] std::optional<unsigned> rest_interruption(unsigned interval, unsigned chance);
+    // Over a rest of `minutes`, rolled with `dice`.
+    [[nodiscard]] std::optional<unsigned> rest_interruption(unsigned interval, unsigned chance,
+                                                            unsigned minutes, const Dice &dice);
     void announce_camp_attack();
     [[nodiscard]] bool in_curse_wilderness() const;
     [[nodiscard]] bool camp_warded() const;
@@ -1087,10 +1090,12 @@ class RolfTourSession
         std::optional<unsigned> interrupted_after;
     };
 
-    [[nodiscard]] FixOutcome fix_party();
+    // The party's time passes; the caller brings the script's clock up to
+    // date, by binding it or in its reply.
+    [[nodiscard]] FixOutcome fix_party(const Dice &dice);
     // One of the Fix's two rests: its minutes pass unless an interruption
     // roll ends it first (the minutes then rested).
-    [[nodiscard]] std::optional<unsigned> fix_rest(unsigned minutes);
+    [[nodiscard]] std::optional<unsigned> fix_rest(unsigned minutes, const Dice &dice);
     // The 256-color engine's LOAD FILES: a map (below 7Fh, indoors only) and a
     // wall set (255 keeps the current one); vga_host.cpp.
     [[nodiscard]] EclHostReply vga_load_files(unsigned map, unsigned walls);
