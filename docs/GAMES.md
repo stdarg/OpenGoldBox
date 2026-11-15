@@ -649,7 +649,8 @@ new decoders.
    experience for the wandering monsters a player meets (300,000 in Limbo
    after the Aerie, 300,000 at Zhentil Keep's hall, 400,000 in Limbo before
    the Web Dimension, trained up to two levels a visit) brings it to
-   Kalistes at levels 15 to 18. Thorne is a stand-in again (his breath).
+   Kalistes at levels 15 to 18. Thorne and the Aerie's five blue dragons
+   are stand-ins (their breath).
    In Myth Drannor the ranger readies Nacacia's light crossbow and blessed
    bolts, which slay a rakshasa (effect 82, played); the party beats the
    rakshasas draining a knight and those at the altar, climbs the door that

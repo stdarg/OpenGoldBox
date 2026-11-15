@@ -538,6 +538,10 @@ struct RouteBeat
     // casters have their spells again, as a player rests before a known
     // fight (Treasures' Way Inn, whose fights follow one another).
     bool rest_for_spells = false;
+    // Pools of Darkness: the clerics cast their cures on the badly hurt
+    // before the beat instead of a camp, where a camp draws a swarm (the
+    // Drow Testing Ground's Test, before its spiders' amulets are found).
+    bool cure_first = false;
 };
 
 // Answers that train each of the route's members a level at a hall: its
@@ -2812,8 +2816,14 @@ const std::vector<RouteBeat> &darkness_route()
                        {1, 14, D::east},
                        {2, 14, D::east}});
         // The the blue dragons' nest, the steel key hidden behind a rock (bit 1).
+        // Since the dragons breathe (2026-11-15), its five blue dragons'
+        // lightning, three breaths each of their 80 Hit Points, leaves the
+        // route's party (levels 12 to 14) dead with most dice, so the test
+        // wins the fight, a stand-in until the route comes as strong as a
+        // player who met the Moonsea's wandering monsters on the way.
         auto steel_key = step_beat(33, 3, 14, D::east);
         steel_key.rest_first = true;
+        steel_key.test_wins = true;
         steel_key.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x144, 15};
         route.push_back(steel_key);
         // Back west and north to the doors before the dimensional gate (7,2):
@@ -3406,13 +3416,22 @@ const std::vector<RouteBeat> &darkness_route()
         walk_passages(route, 81,
                       {{7, 4, D::south}, {7, 5, D::west}, {6, 5, D::west}, {5, 5, D::south}});
         route.push_back(step_beat(81, 5, 6, D::west, {"YES", "YES"}));
+        // Burnt by the flames, the party does not camp in the Test, whose
+        // camps draw swarms of spiders until it holds the amulets that repel
+        // them: its clerics cure the badly hurt before Hem.
         walk_passages(route, 81,
                       {{4, 6, D::south},
                        {4, 7, D::south},
                        {4, 8, D::south},
                        {4, 9, D::south},
                        {4, 10, D::south}});
-        route.push_back(step_beat(81, 4, 11, D::south, {"APPROACH"}));
+        for (auto beat = route.end() - 5; beat != route.end(); ++beat)
+        {
+            beat->camp_broken = true;
+        }
+        auto hem = step_beat(81, 4, 11, D::south, {"APPROACH"});
+        hem.cure_first = true;
+        route.push_back(hem);
         // The Test passed, the table beyond (6,14) holds magic daggers and
         // the amulets that repel spiders, which the party takes (cell 1FFh).
         walk_passages(route, 81, {{4, 12, D::south}, {4, 13, D::south}, {4, 14, D::east}});
@@ -7074,6 +7093,10 @@ bool walk_census(GoldBoxGame game, bool route)
                     // A camp attacked fights: the last beat's flight is over.
                     fleeing = false;
                     beat.waiting ? rest_in_wilderness() : rest_until_healed(beat.rest_for_spells);
+                }
+                if (beat.cure_first)
+                {
+                    cure_the_hurt();
                 }
                 if (beat.memorize_first && session.can_leave() &&
                     session.camp(opengold::RestKind::long_rest))

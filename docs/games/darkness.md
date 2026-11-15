@@ -770,7 +770,10 @@ can come as strong. Thorne (34: 3,7) the test wins again since the
 dragons' breaths are played (2026-11-15, night): his 24d10+12 of fire,
 three times, burns the party to death with every dice, Ring of Fire
 Resistance and all; a player would ward each member with Resist Fire
-first, which the route does not cast yet. The route's party carries the game's own
+first, which the route does not cast yet. So does the Aerie's blue
+dragons' nest (33: 3,14): five blue dragons, each breathing lightning of
+its 80 Hit Points three times, leave the party of levels 12 to 14 dead with
+most dice even rested. The route's party carries the game's own
 starting equipment (ORIGINAL-RULES.md, *Pools of Darkness*). Until the
 route reaches the win it passes when it plays every beat to Myth Drannor's
 gate (map 66).
