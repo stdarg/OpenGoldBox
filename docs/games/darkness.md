@@ -226,7 +226,7 @@ ending the film after it (commands 13 and 14, which the decoder reports for
 each frame). Then come the game's own title pictures as its Intro shows them:
 `TITLE` 1 and 2 for 5 seconds each, a key on either going on to 3, the title
 menu's backdrop, which stays 20 seconds; `MUSIC.DAX`'s piece 1 plays from
-picture 1 (`load_title_screens`). FINAL is still to come after the win.
+picture 1 (`load_title_screens`). After the win (since 2026-11-15) the view plays FINAL as `CONTROL.EXE` does once `GAME.EXE` ends: each frame for its time, `P3.SMS`'s song 0 at the music level, a key ending it where the film allows (`load_closing_film`); it stands in place of a dropped-in film (ENDING-FILMS.md).
 
 ## Scripts, creatures and items
 

@@ -354,6 +354,11 @@ the hall and pink-gold at dawn.
 
 ## Pools of Darkness — `DARKNESS`
 
+Since 2026-11-15 the win plays the original's own closing film, `FINAL`
+with its song `P3.SMS`, from the player's game (darkness.md, The opening and
+ending films), in place of a dropped-in film; the plan below stands for a
+film of our own.
+
 ### Finale facts
 
 - **Foe:** Gothmenes, a balor and Bane's chief ally. He waits in his palace

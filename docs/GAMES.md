@@ -614,7 +614,7 @@ new decoders.
    on to the third, a key on the third ends the title) with its title music
    from the first. The party screen's party meets Rolf on New Phlan's docks
    and is walked out (`opengold_godot_startup_menu_darkness`). The closing
-   film after the win is still to come (darkness.md, In OpenGoldBox).
+   film, FINAL with its song, plays after the win (2026-11-15; darkness.md, In OpenGoldBox).
 
 *Treasures of the Savage Frontier* ([treasure.md](games/treasure.md)) runs on
 the engine of *Pools of Darkness*, and OpenGoldBox plays both with one code
