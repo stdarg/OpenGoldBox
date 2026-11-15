@@ -929,6 +929,11 @@ class Session final : public rules::CombatSession
         return game_of(identity_) == GoldBoxGame::pools_of_darkness;
     }
 
+    [[nodiscard]] bool treasures() const
+    {
+        return game_of(identity_) == GoldBoxGame::treasures_of_the_savage_frontier;
+    }
+
     // Whether the fight plays Secret's rules where Pools of Darkness's
     // reconstruction does as Secret's does (docs/ORIGINAL-RULES.md, Pools of
     // Darkness); Treasures', on the same engine, is not checked yet.
@@ -2621,9 +2626,26 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         for (const auto id : targets)
         {
             auto &f = *find(id);
-            if (!secret_engine() && (f.numbers.creature_type > 1 || f.numbers.large))
+            // Treasures' takes any but a monster its flags do not call a
+            // person or one of more than a square (its SpellCharmPerson);
+            // every character stands on one square (its chargen.pas), though
+            // a tall one counts as large here.
+            const bool refused =
+                treasures() ? f.numbers.race == 0 &&
+                                  ((f.numbers.traits & trait::person) == 0 || f.numbers.large)
+                            : f.numbers.creature_type > 1 || f.numbers.large;
+            if (!secret_engine() && refused)
             {
                 log({"{name} is unaffected.", {{"name", f.name}}});
+                continue;
+            }
+            // Treasures' frees one charmed already, with no save (its
+            // SpellCharmPerson).
+            if (treasures() && f.has(effect::charm))
+            {
+                const auto *node = f.find_effect(effect::charm);
+                remove_with_handler(f, static_cast<std::size_t>(node - f.numbers.effects.data()));
+                log({"{name} is uncharmed.", {{"name", f.name}}});
                 continue;
             }
             kept.push_back(id);

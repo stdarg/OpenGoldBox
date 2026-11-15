@@ -708,8 +708,8 @@ pictures, walls and script host, *Treasures* adding only what it changes.
    --treasure-walk`) walks every square of every map, the overland's too
    (script 51, maps 51 to 57, drawn from above from `OVER`'s pictures), with
    six fighters made under *Treasures*' rules, and runs each event and fight
-   (treasure.md, The walk). Still to come: the music and sounds, the
-   romances, and the camp dialog's Fix and Crown (the session has both since 2026-11-15).
+   (treasure.md, The walk). Still to come: the music and sounds and the
+   romances; the camp dialog offers Fix and Crown since 2026-11-15.
    The win is in place: the event in which Freezefire dies (script 38 sets
    cell 25Ch to 1) ends as a win (`game_won`), the original having no ending
    of its own (treasure.md, The ending).
@@ -745,14 +745,19 @@ pictures, walls and script host, *Treasures* adding only what it changes.
    its dead raised at their temples, and Fireshear's camps resting again
    (treasure.md, Played whole). The voyages run
    PROGRAM 4, the original's Fix (the casters heal and cure by their spell
-   slots over a timed rest); the session's camp has the Fix and the Crown
-   (treasure.md, What the route needed), which the camp dialog does not
-   offer yet. *Stand-ins:* the experience and money at Llorkh's hall, and
-   the test's win of two fights the route's player loses with every dice
-   (the Way Inn's last, whose sorceresses charm faster than Dispel Magic
-   frees, and Freezefire, fought right after the lair's black-robed men
-   with no rest between). The romances gate nothing (the cluebook's
-   Falling in Love).
+   slots over a timed rest, since 2026-11-15 with Heal's cure of
+   feeblemind and Restoration where the slots allow); the camp dialog
+   offers its Fix and Crown, as the original's camp menu does (treasure.md,
+   What the route needed; `opengold_godot_treasure_camp`). *Treasures*'
+   Charm Person frees a charmed member and, since 2026-11-15, takes the
+   party's members as the original's does (OpenGoldBox had counted every
+   tall character too large for it). *Stand-ins:* the experience and money
+   at Llorkh's hall, and the test's win of three fights the route's player
+   loses with every dice, whose sorceresses and black-robed men charm
+   faster than Charm Person and Dispel Magic free: the Way Inn's last, the
+   council's Krakens and the lair's black-robed men. The route's player
+   beats Freezefire. The romances gate nothing (the cluebook's Falling in
+   Love).
 
 ### 8. *Unlimited Adventures*
 

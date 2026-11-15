@@ -198,9 +198,8 @@ walk needed besides the opening's:
   scripts hold those maps.
 
 Still to come: the records that only set colors for the picture shown, the overland's color
-cycling, the music and sounds other than the footstep, the camp dialog's Fix
-and Crown buttons (the session has both, What the route needed), and the
-romances. The romances gate nothing: a lover fights better, or blindly when
+cycling, the music and sounds other than the footstep, and the romances
+(the camp dialog's Fix and Crown since 2026-11-15, What the route needed). The romances gate nothing: a lover fights better, or blindly when
 its love falls (the cluebook's Falling in Love).
 
 One of the walk's fights no side can finish (map 24 at 1,5): a caster with no
@@ -235,9 +234,11 @@ engine, each as the original does it:
   luck state (cell 25Ch, which Freezefire's fall sets to 1) is 1, which then
   becomes 2 (its ShowNextLuckText). Its pages are shown together and wait for
   the player to go on.
-- **PROGRAM 5** makes the party whole: blindness, disease and poison cured,
-  the dead (but elves) raised, the stoned made flesh, every Hit Point back
-  (its RepairParty), then waits for the player. Freezefire's lair uses it.
+- **PROGRAM 5** makes the party whole: feeblemind, blindness, disease and
+  poison cured, the dead (but elves) resurrected, the stoned made flesh,
+  every drained level restored and every Hit Point back (its RepairParty),
+  then waits for the player. Until 2026-11-15 it left feeblemind and
+  drained levels and raised the dead by Raise Dead, at its cost (Bugs). Freezefire's lair uses it.
 - **PROGRAM 4, the Fix** (its CampFixMenu, since 2026-11-15), which the
   voyages run as the ship sails: nothing when no member is missing Hit
   Points. Otherwise the party rests while its standing casters work by
@@ -260,15 +261,27 @@ engine, each as the original does it:
   rest is rolled for interruption as a camp is (cells 2Bh and 2Ch): from a
   script the Fix then stops ("Your repose is suddenly interrupted!"), in
   camp the camp's interruption script runs. It waits for a key only when it
-  has something to tell. The original's Restoration of drained levels and
-  Heal's cure of feeblemind are not cast yet; its bugs here are fixed
-  ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Bugs).
+  has something to tell. Since 2026-11-15 it also casts what the original
+  casts with the highest slots: a sixth-level slot (Heal's, known for the
+  first rest) cures a member's feeblemind, and its blindness with it,
+  healing nothing ("is healed"; that member's blindness then takes no Cure
+  Blindness), and in the second rest each seventh-level slot gives a
+  drained level back by Restoration (an hour and three quarters each, an
+  hour and a half a feeblemind), each member in turn; a Resurrection raises
+  the dead as the spell does, losing nothing (it raised no one before). A
+  cleric of *Treasures* stops at level 10, short of those slots, so only a
+  character beyond its caps would cast them (`opengold_treasure_tests` makes
+  one under *Pools of Darkness*' rules, its engine's). Its bugs here are
+  fixed ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Bugs).
 - **The camp's Fix and Crown** (`RolfTourSession::camp_fix`, `camp_crown`):
   Fix camps as a rest does and runs the Fix, where the original's camp menu
   shows it (unless every rest step is interrupted). Crown, shown once the
   party has Amanitas's crown (cell 3Fh) and until his last reading is given
-  (cell 25Ch at 2), tells the next luck reading as PROGRAM 3 does. The
-  game's camp dialog does not offer them yet.
+  (cell 25Ch at 2), tells the next luck reading as PROGRAM 3 does. Since
+  2026-11-15 the game's camp dialog offers them beside Start, as the
+  original's camp menu (Save View Magic Rest Alter Fix Crown Exit) does,
+  each only while the session offers it (`opengold_godot_treasure_camp`
+  presses both on the town screen).
 - **The tenth mission** is the council: no script sets its cell (130h). The
   council's script marks it done by setting cell 1F8h to FFh, and the luck
   reading is then 12 (go to the Ice Peak), as PROGRAM 3's order has it;
@@ -339,7 +352,8 @@ Llorkh's hall, training the party to levels 8 and 9).
    (4,15) and Dauravyn Redbeard's captors (7,15), whose fall ends the third
    Lucky Paper mission (cell 129h). *A stand-in:* the route's player loses
    that last fight with every dice it tries (six Hosttower sorceresses charm
-   its members), so the test wins it.
+   its members faster than Charm Person and Dispel Magic free them), so the
+   test wins it.
 
 8. **Yartar** (map 23), overland north by maps 56 and 54: resting in a
    house off the streets (11,9), the robed Krakens at the secret door
@@ -394,7 +408,8 @@ Llorkh's hall, training the party to levels 8 and 9).
     out by the gate (15,15) on the east road.
 16. **Mirabar** (map 30), by maps 51 and 52: rested at the Dig Inn (4,11)
     after the road, the council (7,9) and the
-    Krakens who burst in, King Steelfist (15,4) and the Marchion (1,7),
+    Krakens who burst in (*a stand-in:* their Hosttower sorceresses charm
+    the party faster than it frees itself, so the test wins it), King Steelfist (15,4) and the Marchion (1,7),
     who sends his hammer Kriiador along. The council done (cell 1F8h at
     FFh, the tenth mission), the dead are raised at the Temple of Vergadain
     (2,13) and the party rests at the Dig Inn (4,11).
@@ -428,23 +443,31 @@ Llorkh's hall, training the party to levels 8 and 9).
     into Freezefire's lair (3,6): the black-robed men combing the hoard,
     then Freezefire risen as the Gem is pried from his claw, with the
     dwarves fighting beside the party. As the dragon dies the game is won
-    (The ending).
+    (The ending). *A stand-in:* the black-robed men hold and charm the
+    party faster than it frees itself, so the test wins that fight; the
+    route's player beats Freezefire.
 
 *Stand-ins:* the experience and money at Llorkh's hall, and the test's win
-of two fights the route's player loses with every dice it tries: the Way
-Inn's last (six Hosttower sorceresses charm the members faster than the
-casters free them, every third-level slot holding Dispel Magic) and
-Freezefire, risen at once after the lair's black-robed men with no rest
-between (the worn party falls; in earlier plays, before the casters
-memorized Dispel Magic for the lair, the route's player beat him and lost
-to the black-robed men instead). The route's player frees a member charmed
-onto the other side or held helpless with Dispel Magic, which ends a charm
-or a hold as the original's dispel does, and its casters memorize it
-first before the Way Inn's last fight, the council and the lair
-(`RouteBeat::memorize_first_of`). So it wins Neverwinter's eastern Kraken
-base (trained at Mintarn), the council's Krakens and Hosttower
-sorceresses (rested at the Dig Inn), and the lair's black-robed men, all
-stand-ins until 2026-11-15.
+of three fights against Hosttower sorceresses and black-robed men that the
+route's player loses with every dice it tries: the Way Inn's last, the
+council's Krakens and the lair's black-robed men. Each charms (and the
+black-robed men hold) the party's members faster than its casters free
+them. The route's player frees a member charmed onto the other side with
+Charm Person, which in *Treasures* ends a charm with no save (its
+SpellCharmPerson, since 2026-11-15), or with Dispel Magic, which also ends
+a hold, its casters memorizing them first (`RouteBeat::memorize_first_of`).
+On 2026-11-15 the council and the black-robed men were won without the
+test for a while, but only because OpenGoldBox's Charm Person never took a
+character (Bugs): every character of normal height counted as too large
+for it. With the original's rule the sorceresses' and black-robed men's
+Charm Person takes the party's members too, and those two fights are
+stand-ins again. Freezefire, risen at once after the black-robed men, is
+beaten by the route's player since 2026-11-15 (a stand-in before). The
+route's player also wins Neverwinter's eastern Kraken base (trained at
+Mintarn). Tried and dropped at the Way Inn: Silence, 15' Radius at the
+sorceresses and Charm Person at them, as the cluebook bids in the lair;
+neither won it. Also tried in the lair: healing before the black-robed
+men's last falls, as the cluebook bids; the fight was lost before it.
 
 Every walk is played step by step as the planning aid
 (`OPENGOLD_SECRET_FIND`, with `OPENGOLD_FIND_YES` for a town's "ENTER ...?"
@@ -478,12 +501,20 @@ took, as a player would play it:
   Fix in camp on the overland, tried, rolls the wandering monsters more
   often than it heals.
 
-*Next (where the work stopped, 2026-11-15):* the two stand-ins left. The
-original's Charm Person cast on a charmed member frees it (its
-SpellCharmPerson); OpenGoldBox's combat does not do that yet, and the
-route's player could add it to Dispel Magic at the Way Inn. Then the camp
-dialog's Fix and Crown buttons, and the Fix's Restoration and cure of
-feeblemind.
+*Next (where the work stopped, 2026-11-15):* the three charm fights. A
+character stands on one square in *Treasures* (its chargen.pas sets
+iconDimensions to 1), but OpenGoldBox counts any tall icon as large
+(`Combatant::large`, from the icon's height), which only Charm Person reads
+the original's way so far; Hold Person and the other size checks still
+treat tall characters as large and should be checked against the
+reconstruction next (it may make the black-robed men's holds land more).
+Then the fights themselves: the cluebook advises Charm Person and Charm
+Monsters at the enemy's casters first, then Hold Monster; the route's
+player could try aiming them by hand at the sorceresses (the quick
+commands aim the magic-user's Charm Person at margoyles it cannot take).
+Still to come besides: the color records, the overland's color cycling,
+the music and sounds other than the footstep, and the camp's display of
+the crystals the party holds (its CampMainMenu).
 
 ## The ending
 
@@ -495,3 +526,15 @@ Waterdeep's honors, and leaves the party on the overland outside Waterdeep
 (map 54), where the game goes on. OpenGoldBox wins the game as that event
 ends: "You have won." follows the script's closing words (`game_won`) until
 the player goes on ([DEVIATIONS.md](../DEVIATIONS.md)).
+
+## Bugs
+
+OpenGoldBox's own bugs found in *Treasures* and fixed (the original's are
+in [ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Bugs):
+
+| Bug | Fixed |
+|---|---|
+| Charm Person judged a target by *Pool of Radiance*'s rule (a creature type above 1, or a tall icon): every character of normal height counted as large, so neither side's Charm Person took or freed one, and monsters went by their type, not their flags (2026-11-15) | *Treasures*' own rule: a character always, a monster its flags call a person (bit 2 of its "immunities", record byte 421) on one square; one charmed already is freed |
+| The Fix's Resurrection raised no one, the original rules having no such service, and while a cleric had it Raise Dead was not cast either (2026-11-15) | The dead but elves are resurrected, losing nothing |
+| A temple's Heal cured nothing besides wounds in *Treasures*, whose Heal lifts blindness and feeblemind (its `temple.pas`, CureWounds) (2026-11-15) | It lifts them |
+| PROGRAM 5 left feeblemind and drained levels and raised the dead by Raise Dead, at its cost in Constitution (its RepairParty resurrects and restores) (2026-11-15) | As RepairParty |

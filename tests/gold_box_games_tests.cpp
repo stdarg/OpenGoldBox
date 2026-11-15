@@ -5063,13 +5063,13 @@ const std::vector<RouteBeat> &treasure_route()
             route.push_back(fight);
         }
         // Redbeard's captors (a Zhentil lord, neo-otyughs, greater margoyles
-        // and six Hosttower sorceresses casting Charm Monsters on the party):
-        // the casters memorize Dispel Magic, which frees a charmed member.
-        // A stand-in still: with every third-level slot holding Dispel Magic
+        // and six Hosttower sorceresses casting Charm Monsters and Charm
+        // Person on the party): the magic-user memorizes Charm Person, which
+        // frees a charmed member, the clerics Dispel Magic. A stand-in still:
         // the sorceresses charm the party faster than its casters free it,
         // with every dice the route's player tries, so the test wins the
         // fight.
-        route.back().memorize_first_of = {"dispel_magic"};
+        route.back().memorize_first_of = {"charm_person", "dispel_magic"};
         route.back().test_wins = true;
         route.back().expect_cell = {{0x129, 1}};
         // Down the stairs (9,13) and out of the Way Inn, then overland north
@@ -5479,8 +5479,13 @@ const std::vector<RouteBeat> &treasure_route()
         RouteBeat council{30, 7, 9, D::north, {}};
         council.rest_first = true;
         council.rest_for_spells = true;
-        // Its Hosttower sorceresses charm: Dispel Magic frees the charmed.
-        council.memorize_first_of = {"dispel_magic"};
+        // Its Hosttower sorceresses charm: Charm Person and Dispel Magic free
+        // the charmed. A stand-in again since their Charm Person takes the
+        // party's members, as the original's does (treasure.md, Bugs): they
+        // charm the party faster than its casters free it, with every dice
+        // the route's player tries, so the test wins the fight.
+        council.memorize_first_of = {"charm_person", "dispel_magic"};
+        council.test_wins = true;
         route.push_back(council);
         route.push_back({30, 15, 4, D::north, {"YES"}});
         route.push_back({30, 1, 7, D::north, {"YES"}});
@@ -5678,12 +5683,14 @@ const std::vector<RouteBeat> &treasure_route()
                       {{6, 8, D::west}, {5, 8, D::north}, {5, 7, D::west}, {4, 7, D::north}});
         auto freezefire = step_beat(38, 4, 6, D::west);
         freezefire.expect_cell = {{0x25C, 1}};
-        // The black-robed masters, mages and spies hold the party's members
-        // with Hold Person and Hold Monster; the route's player frees them
-        // with Dispel Magic (memorized in the cavern) and wins. A stand-in
-        // still: Freezefire, risen at once after them with no rest between,
-        // beats the worn party with every dice the route's player tries, so
-        // the test wins whichever of the lair's fights its player loses.
+        // The black-robed masters, mages and spies hold and charm the party's
+        // members (Hold Person, Hold Monster and Charm Person); the route's
+        // player frees them with Dispel Magic (memorized in the cavern). A
+        // stand-in: since their Charm Person takes the party's members, as
+        // the original's does (treasure.md, Bugs), they beat the party with
+        // every dice the route's player tries, so the test wins whichever of
+        // the lair's fights its player loses. The route's player beats
+        // Freezefire, risen at once after them.
         freezefire.test_wins = true;
         route.push_back(freezefire);
         // A camp on the overland (maps 51 to 57) draws its wandering
@@ -6451,12 +6458,14 @@ bool walk_census(GoldBoxGame game, bool route)
     };
     // A player's answer to a member charmed onto the other side or held
     // helpless (Treasures' Way Inn sorceresses, Freezefire's black-robed
-    // men, Pools of Darkness's rakshasas): Dispel Magic at it, which ends a charm or a hold as the
-    // original's dispel does, where a caster has it memorized.
+    // men, Pools of Darkness's rakshasas): Charm Person at a charmed one,
+    // which frees it with no save as the original Treasures' does, or Dispel
+    // Magic, which ends a charm or a hold as the original's dispel does,
+    // where a caster has it memorized.
     const auto free_the_bound =
         [&](const opengold::rules::CombatSession &fight) -> std::optional<opengold::rules::Command>
     {
-        constexpr unsigned cleric_dispel = 41, mage_dispel = 46;
+        constexpr unsigned charm_person = 10, cleric_dispel = 41, mage_dispel = 46;
         const auto dispel = [](const opengold::rules::Command &command)
         {
             return command.item == cleric_dispel || command.item == mage_dispel;
@@ -6471,24 +6480,50 @@ bool walk_census(GoldBoxGame game, bool route)
                                        });
         };
         const auto state = fight.snapshot();
-        const auto bound =
-            std::ranges::find_if(state.combatants,
-                                 [&](const opengold::rules::CombatantView &unit)
-                                 {
-                                     return ours(unit) && !unit.dead &&
-                                            (unit.side == opengold::rules::Side::opposition ||
-                                             unit.status == "helpless");
-                                 });
-        if (bound == state.combatants.end())
+        std::vector<opengold::rules::CombatantView> charmed, held;
+        for (const auto &unit : state.combatants)
+        {
+            if (!ours(unit) || unit.dead)
+            {
+                continue;
+            }
+            if (unit.side == opengold::rules::Side::opposition)
+            {
+                charmed.push_back(unit);
+            }
+            else if (unit.status == "helpless")
+            {
+                held.push_back(unit);
+            }
+        }
+        if (charmed.empty() && held.empty())
         {
             return std::nullopt;
         }
+        const auto aims_at = [](const opengold::rules::Command &command,
+                                const std::vector<opengold::rules::CombatantView> &units)
+        {
+            return std::ranges::any_of(units,
+                                       [&](const opengold::rules::CombatantView &unit)
+                                       {
+                                           return command.target == unit.id ||
+                                                  (command.destination.x == unit.cell.x &&
+                                                   command.destination.y == unit.cell.y);
+                                       });
+        };
         const auto commands = fight.legal_commands();
         for (const auto &command : commands)
         {
-            if (command.verb == "aim" && dispel(command) &&
-                (command.target == bound->id || (command.destination.x == bound->cell.x &&
-                                                 command.destination.y == bound->cell.y)))
+            if (command.verb == "aim" &&
+                ((command.item == charm_person && aims_at(command, charmed)) ||
+                 (dispel(command) && (aims_at(command, charmed) || aims_at(command, held)))))
+            {
+                return command;
+            }
+        }
+        for (const auto &command : commands)
+        {
+            if (command.verb == "cast" && command.item == charm_person && !charmed.empty())
             {
                 return command;
             }

@@ -2076,6 +2076,36 @@ void cast_now(rules::CombatSession &session, std::string_view caster_name, int s
     session.submit(*chosen);
 }
 
+// Treasures' Charm Person frees a creature charmed already, with no save
+// (its SpellCharmPerson). It takes a monster its flags call a person, of
+// whatever type; a guard keeps the fight going.
+void treasures_charm_person_frees_the_charmed()
+{
+    using original::ClassSlot;
+    auto foe = victim(20);
+    foe.creature_type = 5;
+    foe.traits = original::trait::person;
+    auto fight =
+        arrange({{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 1, {10, 10})},
+                 {"Bandit", rules::Side::opposition, {4, 3}, foe},
+                 {"Guard", rules::Side::opposition, {7, 6}, victim(20)}},
+                83, {}, 100, GoldBoxGame::treasures_of_the_savage_frontier);
+    auto &session = *fight.session;
+    const auto cast_at_bandit = [&]
+    {
+        until_turn_of(session, "Mage");
+        check(session.submit(*cast_command(session, 10)), "Charm Person is cast");
+        check(session.submit(*aim_at(session, "Bandit")), "It is aimed at the bandit");
+    };
+    cast_at_bandit();
+    check(view_of(session.snapshot(), "Bandit").side == rules::Side::party,
+          "The bandit is charmed");
+    cast_at_bandit();
+    check(view_of(session.snapshot(), "Bandit").side == rules::Side::opposition &&
+              logged(session, "{name} is uncharmed.") == 1,
+          "A second Charm Person frees it");
+}
+
 // Hold Person holds a man but not a large creature (magic.pas, the hold).
 void hold_person_holds()
 {
@@ -5407,6 +5437,7 @@ int main()
         write_view_fixture();
         sleep_takes_the_weak();
         charm_person_turns_a_foe();
+        treasures_charm_person_frees_the_charmed();
         cure_light_wounds_stops_bleeding();
         races_know_their_foes();
         hold_person_holds();

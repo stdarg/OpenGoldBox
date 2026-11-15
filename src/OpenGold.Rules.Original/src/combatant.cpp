@@ -554,6 +554,13 @@ std::pair<int, int> kit_item_strength(int strength, int exceptional,
     return {strength, exceptional};
 }
 
+// Treasures' monster a Charm Person may take: bit 2 of its "immunities"
+// (its magic.pas, SpellCharmPerson). Its other flags are not checked yet.
+int treasures_traits(const por::CharacterRecord &record)
+{
+    return (record.target_flags & 0x02) ? trait::person : 0;
+}
+
 // Secret's effect that turns a gaze back on the gazer (EffPetrifyingGaze in
 // its reconstruction), which an item gives while it is readied: the item's
 // effect byte names it, and its special byte's 0x80 with no other bit says it
@@ -1031,7 +1038,11 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
     c.alignment = record.alignment;
     c.creature_type = record.type;
     c.kin = secret ? secret_kin(record) : kit ? kit_kin(record) : kin_of(record);
-    c.traits = secret ? secret_traits(record) : kit ? kit_traits(record) : 0;
+    c.traits = secret ? secret_traits(record)
+               : kit  ? kit_traits(record)
+               : record.game == GoldBoxGame::treasures_of_the_savage_frontier
+                   ? treasures_traits(record)
+                   : 0;
     c.magic_resistance = record.magic_resistance;
     c.items = usable_items(carried, record.game);
     // Memorized spells; those still being learned (bit 0x80) are not ready.

@@ -629,6 +629,11 @@ Its differences (2026-11-14):
   than the level's slots (slots x 4 / 3), on a page of choices after the
   roll (Decisions); it knows no other spells of those levels, not the four a
   *Pool of Radiance* magic-user starts with.
+- **Charm Person** (its `magic.pas`, SpellCharmPerson, 2026-11-15) takes
+  any character, or a monster its flags call a person (bit 2 of its record's
+  "immunities", byte 421) on one square, and frees one charmed already, with
+  no save: a party's magic-user uncharms a member the enemy has charmed.
+  Charm Monsters and Charm Person or Mammal do not free.
 - **Detect Magic** may be cast outside combat, as in the originals, spent
   with nothing more to lay: *Treasures*' scripts may wait for a spell
   (Cortarra, [treasure.md](games/treasure.md), What the route needed).

@@ -122,11 +122,12 @@ std::optional<por::CharacterRecord> decode_creature(std::span<const std::uint8_t
     // Pools of Darkness's flags are Secret's, bit for bit (its effhndlr.pas
     // and magic.pas): what kind of creature it is, what its foes' weapons and
     // spells may do to it (its "immunities"), and its magic resistance.
-    // Treasures' are not checked yet.
+    // Treasures' flags sit in the same bytes; only its Charm Person reads
+    // them yet (its magic.pas), and its magic resistance is not checked yet.
+    c.creature_type_flags = b[420];
+    c.target_flags = b[421];
     if (darkness)
     {
-        c.creature_type_flags = b[420];
-        c.target_flags = b[421];
         c.magic_resistance = b[491];
     }
     c.item_count = b[422];
