@@ -775,6 +775,20 @@ since, the rest's interruptions and the kit's camp of any length (rules5).
 2. *Unlimited Adventures*' difficulty: its session calls
    `original::monster_difficulty(level, true)` with each design's own
    setting (the coordinator, 2026-11-15).
+3. *Gateway*'s route since the rest's interruptions (rules5, 2026-11-15):
+   a broken camp now keeps the days and spells its time gave, so the
+   Kraken camps in the first maps end sooner (7 attacks, not 13) and the
+   later fights roll otherwise. The route then loses the giant snakes' and
+   shambling mounds' fight at the foot of the Star Mounts (map 26, 2,3,
+   HELP BIRD), the mounds smothering the party; a night's rest before it
+   on the overland meets the snakes in camp and leaves the aerie (map 18)
+   to one survivor, and a night in Llorkh changes nothing. Next step: a
+   player's answer for that fight (fire or Hold at the mounds, a ward, or
+   a camp elsewhere before it), tried with `--gateway-route`.
+   *Secret*'s route wins since it rests on through six broken camps, not
+   three. The *Pools of Darkness* route (its owner's) now loses on map 66
+   (5,0) to the rakshasas that rush to defend Tyranthraxus, where it won
+   before; the *Treasures* route (its owner's) lost before this round.
 
 ## What the original rules cover
 
