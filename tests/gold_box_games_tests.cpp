@@ -2084,7 +2084,7 @@ std::vector<std::string> train_darkness_party(int levels, std::vector<std::strin
 // Pools of Darkness's route plays to the game's end once this is true; until
 // then it stops on this map (docs/GAMES.md, Pools of Darkness, step 5).
 constexpr bool darkness_route_ends_the_game = false;
-constexpr unsigned darkness_route_stops_on_map = 67;
+constexpr unsigned darkness_route_stops_on_map = 52;
 
 // Pools of Darkness's story, beat by beat, as its cluebook tells it: from New
 // Phlan's docks, where Rolf has walked the party out.
@@ -4306,6 +4306,180 @@ const std::vector<RouteBeat> &darkness_route()
         tower_step(13, 5, D::south, {});
         tower_step(13, 6, D::south, {});
         tower_step(13, 7, D::east, {"YES", "type:RED"});
+        // West to the lofts of the Black Circle's mages (the cluebook's 9),
+        // each attacked through its door in turn as small groups (cell 251h
+        // bit 2), then the Fountains of Moander (1,8, the cluebook's 10),
+        // whose clerics and monsters fall (bit 3), and the Black Circle's
+        // last, formed outside it (1,7).
+        walk_tower({{14, 7, D::north},
+                    {14, 6, D::west},
+                    {13, 6, D::north},
+                    {13, 5, D::west},
+                    {12, 5, D::west},
+                    {11, 5, D::west},
+                    {10, 5, D::west},
+                    {9, 5, D::west},
+                    {8, 5, D::west},
+                    {7, 5, D::west},
+                    {6, 5, D::west},
+                    {5, 5, D::south},
+                    {5, 6, D::west}});
+        for (unsigned x = 4; x >= 1; --x)
+        {
+            tower_step(x, 6, D::north, {});
+            tower_step(x, 5, D::south, {});
+            if (x > 1)
+            {
+                tower_step(x, 6, D::west, {});
+            }
+        }
+        tower_step(1, 6, D::west, {});
+        tower_step(0, 6, D::east, {});
+        // The fountain's room opens only by the doors where the Black Circle
+        // forms, so the party rests in the quiet room (5,9) first and
+        // goes in whole, round by the corridor west of it (1,7, no door).
+        walk_tower({{1, 6, D::east},
+                    {2, 6, D::south},
+                    {2, 7, D::south},
+                    {2, 8, D::south},
+                    {2, 9, D::east},
+                    {3, 9, D::east},
+                    {4, 9, D::east}});
+        route.push_back(quiet_room_10);
+        walk_tower({{4, 9, D::west},
+                    {3, 9, D::west},
+                    {2, 9, D::north},
+                    {2, 8, D::north},
+                    {2, 7, D::west}});
+        tower_step(1, 7, D::south, {});
+        tower_step(1, 8, D::north, {});
+        // Back to the quiet room to rest.
+        walk_tower({{1, 7, D::east},
+                    {2, 7, D::south},
+                    {2, 8, D::south},
+                    {2, 9, D::east},
+                    {3, 9, D::east},
+                    {4, 9, D::east}});
+        route.push_back(quiet_room_10);
+        // Down the path at 6,9 (THE PATH GOES DOWN, YES) to level 11 and
+        // north to the Manufactory of Moander's Red Wizards (7,11, the
+        // cluebook's 14), entered by its door: the party beats them and
+        // their walking disasters (cell 251h bit 4).
+        walk_tower({{4, 9, D::west},
+                    {3, 9, D::west},
+                    {2, 9, D::north},
+                    {2, 8, D::north},
+                    {2, 7, D::east},
+                    {3, 7, D::east},
+                    {4, 7, D::east},
+                    {5, 7, D::south},
+                    {5, 8, D::east},
+                    {6, 8, D::south}});
+        tower_step(6, 9, D::west, {"YES"});
+        walk_tower({{5, 15, D::north},
+                    {5, 14, D::north},
+                    {5, 13, D::north},
+                    {5, 12, D::north},
+                    {5, 11, D::north},
+                    {5, 10, D::east},
+                    {6, 10, D::east},
+                    {7, 10, D::east},
+                    {8, 10, D::south}});
+        tower_step(8, 11, D::west, {});
+        // Round by the west corridor to the Black Circle's manufactory (7,14,
+        // the cluebook's 12), whose wearied mages it attacks at once
+        // (ATTACK; bit 5), through it to the Cult of Moander's (9,13, the
+        // cluebook's 13; cultists, then the bits of Moander, bit 6), and on
+        // to the level's quiet room (11,15), where it rests.
+        walk_tower({{7, 11, D::east},
+                    {8, 11, D::north},
+                    {8, 10, D::west},
+                    {7, 10, D::west},
+                    {6, 10, D::west},
+                    {5, 10, D::south},
+                    {5, 11, D::south},
+                    {5, 12, D::south},
+                    {5, 13, D::south},
+                    {5, 14, D::east}});
+        tower_step(6, 14, D::east, {"ATTACK"});
+        walk_tower({{7, 14, D::east}, {8, 14, D::south}, {8, 15, D::east}, {9, 15, D::north}});
+        tower_step(9, 14, D::north, {});
+        walk_tower({{9, 13, D::south},
+                    {9, 14, D::east},
+                    {10, 14, D::east},
+                    {11, 14, D::east},
+                    {12, 14, D::south}});
+        auto quiet_room_11 = step_beat(67, 12, 15, D::west);
+        quiet_room_11.camp_broken = true;
+        route.push_back(quiet_room_11);
+        auto rest_11 = step_beat(67, 11, 15, D::east);
+        rest_11.rest_first = true;
+        rest_11.rest_for_spells = true;
+        route.push_back(rest_11);
+        // East through the door into the Dispersion Diagram (14,15, the
+        // cluebook's 15): seeing it disrupts the last of Marcus's operations
+        // (bit 7), and the party moves on rather than break the beasts'
+        // circle (MOVE).
+        walk_tower({{12, 15, D::east}});
+        tower_step(13, 15, D::east, {"MOVE"});
+        // North through the edge of the Temple of Transformation, walking
+        // warily among the rapt devotees (MOVE; two squares, before anyone
+        // steps on the cat), to the secret underpass (11,10 west, the
+        // cluebook's 19) and round to the Chambers of Marcus (1,13, the
+        // cluebook's 18): his spectres, the hidden foes and his minions come
+        // in waves, then Marcus himself, defending Petra.
+        walk_tower({{14, 15, D::north},
+                    {14, 14, D::north},
+                    {14, 13, D::north},
+                    {14, 12, D::north},
+                    {14, 11, D::north},
+                    {14, 10, D::west},
+                    {13, 10, D::west},
+                    {12, 10, D::west},
+                    {11, 10, D::west},
+                    {3, 10, D::west},
+                    {2, 10, D::west},
+                    {1, 10, D::west},
+                    {0, 10, D::south},
+                    {0, 11, D::south}});
+        // A stand-in: the waves are fought back to back, the Minions of Bane
+        // breathing for 27 and the Banite clerics holding members for them
+        // to slay, and Marcus with his Black Circle mages and minions beats
+        // what is left in every play the route tries, so the test wins
+        // these fights.
+        auto chambers = step_beat(67, 0, 12, D::south);
+        chambers.camp_broken = true;
+        chambers.test_wins = true;
+        route.push_back(chambers);
+        // Shal and Petra meet and the woman, now whole, bids the party to
+        // the temple: back by the underpass (3,10 east) and north to the
+        // Vessel of Moander (13,9, the cluebook's 20), which reels as the
+        // tower falls; the party leaps aboard (script 75).
+        walk_tower({{1, 14, D::north},
+                    {1, 13, D::west},
+                    {0, 13, D::north},
+                    {0, 12, D::north},
+                    {0, 11, D::north},
+                    {0, 10, D::east},
+                    {1, 10, D::east},
+                    {2, 10, D::east},
+                    {3, 10, D::east},
+                    {11, 10, D::east},
+                    {12, 10, D::east}});
+        tower_step(13, 10, D::north, {"stop:REST"});
+        // In Limbo Shal leaves the party, and Elminster's camp rests it. The
+        // tower's wandering mages, cultists and bits of Moander a player
+        // meets on its levels are a stand-in: 500,000 experience each,
+        // trained here (up to two levels). Then on to Moander (MOVE ON,
+        // MOANDER).
+        RouteBeat tower_rest{18, 0, 0, D::north, {}};
+        tower_rest.rest_choice = "REST";
+        route.push_back(tower_rest);
+        RouteBeat to_moander{18, 0, 0, D::north,
+                             train_darkness_party(2, {"TRAIN"}, {"MOVE ON", "MOANDER"})};
+        to_moander.waiting = true;
+        to_moander.test_experience = 500'000;
+        route.push_back(to_moander);
         return route;
     }();
     return beats;
