@@ -2127,7 +2127,7 @@ std::vector<std::string> train_darkness_party(int levels, std::vector<std::strin
 // Pools of Darkness's route plays to the game's end once this is true; until
 // then it stops on this map (docs/GAMES.md, Pools of Darkness, step 5).
 constexpr bool darkness_route_ends_the_game = false;
-constexpr unsigned darkness_route_stops_on_map = 52;
+constexpr unsigned darkness_route_stops_on_map = 53;
 
 // Pools of Darkness's story, beat by beat, as its cluebook tells it: from New
 // Phlan's docks, where Rolf has walked the party out.
@@ -4738,6 +4738,42 @@ const std::vector<RouteBeat> &darkness_route()
         auto reward = step_beat(52, 13, 8, D::west, {"YES"});
         reward.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x23B, 1};
         route.push_back(reward);
+        // Aeghwaet helped, the wound's camps rest (the cluebook): the party
+        // rests whole, walks back south to the wound's opening (12,15) and
+        // leaves (DO YOU WANT TO LEAVE? YES) for Moander's body.
+        auto rest_wound = step_beat(52, 12, 8, D::south);
+        rest_wound.passing = true;
+        rest_wound.rest_first = true;
+        rest_wound.rest_for_spells = true;
+        route.push_back(rest_wound);
+        walk_passages(route, 52,
+                      {{12, 9, D::south},
+                       {12, 10, D::south},
+                       {12, 11, D::south},
+                       {12, 12, D::south},
+                       {12, 13, D::south},
+                       {12, 14, D::south}});
+        route.push_back(step_beat(52, 12, 15, D::south, {"YES", "NO"}));
+        // Over the body north and north-east to the wound in Moander's side
+        // (21,3; the cluebook's Entrance to Heart), fleeing what roams it,
+        // and in (DO YOU ENTER? YES).
+        RouteBeat to_the_side{52, 0, 0, D::north, {"YES"}};
+        to_the_side.area_steps = {C::north,     C::north,     C::north,     C::north,
+                                  C::northeast, C::northeast, C::northeast, C::northeast,
+                                  C::northeast, C::northeast};
+        to_the_side.fleeing = true;
+        route.push_back(to_the_side);
+        // The Entrance to Heart (map 52 from 8,0), whose camps rest (the
+        // cluebook): rested, the party walks south to the lung's muscle wall
+        // (8,5, event 29; the cluebook's 25), spreads Aeghwaet's potion on it
+        // (USE POTIONS) and cuts through (YES) into the heart (script 53).
+        auto rest_entrance = step_beat(52, 8, 0, D::south);
+        rest_entrance.passing = true;
+        rest_entrance.rest_first = true;
+        rest_entrance.rest_for_spells = true;
+        route.push_back(rest_entrance);
+        walk_passages(route, 52, {{8, 1, D::south}, {8, 2, D::south}, {8, 3, D::south}});
+        route.push_back(step_beat(52, 8, 4, D::south, {"USE POTIONS", "YES"}));
         return route;
     }();
     return beats;
