@@ -692,7 +692,6 @@ The work asked for next (2026-11-14), in order, with what each needs:
      (`RolfTourSession` in phlan_session.cpp, `rest_interruption`;
      ua_session.cpp; vga_host.cpp, other sessions' files, small hooks only)
      and the rest dialog's length (days, hours, minutes) in the Godot view.
-   - The training hall's fee and the classes each hall trains (step 3).
    - The temples' Restoration (step 6; *Pools of Darkness*'s and
      *Treasures*'), a service the game's temple screen does not offer yet;
      the spell in camp gives drained levels back (Pools of Darkness).
@@ -879,7 +878,12 @@ lines in all:
      fighters' hall fighters, paladins and rangers; the clerics' clerics and
      druids). The hall turns away the unconscious, the poor, the wrong class
      and the inexperienced as the original words it, says what the member
-     will become, and lets a magic-user choose its new spell.
+     will become, and lets a magic-user choose its new spell. The later
+     games' halls train the classes their script's class mask names (cell
+     6DA8h, `TRAIN_MASK`; its bits are *Curse*'s `classBits`: 1 magic-users,
+     2 clerics and druids, 4 thieves and monks, 8 fighters, 10h paladins, 20h
+     rangers), any mask (`original_mask_classes`, 2026-11-15); *Pool of
+     Radiance*'s named halls are their masks too (`original_class_mask`).
    - **Thief skills:** a thief may pick locks, as the original offers Pick to
      a party with one; scripts read a half-elf's own race code.
    - **The temple** heals as the original's (`temple.pas`): Cure Light,

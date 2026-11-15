@@ -2532,9 +2532,14 @@ void CampaignParty::grant_experience_share(unsigned amount, MemberId id)
 
 CampaignParty::HallTraining CampaignParty::hall_training(MemberId id, TrainingHall hall) const
 {
+    return hall_training(id, original_class_mask(hall));
+}
+
+CampaignParty::HallTraining CampaignParty::hall_training(MemberId id, unsigned class_mask) const
+{
     const auto &m = member(id);
     const auto &sheet = m.character.sheet();
-    const auto taught = original_hall_classes(hall);
+    const auto taught = original_mask_classes(class_mask);
     const auto here = [&taught](const std::string &klass)
     {
         return std::ranges::find(taught, klass) != taught.end();
@@ -2578,13 +2583,19 @@ CampaignParty::HallTraining CampaignParty::hall_training(MemberId id, TrainingHa
 void CampaignParty::train_at_hall_level(MemberId id, TrainingHall hall,
                                         std::vector<std::string> spells)
 {
+    train_at_hall_level(id, original_class_mask(hall), std::move(spells));
+}
+
+void CampaignParty::train_at_hall_level(MemberId id, unsigned class_mask,
+                                        std::vector<std::string> spells)
+{
     editable();
-    if (const auto offer = hall_training(id, hall); offer.denial != TrainingDenial::none)
+    if (const auto offer = hall_training(id, class_mask); offer.denial != TrainingDenial::none)
     {
         throw std::runtime_error("The hall cannot train this member now");
     }
     auto choice = rules_->default_advancement(member(id).character.sheet());
-    for (const auto klass : original_hall_classes(hall))
+    for (const auto klass : original_mask_classes(class_mask))
     {
         choice.training["hall"].emplace_back(klass);
     }

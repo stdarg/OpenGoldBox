@@ -63,6 +63,15 @@ enum class TrainingDenial
 // fighters, paladins and rangers, the clerics' clerics and druids.
 [[nodiscard]] std::vector<std::string_view> original_hall_classes(TrainingHall hall);
 
+// The classes a hall of the later games trains, by the class mask its script
+// sets (TRAIN_MASK, cell 6DA8h; the classBits of Curse's gdconsts.pas): 1
+// magic-users, 2 clerics and druids, 4 thieves and monks, 8 fighters, 10h
+// paladins and 20h rangers; 127 every class.
+[[nodiscard]] std::vector<std::string_view> original_mask_classes(unsigned class_mask);
+
+// The class mask of one of Pool of Radiance's halls, which name their classes.
+[[nodiscard]] unsigned original_class_mask(TrainingHall hall);
+
 // What the original's training costs (chargen.pas, TrainingMenu): 1,000
 // gold, and nothing in Secret of the Silver Blades and Pools of Darkness,
 // whose TrainingMenu takes no money. Treasures of the Savage Frontier asks

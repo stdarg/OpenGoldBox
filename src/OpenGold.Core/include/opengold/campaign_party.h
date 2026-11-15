@@ -431,10 +431,14 @@ class CampaignParty
     };
 
     [[nodiscard]] HallTraining hall_training(MemberId id, TrainingHall hall) const;
+    // The same at a hall of the later games, made of its script's class mask
+    // (original_mask_classes).
+    [[nodiscard]] HallTraining hall_training(MemberId id, unsigned class_mask) const;
     // Pays the fee and trains the member: a level in the classes
     // hall_training() names, a magic-user's learning `spells` (one). Atomic:
     // throws, changing nothing, when the hall cannot.
     void train_at_hall_level(MemberId id, TrainingHall hall, std::vector<std::string> spells);
+    void train_at_hall_level(MemberId id, unsigned class_mask, std::vector<std::string> spells);
     // Whether the member has the experience and the state to gain a level,
     // wherever the rules let it.
     [[nodiscard]] bool ready_to_advance(MemberId id) const;

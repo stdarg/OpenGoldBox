@@ -95,20 +95,48 @@ std::uint32_t skill_training_fee(std::string_view grant)
 
 std::vector<std::string_view> original_hall_classes(TrainingHall hall)
 {
+    return original_mask_classes(original_class_mask(hall));
+}
+
+std::vector<std::string_view> original_mask_classes(unsigned class_mask)
+{
+    constexpr std::array<std::pair<std::string_view, unsigned>, 8> class_bits{{
+        {"cleric", 0x02},
+        {"druid", 0x02},
+        {"fighter", 0x08},
+        {"paladin", 0x10},
+        {"ranger", 0x20},
+        {"magic_user", 0x01},
+        {"thief", 0x04},
+        {"monk", 0x04},
+    }};
+    std::vector<std::string_view> classes;
+    for (const auto &[klass, bit] : class_bits)
+    {
+        if ((class_mask & bit) != 0)
+        {
+            classes.push_back(klass);
+        }
+    }
+    return classes;
+}
+
+unsigned original_class_mask(TrainingHall hall)
+{
     switch (hall)
     {
     case TrainingHall::fighters:
-        return {"fighter", "paladin", "ranger"};
+        return 0x08 | 0x10 | 0x20;
     case TrainingHall::clerics:
-        return {"cleric", "druid"};
+        return 0x02;
     case TrainingHall::magic_users:
-        return {"magic_user"};
+        return 0x01;
     case TrainingHall::thieves:
-        return {"thief"};
+        return 0x04;
     case TrainingHall::every_class:
-        return {"cleric", "druid", "fighter", "paladin", "ranger", "magic_user", "thief", "monk"};
+        return 127;
     }
-    return {};
+    return 0;
 }
 
 } // namespace opengold

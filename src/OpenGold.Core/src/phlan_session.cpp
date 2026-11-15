@@ -4630,18 +4630,22 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
 
 void RolfTourSession::open_hall(std::uint64_t request)
 {
-    // Pool of Radiance's halls name their classes; Curse's set a class mask,
-    // every class (127) in each of its halls.
-    const auto hall = game() == GoldBoxGame::pool_of_radiance
-                          ? opengold::training_hall_named(machine_.string(ecl_training_hall_name))
-                      : machine_.variable(game_cell(ecl_training_class_mask)) == 127
-                          ? std::optional{opengold::TrainingHall::every_class}
-                          : std::nullopt;
-    if (!hall)
+    // Pool of Radiance's halls name their classes; the later games' set a
+    // class mask (TRAIN_MASK), every class (127) in each of Curse's halls.
+    if (game() == GoldBoxGame::pool_of_radiance)
     {
-        throw EclError("Training hall without a known class word");
+        const auto hall = opengold::training_hall_named(machine_.string(ecl_training_hall_name));
+        if (!hall)
+        {
+            throw EclError("Training hall without a known class word");
+        }
+        hall_visit_ = HallVisit{request, *hall, 0, {}, opengold::original_class_mask(*hall)};
     }
-    hall_visit_ = HallVisit{request, *hall, 0, {}};
+    else
+    {
+        const unsigned mask = machine_.variable(game_cell(ecl_training_class_mask)) & 0x7FU;
+        hall_visit_ = HallVisit{request, opengold::TrainingHall::every_class, 0, {}, mask};
+    }
     show_hall({});
 }
 
@@ -4931,7 +4935,7 @@ bool RolfTourSession::choose_at_original_hall(const HallChoice &picked)
     auto &visit = *hall_visit_;
     const auto &member = campaign_->member(picked.member);
     const auto name = member.character.sheet().name;
-    const auto offer = campaign_->hall_training(picked.member, visit.hall);
+    const auto offer = campaign_->hall_training(picked.member, visit.class_mask);
     if (offer.denial != TrainingDenial::none)
     {
         visit.member = 0;
@@ -4982,7 +4986,7 @@ bool RolfTourSession::choose_at_original_hall(const HallChoice &picked)
     {
         spells.push_back(picked.grant);
     }
-    campaign_->train_at_hall_level(picked.member, visit.hall, std::move(spells));
+    campaign_->train_at_hall_level(picked.member, visit.class_mask, std::move(spells));
     visit.member = 0;
     show_hall({{"Congratulations... {name} has trained.", {{"name", name}}}});
     return true;

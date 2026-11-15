@@ -717,6 +717,8 @@ class RolfTourSession
         opengold::TrainingHall hall{};
         opengold::MemberId member{}; // whose lessons are listed; 0 lists the services
         std::vector<HallChoice> choices;
+        // The classes the original's hall trains (its script's class mask).
+        unsigned class_mask{};
     };
 
     std::optional<HallVisit> hall_visit_;

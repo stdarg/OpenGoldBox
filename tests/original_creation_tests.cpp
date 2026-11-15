@@ -144,6 +144,17 @@ void a_fighter_trains_and_keeps_the_level()
     check(hall.denial == TrainingDenial::none &&
               hall.classes == std::vector<std::string>{"fighter"},
           "The fighters' hall trains it as a fighter");
+    // The later games' halls by their scripts' class masks (TRAIN_MASK).
+    check(party.hall_training(id, 0x01U).denial == TrainingDenial::other_hall &&
+              party.hall_training(id, 0x08U).classes == std::vector<std::string>{"fighter"} &&
+              party.hall_training(id, 127U).denial == TrainingDenial::none,
+          "A hall of a class mask trains the classes its bits name");
+    check(original_mask_classes(0x22) ==
+                  std::vector<std::string_view>{"cleric", "druid", "ranger"} &&
+              original_mask_classes(0x04) == std::vector<std::string_view>{"thief", "monk"} &&
+              original_mask_classes(original_class_mask(TrainingHall::fighters)) ==
+                  original_hall_classes(TrainingHall::fighters),
+          "A mask's bits: clerics and druids 2, thieves and monks 4, rangers 20h");
     const int before = party.member(id).character.sheet().hit_points;
     const auto gold = gold_value(party.state().wealth);
     party.train_at_hall_level(id, TrainingHall::fighters, {});
