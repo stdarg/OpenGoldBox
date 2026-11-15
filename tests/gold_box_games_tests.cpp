@@ -2797,12 +2797,8 @@ const std::vector<RouteBeat> &darkness_route()
              {4, 1, D::west},    {3, 1, D::west},    {2, 1, D::south},   {2, 2, D::south},
              {2, 3, D::south},   {2, 4, D::west},    {1, 4, D::south},   {1, 5, D::east},
              {2, 5, D::east},    {3, 5, D::south}});
-        // Since Darkness's monsters fight by their own effect numbers and
-        // Secret's round order (2026-11-15), Thorne, an ancient red dragon,
-        // kills the party with every dice the route tries: there the test wins
-        // the fight (a stand-in, until the route's player takes and wears the
-        // Ring of Fire Resistance from the dragon's hoard in room 4, as the
-        // cluebook's player would; it takes no treasure but wands).
+        // Thorne, an ancient red dragon, is beaten with the Ring of Fire
+        // Resistance worn, members dead and raised after.
         auto thorne = step_beat(34, 3, 6, D::south, {"YES"});
         thorne.rest_first = true;
         thorne.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x152, 255};
@@ -2977,8 +2973,14 @@ const std::vector<RouteBeat> &darkness_route()
                        {6, 14, D::east}});
         route.push_back(step_beat(35, 7, 14, D::east, {"YES"}));
         // In the slave pens below (map 68, Silk and the Slaves of the Drow)
-        // the party makes its way, rested first, as the planning aid finds it,
-        // north through the barracks and west under the arches, over the
+        // the party makes its way as the planning aid finds it. Silk (7,13,
+        // entered facing west) joins it when it agrees to help her (cell 25Eh
+        // 1), and her room is safe to rest in (cell 9Ah). In the prison wing
+        // (script 71, east of 12,13) it attacks the prison guards (14,12) for
+        // their keys and frees her Swanmays from the cell at (10,11) (cell 25Eh
+        // 3), as the Eyes of Kalistes will ask; it rests in her room again.
+        // Then north through the barracks and west under the arches to the
+        // quiet room (1,8, entered facing west), where it rests, over the
         // spiked pit's bridge and through the teleporting room, past the iron
         // golem and the fountain, to the secret door into Kalistes' Temple
         // (15,1; script 69).
