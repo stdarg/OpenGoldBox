@@ -4972,6 +4972,14 @@ const std::vector<RouteBeat> &darkness_route()
                     {8, 15, D::west},   {7, 15, D::west},   {6, 15, D::west},   {5, 15, D::west},
                     {4, 15, D::west}});
         route.push_back(step_beat(53, 3, 15, D::west, {"YES"}));
+        // FINAL PROBE
+        walk_heart({{7, 10, D::west}, {6, 10, D::south}, {6, 11, D::south}});
+        auto showdown = step_beat(53, 6, 12, D::west, {"YES"});
+        showdown.cure_first = true;
+        showdown.cure_to_full = true;
+        showdown.camp_broken = true;
+        showdown.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x245, 1};
+        route.push_back(showdown);
         return route;
     }();
     return beats;
