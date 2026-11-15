@@ -6269,9 +6269,12 @@ bool Session::ai_step(Fighter &f, int &last_direction, int &stuck)
     if (f.fleeing)
     {
         // The party's enemies run along its facing, its own side the other
-        // way (combatai.pas, AiMoveStep).
+        // way (combatai.pas, AiMoveStep); the 256-color engine's turn one
+        // step clockwise of the earlier games', north giving north and
+        // south south.
         f.stance = roll(2);
-        base = (along_party_facing() + (f.side == Side::party ? 4 : 0)) % 8;
+        const int turned = vga_engine(game_of(identity_)) ? 1 : 0;
+        base = (along_party_facing() + turned + (f.side == Side::party ? 4 : 0)) % 8;
     }
     else if (locked)
     {
