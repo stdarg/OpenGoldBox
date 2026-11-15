@@ -667,9 +667,15 @@ new decoders.
    (the archery stash, the elf's grave) and joins the bolts (the items
    menu's JOIN, now in the party), trains again at Zhentil Keep's hall
    (500,000 test experience) and wins Myth Drannor's altar and temple, the
-   Vaasans and Thorne too; the Aerie's blue dragons and Kalistes' egg room
-   are the stand-ins left. It leaves Myth Drannor by its gate and stops in
-   the Red Tower's garden (70: 4,15; darkness.md, Where it stops).
+   Vaasans too. *Since 2026-11-16:* the computer casts as the original's
+   (as *Treasures*'), so Thorne's dragons cast Fireball first and he is a
+   stand-in again; the route climbs the Tower of Marcus, crosses Moander's
+   body, clears the Large Wound and plays Moander's heart by its beat, the
+   Watcher's five spots and the chase, to the Talisman of Bane, and stops
+   back in the Large Wound (52: 12,15; darkness.md, Where it stops). Its
+   stand-ins: Thorne, the Aerie's blue dragons, Kalistes' egg room, the
+   Chambers of Marcus, the heart's magnetic golems and Tanetal's last
+   stand.
    *The area map is drawn (2026-11-14):* the big picture with the party's
    marker, as the original draws it. *Spell levels 8 and 9 and the new
    spells (2026-11-15):* merged, with Restoration giving back a drained

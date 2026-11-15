@@ -841,10 +841,52 @@ by what it is offered:
   the minions' four fights (events 14 to 17 at 6,11, 11,10, 10,15 and
   14,13) come in the order cell 233h keeps wherever they are met, each a
   bit of cell 239h (30 with all four): Bane minions mining the flesh, a
-  swarm of bits of Moander (a stand-in, below), mages with elementals and
+  swarm of bits of Moander, mages with elementals and
   elementals excavating. Back at (12,8, event 13, from 13,8 westward)
   Aeghwaet gives a small reward, then the two potions the heart needs
   (cell 23Bh 1), and his healing (YES; his temple's menu).
+- **The Entrance to Heart (map 52 from 8,0; script 52).** With Aeghwaet
+  helped the wound's camps rest: rested, the party leaves by the opening
+  (12,15: DO YOU WANT TO LEAVE? YES, then NO to entering again), walks the
+  body north and north-east to the wound in Moander's side (21,3: DO YOU
+  ENTER? YES; the cluebook's 24), rests there, and at the lung's muscle
+  wall (8,5, event 29; the cluebook's 25) spreads the potion on it (USE
+  POTIONS) and cuts through (YES) into the heart (script 53).
+- **Moander's heart (map 53, script 53; its words are script 55's, which
+  it runs with NEW ECL and returns from).** No camp: Tanetal comes to slit
+  sleeping throats (the cluebook), so the party walks hurt, its clerics
+  curing. The heart beats: cell 9Bh counts the party's steps, DUB comes at
+  half the beat (cell 243h; 60 steps at first) and drains a party in an
+  atrium or its vessels (events 20 to 23) into a ventricle, LUB at the
+  whole beat flushes one in a ventricle or the vessels it drains (events
+  10 to 18) out of the heart; cell 9Ah is 1 after a LUB and 2 after a DUB.
+  Its muscle tissue (event bit 40h) is safe, and a player times the
+  vessels by the beat, so the route paces tissue until the beat it waits
+  for has passed (`pace_heart`). The heart's story comes to a party
+  wandering its tissue (event 0: 1 step in 20, then 1 in 10), each part a
+  bit of cell 24Ah: the army's remains (32), the Watcher's scolding (4),
+  Tanetal slaying two soldiers (1); then the Watcher's five spots (events
+  26 to 30; cell 242h her business, cell 24Dh the spots used) serve her
+  story in turn wherever met: at 1,13 the potions are mixed (the slime
+  falls away, cell 241h 1); the tools (11,1), the arrow's four weapons
+  (4,5: YES four times, NO before it stings; Moander's pulse quickens to
+  a beat every 14 steps, cell 241h 2); a fake Tanetal attacked (ATTACK);
+  at 7,6 the unguent stolen; the cornucopia (8,0); at 9,4 Moander lulled
+  to sleep (a beat every 80 steps, the tuning fork, cell 241h 3); the
+  magnetic iron golems up the pulmonary artery (9,3); the unguent (15,3,
+  carried there by the artery's current); at 10,10 the magnetic weapons
+  noticed; the shock in the left ventricle (from 11,8: YES), which flushes
+  Tanetal and drops the Talisman; at 15,7 the trap (YES); the chase
+  (events 32 to 38, cell A2h counting them: 15,4, then south to 15,15,
+  west to 12,15, north to 12,12, west to 9,12, south to 9,15, west to 2,15,
+  where shocking the wall, YES, drains the party into the right
+  ventricle); and Tanetal's last stand (5,12, event 8), which leaves the
+  Talisman of Bane (cell 245h 1). Out by the vena cava's end (2,15,
+  south: ARE YOU SURE YOU WANT TO LEAVE THE HEART? YES) onto the body by
+  the side wound (20,3), and back to the Large Wound, where Aeghwaet heals
+  the party. A step where agents of Tanetal no play of the party beats came
+  on it is played again with other dice (`RouteBeat::reloads`, a player's
+  reload): three in the heart.
 
 Since 2026-11-15 the route's casters memorize spells of every level they
 have slots of (Pools of Darkness's levels 6 to 9 among them) and raise the
@@ -861,11 +903,17 @@ state does (Script memory, above). Until 2026-11-14 OpenGoldBox stepped on
 anyway, so stairs landed a square beyond their landing and a held step could
 wrap round the map's edge.
 
-Stand-ins (2026-11-15, late): four, the fights the test wins. The Large
-Wound's swarm of six bits of Moander (52: 11,10, the minions' second
-fight): 81 Hit Points each, two blows of up to 23, one poisoning, beat the
-route's party of levels 18 to 20 in every play (its weapons harm them
-little; the bits are plants no Hold Person holds). The
+Stand-ins (2026-11-16): six, the fights the test wins. Thorne and his
+seven red dragons (34: 3,6): since the computer casts as the original's
+does (its spell of highest AI weight with a target first: the dragons'
+Fireball, below), their fireballs, fear and breath beat the party of
+levels 13 to 15, warded with Resist Fire, in every one of the 120 plays.
+Moander's heart: the magnetic iron golems (53: 9,3; six iron golems and
+four fellows, whom the party's Fireball heals, as the original's
+EffIronGolem does, and its blows harm little) and Tanetal's last stand
+(53: 5,12; the best play leaves four members dead). The Large Wound's
+swarm of bits of Moander, a stand-in until then, the route's player now
+wins. The
 Chambers of Marcus (67: 0,12 south; script 77): the spectres fall, then the
 Minions of Bane, breathing for 27 each, and Banite clerics, whose Hold
 Person leaves members for the minions to slay, and at once Marcus with his
@@ -887,12 +935,13 @@ no eighth-level slot (TrimHighSpellSlots), so its training never offers
 such a spell, as for a party made in the original The player of the original comes far
 stronger, from the many wandering fights a route that walks straight to its
 goals does not have. The fights the route's player now wins (2026-11-15,
-late): the Vaasans (37: 13,8; the party came stronger), Thorne with his
-seven red dragons (warded with Resist Fire), Myth Drannor's altar and its
-temple (the blessed bolts, above). The route's party carries the game's own
-starting equipment (ORIGINAL-RULES.md, *Pools of Darkness*). Until the route
-reaches the win it passes when it plays every beat to Moander's body
-(map 52).
+late): the Vaasans (37: 13,8; the party came stronger), Myth Drannor's
+altar and its temple (the blessed bolts, above) and, since 2026-11-16, the
+Large Wound's swarm of bits of Moander; Thorne, won until the computer cast
+as the original's does, is a stand-in again. The route's party carries the
+game's own starting equipment (ORIGINAL-RULES.md, *Pools of Darkness*).
+Until the route reaches the win it passes when it plays every beat, through
+Moander's heart, back to the Large Wound (map 52).
 
 The route's rest takes a Darkness camp entry that sets cell 2Bh (the rest
 period) for one that refuses the rest, rests a night and cures the badly
@@ -990,9 +1039,25 @@ cast out of one, and their FIX uses it too, camp.pas); the Web Dimension's
 ruins are walked unrested after Cynthia (a camp there drew Kalistes' pets,
 iron golems and giant spiders); and the lower tower is played as above.
 
-Where it stops (2026-11-15, late): with Aeghwaet in the Large Wound (map
-52 at 12,8, script 52), the heart's two potions held (cell 23Bh 1). The
-exact next step: leave the wound (its entrance, 12,15: DO YOU WANT TO
+Pools of Darkness's computer casts as *Treasures*' does since 2026-11-16:
+the two games' `combatai.pas` and `cbtacts.pas` are the same (SelectSpellToCast,
+PickCastableSpell, RateSpellTarget, AimAreaSpell, and a SelectItemToUse that
+uses nothing), so the memorized spell of highest AI weight that has a
+target is cast first (ORIGINAL-RULES.md, *Pools of Darkness*).
+
+Where it stops (2026-11-16): back with Aeghwaet in the Large Wound (map
+52 at 12,15, script 52), the party whole and the Talisman of Bane held
+(cell 245h 1). The exact next step: Mulmaster. Leave the wound (12,15:
+DO YOU WANT TO LEAVE? YES, then NO), walk the body back to the depression
+(the planning aid with OPENGOLD_SECRET_AREA=1 and OPENGOLD_SECRET_KEYS=25,26
+finds the place; it was reached at the climb out, 7,10 on map 52), step
+through its gate to Limbo (DO YOU STEP THROUGH THE GATE? YES; the
+cluebook's Depression 1), and from Elminster's menu on to Mulmaster (its
+arena, location 4: the fights, then Arcam's interview), the Cave of the
+Beholder (Arcam, the labyrinth by the chant of journal entry 46, the
+Sentinel Halls whose fist opens for the Talisman), Dark Phlan (64) and
+the Palace of Gothmenes (65, 74, 73), whose win (75) is in place. Before
+the heart, what follows (kept for the record): leave the wound (its entrance, 12,15: DO YOU WANT TO
 LEAVE?, NEW ECL 51), walk the body to the wound in Moander's side (the
 cluebook's Entrance to Heart, its locations 24 to 26): the survey
 (OPENGOLD_DARKNESS_SITES) shows "A WOUND CUTS DEEP INTO MOANDER'S SIDE" at

@@ -506,6 +506,12 @@ Journal), chosen by the game as the others' are (2026-11-14):
     answered.
   - Fire Touch, Iron Skin, Mind Blank and Protection from Fire may be cast
     in camp and last into the next fight.
+- **The computer's spells** (its `combatai.pas` and `cbtacts.pas`,
+  2026-11-16) are *Treasures*' (below): its SelectSpellToCast,
+  PickCastableSpell, RateSpellTarget and AimAreaSpell are the same, and its
+  SelectItemToUse uses nothing, so a monster casts the memorized spell of
+  highest AI weight that has a target first (Thorne's red dragons their
+  Fireball) and never uses an item.
 - **Its spell table** (its `gdconsts.pas`, 2026-11-15, late) is the
   256-color engine's: in the 44 rows *Treasures* changes from the earlier
   games' (range, duration, save, when cast, AI weight; *Treasures*, below)
@@ -1700,5 +1706,5 @@ scales Hit Points takes only the table's to-hit and Armor Class.
 | *Treasures:* the Fix's Cure Blindness lifts the blindness of whichever member is current, not of the member it cures, and is never spent (`camp.pas`, `CampFixMenu`) | The blind member regains sight, one cure a member |
 | *Treasures:* the Fix's first rest counts a magic-user's Remove Curse by its third-level slots, its second by its fourth-level ones, where the spell is (`camp.pas`, `CampFixMenu`) | Fourth-level slots in both |
 | *Treasures:* the Fix says a resurrected member "has been ressurected" (`camp.pas`, `CampFixMenu`) | Spelt "resurrected" |
-| *Treasures:* the computer's choice of spell sorts the memorized spells from the second, so the first memorized is never cast (`combatai.pas`, PickCastableSpell) | Every memorized spell is weighed |
+| *Treasures* and *Pools of Darkness:* the computer's choice of spell sorts the memorized spells from the second, so the first memorized is never cast (their `combatai.pas`, PickCastableSpell) | Every memorized spell is weighed |
 | *Gateway:* a giant squid's constricting hold (effect 156) has its squeeze, two blows of 1d2, but the fight never calls it, so the squid only holds (`effhndlr.pas`, condition 14; `cbtacts.pas`, `AttackConstrict`) | It squeezes with them, as the owlbear's hug does |
