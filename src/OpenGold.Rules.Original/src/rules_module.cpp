@@ -2102,7 +2102,7 @@ bool ages_with_the_clock(const CharacterSheet &sheet) noexcept
 // Unlimited Adventures' rot as months pass (effects.c, fx_rotting): each
 // month that runs out takes 2 Charisma, never below 3, for the sheet to lose
 // (charisma_rotted, clock_changes); the rot lasts the months its strength
-// counts by 32s, and the last one leaves the member dead ("Dies rots away").
+// counts by 32s, and the last one leaves the member dead: it rots away.
 void rot_away(const CharacterSheet &sheet, VitalState &state, std::vector<Effect> &conditions,
               int passed)
 {
