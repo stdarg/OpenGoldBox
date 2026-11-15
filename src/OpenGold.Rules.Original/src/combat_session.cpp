@@ -993,6 +993,14 @@ class Session final : public rules::CombatSession
         return game_of(identity_) == GoldBoxGame::treasures_of_the_savage_frontier;
     }
 
+    // The 256-color engine's computer (Pools of Darkness's and Treasures'
+    // combatai.pas and cbtacts.pas, the same in both): it casts the spell of
+    // highest AI weight that has a target and never uses an item.
+    [[nodiscard]] bool weighs_spells() const
+    {
+        return darkness() || treasures();
+    }
+
     [[nodiscard]] bool gateway() const
     {
         return game_of(identity_) == GoldBoxGame::gateway_to_the_savage_frontier;
@@ -7133,8 +7141,8 @@ bool Session::take_ai_step(Fighter &f, int direction, int &last_direction)
 // scroll) whose spell it decides on is used.
 bool Session::ai_use_item(Fighter &f)
 {
-    // Treasures' computer never uses an item (its SelectItemToUse).
-    if (treasures())
+    // The 256-color engine's computer never uses an item (its SelectItemToUse).
+    if (weighs_spells())
     {
         return false;
     }
@@ -7180,7 +7188,7 @@ bool Session::ai_use_item(Fighter &f)
 // spells, the first it decides on cast as anyone casts it.
 bool Session::ai_cast(Fighter &f, bool magic)
 {
-    if (treasures())
+    if (weighs_spells())
     {
         return treasures_ai_cast(f, magic);
     }
@@ -7280,7 +7288,8 @@ bool Session::treasures_ai_cast(Fighter &f, bool magic)
 // the spells it stops, and magic resistance above 50 every spell.
 int Session::treasures_spell_rating(const Fighter &caster, const Fighter &target, int number) const
 {
-    constexpr auto game = GoldBoxGame::treasures_of_the_savage_frontier;
+    // Pools of Darkness numbers these effects as Treasures does.
+    const auto game = game_of(identity_);
     const auto &known = *game_spell(number);
     const Side enemies = caster.side == Side::party ? Side::opposition : Side::party;
     if (target.side != (known.offensive ? enemies : caster.side))
@@ -7288,7 +7297,7 @@ int Session::treasures_spell_rating(const Fighter &caster, const Fighter &target
         return -10;
     }
     // Its own effect numbers (canonical_effect).
-    const auto has = [&target](int code)
+    const auto has = [&target, game](int code)
     {
         return target.has(canonical_effect(code, game));
     };
@@ -7673,7 +7682,7 @@ Fighter *Session::cure_search(const Fighter &f)
 // helpless one for a spell that makes helpless. False when it finds none.
 bool Session::ai_aim(Fighter &f)
 {
-    if (treasures())
+    if (weighs_spells())
     {
         return treasures_ai_aim(f);
     }
