@@ -3747,13 +3747,34 @@ const std::vector<RouteBeat> &darkness_route()
                        {3, 5, D::west}});
         route.push_back(step_beat(35, 2, 5, D::north, {"YES"}));
         // Out of the wagon inside Zhentil Keep's gate (map 19 at 7,8),
-        // unseen, and south through the city's south half off the map by its
+        // unseen, and south through the city's south half to its training
+        // hall (3,9), as on the way in: the wandering monsters of the Web
+        // Dimension's paths and the Descent a player meets on the way are a
+        // stand-in, 500,000 experience each, and the party trains up to two
+        // levels for Myth Drannor's rakshasas. Then off the map by the city's
         // gate (8,15) to the area map.
         walk_passages(route, 19,
                       {{7, 8, D::east},
                        {8, 8, D::south},
                        {8, 9, D::south},
                        {8, 10, D::south},
+                       {8, 11, D::west},
+                       {7, 11, D::west},
+                       {6, 11, D::west},
+                       {5, 11, D::west},
+                       {4, 11, D::west}});
+        route.push_back(step_beat(19, 3, 11, D::north, {"YES"}));
+        auto zhentil_hall_again = step_beat(19, 3, 10, D::north, train_darkness_party(2));
+        zhentil_hall_again.test_experience = 500'000;
+        route.push_back(zhentil_hall_again);
+        walk_passages(route, 19,
+                      {{3, 9, D::south},
+                       {3, 10, D::south},
+                       {3, 11, D::east},
+                       {4, 11, D::east},
+                       {5, 11, D::east},
+                       {6, 11, D::east},
+                       {7, 11, D::east},
                        {8, 11, D::south},
                        {8, 12, D::south},
                        {8, 13, D::south},
@@ -3820,64 +3841,24 @@ const std::vector<RouteBeat> &darkness_route()
         searched.passing = true;
         searched.searching = false;
         route.push_back(searched);
-        // Back west and south to the ruined houses (6,13), where it rests.
+        // Back west, and along the street north of the knights the
+        // rakshasas drain (the cluebook's 9, left alone: its fight would
+        // spend the bolts the temple needs), to the spectres' room (3,10, the
+        // cluebook's 11), entered by its door facing west. Beaten, they leave
+        // an elf's remains, whose armor the party takes (YES), and with it a
+        // light crossbow +2, quarrels +4 and two stacks of blessed bolts,
+        // which the first paladin takes and readies, so three members shoot
+        // the bolts.
         walk_ruins_unrested({{14, 9, D::west},
                              {13, 9, D::west},
                              {12, 9, D::west},
                              {11, 9, D::south},
-                             {11, 10, D::south},
-                             {11, 11, D::south},
-                             {11, 12, D::south},
-                             {11, 13, D::south},
-                             {11, 14, D::south},
-                             {11, 15, D::west},
-                             {10, 15, D::west},
-                             {9, 15, D::west},
-                             {8, 15, D::west},
-                             {7, 15, D::west},
-                             {6, 15, D::north},
-                             {6, 14, D::north}});
-        RouteBeat ruin_rest{66, 6, 13, D::north, {}};
-        ruin_rest.rest_first = true;
-        // A night's rest even when whole, so the casters have their spells
-        // for the rakshasas.
-        ruin_rest.rest_for_spells = true;
-        route.push_back(ruin_rest);
-        // West to the rakshasas and Banites at their altar (3,14, the
-        // cluebook's 10), and back to the houses to rest.
-        walk_ruins_unrested({{6, 13, D::south},
-                             {6, 14, D::west},
-                             {5, 14, D::north},
-                             {5, 13, D::west},
-                             {4, 13, D::west}});
-        // The altar's eight Banite clerics and their rakshasas, among them
-        // Rukhs and Rajahs that take half from weapons below +4 and no spell
-        // below the eighth level, beat the route's party (levels 16 to 18)
-        // with every dice, rested and its spells fresh, so the test wins the
-        // fight: a stand-in until the route comes stronger.
-        auto banites = step_beat(66, 3, 13, D::south, {"YES"});
-        banites.camp_broken = true;
-        banites.test_wins = true;
-        route.push_back(banites);
-        walk_ruins_unrested({{3, 14, D::north},
-                             {3, 13, D::east},
-                             {4, 13, D::east},
-                             {5, 13, D::south},
-                             {5, 14, D::east},
-                             {6, 14, D::north}});
-        route.push_back(ruin_rest);
-        // North to the spectres' room (3,10, the cluebook's 11), entered by
-        // its door facing west: beaten, they leave an elf's remains, whose
-        // armor the party takes (YES), and with it a light crossbow +2, quarrels
-        // +4 and two stacks of blessed bolts, which the first paladin takes and
-        // readies, so three members shoot the bolts. Back to the houses to
-        // rest, the spectres' drains given back.
-        walk_ruins_unrested({{6, 13, D::south},
-                             {6, 14, D::west},
-                             {5, 14, D::north},
-                             {5, 13, D::north},
-                             {5, 12, D::north},
-                             {5, 11, D::north},
+                             {11, 10, D::west},
+                             {10, 10, D::west},
+                             {9, 10, D::west},
+                             {8, 10, D::west},
+                             {7, 10, D::west},
+                             {6, 10, D::west},
                              {5, 10, D::west}});
         auto grave = step_beat(66, 4, 10, D::west, {"YES"});
         grave.camp_broken = true;
@@ -3886,11 +3867,57 @@ const std::vector<RouteBeat> &darkness_route()
                             {"Bolt", "paladin 1"},
                             {"Bolt", "paladin 1"}};
         route.push_back(grave);
+        // South to the ruined houses (6,13), where it rests, the spectres'
+        // drains given back.
         walk_ruins_unrested({{3, 10, D::east},
                              {4, 10, D::east},
                              {5, 10, D::south},
                              {5, 11, D::south},
                              {5, 12, D::south},
+                             {5, 13, D::south},
+                             {5, 14, D::east},
+                             {6, 14, D::north}});
+        RouteBeat ruin_rest{66, 6, 13, D::north, {}};
+        ruin_rest.rest_first = true;
+        // A night's rest even when whole, so the casters have their spells
+        // for the rakshasas, Dispel Magic first, which frees a member their
+        // Hold Person holds.
+        ruin_rest.rest_for_spells = true;
+        ruin_rest.memorize_first_of = {"dispel_magic"};
+        route.push_back(ruin_rest);
+        // The bolts' bearers ready their crossbows (item type 27) and their
+        // quarrels +4 (12), and, where `blessed`, their blessed bolts (74) in
+        // the quarrels' place, as a player saves the bolts for the
+        // rakshasas no +3 weapon harms.
+        const auto ready_the_bolts = [](RouteBeat &beat, bool blessed)
+        {
+            for (const char *bearer : {"paladin 1", "paladin 2", "ranger 3"})
+            {
+                beat.ready_types.emplace_back(27, bearer);
+                beat.ready_types.emplace_back(12, bearer);
+                if (blessed)
+                {
+                    beat.ready_types.emplace_back(74, bearer);
+                }
+            }
+        };
+        // West to the rakshasas and Banites at their altar (3,14, the
+        // cluebook's 10), the only way to the ruins' west side, and back to
+        // the houses to rest. The altar's nine Banite clerics and seven
+        // rakshasas, which take half from weapons below +3 and no spell below
+        // the eighth level, fall to the quarrels +4 and the swords +3.
+        walk_ruins_unrested({{6, 13, D::south},
+                             {6, 14, D::west},
+                             {5, 14, D::north},
+                             {5, 13, D::west},
+                             {4, 13, D::west}});
+        auto banites = step_beat(66, 3, 13, D::south, {"YES"});
+        banites.camp_broken = true;
+        ready_the_bolts(banites, true);
+        route.push_back(banites);
+        walk_ruins_unrested({{3, 14, D::north},
+                             {3, 13, D::east},
+                             {4, 13, D::east},
                              {5, 13, D::south},
                              {5, 14, D::east},
                              {6, 14, D::north}});
@@ -3931,9 +3958,7 @@ const std::vector<RouteBeat> &darkness_route()
         auto temple_rest = step_beat(66, 3, 0, D::east);
         temple_rest.rest_first = true;
         temple_rest.rest_for_spells = true;
-        // The magic-user memorizes Mind Blank for the two bearers of the most
-        // bolts, cast on them at the temple's door.
-        temple_rest.ward_memorized = "mind_blank";
+        temple_rest.memorize_first_of = {"dispel_magic"};
         route.push_back(temple_rest);
         walk_ruins_unrested({{4, 0, D::east}});
         // Into the temple (5,1, the cluebook's 16), where the Rakshasa
@@ -3942,17 +3967,7 @@ const std::vector<RouteBeat> &darkness_route()
         // rakshasas who rush in (cell 1D8h FFh).
         auto maharajah = step_beat(66, 5, 0, D::south, {"SMASH GLOBES"});
         maharajah.camp_broken = true;
-        // Mind Blank turns the rakshasas' Hold Person and charms away from the
-        // ranger and the second paladin, who carry the most blessed bolts.
-        maharajah.ward_each_with = "mind_blank";
-        maharajah.ward_members = {"ranger 3", "paladin 2"};
-        // The bolts' bearers ready their crossbows and blessed bolts again
-        // (item types 27 and 74), where the last fight left them swords.
-        for (const char *bearer : {"paladin 1", "paladin 2", "ranger 3"})
-        {
-            maharajah.ready_types.emplace_back(27, bearer);
-            maharajah.ready_types.emplace_back(74, bearer);
-        }
+        ready_the_bolts(maharajah, true);
         maharajah.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x1D8, 255};
         route.push_back(maharajah);
         return route;
@@ -6237,12 +6252,20 @@ bool walk_census(GoldBoxGame game, bool route)
         // ones that touch Pools of Darkness's rakshasas: Meteor Swarm, Power
         // Word Kill, Mass Charm and Power Word Blind.
         constexpr std::array<unsigned, 4> rakshasa_spells{324, 325, 320, 323};
+        const auto state = session.snapshot();
+        const bool rakshasas =
+            std::ranges::any_of(state.combatants,
+                                [](const opengold::rules::CombatantView &unit)
+                                {
+                                    return unit.side == opengold::rules::Side::opposition &&
+                                           unit.name.starts_with("RAKSHASA");
+                                });
         const auto ours = [&](unsigned spell)
         {
             return spell == blast || spell == hold_monster || holds_people(spell) ||
-                   std::ranges::find(rakshasa_spells, spell) != rakshasa_spells.end();
+                   (rakshasas &&
+                    std::ranges::find(rakshasa_spells, spell) != rakshasa_spells.end());
         };
-        const auto state = session.snapshot();
         const auto unit_of = [&](opengold::rules::EntityId id)
         {
             return std::ranges::find(state.combatants, id, &opengold::rules::CombatantView::id);
@@ -6273,15 +6296,15 @@ bool walk_census(GoldBoxGame game, bool route)
         const auto commands = session.legal_commands();
         // Pools of Darkness's rakshasas are shot from afar, where a blessed
         // bolt slays one (its effect 82), as Nacacia bids: the Rajahs, whose
-        // Lightning Bolts and Ice Storms harm the most, then the rakshasas
-        // casting Magic Missiles, the Maharajah and last the Rukhs, who only
-        // strike.
+        // Lightning Bolts and Ice Storms harm the most, the Maharajah, the
+        // Rukhs, whom no weapon below +4 harms whole, and last the
+        // rakshasas, whom the swords +3 harm.
         const auto shooting_rank = [](const std::string &name)
         {
             return name.starts_with("RAKSHASA RAJAH")  ? 0
-                   : name.starts_with("RAKSHASA MAH")  ? 2
-                   : name.starts_with("RAKSHASA RUKH") ? 3
-                                                       : 1;
+                   : name.starts_with("RAKSHASA MAH")  ? 1
+                   : name.starts_with("RAKSHASA RUKH") ? 2
+                                                       : 3;
         };
         const opengold::rules::Command *shot = nullptr;
         for (const auto &command : commands)
@@ -6376,13 +6399,6 @@ bool walk_census(GoldBoxGame game, bool route)
         for (const unsigned wanted :
              {324U, 325U, 320U, 323U, blast, hold_monster, hold_person, mage_hold_person})
         {
-            const bool rakshasas =
-                std::ranges::any_of(state.combatants,
-                                    [](const opengold::rules::CombatantView &unit)
-                                    {
-                                        return unit.side == opengold::rules::Side::opposition &&
-                                               unit.name.starts_with("RAKSHASA");
-                                    });
             if (wanted > 300 && !rakshasas)
             {
                 continue;
@@ -6405,7 +6421,7 @@ bool walk_census(GoldBoxGame game, bool route)
     };
     // A player's answer to a member charmed onto the other side or held
     // helpless (Treasures' Way Inn sorceresses, Freezefire's black-robed
-    // men): Dispel Magic at it, which ends a charm or a hold as the
+    // men, Pools of Darkness's rakshasas): Dispel Magic at it, which ends a charm or a hold as the
     // original's dispel does, where a caster has it memorized.
     const auto free_the_bound =
         [&](const opengold::rules::CombatSession &fight) -> std::optional<opengold::rules::Command>
@@ -6595,7 +6611,10 @@ bool walk_census(GoldBoxGame game, bool route)
             const bool member = actor != state.combatants.end() &&
                                 actor->side == opengold::rules::Side::party &&
                                 !opengold::is_ally(state.actor);
-            auto held = member && game == GoldBoxGame::treasures_of_the_savage_frontier
+            // Treasures and Pools of Darkness share the 256-color engine,
+            // whose dispel ends a charm or a hold.
+            auto held = member && (game == GoldBoxGame::treasures_of_the_savage_frontier ||
+                                   game == GoldBoxGame::pools_of_darkness)
                             ? free_the_bound(session)
                             : std::nullopt;
             if (!held && member && tactic == 2)
