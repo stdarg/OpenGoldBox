@@ -358,7 +358,11 @@ Llorkh's hall, training the party to levels 8 and 9).
    rentals (3,15), open now.
 3. **Secomber** (map 19), down the river and overland (maps 57 and 56): the
    first crystal battle (13,15) and Amanitas (7,10), who gives the crown and
-   tells of the ambassadors (PROGRAM 3).
+   tells of the ambassadors (PROGRAM 3), rested for at the Inn of the
+   Eccentric Owl (0,11, facing south) before each, the magic-user's Fireballs
+   memorized for the battle's sorceresses (the town's guards break a camp in
+   the streets, and since the round-4 rules an interrupted rest leaves the
+   spells unlearned).
 4. **Leilon** (map 20), overland by maps 56, 54 and 53: the drugged dinner at
    the Rutting Buck (9,7), rested for, the clerics memorizing Resist Fire
    for every member, and the escape from the barn by the sick trick (12,5).
