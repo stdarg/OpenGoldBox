@@ -217,8 +217,8 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
     const auto effect_count = *next++;
     for (int n = 0; n < effect_count; ++n, next += 4)
     {
-        // Curse's, Secret's and the kit's own effects run past 255 (canonical_effect).
-        if (next[0] < 1 || next[0] > 255 + kit_effect_offset || next[1] < 0 || next[2] < 0)
+        // The later games' and the kit's own effects run past 255 (canonical_effect).
+        if (next[0] < 1 || next[0] > 255 + vga_effect_offset || next[1] < 0 || next[2] < 0)
         {
             return std::nullopt;
         }
@@ -516,15 +516,15 @@ bool reflects_gazes(const CarriedItem &carried)
 // byte (62) says the item gives one. Pool of Radiance's special byte names a
 // handler of its own, and those that grant an effect are 128 to 130, 133, 134,
 // 136, 138 and 139 (viewchar.pas, ToggleReadyItem; effhndlr.pas,
-// EffGrantItemEffect); from Curse on the byte's 0x80 with no other bit does
-// (ToggleItemEffect). The 256-color games and Unlimited Adventures number
-// their effects in ways the fight does not read yet, so their items give none.
+// EffGrantItemEffect); from Curse on, and in Unlimited Adventures, the byte's
+// 0x80 with no other bit does (ToggleItemEffect; the kit's charview.c,
+// item_effect). Treasures grants by 0x0F and 0x8F too, but never Spiritual
+// Hammer's own effect (23), which its hammer carries.
 std::optional<Effect> granted_effect(const CarriedItem &carried, GoldBoxGame game)
 {
     const auto &bytes = carried.item.effect_codes;
     const int special = bytes[2], code = bytes[1];
-    if (!carried.item.readied() || code == 0 || vga_engine(game) ||
-        game == GoldBoxGame::unlimited_adventures)
+    if (!carried.item.readied() || code == 0)
     {
         return std::nullopt;
     }
@@ -538,8 +538,12 @@ std::optional<Effect> granted_effect(const CarriedItem &carried, GoldBoxGame gam
         }
         return Effect{code, 0, strength, false};
     }
-    constexpr int strength = 255;
-    if (special != 0x80)
+    constexpr int strength = 255, spiritual_hammer = 23;
+    const bool grants =
+        game == GoldBoxGame::treasures_of_the_savage_frontier
+            ? (special == 0x80 || special == 0x8F || special == 0x0F) && code != spiritual_hammer
+            : special == 0x80;
+    if (!grants)
     {
         return std::nullopt;
     }
@@ -686,10 +690,70 @@ int kit_canonical_effect(int code) noexcept
     return found != matched.end() ? found->second : code + kit_effect_offset;
 }
 
+// Gateway's effects by the fight's numbers (effhndlr.pas in its
+// reconstruction, judged by what each does): Curse's, code for code, but for
+// its own new ones (126, 148 to 159 and 161), which no earlier game's effect
+// does, and 160, which ends Spiritual Hammer as Pool of Radiance's 137 does.
+int gateway_canonical_effect(int code) noexcept
+{
+    constexpr int hammer_gone = 160;
+    if (code == hammer_gone)
+    {
+        return 137;
+    }
+    if (code == 126 || (code >= 148 && code <= 161))
+    {
+        return code + gateway_effect_offset;
+    }
+    return canonical_effect(code, GoldBoxGame::curse_of_the_azure_bonds);
+}
+
+// Pools of Darkness' and Treasures' effects by the fight's numbers (their
+// effhndlr.pas, judged by what each does): Secret's, but for those the
+// 256-color engine gave other work: 66 halves the lightest weapons' damage as
+// Curse's 115 does, 101 and 102 drain levels as Pool of Radiance's 85 and 86,
+// 117 is Curse's eye rays (287), Treasures' 156 holds its bearer still as Curse's 136 does; the
+// rest listed are the engine's own, which no earlier game's effect does. The two games number their
+// effects alike to 126, and Treasures goes on to 160.
+int vga_canonical_effect(int code, GoldBoxGame game) noexcept
+{
+    constexpr std::array<std::pair<int, int>, 4> moved{
+        {{66, 115}, {101, 85}, {102, 86}, {117, 287}}};
+    const auto found = std::ranges::find(moved, code, &std::pair<int, int>::first);
+    if (found != moved.end())
+    {
+        return found->second;
+    }
+    constexpr std::array own{40, 67, 76, 80, 81, 82, 99, 100, 104, 108};
+    const bool treasures = game == GoldBoxGame::treasures_of_the_savage_frontier;
+    if (treasures && code == 156)
+    {
+        return 336;
+    }
+    if (std::ranges::find(own, code) != own.end() || (code >= 114 && code <= 127) ||
+        (treasures && code > 127))
+    {
+        return code + vga_effect_offset;
+    }
+    return secret_canonical_effect(code);
+}
+
 } // namespace
 
 int canonical_effect(int code, GoldBoxGame game) noexcept
 {
+    if (code == 0)
+    {
+        return 0;
+    }
+    if (game == GoldBoxGame::gateway_to_the_savage_frontier)
+    {
+        return gateway_canonical_effect(code);
+    }
+    if (vga_engine(game))
+    {
+        return vga_canonical_effect(code, game);
+    }
     if (game == GoldBoxGame::unlimited_adventures && code != 0)
     {
         return kit_canonical_effect(code);

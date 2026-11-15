@@ -2170,7 +2170,12 @@ void Session::drain_levels(Fighter &victim, int levels)
         auto &classes = numbers.class_levels;
         const int total = std::accumulate(classes.begin(), classes.end(), 0);
         const int per_level = numbers.max_hit_points / std::max({total, numbers.level, 1});
-        numbers.max_hit_points = std::max(numbers.max_hit_points - per_level, 1);
+        // One dead forever keeps the maximum it had, which the game weighs
+        // as it takes its member back.
+        if (numbers.level >= 2 && !victim.has(effect::animated))
+        {
+            numbers.max_hit_points = std::max(numbers.max_hit_points - per_level, 1);
+        }
         victim.hit_points = std::max(victim.hit_points - per_level, 0);
         if (numbers.level < 2 || victim.has(effect::animated))
         {

@@ -4571,8 +4571,66 @@ void readied_items_give_their_effects()
     displaced.code = 89;
     check(effects_with(secret_game, {0, 89, 0x80}, true, {displaced}) == std::vector<int>{89},
           "A record holding the item's effect keeps one");
-    check(effects_with(GoldBoxGame::pools_of_darkness, {0, 75, 0x80}, true).empty(),
-          "The 256-color games' items give none until the fight reads their numbers");
+    constexpr auto treasures = GoldBoxGame::treasures_of_the_savage_frontier;
+    check(effects_with(GoldBoxGame::pools_of_darkness, {0, 89, 0x80}, true) ==
+                  std::vector<int>{89} &&
+              effects_with(GoldBoxGame::pools_of_darkness, {0, 89, 0x8F}, true).empty(),
+          "Pools of Darkness grants by the special byte's 0x80 alone, by its numbers");
+    check(effects_with(treasures, {0, 89, 0x8F}, true) == std::vector<int>{89} &&
+              effects_with(treasures, {0, 89, 0x0F}, true) == std::vector<int>{89} &&
+              effects_with(treasures, {0, 23, 0x80}, true).empty(),
+          "Treasures grants by 0x0F and 0x8F too, but never Spiritual Hammer's effect");
+    check(effects_with(GoldBoxGame::gateway_to_the_savage_frontier, {0, 89, 0x80}, true) ==
+                  std::vector<int>{89} &&
+              effects_with(GoldBoxGame::unlimited_adventures, {0, 89, 0x80}, true) ==
+                  std::vector<int>{89},
+          "Gateway's and Unlimited Adventures' cloaks of displacement displace their wearers");
+}
+
+// Gateway's effects by the fight's numbers are Curse's, but for its own; Pools
+// of Darkness' and Treasures' are Secret's, but for those their engine moved
+// and its own (canonical_effect, docs/ORIGINAL-RULES.md).
+void later_games_effects_take_their_own_numbers()
+{
+    constexpr auto gateway = GoldBoxGame::gateway_to_the_savage_frontier;
+    constexpr auto darkness = GoldBoxGame::pools_of_darkness;
+    constexpr auto treasures = GoldBoxGame::treasures_of_the_savage_frontier;
+    for (const int code : {3, 7, 13, 27, 35, 57, 87, 122, 139, 144, 147})
+    {
+        check(original::canonical_effect(code, gateway) ==
+                  original::canonical_effect(code, GoldBoxGame::curse_of_the_azure_bonds),
+              "Gateway's effect " + std::to_string(code) + " is Curse's");
+    }
+    check(original::canonical_effect(160, gateway) == 137 &&
+              original::canonical_effect(126, gateway) == 126 + original::gateway_effect_offset &&
+              original::canonical_effect(158, gateway) == 158 + original::gateway_effect_offset,
+          "Gateway's own effects take numbers of their own");
+    for (const auto game : {darkness, treasures})
+    {
+        for (const int code : {4, 6, 7, 13, 18, 32, 57, 58, 59, 64, 79, 89, 93, 98, 103, 111})
+        {
+            check(original::canonical_effect(code, game) ==
+                      original::canonical_effect(code, secret_game),
+                  "The 256-color games' effect " + std::to_string(code) + " is Secret's");
+        }
+        check(original::canonical_effect(66, game) == 115 &&
+                  original::canonical_effect(101, game) == 85 &&
+                  original::canonical_effect(102, game) == 86 &&
+                  original::canonical_effect(117, game) == 287,
+              "The engine's moved effects take the earlier games' numbers that work alike");
+        check(original::canonical_effect(40, game) == 40 + original::vga_effect_offset &&
+                  original::canonical_effect(99, game) == 99 + original::vga_effect_offset &&
+                  original::canonical_effect(108, game) == 108 + original::vga_effect_offset &&
+                  original::canonical_effect(126, game) == 126 + original::vga_effect_offset,
+              "The engine's own effects take numbers of their own");
+    }
+    check(original::canonical_effect(156, treasures) == 336 &&
+              original::canonical_effect(140, treasures) == 140 + original::vga_effect_offset,
+          "Treasures' later effects: holding still as Curse's 136, the rest its own");
+    original::Combatant vorpal;
+    vorpal.effects.push_back({original::canonical_effect(160, treasures), 0, 255, true});
+    check(original::Combatant::decode(vorpal.encode()) == vorpal,
+          "A creature keeps the engine's own effects through its profile");
 }
 
 // Secret's giant-bane weapon (its effect 75, EffHolyWater): against one its
@@ -4954,6 +5012,7 @@ int main()
         out_of_doors();
         a_quarrel_banishes_the_rakshasa();
         readied_items_give_their_effects();
+        later_games_effects_take_their_own_numbers();
         heights_decide_sight();
         the_party_facing_and_movement();
         spiritual_hammer_gives_its_hammer();

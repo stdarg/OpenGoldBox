@@ -4152,6 +4152,9 @@ const std::vector<RouteBeat> &gateway_route()
                        {12, 8, D::east},
                        {13, 6, D::east}});
         route.push_back(step_beat(23, 14, 4, D::east, {"YES"}));
+        // Sundabar's Temple of Tyr (2,2) raises any the aarakocra's fight
+        // cost: its shambling mounds engulf and smother their victims.
+        route.push_back({19, 2, 2, D::north, {"raise:dead", "Leave"}});
         // Out of Sundabar by its west gate, and overland round the mountains
         // east to Ascore.
         walk_passages(route, 19, {{0, 10, D::west}}, true);

@@ -1199,12 +1199,34 @@ gear.
      monster's saved with its items does, keeps one. The effects the fight
      does not play yet do nothing: *Pool of Radiance*'s undead slayer (3) and
      flame tongue (6), *Curse*'s spell failure, dragon slayer, bane weapon
-     and berserk (74 to 77). The 256-color
-     games and *Unlimited Adventures* number their effects in ways the fight
-     does not read yet (`canonical_effect` reads *Gateway*'s, *Pools of
-     Darkness*'s and *Treasures*' as *Pool of Radiance*'s), so their items
-     give none; the special byte's other kinds (Strength, spell slots, the
-     aligned weapon) are their own items.
+     and berserk (74 to 77). *Gateway*, *Pools of Darkness* and *Unlimited
+     Adventures* grant by the byte's 0x80 alone, as *Curse* does (the kit's
+     `item_effect`); *Treasures* by 0x0F and 0x8F too, but never Spiritual
+     Hammer's own effect (23); each read by its game's numbers (Effects of the
+     later games, below). The special byte's other kinds (Strength, spell
+     slots, the aligned weapon) are their own items.
+   - **Effects of the later games** (2026-11-15; `canonical_effect`, their
+     `effhndlr.pas`, judged by what each handler does): *Gateway*'s are
+     *Curse*'s, code for code, but for 160, which ends Spiritual Hammer as
+     *Pool of Radiance*'s 137 does, and its own 126, 148 to 159 and 161
+     (`gateway_effect_offset` higher). *Pools of Darkness*'s and *Treasures*'
+     are *Secret*'s, but for those their engine gave other work: 66 halves the
+     lightest weapons' damage (*Curse*'s 115), 101 and 102 drain levels (*Pool
+     of Radiance*'s 85 and 86), 117 is *Curse*'s eye rays (287), *Treasures*'
+     156 holds its bearer still (*Curse*'s 136), and the engine's own (40, 67,
+     76, 80 to 82, 99, 100, 104, 108, 114 to 127, and *Treasures*' 128 to 160)
+     are `vga_effect_offset` higher. Before, these games' records were read by
+     *Pool of Radiance*'s numbers: *Treasures*' carrion crawler, whose 88 is a
+     paralyzing touch, breathed lightning. The fight plays only the effects it
+     knows by these numbers; the engine's own do nothing yet, nor do the
+     ways *Gateway*'s alike-numbered ones differ from *Curse*'s (its
+     shambling mound engulfs on 1 to 4 of a d10, not on two hits; its hug
+     makes two attacks). *Gateway*'s route raises at Sundabar's temple
+     the member its shambling mounds now smother. *Pools of Darkness*'s
+     route does not pass with them yet: its iron golems (harmed only by +3
+     weapons), fire giants and drow kill members in the Fire Giant Cave
+     (map 32, 11,6) and its party falls on map 48 (10,13); that route's
+     planning is to follow.
    - **The party's facing** (2026-11-14; `combatst.pas`,
      `InitCreatureCombatData`; `combatai.pas`, `AiMoveStep`): the fight
      knows the way the party faced as it met its foes

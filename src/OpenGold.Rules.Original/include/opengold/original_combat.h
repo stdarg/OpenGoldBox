@@ -90,6 +90,10 @@ inline constexpr int darkness_effect_offset = 470;
 // Unlimited Adventures' monster effects that no earlier game's effect does
 // are numbered this much higher than the kit's own, which no handler plays.
 inline constexpr int kit_effect_offset = 600;
+// Gateway's and the 256-color games' own effects, which no earlier game's
+// effect does, are numbered this much higher than the game's own.
+inline constexpr int gateway_effect_offset = 1000;
+inline constexpr int vga_effect_offset = 1200;
 
 // The number the fight knows a game's own effect by (its records', items'
 // and spells'): Pool of Radiance's as they are; Curse's that work as Pool of
@@ -101,7 +105,10 @@ inline constexpr int kit_effect_offset = 600;
 // those that work otherwise (docs/ORIGINAL-RULES.md, Pools of Darkness);
 // Unlimited Adventures' monsters' as
 // the effect that does what the kit's does, and the rest kit_effect_offset
-// higher (docs/games/ua.md, Monsters' effects).
+// higher (docs/games/ua.md, Monsters' effects); Gateway's as Curse's, Pools of
+// Darkness' and Treasures' as Secret's, but for their own, which are
+// gateway_effect_offset and vga_effect_offset higher
+// (docs/ORIGINAL-RULES.md).
 [[nodiscard]] int canonical_effect(int code, GoldBoxGame game) noexcept;
 
 struct Effect
