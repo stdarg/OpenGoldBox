@@ -510,11 +510,13 @@ bool reflects_gazes(const CarriedItem &carried)
 
 // A thief backstabs with no weapon, a club or a dagger (item types 3 and 4)
 // or a broad, long or short sword (17 to 19) in any armor (cbtacts.pas,
-// IsBackstab, in Secret's reconstruction).
-bool secret_backstab_weapon(const CarriedItem *weapon)
+// IsBackstab, in Secret's reconstruction); in Pools of Darkness also with an
+// item of type 63 or 67 (its IsBackstab).
+bool secret_backstab_weapon(const CarriedItem *weapon, GoldBoxGame game)
 {
     const int type = weapon ? weapon->item.type : 0;
-    return !weapon || type == 3 || type == 4 || (type >= 17 && type <= 19);
+    const bool darkness_type = game == GoldBoxGame::pools_of_darkness && (type == 63 || type == 67);
+    return !weapon || type == 3 || type == 4 || (type >= 17 && type <= 19) || darkness_type;
 }
 
 } // namespace
@@ -597,6 +599,34 @@ int secret_canonical_effect(int code) noexcept
     return code + secret_effect_offset;
 }
 
+// Pools of Darkness's effects by the fight's numbers (effhndlr.pas and the
+// effectFns it registers in its reconstruction, judged by what each handler
+// does): Secret's but where its handler does otherwise. The Rakshasa's
+// protection (40), half damage from weapons below +3 (80) and +4 (81), the
+// need of a +2 weapon (125) and immunity to gazes (126) do as the
+// Unlimited Adventures kit's of the same numbers, and take them. Half damage
+// from crushing weapons (67), a giant-slaying sword (75), the blessed bolt
+// that slays (82), the big red, green, blue and black dragons'
+// breaths (83, 90, 91, 96), the bulette's rake (99), its dragon fear (100),
+// 4d6 of fire with a hit (104) and the paralyzing gaze (114) are its own;
+// half damage from cutting and piercing weapons is Pool of Radiance's (115),
+// the red and white dragons' breaths Secret's fire and cold (its 104 and 83), the
+// drains Pool of Radiance's (85, 86) and 2d6 of fire with a hit Fire Touch.
+int darkness_canonical_effect(int code) noexcept
+{
+    constexpr int own = secret_effect_offset, past = darkness_effect_offset,
+                  kit = kit_effect_offset;
+    constexpr std::array<std::pair<int, int>, 22> moved{{
+        {40, 40 + kit},    {66, 115},       {67, 67 + past},   {75, 75 + past},  {80, 80 + kit},
+        {81, 81 + kit},    {82, 82 + past}, {83, 83 + past},   {84, 104 + own},  {85, 83 + own},
+        {125, 125 + kit},  {126, 126 + kit},
+        {90, 90 + past}, {91, 91 + past}, {96, 96 + past},   {99, 99 + past},  {100, 100 + past},
+        {101, 85},       {102, 86},       {104, 104 + past}, {108, 121 + own}, {114, 114 + past},
+    }};
+    const auto found = std::ranges::find(moved, code, &std::pair<int, int>::first);
+    return found != moved.end() ? found->second : secret_canonical_effect(code);
+}
+
 // Unlimited Adventures' monsters' effects by the fight's numbers (the
 // kit's effects.c and fxcombat.c, judged by what each does; docs/games/ua.md,
 // Monsters' effects). The kit numbers its effects as the Krynn games do, so
@@ -629,6 +659,10 @@ int canonical_effect(int code, GoldBoxGame game) noexcept
     if (game == GoldBoxGame::secret_of_the_silver_blades && code != 0)
     {
         return secret_canonical_effect(code);
+    }
+    if (game == GoldBoxGame::pools_of_darkness && code != 0)
+    {
+        return darkness_canonical_effect(code);
     }
     if (game != GoldBoxGame::curse_of_the_azure_bonds || code == 0)
     {
@@ -778,10 +812,13 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
     c.backstabs = l.thief > 0 && (!armor || armor->item.type == 50) &&
                   (!weapon || weapon_type == 7 || weapon_type == 8 ||
                    (weapon_type >= 35 && weapon_type <= 37));
-    const bool secret = record.game == GoldBoxGame::secret_of_the_silver_blades;
+    // Pools of Darkness reads its records' flags, backstabs and mirrors as
+    // Secret does (its reconstruction's cbtacts.pas, effhndlr.pas and magic.pas).
+    const bool secret = record.game == GoldBoxGame::secret_of_the_silver_blades ||
+                        record.game == GoldBoxGame::pools_of_darkness;
     if (secret)
     {
-        c.backstabs = l.thief > 0 && secret_backstab_weapon(weapon);
+        c.backstabs = l.thief > 0 && secret_backstab_weapon(weapon, record.game);
     }
     // The combat icon's size: above 0x80, or a size above 1 (cbtacts.pas, RollAttacks).
     c.large = record.icon_size_raw > 0x80 || (record.icon_size_raw & 7) > 1;

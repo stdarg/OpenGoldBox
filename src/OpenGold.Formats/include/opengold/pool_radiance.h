@@ -87,11 +87,11 @@ struct CharacterRecord
     std::uint8_t attack_level{}, highest_level_raw{}, drained_levels{}, drained_hit_points{},
         undead_level{};
     std::array<std::uint8_t, 8> thief_skills{};
-    // Secret of the Silver Blades judges a creature by flag bits where the
-    // earlier games read its type (docs/games/secret.md): what kind of
-    // creature it is to effects and spells (secret::creature_type bits), what
-    // its foes' weapons and spells may do to it (secret::target bits), and its
-    // magic resistance in percent. Zero in the other games.
+    // Secret of the Silver Blades and Pools of Darkness judge a creature by
+    // flag bits where the earlier games read its type (docs/games/secret.md):
+    // what kind of creature it is to effects and spells (secret::creature_type
+    // bits), what its foes' weapons and spells may do to it (secret::target
+    // bits), and its magic resistance in percent. Zero in the other games.
     std::uint8_t creature_type_flags{}, target_flags{}, magic_resistance{};
     // Byte values are retained: known-spell flags/counters and memorized spell IDs.
     std::vector<std::uint8_t> spell_book, memorized_spells;

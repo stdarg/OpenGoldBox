@@ -503,14 +503,59 @@ Journal), chosen by the game as the others' are (2026-11-14):
   +3 and 50 darts +2. It readies each but the fourth, as the rules allow (a
   class that may not use an item, or full hands, leaves it in the pack), and
   counts what it carries (Bugs) (2026-11-14).
+- **Its monsters' effects** are read by what each of its handlers does
+  (`effhndlr.pas` and the `effectFns` it registers, `canonical_effect`),
+  not by their names (2026-11-15):
+  - *As Secret's:* every code whose handler does what *Secret*'s of the
+    same number does, among them its Globe of Invulnerability (57), the
+    petrifying and confusing gazes (58, 70), the need of a +3 weapon (60)
+    and of a magic one (103), the poisons (64, 86), paralysis (88) and
+    immunities to fire, cold and fear (93, 98, 92).
+  - *As an earlier game's:* half harm from cutting and piercing weapons
+    (66) is *Pool of Radiance*'s skeletons', the red and white dragons'
+    breaths (84, 85) *Secret*'s fire and cold breaths, the drains of one
+    and two levels (101, 102) *Pool of Radiance*'s, and 2d6 of fire with
+    each hit (108) its own Fire Touch.
+  - *Its own, played:* the Rakshasa's protection (40: no spell below the
+    eighth level), half harm from crushing weapons (67) and from weapons
+    below +3 (80) and +4 (81), the need of a +2 weapon (125: a monster's
+    own blows harm it from 7 Hit Dice), gaze immunity (126: no gaze stones
+    or confuses it), 4d6 of fire with each hit (104), and dragon fear
+    (100): each enemy that fails a save against petrification at -4 is
+    terrified for the fight, 2 worse to hit and 2 less harmful a blow
+    (120). The original tries the fear twice as a fight starts (its fight
+    start runs two conditions that both hold it), so one that saves once
+    faces it again; that is kept.
+  - *Its own, not played yet:* a giant-slaying sword (75), the blessed
+    bolt that slays a rakshasa (82), the big red, green, blue and black
+    dragons' breaths (83, 90, 91, 96), the bulette's rake (99), the
+    paralyzing and charming gazes (114, 124), Kalistes' new weapons
+    (116), the beholders' rays (117, which the original plays as nothing)
+    and the vorpal blade (115).
+  - Its records' type flags, "immunities" and magic resistance are read
+    (bytes 420, 421 and 491), *Secret*'s bits, so a creature is a snake, a
+    mammal, a ranger's foe or unliving as in *Secret*.
+- **Its fights play *Secret*'s rules where its reconstruction does as
+  *Secret*'s** (`combat.pas`, `cbtacts.pas`, `magic.pas`, 2026-11-15): the
+  round's order made once as it begins, a delay going last, a spell begun
+  moving its caster down the order; a backstab only on a one-square
+  defender beside the thief, 4 off the rear Armor Class and multiplied after
+  the blow's effects (by 5 at most in *Pools of Darkness*), with *Secret*'s
+  weapons and two more (item types 63 and 67); a blow's effects only with
+  damage; Hold Person never holding a monster; Snake Charm and the ranger's
+  bonus by the record's flags; the undead and unliving breathing a stinking
+  cloud unharmed. Charm Person takes a monster its flags call a mammal, of
+  one square (its `SpellCharmPerson`). Turning undead stays the earlier
+  games' (*Secret* has none, *Pools of Darkness* has it), and so does the
+  AI's step into a cloud (its `AiCanStep` neither saves nor counts movement
+  as *Secret*'s does).
 - **Still to come:** the temples' Restoration, a service the game's temple
   screen does not offer yet; Mass Charm's test of the record's
   charmable flag (it passes over only a large creature and the caster's
-  side for now); its fights as *Secret*'s (a *Pools of Darkness* record's
-  effects by its own numbers, `canonical_effect`, and *Secret*'s checks
-  `Session::secret` makes); and
-  bringing a *Secret* party across (its LoadChar), which the original
-  offers.
+  side for now); the monsters' effects not played yet (above); its own
+  turning (paladins from level 3, a limit of tries a fight) and cloud
+  steps; and bringing a *Secret* party across (its LoadChar), which the
+  original offers.
 
 ## Treasures of the Savage Frontier
 

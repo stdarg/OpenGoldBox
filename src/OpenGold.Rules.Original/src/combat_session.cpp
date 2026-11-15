@@ -102,6 +102,9 @@ constexpr int globe_of_invulnerability = 457, petrifying_gaze = 458, needs_plus_
               ghoul_touch = 488, bashing_proof = 490, fearless = 492, hardy = 494,
               fire_breath = 504, stunned = 506;
 // Unlimited Adventures' own (canonical_effect, its code plus kit_effect_offset).
+// Pools of Darkness plays four of them by the same rules: the Rakshasa's
+// protection is the kit's spell_proof, its weapons below +3 and +4 halving,
+// its need of a +2 weapon and its immunity to gazes the kit's.
 constexpr int spell_proof = 640, disease_proof = 676, halved_below_plus_three = 680,
               halved_below_plus_four = 681, poison_breath = 690, bulette_attacks = 699,
               needs_plus_two = 725, gaze_proof = 726, stench = 737, sickened = 748,
@@ -111,11 +114,15 @@ constexpr int spell_proof = 640, disease_proof = 676, halved_below_plus_three = 
 // into, for the campaign to keep: past the kit's last effect (228), so no
 // record of the kit's names it.
 constexpr int armor_eaten = kit_effect_offset + 250;
-// Pools of Darkness's own (its 118 to 123, plus secret_effect_offset): a
-// dance, the druid's Protection from Fire, Fire Touch, Iron Skin and Mind
-// Blank; and the caster's Blade Barrier, which no game's effect numbers.
-constexpr int dancing = 518, druid_fire_protection = 519, fire_touch = 521, iron_skin = 522,
-              mind_blank = 523, blade_barrier = 601;
+// Pools of Darkness's own (its 118 to 124, plus secret_effect_offset): a
+// dance, the druid's Protection from Fire, dragon fear's terror, Fire Touch,
+// Iron Skin and Mind Blank; and the caster's Blade Barrier, which no game's
+// effect numbers. Its others no earlier game has (its 67, 100 and 104, plus
+// darkness_effect_offset): half harm from crushing weapons, dragon fear and
+// 4d6 of fire with a hit.
+constexpr int dancing = 518, druid_fire_protection = 519, dragon_feared = 520, fire_touch = 521,
+              iron_skin = 522, mind_blank = 523, blade_barrier = 601, halves_crushing = 537,
+              darkness_dragon_fear = 570, fire_hit = 574;
 } // namespace effect
 
 // What a hit carries, by the attacker's effects, in the original's order: a
@@ -800,10 +807,10 @@ class Session final : public rules::CombatSession
     // The opposition's Hit Points left of its whole, in steps of 5, as of the
     // round's start (cbtacts.pas, UpdateHostileHpPercent).
     int hostile_hit_points_percent_{100};
-    // Secret of the Silver Blades orders the round once as it begins: those
-    // yet to act this round, first first (combat.pas, OrderCreatures, in its
-    // reconstruction). Empty in the earlier games, which pick the highest
-    // initiative left each time.
+    // Secret of the Silver Blades and Pools of Darkness order the round once
+    // as it begins: those yet to act this round, first first (combat.pas,
+    // OrderCreatures, in their reconstructions). Empty in the earlier games,
+    // which pick the highest initiative left each time.
     std::vector<EntityId> turn_order_;
     // The dice the damage of the spell going off was rolled with (the kit's
     // damage_dice_count), which the kit's effects weigh fire by; 0 for any
@@ -820,11 +827,25 @@ class Session final : public rules::CombatSession
         return game_of(identity_) == GoldBoxGame::unlimited_adventures;
     }
 
-    // Secret and Unlimited Adventures order each round once as it begins,
-    // ties broken by a d2 (the kit's combat.c and cbaction.c, as Secret's).
+    [[nodiscard]] bool darkness() const
+    {
+        return game_of(identity_) == GoldBoxGame::pools_of_darkness;
+    }
+
+    // Whether the fight plays Secret's rules where Pools of Darkness's
+    // reconstruction does as Secret's does (docs/ORIGINAL-RULES.md, Pools of
+    // Darkness); Treasures', on the same engine, is not checked yet.
+    [[nodiscard]] bool secret_engine() const
+    {
+        return secret() || darkness();
+    }
+
+    // Secret, Pools of Darkness and Unlimited Adventures order each round
+    // once as it begins, ties broken by a d2 (Secret's and Darkness's
+    // combat.pas, OrderCreatures; the kit's combat.c and cbaction.c).
     [[nodiscard]] bool ordered_rounds() const
     {
-        return secret() || game_of(identity_) == GoldBoxGame::unlimited_adventures;
+        return secret_engine() || kit();
     }
 
     // A spell as this fight's game has it (Gateway changes four rows).
@@ -950,6 +971,7 @@ class Session final : public rules::CombatSession
     void swallow_whole(Fighter &swallower, Fighter &victim);
     void iron_golem_absorbs(Fighter &golem, int damage, int element);
     void dragon_fear(const Fighter &dragon);
+    void darkness_dragon_fear(const Fighter &dragon);
     void order_turns();
     void reorder_after_cast(Fighter &caster);
     [[nodiscard]] bool breathes_clouds_freely(const Fighter &f) const;
@@ -1151,7 +1173,7 @@ void Session::next_actor()
         }
         for (auto &f : fighters_)
         {
-            // Secret's and the kit's order has picked already.
+            // Secret's, Darkness's and the kit's order has picked already.
             if (ordered_rounds() || !f.able() || f.initiative <= 0)
             {
                 continue;
@@ -1305,7 +1327,7 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
     // (cbtacts.pas, IsBackstab, in its reconstruction).
     const bool one_square = defender.footprint.width == 1 && defender.footprint.height == 1;
     const bool backstab = attacker.numbers.backstabs && behind_its_back &&
-                          (!secret() || (one_square && adjacent(attacker, defender)));
+                          (!secret_engine() || (one_square && adjacent(attacker, defender)));
     const bool behind = from_behind || (behind_its_back && defender.flank_spread > 4);
     // Shield keeps the front Armor Class at 3 or better (effhndlr.pas, EffShield).
     const int front = defender.has(effect::shield) ? std::min(defender.numbers.armor_class, 3)
@@ -1324,7 +1346,7 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
                                        defender.numbers.rear_armor_class)
                             : defender.numbers.rear_armor_class;
     // Secret takes 4 from the Armor Class from behind for a backstab (RollAttacks).
-    const int backstab_armor_class = rear + (secret() ? 4 : 2);
+    const int backstab_armor_class = rear + (secret_engine() ? 4 : 2);
     const int armor_class = (backstab ? backstab_armor_class
                              : behind ? rear
                              : coughs ? rear
@@ -1388,15 +1410,16 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
             auto damage = hit_damage(dice, attack.modifier);
             // Secret multiplies a backstab after the effects on the blow, so the
             // multiple covers a ranger's bonus too (CalcWeaponDamage), with
-            // (level - 1) div 4 + 2.
-            if (backstab && !secret())
+            // (level - 1) div 4 + 2; Pools of Darkness by 5 at most.
+            if (backstab && !secret_engine())
             {
                 damage *= attacker.numbers.thief_level / 4 + 2;
             }
             damage = weapon_damage_defenses(attacker, defender, damage, phase, primary_hits);
-            if (backstab && secret())
+            if (backstab && secret_engine())
             {
-                damage *= (attacker.numbers.thief_level - 1) / 4 + 2;
+                const int multiple = (attacker.numbers.thief_level - 1) / 4 + 2;
+                damage *= darkness() ? std::min(multiple, 5) : multiple;
             }
             log({"{attacker} hits {name} for {damage}.",
                  {{"attacker", attacker.name},
@@ -1405,18 +1428,25 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
             primary_hits += phase == 0 ? 1 : 0;
             inflict(defender, damage);
             // In Secret only a blow that did damage carries anything (RollAttacks).
-            if (defender.able() && (damage > 0 || !secret()))
+            if (defender.able() && (damage > 0 || !secret_engine()))
             {
                 on_hit(attacker, defender, phase, primary_hits, natural);
             }
             // Fire Touch burns what its bearer hits for 2d6, halved by a save
-            // (effhndlr.pas, EffFireTouch).
+            // (effhndlr.pas, EffFireTouch); Pools of Darkness's fire with a hit
+            // for 4d6 (EffFireDmg4d6).
             if (const auto *touch = attacker.find_effect(effect::fire_touch);
                 touch && defender.able())
             {
                 const bool saved = saving_throw(defender, 4, 0, &attacker, 9);
                 nonweapon_damage(defender, roll(6) + roll(6), 2, saved, 9, touch->strength, 318,
                                  false);
+            }
+            if (attacker.has(effect::fire_hit) && defender.able())
+            {
+                const bool saved = saving_throw(defender, 4, 0, &attacker, 9);
+                const int fire = roll(6) + roll(6) + roll(6) + roll(6);
+                nonweapon_damage(defender, fire, 2, saved, 9, attacker.numbers.level, 0, false);
             }
         }
     }
@@ -1438,8 +1468,10 @@ int attack_modifier(const Fighter &attacker, const Fighter &defender, GoldBoxGam
     // Blindness and Bestow Curse take 4 from the attacker's rolls (effhndlr.pas, 33, 36).
     modifier -= attacker.has(effect::blind) ? 4 : 0;
     modifier -= attacker.has(effect::bestow_curse) ? 4 : 0;
-    // The kit's 148, which a ghast's stench gives, takes 2 (effects.c).
+    // The kit's 148, which a ghast's stench gives, takes 2 (effects.c); so
+    // does Pools of Darkness's dragon fear (effhndlr.pas, EffDragonFeared).
     modifier -= attacker.has(effect::sickened) ? 2 : 0;
+    modifier -= attacker.has(effect::dragon_feared) ? 2 : 0;
     if (defender.has(effect::invisible) || defender.has(effect::dust))
     {
         modifier -= 4;
@@ -2391,12 +2423,12 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         break;
     case 10:
         // Charm Person cannot take a creature of type above 1 or a large one
-        // (magic.pas, the charm); Secret judges by race and flags instead
-        // (refuses_spell).
+        // (magic.pas, the charm); Secret and Pools of Darkness judge by race
+        // and flags instead (refuses_spell).
         for (const auto id : targets)
         {
             auto &f = *find(id);
-            if (!secret() && (f.numbers.creature_type > 1 || f.numbers.large))
+            if (!secret_engine() && (f.numbers.creature_type > 1 || f.numbers.large))
             {
                 log({"{name} is unaffected.", {{"name", f.name}}});
                 continue;
@@ -2425,15 +2457,16 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
     {
         // Hold Person: the fewer held, the harder to save, each in turn from
         // the last picked; a creature of type above 1 or a large one is not
-        // held (magic.pas, the hold). In Secret a monster is never held,
-        // whatever its size (magic.pas, its multi-target resolver).
+        // held (magic.pas, the hold). In Secret and Pools of Darkness a
+        // monster is never held, whatever its size (magic.pas, their
+        // multi-target resolvers).
         const int count = static_cast<int>(targets.size());
         const int modifier = count == 1 ? (number == 23 ? -2 : -3) : count == 2 ? -1 : 0;
         for (auto id = targets.rbegin(); id != targets.rend(); ++id)
         {
             auto &f = *find(*id);
-            const bool held_off =
-                secret() ? f.numbers.race == 0 : f.numbers.creature_type > 1 || f.numbers.large;
+            const bool held_off = secret_engine() ? f.numbers.race == 0
+                                                  : f.numbers.creature_type > 1 || f.numbers.large;
             if (held_off)
             {
                 log({"{name} is unaffected.", {{"name", f.name}}});
@@ -2505,14 +2538,14 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
     {
         // Snake Charm: every snake on the field, either side, whose Hit Points
         // the caster's own can pay for (magic.pas, the snake charm). Secret
-        // knows a snake by its flags and passes over one charmed already
-        // (SpellSnakeCharm).
+        // and Pools of Darkness know a snake by its flags and pass over one
+        // charmed already (SpellSnakeCharm).
         int pool = caster.hit_points;
         for (auto &f : fighters_)
         {
             const bool snake =
-                secret() ? (f.numbers.traits & trait::snake) && !f.has(effect::snake_charm)
-                         : f.numbers.creature_type == 14;
+                secret_engine() ? (f.numbers.traits & trait::snake) && !f.has(effect::snake_charm)
+                                : f.numbers.creature_type == 14;
             if (!f.able() || !snake || f.hit_points > pool)
             {
                 continue;
@@ -3586,7 +3619,7 @@ bool Session::refuses_spell(const Fighter &target, int number) const
 {
     constexpr int charm_person = 10, slay_living = 176, charm_person_or_mammal = 296,
                   death_spell = 310;
-    if (!secret())
+    if (!secret_engine())
     {
         return false;
     }
@@ -3595,6 +3628,12 @@ bool Session::refuses_spell(const Fighter &target, int number) const
     switch (number)
     {
     case charm_person:
+        // Pools of Darkness's takes a monster its flags call a mammal, of
+        // one square (its SpellCharmPerson).
+        if (darkness())
+        {
+            return (monster && (traits & trait::mammal) == 0) || target.numbers.large;
+        }
         return monster && (traits & trait::person) == 0;
     case charm_person_or_mammal:
         return monster && (traits & trait::mammal) == 0;
@@ -4273,7 +4312,8 @@ bool Session::add_with_message(Fighter &target, Effect added, bool negates, bool
                         is({effect::charm, 235, effect::paralysis, 268, effect::fear}));
     immune = immune || target.has(effect::iron_golem);
     // The kit's (effects.c): a spell below the eighth level takes no hold
-    // (40), nor does disease on an otyugh (76).
+    // (40; Pools of Darkness's Rakshasa too, effhndlr.pas, EffRakshasaProt),
+    // nor does disease on an otyugh (76).
     immune = immune || (target.has(effect::spell_proof) && spell_effect && known->level < 8);
     constexpr int diseased = 34;
     immune = immune || (target.has(effect::disease_proof) && code == diseased);
@@ -4738,11 +4778,13 @@ bool Session::in_cloud(const Fighter &f, CloudKind kind) const
                        });
 }
 
-// In Secret the undead and the unliving (its record's flag) breathe a stinking
-// cloud unharmed (fxengine.pas, ConsiderTerrainEffects, in its reconstruction).
+// In Secret and Pools of Darkness the undead and the unliving (the record's
+// flag) breathe a stinking cloud unharmed (fxengine.pas,
+// ConsiderTerrainEffects, in their reconstructions).
 bool Session::breathes_clouds_freely(const Fighter &f) const
 {
-    return secret() && (f.numbers.undead_level > 0 || (f.numbers.traits & trait::unliving) != 0);
+    return secret_engine() &&
+           (f.numbers.undead_level > 0 || (f.numbers.traits & trait::unliving) != 0);
 }
 
 // What the clouds do to one in them (fxengine.pas, ConsiderTerrainEffects).
@@ -5521,6 +5563,8 @@ void Session::petrifying_gaze(Fighter &gazer)
         log({"{name} reflects it.", {{"name", target->name}}});
         victim = &gazer;
     }
+    // The kit's and Pools of Darkness's immunity to gazes spares it
+    // (effhndlr.pas, EffImmuneGaze).
     if (!saving_throw(*victim, 1, 0, &gazer) && !victim->has(effect::gaze_proof))
     {
         turn_to_stone(*victim);
@@ -5588,6 +5632,24 @@ void Session::dragon_fear(const Fighter &dragon)
         {
             f.turned = true;
         }
+    }
+}
+
+// A Pools of Darkness dragon's fear (effhndlr.pas, EffDragonFear, in its
+// reconstruction): each able enemy not terrified already that fails a save
+// against petrification at -4 is terrified for the fight, 2 worse to hit and
+// 2 less harmful a blow (EffDragonFeared).
+void Session::darkness_dragon_fear(const Fighter &dragon)
+{
+    for (auto &f : fighters_)
+    {
+        if (f.side == dragon.side || !f.able() || f.has(effect::dragon_feared) ||
+            saving_throw(f, 1, -4, &dragon))
+        {
+            continue;
+        }
+        f.numbers.effects.push_back({effect::dragon_feared, 0, 0, false});
+        log({"{name} is terrified.", {{"name", f.name}}});
     }
 }
 
@@ -6775,6 +6837,14 @@ void Session::combat_start()
         {
             dragon_fear(f);
         }
+        // A Pools of Darkness dragon's, tried by both of the original's
+        // conditions of a fight's start (combatst.pas, CombatStart, and
+        // combat.pas, CombatMain), so one that saves once faces it again.
+        if (f.has(effect::darkness_dragon_fear) && f.able())
+        {
+            darkness_dragon_fear(f);
+            darkness_dragon_fear(f);
+        }
     }
 }
 
@@ -6963,6 +7033,11 @@ int Session::weapon_damage_defenses(const Fighter &attacker, Fighter &defender, 
     {
         damage -= damage / 4;
     }
+    // Pools of Darkness's dragon fear takes 2 from a blow (EffDragonFeared).
+    if (attacker.has(effect::dragon_feared))
+    {
+        damage = std::max(damage - 2, 0);
+    }
     // Mirror images take blows too, as the manual says; the original let them
     // take only a spell's (an obvious bug, fixed).
     if (mirror_absorbs(defender))
@@ -7013,6 +7088,14 @@ int Session::weapon_damage_defenses(const Fighter &attacker, Fighter &defender, 
     {
         damage = 0;
     }
+    // Pools of Darkness's crushing weapon does half (effhndlr.pas,
+    // EffHalfDmgCrush); its weapons below +3 and +4 and its need of a +2
+    // weapon are the kit's, below (EffLuckStone, EffHalfDmgWeaponLt3,
+    // EffNeedPlus2).
+    if (defender.has(effect::halves_crushing) && striker && bludgeoning)
+    {
+        damage /= 2;
+    }
     // The kit's (effects.c): a weapon below +3 or +4 does half (80, 81); one
     // below +2 nothing, nor a creature's bare blows unless a monster's of 7
     // Hit Dice or more (125); and a black pudding takes nothing from any
@@ -7061,12 +7144,13 @@ int Session::weapon_damage_defenses(const Fighter &attacker, Fighter &defender, 
         damage = std::min(damage, 1);
     }
     // A ranger adds its level against giants (Curse, AffectRangerVsGiant); in
-    // Secret against the creatures its flags name, and in the kit those its
-    // monster types do, from next to them (EffRangerDamageBonus; the kit's
-    // effects.c, 105).
-    const bool ranger_foe = secret() || kit() ? (defender.numbers.traits & trait::ranger_foe) &&
-                                                    adjacent(attacker, defender)
-                                              : (defender.numbers.kin & kin::giant) != 0;
+    // Secret and Pools of Darkness against the creatures its flags name, and
+    // in the kit those its monster types do, from next to them
+    // (EffRangerDamageBonus; the kit's effects.c, 105).
+    const bool ranger_foe = secret_engine() || kit()
+                                ? (defender.numbers.traits & trait::ranger_foe) &&
+                                      adjacent(attacker, defender)
+                                : (defender.numbers.kin & kin::giant) != 0;
     if (attacker.has(334) && ranger_foe && damage > 0)
     {
         damage += attacker.numbers.class_levels[static_cast<std::size_t>(ClassSlot::ranger)];
@@ -7932,8 +8016,9 @@ bool Session::submit(const rules::Command &command)
     }
     else if (command.verb == "delay")
     {
-        // It acts again later this round, at initiative 1; in Secret, last of
-        // all (combat.pas, ManualControl, in its reconstruction).
+        // It acts again later this round, at initiative 1; in Secret and Pools
+        // of Darkness, last of all (combat.pas, ManualControl, in their
+        // reconstructions).
         actor.initiative = 1;
         if (ordered_rounds())
         {

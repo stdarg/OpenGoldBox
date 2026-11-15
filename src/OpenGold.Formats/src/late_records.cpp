@@ -119,6 +119,16 @@ std::optional<por::CharacterRecord> decode_creature(std::span<const std::uint8_t
                     c.spell_slots[list].begin());
     }
     c.base_xp_award = format::read_u16(b, 408);
+    // Pools of Darkness's flags are Secret's, bit for bit (its effhndlr.pas
+    // and magic.pas): what kind of creature it is, what its foes' weapons and
+    // spells may do to it (its "immunities"), and its magic resistance.
+    // Treasures' are not checked yet.
+    if (darkness)
+    {
+        c.creature_type_flags = b[420];
+        c.target_flags = b[421];
+        c.magic_resistance = b[491];
+    }
     c.item_count = b[422];
     c.hands_equipped = b[479];
     c.save_bonus = signed_byte(b[480]);

@@ -3944,8 +3944,10 @@ void darkness_spells_fight()
                  return aim_at_cell(holy, {3, 4});
              });
     const int cut = 200 - view_of(holy.snapshot(), "Hobgoblin").hit_points;
-    check(logged(holy, "{name} is cut by the blades.") == 1 && cut >= 8 && cut <= 64,
-          "Blade Barrier cuts one in it for 8d8");
+    // Secret's order of the round lets the hobgoblin take its turn in the
+    // blades too before the check.
+    const int cuts = logged(holy, "{name} is cut by the blades.");
+    check(cuts >= 1 && cut >= 8 * cuts && cut <= 64 * cuts, "Blade Barrier cuts one in it for 8d8");
 
     auto dance = arrange_darkness(
         {{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 20, {321, 324, 326})},
@@ -3997,6 +3999,154 @@ void darkness_spells_fight()
     check(view_of(charm.session->snapshot(), "Orc").side == rules::Side::party &&
               view_of(charm.session->snapshot(), "Shielded").side == rules::Side::opposition,
           "Mass Charm charms an enemy; Mind Blank turns it away");
+}
+
+constexpr auto darkness_game = GoldBoxGame::pools_of_darkness;
+
+Fight arrange_darkness(const std::vector<Placed> &placed, std::uint64_t seed)
+{
+    return arrange(placed, seed, {}, 100, darkness_game);
+}
+
+// Pools of Darkness's effects by the fight's numbers (canonical_effect):
+// Secret's where its handler does as Secret's, the earlier games' where it
+// does as theirs, and its own 400 up, or 470 where Secret's own take that.
+void darkness_effects_take_their_own_numbers()
+{
+    const auto mapped = [](int code)
+    {
+        return original::canonical_effect(code, darkness_game);
+    };
+    check(mapped(6) == 335 && mapped(57) == 457 && mapped(58) == 458 && mapped(60) == 460 &&
+              mapped(64) == 464 && mapped(70) == 470 && mapped(93) == 112 && mapped(103) == 119,
+          "An effect that works as Secret's takes Secret's number");
+    check(mapped(66) == 115 && mapped(84) == 504 && mapped(85) == 483 && mapped(101) == 85 &&
+              mapped(102) == 86 && mapped(108) == 521,
+          "One that works as another's takes that one's number");
+    check(mapped(40) == 640 && mapped(80) == 680 && mapped(81) == 681 && mapped(125) == 725 &&
+              mapped(126) == 726,
+          "The Rakshasa's protection, weapons below +3 and +4, the +2 weapon and gaze immunity "
+          "take the kit's numbers, which play them alike");
+    check(mapped(118) == 518 && mapped(67) == 537 &&
+              mapped(100) == 570 && mapped(104) == 574,
+          "Its own are 400 up, or 470 where one of Secret's has that number");
+}
+
+// Pools of Darkness's creatures as its files make them (OPENGOLD_GOLDBOX_DIR):
+// their effects by the fight's numbers, their flags and magic resistance.
+void darkness_records_fight_by_their_effects()
+{
+    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
+    if (!games)
+    {
+        std::cout << "Pools of Darkness's files are not here; its records are not checked.\n";
+        return;
+    }
+    const auto content =
+        load_original_content(std::filesystem::path(games) / "DARKNESS", darkness_game);
+    const auto creature_at = [&content](int record) -> const original::Combatant &
+    {
+        return content.bestiary.at("MON1CHA.DAX:" + std::to_string(record));
+    };
+    const auto has = [](const original::Combatant &c, int code)
+    {
+        return std::ranges::any_of(c.effects,
+                                   [code](const original::Effect &e)
+                                   {
+                                       return e.code == code;
+                                   });
+    };
+    check(has(creature_at(55), 85) && has(creature_at(55), 119),
+          "A wight's touch drains a level, and only magic harms it");
+    check(has(creature_at(26), 504) && has(creature_at(26), 570) && has(creature_at(26), 273),
+          "A red dragon breathes fire, frightens and shrugs off breath");
+    check(has(creature_at(70), 640) && has(creature_at(70), 680),
+          "A rakshasa takes no spell below the eighth level and half from weapons below +3");
+    check(creature_at(40).magic_resistance == 80, "A drow wizard resists magic");
+    check((creature_at(15).traits & original::trait::ranger_foe) &&
+              (creature_at(15).traits & original::trait::giant_bane) &&
+              (creature_at(55).traits & original::trait::unliving),
+          "A hill giant is a ranger's foe and a giant-bane weapon's; a wight is unliving");
+    check(has(creature_at(78), 457), "Marcus is in a Globe of Invulnerability");
+    check(creature_at(75).traits & original::trait::snake, "A poisonous snake is a snake");
+}
+
+// A Pools of Darkness monster's effects in a fight: its Globe of
+// Invulnerability (57) turns a spell of the fourth level or below, a wight's
+// touch (101) drains a level, and a dragon's fear (100) terrifies each enemy
+// that fails a save at -4, without the run Secret's sends them on.
+void darkness_monsters_fight_by_their_effects()
+{
+    using original::ClassSlot;
+    por::CharacterRecord record;
+    record.game = darkness_game;
+    record.name = "LICH";
+    record.max_hit_points = 60;
+    record.base_thac0 = 10;
+    record.base_armor_class = 0;
+    por::EffectRecord globe;
+    globe.code = 57;
+    const auto lich = original::combatant_from_record(record, {}, std::array{globe});
+    auto shielded = arrange_darkness(
+        {{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 5, {15})},
+         {"Lich", rules::Side::opposition, {5, 3}, lich}},
+        307);
+    cast_now(*shielded.session, "Mage", 15,
+             [&]
+             {
+                 return aim_at(*shielded.session, "Lich");
+             });
+    check(logged(*shielded.session, "{name} is unaffected.") == 1 &&
+              view_of(shielded.session->snapshot(), "Lich").hit_points == 60,
+          "Its Globe of Invulnerability turns Magic Missile");
+
+    const auto drain_touch = original::canonical_effect(101, darkness_game);
+    auto fighter = victim(30);
+    fighter.class_levels[static_cast<std::size_t>(ClassSlot::fighter)] = 3;
+    fighter.level = 3;
+    const auto drained = attack_until(
+        monster({2, 1, 1, 0}, {0, 0, 0, 0}, {{drain_touch, 0, 255, false}}), fighter,
+        [](const rules::CombatSession &session)
+        {
+            return logged(session, "{name} is drained a level.") > 0;
+        },
+        47, darkness_game);
+    check(logged(*drained.session, "{name} is drained a level.") == 1,
+          "A wight's touch drains a level");
+
+    const auto fear = original::canonical_effect(100, darkness_game);
+    auto feared = arrange_darkness(
+        {{"Squire", rules::Side::party, {1, 3}, victim(50)},
+         {"Knight", rules::Side::party, {1, 5}, victim(50)},
+         {"Dragon", rules::Side::opposition, {6, 3}, special({{fear, 0, 255, false}}, 60)}},
+        263);
+    check(logged(*feared.session, "{name} is terrified.") == 2,
+          "A dragon's fear terrifies each enemy that fails its save");
+    until_turn_of(*feared.session, "Squire");
+    check(!view_of(feared.session->snapshot(), "Squire").panicked,
+          "The terrified fight on, worse off");
+}
+
+// Pools of Darkness plays Secret's rules where its reconstruction does as
+// Secret's: Hold Person never holds a monster (magic.pas,
+// ApplyEffectToTargets), however small.
+void darkness_holds_no_monster()
+{
+    using original::ClassSlot;
+    auto fight = arrange_darkness(
+        {{"Cleric", rules::Side::party, {0, 3}, caster(ClassSlot::cleric, 3, {23})},
+         {"Bandit", rules::Side::opposition, {4, 3}, victim(20)}},
+        101);
+    auto &session = *fight.session;
+    cast_now(session, "Cleric", 23,
+             [&]
+             {
+                 return aim_at(session, "Bandit");
+             });
+    session.submit(order(session, "aim_done"));
+    check(view_of(session.snapshot(), "Bandit").status.empty() &&
+              logged(session, "{name} is unaffected.") == 1,
+          "Hold Person does not hold a monster");
 }
 
 // Gateway's changed rows (its spellTable): Prayer on up to four creatures the
@@ -4587,6 +4737,10 @@ int main()
         the_kits_monsters_breathe();
         the_kits_rangers_know_their_foes();
         darkness_spells_fight();
+        darkness_effects_take_their_own_numbers();
+        darkness_records_fight_by_their_effects();
+        darkness_monsters_fight_by_their_effects();
+        darkness_holds_no_monster();
         std::cout << "Original-rules combat passed.\n";
     }
     catch (const std::exception &error)
