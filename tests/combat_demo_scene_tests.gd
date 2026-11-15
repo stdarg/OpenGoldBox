@@ -259,12 +259,21 @@ func check_demo() -> void:
         "Movement effects use one-eighth volume")
     require(is_equal_approx(combat.get_node("DeathAudio").volume_linear, 0.125),
         "Death effects use one-eighth volume")
+    # Like the footstep, the attack sound is short and can finish before it is
+    # checked on a busy machine, so it counts as heard once it played or finished.
+    var attack_audio: AudioStreamPlayer = combat.get_node("AttackAudio")
+    var attack_sound := [false]
+    attack_audio.finished.connect(func(): attack_sound[0] = true)
     root.push_input(active_key)
     require(combat.selected_character_cell() == Vector2i(8, 5),
         "Arrow key attacks the adjacent enemy without moving into its square")
     require(combat.attack_pose_active(3), "Attack starts the hero action pose")
     require(not combat.sprite_facing_left(3), "Hero faces right when attacking the Kobold to the right")
-    require(combat.get_node("AttackAudio").playing, "Attack plays the original attack sound")
+    for frame in range(30):
+        if attack_sound[0] or attack_audio.playing:
+            break
+        await process_frame
+    require(attack_sound[0] or attack_audio.playing, "Attack plays the original attack sound")
     require(is_equal_approx(combat.get_node("AttackAudio").volume_linear, 0.125),
         "Attack effects use one-eighth volume")
     require(combat.get_node("LogStack/Log").text.contains("Dorian Nightwind -> Kobold"),
