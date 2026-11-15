@@ -612,6 +612,23 @@ func check_ua() -> void:
 	# where it was saved (docs/games/ua.md, Saving and loading a game).
 	var north_view: PackedByteArray = (town.tour_visuals()["wall_image"] as Image).get_data()
 	await press("CampaignTown/%Menu")
+	# The in-game Options: a design plays the Difficulty as Design difficulty
+	# says, Both by default, and a choice is kept for Unlimited Adventures.
+	await press("GameMenu/Menu/Options")
+	var gameplay: Control = current_scene.get_node("GameMenu/Options/Gameplay")
+	var design_difficulty: OptionButton = gameplay.get_node("DesignDifficulty")
+	require(design_difficulty.is_visible_in_tree() and design_difficulty.item_count == 3
+		and design_difficulty.get_item_text(0) == "The design's" and design_difficulty.selected == 2,
+		"Options offer Design difficulty, Both chosen")
+	require((gameplay.get_node("DifficultyNote") as Label).text.contains("Design difficulty"),
+		"The Difficulty's note sends a design's player to Design difficulty")
+	design_difficulty.select(0)
+	design_difficulty.item_selected.emit(0)
+	var config := ConfigFile.new()
+	config.load(OS.get_environment("OPENGOLD_SETTINGS_FILE"))
+	require(config.get_value("design_difficulty", "UA", "") == "design",
+		"The design's own difficulty is saved for Unlimited Adventures")
+	await press("GameMenu/Options/Close")
 	await press("GameMenu/Menu/Save")
 	var slots: Window = current_scene.get_node("SaveSlots")
 	require(slots.visible, "Save game opens the save slots for a design")

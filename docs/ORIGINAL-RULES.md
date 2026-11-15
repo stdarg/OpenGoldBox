@@ -19,8 +19,9 @@ The user decided these on 2026-11-11 and 2026-11-12:
   Infernal), but each set of rules has its own effects for them. The balance
   settings built so far (DIFF-2's table, `encounter_challenge`, the `[monsters]`
   ability switches) belong to the SRD rules. Under the original rules the
-  game plays at Normal, the original's own play (2026-11-14); see
-  [Difficulty](#difficulty).
+  game plays at Normal, the original's own play (2026-11-14), but in an
+  *Unlimited Adventures* design, which plays its own levels, OpenGoldBox's
+  difficulty table or both (2026-11-15); see [Difficulty](#difficulty).
 - **Look takes ten minutes** in every game, as each original's map menu
   L does (AdvanceTime(1, 2)), asked for on 2026-11-14.
 - **Obvious bugs in the original are fixed, not kept.** Since 2026-11-14 an
@@ -633,8 +634,16 @@ whole list):
   no defense against giants (ua.md).
 - **Its fights order each round once,** ties on a d2, as *Secret*'s do
   (2026-11-14).
+- **Its difficulty** (the user, 2026-11-15: "C, but make it a configurable
+  option"): the game's Difficulty plays in a design as the Options screen's
+  Design difficulty says, the kit's five levels (the party's side +2 to -2
+  to hit, the monsters' Hit Points x (level + 1) / 4; Easy its level 1,
+  Normal its 3, Hard its 4, Nightmare and Infernal its 5), OpenGoldBox's
+  difficulty table for the monsters (to-hit, Hit Points and Armor Class;
+  [Difficulty](#difficulty)), or both, the default: the kit's Hit Points
+  and party to-hit with the table's to-hit and Armor Class (ua.md, Fights).
 - **Still to come:** its critical hits on a natural 17 or more, which only a
-  vorpal weapon uses; its difficulty levels (a question for the user).
+  vorpal weapon uses.
 
 ## Next
 
@@ -1298,6 +1307,17 @@ to tune fights:
 
 The original rules' levels will be built from these levers, and their numbers
 tuned with the AI lab once the original rules play.
+
+**OpenGoldBox's difficulty table** (the user, 2026-11-15) changes the
+monsters only: Easy -2 to hit, 75% Hit Points and Armor Class 2 worse;
+Normal as recorded; Hard +1, 125% and 1 better; Nightmare +2, 150% and 2
+better; Infernal +3, 200% and 3 better (`original_monster_strength`,
+difficulty.h). A fight under the original rules lays a creature's
+`rules::Participant::original_strength` on it as it begins (its Hit Points,
+at least 1, its THAC0 and its Armor Class) and a `CampaignEncounter`'s
+`party_to_hit` on the party's side. So far only *Unlimited Adventures*
+plays it (Unlimited Adventures, above); a game whose original already
+scales Hit Points takes only the table's to-hit and Armor Class.
 
 ## Bugs in the original
 

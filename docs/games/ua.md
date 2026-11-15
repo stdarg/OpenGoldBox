@@ -201,7 +201,8 @@ session itself is unchanged. What only a DAX campaign has (shops and
 treasure piles, its script's variables, sprites and NPC portraits, temples,
 teleports and Word of Recall, close-ups, the ending film, the difficulty
 and auto-equip settings) the view reaches through `dax()`, which is null for
-a design, so the view leaves those out instead of drawing them wrong. Camping (`camp_menu`, the kit's own menu, `camp` and `decline_camp`) and the
+a design, so the view leaves those out instead of drawing them wrong; a
+design takes the difficulty through `UaSession::difficulty` instead (Fights). Camping (`camp_menu`, the kit's own menu, `camp` and `decline_camp`) and the
 overhead map (`area_map`) the session gives itself, and a design saves its
 own way (Saving and loading a game, below).
 
@@ -424,14 +425,37 @@ does it (`ua_combat`, `ua_session`; the reconstruction's `cmbsetup.c`,
   three-class a third). Where byte 0Ch's bit 40h says the party cannot die,
   the fallen get up with 1 Hit Point, and only a party with no one alive is
   lost.
-- **Difficulty.** The kit scales a monster's Hit Points by its Level (1 to
-  5) times (Level + 1) / 4; at its Normal, Level 3, they stand as recorded.
-  The original rules play at Normal ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md)),
-  so they are never scaled.
+- **Difficulty.** The kit has five levels (camp.c, `level_menu`), its third
+  a new game's (newgame.c): each scales a monster against the party by
+  (level + 1) / 4 of its Hit Points, at least 1 (evcmds.c, `monster_add`;
+  at level 3 they stand as recorded), and gives the party's side, its
+  members and allies, +2, +1, 0, -1 or -2 to hit (fxcore.c,
+  `fx_attack_roll`). The user's answer (2026-11-15, "C, but make it a
+  configurable option"): the game's Difficulty plays in a design as the
+  Options screen's **Design difficulty** says (`[design_difficulty] UA`,
+  [CONFIGURATION.md](../CONFIGURATION.md)):
+  - **The design's**: the kit's levels, Easy its level 1, Normal its 3,
+    Hard its 4, Nightmare and Infernal its 5 (its level 2 has no
+    difficulty of the game's).
+  - **OpenGoldBox's**: the difficulty table, for the monsters only: Easy
+    -2 to hit, 75% Hit Points, Armor Class 2 worse; Normal as recorded;
+    Hard +1, 125%, 1 better; Nightmare +2, 150%, 2 better; Infernal +3,
+    200%, 3 better (`original_monster_strength`).
+  - **Both**, the default: the kit's Hit Points and the party's to-hit,
+    with the table's to-hit and Armor Class for the monsters (the user's
+    answer for games whose original already scales Hit Points).
+
+  The session works out each fight's (`ua::design_strength`): the
+  monsters' `rules::Participant::original_strength` and the encounter's
+  `party_to_hit`, which the original rules' fight lays on each creature as
+  it begins (its THAC0, Armor Class and Hit Points). The view gives the
+  session the settings as a design starts or loads and as the menu closes.
 
 `opengold_ua_session_tests` checks each on the test design's fights and
-every monster of the kit; `opengold_godot_startup_menu_ua` sees the kobolds
-on the kit's field in their icons.
+every monster of the kit, and each Design difficulty at Easy, Normal and
+Infernal as the fight fields the kobolds and the party's side;
+`opengold_godot_startup_menu_ua` sees the Design difficulty row kept and the
+kobolds on the kit's field in their icons.
 
 ### A party under the kit's rules
 
@@ -485,9 +509,10 @@ Its differences from the Pool family ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md))
   vorpal weapon behead (`fxcombat.c`, `fx_vorpal`); it waits for items'
   special effects when readied (What remains).
 - Difficulty (five levels, Normal the third) changes the party's to-hit and
-  the monsters' Hit Points; the original rules play at Normal, where
-  neither changes (Fights). Experience from a fight gives single classes
-  10% more. *Done* (Fights).
+  the monsters' Hit Points; the game's Difficulty plays them, OpenGoldBox's
+  table or both, as the Options screen's Design difficulty says (the user,
+  2026-11-15). Experience from a fight gives single classes 10% more.
+  *Done* (Fights).
 
 ### The test design
 
@@ -551,14 +576,9 @@ playing each event and fight; it fails on any event the session cannot play.
     wandering monsters, its step events and rest encounters, play.)
   - Byte 12h's top bits (the turning level +0, 2, 10 or 41 over the
     area's) and an icon over two squares a side, which stands as two.
-- The kit's difficulty levels (A party under the kit's rules): a question
-  for the user, whether a design's Difficulty plays the kit's five levels
-  (the party's to-hit +2, +1, 0, -1 or -2 and the monsters' Hit Points
-  scaled by Level x (Level + 1) / 4) or stays at Normal as every game does
-  under the original rules.
 - A critical hit's vorpal beheading, with items' special effects.
 
-Next, in this order: the difficulty question above once answered; then monsters'
+Next, in this order: monsters'
 spells (+C6h) and items' special effects when readied (which bring the
 vorpal beheading); then the services' smaller parts.
 

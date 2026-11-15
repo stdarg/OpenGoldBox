@@ -29,6 +29,9 @@ legendary="hard"
 [original_shops]
 POOLRAD="on"
 
+[design_difficulty]
+UA="both"
+
 [art]
 directory="/Users/you/OpenGoldBox-new-art"
 walls="new"
@@ -76,7 +79,7 @@ files receive the default. See
 
 The in-game menu's **Options** screen (Escape) sets these settings and writes
 them at once: under Gameplay `difficulty`, `encounter_challenge`, the
-`[gear]` section, `keep_quick`, `[original_shops]` and the `[monsters]` section below; under Interface `language`, which takes effect the
+`[gear]` section, `keep_quick`, `[original_shops]`, `[design_difficulty]` and the `[monsters]` section below; under Interface `language`, which takes effect the
 next time the game starts, `combat_zoom`, read when a fight opens, the
 `[art]` section below, which takes effect at once, and `[sound]`.
 
@@ -132,6 +135,19 @@ Pool of Radiance's New Phlan adds the Rogue's Shop, behind its secret door,
 and OpenGoldBox's gear (magic ink, the rogue's kits and poisons) at
 OpenGoldBox's prices. Only Pool of Radiance has modified shops so far. It is
 read when a game starts or loads.
+
+`[design_difficulty] UA` is the Options screen's Design difficulty: how
+`difficulty` plays in an *Unlimited Adventures* design (the user, 2026-11-15;
+[games/ua.md](games/ua.md), Fights). `design` plays the kit's own five
+levels: the party's side +2, +1, 0, -1 or -2 to hit and the monsters' Hit
+Points x (level + 1) / 4, Easy the kit's level 1, Normal its 3, Hard its 4,
+Nightmare and Infernal its 5. `table` plays OpenGoldBox's difficulty table
+for the monsters only: Easy -2 to hit, 75% Hit Points and Armor Class 2
+worse; Normal as recorded; Hard +1, 125% and 1 better; Nightmare +2, 150%
+and 2 better; Infernal +3, 200% and 3 better. `both`, the default, also used
+for any other value, plays the kit's levels with the table's to-hit and
+Armor Class for the monsters. It is read when a design starts or loads and
+when the menu closes, for the next fight.
 
 `[monsters]` switches monster abilities by difficulty. Each key names an
 ability (`legendary`, `parry`, `breath`; the
