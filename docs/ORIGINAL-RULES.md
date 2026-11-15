@@ -699,10 +699,16 @@ Hammer's lasting hammer and the later games' effect numbers.
      (`RolfTourSession` in phlan_session.cpp, `rest_interruption`;
      ua_session.cpp; vga_host.cpp, other sessions' files, small hooks only)
      and the rest dialog's length (days, hours, minutes) in the Godot view.
-2. *Gateway*'s alike-numbered effects that differ from *Curse*'s and
+2. *Pools of Darkness*'s route under the original's sight and facing
+   (`WalkLine`, `quadDir`, 2026-11-14; the same line walk in its
+   pathing.pas): the basilisks at map 37 (0,8) now see and stone the whole
+   party, and later its party falls on map 48 (10,13). Its planning, which
+   another session owns, needs mirrors or another way past them, as a
+   player would play it.
+3. *Gateway*'s alike-numbered effects that differ from *Curse*'s and
    *Gateway*'s and *Treasures*' own effects (Effects of the later games),
    which do nothing yet.
-3. *Unlimited Adventures*' difficulty: its session calls
+4. *Unlimited Adventures*' difficulty: its session calls
    `original::monster_difficulty(level, true)` with each design's own
    setting (the coordinator, 2026-11-15).
 
