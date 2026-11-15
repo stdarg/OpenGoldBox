@@ -3358,6 +3358,18 @@ const std::vector<RouteBeat> &darkness_route()
         into_roadside_village.area_steps = {C::east};
         into_roadside_village.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x25, 33};
         route.push_back(into_roadside_village);
+        // Round the village to the Parlor's wall of gossamer (1,4), where
+        // Locaste marches in by her own Ward; the party tries to enter as
+        // well, and the spiders shy from its Ward (script 85): it is in
+        // Kalistes' Parlor (script 82).
+        walk_passages(route, 83,
+                      {{7, 9, D::north}, {7, 8, D::east},  {8, 8, D::north}, {8, 7, D::east},
+                       {9, 7, D::north}, {9, 6, D::north}, {9, 5, D::north}, {9, 4, D::north},
+                       {9, 3, D::north}, {9, 2, D::north}, {9, 1, D::north}, {9, 0, D::west},
+                       {8, 0, D::west},  {7, 0, D::west},  {6, 0, D::west},  {5, 0, D::south},
+                       {5, 1, D::south}, {5, 2, D::south}, {5, 3, D::south}, {5, 4, D::west},
+                       {4, 4, D::west},  {3, 4, D::west}});
+        route.push_back(step_beat(83, 2, 4, D::west, {"TRY TO ENTER"}));
         return route;
     }();
     return beats;
