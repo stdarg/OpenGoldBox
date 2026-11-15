@@ -2488,13 +2488,19 @@ const std::vector<RouteBeat> &darkness_route()
         // its way past the gate's giants as would-be mercenaries (map 21).
         // It flees the vampires that roam the shore, whose bites drain two
         // levels (since 2026-11-15, the 256-color games' effect numbers).
-        RouteBeat to_steading{17, 0, 0, D::north, {"YES", "TALK"}};
+        // The gate's guards are answered on the last step only, so a
+        // wandering band met on the way, which may ask the same, does not
+        // take the answer (TALK).
+        RouteBeat to_steading{17, 0, 0, D::north, {}};
         to_steading.passing = true;
         to_steading.fleeing = true;
-        to_steading.area_steps = {C::northwest, C::west, C::west,      C::west,
-                                  C::west,      C::west, C::west,      C::west,
-                                  C::west,      C::west, C::northwest, C::northwest};
+        to_steading.area_steps = {C::northwest, C::west, C::west, C::west, C::west,     C::west,
+                                  C::west,      C::west, C::west, C::west, C::northwest};
         route.push_back(to_steading);
+        RouteBeat into_steading{17, 0, 0, D::north, {"YES", "TALK"}};
+        into_steading.fleeing = true;
+        into_steading.area_steps = {C::northwest};
+        route.push_back(into_steading);
         // North through the courtyard to the Twisted Horn (9,8), where Kardal,
         // Sasha's spy, tells the party to kill the cloud giants in the private
         // room south of it for promotion to the inner steading (cell 114h
@@ -3721,12 +3727,69 @@ const std::vector<RouteBeat> &darkness_route()
         RouteBeat ruin_rest{66, 6, 13, D::north, {}};
         ruin_rest.rest_first = true;
         route.push_back(ruin_rest);
-        // The door will not budge: a member of Dexterity 17 climbs over and
-        // secures a rope (CLIMB OVER, WHO), each member trying in turn.
-        route.push_back(step_beat(66, 4, 4, D::north,
-                                  {"CLIMB OVER", "paladin 1", "CLIMB OVER", "paladin 2",
-                                   "CLIMB OVER", "ranger 3", "CLIMB OVER", "cleric 4", "CLIMB OVER",
-                                   "cleric 5", "CLIMB OVER", "magic_user 6"}));
+        // Myth Drannor's walks make no camp but in the ruined houses.
+        const auto walk_ruins_unrested =
+            [&route](std::initializer_list<std::tuple<unsigned, unsigned, D>> steps)
+        {
+            walk_passages(route, 66, steps, false, false, false, {"YES"});
+            for (auto beat = route.end() - static_cast<std::ptrdiff_t>(steps.size());
+                 beat != route.end(); ++beat)
+            {
+                beat->camp_broken = true;
+            }
+        };
+        // West to the rakshasas and Banites at their altar (3,14, the
+        // cluebook's 10), and back to the houses to rest.
+        walk_ruins_unrested({{6, 13, D::south},
+                             {6, 14, D::west},
+                             {5, 14, D::north},
+                             {5, 13, D::west},
+                             {4, 13, D::west},
+                             {3, 13, D::south}});
+        walk_ruins_unrested({{3, 14, D::north},
+                             {3, 13, D::east},
+                             {4, 13, D::east},
+                             {5, 13, D::south},
+                             {5, 14, D::east},
+                             {6, 14, D::north}});
+        route.push_back(ruin_rest);
+        // Then round the ruins' west side to the door that will not budge
+        // (4,4).
+        walk_ruins_unrested(
+            {{6, 13, D::south}, {6, 14, D::west},  {5, 14, D::north}, {5, 13, D::west},
+             {4, 13, D::west},  {3, 13, D::south}, {3, 14, D::west},  {2, 14, D::west},
+             {1, 14, D::north}, {1, 13, D::west},  {0, 13, D::north}, {0, 12, D::north},
+             {0, 11, D::north}, {0, 10, D::east},  {1, 10, D::north}, {1, 9, D::north},
+             {1, 8, D::north},  {1, 7, D::west},   {0, 7, D::north},  {0, 6, D::east},
+             {1, 6, D::east},   {2, 6, D::east},   {3, 6, D::east},   {4, 6, D::north},
+             {4, 5, D::north}});
+        // The door will not budge: the second paladin, of Dexterity 18 (17
+        // will do), climbs over and secures a rope (CLIMB OVER, WHO; cell
+        // 1D7h bit 1).
+        route.push_back(step_beat(66, 4, 4, D::north, {"CLIMB OVER", "paladin 2"}));
+        // Beyond it, round to the house west of the temple (3,0), where the
+        // party rests, to the temple's door (5,0). The route stops there: in
+        // the temple (5,1, the cluebook's 16), where the Rakshasa Maharajah
+        // raises Tyranthraxus, the party smashes the knights' globes (SMASH
+        // GLOBES) and Tyranthraxus' form falls to dust, but the Maharajah
+        // and the rakshasas who rush in beat it with every dice (cell 1D8h
+        // stays 0; darkness.md, Where it stops).
+        walk_ruins_unrested({{4, 3, D::east},
+                             {5, 3, D::south},
+                             {5, 4, D::east},
+                             {6, 4, D::north},
+                             {6, 3, D::east},
+                             {7, 3, D::north},
+                             {7, 2, D::north},
+                             {7, 1, D::north},
+                             {7, 0, D::west},
+                             {6, 0, D::west},
+                             {5, 0, D::west},
+                             {4, 0, D::west}});
+        auto temple_rest = step_beat(66, 3, 0, D::east);
+        temple_rest.rest_first = true;
+        route.push_back(temple_rest);
+        walk_ruins_unrested({{4, 0, D::east}});
         return route;
     }();
     return beats;
