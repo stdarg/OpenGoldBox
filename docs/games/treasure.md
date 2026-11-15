@@ -390,13 +390,13 @@ Llorkh's hall, training the party to levels 8 and 9).
    again, the storeroom (12,2), the barracks (4,4), the inn's door (7,6), its
    hall (2,7), and upstairs the alliance's meeting (14,13), the alarm room
    (4,15) and Dauravyn Redbeard's captors (7,15), whose fall ends the third
-   Lucky Paper mission (cell 129h). *A stand-in:* the route's player loses
-   that last fight with every dice it tries (six Hosttower sorceresses
-   lightning-bolt, fireball and charm its members within two rounds, while
-   its fighters are held up by the margoyles and neo-otyughs), so the test
-   wins it. With *Treasures*' own AI (2026-11-15) the sorceresses open with
-   Lightning Bolts, and the route's player wins only where the magic-user's
-   Fireball, aimed at their row, goes off first: about one try in forty.
+   Lucky Paper mission (cell 129h). Six Hosttower sorceresses each hold a
+   Lightning Bolt and a Fireball (their record, `MON1CHA` 114), which their
+   AI casts first, and most often all six bolt the party before its
+   magic-user acts, the bolts bouncing off the wall behind it; the route's
+   player wins about one play in eleven, where its Fireball goes off at
+   their row first, so it reloads that fight until it wins
+   (`RouteBeat::reloads`, since 2026-11-15; until then the test won it).
 
 8. **Yartar** (map 23), overland north by maps 56 and 54: resting in a
    house off the streets (11,9), the robed Krakens at the secret door
@@ -493,16 +493,31 @@ Llorkh's hall, training the party to levels 8 and 9).
     into Freezefire's lair (3,6): the black-robed men combing the hoard,
     then Freezefire risen as the Gem is pried from his claw, with the
     dwarves fighting beside the party. As the dragon dies the game is won
-    (The ending). *A stand-in:* the black-robed spies and mages hold the
-    party's members (Hold Person, Hold Monster) and the masters slay the
-    held, faster than Dispel Magic frees them, so the test wins that fight
-    (also where the dwarves win it over the members' bodies, since
-    2026-11-15); the route's player beats Freezefire.
+    (The ending). The black-robed spies and mages hold and slay the party's
+    members from the first round (Hold Monster, Hold Person, Slay Living)
+    and the masters slay the held: the route's player wins about one play in
+    twenty, most members dead, so it reloads until it wins, then beats
+    Freezefire with the dwarves; the ending's PROGRAM 5 makes the party whole
+    ("One member surviving is all the party needs to win the battle", the
+    cluebook says). Until 2026-11-15 the test won the black-robed men's
+    fight.
 
-*Stand-ins:* the experience and money at Llorkh's hall, and the test's win
-of two fights the route's player loses with every dice it tries: the Way
-Inn's last, against six Hosttower sorceresses, and the lair's black-robed
-men. The route's player frees a member charmed onto the other side with
+*Stand-ins:* the experience and money at Llorkh's hall. The Way Inn's
+last fight and the lair's black-robed men, which the test won until
+2026-11-15, the route's player wins by reloading them until it does
+(`RouteBeat::reloads`: past the 120 plays every fight gets, up to 600 more
+while none has won), as a player reloads a fight the enemy most often wins
+in its first round. Tried there on 2026-11-15, each over 300 plays, and
+none changing the odds: Magic Missile at a sorceress casting, Charm Person
+at the sorceresses first (the cluebook's advice for the lair), Fireball
+then Charm Person, every member warded with Protection from Evil or Resist
+Fire, the clerics' Hold Person at the casters, blows at the held first, and
+long bows for the paladins and the ranger (which must put sword and shield
+away to ready them; the Way Inn's Limantour Saddlery, store 16, sells
+belts, robes, cloaks, boots, a mirror and boulders, not bows). The
+sorceresses' records begin their memorized spells at the second slot, so
+the original's sort past the first slot (Bugs) changes nothing there. The
+route's player frees a member charmed onto the other side with
 Charm Person, which in *Treasures* ends a charm with no save (its
 SpellCharmPerson), or with Dispel Magic, which also ends a hold, its
 casters memorizing them first (`RouteBeat::memorize_first_of`). The
@@ -524,7 +539,11 @@ that rests first rests a night even when the party is whole
 (`RouteBeat::rest_for_spells`), so its casters have their spells again;
 `OPENGOLD_WALLS` prints a map's walls, doors and events, and
 `OPENGOLD_CURSE_SURVEY=N` surveys map N, and `OPENGOLD_ROUTE_PLAY_STAND_INS`
-plays a stand-in's fights as any other, the test winning none. Its check passes when "You have won."
+plays a stand-in's fights as any other, the test winning none.
+`OPENGOLD_FIGHT_TRIES=N` plays a fight N times instead of 120 and, with
+`OPENGOLD_FIGHT_TACTIC`, each try with dice of its own, to measure a
+tactic's odds (with `OPENGOLD_FIGHT_SCORES`, `OPENGOLD_ROUTE_RESUME` and
+`OPENGOLD_ROUTE_BEATS` for one fight). Its check passes when "You have won."
 is shown with every member alive (`treasure_route_ends_the_game`).
 
 *Played whole (2026-11-15),* on the original-rules round's stronger

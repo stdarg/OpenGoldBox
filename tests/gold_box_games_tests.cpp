@@ -507,6 +507,11 @@ struct RouteBeat
     // headquarters a guard who gets away sounds the alarm (the cluebook's
     // Alarms), as a player keeps one from escaping.
     bool holding_foes = false;
+    // A fight none of the 120 tries wins is played again with new dice, up
+    // to this many more times, until one does, as a player reloads a fight
+    // the enemy most often wins in its first round (Treasures' Way Inn
+    // sorceresses and the lair's black-robed men).
+    unsigned reloads = 0;
     // The rounds of repeat_until_at_least stay on the beat's square, as a
     // player tries a climb again.
     bool repeat_in_place = false;
@@ -6121,14 +6126,14 @@ const std::vector<RouteBeat> &treasure_route()
             route.push_back(fight);
         }
         // Redbeard's captors (a Zhentil lord, neo-otyughs, greater margoyles
-        // and six Hosttower sorceresses casting Charm Monsters and Charm
-        // Person on the party): the magic-user memorizes Charm Person, which
-        // frees a charmed member, the clerics Dispel Magic. A stand-in still:
-        // the sorceresses charm the party faster than its casters free it,
-        // with every dice the route's player tries, so the test wins the
-        // fight.
+        // and six Hosttower sorceresses, each with a Lightning Bolt and a
+        // Fireball, then Charm Monsters and Charm Person): the magic-user
+        // memorizes its Fireballs and Charm Person, which frees a charmed
+        // member, the clerics Dispel Magic. The sorceresses most often bolt
+        // the party before its magic-user acts: about one play in eleven is
+        // won (2026-11-15), so the party reloads until it wins.
         route.back().memorize_first_of = {"fireball", "charm_person", "dispel_magic"};
-        route.back().test_wins = true;
+        route.back().reloads = 600;
         route.back().expect_cell = {{0x129, 1}};
         // Down the stairs (9,13) and out of the Way Inn, then overland north
         // by maps 56 and 54 to Yartar (map 23).
@@ -6752,15 +6757,16 @@ const std::vector<RouteBeat> &treasure_route()
                       {{6, 8, D::west}, {5, 8, D::north}, {5, 7, D::west}, {4, 7, D::north}});
         auto freezefire = step_beat(38, 4, 6, D::west);
         freezefire.expect_cell = {{0x25C, 1}};
-        // The black-robed masters, mages and spies hold and charm the party's
-        // members (Hold Person, Hold Monster and Charm Person); the route's
-        // player frees them with Dispel Magic (memorized in the cavern). A
-        // stand-in: since their Charm Person takes the party's members, as
-        // the original's does (treasure.md, Bugs), they beat the party with
-        // every dice the route's player tries, so the test wins whichever of
-        // the lair's fights its player loses. The route's player beats
-        // Freezefire, risen at once after them.
-        freezefire.test_wins = true;
+        // The black-robed masters, mages and spies hold, slay and charm the
+        // party's members (Hold Monster, Hold Person, Slay Living and Charm
+        // Person) from the first round; the route's player frees them with
+        // Dispel Magic (memorized in the cavern). About one play in twenty is
+        // won, most of the party dead (2026-11-15): the party reloads until
+        // it wins, and with the dwarves beats Freezefire, risen at once after
+        // them. The ice hunters' care (PROGRAM 5) makes the party whole as
+        // the game is won, as the cluebook has it ("One member surviving is
+        // all the party needs to win the battle").
+        freezefire.reloads = 600;
         route.push_back(freezefire);
         // A camp on the overland (maps 51 to 57) draws its wandering
         // monsters night after night: the party walks on between towns
@@ -7503,7 +7509,7 @@ bool walk_census(GoldBoxGame game, bool route)
         };
         for (const auto &command : commands)
         {
-            if ((command.verb == "attack" || command.verb == "ranged") &&
+            if ((command.verb == "melee" || command.verb == "ranged") &&
                 unit_of(command.target) != state.combatants.end() && rank(command) < 2 &&
                 (!blow || rank(command) < rank(*blow)))
             {
@@ -8154,6 +8160,9 @@ bool walk_census(GoldBoxGame game, bool route)
     const bool playing_stand_ins = std::getenv("OPENGOLD_ROUTE_PLAY_STAND_INS") != nullptr;
     // The beat being played keeps every enemy from fleeing (RouteBeat::holding_foes).
     bool holding_foes = false;
+    // The tries the beat being played reloads for while no try has won it
+    // (RouteBeat::reloads).
+    unsigned reloads = 0;
     // A planning aid (OPENGOLD_SECRET_FIND) wins every fight at once.
     bool planning = false;
     // Fights played so far (a camp counts the ones that interrupt it), and
@@ -8202,13 +8211,13 @@ bool walk_census(GoldBoxGame game, bool route)
         // Try t plays seed 7 + t / 3 with tactic t % 3: everyone casting, the
         // magic-user alone casting, or a player's own choices (player_turn).
         // OPENGOLD_FIGHT_TACTIC=N plays every try with tactic N, to see
-        // how one tactic fares (a planning aid).
+        // how one tactic fares (a planning aid), each try with dice of its own.
         const char *forced_tactic = std::getenv("OPENGOLD_FIGHT_TACTIC");
         const auto play_try = [&](unsigned t)
         {
-            return fight_once(7 + t / 3, forced_tactic
-                                             ? static_cast<unsigned>(std::stoul(forced_tactic))
-                                             : t % 3);
+            return forced_tactic
+                       ? fight_once(7 + t, static_cast<unsigned>(std::stoul(forced_tactic)))
+                       : fight_once(7 + t / 3, t % 3);
         };
         // OPENGOLD_FIGHT_SCORES plays every try and prints each one's score
         // (a planning aid, to see how often a tactic wins).
@@ -8225,7 +8234,15 @@ bool walk_census(GoldBoxGame game, bool route)
         auto result = planning ? opengold::rules::Snapshot{} : play_try(0);
         auto best = planning ? 1 : score(result);
         print_score(0, result);
-        while (route && !planning && (best > 0 || scoring) && ++last < 120)
+        // OPENGOLD_FIGHT_TRIES=N plays N tries instead of 120, to measure a
+        // tactic's chances over more dice (a planning aid). A beat that
+        // reloads until won (RouteBeat::reloads) plays on past them, up to its
+        // count more, while no try has won.
+        const char *tries = std::getenv("OPENGOLD_FIGHT_TRIES");
+        const unsigned try_count = tries ? static_cast<unsigned>(std::stoul(tries)) : 120;
+        constexpr int lost_fight = 1'000'000;
+        while (route && !planning && (best > 0 || scoring) &&
+               (++last < try_count || (best >= lost_fight && last < try_count + reloads)))
         {
             party->restore(before);
             result = play_try(last);
@@ -9336,6 +9353,7 @@ bool walk_census(GoldBoxGame game, bool route)
                                      beat.memorize_first_of.end());
                 // A camp before the beat fights as the beat does.
                 test_winning = beat.test_wins && !playing_stand_ins;
+                reloads = beat.reloads;
                 if (beat.rest_first || (beat.passing && !beat.camp_broken && party_hurt() &&
                                         session.snapshot().area_id != restless_map))
                 {
@@ -9422,6 +9440,7 @@ bool walk_census(GoldBoxGame game, bool route)
                     }
                     test_winning = beat.test_wins && !playing_stand_ins;
                     holding_foes = beat.holding_foes;
+                    reloads = beat.reloads;
                     maze_exits.assign(beat.maze_exits.begin(), beat.maze_exits.end());
                     if (beat.rest_choice)
                     {
