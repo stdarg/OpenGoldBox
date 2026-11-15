@@ -4937,6 +4937,9 @@ const std::vector<RouteBeat> &treasure_route()
         // through the door (12,5).
         RouteBeat tavern{20, 9, 7, D::north, {}};
         tavern.rest_first = true;
+        // The clerics memorize Resist Fire for every member against the
+        // Zhentil captain's hell hounds, past the caverns where no camp rests.
+        tavern.ward_memorized = "resist_fire";
         route.push_back(tavern);
         route.push_back({20, 12, 5, D::north, {"SICK TRICK"}});
         // Out of the barn by the stone stairway and the farmhouse, out of
@@ -4985,7 +4988,12 @@ const std::vector<RouteBeat> &treasure_route()
                        {9, 2, D::east},   {10, 2, D::east},  {11, 2, D::east},  {12, 2, D::north},
                        {12, 1, D::east},  {13, 1, D::north}});
         auto captain = step_beat(22, 13, 0, D::west);
-        captain.rest_first = true;
+        // His hell hounds breathe fire at whoever stands beside them, every
+        // turn: the clerics ward each member with the Resist Fire memorized
+        // in Leilon and cure the badly hurt, for the hounds and guards
+        // breaking a camp here leave the party worn.
+        captain.cure_first = true;
+        captain.ward_each_with = "resist_fire";
         captain.expect_cell = {{0x128, 1}};
         route.push_back(captain);
         walk_passages(route, 22,
