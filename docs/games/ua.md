@@ -613,11 +613,20 @@ playing each event and fight; it fails on any event the session cannot play.
     area's) and an icon over two squares a side, which stands as two.
 
 Next, in this order (2026-11-15; monsters' spells, items' special effects,
-Appraise and the vault's items are done): a temple's Restoration, building
-on the rules' Restoration in camp and the temple service
-(`rules::TempleService::restoration`) that Pools of Darkness's and
-Treasures' temples sell, once that is on main; the near matches'
-differences left (58's reach, 82, 91, 96, 117 and 170; Monsters' effects).
+Appraise and the vault's items are done):
+
+1. A temple's Restoration, once the temple service
+   (`rules::TempleService::restoration`, the lasting change the campaign
+   keeps for a service; commit 383e7657 of the original rules' branch)
+   that Pools of Darkness's and Treasures' temples sell is on main: the
+   kit's Heal menu offers it at level 7 for 1,500 platinum at byte 5's
+   rate, after Stone to Flesh and before Resurrection, and casts the spell
+   on the member (`temple.c`, `restore_levels`); it is the twelfth row of
+   `temple_offers` in `ua_services.cpp`.
+2. The near matches' differences left (Monsters' effects): 82 slays with a
+   blow of an item of type 4Ah, the kit's quarrel of slaying (`effects.c`,
+   `fx_slain_by_type`); 58's reach; 91's and 96's breaths; 117's rays; 170's
+   rot, 2 Charisma a month until it kills (`fx_rotting`).
 
 ### Monsters' effects, "no magic" fights and step events
 
