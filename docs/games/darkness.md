@@ -542,13 +542,27 @@ by what it is offered:
   after each night. TRAIN opens the hall, which in Darkness names no price
   ("Who will train?"). MOVE ON, THORNE.
 - **Thorne's cave (map 34),** before the Horn of Doom's third blast: the
-  shortest way the planning aid finds to Thorne (3,7), whom the party will
-  not leave (YES); beaten (cell 152h FFh), he leaves the Horn of Doom. Back
+  shortest way the planning aid finds to Thorne (3,7), turning aside once
+  into the cluebook's room 4 (15,12, entered facing south), where the party
+  attacks the red dragon stuffing its treasure into a hole (ATTACK; cell
+  153h bit 7) and the leading paladin takes and wears the hoard's one ring,
+  the Ring of Fire Resistance (unidentified; the route's `take_items`).
+  Thorne, whom the party will not leave (YES), is beaten (cell 152h FFh),
+  members dead and raised after; he leaves the Horn of Doom. Back
   to the gate (0,13, westward), and from Limbo (REALMS) Elminster returns
   the party to the Aerie's gate, the script it came from (cell 9Ah). It
   walks out by the Aerie's entrance (8,15), declining the cave again.
 - **Zhentil Keep (map 19, script 19),** south-west at (0,4): the party pays
-  the drow's tax and walks north to the courtyard gate (8,7), into the halls
+  the drow's tax and walks to the training hall in the city's south half
+  (map 19's north half is Mulmaster's, script 26; script 19's events 4 and
+  5 there are only what the survey met). From the hall's sign (3,11) north,
+  the clerk (3,10, event 4, facing north) asks 10 gems of those not on the
+  approved list (YES; WHO pays); in the hall (3,9, event 5, a facing with no
+  wall ahead) each member with the experience trains (PROGRAM 0). East to
+  the Purple Plume Tavern (12,14, event 18, entered from its sign at 13,14
+  facing west), where it stays (YES): its camps are left alone while the
+  guards are not roused (cell A7h, script 19's camp entry; the cluebook's
+  "mostly safe"). Then north to the courtyard gate (8,7), into the halls
   of Manshoon's tower (map 48, script 48). The seven clerics (12,12) ask
   whether it goes on, has entered Zhentil Keep before and how often (once:
   "1"), and whether it bears Thorne's gift (YES): it passes. The original
@@ -587,12 +601,10 @@ One stand-in: the Vaasans who get through, seven mages and twelve
 warriors, hold the party with Hold Monster before it acts and slay the held
 with every dice the route tries, so the test wins that fight. A player
 would gear the party with the cave's treasure and ward it first; the
-route's player takes no treasure but wands. A second since 2026-11-15:
-Thorne (34: 3,7), an ancient red dragon, kills the party with every dice
-the route tries now that Darkness's monsters fight by their own effect
-numbers and Secret's round order (ORIGINAL-RULES.md, *Pools of Darkness*),
-so the test wins that fight too; a player would take the Ring of Fire
-Resistance from the hoard in room 4 and wear it. The route's party carries
+route's player takes no treasure but wands. Thorne (34: 3,7), which from
+the 2026-11-15 morning the test won as well, is the route's own since that
+day: its player takes and wears the Ring of Fire Resistance from the hoard
+in room 4, as the cluebook's would, and wins. The route's party carries
 the game's own starting equipment (ORIGINAL-RULES.md, *Pools of Darkness*).
 Until the route reaches the win it passes when it plays every beat to
 Kalistes' Temple (map 69).
@@ -616,21 +628,11 @@ OpenGoldBox left the flags as they were, so a won fight could read as lost
 and move the party back a square (the walk passed all the same).
 
 Where it stops (2026-11-15): in Kalistes' Temple (map 69), stepped in
-through the slave pens' secret door, the party badly hurt (two members
-knocked out) and untrained since Limbo, where the paladins lacked the
-experience for their next level. Next, before going down: Zhentil Keep's
-training hall, whose "Who will train?" the survey meets at (19: 12,1)
-beside the clerk who asks 10 gems of those not on the approved list
-(12,0); the planning aid finds no plain way to either from the gate
-(8,15), so the way in (a door's question, a facing) is still to be found.
-From the gate it reaches 99 squares, none north of row 8 (0,8 to 2,8, 7,8,
-8,8 and 12,8 to 15,8 are its northern edge; 8,8 north is the courtyard gate
-into map 48): the city's north half, the hall's, lies past whatever row 8's
-northern walls hold, which map 19's wall data and script 19's step entry
-(a door, a locked door, a guard's event) should tell. Answering YES
-everywhere (`OPENGOLD_SECRET_PREFER=YES`) reaches 973 squares across other
-maps but not (12,1) either;
-then a rest at the tavern (the cluebook's 12, "mostly safe"), and in the
+through the slave pens' secret door, the party badly hurt (members dead or
+knocked out). Zhentil Keep's training hall and tavern were found in the
+city's south half by map 19's walls and script 19's events (above); the
+"Who will train?" the survey met at (12,1) is script 19's event 5 on the
+map's north half, which only Mulmaster's script (26) walks. Next, in the
 slave pens Silk (the cluebook's 4) and her quiet rooms (4 and 26). In
 Kalistes' Temple the cluebook's way: the secret entry, the priests'
 quarters' map (12), the oracle (13), and the inner chamber (15), where

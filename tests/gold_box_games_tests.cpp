@@ -527,6 +527,10 @@ struct RouteBeat
     // actions holding the text) that anyone has memorized, as a player
     // answers Treasures' Cortarra, whose script waits for a spell.
     std::vector<std::string> cast_after;
+    // Items to take from a treasure there, each by its name (any case) and
+    // the name of the member who takes and readies it, as a player gears the
+    // party for a fight to come (Thorne's Ring of Fire Resistance).
+    std::vector<std::pair<std::string, std::string>> take_items;
 };
 
 // Answers that train each of the route's members a level at a hall: its
@@ -2765,22 +2769,34 @@ const std::vector<RouteBeat> &darkness_route()
         // Ki-rin's spirit, who asks why it has come (DUTY), to Thorne (3,7),
         // whom it will not leave; beaten, he leaves the Horn of Doom (cell
         // 152h FFh).
-        walk_passages(route, 34,
-                      {{1, 13, D::south},  {1, 14, D::south},  {1, 15, D::east},  {2, 15, D::east},
-                       {3, 15, D::east},   {4, 15, D::north},  {4, 14, D::east},  {5, 14, D::east},
-                       {6, 14, D::east},   {7, 14, D::north},  {7, 13, D::north}, {7, 12, D::east},
-                       {8, 12, D::east},   {9, 12, D::east},   {10, 12, D::east}, {11, 12, D::east},
-                       {12, 12, D::north}, {12, 11, D::east},  {13, 11, D::east}, {14, 11, D::east},
-                       {15, 11, D::north}, {15, 10, D::north}, {15, 9, D::north}, {15, 8, D::north},
-                       {15, 7, D::west},   {14, 7, D::west},   {13, 7, D::west},  {12, 7, D::north},
-                       {12, 6, D::north},  {12, 5, D::west},   {11, 5, D::west},  {10, 5, D::south},
-                       {10, 6, D::south},  {10, 7, D::south},  {10, 8, D::west},  {9, 8, D::west},
-                       {8, 8, D::west},    {7, 8, D::north},   {7, 7, D::north},  {7, 6, D::north},
-                       {7, 5, D::west},    {6, 5, D::north},   {6, 4, D::north},  {6, 3, D::north},
-                       {6, 2, D::north},   {6, 1, D::west},    {5, 1, D::west},   {4, 1, D::west},
-                       {3, 1, D::west},    {2, 1, D::south},   {2, 2, D::south},  {2, 3, D::south},
-                       {2, 4, D::west},    {1, 4, D::south},   {1, 5, D::east},   {2, 5, D::east},
-                       {3, 5, D::south}});
+        walk_passages(route, 34, {{1, 13, D::south}, {1, 14, D::south},  {1, 15, D::east},
+                                  {2, 15, D::east},  {3, 15, D::east},   {4, 15, D::north},
+                                  {4, 14, D::east},  {5, 14, D::east},   {6, 14, D::east},
+                                  {7, 14, D::north}, {7, 13, D::north},  {7, 12, D::east},
+                                  {8, 12, D::east},  {9, 12, D::east},   {10, 12, D::east},
+                                  {11, 12, D::east}, {12, 12, D::north}, {12, 11, D::east},
+                                  {13, 11, D::east}, {14, 11, D::east}});
+        // South of the corridor (15,12) a red dragon stuffs its treasure into
+        // a hole (the cluebook's room 4): the party attacks it, rested first,
+        // and the paladin who leads takes the Ring of Fire Resistance from its
+        // hoard (its one ring, unidentified) and wears it against Thorne's
+        // breath.
+        auto hoard = step_beat(34, 15, 11, D::south, {"ATTACK"});
+        hoard.rest_first = true;
+        hoard.take_items = {{"RING", "paladin 1"}};
+        route.push_back(hoard);
+        walk_passages(
+            route, 34,
+            {{15, 12, D::north}, {15, 11, D::north}, {15, 10, D::north}, {15, 9, D::north},
+             {15, 8, D::north},  {15, 7, D::west},   {14, 7, D::west},   {13, 7, D::west},
+             {12, 7, D::north},  {12, 6, D::north},  {12, 5, D::west},   {11, 5, D::west},
+             {10, 5, D::south},  {10, 6, D::south},  {10, 7, D::south},  {10, 8, D::west},
+             {9, 8, D::west},    {8, 8, D::west},    {7, 8, D::north},   {7, 7, D::north},
+             {7, 6, D::north},   {7, 5, D::west},    {6, 5, D::north},   {6, 4, D::north},
+             {6, 3, D::north},   {6, 2, D::north},   {6, 1, D::west},    {5, 1, D::west},
+             {4, 1, D::west},    {3, 1, D::west},    {2, 1, D::south},   {2, 2, D::south},
+             {2, 3, D::south},   {2, 4, D::west},    {1, 4, D::south},   {1, 5, D::east},
+             {2, 5, D::east},    {3, 5, D::south}});
         // Since Darkness's monsters fight by their own effect numbers and
         // Secret's round order (2026-11-15), Thorne, an ancient red dragon,
         // kills the party with every dice the route tries: there the test wins
@@ -2789,7 +2805,6 @@ const std::vector<RouteBeat> &darkness_route()
         // cluebook's player would; it takes no treasure but wands).
         auto thorne = step_beat(34, 3, 6, D::south, {"YES"});
         thorne.rest_first = true;
-        thorne.test_wins = true;
         thorne.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x152, 255};
         route.push_back(thorne);
         // Back the way it came to the dimensional gate (0,13), stepped
@@ -4868,6 +4883,9 @@ bool walk_census(GoldBoxGame game, bool route)
     bool declining = false;
     // The beat being played takes the first wand a treasure holds (RouteBeat::take_wand).
     bool taking_wand = false;
+    // The items the beat being played takes from a treasure, and who takes
+    // each (RouteBeat::take_items).
+    std::vector<std::pair<std::string, std::string>> items_to_take;
     // Whether the closing words of a won game were shown (game_won).
     bool game_won_shown = false;
     // The beat being played only passes by (RouteBeat::passing).
@@ -4876,6 +4894,50 @@ bool walk_census(GoldBoxGame game, bool route)
     bool fleeing = false;
     // The beat being played avoids the monsters it meets (RouteBeat::avoiding).
     bool avoiding = false;
+    // Takes the first of the beat's items still to take that the treasure
+    // holds, for the member named with it, and readies it, as a player gears
+    // the party: true when one was taken.
+    const auto take_named_item = [&](const std::vector<opengold::por::Equipment> &pile)
+    {
+        const auto upper = [](std::string text)
+        {
+            std::ranges::transform(text, text.begin(), ::toupper);
+            return text;
+        };
+        const auto slots = party->state().slots;
+        for (auto wanted = items_to_take.begin(); wanted != items_to_take.end(); ++wanted)
+        {
+            const auto item = std::ranges::find_if(
+                pile,
+                [&](const opengold::por::Equipment &it)
+                {
+                    return upper(it.label()).find(upper(wanted->first)) != std::string::npos;
+                });
+            const auto taker = std::ranges::find_if(
+                slots,
+                [&](opengold::MemberId id)
+                {
+                    return id && party->member(id).character.sheet().name == wanted->second;
+                });
+            if (item == pile.end() || taker == slots.end())
+            {
+                continue;
+            }
+            const auto item_name = item->label();
+            party->select(opengold::PartySlot{static_cast<unsigned>(taker - slots.begin())});
+            if (!session.take_treasure(session.snapshot().continue_ticket,
+                                       static_cast<std::size_t>(item - pile.begin())))
+            {
+                continue;
+            }
+            const auto &items = party->member(*taker).character.inventory().items();
+            party->equip(*taker, items.back().id);
+            std::cout << "  " << wanted->second << " takes and readies " << item_name << "\n";
+            items_to_take.erase(wanted);
+            return true;
+        }
+        return false;
+    };
     const auto play = [&](const std::string &where)
     {
         const auto attribute = [&]
@@ -5225,6 +5287,10 @@ bool walk_census(GoldBoxGame game, bool route)
                         continue;
                     }
                 }
+                if (route && take_named_item(pile))
+                {
+                    continue;
+                }
                 (void)session.leave_treasure(s.continue_ticket);
                 continue;
             }
@@ -5568,6 +5634,7 @@ bool walk_census(GoldBoxGame game, bool route)
                 {
                     answers = beat.answers;
                     taking_wand = beat.take_wand;
+                    items_to_take = beat.take_items;
                     passing = beat.passing;
                     fleeing = beat.fleeing;
                     avoiding = beat.avoiding;

@@ -585,6 +585,7 @@ new decoders.
    guarding the way, takes the Dragons' Aerie's four keys and beats
    Modthryth's dracoliches, rests and trains with Elminster in Limbo, beats
    Thorne and brings back the Horn of Doom, pays its way into Zhentil Keep,
+   trains there and stays at its tavern,
    answers Manshoon's clerics truly and goes down through the drow
    stronghold to the temple's halls, and (2026-11-15) unrested through the
    slave pens, over the spiked pit's bridge and past the iron golem, to the
@@ -592,11 +593,9 @@ new decoders.
    PROGRAM 1 after Gothmenes falls (darkness.md, The win and the route).
    *Stand-ins:* the test wins the fight with the Vaasans who get through
    Vala's breach (their mages hold the party with Hold Monster), also where
-   the best play wins it with members dead; and (2026-11-15) the fight with
-   Thorne, which since Darkness's monsters fight by their own effect numbers
-   and Secret's round order kills the party with every dice (a player would
-   wear the Ring of Fire Resistance from his hoard; the route's player takes
-   no treasure but wands). Each script starts its wandering
+   the best play wins it with members dead. Thorne, which the test won for
+   a while on 2026-11-15, is the route's own again: it takes and wears the
+   Ring of Fire Resistance from his hoard (room 4) and wins. Each script starts its wandering
    monsters afresh, as the original's does (cells 97h to C8h, 2026-11-14), so
    the route meets more of them; in the Temple of Tyr, whose patrols break
    every camp until the bells ring (cell 181h), the party rests only in the
@@ -604,16 +603,15 @@ new decoders.
    spells of all nine levels (2026-11-15). The route's party
    carries the game's own starting equipment. Until the route reaches the
    win it passes when it plays every beat to Kalistes' Temple (map 69).
-   *Where it stops (2026-11-15):* in Kalistes' Temple (map 69), the party
-   hurt and untrained since Limbo; next, the way into Zhentil Keep's
-   training hall (12,1) and its tavern, in the city's north half, which the
-   planning aid does not reach from the gate (nothing north of row 8; map
-   19's walls and script 19's step entry are to be read for the way), then
-   Kalistes' Temple's inner chamber and portal, the Web Dimension and on
-   round the area map to Dark Phlan (darkness.md, Where it stops). Thorne's
-   stand-in is to give way to the route taking and readying the Ring of
-   Fire Resistance from his hoard (room 4), and the temples' Restoration is
-   to come where a beat needs it.
+   *Where it stops (2026-11-15):* in Kalistes' Temple (map 69), stepped
+   in through the slave pens' secret door, the party badly hurt. Since
+   2026-11-15 it trains in Zhentil Keep's hall (3,9, past the clerk's 10
+   gems at 3,10) and stays at the Purple Plume Tavern (12,14), both in the
+   city's south half (map 19's north half is Mulmaster's, script 26).
+   Next: Kalistes' Temple's priests' quarters, oracle, inner chamber and
+   portal, the Web Dimension and on round the area map to Dark Phlan
+   (darkness.md, Where it stops). The temples' Restoration is to come where
+   a beat needs it.
    *The area map is drawn (2026-11-14):* the big picture with the party's
    marker, as the original draws it. *Spell levels 8 and 9 and the new
    spells (2026-11-15):* merged, with Restoration giving back a drained
