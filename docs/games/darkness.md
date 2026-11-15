@@ -622,7 +622,14 @@ experience for their next level. Next, before going down: Zhentil Keep's
 training hall, whose "Who will train?" the survey meets at (19: 12,1)
 beside the clerk who asks 10 gems of those not on the approved list
 (12,0); the planning aid finds no plain way to either from the gate
-(8,15), so the way in (a door's question, a facing) is still to be found;
+(8,15), so the way in (a door's question, a facing) is still to be found.
+From the gate it reaches 99 squares, none north of row 8 (0,8 to 2,8, 7,8,
+8,8 and 12,8 to 15,8 are its northern edge; 8,8 north is the courtyard gate
+into map 48): the city's north half, the hall's, lies past whatever row 8's
+northern walls hold, which map 19's wall data and script 19's step entry
+(a door, a locked door, a guard's event) should tell. Answering YES
+everywhere (`OPENGOLD_SECRET_PREFER=YES`) reaches 973 squares across other
+maps but not (12,1) either;
 then a rest at the tavern (the cluebook's 12, "mostly safe"), and in the
 slave pens Silk (the cluebook's 4) and her quiet rooms (4 and 26). In
 Kalistes' Temple the cluebook's way: the secret entry, the priests'

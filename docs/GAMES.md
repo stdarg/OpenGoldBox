@@ -606,9 +606,14 @@ new decoders.
    win it passes when it plays every beat to Kalistes' Temple (map 69).
    *Where it stops (2026-11-15):* in Kalistes' Temple (map 69), the party
    hurt and untrained since Limbo; next, the way into Zhentil Keep's
-   training hall (12,1) and its tavern, which the planning aid does not yet
-   find, then Kalistes' Temple's inner chamber and portal, the Web Dimension
-   and on round the area map to Dark Phlan (darkness.md, Where it stops).
+   training hall (12,1) and its tavern, in the city's north half, which the
+   planning aid does not reach from the gate (nothing north of row 8; map
+   19's walls and script 19's step entry are to be read for the way), then
+   Kalistes' Temple's inner chamber and portal, the Web Dimension and on
+   round the area map to Dark Phlan (darkness.md, Where it stops). Thorne's
+   stand-in is to give way to the route taking and readying the Ring of
+   Fire Resistance from his hoard (room 4), and the temples' Restoration is
+   to come where a beat needs it.
    *The area map is drawn (2026-11-14):* the big picture with the party's
    marker, as the original draws it. *Spell levels 8 and 9 and the new
    spells (2026-11-15):* merged, with Restoration giving back a drained
