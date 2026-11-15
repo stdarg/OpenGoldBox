@@ -585,8 +585,11 @@ OpenGoldBox weighs them all, a choice to put to the user. *Pools of
 Darkness* shares the spell table, the AI and the one-square characters and
 should take them up, its route checked. Still to come besides: replacing
 the Llorkh test experience if a route can earn it, the color records, the
-music and sounds other than the footstep (`MUSIC.DAX`'s bank and
-`ZOUNDS.DAX`, PLAY SOUND 2 to 14 and from 80h), and the camp's display of
+sounds the program itself plays in a fight (`ZOUNDS.DAX`'s records 1 to
+11: its magic.pas sounds Fireball and Lightning Bolt, its combat the blows):
+no script of *Treasures* plays any sound but the footstep (PLAY SOUND 10 in
+every script, never a piece of music), and `MUSIC.DAX`'s one bank plays
+over the title already, and the camp's display of
 the crystals the party holds (its CampMainMenu, cell 3Ch: 1 red, 2 green, 4
 blue), which needs the crystal effects 128 to 130 (at 0 Hit Points, while
 cell 3Dh is set) that no fight plays yet.
