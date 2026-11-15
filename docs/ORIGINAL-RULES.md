@@ -663,7 +663,10 @@ whole list):
 
 ## Next
 
-The work asked for next (2026-11-14), in order, with what each needs:
+The work asked for next (2026-11-14, brought up to date 2026-11-15), in
+order, with what each needs. Done since: the difficulty levels, the halls'
+class masks, AD&D aging by the clock, Spiritual Hammer's lasting hammer and
+the later games' effect numbers.
 
 1. The other "Still to come" items above that are no one game's campaign or
    route work, in their order in this file:
