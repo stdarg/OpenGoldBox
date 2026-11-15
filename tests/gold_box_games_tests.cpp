@@ -5047,6 +5047,59 @@ const std::vector<RouteBeat> &darkness_route()
                                     C::southwest, C::southwest};
         back_to_wound.fleeing = true;
         route.push_back(back_to_wound);
+        // Out of the wound (YES, then NO to entering again) and over the body
+        // north-east and north-west to the depression (12,4), where the party
+        // climbs down (DO YOU ENTER? YES; map 52).
+        route.push_back(step_beat(52, 12, 15, D::south, {"YES", "NO"}));
+        RouteBeat to_the_depression{52, 0, 0, D::north, {"YES"}};
+        to_the_depression.area_steps = {C::northeast, C::northeast, C::northeast,
+                                        C::northwest, C::northwest, C::northwest,
+                                        C::northwest, C::northwest, C::northwest};
+        to_the_depression.fleeing = true;
+        route.push_back(to_the_depression);
+        // In the depression the gate (7,10, event 10, the wall south of it
+        // ahead; the cluebook's Depression 1): the party steps through (YES)
+        // to Limbo, where Elminster greets the Talisman of Bane, his camp rests
+        // the party and it trains. DOWN ROPE returns it to the Realms' area
+        // map below the Red Tower's pool (5,12), its stored goods left (NO).
+        route.push_back(step_beat(52, 7, 9, D::south, {"YES", "stop:REST"}));
+        RouteBeat talisman_rest{18, 0, 0, D::north, {}};
+        talisman_rest.rest_choice = "REST";
+        route.push_back(talisman_rest);
+        RouteBeat down_rope{
+            18, 0, 0, D::north,
+            train_darkness_party(2, {"TRAIN"}, {"MOVE ON", "DOWN ROPE", "YES", "NO"})};
+        down_rope.waiting = true;
+        route.push_back(down_rope);
+        // East across the area map to the black city of Mulmaster (31,11),
+        // fleeing what roams it, and in (YES; script 26, map 19's north half).
+        // The sites on the way (a wayhouse, villages) are passed by (NO).
+        RouteBeat to_mulmaster{18, 0, 0, D::north, {}};
+        to_mulmaster.area_steps.assign(25, C::east);
+        to_mulmaster.fleeing = true;
+        to_mulmaster.passing = true;
+        route.push_back(to_mulmaster);
+        RouteBeat into_mulmaster{18, 0, 0, D::north, {"YES", "MOVE ON"}};
+        into_mulmaster.area_steps = {C::northeast};
+        into_mulmaster.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x16, 26};
+        route.push_back(into_mulmaster);
+        // MOVE ON past the gate's guards (0,3; the cluebook's 1), and through
+        // the alleys, where Banites chant the labyrinth's way (journal entry
+        // 24), to the arena's grating (5,6).
+        walk_passages(route, 19,
+                      {{0, 3, D::east},
+                       {1, 3, D::east},
+                       {2, 3, D::east},
+                       {3, 3, D::south},
+                       {3, 4, D::south},
+                       {3, 5, D::south},
+                       {3, 6, D::east},
+                       {4, 6, D::east}});
+        // Into the arena (6,6, event 21; the cluebook's 4): the party has
+        // offended no one, so it fights a round or two (cell A6h) of the
+        // pens' monsters, and a beholder offers it Arcam's interview (YES):
+        // it is led down into the Cave of the Beholder (script 36).
+        route.push_back(step_beat(19, 5, 6, D::east, {"YES"}));
         return route;
     }();
     return beats;
