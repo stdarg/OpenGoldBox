@@ -556,7 +556,26 @@ by what it is offered:
   liches find the horn and are beaten, the tax is paid, and the path at
   (3,8) descends to the drow stronghold.
 - **The Descent to the Depths (map 35, script 35)** to the path down at
-  (7,14) into the drow temple's halls (map 68, script 68), where it stops.
+  (7,14) into the drow temple's halls (map 68, script 68).
+- **The slave pens (map 68, the cluebook's Silk and the Slaves of the
+  Drow),** walked without a camp, as the drow patrols fall on any outside
+  the cluebook's two quiet rooms (a camp at the stairs met twelve drow
+  sorcerers, champions and a drider and lost): from (7,15) north through
+  the barracks and west under the arches, over the spiked pit's bridge
+  (0,1, CROSS BRIDGE), through the teleporting room, past the iron golem's
+  room (12,1, entered) and the fountain (14,1, waded) to the secret door at
+  (15,1), stepped through eastward into Kalistes' Temple (script 69), where
+  it stops (2026-11-15). The way is the planning aid's with
+  `OPENGOLD_SECRET_PREFER=CROSS,YES`.
+
+Since 2026-11-15 the route's casters memorize spells of every level they
+have slots of (Pools of Darkness's levels 6 to 9 among them) and raise the
+dead with Resurrection too; a member knocked out (0 Hit Points), whom
+resting does not heal, is cured in camp as a player would. In the Temple
+of Tyr the party rests in the scribe's office (9,4, entered facing west:
+"IT MIGHT BE A GOOD PLACE TO REST"), the one room whose camps the patrols
+leave alone until the bells ring (the cluebook's location 5), after the
+vampire priest and again before the braziers.
 
 A step's event that sets cell 3h to FFh (stairs, the steading's barred door
 and its gate) holds back the step that ran it, as the original's movement
@@ -568,17 +587,27 @@ One stand-in: the Vaasans who get through, seven mages and twelve
 warriors, hold the party with Hold Monster before it acts and slay the held
 with every dice the route tries, so the test wins that fight. A player
 would gear the party with the cave's treasure and ward it first; the
-route's player takes no treasure but wands. The route's party carries the
-game's own starting equipment (ORIGINAL-RULES.md, *Pools of Darkness*).
-Until the route reaches the win it passes when it plays every beat to the
-drow temple's halls (map 68).
+route's player takes no treasure but wands. A second since 2026-11-15:
+Thorne (34: 3,7), an ancient red dragon, kills the party with every dice
+the route tries now that Darkness's monsters fight by their own effect
+numbers and Secret's round order (ORIGINAL-RULES.md, *Pools of Darkness*),
+so the test wins that fight too; a player would take the Ring of Fire
+Resistance from the hoard in room 4 and wear it. The route's party carries
+the game's own starting equipment (ORIGINAL-RULES.md, *Pools of Darkness*).
+Until the route reaches the win it passes when it plays every beat to
+Kalistes' Temple (map 69).
 
 What the route needed besides (2026-11-14): a Darkness party saves and
 loads, its levels to 40, on the area map (whose script, 17, does not load
 the map the party left) and after a level drain (a character's spell
 choices, training and hall entries replay in the order they were made, as
 a drain may bring it back to a level it has left); a restored machine
-leaves ACTION MENU to the machine, as a new one does.
+leaves ACTION MENU to the machine, as a new one does. And (2026-11-15): the
+same spells chosen again at the same level keep one level-history entry,
+for the nightly choices of spells of nine levels grew the save past the
+campaign save's 16 MB by Zhentil Keep; and the training hall's cap of
+level 15 is the SRD's only, so a character under the original rules trains
+as far as its game's tables go.
 
 A fight's result reaches Darkness's scripts as compare flags: they test
 it with IF right after COMBAT, which its PostCombat sets to "equal" when the
@@ -586,16 +615,20 @@ party won or came through and "not equal" when it fled. Until 2026-11-14
 OpenGoldBox left the flags as they were, so a won fight could read as lost
 and move the party back a square (the walk passed all the same).
 
-Where it stops (2026-11-14): in the drow temple's halls (map 68), arrived at
-(7,15). Next, the door at the map's east edge (15,1), which asks "THE DOOR
-OPENS ONTO A CORRIDOR. DO YOU ENTER?" and leads to script 69: the way there
-runs past the iron golem's room (12,1, event 23, "DO YOU ENTER THE ROOM?")
-and the drow with their grown spider (13,1, event 11). A first try
-(2026-11-14) lost to a band of drow sorcerers, champions and a drider at
-(7,9), the party untrained since Limbo (about 1,900,000 experience, enough
-for a level each) and not rested; Zhentil Keep's training hall (10 gems)
-and the tavern (rest) come first, and the cluebook's Traned and Silk help
-below. Then Kalistes' temple and the Web Dimension, the Drow Testing
+Where it stops (2026-11-15): in Kalistes' Temple (map 69), stepped in
+through the slave pens' secret door, the party badly hurt (two members
+knocked out) and untrained since Limbo, where the paladins lacked the
+experience for their next level. Next, before going down: Zhentil Keep's
+training hall, whose "Who will train?" the survey meets at (19: 12,1)
+beside the clerk who asks 10 gems of those not on the approved list
+(12,0); the planning aid finds no plain way to either from the gate
+(8,15), so the way in (a door's question, a facing) is still to be found;
+then a rest at the tavern (the cluebook's 12, "mostly safe"), and in the
+slave pens Silk (the cluebook's 4) and her quiet rooms (4 and 26). In
+Kalistes' Temple the cluebook's way: the secret entry, the priests'
+quarters' map (12), the oracle (13), and the inner chamber (15), where
+the statue's hands are destroyed and the portal to the Web Dimension
+entered; rest in the barracks (16) once cleared. Then the Web Dimension, the Drow Testing
 Ground and Kalistes' Parlor, Myth Drannor and the Red Tower (scripts 66,
 70, 67), Moander (52, 53, 55), Mulmaster and the beholders' cave, Dark
 Phlan (64) and the Palace of Gothmenes (65, 74, 73), whose win (75) is in
