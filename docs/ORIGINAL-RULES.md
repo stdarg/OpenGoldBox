@@ -313,6 +313,31 @@ chosen by the game as *Curse*'s are. In progress (2026-11-13):
 - **Youth** (2026-11-14; its item power 63, `SpellYouth`) makes its user
   1d4+1 years younger, not below 18, in a fight or out of one (an age that
   changes, Plan step 3).
+- **The camp's Fix** (2026-11-16; its `camp.pas`, CampFixMenu), which the
+  cluebook bids a party use where rests are broken (the crevasses): nothing
+  when no member is missing Hit Points. Otherwise each cure a standing
+  member (alive, awake, not stone) has memorized is rolled into the healing
+  (Cure Light Wounds 1d8, the druid's too, Cure Serious 2d8+1, Cure Critical
+  3d8+3, Heal 4d8+5) and each memorized status cure counted, none of them
+  spent. The party rests as long as the longest caster's casting takes (of
+  Wisdom above 3: four hours with first-level cure slots or a ranger's
+  second-level druid ones, six with fourth- or fifth-level, eight with
+  sixth-level, and a quarter hour, half an hour, an hour, an hour and a
+  quarter and an hour and a half a slot of them), as many times less as the
+  casters' minutes (27 for each kind of first- or second-level slots, 34 or
+  78 for the fourth and fifth, 90 for the sixth) exceed the Hit Points
+  missing. After it each such slot adds a roll (Heal's 4d8+3), the counted
+  cures go to the members they help in the party's order (a Heal to the
+  feebleminded, curing their disease and blindness with it; Stone to Flesh,
+  Neutralize Poison, Raise Dead, Remove Curse, and to one no Heal cured, Cure
+  Disease or else Cure Blindness), and the healing is spent on the living in
+  the party's order, waking the unconscious. A second rest, as long as the
+  cures still needed take with the slots added (an hour and a half a
+  feeblemind or a statue, an hour and a quarter a raising, an hour a
+  poison, three quarters of an hour a disease, blindness or curse), applies
+  them again. Either rest is rolled for interruption as a camp is. Its bugs
+  are fixed (Bugs). *Secret*'s route Fixes before it rests for its spells,
+  and where its camps are broken.
 
 ### *Secret*'s combat
 
@@ -2093,6 +2118,9 @@ scales Hit Points takes only the table's to-hit and Armor Class.
 | *Pools of Darkness:* a giant-slaying sword's blow sets the damage after Ray of Enfeeblement, the ranger's bonus and dragon fear have changed it, so none of them touches it (`fxengine.pas`, the attacker's weapon damage) | They change its 6d6 too, as for the kit's sword |
 | *Pools of Darkness:* bringing a *Secret* character across copies its attack level (record byte 230) into the known spells' place of Fire Touch (118), so every one arrives knowing it (`saveload.pas`, LoadChar) | It knows only the spells it knew |
 | *Curse:* the wilderness script (ECL1 80) marks a camp with a cell Tilverton's sage and Kybor's library also set for themselves (0x4C13), so a party that paid the sage reaches the wilderness as if back from camp: it skips loading the roads from Tilverton, and the first journey goes where stale cells say | Arriving from another script, the party is not back from camp |
+| *Secret:* the Fix's casting time adds up from a count it never sets to 0, so whether a party missing few Hit Points rests less depends on what that memory held (`camp.pas`, `CampFixMenu`, ComputeFixTime) | Counted from 0 |
+| *Secret:* the Fix gives a member who cannot cast the casting times of the member before it, so a party rests longer for its unconscious (`camp.pas`, `CampFixMenu`, ComputeFixTime) | One who cannot cast adds no time |
+| *Secret:* the Fix's Cure Disease and Cure Blindness are never spent, and its Cure Blindness lifts the blindness of whichever member is current, not of the member it cures (`camp.pas`, `CampFixMenu`, CureStatusEffects) | Each cures the member it is for, one a member, and is spent |
 | *Treasures:* the Fix's second rest gives a raising its time only when no one has Resurrection, and then sets the raisings left to none, so the dead it was timed for are never raised (`camp.pas`, `CampFixMenu`, ComputeCureTime) | The raisings it was timed for are cast |
 | *Treasures:* the Fix's Cure Blindness lifts the blindness of whichever member is current, not of the member it cures, and is never spent (`camp.pas`, `CampFixMenu`) | The blind member regains sight, one cure a member |
 | *Treasures:* the Fix's first rest counts a magic-user's Remove Curse by its third-level slots, its second by its fourth-level ones, where the spell is (`camp.pas`, `CampFixMenu`) | Fourth-level slots in both |

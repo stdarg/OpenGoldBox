@@ -588,6 +588,8 @@ class CampaignParty
     [[nodiscard]] std::vector<rules::StatusEffectView> status_effects(MemberId id) const;
     // Spells and features an active member can use outside combat (CLASS-3).
     [[nodiscard]] std::vector<rules::CampAction> camp_actions(MemberId id) const;
+    // The spells the member has memorized and not cast, by id, a copy each.
+    [[nodiscard]] std::vector<std::string> memorized_spells(MemberId id) const;
     // Atomic: on failure nothing changes.
     void use_camp_action(MemberId user, MemberId target, std::string_view action);
     // The first active member who can cast Identify now, if any. Identify is

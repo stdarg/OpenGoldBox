@@ -3582,6 +3582,12 @@ std::vector<rules::StatusEffectView> CampaignParty::status_effects(MemberId id) 
     return rules_->status_effects(m.character.sheet(), m.vitals);
 }
 
+std::vector<std::string> CampaignParty::memorized_spells(MemberId id) const
+{
+    const auto &m = member(id);
+    return rules_->memorized_spells(m.character.sheet(), m.vitals);
+}
+
 std::vector<rules::CampAction> CampaignParty::camp_actions(MemberId id) const
 {
     const auto &m = member(id);

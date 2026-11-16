@@ -637,6 +637,8 @@ class OriginalModule final : public RulesModule
 
     void recover_days(VitalState &state, const CharacterSheet &sheet, unsigned days) const override;
     void end_rest(VitalState &state, const CharacterSheet &sheet) const override;
+    [[nodiscard]] std::vector<std::string> memorized_spells(const CharacterSheet &sheet,
+                                                            const VitalState &state) const override;
     [[nodiscard]] std::vector<MemorizedAnew>
     memorizing_anew(const CharacterSheet &sheet, const VitalState &state,
                     const SpellChoices &choices) const override;
@@ -2166,6 +2168,19 @@ void OriginalModule::end_rest(VitalState &state, const CharacterSheet &sheet) co
         return;
     }
     state.resources = rested_state(conditions_of(sheet, state));
+}
+
+// The spells left to cast: its last fight's, or after a rest its sheet's
+// (spells_left), each by its id.
+std::vector<std::string> OriginalModule::memorized_spells(const CharacterSheet &sheet,
+                                                          const VitalState &state) const
+{
+    std::vector<std::string> ids;
+    for (const int number : spells_left(sheet, state))
+    {
+        ids.push_back(spell_id(number));
+    }
+    return ids;
 }
 
 // The spells a choice memorizes into empty slots (camp.pas,

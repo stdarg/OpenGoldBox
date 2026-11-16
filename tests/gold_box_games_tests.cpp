@@ -1129,6 +1129,32 @@ void rest_in_scribes_office(std::vector<RouteBeat> &beats)
 constexpr bool secret_route_ends_the_game = true;
 constexpr unsigned secret_route_stops_on_map = 98;
 
+// The beat on this square of the map (its `occurrence`th, counting from 1)
+// takes these items from the treasures it wins (RouteBeat::take_items).
+void take_at(std::vector<RouteBeat> &route, std::tuple<unsigned, unsigned, unsigned> square,
+             unsigned occurrence, std::vector<std::pair<std::string, std::string>> items)
+{
+    for (auto &beat : route)
+    {
+        if (std::tuple{beat.map, beat.x, beat.y} == square && --occurrence == 0)
+        {
+            beat.take_items = std::move(items);
+            return;
+        }
+    }
+    throw std::logic_error("No beat takes the items on its square");
+}
+
+// What the route's party takes from the mayor's pile (item list 18), as a
+// player shares it out: each item by its name and the member who readies it.
+std::vector<std::pair<std::string, std::string>> secret_town_gear()
+{
+    return {{"Shield +2", "paladin 1"},
+            {"Gauntlets", "paladin 2"},
+            {"Wand of Ice Storm", "magic_user 6"},
+            {"Bracers", "magic_user 6"}};
+}
+
 // Secret's story, beat by beat, as its cluebook tells it (plan phase 4, step
 // 4): from New Verdigris on.
 const std::vector<RouteBeat> &secret_route()
@@ -1148,8 +1174,9 @@ const std::vector<RouteBeat> &secret_route()
             experienced.test_experience = 1'000'000;
             route.push_back(experienced);
         }
-        // The armoury (location 9): a mirror for each member, readied, which
-        // turns the gazes of basilisks and medusae back (the cluebook's advice).
+        // The armoury (location 9): a mirror for each member, readied where a
+        // hand is free, which turns the gazes of basilisks and medusae back
+        // (the cluebook's advice).
         route.push_back({16, 14, 6, D::north, {"YES", "buy:MIRROR"}});
         route.insert(
             route.end(),
@@ -2075,6 +2102,25 @@ const std::vector<RouteBeat> &secret_route()
         soul_gem.test_wins = true;
         soul_gem.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CD9, 1};
         route.push_back(soul_gem);
+        // The treasures on the way that arm the party better, as the
+        // cluebook's list of items finds them (its Items), each taken where
+        // the route's beat wins it: the Old Red Dragon's lair (the ruins'
+        // 13), the dead adventurer on the mine's first level (the mines' 11),
+        // the mines' 71 and 81, the frost giant king's thanks (the village's
+        // 13) and the Eastern Crevasses' 16.
+        take_at(route, {32, 0, 3}, 1, {{"Cloak", "magic_user 6"}, {"Ring", "magic_user 6"}});
+        take_at(route, {48, 0, 5}, 1,
+                {{"Plate Mail", "paladin 1"},
+                 {"Long Sword", "paladin 1"},
+                 {"Shield", "paladin 1"},
+                 {"Ring", "paladin 1"}});
+        take_at(route, {48, 14, 2}, 1, {{"Ring", "magic_user 6"}});
+        take_at(route, {48, 6, 10}, 3,
+                {{"Long Sword", "ranger 3"}, {"Banded", "paladin 2"}, {"Cloak", "cleric 4"}});
+        take_at(route, {81, 2, 15}, 1,
+                {{"Long Sword", "paladin 2"}, {"Shield", "paladin 2"}, {"Plate Mail", "ranger 3"}});
+        take_at(route, {82, 15, 14}, 1,
+                {{"Silver Long Sword", "paladin 1"}, {"Silver Shield", "paladin 1"}});
         return route;
     }();
     return beats;
@@ -7296,6 +7342,111 @@ void secret_opening_reaches_the_first_map()
     }
 }
 
+// Secret's camp Fix (its camp.pas, CampFixMenu): the party rests only while
+// its cleric's cures heal it, rolled from its spell slots, waking the
+// unconscious, and in a second rest its Raise Dead slots raise the dead; no
+// memorized spell is spent, and the rests take hours, not days.
+void secret_camp_fixes_the_party()
+{
+    using opengold::por::TourPhase;
+    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
+    const auto folder = games ? std::filesystem::path(games) / "SECRET" : std::filesystem::path();
+    if (!games || opengold::identify_game(folder) != GoldBoxGame::secret_of_the_silver_blades)
+    {
+        std::cout << "Secret's files are not here; its Fix is not played.\n";
+        return;
+    }
+    auto session = opengold::load_campaign(folder, GoldBoxGame::secret_of_the_silver_blades);
+    std::shared_ptr<const opengold::rules::CharacterRules> creation =
+        opengold::original::character_rules(opengold::original::default_aging,
+                                            GoldBoxGame::secret_of_the_silver_blades);
+    auto party = std::make_shared<opengold::CampaignParty>(
+        opengold::original::rules_module(
+            opengold::load_original_content(folder, GoldBoxGame::secret_of_the_silver_blades)),
+        creation);
+    std::vector<opengold::MemberId> members;
+    for (const char *klass : {"cleric", "fighter", "fighter"})
+    {
+        opengold::CharacterCreator creator(creation, 60 + static_cast<unsigned>(members.size()));
+        creator.select(opengold::rules::CreationField::race, "human");
+        creator.select(opengold::rules::CreationField::character_class, klass);
+        creator.name(std::string(klass) + " " + std::to_string(members.size() + 1));
+        opengold::test::walk_original_creation(creator, learned_first);
+        members.push_back(party->add_pc(creator.create_character()));
+        opengold::test::modify_to_the_highest(*party, members.back());
+    }
+    const auto cleric = members[0], fallen = members[1], dead = members[2];
+    // The cleric trained until it has fifth-level slots, for Raise Dead.
+    for (int level = 0;
+         level < 6 && party->member(cleric).character.sheet().original->cleric_slots[4] == 0;
+         ++level)
+    {
+        party->award_experience(1'000'000, "test:fix-" + std::to_string(level), cleric);
+        party->train_at_hall_level(cleric, 0xFFU, {});
+    }
+    check(party->member(cleric).character.sheet().original->cleric_slots[4] > 0,
+          "The cleric has fifth-level slots");
+    session.campaign_party(party);
+    for (int step = 0; step < 400 && !session.can_leave(); ++step)
+    {
+        const auto &s = session.snapshot();
+        if (s.phase == TourPhase::running)
+        {
+            session.advance(1.0);
+        }
+        else if (s.phase == TourPhase::awaiting_continue)
+        {
+            check(session.choose(s.continue_ticket, 0), "The opening goes on");
+        }
+        else if (s.phase == TourPhase::treasure)
+        {
+            check(session.leave_treasure(s.continue_ticket), "The party leaves the pile");
+        }
+        else
+        {
+            break;
+        }
+    }
+    check(session.can_leave(), "The opening ends in New Verdigris");
+    auto hurt = party->checkpoint();
+    for (auto &member : hurt.roster)
+    {
+        if (member.id == fallen)
+        {
+            member.vitals.hit_points = 0;
+        }
+        if (member.id == dead)
+        {
+            member.vitals.hit_points = 0;
+            member.vitals.dead = true;
+        }
+    }
+    party->restore(std::move(hurt));
+    // No interruption: the rests are not rolled for.
+    opengold::test::TourAccess::set_variable(
+        session,
+        opengold::por::game_address(opengold::por::ecl_rest_interruption_chance,
+                                    GoldBoxGame::secret_of_the_silver_blades),
+        0);
+    const auto spells_before = party->memorized_spells(cleric);
+    const auto minutes_before = party->state().time_minutes;
+    check(session.camp_offers_fix() && session.camp_fix(), "The camp's Fix begins");
+    for (int step = 0; step < 50 && session.snapshot().phase == TourPhase::running; ++step)
+    {
+        session.advance(1.0);
+    }
+    check(party->member(fallen).vitals.hit_points > 0,
+          "The cure slots wake the fallen fighter: " + session.snapshot().dialogue);
+    check(!party->member(dead).vitals.dead,
+          "The second rest raises the dead fighter: " + session.snapshot().dialogue);
+    check(session.snapshot().dialogue.find("has been raised from the dead") != std::string::npos,
+          "The Fix tells the raising: " + session.snapshot().dialogue);
+    check(party->state().time_minutes > minutes_before &&
+              party->state().time_minutes < minutes_before + 24 * 60,
+          "The Fix takes hours, not a night");
+    check(party->memorized_spells(cleric) == spells_before, "The Fix spends no memorized spell");
+}
+
 // Treasures' overland script (51) loads the map its cell 2EEh names and puts
 // the party where cells 2EBh to 2EDh say (facing, x and y), which the way
 // there sets; entering an overland map directly, the walk sets them.
@@ -9727,18 +9878,30 @@ bool walk_census(GoldBoxGame game, bool route)
                     {
                         std::cout << " " << offered.label() << ";";
                     }
-                    std::cout << "\n";
+                    std::cout << " (the party has " << party->purse_gold() << " gold)\n";
                 }
                 // "buy:NAME" buys each member an item whose name holds NAME
                 // and readies it, as a player outfits the party (Secret's
-                // armoury sells the mirrors that turn gazes back).
-                if (!answers.empty() && answers.front().starts_with("buy:"))
+                // armoury sells the mirrors that turn gazes back);
+                // "buy:NAME@MEMBER,MEMBER" buys one only for the members named.
+                // Answers that buy follow one another in one visit.
+                while (!answers.empty() && answers.front().starts_with("buy:"))
                 {
-                    const auto wanted = answers.front().substr(4);
+                    const auto order = answers.front().substr(4);
                     answers.erase(answers.begin());
+                    const auto at = order.find('@');
+                    const auto wanted = order.substr(0, at);
+                    const auto buyers =
+                        at == std::string::npos ? std::string{} : "," + order.substr(at + 1) + ",";
                     const auto slots = party->state().slots;
                     for (std::size_t slot = 0; slot < slots.size(); ++slot)
                     {
+                        if (slots[slot] && !buyers.empty() &&
+                            buyers.find("," + party->member(slots[slot]).character.sheet().name +
+                                        ",") == std::string::npos)
+                        {
+                            continue;
+                        }
                         const auto &stock = session.shop_stock();
                         const auto item = std::ranges::find_if(
                             stock,
@@ -10106,6 +10269,35 @@ bool walk_census(GoldBoxGame game, bool route)
             }
             return session.camp(opengold::RestKind::long_rest);
         };
+        // Secret's player heals with the camp's Fix (camp.pas, CampFixMenu),
+        // as the cluebook bids where rests are broken (the crevasses): it
+        // rests only the hours its clerics' cures take, again while the
+        // party is hurt and its clerics stand. A Fix a fight broke counts
+        // towards `interrupted`; false once monsters broke six.
+        const auto fix_party = [&](unsigned &interrupted)
+        {
+            for (int fix = 0; fix < 6 && !party_whole() && session.camp_offers_fix(); ++fix)
+            {
+                const auto fights_before = fights_fought;
+                const auto hit_points_before = party_hit_points();
+                if (!session.camp_fix())
+                {
+                    break;
+                }
+                play("camp");
+                std::cout << "  the party fixes: " << hit_points_before << " to "
+                          << party_hit_points() << " Hit Points\n";
+                if (fights_fought != fights_before && ++interrupted >= 6)
+                {
+                    return false;
+                }
+                if (fights_fought == fights_before && party_hit_points() == hit_points_before)
+                {
+                    break;
+                }
+            }
+            return true;
+        };
         // `a_night_first` rests a night even when the party is whole, so its
         // casters choose their spells anew (RouteBeat::rest_for_spells).
         const auto rest_until_healed = [&](bool a_night_first = false, bool through_period = false)
@@ -10117,6 +10309,16 @@ bool walk_census(GoldBoxGame game, bool route)
             // rests on through more of them.
             unsigned interrupted = 0;
             unsigned idle_camps = 0;
+            // Secret's party Fixes first, then rests a night for its spells.
+            if (game == GoldBoxGame::secret_of_the_silver_blades && route && !party_whole())
+            {
+                if (!fix_party(interrupted))
+                {
+                    restless_map = session.snapshot().area_id;
+                    return;
+                }
+                a_night_first = true;
+            }
             for (int day = 0; day < 90 && session.can_leave(); ++day)
             {
                 const bool resting = (a_night_first && day == 0) || !party_whole();
@@ -10200,6 +10402,10 @@ bool walk_census(GoldBoxGame game, bool route)
                 play("wilderness camp");
             }
         };
+        if (game == GoldBoxGame::secret_of_the_silver_blades)
+        {
+            items_to_take = secret_town_gear();
+        }
         play("opening");
         // Planning aids, so a search can start where the route ends without
         // replaying it: OPENGOLD_ROUTE_BEATS=N plays only the route's first N
@@ -10221,14 +10427,27 @@ bool walk_census(GoldBoxGame game, bool route)
             party->restore(saved.party);
             session = std::move(*saved.town);
             session.attach_restored_party(party);
+            // OPENGOLD_ROUTE_WHOLE makes the resumed party whole outside the
+            // game's commands, its spells memorized, and keeps it from camping
+            // on the map it stands on, to measure a fight at full strength (a
+            // planning aid).
+            if (std::getenv("OPENGOLD_ROUTE_WHOLE"))
+            {
+                for (int day = 0; day < 200 && !party_whole() && party->rest(); ++day)
+                {
+                    memorize();
+                }
+                restless_map = session.snapshot().area_id;
+            }
         }
         std::size_t beat_number = 0;
-        // Pools of Darkness's and Gateway's routes give each beat dice of
-        // its own (beat_dice_seed), so a resumed save plays on as the whole
-        // run does and an engine change reshuffles only the beats it
+        // Pools of Darkness's, Gateway's and Secret's routes give each beat
+        // dice of its own (beat_dice_seed), so a resumed save plays on as the
+        // whole run does and an engine change reshuffles only the beats it
         // touches; the other routes keep their one stream.
         const bool dice_per_beat = game == GoldBoxGame::pools_of_darkness ||
-                                   game == GoldBoxGame::gateway_to_the_savage_frontier;
+                                   game == GoldBoxGame::gateway_to_the_savage_frontier ||
+                                   game == GoldBoxGame::secret_of_the_silver_blades;
         // How many beats like each (by beat_dice_seed's first seed) came before.
         std::map<std::uint64_t, unsigned> beats_seen;
         // A beat that throws ends the route, named with the beat it was in.
@@ -10382,6 +10601,15 @@ bool walk_census(GoldBoxGame game, bool route)
                     beat.waiting
                         ? rest_in_wilderness()
                         : rest_until_healed(beat.rest_for_spells, beat.rest_through_period);
+                }
+                else if (game == GoldBoxGame::secret_of_the_silver_blades && route &&
+                         beat.passing && party_hurt())
+                {
+                    // Where Secret's party gives up resting, it still Fixes:
+                    // its few hours are broken less often than a night.
+                    fleeing = false;
+                    unsigned interrupted = 0;
+                    (void)fix_party(interrupted);
                 }
                 if (beat.cure_first)
                 {
@@ -11232,6 +11460,7 @@ int main(int argc, char **argv)
         item_types_carry_their_properties();
         curse_opening_reaches_the_first_map();
         secret_opening_reaches_the_first_map();
+        secret_camp_fixes_the_party();
         the_font_has_eight_bytes_a_glyph();
         std::cout << "Gold Box games passed.\n";
     }

@@ -528,9 +528,9 @@ class RolfTourSession
     // the other games, whose dialog opens at once, and when the party cannot
     // camp now.
     bool open_camp();
-    // Treasures' camp menu (camp.pas, CampMainMenu). Fix camps as a rest
-    // does, but the party rests only while its casters cure and heal it
-    // (fix_party). Crown asks Amanitas, through the crown he gave, for the
+    // Treasures' and Secret's camp menus (camp.pas, CampMainMenu). Fix camps
+    // as a rest does, but the party rests only while its casters cure and
+    // heal it (fix_party). Crown asks Amanitas, through the crown he gave, for the
     // next luck reading, while the party has it (cell 3Fh) and its last
     // reading has not been given (cell 25Ch at 2). False when the camp
     // cannot do so now.
@@ -1257,6 +1257,10 @@ class RolfTourSession
     // The party's time passes; the caller brings the script's clock up to
     // date, by binding it or in its reply.
     [[nodiscard]] FixOutcome fix_party(const Dice &dice);
+    // Secret's Fix (its own CampFixMenu): its memorized cures rolled, then
+    // after the rest one roll for each cure slot, spent on the party in
+    // order; the cures it counts applied after each of its two rests.
+    [[nodiscard]] FixOutcome secret_fix_party(const Dice &dice);
     // One of the Fix's two rests: its minutes pass unless an interruption
     // roll ends it first (the minutes then rested).
     [[nodiscard]] std::optional<unsigned> fix_rest(unsigned minutes, const Dice &dice);

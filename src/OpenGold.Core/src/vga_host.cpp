@@ -734,7 +734,9 @@ bool RolfTourSession::camp_offers_fix() const
     // The original's menu hides Rest and Fix only where every rest step is
     // interrupted; OpenGoldBox's camp refuses a rest where none is allowed.
     constexpr std::uint16_t every_step = 1, always = 100;
-    return game() == GoldBoxGame::treasures_of_the_savage_frontier && campaign_ && can_leave() &&
+    const bool fixes = game() == GoldBoxGame::treasures_of_the_savage_frontier ||
+                       game() == GoldBoxGame::secret_of_the_silver_blades;
+    return fixes && campaign_ && can_leave() &&
            (machine_.variable(game_cell(ecl_rest_interruption_chance)) < always ||
             machine_.variable(game_cell(ecl_rest_check_interval)) != every_step);
 }
@@ -828,6 +830,10 @@ std::optional<unsigned> RolfTourSession::fix_rest(unsigned minutes, const Dice &
 
 RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
 {
+    if (game() == GoldBoxGame::secret_of_the_silver_blades)
+    {
+        return secret_fix_party(dice);
+    }
     using rules::TempleService;
     FixOutcome outcome;
     const auto members = campaign_->state().slots;
@@ -1075,6 +1081,287 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
         std::min(cures.heal, feebleminded) * 90 + std::min(cures.stone_to_flesh, stoned) * 90 +
         std::min(cures.neutralize_poison, poisoned) * 60 +
         std::min(cures.cure_blindness, blind) * 45 + std::min(cures.remove_curse, cursed) * 45;
+    outcome.interrupted_after = fix_rest(curing, dice);
+    if (!outcome.interrupted_after)
+    {
+        cure_party();
+    }
+    return outcome;
+}
+
+RolfTourSession::FixOutcome RolfTourSession::secret_fix_party(const Dice &dice)
+{
+    using rules::TempleService;
+    FixOutcome outcome;
+    const auto members = campaign_->state().slots;
+    int missing = 0;
+    for (const auto id : members)
+    {
+        if (id)
+        {
+            missing += campaign_->hit_point_maximum(id) -
+                       std::max(campaign_->member(id).vitals.hit_points, 0);
+        }
+    }
+    // The original's Fix does nothing for a party missing no Hit Points.
+    if (missing == 0)
+    {
+        return outcome;
+    }
+    // A member casts while its status is okay: alive, awake and not stone.
+    const auto standing = [&](MemberId id)
+    {
+        if (!id || !campaign_->member(id).character.sheet().original)
+        {
+            return false;
+        }
+        const auto &vitals = campaign_->member(id).vitals;
+        return !vitals.dead && vitals.hit_points > 0 &&
+               !campaign_->temple_service_helps(id, TempleService::stone_to_flesh);
+    };
+    const auto slots = [](int count)
+    {
+        return static_cast<unsigned>(std::max(count, 0));
+    };
+    const auto roll = [&dice](unsigned count, int plus)
+    {
+        int total = plus;
+        for (unsigned die = 0; die < count; ++die)
+        {
+            total += static_cast<int>(dice(8)) + 1;
+        }
+        return total;
+    };
+
+    // The cures the Fix can apply, from the spells memorized and, for its
+    // second rest, the slots.
+    struct Cures
+    {
+        unsigned heal = 0, stone_to_flesh = 0, neutralize_poison = 0, raise_dead = 0,
+                 remove_curse = 0, cure_disease = 0, cure_blindness = 0;
+    } cures;
+
+    // Each cure memorized by a standing member is rolled into the healing
+    // (RollMemorizedCures), and each status cure counted.
+    int healing = 0;
+    for (const auto id : members)
+    {
+        if (!standing(id))
+        {
+            continue;
+        }
+        for (const auto &spell : campaign_->memorized_spells(id))
+        {
+            if (spell == "cleric:cure_light_wounds" || spell == "druid:cure_light_wounds")
+            {
+                healing += roll(1, 0);
+            }
+            else if (spell == "cleric:cure_serious_wounds")
+            {
+                healing += roll(2, 1);
+            }
+            else if (spell == "cleric:cure_critical_wounds")
+            {
+                healing += roll(3, 3);
+            }
+            else if (spell == "cleric:heal")
+            {
+                healing += roll(4, 5);
+                ++cures.heal;
+            }
+            cures.neutralize_poison += spell == "cleric:neutralize_poison" ? 1 : 0;
+            cures.raise_dead += spell == "cleric:raise_dead" ? 1 : 0;
+            cures.remove_curse +=
+                spell == "cleric:remove_curse" || spell == "magic_user:remove_curse" ? 1 : 0;
+            cures.stone_to_flesh += spell == "magic_user:stone_to_flesh" ? 1 : 0;
+            cures.cure_blindness += spell == "cleric:cure_blindness" ? 1 : 0;
+            cures.cure_disease += spell == "cleric:cure_disease" ? 1 : 0;
+        }
+    }
+
+    // The rest's length (ComputeFixTime): for each standing member of
+    // Wisdom above 3, four hours with first-level cures (or second-level
+    // druid ones), six with fourth- or fifth-level, eight with sixth-level,
+    // and a quarter hour, half an hour, an hour, an hour and a quarter and
+    // an hour and a half for each slot of them; the longest member's. A
+    // party missing fewer Hit Points than the members' minutes rests as
+    // many times less.
+    unsigned light = 0, serious = 0, critical = 0, heals = 0, longest = 0, minutes = 0;
+    for (const auto id : members)
+    {
+        if (!standing(id) ||
+            campaign_->member(id).character.sheet().scores[rules::Ability::wisdom] <= 3)
+        {
+            continue;
+        }
+        const auto &numbers = *campaign_->member(id).character.sheet().original;
+        const auto &cleric = numbers.cleric_slots;
+        const unsigned first = slots(cleric[0]), druid = slots(numbers.druid_slots[1]),
+                       fourth = slots(cleric[3]), fifth = slots(cleric[4]),
+                       sixth = slots(cleric[5]);
+        light += first + druid;
+        serious += fourth;
+        critical += fifth;
+        heals += sixth;
+        unsigned base = 0;
+        if (first > 0)
+        {
+            base = 240;
+            minutes += 27;
+        }
+        if (druid > 0)
+        {
+            base = 240;
+            minutes += 27;
+        }
+        if (fourth + fifth > 0)
+        {
+            base = 360;
+            minutes += fifth > 0 ? 78 : 34;
+        }
+        if (sixth > 0)
+        {
+            base = 480;
+            minutes += 90;
+        }
+        base += first * 15 + druid * 30 + fourth * 60 + fifth * 75 + sixth * 90;
+        longest = std::max(longest, base);
+    }
+    if (missing < static_cast<int>(minutes))
+    {
+        longest /= minutes / static_cast<unsigned>(missing);
+    }
+
+    const auto name_of = [&](MemberId id)
+    {
+        return campaign_->member(id).character.sheet().name;
+    };
+    const auto say = [&](std::string source, MemberId id)
+    {
+        outcome.words.push_back({std::move(source), {{"name", name_of(id)}}});
+    };
+    // The cures counted go to the members they help, in the party's order
+    // (CureStatusEffects): a Heal to the feebleminded, with their blindness
+    // and disease; then Stone to Flesh, Neutralize Poison, Raise Dead and
+    // Remove Curse; and to a member no Heal cured, Cure Disease or else Cure
+    // Blindness.
+    const auto cure_party = [&]
+    {
+        for (const auto id : members)
+        {
+            if (!id)
+            {
+                continue;
+            }
+            const auto cure = [&](unsigned &count, TempleService service, std::string words)
+            {
+                if (count == 0 || !campaign_->temple_service_helps(id, service))
+                {
+                    return false;
+                }
+                campaign_->temple_service(id, service, 0);
+                --count;
+                say(std::move(words), id);
+                return true;
+            };
+            const bool healed =
+                cure(cures.heal, TempleService::cure_feeblemind, "{name} is healed");
+            if (healed && campaign_->temple_service_helps(id, TempleService::cure_disease))
+            {
+                campaign_->temple_service(id, TempleService::cure_disease, 0);
+            }
+            cure(cures.stone_to_flesh, TempleService::stone_to_flesh,
+                 "{name} is changed back to flesh");
+            cure(cures.neutralize_poison, TempleService::neutralize_poison, "{name} is detoxified");
+            cure(cures.raise_dead, TempleService::raise_dead,
+                 "{name} has been raised from the dead");
+            cure(cures.remove_curse, TempleService::remove_curse, "{name} is relieved of a curse");
+            if (!healed && !cure(cures.cure_disease, TempleService::cure_disease,
+                                 "{name} is cured of disease"))
+            {
+                cure(cures.cure_blindness, TempleService::cure_blindness, "{name} regains sight");
+            }
+        }
+    };
+    outcome.interrupted_after = fix_rest(longest, dice);
+    if (outcome.interrupted_after)
+    {
+        return outcome;
+    }
+    // One roll for each cure slot (RollCureSlots), a Heal's 4d8+3.
+    for (unsigned slot = 0; slot < light; ++slot)
+    {
+        healing += roll(1, 0);
+    }
+    for (unsigned slot = 0; slot < serious; ++slot)
+    {
+        healing += roll(2, 1);
+    }
+    for (unsigned slot = 0; slot < critical; ++slot)
+    {
+        healing += roll(3, 3);
+    }
+    for (unsigned slot = 0; slot < heals; ++slot)
+    {
+        healing += roll(4, 3);
+    }
+    cure_party();
+    // The healing is spent on the living in the party's order, waking the
+    // unconscious (HealParty).
+    for (const auto id : members)
+    {
+        if (id && !campaign_->temple_service_helps(id, TempleService::stone_to_flesh))
+        {
+            healing -= campaign_->restore_hit_points(id, healing);
+        }
+    }
+    // A second rest for the cures left to do, the standing members' slots
+    // added to the counts (ComputeCureTime): an hour and a half for each
+    // Heal on the feebleminded and each Stone to Flesh, an hour and a
+    // quarter for each Raise Dead, an hour for each Neutralize Poison and
+    // three quarters for each Cure Disease, Cure Blindness and Remove Curse.
+    unsigned dead = 0, stoned = 0, poisoned = 0, feebleminded = 0, blind = 0, diseased = 0,
+             cursed = 0;
+    for (const auto id : members)
+    {
+        if (!id)
+        {
+            continue;
+        }
+        dead += campaign_->temple_service_helps(id, TempleService::raise_dead) ? 1 : 0;
+        stoned += campaign_->temple_service_helps(id, TempleService::stone_to_flesh) ? 1 : 0;
+        cursed += campaign_->temple_service_helps(id, TempleService::remove_curse) ? 1 : 0;
+        poisoned += campaign_->temple_service_helps(id, TempleService::neutralize_poison) ? 1 : 0;
+        if (campaign_->temple_service_helps(id, TempleService::cure_feeblemind))
+        {
+            ++feebleminded;
+        }
+        else
+        {
+            blind += campaign_->temple_service_helps(id, TempleService::cure_blindness) ? 1 : 0;
+            diseased += campaign_->temple_service_helps(id, TempleService::cure_disease) ? 1 : 0;
+        }
+    }
+    for (const auto id : members)
+    {
+        if (!standing(id))
+        {
+            continue;
+        }
+        const auto &numbers = *campaign_->member(id).character.sheet().original;
+        cures.heal += slots(numbers.cleric_slots[5]);
+        cures.stone_to_flesh += slots(numbers.magic_user_slots[5]);
+        cures.raise_dead += slots(numbers.cleric_slots[4]);
+        cures.neutralize_poison += slots(numbers.cleric_slots[3]);
+        cures.remove_curse += slots(numbers.magic_user_slots[3]) + slots(numbers.cleric_slots[2]);
+        cures.cure_blindness += slots(numbers.cleric_slots[2]);
+        cures.cure_disease += slots(numbers.cleric_slots[2]);
+    }
+    const unsigned curing =
+        std::min(cures.heal, feebleminded) * 90 + std::min(cures.stone_to_flesh, stoned) * 90 +
+        std::min(cures.raise_dead, dead) * 75 + std::min(cures.neutralize_poison, poisoned) * 60 +
+        std::min(cures.cure_disease, diseased) * 45 + std::min(cures.cure_blindness, blind) * 45 +
+        std::min(cures.remove_curse, cursed) * 45;
     outcome.interrupted_after = fix_rest(curing, dice);
     if (!outcome.interrupted_after)
     {

@@ -1484,6 +1484,16 @@ class RulesModule
         (void)sheet;
     }
 
+    // The spells the member has memorized and not cast, by id, a copy each
+    // (Secret's camp Fix rolls the cures among them); none by default.
+    [[nodiscard]] virtual std::vector<std::string> memorized_spells(const CharacterSheet &sheet,
+                                                                    const VitalState &state) const
+    {
+        (void)sheet;
+        (void)state;
+        return {};
+    }
+
     // The spells `choices` memorizes anew: those beyond the member's spells
     // memorized and not cast, whose memorizing takes the preparation time
     // (preparation_finishes), in the order the rest finishes them.
