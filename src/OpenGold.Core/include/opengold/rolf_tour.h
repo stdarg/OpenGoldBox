@@ -301,6 +301,15 @@ struct TourSnapshot
     // The script opened the camp menu (PROGRAM 9 outside an inn): the party
     // may camp now, and the view shows its camp dialog.
     bool camp_offered{};
+    // Treasures' camp menu is open (open_camp): its map's camp entry and the
+    // romance's scene are done, and the view shows the camp dialog.
+    bool camp_menu_open{};
+    // The later games' music, which a script's PLAY SOUND from 80h starts
+    // (eclvm.pas, EclPlaySound): the piece (MUSIC.DAX's record), none once a
+    // sound effect has stopped it (music.pas, SendSoundCommand), and the
+    // starts, counted as footsteps are, a piece started again counting too.
+    std::optional<unsigned> music;
+    unsigned music_starts{};
     // Search mode is on (set_searching).
     bool searching{};
     unsigned script_id{}, event_runs{}, sprite_id{12};
@@ -500,6 +509,14 @@ class RolfTourSession
     // (CampaignParty::rest(std::chrono::minutes)), as the original's camp
     // rests for the time its rest menu shows.
     bool camp(std::chrono::minutes length);
+    // Treasures' camp opens as the original's does (eclvm.pas, EnterCamp):
+    // the map's camp entry runs, then the romance's scene is told if one is
+    // due (camp.pas, CampMainMenu, UpdateRelationship), and the snapshot's
+    // camp_menu_open asks for the camp dialog. A camp, Fix included, made
+    // while the menu is open rests without running the entry again. False in
+    // the other games, whose dialog opens at once, and when the party cannot
+    // camp now.
+    bool open_camp();
     // Treasures' camp menu (camp.pas, CampMainMenu). Fix camps as a rest
     // does, but the party rests only while its casters cure and heal it
     // (fix_party). Crown asks Amanitas, through the crown he gave, for the
@@ -1056,9 +1073,14 @@ class RolfTourSession
     };
 
     std::optional<RomanceScene> romance_scene_;
-    // The camp's scene is told: the camp goes on (romance_resumes_camp_ as
-    // the session next runs) without telling it again.
-    bool romance_told_{}, romance_resumes_camp_{};
+    // The camp's scene is told: the camp goes on (camp_resumes_ as the
+    // session next runs) without telling it again. A camp made from an open
+    // menu goes on so too, its entry having run as the menu opened.
+    bool romance_told_{}, camp_resumes_{};
+    // The camp event running opens Treasures' camp menu (open_camp); the
+    // menu is open, and the next camp event rests without running the entry;
+    // the camp event running is that rest, made from the open menu.
+    bool camp_opening_{}, camp_menu_open_{}, camp_from_menu_{};
     // The third member a scene names last (romance.pas, otherPartyMember),
     // which the original keeps only while it runs.
     MemberId romance_bystander_{};
@@ -1069,6 +1091,8 @@ class RolfTourSession
     // (host_random) while a script waits on the host.
     using Dice = std::function<unsigned(unsigned)>;
     bool start_camp(RestKind kind, std::optional<std::chrono::minutes> length);
+    // The party is idle where it may camp, out of a fight and any rest.
+    [[nodiscard]] bool can_camp() const;
     // The campaign's rest for the camp running: camp_kind_'s, of camp_length_
     // when one was asked for.
     [[nodiscard]] std::optional<RestResult> camp_rest();
@@ -1238,6 +1262,9 @@ class RolfTourSession
     [[nodiscard]] Image treasures_overland_view() const;
     // Its PLAY SOUND: a sound effect, or music from 80h up.
     void vga_play_sound(unsigned sound);
+    // A sound effect plays: it stops the later games' music (music.pas,
+    // SendSoundCommand), the footstep too.
+    void sound_effect_played();
     // Its scripts read the current character's record byte for byte from
     // 401h (docs/games/darkness.md, Script memory): the record's fields, last
     // in the reply so that they stand.

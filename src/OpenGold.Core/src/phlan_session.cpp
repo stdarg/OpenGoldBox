@@ -959,6 +959,7 @@ bool RolfTourSession::move_party(ExplorationCommand command)
         pose.y = wrapped_y;
         pick_tried_ = false;
         ++snapshot_.footsteps;
+        sound_effect_played();
     }
     if (campaign_ && command == ExplorationCommand::forward)
     {
@@ -1067,7 +1068,15 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
                 static_cast<std::uint16_t>(reaction_score(campaign_->reaction_charisma(speaker))));
         }
     }
-    if (!machine_.start(entry.value_or(static_cast<std::size_t>(trigger))))
+    // A camp made from Treasures' open camp menu ran its entry and told the
+    // romance as the menu opened (open_camp): it goes straight on to its rest.
+    camp_from_menu_ = std::exchange(camp_menu_open_, false) && trigger == EventTrigger::camp;
+    snapshot_.camp_menu_open = camp_opening_ = false;
+    if (camp_from_menu_)
+    {
+        camp_resumes_ = true;
+    }
+    else if (!machine_.start(entry.value_or(static_cast<std::size_t>(trigger))))
     {
         fail("Unable to start town script");
         return;
@@ -2167,8 +2176,9 @@ void RolfTourSession::finish_event()
         {
             throw EclError("Rest requires campaign rules");
         }
-        // Treasures' camp tells its romance first (camp.pas, CampMainMenu).
-        if (!std::exchange(romance_told_, false) && tell_romance())
+        // Treasures' camp tells its romance first (camp.pas, CampMainMenu),
+        // a camp from its open menu having told it as the menu opened.
+        if (!camp_from_menu_ && !std::exchange(romance_told_, false) && tell_romance())
         {
             return;
         }
@@ -2183,7 +2193,12 @@ void RolfTourSession::finish_event()
             snapshot_.dialogue += line;
             log_diagnostic(LogPriority::info, "camp", line);
         };
-        if (chance == 255)
+        if (std::exchange(camp_opening_, false))
+        {
+            // Opened, the camp menu waits for the player (open_camp).
+            camp_menu_open_ = snapshot_.camp_menu_open = true;
+        }
+        else if (chance == 255)
         {
             camp_fixing_ = false;
             add_camp_line("Rest is not allowed here.");

@@ -36,6 +36,13 @@ struct TourAccess
         town.machine_.bind_string(address, value);
     }
 
+    // A script's PLAY SOUND in the 256-color games (eclvm.pas, EclPlaySound),
+    // for a sound no script near a test's party plays.
+    static void play_sound(por::RolfTourSession &town, unsigned sound)
+    {
+        town.vga_play_sound(sound);
+    }
+
     // A copy of the script machine, to try dice on without touching the session.
     static por::EclMachine machine(const por::RolfTourSession &town)
     {

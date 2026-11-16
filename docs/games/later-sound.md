@@ -187,16 +187,47 @@ A single operator at full level reaches a quarter of the 16-bit range.
 
 ### Where the games play it
 
+The reconstructions of *Gateway*, *Pools of Darkness* and *Treasures* start
+their music in two places only: the title (their `intro.pas`) and a script's
+PLAY SOUND (their `eclvm.pas`). None plays music in a fight, in camp or at a
+shop, and *Gateway* and *Treasures* play none at their ends. Since
+2026-11-16 OpenGoldBox plays it everywhere they do:
+
 | Game | Piece | When |
 |---|---|---|
 | *Secret* | `SOUND.DAX` record 2 | Over the title pictures and credits |
 | *Gateway* | `MUSIC.DAX` record 1 | Over the title pictures, which wait for its end |
 | *Pools of Darkness*, *Treasures* | `MUSIC.DAX` record 1 | Over the title pictures |
-| *Gateway*, *Pools of Darkness*, *Treasures* | `MUSIC.DAX` record *n* | A script's PLAY SOUND with the value 80h + *n* |
+| *Pools of Darkness*, *Treasures* | `MUSIC.DAX` record *n* | A script's PLAY SOUND with the value 80h + *n* |
+| *Pools of Darkness* | `P1.SMS` song, then `P3.SMS` | The opening film (`INTRO`) and the closing film (`FINAL`), as its `CONTROL.EXE` runs them |
 
-`title_music_piece` gives the title's piece. A new piece stops the one
-playing; a sound effect stops the music in *Pools of Darkness* and
-*Treasures*.
+- **The scripts' music.** Only *Pools of Darkness*' scripts start any: 16
+  PLAY SOUNDs from 81h to 88h (and one with a cell's value), Bane's coming
+  to Phlan the first (script 16, piece 2). *Treasures*' only PLAY SOUND is
+  the footstep, 10. *Gateway*'s scripts would start a piece through CALL's
+  service 3201h with cell 3DEh, but none calls it. The town screen plays the
+  piece at the Music level (`TourSnapshot::music`), from its start again
+  when a script starts the piece playing.
+- **What stops it.** A new piece takes the place of the one playing. In
+  *Pools of Darkness* and *Treasures* every sound effect shuts the music
+  driver down first (`music.pas`, SendSoundCommand): a script's effect (2 to
+  14), the party's footstep (`explore.pas`, StepForward) and a fight's
+  sounds, so a script's piece plays until the party walks on or a fight
+  makes its first sound. OpenGoldBox stops it so, the fight's sounds
+  through the town's `Music` player (the group `game_music`). It stops too
+  when the game ends, before *Pools of Darkness*' closing film (its
+  `CONTROL.EXE` runs the film after the game has shut the driver down).
+- **The title.** `title_music_piece` gives the title's piece. *Pools of
+  Darkness*' and *Treasures*' originals stop it only at their main menu
+  (their `fixmain.pas`), after a title menu that starts the demonstration
+  within seconds; OpenGoldBox stops it as its own game menu follows the
+  title. *Gateway*'s title stops it itself.
+- **Endings.** *Treasures*' `CONTROL.EXE` builds a command line for the
+  closing film viewer and throws it away; its files hold no film, and its
+  end plays no music. *Gateway*'s end shows six pictures (`ending.pas`) and
+  plays none. Until 2026-11-16 the town screen looked for *Pools of
+  Darkness*' closing film in *Pool of Radiance*'s folder, so neither the
+  film nor its song played; it reads the game's own folder now.
 
 ## The digitized sound effects
 

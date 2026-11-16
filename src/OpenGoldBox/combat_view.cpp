@@ -202,6 +202,12 @@ void CombatView::_bind_methods()
     ClassDB::bind_method(D_METHOD("battlefield_visuals"), &CombatView::battlefield_visuals);
 }
 
+void CombatView::play_effect(opengold::por::SoundPlayer &player, unsigned sound)
+{
+    get_tree()->call_group("game_music", "stop");
+    player.play(sound);
+}
+
 double CombatView::cell_pixels()
 {
     return required_node<Node>(*this, "CombatLayout").call("cell_pixels", combat_zoom_);
@@ -2331,7 +2337,7 @@ void CombatView::act(Command command)
                 action_seconds_[command.actor] = 1.0;
                 if (attack_sound_)
                 {
-                    attack_sound_->play(sound);
+                    play_effect(*attack_sound_, sound);
                 }
             }
             bool moved = false, dead = false;
@@ -2352,11 +2358,11 @@ void CombatView::act(Command command)
             }
             if (dead && death_sound_)
             {
-                death_sound_->play(5);
+                play_effect(*death_sound_, 5);
             }
             if (moved && effect_sound_)
             {
-                effect_sound_->play(10);
+                play_effect(*effect_sound_, 10);
             }
             mode_ = "move";
             effect_target_index_ = 0;

@@ -1,11 +1,14 @@
 extends SceneTree
 
-# Treasures' camp on the real town screen (camp.pas, CampMainMenu): the camp
-# dialog names the crystals the party holds and offers Fix and, while the
-# party holds Amanitas's crown, Crown. Crown tells the luck; Fix heals the
-# wounded member as the casters' slots allow. Run by tests/treasure_camp.cmake
-# with --camp-save=<a Treasures save of a party in the fortress, a member
-# wounded, the crown and the red and blue crystals held>.
+# Treasures' camp on the real town screen (camp.pas, CampMainMenu): as the
+# camp opens, the romance's scene is told before the camp dialog shows
+# (eclvm.pas, EnterCamp; romance.pas, UpdateRelationship); the dialog names
+# the crystals the party holds and offers Fix and, while the party holds
+# Amanitas's crown, Crown. Crown tells the luck; Fix heals the wounded member
+# as the casters' slots allow. Run by tests/treasure_camp.cmake with
+# --camp-save=<a Treasures save of a party in the fortress, a member wounded,
+# the crown and the red and blue crystals held, the fighter and the paladin in
+# love with their scene due>.
 
 const SAVE_NAME := "Fortress camp"
 
@@ -115,7 +118,17 @@ func run_checks() -> void:
 
 	await press("CampaignTown/%Camp")
 	var dialog: Window = town().get_node("RestDialog")
-	require(dialog.visible, "Camp opens the camp dialog")
+	for wait in range(20):
+		if dialogue().contains("PALADIN"): break
+		await settle(4)
+	var scene := dialogue()
+	require(not dialog.visible and scene.contains("PALADIN") and scene.contains("FIGHTER"),
+		"The romance's scene comes as the camp opens, before its dialog: " + scene)
+	await press("CampaignTown/%Continue")
+	for wait in range(20):
+		if dialog.visible: break
+		await settle(4)
+	require(dialog.visible, "Camp opens the camp dialog after the scene")
 	for button in ["Start", "Fix", "Crown", "Finish"]:
 		var shown: Button = dialog.get_node(button)
 		require(shown.visible and not shown.disabled, "The camp dialog offers " + button)
@@ -129,10 +142,13 @@ func run_checks() -> void:
 
 	var hurt := party_hp()
 	await press("CampaignTown/%Camp")
-	require(dialog.visible, "Camp opens the camp dialog again")
+	for wait in range(20):
+		if dialog.visible: break
+		await settle(4)
+	require(dialog.visible and not dialogue().contains("PALADIN"), "Camp opens the camp dialog again, the scene told once")
 	await press("CampaignTown/RestDialog/Fix")
 	await play_on()
 	require(exploring(), "The party explores after the Fix: " + dialogue())
 	require(party_hp() > hurt, "The Fix heals the wounded member: " + str(hurt) + " -> " + str(party_hp()) + "; " + dialogue())
-	print("Treasures camp passed: the crystals named, Crown tells the luck, Fix heals the party.")
+	print("Treasures camp passed: the romance's scene as the camp opens, the crystals named, Crown tells the luck, Fix heals the party.")
 	quit(0)

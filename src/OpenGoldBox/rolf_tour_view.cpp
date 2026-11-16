@@ -751,6 +751,8 @@ void RolfTourView::restart()
         displayed_ticket_ = 0;
         played_footsteps_ = 0;
         played_thunder_ = 0;
+        played_music_starts_ = 0;
+        music_.reset();
         shown_revision_ = 0;
         session_->advance(0);
     }
@@ -965,6 +967,10 @@ void RolfTourView::apply_sound_volume()
     if (original_sound_)
     {
         original_sound_->set_volume(settings::sound_volume(settings::SoundKind::effects));
+    }
+    if (music_)
+    {
+        music_->set_volume(settings::sound_volume(settings::SoundKind::music));
     }
     if (game_footstep_)
     {
@@ -2230,6 +2236,7 @@ void RolfTourView::advance_frame(double delta)
                 original_sound_->play(original_fireball_sound);
             }
         }
+        follow_music(session_->snapshot());
         // Treasures' overland colors turn while it is shown.
         auto *treasures = dax();
         const bool colors_turned = treasures && !checking_ && treasures->turn_colors(delta);
@@ -2794,13 +2801,56 @@ void RolfTourView::play_ending_film()
     }
 }
 
+void RolfTourView::follow_music(const TourSnapshot &snapshot)
+{
+    if (snapshot.music_starts != played_music_starts_)
+    {
+        played_music_starts_ = snapshot.music_starts;
+        if (snapshot.music && !checking_)
+        {
+            play_music(*snapshot.music);
+        }
+    }
+    if (!snapshot.music && music_ && music_->current_sound())
+    {
+        music_->stop();
+    }
+}
+
+// A piece of the game's MUSIC.DAX at the player's music level, from its start;
+// a piece that cannot be read leaves the town silent.
+void RolfTourView::play_music(unsigned piece)
+{
+    const auto game = settings::chosen_game();
+    try
+    {
+        if (!music_ || music_piece_ != piece)
+        {
+            music_.reset();
+            music_ = std::make_unique<SoundPlayer>(
+                SoundBank::load_music(presentation::path_from_godot(settings::game_folder(game)),
+                                      game, piece),
+                std::make_unique<GodotSoundOutput>(
+                    required_node<AudioStreamPlayer>(*this, "Music")));
+            music_piece_ = piece;
+            music_->set_volume(settings::sound_volume(settings::SoundKind::music));
+        }
+        music_->play(piece);
+    }
+    catch (const std::runtime_error &failure)
+    {
+        music_.reset();
+        opengold::log_diagnostic(opengold::LogPriority::warning, "music", failure.what());
+    }
+}
+
 // The game's closing film from the player's game, each screen for its time
 // with its song at the player's music level; false when the game has none or
 // it cannot be read.
 bool RolfTourView::play_closing_film()
 {
     const auto game = dax_session().game();
-    const auto folder = presentation::path_from_godot(settings::game_path());
+    const auto folder = presentation::path_from_godot(settings::game_folder(game));
     try
     {
         auto film = opengold::load_closing_film(folder, game);
@@ -2815,6 +2865,8 @@ bool RolfTourView::play_closing_film()
         opengold::log_diagnostic(opengold::LogPriority::warning, "ending", failure.what());
         return false;
     }
+    // The game has ended, and its music with it, before the film plays.
+    music_.reset();
     auto *layer = memnew(CanvasLayer);
     layer->set_name("EndingFilm");
     layer->set_layer(100);
@@ -2988,6 +3040,11 @@ void RolfTourView::refresh()
     {
         camp_offer_run_ = s.event_runs;
         camp();
+    }
+    if (completed && s.camp_menu_open && camp_menu_run_ != s.event_runs)
+    {
+        camp_menu_run_ = s.event_runs;
+        show_camp_dialog();
     }
     const bool faulted = !loaded || s.phase == TourPhase::faulted;
     const bool treasure = loaded && s.phase == TourPhase::treasure;

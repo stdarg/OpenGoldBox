@@ -206,6 +206,10 @@ class CombatView : public godot::Control
     std::unique_ptr<opengold::por::SoundPlayer> attack_sound_;
     std::unique_ptr<opengold::por::SoundPlayer> effect_sound_;
     std::unique_ptr<opengold::por::SoundPlayer> death_sound_;
+    // Plays a sound effect, which stops the music a town's script started
+    // (the group game_music), as the later games' does (music.pas,
+    // SendSoundCommand).
+    void play_effect(opengold::por::SoundPlayer &player, unsigned sound);
     std::map<opengold::rules::EntityId, godot::Ref<godot::Texture2D>> portraits_;
     opengold::rules::EntityId selected_{};
     opengold::rules::EntityId last_actor_{};

@@ -111,6 +111,19 @@ void RolfTourView::camp()
         refresh();
         return;
     }
+    // Treasures' camp runs its map's camp entry and tells the romance's scene
+    // as its menu opens (eclvm.pas, EnterCamp; camp.pas, CampMainMenu): the
+    // dialog shows once they are done (TourSnapshot::camp_menu_open).
+    if (auto *treasures = dax(); treasures && treasures->open_camp())
+    {
+        refresh();
+        return;
+    }
+    show_camp_dialog();
+}
+
+void RolfTourView::show_camp_dialog()
+{
     rest_save_open_ = false;
     rest_result_ = String();
     auto *w = &presentation::required_node<Window>(*this, "RestDialog");

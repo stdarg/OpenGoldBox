@@ -19,8 +19,10 @@ namespace
 // The map number from which LOAD FILES loads no map, and the wall set that
 // keeps the current one.
 constexpr unsigned first_non_map = 0x7F, keep_walls = 255;
-// PLAY SOUND's footstep (its music starts from 80h).
-constexpr unsigned footstep_sound = 10;
+// PLAY SOUND's footstep, its sound effects (2 to 14) and its music, whose
+// pieces start from 80h.
+constexpr unsigned footstep_sound = 10, first_sound_effect = 2, last_sound_effect = 14,
+                   first_music_sound = 0x80;
 
 // The current character's record, from 401h: the bytes of its fields the
 // scripts read (docs/games/darkness.md, Creatures).
@@ -1054,12 +1056,32 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
 
 void RolfTourSession::vga_play_sound(unsigned sound)
 {
+    // From 80h a piece of the game's music starts, played again from its
+    // start if it is the one playing (eclvm.pas, EclPlaySound; music.pas,
+    // StartMusic).
+    if (sound >= first_music_sound)
+    {
+        snapshot_.music = sound - first_music_sound;
+        ++snapshot_.music_starts;
+        return;
+    }
+    if (sound < first_sound_effect || sound > last_sound_effect)
+    {
+        return;
+    }
     // The footstep plays as the other games' does, Treasures' its own sound 10
-    // (the view's); the other sound effects and the music are not played yet.
+    // (the view's); the other sound effects are not played yet, but stop the
+    // music as they would.
     if (sound == footstep_sound)
     {
         ++snapshot_.footsteps;
     }
+    sound_effect_played();
+}
+
+void RolfTourSession::sound_effect_played()
+{
+    snapshot_.music.reset();
 }
 
 namespace
@@ -1239,7 +1261,7 @@ void RolfTourSession::show_romance_step()
     snapshot_.host_choices.clear();
     snapshot_.continue_ticket = 0;
     snapshot_.phase = TourPhase::running;
-    romance_told_ = romance_resumes_camp_ = true;
+    romance_told_ = camp_resumes_ = true;
     ++snapshot_.revision;
 }
 

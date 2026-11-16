@@ -9093,6 +9093,10 @@ bool walk_census(GoldBoxGame game, bool route)
     std::vector<std::pair<std::string, std::string>> items_to_take;
     // Whether the closing words of a won game were shown (game_won).
     bool game_won_shown = false;
+    // The pieces of music the scripts started (TourSnapshot::music), and the
+    // starts already counted.
+    std::vector<unsigned> music_heard;
+    unsigned music_starts_seen = 0;
     // The beat being played only passes by (RouteBeat::passing).
     bool passing = false;
     // The beat being played avoids the monsters it meets (RouteBeat::avoiding).
@@ -9235,6 +9239,15 @@ bool walk_census(GoldBoxGame game, bool route)
             if (!s.diagnostic.empty() && !s.diagnostic.starts_with("Bought "))
             {
                 needs[s.diagnostic].push_back(where);
+            }
+            if (s.music_starts != music_starts_seen)
+            {
+                music_starts_seen = s.music_starts;
+                if (s.music)
+                {
+                    music_heard.push_back(*s.music);
+                    std::cout << "  music: piece " << *s.music << " at " << where << "\n";
+                }
             }
             switch (s.phase)
             {
@@ -9867,6 +9880,21 @@ bool walk_census(GoldBoxGame game, bool route)
                 }
             }
         };
+        // A camp as the camp dialog makes it: Treasures' camp menu opens
+        // first, running the map's camp entry and telling the romance's scene
+        // (open_camp), and the party rests only once the menu is open.
+        const auto camp_and_rest = [&]
+        {
+            if (session.open_camp())
+            {
+                play("camp menu");
+                if (!session.snapshot().camp_menu_open)
+                {
+                    return false;
+                }
+            }
+            return session.camp(opengold::RestKind::long_rest);
+        };
         // `a_night_first` rests a night even when the party is whole, so its
         // casters choose their spells anew (RouteBeat::rest_for_spells).
         const auto rest_until_healed = [&](bool a_night_first = false, bool through_period = false)
@@ -9881,7 +9909,7 @@ bool walk_census(GoldBoxGame game, bool route)
             for (int day = 0; day < 90 && session.can_leave(); ++day)
             {
                 const bool resting = (a_night_first && day == 0) || !party_whole();
-                if (!resting || !session.camp(opengold::RestKind::long_rest))
+                if (!resting || !camp_and_rest())
                 {
                     break;
                 }
@@ -10156,8 +10184,7 @@ bool walk_census(GoldBoxGame game, bool route)
                 {
                     ready_type(type, name);
                 }
-                if (beat.memorize_first && session.can_leave() &&
-                    session.camp(opengold::RestKind::long_rest))
+                if (beat.memorize_first && session.can_leave() && camp_and_rest())
                 {
                     memorize();
                     play("camp");
@@ -10812,6 +10839,13 @@ bool walk_census(GoldBoxGame game, bool route)
                                                     {
                                                         return id && party->member(id).vitals.dead;
                                                     });
+        // Bane's coming to Phlan starts Pools of Darkness's music, piece 2
+        // (script 16; eclvm.pas, EclPlaySound).
+        if (game == GoldBoxGame::pools_of_darkness &&
+            std::ranges::find(music_heard, 2U) == music_heard.end())
+        {
+            needs["Bane's coming started no music"].push_back("the route");
+        }
         const bool played = needs.empty() && end.phase != TourPhase::defeated;
         // Secret's route does not reach its end yet: until it does, it passes
         // when it plays every beat to the map of its last.

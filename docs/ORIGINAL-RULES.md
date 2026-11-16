@@ -2147,9 +2147,12 @@ gear.
      refused one from now on, 2 worse to strike and 2 easier to be struck
      (`original::romance_refused`). Dispel Magic takes no love, nor a
      kampfult's crushing, a stone golem's stone or a yeti's grab (its
-     `magic.pas`, SpellDispelMagic). The original's camp menu tells the
-     scene as it opens; OpenGoldBox's camp tells it as the party camps or
-     Fixes, before the rest.
+     `magic.pas`, SpellDispelMagic). The scene is told as the camp menu
+     opens, after the map's camp entry and before the player chooses Rest,
+     Fix, Crown or anything else (its `eclvm.pas`, EnterCamp, and
+     `camp.pas`, CampMainMenu; `RolfTourSession::open_camp`, since
+     2026-11-16). Until then OpenGoldBox told it only as the party rested
+     or Fixed, so the Crown alone heard none.
    - **The party's facing** (2026-11-14; `combatst.pas`,
      `InitCreatureCombatData`; `combatai.pas`, `AiMoveStep`): the fight
      knows the way the party faced as it met its foes

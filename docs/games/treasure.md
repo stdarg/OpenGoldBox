@@ -217,7 +217,12 @@ walk needed besides the opening's:
   alone) loads the opening's map and the overland's too; the game's own
   scripts hold those maps.
 
-Still to come: the music. The scripts' only sound is PLAY SOUND 10, the
+The music plays where the original plays it ([later-sound.md](later-sound.md),
+Where the games play it): `MUSIC.DAX`'s one piece over the title pictures,
+and nowhere else, as its reconstruction starts it only in its `intro.pas`
+and for a script's PLAY SOUND from 80h, which no script has. Its end plays
+no film and no music: its `CONTROL.EXE` builds the film viewer's command line
+and throws it away. The scripts' only sound is PLAY SOUND 10, the
 footstep, which a step plays too (its explore.pas, StepForward, and eclvm.pas,
 EclPlaySound): since 2026-11-16 the town view plays it from `ZOUNDS.DAX`
 (record 9, a click of 132 samples) in place of the synthesized footstep of the
@@ -297,6 +302,13 @@ engine, each as the original does it:
   character beyond its caps would cast them (`opengold_treasure_tests` makes
   one under *Pools of Darkness*' rules, its engine's). Its bugs here are
   fixed ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Bugs).
+- **The camp's opening** (`RolfTourSession::open_camp`, since
+  2026-11-16): Camp runs the map's camp entry, which sets the rest's
+  interruption cells, and tells the romance's scene if one is due, then the
+  camp dialog opens with Rest, Fix and Crown as those cells allow (its
+  eclvm.pas, EnterCamp, and camp.pas, CampMainMenu). A rest or a Fix from
+  the open dialog runs neither again; Cancel leaves the camp, and the next
+  Camp runs the entry again.
 - **The camp's Fix and Crown** (`RolfTourSession::camp_fix`, `camp_crown`):
   Fix camps as a rest does and runs the Fix, where the original's camp menu
   shows it (unless every rest step is interrupted). Crown, shown once the
@@ -641,7 +653,14 @@ left:
 - The records that only set colors (Pictures and graphics; its
   portrait.pas, LoadAnimation) and the scripts' footstep (PLAY SOUND 10,
   record 9) play since 2026-11-16; the stone golem (147) and the yetis' fear
-  on surprise (152) since 2026-11-15. Still to come: the music.
+  on surprise (152) since 2026-11-15. The music plays where the original
+  plays it, over the title alone (since 2026-11-16, treasure10: checked,
+  nothing was missing).
+- **The romance's scenes** are told as the camp menu opens (since
+  2026-11-16, treasure10), as the original's EnterCamp runs the map's camp
+  entry and then its CampMainMenu, whose first act is the romance: before,
+  OpenGoldBox told them only as the party rested or used Fix, so a camp
+  opened for the Crown alone heard none.
 
 ## The ending
 

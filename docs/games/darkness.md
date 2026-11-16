@@ -398,8 +398,10 @@ onto the party's side as a fight ends leaves as one that ran, worth neither
 experience nor treasure, as the original's CombatDoneCleanup marks it.
 
 Still to come: the evening and other skies; the combat ground tiles
-(`DUNGCOM`, `WILDCOM`); sound effects other than the footstep, and the music
-PLAY SOUND starts; the closing film after the win.
+(`DUNGCOM`, `WILDCOM`); the scripts' sound effects other than the footstep.
+The music PLAY SOUND starts plays since 2026-11-16, until a sound effect
+stops it, and the closing film after the win with its song
+([later-sound.md](later-sound.md), Where the games play it).
 
 ## The area map
 

@@ -406,10 +406,16 @@ void the_camp_fixes_the_party()
     check(session.camp_crystals() == 5, "The red and blue crystals held");
 
     // OPENGOLD_TREASURE_CAMP_FIXTURE saves the camp, the fighter wounded
-    // again, the crown and the red and blue crystals held, for the camp
+    // again, the crown and the red and blue crystals held, and the fighter
+    // and the paladin in love, their scene due at the next camp, for the camp
     // dialog's check (treasure_camp.cmake).
     if (const char *fixture = std::getenv("OPENGOLD_TREASURE_CAMP_FIXTURE"))
     {
+        TourAccess::set_variable(session, opengold::por::EclAddress{0x105}, 21);
+        TourAccess::set_string(session, opengold::por::EclAddress{0xE5}, "FIGHTER");
+        TourAccess::set_string(session, opengold::por::EclAddress{0xF5}, "PALADIN");
+        TourAccess::set_variable(session, opengold::por::EclAddress{0x106}, 30);
+        TourAccess::set_variable(session, opengold::por::EclAddress{0x107}, 60);
         auto hurt = party->checkpoint();
         for (auto &member : hurt.roster)
         {
@@ -664,6 +670,86 @@ void the_camp_tells_the_romance()
           "Refused, the NPC leaves and the member loses 6 Charisma: " + told);
 }
 
+// Treasures' camp menu (eclvm.pas, EnterCamp; camp.pas, CampMainMenu): as
+// it opens, the map's camp entry runs and the romance's scene is told, before
+// the player chooses anything, so the Crown alone hears it too. A rest from
+// the open menu runs neither again; the next opening tells the next scene.
+void the_camp_menu_tells_the_romance_as_it_opens()
+{
+    const auto folder = treasures_folder();
+    if (folder.empty())
+    {
+        return;
+    }
+    using opengold::por::EclAddress;
+    using opengold::test::TourAccess;
+    auto session = opengold::load_campaign(folder, treasures_game);
+    const auto party = treasures_party(folder);
+    session.campaign_party(party);
+    const auto run = [&session, &party]
+    {
+        for (int step = 0; step < 50 && session.snapshot().phase == TourPhase::running; ++step)
+        {
+            if (party->state().spell_rest)
+            {
+                for (const auto id : std::vector(party->state().spell_rest->members))
+                {
+                    party->keep_rest_spells(id);
+                }
+            }
+            session.advance(1.0);
+        }
+    };
+    const auto settle = [&]
+    {
+        std::string told;
+        run();
+        for (int screen = 0;
+             screen < 12 && session.snapshot().phase == TourPhase::awaiting_continue; ++screen)
+        {
+            told += session.snapshot().dialogue + "\n";
+            check(session.choose(session.snapshot().continue_ticket, 0), "A key goes on");
+            run();
+        }
+        return told;
+    };
+    settle();
+    TourAccess::set_variable(session, EclAddress{0x2B}, 0);
+    TourAccess::set_variable(session, EclAddress{0x105}, 21);
+    TourAccess::set_string(session, EclAddress{0xE5}, "FIGHTER");
+    TourAccess::set_string(session, EclAddress{0xF5}, "PALADIN");
+    TourAccess::set_variable(session, EclAddress{0x106}, 30);
+    TourAccess::set_variable(session, EclAddress{0x107}, 60);
+    TourAccess::set_variable(session, EclAddress{0x3F}, 1);
+
+    check(session.open_camp(), "The camp menu opens");
+    run();
+    check(session.snapshot().phase == TourPhase::awaiting_continue &&
+              session.snapshot().dialogue.find("PALADIN") != std::string::npos &&
+              !session.snapshot().camp_menu_open,
+          "The romance's scene comes before the menu: " + session.snapshot().dialogue);
+    settle();
+    check(session.snapshot().phase == TourPhase::completed && session.snapshot().camp_menu_open,
+          "The menu is open once the scene is told");
+    const auto minutes = party->state().time_minutes;
+    check(session.camp_crown() && !session.snapshot().dialogue.empty(),
+          "The Crown alone tells the luck after the scene");
+    check(party->state().time_minutes == minutes, "Opening the menu takes no time");
+
+    // Loves moved to other bands while the menu was open: the rest tells
+    // nothing, the next opening does.
+    check(session.open_camp(), "The camp menu opens again");
+    check(settle().find("PALADIN") == std::string::npos, "Bands unchanged, no scene");
+    TourAccess::set_variable(session, EclAddress{0x106}, 60);
+    TourAccess::set_variable(session, EclAddress{0x107}, 60);
+    check(session.camp(opengold::RestKind::long_rest), "The party rests from the menu");
+    const auto rested = settle();
+    check(rested.find("PALADIN") == std::string::npos && party->state().time_minutes > minutes,
+          "The rest tells no scene: " + rested);
+    check(session.open_camp(), "The camp menu opens a third time");
+    check(settle().find("PALADIN") != std::string::npos, "The next opening tells the new bands");
+}
+
 // Treasures' pictures (its portrait.pas, LoadAnimation): the PIC record cell
 // 4Eh names is drawn in the colors of the record cell 4Fh names, one of the
 // records that only set colors (each town's script sets its own, script 16
@@ -712,6 +798,7 @@ int main()
         the_opening_reaches_the_fortress();
         the_camp_fixes_the_party();
         the_camp_tells_the_romance();
+        the_camp_menu_tells_the_romance_as_it_opens();
         a_picture_takes_a_color_records_colors();
         the_fix_restores_and_cures_feeblemind();
         the_overland_is_drawn_from_above();

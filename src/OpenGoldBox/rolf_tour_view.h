@@ -205,6 +205,13 @@ class RolfTourView : public godot::Control
     // steps and its scripts' PLAY SOUND 10 play; null in the other games, whose
     // footstep is footstep_.
     std::unique_ptr<opengold::por::SoundPlayer> game_footstep_;
+    // The later games' music their scripts start (TourSnapshot::music), the
+    // piece it holds, and the starts already played.
+    std::unique_ptr<opengold::por::SoundPlayer> music_;
+    unsigned music_piece_{}, played_music_starts_{};
+    // Starts the scripts' music, stops it once a sound effect has.
+    void follow_music(const opengold::por::TourSnapshot &snapshot);
+    void play_music(unsigned piece);
     unsigned rendered_sprite_id_{999};
     std::uint64_t displayed_ticket_{};
     // The shop's filter, ShopFilter's index (All by default), and the stock
@@ -284,6 +291,8 @@ class RolfTourView : public godot::Control
     // The original's Search mode: each step searches, and takes longer.
     void toggle_search();
     void camp();
+    // The camp dialog, once the camp's opening is done (camp()).
+    void show_camp_dialog();
     void setup_rest();
     void check_rest_controls();
     void check_mastery_rest_controls();
@@ -341,8 +350,9 @@ class RolfTourView : public godot::Control
     opengold::MemberId rest_member_{};
     godot::String rest_result_;
     bool rest_save_open_{};
-    // The event whose camp offer the camp dialog last answered.
-    unsigned camp_offer_run_{};
+    // The event whose camp offer the camp dialog last answered, and the one
+    // that last opened Treasures' camp menu.
+    unsigned camp_offer_run_{}, camp_menu_run_{};
     // The Menu button asks the host for the in-game menu.
     void request_menu();
     void inventory();

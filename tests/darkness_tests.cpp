@@ -182,6 +182,7 @@ std::size_t colours(const opengold::Image &image)
 }
 
 void the_area_map_is_drawn(opengold::por::RolfTourSession &session);
+void the_scripts_start_the_music(opengold::por::RolfTourSession &session);
 
 // A new game runs script 16: map 16, New Phlan's docks, with wall set 1, the
 // party at (15,0) facing west over picture 148, where Rolf, the portmaster,
@@ -247,7 +248,41 @@ void the_opening_reaches_new_phlan()
     check(colours(view) > 8, "The 3D view shows the docks' walls in 256 colors");
     check(session.explore(ExplorationCommand::turn_left), "The party turns");
     check(session.observe_view().rgba != view.rgba, "Turning shows another view");
+    the_scripts_start_the_music(session);
     the_area_map_is_drawn(session);
+}
+
+// A script's PLAY SOUND from 80h starts MUSIC.DAX's piece of that number less
+// 80h, again from its start when it is the one playing (eclvm.pas,
+// EclPlaySound; music.pas, StartMusic); any sound effect stops it, a script's
+// or the party's footstep (music.pas, SendSoundCommand; explore.pas, StepForward).
+void the_scripts_start_the_music(opengold::por::RolfTourSession &session)
+{
+    using opengold::test::TourAccess;
+    const auto &snapshot = session.snapshot();
+    check(!snapshot.music && snapshot.music_starts == 0, "No music plays on New Phlan's streets");
+    TourAccess::play_sound(session, 0x82);
+    check(snapshot.music == 2U && snapshot.music_starts == 1, "PLAY SOUND 82h starts piece 2");
+    TourAccess::play_sound(session, 0x82);
+    check(snapshot.music == 2U && snapshot.music_starts == 2, "The same piece starts again");
+    TourAccess::play_sound(session, 0x88);
+    check(snapshot.music == 8U, "PLAY SOUND 88h starts piece 8 in its place");
+    TourAccess::play_sound(session, 1);
+    check(snapshot.music == 8U, "Sound 1 is no effect and leaves the music");
+    TourAccess::play_sound(session, 5);
+    check(!snapshot.music, "A sound effect stops the music");
+    TourAccess::play_sound(session, 0x81);
+    const auto footsteps = snapshot.footsteps;
+    for (int turn = 0; turn < 4 && snapshot.footsteps == footsteps; ++turn)
+    {
+        (void)session.explore(ExplorationCommand::forward);
+        for (int step = 0; step < 50 && snapshot.phase == TourPhase::running; ++step)
+        {
+            session.advance(1.0);
+        }
+        (void)session.explore(ExplorationCommand::turn_left);
+    }
+    check(snapshot.footsteps != footsteps && !snapshot.music, "The party's footstep stops it");
 }
 
 // Outside a dungeon (cell 22h at 0) the view is the area map as the original

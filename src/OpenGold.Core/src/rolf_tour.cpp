@@ -1188,6 +1188,7 @@ void RolfTourSession::handle_host(const EclRequest &request)
             {
                 ++snapshot_.thunder;
             }
+            sound_effect_played();
         }
         else if (service == EclAddress{routines.portrait_animation_step})
         {
@@ -1236,8 +1237,9 @@ void RolfTourSession::advance(double seconds)
     }
     try
     {
-        // A camp whose romance scene is told goes on.
-        if (std::exchange(romance_resumes_camp_, false))
+        // A camp whose romance scene is told, or made from an open camp
+        // menu, goes on.
+        if (std::exchange(camp_resumes_, false))
         {
             finish_event();
             return;
@@ -1411,15 +1413,34 @@ bool RolfTourSession::camp(std::chrono::minutes length)
            start_camp(RestKind::long_rest, length);
 }
 
+bool RolfTourSession::open_camp()
+{
+    if (game() != GoldBoxGame::treasures_of_the_savage_frontier || !can_camp())
+    {
+        return false;
+    }
+    log_player("opens the camp menu");
+    snapshot_.dialogue.clear();
+    begin_event(EventTrigger::camp);
+    camp_opening_ = true;
+    advance(0);
+    return true;
+}
+
+bool RolfTourSession::can_camp() const
+{
+    return town_ && campaign_ && snapshot_.phase == TourPhase::completed &&
+           !campaign_->in_combat() && !campaign_->state().short_rest &&
+           !campaign_->state().spell_rest && !campaign_->state().training_rest;
+}
+
 bool RolfTourSession::start_camp(RestKind kind, std::optional<std::chrono::minutes> length)
 {
     if (kind != RestKind::short_rest && kind != RestKind::long_rest)
     {
         return false;
     }
-    if (!town_ || !campaign_ || snapshot_.phase != TourPhase::completed || campaign_->in_combat() ||
-        campaign_->state().short_rest || campaign_->state().spell_rest ||
-        campaign_->state().training_rest)
+    if (!can_camp())
     {
         return false;
     }
