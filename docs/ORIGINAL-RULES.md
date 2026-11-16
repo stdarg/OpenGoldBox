@@ -608,13 +608,15 @@ Journal), chosen by the game as the others' are (2026-11-14):
     gaze: OpenGoldBox plays them as nothing too (2026-11-15), unless the
     Options screen's Darkness's gazes is on (DEVIATIONS.md, the user's
     decision of 2026-11-15).
-  - *Its own, not played:* the beholders' rays (117), kept still for now
-    (2026-11-16), though its reconstruction registers AttackEyeRays
-    for them and runs it as the AI's move begins (`combatai.pas`,
-    AiMoveAttack, condition MONSTER_SPECIAL), which would play them as the
-    kit's 117 (four tries a turn, a ray within 2, 3, 4 and 5 squares, then
-    Fear, Slow and Sleep). The beholder, elder orb and death tyrant (records
-    31, 94 and 95) carry it.
+  - *Its own, played as the kit's* (2026-11-16): the beholders' rays
+    (117), which its reconstruction registers as AttackEyeRays and runs as
+    the AI's move begins (`combatai.pas`, AiMoveAttack, condition
+    MONSTER_SPECIAL), the kit's 117's algorithm: four tries a turn at an
+    enemy it locks onto anew anywhere on the field, each power once a turn,
+    a disintegrating ray within 2 squares, a petrifying one within 3, death
+    within 4 and Cause Serious Wounds within 5, then Fear, Slow and Sleep.
+    The beholder, elder orb and death tyrant (records 31, 94 and 95) carry
+    it. Until 2026-11-16 they were kept still.
   - Its records' type flags, "immunities" and magic resistance are read
     (bytes 420, 421 and 491), *Secret*'s bits, so a creature is a snake, a
     mammal, a ranger's foe or unliving as in *Secret*.
@@ -654,10 +656,11 @@ Journal), chosen by the game as the others' are (2026-11-14):
   bits 8 and 10h); into a cloudkill unless a Globe of Invulnerability
   guards it or it is proof against poison; nor into Blade Barrier's blades.
   One turned to flee steps anywhere. The party's members on Quick step so
-  too: since this rule the route's party loses every one of the 120 plays of
-  Tanetal's last stand (map 53, 6,12), where the cultists raise Blade
-  Barriers about it; with the earlier games' step it wins on about the 40th
-  (2026-11-16, for the route's owner to re-plan).
+  too. Under the earlier games' step the bits of Moander of Tanetal's last
+  stand (map 53, 6,12) walked into their own cultists' Blade Barriers and
+  were cut down; now they keep out of them, and the route's party, unhasted,
+  lost every play. Its player now hastes the party before the fight
+  (docs/games/darkness.md).
 - **A *Secret* character comes across** as its LoadChar takes one in
   (`saveload.pas`, its legacy record; `CampaignParty::bring_across` with
   `secret_items_for_darkness`; the party screen's *Add from Secret*,
@@ -675,11 +678,17 @@ Journal), chosen by the game as the others' are (2026-11-14):
   spell does, for nothing, as *Pools of Darkness*'s and *Treasures*'
   temples ask nothing (`rules::TempleService::restoration`); it is offered
   only to one a drain has taken below its peak.
-- **Still to come:** the beholders' rays, should they be played (above).
-  Its clouds themselves are still the earlier games' for one in them: its
-  ConsiderTerrainEffects spares one its record calls proof against poison
-  from a stinking cloud and a cloudkill, and a cloudkill harms one of more
-  than 6 Hit Dice for 1d10, where OpenGoldBox spares it.
+- **Its clouds, for one in them** (`fxengine.pas`, ConsiderTerrainEffects,
+  2026-11-16), are its own: a stinking cloud spares the undead, the
+  nauseous and one its record calls unliving or proof against poison
+  ("immunities" bits 8 and 10h); one that saves coughs for 1d4+1 rounds,
+  not one, and loses a spell it was casting; and the cloud is breathed as
+  it is laid or stepped into, not again as each round ends (EndOfRound
+  passes over it). A cloudkill spares one proof against poison, kills one
+  of 0 to 4 Hit Dice, one of 5 failing a save at -4 and one of 6 failing
+  one at 0, and harms one of more for 1d10, magical and poisonous, where
+  the earlier games spare it. *Treasures*' reconstruction has the same
+  clouds; they are still to come there.
 
 ## Treasures of the Savage Frontier
 
@@ -1087,13 +1096,15 @@ Journal), chosen by the game as the others' are (2026-11-14):
     gaze: OpenGoldBox plays them as nothing too (2026-11-15), unless the
     Options screen's Darkness's gazes is on (DEVIATIONS.md, the user's
     decision of 2026-11-15).
-  - *Its own, not played:* the beholders' rays (117), kept still for now
-    (2026-11-16), though its reconstruction registers AttackEyeRays
-    for them and runs it as the AI's move begins (`combatai.pas`,
-    AiMoveAttack, condition MONSTER_SPECIAL), which would play them as the
-    kit's 117 (four tries a turn, a ray within 2, 3, 4 and 5 squares, then
-    Fear, Slow and Sleep). The beholder, elder orb and death tyrant (records
-    31, 94 and 95) carry it.
+  - *Its own, played as the kit's* (2026-11-16): the beholders' rays
+    (117), which its reconstruction registers as AttackEyeRays and runs as
+    the AI's move begins (`combatai.pas`, AiMoveAttack, condition
+    MONSTER_SPECIAL), the kit's 117's algorithm: four tries a turn at an
+    enemy it locks onto anew anywhere on the field, each power once a turn,
+    a disintegrating ray within 2 squares, a petrifying one within 3, death
+    within 4 and Cause Serious Wounds within 5, then Fear, Slow and Sleep.
+    The beholder, elder orb and death tyrant (records 31, 94 and 95) carry
+    it. Until 2026-11-16 they were kept still.
   - Its records' type flags, "immunities" and magic resistance are read
     (bytes 420, 421 and 491), *Secret*'s bits, so a creature is a snake, a
     mammal, a ranger's foe or unliving as in *Secret*.
@@ -1133,10 +1144,11 @@ Journal), chosen by the game as the others' are (2026-11-14):
   bits 8 and 10h); into a cloudkill unless a Globe of Invulnerability
   guards it or it is proof against poison; nor into Blade Barrier's blades.
   One turned to flee steps anywhere. The party's members on Quick step so
-  too: since this rule the route's party loses every one of the 120 plays of
-  Tanetal's last stand (map 53, 6,12), where the cultists raise Blade
-  Barriers about it; with the earlier games' step it wins on about the 40th
-  (2026-11-16, for the route's owner to re-plan).
+  too. Under the earlier games' step the bits of Moander of Tanetal's last
+  stand (map 53, 6,12) walked into their own cultists' Blade Barriers and
+  were cut down; now they keep out of them, and the route's party, unhasted,
+  lost every play. Its player now hastes the party before the fight
+  (docs/games/darkness.md).
 - **A *Secret* character comes across** as its LoadChar takes one in
   (`saveload.pas`, its legacy record; `CampaignParty::bring_across` with
   `secret_items_for_darkness`; the party screen's *Add from Secret*,
@@ -1154,11 +1166,17 @@ Journal), chosen by the game as the others' are (2026-11-14):
   spell does, for nothing, as *Pools of Darkness*'s and *Treasures*'
   temples ask nothing (`rules::TempleService::restoration`); it is offered
   only to one a drain has taken below its peak.
-- **Still to come:** the beholders' rays, should they be played (above).
-  Its clouds themselves are still the earlier games' for one in them: its
-  ConsiderTerrainEffects spares one its record calls proof against poison
-  from a stinking cloud and a cloudkill, and a cloudkill harms one of more
-  than 6 Hit Dice for 1d10, where OpenGoldBox spares it.
+- **Its clouds, for one in them** (`fxengine.pas`, ConsiderTerrainEffects,
+  2026-11-16), are its own: a stinking cloud spares the undead, the
+  nauseous and one its record calls unliving or proof against poison
+  ("immunities" bits 8 and 10h); one that saves coughs for 1d4+1 rounds,
+  not one, and loses a spell it was casting; and the cloud is breathed as
+  it is laid or stepped into, not again as each round ends (EndOfRound
+  passes over it). A cloudkill spares one proof against poison, kills one
+  of 0 to 4 Hit Dice, one of 5 failing a save at -4 and one of 6 failing
+  one at 0, and harms one of more for 1d10, magical and poisonous, where
+  the earlier games spare it. *Treasures*' reconstruction has the same
+  clouds; they are still to come there.
 
 ## Treasures of the Savage Frontier
 

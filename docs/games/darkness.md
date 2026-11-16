@@ -998,8 +998,9 @@ state does (Script memory, above). Until 2026-11-14 OpenGoldBox stepped on
 anyway, so stairs landed a square beyond their landing and a held step could
 wrap round the map's edge.
 
-Stand-ins (2026-11-16, late): three, the fights the test wins, down from
-nine (The stand-ins measured, below). Kalistes' egg room (84: 2,6), both its
+Stand-ins (2026-11-16, night): four, the fights the test wins, down from
+nine (The stand-ins measured, below; Tanetal re-planned and the beholders'
+rays, below). Kalistes' egg room (84: 2,6), both its
 fights: Kalistes, seven drow champions, eight drow wizards and five pets,
 whose eight Ice Storms in the first round take some 120 Hit Points from each
 member of the party of levels 15 to 17 before most of it acts, and the
@@ -1007,14 +1008,16 @@ spy's basilisks, medusae and earth elementals after; no play of 120 wins.
 And the finale's first fight (script 75: the pool's dracoliches, bits of
 Moander, minions and Pets of Kalistes, whose breaths and Charm Person beat
 the party, its bearer of the crystal near death from countermanding the
-summons, in every play; Xoham's beholders and Gothmenes after it the route's
-player beats). The fights the route's player now wins: Thorne and his seven
-red dragons (34: 3,6), the Aerie's blue dragons (33: 3,14), the Chambers of
-Marcus (67: 0,12 south; script 77), the heart's magnetic iron golems (53:
-9,3), Tanetal's last stand (53: 5,12), the Iron Wall's fourteen Minions of
-Bane (64: 15,5) and the palace's rakshasas (65: 4,4); where few plays win
-(Thorne, the blue dragons, the golems, Tanetal, the rakshasas) the player
-reloads until one does (`RouteBeat::reloads_until_won`, 240 more plays at
+summons, in every play) and, since the beholders' rays play, Xoham's
+beholders after it, whom the party beats in most plays but never without a
+member disintegrated, turned to stone or slain (Gothmenes after them the
+route's player beats). The fights the route's player now wins: Thorne and
+his seven red dragons (34: 3,6), the Aerie's blue dragons (33: 3,14), the
+Chambers of Marcus (67: 0,12 south; script 77), the heart's magnetic iron
+golems (53: 9,3) and Tanetal's last stand (53: 5,12), the party hasted for
+both, the Iron Wall's fourteen Minions of Bane (64: 15,5) and the palace's
+rakshasas (65: 4,4); where few plays win (Thorne, the blue dragons, the
+rakshasas) the player reloads until one does (`RouteBeat::reloads_until_won`, 240 more plays at
 most), and members killed in a won fight are raised after it, as a player
 raises them. Before them (2026-11-15, late) the Vaasans (37: 13,8), Myth
 Drannor's altar and its temple (the blessed bolts, above) and the Large
@@ -1191,9 +1194,10 @@ The iron golems (six and four large ones) heal from fire and take no other
 spell (EffIronGolem; the clerics' maces, crushing weapons, do them no harm
 either), so the route's player casts no fire where one stands and, where only
 golems stand, no spell against them and no Quick magic but its magic-user's
-Lightning Bolts, which slow them (it memorizes them in the camp before the
-heart), its clerics taking up their maces and shields (with spells
-cast as Quick casts them, 1 play of 120 won).
+Lightning Bolts, which slow them, its clerics taking up their maces and
+shields (with spells cast as Quick casts them, 1 play of 120 won). Since
+2026-11-16 (night) the magic-user memorizes Hastes instead in the camp before
+the heart and hastes the party as it steps up to them (below).
 The finale's clerics cure the party before it (the pool's waters hurt the
 crystal's bearer), which no play still turns. The web's paths to Kalistes'
 Parlor are fled (`RouteBeat::fleeing`): with the rolled party a band of Pets
@@ -1205,6 +1209,39 @@ Experience is not what the three stand-ins lack: a late fight gives each
 member some 9,000 (the Iron Wall's minions) to 74,000 (the finale), where a
 paladin's level costs 350,000, so wandering fights would not raise the party
 a level before the end.
+
+### Tanetal re-planned, and the beholders' rays (2026-11-16, night)
+
+Pools of Darkness's AI never steps into Blade Barrier's blades
+(ORIGINAL-RULES.md, its cloud step), and the party's members on Quick step
+so too. Under the earlier games' step the bits of Moander of Tanetal's last
+stand walked into their own cultists' blades and were cut down (in the plays
+it won, every bit of Moander was cut); now they keep out of them, and their
+poisonous blows, which slay a member that fails its save, beat the party:
+none of 1,080 plays won, whatever its tactic. Protection from Evil on each
+member won none of 360 either; the clerics memorizing Blade Barrier and
+casting it on the bits won 1 of 193.
+
+What wins is Haste. Cast out of a fight it hastes the whole party for 3
+rounds and 1 a level (its spell row; one of level 16 to 31 ages no one,
+Bugs), so the route's magic-user memorizes Hastes in the camp at the
+Entrance to Heart, the heart's last, and casts one as the party steps up to
+the iron golems (9,3) and one as it steps up to Tanetal (6,12)
+(`RouteBeat::ward_each_with`, cast on the first member). Hasted, the party
+wins 87 of 120 plays of the golems (3 unhasted) and 23 of 120 of Tanetal's
+last stand, members dead in each, raised after it; neither needs a reload
+now. The Lightning Bolts the magic-user took for the golems gave way to the
+Hastes.
+
+The beholders' rays play since 2026-11-16 (ORIGINAL-RULES.md). The route
+meets beholders only in the finale (script 75): Xoham, two death tyrants, an
+elder orb and four beholders, after the pool's servants. The party wins 114
+of 120 plays, but in each the rays take one to five members (disintegrated,
+stoned or slain), so the test, which wins a fight whose best play costs a
+member (the stand-ins' rule), wins it: a stand-in. Hastes memorized in the
+city's inn do not last to it, the Quick magic-user casting them at the Iron
+Wall's minions; a Haste on the party at the Iron Wall wins its second fight
+in 91 of 120 plays where 61 won.
 
 ### Kalistes and the finale tried again (2026-11-16, late)
 

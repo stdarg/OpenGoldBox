@@ -4809,9 +4809,10 @@ const std::vector<RouteBeat> &darkness_route()
         rest_entrance.passing = true;
         rest_entrance.rest_first = true;
         rest_entrance.rest_for_spells = true;
-        // The magic-user takes Lightning Bolts for the heart's iron golems,
-        // whom lightning slows (the camp before the heart; no camp in it).
-        rest_entrance.memorize_first_of = {"lightning_bolt"};
+        // The magic-user takes Hastes for the heart's two great fights, its
+        // iron golems and Tanetal's last stand (the camp before the heart; no
+        // camp in it).
+        rest_entrance.memorize_first_of = {"haste"};
         route.push_back(rest_entrance);
         walk_passages(route, 52, {{8, 1, D::south}, {8, 2, D::south}, {8, 3, D::south}});
         route.push_back(step_beat(52, 8, 4, D::south, {"USE POTIONS", "YES"}));
@@ -4967,12 +4968,12 @@ const std::vector<RouteBeat> &darkness_route()
         // (the cluebook's way) to its iron golems (9,3, event 3; the
         // cluebook's 3), which tear the party's weapons away and magnetize
         // them. Six iron golems and four large ones, whom fire heals and no
-        // other spell touches but lightning, which slows them: the magic-user
-        // casts its Lightning Bolts at them and the others fight with their
-        // weapons (wasted_on_golems). They beat the party in most plays (3
-        // of 120 win, 2026-11-16), so the player reloads until one wins. East
-        // along the artery, its current carries the party to the unguent
-        // (15,3; the cluebook's 4).
+        // other spell touches but lightning, which slows them: the members
+        // fight with their weapons (wasted_on_golems), hasted as they step
+        // up (Haste, cast out of a fight, hastes the whole party for 3 rounds
+        // and 1 a level; most plays win, 87 of 120, 2026-11-16, where 3 did
+        // unhasted). East along the artery, its current carries the party to
+        // the unguent (15,3; the cluebook's 4).
         walk_heart({{9, 4, D::east},  {10, 4, D::north}, {10, 2, D::west}, {9, 2, D::west},
                     {8, 2, D::west},  {7, 2, D::west},   {6, 2, D::south}, {6, 4, D::south},
                     {6, 5, D::west},  {5, 5, D::west},   {4, 5, D::west},  {3, 5, D::west},
@@ -4984,7 +4985,9 @@ const std::vector<RouteBeat> &darkness_route()
         auto golems = step_beat(53, 8, 3, D::east);
         golems.cure_first = true;
         golems.camp_broken = true;
-        golems.reloads_until_won = 240;
+        // One Haste takes the whole party: it is cast on the first member.
+        golems.ward_each_with = "haste";
+        golems.ward_members = {"paladin 1"};
         // The clerics take up their maces +3 and shields again, as a player
         // does where only a weapon of +3 or better harms the foe: their
         // staff slings +2 do nothing to an iron golem.
@@ -5051,16 +5054,20 @@ const std::vector<RouteBeat> &darkness_route()
         route.push_back(step_beat(53, 3, 15, D::west, {"YES"}));
         // Tanetal's last stand in the right ventricle (5,12, event 8; the
         // cluebook's 10): he slays the Watcher and his minions rise.
-        // Tanetal, his golems, cultists and bits of Moander beat the party in
-        // most plays (5 of 120 win, three members dead, 2026-11-16), so the
-        // player reloads until one wins and raises its dead after. The party
+        // Tanetal, his golem, cultists and bits of Moander: the cultists raise
+        // Blade Barriers, which neither side's computer steps into
+        // (combatai.pas, AiCanStep), so the bits of Moander, whose poison
+        // slays, are not cut down by them. The magic-user hastes the party as
+        // it steps up (23 of 120 plays win, members dead, 2026-11-16; none
+        // of 360 unhasted), and the party raises its dead after. The party
         // takes the Talisman of Bane (cell 245h 1).
         walk_heart({{7, 10, D::west}, {6, 10, D::south}, {6, 11, D::south}});
         auto showdown = step_beat(53, 6, 12, D::west, {"YES"});
         showdown.cure_first = true;
         showdown.cure_to_full = true;
         showdown.camp_broken = true;
-        showdown.reloads_until_won = 240;
+        showdown.ward_each_with = "haste";
+        showdown.ward_members = {"paladin 1"};
         showdown.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x245, 1};
         route.push_back(showdown);
         // Out of the heart by the vena cava's end (2,15, south: ARE YOU SURE
