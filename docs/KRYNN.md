@@ -3,8 +3,9 @@
 The plan for OpenGoldBox to play the three *Dragonlance* Gold Box games from
 start to finish: *Champions of Krynn* (1990), *Death Knights of Krynn* (1991)
 and *The Dark Queen of Krynn* (1992). It follows the method of the *Forgotten
-Realms* games ([GAMES.md](GAMES.md)). This plan is written but not started; work
-begins when the user says so (2026-11-16).
+Realms* games ([GAMES.md](GAMES.md)). This plan is written but not started. The
+user decided (2026-11-16) that it begins as soon as the *Forgotten Realms* goal
+is met, as the next goal: the three *Krynn* games playable to their ends.
 
 ## Where the files are
 
@@ -206,16 +207,12 @@ These carry over from the Realms games, per game:
 - the Spanish text;
 - the ending films.
 
-### K7. The SRD rules for Krynn
+### K7. The SRD rules for Krynn (later)
 
-As the Realms games' plan step 9 has it: the SRD 5.2.1 rules come only after
-all three games play under the original rules. They come as content work:
-
-- monster conversions: each creature stays what its art shows, with the
-  matching SRD stat block, and the original's Hit Points when that block is far
-  stronger;
-- shops and art mappings;
-- an SRD form of the Krynn classes and races.
+Not part of this goal (the user, 2026-11-16); they may be added later. Then,
+as the Realms games' plan step 9 has it, they would come as content work:
+monster conversions (each creature stays what its art shows), shops, art
+mappings and an SRD form of the Krynn classes and races.
 
 ## Working in parallel
 
@@ -231,7 +228,7 @@ format, rules version), which are claimed before they are raised.
 - **K3 to K5:** one route agent per game. *Death Knights*' route can start on
   new characters while *Champions*' route is still being finished, and switch
   to a brought-in party when *Champions* wins.
-- **K6 and K7:** after each game's route wins.
+- **K6:** after each game's route wins.
 
 The coordinator merges each agent's branch after the full native and game
 suites pass, and pushes it.
@@ -246,14 +243,14 @@ suites pass, and pushes it.
   Realms game added. K2 is the longest step.
 - **Bringing parties between games** depends on the previous game's route
   winning, so *Death Knights*' and *The Dark Queen*'s routes finish last.
-- **The startup menu's ten games** need a new layout; see question 2.
+- **The startup menu's ten games** need a new layout (see Decisions).
 
-## Questions
+## Decisions
 
-1. **When does this start?** Now, alongside the Realms games' last work (their
-   SRD rules, phase 9), or after that?
-2. **The startup menu** grows from seven games to ten. One list, or grouped by
-   world (*Forgotten Realms*, *Krynn*)? Mockups of the real screen come with
-   step K0.
-3. **The SRD rules for Krynn (K7):** part of this plan's goal, or a later goal
-   of its own?
+The user's answers (2026-11-16):
+
+1. **When:** this begins as soon as the *Forgotten Realms* goal is met, as a
+   goal of its own: the three *Krynn* games playable to their ends.
+2. **The startup menu:** the user suggested a dropdown for the ten games. The
+   layout is settled with mockups of the real screen in step K0.
+3. **The SRD rules for Krynn:** not in this goal; they may come later (K7).
