@@ -2358,7 +2358,7 @@ gear.
       with the fight. The rules report it in `Snapshot::round_limit_reached`
       beside `Outcome::victory`; the campaign then lets the standing
       monsters go unpaid instead of refusing the result. The combat
-      checkpoint keeps the limit (format 25).
+      checkpoint keeps the limit (format 27).
     - **Ice Storm's and Cone of Cold's elements.** Each reconstruction's
       `SpellIceStorm` and `SpellConeOfCold` pass their damage's element:
       Cone of Cold cold and magic (10) in every game; Ice Storm cold and
