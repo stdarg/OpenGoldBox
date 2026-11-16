@@ -733,16 +733,21 @@ const std::vector<RouteBeat> &curse_route()
         // with the dragons and is nice to them, as the cluebook advises.
         {50, 7, 12, D::north, {"PARLAY WITH THE DRAGONS", "NICE"}, true},
         // Dracandros in the tower's courtyard; among his treasures, the Helm
-        // of Dragons (cell 0x4C59): the second bond is gone.
-        {51,
-         4,
-         13,
-         D::north,
-         {},
-         true,
-         false,
-         false,
-         std::pair<std::uint16_t, std::uint16_t>{0x4C59, 1}},
+        // of Dragons (cell 0x4C59): the second bond is gone. The party takes
+        // the magic he leaves: Bracers AC 2 and a Ring of Wizardry for the
+        // magic-user, a Ring of Protection +3, and his wands (Ice Storm and
+        // Fireballs).
+        []
+        {
+            RouteBeat dracandros{51, 4, 13, D::north, {}, true};
+            dracandros.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C59, 1};
+            dracandros.take_items = {{"BRACERS", "magic_user 6"},
+                                     {"RING (", "paladin 1"},
+                                     {"RING (", "magic_user 6"},
+                                     {"WAND (", "magic_user 6"},
+                                     {"WAND (", "magic_user 6"}};
+            return dracandros;
+        }(),
         // Out of the tower by its secret passage, to Hap's village, and the
         // dead raised at its Temple of Sune.
         {51,
@@ -801,43 +806,34 @@ const std::vector<RouteBeat> &curse_route()
         // commander's disapproval, as the cluebook says).
         {0, 0, 0, D::north, {"ENTER CITY", "ASK PERMISSION", "PARLAY"}, true, false, true},
         // In the commander's waiting room, a step east brings out Zhentil Keep
-        // spies; the commander thinks well of a party that fights them.
-        {16,
-         0,
-         3,
-         D::east,
-         {"FIGHT", "HAUGHTY"},
-         false,
-         false,
-         false,
-         std::nullopt,
-         0,
-         0,
-         std::nullopt,
-         false,
-         true},
+        // spies; the commander thinks well of a party that fights them. The
+        // party takes their magic broad swords, splint mail and mace.
+        []
+        {
+            RouteBeat spies{16, 0, 3, D::east, {"FIGHT", "HAUGHTY"}};
+            spies.step = true;
+            spies.take_items = {{"BROAD SWORD (", "paladin 1"},
+                                {"BROAD SWORD (", "paladin 2"},
+                                {"BROAD SWORD (", "ranger 3"},
+                                {"SPLINT", "cleric 4"},
+                                {"MACE (", "cleric 5"}};
+            return spies;
+        }(),
         // The Red Plumes' barracks (event 25), where they point out a spot
         // the party can rest: elsewhere in their quarters a camp is refused
         // ("NO SLEEPING HERE"), and in the streets wandering monsters break
         // it (ECL3.DAX 16's camp entries).
         {16, 5, 2, D::north, {}},
         // The shambling mounds over a dead cleric, who holds the Wand of
-        // Defoliation the Pit of Moander calls for, rested at the barracks.
-        {16,
-         11,
-         8,
-         D::north,
-         {"Fight"},
-         true,
-         false,
-         false,
-         std::nullopt,
-         0,
-         0,
-         std::nullopt,
-         false,
-         false,
-         true},
+        // Defoliation the Pit of Moander calls for (readied), and a Wand of
+        // Lightning, rested at the barracks.
+        []
+        {
+            RouteBeat mounds{16, 11, 8, D::north, {"Fight"}, true};
+            mounds.take_wand = true;
+            mounds.take_items = {{"WAND (", "magic_user 6"}};
+            return mounds;
+        }(),
         // Into the Pit of Moander, rested at the barracks again.
         {16, 5, 2, D::north, {}},
         {16,
@@ -864,8 +860,20 @@ const std::vector<RouteBeat> &curse_route()
         // attacks Mogion, six cultists and five shambling mounds; as the rift
         // snaps shut three pseudopods of Moander (140 Hit Points each) attack
         // at once, and in their remains the party finds the Gauntlet of
-        // Moander (cell 0x4C5B).
-        {17, 7, 1, D::north, {"ATTACK"}},
+        // Moander (cell 0x4C5B). The magic-user readies the Wand of
+        // Defoliation for the mounds first; the party takes the magic the
+        // cult leaves: plate armor +3, a shield +2, a mace +3 and a Cloak of
+        // Displacement.
+        []
+        {
+            RouteBeat mogion{17, 7, 1, D::north, {"ATTACK"}};
+            mogion.ready_types = {{79, "magic_user 6"}};
+            mogion.take_items = {{"PLATE", "paladin 1"},
+                                 {"SHIELD (", "paladin 2"},
+                                 {"MACE (", "cleric 4"},
+                                 {"CLOAK", "ranger 3"}};
+            return mogion;
+        }(),
         // Back up the stairs to the Pit's first level (not down again).
         {17, 15, 14, D::north, {"YES", "NO"}},
         // The cultists' last stand by the Pit's way out (ten cultists, five
@@ -926,7 +934,15 @@ const std::vector<RouteBeat> &curse_route()
         // The hooded woman (Dexam's medusa) takes the party to the Caves of
         // the Beholder, the only way out of the shrine. She shows herself
         // every other time the party passes (cell 0x4C1B), so it passes twice.
-        {32, 2, 3, D::north, {}},
+        // Dexam's men fight Fzoul's on the way, and the party takes the
+        // plate armor +1 they leave.
+        []
+        {
+            RouteBeat woman{32, 2, 3, D::north, {}};
+            woman.take_items = {
+                {"PLATE", "paladin 2"}, {"PLATE", "ranger 3"}, {"PLATE", "cleric 5"}};
+            return woman;
+        }(),
         {32, 2, 3, D::north, {"YES"}},
         // Dexam the Beholder and his minions, for the Amulet of Lathander
         // (map 33's events 15 and 16; the "beholder" at 2,1 is a gas spore).
@@ -992,8 +1008,14 @@ const std::vector<RouteBeat> &curse_route()
         {66, 5, 6, D::north, {"YES", "YES"}, true},
         // In the temple's chapel Tyranthraxus takes the bonded party, Nameless
         // frees it and dies, and Tyranthraxus leaves his minions to it; then
-        // up the main hall's stairs to the second floor.
-        {67, 5, 11, D::north, {}},
+        // up the main hall's stairs to the second floor. The party takes the
+        // plate armor +2 the minions leave.
+        []
+        {
+            RouteBeat chapel{67, 5, 11, D::north, {}};
+            chapel.take_items = {{"PLATE", "paladin 2"}, {"PLATE", "ranger 3"}};
+            return chapel;
+        }(),
         {67, 10, 7, D::north, {"YES"}},
         // Tyranthraxus, with high priests and margoyles, on the second floor:
         // the final battle, the clerics' cures cast first on the hurt.
@@ -1002,7 +1024,7 @@ const std::vector<RouteBeat> &curse_route()
             RouteBeat finale{67, 6, 1, D::north, {}};
             finale.cure_first = true;
             finale.cure_to_full = true;
-            finale.test_wins = true;
+            finale.reloads_until_won = 240;
             return finale;
         }(),
     };
@@ -7734,8 +7756,10 @@ bool walk_census(GoldBoxGame game, bool route)
                 raw[46] = type;
                 // The route's party carries the magic arms of one brought from
                 // Pool of Radiance: weapons +2, armor and shields +1 (the
-                // record's magic bonus, byte 50).
-                if (route)
+                // record's magic bonus, byte 50). Curse's party starts with
+                // what its 300 platinum buys and takes the magic arms its
+                // fights leave (RouteBeat::take_items).
+                if (route && game != GoldBoxGame::curse_of_the_azure_bonds)
                 {
                     raw[50] = type == plate || type == shield ? 1 : 2;
                 }
@@ -8091,6 +8115,125 @@ bool walk_census(GoldBoxGame game, bool route)
     // the strongest enemy not yet helpless, Hold Person at the strongest
     // person (not a shambling mound nor a bit of Moander, plants it does not
     // hold); Quick for the rest.
+    // A Curse player's choices against Tyranthraxus's guard, as the cluebook
+    // bids (the final battle): fireballs into the margoyles and high priests
+    // before they act, the burst where it takes the most and spares every
+    // member; a cleric's Prayer once; then Hold Person on the high priests,
+    // who are people, before they cast. Anything else the member's Quick
+    // chooses.
+    const auto finale_turn =
+        [](const opengold::rules::CombatSession &session) -> std::optional<opengold::rules::Command>
+    {
+        constexpr unsigned fireball = 47, prayer = 42, hold_person = 23;
+        constexpr int burst_reach = 7; // doubled steps: Fireball's 3 squares
+        const auto state = session.snapshot();
+        const auto foe = [](const opengold::rules::CombatantView &unit)
+        {
+            return unit.side == opengold::rules::Side::opposition && unit.conscious;
+        };
+        if (std::ranges::none_of(state.combatants,
+                                 [&](const opengold::rules::CombatantView &unit)
+                                 {
+                                     return foe(unit) && unit.name.starts_with("TYRANTHRAXUS");
+                                 }))
+        {
+            return std::nullopt;
+        }
+        const auto priest = [&](const opengold::rules::CombatantView &unit)
+        {
+            return foe(unit) && unit.name.starts_with("HIGH PRIEST") && unit.status.empty();
+        };
+        const auto burst_worth = [&](opengold::rules::Cell aim)
+        {
+            int worth = 0;
+            for (const auto &unit : state.combatants)
+            {
+                const int dx = std::abs(unit.cell.x - aim.x), dy = std::abs(unit.cell.y - aim.y);
+                if (!unit.conscious || 2 * std::max(dx, dy) + std::min(dx, dy) > burst_reach)
+                {
+                    continue;
+                }
+                worth += unit.side == opengold::rules::Side::party ? -100
+                         : unit.name.starts_with("HIGH PRIEST")    ? 2
+                                                                   : 1;
+            }
+            return worth;
+        };
+        const auto unit_of = [&](opengold::rules::EntityId id)
+        {
+            return std::ranges::find(state.combatants, id, &opengold::rules::CombatantView::id);
+        };
+        const auto spell_of = [](const opengold::rules::Command &command)
+        {
+            return command.verb == "use" ? command.item % 256 : command.item;
+        };
+        const auto commands = session.legal_commands();
+        // Aiming a burst or a hold already begun.
+        const opengold::rules::Command *aim = nullptr;
+        for (const auto &command : commands)
+        {
+            if (command.verb == "aim" && command.item == fireball &&
+                (!aim || burst_worth(command.destination) > burst_worth(aim->destination)))
+            {
+                aim = &command;
+            }
+            if (command.verb == "aim" && command.item == hold_person &&
+                unit_of(command.target) != state.combatants.end() &&
+                priest(*unit_of(command.target)))
+            {
+                return command;
+            }
+        }
+        if (aim)
+        {
+            return *aim;
+        }
+        for (const auto &command : commands)
+        {
+            if (command.verb == "aim_done" && command.item == hold_person)
+            {
+                return command;
+            }
+        }
+        // A burst worth casting: one square in range takes three or more
+        // foes and no member.
+        const bool burst_worth_casting = [&]
+        {
+            for (int y = 0; y < state.battlefield.height; ++y)
+            {
+                for (int x = 0; x < state.battlefield.width; ++x)
+                {
+                    if (burst_worth({x, y}) >= 3)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }();
+        const bool prayed = std::ranges::any_of(
+            state.log_entries,
+            [](const opengold::rules::LogEntry &entry)
+            {
+                return entry.english.find(" casts Prayer.") != std::string::npos &&
+                       !entry.english.starts_with("HIGH PRIEST");
+            });
+        const bool priests_free = std::ranges::any_of(state.combatants, priest);
+        for (const auto &command : commands)
+        {
+            if (command.verb != "cast" && command.verb != "use")
+            {
+                continue;
+            }
+            const auto spell = spell_of(command);
+            if ((spell == fireball && burst_worth_casting) || (spell == prayer && !prayed) ||
+                (spell == hold_person && priests_free && command.verb == "cast"))
+            {
+                return command;
+            }
+        }
+        return std::nullopt;
+    };
     const auto player_turn =
         [](const opengold::rules::CombatSession &session,
            std::vector<opengold::rules::EntityId> &picked,
@@ -8617,6 +8760,10 @@ bool walk_census(GoldBoxGame game, bool route)
                 game == GoldBoxGame::gateway_to_the_savage_frontier)
             {
                 held = mounds_turn(session);
+            }
+            if (!held && member && tactic == 2 && game == GoldBoxGame::curse_of_the_azure_bonds)
+            {
+                held = finale_turn(session);
             }
             // Treasures' Hold Person takes no monster, and its Quick casts by
             // its own AI, which aims its holds where they take: the other
@@ -9563,9 +9710,11 @@ bool walk_census(GoldBoxGame game, bool route)
                     if (taken)
                     {
                         const auto &items = party->member(*mage).character.inventory().items();
+                        // In place of a wand readied already (Curse's
+                        // Dracandros leaves two).
                         if (!packing_wand)
                         {
-                            party->equip(*mage, items.back().id);
+                            ready_in_place(*mage, items.back().id);
                         }
                         std::cout << "  " << where << ": the magic-user takes "
                                   << (packing_wand ? "and packs " : "and readies ") << wand_name
@@ -10826,9 +10975,14 @@ bool walk_census(GoldBoxGame game, bool route)
         // last words and the party's return to Phlan, so its route ends
         // there, the win shown on the way.
         const bool ends_on_the_win = game != GoldBoxGame::pools_of_darkness;
+        // Curse's last fight wins the game even at the cost of a member, as
+        // the original counts a fight won with one member standing
+        // (postcbt.pas, DetermineCombatResults): no camp in the ruined temple
+        // raises the dead before Tyranthraxus's fall ends it.
+        const bool dead_allowed = game == GoldBoxGame::curse_of_the_azure_bonds;
         return played &&
                (!ends_on_the_win || end.dialogue.find("You have won.") != std::string::npos) &&
-               game_won_shown && all_alive;
+               game_won_shown && (all_alive || dead_allowed);
     }
     // OPENGOLD_CURSE_MAP walks that map alone.
     const char *only = std::getenv("OPENGOLD_CURSE_MAP");
