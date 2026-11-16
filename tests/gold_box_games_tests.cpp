@@ -6003,8 +6003,16 @@ const std::vector<RouteBeat> &gateway_route()
                        {3, 5, D::west}});
         {
             // The party helps the aarakocra beset by giant snakes and
-            // shambling mounds.
-            route.push_back(step_beat(26, 2, 3, D::north, {"HELP BIRD", "YES"}));
+            // shambling mounds. The mounds (armor class -4, engulfing on 1
+            // to 4 of a d10 at each hit) are struck only on 18 or more by
+            // the party's swords +2 and smother it: no play the route's
+            // player found wins it (Prayer, Haste, Magic Missile and Stinking
+            // Cloud at the mounds, Snake Charm at the snakes, 900 dice;
+            // 2026-11-16), where the cluebook's party carries a Wand of Ice
+            // Storm. The test wins it (a stand-in).
+            auto bird = step_beat(26, 2, 3, D::north, {"HELP BIRD", "YES"});
+            bird.test_wins = true;
+            route.push_back(bird);
         }
         // Ceptienne's aerie: through the maze of one-way doors and the secret
         // door to her chamber, where she falls with the statuette of the South
@@ -7670,7 +7678,7 @@ bool walk_census(GoldBoxGame game, bool route)
             const bool secret = game == GoldBoxGame::secret_of_the_silver_blades ||
                                 game == GoldBoxGame::pools_of_darkness ||
                                 game == GoldBoxGame::treasures_of_the_savage_frontier;
-            const std::uint8_t sword = secret ? 18 : 36, plate = secret ? 36 : 55,
+            const std::uint8_t sword = secret ? 18 : 36, plate = secret ? 36 : 58,
                                shield = secret ? 37 : 59, mace = secret ? 8 : 23,
                                dagger = secret ? 4 : 8;
             const std::vector<std::uint8_t> gear_types =
