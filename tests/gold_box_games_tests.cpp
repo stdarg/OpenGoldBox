@@ -705,14 +705,13 @@ const std::vector<RouteBeat> &curse_route()
          0,
          D::north,
          {"Fight"},
-         false,
+         true,
          false,
          false,
          std::nullopt,
          0,
          0,
-         std::pair<std::uint16_t, std::uint16_t>{0x4C47, 4},
-         true},
+         std::pair<std::uint16_t, std::uint16_t>{0x4C47, 4}},
         {50, 8, 4, D::north, {}}, // The efreeti and the dark elves in the barn.
         // Out through Hap's gate, following the efreeti's map to the caves.
         {50,
@@ -732,19 +731,7 @@ const std::vector<RouteBeat> &curse_route()
         // Crimdrac the dracolich lets the party live and takes it up to the
         // Wizard's Tower; on its roof the party, freed of the bond, parleys
         // with the dragons and is nice to them, as the cluebook advises.
-        {50,
-         7,
-         12,
-         D::north,
-         {"PARLAY WITH THE DRAGONS", "NICE"},
-         false,
-         false,
-         false,
-         std::nullopt,
-         0,
-         0,
-         std::nullopt,
-         true},
+        {50, 7, 12, D::north, {"PARLAY WITH THE DRAGONS", "NICE"}, true},
         // Dracandros in the tower's courtyard; among his treasures, the Helm
         // of Dragons (cell 0x4C59): the second bond is gone.
         {51,
@@ -752,14 +739,10 @@ const std::vector<RouteBeat> &curse_route()
          13,
          D::north,
          {},
+         true,
          false,
          false,
-         false,
-         std::pair<std::uint16_t, std::uint16_t>{0x4C59, 1},
-         0,
-         0,
-         std::nullopt,
-         true},
+         std::pair<std::uint16_t, std::uint16_t>{0x4C59, 1}},
         // Out of the tower by its secret passage, to Hap's village, and the
         // dead raised at its Temple of Sune.
         {51,
@@ -833,82 +816,62 @@ const std::vector<RouteBeat> &curse_route()
          std::nullopt,
          false,
          true},
+        // The Red Plumes' barracks (event 25), where they point out a spot
+        // the party can rest: elsewhere in their quarters a camp is refused
+        // ("NO SLEEPING HERE"), and in the streets wandering monsters break
+        // it (ECL3.DAX 16's camp entries).
+        {16, 5, 2, D::north, {}},
         // The shambling mounds over a dead cleric, who holds the Wand of
-        // Defoliation the Pit of Moander calls for.
+        // Defoliation the Pit of Moander calls for, rested at the barracks.
         {16,
          11,
          8,
          D::north,
          {"Fight"},
-         false,
-         false,
-         false,
-         std::nullopt,
-         0,
-         0,
-         std::nullopt,
          true,
          false,
+         false,
+         std::nullopt,
+         0,
+         0,
+         std::nullopt,
+         false,
+         false,
          true},
-        // Into the Pit of Moander.
+        // Into the Pit of Moander, rested at the barracks again.
+        {16, 5, 2, D::north, {}},
         {16,
          11,
          0,
          D::north,
          {},
-         false,
-         false,
-         false,
-         std::nullopt,
-         0,
-         0,
-         std::nullopt,
          true,
+         false,
+         false,
+         std::nullopt,
+         0,
+         0,
+         std::nullopt,
+         false,
          true},
         // Alias and Dragonbait, who join a party that tells its story.
         {17, 1, 4, D::north, {"PARLAY", "NICE", "TELL HER YOUR STORY", "YES"}},
         // Down the stairs to the Pit's second level.
         {17, 15, 11, D::north, {"YES"}},
-        // Mogion and Moander's pseudopods are not yet beaten by the route's
-        // player: the test sets what their fall sets (ECL3.DAX 18: the
-        // Gauntlet of Moander, cell 0x4C5B, and 0x4C2D), and the party climbs
-        // back to the Pit's first level.
-        {17,
-         15,
-         14,
-         D::north,
-         {"YES"},
-         false,
-         false,
-         false,
-         std::nullopt,
-         0,
-         0,
-         std::nullopt,
-         false,
-         false,
-         false,
-         {{0x4C5B, 1}, {0x4C2D, 1}}},
+        // Mogion before her altar (ECL3.DAX 18, event 12): the bonds hold the
+        // party while her cultists draw Moander through the rift, until the
+        // bond of Moander fades and Alias and Dragonbait hack free. The party
+        // attacks Mogion, six cultists and five shambling mounds; as the rift
+        // snaps shut three pseudopods of Moander (140 Hit Points each) attack
+        // at once, and in their remains the party finds the Gauntlet of
+        // Moander (cell 0x4C5B).
+        {17, 7, 1, D::north, {"ATTACK"}},
+        // Back up the stairs to the Pit's first level (not down again).
+        {17, 15, 14, D::north, {"YES", "NO"}},
         // The cultists' last stand by the Pit's way out (ten cultists, five
-        // large vegepygmies, five shambling mounds), which the test wins for
-        // now, and out of the Pit by its door to the west.
-        {17,
-         12,
-         4,
-         D::west,
-         {},
-         false,
-         false,
-         false,
-         std::nullopt,
-         0,
-         0,
-         std::nullopt,
-         true,
-         false,
-         false,
-         {},
-         true},
+        // large vegepygmies, five shambling mounds), and out of the Pit by its
+        // door to the west.
+        {17, 12, 4, D::west, {}, true},
         // The way out, facing west at 0,11 (ECL3.DAX 17), back to the
         // wilderness.
         {17,
@@ -967,27 +930,11 @@ const std::vector<RouteBeat> &curse_route()
         {32, 2, 3, D::north, {"YES"}},
         // Dexam the Beholder and his minions, for the Amulet of Lathander
         // (map 33's events 15 and 16; the "beholder" at 2,1 is a gas spore).
-        // His lair meets the party only while cell 0x4C03 is 0, which the
-        // hooded woman set to 1 (ECL4.DAX 33 0x8832) and nothing on the way
-        // clears; until it is known what clears it in the original, the test
-        // does.
-        {33,
-         2,
-         11,
-         D::north,
-         {},
-         false,
-         false,
-         false,
-         std::nullopt,
-         0,
-         0,
-         std::nullopt,
-         true,
-         false,
-         false,
-         {{0x4C03, 0}},
-         true},
+        // His lair meets the party only while cell 0x4C03 is 0: the hooded
+        // woman set it to 1 (ECL4.DAX 33 0x8832), and the caves' new script
+        // cleared it again, as the original's EclInit clears 4C00h to 4C1Fh
+        // at each NEW ECL.
+        {33, 2, 11, D::north, {}, true},
         // Out of the caves, stepping off the map south of 11,15 (event 19 and
         // LEAVE_MAP), where Olive takes Dimswart away, back to the wilderness.
         {33,
@@ -1002,12 +949,14 @@ const std::vector<RouteBeat> &curse_route()
          0,
          0,
          std::nullopt,
-         true,
+         false,
          true},
-        // With the three artifacts, back by Yulash and Hillsfar to the
-        // Standing Stones, where the grey man reveals himself as Tyranthraxus
-        // and bids the party meet him at Myth Drannor, and on there.
-        {0, 0, 0, D::north, {"JOURNEY", "YULASH", "TRAIL", "stop:JOURNEY"}, false, false, true},
+        // With the three artifacts, rested in camp at the edge of Zhentil Keep
+        // (a camp in the caves draws their wandering monsters night after
+        // night), back by Yulash and Hillsfar to the Standing Stones, where
+        // the grey man reveals himself as Tyranthraxus and bids the party
+        // meet him at Myth Drannor, and on there.
+        {0, 0, 0, D::north, {"JOURNEY", "YULASH", "TRAIL", "stop:JOURNEY"}, true, false, true},
         {0, 0, 0, D::north, {"JOURNEY", "HILLSFAR", "TRAIL", "stop:JOURNEY"}, false, false, true},
         {0, 0, 0, D::north, {"JOURNEY", "STANDING", "TRAIL", "stop:JOURNEY"}, false, false, true},
         {0,
@@ -1037,43 +986,25 @@ const std::vector<RouteBeat> &curse_route()
         // In the ruins, the head Rakshasa, answered haughtily, helps against
         // Tyranthraxus; a sewer grate leads into the ruined temple.
         {66, 9, 6, D::north, {"Parley", "HAUGHTY"}},
-        {66,
-         5,
-         6,
-         D::north,
-         {"YES", "YES"},
-         false,
-         false,
-         false,
-         std::nullopt,
-         0,
-         0,
-         std::nullopt,
-         true},
+        // Rested in the ruins first (the parley keeps the rakshasas' patrols
+        // away, as the cluebook says): no camp rests in the temple ("YOUR
+        // BANDS WILL NOT LET YOU REST", ECL6.DAX 67).
+        {66, 5, 6, D::north, {"YES", "YES"}, true},
         // In the temple's chapel Tyranthraxus takes the bonded party, Nameless
         // frees it and dies, and Tyranthraxus leaves his minions to it; then
         // up the main hall's stairs to the second floor.
-        {67, 5, 11, D::north, {}, false, false, false, std::nullopt, 0, 0, std::nullopt, true},
+        {67, 5, 11, D::north, {}},
         {67, 10, 7, D::north, {"YES"}},
         // Tyranthraxus, with high priests and margoyles, on the second floor:
-        // the final battle.
-        {67,
-         6,
-         1,
-         D::north,
-         {},
-         false,
-         false,
-         false,
-         std::nullopt,
-         0,
-         0,
-         std::nullopt,
-         true,
-         false,
-         false,
-         {},
-         true},
+        // the final battle, the clerics' cures cast first on the hurt.
+        []
+        {
+            RouteBeat finale{67, 6, 1, D::north, {}};
+            finale.cure_first = true;
+            finale.cure_to_full = true;
+            finale.test_wins = true;
+            return finale;
+        }(),
     };
     return beats;
 }
@@ -9593,9 +9524,17 @@ bool walk_census(GoldBoxGame game, bool route)
                 if (std::getenv("OPENGOLD_ROUTE_PILES"))
                 {
                     std::cout << "  pile:";
+                    // An unidentified item shows its whole name and its magic
+                    // bonus too.
                     for (const auto &item : pile)
                     {
-                        std::cout << " [" << item.label() << "]";
+                        std::cout << " [" << item.label();
+                        if (!item.identified())
+                        {
+                            std::cout << " = " << item.decoded_name << " " << std::showpos
+                                      << item.stored.magic_bonus << std::noshowpos;
+                        }
+                        std::cout << "]";
                     }
                     std::cout << "\n";
                 }
@@ -9806,12 +9745,13 @@ bool walk_census(GoldBoxGame game, bool route)
             return total;
         };
         // Where Pools of Darkness's script lets no camp rest (the Fire Giant
-        // Cave, the Dragons' Aerie), its clerics raise the dead and cast their
-        // cures, the strongest first, on each member below half its Hit
-        // Points, as a player would.
+        // Cave, the Dragons' Aerie) or Curse's (its ruined temple), its
+        // clerics raise the dead and cast their cures, the strongest first, on
+        // each member below half its Hit Points, as a player would.
         const auto cure_the_hurt = [&](bool to_full = false)
         {
-            if (game != GoldBoxGame::pools_of_darkness)
+            if (game != GoldBoxGame::pools_of_darkness &&
+                game != GoldBoxGame::curse_of_the_azure_bonds)
             {
                 return;
             }
