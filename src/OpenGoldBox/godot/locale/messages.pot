@@ -25,7 +25,7 @@ msgstr ""
 msgid "   THAC0 {thac0}"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:639
+#: src/OpenGoldBox/party_preview.cpp:640
 msgid " (Reserve)"
 msgstr ""
 
@@ -730,11 +730,11 @@ msgstr ""
 msgid "Add character from Pool of Radiance"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:719
+#: src/OpenGoldBox/party_preview.cpp:720
 msgid "Add from Gateway"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/party_panel.tscn:244 src/OpenGoldBox/party_preview.cpp:720
+#: src/OpenGoldBox/godot/scenes/party_panel.tscn:244 src/OpenGoldBox/party_preview.cpp:721
 msgid "Add from Pool of Radiance"
 msgstr ""
 
@@ -742,7 +742,7 @@ msgstr ""
 msgid "Add proficiency to Initiative; optionally swap Initiative with an eligible ally before the first turn."
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1182 src/OpenGoldBox/godot/scenes/character_creation.tscn:1509 src/OpenGoldBox/godot/scenes/character_creation.tscn:1629 src/OpenGoldBox/party_preview.cpp:1176
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1182 src/OpenGoldBox/godot/scenes/character_creation.tscn:1509 src/OpenGoldBox/godot/scenes/character_creation.tscn:1629 src/OpenGoldBox/party_preview.cpp:1177
 msgid "Add to party"
 msgstr ""
 
@@ -2577,7 +2577,7 @@ msgstr ""
 msgid "Choose the required training options. Back preserves your selections."
 msgstr ""
 
-#: src/OpenGoldBox/modify_character_dialog.cpp:224
+#: src/OpenGoldBox/modify_character_dialog.cpp:223
 msgid "Choose the spell book's spells to keep the changes."
 msgstr ""
 
@@ -3181,7 +3181,7 @@ msgstr ""
 msgid "Create a character before saving"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:652
+#: src/OpenGoldBox/party_preview.cpp:653
 msgid "Create a character, finish its sheet, then Add to party.\n\nA party holds six characters, and up to two others may join it on the way. Removed members remain in the roster."
 msgstr ""
 
@@ -3438,11 +3438,11 @@ msgstr ""
 msgid "Decrease battlefield zoom by 100 percentage points"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:2037
+#: src/OpenGoldBox/party_preview.cpp:2038
 msgid "Defeat"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:2121
+#: src/OpenGoldBox/party_preview.cpp:2122
 msgid "Defeat test"
 msgstr ""
 
@@ -3993,7 +3993,7 @@ msgstr ""
 msgid "Dwarves are stout, hardy folk, as enduring as the stone they work.\n\nRacial traits:\n- Dwarven Toughness: 1 more Hit Point at every level.\n- Dwarven Resilience: Resistance to Poison damage, and Advantage on saves against being Poisoned."
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:700
+#: src/OpenGoldBox/party_preview.cpp:701
 msgid "Each new character brings 3d6 × 10 gold pieces. Save game keeps this party to play on later."
 msgstr ""
 
@@ -4231,7 +4231,7 @@ msgstr ""
 msgid "Enter a name before finishing your character."
 msgstr ""
 
-#: src/OpenGoldBox/modify_character_dialog.cpp:212
+#: src/OpenGoldBox/modify_character_dialog.cpp:211
 msgid "Enter a name for your character."
 msgstr ""
 
@@ -4284,7 +4284,7 @@ msgstr ""
 msgid "Equipped / "
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1269 src/OpenGoldBox/rolf_tour_view.cpp:1172
+#: src/OpenGoldBox/party_preview.cpp:1270 src/OpenGoldBox/rolf_tour_view.cpp:1172
 msgid "Equipped."
 msgstr ""
 
@@ -4368,7 +4368,7 @@ msgstr ""
 msgid "Exit"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:2045
+#: src/OpenGoldBox/party_preview.cpp:2046
 msgid "Exit to OS"
 msgstr ""
 
@@ -4707,7 +4707,7 @@ msgstr ""
 msgid "Finish Long Rest spell choices before combat"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1820
+#: src/OpenGoldBox/party_preview.cpp:1821
 msgid "Finish combat, dialogue or shopping before returning to the party."
 msgstr ""
 
@@ -5767,12 +5767,12 @@ msgstr ""
 msgid "Hit Points outside the character's range"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:1022
+#: src/OpenGoldBox/character_creation_view.cpp:1025
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Hit Points {hp}   Age {age}   Gold {gold}"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:1018
+#: src/OpenGoldBox/character_creation_view.cpp:1021
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Hit Points {hp}   Age {age}   Platinum {pp}"
 msgstr ""
@@ -6112,7 +6112,7 @@ msgstr ""
 msgid "Insight"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1819
+#: src/OpenGoldBox/party_preview.cpp:1820
 msgid "Inspect your party and equipment."
 msgstr ""
 
@@ -6792,7 +6792,7 @@ msgstr ""
 msgid "Load Character"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:2041
+#: src/OpenGoldBox/party_preview.cpp:2042
 msgid "Load a saved game to continue."
 msgstr ""
 
@@ -7499,7 +7499,7 @@ msgstr ""
 msgid "Modify character"
 msgstr ""
 
-#: src/OpenGoldBox/modify_character_dialog.cpp:164
+#: src/OpenGoldBox/modify_character_dialog.cpp:163
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Modify {name}"
 msgstr ""
@@ -9484,7 +9484,7 @@ msgstr ""
 msgid "Religion"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:2045
+#: src/OpenGoldBox/party_preview.cpp:2046
 msgid "Reload a Saved Game"
 msgstr ""
 
@@ -11136,7 +11136,7 @@ msgstr ""
 msgid "Start"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:390 src/OpenGoldBox/party_preview.cpp:1175
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:390 src/OpenGoldBox/party_preview.cpp:1176
 msgid "Start over"
 msgstr ""
 
@@ -11795,7 +11795,7 @@ msgstr ""
 msgid "The dead rise when the minute of casting ends."
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1876
+#: src/OpenGoldBox/party_preview.cpp:1877
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "The default party could not be made: {problem}"
 msgstr ""
@@ -12141,7 +12141,7 @@ msgstr ""
 msgid "The {spell} on the scroll is lost."
 msgstr ""
 
-#: src/OpenGoldBox/modify_character_dialog.cpp:216
+#: src/OpenGoldBox/modify_character_dialog.cpp:215
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "There is already a {name} in the party."
 msgstr ""
@@ -13611,7 +13611,7 @@ msgstr ""
 msgid "Your party flees the battle."
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:2039
+#: src/OpenGoldBox/party_preview.cpp:2040
 msgid "Your party has been defeated."
 msgstr ""
 
