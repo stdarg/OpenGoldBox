@@ -28,7 +28,7 @@ The user decided these on 2026-11-12:
 | 1 | *Pool of Radiance* | 1988 | `POOLRAD` | Playable and winnable |
 | 2 | *Curse of the Azure Bonds* | 1989 | `CURSE` | Played to its end by the route test, with stand-ins ([curse.md](games/curse.md)) |
 | 3 | *Secret of the Silver Blades* | 1990 | `SECRET` | Played to its win by the route test, with stand-ins ([secret.md](games/secret.md)) |
-| 4 | *Gateway to the Savage Frontier* | 1991 | `GATEWAY` | Played to its win by the route test, with stand-ins of experience, gold, gear and waits; no fight is won by the test ([gateway.md](games/gateway.md)) |
+| 4 | *Gateway to the Savage Frontier* | 1991 | `GATEWAY` | Played to its win by the route test, with stand-ins of experience, gold, gear and waits; one fight is won by the test, the Star Mounts' giant snakes and shambling mounds ([gateway.md](games/gateway.md)) |
 | 5 | *Pools of Darkness* | 1991 | `DARKNESS` | Played to its win by the route test, with stand-ins ([darkness.md](games/darkness.md)) |
 | 6 | *Treasures of the Savage Frontier* | 1992 | `TREASURE` | Played to its win by the route test; no fight is won by the test, only Llorkh's experience and money are given ([treasure.md](games/treasure.md)) |
 | 7 | *Forgotten Realms: Unlimited Adventures* | 1993 | `UA` | Designs made with the kit play to their win: walls, events and fights ([ua.md](games/ua.md)) |
@@ -516,7 +516,7 @@ new decoders.
    through the barracks to the commander's room: the statuette of the North
    (bit 3) and the others back. Rested in Llorkh, it walks to the foot of the
    Star Mounts, saves the aarakocra from the giant snakes and shambling
-   mounds, is flown to Ceptienne's aerie and through its maze to her chamber:
+   mounds (the test's win), is flown to Ceptienne's aerie and through its maze to her chamber:
    the statuette of the South (bit 4). Flown down, it walks to Sundabar and
    from its west gate overland round the mountains to Ascore, opens
    Vaalgamon's gate with the four statuettes past its spiders, and takes his
@@ -532,8 +532,11 @@ new decoders.
    short as the original's monsters ready their weapons. Every walk is played step by step as the planning aid
    (`OPENGOLD_SECRET_FIND`, with `OPENGOLD_FIND_YES` for the questions it must
    answer Yes) finds it. The stand-ins are the test experience and gold, the
-   gear and the waits for the ships and the morning; no fight is won by the
-   test. It rests on
+   gear and the waits for the ships and the morning, and one fight, which
+   the test wins: the giant snakes and shambling mounds at the foot of the
+   Star Mounts, whose mounds (armor class -4, engulfing) no play of the
+   route's party beats (2026-11-16, [ORIGINAL-RULES.md](ORIGINAL-RULES.md),
+   Next). It rests on
    the gate's square before the maze: Ascore's camp script (ECL6:20 0x818D)
    lets a party sleep only on squares of events 4 and 107 on (but 121), and
    breaks every other camp with undead, the rooms just east of the gate too,
