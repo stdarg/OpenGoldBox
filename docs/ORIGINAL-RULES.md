@@ -633,11 +633,36 @@ Journal), chosen by the game as the others' are (2026-11-14):
   Cast menu), and the Use menu is barred (`viewchar.pas`, UseItemMenu). The
   finale sets it for Gothmenes' last stand, the cluebook's "Bane's power
   which prevents the party from using magic" (ECL1:75), and script 39 for
-  its own area. A fight under it is a no-magic fight
-  (`rules::Encounter::no_magic`, as the kit's), with Use barred too
-  (2026-11-16, rules round 6); until then the party cast in that fight.
-  Its camp's refusal to cast there ("cannot cast spells in this area",
-  `camp.pas`) is still to come.
+  its own area (Dave's Challenge, after the win). A fight under it is a
+  no-magic fight (`rules::Encounter::no_magic`, as the kit's), with Use
+  barred too (2026-11-16, rules round 6); until then the party cast in that
+  fight. Out of a fight too (2026-11-16, darkness17): a spell cast from
+  camp or the Cast menu is refused, "<name> cannot cast spells in this
+  area" (`camp.pas`, CanDoSpellActivity), the spell kept, and the items
+  menu offers no Use (`RolfTourSession::magic_barred`). Its Fix, which
+  does nothing there either, OpenGoldBox's Pools of Darkness camp does not
+  offer.
+- **Its scripts' to-hit cells**: cell 1 (monsterHitMod) is added to the
+  attack roll of every creature on the monsters' side, cell 2Fh
+  (partyHitMod, a signed byte: F9h is 7 worse) to the party's side's, and
+  the fight's end sets both to 0 (`fxengine.pas`, AttackRoll;
+  `postcbt.pas`). The scripts set them for their hardest fights: Gothmenes'
+  last stand (the monsters 6 better and the party 7 worse when the party
+  will not bargain, 8 and 11 when it will), the slaves of the Descent to
+  the Depths (party 7 worse), the Temple of Tyr's catacombs, Moander's
+  heart by its own table, and Dave's Challenge. Played since 2026-11-16
+  (darkness17, `RolfTourSession::add_script_to_hit`, as the encounter's
+  `party_to_hit` and each monster's `original_strength.to_hit`); until then
+  OpenGoldBox read neither cell.
+- **A script stands a dead member up** by setting its record's status to
+  okay (0) with its Hit Points: the finale's last words ("A FOG OF PAIN
+  LIFTS", ECL1:75 0x95BF) set each member it counts to its maximum Hit
+  Points and okay. No cost of a raising is taken
+  (`CampaignParty::read_character`, 2026-11-16); until then the session
+  threw "Unsupported script HP change" there. The script counts from cell
+  C4h, which Xoham's fight left at the beholders' number (4 when no member
+  was down, else 3), not from 0, so the original heals only the members
+  from the fourth or fifth on; OpenGoldBox plays it so (Bugs).
 - **Arrows and quarrels** are *Secret*'s item types, 30 and 12, and its
   crossbows shoot its blessed bolts (type 74) as quarrels, from the one bolt
   place (`charhlp.pas`, `RecalcStats`, 2026-11-15). Until then OpenGoldBox
@@ -2084,3 +2109,4 @@ scales Hit Points takes only the table's to-hit and Armor Class.
 | *Curse* to *Treasures:* Keep adds up the Constitution's share of the Hit Points in a byte, so a Constitution below 7 wraps it round and the Hit Points rolled come out wrong (`chargen.pas`, `ModifyCharacterMenu`) | Counted with its sign |
 | *Unlimited Adventures:* Modify takes off every item the character has readied and never readies them again (`modify.c`, `modify_hero`) | The items stay readied |
 | Modify's Add on the Hit Points sets them to their highest, which lowers Hit Points creation left above it (the kit's knight), and Subtract likewise raises those below the lowest; a change of Constitution only pulls them back the one way (`chargen.pas`, `ModifyCharacterMenu`; `modify.c`) | A raise never lowers them and a lowering never raises them |
+| *Pools of Darkness:* the finale's last words heal and stand up the members from the count in cell C4h, which Xoham's fight left at its beholders' number (3 or 4), not from 0, so the first three or four members are not healed, though the cluebook says the party is (ECL1:75 0x95BF) | Played as the original for now: a fix would change a script's data, which OpenGoldBox has not done; for the user to decide (2026-11-16) |
