@@ -9026,6 +9026,15 @@ bool walk_census(GoldBoxGame game, bool route)
             party->restore(before);
             result = play_try(best_try);
         }
+        // OPENGOLD_FIGHT_LOG prints the kept play's log, to see why a fight goes
+        // as it does (the play's, where the test then wins it).
+        if (std::getenv("OPENGOLD_FIGHT_LOG"))
+        {
+            for (const auto &entry : result.log_entries)
+            {
+                std::cout << "    | " << entry.english << '\n';
+            }
+        }
         // Where the test wins fights, it also wins one the best play wins
         // only at the cost of a member dead or turned to stone: the party
         // would be lost on the way (Secret's and Pools of Darkness's routes'
@@ -9066,15 +9075,6 @@ bool walk_census(GoldBoxGame game, bool route)
             if (!planning)
             {
                 std::cout << "  the test wins the fight\n";
-            }
-        }
-        // OPENGOLD_FIGHT_LOG prints the kept play's log, to see why a fight goes
-        // as it does.
-        if (std::getenv("OPENGOLD_FIGHT_LOG"))
-        {
-            for (const auto &entry : result.log_entries)
-            {
-                std::cout << "    | " << entry.english << '\n';
             }
         }
         ++phases["fights ended " + std::to_string(static_cast<int>(result.outcome))];
