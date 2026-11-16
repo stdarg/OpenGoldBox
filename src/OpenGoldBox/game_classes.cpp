@@ -5,6 +5,7 @@
 #include "character_creation_view.h"
 #include "character_pool_dialog.h"
 #include "earlier_game_dialog.h"
+#include "modify_character_dialog.h"
 #include "portrait_dialog.h"
 #include "town_sheet_dialog.h"
 #include "equipment_choice_dialog.h"
@@ -27,6 +28,7 @@ void register_game_classes()
     godot::ClassDB::register_class<EquipmentChoiceDialog>();
     godot::ClassDB::register_class<CharacterPoolDialog>();
     godot::ClassDB::register_class<EarlierGameDialog>();
+    godot::ClassDB::register_class<ModifyCharacterDialog>();
     godot::ClassDB::register_class<TownSheetDialog>();
     godot::ClassDB::register_class<PortraitDialog>();
     godot::ClassDB::register_class<SaveSlots>();

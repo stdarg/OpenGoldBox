@@ -200,6 +200,25 @@ enum class AbilityGeneration
     rolled_in_place
 };
 
+// A row of the original games' Modify Character screen: an ability score, in
+// the order of Ability, or the Hit Points.
+enum class ModifyRow : unsigned
+{
+    strength,
+    dexterity,
+    constitution,
+    intelligence,
+    wisdom,
+    charisma,
+    hit_points
+};
+
+enum class ModifyStep
+{
+    lower,
+    raise
+};
+
 // Every operation is pure, so a module that omits one fails to compile
 // instead of failing in play (Effective C++ Item 34).
 class CharacterRules
@@ -225,6 +244,43 @@ class CharacterRules
         (void)from;
         (void)experience;
         return std::nullopt;
+    }
+
+    // The original games' Modify Character (docs/ORIGINAL-RULES.md): whether
+    // a character made from this draft, with this much experience, may still
+    // have its scores and Hit Points changed. Never under rules without it,
+    // such as the SRD's.
+    [[nodiscard]] virtual bool modifiable(const CharacterDraft &draft, unsigned experience) const
+    {
+        (void)draft;
+        (void)experience;
+        return false;
+    }
+
+    // The draft with one row of Modify Character lowered or raised a step,
+    // within the limits of its race, class and Hit Dice; the draft unchanged
+    // at a limit.
+    [[nodiscard]] virtual CharacterDraft modified(const CharacterDraft &draft, ModifyRow row,
+                                                  ModifyStep step) const
+    {
+        (void)draft;
+        (void)row;
+        (void)step;
+        throw std::logic_error("These rules have no Modify Character");
+    }
+
+    // Whether Modify Character also changes the name, as it does from Curse on.
+    [[nodiscard]] virtual bool modify_renames() const
+    {
+        return false;
+    }
+
+    // Whether creation offers Modify on the roll, before the character is
+    // finished, as Unlimited Adventures does; every game offers it on its
+    // party menu.
+    [[nodiscard]] virtual bool modify_while_made() const
+    {
+        return false;
     }
     [[nodiscard]] virtual std::vector<CreationChoice> choices(CreationField field) const = 0;
     [[nodiscard]] virtual std::vector<ScoreAdjustment>

@@ -548,6 +548,14 @@ Its differences from the Pool family ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md))
   table or both, as the Options screen's Design difficulty says (the user,
   2026-11-15). Experience from a fight gives single classes 10% more.
   *Done* (Fights).
+- Modify Character (`modify.c`, `modify_hero`): on the party menu while a
+  character's experience is still the design's start, a half or a third of
+  it, and also on the creation's roll beside Reroll (`create.c`), without
+  the name. It changes the scores, the Hit Points (*Pools of Darkness*'s
+  limits, with the kit's own Hit Dice levels) and, on the party menu, the
+  name, refusing another member's. *Done* (2026-11-16,
+  [ORIGINAL-RULES.md](../ORIGINAL-RULES.md#modify-character)); the kit's
+  taking off of every readied item is left out (Bugs).
 
 ### The test design
 

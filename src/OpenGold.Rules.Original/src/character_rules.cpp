@@ -186,9 +186,60 @@ constexpr int rules_data_version = 1;
     return out.str();
 }
 
+// Modify's numbers, kept after the roll (or after an imported character's
+// numbers): a marker, a version, the six scores from Strength to Charisma,
+// exceptional Strength and the Hit Points. A draft never modified has none,
+// so its rules data is what it was before Modify.
+constexpr std::string_view modified_marker = " modified ";
+constexpr int modified_data_version = 1;
+
+// The rules data before Modify's numbers.
+[[nodiscard]] std::string_view before_modified(std::string_view data)
+{
+    return data.substr(0, data.find(modified_marker));
+}
+
+[[nodiscard]] std::optional<ModifiedNumbers> modified_of(std::string_view data)
+{
+    const auto found = data.find(modified_marker);
+    if (found == std::string_view::npos)
+    {
+        return std::nullopt;
+    }
+    std::istringstream in{std::string(data.substr(found + modified_marker.size()))};
+    int version{};
+    ModifiedNumbers numbers;
+    in >> version;
+    for (const auto ability : rules::all_abilities)
+    {
+        in >> numbers.scores[ability];
+    }
+    in >> numbers.exceptional_strength >> numbers.hit_points;
+    std::string rest;
+    if (!in || version != modified_data_version || (in >> rest) || numbers.hit_points < 1 ||
+        numbers.exceptional_strength < 0 || numbers.exceptional_strength > 100)
+    {
+        throw std::invalid_argument("Unreadable modified character");
+    }
+    return numbers;
+}
+
+// The rules data with Modify's numbers in place of any before.
+[[nodiscard]] std::string with_modified(std::string_view data, const ModifiedNumbers &numbers)
+{
+    std::ostringstream out;
+    out << before_modified(data) << modified_marker << modified_data_version;
+    for (const auto ability : rules::all_abilities)
+    {
+        out << ' ' << numbers.scores[ability];
+    }
+    out << ' ' << numbers.exceptional_strength << ' ' << numbers.hit_points;
+    return out.str();
+}
+
 [[nodiscard]] RolledCharacter decode(std::string_view data)
 {
-    std::istringstream in{std::string(data)};
+    std::istringstream in{std::string(before_modified(data))};
     int version{};
     RolledCharacter rolled;
     in >> version;
@@ -321,7 +372,7 @@ std::optional<Imported> imported_of(const CharacterDraft &draft)
     {
         return std::nullopt;
     }
-    std::istringstream in{std::string(data.substr(imported_prefix.size()))};
+    std::istringstream in{std::string(before_modified(data).substr(imported_prefix.size()))};
     int version{};
     Imported from;
     in >> version;
@@ -579,6 +630,55 @@ class OriginalCharacterRules final : public rules::CharacterRules
         return draft;
     }
 
+    // Modify Character: a character its game's creation made, or one brought
+    // from the game before, while its experience is what its game's creation
+    // gives (modify_allowed); an NPC's record never.
+    bool modifiable(const CharacterDraft &draft, unsigned experience) const override
+    {
+        if (!draft.rolled || draft.rules_data.starts_with(record_prefix))
+        {
+            return false;
+        }
+        // An Unlimited Adventures design's start, or the kit's own.
+        const int design_start =
+            start_ ? start_->experience : starting_experience(Profession::fighter, game_);
+        return modify_allowed(static_cast<int>(std::min<unsigned>(experience, 100000000)), game_,
+                              design_start);
+    }
+
+    CharacterDraft modified(const CharacterDraft &draft, rules::ModifyRow row,
+                            rules::ModifyStep step) const override
+    {
+        if (draft.rules_data.starts_with(record_prefix))
+        {
+            throw std::invalid_argument("An NPC cannot be modified");
+        }
+        const auto sheet = evaluate(draft, rules::NameRequirement::optional);
+        const auto &numbers = *sheet.original;
+        const ModifiedNumbers before{sheet.scores, numbers.exceptional_strength, sheet.hit_points};
+        const auto after = modify_step(before, modified_character(draft, sheet), row, step, game_);
+        auto changed = draft;
+        if (after != before)
+        {
+            changed.rules_data = with_modified(draft.rules_data, after);
+        }
+        return changed;
+    }
+
+    // Pool of Radiance's Modify changes only the numbers; from Curse on it
+    // changes the name too.
+    bool modify_renames() const override
+    {
+        return game_ != GoldBoxGame::pool_of_radiance;
+    }
+
+    // The kit's roll offers Modify beside Reroll (create.c); the Pascal
+    // games' Modify is on their party menu only.
+    bool modify_while_made() const override
+    {
+        return game_ == GoldBoxGame::unlimited_adventures;
+    }
+
     std::vector<CreationChoice> choices(CreationField field) const override
     {
         switch (field)
@@ -702,7 +802,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
         }
         if (const auto imported = imported_of(draft))
         {
-            return imported->scores[ability];
+            return modified_imported(*imported, draft).scores[ability];
         }
         if (!draft.rolled)
         {
@@ -736,7 +836,15 @@ class OriginalCharacterRules final : public rules::CharacterRules
         }
         if (const auto imported = imported_of(draft))
         {
-            return imported_sheet(draft, *imported);
+            auto sheet = imported_sheet(draft, modified_imported(*imported, draft));
+            if (modified_of(draft.rules_data))
+            {
+                auto &numbers = *sheet.original;
+                numbers.rolled_hit_points = modified_rolled_hit_points(
+                    modified_character(draft, sheet), sheet.scores[Ability::constitution],
+                    sheet.hit_points, numbers.rolled_hit_points, game_);
+            }
+            return sheet;
         }
         const auto chosen = read_choices(draft, game_);
         const auto alignment = require_id(alignments, draft.alignment, "alignment");
@@ -750,8 +858,12 @@ class OriginalCharacterRules final : public rules::CharacterRules
             throw std::invalid_argument("The character's abilities are not rolled");
         }
         const auto rolled = decode(draft.rules_data);
-        const auto ability = ability_scores(chosen.race, chosen.gender, chosen.profession, rolled,
-                                            aging_, rolled.starting_age, game_);
+        const auto rolled_ability = ability_scores(chosen.race, chosen.gender, chosen.profession,
+                                                   rolled, aging_, rolled.starting_age, game_);
+        // Modify changes the scores and Hit Points after the original's
+        // creation trained the character, so its levels stay the roll's.
+        const auto modified = modified_of(draft.rules_data);
+        const auto ability = modified ? modified->scores : rolled_ability;
         CharacterSheet sheet;
         sheet.identity = identity();
         sheet.name = draft.name;
@@ -762,13 +874,15 @@ class OriginalCharacterRules final : public rules::CharacterRules
         sheet.base = ability;
         sheet.scores = ability;
         // Curse's character starts trained to its starting experience.
-        const auto trained = starting_training(chosen.race, chosen.profession, ability, rolled,
-                                               game_, experience_of(chosen.profession));
+        const auto trained = starting_training(chosen.race, chosen.profession, rolled_ability,
+                                               rolled, game_, experience_of(chosen.profession));
         const auto &levels = trained.levels;
         sheet.level = *std::max_element(levels.begin(), levels.end());
-        sheet.hit_points = first_level_hit_points(chosen.profession, rolled,
-                                                  ability[Ability::constitution], game_) +
-                           trained.hit_points;
+        sheet.hit_points = modified
+                               ? modified->hit_points
+                               : first_level_hit_points(chosen.profession, rolled,
+                                                        ability[Ability::constitution], game_) +
+                                     trained.hit_points;
         for (const auto slot : classes_of(chosen.profession))
         {
             sheet.level_classes.emplace_back(class_slot_id(slot));
@@ -780,10 +894,18 @@ class OriginalCharacterRules final : public rules::CharacterRules
         original.experience = experience_of(chosen.profession);
         original.platinum = platinum();
         original.exceptional_strength =
-            exceptional_strength(chosen.race, chosen.gender, chosen.profession, rolled,
-                                 ability[Ability::strength], game_);
+            modified ? modified->exceptional_strength
+                     : exceptional_strength(chosen.race, chosen.gender, chosen.profession, rolled,
+                                            ability[Ability::strength], game_);
         original.rolled_hit_points =
             first_level_rolled_hit_points(chosen.profession, rolled) + trained.rolled_hit_points;
+        if (modified)
+        {
+            original.rolled_hit_points =
+                modified_rolled_hit_points({chosen.race, chosen.gender, chosen.profession, levels},
+                                           ability[Ability::constitution], modified->hit_points,
+                                           original.rolled_hit_points, game_);
+        }
         original.age = rolled.starting_age;
         original.aging_changes_scores = aging_ == Aging::add;
         original.gold = rolled.gold;
@@ -828,9 +950,10 @@ class OriginalCharacterRules final : public rules::CharacterRules
                                             aging_, rolled.starting_age, game_);
         const auto trained =
             starting_training(chosen.race, chosen.profession, ability, rolled, game_);
+        const auto now = scores(draft);
         const auto slots =
             spell_slots(ClassSlot::magic_user, level_in(trained.levels, ClassSlot::magic_user),
-                        ability[Ability::wisdom], ability[Ability::intelligence], game_);
+                        now[Ability::wisdom], now[Ability::intelligence], game_);
         for (int level = 1; level <= chosen_spell_levels; ++level)
         {
             const int slot_count = slots[static_cast<std::size_t>(level - 1)];
@@ -874,6 +997,29 @@ class OriginalCharacterRules final : public rules::CharacterRules
     }
 
   private:
+    // The character Modify changes, by its sheet.
+    [[nodiscard]] static ModifiedCharacter modified_character(const CharacterDraft &draft,
+                                                              const CharacterSheet &sheet)
+    {
+        const auto &numbers = *sheet.original;
+        return {static_cast<Race>(numbers.race),
+                draft.gender == "female" ? Gender::female : Gender::male,
+                static_cast<Profession>(numbers.profession), numbers.class_levels};
+    }
+
+    // A character brought from another game with Modify's numbers, when the
+    // player kept some.
+    [[nodiscard]] static Imported modified_imported(Imported from, const CharacterDraft &draft)
+    {
+        if (const auto modified = modified_of(draft.rules_data))
+        {
+            from.scores = modified->scores;
+            from.exceptional_strength = modified->exceptional_strength;
+            from.hit_points = modified->hit_points;
+        }
+        return from;
+    }
+
     // A character brought from another game, as its draft keeps it.
     [[nodiscard]] CharacterSheet imported_sheet(const CharacterDraft &draft,
                                                 const Imported &from) const
@@ -1012,8 +1158,13 @@ class OriginalCharacterRules final : public rules::CharacterRules
         return sheet;
     }
 
+    // Modify's scores, or else the roll's.
     [[nodiscard]] rules::AbilityArray<int> scores(const CharacterDraft &draft) const
     {
+        if (const auto modified = modified_of(draft.rules_data))
+        {
+            return modified->scores;
+        }
         const auto chosen = read_choices(draft, game_);
         const auto rolled = decode(draft.rules_data);
         return ability_scores(chosen.race, chosen.gender, chosen.profession, rolled, aging_,

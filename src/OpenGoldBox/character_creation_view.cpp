@@ -9,6 +9,7 @@
 #include "character_creation_view.h"
 #include "character_sheet_text.h"
 #include "character_text.h"
+#include "modify_character_dialog.h"
 #include "opengold/srd5.h"
 #include "godot_path.h"
 #include "guarded_handlers.h"
@@ -149,6 +150,8 @@ void CharacterCreationView::_ready()
         .connect("pressed", presentation::guarded(this, &CharacterCreationView::restart));
     required_node<Button>(*this, "Roll")
         .connect("pressed", presentation::guarded(this, &CharacterCreationView::roll));
+    required_node<Button>(*this, "ModifyRoll")
+        .connect("pressed", presentation::guarded(this, &CharacterCreationView::modify_on_roll));
     required_node<ItemList>(*this, "Choices")
         .connect("item_selected",
                  presentation::guarded(this, &CharacterCreationView::choice_selected));
@@ -507,6 +510,8 @@ void CharacterCreationView::refresh()
         show(n, stats && !in_place);
     }
     show("Instructions", !stats || in_place);
+    // Unlimited Adventures' roll offers Modify beside Reroll (create.c).
+    show("ModifyRoll", stats && in_place && creator_->rules().modify_while_made() && d.rolled);
     for (unsigned i = 0; i < 6; ++i)
     {
         show(gs("Warning" + std::to_string(i)),
@@ -964,6 +969,25 @@ void CharacterCreationView::refresh()
     refresh_art();
     layout();
     queue_redraw();
+}
+
+void CharacterCreationView::modify_on_roll()
+{
+    if (!creator_ || !creator_->rules().modify_while_made() || !creator_->draft().rolled)
+    {
+        return;
+    }
+    // The kit's roll shows no name: creation asks for it next (create.c).
+    required_node<ModifyCharacterDialog>(*this, "ModifyModal")
+        .open({campaign_->character_rules(),
+               creator_->draft(),
+               false,
+               {},
+               [this](rules::CharacterDraft draft)
+               {
+                   creator_->modify(draft);
+                   refresh();
+               }});
 }
 
 bool CharacterCreationView::rolls_in_place() const

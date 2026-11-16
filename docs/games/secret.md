@@ -129,6 +129,16 @@ blank, and each slot's walls are read with its shift. The census decodes each
 set alone, with the slots it does not fill left blank. LOAD PIECES leaves a
 second or third slot of 127 empty, as of 255.
 
+## Modify Character
+
+The party menu's Modify changes a new character's scores, Hit Points and
+name while its experience is still creation's 200,000 (100,000 or 66,667 for
+each class of a multi-class character), or none (`chargen.pas`,
+`ModifyCharacterMenu`). Its Hit Points are *Curse*'s limits with each class's
+own Constitution bonus, a fighter or paladin past its Hit Dice gaining 2 a
+level. OpenGoldBox's party screen offers it so
+([ORIGINAL-RULES.md](../ORIGINAL-RULES.md#modify-character)).
+
 ## The opening
 
 A new game runs script 17 of disk 2, which has no map: over picture 119 (the

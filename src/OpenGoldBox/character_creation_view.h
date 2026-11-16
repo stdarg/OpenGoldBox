@@ -158,6 +158,12 @@ class CharacterCreationView : public godot::Control
     // Curse's Add Character from Pool of Radiance and Treasures' from
     // Gateway, offered when the party plays them under the original rules.
     void show_earlier_game();
+    // The original games' Modify Character for the roster's chosen member,
+    // offered under the original rules while its rules still allow it.
+    void show_modify();
+    // Modify on the roll, where the rules offer it while a character is made
+    // (Unlimited Adventures').
+    void modify_on_roll();
     [[nodiscard]] bool bringing_across() const;
     // The leader speaks for the party and deals with shopkeepers.
     void make_roster_leader();

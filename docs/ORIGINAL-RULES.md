@@ -1236,7 +1236,8 @@ lines in all:
     allows;
   - each ability the best of six 3d6 rolls, adjusted for age, kept within the
     race's limits and raised to the class's minimums;
-  - the *Modify character* screen before the first experience;
+  - the *Modify character* screen before the first experience (built
+    2026-11-16, [Modify Character](#modify-character));
   - Hit Points, starting gold and starting spells.
 - **Advancement:** the experience tables, the level limits, and training (one
   level per visit, 1,000 gold pieces).
@@ -1535,6 +1536,121 @@ lines in all:
      party's.
 7. **The monsters' tactics and the original rules' difficulty levels.** The
    original rules become the default once they play from start to end.
+
+## Modify Character
+
+Every Forgotten Realms game lets the player change a new character's rolled
+ability scores and Hit Points, to play a favourite character as it was
+written up, until the character begins adventuring (each game's
+`chargen.pas`, `ModifyCharacterMenu`; the kit's `modify.c`, `modify_hero`;
+the manuals say the same). OpenGoldBox offers it under the original rules
+as each game does (2026-11-16):
+
+- **Where.** The party screen's **Modify character** button, for the member
+  chosen in the roster: the original's party menu, the M of Create, Drop,
+  Modify, Train and the rest, which in every game follows creation at once
+  and stays on hand before the adventure. The kit also offers it on the
+  creation's roll, beside Roll again (its Done, Reroll Stats, Modify, Exit;
+  `create.c`), before the character is named. The Pascal games offer it on
+  the party menu only. It is never offered for an NPC.
+- **Until.** A character can be modified while its experience is still one
+  its game's creation gives, for one, two or three classes; with any other
+  the original says "*name* can't be modified", and OpenGoldBox turns the
+  button off:
+
+  | Game | Experience it may have |
+  |---|---|
+  | *Pool of Radiance* | none |
+  | *Curse of the Azure Bonds* | 25,000, 12,500 or 8,333, or none |
+  | *Secret of the Silver Blades* | 200,000, 100,000 or 66,667, or none |
+  | *Gateway to the Savage Frontier* | 3,000, 1,500 or 1,000, or none |
+  | *Pools of Darkness* | 1,500,001, 750,000 or 500,000 |
+  | *Treasures of the Savage Frontier* | 22,600, 11,300 or 7,533 |
+  | *Unlimited Adventures* | the design's starting experience, a half or a third of it |
+
+  So the first experience a fight or a script gives ends it. A character
+  brought from the game before (*Curse* from *Pool of Radiance*) can be
+  modified if its experience is one of these. From *Curse* to *Gateway* a
+  human who changed class cannot (their `levelAtChange`); OpenGoldBox has no
+  change of class yet. *Pools of Darkness* and *Treasures* also allowed it
+  from a testers' command-line switch, which OpenGoldBox does not offer.
+- **What changes.** The six scores, exceptional Strength and the maximum
+  Hit Points; from *Curse* on the name too, up to 15 letters (*Unlimited
+  Adventures* refuses another member's name, and its roll's Modify shows no
+  name, which creation asks next); and in *Treasures* a magic-user's spell
+  book, its first- to third-level spells chosen again as at creation (its
+  Keep runs the creation's choice again, and its manual names spell books
+  among what Modify changes). The character keeps the levels its creation
+  trained it to.
+- **Scores,** a point a step. Raising stops at the race's highest (Strength's
+  by gender). At Strength 18, the race's highest, a fighter (from *Curse* on
+  a fighter, paladin or ranger) raises its exceptional Strength instead, a
+  point at a time, to its race's and gender's limit (18/00 for a human man);
+  lowering takes the exceptional Strength first, to 18 even, then the score.
+  Lowering stops at the race's lowest and the class's minimum (a
+  multi-class's own row). No other limit applies: the Wisdom of 13 creation
+  gives a cleric multi-class may be lowered to the class's 9, as in every
+  original.
+- **Hit Points,** a point a step, between a lowest and a highest worked out
+  from the class levels and the Constitution, and divided among a
+  multi-class character's classes:
+  - *Pool of Radiance:* the lowest is a point a level (two at a ranger's or
+    monk's first level), the highest each die's top (d8 cleric, d10 fighter,
+    d4 magic-user, d6 thief); each with one level's Constitution bonus, the
+    lowest at least 1.
+  - *Curse* and *Gateway:* the lowest as *Pool of Radiance*'s, with *Curse*'s
+    bonus for one level (its single fighter's, paladin's or ranger's extra
+    from 17 up, doubled for a first-level ranger). The highest is each
+    class's die's top plus its Constitution's points a level (a fighter's,
+    paladin's or ranger's 3 to 5 at 17 to 19, anyone's 2 at 16 and up) at
+    every level, and past a class's Hit Dice a fixed amount (a fighter's 90
+    and 3 a level, a cleric's 72 and 2, a magic-user's 44 and 1, a thief's 60
+    and 2, a ranger's 88 and 2).
+  - *Secret:* *Curse*'s, each class with its own bonus, and past their Hit
+    Dice a fighter or paladin 88 and 2 a level.
+  - *Pools of Darkness*, *Treasures* and *Unlimited Adventures:* the lowest
+    is a point a level and past a class's Hit Dice a fixed amount (as many as
+    its dice's levels, then 2 a level, a fighter's or paladin's 3, a
+    magic-user's 1), with every level's Constitution bonus when the total is
+    above 0. The highest is each die's top with its Constitution's points at
+    each level of the dice, and past them 2 a level (a fighter's or
+    paladin's 3, a magic-user's 1).
+
+  A change of Constitution brings the Hit Points within its new limits; it
+  moves them no further. The character's current Hit Points are its new
+  maximum.
+- **Keep and Exit.** Keep keeps the changes and Exit leaves the character as
+  it was. From *Curse* on, Keep works out again the Hit Points the dice gave
+  (the original's hpRolled, which Raise Dead's loss is reckoned from): the
+  maximum less the Constitution's share of it; *Pool of Radiance* keeps its
+  dice's.
+- **The screen** is a window over the party screen with a row for each
+  score and the Hit Points, each with a lower (−) and a raise (+) button
+  that turn off at its limit, the name (from *Curse* on) and *Treasures*'
+  spell choices, and Keep and Exit buttons. Up and Down choose a row (marked
+  with ">"), Left and Right lower or raise it, Enter keeps and Escape exits
+  ([KEYBOARD.md](KEYBOARD.md)). The originals' menus differ a little from
+  game to game (Keep Exit; Add Subtract Keep Exit; the kit's Next Previous
+  Add Sub Keep Exit); OpenGoldBox's is the same in all.
+- **Left out, as they change nothing here:** the originals' reset of a
+  cleric's first-level slots on a change of Wisdom (OpenGoldBox works the
+  slots out from Wisdom), their "modified" mark (read only for an NPC's
+  share of treasure) and the kit's taking off of every readied item
+  (OpenGoldBox's scores are the character's own, without its items).
+- **Saves** keep the changed numbers in the character's creation data, after
+  its roll, so they need no new campaign format. A character never modified
+  is saved as before.
+- **The SRD rules' creation is unchanged:** it has no Modify, and the
+  button is not shown under the SRD rules.
+
+The rules are `OpenGold.Rules.Original`'s `modify_allowed`,
+`modify_hit_point_minimum`, `modify_hit_point_maximum`, `modify_step` and
+`modified_rolled_hit_points` (`modify.cpp`), keyed by game, behind
+`rules::CharacterRules::modifiable`, `modified`, `modify_renames` and
+`modify_while_made`; the party's `CampaignParty::modify` and the creator's
+`CharacterCreator::modify` take the changed draft. Tests:
+`tests/original_modify_tests.cpp` and, on the real screen,
+`tests/original_modify_view_tests.gd`.
 
 ## Combat (plan step 4)
 
@@ -2181,3 +2297,8 @@ scales Hit Points takes only the table's to-hit and Armor Class.
 | *Treasures* and *Pools of Darkness:* the computer's choice of spell sorts the memorized spells from the second, so the first memorized is never cast (their `combatai.pas`, PickCastableSpell) | Every memorized spell is weighed |
 | *Treasures:* the stone guardian's proofing against thrown weapons (effect 141) reads the weapon type's properties for a bare blow too, from no item (`effhndlr.pas`, EffResistItemTypes) | Only a weapon's type is read |
 | *Gateway:* a giant squid's constricting hold (effect 156) has its squeeze, two blows of 1d2, but the fight never calls it, so the squid only holds (`effhndlr.pas`, condition 14; `cbtacts.pas`, `AttackConstrict`) | It squeezes with them, as the owlbear's hug does |
+| Modify lowers a score below its class's minimum to its race's minimum, which may be lower still: a fighter's Strength of 9 lowered becomes 3 (`chargen.pas`, `ModifyCharacterMenu`) | It stops at the higher of the two, as from *Curse* on |
+| Modify's change of Wisdom awards a cleric's bonus slots of the second and third levels again at each step, with no ceiling (`chargen.pas`, `ModifyCharacterMenu`) | The slots are worked out from Wisdom, so a change of it changes them once |
+| *Curse*, *Gateway* and *Secret:* past a class's Hit Dice, Modify's highest Hit Points take its fixed amount in place of the other classes' (`chargen.pas`, `HpMaximum`) | Added to them, as for training |
+| *Curse* to *Treasures:* Keep adds up the Constitution's share of the Hit Points in a byte, so a Constitution below 7 wraps it round and the Hit Points rolled come out wrong (`chargen.pas`, `ModifyCharacterMenu`) | Counted with its sign |
+| *Unlimited Adventures:* Modify takes off every item the character has readied and never readies them again (`modify.c`, `modify_hero`) | The items stay readied |

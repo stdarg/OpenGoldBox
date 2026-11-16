@@ -173,6 +173,19 @@ offset_bottom = -98
 metadata/layout_reference = Rect2(288, 946, 170, 36)
 text = "Roll all six"
 
+[node name="ModifyRoll" type="Button" parent="."]
+visible = false
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -204
+offset_right = -84
+offset_top = -178
+offset_bottom = -142
+tooltip_text = "Change the rolled scores and Hit Points within what the race, class and Hit Dice allow."
+text = "Modify"
+
 [node name="SwapHint" type="Label" parent="."]
 anchor_right = 1
 anchor_top = 1
@@ -1619,6 +1632,280 @@ text = "Add to party"
 custom_minimum_size = Vector2(130, 40)
 layout_mode = 2
 text = "Close"
+
+[node name="ModifyModal" type="ModifyCharacterDialog" parent="."]
+visible = false
+title = "Modify character"
+transient = true
+exclusive = true
+unresizable = true
+size = Vector2i(760, 640)
+
+[node name="Background" type="Panel" parent="ModifyModal"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_type_variation = &"DialogSurface"
+
+[node name="Margin" type="MarginContainer" parent="ModifyModal"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_type_variation = &"Margin24"
+
+[node name="Rows" type="VBoxContainer" parent="ModifyModal/Margin"]
+layout_mode = 2
+theme_type_variation = &"VBoxContainerGap8"
+
+[node name="Title" type="Label" parent="ModifyModal/Margin/Rows"]
+layout_mode = 2
+theme_type_variation = &"LabelText23"
+auto_translate_mode = 2
+
+[node name="Hint" type="Label" parent="ModifyModal/Margin/Rows"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Up and Down choose a row; Left and Right, or its buttons, lower or raise it within what the character's race, class and Hit Dice allow. Enter keeps the changes; Escape leaves them."
+
+[node name="NameRow" type="HBoxContainer" parent="ModifyModal/Margin/Rows"]
+layout_mode = 2
+theme_type_variation = &"HBoxContainerGap10"
+
+[node name="NameLabel" type="Label" parent="ModifyModal/Margin/Rows/NameRow"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+text = "Name"
+
+[node name="Name" type="LineEdit" parent="ModifyModal/Margin/Rows/NameRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+max_length = 15
+auto_translate_mode = 2
+
+[node name="Grid" type="GridContainer" parent="ModifyModal/Margin/Rows"]
+layout_mode = 2
+columns = 4
+[node name="Row0" type="Button" parent="ModifyModal/Margin/Rows/Grid"]
+custom_minimum_size = Vector2(220, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+flat = true
+alignment = 0
+auto_translate_mode = 2
+text = "Strength"
+
+[node name="Lower0" type="Button" parent="ModifyModal/Margin/Rows/Grid"]
+custom_minimum_size = Vector2(56, 40)
+layout_mode = 2
+tooltip_text = "Lower"
+text = "−"
+
+[node name="Value0" type="Label" parent="ModifyModal/Margin/Rows/Grid"]
+custom_minimum_size = Vector2(110, 40)
+layout_mode = 2
+auto_translate_mode = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Raise0" type="Button" parent="ModifyModal/Margin/Rows/Grid"]
+custom_minimum_size = Vector2(56, 40)
+layout_mode = 2
+tooltip_text = "Raise"
+text = "+"
+[node name="Row1" type="Button" parent="ModifyModal/Margin/Rows/Grid"]
+custom_minimum_size = Vector2(220, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+flat = true
+alignment = 0
+auto_translate_mode = 2
+text = "Dexterity"
+
+[node name="Lower1" type="Button" parent="ModifyModal/Margin/Rows/Grid"]
+custom_minimum_size = Vector2(56, 40)
+layout_mode = 2
+tooltip_text = "Lower"
+text = "−"
+
+[node name="Value1" type="Label" parent="ModifyModal/Margin/Rows/Grid"]
+custom_minimum_size = Vector2(110, 40)
+layout_mode = 2
+auto_translate_mode = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Raise1" type="Button" parent="ModifyModal/Margin/Rows/Grid"]
+custom_minimum_size = Vector2(56, 40)
+layout_mode = 2
+tooltip_text = "Raise"
+text = "+"
+[node name="Row2" type="Button" parent="ModifyModal/Margin/Rows/Grid"]
+custom_minimum_size = Vector2(220, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+flat = true
+alignment = 0
+auto_translate_mode = 2
+text = "Constitution"
+
+[node name="Lower2" type="Button" parent="ModifyModal/Margin/Rows/Grid"]
+custom_minimum_size = Vector2(56, 40)
+layout_mode = 2
+tooltip_text = "Lower"
+text = "−"
+
+[node name="Value2" type="Label" parent="ModifyModal/Margin/Rows/Grid"]
+custom_minimum_size = Vector2(110, 40)
+layout_mode = 2
+auto_translate_mode = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Raise2" type="Button" parent="ModifyModal/Margin/Rows/Grid"]
+custom_minimum_size = Vector2(56, 40)
+layout_mode = 2
+tooltip_text = "Raise"
+text = "+"
+[node name="Row3" type="Button" parent="ModifyModal/Margin/Rows/Grid"]
+custom_minimum_size = Vector2(220, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+flat = true
+alignment = 0
+auto_translate_mode = 2
+text = "Intelligence"
+
+[node name="Lower3" type="Button" parent="ModifyModal/Margin/Rows/Grid"]
+custom_minimum_size = Vector2(56, 40)
+layout_mode = 2
+tooltip_text = "Lower"
+text = "−"
+
+[node name="Value3" type="Label" parent="ModifyModal/Margin/Rows/Grid"]
+custom_minimum_size = Vector2(110, 40)
+layout_mode = 2
+auto_translate_mode = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Raise3" type="Button" parent="ModifyModal/Margin/Rows/Grid"]
+custom_minimum_size = Vector2(56, 40)
+layout_mode = 2
+tooltip_text = "Raise"
+text = "+"
+[node name="Row4" type="Button" parent="ModifyModal/Margin/Rows/Grid"]
+custom_minimum_size = Vector2(220, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+flat = true
+alignment = 0
+auto_translate_mode = 2
+text = "Wisdom"
+
+[node name="Lower4" type="Button" parent="ModifyModal/Margin/Rows/Grid"]
+custom_minimum_size = Vector2(56, 40)
+layout_mode = 2
+tooltip_text = "Lower"
+text = "−"
+
+[node name="Value4" type="Label" parent="ModifyModal/Margin/Rows/Grid"]
+custom_minimum_size = Vector2(110, 40)
+layout_mode = 2
+auto_translate_mode = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Raise4" type="Button" parent="ModifyModal/Margin/Rows/Grid"]
+custom_minimum_size = Vector2(56, 40)
+layout_mode = 2
+tooltip_text = "Raise"
+text = "+"
+[node name="Row5" type="Button" parent="ModifyModal/Margin/Rows/Grid"]
+custom_minimum_size = Vector2(220, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+flat = true
+alignment = 0
+auto_translate_mode = 2
+text = "Charisma"
+
+[node name="Lower5" type="Button" parent="ModifyModal/Margin/Rows/Grid"]
+custom_minimum_size = Vector2(56, 40)
+layout_mode = 2
+tooltip_text = "Lower"
+text = "−"
+
+[node name="Value5" type="Label" parent="ModifyModal/Margin/Rows/Grid"]
+custom_minimum_size = Vector2(110, 40)
+layout_mode = 2
+auto_translate_mode = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Raise5" type="Button" parent="ModifyModal/Margin/Rows/Grid"]
+custom_minimum_size = Vector2(56, 40)
+layout_mode = 2
+tooltip_text = "Raise"
+text = "+"
+[node name="Row6" type="Button" parent="ModifyModal/Margin/Rows/Grid"]
+custom_minimum_size = Vector2(220, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+flat = true
+alignment = 0
+auto_translate_mode = 2
+text = "Hit Points"
+
+[node name="Lower6" type="Button" parent="ModifyModal/Margin/Rows/Grid"]
+custom_minimum_size = Vector2(56, 40)
+layout_mode = 2
+tooltip_text = "Lower"
+text = "−"
+
+[node name="Value6" type="Label" parent="ModifyModal/Margin/Rows/Grid"]
+custom_minimum_size = Vector2(110, 40)
+layout_mode = 2
+auto_translate_mode = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Raise6" type="Button" parent="ModifyModal/Margin/Rows/Grid"]
+custom_minimum_size = Vector2(56, 40)
+layout_mode = 2
+tooltip_text = "Raise"
+text = "+"
+[node name="Spells" type="ScrollContainer" parent="ModifyModal/Margin/Rows"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="List" type="VBoxContainer" parent="ModifyModal/Margin/Rows/Spells"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"VBoxContainerGap8"
+
+[node name="Status" type="Label" parent="ModifyModal/Margin/Rows"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+size_flags_vertical = 10
+autowrap_mode = 3
+auto_translate_mode = 2
+
+[node name="Buttons" type="HBoxContainer" parent="ModifyModal/Margin/Rows"]
+layout_mode = 2
+alignment = 2
+theme_type_variation = &"HBoxContainerGap10"
+
+[node name="Keep" type="Button" parent="ModifyModal/Margin/Rows/Buttons"]
+custom_minimum_size = Vector2(130, 40)
+layout_mode = 2
+text = "Keep"
+
+[node name="Exit" type="Button" parent="ModifyModal/Margin/Rows/Buttons"]
+custom_minimum_size = Vector2(130, 40)
+layout_mode = 2
+text = "Exit"
 
 [node name="TargetsTitle" type="Label" parent="."]
 offset_left = 50

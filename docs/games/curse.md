@@ -130,6 +130,17 @@ fields *Pool of Radiance*'s records fill (`por::CharacterRecord`), with the
 current abilities, the levels before a change of class and the longer spell
 lists besides.
 
+## Modify Character
+
+The party menu's Modify changes a new character's scores, Hit Points and
+name while its experience is still what creation gives, 25,000 (12,500 or
+8,333 for each class of a multi-class character), or none, as a character
+brought from *Pool of Radiance* before its first fight has (`chargen.pas`,
+`ModifyCharacterMenu`). The Hit Points reach each class's die and
+Constitution at every level creation trained it to. OpenGoldBox's party
+screen offers it so
+([ORIGINAL-RULES.md](../ORIGINAL-RULES.md#modify-character)).
+
 ## Sound effects
 
 The PC speaker's driver is linked into `START.EXE` as in *Pool of Radiance*, but

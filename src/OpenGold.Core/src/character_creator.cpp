@@ -961,6 +961,31 @@ void CharacterCreator::roll()
     }
 }
 
+void CharacterCreator::modify(const rules::CharacterDraft &modified)
+{
+    require_editable();
+    if (!rules_->modify_while_made())
+    {
+        throw std::logic_error("These rules offer Modify on the party screen only");
+    }
+    if (!rolls_in_place() || !draft_.rolled)
+    {
+        throw std::runtime_error("Roll the character first.");
+    }
+    const auto experience = rules_->evaluate(draft_, rules::NameRequirement::optional).original;
+    if (!experience || !rules_->modifiable(draft_, static_cast<unsigned>(experience->experience)))
+    {
+        throw std::runtime_error("This character cannot be modified");
+    }
+    if (modified.race != draft_.race || modified.gender != draft_.gender ||
+        modified.character_class != draft_.character_class ||
+        modified.alignment != draft_.alignment)
+    {
+        throw std::invalid_argument("Modify changes only the scores and Hit Points");
+    }
+    draft_.rules_data = modified.rules_data;
+}
+
 bool CharacterCreator::scores_assigned() const
 {
     return rolls_in_place() ? draft_.rolled : all_scores_assigned(draft_);

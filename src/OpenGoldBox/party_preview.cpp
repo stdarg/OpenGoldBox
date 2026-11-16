@@ -13,6 +13,7 @@
 #include "character_creation_view.h"
 #include "character_pool_dialog.h"
 #include "earlier_game_dialog.h"
+#include "modify_character_dialog.h"
 #include "town_sheet_dialog.h"
 #include "character_sheet_text.h"
 #include "equipment_choice_dialog.h"
@@ -163,6 +164,8 @@ void CharacterCreationView::setup_party()
                 roster_index_ = campaign_->state().roster.size() - 1;
                 refresh_party();
             });
+    required_node<Button>(*this, "PartyPanel/ActionRow1/Modify")
+        .connect("pressed", presentation::guarded(this, &CharacterCreationView::show_modify));
     required_node<Button>(*this, "PartyPanel/ActionRow2/Modifiers")
         .connect("pressed", presentation::guarded(this, &CharacterCreationView::show_modifiers));
     required_node<Button>(*this, "PartyPanel/ActionRow2/SavingThrows")
@@ -395,6 +398,45 @@ void CharacterCreationView::show_earlier_game()
     {
         required_node<EarlierGameDialog>(*this, "FromPoolModal").open();
     }
+}
+
+void CharacterCreationView::show_modify()
+{
+    const auto &roster = campaign_->state().roster;
+    if (roster_index_ >= roster.size())
+    {
+        return;
+    }
+    const auto &member = roster[roster_index_];
+    const auto id = member.id;
+    if (!campaign_->modifiable(id))
+    {
+        error_ = i18n::format("{name} can't be modified.",
+                              {{"name", gs(member.character.sheet().name)}});
+        refresh_party();
+        return;
+    }
+    const auto rules = campaign_->character_rules();
+    // The kit refuses a name another member has ("Already a ... in party!").
+    std::vector<std::string> taken;
+    if (original::game_of(campaign_->identity()) == GoldBoxGame::unlimited_adventures)
+    {
+        for (const auto &other : roster)
+        {
+            if (other.id != id)
+            {
+                taken.push_back(other.character.sheet().name);
+            }
+        }
+    }
+    required_node<ModifyCharacterDialog>(*this, "ModifyModal")
+        .open({rules, member.character.creation_data(), rules->modify_renames(), std::move(taken),
+               [this, id](rules::CharacterDraft draft)
+               {
+                   campaign_->modify(id, std::move(draft));
+                   error_ = "";
+                   refresh_party();
+               }});
 }
 
 bool CharacterCreationView::bringing_across() const
@@ -679,6 +721,13 @@ void CharacterCreationView::refresh_party()
                                               : N_("Add from Pool of Radiance")));
     // Only an active member who is not already the leader can be made leader.
     const auto chosen = state.roster.empty() ? MemberId{} : state.roster[roster_index_].id;
+    // The original games' party menu offers Modify for a character before
+    // its first experience; the SRD's creation has none.
+    auto &modify = required_node<Button>(*this, "PartyPanel/ActionRow1/Modify");
+    modify.set_visible(game_rules_of(*campaign_).set == GameRules::Set::original);
+    modify.set_disabled(!chosen || !campaign_->modifiable(chosen));
+    modify.set_tooltip_text(i18n::text(N_(
+        "Change a character's ability scores and Hit Points before it gains its first experience.")));
     required_node<Button>(*this, "PartyPanel/MakeLeader")
         .set_disabled(!chosen || chosen == campaign_->leader() ||
                       std::find(state.slots.begin(), state.slots.end(), chosen) ==

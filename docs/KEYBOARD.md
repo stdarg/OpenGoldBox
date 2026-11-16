@@ -30,6 +30,15 @@ Both work in every window. Neither advances the splash screens.
 | Arrow keys | Move through the portrait grid when it has focus: Left and Right by one portrait, Up and Down by one row. |
 | Esc | Close the full-size portrait (opened by double-clicking one). |
 
+### Modify character (the original rules)
+
+| Key | Does |
+| --- | --- |
+| Up / Down | Choose the score or Hit Points row to change. |
+| Left / Right | Lower or raise the chosen row a step (held, it repeats). While the name is being typed they move in it. |
+| Enter | Keep the changes. |
+| Esc | Exit, leaving the character as it was. |
+
 ## Exploration
 
 | Key | Does |

@@ -297,6 +297,16 @@ class CampaignParty
     MemberId bring_across(const PartyMember &from, const ItemConversion &convert_item = {},
                           std::optional<BroughtMoney> own_money = std::nullopt);
 
+    // The original games' Modify Character: whether the member's rules still
+    // let its scores and Hit Points be changed (a player character, before
+    // its first experience as its game counts it).
+    [[nodiscard]] bool modifiable(MemberId id) const;
+    // The member made again from `draft`, its creation draft with Modify's
+    // changes (rules::CharacterRules::modified), at its new full Hit Points.
+    // Throws, changing nothing, unless the member is modifiable and the draft
+    // keeps its race, gender, class and alignment.
+    void modify(MemberId id, rules::CharacterDraft draft);
+
     // Developer tools only (dev_tools/party_tester): player characters may
     // also take the two NPC positions, so up to eight of them fight. A game
     // party never allows it, and no save holds such a party.

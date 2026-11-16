@@ -71,7 +71,7 @@ configure_file("${export_config}" "${game_project}/export_presets.cfg" @ONLY)
 
 add_library(opengoldbox_game SHARED rolf_tour_view.cpp combat_view.cpp character_creation_view.cpp
     portrait_picker.cpp portrait_catalog.cpp party_preview.cpp equipment_choice_dialog.cpp level_up_view.cpp level_up_dialog.cpp level_up_lab_view.cpp campaign_save_view.cpp save_slots.cpp
-    character_pool_dialog.cpp earlier_game_dialog.cpp town_sheet_dialog.cpp portrait_dialog.cpp original_portrait_parts.cpp character_sheet_view.cpp character_sheet_text.cpp godot_sound_output.cpp register_types.cpp game_classes.cpp campaign_combat.cpp startup_view.cpp game_lifecycle.cpp crash_reports.cpp game_log.cpp game_menu_view.cpp game_menu_host.cpp screenshot_service.cpp localization.cpp application_settings.cpp game_rules.cpp)
+    character_pool_dialog.cpp earlier_game_dialog.cpp modify_character_dialog.cpp town_sheet_dialog.cpp portrait_dialog.cpp original_portrait_parts.cpp character_sheet_view.cpp character_sheet_text.cpp godot_sound_output.cpp register_types.cpp game_classes.cpp campaign_combat.cpp startup_view.cpp game_lifecycle.cpp crash_reports.cpp game_log.cpp game_menu_view.cpp game_menu_host.cpp screenshot_service.cpp localization.cpp application_settings.cpp game_rules.cpp)
 target_link_libraries(opengoldbox_game PRIVATE opengold_core opengold_rules_srd5 opengold_rules_original godot-cpp)
 # The commit being built, for the head of the game's log; checked on every build.
 add_custom_target(opengoldbox_commit
@@ -489,6 +489,13 @@ if(OPENGOLD_BUILD_TESTS)
     # A character made under the original rules, page by page.
     opengold_creation_check(original "Original creation view passed"
         -DSCRIPT=original_creation_view_tests -DARGS=--original-rules)
+    # Modify Character on the party screen, by keyboard and mouse: Pool of
+    # Radiance's here, the other games' below (with their files); the SRD's
+    # party screen offers none.
+    opengold_creation_check(original_modify "Modify view passed: POOLRAD"
+        -DSCRIPT=original_modify_view_tests -DARGS=--original-rules)
+    opengold_creation_check(srd_modify "Modify view passed: the SRD offers none"
+        -DSCRIPT=original_modify_view_tests -DARGS=--rules=srd)
     # A sample of every Human the screen can make, one screen after another,
     # with both fill orders and changes of background, class and species, some
     # made again on a fresh screen; the script explores every species when
@@ -647,6 +654,19 @@ if(OPENGOLD_BUILD_TESTS)
         "Startup menu passed: Unlimited Adventures"
         "-DARGS=--ua\;--ua-design=${OPENGOLD_UA_DESIGN_FIXTURE}")
     set_property(TEST opengold_godot_startup_menu_ua APPEND PROPERTY
+        FIXTURES_REQUIRED ua_design_fixture)
+    # Each later game's Modify Character (original_modify_view_tests), with its
+    # name and, in Treasures, a magic-user's spell book; the kit's on its roll
+    # too. Skipped without a game's files.
+    foreach(folder CURSE SECRET GATEWAY DARKNESS TREASURE)
+        string(TOLOWER "${folder}" lower)
+        opengold_settings_check(original_modify_${lower} original_modify_view_tests
+            "Modify view passed: ${folder}" "-DARGS=--game=${folder}\;--rules=original")
+    endforeach()
+    opengold_settings_check(original_modify_ua original_modify_view_tests
+        "Modify view passed: UA"
+        "-DARGS=--game=UA\;--rules=original\;--ua-design=${OPENGOLD_UA_DESIGN_FIXTURE}")
+    set_property(TEST opengold_godot_original_modify_ua APPEND PROPERTY
         FIXTURES_REQUIRED ua_design_fixture)
     # Each game's save and load screens list its own saves, and a save of
     # another game starts that game. Skipped without Curse's files.

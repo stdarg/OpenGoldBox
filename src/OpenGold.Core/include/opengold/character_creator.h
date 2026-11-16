@@ -131,6 +131,12 @@ class CharacterCreator
         return starting_platinum_;
     }
 
+    // Modify Character on the roll, where the rules offer it while a
+    // character is made (rules::CharacterRules::modify_while_made, Unlimited
+    // Adventures'): the draft with Modify's changes. Throws unless the
+    // character is rolled, the rules let it be modified and the draft keeps
+    // its choices.
+    void modify(const rules::CharacterDraft &modified);
     void assign_roll(unsigned roll, rules::Ability ability);
     [[nodiscard]] bool scores_assigned() const;
     void swap_scores(rules::Ability first, rules::Ability second);

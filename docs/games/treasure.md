@@ -146,6 +146,16 @@ appearances into its slot and the ones after it. TREASURE adds its platinum,
 gems and jewelry and its items (`ITEM0`'s definitions) to the pile the next
 COMBAT with no monsters gives.
 
+## Modify Character
+
+The party menu's Modify changes a new character's scores, Hit Points and
+name while its experience is still creation's 22,600 (11,300 or 7,533 for
+each class of a multi-class character), with *Pools of Darkness*'s limits,
+and a magic-user chooses its first- to third-level spells again, as its
+Keep runs creation's choice anew (`chargen.pas`, `ModifyCharacterMenu`,
+`InitKnownSpells`). OpenGoldBox's party screen offers it so
+([ORIGINAL-RULES.md](../ORIGINAL-RULES.md#modify-character)).
+
 ## The opening
 
 A new game runs script 16, its load entry only. Over pictures 2, 3 and 4 it

@@ -503,6 +503,16 @@ in the game: answering YES at a hall lists its services in the dialogue
 
 ## Interface and saves
 
+- **Modify Character's window** (2026-11-16). The originals edit the scores,
+  Hit Points and name in place on the character's sheet, from a menu that
+  differs from game to game (*Pool of Radiance*'s Keep Exit, where Enter
+  moves to the next row; *Secret*'s and *Pools of Darkness*'s Add Subtract
+  Keep Exit; the kit's Next Previous Add Sub Keep Exit, where Escape does
+  nothing). OpenGoldBox's party screen opens one window for every game, a
+  row for each score and the Hit Points with lower and raise buttons: Up and
+  Down choose a row, Left and Right change it, Enter keeps the changes and
+  Escape leaves them. The limits are each game's
+  ([ORIGINAL-RULES.md](ORIGINAL-RULES.md#modify-character)).
 - **A film celebrates each win** (2026-11-14, the user's design). The
   originals end on their closing words (*Pool of Radiance* on its closing
   story). OpenGoldBox plays the game's ending film first, when one is among

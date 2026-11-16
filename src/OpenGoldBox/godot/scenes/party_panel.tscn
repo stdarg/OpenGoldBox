@@ -119,6 +119,13 @@ size_flags_horizontal = 3
 size_flags_stretch_ratio = 355.2
 text = "Equip selected"
 
+[node name="Modify" type="Button" parent="ActionRow1"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 300.0
+text = "Modify character"
+
 [node name="ActionRow2" type="HBoxContainer" parent="."]
 anchor_right = 1.0
 anchor_top = 1.0

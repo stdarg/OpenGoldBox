@@ -311,6 +311,17 @@ OpenGoldBox's engine names the cells by *Pool of Radiance*'s addresses, and
 `game_address` gives each its Darkness cell; a *Pool of Radiance* cell
 Darkness has no place for is kept where no Darkness script reads it.
 
+## Modify Character
+
+The party menu's Modify changes a new character's scores, Hit Points and
+name while its experience is still creation's 1,500,001 (750,000 or 500,000
+for each class of a multi-class character); unlike the earlier games, never
+one with none (`chargen.pas`, `ModifyCharacterMenu`). Its Hit Points run from
+a point a level, with every level's Constitution bonus when that is above 0
+(its `HpMaximum`), to each die's top with its Constitution at each level of
+the dice and a fixed amount past them (`HitPointCap`). OpenGoldBox's party
+screen offers it so ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md#modify-character)).
+
 ## The opening
 
 A new game runs script 16, its load entry only, as the original's game loop

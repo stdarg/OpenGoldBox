@@ -1,5 +1,6 @@
 #ifndef OPENGOLD_ORIGINAL_RULES_H
 #define OPENGOLD_ORIGINAL_RULES_H
+#include "opengold/character_rules.h"
 #include "opengold/gold_box_game.h"
 #include "opengold/random_state.h"
 #include "opengold/rules.h"
@@ -373,6 +374,57 @@ enum class ThiefSkill : unsigned
 // Constitution of 14, nor at 17 or more without fighter levels.
 [[nodiscard]] int raised_hit_point_loss(const ClassLevels &levels, int constitution, int hit_points,
                                         int rolled_hit_points);
+// Modify Character (each game's chargen.pas, ModifyCharacterMenu; the kit's
+// modify.c): a new character's scores and Hit Points, changed a step at a
+// time within its race's, class's and Hit Dice's limits
+// (docs/ORIGINAL-RULES.md, Modify Character).
+
+// What Modify changes: the six scores, exceptional Strength (1 to 100, on a
+// Strength of 18) and the maximum Hit Points.
+struct ModifiedNumbers
+{
+    rules::AbilityArray<int> scores{};
+    int exceptional_strength{};
+    int hit_points{};
+
+    bool operator==(const ModifiedNumbers &) const = default;
+};
+
+// The character whose numbers Modify changes.
+struct ModifiedCharacter
+{
+    Race race{};
+    Gender gender{};
+    Profession profession{};
+    ClassLevels levels{};
+};
+
+// Whether the game's Modify still takes a character with this much
+// experience: one its game's creation gave it, for one, two or three classes
+// (none in Pool of Radiance; from Curse to Gateway none as well). An
+// Unlimited Adventures design starts its characters with `design_start`.
+[[nodiscard]] bool modify_allowed(int experience, GoldBoxGame game, int design_start = 0);
+// The lowest and highest Hit Points Modify gives a character of these levels
+// and this Constitution (HpMinimum and HpMaximum; Pools of Darkness's,
+// Treasures' and the kit's HpMaximum and HitPointCap).
+[[nodiscard]] int modify_hit_point_minimum(const ModifiedCharacter &character, int constitution,
+                                           GoldBoxGame game);
+[[nodiscard]] int modify_hit_point_maximum(const ModifiedCharacter &character, int constitution,
+                                           GoldBoxGame game);
+// The numbers with one row lowered or raised a step: a score within its
+// race's limits and, lowered, its class's minimum; Strength's exceptional
+// percentage first, a point at a time, for a fighter (from Curse on a
+// paladin or ranger too) at its race's 18; a Constitution's change keeping
+// the Hit Points within their new limits.
+[[nodiscard]] ModifiedNumbers modify_step(const ModifiedNumbers &numbers,
+                                          const ModifiedCharacter &character, rules::ModifyRow row,
+                                          rules::ModifyStep step, GoldBoxGame game);
+// The Hit Points rolled (hpRolled) a modified character keeps: in Pool of
+// Radiance its dice's, `rolled_before`; from Curse on its maximum less its
+// Constitution's share of it, as Keep works it out.
+[[nodiscard]] int modified_rolled_hit_points(const ModifiedCharacter &character, int constitution,
+                                             int hit_points, int rolled_before, GoldBoxGame game);
+
 // A character's share of an award of experience (postcbt.pas,
 // AwardExperience): a single-class cleric, fighter, magic-user or thief
 // with its prime ability above 15 earns a tenth more; a two-class character

@@ -141,6 +141,12 @@ scene. Character creation itself retains the same choices. Supported combat
 profiles and remaining class/skill/spell/lineage limits are listed there.
 Campaign saves keep the party ([saves](SAVES.md)).
 
+Under the original rules the party screen also offers each game's **Modify
+character**, which changes a new member's scores and Hit Points (from *Curse*
+on its name) before its first experience, and *Unlimited Adventures* offers
+it on the roll too ([ORIGINAL-RULES.md](ORIGINAL-RULES.md#modify-character)).
+The SRD rules' creation described here is unchanged and has no Modify.
+
 ## Native boundaries and rules
 
 - `OpenGold.Rules/character_rules.h` defines the optional `CharacterRules`

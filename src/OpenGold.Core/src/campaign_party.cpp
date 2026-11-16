@@ -1259,6 +1259,32 @@ MemberId CampaignParty::bring_across(const PartyMember &from, const ItemConversi
     return id;
 }
 
+bool CampaignParty::modifiable(MemberId id) const
+{
+    const auto &m = member(id);
+    return m.npc_source.empty() &&
+           character_rules()->modifiable(m.character.creation_data(), m.experience);
+}
+
+void CampaignParty::modify(MemberId id, rules::CharacterDraft draft)
+{
+    editable();
+    if (!modifiable(id))
+    {
+        throw std::runtime_error("This character can no longer be modified");
+    }
+    auto &m = edit(id);
+    const auto &before = m.character.creation_data();
+    if (draft.race != before.race || draft.gender != before.gender ||
+        draft.character_class != before.character_class || draft.alignment != before.alignment)
+    {
+        throw std::invalid_argument("Modify changes only the scores, Hit Points and name");
+    }
+    auto changed = m.character.recreated(*character_rules(), *rules_, std::move(draft));
+    m.vitals.hit_points = changed.sheet().hit_points;
+    m.character = std::move(changed);
+}
+
 MemberId CampaignParty::recruit(std::string source, Character converted, unsigned morale)
 {
     editable();

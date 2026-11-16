@@ -116,6 +116,14 @@ portrait frame). 401Bh rereads the wall and event of the party's cell, where
 No and sets the comparison, and 8810h changes the current character's coins
 up into larger ones.
 
+## Modify Character
+
+The party menu's Modify changes a new character's scores, Hit Points and
+name while its experience is still creation's 3,000 (1,500 or 1,000 for each
+class of a multi-class character), or none (`chargen.pas`,
+`ModifyCharacterMenu`), with *Curse*'s limits. OpenGoldBox's party screen
+offers it so ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md#modify-character)).
+
 ## The opening
 
 A new game runs script 1 of disk 2 (`ECL2.DAX`), its load entry only, as the

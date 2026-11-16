@@ -123,6 +123,7 @@ target_link_libraries(opengold_rules_srd5 PUBLIC opengold_rules)
 add_library(opengold_rules_original STATIC
     src/OpenGold.Rules.Original/src/original_rules.cpp
     src/OpenGold.Rules.Original/src/character_rules.cpp
+    src/OpenGold.Rules.Original/src/modify.cpp
     src/OpenGold.Rules.Original/src/combatant.cpp
     src/OpenGold.Rules.Original/src/spells.cpp
     src/OpenGold.Rules.Original/src/combat_session.cpp
@@ -268,6 +269,10 @@ if(OPENGOLD_BUILD_TESTS)
     target_link_libraries(opengold_original_creation_tests PRIVATE opengold_rules_original
         opengold_core)
     add_test(NAME opengold_original_creation_tests COMMAND opengold_original_creation_tests)
+    add_executable(opengold_original_modify_tests tests/original_modify_tests.cpp)
+    target_link_libraries(opengold_original_modify_tests PRIVATE opengold_rules_original
+        opengold_rules_srd5 opengold_core)
+    add_test(NAME opengold_original_modify_tests COMMAND opengold_original_modify_tests)
     add_executable(opengold_original_combat_tests tests/original_combat_tests.cpp)
     target_link_libraries(opengold_original_combat_tests PRIVATE opengold_rules_original opengold_core)
     target_compile_definitions(opengold_original_combat_tests PRIVATE OPENGOLD_BINARY_DIR="${PROJECT_BINARY_DIR}")
