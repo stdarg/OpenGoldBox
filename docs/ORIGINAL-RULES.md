@@ -627,6 +627,17 @@ Journal), chosen by the game as the others' are (2026-11-14):
   - Its records' type flags, "immunities" and magic resistance are read
     (bytes 420, 421 and 491), *Secret*'s bits, so a creature is a snake, a
     mammal, a ranger's foe or unliving as in *Secret*.
+- **Its scripts' antiMagic** (cell 2, "no spells or magic items"): while a
+  script has it set, no one casts a spell in a fight, the computer's
+  creatures neither (`combatai.pas`, SelectSpellToCast; `combat.pas`, the
+  Cast menu), and the Use menu is barred (`viewchar.pas`, UseItemMenu). The
+  finale sets it for Gothmenes' last stand, the cluebook's "Bane's power
+  which prevents the party from using magic" (ECL1:75), and script 39 for
+  its own area. A fight under it is a no-magic fight
+  (`rules::Encounter::no_magic`, as the kit's), with Use barred too
+  (2026-11-16, rules round 6); until then the party cast in that fight.
+  Its camp's refusal to cast there ("cannot cast spells in this area",
+  `camp.pas`) is still to come.
 - **Arrows and quarrels** are *Secret*'s item types, 30 and 12, and its
   crossbows shoot its blessed bolts (type 74) as quarrels, from the one bolt
   place (`charhlp.pas`, `RecalcStats`, 2026-11-15). Until then OpenGoldBox
@@ -1127,6 +1138,17 @@ Journal), chosen by the game as the others' are (2026-11-14):
   - Its records' type flags, "immunities" and magic resistance are read
     (bytes 420, 421 and 491), *Secret*'s bits, so a creature is a snake, a
     mammal, a ranger's foe or unliving as in *Secret*.
+- **Its scripts' antiMagic** (cell 2, "no spells or magic items"): while a
+  script has it set, no one casts a spell in a fight, the computer's
+  creatures neither (`combatai.pas`, SelectSpellToCast; `combat.pas`, the
+  Cast menu), and the Use menu is barred (`viewchar.pas`, UseItemMenu). The
+  finale sets it for Gothmenes' last stand, the cluebook's "Bane's power
+  which prevents the party from using magic" (ECL1:75), and script 39 for
+  its own area. A fight under it is a no-magic fight
+  (`rules::Encounter::no_magic`, as the kit's), with Use barred too
+  (2026-11-16, rules round 6); until then the party cast in that fight.
+  Its camp's refusal to cast there ("cannot cast spells in this area",
+  `camp.pas`) is still to come.
 - **Arrows and quarrels** are *Secret*'s item types, 30 and 12, and its
   crossbows shoot its blessed bolts (type 74) as quarrels, from the one bolt
   place (`charhlp.pas`, `RecalcStats`, 2026-11-15). Until then OpenGoldBox

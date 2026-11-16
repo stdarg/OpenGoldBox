@@ -679,8 +679,27 @@ longer wins; where it stops:
   come from the north, east and west (11): 1 play of 300 wins, two members
   dead. The route loses here.
 
-Next: re-plan these fights (and any after them) for the sides, or put
-them to the user as stand-ins.
+Re-planned (rules round 6, 2026-11-16) with the party a player makes: on
+Modify Character, before its first experience (its 22,600 from creation
+allow it), each member's scores are raised to its race's and class's
+highest and its Hit Points to *Treasures*' highest, through the rules' own
+Modify ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Modify Character;
+`opengold::test::modify_to_the_highest`), as players did and the cluebooks
+assume. The route wins the game again, with no fight won by the test:
+
+- The Way Inn's last fight: 69 plays of 600 win, 21 with no one lost; no
+  longer a stand-in, the party reloads it until it wins
+  (`RouteBeat::reloads_until_won`, 600).
+- The council of Mirabar's ambush: 76 plays of 600 win, 4 with no one lost;
+  the dead are raised at the Temple of Vergadain after it.
+- The beholders fire their rays since this round (their AttackEyeRays, as
+  in *Pools of Darkness*; until then a guard kept them still). The route
+  meets one in Fireshear's cavern on the sea (33: 2,4), with the yeti
+  chiefs and ice hounds: 359 plays of 360 win, 291 with no one lost, and
+  the beholder's Fear, Slow and Sleep are seen in its fight.
+
+Stand-ins left: the experience and money at Llorkh's hall (above), no
+fight.
 
 ## The ending
 

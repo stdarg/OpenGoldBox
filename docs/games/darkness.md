@@ -1000,21 +1000,23 @@ state does (Script memory, above). Until 2026-11-14 OpenGoldBox stepped on
 anyway, so stairs landed a square beyond their landing and a held step could
 wrap round the map's edge.
 
-Stand-ins (2026-11-16, night): four, the fights the test wins, down from
-nine (The stand-ins measured, below; Tanetal re-planned and the beholders'
-rays, below). Kalistes' egg room (84: 2,6), both its
-fights: Kalistes, seven drow champions, eight drow wizards and five pets,
-whose eight Ice Storms in the first round take some 120 Hit Points from each
-member of the party of levels 15 to 17 before most of it acts, and the
-spy's basilisks, medusae and earth elementals after; no play of 120 wins.
-And the finale's first fight (script 75: the pool's dracoliches, bits of
-Moander, minions and Pets of Kalistes, whose breaths and Charm Person beat
-the party, its bearer of the crystal near death from countermanding the
-summons, in every play) and, since the beholders' rays play, Xoham's
-beholders after it, whom the party beats in most plays but never without a
-member disintegrated, turned to stone or slain; since the monsters come from
-the sides their SETUP MONSTER names (2026-11-16, rules round 6) Gothmenes'
-last stand is the test's too (The sides and the round limit, below). The
+Stand-ins (2026-11-16, rules round 6): three, the fights the test wins,
+down from nine (The stand-ins measured, below; The sides and the round
+limit, below). Kalistes' fight in her egg room (84: 2,6): Kalistes, seven
+drow champions, eight drow wizards and five pets, whose eight Ice Storms in
+the first round take some 120 Hit Points from each member before most of
+it acts; 4 plays of 840 win, each with three members or more lost, so the
+test wins it (the spy's basilisks, medusae and earth elementals after it
+the route's player beats: 149 plays of 600, 45 with no one lost). The
+finale's first fight (script 75: the pool's dracoliches, bits of Moander,
+minions and Pets of Kalistes, whose breaths and Charm Person beat the
+party, its bearer of the crystal near death from countermanding the
+summons; none of 600 plays wins). And Gothmenes' last stand at its end,
+under Bane's power that bars all magic (none of 600 plays wins; The sides
+and the round limit, below). Xoham's beholders between them, a stand-in
+on the beholders' rays, the route's player now beats with no one lost (14
+plays of 600; 425 win, most with members lost, whom no camp can raise
+before the finale's end, so the player reloads a costly win there). The
 fights the route's player now wins: Thorne and
 his seven red dragons (34: 3,6), the Aerie's blue dragons (33: 3,14), the
 Chambers of Marcus (67: 0,12 south; script 77), the heart's magnetic iron
@@ -1371,6 +1373,40 @@ party in all of the beat's 360 plays (2026-11-16, late): the route stops in
 Thorne's chamber (34: 3,6). Next: measure Thorne on more dice, and re-plan
 (a stronger party of the original player's make, or Thorne a stand-in
 again, for the user to decide).
+
+**The party made on Modify Character** (rules round 6, the coordinator's
+decision of 2026-11-16). In every game a player may set a new character's
+scores and Hit Points with Modify before its first experience
+([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Modify Character), and players
+did, as the cluebooks assume. The route's player now does: each member's
+scores are raised to its race's and class's highest and its Hit Points to
+the game's highest, a step at a time through the rules' own Modify
+(`opengold::test::modify_to_the_highest`, after creation, before anything
+else), in place of rolling again until the class's ability was 18 and the
+Constitution 17. The party starts with 135 Hit Points a paladin, 138 the
+ranger, 100 a cleric and 69 the magic-user (2026-11-16), every score at its
+highest (the magic-user's Intelligence 18 keeps its eighth- and ninth-level
+slots). With it:
+
+- Thorne's dragons (34: 3,6), from three sides: 130 plays of 360 win, 8
+  with no one lost (none of 360 before); the route wins it with no one lost.
+- Kalistes' egg room: the spy's fight after Kalistes is won by play (149 of
+  600); Kalistes' own stays a stand-in (4 of 840, each costing three
+  members or more).
+- Xoham's beholders (the finale): won by play with no one lost (above).
+- Gothmenes' last stand stays a stand-in. Its script sets cell 2
+  (antiMagic) before it, which OpenGoldBox now plays
+  ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), *Pools of Darkness*, Its
+  scripts' antiMagic): no spell and no Use on either side. Gothmenes, two
+  green dragons, eight Minions of Bane and two bits of Moander come from all
+  four sides (SETUP MONSTER's 15), the minions' lightning three times each
+  (their 45 maximum Hit Points, half on a save) and the dragons' poison
+  three times each (72), against a party whose bearer of the crystal stands
+  at 2 Hit Points: none of 600 plays wins, the party with magic barred
+  (none of 120 before the bar either). Tried and dropped: the members
+  stepping apart before they close in, so that a breath takes one member
+  where it took several (none of 600 won); the monsters reach the party in
+  its first turns. No reasonable play of this party wins it.
 
 ### Creatures
 
