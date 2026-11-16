@@ -1151,19 +1151,20 @@ Each stand-in's fight played from a save before it
 (40 dice, three tactics); "wins" are plays the party wins, "clean" those it
 wins with no member dead:
 
-| Fight | Before | Rolled party | With its tactics |
-|---|---|---|---|
-| The Aerie's blue dragons (33: 3,14) | 3 wins, 0 clean | 4, 0 | |
-| Thorne (34: 3,6) | 0 | 6, 2 (the safe room's rest) | |
-| Kalistes (84: 2,6) | 0 | 0 | |
-| The Chambers of Marcus, Marcus's wave | 1, 0 | 86, 31 | |
-| The heart's iron golems (53: 9,3) | 0 | 1, 0 | 3, 0 |
-| Tanetal's last stand (53: 5,12) | 2, 0 | 10, 0 | |
-| The Iron Wall's minions (64: 15,5) | 2, 1 | 69, 23 | |
-| The palace's rakshasas (65: 4,4) | 0 | 8, 4 | |
-| The finale's first fight (75) | 0 | 0 | 0 (cured first) |
+| Fight | Before | Now |
+|---|---|---|
+| The Aerie's blue dragons (33: 3,14) | 3 wins, 0 clean | 4, 0 |
+| Thorne (34: 3,6) | 0 | 6, 2 |
+| Kalistes (84: 2,6) | 0 | 0 |
+| The Chambers of Marcus, Marcus's wave | 1, 0 | 88, 42 |
+| The heart's iron golems (53: 9,3) | 0 | 3, 0 |
+| Tanetal's last stand (53: 5,12) | 2, 0 | 5, 0 |
+| The Iron Wall's minions (64: 15,5) | 2, 1 | 63, 18 |
+| The palace's rakshasas (65: 4,4) | 0 | 9, 4 |
+| The finale's first fight (75) | 0 | 0 |
 
-"Before" is the party of 2026-11-16 as it was. "Rolled party": the route's
+"Now" is measured after the rebase onto the rest's rules of 2026-11-16
+(campaign_rest.cpp). "Before" is the party of 2026-11-16 as it was. Now the route's
 player rolls each character again at creation until its class's ability is
 18 and its Constitution 17 (the creation screen's Roll, as a player rolls
 for a party meant to finish the game; the original's Modify, which sets the
@@ -1180,11 +1181,24 @@ spell (EffIronGolem; the clerics' maces, crushing weapons, do them no harm
 either), so the route's player casts no fire where one stands and, where only
 golems stand, no spell against them and no Quick magic but its magic-user's
 Lightning Bolts, which slow them (it memorizes them in the camp before the
-heart), its clerics taking up their maces and shields: 3 plays of 120 win.
+heart), its clerics taking up their maces and shields (with spells
+cast as Quick casts them, 1 play of 120 won).
 The finale's clerics cure the party before it (the pool's waters hurt the
 crystal's bearer), which no play still turns. The web's paths to Kalistes'
 Parlor are fled (`RouteBeat::fleeing`): with the rolled party a band of Pets
 of Kalistes came on the party there, and the fight it won put it off its way.
+
+No engine fault was found in these fights: the iron golems, the dragons'
+breaths and the computer's spells play as the reconstruction has them.
+Experience is not what the three stand-ins lack: a late fight gives each
+member some 9,000 (the Iron Wall's minions) to 74,000 (the finale), where a
+paladin's level costs 350,000, so wandering fights would not raise the party
+a level before the end. What is left to try: for Kalistes, a party spread
+out before the wizards' first Ice Storms, or Globes of Invulnerability; for
+the finale, Mind Blank (which the route's magic-user does not memorize: its
+memorizing ranks no such spell) against the dracoliches' Charm Person, and
+the casters' spells chosen for the fight (the clerics fill their
+fifth-level slots with Raise Dead, the route's rule since 2026-11-15).
 
 ### Creatures
 

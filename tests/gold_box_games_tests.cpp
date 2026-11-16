@@ -4650,7 +4650,7 @@ const std::vector<RouteBeat> &darkness_route()
         // The waves are fought back to back: the spectres, the Minions of
         // Bane breathing for 27 with the Banite clerics holding members for
         // them to slay, the human minions, and Marcus with his Black Circle
-        // mages and minions (86 of 120 plays win the last, 2026-11-16).
+        // mages and minions (88 of 120 plays win the last, 2026-11-16).
         auto chambers = step_beat(67, 0, 12, D::south);
         chambers.camp_broken = true;
         route.push_back(chambers);
@@ -5048,7 +5048,7 @@ const std::vector<RouteBeat> &darkness_route()
         // Tanetal's last stand in the right ventricle (5,12, event 8; the
         // cluebook's 10): he slays the Watcher and his minions rise.
         // Tanetal, his golems, cultists and bits of Moander beat the party in
-        // most plays (10 of 120 win, three members dead, 2026-11-16), so the
+        // most plays (5 of 120 win, three members dead, 2026-11-16), so the
         // player reloads until one wins and raises its dead after. The party
         // takes the Talisman of Bane (cell 245h 1).
         walk_heart({{7, 10, D::west}, {6, 10, D::south}, {6, 11, D::south}});
@@ -5273,7 +5273,7 @@ const std::vector<RouteBeat> &darkness_route()
         // member (6; the cluebook's 12), the wall shatters, and through it
         // (YES) lies the Palace of Gothmenes (script 65, the Crystal Ring
         // held). Fourteen Minions of Bane, each casting Ice Storm and Hold
-        // Monster and breathing for 22, fall to the party in 69 of 120 plays
+        // Monster and breathing for 22, fall to the party in 63 of 120 plays
         // (2026-11-16).
         {
             auto iron_wall =
@@ -5305,7 +5305,7 @@ const std::vector<RouteBeat> &darkness_route()
         // rakshasas are revealed. The bolts' bearers ready their crossbows
         // and quarrels (item types 27 and 12). Two Maharajahs and seven
         // Rajahs, whom no spell below the eighth level touches, cast an Ice
-        // Storm each a round and beat the party in most plays (8 of 120 win,
+        // Storm each a round and beat the party in most plays (9 of 120 win,
         // 2026-11-16, with the magic-user's eighth- and ninth-level spells),
         // so the player reloads until one wins.
         {
