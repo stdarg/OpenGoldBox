@@ -17488,3 +17488,23 @@ msgstr "◀ Cuerpo"
 #: src/OpenGoldBox/godot/scenes/original_portrait_parts.tscn:10
 msgid "◀ Head"
 msgstr "◀ Cabeza"
+
+#: src/OpenGoldBox/earlier_game_dialog.cpp:185
+msgid "Add character from Secret of the Silver Blades"
+msgstr "Añadir un personaje de Secret of the Silver Blades"
+
+#: src/OpenGoldBox/party_preview.cpp:679
+msgid "Add from Secret"
+msgstr "Añadir de Secret"
+
+#: src/OpenGoldBox/earlier_game_dialog.cpp:284
+msgid "Brings its levels, experience, spells and items, and its share of the party's platinum, gems and jewelry."
+msgstr "Trae sus niveles, su experiencia, sus conjuros y sus objetos, y su parte del platino, las gemas y las joyas del grupo."
+
+#: src/OpenGoldBox/earlier_game_dialog.cpp:214
+msgid "Choose a Secret of the Silver Blades save, then a character to bring into the party."
+msgstr "Elige una partida guardada de Secret of the Silver Blades y después un personaje para traer al grupo."
+
+#: src/OpenGoldBox/earlier_game_dialog.cpp:219
+msgid "No Secret of the Silver Blades game saved under the original rules was found."
+msgstr "No se ha encontrado ninguna partida de Secret of the Silver Blades guardada con las reglas originales."
