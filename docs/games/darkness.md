@@ -1362,6 +1362,16 @@ The route wins on them. What changed in its play:
   from ahead and it won. Stand-ins: Kalistes' egg room (both fights) and the
   finale beat (its first fight and Gothmenes').
 
+Then the Hit Points of AdjustLevelHitPoints came with it (a level past a
+class's Hit Dice adds its fixed amount, no Constitution bonus): the default
+party starts with about a fifth fewer Hit Points (its paladin 102 where it
+had 130 before Thorne). The blue dragons of the Aerie (33), lost on that fix
+alone, are won again, but Thorne's dragons, from three sides, now beat the
+party in all of the beat's 360 plays (2026-11-16, late): the route stops in
+Thorne's chamber (34: 3,6). Next: measure Thorne on more dice, and re-plan
+(a stronger party of the original player's make, or Thorne a stand-in
+again, for the user to decide).
+
 ### Creatures
 
 A creature is 510 bytes. A character can hold 141 memorized spells and know
