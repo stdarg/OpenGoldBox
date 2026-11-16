@@ -3556,7 +3556,9 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
     }
     case 184:
         // Fear: those on a path 6 squares long and 3 wide that fail to save
-        // flee (Curse, SpellFear).
+        // flee (Curse, SpellFear). Pools of Darkness's are forced to flee
+        // while the fright lasts (its SpellFear sets their turned flag, which
+        // its EffFear clears as the fright ends).
         for (const auto id : path_area(caster, aim, 6, 3))
         {
             auto &f = *find(id);
@@ -3565,6 +3567,7 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
                                  false, 0, level, &known))
             {
                 f.fleeing = true;
+                f.turned = f.turned || darkness();
             }
         }
         break;
@@ -8901,9 +8904,10 @@ void Session::expire(Fighter &f, const Effect &ended)
     case 342:
         // Fear ends: it stops fleeing and is the player's again (Curse, AffectFear).
         f.fleeing = false;
-        // Treasures' fear also ends the flight its yetis' surprise forced
-        // (its effhndlr.pas, EffFear, as the effect is removed).
-        if (treasures())
+        // Treasures' fear also ends the flight its yetis' surprise forced, and
+        // Pools of Darkness's the flight its Fear forced (their effhndlr.pas,
+        // EffFear, as the effect is removed).
+        if (treasures() || darkness())
         {
             f.turned = false;
         }

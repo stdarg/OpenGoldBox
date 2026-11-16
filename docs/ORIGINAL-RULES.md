@@ -679,6 +679,12 @@ Journal), chosen by the game as the others' are (2026-11-14):
   spell does, for nothing, as *Pools of Darkness*'s and *Treasures*'
   temples ask nothing (`rules::TempleService::restoration`); it is offered
   only to one a drain has taken below its peak.
+- **Fear forces the flight while it lasts** (`magic.pas`, SpellFear;
+  `effhndlr.pas`, EffFear; 2026-11-16): one that fails its save against the
+  spell, or a beholder's Fear, is forced to flee, its flight ending with the
+  fright, a round a caster level. Until then OpenGoldBox let it flee only
+  until its next turn, whose morale check put it back in the fight (its own
+  bug, fixed). A dragon's fear (100) makes no one flee.
 - **Its clouds, for one in them** (`fxengine.pas`, ConsiderTerrainEffects,
   2026-11-16), are its own: a stinking cloud spares the undead, the
   nauseous and one its record calls unliving or proof against poison
@@ -1168,6 +1174,12 @@ Journal), chosen by the game as the others' are (2026-11-14):
   spell does, for nothing, as *Pools of Darkness*'s and *Treasures*'
   temples ask nothing (`rules::TempleService::restoration`); it is offered
   only to one a drain has taken below its peak.
+- **Fear forces the flight while it lasts** (`magic.pas`, SpellFear;
+  `effhndlr.pas`, EffFear; 2026-11-16): one that fails its save against the
+  spell, or a beholder's Fear, is forced to flee, its flight ending with the
+  fright, a round a caster level. Until then OpenGoldBox let it flee only
+  until its next turn, whose morale check put it back in the fight (its own
+  bug, fixed). A dragon's fear (100) makes no one flee.
 - **Its clouds, for one in them** (`fxengine.pas`, ConsiderTerrainEffects,
   2026-11-16), are its own: a stinking cloud spares the undead, the
   nauseous and one its record calls unliving or proof against poison

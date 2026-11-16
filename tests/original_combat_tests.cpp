@@ -5106,6 +5106,53 @@ void darkness_clouds_spare_the_poison_proof()
           "A stinking cloud takes only the one not proof against poison");
 }
 
+// Pools of Darkness's Fear (magic.pas, SpellFear) sends one that fails its
+// save running only while the fright lasts, a round a caster level: its
+// EffFear ends the flight as the effect goes (effhndlr.pas). Its dragons'
+// fear makes no one run (darkness_monsters_fight_by_their_effects).
+void darkness_fear_ends_with_the_fright()
+{
+    using original::ClassSlot;
+    auto rooted = victim(500);
+    rooted.saving_throws = {20, 20, 20, 20, 20};
+    rooted.movement = 0;
+    auto fight = arrange_darkness(
+        {{"Mage", rules::Side::party, {1, 3}, caster(ClassSlot::magic_user, 7, {184})},
+         {"Ogre", rules::Side::opposition, {3, 3}, rooted}},
+        341);
+    auto &session = *fight.session;
+    cast_now(session, "Mage", 184,
+             [&]
+             {
+                 return aim_at_cell(session, {3, 3});
+             });
+    check(view_of(session.snapshot(), "Ogre").panicked, "One that fails its save runs in terror");
+    const auto cast_round = session.snapshot().round;
+    play_until(
+        session,
+        [&](const std::string &)
+        {
+            return order(session, "end");
+        },
+        [&]
+        {
+            return session.snapshot().round > cast_round + 1;
+        });
+    check(view_of(session.snapshot(), "Ogre").panicked,
+          "It still runs at its next turn, the fright not over");
+    play_until(
+        session,
+        [&](const std::string &)
+        {
+            return order(session, "end");
+        },
+        [&]
+        {
+            return session.snapshot().round > cast_round + 9;
+        });
+    check(!view_of(session.snapshot(), "Ogre").panicked, "Its flight ends with the fright");
+}
+
 // Pools of Darkness's beholders fire their rays (its 117; cbtacts.pas,
 // AttackEyeRays, which its AI runs as its move begins, combatai.pas,
 // AiMoveAttack): as the kit's, up to four tries a turn at the enemy it locks
@@ -6796,6 +6843,7 @@ int main()
         darkness_ai_shuns_clouds();
         darkness_clouds_spare_the_poison_proof();
         darkness_beholder_fires_its_rays();
+        darkness_fear_ends_with_the_fright();
         std::cout << "Original-rules combat passed.\n";
     }
     catch (const std::exception &error)
