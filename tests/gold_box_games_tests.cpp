@@ -1082,7 +1082,7 @@ void walk_passages(
 // Steps through a map as walk_passages does, but without stopping to rest
 // and taking the first choice where no answer is given: Secret's castle,
 // whose guards break every camp, which a hurt party crosses to a gateway to
-// the Well, where it can rest. The test wins the fights its player loses.
+// the Well, where it can rest.
 void walk_unrested(
     std::vector<RouteBeat> &beats, unsigned map,
     std::initializer_list<std::tuple<unsigned, unsigned, opengold::por::MapDirection>> passages,
@@ -1090,9 +1090,7 @@ void walk_unrested(
 {
     for (const auto &[x, y, facing] : passages)
     {
-        auto beat = step_beat(map, x, y, facing, answers);
-        beat.test_wins = true;
-        beats.push_back(beat);
+        beats.push_back(step_beat(map, x, y, facing, answers));
     }
 }
 
@@ -1144,6 +1142,10 @@ void take_at(std::vector<RouteBeat> &route, std::tuple<unsigned, unsigned, unsig
     }
     throw std::logic_error("No beat takes the items on its square");
 }
+
+// Secret's mirror (its item type 48), which turns gazes back, and its
+// shield (37).
+constexpr int mirror_type = 48, shield_type = 37;
 
 // What the route's party takes from the mayor's pile (item list 18), as a
 // player shares it out: each item by its name and the member who readies it.
@@ -1623,11 +1625,18 @@ const std::vector<RouteBeat> &secret_route()
         route.push_back(step_beat(50, 8, 0, D::north));
         route.push_back(step_beat(49, 5, 12, D::north));
         route.push_back({49, 3, 3, D::north, {"YES", "B"}});
+        // Below, basilisks, medusae and cockatrices: each member readies its
+        // mirror, which turns their gazes back (the cluebook's advice), in
+        // place of its shield.
+        for (const char *member :
+             {"paladin 1", "paladin 2", "ranger 3", "cleric 4", "cleric 5", "magic_user 6"})
+        {
+            route.back().ready_types.emplace_back(mirror_type, member);
+        }
         // Level 10: through the hole the miners broke into the castle's dungeon
         // (script 64). Its patrols of cockatrices, medusae and basilisks turn the
-        // party to stone: the party waits for them to go where it may, and where
-        // they attack with every dice the route tries the test wins the fight
-        // its player loses (a stand-in).
+        // party to stone: each member readies its mirror, and the party waits
+        // for them to go where it may.
         walk_passages(route, 49,
                       {{3, 3, D::east},   {4, 3, D::east},   {5, 3, D::east},    {6, 3, D::east},
                        {11, 0, D::east},  {12, 0, D::east},  {13, 0, D::east},   {14, 0, D::east},
@@ -1648,7 +1657,7 @@ const std::vector<RouteBeat> &secret_route()
                        {8, 14, D::south}, {8, 15, D::east},  {9, 15, D::east},   {10, 15, D::east},
                        {11, 15, D::east}, {12, 15, D::east}, {13, 15, D::north}, {13, 14, D::east},
                        {14, 14, D::east}, {15, 14, D::east}},
-                      true, true, true);
+                      true, false, true);
         // The Dungeon (map 64; levels 10 to 7 on one map, the level in cell
         // 4C87). Level 10's patrols leave members turned to stone, which only
         // Stone to Flesh cures: back by the Dungeon's teleporter (location 7)
@@ -1785,9 +1794,9 @@ const std::vector<RouteBeat> &secret_route()
                        {2, 15, D::south}},
                       true);
         // The Western Crevasses (script 80; its places told apart by cells 4C05
-        // and 4C6B) to the Frost Giant Village (script 81). Its patrols of the
-        // Dreadlord's legion beat the route's party with every dice it tries:
-        // there the test wins the fight its player loses (a stand-in).
+        // and 4C6B) to the Frost Giant Village (script 81). Against the
+        // Dreadlord's legion's patrols the party strikes their wizards first,
+        // as the cluebook bids (treasures_turn).
         walk_passages(
             route, 80,
             {{1, 11, D::east},   {2, 11, D::east},   {3, 11, D::north},  {3, 10, D::east},
@@ -1861,11 +1870,10 @@ const std::vector<RouteBeat> &secret_route()
              {7, 10, D::east},   {8, 10, D::east},   {9, 10, D::east},   {10, 10, D::east},
              {8, 6, D::east},    {9, 6, D::east},    {10, 6, D::east},   {11, 6, D::east},
              {12, 6, D::east},   {1, 5, D::east},    {2, 5, D::east},    {3, 5, D::east}},
-            true, true);
+            true);
         // The Frost Giant Village (script 81): its blockaded door bashed open, its king won over by
         // fighting the Black Circle beside him, his guards lead the party east, toward the castle,
-        // into the Eastern Crevasses (script 82). Fights its player loses with every dice are won
-        // by the test (a stand-in).
+        // into the Eastern Crevasses (script 82).
         walk_passages(route, 81,
                       {{0, 8, D::east},   {1, 8, D::east},   {2, 8, D::east},   {3, 8, D::east},
                        {4, 8, D::east},   {5, 8, D::east},   {6, 8, D::east},   {7, 8, D::east},
@@ -1873,20 +1881,7 @@ const std::vector<RouteBeat> &secret_route()
                        {9, 11, D::south}, {9, 12, D::south}, {9, 13, D::south}, {9, 14, D::south},
                        {9, 15, D::east},  {10, 15, D::east}, {11, 15, D::east}, {12, 15, D::north},
                        {2, 15, D::west}},
-                      true, true, false, {"BASH", "BASH", "BASH", "CASTLE"});
-        // From the mine on, a fight on the way (or in a camp on the way) that
-        // the route's player loses with every dice it tries is won by the test
-        // (a stand-in): Secret's mines, Dungeon and crevasses meet the party
-        // with more and stronger foes than its player can beat each time.
-        const auto mine = std::ranges::find_if(route,
-                                               [](const RouteBeat &beat)
-                                               {
-                                                   return beat.map == 48;
-                                               });
-        for (auto beat = mine; beat != route.end(); ++beat)
-        {
-            beat->test_wins = beat->test_wins || beat->passing;
-        }
+                      true, false, false, {"BASH", "BASH", "BASH", "CASTLE"});
         // The Eastern Crevasses (script 82) to the Castle of the Twins' gate, which Oswulf's spirit
         // opens to the bearer of his staff (script 96).
         walk_passages(
@@ -1968,7 +1963,7 @@ const std::vector<RouteBeat> &secret_route()
              {6, 6, D::east},    {7, 6, D::east},    {10, 15, D::east},  {11, 15, D::east},
              {12, 15, D::east},  {13, 15, D::east},  {14, 15, D::east},  {15, 15, D::north},
              {15, 14, D::north}, {15, 13, D::north}, {15, 12, D::north}},
-            true, true);
+            true);
         route.push_back(step_beat(82, 15, 11, D::east, {"YES"}));
         // The Castle Entrance (script 96), where the castle's guards break
         // every camp: hurt from the crevasses, the party does not rest there
@@ -2088,16 +2083,28 @@ const std::vector<RouteBeat> &secret_route()
                        {6, 1, D::west},  {5, 1, D::south}, {5, 2, D::west},  {4, 2, D::south},
                        {4, 3, D::south}, {4, 4, D::west},  {3, 4, D::west},  {2, 4, D::north},
                        {2, 3, D::west}},
-                      true, true, false, {"YES", "BRASS"});
+                      true, false, false, {"YES", "BRASS"});
+        // The Dreadlord, awakened as the party steps west from 4,4 to 3,4,
+        // with ten storm giants and six Banite priests dealt about the party,
+        // their bolts and holds from the first round: the party, whole and
+        // rested, wins none of 360 plays (2026-11-16), and the test wins it
+        // (a stand-in).
+        std::ranges::find_if(route,
+                             [](const RouteBeat &beat)
+                             {
+                                 return beat.map == 98 && beat.x == 3 && beat.y == 4;
+                             })
+            ->test_wins = true;
         RouteBeat secret_door{98, 1, 3, D::north, {}};
         secret_door.repeat_in_place = true;
         secret_door.repeat_until_at_least = std::pair<std::uint16_t, std::uint16_t>{0x4CDC, 128};
-        secret_door.test_wins = true;
         route.push_back(secret_door);
         // Through it, the chamber of the Dreadlord's soul: the party explores
         // it, beats the iron golems and medusae about the gem, and the gem is
         // shattered (cell 4CD9 set to 1): Eldamar's soul is free, and the
-        // game is won.
+        // game is won. Twelve iron golems, whom only the weapons +3 of two
+        // paladins and Vala harm, and six medusae beat the party in all 360
+        // plays (2026-11-16): the test wins the fight (a stand-in).
         RouteBeat soul_gem = step_beat(98, 1, 3, D::north, {"EXPLORE ROOM"});
         soul_gem.test_wins = true;
         soul_gem.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CD9, 1};
@@ -2121,6 +2128,44 @@ const std::vector<RouteBeat> &secret_route()
                 {{"Long Sword", "paladin 2"}, {"Shield", "paladin 2"}, {"Plate Mail", "ranger 3"}});
         take_at(route, {82, 15, 14}, 1,
                 {{"Silver Long Sword", "paladin 1"}, {"Silver Shield", "paladin 1"}});
+        // From the crevasses on, a fight its player loses with each of its
+        // 120 tries is played again with new dice, up to 240 more, until one
+        // wins, as a player reloads the Black Circle's patrols, whose
+        // wizards hold and disintegrate the party when they act first.
+        for (auto &beat : route)
+        {
+            if (beat.map >= 80)
+            {
+                beat.reloads_until_won = 240;
+            }
+        }
+        // Oswulf's last stand (15,15): the cloud giants and white dragons,
+        // which the party beats in every play, and at once the Black
+        // Circle's guards with six wizards behind them, whose bolts, holds
+        // and disintegrations beat the party in all but 1 of 486 plays,
+        // with no camp between (a rest there draws the castle's guards):
+        // the test wins it (a stand-in).
+        std::ranges::find_if(route,
+                             [](const RouteBeat &beat)
+                             {
+                                 return beat.map == 82 && beat.x == 15 && beat.y == 15;
+                             })
+            ->test_wins = true;
+        // The crevasses hold no gazes: their shields again, out of the
+        // Dungeon; the castle's medusae and basilisks: the mirrors again, but
+        // for the Silver Shield's bearer, whose shield turns gazes back.
+        const auto first_on = [&route](unsigned map)
+        {
+            return std::ranges::find(route, map, &RouteBeat::map);
+        };
+        for (const char *member : {"paladin 1", "paladin 2", "ranger 3", "cleric 4", "cleric 5"})
+        {
+            first_on(80)->ready_types.emplace_back(shield_type, member);
+        }
+        for (const char *member : {"paladin 2", "ranger 3", "cleric 4", "cleric 5"})
+        {
+            first_on(96)->ready_types.emplace_back(mirror_type, member);
+        }
         return route;
     }();
     return beats;
@@ -7576,9 +7621,13 @@ bool walk_census(GoldBoxGame game, bool route)
                                                              "cure_light_wounds",
                                                              "prayer",
                                                              "bless"};
-        // The route's Pools of Darkness casters take spells of every level
-        // they have slots of; the other routes, levels 1 to 5.
-        const int highest_level = game == GoldBoxGame::pools_of_darkness && route ? 9 : 5;
+        // The route's Pools of Darkness and Secret casters take spells of
+        // every level they have slots of (Secret's to the seventh); the
+        // other routes, levels 1 to 5.
+        const int highest_level = !route                                             ? 5
+                                  : game == GoldBoxGame::pools_of_darkness           ? 9
+                                  : game == GoldBoxGame::secret_of_the_silver_blades ? 7
+                                                                                     : 5;
         const auto dead = [&]
         {
             std::vector<opengold::MemberId> members;
@@ -7941,9 +7990,13 @@ bool walk_census(GoldBoxGame game, bool route)
     // casts loses its spell): the magic-user's Fireball, cast or from a wand,
     // where its burst takes the most enemies, sorceresses and mages counted
     // thrice, and spares every member and ally; else a blow or a shot at an
-    // enemy who has begun casting, then at a caster.
-    const auto treasures_turn =
-        [](const opengold::rules::CombatSession &session) -> std::optional<opengold::rules::Command>
+    // enemy who has begun casting, then at a caster. Secret's player plays
+    // its crevasses' and castle's casters so (its cluebook: "Always be sure
+    // to injure enemy spellcasters every round to prevent them from
+    // casting"): the Black Circle's wizards and necromancers, the Legion's
+    // wizards and the Banite priests.
+    const auto treasures_turn = [game](const opengold::rules::CombatSession &session)
+        -> std::optional<opengold::rules::Command>
     {
         constexpr unsigned fireball = 47;
         constexpr int burst_reach = 7; // doubled steps: Fireball's 3 squares
@@ -7958,8 +8011,14 @@ bool walk_census(GoldBoxGame game, bool route)
             }
             std::cout << "\n";
         }
-        const auto caster = [](const opengold::rules::CombatantView &unit)
+        const auto caster = [game](const opengold::rules::CombatantView &unit)
         {
+            if (game == GoldBoxGame::secret_of_the_silver_blades)
+            {
+                return unit.name.find("WIZARD") != std::string::npos ||
+                       unit.name.find("NECROMANCER") != std::string::npos ||
+                       unit.name.find("PRIEST") != std::string::npos;
+            }
             return unit.name.find("SORC") != std::string::npos ||
                    unit.name.find("MAGE") != std::string::npos;
         };
@@ -8908,7 +8967,8 @@ bool walk_census(GoldBoxGame game, bool route)
                             ? free_the_bound(session)
                             : std::nullopt;
             if (!held && member && tactic == 2 &&
-                game == GoldBoxGame::treasures_of_the_savage_frontier)
+                (game == GoldBoxGame::treasures_of_the_savage_frontier ||
+                 game == GoldBoxGame::secret_of_the_silver_blades))
             {
                 held = treasures_turn(session);
             }
@@ -9236,7 +9296,11 @@ bool walk_census(GoldBoxGame game, bool route)
         // (Thorne's dragons, the drow temple's statue) cost both. Where the
         // dead cannot be raised before the beat ends (the finale's Xoham,
         // whose script runs on to the end), one member lost is reloaded too.
-        const unsigned costly_reloads = game == GoldBoxGame::pools_of_darkness ? 240 : 0;
+        // Secret's player does the same, its dead raised by the camp's Fix.
+        const unsigned costly_reloads = game == GoldBoxGame::pools_of_darkness ||
+                                                game == GoldBoxGame::secret_of_the_silver_blades
+                                            ? 240
+                                            : 0;
         const int costly_score = test_winning ? one_member_lost : two_members_lost;
         while (route && !planning && (best > 0 || scoring) &&
                (++last < try_count ||
@@ -9358,7 +9422,22 @@ bool walk_census(GoldBoxGame game, bool route)
             // Something readied is in its place (quarrels where bolts go,
             // a sword and shield where a crossbow goes): the member puts
             // away the one item, or else the two, whose place it takes.
-            const auto readied = std::vector(party->member(taker).equipped);
+            auto readied = std::vector(party->member(taker).equipped);
+            // Secret's player puts away a shield or a mirror (its types 37
+            // and 48) before a weapon, as a mirror or a shield takes the
+            // other's hand.
+            if (game == GoldBoxGame::secret_of_the_silver_blades)
+            {
+                const auto &inventory = party->member(taker).character.inventory();
+                std::ranges::stable_partition(
+                    readied,
+                    [&](std::uint64_t item)
+                    {
+                        const auto entry = inventory.find(item);
+                        return entry && (entry->get().original_type == shield_type ||
+                                         entry->get().original_type == mirror_type);
+                    });
+            }
             const auto fits_without = [&](std::vector<std::uint64_t> away)
             {
                 for (const auto item : away)
@@ -9734,10 +9813,20 @@ bool walk_census(GoldBoxGame game, bool route)
                         "Power Word Blind",
                         "Delayed Blast Fireball",
                         "Globe of Invulnerability"};
+                    // Secret's magic-user takes a sixth-level spell when it
+                    // reaches them: the Globe against the storm giants'
+                    // bolts (the cluebook's advice), Disintegrate against
+                    // the Black Circle's lords.
+                    constexpr std::array<std::string_view, 2> secret_first{
+                        "Globe of Invulnerability", "Disintegrate"};
                     std::vector<std::string_view> wanted(learned.begin(), learned.end());
                     if (game == GoldBoxGame::pools_of_darkness)
                     {
                         wanted.insert(wanted.begin(), darkness_first.begin(), darkness_first.end());
+                    }
+                    if (game == GoldBoxGame::secret_of_the_silver_blades)
+                    {
+                        wanted.insert(wanted.begin(), secret_first.begin(), secret_first.end());
                     }
                     for (const auto name : wanted)
                     {
@@ -10160,6 +10249,28 @@ bool walk_census(GoldBoxGame game, bool route)
         };
         // The map where Secret's party last gave up resting.
         unsigned restless_map = 0xFFFF;
+        // Secret's magic-user has cast half the spells it memorized: a
+        // player passing through rests for them before the next fight.
+        const auto spells_spent = [&]
+        {
+            if (game != GoldBoxGame::secret_of_the_silver_blades || !route)
+            {
+                return false;
+            }
+            return std::ranges::any_of(
+                party->state().slots,
+                [&](opengold::MemberId id)
+                {
+                    if (!id || party->member(id).vitals.dead ||
+                        !party->member(id).character.sheet().name.starts_with("magic_user"))
+                    {
+                        return false;
+                    }
+                    const auto memorized =
+                        party->member(id).character.sheet().prepared_spells.size();
+                    return party->memorized_spells(id).size() * 2 < memorized;
+                });
+        };
         const auto party_hit_points = [&]
         {
             int total = 0;
@@ -10593,20 +10704,23 @@ bool walk_census(GoldBoxGame game, bool route)
                 test_winning = beat.test_wins && !playing_stand_ins;
                 reloads_until_won = beat.reloads_until_won;
                 beat_reloads = beat.reloads;
-                if (beat.rest_first || (beat.passing && !beat.camp_broken && party_hurt() &&
-                                        session.snapshot().area_id != restless_map))
+                if (beat.rest_first ||
+                    (beat.passing && !beat.camp_broken && (party_hurt() || spells_spent()) &&
+                     session.snapshot().area_id != restless_map))
                 {
                     // A camp attacked fights: the last beat's flight is over.
                     fleeing = false;
-                    beat.waiting
-                        ? rest_in_wilderness()
-                        : rest_until_healed(beat.rest_for_spells, beat.rest_through_period);
+                    beat.waiting ? rest_in_wilderness()
+                                 : rest_until_healed(beat.rest_for_spells || spells_spent(),
+                                                     beat.rest_through_period);
                 }
                 else if (game == GoldBoxGame::secret_of_the_silver_blades && route &&
-                         beat.passing && party_hurt())
+                         beat.passing && !party_whole())
                 {
-                    // Where Secret's party gives up resting, it still Fixes:
-                    // its few hours are broken less often than a night.
+                    // Secret's party Fixes whenever a member is hurt, as a
+                    // player does after a fight, and where it gives up
+                    // resting: its few hours are broken less often than a
+                    // night.
                     fleeing = false;
                     unsigned interrupted = 0;
                     (void)fix_party(interrupted);

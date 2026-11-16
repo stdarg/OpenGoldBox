@@ -425,16 +425,24 @@ The steps of *Curse*'s phase 3, with *Secret*'s differences
    and the Dreadlord is no more. You have won." (`game_won`,
    [secret.md](games/secret.md), The ending). `secret_route_ends_the_game`
    is true: the check asks for the win, every member alive, as *Curse*'s
-   does. *Stand-ins:* the experience above; and from the mine on, a fight
-   on the way (or in a camp on the way) that the route's player loses with
-   every dice it tries, or wins only with a member dead or turned to stone,
-   is won by the test (42 fights in the last run, most in the
-   crevasses and the castle, the castle's last fights all of them: the
-   warrior in golden armor, the hydras, the Dreadlord and the soul gem's
-   guards). *The route's own play:* a party below half its Hit Points rests
-   before passing on, flees monsters met in camp while hurt, rests to raise
-   its dead while a cleric stands, and gives up resting on a map where
-   monsters break its camp three times. *Planning aids:*
+   does. *Stand-ins (2026-11-16):* the experience above, and three fights
+   the test wins: Oswulf's last stand's second fight in the Eastern
+   Crevasses (the Black Circle's guards and six wizards at once after the
+   cloud giants; 1 of 486 plays won), the Dreadlord (0 of 360) and the soul
+   gem's iron golems and medusae (0 of 360); every other fight the route's
+   player wins, its dead raised after where a cleric stands
+   ([secret.md](games/secret.md), The route). *The route's own play:* each
+   beat has dice of its own; the party takes the mayor's pile's shield,
+   gauntlets, wand and bracers and the treasures' arms on the way, readies
+   its mirrors where gazes are met and its shields where none are, heals
+   with the camp's Fix whenever a member is hurt, rests (Fixing first)
+   when a member is below half its Hit Points or the magic-user has cast
+   half its spells, flees monsters met in camp while hurt, strikes the
+   enemy's spellcasters first (the cluebook's
+   advice), reloads a fight it loses in each of 120 tries up to 240 times
+   more from the crevasses on, and one won at the cost of two members up
+   to 240 times, and gives up resting, but still Fixes, on a map where
+   monsters break its camp six times. *Planning aids:*
    `OPENGOLD_ROUTE_SAVE=FILE` saves the game where the route ends,
    `OPENGOLD_ROUTE_RESUME=FILE` plays on from such a save, and
    `OPENGOLD_ROUTE_BEATS=N` plays only the first N beats, so a search
