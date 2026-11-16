@@ -2898,7 +2898,7 @@ const std::vector<RouteBeat> &darkness_route()
         // player who met the Moonsea's wandering monsters on the way.
         auto steel_key = step_beat(33, 3, 14, D::east);
         steel_key.rest_first = true;
-        steel_key.test_wins = true;
+        steel_key.reloads_until_won = 240;
         steel_key.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x144, 15};
         route.push_back(steel_key);
         // Back west and north to the doors before the dimensional gate (7,2):
@@ -3009,13 +3009,12 @@ const std::vector<RouteBeat> &darkness_route()
                        {2, 5, D::east},   {3, 5, D::south}});
         // Thorne, an ancient red dragon, and his seven red dragons breathe
         // fire (his 24d10+12, three times): the clerics and the first paladin
-        // cast the Resist Fire memorized in Limbo on each member first, as a
-        // player wards the party. A stand-in: since the dragons cast as the
-        // original's computer does (their spell of highest AI weight first,
-        // Fireball), their fireballs and breath beat the party of levels 13
-        // to 15 in every play the route tries, so the test wins the fight.
+        // cast the Resist Fire memorized in the safe room on each member
+        // first, as a player wards the party. Their fireballs and breath beat
+        // the party in most plays (6 of 120 win, 2026-11-16), so the player
+        // reloads until one wins.
         auto thorne = step_beat(34, 3, 6, D::south, {"YES"});
-        thorne.test_wins = true;
+        thorne.reloads_until_won = 240;
         thorne.rest_first = true;
         // The cave's camps do not rest: the clerics cure every hurt member
         // first (the dragons met on arrival leave some hurt).
@@ -4646,14 +4645,12 @@ const std::vector<RouteBeat> &darkness_route()
                     {1, 10, D::west},
                     {0, 10, D::south},
                     {0, 11, D::south}});
-        // A stand-in: the waves are fought back to back, the Minions of Bane
-        // breathing for 27 and the Banite clerics holding members for them
-        // to slay, and Marcus with his Black Circle mages and minions beats
-        // what is left in every play the route tries, so the test wins
-        // these fights.
+        // The waves are fought back to back: the spectres, the Minions of
+        // Bane breathing for 27 with the Banite clerics holding members for
+        // them to slay, the human minions, and Marcus with his Black Circle
+        // mages and minions (86 of 120 plays win the last, 2026-11-16).
         auto chambers = step_beat(67, 0, 12, D::south);
         chambers.camp_broken = true;
-        chambers.test_wins = true;
         route.push_back(chambers);
         // Shal and Petra meet and the woman, now whole, bids the party to
         // the temple: back by the underpass (3,10 east) and north to the
@@ -4976,6 +4973,14 @@ const std::vector<RouteBeat> &darkness_route()
         golems.cure_first = true;
         golems.camp_broken = true;
         golems.test_wins = true;
+        // The clerics take up their maces +3 and shields again, as a player
+        // does where only a weapon of +3 or better harms the foe: their
+        // staff slings +2 do nothing to an iron golem.
+        for (const char *cleric : {"cleric 4", "cleric 5"})
+        {
+            golems.ready_types.emplace_back(8, cleric);
+            golems.ready_types.emplace_back(37, cleric);
+        }
         route.push_back(golems);
         walk_heart({{9, 3, D::east}, {10, 3, D::east}});
         route.push_back(step_beat(53, 11, 3, D::east, {"YES"}));
@@ -5042,7 +5047,7 @@ const std::vector<RouteBeat> &darkness_route()
         showdown.cure_first = true;
         showdown.cure_to_full = true;
         showdown.camp_broken = true;
-        showdown.test_wins = true;
+        showdown.reloads_until_won = 240;
         showdown.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x245, 1};
         route.push_back(showdown);
         // Out of the heart by the vena cava's end (2,15, south: ARE YOU SURE
@@ -5258,14 +5263,12 @@ const std::vector<RouteBeat> &darkness_route()
         // minions fall on the party; beaten, it blows the horn once for each
         // member (6; the cluebook's 12), the wall shatters, and through it
         // (YES) lies the Palace of Gothmenes (script 65, the Crystal Ring
-        // held). A stand-in: fourteen Minions of Bane, each casting Ice Storm
-        // and Hold Monster and breathing for 22, leave the whole party dead in
-        // two rounds in every one of the route's 120 plays, so the test wins
-        // the fight.
+        // held). Fourteen Minions of Bane, each casting Ice Storm and Hold
+        // Monster and breathing for 22, fall to the party in 69 of 120 plays
+        // (2026-11-16).
         {
             auto iron_wall =
                 step_beat(64, 15, 5, D::west, {"USE HORN OF DOOM", "YES", "type:6", "YES"});
-            iron_wall.test_wins = true;
             route.push_back(iron_wall);
         }
         // The outer palace (map 65, script 65): its secret doors (walls of
@@ -5291,17 +5294,18 @@ const std::vector<RouteBeat> &darkness_route()
         // Elminster is (NO, NO), which gives Gothmenes' search its longest
         // time (cell 1CDh 77, the Tantalus Clock's strikes), and the
         // rakshasas are revealed. The bolts' bearers ready their crossbows
-        // and quarrels (item types 27 and 12). A stand-in: two Maharajahs and
-        // seven Rajahs, whom no spell below the eighth level touches, cast an
-        // Ice Storm each a round and leave the party dead in every play, so
-        // the test wins the fight.
+        // and quarrels (item types 27 and 12). Two Maharajahs and seven
+        // Rajahs, whom no spell below the eighth level touches, cast an Ice
+        // Storm each a round and beat the party in most plays (8 of 120 win,
+        // 2026-11-16, with the magic-user's eighth- and ninth-level spells),
+        // so the player reloads until one wins.
         {
             auto sasha = step_beat(65, 4, 3, D::south, {"NO", "NO"});
             sasha.searching = false;
             sasha.cure_first = true;
             sasha.cure_to_full = true;
             sasha.camp_broken = true;
-            sasha.test_wins = true;
+            sasha.reloads_until_won = 240;
             for (const char *bearer : {"paladin 1", "paladin 2", "ranger 3"})
             {
                 sasha.ready_types.emplace_back(27, bearer);
@@ -5369,6 +5373,10 @@ const std::vector<RouteBeat> &darkness_route()
             auto finale = step_beat(65, 9, 7, D::south, {"NO", "NO", "YES", "NO"});
             finale.repeat_in_place = true;
             finale.camp_broken = true;
+            // The clerics cure what the pool's waters took first, the inner
+            // palace's camps resting nowhere.
+            finale.cure_first = true;
+            finale.cure_to_full = true;
             finale.test_wins = true;
             finale.repeat_until_at_least = std::pair<std::uint16_t, std::uint16_t>{0x16, 75};
             route.push_back(finale);
@@ -8233,11 +8241,31 @@ bool walk_census(GoldBoxGame game, bool route)
     std::optional<unsigned> wanted_exit;
     // The beat being played flees what it meets (RouteBeat::fleeing).
     bool fleeing = false;
-    // Whether the command begins a spell of fire (Fireball, Flame Strike,
-    // Meteor Swarm and the like) while an iron golem stands on the other side.
-    const auto casts_fire_at_golems =
+    // Whether the command begins a spell a player would not cast at iron
+    // golems: fire (Fireball, Flame Strike, Meteor Swarm and the like) while
+    // one stands on the other side, for fire heals it (EffIronGolem); and,
+    // while only iron golems stand there, any spell against them, for none
+    // but lightning, which only slows them, touches them. Quick magic, whose
+    // computer picks the spell itself, is such a spell too there.
+    const auto wasted_on_golems =
         [&](const opengold::rules::Snapshot &state, const opengold::rules::Command &command)
     {
+        bool golems = false, others = false;
+        for (const auto &unit : state.combatants)
+        {
+            if (unit.side == opengold::rules::Side::opposition && unit.conscious)
+            {
+                (unit.name.find("IRON GOLEM") != std::string::npos ? golems : others) = true;
+            }
+        }
+        if (!golems)
+        {
+            return false;
+        }
+        if (command.verb == "quick_magic")
+        {
+            return !others;
+        }
         if (command.verb != "cast" && command.verb != "use")
         {
             return false;
@@ -8253,14 +8281,7 @@ bool walk_census(GoldBoxGame game, bool route)
                           name.find("Flame") != std::string_view::npos ||
                           name.find("Burning") != std::string_view::npos ||
                           name.find("Meteor") != std::string_view::npos;
-        return fire &&
-               std::ranges::any_of(state.combatants,
-                                   [](const opengold::rules::CombatantView &unit)
-                                   {
-                                       return unit.side == opengold::rules::Side::opposition &&
-                                              unit.conscious &&
-                                              unit.name.find("IRON GOLEM") != std::string::npos;
-                                   });
+        return fire || (!others && known->offensive);
     };
     const auto fight_once = [&](std::uint64_t seed, unsigned tactic)
     {
@@ -8390,11 +8411,11 @@ bool walk_census(GoldBoxGame game, bool route)
                                opengold::Searching::everyone)
                          : opengold::choose_demo_command(session, opengold::Searching::everyone,
                                                          opengold::default_difficulty);
-            // A Pools of Darkness player casts no fire where iron golems
-            // stand, whom it heals (EffIronGolem), as the Quick computer
-            // would: the member fights with its weapon instead.
-            if (member && tactic == 2 && game == GoldBoxGame::pools_of_darkness &&
-                casts_fire_at_golems(state, chosen))
+            // A Pools of Darkness player casts no spell on iron golems that
+            // heals them or does nothing to them (wasted_on_golems), as the
+            // Quick computer would, whatever its tactic: the member fights
+            // with its weapon instead.
+            if (member && game == GoldBoxGame::pools_of_darkness && wasted_on_golems(state, chosen))
             {
                 chosen =
                     opengold::choose_quick_command(session, false, opengold::Searching::everyone);

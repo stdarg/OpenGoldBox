@@ -1166,6 +1166,44 @@ script's events are found by its step entry's ON GOTO on cell 2Dh's low six
 bits: event e runs the target at index e, counted from 0
 (`opengold_scripts --inspect DARKNESS ECL1.DAX N`).
 
+### The stand-ins measured (2026-11-16)
+
+Each stand-in's fight played from a save before it
+(`OPENGOLD_ROUTE_SAVES`, then `OPENGOLD_ROUTE_RESUME` with
+`OPENGOLD_ROUTE_PLAY_STAND_INS` and `OPENGOLD_FIGHT_SCORES`), 120 plays each
+(40 dice, three tactics); "wins" are plays the party wins, "clean" those it
+wins with no member dead:
+
+| Fight | Before | Rolled party | And its tactics |
+|---|---|---|---|
+| The Aerie's blue dragons (33: 3,14) | 3 wins, 0 clean | 4, 0 | |
+| Thorne (34: 3,6) | 0 | 6, 2 | |
+| Kalistes (84: 2,6) | 0 | 0 | |
+| The Chambers of Marcus, Marcus's wave | 1, 0 | 86, 31 | |
+| The heart's iron golems (53: 9,3) | 0 | 1, 0 | 0 |
+| Tanetal's last stand (53: 5,12) | 2, 0 | 10, 0 | |
+| The Iron Wall's minions (64: 15,5) | 2, 1 | 69, 23 | |
+| The palace's rakshasas (65: 4,4) | 0 | 8, 4 | |
+| The finale's first fight (75) | 0 | 0 | |
+
+"Before" is the party of 2026-11-16 as it was. "Rolled party": the route's
+player rolls each character again at creation until its class's ability is
+18 and its Constitution 17 (the creation screen's Roll, as a player rolls
+for a party meant to finish the game; the original's Modify, which sets the
+scores outright, OpenGoldBox does not have yet), so the magic-user, of
+Intelligence 18, has its eighth- and ninth-level slots (TrimHighSpellSlots)
+and the members start with 666 Hit Points between them where they had 553;
+the magic-user, of Dexterity 18, climbs Myth Drannor's wall. The party rests
+in Thorne's cave in the room the Ki-rin made safe (10,9, event 39; the
+cluebook's 14), the one camp script 34's camp entry lets rest while Thorne
+lives, memorizing Resist Fire there.
+
+The iron golems (six and four large ones) heal from fire and take no other
+spell (EffIronGolem; the clerics' maces, crushing weapons, do them no harm
+either), so the route's player casts no fire where one stands and, where only
+golems stand, no spell against them and no Quick magic, its clerics taking up
+their maces and shields; their 27-point blows still beat it.
+
 ### Creatures
 
 A creature is 510 bytes. A character can hold 141 memorized spells and know
