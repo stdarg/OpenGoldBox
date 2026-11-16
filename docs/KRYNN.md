@@ -3,9 +3,9 @@
 The plan for OpenGoldBox to play the three *Dragonlance* Gold Box games from
 start to finish: *Champions of Krynn* (1990), *Death Knights of Krynn* (1991)
 and *The Dark Queen of Krynn* (1992). It follows the method of the *Forgotten
-Realms* games ([GAMES.md](GAMES.md)). This plan is written but not started. The
-user decided (2026-11-16) that it begins as soon as the *Forgotten Realms* goal
-is met, as the next goal: the three *Krynn* games playable to their ends.
+Realms* games ([GAMES.md](GAMES.md)). This plan is written but not started. It
+waits for the user's word: when the *Forgotten Realms* games are playable and
+winnable, the user decides what comes next (2026-11-16).
 
 ## Where the files are
 
@@ -251,8 +251,8 @@ suites pass, and pushes it.
 
 The user's answers (2026-11-16):
 
-1. **When:** this begins as soon as the *Forgotten Realms* goal is met, as a
-   goal of its own: the three *Krynn* games playable to their ends.
+1. **When:** the user decides, after the *Forgotten Realms* games are playable
+   and winnable.
 2. **The startup menu:** the user suggested a dropdown for the ten games. The
    layout is settled with mockups of the real screen in step K0.
 3. **The SRD rules for Krynn:** not in this goal; they may come later (K7).
