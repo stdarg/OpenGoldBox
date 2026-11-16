@@ -19,10 +19,10 @@ namespace
 // The map number from which LOAD FILES loads no map, and the wall set that
 // keeps the current one.
 constexpr unsigned first_non_map = 0x7F, keep_walls = 255;
-// PLAY SOUND's footstep, its sound effects (2 to 14) and its music, whose
-// pieces start from 80h.
+// PLAY SOUND's footstep, its sound effects (2 to 14, of which the driver plays
+// 2 to 12) and its music, whose pieces start from 80h.
 constexpr unsigned footstep_sound = 10, first_sound_effect = 2, last_sound_effect = 14,
-                   first_music_sound = 0x80;
+                   last_played_sound_effect = 12, first_music_sound = 0x80;
 
 // The current character's record, from 401h: the bytes of its fields the
 // scripts read (docs/games/darkness.md, Creatures).
@@ -1069,12 +1069,17 @@ void RolfTourSession::vga_play_sound(unsigned sound)
     {
         return;
     }
-    // The footstep plays as the other games' does, Treasures' its own sound 10
-    // (the view's); the other sound effects are not played yet, but stop the
-    // music as they would.
+    // The footstep plays as the party's step does; the driver plays the other
+    // effects up to 12 (sounddrv.pas, SoundCommand), and 13 and 14 only stop
+    // the music.
     if (sound == footstep_sound)
     {
         ++snapshot_.footsteps;
+    }
+    else if (sound <= last_played_sound_effect)
+    {
+        snapshot_.script_sound = sound;
+        ++snapshot_.script_sounds;
     }
     sound_effect_played();
 }

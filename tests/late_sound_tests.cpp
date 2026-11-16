@@ -290,6 +290,19 @@ void darkness_music_reads(const std::filesystem::path &folder)
               first.events[4].length_ticks == 31,
           "Its first note, an eighth, is 31 ticks");
     check(song.tracks[2].length_ticks == 1046, "The third track runs 32 ticks longer");
+
+    // Its scripts' PLAY SOUND plays sounds 2 to 12 (eclvm.pas, EclPlaySound;
+    // sounddrv.pas, SoundCommand), sound n ZOUNDS.DAX's record n - 1, the
+    // footstep (explore.pas, StepForward) sound 10.
+    const auto effects = opengold::por::SoundBank::load(folder, darkness);
+    bool all_sound = effects.clips().size() == 11;
+    for (unsigned id = 2; id <= 12; ++id)
+    {
+        all_sound = all_sound && effects.at(id).audible && !effects.at(id).pcm.samples().empty();
+    }
+    check(all_sound, "Pools of Darkness's sound bank holds its eleven effects as sounds 2 to 12");
+    const auto zounds = archive(folder / "ZOUNDS.DAX");
+    check(record(zounds, 9).size() == 1772, "Its footstep, record 9, is its own 1772 bytes");
 }
 
 void real_files_decode()

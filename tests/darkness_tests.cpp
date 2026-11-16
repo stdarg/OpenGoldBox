@@ -183,6 +183,7 @@ std::size_t colours(const opengold::Image &image)
 
 void the_area_map_is_drawn(opengold::por::RolfTourSession &session);
 void the_scripts_start_the_music(opengold::por::RolfTourSession &session);
+void the_scripts_play_their_sound_effects(opengold::por::RolfTourSession &session);
 
 // A new game runs script 16: map 16, New Phlan's docks, with wall set 1, the
 // party at (15,0) facing west over picture 148, where Rolf, the portmaster,
@@ -249,6 +250,7 @@ void the_opening_reaches_new_phlan()
     check(session.explore(ExplorationCommand::turn_left), "The party turns");
     check(session.observe_view().rgba != view.rgba, "Turning shows another view");
     the_scripts_start_the_music(session);
+    the_scripts_play_their_sound_effects(session);
     the_area_map_is_drawn(session);
 }
 
@@ -283,6 +285,31 @@ void the_scripts_start_the_music(opengold::por::RolfTourSession &session)
         (void)session.explore(ExplorationCommand::turn_left);
     }
     check(snapshot.footsteps != footsteps && !snapshot.music, "The party's footstep stops it");
+}
+
+// A script's PLAY SOUND of 2 to 12 plays that sound effect, ZOUNDS.DAX's
+// record one less (eclvm.pas, EclPlaySound; sounddrv.pas, SoundCommand), the
+// footstep (10) as the party's step does; 13 and 14 play nothing.
+void the_scripts_play_their_sound_effects(opengold::por::RolfTourSession &session)
+{
+    using opengold::test::TourAccess;
+    const auto &snapshot = session.snapshot();
+    const auto sounds = snapshot.script_sounds;
+    TourAccess::play_sound(session, 5);
+    check(snapshot.script_sound == 5 && snapshot.script_sounds == sounds + 1,
+          "PLAY SOUND 5 plays sound 5");
+    TourAccess::play_sound(session, 5);
+    check(snapshot.script_sounds == sounds + 2, "The same sound plays again");
+    TourAccess::play_sound(session, 12);
+    check(snapshot.script_sound == 12, "PLAY SOUND 12 plays sound 12");
+    const auto footsteps = snapshot.footsteps;
+    TourAccess::play_sound(session, 10);
+    check(snapshot.footsteps == footsteps + 1 && snapshot.script_sounds == sounds + 3,
+          "PLAY SOUND 10 plays the footstep");
+    TourAccess::play_sound(session, 0x83);
+    TourAccess::play_sound(session, 13);
+    check(snapshot.script_sounds == sounds + 3 && !snapshot.music,
+          "Sound 13 plays nothing but stops the music");
 }
 
 // Outside a dungeon (cell 22h at 0) the view is the area map as the original

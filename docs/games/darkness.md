@@ -398,10 +398,14 @@ onto the party's side as a fight ends leaves as one that ran, worth neither
 experience nor treasure, as the original's CombatDoneCleanup marks it.
 
 Still to come: the evening and other skies; the combat ground tiles
-(`DUNGCOM`, `WILDCOM`); the scripts' sound effects other than the footstep.
-The music PLAY SOUND starts plays since 2026-11-16, until a sound effect
-stops it, and the closing film after the win with its song
-([later-sound.md](later-sound.md), Where the games play it).
+(`DUNGCOM`, `WILDCOM`). The music PLAY SOUND starts plays since 2026-11-16,
+until a sound effect stops it, and the closing film after the win with its
+song ([later-sound.md](later-sound.md), Where the games play it). Since
+2026-11-16 too the scripts' sound effects play: a PLAY SOUND of 2 to 12
+plays `ZOUNDS.DAX`'s record one less (eclvm.pas, EclPlaySound; sounddrv.pas,
+SoundCommand), and the footstep, sound 10 (record 9, 1772 bytes), is the
+game's own for a step (explore.pas, StepForward) as for a script, where the
+town view played the other games' synthesized footstep.
 
 ## The area map
 

@@ -608,25 +608,25 @@ void RolfTourView::prepare_view()
             original_sound_.reset();
         }
     }
-    // Treasures steps to its own footstep (explore.pas, StepForward; eclvm.pas,
+    // Pools of Darkness and Treasures step to their own footstep (explore.pas,
+    // StepForward) and play their scripts' sound effects (eclvm.pas,
     // EclPlaySound), from the player's copy of the game.
-    if (settings::chosen_game() == opengold::GoldBoxGame::treasures_of_the_savage_frontier)
+    const auto chosen = settings::chosen_game();
+    if (chosen == opengold::GoldBoxGame::pools_of_darkness ||
+        chosen == opengold::GoldBoxGame::treasures_of_the_savage_frontier)
     {
-        const auto treasures = presentation::path_from_godot(
-            settings::game_folder(opengold::GoldBoxGame::treasures_of_the_savage_frontier));
+        const auto folder = presentation::path_from_godot(settings::game_folder(chosen));
         try
         {
-            if (std::filesystem::is_directory(treasures))
+            if (std::filesystem::is_directory(folder))
             {
-                game_footstep_ = std::make_unique<SoundPlayer>(
-                    SoundBank::load(treasures,
-                                    opengold::GoldBoxGame::treasures_of_the_savage_frontier),
-                    std::make_unique<GodotSoundOutput>(footstep));
+                game_sounds_ = std::make_unique<SoundPlayer>(
+                    SoundBank::load(folder, chosen), std::make_unique<GodotSoundOutput>(footstep));
             }
         }
         catch (const std::runtime_error &)
         {
-            game_footstep_.reset();
+            game_sounds_.reset();
         }
     }
     apply_sound_volume();
@@ -751,6 +751,7 @@ void RolfTourView::restart()
         displayed_ticket_ = 0;
         played_footsteps_ = 0;
         played_thunder_ = 0;
+        played_script_sounds_ = 0;
         played_music_starts_ = 0;
         music_.reset();
         shown_revision_ = 0;
@@ -972,9 +973,9 @@ void RolfTourView::apply_sound_volume()
     {
         music_->set_volume(settings::sound_volume(settings::SoundKind::music));
     }
-    if (game_footstep_)
+    if (game_sounds_)
     {
-        game_footstep_->set_volume(settings::sound_volume(settings::SoundKind::effects));
+        game_sounds_->set_volume(settings::sound_volume(settings::SoundKind::effects));
         return;
     }
     const auto share = static_cast<float>(settings::volume_share(settings::SoundKind::effects));
@@ -2218,14 +2219,22 @@ void RolfTourView::advance_frame(double delta)
         if (session_->snapshot().footsteps != played_footsteps_)
         {
             played_footsteps_ = session_->snapshot().footsteps;
-            constexpr unsigned treasures_footstep = 10;
-            if (!checking_ && game_footstep_)
+            constexpr unsigned game_footstep = 10;
+            if (!checking_ && game_sounds_)
             {
-                game_footstep_->play(treasures_footstep);
+                game_sounds_->play(game_footstep);
             }
             else if (!checking_)
             {
                 required_node<AudioStreamPlayer>(*this, "Footstep").play();
+            }
+        }
+        if (session_->snapshot().script_sounds != played_script_sounds_)
+        {
+            played_script_sounds_ = session_->snapshot().script_sounds;
+            if (!checking_ && game_sounds_)
+            {
+                game_sounds_->play(session_->snapshot().script_sound);
             }
         }
         if (session_->snapshot().thunder != played_thunder_)

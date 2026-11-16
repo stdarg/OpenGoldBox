@@ -293,6 +293,11 @@ struct TourSnapshot
     // sound), counted as footsteps are; not saved, as no sound is pending
     // once a save is made.
     unsigned thunder{};
+    // The later games' scripts' sound effects other than the footstep: a
+    // PLAY SOUND of 2 to 12, the sounds their driver plays (sounddrv.pas,
+    // SoundCommand), the last one and the count, counted as footsteps are;
+    // not saved, as thunder is not.
+    unsigned script_sound{}, script_sounds{};
     int sprite_frame{-1}; // -1 hidden; native near/medium/far frames are 0/1/2.
     bool tour_finished{};
     // The party has just won the game: its closing words are shown until the

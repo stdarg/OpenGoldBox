@@ -189,7 +189,8 @@ class RolfTourView : public godot::Control
     float footstep_full_volume_{};
     godot::String error_;
     std::uint64_t shown_revision_{}, checked_ticket_{};
-    unsigned played_footsteps_{}, played_thunder_{}, check_frames_{}, check_prompts_{};
+    unsigned played_footsteps_{}, played_thunder_{}, played_script_sounds_{}, check_frames_{},
+        check_prompts_{};
     // Whether the last snapshot shown had just won the game (its film, if
     // any, plays once a win).
     bool won_game_shown_{};
@@ -201,10 +202,12 @@ class RolfTourView : public godot::Control
     std::unique_ptr<opengold::por::SoundPlayer> closing_song_;
     // The original's sound effects from the player's game, when they have them.
     std::unique_ptr<opengold::por::SoundPlayer> original_sound_;
-    // Treasures' own footstep, its sound 10 (ZOUNDS.DAX record 9), which its
-    // steps and its scripts' PLAY SOUND 10 play; null in the other games, whose
-    // footstep is footstep_.
-    std::unique_ptr<opengold::por::SoundPlayer> game_footstep_;
+    // Pools of Darkness's and Treasures' own sound effects (ZOUNDS.DAX, sound
+    // n its record n - 1): the footstep, sound 10, which their steps and their
+    // scripts' PLAY SOUND 10 play, and their scripts' other effects
+    // (TourSnapshot::script_sound); null in the other games, whose footstep is
+    // footstep_.
+    std::unique_ptr<opengold::por::SoundPlayer> game_sounds_;
     // The later games' music their scripts start (TourSnapshot::music), the
     // piece it holds, and the starts already played.
     std::unique_ptr<opengold::por::SoundPlayer> music_;

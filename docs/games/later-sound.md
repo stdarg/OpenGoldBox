@@ -217,6 +217,20 @@ shop, and *Gateway* and *Treasures* play none at their ends. Since
   through the town's `Music` player (the group `game_music`). It stops too
   when the game ends, before *Pools of Darkness*' closing film (its
   `CONTROL.EXE` runs the film after the game has shut the driver down).
+- **The scripts' sound effects.** A PLAY SOUND below 80h is a sound
+  effect: the driver plays 2 to 12, `ZOUNDS.DAX`'s record one less
+  (`sounddrv.pas`, SoundCommand), and 13 and 14 only stop the music. Since
+  2026-11-16 the town screen plays them at the Sound effects level
+  (`TourSnapshot::script_sound`), through the same sound bank as the
+  fights' effects (`SoundBank::load`). *Pools of Darkness*' scripts play
+  every one of them: the footstep (10) 45 times, 2 and 5 thirteen times
+  each, 9 and 11 twelve, 7 seven, 4 six, 6 and 8 five, 12 twice, 3 once,
+  and one a cell's value; none plays 13 or 14. Its footstep, record 9, is
+  its own for a step (`explore.pas`, StepForward) as for a script, as
+  *Treasures*' is ([treasure.md](treasure.md), The walk). *Treasures*'
+  scripts play only the footstep, and *Gateway*'s none: its sounds would
+  go through CALL's service 3201h (`eclvm.pas`, EclCall), which no script
+  calls.
 - **The title.** `title_music_piece` gives the title's piece. *Pools of
   Darkness*' and *Treasures*' originals stop it only at their main menu
   (their `fixmain.pas`), after a title menu that starts the demonstration
