@@ -1243,6 +1243,10 @@ city's inn do not last to it, the Quick magic-user casting them at the Iron
 Wall's minions; a Haste on the party at the Iron Wall wins its second fight
 in 91 of 120 plays where 61 won.
 
+Fear (the spell, and a beholder's) now forces its flight while the fright
+lasts, as SpellFear and EffFear have it (ORIGINAL-RULES.md); until then the
+next turn's morale check ended it. The route still wins as above with it.
+
 ### Kalistes and the finale tried again (2026-11-16, late)
 
 **Two differences from the original found, not yet made.** Pools of
