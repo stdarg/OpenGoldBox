@@ -10240,7 +10240,8 @@ std::vector<rules::Command> Session::legal_commands() const
     // Use, for a readied item with a spell or power for a fight; a scroll's
     // spells once it is known, or by Read Magic, or a cleric's scroll for a
     // cleric (viewchar.pas, UseItemMenu; magic.pas, the scroll).
-    if (actor->item_use_allowed && !silenced(*actor))
+    if (actor->item_use_allowed && !silenced(*actor) &&
+        !(darkness() && actor->has(effect::no_magic)))
     {
         const bool cleric =
             actor->numbers.class_levels[static_cast<std::size_t>(ClassSlot::cleric)] > 0;

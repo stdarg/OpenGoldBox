@@ -4226,6 +4226,12 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 encounter_->turning_tries = static_cast<int>(staged_undead_loads_);
                 encounter_->turning_penalty =
                     static_cast<int>(machine_.variable(darkness_turning_penalty) & 0xFF);
+                // Its cell 2 (antiMagic), which the finale's script sets for
+                // Gothmenes' last stand: no one casts a spell or uses a magic
+                // item (combatai.pas, SelectSpellToCast; combat.pas, the
+                // Cast menu; viewchar.pas, the Use menu).
+                constexpr EclAddress darkness_anti_magic{0x02};
+                encounter_->no_magic = machine_.variable(darkness_anti_magic) != 0;
             }
             if (std::exchange(duel_, false))
             {

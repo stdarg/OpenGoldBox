@@ -3303,6 +3303,25 @@ void wands_and_potions()
           "The potion heals and is gone");
 }
 
+// Pools of Darkness's antiMagic (its scripts' cell 2, which the finale sets
+// for Gothmenes' last stand) bars the Use menu as well as Cast (viewchar.pas,
+// UseItemMenu; combat.pas, the Cast menu).
+void darkness_no_magic_bars_use()
+{
+    using original::ClassSlot;
+    auto wielder = caster(ClassSlot::cleric, 3, {1});
+    wielder.items = {{0, true, false, 14, true, {65, 0, 0}, 30, 0}};
+    const std::vector<Placed> armed{{"Cleric", rules::Side::party, {1, 3}, wielder},
+                                    {"Kobold", rules::Side::opposition, {3, 1}, creature(20, 0)}};
+    auto barred = arrange(armed, 71, {}, 100, GoldBoxGame::pools_of_darkness, false, true);
+    until_turn_of(*barred.session, "Cleric");
+    check(!cast_command(*barred.session, 1) && !use_command(*barred.session, 0, 65),
+          "Pools of Darkness's no-magic fight bars Cast and Use");
+    auto open = arrange(armed, 71, {}, 100, GoldBoxGame::pools_of_darkness);
+    until_turn_of(*open.session, "Cleric");
+    check(use_command(*open.session, 0, 65).has_value(), "Another fight lets the wand be used");
+}
+
 // A scroll is read once its spells are known, each spell once (magic.pas).
 void scrolls_are_read()
 {
@@ -6832,6 +6851,7 @@ int main()
         treasures_turns_its_own_way();
         bless_waits_for_its_turn();
         no_one_casts_in_a_no_magic_fight();
+        darkness_no_magic_bars_use();
         damage_loses_a_spell();
         magic_missiles();
         curse_caster_levels();
