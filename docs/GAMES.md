@@ -25,7 +25,7 @@ The user decided these on 2026-11-12:
 
 | Order | Game | Released | Folder | Status |
 |---|---|---|---|---|
-| 1 | *Pool of Radiance* | 1988 | `POOLRAD` | Playable and winnable |
+| 1 | *Pool of Radiance* | 1988 | `POOLRAD` | Played to its win by the expedition route under the SRD rules; its route under the original rules is being built (2026-11-16) |
 | 2 | *Curse of the Azure Bonds* | 1989 | `CURSE` | Played to its end by the route test, with stand-ins ([curse.md](games/curse.md)) |
 | 3 | *Secret of the Silver Blades* | 1990 | `SECRET` | Played to its win by the route test, with stand-ins ([secret.md](games/secret.md)) |
 | 4 | *Gateway to the Savage Frontier* | 1991 | `GATEWAY` | Played to its win by the route test, with stand-ins of experience, gold, gear and waits; it wins every fight itself, the Star Mounts' giant snakes and shambling mounds with Luskan's Wand of Ice Storm since 2026-11-16 ([gateway.md](games/gateway.md)) |
