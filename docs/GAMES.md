@@ -25,13 +25,13 @@ The user decided these on 2026-11-12:
 
 | Order | Game | Released | Folder | Status |
 |---|---|---|---|---|
-| 1 | *Pool of Radiance* | 1988 | `POOLRAD` | Playable |
+| 1 | *Pool of Radiance* | 1988 | `POOLRAD` | Playable and winnable |
 | 2 | *Curse of the Azure Bonds* | 1989 | `CURSE` | Played to its end by the route test, with stand-ins ([curse.md](games/curse.md)) |
-| 3 | *Secret of the Silver Blades* | 1990 | `SECRET` | Every file decodes ([secret.md](games/secret.md)) |
-| 4 | *Gateway to the Savage Frontier* | 1991 | `GATEWAY` | Every file decodes ([gateway.md](games/gateway.md)) |
-| 5 | *Pools of Darkness* | 1991 | `DARKNESS` | Its opening plays and its walk passes ([darkness.md](games/darkness.md)) |
-| 6 | *Treasures of the Savage Frontier* | 1992 | `TREASURE` | The walk passes every map and fight; the route plays from the opening to the win ([treasure.md](games/treasure.md)) |
-| 7 | *Forgotten Realms: Unlimited Adventures* | 1993 | `UA` | A design made with the kit plays: its walls, events and fights ([ua.md](games/ua.md)) |
+| 3 | *Secret of the Silver Blades* | 1990 | `SECRET` | Played to its win by the route test, with stand-ins ([secret.md](games/secret.md)) |
+| 4 | *Gateway to the Savage Frontier* | 1991 | `GATEWAY` | Played to its win by the route test, with stand-ins of experience, gold, gear and waits; no fight is won by the test ([gateway.md](games/gateway.md)) |
+| 5 | *Pools of Darkness* | 1991 | `DARKNESS` | The route test plays through Moander's heart to the Talisman of Bane; Mulmaster, Dark Phlan and Gothmenes still to come ([darkness.md](games/darkness.md)) |
+| 6 | *Treasures of the Savage Frontier* | 1992 | `TREASURE` | Played to its win by the route test; no fight is won by the test, only Llorkh's experience and money are given ([treasure.md](games/treasure.md)) |
+| 7 | *Forgotten Realms: Unlimited Adventures* | 1993 | `UA` | Designs made with the kit play to their win: walls, events and fights ([ua.md](games/ua.md)) |
 
 The developer's copies live in `/Users/edmond/GoldBox/<folder>`.
 
