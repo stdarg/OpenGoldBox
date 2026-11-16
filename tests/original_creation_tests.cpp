@@ -1250,6 +1250,26 @@ void darkness_characters_start_equipped()
         return;
     }
     const auto definitions = load_item_definitions(folder, darkness);
+    // Its item types are numbered as Treasures' are, a long sword 18 (the
+    // earlier games' halberd), so every item, plain or magic, takes its name
+    // from its own words.
+    const bool long_swords_named = std::ranges::all_of(
+        definitions,
+        [](const auto &entry)
+        {
+            const auto &item = entry.second;
+            return item.stored.type != 18 || item.label().starts_with("Long Sword");
+        });
+    const bool plain_long_sword =
+        std::ranges::any_of(definitions,
+                            [](const auto &entry)
+                            {
+                                return entry.second.stored.type == 18 &&
+                                       entry.second.stored.magic_bonus == 0 &&
+                                       entry.second.label() == "Long Sword";
+                            });
+    check(long_swords_named && plain_long_sword,
+          "ITEM0's long swords, a plain one among them, are named as Pools of Darkness names them");
     std::shared_ptr<const rules::CharacterRules> creation =
         original::character_rules(original::default_aging, darkness);
     CampaignParty party(original::rules_module(load_original_content(folder, darkness)), creation);

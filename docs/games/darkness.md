@@ -1233,6 +1233,12 @@ special power, or a scroll's three spells. `MON1ITM` holds each creature's
 list. `ITEM0` holds one record of 254 definitions, numbered from 1, which
 TREASURE and the shops copy into a new item. OpenGoldBox reads such a list as
 the earlier games' items with no names (`decode_items(bytes, game)`).
+Its item types are numbered as *Treasures*' are (a long sword 18, plate
+mail 36), not as the earlier games' labels (where 18 is a halberd), so
+every item, plain or magic, is named by `GAME.EXE`'s words: the lists,
+`ITEM0`'s definitions and the monsters' items (`names_every_item`, the
+creature catalog; 2026-11-16). Until then a plain long sword showed as a
+halberd.
 
 ### Item types
 

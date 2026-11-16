@@ -549,8 +549,14 @@ CreatureCatalog CreatureCatalog::load(const std::filesystem::path &directory, Go
                         equipment.base = (*templates)[item.type];
                         equipment.bonuses = equipment_bonuses(item, equipment.base);
                         equipment.stored = std::move(item);
-                        if (item_type_name(equipment.stored.type).empty() &&
-                            equipment.stored.stored_name.empty())
+                        // Pools of Darkness numbers its item types otherwise
+                        // than the generic labels (a long sword 18, the
+                        // earlier games' halberd), so its monsters' items
+                        // are all named by their words.
+                        const bool by_words =
+                            item_type_name(equipment.stored.type).empty() ||
+                            (game == GoldBoxGame::pools_of_darkness && !item_words.empty());
+                        if (by_words && equipment.stored.stored_name.empty())
                         {
                             equipment.decoded_name = item_name(equipment.stored, item_words);
                             equipment.unidentified_name = item_name(

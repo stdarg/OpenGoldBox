@@ -2,6 +2,7 @@
 // and its opening played on the real files when OPENGOLD_GOLDBOX_DIR names the
 // folder holding DARKNESS.
 #include "opengold/campaign_session.h"
+#include "opengold/creature_catalog.h"
 #include "opengold/ecl.h"
 #include "opengold/ecl_machine.h"
 #include "opengold/game_census.h"
@@ -128,6 +129,39 @@ void the_item_words_are_in_the_game_program()
         opengold::por::unpack_sound_executable(bytes), darkness_game);
     check(words && words->size() == 126 && (*words)[1] == "Battle Axe" && (*words)[2] == "Hand Axe",
           "GAME.EXE names the item words");
+}
+
+// Its item types are numbered as Treasures' are (a long sword 18, the earlier
+// games' halberd), so its monsters' items take their names from its words,
+// plain ones too.
+void the_monsters_items_are_named_by_their_words()
+{
+    const auto folder = darkness_folder();
+    if (folder.empty())
+    {
+        std::cout << "Pools of Darkness's files are not here; its monsters' items are not named.\n";
+        return;
+    }
+    const auto catalog = opengold::por::CreatureCatalog::load(folder, darkness_game);
+    unsigned long_swords = 0;
+    std::string misnamed;
+    for (const auto &[id, creature] : catalog.all())
+    {
+        for (const auto &item : creature.equipment)
+        {
+            if (item.stored.type == 18)
+            {
+                ++long_swords;
+                if (item.label().find("Long Sword") == std::string::npos)
+                {
+                    misnamed = item.label();
+                }
+            }
+        }
+    }
+    check(long_swords > 0 && misnamed.empty(),
+          "The monsters' long swords are named long swords: " + std::to_string(long_swords) +
+              " found, " + misnamed);
 }
 
 std::size_t colours(const opengold::Image &image)
@@ -283,6 +317,7 @@ int main()
         the_new_commands_run();
         arithmetic_stores_by_the_destinations_width();
         the_item_words_are_in_the_game_program();
+        the_monsters_items_are_named_by_their_words();
         the_opening_reaches_new_phlan();
         every_map_has_its_script();
         std::cout << "Pools of Darkness passed.\n";

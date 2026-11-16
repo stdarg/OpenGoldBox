@@ -116,12 +116,13 @@ const std::vector<std::uint8_t> &AreaFiles::record(const std::string &archive_na
 
 namespace
 {
-// Treasures numbers its item types otherwise than the generic labels
-// (item_type_name), a long sword 18 and plate mail 36: an item there is named
-// by its own words, magic or not (its itemNameParts).
+// Treasures and Pools of Darkness number their item types otherwise than the
+// generic labels (item_type_name), a long sword 18 and plate mail 36: an item
+// there is named by its own words, magic or not (their itemNameParts).
 bool names_every_item(GoldBoxGame game) noexcept
 {
-    return game == GoldBoxGame::treasures_of_the_savage_frontier;
+    return game == GoldBoxGame::treasures_of_the_savage_frontier ||
+           game == GoldBoxGame::pools_of_darkness;
 }
 } // namespace
 

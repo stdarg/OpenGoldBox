@@ -611,10 +611,12 @@ left:
   too. Taking up *Treasures*' own makes its bolts longer: the Way Inn's
   sorceresses would hit harder, so measure that fight again
   (`OPENGOLD_FIGHT_TRIES`) after the change.
-- *Pools of Darkness* numbers its item types as *Treasures* does and should
-  name its items by their words too (`names_every_item`, Bugs), its route
-  checked; it shares the spell table, the AI and the one-square characters
-  as well.
+- *Pools of Darkness* numbers its item types as *Treasures* does and names
+  its items by their words too since 2026-11-16 (`names_every_item`, and
+  its monsters' items in the creature catalog; darkness.md, Items); it
+  shares the spell table, the AI and the one-square characters as well.
+  *Treasures*' monsters' items are still named by the generic labels where
+  one exists (the creature catalog).
 - The original's sort of the memorized spells passes over the first slot
   (Bugs); every *Treasures* spellcaster's record begins at the second, so
   the choice changes nothing in its fights.
