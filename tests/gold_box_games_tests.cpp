@@ -698,8 +698,8 @@ const std::vector<RouteBeat> &curse_route()
         {0, 0, 0, D::north, {"stop:JOURNEY"}, true, false, true},
         {0, 0, 0, D::north, {"ENTER CITY"}, false, false, true}, // Hap.
         // Hap's dark elf patrols: once four have fallen (cell 0x4C47 counts
-        // them) the barn holds two of each kind, not six. A camp in Hap draws
-        // them on the party, so it does not rest there.
+        // them) the barn holds two of each kind, not six. The party rests
+        // first: a camp in Hap draws the patrols it hunts anyway.
         {50,
          0,
          0,
