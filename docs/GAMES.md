@@ -428,7 +428,7 @@ The steps of *Curse*'s phase 3, with *Secret*'s differences
    does. *Stand-ins (2026-11-16):* the experience above, and three fights
    the test wins: Oswulf's last stand's second fight in the Eastern
    Crevasses (the Black Circle's guards and six wizards at once after the
-   cloud giants; 1 of 486 plays won), the Dreadlord (0 of 360) and the soul
+   cloud giants; 0 of 360 plays won), the Dreadlord (0 of 360) and the soul
    gem's iron golems and medusae (0 of 360); every other fight the route's
    player wins, its dead raised after where a cleric stands
    ([secret.md](games/secret.md), The route). *The route's own play:* each

@@ -2142,7 +2142,7 @@ const std::vector<RouteBeat> &secret_route()
         // Oswulf's last stand (15,15): the cloud giants and white dragons,
         // which the party beats in every play, and at once the Black
         // Circle's guards with six wizards behind them, whose bolts, holds
-        // and disintegrations beat the party in all but 1 of 486 plays,
+        // and disintegrations beat the party in all 360 plays (2026-11-16),
         // with no camp between (a rest there draws the castle's guards):
         // the test wins it (a stand-in).
         std::ranges::find_if(route,

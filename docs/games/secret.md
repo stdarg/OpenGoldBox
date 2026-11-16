@@ -260,6 +260,60 @@ route ends and `OPENGOLD_ROUTE_RESUME=FILE` plays on from it (with
 `OPENGOLD_ROUTE_BEATS=N` to stop after N beats), so a search starts in seconds
 instead of after the route's six minutes.
 
+### Stand-ins and win rates (2026-11-16)
+
+On main before this work (4b5b95686, the party made with Modify) the route's
+test won 17 fights: a basilisk and medusa patrol on the mine's tenth level,
+ten in the Eastern Crevasses (the Black Circle's patrols, the three guard
+posts of ancient red dragons, the cloud giants and white dragons, Oswulf's
+last stand), Sargatha's horde and her lone medusa at the Castle Entrance,
+and in the Sanctum the warrior in golden armor, a camp's fights by the
+hydras, the Dreadlord and the soul gem's guards. Now it wins three. What
+changed, each as a player plays it:
+
+- **Dice a beat**, as Pools of Darkness's and Gateway's routes have, so a
+  save resumed with `OPENGOLD_ROUTE_RESUME` plays on as the whole run does.
+- **Arms:** the party takes from the mayor's pile its Shield +2 (paladin 1),
+  Gauntlets of Ogre Power (paladin 2), Wand of Ice Storm and Bracers AC 6
+  (the magic-user), and on the way the cluebook's items where its beats win
+  them: the Old Red Dragon's cloak and ring (the magic-user), the dead
+  adventurer's plate, sword, shield and ring on the mine's first level
+  (paladin 1), the Ring of Wizardry, the mines' 81 (the sword against
+  giants for the ranger, the banded mail +5 for paladin 2, the cloak for
+  cleric 4), the frost giant king's plate, sword and shield, and Oswulf's
+  Silver Long Sword and Silver Shield (paladin 1). Below the mine's tenth
+  level each member readies its mirror in place of its shield, in the
+  crevasses its shield again, and in the castle its mirror but the Silver
+  Shield's bearer, whose shield turns gazes back.
+- **Spells:** the casters memorize to the seventh level (Heal, Disintegrate),
+  and the magic-user learns the Globe of Invulnerability and Disintegrate
+  as it trains.
+- **Healing:** the camp's Fix (ORIGINAL-RULES.md, *Secret*) whenever a member
+  is hurt, and before each rest; a rest when a member is below half its Hit
+  Points or the magic-user has cast half its spells. Fights won at the cost
+  of members count as won, their dead raised by the Fix's Raise Dead.
+- **Tactics:** the members strike first the enemy's casters (the Black
+  Circle's and the Legion's wizards, the necromancers, the Banite priests)
+  and those beginning a spell, and the magic-user casts its Fireball where it
+  takes the most of them and spares the party, as the cluebook bids. This
+  turned the Black Circle's patrols from 0 and 8 wins in 120 plays to 31 and
+  40.
+- **Reloads:** from the crevasses on, a fight lost in each of 120 plays is
+  played up to 240 more times with new dice, and one won only at the cost
+  of two members (both clerics, who raise the dead) up to 240 more.
+
+The three stand-ins, measured from the route's own saves:
+
+| Fight | Plays won |
+|---|---|
+| Oswulf's last stand (82: 15,15), the second fight: five castle guards, four legionaries, three Black Circle and three Legion wizards right after the cloud giants and white dragons, which the party beats in every play; no camp between | 0 of 360 (1 of 486 after a rest there, which draws the castle's guards) |
+| The Dreadlord (98: 3,4) with ten storm giants and six Banite priests dealt about the party, whole and rested | 0 of 360 |
+| The soul gem's twelve iron golems, whom only the weapons +3 of the paladins and Vala harm, and six medusae (98: 1,3) | 0 of 360 |
+
+The experience a party brings from *Curse* stays a stand-in: the four
+awards give each paladin 1,550,000 above Secret's new character's, and the
+whole route earns about 664,000 a member, too little to replace it.
+
 The castle as the route plays it: the Castle Entrance's rotating alcoves turn
 the party into the rooms beside the great hall and back only once the room's
 lever is pulled (cells 4C04 and 4C05, a bit a room); a flagstone at 9,15
