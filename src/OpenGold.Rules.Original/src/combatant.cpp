@@ -724,8 +724,9 @@ int secret_canonical_effect(int code) noexcept
 // Unlimited Adventures kit's of the same numbers, and take them; so do a
 // giant-slaying sword (75, EffGiantSlayingSword: 6d6 and the Strength bonus
 // at its quarry), the bulette's rake (99, EffBulletRake: 8 second attacks one
-// time in 4, else 4, as its AI readies its weapons) and the vorpal blade
-// (115, EffVorpal: a primary blow of a natural 17 or more beheads). Half
+// time in 4, else 4, as its AI readies its weapons), the vorpal blade (115,
+// EffVorpal: a primary blow of a natural 17 or more beheads) and the
+// beholders' rays (117, AttackEyeRays, run as the AI's move begins). Half
 // damage from crushing weapons (67), the blessed bolt that slays (82), the
 // big red, blue and black dragons' breaths (83, 91, 96), its dragon fear
 // (100), 4d6 of fire with a hit (104) and the paralyzing gaze (114) are its
@@ -737,12 +738,12 @@ int darkness_canonical_effect(int code) noexcept
 {
     constexpr int own = secret_effect_offset, past = darkness_effect_offset,
                   kit = kit_effect_offset;
-    constexpr std::array<std::pair<int, int>, 23> moved{{
-        {40, 40 + kit},   {66, 115},         {67, 67 + past},  {75, 75 + kit},  {80, 80 + kit},
-        {81, 81 + kit},   {82, 82 + past},   {83, 83 + past},  {84, 104 + own}, {85, 83 + own},
-        {125, 125 + kit}, {126, 126 + kit},  {90, 690},        {91, 91 + past}, {96, 96 + past},
-        {99, 99 + kit},   {100, 100 + past}, {101, 85},        {102, 86},       {104, 104 + past},
-        {108, 121 + own}, {114, 114 + past}, {115, 115 + kit},
+    constexpr std::array<std::pair<int, int>, 24> moved{{
+        {40, 40 + kit},   {66, 115},         {67, 67 + past},  {75, 75 + kit},   {80, 80 + kit},
+        {81, 81 + kit},   {82, 82 + past},   {83, 83 + past},  {84, 104 + own},  {85, 83 + own},
+        {125, 125 + kit}, {126, 126 + kit},  {90, 690},        {91, 91 + past},  {96, 96 + past},
+        {99, 99 + kit},   {100, 100 + past}, {101, 85},        {102, 86},        {104, 104 + past},
+        {108, 121 + own}, {114, 114 + past}, {115, 115 + kit}, {117, 117 + kit},
     }};
     const auto found = std::ranges::find(moved, code, &std::pair<int, int>::first);
     return found != moved.end() ? found->second : secret_canonical_effect(code);
@@ -757,8 +758,9 @@ int kit_canonical_effect(int code) noexcept
 {
     // The kit's need of a +1 or +3 weapon (103, 60), its paralysing blows
     // (88, 224), its 2d6 of fire with a blow (108), its beholder's rays
-    // (117) and its rot (170), which takes Charisma month by month, differ
-    // from every game's, and are its own.
+    // (117, which Pools of Darkness's share) and its rot (170), which takes
+    // Charisma month by month, differ from every earlier game's, and are its
+    // own.
     constexpr std::array<std::pair<int, int>, 51> matched{{
         {6, 335},
         {8, 8},

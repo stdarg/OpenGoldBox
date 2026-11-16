@@ -1176,9 +1176,12 @@ class Session final : public rules::CombatSession
     void slow_poison(Fighter &target, int level);
     void revive(Fighter &f);
     [[nodiscard]] bool in_cloud(const Fighter &f, CloudKind kind) const;
-    void breathe_cloud(Fighter &f);
+    void breathe_cloud(Fighter &f, bool round_ends = false);
     void breathe_stinking_cloud(Fighter &f);
+    void breathe_darkness_stench(Fighter &f);
     void breathe_cloudkill(Fighter &f);
+    void breathe_darkness_cloudkill(Fighter &f);
+    [[nodiscard]] int cloud_caster_level(CloudKind kind, int spell_number) const;
     bool lightning_at(Cell cell, int damage, int level, int save = 4, int element = 12,
                       int spell_number = 51);
     void lightning_path(Cell origin, Cell aim, int length, int damage, int level, bool bounce,
@@ -1569,7 +1572,7 @@ void Session::end_round()
     round_end_effects();
     for (auto &f : fighters_)
     {
-        breathe_cloud(f);
+        breathe_cloud(f, true);
     }
     for (auto &f : fighters_)
     {
@@ -5933,11 +5936,37 @@ bool Session::breathes_clouds_freely(const Fighter &f) const
 }
 
 // What the clouds do to one in them (fxengine.pas, ConsiderTerrainEffects).
-void Session::breathe_cloud(Fighter &f)
+// Pools of Darkness's has its own stench and cloudkill, and passes over the
+// stench as the round ends (combat.pas, EndOfRound, skipCloud).
+void Session::breathe_cloud(Fighter &f, bool round_ends)
 {
-    breathe_stinking_cloud(f);
-    breathe_cloudkill(f);
+    if (darkness())
+    {
+        if (!round_ends)
+        {
+            breathe_darkness_stench(f);
+        }
+        breathe_darkness_cloudkill(f);
+    }
+    else
+    {
+        breathe_stinking_cloud(f);
+        breathe_cloudkill(f);
+    }
     cut_by_blades(f, false);
+}
+
+// The level of the caster of the first cloud of the kind, for the magic
+// resistance its harm meets; 12 once the caster is gone.
+int Session::cloud_caster_level(CloudKind kind, int spell_number) const
+{
+    const auto cloud = std::find_if(clouds_.begin(), clouds_.end(),
+                                    [kind](const Cloud &c)
+                                    {
+                                        return c.kind == kind;
+                                    });
+    const auto *caster = cloud != clouds_.end() ? find(cloud->caster) : nullptr;
+    return caster ? caster_level(*caster, *game_spell(spell_number), game_of(identity_)) : 12;
 }
 
 // Pools of Darkness's Blade Barrier cuts one in it for 8d8, which magic
@@ -5955,7 +5984,7 @@ void Session::cut_by_blades(Fighter &f, bool may_save)
                                          return c.kind == CloudKind::blades;
                                      });
     const auto *caster = find(blades->caster);
-    const int level = caster ? caster_level(*caster, *game_spell(301), game_of(identity_)) : 12;
+    const int level = cloud_caster_level(CloudKind::blades, 301);
     if (resists_magic_at_all(f) && magic_resists(f, level, roll(100)))
     {
         log({"{name} is unaffected.", {{"name", f.name}}});
@@ -5988,6 +6017,61 @@ void Session::breathe_cloudkill(Fighter &f)
     log({"{name} is poisoned.", {{"name", f.name}}});
     f.numbers.effects.push_back({effect::poisoned, 0, 255, false});
     kill(f);
+}
+
+// Pools of Darkness's cloudkill (fxengine.pas, ConsiderTerrainEffects): one
+// its record calls proof against poison breathes it unharmed; one of 0 to 4
+// Hit Dice dies of its poison, one of 5 saves at -4, one of 6 at 0, and one
+// of more takes 1d10, magical and poisonous.
+void Session::breathe_darkness_cloudkill(Fighter &f)
+{
+    if (!f.able() || !in_cloud(f, CloudKind::deadly) ||
+        (f.numbers.traits & trait::poison_proof) != 0)
+    {
+        return;
+    }
+    const int hit_dice = f.numbers.level;
+    if (hit_dice > 6)
+    {
+        constexpr int magical_poison = 0x88;
+        nonweapon_damage(f, roll(10), 0, false, magical_poison,
+                         cloud_caster_level(CloudKind::deadly, 191), 191, false);
+        return;
+    }
+    if (hit_dice >= 5 && saving_throw(f, 0, hit_dice == 5 ? -4 : 0))
+    {
+        return;
+    }
+    log({"{name} is poisoned.", {{"name", f.name}}});
+    f.numbers.effects.push_back({effect::poisoned, 0, 255, false});
+    kill(f);
+}
+
+// Pools of Darkness's stinking cloud (fxengine.pas, ConsiderTerrainEffects):
+// the undead, the nauseous and one its record calls unliving or proof against
+// poison breathe it unharmed; the rest save against paralysis, one that saves
+// coughing for 1d4+1 rounds and losing the spell it was casting, one that
+// fails helpless with nausea for 1d4+1.
+void Session::breathe_darkness_stench(Fighter &f)
+{
+    constexpr int spared = trait::unliving | trait::poison_proof;
+    if (!f.able() || !in_cloud(f, CloudKind::stinking) || f.numbers.undead_level > 0 ||
+        f.has(effect::nausea) || (f.numbers.traits & spared) != 0)
+    {
+        return;
+    }
+    const auto &known = *game_spell(34);
+    if (!saving_throw(f, 0, 0))
+    {
+        add_with_message(f, {effect::nausea, roll(4) + 1, 255, false}, false, false, 0, 0, &known);
+        return;
+    }
+    add_with_message(f, {effect::coughing, roll(4) + 1, 255, false}, false, true, 0, 0, &known);
+    if (f.pending_spell || f.aiming)
+    {
+        lose_spell(f);
+        end_actions(f);
+    }
 }
 
 // One in a stinking cloud saves against paralysis: saved, it coughs for the
@@ -7201,12 +7285,14 @@ void Session::curse_specials(Fighter &f)
 // A beholder's eyes (Curse's attack_or_kill): up to four tries, each power
 // once a fight, by the target's distance: a disintegrating ray at exactly 2
 // squares, a petrifying one at 3, death at 4, a 2d8+1 wound at 5; then Fear,
-// Slow and Sleep. The kit's (cbaction.c, eye_rays; its 117) lock onto an
-// enemy anew anywhere on the field as they open, and use each power once a
-// turn, a ray within its distance; its wound is Cause Serious Wounds.
+// Slow and Sleep. The kit's (cbaction.c, eye_rays; its 117) and Pools of
+// Darkness's (cbtacts.pas, AttackEyeRays; its 117, as its AI's move begins)
+// lock onto an enemy anew anywhere on the field as they open, and use each
+// power once a turn, a ray within its distance; the wound is Cause Serious
+// Wounds.
 void Session::beholder_rays(Fighter &f)
 {
-    const bool kit_eyes = kit();
+    const bool kit_eyes = kit() || darkness();
     int used_this_turn = 0;
     for (int tries = 0; tries < 4 && f.able(); ++tries)
     {

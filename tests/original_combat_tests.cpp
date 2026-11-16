@@ -5054,6 +5054,92 @@ void darkness_ai_shuns_clouds()
     check(walks_in(original::trait::poison_proof), "One proof against poison walks into it");
 }
 
+// Pools of Darkness's own clouds (fxengine.pas, ConsiderTerrainEffects): a
+// cloudkill spares one proof against poison and harms one of more than 6 Hit
+// Dice for 1d10; a stinking cloud spares one proof against poison, and one
+// that saves coughs for 1d4+1 rounds.
+void darkness_clouds_spare_the_poison_proof()
+{
+    using original::ClassSlot;
+    const auto foe = [](int level, int traits)
+    {
+        auto c = victim(100);
+        c.level = level;
+        c.traits = traits;
+        return c;
+    };
+    auto deadly = arrange_darkness(
+        {{"Mage", rules::Side::party, {1, 3}, caster(ClassSlot::magic_user, 9, {191})},
+         {"Weak", rules::Side::opposition, {4, 2}, foe(3, 0)},
+         {"Proof", rules::Side::opposition, {4, 3}, foe(3, original::trait::poison_proof)},
+         {"Strong", rules::Side::opposition, {4, 4}, foe(9, 0)}},
+        337);
+    auto &session = *deadly.session;
+    cast_now(session, "Mage", 191,
+             [&]
+             {
+                 return aim_at_cell(session, {3, 3});
+             });
+    const auto snapshot = session.snapshot();
+    check(view_of(snapshot, "Weak").status == "dead", "A cloudkill kills one of 3 Hit Dice");
+    check(view_of(snapshot, "Proof").status != "dead" &&
+              view_of(snapshot, "Proof").hit_points == 100,
+          "It spares one proof against poison");
+    const int strong = view_of(snapshot, "Strong").hit_points;
+    check(view_of(snapshot, "Strong").status != "dead" && strong < 100 && strong >= 90,
+          "One of 9 Hit Dice takes 1d10");
+
+    auto sure = foe(3, 0);
+    sure.saving_throws = {2, 2, 2, 2, 2};
+    auto stench = arrange_darkness(
+        {{"Mage", rules::Side::party, {1, 3}, caster(ClassSlot::magic_user, 9, {34})},
+         {"Saver", rules::Side::opposition, {4, 3}, sure},
+         {"Proof", rules::Side::opposition, {4, 2}, foe(3, original::trait::poison_proof)}},
+        339);
+    auto &smelly = *stench.session;
+    cast_now(smelly, "Mage", 34,
+             [&]
+             {
+                 return aim_at_cell(smelly, {3, 2});
+             });
+    check(logged(smelly, "{name} is affected by {spell}.") == 1,
+          "A stinking cloud takes only the one not proof against poison");
+}
+
+// Pools of Darkness's beholders fire their rays (its 117; cbtacts.pas,
+// AttackEyeRays, which its AI runs as its move begins, combatai.pas,
+// AiMoveAttack): as the kit's, up to four tries a turn at the enemy it locks
+// onto, each power once a turn, a ray within its distance.
+void darkness_beholder_fires_its_rays()
+{
+    const auto eyes = original::canonical_effect(117, darkness_game);
+    check(eyes == 717, "Pools of Darkness's 117 is the kit's eye rays");
+    const auto beholder = special({{eyes, 0, 255, false}}, 60);
+    auto near = arrange_darkness({{"Fighter", rules::Side::party, {2, 3}, victim(500)},
+                                  {"Beholder", rules::Side::opposition, {0, 3}, beholder}},
+                                 265);
+    until_turn_of(*near.session, "Beholder");
+    near.session->submit(order(*near.session, "quick"));
+    check(logged(*near.session, "{name} fires a disintegrating ray.") == 1,
+          "Within 2 squares a beholder's first ray is the disintegrating one");
+
+    auto sure = victim(500);
+    sure.saving_throws = {2, 2, 2, 2, 2};
+    auto far = arrange_darkness({{"Fighter", rules::Side::party, {3, 3}, sure},
+                                 {"Beholder", rules::Side::opposition, {0, 3}, beholder}},
+                                269);
+    until_turn_of(*far.session, "Beholder");
+    far.session->submit(order(*far.session, "quick"));
+    const auto fired = [&](std::string_view ray)
+    {
+        return logged(*far.session, std::string("{name} fires a ") + std::string(ray) + " ray.");
+    };
+    check(fired("disintegrating") == 0 && fired("petrifying") == 1 && fired("death") == 1 &&
+              fired("wounding") == 1 &&
+              view_of(far.session->snapshot(), "Fighter").hit_points < 500,
+          "At 3 squares a beholder fires the stone, death and wounding rays, each once a turn");
+}
+
 // Gateway's changed rows (its spellTable): Prayer on up to four creatures the
 // caster touches, Invisibility 10' Radius aimed beside the caster and
 // reaching 6 squares around, Blink and Strength cast in and out of fights.
@@ -6708,6 +6794,8 @@ int main()
         darkness_blades_and_the_bulette_strike();
         darkness_turns_undead_its_own_way();
         darkness_ai_shuns_clouds();
+        darkness_clouds_spare_the_poison_proof();
+        darkness_beholder_fires_its_rays();
         std::cout << "Original-rules combat passed.\n";
     }
     catch (const std::exception &error)
