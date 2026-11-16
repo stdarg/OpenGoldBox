@@ -4495,22 +4495,41 @@ void darkness_spells_fight()
     check(logged(ball, "{name}'s summons is not answered.") == 1,
           "Monster Summoning finds no one waiting");
 
-    // Mass Charm charms enemies, but not one Mind Blank shields.
-    auto blank = victim(30);
+    // Mass Charm charms enemies its records call persons (SpellMassCharm),
+    // but not one Mind Blank shields, nor a monster its record does not call
+    // a person.
+    auto person = victim(30);
+    person.traits = original::trait::person;
+    auto blank = person;
     blank.effects = {{523, 0, 0, false}};
     auto charm = arrange_darkness(
         {{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 16, {320})},
-         {"Orc", rules::Side::opposition, {4, 3}, victim(30)},
-         {"Shielded", rules::Side::opposition, {4, 4}, blank}},
+         {"Orc", rules::Side::opposition, {4, 3}, person},
+         {"Shielded", rules::Side::opposition, {4, 4}, blank},
+         {"Ooze", rules::Side::opposition, {4, 2}, victim(30)}},
         311);
     cast_now(*charm.session, "Mage", 320,
              [&]
              {
                  return aim_at_cell(*charm.session, {4, 3});
              });
-    check(view_of(charm.session->snapshot(), "Orc").side == rules::Side::party &&
-              view_of(charm.session->snapshot(), "Shielded").side == rules::Side::opposition,
+    const auto charmed = charm.session->snapshot();
+    check(view_of(charmed, "Orc").side == rules::Side::party &&
+              view_of(charmed, "Shielded").side == rules::Side::opposition,
           "Mass Charm charms an enemy; Mind Blank turns it away");
+    const bool ooze_unaffected = std::ranges::any_of(
+        charmed.log_entries,
+        [](const auto &entry)
+        {
+            return entry.message.source == "{name} is unaffected." &&
+                   std::ranges::any_of(entry.message.arguments,
+                                       [](const rules::MessageArgument &a)
+                                       {
+                                           return a.name == "name" && a.value == "Ooze";
+                                       });
+        });
+    check(view_of(charmed, "Ooze").side == rules::Side::opposition && ooze_unaffected,
+          "Mass Charm passes over a monster its record does not call a person");
 }
 
 constexpr auto darkness_game = GoldBoxGame::pools_of_darkness;
@@ -4798,6 +4817,241 @@ void darkness_holds_no_monster()
     check(view_of(session.snapshot(), "Bandit").status.empty() &&
               logged(session, "{name} is unaffected.") == 1,
           "Hold Person does not hold a monster");
+}
+
+// Pools of Darkness's monsters' and items' effects that play as the kit's of
+// the same numbers (effhndlr.pas): a vorpal blade beheads with a primary
+// blow of a natural 17 or more, never one whose record's "immunities" have
+// bit 20h (EffVorpal, 115); a giant-slaying sword strikes its quarry for 6d6
+// and the Strength bonus (EffGiantSlayingSword, 75); a bulette strikes 4
+// times with its second attack, 8 one time in 4 (EffBulletRake, 99).
+void darkness_blades_and_the_bulette_strike()
+{
+    const auto mapped = [](int code)
+    {
+        return original::canonical_effect(code, darkness_game);
+    };
+    check(
+        mapped(75) == 675 && mapped(99) == 699 && mapped(115) == 715,
+        "The giant-slaying sword, the bulette's rake and the vorpal blade take the kit's numbers");
+    const auto wielder = [&](int code)
+    {
+        return monster({2, 1, 1, 0}, {0, 0, 0, 0}, {{mapped(code), 0, 0, false}});
+    };
+    const auto target_of = [](int traits)
+    {
+        auto c = creature(1000, 0);
+        c.traits = traits;
+        return c;
+    };
+    const auto beheading = [&](int traits)
+    {
+        return strike_until(
+            wielder(115), target_of(traits),
+            [](const rules::CombatSession &session)
+            {
+                return logged(session, "{name} is beheaded.") > 0;
+            },
+            53, darkness_game);
+    };
+    const auto blade = beheading(0);
+    check(logged(*blade.session, "{name} is beheaded.") == 1 &&
+              logged(*blade.session, "{attacker} hits {name} for {damage}.", "Attacker") > 1,
+          "A vorpal blade beheads with a blow of a natural 17 or more, not with every blow");
+    const auto proof = beheading(original::trait::beheading_proof);
+    check(logged(*proof.session, "{name} is beheaded.") == 0 &&
+              logged(*proof.session, "{attacker} hits {name} for {damage}.", "Attacker") > 20,
+          "Never one proof against it");
+    const int bane = first_hit(wielder(75), target_of(original::trait::giant_bane), darkness_game);
+    check(bane >= 6 && bane <= 36 && first_hit(wielder(75), target_of(0), darkness_game) == 1,
+          "A giant-slaying sword strikes its quarry for 6d6, others as it would");
+
+    auto flurry =
+        arrange_darkness({{"Fighter", rules::Side::party, {3, 3}, victim()},
+                          {"Bulette",
+                           rules::Side::opposition,
+                           {4, 3},
+                           monster({0, 0, 0, 0}, {2, 1, 1, 0}, {{mapped(99), 0, 0, false}})}},
+                         253);
+    until_turn_of(*flurry.session, "Bulette");
+    flurry.session->submit(order(*flurry.session, "melee", "Fighter"));
+    const int attacks = logged(*flurry.session, "{attacker} hits {name} for {damage}.", "Bulette") +
+                        logged(*flurry.session, "{attacker} misses {name}.", "Bulette");
+    check(attacks == 4 || attacks == 8, "A bulette strikes 4 or 8 times with its second attack");
+
+    // Its records' "immunities" (byte 421): the bulette rakes, a red dragon
+    // (bit 20h) keeps its head, a spectre (bit 10h) is proof against poison.
+    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
+    if (!games)
+    {
+        return;
+    }
+    const auto content =
+        load_original_content(std::filesystem::path(games) / "DARKNESS", darkness_game);
+    const auto creature_at = [&content](int record) -> const original::Combatant &
+    {
+        return content.bestiary.at("MON1CHA.DAX:" + std::to_string(record));
+    };
+    check(std::ranges::find(creature_at(1).effects, 699, &original::Effect::code) !=
+              creature_at(1).effects.end(),
+          "The bulette rakes");
+    check((creature_at(26).traits & original::trait::beheading_proof) &&
+              (creature_at(53).traits & original::trait::poison_proof) &&
+              !(creature_at(15).traits & original::trait::beheading_proof),
+          "A red dragon keeps its head, a spectre is proof against poison, a hill giant neither");
+}
+
+// Pools of Darkness's turning (cbtacts.pas, CombatTurnUndead; combat.pas,
+// CombatMenu; combatai.pas, TurnUndeadAi): a paladin turns from level 3; each
+// member tries as often as the fight's LOAD MONSTERs brought undead; the
+// highest undead in sight comes first and a failure goes on to the levels
+// below; one turned leaves the field at once; the area's penalty takes off
+// the turning column (rules::Encounter::turning_tries, turning_penalty).
+void darkness_turns_undead_its_own_way()
+{
+    using original::ClassSlot;
+    const auto paladin = [](int level)
+    {
+        auto c = creature(30, level);
+        c.class_levels[static_cast<std::size_t>(ClassSlot::paladin)] = level;
+        return c;
+    };
+    const auto turning =
+        [](const std::vector<Placed> &placed, std::uint64_t seed, int tries, int penalty = 0)
+    {
+        return arrange(placed, seed, {}, 100, darkness_game, false, false,
+                       [tries, penalty](rules::Encounter &encounter)
+                       {
+                           encounter.turning_tries = tries;
+                           encounter.turning_penalty = penalty;
+                       });
+    };
+    auto young = turning({{"Squire", rules::Side::party, {1, 3}, paladin(2)},
+                          {"Skeleton", rules::Side::opposition, {5, 3}, undead(1)}},
+                         67, 1);
+    until_turn_of(*young.session, "Squire");
+    check(!offered(*young.session, "turn"), "A paladin of level 2 cannot turn undead");
+
+    // A paladin of level 5 turns at a cleric's level 3; the fight loaded
+    // undead twice, so it tries twice.
+    auto knight = turning({{"Knight", rules::Side::party, {1, 3}, paladin(5)},
+                           {"Wight", rules::Side::opposition, {5, 3}, undead(9)},
+                           {"Wight 2", rules::Side::opposition, {5, 5}, undead(9)}},
+                          67, 2);
+    auto &tries = *knight.session;
+    for (int attempt = 0; attempt < 2; ++attempt)
+    {
+        until_turn_of(tries, "Knight");
+        check(offered(tries, "turn").has_value(), "A paladin of level 5 may turn undead twice");
+        tries.submit(order(tries, "turn"));
+    }
+    until_turn_of(tries, "Knight");
+    check(!offered(tries, "turn"), "Each member tries as often as the fight loaded undead");
+    check(logged(tries, "{name} turns undead.") == 2, "The knight tried twice");
+
+    // A skeleton turned leaves the field at once.
+    auto rout = turning({{"Cleric", rules::Side::party, {1, 3}, cleric(4)},
+                         {"Skeleton", rules::Side::opposition, {5, 3}, undead(1)}},
+                        67, 1);
+    until_turn_of(*rout.session, "Cleric");
+    rout.session->submit(order(*rout.session, "turn"));
+    check(logged(*rout.session, "{name} is turned.") == 1 &&
+              view_of(rout.session->snapshot(), "Skeleton").fled,
+          "A turned skeleton leaves the field at once");
+
+    // The vampire, the highest, is tried before the skeleton; failing it,
+    // the attempt goes on to the skeleton, which a level-8 cleric destroys.
+    bool vampire_first = false, failure_goes_on = false;
+    for (std::uint64_t seed = 1; seed < 80 && !(vampire_first && failure_goes_on); ++seed)
+    {
+        auto fight = turning({{"Cleric", rules::Side::party, {1, 3}, cleric(8)},
+                              {"Skeleton", rules::Side::opposition, {5, 2}, undead(1)},
+                              {"Vampire", rules::Side::opposition, {5, 4}, undead(10)}},
+                             seed, 1);
+        auto &session = *fight.session;
+        until_turn_of(session, "Cleric");
+        session.submit(order(session, "turn"));
+        std::vector<std::string> affected;
+        for (const auto &entry : session.snapshot().log_entries)
+        {
+            const auto &source = entry.message.source;
+            if (source == "{name} is turned." || source == "{name} is destroyed.")
+            {
+                affected.push_back(entry.message.arguments.front().value);
+            }
+        }
+        vampire_first =
+            vampire_first || affected == std::vector<std::string>{"Vampire", "Skeleton"};
+        failure_goes_on = failure_goes_on || affected == std::vector<std::string>{"Skeleton"};
+    }
+    check(vampire_first, "The highest undead comes first");
+    check(failure_goes_on, "A failure goes on to the undead below");
+
+    // The area's penalty can leave no column to turn with.
+    auto cursed = turning({{"Cleric", rules::Side::party, {1, 3}, cleric(8)},
+                           {"Skeleton", rules::Side::opposition, {5, 3}, undead(1)}},
+                          67, 1, 20);
+    until_turn_of(*cursed.session, "Cleric");
+    cursed.session->submit(order(*cursed.session, "turn"));
+    check(logged(*cursed.session, "Nothing happens.") == 1 &&
+              view_of(cursed.session->snapshot(), "Skeleton").status.empty(),
+          "Where the area's penalty passes the column, no undead turns");
+
+    // With no undead loaded no one may turn; a paladin on Quick turns them.
+    auto none = turning({{"Cleric", rules::Side::party, {1, 3}, cleric(8)},
+                         {"Skeleton", rules::Side::opposition, {5, 3}, undead(1)}},
+                        67, 0);
+    until_turn_of(*none.session, "Cleric");
+    check(!offered(*none.session, "turn"), "A fight that loaded no undead offers no turning");
+    auto quick = turning({{"Knight", rules::Side::party, {1, 3}, paladin(10)},
+                          {"Skeleton", rules::Side::opposition, {5, 3}, undead(1)}},
+                         193, 1);
+    until_turn_of(*quick.session, "Knight");
+    quick.session->submit(order(*quick.session, "quick"));
+    check(logged(*quick.session, "{name} turns undead.") == 1,
+          "A paladin on Quick turns undead in sight");
+}
+
+// Pools of Darkness's AI never steps into a cloud that would harm it, with no
+// save and whatever its movement (combatai.pas, AiCanStep): a fast monster
+// keeps out of a cloudkill, one proof against poison walks into it.
+void darkness_ai_shuns_clouds()
+{
+    using original::ClassSlot;
+    const auto walks_in = [](int traits)
+    {
+        auto runner = victim(500);
+        runner.level = 7;
+        runner.movement = 12;
+        runner.traits = traits;
+        auto fight = arrange_darkness(
+            {{"Mage", rules::Side::party, {1, 3}, caster(ClassSlot::magic_user, 9, {191})},
+             {"Runner", rules::Side::opposition, {5, 3}, runner}},
+            331);
+        auto &session = *fight.session;
+        cast_now(session, "Mage", 191,
+                 [&]
+                 {
+                     return aim_at_cell(session, {3, 3});
+                 });
+        bool entered = false;
+        play_until(
+            session,
+            [&](const std::string &actor)
+            {
+                return order(session, actor == "Runner" ? "quick" : "guard");
+            },
+            [&]
+            {
+                const auto cell = view_of(session.snapshot(), "Runner").cell;
+                entered = entered || (cell.x >= 2 && cell.x <= 4 && cell.y >= 2 && cell.y <= 4);
+                return entered || logged(session, "The air clears a little.") > 0 ||
+                       session.snapshot().round > 8;
+            });
+        return entered;
+    };
+    check(!walks_in(0), "A monster of movement 12 never steps into the cloudkill");
+    check(walks_in(original::trait::poison_proof), "One proof against poison walks into it");
 }
 
 // Gateway's changed rows (its spellTable): Prayer on up to four creatures the
@@ -6451,6 +6705,9 @@ int main()
         darkness_dragons_breathe_and_spiders_gaze();
         darkness_gazes_work_with_the_option_on();
         darkness_holds_no_monster();
+        darkness_blades_and_the_bulette_strike();
+        darkness_turns_undead_its_own_way();
+        darkness_ai_shuns_clouds();
         std::cout << "Original-rules combat passed.\n";
     }
     catch (const std::exception &error)

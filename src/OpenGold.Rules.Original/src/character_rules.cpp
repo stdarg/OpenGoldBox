@@ -331,7 +331,9 @@ constexpr std::string_view imported_prefix = "imported:";
 
 // A character brought from another game (Curse's ConvertPoolRadPlayer): its
 // scores, levels, Hit Points, age, experience, drained levels and the
-// magic-user spells it learned, as the draft keeps them.
+// magic-user spells it learned, as the draft keeps them; and the Hit Points it
+// rolled where the game keeps them (Pools of Darkness's LoadChar), else
+// nothing (version 1 drafts have none).
 struct Imported
 {
     rules::AbilityArray<int> scores{};
@@ -340,12 +342,13 @@ struct Imported
     int hit_points{}, age{}, experience{}, drained_levels{}, drained_hit_points{};
     int race{}, profession{}, alignment{};
     std::vector<int> learned;
+    std::optional<int> rolled_hit_points;
 };
 
 std::string encode_imported(const Imported &from)
 {
     std::ostringstream out;
-    out << imported_prefix << 1;
+    out << imported_prefix << (from.rolled_hit_points ? 2 : 1);
     for (const auto ability : rules::all_abilities)
     {
         out << ' ' << from.scores[ability];
@@ -361,6 +364,10 @@ std::string encode_imported(const Imported &from)
     for (const int number : from.learned)
     {
         out << ' ' << number;
+    }
+    if (from.rolled_hit_points)
+    {
+        out << ' ' << *from.rolled_hit_points;
     }
     return out.str();
 }
@@ -393,8 +400,14 @@ std::optional<Imported> imported_of(const CharacterDraft &draft)
     {
         in >> number;
     }
+    if (version == 2)
+    {
+        int rolled = 0;
+        in >> rolled;
+        from.rolled_hit_points = rolled;
+    }
     std::string rest;
-    if (!in || version != 1 || (in >> rest) || from.hit_points < 1)
+    if (!in || (version != 1 && version != 2) || (in >> rest) || from.hit_points < 1)
     {
         throw std::invalid_argument("Unreadable imported character");
     }
@@ -578,7 +591,9 @@ class OriginalCharacterRules final : public rules::CharacterRules
     // its scores kept within this game's limits for its race and gender, its
     // levels, Hit Points, age, experience and drained levels, and the
     // magic-user spells it learned but Animate Dead; it starts with this
-    // game's platinum (Curse's 300).
+    // game's platinum (Curse's 300). Pools of Darkness's LoadChar takes a
+    // Secret character's record nearly whole, its rolled Hit Points too, but
+    // not the levels a drain took, which its record has no place for.
     std::optional<CharacterDraft> imported_draft(const CharacterSheet &from,
                                                  unsigned experience) const override
     {
@@ -604,11 +619,16 @@ class OriginalCharacterRules final : public rules::CharacterRules
         in.hit_points = std::max(from.hit_points, 1);
         in.age = o.age;
         in.experience = static_cast<int>(std::min<unsigned>(experience, 100000000));
-        in.drained_levels = o.drained_levels;
-        in.drained_hit_points = o.drained_hit_points;
+        const bool darkness = game_ == GoldBoxGame::pools_of_darkness;
+        in.drained_levels = darkness ? 0 : o.drained_levels;
+        in.drained_hit_points = darkness ? 0 : o.drained_hit_points;
         in.race = o.race;
         in.profession = o.profession;
         in.alignment = o.alignment;
+        if (darkness)
+        {
+            in.rolled_hit_points = o.rolled_hit_points;
+        }
         constexpr int animate_dead = 36;
         for (const int number : o.known_spells)
         {
@@ -1060,10 +1080,14 @@ class OriginalCharacterRules final : public rules::CharacterRules
         numbers.drained_levels = from.drained_levels;
         numbers.drained_hit_points = from.drained_hit_points;
         // Its Hit Points less a level's Constitution bonus, as Curse's
-        // ConvertPoolRadPlayer reckons them.
+        // ConvertPoolRadPlayer reckons them, or those it rolled where the
+        // game kept them.
         numbers.rolled_hit_points =
-            std::max(0, from.hit_points - constitution_hit_point_bonus(
-                                              profession, from.scores[Ability::constitution]));
+            from.rolled_hit_points
+                ? *from.rolled_hit_points
+                : std::max(0, from.hit_points -
+                                  constitution_hit_point_bonus(profession,
+                                                               from.scores[Ability::constitution]));
         numbers.thief_skills = thief_skills(race, level_in(from.levels, ClassSlot::thief),
                                             from.scores[Ability::dexterity], game_);
         const auto slots = caster_slots(from.levels, from.scores[Ability::wisdom],

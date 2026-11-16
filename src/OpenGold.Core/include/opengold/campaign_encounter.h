@@ -151,6 +151,10 @@ struct CampaignEncounter
     bool frightening_surprise{};
     // Treasures' romance (rules::Encounter::romance).
     std::optional<rules::Romance> romance;
+    // Pools of Darkness's tries at turning undead and its area's turning
+    // penalty (rules::Encounter::turning_tries, turning_penalty).
+    int turning_tries{1};
+    int turning_penalty{};
 };
 
 // What the difficulty does to a fight's monsters and morale, those on the party's

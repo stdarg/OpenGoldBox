@@ -1345,6 +1345,25 @@ share (`por::CharacterRecord`): the coins go to platinum, gems and jewelry,
 the Hit Dice to the highest level, and the slots of spell levels 1 to 5. The
 bulette, creature 1, has 9 Hit Dice, THAC0 12, AC −2 and 41 hit points.
 
+### Characters from Secret
+
+Its LoadChar reads a *Secret* character's 439-byte record and moves it into
+its own 510 bytes in thirteen pieces (`saveload.pas`, the legacy storage): the
+name, scores and Exceptional Strength; THAC0 to the known spells, whose 117
+flags keep their numbers; the saves, movement and levels; the thief skills;
+the platinum, gems and jewelry, the levels and those before a change of
+class; gender to experience; the class mask, rolled Hit Points and spell
+slots; the portrait and icon; the items' count to the magic resistance; and
+the fight's bookkeeping. The memorized spells, the copper to gold and the
+levels a drain took are left out, and the race is numbered one lower. Its
+items are *Secret*'s records as they were, but a bundle (type 73) and what it
+holds, boots of type 45 made +2 and a cloak of type 58 given displacement
+(effect 89). The record's byte 230, *Secret*'s attack level, lands on the
+known flag of Fire Touch (118), which OpenGoldBox leaves unlearned
+([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Bugs). OpenGoldBox brings one
+across from a *Secret* save on the party screen (*Add from Secret*,
+`secret_items_for_darkness`, 2026-11-16).
+
 ### Items
 
 An item is 17 bytes: the last 17 of the earlier games' 63, without the name

@@ -733,6 +733,18 @@ if(OPENGOLD_BUILD_TESTS)
     set_tests_properties(opengold_godot_treasure_from_gateway PROPERTIES
         FIXTURES_REQUIRED godot_project TIMEOUT 320 LABELS godot
         SKIP_REGULAR_EXPRESSION "Skipped: ")
+    # Pools of Darkness's party screen brings a character from a Secret save,
+    # with its money, as its LoadChar does. Skipped without Pools of
+    # Darkness's and Secret's files.
+    add_test(NAME opengold_godot_darkness_from_secret COMMAND "${CMAKE_COMMAND}"
+        "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
+        "-DFIXTURE_WRITER=$<TARGET_FILE:opengold_darkness_tests>"
+        "-DWORK=${CMAKE_BINARY_DIR}/settings-checks/darkness_from_secret"
+        "-DEXPECTED=Pools of Darkness from Secret passed"
+        -P "${PROJECT_SOURCE_DIR}/tests/darkness_from_secret.cmake")
+    set_tests_properties(opengold_godot_darkness_from_secret PROPERTIES
+        FIXTURES_REQUIRED godot_project TIMEOUT 320 LABELS godot
+        SKIP_REGULAR_EXPRESSION "Skipped: ")
     # Treasures' camp dialog offers Fix and Crown, as its camp menu does.
     # Skipped without Treasures' files.
     add_test(NAME opengold_godot_treasure_camp COMMAND "${CMAKE_COMMAND}"

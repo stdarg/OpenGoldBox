@@ -1216,7 +1216,8 @@ MemberId CampaignParty::add_pc(Character character)
 }
 
 MemberId CampaignParty::bring_across(const PartyMember &from, const ItemConversion &convert_item,
-                                     std::optional<BroughtMoney> own_money)
+                                     std::optional<BroughtMoney> own_money,
+                                     ConvertedItems converted)
 {
     const auto draft = character_rules()->imported_draft(from.character.sheet(), from.experience);
     if (!draft)
@@ -1239,7 +1240,9 @@ MemberId CampaignParty::bring_across(const PartyMember &from, const ItemConversi
         const auto before = member(id).character.inventory().items().size();
         take_item(id, *taken);
         const auto &now = member(id).character.inventory().items();
-        if (now.size() > before && !convert_item &&
+        const bool stays_readied =
+            !convert_item || converted == ConvertedItems::readied_as_they_were;
+        if (now.size() > before && stays_readied &&
             std::ranges::find(from.equipped, item.id) != from.equipped.end())
         {
             (void)equip(id, now.back().id);

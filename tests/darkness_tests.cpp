@@ -1,14 +1,21 @@
 // Pools of Darkness's campaign (docs/games/darkness.md): its script commands,
 // and its opening played on the real files when OPENGOLD_GOLDBOX_DIR names the
 // folder holding DARKNESS.
+#include "opengold/campaign_party.h"
+#include "opengold/campaign_save.h"
 #include "opengold/campaign_session.h"
+#include "opengold/character_creator.h"
 #include "opengold/creature_catalog.h"
+#include "opengold/darkness_import.h"
 #include "opengold/ecl.h"
 #include "opengold/ecl_machine.h"
 #include "opengold/game_census.h"
+#include "opengold/original.h"
+#include "opengold/original_content.h"
 #include "opengold/pool_radiance.h"
 #include "opengold/por_sound.h"
 #include "opengold/map_catalog.h"
+#include "original_creation_support.h"
 #include "test_support.h"
 #include "tour_access.h"
 
@@ -310,6 +317,115 @@ void every_map_has_its_script()
 
 } // namespace
 
+// A Secret of the Silver Blades character comes to Pools of Darkness as its
+// LoadChar takes one in (saveload.pas, its legacy record): its levels, Hit
+// Points, rolled Hit Points, experience and the spells it knew, under Pools
+// of Darkness's rules; its items as they were, readied or
+// not, but a bundle (type 73) left behind, boots of type 45 made +2 and a
+// cloak of type 58 given displacement (effect 89); and its own platinum,
+// gems and jewelry, not Pools of Darkness's 200 platinum.
+void a_secret_character_comes_across()
+{
+    const auto darkness = darkness_folder();
+    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
+    const auto secret = games ? std::filesystem::path(games) / "SECRET" : std::filesystem::path();
+    constexpr auto secret_game = GoldBoxGame::secret_of_the_silver_blades;
+    if (darkness.empty() || opengold::identify_game(secret) != secret_game)
+    {
+        std::cout << "Secret's or Pools of Darkness's files are not here; no one comes across.\n";
+        return;
+    }
+    const auto secret_content = opengold::load_original_content(secret, secret_game);
+    std::shared_ptr<const opengold::rules::CharacterRules> secret_creation =
+        opengold::original::character_rules(opengold::original::default_aging, secret_game);
+    opengold::CampaignParty first(opengold::original::rules_module(secret_content),
+                                  secret_creation);
+    opengold::CharacterCreator creator(secret_creation, 5);
+    creator.select(opengold::rules::CreationField::race, "elf");
+    creator.select(opengold::rules::CreationField::character_class, "fighter_magic_user");
+    creator.name("Veteran");
+    opengold::test::walk_original_creation(creator);
+    const auto id = first.add_pc(creator.create_character());
+    const auto item = [&](std::uint8_t type)
+    {
+        opengold::por::Equipment equipment;
+        equipment.stored.type = type;
+        equipment.stored.name_components = {type, 0, 0};
+        // Its record's bytes, which its inventory key keeps: type and word.
+        equipment.stored.raw[46] = equipment.stored.raw[47] = type;
+        equipment.base = secret_content.item_types.at(type);
+        return equipment;
+    };
+    constexpr std::uint8_t dagger = 4, boots = 45, cloak = 58, bundle = 73;
+    for (const auto type : {dagger, boots, cloak, bundle})
+    {
+        first.take_item(id, item(type));
+    }
+    (void)first.equip(id, first.member(id).character.inventory().items().front().id);
+    const auto &veteran = first.member(id);
+    // OPENGOLD_SECRET_SAVE_FIXTURE writes the veteran's party, with money, as
+    // a Secret save for the party screen's check (darkness_from_secret.cmake).
+    if (const char *fixture = std::getenv("OPENGOLD_SECRET_SAVE_FIXTURE"))
+    {
+        auto wealth = first.state().wealth;
+        wealth[static_cast<std::size_t>(opengold::Coin::platinum)] = 1234;
+        wealth[static_cast<std::size_t>(opengold::Coin::gems)] = 6;
+        wealth[static_cast<std::size_t>(opengold::Coin::jewelry)] = 2;
+        first.set_wealth(wealth);
+        opengold::write_campaign_file(
+            fixture,
+            opengold::encode_campaign(first, nullptr, opengold::campaign_asset_identity(secret)));
+    }
+
+    std::shared_ptr<const opengold::rules::CharacterRules> creation =
+        opengold::original::character_rules(opengold::original::default_aging, darkness_game);
+    opengold::CampaignParty second(
+        opengold::original::rules_module(opengold::load_original_content(darkness, darkness_game)),
+        creation);
+    const auto arrived =
+        second.bring_across(veteran, opengold::secret_items_for_darkness(darkness),
+                            opengold::CampaignParty::BroughtMoney{1234, 6, 2},
+                            opengold::CampaignParty::ConvertedItems::readied_as_they_were);
+    const auto &member = second.member(arrived);
+    const auto &sheet = member.character.sheet();
+    const auto &before = *veteran.character.sheet().original;
+    check(sheet.original->class_levels == before.class_levels &&
+              sheet.hit_points == veteran.character.sheet().hit_points &&
+              sheet.original->rolled_hit_points == before.rolled_hit_points &&
+              member.experience == veteran.experience &&
+              opengold::original::game_of(sheet.identity) == darkness_game,
+          "Its levels, Hit Points, rolled Hit Points and experience come along");
+    const auto knows = [](const opengold::rules::CharacterSheet &s, int number)
+    {
+        return std::ranges::find(s.original->known_spells, number) !=
+               s.original->known_spells.end();
+    };
+    for (const int number : before.known_spells)
+    {
+        check(knows(sheet, number), "It knows every spell it knew: " + std::to_string(number));
+    }
+    check(!before.known_spells.empty(), "The veteran knew spells");
+    // The original's LoadChar copies Secret's attack level (byte 230) into
+    // the known spells' place of Fire Touch (118, 318 here), so every one
+    // brought across knew it (Bugs).
+    constexpr int fire_touch = 318;
+    check(!knows(sheet, fire_touch), "It does not learn Fire Touch from its attack level");
+    const auto &items = member.character.inventory().items();
+    check(items.size() == 3 && member.equipped.size() == 1,
+          "Its dagger stays readied; its bundle stays behind");
+    for (const auto &kept : items)
+    {
+        const auto &stored = member.item_sources.at(kept.id).stored;
+        check(stored.type != boots || stored.magic_bonus == 2, "Its boots become +2");
+        check(stored.type != cloak || stored.effect_codes[1] == 89, "Its cloak gives displacement");
+    }
+    const auto &wealth = second.state().wealth;
+    check(wealth[static_cast<std::size_t>(opengold::Coin::platinum)] == 1234 &&
+              wealth[static_cast<std::size_t>(opengold::Coin::gems)] == 6 &&
+              wealth[static_cast<std::size_t>(opengold::Coin::jewelry)] == 2,
+          "It keeps its own platinum, gems and jewelry");
+}
+
 int main()
 {
     try
@@ -320,6 +436,7 @@ int main()
         the_monsters_items_are_named_by_their_words();
         the_opening_reaches_new_phlan();
         every_map_has_its_script();
+        a_secret_character_comes_across();
         std::cout << "Pools of Darkness passed.\n";
     }
     catch (const std::exception &error)

@@ -498,6 +498,14 @@ int secret_traits(const por::CharacterRecord &record)
     traits |= (targets & target::giant_bane) ? trait::giant_bane : 0;
     traits |= (targets & target::person) ? trait::person : 0;
     traits |= (targets & target::unliving) ? trait::unliving : 0;
+    // Pools of Darkness reads two bits more of its "immunities": 10h proof
+    // against poison, whom no cloud holds back (combatai.pas, AiCanStep), and
+    // 20h proof against a vorpal blade (effhndlr.pas, EffVorpal).
+    if (record.game == GoldBoxGame::pools_of_darkness)
+    {
+        traits |= (targets & 0x10) ? trait::poison_proof : 0;
+        traits |= (targets & 0x20) ? trait::beheading_proof : 0;
+    }
     return traits;
 }
 
@@ -713,12 +721,15 @@ int secret_canonical_effect(int code) noexcept
 // does): Secret's but where its handler does otherwise. The Rakshasa's
 // protection (40), half damage from weapons below +3 (80) and +4 (81), the
 // need of a +2 weapon (125) and immunity to gazes (126) do as the
-// Unlimited Adventures kit's of the same numbers, and take them. Half damage
-// from crushing weapons (67), a giant-slaying sword (75), the blessed bolt
-// that slays (82), the big red, blue and black dragons' breaths (83, 91,
-// 96), the bulette's rake (99), its dragon fear (100), 4d6 of fire with a
-// hit (104) and the paralyzing gaze (114) are its own; the green dragon's
-// poison breath (90) is the kit's;
+// Unlimited Adventures kit's of the same numbers, and take them; so do a
+// giant-slaying sword (75, EffGiantSlayingSword: 6d6 and the Strength bonus
+// at its quarry), the bulette's rake (99, EffBulletRake: 8 second attacks one
+// time in 4, else 4, as its AI readies its weapons) and the vorpal blade
+// (115, EffVorpal: a primary blow of a natural 17 or more beheads). Half
+// damage from crushing weapons (67), the blessed bolt that slays (82), the
+// big red, blue and black dragons' breaths (83, 91, 96), its dragon fear
+// (100), 4d6 of fire with a hit (104) and the paralyzing gaze (114) are its
+// own; the green dragon's poison breath (90) is the kit's;
 // half damage from cutting and piercing weapons is Pool of Radiance's (115),
 // the red and white dragons' breaths Secret's fire and cold (its 104 and 83), the
 // drains Pool of Radiance's (85, 86) and 2d6 of fire with a hit Fire Touch.
@@ -726,12 +737,12 @@ int darkness_canonical_effect(int code) noexcept
 {
     constexpr int own = secret_effect_offset, past = darkness_effect_offset,
                   kit = kit_effect_offset;
-    constexpr std::array<std::pair<int, int>, 22> moved{{
-        {40, 40 + kit},   {66, 115},         {67, 67 + past}, {75, 75 + past}, {80, 80 + kit},
-        {81, 81 + kit},   {82, 82 + past},   {83, 83 + past}, {84, 104 + own}, {85, 83 + own},
-        {125, 125 + kit}, {126, 126 + kit},  {90, 690},       {91, 91 + past}, {96, 96 + past},
-        {99, 99 + past},  {100, 100 + past}, {101, 85},       {102, 86},       {104, 104 + past},
-        {108, 121 + own}, {114, 114 + past},
+    constexpr std::array<std::pair<int, int>, 23> moved{{
+        {40, 40 + kit},   {66, 115},         {67, 67 + past},  {75, 75 + kit},  {80, 80 + kit},
+        {81, 81 + kit},   {82, 82 + past},   {83, 83 + past},  {84, 104 + own}, {85, 83 + own},
+        {125, 125 + kit}, {126, 126 + kit},  {90, 690},        {91, 91 + past}, {96, 96 + past},
+        {99, 99 + kit},   {100, 100 + past}, {101, 85},        {102, 86},       {104, 104 + past},
+        {108, 121 + own}, {114, 114 + past}, {115, 115 + kit},
     }};
     const auto found = std::ranges::find(moved, code, &std::pair<int, int>::first);
     return found != moved.end() ? found->second : secret_canonical_effect(code);

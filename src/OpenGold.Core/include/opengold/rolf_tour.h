@@ -924,6 +924,9 @@ class RolfTourSession
     std::vector<rules::Participant> staged_allies_;
     std::vector<opengold::CombatArt> staged_ally_art_;
     std::vector<unsigned> staged_records_;
+    // Pools of Darkness: the LOAD MONSTERs since the last fight that brought
+    // undead, each a try at turning them (rules::Encounter::turning_tries).
+    unsigned staged_undead_loads_{};
     // A Magic Circle kept the camp's attackers away: the rest completes.
     bool rest_warded_{};
     std::optional<EclRequest> encounter_menu_;

@@ -825,6 +825,7 @@ template <bool Reading> struct SaveCodec
             v.door_choices_.clear();
             v.staged_enemies_.clear();
             v.staged_art_.clear();
+            v.staged_undead_loads_ = 0;
             v.staged_allies_.clear();
             v.staged_ally_art_.clear();
             v.encounter_.reset();

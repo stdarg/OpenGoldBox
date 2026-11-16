@@ -272,8 +272,12 @@ inline constexpr int giant_bane = 16;
 inline constexpr int person = 32;
 // It breathes a stinking cloud unharmed; Slay Living and Death Spell cannot slay it.
 inline constexpr int unliving = 64;
-// A vorpal weapon cannot behead it (the kit's immunity bit 20h).
+// A vorpal weapon cannot behead it (the kit's immunity bit 20h, Pools of
+// Darkness's too).
 inline constexpr int beheading_proof = 128;
+// Proof against poison: Pools of Darkness's AI steps into a cloud unafraid
+// (its immunity bit 10h).
+inline constexpr int poison_proof = 256;
 } // namespace trait
 
 // An item a creature carries, with its type (ITEMS); it fights with those it

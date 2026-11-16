@@ -489,7 +489,10 @@ Journal), chosen by the game as the others' are (2026-11-14):
     2d6, halved by a save, for a round a level; Iron Skin leaves its
     caster's Armor Class 4 better for a round a level. Mass Charm (eighth)
     charms enemies within a square of its aim, up to twice the caster's
-    level in Hit Dice, each saving at -2, passing over a large creature.
+    level in Hit Dice, each saving at -2, passing over a large creature
+    and a monster its record does not call a person (bit 2 of its
+    "immunities", which every character has; its `SpellMassCharm`,
+    2026-11-16).
     Otto's Irresistible Dance must hit its touch; the dancer loses its
     turns, saves as if it rolled 1 and has an Armor Class 4 worse, for
     1d4+1 rounds. Mind Blank lasts a day and turns charm, confusion,
@@ -561,7 +564,15 @@ Journal), chosen by the game as the others' are (2026-11-14):
     and +4 (81), the need of a +2 weapon (125: a monster's own blows harm
     it from 7 Hit Dice) and gaze immunity (126: no gaze stones or confuses
     it) do as the *Unlimited Adventures* kit's effects of the same numbers
-    and are played as those (2026-11-15).
+    and are played as those (2026-11-15). So, since 2026-11-16, are a
+    giant-slaying sword (75, EffGiantSlayingSword: at a creature its record's
+    "immunities" bit 1 marks, its blow is 6d6 and its wielder's Strength
+    bonus, and strikes 1 better, Bugs), the bulette's rake (99,
+    EffBulletRake: as its AI readies its weapons for a turn it strikes 8
+    times with its second attack one time in 4, else 4) and the vorpal blade
+    (115, EffVorpal: a first attack's blow of a natural 17 or more beheads,
+    but not a creature whose "immunities" have bit 20h, such as its
+    dragons).
   - *Its own, played:* half harm from crushing weapons (67), 4d6 of fire
     with each hit (104), and dragon fear
     (100): each enemy that fails a save against petrification at -4 is
@@ -597,9 +608,13 @@ Journal), chosen by the game as the others' are (2026-11-14):
     gaze: OpenGoldBox plays them as nothing too (2026-11-15), unless the
     Options screen's Darkness's gazes is on (DEVIATIONS.md, the user's
     decision of 2026-11-15).
-  - *Its own, not played yet:* a giant-slaying sword (75), the bulette's
-    rake (99), the beholders' rays (117, which the original plays as
-    nothing) and the vorpal blade (115).
+  - *Its own, not played:* the beholders' rays (117), kept still for now
+    (2026-11-16), though its reconstruction registers AttackEyeRays
+    for them and runs it as the AI's move begins (`combatai.pas`,
+    AiMoveAttack, condition MONSTER_SPECIAL), which would play them as the
+    kit's 117 (four tries a turn, a ray within 2, 3, 4 and 5 squares, then
+    Fear, Slow and Sleep). The beholder, elder orb and death tyrant (records
+    31, 94 and 95) carry it.
   - Its records' type flags, "immunities" and magic resistance are read
     (bytes 420, 421 and 491), *Secret*'s bits, so a creature is a snake, a
     mammal, a ranger's foe or unliving as in *Secret*.
@@ -617,21 +632,50 @@ Journal), chosen by the game as the others' are (2026-11-14):
   damage; Hold Person never holding a monster; Snake Charm and the ranger's
   bonus by the record's flags; the undead and unliving breathing a stinking
   cloud unharmed. Charm Person takes a monster its flags call a mammal, of
-  one square (its `SpellCharmPerson`). Turning undead stays the earlier
-  games' (*Secret* has none, *Pools of Darkness* has it), and so does the
-  AI's step into a cloud (its `AiCanStep` neither saves nor counts movement
-  as *Secret*'s does).
+  one square (its `SpellCharmPerson`).
+- **Turning undead** is its own (`cbtacts.pas`, CombatTurnUndead and
+  FindTurnUndeadTarget; `combat.pas`, CombatMenu; `combatai.pas`,
+  TurnUndeadAi; 2026-11-16): a cleric, or a paladin from level 3, turns, at
+  the better of its cleric level and its paladin level less 2 (to 8, 9 to
+  13, 14 up), less the penalty its area's script sets in cell Fh (some set
+  20, where no undead turns). Each member may try as often as the fight's
+  LOAD MONSTERs brought undead, so not at all where none did. One d20 for
+  the attempt; the undead enemy in sight of the highest level not above
+  the last one tried comes first, the nearest of those, and one the roll
+  fails sends the attempt on to the levels below; the first one tried sets
+  how many it may affect, 1d6+6 where it would be destroyed past doubt,
+  else 1d12. One turned leaves the field at once; destruction goes on to at
+  least six, as in the earlier games. Undead of levels 11 to 13 have their
+  rows. The AI turns only while it does not flee.
+- **The AI's step into a cloud** (`combatai.pas`, AiCanStep, 2026-11-16)
+  rolls no save and does not look at its movement, as *Secret*'s does; it never steps
+  into a stinking cloud unless it coughs already, a Minor Globe guards it
+  or its record calls it unliving or proof against poison ("immunities"
+  bits 8 and 10h); into a cloudkill unless a Globe of Invulnerability
+  guards it or it is proof against poison; nor into Blade Barrier's blades.
+  One turned to flee steps anywhere.
+- **A *Secret* character comes across** as its LoadChar takes one in
+  (`saveload.pas`, its legacy record; `CampaignParty::bring_across` with
+  `secret_items_for_darkness`; the party screen's *Add from Secret*,
+  2026-11-16): its scores, levels, Hit Points, rolled Hit Points, age,
+  experience and the spells it knew, but not the levels a drain took, which
+  its record has no place for; its items as they were, readied or not,
+  named by *Pools of Darkness*'s own words, but a bundle (type 73) left
+  behind with what it holds, boots of type 45 made +2 and a cloak of type
+  58 given displacement (effect 89); and its own platinum, gems and
+  jewelry, not the 200 platinum a new character has, the save's purse
+  divided evenly among its player characters as *Add from Gateway* divides
+  it. Its copper, silver, electrum and gold stay behind.
 - **The temple's Restoration** (2026-11-15; temple.pas, `Restoration`,
   eleventh in its `HealMenu`) gives a drained member back a level as the
   spell does, for nothing, as *Pools of Darkness*'s and *Treasures*'
   temples ask nothing (`rules::TempleService::restoration`); it is offered
   only to one a drain has taken below its peak.
-- **Still to come:** Mass Charm's test of the record's
-  charmable flag (it passes over only a large creature and the caster's
-  side for now); the monsters' effects not played yet (above); its own
-  turning (paladins from level 3, a limit of tries a fight) and cloud
-  steps; and bringing a *Secret* party across (its LoadChar), which the
-  original offers.
+- **Still to come:** the beholders' rays, should they be played (above).
+  Its clouds themselves are still the earlier games' for one in them: its
+  ConsiderTerrainEffects spares one its record calls proof against poison
+  from a stinking cloud and a cloudkill, and a cloudkill harms one of more
+  than 6 Hit Dice for 1d10, where OpenGoldBox spares it.
 
 ## Treasures of the Savage Frontier
 
@@ -920,7 +964,10 @@ Journal), chosen by the game as the others' are (2026-11-14):
     2d6, halved by a save, for a round a level; Iron Skin leaves its
     caster's Armor Class 4 better for a round a level. Mass Charm (eighth)
     charms enemies within a square of its aim, up to twice the caster's
-    level in Hit Dice, each saving at -2, passing over a large creature.
+    level in Hit Dice, each saving at -2, passing over a large creature
+    and a monster its record does not call a person (bit 2 of its
+    "immunities", which every character has; its `SpellMassCharm`,
+    2026-11-16).
     Otto's Irresistible Dance must hit its touch; the dancer loses its
     turns, saves as if it rolled 1 and has an Armor Class 4 worse, for
     1d4+1 rounds. Mind Blank lasts a day and turns charm, confusion,
@@ -992,7 +1039,15 @@ Journal), chosen by the game as the others' are (2026-11-14):
     and +4 (81), the need of a +2 weapon (125: a monster's own blows harm
     it from 7 Hit Dice) and gaze immunity (126: no gaze stones or confuses
     it) do as the *Unlimited Adventures* kit's effects of the same numbers
-    and are played as those (2026-11-15).
+    and are played as those (2026-11-15). So, since 2026-11-16, are a
+    giant-slaying sword (75, EffGiantSlayingSword: at a creature its record's
+    "immunities" bit 1 marks, its blow is 6d6 and its wielder's Strength
+    bonus, and strikes 1 better, Bugs), the bulette's rake (99,
+    EffBulletRake: as its AI readies its weapons for a turn it strikes 8
+    times with its second attack one time in 4, else 4) and the vorpal blade
+    (115, EffVorpal: a first attack's blow of a natural 17 or more beheads,
+    but not a creature whose "immunities" have bit 20h, such as its
+    dragons).
   - *Its own, played:* half harm from crushing weapons (67), 4d6 of fire
     with each hit (104), and dragon fear
     (100): each enemy that fails a save against petrification at -4 is
@@ -1028,9 +1083,13 @@ Journal), chosen by the game as the others' are (2026-11-14):
     gaze: OpenGoldBox plays them as nothing too (2026-11-15), unless the
     Options screen's Darkness's gazes is on (DEVIATIONS.md, the user's
     decision of 2026-11-15).
-  - *Its own, not played yet:* a giant-slaying sword (75), the bulette's
-    rake (99), the beholders' rays (117, which the original plays as
-    nothing) and the vorpal blade (115).
+  - *Its own, not played:* the beholders' rays (117), kept still for now
+    (2026-11-16), though its reconstruction registers AttackEyeRays
+    for them and runs it as the AI's move begins (`combatai.pas`,
+    AiMoveAttack, condition MONSTER_SPECIAL), which would play them as the
+    kit's 117 (four tries a turn, a ray within 2, 3, 4 and 5 squares, then
+    Fear, Slow and Sleep). The beholder, elder orb and death tyrant (records
+    31, 94 and 95) carry it.
   - Its records' type flags, "immunities" and magic resistance are read
     (bytes 420, 421 and 491), *Secret*'s bits, so a creature is a snake, a
     mammal, a ranger's foe or unliving as in *Secret*.
@@ -1048,21 +1107,50 @@ Journal), chosen by the game as the others' are (2026-11-14):
   damage; Hold Person never holding a monster; Snake Charm and the ranger's
   bonus by the record's flags; the undead and unliving breathing a stinking
   cloud unharmed. Charm Person takes a monster its flags call a mammal, of
-  one square (its `SpellCharmPerson`). Turning undead stays the earlier
-  games' (*Secret* has none, *Pools of Darkness* has it), and so does the
-  AI's step into a cloud (its `AiCanStep` neither saves nor counts movement
-  as *Secret*'s does).
+  one square (its `SpellCharmPerson`).
+- **Turning undead** is its own (`cbtacts.pas`, CombatTurnUndead and
+  FindTurnUndeadTarget; `combat.pas`, CombatMenu; `combatai.pas`,
+  TurnUndeadAi; 2026-11-16): a cleric, or a paladin from level 3, turns, at
+  the better of its cleric level and its paladin level less 2 (to 8, 9 to
+  13, 14 up), less the penalty its area's script sets in cell Fh (some set
+  20, where no undead turns). Each member may try as often as the fight's
+  LOAD MONSTERs brought undead, so not at all where none did. One d20 for
+  the attempt; the undead enemy in sight of the highest level not above
+  the last one tried comes first, the nearest of those, and one the roll
+  fails sends the attempt on to the levels below; the first one tried sets
+  how many it may affect, 1d6+6 where it would be destroyed past doubt,
+  else 1d12. One turned leaves the field at once; destruction goes on to at
+  least six, as in the earlier games. Undead of levels 11 to 13 have their
+  rows. The AI turns only while it does not flee.
+- **The AI's step into a cloud** (`combatai.pas`, AiCanStep, 2026-11-16)
+  rolls no save and does not look at its movement, as *Secret*'s does; it never steps
+  into a stinking cloud unless it coughs already, a Minor Globe guards it
+  or its record calls it unliving or proof against poison ("immunities"
+  bits 8 and 10h); into a cloudkill unless a Globe of Invulnerability
+  guards it or it is proof against poison; nor into Blade Barrier's blades.
+  One turned to flee steps anywhere.
+- **A *Secret* character comes across** as its LoadChar takes one in
+  (`saveload.pas`, its legacy record; `CampaignParty::bring_across` with
+  `secret_items_for_darkness`; the party screen's *Add from Secret*,
+  2026-11-16): its scores, levels, Hit Points, rolled Hit Points, age,
+  experience and the spells it knew, but not the levels a drain took, which
+  its record has no place for; its items as they were, readied or not,
+  named by *Pools of Darkness*'s own words, but a bundle (type 73) left
+  behind with what it holds, boots of type 45 made +2 and a cloak of type
+  58 given displacement (effect 89); and its own platinum, gems and
+  jewelry, not the 200 platinum a new character has, the save's purse
+  divided evenly among its player characters as *Add from Gateway* divides
+  it. Its copper, silver, electrum and gold stay behind.
 - **The temple's Restoration** (2026-11-15; temple.pas, `Restoration`,
   eleventh in its `HealMenu`) gives a drained member back a level as the
   spell does, for nothing, as *Pools of Darkness*'s and *Treasures*'
   temples ask nothing (`rules::TempleService::restoration`); it is offered
   only to one a drain has taken below its peak.
-- **Still to come:** Mass Charm's test of the record's
-  charmable flag (it passes over only a large creature and the caster's
-  side for now); the monsters' effects not played yet (above); its own
-  turning (paladins from level 3, a limit of tries a fight) and cloud
-  steps; and bringing a *Secret* party across (its LoadChar), which the
-  original offers.
+- **Still to come:** the beholders' rays, should they be played (above).
+  Its clouds themselves are still the earlier games' for one in them: its
+  ConsiderTerrainEffects spares one its record calls proof against poison
+  from a stinking cloud and a cloudkill, and a cloudkill harms one of more
+  than 6 Hit Dice for 1d10, where OpenGoldBox spares it.
 
 ## Treasures of the Savage Frontier
 
@@ -2334,6 +2422,9 @@ scales Hit Points takes only the table's to-hit and Armor Class.
 | *Pools of Darkness:* the clerics in Manshoon's tower ask how many times the party has entered Zhentil Keep and add 2 to the answer's place (0 for "1") before comparing it with the count, so no true answer passes and the party fights their elementals (ECL1:49, 816Ah) | The script adds 1: "1", "2" and "MANY" mean 1, 2 and 3 |
 | *Pools of Darkness:* Power Word Blind works out its blindness's time (1d4+1 rounds, ten times as long under 51 Hit Points) and then blinds for the spell's table time, 0, which never ends (`magic.pas`, `SpellPowerWordBlind`) | The time it works out |
 | *Pools of Darkness:* its saving-throw table gives a cleric and a thief at level 19 the row of levels 16 to 18 and 13 to 16, though the rows on either side follow the classes' steps of three and four levels (`saveTbl` in its reconstruction) | Level 20's row from 19 |
+| *Pools of Darkness:* a giant-slaying sword (effect 75) adds its 1 to hit to the attack roll after the roll is judged, so it never helps, as the kit's does (`effhndlr.pas`, EffGiantSlayingSword) | Its quarry is struck 1 better |
+| *Pools of Darkness:* a giant-slaying sword's blow sets the damage after Ray of Enfeeblement, the ranger's bonus and dragon fear have changed it, so none of them touches it (`fxengine.pas`, the attacker's weapon damage) | They change its 6d6 too, as for the kit's sword |
+| *Pools of Darkness:* bringing a *Secret* character across copies its attack level (record byte 230) into the known spells' place of Fire Touch (118), so every one arrives knowing it (`saveload.pas`, LoadChar) | It knows only the spells it knew |
 | *Curse:* the wilderness script (ECL1 80) marks a camp with a cell Tilverton's sage and Kybor's library also set for themselves (0x4C13), so a party that paid the sage reaches the wilderness as if back from camp: it skips loading the roads from Tilverton, and the first journey goes where stale cells say | Arriving from another script, the party is not back from camp |
 | *Treasures:* the Fix's second rest gives a raising its time only when no one has Resurrection, and then sets the raisings left to none, so the dead it was timed for are never raised (`camp.pas`, `CampFixMenu`, ComputeCureTime) | The raisings it was timed for are cast |
 | *Treasures:* the Fix's Cure Blindness lifts the blindness of whichever member is current, not of the member it cures, and is never spent (`camp.pas`, `CampFixMenu`) | The blind member regains sight, one cure a member |

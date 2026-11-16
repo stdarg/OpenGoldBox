@@ -711,14 +711,15 @@ void CharacterCreationView::refresh_party()
         required_node<Button>(*this, gs(std::string("PartyPanel/ActionRow2/") + name))
             .set_disabled(state.roster.empty());
     }
-    // Curse adds characters from Pool of Radiance and Treasures from Gateway;
-    // the party's rules take them in.
+    // Curse adds characters from Pool of Radiance, Treasures from Gateway and
+    // Pools of Darkness from Secret; the party's rules take them in.
     auto &from_earlier_game = required_node<Button>(*this, "PartyPanel/FromPool");
     from_earlier_game.set_visible(bringing_across());
-    from_earlier_game.set_text(i18n::text(original::game_of(campaign_->identity()) ==
-                                                  GoldBoxGame::treasures_of_the_savage_frontier
-                                              ? N_("Add from Gateway")
-                                              : N_("Add from Pool of Radiance")));
+    const auto game = original::game_of(campaign_->identity());
+    from_earlier_game.set_text(
+        i18n::text(game == GoldBoxGame::treasures_of_the_savage_frontier ? N_("Add from Gateway")
+                   : game == GoldBoxGame::pools_of_darkness ? N_("Add from Secret")
+                                                            : N_("Add from Pool of Radiance")));
     // Only an active member who is not already the leader can be made leader.
     const auto chosen = state.roster.empty() ? MemberId{} : state.roster[roster_index_].id;
     // The original games' party menu offers Modify for a character before

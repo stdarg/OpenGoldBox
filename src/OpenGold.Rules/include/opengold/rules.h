@@ -777,6 +777,12 @@ struct Encounter
     // Treasures' romance, while a script has paired a member and an NPC: the
     // two love each other in the fight (Snapshot::romance).
     std::optional<Romance> romance;
+    // Pools of Darkness: how often each member may try to turn undead, one
+    // try for each LOAD MONSTER that brought undead into the fight, and what
+    // its area's script takes off the turning column (its cell Fh). The
+    // earlier games turn once a fight.
+    int turning_tries{1};
+    int turning_penalty{};
 };
 
 // A weapon attack as the rules resolve it: the attack roll's bonus and the

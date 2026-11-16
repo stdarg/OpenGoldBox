@@ -283,10 +283,13 @@ class CampaignParty
     // its numbers, experience and items, and the platinum it starts with; its
     // money stays behind. Throws when the rules take in no one. A game that
     // renumbers the items it takes in (Treasures from Gateway) converts each
-    // one, nothing for an item it cannot use, and takes them unreadied.
+    // one, nothing for an item it cannot use, and takes them unreadied
+    // unless told to keep them readied as they were (Pools of Darkness from
+    // Secret).
     // `own_money`, when given, is the money the member keeps from its game in
     // place of the platinum it would start with (Treasures' option: a
-    // Gateway character's own platinum, gems and jewelry).
+    // Gateway character's own platinum, gems and jewelry; Pools of
+    // Darkness's own rule for a Secret character).
     using ItemConversion = std::function<std::optional<por::Equipment>(const por::Equipment &)>;
 
     struct BroughtMoney
@@ -294,8 +297,15 @@ class CampaignParty
         std::uint32_t platinum{}, gems{}, jewelry{};
     };
 
+    enum class ConvertedItems
+    {
+        unreadied,
+        readied_as_they_were
+    };
+
     MemberId bring_across(const PartyMember &from, const ItemConversion &convert_item = {},
-                          std::optional<BroughtMoney> own_money = std::nullopt);
+                          std::optional<BroughtMoney> own_money = std::nullopt,
+                          ConvertedItems converted = ConvertedItems::unreadied);
 
     // The original games' Modify Character: whether the member's rules still
     // let its scores and Hit Points be changed (a player character, before

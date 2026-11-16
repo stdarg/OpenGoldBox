@@ -12,11 +12,11 @@
 
 // The party screen's choice of the game before's saves: Curse's Add Character
 // to Party, From Where: Pool ("Pool adds a character whose last adventure was
-// in Pool of Radiance"), and Treasures' characters from Gateway to the Savage
-// Frontier. It lists that game's saves made under the original rules, the
-// player characters of the one chosen, and brings each into the campaign's
-// party as its rules take it in (CampaignParty::bring_across). The controls
-// come from the creation scene.
+// in Pool of Radiance"), Treasures' characters from Gateway to the Savage
+// Frontier and Pools of Darkness's from Secret of the Silver Blades. It lists that game's saves
+// made under the original rules, the player characters of the one chosen, and brings each into the
+// campaign's party as its rules take it in (CampaignParty::bring_across). The controls come from
+// the creation scene.
 class EarlierGameDialog : public godot::Window
 {
     GDCLASS(EarlierGameDialog, godot::Window)
@@ -49,7 +49,7 @@ class EarlierGameDialog : public godot::Window
     // Turns Add on or off for the chosen character and says why.
     void show_member_state();
     // The game whose characters come into the campaign's: Pool of Radiance
-    // for Curse, Gateway for Treasures.
+    // for Curse, Gateway for Treasures, Secret for Pools of Darkness.
     [[nodiscard]] opengold::GoldBoxGame earlier_game() const;
     CampaignAccess campaign_;
     std::function<void()> member_added_;
@@ -59,8 +59,9 @@ class EarlierGameDialog : public godot::Window
     std::vector<opengold::PartyMember> members_;
     std::vector<bool> brought_;
     std::size_t member_index_{};
-    // A Gateway character's share of its save's platinum, gems and jewelry,
-    // which Treasures' Gateway's-money option lets it keep.
+    // A Gateway or Secret character's share of its save's platinum, gems and
+    // jewelry, which Treasures' Gateway's-money option lets it keep and Pools
+    // of Darkness always does.
     std::optional<opengold::CampaignParty::BroughtMoney> money_share_;
 };
 

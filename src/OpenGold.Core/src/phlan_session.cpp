@@ -1938,6 +1938,7 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
     staged_enemies_.clear();
     staged_art_.clear();
     staged_records_.clear();
+    staged_undead_loads_ = 0;
     staged_allies_.clear();
     staged_ally_art_.clear();
     // A later script fault must never restore pre-combat HP or erase a victory.
@@ -3712,6 +3713,15 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 : 0;
         const auto *exported = exported_creature(area, record);
         const auto name = creature_name(area, record, exported);
+        // Pools of Darkness gives each member a try at turning undead for
+        // each LOAD MONSTER that brings undead (its EclLoadMonster,
+        // turnUndeadLimit).
+        if (const auto creature = area.encounter_creatures.find(record);
+            count > 0 && creature != area.encounter_creatures.end() &&
+            creature->second.stored.undead_level != 0)
+        {
+            ++staged_undead_loads_;
+        }
         for (unsigned i = 0; ally && i < count; ++i)
         {
             const auto id =
@@ -3743,6 +3753,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         staged_enemies_.clear();
         staged_art_.clear();
         staged_records_.clear();
+        staged_undead_loads_ = 0;
         staged_allies_.clear();
         staged_ally_art_.clear();
         break;
@@ -4063,6 +4074,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             staged_enemies_.clear();
             staged_art_.clear();
             staged_records_.clear();
+            staged_undead_loads_ = 0;
             reply = character_reply(selected_character_);
             reply.writes.push_back({game_cell(ecl_combat_result), 0});
             reply.writes.push_back({game_cell(ecl_monsters_defeated), 0});
@@ -4179,6 +4191,16 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             // Treasures' romance, once a script has paired a member and an
             // NPC (romance.pas, TagRelationshipPair, as each fight starts).
             encounter_->romance = treasures_romance();
+            // Pools of Darkness's turning: a try for each LOAD MONSTER of
+            // undead, and the penalty its scripts set in cell Fh
+            // (turnUndeadPenalty), as CombatTurnUndead reads them.
+            if (game() == GoldBoxGame::pools_of_darkness)
+            {
+                constexpr EclAddress darkness_turning_penalty{0x0F};
+                encounter_->turning_tries = static_cast<int>(staged_undead_loads_);
+                encounter_->turning_penalty =
+                    static_cast<int>(machine_.variable(darkness_turning_penalty) & 0xFF);
+            }
             if (std::exchange(duel_, false))
             {
                 encounter_->mirror = mirror_duel_;

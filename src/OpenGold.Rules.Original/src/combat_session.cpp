@@ -32,7 +32,7 @@ using rules::Side;
 
 // The original counts movement in half-moves: 2 a straight step, 3 a diagonal one.
 constexpr rules::StepCosts half_moves{2, 3, 2, 4, 0};
-constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 25";
+constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 26";
 
 enum class Condition : unsigned
 {
@@ -290,7 +290,9 @@ struct Fighter
     // fill, or undead a cleric turned.
     bool turned{};
     // It has tried to turn undead in this fight: once a fight; in Treasures
-    // how many times it has, as many as the undead the fight began with.
+    // how many times it has, as many as the undead the fight began with, and
+    // in Pools of Darkness as many as the fight loaded undead
+    // (Session::turning_tries_).
     bool tried_turning{};
     int turn_attempts{};
     // Casting: whether it may still start a spell this round (damage and
@@ -870,13 +872,14 @@ class Session final : public rules::CombatSession
   public:
     Session(rules::Identity identity, rules::Battlefield board, std::vector<Fighter> fighters,
             std::uint64_t seed, unsigned morale, bool outdoors, bool escape_ends_fight,
-            int party_facing, int party_move_modifier, bool crystals,
-            bool frightening_surprise)
+            int party_facing, int party_move_modifier, bool crystals, bool frightening_surprise,
+            int turning_tries, int turning_penalty)
         : identity_(std::move(identity)), board_(std::move(board)), fighters_(std::move(fighters)),
           random_{seed}, morale_threshold_(std::min(morale, 100U)), outdoors_(outdoors),
           escape_ends_fight_(escape_ends_fight), party_facing_(party_facing),
           party_move_modifier_(party_move_modifier), crystals_(crystals),
-          frightening_surprise_(frightening_surprise)
+          frightening_surprise_(frightening_surprise), turning_tries_(turning_tries),
+          turning_penalty_(turning_penalty)
     {
         rules::validate_battlefield(board_);
         // Each creature starts turned along the party's facing, the party's
@@ -956,6 +959,11 @@ class Session final : public rules::CombatSession
     // Treasures' surprise that frightens (rules::Encounter), played only as
     // the fight begins.
     bool frightening_surprise_{};
+    // Pools of Darkness's tries at turning undead each member has in this
+    // fight, and what its area takes off the turning column
+    // (rules::Encounter::turning_tries, turning_penalty).
+    int turning_tries_{};
+    int turning_penalty_{};
     std::vector<por::ItemTemplate> item_types_;
 
     // The direction along the party's facing on the field: north gives
@@ -1136,6 +1144,7 @@ class Session final : public rules::CombatSession
     void treasures_turn_undead(Fighter &turner);
     [[nodiscard]] bool may_turn(const Fighter &f) const;
     [[nodiscard]] Fighter *strongest_undead(const Fighter &turner, int highest_level);
+    void darkness_turn_undead(Fighter &cleric);
     void begin_cast(Fighter &caster, int spell_number);
     void start_aiming(Fighter &caster, int spell_number);
     void resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell aim,
@@ -1272,6 +1281,7 @@ class Session final : public rules::CombatSession
     bool ai_step(Fighter &f, int &last_direction, int &stuck);
     bool take_ai_step(Fighter &f, int direction, int &last_direction);
     bool can_step(const Fighter &f, int direction, bool &edge) const;
+    [[nodiscard]] bool darkness_balks(const Fighter &f, const Fighter &moved) const;
     // Whether Secret's AI balks at a step into a cloud: not at all, unless it
     // saves against paralysis, or always.
     enum class CloudBalk
@@ -5119,8 +5129,9 @@ void Session::cast_darkness_spell(Fighter &caster, int number, int level,
 }
 
 // Mass Charm charms enemies of up to twice the caster's level in Hit Dice,
-// each saving at -2; it passes over a large creature and the caster's side
-// (SpellMassCharm).
+// each saving at -2; it passes over a large creature, the caster's side and,
+// in Pools of Darkness, a monster its record does not call a person (bit 2 of
+// its "immunities", which every character has; SpellMassCharm).
 void Session::cast_mass_charm(Fighter &caster, int level, const std::vector<EntityId> &targets)
 {
     const auto &known = *game_spell(320);
@@ -5133,7 +5144,9 @@ void Session::cast_mass_charm(Fighter &caster, int level, const std::vector<Enti
             break;
         }
         auto &target = *find(id);
-        if (target.numbers.large || target.side == caster.side)
+        const bool person =
+            target.numbers.race != 0 || (target.numbers.traits & trait::person) != 0;
+        if ((darkness() && !person) || target.numbers.large || target.side == caster.side)
         {
             log({"{name} is unaffected.", {{"name", target.name}}});
             continue;
@@ -6172,7 +6185,9 @@ void Session::ai_turn(Fighter &f, bool magic)
                                                         o.numbers.undead_level > 0 &&
                                                         sees(board_, f, o);
                                              });
-    if (may_turn(f) && undead_in_sight)
+    // Pools of Darkness's AI turns undead only while it does not flee
+    // (combatai.pas, TurnUndeadAi).
+    if (may_turn(f) && undead_in_sight && !(darkness() && f.fleeing))
     {
         turn_undead(f);
         return;
@@ -7323,6 +7338,10 @@ bool Session::can_step(const Fighter &f, int direction, bool &edge) const
         // A stinking cloud's save is rolled as the step is taken (ai_step).
         return cloud_balk(f, moved) != CloudBalk::always;
     }
+    if (darkness())
+    {
+        return !darkness_balks(f, moved);
+    }
     const bool breathes_freely = f.has(effect::animated) || f.has(effect::coughing) || f.has(111) ||
                                  f.has(125) || breathes_clouds_freely(f);
     return breathes_freely || !in_cloud(moved, CloudKind::stinking);
@@ -7345,6 +7364,29 @@ Session::CloudBalk Session::cloud_balk(const Fighter &f, const Fighter &moved) c
                          f.has(canonical_effect(63, game)) || proof || f.turned;
     return in_cloud(moved, CloudKind::stinking) && !guarded ? CloudBalk::unless_saved
                                                             : CloudBalk::none;
+}
+
+// Pools of Darkness's AI never steps into a cloud that would harm it, with no
+// save and whatever its movement (combatai.pas, AiCanStep): a stinking cloud
+// unless it coughs already, a Minor Globe guards it (its effect 63) or its
+// record calls it unliving or proof against poison; a cloudkill unless a
+// Globe of Invulnerability guards it (57) or it is proof against poison; and
+// Blade Barrier's blades always. One turned to flee steps anywhere.
+bool Session::darkness_balks(const Fighter &f, const Fighter &moved) const
+{
+    if (f.turned)
+    {
+        return false;
+    }
+    const auto game = game_of(identity_);
+    const int traits = f.numbers.traits;
+    const bool poison_proof = (traits & trait::poison_proof) != 0;
+    const bool breathes_stench = f.has(effect::coughing) || f.has(canonical_effect(63, game)) ||
+                                 poison_proof || (traits & trait::unliving) != 0;
+    const bool breathes_poison = f.has(canonical_effect(57, game)) || poison_proof;
+    return (in_cloud(moved, CloudKind::stinking) && !breathes_stench) ||
+           (in_cloud(moved, CloudKind::deadly) && !breathes_poison) ||
+           in_cloud(moved, CloudKind::blades);
 }
 
 // The first step of the shortest way, round walls and creatures, to a square
@@ -8133,7 +8175,9 @@ bool Session::ai_aim(Fighter &f)
 // 10 vampire) and the cleric's level (1 to 8, 9 to 13, 14 up): above 0 it
 // turns, 0 destroys, below 0 destroys on that much or more, 99 never
 // (cbtacts.pas, CombatTurnUndead).
-constexpr std::array<std::array<int, 10>, 10> turning_table{{
+// Pools of Darkness's goes on to undead of levels 11 to 13 (its
+// turnUndeadTable); the earlier games turn none above 10.
+constexpr std::array<std::array<int, 10>, 13> turning_table{{
     {10, 7, 4, 1, 1, 0, 0, -1, -1, -1},
     {13, 10, 7, 1, 1, 0, 0, 0, -1, -1},
     {16, 13, 10, 4, 1, 1, 0, 0, 0, -1},
@@ -8144,6 +8188,9 @@ constexpr std::array<std::array<int, 10>, 10> turning_table{{
     {99, 99, 99, 20, 16, 13, 10, 7, 4, 1},
     {99, 99, 99, 99, 20, 16, 13, 10, 7, 1},
     {99, 99, 99, 99, 99, 20, 16, 13, 10, 4},
+    {99, 99, 99, 99, 99, 99, 20, 16, 13, 10},
+    {99, 99, 99, 99, 99, 99, 99, 19, 16, 10},
+    {99, 99, 99, 99, 99, 99, 99, 20, 19, 13},
 }};
 
 // Turning undead, once a fight (cbtacts.pas, CombatTurnUndead): one d20 for
@@ -8156,6 +8203,11 @@ void Session::turn_undead(Fighter &cleric)
     if (treasures())
     {
         treasures_turn_undead(cleric);
+        return;
+    }
+    if (darkness())
+    {
+        darkness_turn_undead(cleric);
         return;
     }
     cleric.tried_turning = true;
@@ -8221,14 +8273,112 @@ void Session::turn_undead(Fighter &cleric)
     end_actions(cleric);
 }
 
+// Pools of Darkness's turning (cbtacts.pas, CombatTurnUndead and
+// FindTurnUndeadTarget): its column is the better of the cleric's level and
+// the paladin's less 2 (to 8, 9 to 13, 14 up), less the area's penalty
+// (rules::Encounter::turning_penalty), which may leave none to turn with.
+// One d20 for the attempt. The undead enemy in sight of the highest level not
+// above the last one tried comes first, the nearest of those; one the roll
+// beats is turned off the field or destroyed, and one it fails sends the
+// attempt on to the levels below. The first one tried sets how many it may
+// affect: 1d6+6 where it would be destroyed past doubt, else 1d12.
+// Destruction goes on to at least six. The turner's actions end.
+void Session::darkness_turn_undead(Fighter &cleric)
+{
+    ++cleric.turn_attempts;
+    log({"{name} turns undead.", {{"name", cleric.name}}});
+    const auto level = [&cleric](ClassSlot slot)
+    {
+        return cleric.numbers.class_levels[static_cast<std::size_t>(slot)];
+    };
+    const int best = std::max(level(ClassSlot::cleric), level(ClassSlot::paladin) - 2);
+    const int full_column = best <= 8 ? best : best <= 13 ? 9 : 10;
+    const int column = turning_penalty_ > full_column ? 0 : full_column - turning_penalty_;
+    const int natural = roll(20);
+    int highest = static_cast<int>(turning_table.size());
+    std::optional<int> budget;
+    int at_least = 6;
+    bool any = false;
+    while (!budget || *budget > 0)
+    {
+        Fighter *target = nullptr;
+        for (auto &f : fighters_)
+        {
+            const int undead = f.numbers.undead_level;
+            if (f.side == cleric.side || !f.able() || f.turned || undead < 1 || undead > highest ||
+                !sees(board_, cleric, f))
+            {
+                continue;
+            }
+            if (!target || undead > target->numbers.undead_level ||
+                (undead == target->numbers.undead_level &&
+                 distance(cleric, f) < distance(cleric, *target)))
+            {
+                target = &f;
+            }
+        }
+        if (!target)
+        {
+            break;
+        }
+        highest = target->numbers.undead_level;
+        constexpr int never = 99;
+        const int need = column == 0 ? never
+                                     : turning_table[static_cast<std::size_t>(highest - 1)]
+                                                    [static_cast<std::size_t>(column - 1)];
+        if (!budget)
+        {
+            budget = need < 0 ? roll(6) + 6 : roll(12);
+        }
+        if (natural < std::abs(need))
+        {
+            --highest;
+            continue;
+        }
+        any = true;
+        if (need > 0)
+        {
+            log({"{name} is turned.", {{"name", target->name}}});
+            put_out_of_play(*target, Condition::fled);
+        }
+        else
+        {
+            target->condition = Condition::gone;
+            target->hit_points = 0;
+            target->initiative = 0;
+            log({"{name} is destroyed.", {{"name", target->name}}});
+            end_effects_at_zero(*target);
+        }
+        at_least = std::max(at_least - 1, 0);
+        --*budget;
+        if (*budget == 0 && at_least > 0 && need < 0)
+        {
+            budget = 1;
+        }
+    }
+    if (!any)
+    {
+        log({"Nothing happens.", {}});
+    }
+    end_actions(cleric);
+}
+
 // Whether the creature may turn undead now: one with cleric levels, once a
 // fight (combat.pas, CombatMenu), but in Secret, which has no turning. In
 // Treasures a cleric or a paladin past level 2, as many times a fight as
 // the undead the fight began with (its combat.pas, CombatMenu; eclvm.pas,
-// LOAD MONSTER's undeadCount).
+// LOAD MONSTER's undeadCount). In Pools of Darkness a cleric or a paladin past
+// level 2, as often as the fight's LOAD MONSTERs brought undead
+// (turnUndeadLimit).
 bool Session::may_turn(const Fighter &f) const
 {
     const auto &levels = f.numbers.class_levels;
+    if (darkness())
+    {
+        return (levels[static_cast<std::size_t>(ClassSlot::cleric)] > 0 ||
+                levels[static_cast<std::size_t>(ClassSlot::paladin)] > 2) &&
+               f.turn_attempts < turning_tries_;
+    }
     if (!treasures())
     {
         return levels[static_cast<std::size_t>(ClassSlot::cleric)] > 0 && !f.tried_turning &&
@@ -10253,7 +10403,7 @@ std::string Session::save() const
     out(random_.value, round_, revision_, actor_, static_cast<unsigned>(outcome_),
         morale_threshold_, outdoors_, escape_ends_fight_, escape_side_.value_or(4), party_facing_,
         party_move_modifier_, crystals_, crystal_.value_or(3), hostile_hit_points_percent_,
-        romance_.has_value());
+        turning_tries_, turning_penalty_, romance_.has_value());
     if (romance_)
     {
         out(romance_->member, romance_->npc, romance_->member_love, romance_->npc_love, lover_,
@@ -10448,6 +10598,8 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
         session->crystal_ = colour;
     }
     session->hostile_hit_points_percent_ = in.as<int>();
+    session->turning_tries_ = in.as<int>();
+    session->turning_penalty_ = in.as<int>();
     if (in.as<bool>())
     {
         rules::Romance romance;
@@ -10882,8 +11034,8 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
     auto session = std::make_unique<Session>(
         std::move(identity), std::move(encounter.battlefield), std::move(fighters), seed, threshold,
         encounter.outdoors, encounter.escape_ends_fight, encounter.party_facing,
-        encounter.party_move_modifier, encounter.crystals,
-        encounter.frightening_surprise);
+        encounter.party_move_modifier, encounter.crystals, encounter.frightening_surprise,
+        encounter.turning_tries, encounter.turning_penalty);
     session->know_item_types(content.item_types);
     session->play_gazes(gazes_played);
     session->pair_lovers(std::move(encounter.romance));

@@ -760,6 +760,7 @@ void RolfTourSession::reset_run()
     staged_enemies_.clear();
     staged_art_.clear();
     staged_records_.clear();
+    staged_undead_loads_ = 0;
     encounter_menu_.reset();
     encounter_.reset();
     monster_picture_id_.reset();
@@ -936,6 +937,7 @@ void RolfTourSession::roll_back_event()
     staged_enemies_.clear();
     staged_art_.clear();
     staged_records_.clear();
+    staged_undead_loads_ = 0;
     encounter_menu_.reset();
     encounter_.reset();
     monster_picture_id_.reset();

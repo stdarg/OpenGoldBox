@@ -13,6 +13,7 @@
 #include "save_slots.h"
 #include "opengold/campaign_save.h"
 #include "opengold/campaign_session.h"
+#include "opengold/darkness_import.h"
 #include "opengold/diagnostic_log.h"
 #include "opengold/original.h"
 #include "opengold/treasures_import.h"
@@ -116,6 +117,8 @@ std::optional<GoldBoxGame> earlier_game_of(GoldBoxGame game)
         return GoldBoxGame::pool_of_radiance;
     case GoldBoxGame::treasures_of_the_savage_frontier:
         return GoldBoxGame::gateway_to_the_savage_frontier;
+    case GoldBoxGame::pools_of_darkness:
+        return GoldBoxGame::secret_of_the_silver_blades;
     default:
         return std::nullopt;
     }
@@ -176,9 +179,11 @@ void EarlierGameDialog::open()
     money_share_.reset();
     const auto earlier = earlier_game();
     const bool from_gateway = earlier == GoldBoxGame::gateway_to_the_savage_frontier;
+    const bool from_secret = earlier == GoldBoxGame::secret_of_the_silver_blades;
     required_node<Label>(*this, "Margin/Rows/Title")
-        .set_text(i18n::text(from_gateway ? N_("Add character from Gateway to the Savage Frontier")
-                                          : N_("Add character from Pool of Radiance")));
+        .set_text(i18n::text(from_gateway  ? N_("Add character from Gateway to the Savage Frontier")
+                             : from_secret ? N_("Add character from Secret of the Silver Blades")
+                                           : N_("Add character from Pool of Radiance")));
     const auto directory = campaign_save_directory(earlier);
     if (std::filesystem::exists(directory))
     {
@@ -205,9 +210,13 @@ void EarlierGameDialog::open()
         !saves_.empty()
             ? (from_gateway
                    ? N_("Choose a Gateway to the Savage Frontier save, then a character to bring into the party.")
+               : from_secret
+                   ? N_("Choose a Secret of the Silver Blades save, then a character to bring into the party.")
                    : N_("Choose a Pool of Radiance save, then a character to bring into the party."))
         : from_gateway
             ? N_("No Gateway to the Savage Frontier game saved under the original rules was found.")
+        : from_secret
+            ? N_("No Secret of the Silver Blades game saved under the original rules was found.")
             : N_("No Pool of Radiance game saved under the original rules was found.");
     required_node<Label>(*this, "Margin/Rows/Status").set_text(i18n::text(status));
     popup_centered();
@@ -236,7 +245,7 @@ void EarlierGameDialog::select_save(std::int64_t index)
     }
     brought_.assign(members_.size(), false);
     money_share_.reset();
-    if (earlier == GoldBoxGame::gateway_to_the_savage_frontier)
+    if (earlier != GoldBoxGame::pool_of_radiance)
     {
         money_share_ = money_share(party, members_.size());
     }
@@ -265,9 +274,14 @@ void EarlierGameDialog::show_member_state()
                                    });
     const bool brought = brought_.at(member_index_);
     required_node<Button>(*this, "Margin/Rows/Buttons/Add").set_disabled(brought || full);
+    // Pools of Darkness's LoadChar keeps a Secret character's own platinum,
+    // gems and jewelry, and its spells.
+    const auto earlier = earlier_game();
     const auto arrival =
-        earlier_game() == GoldBoxGame::pool_of_radiance
+        earlier == GoldBoxGame::pool_of_radiance
             ? N_("Brings its levels, experience and items, and 300 platinum; its money stays behind.")
+        : earlier == GoldBoxGame::secret_of_the_silver_blades
+            ? N_("Brings its levels, experience, spells and items, and its share of the party's platinum, gems and jewelry.")
         : settings::gateway_money_kept()
             ? N_("Brings its levels, experience and the items Treasures knows, and its share of the party's platinum, gems and jewelry.")
             : N_("Brings its levels, experience and the items Treasures knows, and 200 platinum; its money stays behind.");
@@ -284,7 +298,14 @@ void EarlierGameDialog::add()
         return;
     }
     const auto &member = members_[member_index_];
-    if (earlier_game() == GoldBoxGame::gateway_to_the_savage_frontier)
+    const auto earlier = earlier_game();
+    if (earlier == GoldBoxGame::secret_of_the_silver_blades)
+    {
+        const auto darkness = game_folder_of(GoldBoxGame::pools_of_darkness);
+        (void)campaign_().bring_across(member, secret_items_for_darkness(darkness), money_share_,
+                                       CampaignParty::ConvertedItems::readied_as_they_were);
+    }
+    else if (earlier == GoldBoxGame::gateway_to_the_savage_frontier)
     {
         const auto treasures = game_folder_of(GoldBoxGame::treasures_of_the_savage_frontier);
         (void)campaign_().bring_across(member, gateway_items_for_treasures(treasures),
