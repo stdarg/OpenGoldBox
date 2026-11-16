@@ -1004,14 +1004,11 @@ state does (Script memory, above). Until 2026-11-14 OpenGoldBox stepped on
 anyway, so stairs landed a square beyond their landing and a held step could
 wrap round the map's edge.
 
-Stand-ins (2026-11-16, rules round 6): three, the fights the test wins,
-down from nine (The stand-ins measured, below; The sides and the round
-limit, below). Kalistes' fight in her egg room (84: 2,6): Kalistes, seven
-drow champions, eight drow wizards and five pets, whose eight Ice Storms in
-the first round take some 120 Hit Points from each member before most of
-it acts; 4 plays of 840 win, each with three members or more lost, so the
-test wins it (the spy's basilisks, medusae and earth elementals after it
-the route's player beats: 149 plays of 600, 45 with no one lost). The
+Stand-ins (2026-11-16, darkness17): two, the fights the test wins, down
+from nine (The stand-ins measured, below; The sides and the round limit,
+below; The last stand-ins, below). Kalistes' fight in her egg room (84:
+2,6), a stand-in until then, the route's player now wins, wearing the
+Rings and Cloaks of Protection the party has found (33 plays of 240). The
 finale's first fight (script 75: the pool's dracoliches, bits of Moander,
 minions and Pets of Kalistes, whose breaths and Charm Person beat the
 party, its bearer of the crystal near death from countermanding the
@@ -1411,6 +1408,82 @@ slots). With it:
   stepping apart before they close in, so that a breath takes one member
   where it took several (none of 600 won); the monsters reach the party in
   its first turns. No reasonable play of this party wins it.
+
+### The last stand-ins (darkness17, 2026-11-16)
+
+**Rules found and played** ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md),
+*Pools of Darkness*):
+
+- The antiMagic cell (2) bars casting out of a fight too: the camp and Cast
+  menus refuse with "<name> cannot cast spells in this area" and the items
+  menu offers no Use. Only the finale's last stand and Dave's Challenge
+  (scripts 39 and 40, after the win) set it, so the route never camps under
+  it.
+- The finale's last words ("A FOG OF PAIN LIFTS", ECL1:75 0x95BF) set each
+  member's status to okay and its Hit Points to their maximum; a member the
+  last stand left dead stands up again (it threw "Unsupported script HP
+  change"). The script counts from cell C4h, which Xoham's fight left at the
+  beholders' number, so the original heals the members from the fourth or
+  fifth on only; OpenGoldBox plays it so for now (ORIGINAL-RULES.md, Bugs:
+  for the user). `darkness_tests` plays script 75 from Gothmenes' summons
+  to the win, a member dead after the last stand, and sees him stand.
+- The scripts' to-hit cells were not read: cell 1 (monsterHitMod) adds to
+  the monsters' attack rolls, cell 2Fh (partyHitMod) to the party's, and
+  the fight's end clears them (`fxengine.pas`, AttackRoll). Gothmenes' last
+  stand sets them to 6 and F9h when the party will not bargain (8 and F5h
+  when it will): the monsters 6 better, the party 7 worse, on top of the
+  bar on magic. The route's other fights that set them (the Descent's
+  slaves, the Temple of Tyr's catacombs, Moander's heart) it still wins.
+
+**What the cluebook and scripts offer.** Read with `opengold_scripts
+--inspect DARKNESS ECL1.DAX 75` and 82:
+
+- Script 75 has no way round its three fights. Not countermanding the
+  summons brings all 40 servants (11 dracoliches, 9 bits of Moander, 13
+  minions, 7 pets); a countermand brings 34, or 29 when a d25 roll is below
+  the bearer's Wisdom (cell 416h). Fleeing the servants brings Gothmenes'
+  "RETURN!" and all 40 again; fleeing Xoham, minions who block the retreat
+  and then the beholders again; fleeing the last stand, the larger band
+  ("REFRESHED BY A DIP IN THE FELL POOL"). Bargaining for the crystal's word
+  (AGREE? YES) and saying it is the cluebook's lethal trap (every member
+  slain); saying nothing or another word brings the larger last stand
+  (Gothmenes, three green dragons, eight minions and three of creature
+  record 4 where the other has two bits of Moander, the monsters 8 better,
+  the party 11 worse). The route's NO is
+  the easiest way.
+- Kalistes' egg room (script 82, 0x993E): once the commotion has been
+  raised (cell 20Bh bit 7), coming back into the room brings "KALISTES SPOTS
+  YOU AND ATTACKS": the same band, from ahead at distance 1 instead of from
+  three sides. Played from a save (the bit set by the test), it won none of
+  126 plays, so a player gains nothing by fleeing her first fight.
+- The cluebook's items by area (its Major Magic Items) are what an original
+  party wears at the end: Rings of Protection +4 (the Temple of Tyr, Dark
+  Phlan, the palace), Cloaks of Protection +4 (Dark Phlan, Silk), Bracers,
+  Boots of Speed, +4 armor. The route had taken only the items its beats
+  named.
+
+**The party wears its protection.** Since darkness17 the route's player
+puts on every Ring (type 59) or Cloak of Protection (75) a treasure offers
+that raises a member's protection, in place of a worse one, two rings a
+member (`take_protection`; companions, who leave, take none): the treasures
+on its way hold Rings of Protection +1 and Cloaks +1 and +3, so by Kalistes
+most members wear two rings +1 and the paladins and ranger a cloak. With
+them:
+
+| Fight | Before | Now |
+|---|---|---|
+| Kalistes (84: 2,6), 240 plays | 0 (4 of 840 before the rings) | 33 won, none with no one lost |
+| The spy's band after her | 149 of 600 | 156 of 240, 27 with no one lost |
+| The finale's servants (75) | 0 of 600 | 0 of 240 |
+| Xoham's beholders | 425 of 600 | 174 of 240 |
+| Gothmenes' last stand, with the to-hit cells | 0 of 120 (without them) | 0 of 600 |
+
+Kalistes is no longer a stand-in: the player reloads her fight until a play
+wins (`reloads_until_won`), the member lost raised after it. Upper bounds,
+measured from saves and not kept: every member in a Ring and a Cloak of
+Protection +4, more than the whole game holds, wins Kalistes in 156 plays
+of 240, but neither of the finale's stand-ins (none of 240 each). Those two
+stay: no reasonable play of this party wins them.
 
 ### Creatures
 

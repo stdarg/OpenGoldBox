@@ -3693,14 +3693,14 @@ const std::vector<RouteBeat> &darkness_route()
         // Kalistes comes with seven drow champions, eight drow wizards and
         // five of her pets, and once she falls the slave who shows himself
         // Tanetal's spy calls basilisks, medusae and earth elementals: the
-        // wizards' Hold Monster and Ice Storm, the pets' Disintegrate and
-        // Charm Monsters beat the route's party (levels 13 to 16): 4 plays of
-        // 840 win, each with three members or more lost, so the test wins
-        // her fight, a stand-in until the route's player wins it; the spy's
-        // fight after it the player wins (149 plays of 600, 2026-11-16).
-        // Beaten, she leaves the Crystal Ring (cell 208h).
+        // wizards' Ice Storms and Confusion, the pets' Disintegrate and
+        // Kalistes' six blows beat the route's party in most plays. Wearing
+        // the Rings and Cloaks of Protection it has found (take_protection),
+        // it wins 33 plays of 240, a member lost in each, and the spy's
+        // fight after it 156 (2026-11-16), so the player reloads her fight
+        // until a play wins. Beaten, she leaves the Crystal Ring (cell 208h).
         auto eggs = step_beat(84, 3, 6, D::west, {"DESTROY"});
-        eggs.test_wins = true;
+        eggs.reloads_until_won = 240;
         eggs.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x208, 1};
         route.push_back(eggs);
         // Out with the ring: east through the lower level to the stairs up
@@ -5345,8 +5345,11 @@ const std::vector<RouteBeat> &darkness_route()
         // still answer him, fights to the death, and the crystal crumbles.
         // A stand-in: the route's party falls to the servants in every play
         // (none of 600), and to Gothmenes' last stand, under the script's
-        // bar on all magic (cell 2), in every play (none of 600), so the
-        // test wins those two fights; Xoham's the player wins.
+        // bar on all magic (cell 2) and its to-hit cells (the monsters 6
+        // better, the party 7 worse), in every play (none of 600; none of
+        // 240 either with a Ring and Cloak of Protection +4 on every
+        // member, 2026-11-16), so the test wins those two fights; Xoham's
+        // the player wins.
         {
             auto finale = step_beat(65, 9, 7, D::south, {"NO", "NO", "YES", "NO"});
             finale.repeat_in_place = true;
@@ -9307,6 +9310,110 @@ bool walk_census(GoldBoxGame game, bool route)
         }
         return false;
     };
+    // Pools of Darkness's route player wears the protection the treasures
+    // offer, as a player identifies what the party finds and keeps the best:
+    // a Ring (item type 59) or Cloak of Protection (75) goes to the member
+    // whose protection it raises most, in place of a worse one of its kind
+    // (two rings a member). Companions, who leave, take none. True when one
+    // was taken.
+    const auto take_protection = [&](const std::vector<opengold::por::Equipment> &pile)
+    {
+        constexpr std::uint8_t ring_of_protection = 59, cloak_of_protection = 75;
+        constexpr std::size_t rings_worn = 2;
+        const auto slots = party->state().slots;
+        // What the member wears: the bonus and item of each of `type`, worst
+        // first, and whether its ring and cloak places are taken.
+        struct Worn
+        {
+            std::vector<std::pair<int, std::uint64_t>> of_type;
+            std::size_t rings = 0;
+            bool cloak = false;
+        };
+        const auto worn = [&](opengold::MemberId id, std::uint8_t type)
+        {
+            Worn found;
+            const auto &member = party->member(id);
+            for (const auto item : member.equipped)
+            {
+                const auto source = member.item_sources.find(item);
+                if (source == member.item_sources.end())
+                {
+                    continue;
+                }
+                const auto &stored = source->second.stored;
+                if (stored.type == type)
+                {
+                    found.of_type.emplace_back(stored.magic_bonus, item);
+                }
+                const auto label = source->second.label();
+                found.rings += label.starts_with("Ring") && !label.starts_with("Ring Mail");
+                found.cloak = found.cloak || label.starts_with("Cloak");
+            }
+            std::ranges::sort(found.of_type);
+            return found;
+        };
+        for (std::size_t at = 0; at < pile.size(); ++at)
+        {
+            const auto &offered = pile[at].stored;
+            const int bonus = offered.magic_bonus;
+            if ((offered.type != ring_of_protection && offered.type != cloak_of_protection) ||
+                bonus <= 0)
+            {
+                continue;
+            }
+            int best_gain = 0;
+            std::size_t best_slot = slots.size();
+            std::optional<std::uint64_t> replaced;
+            for (std::size_t slot = 0; slot < slots.size(); ++slot)
+            {
+                const auto id = slots[slot];
+                if (!id || party->member(id).vitals.dead || !party->member(id).npc_source.empty())
+                {
+                    continue;
+                }
+                const auto now = worn(id, offered.type);
+                int gain = 0;
+                std::optional<std::uint64_t> worse;
+                if ((offered.type == ring_of_protection && now.rings < rings_worn) ||
+                    (offered.type == cloak_of_protection && !now.cloak))
+                {
+                    gain = bonus;
+                }
+                else if (!now.of_type.empty())
+                {
+                    gain = bonus - now.of_type.front().first;
+                    worse = now.of_type.front().second;
+                }
+                if (gain > best_gain)
+                {
+                    best_gain = gain;
+                    best_slot = slot;
+                    replaced = worse;
+                }
+            }
+            if (best_slot == slots.size())
+            {
+                continue;
+            }
+            const auto taker = slots[best_slot];
+            const auto item_name = pile[at].label();
+            party->select(opengold::PartySlot{static_cast<unsigned>(best_slot)});
+            if (!session.take_treasure(session.snapshot().continue_ticket, at))
+            {
+                continue;
+            }
+            const auto taken = party->member(taker).character.inventory().items().back().id;
+            if (replaced)
+            {
+                party->unequip(taker, *replaced);
+            }
+            ready_in_place(taker, taken);
+            std::cout << "  " << party->member(taker).character.sheet().name << " takes and wears "
+                      << item_name << " +" << bonus << "\n";
+            return true;
+        }
+        return false;
+    };
     const auto play = [&](const std::string &where)
     {
         const auto attribute = [&]
@@ -9726,6 +9833,10 @@ bool walk_census(GoldBoxGame game, bool route)
                     }
                 }
                 if (route && take_named_item(pile))
+                {
+                    continue;
+                }
+                if (route && game == GoldBoxGame::pools_of_darkness && take_protection(pile))
                 {
                     continue;
                 }
