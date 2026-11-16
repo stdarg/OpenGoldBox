@@ -535,8 +535,9 @@ new decoders.
    gear and the waits for the ships and the morning, and one fight, which
    the test wins: the giant snakes and shambling mounds at the foot of the
    Star Mounts, whose mounds (armor class -4, engulfing) no play of the
-   route's party beats (2026-11-16, [ORIGINAL-RULES.md](ORIGINAL-RULES.md),
-   Next). It rests on
+   route's party beats, nor reloading: none of 3,000 plays with dice of
+   their own, as a player's reloads give, wins it (2026-11-16,
+   [ORIGINAL-RULES.md](ORIGINAL-RULES.md), Next). It rests on
    the gate's square before the maze: Ascore's camp script (ECL6:20 0x818D)
    lets a party sleep only on squares of events 4 and 107 on (but 121), and
    breaks every other camp with undead, the rooms just east of the gate too,

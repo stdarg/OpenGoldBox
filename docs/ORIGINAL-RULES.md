@@ -788,7 +788,17 @@ with every route winning on them (item 3).
    AttackEngulf, as its reconstruction has it). No play the route's player
    tried wins it with this party: Prayer, Haste, Magic Missile and Stinking
    Cloud at the mounds, Snake Charm at the snakes, plate mail, 900 dice. The
-   test wins it (a stand-in, `test_wins`). On the way the route's parties
+   test wins it (a stand-in, `test_wins`). Reloading does not win it either
+   (2026-11-16): a fight's dice are only the seed its tries play
+   (7 + try / 3), not the beat's dice (`beat_dice_seed` reseeds the
+   scripts and the party), so a beat's reload (`RouteBeat::reloads`) gave
+   Pools of Darkness's route a new wandering monster but played this
+   fight, whose monsters the scripts' dice do not change, on the same dice.
+   Since then each reload plays its fights' tries on seeds of their own
+   (10,000 further a reload), as a player's reload rolls them afresh; but
+   none of 3,000 plays of this fight with fresh dice wins (the best leaves
+   two members dead and the fight lost), so `reloads_until_won` cannot win
+   it and the stand-in stays. On the way the route's parties
    of *Curse* and *Gateway* were found wearing chain mail: the test took
    type 55 for plate mail, which is 58 in those games' numbering (their
    `itemTypeNames`); they wear plate mail now, and *Curse*'s route still

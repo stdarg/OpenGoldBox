@@ -575,7 +575,8 @@ struct RouteBeat
     // a crossbow and the blessed bolts left after a fight shot the last of
     // the readied ones and took up the sword again.
     std::vector<std::pair<int, std::string>> ready_types;
-    // Pools of Darkness: the beat plays with other dice, as a player reloads
+    // A route with dice a beat (Pools of Darkness's, Gateway's): the beat
+    // plays with other dice, its scripts' and its fights', as a player reloads
     // and steps again where a wandering monster no play of the party beats
     // came on it (the heart's agents of Tanetal); 0 keeps the beat's own.
     unsigned reloads = 0;
@@ -8477,6 +8478,9 @@ bool walk_census(GoldBoxGame game, bool route)
     // The tries the beat being played reloads for while no try has won it
     // (RouteBeat::reloads_until_won).
     unsigned reloads_until_won = 0;
+    // The reloads of the beat being played (RouteBeat::reloads): its fights'
+    // tries play dice of their own, as a player's reload rolls them afresh.
+    unsigned beat_reloads = 0;
     // A planning aid (OPENGOLD_SECRET_FIND) wins every fight at once.
     bool planning = false;
     // Fights played so far (a camp counts the ones that interrupt it), and
@@ -8526,12 +8530,18 @@ bool walk_census(GoldBoxGame game, bool route)
         // magic-user alone casting, or a player's own choices (player_turn).
         // OPENGOLD_FIGHT_TACTIC=N plays every try with tactic N, to see
         // how one tactic fares (a planning aid), each try with dice of its own.
+        // A fight's dice are its seed alone, not the beat's (beat_dice_seed
+        // reseeds only the scripts and the party), so a beat's reload r moves
+        // its tries on to seeds of their own, 10,000 a reload (past any try
+        // count): otherwise a fight the scripts' dice do not change (Gateway's
+        // Star Mounts) would play the same dice at every reload.
         const char *forced_tactic = std::getenv("OPENGOLD_FIGHT_TACTIC");
+        const std::uint64_t first_seed = 7 + std::uint64_t{beat_reloads} * 10'000;
         const auto play_try = [&](unsigned t)
         {
-            return forced_tactic
-                       ? fight_once(7 + t, static_cast<unsigned>(std::stoul(forced_tactic)))
-                       : fight_once(7 + t / 3, t % 3);
+            return forced_tactic ? fight_once(first_seed + t,
+                                              static_cast<unsigned>(std::stoul(forced_tactic)))
+                                 : fight_once(first_seed + t / 3, t % 3);
         };
         // OPENGOLD_FIGHT_SCORES plays every try and prints each one's score
         // (a planning aid, to see how often a tactic wins).
@@ -9678,6 +9688,7 @@ bool walk_census(GoldBoxGame game, bool route)
                 // A camp before the beat fights as the beat does.
                 test_winning = beat.test_wins && !playing_stand_ins;
                 reloads_until_won = beat.reloads_until_won;
+                beat_reloads = beat.reloads;
                 if (beat.rest_first || (beat.passing && !beat.camp_broken && party_hurt() &&
                                         session.snapshot().area_id != restless_map))
                 {
@@ -9765,6 +9776,7 @@ bool walk_census(GoldBoxGame game, bool route)
                     test_winning = beat.test_wins && !playing_stand_ins;
                     holding_foes = beat.holding_foes;
                     reloads_until_won = beat.reloads_until_won;
+                    beat_reloads = beat.reloads;
                     maze_exits.assign(beat.maze_exits.begin(), beat.maze_exits.end());
                     if (beat.rest_choice)
                     {
