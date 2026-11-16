@@ -3014,8 +3014,10 @@ const std::vector<RouteBeat> &darkness_route()
         // fire (his 24d10+12, three times): the clerics and the first paladin
         // cast the Resist Fire memorized in the safe room on each member
         // first, as a player wards the party. Their fireballs and breath beat
-        // the party in most plays (6 of 120 win, 2026-11-16), so the player
-        // reloads until one wins.
+        // the party in most plays (6 of 120 win, 2026-11-16; since the dragons
+        // come from the east, south and west as his SETUP MONSTER names, 9 of
+        // 1,200, most of them at the cost of both clerics), so the player
+        // reloads until one wins, and reloads a win that costs two members.
         auto thorne = step_beat(34, 3, 6, D::south, {"YES"});
         thorne.reloads_until_won = 240;
         thorne.rest_first = true;
@@ -8996,9 +8998,17 @@ bool walk_census(GoldBoxGame game, bool route)
         // count more, while no try has won.
         const char *tries = std::getenv("OPENGOLD_FIGHT_TRIES");
         const unsigned try_count = tries ? static_cast<unsigned>(std::stoul(tries)) : 120;
-        constexpr int lost_fight = 1'000'000;
-        while (route && !planning && (best > 0 || scoring) &&
-               (++last < try_count || (best >= lost_fight && last < try_count + reloads_until_won)))
+        constexpr int lost_fight = 1'000'000, two_members_lost = 2000;
+        // Pools of Darkness's player also reloads a won fight that cost two
+        // members or more, up to 240 more plays, as both clerics lost leave
+        // no one to raise the dead: since its monsters come from the sides
+        // their SETUP MONSTER names, the best of 120 plays of some fights
+        // (Thorne's dragons, the drow temple's statue) cost both.
+        const unsigned costly_reloads = game == GoldBoxGame::pools_of_darkness ? 240 : 0;
+        while (
+            route && !planning && (best > 0 || scoring) &&
+            (++last < try_count || (best >= lost_fight && last < try_count + reloads_until_won) ||
+             (best >= two_members_lost && best < lost_fight && last < try_count + costly_reloads)))
         {
             party->restore(before);
             result = play_try(last);
