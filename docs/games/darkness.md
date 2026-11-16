@@ -1012,8 +1012,10 @@ Moander, minions and Pets of Kalistes, whose breaths and Charm Person beat
 the party, its bearer of the crystal near death from countermanding the
 summons, in every play) and, since the beholders' rays play, Xoham's
 beholders after it, whom the party beats in most plays but never without a
-member disintegrated, turned to stone or slain (Gothmenes after them the
-route's player beats). The fights the route's player now wins: Thorne and
+member disintegrated, turned to stone or slain; since the monsters come from
+the sides their SETUP MONSTER names (2026-11-16, rules round 6) Gothmenes'
+last stand is the test's too (The sides and the round limit, below). The
+fights the route's player now wins: Thorne and
 his seven red dragons (34: 3,6), the Aerie's blue dragons (33: 3,14), the
 Chambers of Marcus (67: 0,12 south; script 77), the heart's magnetic iron
 golems (53: 9,3) and Tanetal's last stand (53: 5,12), the party hasted for
@@ -1251,7 +1253,7 @@ next turn's morale check ended it. The route still wins as above with it.
 
 ### Kalistes and the finale tried again (2026-11-16, late)
 
-**Two differences from the original found, not yet made.** Pools of
+**Two differences from the original found** (made since: The sides and the round limit, below). Pools of
 Darkness's SETUP MONSTER takes a fourth operand OpenGoldBox reads and
 ignores: the sides (bit 0 north, 1 east, 2 south, 3 west) its monsters come
 from. The original deals the monsters out to those sides in turn from the
@@ -1330,6 +1332,35 @@ the clerics' cures before it (`cure_to_full`, eleven Heals on him in one
 play) spend Heals for nothing; and after the palace's rakshasas the bolts'
 bearers keep their crossbows readied (`ready_types`), so in the fights after
 paladin 2 and the ranger strike with them.
+
+### The sides and the round limit (rules round 6, 2026-11-16)
+
+SETUP MONSTER's sides and the 15-round limit are played now, together
+([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Combat, item 10): the monsters
+are dealt to the sides the script names, facing the party, and a fight in
+which no one attacks for 15 rounds ends won, the monsters left standing
+leaving unpaid. The run that had 228 stalemates with the sides alone has
+none: such fights now end by the limit.
+
+The route wins on them. What changed in its play:
+
+- Thorne's dragons (34: 3,6) come from the east, south and west (his SETUP
+  MONSTER's 14) and surround the party: 9 of 1,200 plays win, most at the
+  cost of both clerics, where 6 of 120 won before. The kept win had left both
+  clerics dead, no one to raise them, and the party fell at Moander's body
+  (52: 0,0) with four members.
+- The drow temple's statue (69: 8,7): 26 of 300 plays win, but the best of
+  the first 120 again cost both clerics.
+- So the route's player reloads a won fight that cost two members or more,
+  up to 240 more plays (Pools of Darkness's route only), as a player keeps a
+  cleric to raise the dead. Thorne is won with the magic-user lost and
+  raised.
+- The finale beat (script 75) was a stand-in already; now its last fight,
+  Gothmenes and the minions who still answer him, is won by the test too:
+  they come from all four sides (15), and the Minions of Bane's breaths from
+  every side beat the party in all 120 plays, where before they came at it
+  from ahead and it won. Stand-ins: Kalistes' egg room (both fights) and the
+  finale beat (its first fight and Gothmenes').
 
 ### Creatures
 
