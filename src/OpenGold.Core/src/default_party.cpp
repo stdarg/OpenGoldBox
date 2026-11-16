@@ -158,10 +158,11 @@ class PartyReader
         return result;
     }
 
-    std::vector<std::string> spells(const Json &entry, std::string_view where) const
+    std::vector<std::string> spells(const Json &entry, std::string_view key,
+                                    std::string_view where) const
     {
         std::vector<std::string> result;
-        for (const auto &spell : field<Json::Array>(entry, "spells", where))
+        for (const auto &spell : field<Json::Array>(entry, key, where))
         {
             const auto *id = std::get_if<std::string>(&spell.value);
             if (!id || id->empty())
@@ -204,7 +205,11 @@ class PartyReader
         const auto scores = six_field(entry, "scores", where, 3, 19);
         std::ranges::copy(scores, result.scores.begin());
         result.items = items(entry, where, true);
-        result.spells = spells(entry, where);
+        if (entry.find("learned"))
+        {
+            result.learned = spells(entry, "learned", where);
+        }
+        result.spells = spells(entry, "spells", where);
         return result;
     }
 
@@ -227,7 +232,7 @@ class PartyReader
             reject(where, "the background raises two different abilities");
         }
         result.items = items(entry, where, false);
-        character.spells = spells(entry, where);
+        character.spells = spells(entry, "spells", where);
         return result;
     }
 
@@ -265,6 +270,37 @@ class PartyReader
     return equipment;
 }
 
+// The spells a creation lets the character choose (Treasures' magic-user's
+// page after the roll), taken from `learned`: each of the page's groups gets
+// as many as it asks for, as creation needs before the character is made.
+void choose_learned_spells(const rules::CharacterRules &creation, rules::CharacterDraft &draft,
+                           const std::vector<std::string> &learned)
+{
+    std::size_t used = 0;
+    for (const auto &group : creation.training_options(draft))
+    {
+        auto &picks = draft.training[group.id];
+        for (const auto &id : learned)
+        {
+            if (std::ranges::find(group.options, id, &rules::CreationChoice::id) !=
+                group.options.end())
+            {
+                picks.push_back(id);
+            }
+        }
+        if (picks.size() != group.count)
+        {
+            throw std::runtime_error(group.label + ": " + std::to_string(group.count) +
+                                     " are chosen, the file lists " + std::to_string(picks.size()));
+        }
+        used += picks.size();
+    }
+    if (used != learned.size())
+    {
+        throw std::runtime_error("its creation offers not every learned spell listed");
+    }
+}
+
 // The original's member: chosen as creation chooses, rolled with its place in
 // the party as the seed, and its rolls made the file's.
 MemberId add_original_member(CampaignParty &party, const DefaultPartyMember &member,
@@ -291,6 +327,7 @@ MemberId add_original_member(CampaignParty &party, const DefaultPartyMember &mem
     RandomState random{seed};
     creation.roll_in_place(draft, random);
     creation.set_rolled_scores(draft, chosen.scores);
+    choose_learned_spells(creation, draft, chosen.learned);
     const auto id =
         party.add_pc(Character(creation, draft, look_under(member.appearance, chosen.race, true)));
     // What a created character joins with (CharacterCreator::starting_gold).
@@ -312,11 +349,15 @@ MemberId add_original_member(CampaignParty &party, const DefaultPartyMember &mem
 // pieces a created character brings.
 MemberId add_srd_member(CampaignParty &party, const DefaultPartyMember &member)
 {
-    auto character =
-        build_companion(member.srd.character, *party.character_rules(), party.rule_module());
-    character.appearance(look_under(member.appearance, member.srd.character.race, false));
+    if (!member.srd)
+    {
+        throw std::runtime_error("this game's default party has no SRD character yet");
+    }
+    const auto &srd = *member.srd;
+    auto character = build_companion(srd.character, *party.character_rules(), party.rule_module());
+    character.appearance(look_under(member.appearance, srd.character.race, false));
     std::vector<std::uint64_t> readied;
-    for (const auto &item : member.srd.items)
+    for (const auto &item : srd.items)
     {
         const auto added = character.add_item({item.key, item.name, item.quantity});
         if (item.readied)
@@ -405,8 +446,12 @@ std::vector<DefaultPartyMember> load_default_party(const std::filesystem::path &
         member.appearance = read.appearance(entry, where);
         member.original =
             read.original(read.object(entry, "original", where), where + ", original");
-        member.srd = read.srd(read.object(entry, "srd", where), member.name, where + ", srd");
-        member.srd.character.gender = member.gender;
+        // A game whose SRD party is not made yet leaves it out.
+        if (entry.find("srd"))
+        {
+            member.srd = read.srd(read.object(entry, "srd", where), member.name, where + ", srd");
+            member.srd->character.gender = member.gender;
+        }
         party.push_back(std::move(member));
     }
     if (party.size() != 6)

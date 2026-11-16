@@ -1,9 +1,10 @@
 // Play with Default Party: each game's own default party
 // (data/default_parties, docs/DEFAULT-PARTIES.md), made by the game's creation
 // rules under the original rules and under the SRD. The original rules read
-// the game's files: Pool of Radiance's from OPENGOLD_GAME_DIR, Curse's,
-// Secret's and Unlimited Adventures' kit from OPENGOLD_GOLDBOX_DIR; a game
-// whose files are not here is skipped. The SRD parties need no game files.
+// the game's files: Pool of Radiance's from OPENGOLD_GAME_DIR, the other
+// games' and Unlimited Adventures' kit from OPENGOLD_GOLDBOX_DIR; a game
+// whose files are not here is skipped. The SRD parties need no game files;
+// Gateway, Pools of Darkness and Treasures have none yet.
 #include "opengold/campaign_party.h"
 #include "opengold/character_art.h"
 #include "opengold/default_party.h"
@@ -11,6 +12,7 @@
 #include "opengold/original.h"
 #include "opengold/original_combat.h"
 #include "opengold/original_content.h"
+#include "opengold/original_spells.h"
 #include "opengold/srd5.h"
 #include "opengold/ua_design.h"
 #include "opengold/ua_session.h"
@@ -93,7 +95,7 @@ void check_party(const opengold::CampaignParty &party,
         {
             art->validate(member.character.appearance());
         }
-        const auto &items = sheet.original ? wanted.original.items : wanted.srd.items;
+        const auto &items = sheet.original ? wanted.original.items : wanted.srd->items;
         std::size_t readied = 0;
         for (const auto &item : items)
         {
@@ -109,9 +111,32 @@ void check_party(const opengold::CampaignParty &party,
     check(purse[3] > 0 || purse[4] > 0, what + " brings its money");
 }
 
+// The experience each game's creation starts a single-class character with.
+[[nodiscard]] unsigned starting_experience(GoldBoxGame game)
+{
+    switch (game)
+    {
+    case GoldBoxGame::curse_of_the_azure_bonds:
+        return 25000;
+    case GoldBoxGame::secret_of_the_silver_blades:
+        return 200000;
+    case GoldBoxGame::gateway_to_the_savage_frontier:
+        return 3000;
+    case GoldBoxGame::pools_of_darkness:
+        return 1500001;
+    case GoldBoxGame::treasures_of_the_savage_frontier:
+        return 22600;
+    default:
+        return 0;
+    }
+}
+
 // Under the original rules each game's creation sets the starting level:
-// level 1 in Pool of Radiance, trained up from 25,000 experience in Curse and
-// further in Secret; the casters have their spells memorized.
+// level 1 in Pool of Radiance, trained up from each later game's starting
+// experience (Gateway's 3,000 to Pools of Darkness's 1,500,001); the casters
+// have their spells memorized, and Treasures' magic-user knows the spells
+// chosen on its creation's page. Pools of Darkness's creation then gives each
+// its equipment, as the game does.
 void original_party(GoldBoxGame game, const opengold::por::CharacterArt *art)
 {
     const auto folder = developer_folder(game);
@@ -134,12 +159,82 @@ void original_party(GoldBoxGame game, const opengold::por::CharacterArt *art)
         const auto &member = party.member(ids[n]);
         const auto &sheet = member.character.sheet();
         check(sheet.original.has_value(), what + ": " + sheet.name + " is an original character");
-        check(game == GoldBoxGame::pool_of_radiance ? sheet.level == 1 && member.experience == 0
-                                                    : sheet.level >= 4 && member.experience > 0,
-              what + ": " + sheet.name + " starts at the game's own level");
+        // Every member after Pool of Radiance's is of one class.
+        check(game == GoldBoxGame::pool_of_radiance
+                  ? sheet.level == 1 && member.experience == 0
+                  : sheet.level >= 2 && member.experience == starting_experience(game),
+              what + ": " + sheet.name + " starts at the game's own level, not level " +
+                  std::to_string(sheet.level) + " with " + std::to_string(member.experience));
         check(sheet.prepared_spells.size() == file[n].original.spells.size(),
               what + ": " + sheet.name + " has its spells memorized");
+        for (const auto &spell : file[n].original.learned)
+        {
+            const auto &known = sheet.original->known_spells;
+            const auto number = opengold::original::spell_number(spell);
+            check(number && std::ranges::find(known, *number) != known.end(),
+                  what + ": " + sheet.name + " knows " + spell + ", chosen at creation");
+        }
     }
+    if (game != GoldBoxGame::pools_of_darkness)
+    {
+        return;
+    }
+    const auto definitions = opengold::load_item_definitions(folder, game);
+    for (const auto id : ids)
+    {
+        opengold::outfit_original_character(party, id, definitions);
+        check(!party.member(id).equipped.empty(), what + ": " +
+                                                      party.member(id).character.sheet().name +
+                                                      " readies its creation's equipment");
+    }
+}
+
+// A game whose SRD party is not made yet refuses the SRD rules, naming why,
+// and adds no one.
+void srd_party_not_made(GoldBoxGame game)
+{
+    const auto file = party_of(game);
+    opengold::CampaignParty party(
+        opengold::srd5::load(source_dir / "data/rules/srd-5.2.1/combat.rules"),
+        opengold::srd5::character_rules());
+    rejects(
+        [&]
+        {
+            opengold::add_default_party(party, file);
+        },
+        std::string(opengold::game_title(game)) + "'s default party has no SRD characters");
+    check(members_of(party).empty(),
+          std::string(opengold::game_title(game)) + ": a refused SRD party adds no one");
+}
+
+// Treasures' magic-user must list as many spells as its creation's page asks.
+void treasures_spell_choice_is_whole()
+{
+    const auto folder = developer_folder(GoldBoxGame::treasures_of_the_savage_frontier);
+    if (folder.empty())
+    {
+        return;
+    }
+    auto file = party_of(GoldBoxGame::treasures_of_the_savage_frontier);
+    auto mage = std::ranges::find(file, std::string("magic_user"),
+                                  [](const opengold::DefaultPartyMember &member)
+                                  {
+                                      return member.original.character_class;
+                                  });
+    check(mage != file.end() && !mage->original.learned.empty(),
+          "Treasures' party has a magic-user who chooses spells");
+    mage->original.learned.pop_back();
+    opengold::CampaignParty party(
+        opengold::original::rules_module(
+            opengold::load_original_content(folder, GoldBoxGame::treasures_of_the_savage_frontier)),
+        opengold::original::character_rules(opengold::original::default_aging,
+                                            GoldBoxGame::treasures_of_the_savage_frontier));
+    rejects(
+        [&]
+        {
+            opengold::add_default_party(party, file);
+        },
+        "A Treasures magic-user short of its creation's spell choices is refused");
 }
 
 // Unlimited Adventures' party plays a design, here the kit's own templates:
@@ -197,7 +292,7 @@ void srd_party(GoldBoxGame game, const opengold::por::CharacterArt *art)
         // Each listed spell is a cantrip it knows, one it learned or one it
         // prepared.
         const auto &draft = character.creation_data();
-        for (const auto &spell : file[n].srd.character.spells)
+        for (const auto &spell : file[n].srd->character.spells)
         {
             bool found = draft.cantrips &&
                          std::ranges::find(*draft.cantrips, spell) != draft.cantrips->end();
@@ -219,7 +314,7 @@ void srd_party(GoldBoxGame game, const opengold::por::CharacterArt *art)
 void a_refused_member_adds_no_one()
 {
     auto file = party_of(GoldBoxGame::pool_of_radiance);
-    file[5].srd.character.character_class = "no_such_class";
+    file[5].srd->character.character_class = "no_such_class";
     opengold::CampaignParty party(
         opengold::srd5::load(source_dir / "data/rules/srd-5.2.1/combat.rules"),
         opengold::srd5::character_rules());
@@ -260,6 +355,14 @@ int main()
             srd_party(game, art ? &*art : nullptr);
             original_party(game, art ? &*art : nullptr);
         }
+        for (const auto game :
+             {GoldBoxGame::gateway_to_the_savage_frontier, GoldBoxGame::pools_of_darkness,
+              GoldBoxGame::treasures_of_the_savage_frontier})
+        {
+            srd_party_not_made(game);
+            original_party(game, art ? &*art : nullptr);
+        }
+        treasures_spell_choice_is_whole();
         srd_party(GoldBoxGame::unlimited_adventures, art ? &*art : nullptr);
         ua_original_party(art ? &*art : nullptr);
         a_refused_member_adds_no_one();

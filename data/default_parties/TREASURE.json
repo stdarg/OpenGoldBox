@@ -1,0 +1,185 @@
+{
+  "format": "opengold-default-party-v1",
+  "members": [
+    {
+      "name": "Brenna Hawkmoor",
+      "gender": "female",
+      "portrait": {"head": 22, "body": 1},
+      "combat_icon": {
+        "head": 7,
+        "body": 10,
+        "colors": [
+          [7, 9, 6, 15, 9, 9],
+          [15, 1, 14, 9, 1, 1]
+        ]
+      },
+      "original": {
+        "race": "human",
+        "class": "paladin",
+        "alignment": "lawful_good",
+        "scores": [17, 12, 15, 11, 14, 17],
+        "items": [
+          {"name": "Long Sword", "type": 18, "readied": true},
+          {"name": "Plate Mail", "type": 36, "readied": true},
+          {"name": "Shield", "type": 37, "readied": true}
+        ],
+        "spells": []
+      }
+    },
+    {
+      "name": "Oswin Greaves",
+      "gender": "male",
+      "portrait": {"head": 13, "body": 13},
+      "combat_icon": {
+        "head": 10,
+        "body": 14,
+        "colors": [
+          [7, 2, 6, 2, 2, 6],
+          [15, 10, 14, 10, 10, 2]
+        ]
+      },
+      "original": {
+        "race": "human",
+        "class": "ranger",
+        "alignment": "chaotic_good",
+        "scores": [16, 16, 15, 13, 14, 10],
+        "items": [
+          {"name": "Long Sword", "type": 18, "readied": true},
+          {"name": "Scale Mail", "type": 33, "readied": true},
+          {"name": "Long Bow", "type": 24, "readied": false},
+          {"name": "Arrows", "type": 30, "quantity": 40, "readied": false}
+        ],
+        "spells": []
+      }
+    },
+    {
+      "name": "Dain Ironfold",
+      "gender": "male",
+      "portrait": {"head": 57, "body": 5},
+      "combat_icon": {
+        "head": 2,
+        "body": 11,
+        "colors": [
+          [7, 6, 6, 6, 6, 8],
+          [15, 14, 14, 14, 14, 8]
+        ]
+      },
+      "original": {
+        "race": "dwarf",
+        "class": "fighter",
+        "alignment": "neutral_good",
+        "scores": [18, 11, 18, 8, 11, 7],
+        "items": [
+          {"name": "Battle Axe", "type": 1, "readied": true},
+          {"name": "Banded Mail", "type": 35, "readied": true}
+        ],
+        "spells": []
+      }
+    },
+    {
+      "name": "Halvard Penn",
+      "gender": "male",
+      "portrait": {"head": 34, "body": 30},
+      "combat_icon": {
+        "head": 4,
+        "body": 20,
+        "colors": [
+          [7, 15, 6, 15, 15, 15],
+          [15, 14, 14, 7, 14, 14]
+        ]
+      },
+      "original": {
+        "race": "human",
+        "class": "cleric",
+        "alignment": "neutral_good",
+        "scores": [14, 10, 15, 11, 18, 13],
+        "items": [
+          {"name": "Mace", "type": 8, "readied": true},
+          {"name": "Chain Mail", "type": 34, "readied": true},
+          {"name": "Shield", "type": 37, "readied": true}
+        ],
+        "spells": [
+          "cleric:bless",
+          "cleric:bless",
+          "cleric:cure_light_wounds",
+          "cleric:cure_light_wounds",
+          "cleric:cure_light_wounds",
+          "cleric:hold_person",
+          "cleric:hold_person",
+          "cleric:hold_person",
+          "cleric:silence_15_radius",
+          "cleric:spiritual_hammer",
+          "cleric:dispel_magic",
+          "cleric:prayer"
+        ]
+      }
+    },
+    {
+      "name": "Neris Silverfrond",
+      "gender": "female",
+      "portrait": {"head": 67, "body": 37},
+      "combat_icon": {
+        "head": 12,
+        "body": 21,
+        "colors": [
+          [7, 1, 6, 1, 1, 1],
+          [15, 9, 14, 9, 9, 9]
+        ]
+      },
+      "original": {
+        "race": "elf",
+        "class": "magic_user",
+        "alignment": "chaotic_good",
+        "scores": [8, 17, 12, 18, 13, 12],
+        "items": [
+          {"name": "Quarterstaff", "type": 15, "readied": true},
+          {"name": "Dagger", "type": 4, "readied": false}
+        ],
+        "learned": [
+          "magic_user:burning_hands",
+          "magic_user:charm_person",
+          "magic_user:magic_missile",
+          "magic_user:shield",
+          "magic_user:sleep",
+          "magic_user:mirror_image",
+          "magic_user:stinking_cloud",
+          "magic_user:fireball"
+        ],
+        "spells": [
+          "magic_user:magic_missile",
+          "magic_user:magic_missile",
+          "magic_user:sleep",
+          "magic_user:shield",
+          "magic_user:stinking_cloud",
+          "magic_user:mirror_image",
+          "magic_user:fireball"
+        ]
+      }
+    },
+    {
+      "name": "Quill Bramblefoot",
+      "gender": "male",
+      "portrait": {"head": 8, "body": 8},
+      "combat_icon": {
+        "head": 9,
+        "body": 7,
+        "colors": [
+          [7, 4, 6, 6, 4, 8],
+          [15, 12, 14, 14, 12, 8]
+        ]
+      },
+      "original": {
+        "race": "halfling",
+        "class": "thief",
+        "alignment": "neutral",
+        "scores": [11, 18, 15, 12, 10, 10],
+        "items": [
+          {"name": "Short Sword", "type": 19, "readied": true},
+          {"name": "Leather Armor", "type": 31, "readied": true},
+          {"name": "Sling", "type": 28, "readied": false}
+        ],
+        "spells": []
+      }
+    }
+  ]
+}

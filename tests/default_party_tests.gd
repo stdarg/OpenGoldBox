@@ -7,16 +7,22 @@ extends SceneTree
 # --game=<folder>, --rules=original or --rules=srd and --default-party;
 # --opening=TEXT is what the opening shows. --save-as=NAME then saves the
 # game, and a second run with --load-save=<that save>, as Continue starts it,
-# must reach exploring with the same six.
+# must reach exploring with the same six. --menu=<folder> instead begins the
+# game as a player does: OpenGoldBox's title, Pick game, the game's title,
+# its menu's Play with Default Party and the original rules.
 
 var folder := ""
 var opening := ""
 var save_name := ""
 var loading := false
+var from_menu := false
 
 func _initialize() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--game="): folder = arg.trim_prefix("--game=")
+		if arg.begins_with("--menu="):
+			folder = arg.trim_prefix("--menu=")
+			from_menu = true
 		if arg.begins_with("--opening="): opening = arg.trim_prefix("--opening=")
 		if arg.begins_with("--save-as="): save_name = arg.trim_prefix("--save-as=")
 		if arg.begins_with("--load-save="): loading = true
@@ -43,7 +49,9 @@ func party_names() -> Array:
 func game_files_here() -> bool:
 	if folder == "POOLRAD": return true
 	var games := OS.get_environment("OPENGOLD_GOLDBOX_DIR")
-	return not games.is_empty() and FileAccess.file_exists(games.path_join(folder).path_join("ITEMS"))
+	# Gateway names its item types' file ITEMS.1.
+	var here := games.path_join(folder)
+	return not games.is_empty() and (FileAccess.file_exists(here.path_join("ITEMS")) or FileAccess.file_exists(here.path_join("ITEMS.1")))
 
 # The names the game's default party file gives its six.
 func file_names() -> Array:
@@ -59,6 +67,38 @@ func reach_exploring() -> void:
 		if town() and town().visible: break
 	require(town() != null and town().visible, folder + ": the game must begin exploring, not on the creation screen: " +
 		(current_scene.get_node("Status").text if current_scene and current_scene.has_node("Status") else "no scene"))
+
+func press_key() -> void:
+	var event := InputEventKey.new()
+	event.keycode = KEY_SPACE
+	event.pressed = true
+	Input.parse_input_event(event)
+	await settle()
+
+# From OpenGoldBox's title to the game begun with its default party under the
+# original rules, by the menus a player uses.
+func play_default_party_from_menu() -> void:
+	await press_key()
+	current_scene.get_node("MainMenu/Buttons/PickGame").pressed.emit()
+	await settle()
+	current_scene.get_node("GamePicker/Buttons/Games/" + folder).pressed.emit()
+	await settle()
+	# Keys pass the game's title; a film's title card waits its seconds.
+	var menu: Window = current_scene.get_node("GameMenu")
+	for attempt in range(60):
+		if menu.visible: break
+		await press_key()
+		await create_timer(0.5).timeout
+	require(menu.visible, folder + "'s menu must follow its title")
+	menu.get_node("Buttons/DefaultParty").pressed.emit()
+	await settle()
+	var dialog: Window = current_scene.get_node("RulesDialog")
+	require(dialog.visible, "Play with Default Party must ask the rules")
+	var rules: OptionButton = dialog.get_node("Rows/Rules")
+	rules.select(0)
+	rules.item_selected.emit(0)
+	dialog.get_node("Rows/Begin").pressed.emit()
+	await settle()
 
 # Plays the opening on until it shows `opening`, as the player's Continue would.
 func see_opening() -> String:
@@ -100,6 +140,7 @@ func run_checks() -> void:
 		return
 	change_scene_to_file("res://scenes/startup.tscn")
 	await settle()
+	if from_menu: await play_default_party_from_menu()
 	await reach_exploring()
 	var names := party_names()
 	require(names == file_names(), folder + ": the default party's six members explore: " + str(names))

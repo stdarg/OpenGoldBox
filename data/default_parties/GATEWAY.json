@@ -1,0 +1,160 @@
+{
+  "format": "opengold-default-party-v1",
+  "members": [
+    {
+      "name": "Kestrel Dunmore",
+      "gender": "female",
+      "portrait": {"head": 45, "body": 7},
+      "combat_icon": {
+        "head": 6,
+        "body": 14,
+        "colors": [
+          [7, 2, 6, 2, 2, 6],
+          [15, 10, 14, 10, 10, 2]
+        ]
+      },
+      "original": {
+        "race": "human",
+        "class": "ranger",
+        "alignment": "chaotic_good",
+        "scores": [17, 16, 16, 13, 14, 10],
+        "items": [
+          {"name": "Long Sword", "type": 36, "readied": true},
+          {"name": "Scale Mail", "type": 54, "readied": true},
+          {"name": "Long Bow", "type": 43, "readied": false},
+          {"name": "Arrows", "type": 73, "quantity": 40, "readied": false}
+        ],
+        "spells": []
+      }
+    },
+    {
+      "name": "Garran Holt",
+      "gender": "male",
+      "portrait": {"head": 54, "body": 1},
+      "combat_icon": {
+        "head": 0,
+        "body": 10,
+        "colors": [
+          [7, 9, 6, 15, 9, 9],
+          [15, 1, 14, 9, 1, 1]
+        ]
+      },
+      "original": {
+        "race": "human",
+        "class": "paladin",
+        "alignment": "lawful_good",
+        "scores": [17, 12, 16, 10, 13, 17],
+        "items": [
+          {"name": "Long Sword", "type": 36, "readied": true},
+          {"name": "Plate Mail", "type": 58, "readied": true},
+          {"name": "Shield", "type": 59, "readied": true}
+        ],
+        "spells": []
+      }
+    },
+    {
+      "name": "Thrain Coppervein",
+      "gender": "male",
+      "portrait": {"head": 57, "body": 18},
+      "combat_icon": {
+        "head": 2,
+        "body": 11,
+        "colors": [
+          [7, 6, 6, 6, 6, 8],
+          [15, 14, 14, 14, 14, 8]
+        ]
+      },
+      "original": {
+        "race": "dwarf",
+        "class": "fighter",
+        "alignment": "lawful_neutral",
+        "scores": [18, 13, 17, 9, 11, 8],
+        "items": [
+          {"name": "Battle Axe", "type": 1, "readied": true},
+          {"name": "Banded Mail", "type": 57, "readied": true},
+          {"name": "Shield", "type": 59, "readied": true}
+        ],
+        "spells": []
+      }
+    },
+    {
+      "name": "Maren Ashcombe",
+      "gender": "female",
+      "portrait": {"head": 11, "body": 30},
+      "combat_icon": {
+        "head": 4,
+        "body": 20,
+        "colors": [
+          [7, 15, 6, 15, 15, 15],
+          [15, 14, 14, 7, 14, 14]
+        ]
+      },
+      "original": {
+        "race": "human",
+        "class": "cleric",
+        "alignment": "neutral_good",
+        "scores": [14, 11, 15, 12, 17, 13],
+        "items": [
+          {"name": "Mace", "type": 23, "readied": true},
+          {"name": "Chain Mail", "type": 55, "readied": true},
+          {"name": "Shield", "type": 59, "readied": true}
+        ],
+        "spells": [
+          "cleric:bless",
+          "cleric:cure_light_wounds",
+          "cleric:cure_light_wounds",
+          "cleric:protection_from_evil"
+        ]
+      }
+    },
+    {
+      "name": "Elowen Brightleaf",
+      "gender": "female",
+      "portrait": {"head": 18, "body": 33},
+      "combat_icon": {
+        "head": 12,
+        "body": 21,
+        "colors": [
+          [7, 3, 6, 3, 3, 3],
+          [15, 11, 14, 11, 11, 11]
+        ]
+      },
+      "original": {
+        "race": "elf",
+        "class": "magic_user",
+        "alignment": "chaotic_good",
+        "scores": [8, 17, 12, 18, 12, 13],
+        "items": [
+          {"name": "Quarterstaff", "type": 33, "readied": true},
+          {"name": "Dagger", "type": 8, "readied": false}
+        ],
+        "spells": ["magic_user:magic_missile", "magic_user:sleep"]
+      }
+    },
+    {
+      "name": "Bram Thistlewood",
+      "gender": "male",
+      "portrait": {"head": 14, "body": 8},
+      "combat_icon": {
+        "head": 9,
+        "body": 7,
+        "colors": [
+          [7, 2, 6, 2, 2, 6],
+          [15, 10, 14, 10, 10, 2]
+        ]
+      },
+      "original": {
+        "race": "halfling",
+        "class": "thief",
+        "alignment": "neutral",
+        "scores": [11, 18, 14, 12, 10, 10],
+        "items": [
+          {"name": "Short Sword", "type": 37, "readied": true},
+          {"name": "Leather Armor", "type": 50, "readied": true},
+          {"name": "Sling", "type": 47, "readied": false}
+        ],
+        "spells": []
+      }
+    }
+  ]
+}

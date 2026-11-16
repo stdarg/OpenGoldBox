@@ -672,6 +672,18 @@ if(OPENGOLD_BUILD_TESTS)
     opengold_settings_check(default_party_curse_srd default_party_tests
         "Default party passed: CURSE began"
         "-DARGS=--game=CURSE\;--rules=srd\;--default-party\;--opening=AWAKEN")
+    # Gateway, Pools of Darkness and Treasures have only their original-rules
+    # party so far, begun as a player begins it: from the menus, past the
+    # game's title, Play with Default Party and the original rules.
+    opengold_settings_check(default_party_gateway_original default_party_tests
+        "Default party passed: GATEWAY began"
+        "-DARGS=--menu=GATEWAY\;--opening=AWAKEN TO DESPAIR")
+    opengold_settings_check(default_party_darkness_original default_party_tests
+        "Default party passed: DARKNESS began"
+        "-DARGS=--menu=DARKNESS\;--opening=I AM ROLF, PORTMASTER")
+    opengold_settings_check(default_party_treasure_original default_party_tests
+        "Default party passed: TREASURE began"
+        "-DARGS=--menu=TREASURE\;--opening=LATE SUMMER IN THE VALLEY OF DESSARIN")
     # Curse's party screen brings characters from a Pool of Radiance save;
     # Pool of Radiance's does not offer it. Skipped without Curse's files.
     foreach(case curse pool)

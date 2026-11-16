@@ -4,6 +4,7 @@
 #include "opengold/character_art.h"
 #include "opengold/companions.h"
 #include <filesystem>
+#include <optional>
 #include <span>
 #include <string>
 #include <vector>
@@ -24,6 +25,7 @@ struct DefaultItem
 // One of a game's six default party members (data/default_parties/<game
 // folder>.json, docs/DEFAULT-PARTIES.md): the same person under each rule
 // set, with one look, and the spells it starts with memorized or prepared.
+// A game whose SRD party is not made yet has no SRD character.
 struct DefaultPartyMember
 {
     std::string name, gender;
@@ -36,6 +38,9 @@ struct DefaultPartyMember
         // The rolls the creation's own roll is made into (set_rolled_scores).
         rules::AbilityArray<int> scores{};
         std::vector<DefaultItem> items;
+        // The spells its creation lets it choose (Treasures' magic-user's of
+        // levels 1 to 3); empty where the creation offers no choice.
+        std::vector<std::string> learned;
         std::vector<std::string> spells;
     } original;
 
@@ -44,7 +49,9 @@ struct DefaultPartyMember
         // Made as a companion is (build_companion), at level 1, with no items.
         CompanionDefinition character;
         std::vector<DefaultItem> items;
-    } srd;
+    };
+
+    std::optional<Srd> srd;
 };
 
 // Reads one game's default party. Throws std::runtime_error, naming the file,
@@ -57,7 +64,7 @@ struct DefaultPartyMember
 // platinum), its items given readied, and its spells memorized at a Long Rest;
 // under the SRD as a level-1 companion with 3d6 x 10 gold pieces. Their items
 // cost nothing. Throws, leaving the party as it was, when the rules refuse a
-// member.
+// member or the file has no SRD character for the SRD rules.
 void add_default_party(CampaignParty &party, std::span<const DefaultPartyMember> members);
 } // namespace opengold
 #endif

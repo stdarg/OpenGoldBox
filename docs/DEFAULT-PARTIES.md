@@ -4,16 +4,20 @@ The startup menu's **Play with Default Party** starts a new game with a
 ready-made party of six, so the player can begin adventuring at once, as each
 original game's pre-rolled party allowed. OpenGoldBox ships its own parties in
 `data/default_parties/`, one file per game folder (`POOLRAD.json`,
-`CURSE.json`, `SECRET.json`, `UA.json`). They are OpenGoldBox's own characters: none of
+`CURSE.json`, `SECRET.json`, `GATEWAY.json`, `DARKNESS.json`,
+`TREASURE.json`, `UA.json`). They are OpenGoldBox's own characters: none of
 their names, scores or items comes from the games' shipped saves, and the
 player's `SAVE` folder is never read.
 
 Each file holds six people. Each person has one name, gender, portrait and
 combat icon, and a character under each rule set: the `original` rules and
 the `srd` rules (SRD 5.2.1). The SRD character is the same person as the
-nearest SRD species and class. To change a party, edit its file; the game
-reads it when the button is pressed, and `opengold_default_party_tests` builds
-every party under both rule sets.
+nearest SRD species and class. *Gateway*, *Pools of Darkness* and *Treasures*
+have their original-rules characters only: their SRD rules wait (GAMES.md,
+phase 9), so their files have no `srd` part, and under the SRD rules the
+button says the party has no SRD characters yet. To change a party, edit its
+file; the game reads it when the button is pressed, and
+`opengold_default_party_tests` builds every party under each rule set it has.
 
 ## How a party is made
 
@@ -28,9 +32,21 @@ Each member is made by the game's own creation rules for the chosen rule set
   adjustment). The starting age and the race's and class's limits still
   apply, so a shown score can differ by a point. Each game's starting
   experience, training, gold and platinum apply: level 1 in *Pool of
-  Radiance*, 25,000 experience in *Curse*, 200,000 in *Secret*. Items are
-  numbered by the game's own item types (*Pool of Radiance* and *Curse* share
-  theirs; *Secret* has its own), with the name each shows.
+  Radiance*, 25,000 experience in *Curse*, 200,000 in *Secret*, 3,000 in
+  *Gateway*, 1,500,001 in *Pools of Darkness* and 22,600 in *Treasures*, each
+  trained at once as far as it reaches. Items are numbered by the game's own
+  item types (*Pool of Radiance*, *Curse* and *Gateway* share theirs;
+  *Secret* and *Treasures* share theirs), with the name each shows. *Pools of
+  Darkness* gives each new character its equipment by its class
+  (`outfit_original_character`), so its file lists none.
+- **Creation's spell choices:** a *Treasures* magic-user chooses its first-
+  to third-level spells on a page after the roll, slots x 4 / 3 of each level
+  (ORIGINAL-RULES.md). Its `learned` list holds the choices; each level gets
+  exactly as many as the page asks for, or the member is refused. It knows
+  Read Magic besides.
+- **Standing:** in *Pools of Darkness* and *Treasures* every character stands
+  on one square in a fight, the dwarves and halflings too (their
+  `chargen.pas`); their icons are drawn short as in every game.
 - **SRD:** made as a hand-made companion is (`build_companion`, as in
   `data/companions`): level 1, the `rolled` scores plus the background's +2
   and +1, the class's and background's training choices by default, the
@@ -75,6 +91,54 @@ Each member is made by the game's own creation rules for the chosen rule set
 | Anselm Brightwater (male) | Human Cleric, Lawful Good; Str 14 Dex 10 Con 15 Int 12 Wis 18 Cha 13; Mace, Chain Mail, Shield; memorizes bless, cure light wounds, cure light wounds, cure light wounds, protection from evil, hold person, hold person, hold person, silence 15 radius, spiritual hammer, prayer, dispel magic, cure disease, remove curse, cure serious wounds, cure serious wounds, neutralize poison | Human Cleric, Lawful Good, Acolyte; rolled Str 14 Dex 10 Con 14 Int 12 Wis 15 Cha 12 (+2 Wisdom, +1 Charisma); Mace, Scale Mail, Shield; spells guidance, sacred flame, resistance, bless, cure wounds, guiding bolt, shield of faith |
 | Liriel Moonbrook (female) | Elf Magic-User, Neutral Good; Str 8 Dex 17 Con 12 Int 18 Wis 13 Cha 12; Quarterstaff, Dagger (packed); memorizes magic missile, magic missile, sleep, shield, stinking cloud, mirror image, invisibility, fireball, lightning bolt, haste, confusion, minor globe of invulnerability, hold monster | Elf Wizard, Neutral Good, Sage; rolled Str 8 Dex 15 Con 12 Int 15 Wis 13 Cha 12 (+2 Intelligence, +1 Constitution); Quarterstaff, Dagger (packed); spells fire bolt, ray of frost, shocking grasp, magic missile, shield, sleep, mage armor, burning hands, detect magic |
 | Fenn Applewood (male) | Halfling Thief, Neutral; Str 11 Dex 18 Con 15 Int 12 Wis 10 Cha 10; Short Sword, Leather Armor, Sling (packed) | Halfling Rogue, Neutral, Criminal; rolled Str 10 Dex 15 Con 13 Int 12 Wis 10 Cha 10 (+2 Dexterity, +1 Constitution); Shortsword, Leather Armor, Sling (packed) |
+
+## Gateway to the Savage Frontier (`GATEWAY.json`)
+
+Original rules only. Each starts with 3,000 experience; a fighter, paladin,
+ranger, cleric and magic-user reach level 2, the thief level 3.
+
+| Name | Original rules |
+|---|---|
+| Kestrel Dunmore (female) | Human Ranger, Chaotic Good; Str 17 Dex 16 Con 16 Int 13 Wis 14 Cha 10; Long Sword, Scale Mail, Long Bow (packed), Arrows x40 (packed) |
+| Garran Holt (male) | Human Paladin, Lawful Good; Str 17 Dex 12 Con 16 Int 10 Wis 13 Cha 17; Long Sword, Plate Mail, Shield |
+| Thrain Coppervein (male) | Dwarf Fighter, Lawful Neutral; Str 18 Dex 13 Con 17 Int 9 Wis 11 Cha 8; Battle Axe, Banded Mail, Shield |
+| Maren Ashcombe (female) | Human Cleric, Neutral Good; Str 14 Dex 11 Con 15 Int 12 Wis 17 Cha 13; Mace, Chain Mail, Shield; memorizes bless, cure light wounds, cure light wounds, protection from evil |
+| Elowen Brightleaf (female) | Elf Magic-User, Chaotic Good; Str 8 Dex 17 Con 12 Int 18 Wis 12 Cha 13; Quarterstaff, Dagger (packed); memorizes magic missile, sleep |
+| Bram Thistlewood (male) | Halfling Thief, Neutral; Str 11 Dex 18 Con 14 Int 12 Wis 10 Cha 10; Short Sword, Leather Armor, Sling (packed) |
+
+## Pools of Darkness (`DARKNESS.json`)
+
+Original rules only. Each starts with 1,500,001 experience and 200 platinum:
+the paladin reaches level 12, the ranger 13, the cleric and magic-user 14,
+the thief 16, and the dwarf fighter stops at his race's 9. The game's
+creation gives each its equipment by class: a fighter's long sword, plate
+mail, shield, long bow and arrows; a thief's bracers, ring, long sword and
+sling; a cleric's mace, plate mail, shield, staff sling and scrolls; a
+magic-user's bracers, ring, quarterstaff and darts.
+
+| Name | Original rules |
+|---|---|
+| Aldric Stormvale (male) | Human Paladin, Lawful Good; Str 17 Dex 13 Con 16 Int 10 Wis 14 Cha 17; memorizes bless, cure light wounds, hold person, spiritual hammer |
+| Sera Nightbrook (female) | Human Ranger, Neutral Good; Str 16 Dex 17 Con 16 Int 13 Wis 14 Cha 11; memorizes magic missile, shield, mirror image, entangle, faerie fire, barkskin |
+| Hrolf Granitehand (male) | Dwarf Fighter, Lawful Neutral; Str 18 Dex 12 Con 18 Int 9 Wis 10 Cha 8 |
+| Ilona Dawnmere (female) | Human Cleric, Lawful Good; Str 13 Dex 10 Con 15 Int 12 Wis 18 Cha 14; memorizes bless x2, cure light wounds x4, protection from evil x2, hold person x4, silence 15' radius, spiritual hammer x2, resist fire, dispel magic x2, prayer x2, remove curse, cure disease, cure blindness, cure serious wounds x4, neutralize poison, protection from evil 10' radius, flame strike, cure critical wounds, raise dead, heal, blade barrier |
+| Varis Quillon (male) | Human Magic-User, Neutral Good; Str 9 Dex 16 Con 13 Int 18 Wis 12 Cha 11; memorizes magic missile x4, shield, stinking cloud x2, mirror image x2, invisibility, fireball x2, lightning bolt, haste, dispel magic, ice storm x2, minor globe of invulnerability, fire shield, cone of cold x3, cloudkill, disintegrate, globe of invulnerability, delayed blast fireball |
+| Tobble Fennick (male) | Gnome Thief, Neutral; Str 12 Dex 18 Con 15 Int 13 Wis 10 Cha 9 |
+
+## Treasures of the Savage Frontier (`TREASURE.json`)
+
+Original rules only. Each starts with 22,600 experience and 200 platinum: the
+paladin reaches level 4, the ranger, fighter, cleric and magic-user 5, the
+thief 6. Its battle axe takes both hands, so the dwarf carries no shield.
+
+| Name | Original rules |
+|---|---|
+| Brenna Hawkmoor (female) | Human Paladin, Lawful Good; Str 17 Dex 12 Con 15 Int 11 Wis 14 Cha 17; Long Sword, Plate Mail, Shield |
+| Oswin Greaves (male) | Human Ranger, Chaotic Good; Str 16 Dex 16 Con 15 Int 13 Wis 14 Cha 10; Long Sword, Scale Mail, Long Bow (packed), Arrows x40 (packed) |
+| Dain Ironfold (male) | Dwarf Fighter, Neutral Good; Str 18 Dex 11 Con 18 Int 8 Wis 11 Cha 7; Battle Axe, Banded Mail |
+| Halvard Penn (male) | Human Cleric, Neutral Good; Str 14 Dex 10 Con 15 Int 11 Wis 18 Cha 13; Mace, Chain Mail, Shield; memorizes bless x2, cure light wounds x3, hold person x3, silence 15' radius, spiritual hammer, dispel magic, prayer |
+| Neris Silverfrond (female) | Elf Magic-User, Chaotic Good; Str 8 Dex 17 Con 12 Int 18 Wis 13 Cha 12; Quarterstaff, Dagger (packed); chooses burning hands, charm person, magic missile, shield, sleep, mirror image, stinking cloud and fireball at creation; memorizes magic missile x2, sleep, shield, stinking cloud, mirror image, fireball |
+| Quill Bramblefoot (male) | Halfling Thief, Neutral; Str 11 Dex 18 Con 15 Int 12 Wis 10 Cha 10; Short Sword, Leather Armor, Sling (packed) |
 
 ## Unlimited Adventures (`UA.json`)
 

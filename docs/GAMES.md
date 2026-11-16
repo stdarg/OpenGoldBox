@@ -44,7 +44,9 @@ OpenGoldBox's startup menu offers Play with Default Party instead with its own
 parties, one per game under the original rules and under the SRD 5.2.1 rules
 (`data/default_parties`, listed in [DEFAULT-PARTIES.md](DEFAULT-PARTIES.md)),
 made by the game's own creation rules; it never reads the player's `SAVE`
-folder, whose saved games may have been played on.
+folder, whose saved games may have been played on. *Gateway*, *Pools of
+Darkness* and *Treasures* have their original-rules parties only until their
+SRD rules come (phase 9).
 
 ## What the games share
 
