@@ -1616,9 +1616,12 @@ as each game does (2026-11-16):
     each level of the dice, and past them 2 a level (a fighter's or
     paladin's 3, a magic-user's 1).
 
-  A change of Constitution brings the Hit Points within its new limits; it
-  moves them no further. The character's current Hit Points are its new
-  maximum.
+  A lower Constitution brings the Hit Points down to its new highest, a
+  higher one up to its new lowest; it moves them no further. A step on the
+  Hit Points never moves them the other way: in OpenGoldBox most new *Pools
+  of Darkness* characters start above that game's highest, and keep their
+  Hit Points unless lowered (Bugs). The character's current Hit Points are
+  its new maximum.
 - **Keep and Exit.** Keep keeps the changes and Exit leaves the character as
   it was. From *Curse* on, Keep works out again the Hit Points the dice gave
   (the original's hpRolled, which Raise Dead's loss is reckoned from): the
@@ -2302,3 +2305,4 @@ scales Hit Points takes only the table's to-hit and Armor Class.
 | *Curse*, *Gateway* and *Secret:* past a class's Hit Dice, Modify's highest Hit Points take its fixed amount in place of the other classes' (`chargen.pas`, `HpMaximum`) | Added to them, as for training |
 | *Curse* to *Treasures:* Keep adds up the Constitution's share of the Hit Points in a byte, so a Constitution below 7 wraps it round and the Hit Points rolled come out wrong (`chargen.pas`, `ModifyCharacterMenu`) | Counted with its sign |
 | *Unlimited Adventures:* Modify takes off every item the character has readied and never readies them again (`modify.c`, `modify_hero`) | The items stay readied |
+| Modify's Add on the Hit Points sets them to their highest, which lowers Hit Points creation left above it (the kit's knight; in OpenGoldBox most new *Pools of Darkness* characters, whose trained Hit Points come out above `HitPointCap`), and Subtract likewise raises those below the lowest; a change of Constitution only pulls them back the one way (`chargen.pas`, `ModifyCharacterMenu`; `modify.c`) | A raise never lowers them and a lowering never raises them |

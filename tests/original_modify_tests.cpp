@@ -209,6 +209,13 @@ void scores_step_within_their_limits()
               original::modify_step(frail, fighter, ModifyRow::hit_points, ModifyStep::lower,
                                     pool) == frail,
           "The Hit Points stop at the dice's highest and lowest");
+    ModifiedNumbers above{{12, 12, 16, 10, 10, 10}, 0, 20};
+    const auto lowered_once =
+        original::modify_step(above, fighter, ModifyRow::hit_points, ModifyStep::lower, pool);
+    check(original::modify_step(above, fighter, ModifyRow::hit_points, ModifyStep::raise, pool) ==
+                  above &&
+              lowered_once.hit_points == 19,
+          "Hit Points above the highest never fall on a raise, and fall a point on a lower");
 }
 
 // Keep's hpRolled: Pool of Radiance keeps the dice's; from Curse on the

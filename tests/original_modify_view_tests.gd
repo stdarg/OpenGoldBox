@@ -217,7 +217,7 @@ func run_checks() -> void:
 	var highest := int(value(6))
 	require(button("Raise", 6).disabled and highest >= hit_points, "Right raises the Hit Points to their highest")
 	await key(KEY_LEFT)
-	require(int(value(6)) == highest - 1 and not button("Raise", 6).disabled, "Left lowers them a point")
+	require(int(value(6)) == highest - 1, "Left lowers them a point")
 	await key(KEY_UP)
 	require(row_text(5).begins_with("> " + TranslationServer.translate("Charisma")), "Up moves back a row")
 

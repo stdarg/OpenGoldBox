@@ -367,15 +367,19 @@ template <class Visit> void each_class(const ClassLevels &levels, Visit &&visit)
 {
     auto next = numbers;
     const int constitution = numbers.scores[Ability::constitution];
+    // A step never moves the other way: Hit Points creation left above the
+    // highest (or below the lowest) stay where they are (Bugs).
     if (step == ModifyStep::lower)
     {
-        next.hit_points =
-            std::max(next.hit_points - 1, modify_hit_point_minimum(character, constitution, game));
+        next.hit_points = std::min(
+            next.hit_points,
+            std::max(next.hit_points - 1, modify_hit_point_minimum(character, constitution, game)));
     }
     else
     {
-        next.hit_points =
-            std::min(next.hit_points + 1, modify_hit_point_maximum(character, constitution, game));
+        next.hit_points = std::max(
+            next.hit_points,
+            std::min(next.hit_points + 1, modify_hit_point_maximum(character, constitution, game)));
     }
     return next;
 }
@@ -476,12 +480,17 @@ ModifiedNumbers modify_step(const ModifiedNumbers &numbers, const ModifiedCharac
     {
         ++score;
     }
-    if (ability == Ability::constitution)
+    // A lower Constitution brings the Hit Points down to its highest, a
+    // higher one up to its lowest, as the original does.
+    if (ability == Ability::constitution && step == ModifyStep::lower)
     {
         next.hit_points =
-            std::clamp(next.hit_points, modify_hit_point_minimum(character, score, game),
-                       std::max(modify_hit_point_minimum(character, score, game),
-                                modify_hit_point_maximum(character, score, game)));
+            std::min(next.hit_points, modify_hit_point_maximum(character, score, game));
+    }
+    if (ability == Ability::constitution && step == ModifyStep::raise)
+    {
+        next.hit_points =
+            std::max(next.hit_points, modify_hit_point_minimum(character, score, game));
     }
     return next;
 }

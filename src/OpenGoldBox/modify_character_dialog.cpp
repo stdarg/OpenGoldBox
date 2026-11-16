@@ -137,9 +137,7 @@ void ModifyCharacterDialog::fill_spells()
     auto &list = required_node<VBoxContainer>(*this, spell_list);
     while (list.get_child_count() > 0)
     {
-        auto *child = list.get_child(0);
-        list.remove_child(child);
-        child->queue_free();
+        presentation::detach_child(list, *list.get_child(0)).reset();
     }
     const auto groups = request_.rules->training_options(request_.draft);
     required_node<Control>(*this, "Margin/Rows/Spells").set_visible(!groups.empty());
