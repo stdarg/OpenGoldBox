@@ -278,7 +278,7 @@ msgstr "A disciplined martial artist. Primary abilities: Dexterity and Wisdom. H
 msgid "A divine scroll: a Cleric, Druid, Paladin or Ranger reads its spells. A level-13 Thief reads any scroll."
 msgstr "A divine scroll: a Cleric, Druid, Paladin or Ranger reads its spells. A level-13 Thief reads any scroll."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1872
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1874
 msgid "A drain takes more levels than the character has"
 msgstr "A drain takes more levels than the character has"
 
@@ -2167,7 +2167,7 @@ msgstr "Cast a spell or use a feature outside combat."
 msgid "Cast spell"
 msgstr "Cast spell"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2696 src/OpenGold.Rules.Original/src/rules_module.cpp:2709 src/OpenGold.Rules.Original/src/rules_module.cpp:2721 src/OpenGoldBox/combat_view.cpp:102
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2698 src/OpenGold.Rules.Original/src/rules_module.cpp:2711 src/OpenGold.Rules.Original/src/rules_module.cpp:2723 src/OpenGoldBox/combat_view.cpp:102
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Cast {spell}"
 msgstr "Cast {spell}"
@@ -3293,7 +3293,7 @@ msgstr "Cure Wounds (Magic Initiate)"
 msgid "Cure Wounds (level 2 slot)"
 msgstr "Cure Wounds (level 2 slot)"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2688
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2690
 msgid "Cure disease"
 msgstr "Cure disease"
 
@@ -6468,7 +6468,7 @@ msgstr "Lay On Hands: cure Poisoned"
 msgid "Lay On Hands: cure Poisoned (5)"
 msgstr "Lay On Hands: cure Poisoned (5)"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2684
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2686
 msgid "Lay on hands"
 msgstr "Lay on hands"
 
@@ -9122,7 +9122,7 @@ msgstr "Raise Dead can bring it back within ten days of its death."
 msgid "Raise Dead cannot bring back {name}, who has been dead too long or is dust."
 msgstr "Raise Dead cannot bring back {name}, who has been dead too long or is dust."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2814
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2816
 msgid "Raise Dead cannot bring this member back"
 msgstr "Raise Dead cannot bring this member back"
 
@@ -11594,11 +11594,11 @@ msgstr "Thank you for your generous donation."
 msgid "That attempt did not succeed."
 msgstr "That attempt did not succeed."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2739
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2741
 msgid "That cannot be done now"
 msgstr "That cannot be done now"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2986
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2988
 msgid "That cannot be used now"
 msgstr "That cannot be used now"
 
@@ -11610,7 +11610,7 @@ msgstr "That is not a Manual of Bodily Health"
 msgid "That potion works only in combat"
 msgstr "That potion works only in combat"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2785 src/OpenGold.Rules.Original/src/rules_module.cpp:2798 src/OpenGold.Rules.Original/src/rules_module.cpp:2806 src/OpenGold.Rules.Original/src/rules_module.cpp:3021 src/OpenGold.Rules.Original/src/rules_module.cpp:3213
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2787 src/OpenGold.Rules.Original/src/rules_module.cpp:2800 src/OpenGold.Rules.Original/src/rules_module.cpp:2808 src/OpenGold.Rules.Original/src/rules_module.cpp:3023 src/OpenGold.Rules.Original/src/rules_module.cpp:3215
 msgid "That spell cannot be cast now"
 msgstr "That spell cannot be cast now"
 
@@ -11768,7 +11768,7 @@ msgstr "The cantrip reaches 30 feet farther per Warlock level."
 msgid "The casters heal and cure the party as it rests"
 msgstr "The casters heal and cure the party as it rests"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1832
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1834
 msgid "The character has no levels in a class it trained in"
 msgstr "The character has no levels in a class it trained in"
 
@@ -11807,7 +11807,7 @@ msgstr "The cloud drifts."
 msgid "The creature that hit it this turn attacks it with Disadvantage."
 msgstr "The creature that hit it this turn attacks it with Disadvantage."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2820
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2822
 msgid "The dead cannot be healed"
 msgstr "The dead cannot be healed"
 
@@ -12083,7 +12083,7 @@ msgstr "The sunlight ends the magical Darkness."
 msgid "The sword will not stay in {name}'s hand and burns for {damage} Force damage."
 msgstr "The sword will not stay in {name}'s hand and burns for {damage} Force damage."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2512
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2514
 msgid "The temple cannot help with that"
 msgstr "The temple cannot help with that"
 
