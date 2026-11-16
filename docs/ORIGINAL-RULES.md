@@ -653,7 +653,11 @@ Journal), chosen by the game as the others' are (2026-11-14):
   or its record calls it unliving or proof against poison ("immunities"
   bits 8 and 10h); into a cloudkill unless a Globe of Invulnerability
   guards it or it is proof against poison; nor into Blade Barrier's blades.
-  One turned to flee steps anywhere.
+  One turned to flee steps anywhere. The party's members on Quick step so
+  too: since this rule the route's party loses every one of the 120 plays of
+  Tanetal's last stand (map 53, 6,12), where the cultists raise Blade
+  Barriers about it; with the earlier games' step it wins on about the 40th
+  (2026-11-16, for the route's owner to re-plan).
 - **A *Secret* character comes across** as its LoadChar takes one in
   (`saveload.pas`, its legacy record; `CampaignParty::bring_across` with
   `secret_items_for_darkness`; the party screen's *Add from Secret*,
@@ -1128,7 +1132,11 @@ Journal), chosen by the game as the others' are (2026-11-14):
   or its record calls it unliving or proof against poison ("immunities"
   bits 8 and 10h); into a cloudkill unless a Globe of Invulnerability
   guards it or it is proof against poison; nor into Blade Barrier's blades.
-  One turned to flee steps anywhere.
+  One turned to flee steps anywhere. The party's members on Quick step so
+  too: since this rule the route's party loses every one of the 120 plays of
+  Tanetal's last stand (map 53, 6,12), where the cultists raise Blade
+  Barriers about it; with the earlier games' step it wins on about the 40th
+  (2026-11-16, for the route's owner to re-plan).
 - **A *Secret* character comes across** as its LoadChar takes one in
   (`saveload.pas`, its legacy record; `CampaignParty::bring_across` with
   `secret_items_for_darkness`; the party screen's *Add from Secret*,
