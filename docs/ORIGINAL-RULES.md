@@ -758,7 +758,8 @@ order, with what each needs. Done since: the difficulty levels, the halls'
 class masks, AD&D aging by the clock, the temples' Restoration, Spiritual
 Hammer's lasting hammer, the later games' effect numbers, the rest of any
 length with memorizing's time, and *Gateway*'s and *Treasures*' effects;
-since, the rest's interruptions and the kit's camp of any length (rules5).
+since, the rest's interruptions and the kit's camp of any length (rules5),
+with every route winning on them (item 3).
 
 1. *Treasures*' own effects still to play (Effects of the later games):
    the crystals (128 to 130, the treasure route's owner) and the romance
@@ -791,11 +792,12 @@ since, the rest's interruptions and the kit's camp of any length (rules5).
    of *Curse* and *Gateway* were found wearing chain mail: the test took
    type 55 for plate mail, which is 58 in those games' numbering (their
    `itemTypeNames`); they wear plate mail now, and *Curse*'s route still
-   wins. Next step: rebase onto origin/main (done, Treasures part 8,
-   12fb7be3d) and re-tune *Treasures*' route with `reloads_until_won`.
-   *Secret*'s route wins since it rests on through six broken camps, not
-   three. *Pool of Radiance*'s, *Curse*'s, the kit's and, after Darkness
-   part 13, *Pools of Darkness*'s routes win.
+   wins. Rebased onto Treasures part 8 (12fb7be3d) and Darkness part 14
+   (033e23308), every route wins on the new rest (2026-11-16): *Treasures*'
+   with no re-tuning and no fight won by the test, its Way Inn and lair
+   fights reloading until won as on main; *Pools of Darkness*'s to its win;
+   *Secret*'s, resting on through six broken camps, not three; *Pool of
+   Radiance*'s, *Curse*'s and the kit's.
 
 ## Gateway to the Savage Frontier
 
