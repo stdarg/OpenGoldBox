@@ -847,4 +847,5 @@ game, as *Pool of Radiance* has.
 
 *Champions of Krynn*, *Death Knights of Krynn*, *The Dark Queen of Krynn*,
 *Buck Rogers: Countdown to Doomsday* and *Buck Rogers: Matrix Cubed*, with the
-same method.
+same method. The *Krynn* games' plan is [KRYNN.md](KRYNN.md) (written
+2026-11-16, not started).
