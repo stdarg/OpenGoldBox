@@ -6818,9 +6818,7 @@ void Session::kit_specials(Fighter &f)
     {
         return;
     }
-    // Treasures' beholders, whose reconstruction registers the same
-    // AttackEyeRays, are still kept still.
-    if (f.has(effect::eye_rays) && !treasures())
+    if (f.has(effect::eye_rays))
     {
         beholder_rays(f);
     }

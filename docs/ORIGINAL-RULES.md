@@ -622,7 +622,8 @@ Journal), chosen by the game as the others' are (2026-11-14):
     within 4 and Cause Serious Wounds within 5, then Fear, Slow and Sleep.
     The beholder, elder orb and death tyrant (records 31, 94 and 95) carry
     it. Until 2026-11-16 they were kept still. *Treasures*' reconstruction
-    registers the same routine; its beholders are still kept still.
+    registers the same routine, and its beholders fire their rays as well
+    since 2026-11-16 (rules round 6).
   - Its records' type flags, "immunities" and magic resistance are read
     (bytes 420, 421 and 491), *Secret*'s bits, so a creature is a snake, a
     mammal, a ranger's foe or unliving as in *Secret*.
@@ -1121,7 +1122,8 @@ Journal), chosen by the game as the others' are (2026-11-14):
     within 4 and Cause Serious Wounds within 5, then Fear, Slow and Sleep.
     The beholder, elder orb and death tyrant (records 31, 94 and 95) carry
     it. Until 2026-11-16 they were kept still. *Treasures*' reconstruction
-    registers the same routine; its beholders are still kept still.
+    registers the same routine, and its beholders fire their rays as well
+    since 2026-11-16 (rules round 6).
   - Its records' type flags, "immunities" and magic resistance are read
     (bytes 420, 421 and 491), *Secret*'s bits, so a creature is a snake, a
     mammal, a ranger's foe or unliving as in *Secret*.
