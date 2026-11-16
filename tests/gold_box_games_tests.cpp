@@ -2976,18 +2976,37 @@ const std::vector<RouteBeat> &darkness_route()
         hoard.rest_first = true;
         hoard.take_items = {{"RING", "paladin 1"}};
         route.push_back(hoard);
-        walk_passages(
-            route, 34,
-            {{15, 12, D::north}, {15, 11, D::north}, {15, 10, D::north}, {15, 9, D::north},
-             {15, 8, D::north},  {15, 7, D::west},   {14, 7, D::west},   {13, 7, D::west},
-             {12, 7, D::north},  {12, 6, D::north},  {12, 5, D::west},   {11, 5, D::west},
-             {10, 5, D::south},  {10, 6, D::south},  {10, 7, D::south},  {10, 8, D::west},
-             {9, 8, D::west},    {8, 8, D::west},    {7, 8, D::north},   {7, 7, D::north},
-             {7, 6, D::north},   {7, 5, D::west},    {6, 5, D::north},   {6, 4, D::north},
-             {6, 3, D::north},   {6, 2, D::north},   {6, 1, D::west},    {5, 1, D::west},
-             {4, 1, D::west},    {3, 1, D::west},    {2, 1, D::south},   {2, 2, D::south},
-             {2, 3, D::south},   {2, 4, D::west},    {1, 4, D::south},   {1, 5, D::east},
-             {2, 5, D::east},    {3, 5, D::south}});
+        walk_passages(route, 34,
+                      {{15, 12, D::north},
+                       {15, 11, D::north},
+                       {15, 10, D::north},
+                       {15, 9, D::north},
+                       {15, 8, D::north},
+                       {15, 7, D::west},
+                       {14, 7, D::west},
+                       {13, 7, D::west}});
+        // South through the doors to the room the Ki-rin has made safe to
+        // camp in (10,9, event 39; the cluebook's 14), the one camp of the
+        // cave that rests while Thorne lives (script 34's camp entry): the
+        // party rests there, its clerics and paladins memorizing Resist Fire
+        // for every member, and goes back north.
+        walk_passages(route, 34,
+                      {{12, 7, D::south}, {12, 8, D::south}, {12, 9, D::west}, {11, 9, D::west}});
+        auto safe_room = step_beat(34, 10, 9, D::east);
+        safe_room.rest_first = true;
+        safe_room.rest_for_spells = true;
+        safe_room.ward_memorized = "resist_fire";
+        route.push_back(safe_room);
+        walk_passages(route, 34, {{11, 9, D::east}, {12, 9, D::north}, {12, 8, D::north}});
+        walk_passages(route, 34,
+                      {{12, 7, D::north}, {12, 6, D::north}, {12, 5, D::west},  {11, 5, D::west},
+                       {10, 5, D::south}, {10, 6, D::south}, {10, 7, D::south}, {10, 8, D::west},
+                       {9, 8, D::west},   {8, 8, D::west},   {7, 8, D::north},  {7, 7, D::north},
+                       {7, 6, D::north},  {7, 5, D::west},   {6, 5, D::north},  {6, 4, D::north},
+                       {6, 3, D::north},  {6, 2, D::north},  {6, 1, D::west},   {5, 1, D::west},
+                       {4, 1, D::west},   {3, 1, D::west},   {2, 1, D::south},  {2, 2, D::south},
+                       {2, 3, D::south},  {2, 4, D::west},   {1, 4, D::south},  {1, 5, D::east},
+                       {2, 5, D::east},   {3, 5, D::south}});
         // Thorne, an ancient red dragon, and his seven red dragons breathe
         // fire (his 24d10+12, three times): the clerics and the first paladin
         // cast the Resist Fire memorized in Limbo on each member first, as a
@@ -4014,10 +4033,10 @@ const std::vector<RouteBeat> &darkness_route()
              {1, 8, D::north},  {1, 7, D::west},   {0, 7, D::north},  {0, 6, D::east},
              {1, 6, D::east},   {2, 6, D::east},   {3, 6, D::east},   {4, 6, D::north},
              {4, 5, D::north}});
-        // The door will not budge: the second paladin, of Dexterity 18 (17
-        // will do), climbs over and secures a rope (CLIMB OVER, WHO; cell
-        // 1D7h bit 1).
-        route.push_back(step_beat(66, 4, 4, D::north, {"CLIMB OVER", "paladin 2"}));
+        // The door will not budge: the magic-user, of Dexterity 18 (17 will
+        // do), climbs over and secures a rope (CLIMB OVER, WHO; cell 1D7h
+        // bit 1).
+        route.push_back(step_beat(66, 4, 4, D::north, {"CLIMB OVER", "magic_user 6"}));
         // Beyond it, round to the house west of the temple (3,0), where the
         // party rests, to the temple's door (5,0).
         walk_ruins_unrested({{4, 3, D::east},
@@ -7663,8 +7682,35 @@ bool walk_census(GoldBoxGame game, bool route)
             creator.select(opengold::rules::CreationField::race, "human");
             creator.select(opengold::rules::CreationField::character_class, klass);
             creator.name(klass + " " + std::to_string(n + 1));
-            opengold::test::walk_original_creation(creator, learned_first);
+            // Pools of Darkness's route's player rolls each character again
+            // until its class's ability is 18 and its Constitution 17, as a
+            // player rolls for a party meant to finish the game: its
+            // magic-user's eighth- and ninth-level spells need Intelligence
+            // 16 and 18 (TrimHighSpellSlots).
+            const auto keep = [&](const opengold::rules::CharacterSheet &sheet)
+            {
+                using opengold::rules::Ability;
+                if (!route || game != GoldBoxGame::pools_of_darkness)
+                {
+                    return true;
+                }
+                const auto prime = klass == "magic_user" ? Ability::intelligence
+                                   : klass == "cleric"   ? Ability::wisdom
+                                                         : Ability::strength;
+                return sheet.scores[prime] >= 18 && sheet.scores[Ability::constitution] >= 17;
+            };
+            opengold::test::walk_original_creation(creator, learned_first, keep);
             const auto id = party->add_pc(creator.create_character());
+            // OPENGOLD_FIGHT_GEAR prints each member's scores too.
+            if (std::getenv("OPENGOLD_FIGHT_GEAR"))
+            {
+                std::cout << "  scores: " << creator.sheet().name;
+                for (const auto ability : opengold::rules::all_abilities)
+                {
+                    std::cout << " " << creator.sheet().scores[ability];
+                }
+                std::cout << "\n";
+            }
             // Pools of Darkness's route party carries the game's own starting
             // equipment, as a party made in the original does.
             if (route && game == GoldBoxGame::pools_of_darkness)
@@ -8187,6 +8233,35 @@ bool walk_census(GoldBoxGame game, bool route)
     std::optional<unsigned> wanted_exit;
     // The beat being played flees what it meets (RouteBeat::fleeing).
     bool fleeing = false;
+    // Whether the command begins a spell of fire (Fireball, Flame Strike,
+    // Meteor Swarm and the like) while an iron golem stands on the other side.
+    const auto casts_fire_at_golems =
+        [&](const opengold::rules::Snapshot &state, const opengold::rules::Command &command)
+    {
+        if (command.verb != "cast" && command.verb != "use")
+        {
+            return false;
+        }
+        const auto *known = opengold::original::spell(
+            static_cast<int>(command.verb == "use" ? command.item % 256 : command.item), game);
+        if (!known)
+        {
+            return false;
+        }
+        const std::string_view name = known->name;
+        const bool fire = name.find("Fire") != std::string_view::npos ||
+                          name.find("Flame") != std::string_view::npos ||
+                          name.find("Burning") != std::string_view::npos ||
+                          name.find("Meteor") != std::string_view::npos;
+        return fire &&
+               std::ranges::any_of(state.combatants,
+                                   [](const opengold::rules::CombatantView &unit)
+                                   {
+                                       return unit.side == opengold::rules::Side::opposition &&
+                                              unit.conscious &&
+                                              unit.name.find("IRON GOLEM") != std::string::npos;
+                                   });
+    };
     const auto fight_once = [&](std::uint64_t seed, unsigned tactic)
     {
         opengold::CombatDemo combat(opengold::original::rules_module(content));
@@ -8308,13 +8383,22 @@ bool walk_census(GoldBoxGame game, bool route)
                     }
                 }
             }
-            const auto chosen =
+            auto chosen =
                 held     ? *held
                 : member ? opengold::choose_quick_command(
                                session, tactic != 1 || actor->name.starts_with("magic_user"),
                                opengold::Searching::everyone)
                          : opengold::choose_demo_command(session, opengold::Searching::everyone,
                                                          opengold::default_difficulty);
+            // A Pools of Darkness player casts no fire where iron golems
+            // stand, whom it heals (EffIronGolem), as the Quick computer
+            // would: the member fights with its weapon instead.
+            if (member && tactic == 2 && game == GoldBoxGame::pools_of_darkness &&
+                casts_fire_at_golems(state, chosen))
+            {
+                chosen =
+                    opengold::choose_quick_command(session, false, opengold::Searching::everyone);
+            }
             if (!combat.submit(chosen))
             {
                 ++phases["fight stopped at " + chosen.verb];
