@@ -1151,8 +1151,12 @@ StartingTraining starting_training(Race race, Profession profession,
             const int level = ++level_in(trained.levels, slot);
             const auto n =
                 static_cast<std::size_t>(std::ranges::find(classes, slot) - classes.begin());
-            rolled_dice +=
-                rolled.training_hit_dice.at(first_die[n] + static_cast<std::size_t>(level - 2));
+            // Past its Hit Dice a class adds a fixed amount, as training does
+            // (roll_training_hit_dice); the die rolled for the level goes unused.
+            rolled_dice += level >= curse_hit_dice_levels[index(slot)]
+                               ? curse_fixed_hit_points[index(slot)]
+                               : rolled.training_hit_dice.at(first_die[n] +
+                                                             static_cast<std::size_t>(level - 2));
             if (slot == C::magic_user && !vga_engine(game))
             {
                 const auto learned = game == GoldBoxGame::secret_of_the_silver_blades
@@ -1164,8 +1168,8 @@ StartingTraining starting_training(Race race, Profession profession,
                 }
             }
         }
-        trained.hit_points +=
-            training_hit_points(profession, rolled_dice, scores[Ability::constitution], game);
+        trained.hit_points += training_hit_points(
+            profession, rolled_dice, scores[Ability::constitution], game, trained.levels, ready);
         trained.rolled_hit_points += training_rolled_hit_points(profession, rolled_dice);
     }
 }
@@ -1634,14 +1638,27 @@ int roll_training_hit_dice(const ClassLevels &trained_levels, std::span<const Cl
     return total;
 }
 
-int training_hit_points(Profession profession, int rolled, int constitution, GoldBoxGame game)
+int training_hit_points(Profession profession, int rolled, int constitution, GoldBoxGame game,
+                        const ClassLevels &trained_levels, std::span<const ClassSlot> trained)
 {
     const int classes = static_cast<int>(classes_of(profession).size());
-    const int bonus = constitution_hit_point_bonus(profession, constitution, game);
     if (secret_hit_points(game))
     {
+        // Only the classes that trained add their bonus, and none past its
+        // Hit Dice (Secret's RollFirstLevelHp, the later games'
+        // AdjustLevelHitPoints).
+        int bonus = 0;
+        for (const auto slot : trained)
+        {
+            if (level_in(trained_levels, slot) < curse_hit_dice_levels[index(slot)])
+            {
+                bonus +=
+                    constitution_hit_point_bonus(static_cast<Profession>(slot), constitution, game);
+            }
+        }
         return std::max(1, rolled / classes) + bonus / classes;
     }
+    const int bonus = constitution_hit_point_bonus(profession, constitution, game);
     return std::max(1, (rolled + bonus) / classes);
 }
 

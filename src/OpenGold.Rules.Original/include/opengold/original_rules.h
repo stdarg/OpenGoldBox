@@ -354,9 +354,12 @@ enum class ThiefSkill : unsigned
                                          std::span<const ClassSlot> trained, GoldBoxGame game,
                                          RandomState &random);
 // What training adds to the Hit Points: the roll and the Constitution bonus
-// of all the profession's classes, divided among them, at least 1.
+// of all the profession's classes, divided among them, at least 1. From
+// Secret on, the bonus is only the trained classes' (at these levels after
+// training), none past a class's Hit Dice, divided apart from the roll.
 [[nodiscard]] int training_hit_points(Profession profession, int rolled, int constitution,
-                                      GoldBoxGame game = GoldBoxGame::pool_of_radiance);
+                                      GoldBoxGame game, const ClassLevels &trained_levels,
+                                      std::span<const ClassSlot> trained);
 // What training adds to the Hit Points rolled: the roll divided among the
 // classes, at least 1 (chargen.pas, TrainingMenu).
 [[nodiscard]] int training_rolled_hit_points(Profession profession, int rolled);

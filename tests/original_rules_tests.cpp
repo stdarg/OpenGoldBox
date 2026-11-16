@@ -2,6 +2,7 @@
 #include "opengold/original.h"
 #include "opengold/original_spells.h"
 #include "test_support.h"
+#include <initializer_list>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -390,11 +391,26 @@ void training()
         const int rolled = roll_training_hit_dice(fighter, trained, pool, random);
         check(rolled >= 1 && rolled <= 10, "A fighter trains with a d10");
     }
-    check(training_hit_points(Profession::fighter, 6, 18) == 10,
+    const auto second_level = [](std::initializer_list<ClassSlot> slots)
+    {
+        ClassLevels levels{};
+        for (const auto slot : slots)
+        {
+            level_in(levels, slot) = 2;
+        }
+        return levels;
+    };
+    const std::vector<ClassSlot> fighter_thief{ClassSlot::fighter, ClassSlot::thief};
+    const std::vector<ClassSlot> magic_user{ClassSlot::magic_user};
+    check(training_hit_points(Profession::fighter, 6, 18, pool, second_level({ClassSlot::fighter}),
+                              trained) == 10,
           "A fighter of 18 Constitution adds 4 to the roll");
-    check(training_hit_points(Profession::fighter_thief, 7, 15) == 4,
+    const auto both = second_level({ClassSlot::fighter, ClassSlot::thief});
+    check(training_hit_points(Profession::fighter_thief, 7, 15, pool, both, fighter_thief) == 4,
           "A fighter/thief shares the roll and its two classes' bonus");
-    check(training_hit_points(Profession::magic_user, 1, 3) == 1, "Training adds at least 1");
+    check(training_hit_points(Profession::magic_user, 1, 3, pool,
+                              second_level({ClassSlot::magic_user}), magic_user) == 1,
+          "Training adds at least 1");
 
     // Curse's and Secret's Constitution bonus (ConHpBonus): fighters,
     // paladins and rangers gain more from 17 up; Curse gives it to a single
@@ -412,8 +428,17 @@ void training()
           "Only Secret gives a multi-class fighter the extra point");
     check(constitution_hit_point_bonus(Profession::cleric, 16, secret, true) == 4,
           "Secret's cleric counts its bonus for both first-level dice");
-    check(training_hit_points(Profession::fighter_thief, 7, 17, secret) == 5,
+    check(training_hit_points(Profession::fighter_thief, 7, 17, secret, both, fighter_thief) == 5,
           "Secret divides the roll and the bonus apart: 7/2 + 5/2");
+    check(training_hit_points(Profession::fighter_thief, 7, 17, secret, both, trained) == 4,
+          "Secret adds the bonus of the classes that trained: 7/2 + 3/2");
+    // AdjustLevelHitPoints (Pools of Darkness, Treasures): past a class's Hit
+    // Dice the level adds its fixed amount and no Constitution bonus.
+    ClassLevels fourteenth{};
+    level_in(fourteenth, ClassSlot::fighter) = 14;
+    const auto darkness_game = opengold::GoldBoxGame::pools_of_darkness;
+    check(training_hit_points(Profession::fighter, 3, 18, darkness_game, fourteenth, trained) == 3,
+          "A Pools of Darkness fighter's level 14 adds 3 and no bonus");
 
     opengold::rules::AbilityArray<int> scores{16, 10, 10, 10, 10, 10};
     check(experience_share(Profession::fighter, scores, 100) == 110,

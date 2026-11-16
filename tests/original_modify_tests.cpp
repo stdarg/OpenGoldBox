@@ -6,7 +6,11 @@
 #include "opengold/srd5.h"
 #include "original_creation_support.h"
 #include "test_support.h"
+#include <algorithm>
 #include <iostream>
+#include <string>
+#include <string_view>
+#include <utility>
 
 // Modify Character under the original rules (docs/ORIGINAL-RULES.md, Modify
 // Character): each game's chargen.pas ModifyCharacterMenu, its HpMinimum and
@@ -157,6 +161,73 @@ void darkness_hit_point_limits()
     const auto ranger = human(Profession::ranger, levels_in(ClassSlot::ranger, 13));
     check(original::modify_hit_point_maximum(ranger, 16, darkness) == 10 * 10 + 10 + 3 * 2,
           "A ranger's extra die counts past its Hit Dice");
+}
+
+// Every character Pools of Darkness's and Treasures' creation makes starts
+// within its game's Modify limits: AdjustLevelHitPoints, the creation's
+// training, adds only a fixed amount and no Constitution bonus past a class's
+// Hit Dice, and a bonus only for the classes that trained, which HitPointCap
+// counts the same way.
+void new_characters_start_within_modify_limits()
+{
+    constexpr int rolls = 100;
+    const std::pair<Race, std::string_view> races[]{
+        {Race::dwarf, "dwarf"},       {Race::elf, "elf"},           {Race::gnome, "gnome"},
+        {Race::half_elf, "half_elf"}, {Race::halfling, "halfling"}, {Race::human, "human"}};
+    const std::pair<Profession, std::string_view> professions[]{
+        {Profession::cleric, "cleric"},
+        {Profession::fighter, "fighter"},
+        {Profession::magic_user, "magic_user"},
+        {Profession::thief, "thief"},
+        {Profession::paladin, "paladin"},
+        {Profession::ranger, "ranger"},
+        {Profession::cleric_fighter, "cleric_fighter"},
+        {Profession::cleric_fighter_magic_user, "cleric_fighter_magic_user"},
+        {Profession::cleric_ranger, "cleric_ranger"},
+        {Profession::cleric_magic_user, "cleric_magic_user"},
+        {Profession::cleric_thief, "cleric_thief"},
+        {Profession::fighter_magic_user, "fighter_magic_user"},
+        {Profession::fighter_thief, "fighter_thief"},
+        {Profession::fighter_magic_user_thief, "fighter_magic_user_thief"},
+        {Profession::magic_user_thief, "magic_user_thief"}};
+    for (const auto game : {darkness, treasures})
+    {
+        for (const auto &[race, race_id] : races)
+        {
+            for (const auto &[profession, profession_id] : professions)
+            {
+                if (std::ranges::find(original::professions_for(race, game), profession) ==
+                    original::professions_for(race, game).end())
+                {
+                    continue;
+                }
+                CharacterCreator creator(original::character_rules(original::default_aging, game),
+                                         static_cast<std::uint64_t>(profession) * 31 + 7);
+                creator.select(CreationField::race, race_id);
+                creator.select(CreationField::character_class, profession_id);
+                creator.name("Ava");
+                while (creator.step() != CreationStep::attributes)
+                {
+                    creator.next();
+                }
+                for (int roll = 0; roll < rolls; ++roll)
+                {
+                    creator.roll();
+                    const auto sheet = creator.sheet();
+                    const ModifiedCharacter character{race, Gender::male, profession,
+                                                      sheet.original->class_levels};
+                    const int constitution = sheet.scores[Ability::constitution];
+                    const int lowest =
+                        original::modify_hit_point_minimum(character, constitution, game);
+                    const int highest =
+                        original::modify_hit_point_maximum(character, constitution, game);
+                    check(sheet.hit_points >= lowest && sheet.hit_points <= highest,
+                          "A new " + std::string(race_id) + " " + std::string(profession_id) +
+                              " starts within its game's Modify Hit Points");
+                }
+            }
+        }
+    }
 }
 
 // The rows' steps: a score within its race's limits and its class's minimum,
@@ -403,6 +474,7 @@ int main()
         curse_hit_point_limits();
         secret_hit_point_limits();
         darkness_hit_point_limits();
+        new_characters_start_within_modify_limits();
         scores_step_within_their_limits();
         keep_works_out_the_rolled_hit_points();
         a_draft_is_modified_a_step_at_a_time();

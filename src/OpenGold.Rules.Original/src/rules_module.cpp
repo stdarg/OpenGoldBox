@@ -1821,12 +1821,14 @@ bool OriginalModule::advance_character(CharacterSheet &sheet, VitalState &state,
         next.original->known_spells.push_back(*spell_number(id, game_of(sheet.identity)));
     }
     auto &levels = next.original->class_levels;
+    std::vector<ClassSlot> trained;
     for (std::size_t at = 0; at < class_slot_count; ++at)
     {
         if ((training.classes & (1U << at)) == 0)
         {
             continue;
         }
+        trained.push_back(static_cast<ClassSlot>(at));
         if (levels[at] == 0)
         {
             throw std::invalid_argument("The character has no levels in a class it trained in");
@@ -1843,9 +1845,9 @@ bool OriginalModule::advance_character(CharacterSheet &sheet, VitalState &state,
         }
     }
     recount_levels(next);
-    const int gain =
-        training_hit_points(static_cast<Profession>(numbers.profession), training.rolled,
-                            next.scores[Ability::constitution], game_of(next.identity));
+    const int gain = training_hit_points(static_cast<Profession>(numbers.profession),
+                                         training.rolled, next.scores[Ability::constitution],
+                                         game_of(next.identity), levels, trained);
     next.hit_points += gain;
     next.original->rolled_hit_points +=
         training_rolled_hit_points(static_cast<Profession>(numbers.profession), training.rolled);

@@ -259,7 +259,8 @@ chosen by the game as *Curse*'s are. In progress (2026-11-13):
 - **Hit Points:** each class adds its own Constitution bonus, a fighter's,
   paladin's or ranger's with the extra from 17 up even in a multi-class
   character, once for each of a level's dice; the roll and the bonus are
-  divided among the classes apart.
+  divided among the classes apart. A training counts only the bonus of the
+  classes that rise, and none past a class's Hit Dice (`RollFirstLevelHp`).
 - **Tables:** experience to level 15 (thieves 18); THAC0 and saving throws to
   level 18 (`saveTbl`), with the paladin's faults fixed as *Curse*'s (Bugs);
   thief skills to level 18, Read Languages 5 below *Curse*'s at 11 and 12.
@@ -433,7 +434,11 @@ Journal), chosen by the game as the others' are (2026-11-14):
   at 32. Races, classes, alignments, ability limits and level limits are
   *Secret*'s.
 - **Hit Points** are reckoned as *Secret*'s, the Constitution bonus once for
-  each of a level's dice.
+  each of a level's dice. Past a class's Hit Dice its creation's training
+  too adds the fixed amount and no bonus, so a new character's Hit Points
+  stay within Modify's highest (`AdjustLevelHitPoints`, `HitPointCap`;
+  before 2026-11-16 OpenGoldBox rolled a die and the bonus at every level,
+  and most new characters started above it).
 - **Experience:** *Secret*'s to level 10; from 11 a level costs a fixed amount
   more (cleric 225,000, fighter 250,000, paladin 350,000, ranger 325,000,
   magic-user 375,000, thief 220,000) up to level 40. A paladin's level 11
@@ -928,7 +933,11 @@ Journal), chosen by the game as the others' are (2026-11-14):
   at 32. Races, classes, alignments, ability limits and level limits are
   *Secret*'s.
 - **Hit Points** are reckoned as *Secret*'s, the Constitution bonus once for
-  each of a level's dice.
+  each of a level's dice. Past a class's Hit Dice its creation's training
+  too adds the fixed amount and no bonus, so a new character's Hit Points
+  stay within Modify's highest (`AdjustLevelHitPoints`, `HitPointCap`;
+  before 2026-11-16 OpenGoldBox rolled a die and the bonus at every level,
+  and most new characters started above it).
 - **Experience:** *Secret*'s to level 10; from 11 a level costs a fixed amount
   more (cleric 225,000, fighter 250,000, paladin 350,000, ranger 325,000,
   magic-user 375,000, thief 220,000) up to level 40. A paladin's level 11
@@ -1753,9 +1762,8 @@ as each game does (2026-11-16):
 
   A lower Constitution brings the Hit Points down to its new highest, a
   higher one up to its new lowest; it moves them no further. A step on the
-  Hit Points never moves them the other way: in OpenGoldBox most new *Pools
-  of Darkness* characters start above that game's highest, and keep their
-  Hit Points unless lowered (Bugs). The character's current Hit Points are
+  Hit Points never moves them the other way: Hit Points left above the
+  highest (the kit's knight) keep their value unless lowered (Bugs). The character's current Hit Points are
   its new maximum.
 - **Keep and Exit.** Keep keeps the changes and Exit leaves the character as
   it was. From *Curse* on, Keep works out again the Hit Points the dice gave
@@ -2488,7 +2496,7 @@ scales Hit Points takes only the table's to-hit and Armor Class.
 | A level drain keeps the drained class's level as the victim's highest level, so a fighter 5 / thief 6 drained in fighter counts as level 4 (`effhndlr.pas`, the level drain) | The highest of its classes |
 | Each hit of a holding bite's own bite starts another hold, stacking holds on the biter and immobility on the victim, which can outlast the fight (`effhndlr.pas`, `EffBiteHold`) | One hold at a time |
 | Strength 19 and above has no row in the open-doors table, so a member that strong never forces an ordinary door (`explore.pas`, `BashDoor`) | It forces one as 18/00 does, 5 in 6 |
-| *Curse* and *Secret:* past a class's Hit Dice, training's fixed Hit Points (3 a fighter or paladin, 2 a cleric, ranger or thief, 1 a magic-user) replace the other classes' rolls instead of adding to them (`ovr018`, `sub_509E0`) | Added to them |
+| *Curse* to *Treasures:* past a class's Hit Dice, training's fixed Hit Points (3 a fighter or paladin, 2 a cleric, ranger or thief, 1 a magic-user) replace the other classes' rolls instead of adding to them (`ovr018`, `sub_509E0`; *Secret*'s `RollFirstLevelHp`, the later games' `AdjustLevelHitPoints`) | Added to them |
 | *Curse*, *Secret* and *Unlimited Adventures:* the paladin's saving throws, otherwise 2 better than a fighter's, are 1 worse against petrification at levels 5 and 6 and against death at level 8 than that (`ovr026`, `SaveThrowValues`) | 2 better throughout |
 | *Curse* and *Secret:* their starting-age tables have no row for a half-elf ranger, which starts aged 0 (`Gbl.cs`, `halfelf_ages` in its reconstruction) | A half-elf fighter's age |
 | *Secret:* poison rides only a creature's second attack, so the centipede, the giant snake and spider, the medusa and the Sargatha, which attack only with their first, never poison (`fxengine.pas`, its conditions 2 and 3) | A creature with no second attack poisons with its first |
@@ -2541,4 +2549,4 @@ scales Hit Points takes only the table's to-hit and Armor Class.
 | *Curse*, *Gateway* and *Secret:* past a class's Hit Dice, Modify's highest Hit Points take its fixed amount in place of the other classes' (`chargen.pas`, `HpMaximum`) | Added to them, as for training |
 | *Curse* to *Treasures:* Keep adds up the Constitution's share of the Hit Points in a byte, so a Constitution below 7 wraps it round and the Hit Points rolled come out wrong (`chargen.pas`, `ModifyCharacterMenu`) | Counted with its sign |
 | *Unlimited Adventures:* Modify takes off every item the character has readied and never readies them again (`modify.c`, `modify_hero`) | The items stay readied |
-| Modify's Add on the Hit Points sets them to their highest, which lowers Hit Points creation left above it (the kit's knight; in OpenGoldBox most new *Pools of Darkness* characters, whose trained Hit Points come out above `HitPointCap`), and Subtract likewise raises those below the lowest; a change of Constitution only pulls them back the one way (`chargen.pas`, `ModifyCharacterMenu`; `modify.c`) | A raise never lowers them and a lowering never raises them |
+| Modify's Add on the Hit Points sets them to their highest, which lowers Hit Points creation left above it (the kit's knight), and Subtract likewise raises those below the lowest; a change of Constitution only pulls them back the one way (`chargen.pas`, `ModifyCharacterMenu`; `modify.c`) | A raise never lowers them and a lowering never raises them |
