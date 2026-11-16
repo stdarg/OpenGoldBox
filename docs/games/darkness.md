@@ -1193,12 +1193,89 @@ breaths and the computer's spells play as the reconstruction has them.
 Experience is not what the three stand-ins lack: a late fight gives each
 member some 9,000 (the Iron Wall's minions) to 74,000 (the finale), where a
 paladin's level costs 350,000, so wandering fights would not raise the party
-a level before the end. What is left to try: for Kalistes, a party spread
-out before the wizards' first Ice Storms, or Globes of Invulnerability; for
-the finale, Mind Blank (which the route's magic-user does not memorize: its
-memorizing ranks no such spell) against the dracoliches' Charm Person, and
-the casters' spells chosen for the fight (the clerics fill their
-fifth-level slots with Raise Dead, the route's rule since 2026-11-15).
+a level before the end.
+
+### Kalistes and the finale tried again (2026-11-16, late)
+
+**Two differences from the original found, not yet made.** Pools of
+Darkness's SETUP MONSTER takes a fourth operand OpenGoldBox reads and
+ignores: the sides (bit 0 north, 1 east, 2 south, 3 west) its monsters come
+from. The original deals the monsters out to those sides in turn from the
+east, each group a square off the party's (at least one even where the
+script asks for 0) and facing it (eclvm.pas, EclSetupMonster; combatst.pas,
+PlaceAllCreatures; Unlimited Adventures' placement, which OpenGoldBox has,
+deals them the same way). OpenGoldBox stands every monster ahead of the
+party, and where the script asks for distance 0 a band too big for its
+half-square spills round the party, so that Kalistes' drow stand among the
+members. Kalistes' egg room names north, east and south (7, distance 0);
+the finale's servants come from the east and south (6); script 75's later
+fights from all four sides (15). *Treasures* reads the same operand (its
+`hostileFacingMask`).
+
+Dealt out so (built and measured on 2026-11-16, then taken back out), many
+of the route's other fights stood monsters in squares the party cannot
+reach (behind a wall of the map, or on the web's paths and Moander's body,
+where gaze spiders and bits of Moander stay put), and 228 fights of one run
+ended in stalemates; the route then lost its way at Moander's body (52: 0,0,
+"A fight ended without a result"). The original ends such a fight by its
+second rule OpenGoldBox lacks: after 15 rounds with no attack made
+(combatst.pas, CombatStart, `fightEndRound` 15; cbtacts.pas, MakeAttack,
+which sets it 15 rounds on; combat.pas, CombatMain and EndOfRound). Secret
+and Gateway have the same limit (their `roundLimit`). The two belong
+together: the sides first would leave the route's fights to the test's
+stalemate handling. Both are a change to every newer game's combat (and its
+rules interface, which has no outcome for a fight that just stops), for the
+rules' agent rather than the route's.
+
+**What was measured** (120 plays of each fight from a save before it, three
+tactics; 0 means no play won; the monsters dealt to their sides as above
+for every row, which changes nothing here):
+
+| Fight | Plays won |
+|---|---|
+| Kalistes (84: 2,6), as the route plays it | 0 of 120 |
+| Kalistes, the party scattering (below) | 0 of 900 |
+| The finale's first fight (75), as the route plays it | 0 of 120 |
+
+The party scattering was a player's answer to the eight Ice Storms (an
+Ice Storm takes everyone within 2 squares of its aim, no save, 3d10; the
+computer aims it where it takes the most enemies and none of its own side,
+cbtacts.pas, AimAreaSpell): while an enemy is casting, each member shot or
+struck a caster it could reach (a blow loses the spell), else stepped away
+from the others until none stood within 4 squares. It works as meant: most
+wizards find no square that takes two members and abort their storms. But
+the pets of Kalistes reach the party in the first round and their poison
+kills where a save fails, Kalistes' six weapons do some 90 a round, and her
+champions strike every member who steps away; no play of 900 won. (Built and measured, then taken back out with the
+sides above, the egg room being its only use.)
+
+**How far the party is from winning them.** To see whether any tactic or
+spell could turn these fights, the two were played with the party made
+stronger outside the rules (a throwaway build, not kept): every member
+Mind Blanked (no charm, hold, confusion, feeblemind or fear), 8 better on
+every saving throw and 6 better in Armor Class (more than the Rings and
+Cloaks of Protection +4 a player finds give), all harm to the party halved
+(as if its Hit Points were doubled), and its own blows and spells doing
+twice the harm. Each alone and all together, no play of 120 won either
+fight. So Mind Blank against the dracoliches' Charm Person, Globes of
+Invulnerability (the magic-user's own only: a spell on the caster, magic.pas
+and spell 112's table row), the order of march (it sets only the ranks of
+the party's own square) and the casters' spells cannot turn them: the
+finale's 29 servants (5 dracoliches, whose breath does their 80 maximum Hit
+Points, 4 bits of Moander, 11 Minions of Bane breathing for 45 and 9 Pets of
+Kalistes casting Disintegrate, Death Spell and Feeblemind; script 75 brings
+these after a countermand that succeeds, 34 or 40 otherwise) and Kalistes'
+21 put more death into the first two rounds than six members survive. The
+stand-ins stay; what would turn them is a party of the original player's
+make (two or three magic-users or more casters against one here, and the
+items of the whole game; the cluebook lists them by area), not a tactic.
+
+Seen on the way, for a later round: the finale's crystal-bearer goes in at
+2 Hit Points whatever it had (the countermand's DAMAGE takes all but 2), so
+the clerics' cures before it (`cure_to_full`, eleven Heals on him in one
+play) spend Heals for nothing; and after the palace's rakshasas the bolts'
+bearers keep their crossbows readied (`ready_types`), so in the fights after
+paladin 2 and the ranger strike with them.
 
 ### Creatures
 
