@@ -3739,11 +3739,11 @@ const std::vector<RouteBeat> &darkness_route()
         // five of her pets, and once she falls the slave who shows himself
         // Tanetal's spy calls basilisks, medusae and earth elementals: the
         // wizards' Hold Monster and Ice Storm, the pets' Disintegrate and
-        // Charm Monsters and the stoning gazes beat the route's party
-        // (levels 13 to 16) with every dice it tries, so the test wins both
-        // fights, a stand-in until the route's player wins them (a player
-        // would come stronger from the minis, with Storm). Beaten, she
-        // leaves the Crystal Ring (cell 208h).
+        // Charm Monsters beat the route's party (levels 13 to 16): 4 plays of
+        // 840 win, each with three members or more lost, so the test wins
+        // her fight, a stand-in until the route's player wins it; the spy's
+        // fight after it the player wins (149 plays of 600, 2026-11-16).
+        // Beaten, she leaves the Crystal Ring (cell 208h).
         auto eggs = step_beat(84, 3, 6, D::west, {"DESTROY"});
         eggs.test_wins = true;
         eggs.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x208, 1};
@@ -5388,9 +5388,10 @@ const std::vector<RouteBeat> &darkness_route()
         // swept into the pool, and the party will not bargain for the
         // crystal's word (AGREE? NO): Gothmenes, with the few minions who
         // still answer him, fights to the death, and the crystal crumbles.
-        // A stand-in: the route's party, short of the original player's
-        // strength, falls to the servants in every play, so the test wins
-        // the finale's fights.
+        // A stand-in: the route's party falls to the servants in every play
+        // (none of 600), and to Gothmenes' last stand, under the script's
+        // bar on all magic (cell 2), in every play (none of 600), so the
+        // test wins those two fights; Xoham's the player wins.
         {
             auto finale = step_beat(65, 9, 7, D::south, {"NO", "NO", "YES", "NO"});
             finale.repeat_in_place = true;
@@ -6533,14 +6534,12 @@ const std::vector<RouteBeat> &treasure_route()
         // Fireball, then Charm Monsters and Charm Person): the magic-user
         // memorizes its Fireballs and Charm Person, which frees a charmed
         // member, the clerics Dispel Magic. The sorceresses most often bolt
-        // the party before its magic-user acts: about one play in eleven was
-        // won (2026-11-15) while they all stood ahead. Its SETUP MONSTER
-        // deals them ahead and to the right (sides 3, or 9 facing west), so
-        // half of them bolt from beside the party: 3 plays of 3,000 win
-        // (2026-11-16), and 15 of 120 with the sides taken away. A stand-in:
-        // the test wins it.
+        // the party before its magic-user acts. Its SETUP MONSTER deals them
+        // ahead and to the right (sides 3, or 9 facing west), so half of them
+        // bolt from beside the party; the party made on Modify Character wins
+        // 69 plays of 600 (2026-11-16), so it reloads until it wins.
         route.back().memorize_first_of = {"fireball", "charm_person", "dispel_magic"};
-        route.back().test_wins = true;
+        route.back().reloads_until_won = 600;
         route.back().expect_cell = {{0x129, 1}};
         // Down the stairs (9,13) and out of the Way Inn, then overland north
         // by maps 56 and 54 to Yartar (map 23).
@@ -8995,17 +8994,20 @@ bool walk_census(GoldBoxGame game, bool route)
         // count more, while no try has won.
         const char *tries = std::getenv("OPENGOLD_FIGHT_TRIES");
         const unsigned try_count = tries ? static_cast<unsigned>(std::stoul(tries)) : 120;
-        constexpr int lost_fight = 1'000'000, two_members_lost = 2000;
+        constexpr int lost_fight = 1'000'000, one_member_lost = 1000, two_members_lost = 2000;
         // Pools of Darkness's player also reloads a won fight that cost two
         // members or more, up to 240 more plays, as both clerics lost leave
         // no one to raise the dead: since its monsters come from the sides
         // their SETUP MONSTER names, the best of 120 plays of some fights
-        // (Thorne's dragons, the drow temple's statue) cost both.
+        // (Thorne's dragons, the drow temple's statue) cost both. Where the
+        // dead cannot be raised before the beat ends (the finale's Xoham,
+        // whose script runs on to the end), one member lost is reloaded too.
         const unsigned costly_reloads = game == GoldBoxGame::pools_of_darkness ? 240 : 0;
-        while (
-            route && !planning && (best > 0 || scoring) &&
-            (++last < try_count || (best >= lost_fight && last < try_count + reloads_until_won) ||
-             (best >= two_members_lost && best < lost_fight && last < try_count + costly_reloads)))
+        const int costly_score = test_winning ? one_member_lost : two_members_lost;
+        while (route && !planning && (best > 0 || scoring) &&
+               (++last < try_count ||
+                (best >= lost_fight && last < try_count + reloads_until_won) ||
+                (best >= costly_score && best < lost_fight && last < try_count + costly_reloads)))
         {
             party->restore(before);
             result = play_try(last);
