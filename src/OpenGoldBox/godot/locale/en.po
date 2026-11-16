@@ -2577,7 +2577,7 @@ msgstr "Choose the new class's training"
 msgid "Choose the required training options. Back preserves your selections."
 msgstr "Choose the required training options. Back preserves your selections."
 
-#: src/OpenGoldBox/modify_character_dialog.cpp:233
+#: src/OpenGoldBox/modify_character_dialog.cpp:231
 msgid "Choose the spell book's spells to keep the changes."
 msgstr "Choose the spell book's spells to keep the changes."
 
@@ -4231,7 +4231,7 @@ msgstr "Enter a character name"
 msgid "Enter a name before finishing your character."
 msgstr "Enter a name before finishing your character."
 
-#: src/OpenGoldBox/modify_character_dialog.cpp:221
+#: src/OpenGoldBox/modify_character_dialog.cpp:219
 msgid "Enter a name for your character."
 msgstr "Enter a name for your character."
 
@@ -7499,7 +7499,7 @@ msgstr "Modify"
 msgid "Modify character"
 msgstr "Modify character"
 
-#: src/OpenGoldBox/modify_character_dialog.cpp:173
+#: src/OpenGoldBox/modify_character_dialog.cpp:171
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Modify {name}"
 msgstr "Modify {name}"
@@ -12141,7 +12141,7 @@ msgstr "The wind deflects the shot."
 msgid "The {spell} on the scroll is lost."
 msgstr "The {spell} on the scroll is lost."
 
-#: src/OpenGoldBox/modify_character_dialog.cpp:225
+#: src/OpenGoldBox/modify_character_dialog.cpp:223
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "There is already a {name} in the party."
 msgstr "There is already a {name} in the party."
