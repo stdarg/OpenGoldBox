@@ -539,7 +539,7 @@ numeric addition to all six saving throws.
 
 Evidence: [status_effects.h](../../src/OpenGold.Rules.Srd5/src/status_effects.h),
 [status_effects.cpp](../../src/OpenGold.Rules.Srd5/src/status_effects.cpp),
-[combat_grid.cpp](../../src/OpenGold.Rules.Srd5/src/combat_grid.cpp),
+[movement_grid.cpp](../../src/OpenGold.Rules/src/movement_grid.cpp),
 [STATUS-EFFECTS](../STATUS-EFFECTS.md).
 
 ### G11 — P2: Documentation and tests can overstate or obscure support
@@ -590,8 +590,8 @@ they are not silently treated as authorization to reverse earlier decisions.
   least two sizes apart. An ally's space does not itself impose Difficult
   Terrain in 5.2.1; another applicable terrain effect still can. Ending movement
   in an occupied space remains restricted. See
-  [combat_grid.cpp](../../src/OpenGold.Rules.Srd5/src/combat_grid.cpp), lines
-  81–90; [SRD p. 14](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=14).
+  [movement_grid.cpp](../../src/OpenGold.Rules/src/movement_grid.cpp)
+  (the implementation moved after this audit); [SRD p. 14](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=14).
 
 **Completion gate:** record whether each policy is retained as a house rule or
 replaced by SRD behavior. Implement the resulting decision in Stage 2, with

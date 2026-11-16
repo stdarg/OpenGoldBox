@@ -102,7 +102,7 @@ opens the Podol Plaza temple directly. A visible Godot run can append
 
 ## Sources and limits
 
-The [original Cluebook](../../GameDocs/Cluebook.pdf) identifies the New Phlan
+The original Cluebook (user-supplied, not in this repository) identifies the New Phlan
 shop types, three temples, and Podol Plaza's hidden Temple of Ilmater. The
 installed game scripts and map records establish the fixed locations. The
 decoded item lists and gold values provide shop defaults. The complete temple

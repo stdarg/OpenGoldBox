@@ -1,6 +1,7 @@
 # SRD repository map
 
-Navigation reference, verified 2026-09-24. Use symbols rather than stale line
+Navigation reference, originally verified 2026-09-24; movement entry refreshed
+2026-11-16. Use symbols rather than stale line
 numbers. Update affected entries when ownership moves; this is not a second
 architecture document or completion ledger. See [TECH](TECH.md) for boundaries.
 
@@ -12,7 +13,7 @@ architecture document or completion ledger. See [TECH](TECH.md) for boundaries.
 | Cantrips, books, preparation, source validation | `src/OpenGold.Rules.Srd5/src/spell_access.cpp` | `opengold_spell_access_tests`; per-spell tests |
 | Combat, legal commands, profiles, progression, saved-state validation | `src/OpenGold.Rules.Srd5/src/srd5.cpp`: `character_definition`, `legal_commands`, `character_profile`, `detail::validate_grants`, `Session::restore` | `opengold_rules_tests`; affected feature tests |
 | Status lifecycles and codecs | `src/OpenGold.Rules.Srd5/src/status_effects.cpp` | `opengold_status_effect_tests` |
-| Movement/occupancy | `src/OpenGold.Rules.Srd5/src/combat_grid.cpp` | Locate grid/movement targets in root CMakeLists; [transit](UNCONSCIOUS-TRANSIT.md) |
+| Movement/occupancy | `src/OpenGold.Rules/src/movement_grid.cpp`; SRD alias in `src/OpenGold.Rules.Srd5/src/combat_grid.h` | `opengold_combat_grid_tests`; [transit](UNCONSCIOUS-TRANSIT.md) |
 | Spell table and weapon/armor rules | `src/OpenGold.Rules.Srd5/src/spell_table.h`, `weapons.h`, `armor.h` | `opengold_spell_component_tests`, `opengold_weapon_catalog_tests`, `opengold_armor_catalog_tests` |
 | Thrown weapons | SRD `Session::throw_weapon` | `opengold_thrown_weapon_tests`, `opengold_godot_thrown`; [packet](THROWN-WEAPONS.md) |
 | Campaign handoff, resources and saves | `src/OpenGold.Core/src/campaign_party.cpp`, `campaign_rest.cpp`, `campaign_save.cpp`, `combat_demo.cpp` | `opengold_campaign_rest_tests`, `opengold_rest_resource_tests`, `opengold_save_tests` |

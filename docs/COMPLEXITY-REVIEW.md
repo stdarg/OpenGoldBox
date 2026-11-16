@@ -24,10 +24,11 @@ The highest-priority changes were in `OpenGold.Rules.Srd5`:
    is now isolated in `has_line_of_sight()` and explained beside the algorithm.
    It can be tested without constructing a combat session or rolling initiative.
 
-The grid helpers live in
-[`combat_grid.h`](../src/OpenGold.Rules.Srd5/src/combat_grid.h) and
-[`combat_grid.cpp`](../src/OpenGold.Rules.Srd5/src/combat_grid.cpp).
-They remain private implementation details of the SRD module. The public rules
+The shared grid helpers live in
+[`movement_grid.h`](../src/OpenGold.Rules/include/opengold/movement_grid.h) and
+[`movement_grid.cpp`](../src/OpenGold.Rules/src/movement_grid.cpp). The SRD
+module imports them through
+[`combat_grid.h`](../src/OpenGold.Rules.Srd5/src/combat_grid.h). The public rules
 interface, Godot presentation boundary, checkpoint formats 1–3, and command
 ordering remain compatible. Grid snapshots and search results own their data
 by value; session candidates use `std::unique_ptr`.
