@@ -987,50 +987,27 @@ state does (Script memory, above). Until 2026-11-14 OpenGoldBox stepped on
 anyway, so stairs landed a square beyond their landing and a held step could
 wrap round the map's edge.
 
-Stand-ins (2026-11-16): nine, the fights the test wins. The last three
-are the end's: the Iron Wall's minions (64: 15,5; fourteen Minions of
-Bane, each casting Ice Storm and Hold Monster and breathing for 22, leave
-the party of levels 19 to 22 dead in two rounds in every one of the 120
-plays), the palace's rakshasas (65: 4,4; two Maharajahs and seven Rajahs,
-whom no spell below the eighth level touches, an Ice Storm each a round),
-and the finale (script 75: the pool's dracoliches, bits of Moander,
-minions and Pets of Kalistes, then Xoham's beholders, then Gothmenes).
-Thorne and his
-seven red dragons (34: 3,6): since the computer casts as the original's
-does (its spell of highest AI weight with a target first: the dragons'
-Fireball, below), their fireballs, fear and breath beat the party of
-levels 13 to 15, warded with Resist Fire, in every one of the 120 plays.
-Moander's heart: the magnetic iron golems (53: 9,3; six iron golems and
-four fellows, whom the party's Fireball heals, as the original's
-EffIronGolem does, and its blows harm little) and Tanetal's last stand
-(53: 5,12; the best play leaves four members dead). The Large Wound's
-swarm of bits of Moander, a stand-in until then, the route's player now
-wins. The
-Chambers of Marcus (67: 0,12 south; script 77): the spectres fall, then the
-Minions of Bane, breathing for 27 each, and Banite clerics, whose Hold
-Person leaves members for the minions to slay, and at once Marcus with his
-Black Circle mages and minions; the best of the route's plays of the
-minions leaves too little for Marcus, whom no play beats. The Aerie's
-blue dragons' nest (33: 3,14): five blue dragons, each breathing lightning
-of its 80 Hit Points three times, leave the party of levels 12 to 14 dead
-with most dice even rested; the game has no spell against lightning, only
-the Protection from Dragon Breath of a potion the party has not found. And
-Kalistes' egg room (84: 2,6): Kalistes, seven drow champions, eight drow
-wizards and five pets, and the spy's basilisks, medusae and earth elementals
-after. Since her six weapons are played (ORIGINAL-RULES.md, *Pools of
-Darkness*; each of her six blows a round 12 to 21 with her Strength of 19)
-the best of the route's 120 plays (40 dice, three tactics) leaves the whole
-party dead, its members held by the wizards' and champions' Hold Monster and
-slain helpless, hit by Ice Storm and Disintegrate. Mind Blank, which turns
-holding, is beyond the route's magic-user: its Intelligence, below 16, gives it
-no eighth-level slot (TrimHighSpellSlots), so its training never offers
-such a spell, as for a party made in the original The player of the original comes far
-stronger, from the many wandering fights a route that walks straight to its
-goals does not have. The fights the route's player now wins (2026-11-15,
-late): the Vaasans (37: 13,8; the party came stronger), Myth Drannor's
-altar and its temple (the blessed bolts, above) and, since 2026-11-16, the
-Large Wound's swarm of bits of Moander; Thorne, won until the computer cast
-as the original's does, is a stand-in again. The route's party carries the
+Stand-ins (2026-11-16, late): three, the fights the test wins, down from
+nine (The stand-ins measured, below). Kalistes' egg room (84: 2,6), both its
+fights: Kalistes, seven drow champions, eight drow wizards and five pets,
+whose eight Ice Storms in the first round take some 120 Hit Points from each
+member of the party of levels 15 to 17 before most of it acts, and the
+spy's basilisks, medusae and earth elementals after; no play of 120 wins.
+And the finale's first fight (script 75: the pool's dracoliches, bits of
+Moander, minions and Pets of Kalistes, whose breaths and Charm Person beat
+the party, its bearer of the crystal near death from countermanding the
+summons, in every play; Xoham's beholders and Gothmenes after it the route's
+player beats). The fights the route's player now wins: Thorne and his seven
+red dragons (34: 3,6), the Aerie's blue dragons (33: 3,14), the Chambers of
+Marcus (67: 0,12 south; script 77), the heart's magnetic iron golems (53:
+9,3), Tanetal's last stand (53: 5,12), the Iron Wall's fourteen Minions of
+Bane (64: 15,5) and the palace's rakshasas (65: 4,4); where few plays win
+(Thorne, the blue dragons, the golems, Tanetal, the rakshasas) the player
+reloads until one does (`RouteBeat::reloads_until_won`, 240 more plays at
+most), and members killed in a won fight are raised after it, as a player
+raises them. Before them (2026-11-15, late) the Vaasans (37: 13,8), Myth
+Drannor's altar and its temple (the blessed bolts, above) and the Large
+Wound's swarm of bits of Moander. The route's party carries the
 game's own starting equipment (ORIGINAL-RULES.md, *Pools of Darkness*).
 The route plays to the win (2026-11-16, `darkness_route_ends_the_game`): it
 passes when every beat plays, the win is shown and no member is dead; it
@@ -1174,17 +1151,17 @@ Each stand-in's fight played from a save before it
 (40 dice, three tactics); "wins" are plays the party wins, "clean" those it
 wins with no member dead:
 
-| Fight | Before | Rolled party | And its tactics |
+| Fight | Before | Rolled party | With its tactics |
 |---|---|---|---|
 | The Aerie's blue dragons (33: 3,14) | 3 wins, 0 clean | 4, 0 | |
-| Thorne (34: 3,6) | 0 | 6, 2 | |
+| Thorne (34: 3,6) | 0 | 6, 2 (the safe room's rest) | |
 | Kalistes (84: 2,6) | 0 | 0 | |
 | The Chambers of Marcus, Marcus's wave | 1, 0 | 86, 31 | |
-| The heart's iron golems (53: 9,3) | 0 | 1, 0 | 0 |
+| The heart's iron golems (53: 9,3) | 0 | 1, 0 | 3, 0 |
 | Tanetal's last stand (53: 5,12) | 2, 0 | 10, 0 | |
 | The Iron Wall's minions (64: 15,5) | 2, 1 | 69, 23 | |
 | The palace's rakshasas (65: 4,4) | 0 | 8, 4 | |
-| The finale's first fight (75) | 0 | 0 | |
+| The finale's first fight (75) | 0 | 0 | 0 (cured first) |
 
 "Before" is the party of 2026-11-16 as it was. "Rolled party": the route's
 player rolls each character again at creation until its class's ability is
@@ -1201,8 +1178,13 @@ lives, memorizing Resist Fire there.
 The iron golems (six and four large ones) heal from fire and take no other
 spell (EffIronGolem; the clerics' maces, crushing weapons, do them no harm
 either), so the route's player casts no fire where one stands and, where only
-golems stand, no spell against them and no Quick magic, its clerics taking up
-their maces and shields; their 27-point blows still beat it.
+golems stand, no spell against them and no Quick magic but its magic-user's
+Lightning Bolts, which slow them (it memorizes them in the camp before the
+heart), its clerics taking up their maces and shields: 3 plays of 120 win.
+The finale's clerics cure the party before it (the pool's waters hurt the
+crystal's bearer), which no play still turns. The web's paths to Kalistes'
+Parlor are fled (`RouteBeat::fleeing`): with the rolled party a band of Pets
+of Kalistes came on the party there, and the fight it won put it off its way.
 
 ### Creatures
 

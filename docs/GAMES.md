@@ -688,10 +688,17 @@ new decoders.
    walks its secret ways in search mode, refuses to tell "Sasha" where
    Elminster is, waits out the Tantalus Clock, takes Bane's Crystal from
    the Pool of Death with the Crystal Ring, and Gothmenes falls: the game
-   is won (`game_won`; darkness.md, The win and the route). Its stand-ins:
-   Thorne, the Aerie's blue dragons, Kalistes' egg room, the Chambers of
-   Marcus, the heart's magnetic golems, Tanetal's last stand, the Iron
-   Wall's minions, the palace's rakshasas and the finale.
+   is won (`game_won`; darkness.md, The win and the route). *Fewer
+   stand-ins (2026-11-16, late):* the route's player rolls each character
+   until its class's ability is 18 and its Constitution 17, so its
+   magic-user, of Intelligence 18, casts eighth- and ninth-level spells;
+   it rests in Thorne's safe room, casts only Lightning Bolts at the heart's
+   iron golems, reloads where few plays win and raises its dead after a won
+   fight. It now wins Thorne, the Aerie's blue dragons, the Chambers of
+   Marcus, the heart's golems, Tanetal's last stand, the Iron Wall's
+   minions and the palace's rakshasas (darkness.md, The stand-ins
+   measured). Its stand-ins: Kalistes' egg room (both fights) and the
+   finale's first fight.
    *The area map is drawn (2026-11-14):* the big picture with the party's
    marker, as the original draws it. *Spell levels 8 and 9 and the new
    spells (2026-11-15):* merged, with Restoration giving back a drained

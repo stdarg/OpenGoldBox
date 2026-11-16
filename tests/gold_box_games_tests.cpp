@@ -2890,12 +2890,11 @@ const std::vector<RouteBeat> &darkness_route()
                        {1, 15, D::north},
                        {1, 14, D::east},
                        {2, 14, D::east}});
-        // The the blue dragons' nest, the steel key hidden behind a rock (bit 1).
-        // Since the dragons breathe (2026-11-15), its five blue dragons'
-        // lightning, three breaths each of their 80 Hit Points, leaves the
-        // route's party (levels 12 to 14) dead with most dice, so the test
-        // wins the fight, a stand-in until the route comes as strong as a
-        // player who met the Moonsea's wandering monsters on the way.
+        // The blue dragons' nest, the steel key hidden behind a rock (bit 1).
+        // Its five blue dragons' lightning, three breaths each of their 80
+        // Hit Points, beats the route's party (levels 12 to 14) in most plays
+        // (4 of 120 win, two members dead, 2026-11-16), so the player reloads
+        // until one wins and raises its dead after.
         auto steel_key = step_beat(33, 3, 14, D::east);
         steel_key.rest_first = true;
         steel_key.reloads_until_won = 240;
@@ -3608,8 +3607,11 @@ const std::vector<RouteBeat> &darkness_route()
         route.push_back(step_beat(81, 5, 15, D::south, {"YES", "NO"}));
         // North-east and east along the paths, passing the other sites by,
         // to the village beside the road (33,1), by Kalistes' Parlor.
+        // The party flees what roams the paths (the Pets of Kalistes), as a
+        // player bound for the Parlor does.
         RouteBeat to_roadside_village{83, 0, 0, D::north, {}};
         to_roadside_village.passing = true;
+        to_roadside_village.fleeing = true;
         to_roadside_village.area_steps = {C::northeast, C::northeast, C::northeast,
                                           C::northeast, C::northeast, C::northeast};
         to_roadside_village.area_steps.insert(to_roadside_village.area_steps.end(), 13, C::east);
@@ -4803,6 +4805,9 @@ const std::vector<RouteBeat> &darkness_route()
         rest_entrance.passing = true;
         rest_entrance.rest_first = true;
         rest_entrance.rest_for_spells = true;
+        // The magic-user takes Lightning Bolts for the heart's iron golems,
+        // whom lightning slows (the camp before the heart; no camp in it).
+        rest_entrance.memorize_first_of = {"lightning_bolt"};
         route.push_back(rest_entrance);
         walk_passages(route, 52, {{8, 1, D::south}, {8, 2, D::south}, {8, 3, D::south}});
         route.push_back(step_beat(52, 8, 4, D::south, {"USE POTIONS", "YES"}));
@@ -4957,10 +4962,13 @@ const std::vector<RouteBeat> &darkness_route()
         // Round by the right atrium and ventricle and up the pulmonary artery
         // (the cluebook's way) to its iron golems (9,3, event 3; the
         // cluebook's 3), which tear the party's weapons away and magnetize
-        // them. A stand-in: six iron golems and four fellows, whom fire heals and
-        // the party's blows harm little, beat it in every play the route
-        // tries, so the test wins the fight. East along the artery, its
-        // current carries the party to the unguent (15,3; the cluebook's 4).
+        // them. Six iron golems and four large ones, whom fire heals and no
+        // other spell touches but lightning, which slows them: the magic-user
+        // casts its Lightning Bolts at them and the others fight with their
+        // weapons (wasted_on_golems). They beat the party in most plays (3
+        // of 120 win, 2026-11-16), so the player reloads until one wins. East
+        // along the artery, its current carries the party to the unguent
+        // (15,3; the cluebook's 4).
         walk_heart({{9, 4, D::east},  {10, 4, D::north}, {10, 2, D::west}, {9, 2, D::west},
                     {8, 2, D::west},  {7, 2, D::west},   {6, 2, D::south}, {6, 4, D::south},
                     {6, 5, D::west},  {5, 5, D::west},   {4, 5, D::west},  {3, 5, D::west},
@@ -4972,7 +4980,7 @@ const std::vector<RouteBeat> &darkness_route()
         auto golems = step_beat(53, 8, 3, D::east);
         golems.cure_first = true;
         golems.camp_broken = true;
-        golems.test_wins = true;
+        golems.reloads_until_won = 240;
         // The clerics take up their maces +3 and shields again, as a player
         // does where only a weapon of +3 or better harms the foe: their
         // staff slings +2 do nothing to an iron golem.
@@ -5038,10 +5046,11 @@ const std::vector<RouteBeat> &darkness_route()
                     {4, 15, D::west}});
         route.push_back(step_beat(53, 3, 15, D::west, {"YES"}));
         // Tanetal's last stand in the right ventricle (5,12, event 8; the
-        // cluebook's 10): he slays the Watcher and his minions rise. A
-        // stand-in: Tanetal, his golems and bits of Moander leave four
-        // members dead in the best of the route's plays, so the test wins
-        // the fight. The party takes the Talisman of Bane (cell 245h 1).
+        // cluebook's 10): he slays the Watcher and his minions rise.
+        // Tanetal, his golems, cultists and bits of Moander beat the party in
+        // most plays (10 of 120 win, three members dead, 2026-11-16), so the
+        // player reloads until one wins and raises its dead after. The party
+        // takes the Talisman of Bane (cell 245h 1).
         walk_heart({{7, 10, D::west}, {6, 10, D::south}, {6, 11, D::south}});
         auto showdown = step_beat(53, 6, 12, D::west, {"YES"});
         showdown.cure_first = true;
@@ -8247,6 +8256,47 @@ bool walk_census(GoldBoxGame game, bool route)
     // while only iron golems stand there, any spell against them, for none
     // but lightning, which only slows them, touches them. Quick magic, whose
     // computer picks the spell itself, is such a spell too there.
+    // The member's Lightning Bolt where only iron golems stand on the other
+    // side: begun, or aimed at a golem it has not slowed yet (else any).
+    const auto lightning_at_golems =
+        [&](const opengold::rules::CombatSession &fight) -> std::optional<opengold::rules::Command>
+    {
+        const auto bolt = opengold::original::spell_number("magic_user:lightning_bolt", game);
+        if (!bolt)
+        {
+            return std::nullopt;
+        }
+        const auto state = fight.snapshot();
+        const auto golem = [&](opengold::rules::EntityId id, bool unslowed)
+        {
+            const auto unit =
+                std::ranges::find(state.combatants, id, &opengold::rules::CombatantView::id);
+            return unit != state.combatants.end() &&
+                   unit->side == opengold::rules::Side::opposition && unit->conscious &&
+                   unit->name.find("IRON GOLEM") != std::string::npos &&
+                   (!unslowed || unit->status.find("slow") == std::string::npos);
+        };
+        const auto commands = fight.legal_commands();
+        for (const bool unslowed : {true, false})
+        {
+            for (const auto &command : commands)
+            {
+                if (command.verb == "aim" && command.item == static_cast<unsigned>(*bolt) &&
+                    golem(command.target, unslowed))
+                {
+                    return command;
+                }
+            }
+        }
+        for (const auto &command : commands)
+        {
+            if (command.verb == "cast" && command.item == static_cast<unsigned>(*bolt))
+            {
+                return command;
+            }
+        }
+        return std::nullopt;
+    };
     const auto wasted_on_golems =
         [&](const opengold::rules::Snapshot &state, const opengold::rules::Command &command)
     {
@@ -8419,6 +8469,19 @@ bool walk_census(GoldBoxGame game, bool route)
             {
                 chosen =
                     opengold::choose_quick_command(session, false, opengold::Searching::everyone);
+                // Lightning slows an iron golem (EffIronGolem): a member with
+                // Lightning Bolt casts it at one instead.
+                if (const auto bolt = lightning_at_golems(session))
+                {
+                    chosen = *bolt;
+                }
+            }
+            else if (member && game == GoldBoxGame::pools_of_darkness && chosen.verb == "aim")
+            {
+                if (const auto bolt = lightning_at_golems(session); bolt && bolt->verb == "aim")
+                {
+                    chosen = *bolt;
+                }
             }
             if (!combat.submit(chosen))
             {
