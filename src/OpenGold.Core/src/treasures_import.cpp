@@ -129,6 +129,12 @@ CampaignParty::ItemConversion gateway_items_for_treasures(const std::filesystem:
             return std::nullopt;
         }
         item.readied_raw = 0;
+        // The record's bytes say so too: an item is kept and known by them
+        // (por::original_item_key).
+        constexpr std::size_t type_byte = 46, first_word_byte = 47, readied_byte = 52;
+        item.raw[type_byte] = item.type;
+        std::ranges::copy(item.name_components, item.raw.begin() + first_word_byte);
+        item.raw[readied_byte] = 0;
         por::Equipment taken;
         taken.base = tables->templates[item.type];
         taken.bonuses = por::equipment_bonuses(item, taken.base);

@@ -132,6 +132,12 @@ struct PhlanResources
     // Treasures' LUCK texts by record: the luck readings (0 to 14), the lucky
     // papers' words and the romances' scenes.
     std::map<unsigned, std::string> luck_texts;
+    // Treasures' PIC records as they decode, and the color runs of its PIC
+    // records that only set colors (PIC1 38, PIC1A 78 and the like), by record:
+    // the picture cell 4Eh names is shown in the colors of the record cell
+    // 4Fh names (its portrait.pas, LoadAnimation).
+    std::map<unsigned, VgaAnimation> pic_records;
+    std::map<unsigned, VgaPaletteRange> picture_colors;
     // ITEMS templates, indexed by original item type, for generated treasure.
     std::vector<ItemTemplate> item_templates;
     std::vector<std::uint8_t> sprite_archive;
@@ -652,6 +658,11 @@ class RolfTourSession
 
     // The monster close-up that loops before combat, or null when none is showing.
     [[nodiscard]] const std::vector<AnimationFrame> *monster_picture() const;
+    // The frames of PIC record `id` as the game shows them, null for none:
+    // Treasures draws the picture its cell 4Eh names in the colors of the
+    // record its cell 4Fh names, laid over the picture's own (its portrait.pas,
+    // LoadAnimation, which loads that record as it loads the picture).
+    [[nodiscard]] const std::vector<AnimationFrame> *pic_frames(unsigned id) const;
     // The animation on screen now, if any: the monster's close-up once it is beside
     // the party, or a picture the script shows. Null shows the still view.
     [[nodiscard]] const std::vector<AnimationFrame> *scene_animation() const;
@@ -838,6 +849,16 @@ class RolfTourSession
     std::optional<Image> picture_;
     std::optional<unsigned> picture_animation_id_; // The PIC record picture_ begins.
 
+    // A Treasures picture drawn in a color record's colors (pic_frames): the
+    // picture, the color record and the frames, kept while both stay the same.
+    struct RecolouredPicture
+    {
+        unsigned picture{}, colors{};
+        std::vector<AnimationFrame> frames;
+    };
+
+    mutable std::optional<RecolouredPicture> recoloured_picture_;
+
     // Everything an event can change, saved when it begins so a failed event
     // rolls back as a whole rather than member by hand-paired member
     // (Effective C++ Item 29).
@@ -1010,6 +1031,34 @@ class RolfTourSession
     std::optional<std::chrono::minutes> camp_length_;
     // The camp running is Treasures' Fix (camp_fix), not a rest.
     bool camp_fixing_{};
+
+    // Treasures' romance scene at a camp (tell_romance): what is still to
+    // come, in order, and the pair's members.
+    struct RomanceStep
+    {
+        enum class Kind
+        {
+            text,
+            proposal,
+            npc_leaves,
+            refused
+        } kind{};
+        unsigned entry{};
+    };
+
+    struct RomanceScene
+    {
+        std::vector<RomanceStep> steps;
+        MemberId member{}, npc{};
+    };
+
+    std::optional<RomanceScene> romance_scene_;
+    // The camp's scene is told: the camp goes on (romance_resumes_camp_ as
+    // the session next runs) without telling it again.
+    bool romance_told_{}, romance_resumes_camp_{};
+    // The third member a scene names last (romance.pas, otherPartyMember),
+    // which the original keeps only while it runs.
+    MemberId romance_bystander_{};
     // Five-minute rest steps since the last interruption check. Like the
     // original engine's counter, it carries over between rests; it is saved.
     unsigned rest_checks_{};
@@ -1146,6 +1195,23 @@ class RolfTourSession
         std::optional<unsigned> interrupted_after;
     };
 
+    // Treasures' romance (its romance.pas), vga_host.cpp: the pair its
+    // scripts name and their loves, for a fight (TagRelationshipPair), or
+    // nothing before a script names the NPC (cell 105h) and in the other games.
+    [[nodiscard]] std::optional<opengold::rules::Romance> treasures_romance() const;
+    // As a camp begins, after the area's camp script (UpdateRelationship):
+    // when both lovers stand and a love has passed into another band of 25,
+    // the scene for the two bands is told, the NPC may leave, and at the top
+    // band of both it proposes. True while the scene waits for the player;
+    // the camp goes on as it ends.
+    bool tell_romance();
+    // The scene's next text or the proposal, or the camp's going on when
+    // nothing is left; choose_in_romance answers it.
+    void show_romance_step();
+    bool choose_in_romance(std::size_t choice);
+    // A romance text (the LUCK file's entries 101 to 117) with the names and
+    // pronouns of the people in it, in capitals; its pages apart.
+    [[nodiscard]] std::string romance_text(unsigned entry);
     // The party's time passes; the caller brings the script's clock up to
     // date, by binding it or in its reply.
     [[nodiscard]] FixOutcome fix_party(const Dice &dice);

@@ -1362,7 +1362,47 @@ const std::vector<AnimationFrame> *RolfTourSession::monster_picture() const
     {
         return nullptr;
     }
-    return &area_resources().animations.at(*monster_picture_id_);
+    return pic_frames(*monster_picture_id_);
+}
+
+const std::vector<AnimationFrame> *RolfTourSession::pic_frames(unsigned id) const
+{
+    const auto &animations = area_resources().animations;
+    const auto own = animations.find(id);
+    if (own == animations.end())
+    {
+        return nullptr;
+    }
+    constexpr EclAddress recoloured{0x4E}, colors_record{0x4F};
+    if (game() != GoldBoxGame::treasures_of_the_savage_frontier ||
+        machine_.variable(recoloured) != id)
+    {
+        return &own->second;
+    }
+    const auto colors = town_->picture_colors.find(machine_.variable(colors_record));
+    const auto record = town_->pic_records.find(id);
+    if (colors == town_->picture_colors.end() || record == town_->pic_records.end())
+    {
+        return &own->second;
+    }
+    if (!recoloured_picture_ || recoloured_picture_->picture != id ||
+        recoloured_picture_->colors != colors->first)
+    {
+        // The color record's run is laid over the picture's own colors.
+        auto table = vga_color_table(record->second.palette);
+        const auto &run = colors->second;
+        for (std::size_t n = 0; n < run.colors.size() && run.first + n < table.size(); ++n)
+        {
+            table[run.first + n] = run.colors[n];
+        }
+        std::vector<AnimationFrame> frames;
+        for (const auto &frame : record->second.frames)
+        {
+            frames.push_back({frame.delay, vga_rgba(frame.image, table)});
+        }
+        recoloured_picture_ = RecolouredPicture{id, colors->first, std::move(frames)};
+    }
+    return &recoloured_picture_->frames;
 }
 
 std::optional<unsigned> RolfTourSession::scene_animation_record() const
@@ -1397,7 +1437,7 @@ const std::vector<AnimationFrame> *RolfTourSession::scene_animation() const
         return monster_picture();
     }
     const auto record = scene_animation_record();
-    return record ? &area_resources().animations.at(*record) : nullptr;
+    return record ? pic_frames(*record) : nullptr;
 }
 
 std::optional<std::pair<unsigned, unsigned>> RolfTourSession::scene_animation_source() const
@@ -1860,6 +1900,15 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
                                                            1U << *result.crystal)});
             results.push_back({last_crystal, static_cast<std::uint16_t>(*result.crystal)});
         }
+        // Treasures' romance: the loves as the fight moved them (cells 106h
+        // and 107h; effhndlr.pas, EffInLove).
+        if (result.romance)
+        {
+            results.push_back(
+                {EclAddress{0x106}, static_cast<std::uint16_t>(result.romance->member_love)});
+            results.push_back(
+                {EclAddress{0x107}, static_cast<std::uint16_t>(result.romance->npc_love)});
+        }
         // The items the monsters leave wait for the party to take them; the
         // script hears the result once the party leaves the treasure.
         if (!treasure_pile_.empty())
@@ -2116,6 +2165,11 @@ void RolfTourSession::finish_event()
         if (!campaign_)
         {
             throw EclError("Rest requires campaign rules");
+        }
+        // Treasures' camp tells its romance first (camp.pas, CampMainMenu).
+        if (!std::exchange(romance_told_, false) && tell_romance())
+        {
+            return;
         }
         const auto interval = machine_.variable(game_cell(ecl_rest_check_interval)),
                    chance = machine_.variable(game_cell(ecl_rest_interruption_chance));
@@ -2991,6 +3045,10 @@ bool RolfTourSession::choose(std::uint64_t ticket, std::size_t choice)
         return false;
     }
     log_player("chooses \"" + snapshot_.choices[choice] + "\"");
+    if (romance_scene_)
+    {
+        return choose_in_romance(choice);
+    }
     if (hall_visit_)
     {
         return choose_at_hall(choice);
@@ -3592,7 +3650,12 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             {
                 picture_animation_id_ = arg(0);
             }
-            if (found != area_resources().pictures.end())
+            const auto *frames = pic_frames(arg(0));
+            if (frames && !frames->empty() && frames != &animation->second)
+            {
+                picture_ = frames->front().image;
+            }
+            else if (found != area_resources().pictures.end())
             {
                 picture_ = found->second;
             }
@@ -4113,6 +4176,9 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             encounter_->frightening_surprise =
                 game() == GoldBoxGame::treasures_of_the_savage_frontier &&
                 machine_.variable(EclAddress{0x53}) != 0;
+            // Treasures' romance, once a script has paired a member and an
+            // NPC (romance.pas, TagRelationshipPair, as each fight starts).
+            encounter_->romance = treasures_romance();
             if (std::exchange(duel_, false))
             {
                 encounter_->mirror = mirror_duel_;

@@ -32,7 +32,7 @@ using rules::Side;
 
 // The original counts movement in half-moves: 2 a straight step, 3 a diagonal one.
 constexpr rules::StepCosts half_moves{2, 3, 2, 4, 0};
-constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 24";
+constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 25";
 
 enum class Condition : unsigned
 {
@@ -52,6 +52,9 @@ enum class Condition : unsigned
 // The record's NPC byte from 0x80 up marks a creature whose morale counts;
 // below it are the player's characters, who never check (combatai.pas, CheckMorale).
 constexpr unsigned non_player = 0x80;
+// A party member the computer plays for a while (the original's
+// ANIMATED_PLAYER); 0 again once that ends.
+constexpr unsigned animated_player = 0xB3;
 
 // The original's race number of an elf (its records' races run from 1, a
 // dwarf, to 7, a human; 0 is a monster).
@@ -167,6 +170,9 @@ constexpr int gateway_paralyzing_gaze = 1126, fire_harms_more = 1148, drinks_blo
 // Its crystals, which a creature gives up as it falls in a crystal battle
 // (128 to 130: EffRedCrystal, EffGreenCrystal, EffBlueCrystal).
 constexpr int red_crystal = 1328;
+// Its romance's love (131, EffInLove), on the pair a script names: strength 1
+// on a member whose proposal the party refused, 2 on a lover in a frenzy.
+constexpr int in_love = 1331, refused_love = 1, frenzied_love = 2;
 constexpr int halves_elements = 1333, stone_to_flesh_kills = 1334, slug_acid = 1337,
               hell_hound_breath = 1338, quarter_from_edges = 1341, effects_proof = 1342,
               manticore_spines = 1343, crushes = 1344, rat_disease = 1345, quick_start = 1346,
@@ -283,8 +289,10 @@ struct Fighter
     // Forced to flee for the rest of the fight: a stirge that has drunk its
     // fill, or undead a cleric turned.
     bool turned{};
-    // It has tried to turn undead in this fight: once a fight.
+    // It has tried to turn undead in this fight: once a fight; in Treasures
+    // how many times it has, as many as the undead the fight began with.
     bool tried_turning{};
+    int turn_attempts{};
     // Casting: whether it may still start a spell this round (damage and
     // silence stop it), the spell it has begun that goes off at its next
     // turn, and the spell it is aiming now with the creatures picked so far
@@ -938,6 +946,13 @@ class Session final : public rules::CombatSession
     // cbTailFlag2 and gameState's lastCrystal).
     bool crystals_{};
     std::optional<unsigned> crystal_;
+    // Treasures' romance (pair_lovers): its loves as they move, and the party
+    // member and the NPC in love, 0 for one not in the fight.
+    std::optional<rules::Romance> romance_;
+    EntityId lover_{}, beloved_{};
+    // The creature whose weapon strikes now, which a foe it fells counts
+    // against; 0 outside a weapon's attack, where the one acting does.
+    EntityId striker_{};
     // Treasures' surprise that frightens (rules::Encounter), played only as
     // the fight begins.
     bool frightening_surprise_{};
@@ -989,6 +1004,11 @@ class Session final : public rules::CombatSession
     {
         gazes_played_ = played;
     }
+
+    // Treasures' romance as the fight starts (its romance.pas,
+    // TagRelationshipPair): the creatures of the pair's names, the last of
+    // each, love each other, and no one else does.
+    void pair_lovers(std::optional<rules::Romance> romance);
 
   private:
     [[nodiscard]] bool secret() const
@@ -1088,6 +1108,9 @@ class Session final : public rules::CombatSession
     void slay_helpless(Fighter &attacker, Fighter &defender);
     void end_effects_at_zero(Fighter &f);
     void give_up_crystal(Fighter &f);
+    void love_at_fall(Fighter &fallen);
+    [[nodiscard]] int love_modifier(const Fighter &attacker, const Fighter &defender) const;
+    [[nodiscard]] bool frenzied(const Fighter &f) const;
     void release(Fighter &holder, int code);
     void on_hit(Fighter &attacker, Fighter &defender, int phase, int primary_hits, int natural,
                 int attack_roll);
@@ -1110,6 +1133,9 @@ class Session final : public rules::CombatSession
     void attached_turn(Fighter &f);
     void curse_turn_start(Fighter &f);
     void turn_undead(Fighter &cleric);
+    void treasures_turn_undead(Fighter &turner);
+    [[nodiscard]] bool may_turn(const Fighter &f) const;
+    [[nodiscard]] Fighter *strongest_undead(const Fighter &turner, int highest_level);
     void begin_cast(Fighter &caster, int spell_number);
     void start_aiming(Fighter &caster, int spell_number);
     void resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell aim,
@@ -1148,6 +1174,9 @@ class Session final : public rules::CombatSession
                       int spell_number = 51);
     void lightning_path(Cell origin, Cell aim, int length, int damage, int level, bool bounce,
                         int save = 4, int element = 12, int spell_number = 51);
+    void treasures_lightning_path(Cell origin, Cell aim, int length, int damage, int level,
+                                  bool near_bounce_doubles, int save, int element,
+                                  int spell_number);
     void monster_specials(Fighter &f);
     void darkness_gazes(Fighter &f);
     void curse_specials(Fighter &f);
@@ -1750,7 +1779,7 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
                 attacker.remove(effect::invisible);
             }
             const int modifier = attack_modifier(attacker, defender, game_of(identity_)) +
-                                 prayer_bonus(attacker) -
+                                 prayer_bonus(attacker) + love_modifier(attacker, defender) -
                                  (aura_protects(attacker, defender) ? 2 : 0);
             // One made helpless partway through is hit by the rest (cbtacts.pas, RollAttacks).
             const bool aside = natural > 1 && turned_aside(defender);
@@ -1801,7 +1830,9 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
                   {"name", defender.name},
                   {"damage", std::to_string(damage)}}});
             primary_hits += phase == 0 ? 1 : 0;
+            striker_ = attacker.id;
             inflict(defender, damage);
+            striker_ = 0;
             // In Secret only a blow that did damage carries anything (RollAttacks).
             if (defender.able() && (damage > 0 || !secret_engine()))
             {
@@ -2163,6 +2194,7 @@ void Session::end_effects_at_zero(Fighter &f)
     if (f.condition != Condition::fled && f.condition != Condition::surrendered)
     {
         give_up_crystal(f);
+        love_at_fall(f);
     }
 }
 
@@ -2201,6 +2233,155 @@ void Session::give_up_crystal(Fighter &f)
             log({"{name} smashes a crystal.", {{"name", other.name}}});
         }
     }
+}
+
+void Session::pair_lovers(std::optional<rules::Romance> romance)
+{
+    romance_ = std::move(romance);
+    lover_ = beloved_ = 0;
+    if (!romance_)
+    {
+        return;
+    }
+    const auto named = [](std::string_view name, std::string_view wanted)
+    {
+        return !wanted.empty() && std::ranges::equal(name, wanted,
+                                                     [](unsigned char a, unsigned char b)
+                                                     {
+                                                         return std::toupper(a) == std::toupper(b);
+                                                     });
+    };
+    for (const auto &f : fighters_)
+    {
+        if (named(f.name, romance_->npc))
+        {
+            beloved_ = f.id;
+        }
+        if (named(f.name, romance_->member))
+        {
+            lover_ = f.id;
+        }
+    }
+    for (auto &f : fighters_)
+    {
+        const bool paired = f.id == lover_ || f.id == beloved_;
+        if (paired && !f.has(effect::in_love))
+        {
+            f.numbers.effects.push_back({effect::in_love, 0, 0, false});
+        }
+        else if (!paired)
+        {
+            f.remove(effect::in_love);
+        }
+    }
+}
+
+// A lover falls (EffInLove at ZERO_HIT_POINTS): the other, still fighting
+// and loving it 100 or more, goes into a frenzy, the computer playing it to
+// the fight's end. A foe that falls to a lover (EffInLove's condition 25,
+// for the one whose weapon felled it or who acts) moves the other's love: 2
+// up for an evil foe, to 255 at most, 20 down for a good one, to 0 at least.
+void Session::love_at_fall(Fighter &fallen)
+{
+    if (!romance_)
+    {
+        return;
+    }
+    const auto other_of = [this](const Fighter &one) -> Fighter *
+    {
+        const EntityId other = one.id == beloved_ ? lover_ : beloved_;
+        return other ? find(other) : nullptr;
+    };
+    // The love of `one` for the other.
+    const auto love_of = [this](const Fighter &one) -> int &
+    {
+        return one.id == beloved_ ? romance_->npc_love : romance_->member_love;
+    };
+    if (fallen.has(effect::in_love))
+    {
+        if (auto *ally = other_of(fallen); ally && ally->able() && love_of(*ally) >= 100)
+        {
+            if (auto *love = ally->find_effect(effect::in_love);
+                love && love->strength != effect::frenzied_love)
+            {
+                log({"{name} goes into a frenzy.", {{"name", ally->name}}});
+                love->strength = effect::frenzied_love;
+                if (ally->numbers.morale < non_player)
+                {
+                    ally->numbers.morale = animated_player;
+                }
+            }
+        }
+    }
+    if (fallen.able())
+    {
+        return;
+    }
+    auto *killer = find(striker_ ? striker_ : actor_);
+    if (!killer || killer->id == fallen.id || !killer->has(effect::in_love))
+    {
+        return;
+    }
+    // The killer's beloved's love: the member's when the NPC kills.
+    int &love = killer->id == beloved_ ? romance_->member_love : romance_->npc_love;
+    const int alignment = fallen.numbers.alignment;
+    if (alignment == 2 || alignment == 5 || alignment == 8)
+    {
+        love += love < 0xFE ? 2 : 0;
+    }
+    else if (alignment == 0 || alignment == 3 || alignment == 6)
+    {
+        love = love >= 20 ? love - 20 : 0;
+    }
+}
+
+// Love on an attack roll (EffInLove at ATTACKER_ATTACK_ROLL and at the
+// defender's): a lover in a frenzy strikes 2 better, one whose proposal was
+// refused 2 worse; one who loves and is loved 100 or more 1 better, one whose
+// beloved is not fighting, or who loves 100 or more and is loved below 50, 1
+// worse. A lover in a frenzy, or refused, is struck 2 better.
+int Session::love_modifier(const Fighter &attacker, const Fighter &defender) const
+{
+    int modifier = 0;
+    if (const auto *love = attacker.find_effect(effect::in_love))
+    {
+        if (love->strength == effect::frenzied_love)
+        {
+            modifier += 2;
+        }
+        else if (love->strength == effect::refused_love)
+        {
+            modifier -= 2;
+        }
+        else if (romance_)
+        {
+            const bool npc = attacker.id == beloved_;
+            const int own = npc ? romance_->npc_love : romance_->member_love;
+            const int other = npc ? romance_->member_love : romance_->npc_love;
+            const EntityId ally_id = npc ? lover_ : beloved_;
+            const auto *ally = ally_id ? find(ally_id) : nullptr;
+            if (own >= 100 && other >= 100)
+            {
+                modifier += 1;
+            }
+            else if (!((own < 100 || other >= 50) && ally && ally->able()))
+            {
+                modifier -= 1;
+            }
+        }
+    }
+    if (const auto *love = defender.find_effect(effect::in_love);
+        love && (love->strength == effect::frenzied_love || love->strength == effect::refused_love))
+    {
+        modifier += 2;
+    }
+    return modifier;
+}
+
+bool Session::frenzied(const Fighter &f) const
+{
+    const auto *love = f.find_effect(effect::in_love);
+    return love && love->strength == effect::frenzied_love && f.side == Side::party;
 }
 
 // A hold or a drain ends: its victim, whose combat number its strength keeps,
@@ -4338,7 +4519,8 @@ void Session::cast_generic(Fighter &caster, int number, int level,
         {
             const int natural = roll(20);
             if (!attack_hits(natural, caster.numbers.thac0, target.numbers.armor_class,
-                             attack_modifier(caster, target, game_of(identity_))))
+                             attack_modifier(caster, target, game_of(identity_)) +
+                                 love_modifier(caster, target)))
             {
                 log({"{attacker} misses {name}.",
                      {{"attacker", caster.name}, {"name", target.name}}});
@@ -4906,7 +5088,8 @@ void Session::cast_darkness_spell(Fighter &caster, int number, int level,
         {
             auto &target = *find(id);
             if (!attack_hits(roll(20), caster.numbers.thac0, target.numbers.armor_class,
-                             attack_modifier(caster, target, game_of(identity_))))
+                             attack_modifier(caster, target, game_of(identity_)) +
+                                 love_modifier(caster, target)))
             {
                 log({"{attacker} misses {name}.",
                      {{"attacker", caster.name}, {"name", target.name}}});
@@ -5522,6 +5705,12 @@ void Session::lightning_path(Cell origin, Cell aim, int length, int damage, int 
     {
         return;
     }
+    if (treasures())
+    {
+        treasures_lightning_path(origin, aim, length, damage, level, bounce, save, element,
+                                 spell_number);
+        return;
+    }
     Cell target = aim;
     EntityId last = standing_at(aim);
     int sign = 1, budget = length * 2;
@@ -5568,6 +5757,82 @@ void Session::lightning_path(Cell origin, Cell aim, int length, int damage, int 
             }
             budget = walk.distance < budget ? budget - walk.distance : 0;
         } while (!blocked && budget > 0);
+    }
+}
+
+// Treasures' bolt (its magic.pas, LightningPath) walks its length counting
+// each step once: a leg costs the distance it walked, at least 2. It strikes
+// each new creature it enters, never the one it struck last; out of doors
+// (its overMap) it runs on through walls and rough ground, and indoors such a
+// square turns it back toward the caster, a first turn within 8 of the
+// caster costing the distance walked so far again. The field's edge ends it.
+// The original kept the cost of the legs before a turn and took it from the
+// first leg after, its byte wrapping, so the turned bolt most often ended at
+// the first creature it met; and at the field's edge it struck the square
+// before again, hitting the creature it had just hit a second time (obvious
+// bugs, fixed: docs/ORIGINAL-RULES.md, Bugs).
+void Session::treasures_lightning_path(Cell origin, Cell aim, int length, int damage, int level,
+                                       bool near_bounce_doubles, int save, int element,
+                                       int spell_number)
+{
+    Cell target = aim;
+    EntityId last = standing_at(aim);
+    int sign = 1, budget = length * 2;
+    while (budget > 0)
+    {
+        LineWalk walk(target, {target.x + (target.x - origin.x) * sign * budget,
+                               target.y + (target.y - origin.y) * sign * budget});
+        int spent = 0;
+        bool turned = false;
+        do
+        {
+            EntityId here = 0;
+            bool off_field = false, rough = false;
+            if (walk.start != walk.end)
+            {
+                bool more = true;
+                do
+                {
+                    more = walk.next();
+                    off_field = !board_.contains(walk.at);
+                    here = off_field ? 0 : standing_at(walk.at);
+                    rough = !off_field && board_.at(walk.at) != rules::Terrain::open;
+                } while (more && !(here && here != last) && !off_field && !rough &&
+                         walk.distance < budget);
+            }
+            if (off_field)
+            {
+                return;
+            }
+            if (here != last && here)
+            {
+                (void)lightning_at(walk.at, damage, level, save, element, spell_number);
+            }
+            last = here;
+            int walked = walk.distance;
+            if (rough && !outdoors_)
+            {
+                target = walk.at;
+                LineWalk back(target, origin);
+                while (back.next())
+                {
+                }
+                if (near_bounce_doubles && back.distance <= 8)
+                {
+                    walked *= 2;
+                }
+                near_bounce_doubles = false;
+                sign = -1;
+                turned = true;
+            }
+            const int leg = std::max(walked - spent, 2);
+            budget = leg < budget ? budget - leg : 0;
+            spent = walked;
+            if (walk.start == walk.end && !turned)
+            {
+                return;
+            }
+        } while (!turned && budget > 0);
     }
 }
 
@@ -5780,7 +6045,12 @@ void Session::dispel(Fighter &target, int level)
     for (std::size_t node = 0; node < target.numbers.effects.size();)
     {
         const auto &e = target.numbers.effects[node];
-        if (e.code == effect::age_in_years)
+        // Treasures' takes no love, kampfult's crushing, stone golem or
+        // yeti's grab (its magic.pas, SpellDispelMagic).
+        const bool treasures_kept =
+            treasures() && (e.code == effect::in_love || e.code == effect::crushes ||
+                            (e.code >= effect::stone_golem && e.code <= effect::grabs_6d4));
+        if (e.code == effect::age_in_years || treasures_kept)
         {
             ++node;
             continue;
@@ -5902,8 +6172,7 @@ void Session::ai_turn(Fighter &f, bool magic)
                                                         o.numbers.undead_level > 0 &&
                                                         sees(board_, f, o);
                                              });
-    if (f.numbers.class_levels[static_cast<std::size_t>(ClassSlot::cleric)] > 0 &&
-        !f.tried_turning && undead_in_sight && !secret())
+    if (may_turn(f) && undead_in_sight)
     {
         turn_undead(f);
         return;
@@ -7884,6 +8153,11 @@ constexpr std::array<std::array<int, 10>, 10> turning_table{{
 // The cleric's actions end.
 void Session::turn_undead(Fighter &cleric)
 {
+    if (treasures())
+    {
+        treasures_turn_undead(cleric);
+        return;
+    }
     cleric.tried_turning = true;
     log({"{name} turns undead.", {{"name", cleric.name}}});
     const int level = cleric.numbers.class_levels[static_cast<std::size_t>(ClassSlot::cleric)];
@@ -7945,6 +8219,140 @@ void Session::turn_undead(Fighter &cleric)
         log({"Nothing happens.", {}});
     }
     end_actions(cleric);
+}
+
+// Whether the creature may turn undead now: one with cleric levels, once a
+// fight (combat.pas, CombatMenu), but in Secret, which has no turning. In
+// Treasures a cleric or a paladin past level 2, as many times a fight as
+// the undead the fight began with (its combat.pas, CombatMenu; eclvm.pas,
+// LOAD MONSTER's undeadCount).
+bool Session::may_turn(const Fighter &f) const
+{
+    const auto &levels = f.numbers.class_levels;
+    if (!treasures())
+    {
+        return levels[static_cast<std::size_t>(ClassSlot::cleric)] > 0 && !f.tried_turning &&
+               !secret();
+    }
+    const auto undead = std::ranges::count_if(fighters_,
+                                              [](const Fighter &o)
+                                              {
+                                                  return o.numbers.undead_level > 0;
+                                              });
+    return (levels[static_cast<std::size_t>(ClassSlot::cleric)] > 0 ||
+            levels[static_cast<std::size_t>(ClassSlot::paladin)] > 2) &&
+           f.turn_attempts < undead;
+}
+
+// Treasures' table (its gdconsts.pas, turnUndeadTable): undead levels 1 to
+// 13, by the turning column 0 (none) to 10, read as turning_table.
+constexpr std::array<std::array<int, 11>, 13> treasures_turning_table{{
+    {99, 10, 7, 4, 1, 1, 0, 0, -1, -1, -1},
+    {99, 13, 10, 7, 1, 1, 0, 0, 0, -1, -1},
+    {99, 16, 13, 10, 4, 1, 1, 0, 0, 0, -1},
+    {99, 19, 16, 13, 7, 4, 1, 1, 0, 0, -1},
+    {99, 20, 19, 16, 10, 7, 4, 1, 1, 0, 0},
+    {99, 99, 20, 19, 13, 10, 7, 4, 1, 1, 0},
+    {99, 99, 99, 20, 16, 13, 10, 7, 4, 1, 0},
+    {99, 99, 99, 99, 20, 16, 13, 10, 7, 4, 1},
+    {99, 99, 99, 99, 99, 20, 16, 13, 10, 7, 1},
+    {99, 99, 99, 99, 99, 99, 20, 16, 13, 10, 4},
+    {99, 99, 99, 99, 99, 99, 99, 20, 16, 13, 10},
+    {99, 99, 99, 99, 99, 99, 99, 99, 19, 16, 10},
+    {99, 99, 99, 99, 99, 99, 99, 99, 20, 19, 13},
+}};
+
+// The strongest undead enemy in sight, not turned, of a level no higher
+// than given, the nearest of equals (its cbtacts.pas, FindTurnUndeadTarget).
+Fighter *Session::strongest_undead(const Fighter &turner, int highest_level)
+{
+    Fighter *target = nullptr;
+    for (auto &f : fighters_)
+    {
+        const int level = f.numbers.undead_level;
+        if (f.side == turner.side || !f.able() || f.turned || level < 1 || level > highest_level ||
+            !sees(board_, turner, f))
+        {
+            continue;
+        }
+        if (!target || level > target->numbers.undead_level ||
+            (level == target->numbers.undead_level &&
+             distance(turner, f) < distance(turner, *target)))
+        {
+            target = &f;
+        }
+    }
+    return target;
+}
+
+// Treasures' turning (its cbtacts.pas, CombatTurnUndead): its column is the
+// cleric level or the paladin level less 2, whichever is more, 9 from 9 to
+// 13 and 10 from 14. One d20 is rolled against the strongest undead in sight
+// first; each it beats is turned or destroyed, up to 1d12, or 1d6+6 when
+// the first is destroyed, destruction going on to at least six; a roll it
+// fails sends it to the weaker undead. The turner's actions end. (The area's
+// turning penalty, its cell 0Fh, no Treasures script sets.)
+void Session::treasures_turn_undead(Fighter &turner)
+{
+    ++turner.turn_attempts;
+    log({"{name} turns undead.", {{"name", turner.name}}});
+    const auto &levels = turner.numbers.class_levels;
+    int column = std::max(levels[static_cast<std::size_t>(ClassSlot::cleric)],
+                          levels[static_cast<std::size_t>(ClassSlot::paladin)] - 2);
+    if (column > 8)
+    {
+        column = column < 14 ? 9 : 10;
+    }
+    column = std::max(column, 0);
+    constexpr int strongest = 13;
+    int highest_level = strongest, at_least = 6, left = -1;
+    const int natural = roll(20);
+    bool any = false;
+    while (left != 0)
+    {
+        auto *target = strongest_undead(turner, highest_level);
+        if (!target)
+        {
+            break;
+        }
+        const int need =
+            treasures_turning_table[static_cast<std::size_t>(target->numbers.undead_level - 1)]
+                                   [static_cast<std::size_t>(column)];
+        if (left < 0)
+        {
+            left = need < 0 ? roll(6) + 6 : roll(12);
+        }
+        if (natural < std::abs(need))
+        {
+            --highest_level;
+            continue;
+        }
+        any = true;
+        if (need > 0)
+        {
+            target->turned = true;
+            log({"{name} is turned.", {{"name", target->name}}});
+        }
+        else
+        {
+            target->condition = Condition::gone;
+            target->hit_points = 0;
+            target->initiative = 0;
+            log({"{name} is destroyed.", {{"name", target->name}}});
+            end_effects_at_zero(*target);
+        }
+        at_least = std::max(at_least - 1, 0);
+        --left;
+        if (left == 0 && at_least > 0 && need < 0)
+        {
+            left = 1;
+        }
+    }
+    if (!any)
+    {
+        log({"Nothing happens.", {}});
+    }
+    end_actions(turner);
 }
 
 // Killed outright, whatever its Hit Points.
@@ -8255,6 +8663,12 @@ void Session::expire(Fighter &f, const Effect &ended)
     case 342:
         // Fear ends: it stops fleeing and is the player's again (Curse, AffectFear).
         f.fleeing = false;
+        // Treasures' fear also ends the flight its yetis' surprise forced
+        // (its effhndlr.pas, EffFear, as the effect is removed).
+        if (treasures())
+        {
+            f.turned = false;
+        }
         break;
     case 337:
         // Berserk ends: it is back on its own side.
@@ -9234,6 +9648,20 @@ void Session::settle_outcome()
     }
     if (outcome_ != rules::Outcome::ongoing)
     {
+        // A frenzy ends with the fight, and the party plays the lover again
+        // (postcbt.pas, DetermineCombatResults).
+        for (auto &f : fighters_)
+        {
+            if (auto *love = f.find_effect(effect::in_love);
+                love && love->strength == effect::frenzied_love)
+            {
+                love->strength = 0;
+                if (f.numbers.morale == animated_player)
+                {
+                    f.numbers.morale = 0;
+                }
+            }
+        }
         actor_ = 0;
         log({outcome_ == rules::Outcome::victory ? "The party wins the fight."
              : outcome_ == rules::Outcome::fled  ? "The party has fled."
@@ -9286,6 +9714,7 @@ rules::Snapshot Session::snapshot() const
     state.outcome = outcome_;
     state.escape_side = escape_side_;
     state.crystal = crystal_;
+    state.romance = romance_;
     state.battlefield = board_;
     state.log_entries = log_;
     std::vector<const Fighter *> order;
@@ -9334,6 +9763,7 @@ rules::Snapshot Session::snapshot() const
         // drained, effects still running), for the game to keep.
         const bool keeps = f->condition == Condition::okay || f->condition == Condition::fled;
         // A statue stays one until Stone to Flesh (status PETRIFIED).
+        view.computer_plays = frenzied(*f);
         view.persistent = {keeps ? f->hit_points : 0, view.dead, f->numbers.encode(),
                            f->condition == Condition::stoned ? std::string(stoned_description)
                                                              : std::string()};
@@ -9422,6 +9852,16 @@ std::vector<rules::Command> Session::legal_commands() const
     if (actor->aiming)
     {
         return aiming_commands(*actor);
+    }
+    // A lover in a frenzy fights under the computer's control (EffInLove).
+    if (frenzied(*actor))
+    {
+        rules::Command quick;
+        quick.revision = revision_;
+        quick.actor = actor_;
+        quick.verb = "quick";
+        commands.push_back(quick);
+        return commands;
     }
     for (const auto &cell : movement_reach(actor_))
     {
@@ -9571,8 +10011,7 @@ std::vector<rules::Command> Session::legal_commands() const
     }
     // Turn, once a fight for one with cleric levels (combat.pas, CombatMenu).
     // Secret has no turning (its CombatMenu offers none).
-    if (actor->numbers.class_levels[static_cast<std::size_t>(ClassSlot::cleric)] > 0 &&
-        !actor->tried_turning && !secret())
+    if (may_turn(*actor))
     {
         offer("turn");
     }
@@ -9814,7 +10253,13 @@ std::string Session::save() const
     out(random_.value, round_, revision_, actor_, static_cast<unsigned>(outcome_),
         morale_threshold_, outdoors_, escape_ends_fight_, escape_side_.value_or(4), party_facing_,
         party_move_modifier_, crystals_, crystal_.value_or(3), hostile_hit_points_percent_,
-        clouds_.size());
+        romance_.has_value());
+    if (romance_)
+    {
+        out(romance_->member, romance_->npc, romance_->member_love, romance_->npc_love, lover_,
+            beloved_);
+    }
+    out(clouds_.size());
     for (const auto &cloud : clouds_)
     {
         out(cloud.caster, cloud.index, cloud.corner.x, cloud.corner.y,
@@ -9842,10 +10287,10 @@ std::string Session::save() const
             static_cast<unsigned>(f.condition), f.overkill, f.initiative, f.half_moves,
             f.attacks_left[0], f.attacks_left[1], f.surprised, f.attack_phase, f.sweep_budget,
             f.direction, f.flank_count, f.flank_spread, f.guarding, f.fleeing, f.turned,
-            f.tried_turning, f.cast_allowed, f.pending_spell, f.aiming, f.picks_left, f.blast_delay,
-            static_cast<unsigned>(f.own_side), f.item_use_allowed, f.using_item, f.stance, f.lock,
-            f.arrival_round, f.before_animation ? f.before_animation->encode() : std::string(),
-            f.picked.size());
+            f.tried_turning, f.turn_attempts, f.cast_allowed, f.pending_spell, f.aiming,
+            f.picks_left, f.blast_delay, static_cast<unsigned>(f.own_side), f.item_use_allowed,
+            f.using_item, f.stance, f.lock, f.arrival_round,
+            f.before_animation ? f.before_animation->encode() : std::string(), f.picked.size());
         for (const auto id : f.picked)
         {
             out(id);
@@ -10003,6 +10448,17 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
         session->crystal_ = colour;
     }
     session->hostile_hit_points_percent_ = in.as<int>();
+    if (in.as<bool>())
+    {
+        rules::Romance romance;
+        romance.member = in.text();
+        romance.npc = in.text();
+        romance.member_love = in.as<int>();
+        romance.npc_love = in.as<int>();
+        session->romance_ = std::move(romance);
+        session->lover_ = in.as<EntityId>();
+        session->beloved_ = in.as<EntityId>();
+    }
     const auto clouds = in.as<std::size_t>();
     if (clouds > 64)
     {
@@ -10091,6 +10547,7 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
         f.fleeing = in.as<bool>();
         f.turned = in.as<bool>();
         f.tried_turning = in.as<bool>();
+        f.turn_attempts = in.as<int>();
         f.cast_allowed = in.as<bool>();
         f.pending_spell = in.as<int>();
         f.aiming = in.as<int>();
@@ -10429,6 +10886,7 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
         encounter.frightening_surprise);
     session->know_item_types(content.item_types);
     session->play_gazes(gazes_played);
+    session->pair_lovers(std::move(encounter.romance));
     return session;
 }
 

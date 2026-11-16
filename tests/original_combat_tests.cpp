@@ -1724,6 +1724,63 @@ void clerics_turn_undead()
           "A turned skeleton is forced to flee");
 }
 
+// Treasures' turning (its cbtacts.pas, CombatTurnUndead; combat.pas,
+// CombatMenu): a paladin past level 2 turns too, at its level less 2; a
+// turner may try as many times a fight as the undead it began with; and the
+// strongest undead in sight is tried first, a failed roll going on to the
+// weaker.
+void treasures_turns_its_own_way()
+{
+    constexpr auto treasures = GoldBoxGame::treasures_of_the_savage_frontier;
+    auto paladin = creature(30, 5);
+    paladin.class_levels[static_cast<std::size_t>(original::ClassSlot::paladin)] = 5;
+    auto low_paladin = creature(30, 2);
+    low_paladin.class_levels[static_cast<std::size_t>(original::ClassSlot::paladin)] = 2;
+    auto offers = arrange({{"Paladin", rules::Side::party, {1, 3}, paladin},
+                           {"Squire", rules::Side::party, {1, 5}, low_paladin},
+                           {"Zombie", rules::Side::opposition, {5, 3}, undead(2)},
+                           {"Ghoul", rules::Side::opposition, {5, 5}, undead(3)}},
+                          67, {}, 100, treasures);
+    auto &session = *offers.session;
+    until_turn_of(session, "Squire");
+    check(!offered(session, "turn"), "A paladin of level 2 cannot turn");
+    until_turn_of(session, "Paladin");
+    check(offered(session, "turn").has_value(), "A paladin of level 5 turns, at level 3");
+    session.submit(order(session, "turn"));
+    until_turn_of(session, "Paladin");
+    check(offered(session, "turn").has_value(), "Two undead began the fight: it may turn again");
+    session.submit(order(session, "turn"));
+    until_turn_of(session, "Paladin");
+    check(!offered(session, "turn"), "Twice is all");
+
+    // A level-1 cleric cannot turn the vampire, tried first, so its roll goes
+    // on to the skeleton behind it.
+    const auto skeleton_turned = [](GoldBoxGame game)
+    {
+        auto fight = arrange({{"Cleric", rules::Side::party, {1, 3}, cleric(1)},
+                              {"Vampire", rules::Side::opposition, {3, 3}, undead(10)},
+                              {"Skeleton", rules::Side::opposition, {6, 3}, undead(1)}},
+                             67, {}, 100, game);
+        auto &turning = *fight.session;
+        for (int attempt = 0; attempt < 6; ++attempt)
+        {
+            until_turn_of(turning, "Cleric");
+            if (!offered(turning, "turn"))
+            {
+                break;
+            }
+            turning.submit(order(turning, "turn"));
+            if (logged(turning, "{name} is turned.") > 0)
+            {
+                return true;
+            }
+        }
+        return false;
+    };
+    check(skeleton_turned(treasures),
+          "Treasures' cleric fails at the vampire and turns the skeleton");
+}
+
 // A caster of this class and level with these spells memorized.
 original::Combatant caster(original::ClassSlot slot, int level, std::vector<int> spells)
 {
@@ -2381,6 +2438,243 @@ void each_game_bolts_its_own_length()
           "Lightning Bolt reaches 1 square a level to Gateway, 4 from Secret on");
 }
 
+// Treasures' bolt (its magic.pas, LightningPath) counts each step once: a
+// leg costs what it walked, so creatures on its way do not shorten it. Pool
+// of Radiance's takes the whole distance walked at each, and ends sooner.
+void treasures_bolt_counts_each_step_once()
+{
+    using original::ClassSlot;
+    const auto far_hit = [](GoldBoxGame game)
+    {
+        auto fight =
+            arrange({{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 5, {51})},
+                     {"Near", rules::Side::opposition, {1, 3}, victim(100)},
+                     {"Second", rules::Side::opposition, {2, 3}, victim(100)},
+                     {"Third", rules::Side::opposition, {3, 3}, victim(100)},
+                     {"Fourth", rules::Side::opposition, {4, 3}, victim(100)},
+                     {"Far", rules::Side::opposition, {9, 3}, victim(100)}},
+                    127, {}, 100, game, false, false,
+                    [](rules::Encounter &encounter)
+                    {
+                        encounter.battlefield = {
+                            16, 8, std::vector<rules::Terrain>(128, rules::Terrain::open)};
+                    });
+        auto &session = *fight.session;
+        cast_now(session, "Mage", 51,
+                 [&]
+                 {
+                     return aim_at_cell(session, {1, 3});
+                 });
+        return view_of(session.snapshot(), "Far").hit_points < 100;
+    };
+    check(far_hit(GoldBoxGame::treasures_of_the_savage_frontier),
+          "Treasures' bolt runs on past four creatures to one 8 squares beyond its aim");
+    check(!far_hit(GoldBoxGame::pool_of_radiance),
+          "Pool of Radiance's bolt, its length taken at each creature, ends before it");
+}
+
+// Treasures' bolt turns at a wall only indoors (its magic.pas, LightningPath:
+// location 1, not overMap); out of doors it runs on through the wall. Turned,
+// it strikes the creature it struck before again.
+void treasures_bolt_turns_only_indoors()
+{
+    using original::ClassSlot;
+
+    struct Struck
+    {
+        int aim_damage, beyond_damage;
+    };
+
+    const auto bolt = [](bool outdoors)
+    {
+        auto fight =
+            arrange({{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 5, {51})},
+                     {"Aim", rules::Side::opposition, {2, 3}, victim(100)},
+                     {"Beyond", rules::Side::opposition, {6, 3}, victim(100)}},
+                    127, {{4, 3}}, 100, GoldBoxGame::treasures_of_the_savage_frontier, outdoors);
+        auto &session = *fight.session;
+        cast_now(session, "Mage", 51,
+                 [&]
+                 {
+                     return aim_at_cell(session, {2, 3});
+                 });
+        const auto state = session.snapshot();
+        return Struck{100 - view_of(state, "Aim").hit_points,
+                      100 - view_of(state, "Beyond").hit_points};
+    };
+    const auto inside = bolt(false), outside = bolt(true);
+    check(inside.beyond_damage == 0 && outside.beyond_damage > 0,
+          "Out of doors the bolt runs on through the wall; indoors it turns there");
+    check(inside.aim_damage > outside.aim_damage,
+          "Turned by the wall, it strikes its aim again on the way back");
+}
+
+// Treasures' romance in a fight: a member and an NPC a script has paired
+// (romance.pas, TagRelationshipPair, by name and whatever its case), with
+// these loves for each other.
+Fight romance_fight(const std::vector<Placed> &placed, int member_love, int npc_love,
+                    std::uint64_t seed = 31)
+{
+    return arrange(
+        placed, seed, {}, 100, GoldBoxGame::treasures_of_the_savage_frontier, false, false,
+        [=](rules::Encounter &encounter)
+        {
+            encounter.romance = rules::Romance{"HERO", "SIULAJIA", member_love, npc_love};
+        });
+}
+
+// Plays the fight, `striker` meleeing `target` at each of its turns and the
+// others ending theirs, until the fight ends or `done` holds.
+void strike_until(
+    rules::CombatSession &session, std::string_view striker, std::string_view target,
+    const std::function<bool()> &done =
+        []
+    {
+        return false;
+    })
+{
+    play_until(
+        session,
+        [&](const std::string &actor)
+        {
+            if (actor == striker)
+            {
+                if (const auto melee = offered(session, "melee", target))
+                {
+                    return *melee;
+                }
+            }
+            // A lover in a frenzy is offered only the computer's play.
+            if (const auto quick = offered(session, "quick"); quick && !offered(session, "end"))
+            {
+                return *quick;
+            }
+            return order(session, "end");
+        },
+        done, 400);
+}
+
+// A foe that falls to a lover moves the other's love (effhndlr.pas,
+// EffInLove, condition 25): 2 up for an evil foe, 20 down for a good one, to 0
+// at least.
+void a_lovers_kills_move_the_others_love()
+{
+    const auto love_after = [](std::string_view killer, int alignment, int member_love)
+    {
+        auto striker = creature(30);
+        striker.thac0 = -20;
+        auto foe = creature(1);
+        foe.alignment = alignment;
+        auto fight = romance_fight(
+            {{"Hero", rules::Side::party, {3, 2}, killer == "Hero" ? striker : creature(30)},
+             {"Siulajia",
+              rules::Side::party,
+              {3, 4},
+              killer == "Siulajia" ? striker : creature(30)},
+             {"Foe", rules::Side::opposition, {4, 3}, foe}},
+            member_love, 40);
+        strike_until(*fight.session, killer, "Foe");
+        const auto romance = fight.session->snapshot().romance;
+        check(romance.has_value(), "The fight keeps the romance");
+        return std::pair{romance->member_love, romance->npc_love};
+    };
+    check(love_after("Siulajia", 2, 10) == std::pair{12, 40},
+          "The NPC fells an evil foe: the member loves it 2 more");
+    check(love_after("Siulajia", 0, 30) == std::pair{10, 40},
+          "The NPC fells a good foe: the member loves it 20 less");
+    check(love_after("Siulajia", 6, 10) == std::pair{0, 40}, "A love falls to 0 at least");
+    check(love_after("Siulajia", 4, 10) == std::pair{10, 40}, "A neutral foe moves no love");
+    check(love_after("Hero", 8, 10) == std::pair{10, 42},
+          "The member fells an evil foe: the NPC loves it 2 more");
+}
+
+// A lover falls (EffInLove at ZERO_HIT_POINTS): the other, loving it 100 or
+// more, goes into a frenzy, the computer playing it to the fight's end.
+void a_fallen_lover_frenzies_the_other()
+{
+    const auto fight_for = [](int member_love)
+    {
+        auto foe = creature(1000);
+        foe.thac0 = -20;
+        auto fight = romance_fight({{"Hero", rules::Side::party, {1, 1}, creature(50)},
+                                    {"Siulajia", rules::Side::party, {3, 3}, creature(1)},
+                                    {"Foe", rules::Side::opposition, {4, 3}, foe}},
+                                   member_love, 0);
+        auto &session = *fight.session;
+        strike_until(session, "Foe", "Siulajia",
+                     [&]
+                     {
+                         return !view_of(session.snapshot(), "Siulajia").conscious;
+                     });
+        return fight;
+    };
+    auto loving = fight_for(100);
+    auto &session = *loving.session;
+    check(logged(session, "{name} goes into a frenzy.") == 1 &&
+              view_of(session.snapshot(), "Hero").computer_plays,
+          "The member who loves the fallen NPC 100 goes into a frenzy");
+    until_turn_of(session, "Hero");
+    const auto commands = session.legal_commands();
+    check(commands.size() == 1 && commands.front().verb == "quick",
+          "A lover in a frenzy fights under the computer's control");
+    auto cooler = fight_for(99);
+    check(logged(*cooler.session, "{name} goes into a frenzy.") == 0 &&
+              !view_of(cooler.session->snapshot(), "Hero").computer_plays,
+          "One who loves it 99 goes into no frenzy");
+}
+
+// Love on attack rolls (EffInLove at ATTACKER_ATTACK_ROLL and the
+// defender's): a lover in a frenzy strikes 2 better, a refused one 2 worse,
+// and either is struck 2 better; one loving and loved 100 strikes 1 better,
+// one whose beloved is not in the fight 1 worse. Counted over many blows.
+void love_moves_attack_rolls()
+{
+    using Love = std::optional<int>;
+    const auto hits =
+        [](Love attacker_love, Love defender_love, std::optional<rules::Romance> romance)
+    {
+        auto attacker = creature(1000);
+        attacker.attacks[0] = {40, 1, 1, 0};
+        attacker.thac0 = 11;
+        if (attacker_love)
+        {
+            attacker.effects.push_back({1331, 0, *attacker_love, false});
+        }
+        auto target = creature(1000000);
+        target.armor_class = 0;
+        if (defender_love)
+        {
+            target.effects.push_back({1331, 0, *defender_love, false});
+        }
+        std::vector<Placed> placed{{"Hero", rules::Side::party, {3, 3}, attacker},
+                                   {"Foe", rules::Side::opposition, {4, 3}, target}};
+        if (romance && romance->npc == "SIULAJIA")
+        {
+            placed.push_back({"Siulajia", rules::Side::party, {1, 1}, creature(30)});
+        }
+        auto fight = arrange(placed, 57, {}, 100, GoldBoxGame::treasures_of_the_savage_frontier,
+                             false, false,
+                             [&](rules::Encounter &encounter)
+                             {
+                                 encounter.romance = romance;
+                             });
+        auto &session = *fight.session;
+        strike_until(session, "Hero", "Foe",
+                     [&]
+                     {
+                         return session.snapshot().round > 60;
+                     });
+        return logged(session, "{attacker} hits {name} for {damage}.", "Hero");
+    };
+    const int plain = hits({}, {}, {});
+    check(hits(2, {}, {}) > plain && hits(1, {}, {}) < plain && hits({}, 1, {}) > plain &&
+              hits({}, 2, {}) > plain,
+          "A frenzied lover strikes better and a refused one worse; either is struck better");
+    const rules::Romance requited{"HERO", "SIULAJIA", 100, 100}, alone{"HERO", "NOBODY", 0, 0};
+    check(hits({}, {}, requited) > plain, "One loving and loved 100 strikes better");
+    check(hits({}, {}, alone) < plain, "One whose beloved is not fighting strikes worse");
+}
+
 // Curse's effects by the fight's numbers: those that work as Pool of
 // Radiance's of the same number keep it, fumbling is helplessness, and the
 // rest move 200 up, so a dracolich's paralyzing touch (122) is not Pool of
@@ -2692,6 +2986,35 @@ void dispel_magic_strips()
     const auto left = left_by_fight(session, "Foe").effects;
     check(left == std::vector<original::Effect>{{90, 0, 255, false}},
           "Haste is dispelled, the race's own save bonus is not");
+}
+
+// Treasures' Dispel Magic leaves the romance's love, a kampfult's crushing, a
+// stone golem's stone and a yeti's grab (its magic.pas, SpellDispelMagic).
+void treasures_dispel_keeps_its_own()
+{
+    using original::ClassSlot;
+    auto foe = creature(30, 0);
+    foe.effects = {{39, 5, 0, false},
+                   {1331, 0, 0, false},
+                   {1344, 0, 0, false},
+                   {1347, 0, 0, false},
+                   {1349, 0, 0, false}};
+    auto fight =
+        arrange({{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 10, {46})},
+                 {"Foe", rules::Side::opposition, {5, 3}, foe}},
+                137, {}, 100, GoldBoxGame::treasures_of_the_savage_frontier);
+    auto &session = *fight.session;
+    cast_now(session, "Mage", 46,
+             [&]
+             {
+                 return aim_at_cell(session, {5, 3});
+             });
+    const auto left = left_by_fight(session, "Foe").effects;
+    check(left == std::vector<original::Effect>{{1331, 0, 0, false},
+                                                {1344, 0, 0, false},
+                                                {1347, 0, 0, false},
+                                                {1349, 0, 0, false}},
+          "Haste is dispelled; Treasures' love, crushing, stone golem and grab are not");
 }
 
 // Animate Dead raises a slain human for the cleric, whole (magic.pas).
@@ -5265,6 +5588,31 @@ void yetis_frighten_when_they_surprise()
     };
     check(frightened(true), "Surprised by the yeti, the victim is frightened");
     check(!frightened(false), "Met otherwise, it is not");
+
+    // The fright lasts 2 rounds, and its flight with it (effhndlr.pas,
+    // EffFear, as the effect is removed): the victim is forced to flee no
+    // more after that.
+    auto fight = arrange({{"Victim", rules::Side::party, {3, 3}, victim(50)},
+                          {"Yeti", rules::Side::opposition, {6, 3}, yeti}},
+                         47, {}, 100, treasures, false, false,
+                         [](rules::Encounter &encounter)
+                         {
+                             encounter.frightening_surprise = true;
+                         });
+    auto &session = *fight.session;
+    play_until(
+        session,
+        [&](const std::string &)
+        {
+            return order(session, "end");
+        },
+        [&]
+        {
+            return session.snapshot().round > 6;
+        });
+    const int flights = logged(session, "{name} is forced to flee.");
+    check(flights > 0 && flights <= 3, "The flight ends with the fright: forced to flee " +
+                                           std::to_string(flights) + " times in 6 rounds");
 }
 
 // A Treasures stone golem (its effect 147, EffSlowAura): stone, it slows an
@@ -5994,6 +6342,7 @@ int main()
         some_cannot_be_targeted();
         a_mummy_frightens();
         clerics_turn_undead();
+        treasures_turns_its_own_way();
         bless_waits_for_its_turn();
         no_one_casts_in_a_no_magic_fight();
         damage_loses_a_spell();
@@ -6036,6 +6385,12 @@ int main()
         silence_stops_casting();
         missiles_turned_away();
         lightning_runs_on();
+        treasures_bolt_counts_each_step_once();
+        treasures_bolt_turns_only_indoors();
+        a_lovers_kills_move_the_others_love();
+        treasures_dispel_keeps_its_own();
+        a_fallen_lover_frenzies_the_other();
+        love_moves_attack_rolls();
         curse_spells_strike();
         curse_effects_take_their_own_numbers();
         curse_defenses_hold();

@@ -201,6 +201,10 @@ class RolfTourView : public godot::Control
     std::unique_ptr<opengold::por::SoundPlayer> closing_song_;
     // The original's sound effects from the player's game, when they have them.
     std::unique_ptr<opengold::por::SoundPlayer> original_sound_;
+    // Treasures' own footstep, its sound 10 (ZOUNDS.DAX record 9), which its
+    // steps and its scripts' PLAY SOUND 10 play; null in the other games, whose
+    // footstep is footstep_.
+    std::unique_ptr<opengold::por::SoundPlayer> game_footstep_;
     unsigned rendered_sprite_id_{999};
     std::uint64_t displayed_ticket_{};
     // The shop's filter, ShopFilter's index (All by default), and the stock

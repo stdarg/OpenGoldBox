@@ -392,6 +392,17 @@ Ref<Texture2D> CombatView::sprite_texture(EntityId id, por::IconPose pose) const
 
 bool CombatView::is_quick(EntityId id) const
 {
+    // The rules may take a member out of the player's hands (a Treasures
+    // lover in a frenzy).
+    if (demo_ && demo_->has_combat())
+    {
+        const auto &combatants = demo_.snapshot().combatants;
+        const auto found = std::ranges::find(combatants, id, &rules::CombatantView::id);
+        if (found != combatants.end() && found->computer_plays)
+        {
+            return true;
+        }
+    }
     if (!campaign_)
     {
         return quick_.contains(id);

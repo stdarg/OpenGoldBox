@@ -2914,6 +2914,19 @@ void CampaignParty::advance(MemberId id, const rules::AdvancementChoice &choice)
     state_.random_state = random;
 }
 
+void CampaignParty::keep_lasting_change(MemberId id, const rules::AdvancementChoice &change)
+{
+    editable();
+    auto changed = member(id);
+    if (!changed.character.advance(*rules_, changed.vitals, change))
+    {
+        throw std::runtime_error("The change cannot be kept");
+    }
+    changed.experience = rules_->experience_after_lasting_change(changed.character.sheet(), change,
+                                                                 changed.experience);
+    edit(id) = std::move(changed);
+}
+
 rules::SpellChoiceOptions CampaignParty::spell_choice_options(MemberId id) const
 {
     return rules_->spell_choice_options(member(id).character.sheet(), rest_spell_context());

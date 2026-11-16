@@ -9232,6 +9232,14 @@ bool walk_census(GoldBoxGame game, bool route)
             switch (s.phase)
             {
             case TourPhase::running:
+                // Treasures' camp tells its romance before it rests
+                // (romance.pas, UpdateRelationship), so its casters choose
+                // their spells only as the rest after the scene ends.
+                if (game == GoldBoxGame::treasures_of_the_savage_frontier &&
+                    party->state().spell_rest)
+                {
+                    memorize();
+                }
                 session.advance(1.0);
                 continue;
             case TourPhase::awaiting_continue:

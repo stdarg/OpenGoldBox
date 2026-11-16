@@ -334,6 +334,12 @@ void real_files_decode()
         check(all_sound, "Treasures' sound bank holds its eleven effects as sounds 2 to 12");
         check(std::abs(effects.at(2).pcm.duration() - (2468.0 - 104) / 9861) < 0.01,
               "Sound 2 plays record 1 at its own rate");
+        // Its footstep, which a step (explore.pas, StepForward: soundIds[8])
+        // and its scripts' PLAY SOUND 10 (eclvm.pas, EclPlaySound) play, is
+        // sound 10: record 9's click, which the town view plays for both.
+        check(std::abs(effects.at(10).pcm.duration() -
+                       static_cast<double>(click->samples.size()) / click->rate) < 0.005,
+              "Treasures' footstep is sound 10, record 9's click");
     }
     if (opengold::identify_game(root / "SECRET") == GoldBoxGame::secret_of_the_silver_blades)
     {

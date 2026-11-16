@@ -700,6 +700,20 @@ Its differences (2026-11-14):
   (2026-11-15) passes the character's share of its save's platinum, gems
   and jewelry, the purse divided evenly among the save's player characters,
   since OpenGoldBox keeps a party's money in one purse.
+- **Its romance** (2026-11-16): the party's leader and the NPC who joins in
+  Geildarr's Keep love each other; the loves move in fights and the camps
+  tell them, the NPC leaving or proposing (Combat, *Treasures*' romance).
+- **Its Lightning Bolt** runs its own path (2026-11-16): each step counted
+  once, turned by a wall only indoors (Combat, Lightning Bolt by game).
+- **Turning undead** (2026-11-16; its `cbtacts.pas`, CombatTurnUndead,
+  and `combat.pas`, CombatMenu): a cleric, or a paladin past level 2, turns
+  at its cleric level or its paladin level less 2, whichever is more (9 from
+  9 to 13, 10 from 14, on its own table of 13 undead levels), as many times
+  a fight as the undead the fight began with. Its d20 is tried against the
+  strongest undead in sight first, a failed roll going on to the weaker
+  ones; it turns or destroys up to 1d12, or 1d6+6 when the first is
+  destroyed. The earlier games turn once a fight, clerics only, the weakest
+  first, and a failed roll ends the attempt.
 
 ## Unlimited Adventures
 
@@ -761,18 +775,11 @@ length with memorizing's time, and *Gateway*'s and *Treasures*' effects;
 since, the rest's interruptions and the kit's camp of any length (rules5),
 with every route winning on them (item 3).
 
-1. *Treasures*' own effects still to play (Effects of the later games):
-   the crystals (128 to 130, the treasure route's owner) and the romance
-   (131). The romance needs its reconstruction's `romance.pas`
-   (TagRelationshipPair, UpdateRelationship): as each fight starts, the
-   party member and the NPC its cells name (`npcNumber`, the two names)
-   take effect 131; in a fight a downed foe raises or lowers the other's
-   love (`npcLove`, `partyLove`), the loves move attack rolls, and at 100
-   the NPC fights in a frenzy (EffInLove); at each camp the loves' bands
-   of 25 show the LUCK file's entries 101 to 117, the NPC leaving at the
-   lowest, and at the highest the proposal (Accept or Reject, a rejected
-   member losing 6 Charisma). Its first step: which of *Treasures*'
-   scripts set `npcNumber` and the names, and where the route meets them.
+1. *Treasures*' own effects: done (2026-11-16, treasure9). The crystals
+   (128 to 130) play since 2026-11-15, the romance (131) since 2026-11-16
+   (Effects of the later games, *Treasures*' romance); its pair is named by
+   ECL 17 as the NPC joins in Geildarr's Keep (the route's Siulajia with
+   its leader).
 2. *Unlimited Adventures*' difficulty: its session calls
    `original::monster_difficulty(level, true)` with each design's own
    setting (the coordinator, 2026-11-15).
@@ -1927,7 +1934,15 @@ gear.
      Darkness* and the kit; it reaches 4 squares and 1 a caster level to
      *Gateway*, 4 a level in *Secret*, the 256-color games and the kit.
      OpenGoldBox ran *Pool of Radiance*'s in every game (its own bug,
-     fixed; `original::spell(51, game)`).
+     fixed; `original::spell(51, game)`). *Treasures*' path is its own
+     since 2026-11-16 (its `LightningPath`, for every bolt: the spell, the
+     javelin and the breath): each leg costs the distance it walked, at
+     least 2, so creatures on the way do not shorten the bolt as *Pool of
+     Radiance*'s cumulative count does; indoors a wall or rough square turns
+     it back, a first turn within 8 of the caster costing the distance
+     walked so far again; out of doors (the overland) it runs on through
+     them; the field's edge ends it (Bugs). The other games keep *Pool of
+     Radiance*'s path.
    - ***Gateway*'s alike-numbered effects** (2026-11-15; its `effhndlr.pas`,
      `cbtacts.pas`, against *Curse*'s, handler by handler and condition by
      condition): its shambling mound engulfs on 1 to 4 of a d10 at each hit
@@ -1975,11 +1990,38 @@ gear.
      it returns to stone (147, EffSlowAura); and a yeti frightens the
      party as the fight begins where the script has set cell 53h (its
      surprise), each member that fails a save against petrification fleeing
-     (152, EffFrightenAura, `rules::Encounter::frightening_surprise`). Not
-     played yet: the crystals its Zhentarim carry (128 to 130, which set the
-     script's crystal bits as they fall) and the romance (131, from its
-     romance code: Next); the greenhag's shape change (140) only changes its
-     icon.
+     (152, EffFrightenAura, `rules::Encounter::frightening_surprise`).
+     Since 2026-11-16 (treasure9) the romance (131), below. The greenhag's
+     shape change (140) only changes its icon.
+   - ***Treasures*' romance** (2026-11-16; its `romance.pas` and
+     `effhndlr.pas`, EffInLove; `rules::Encounter::romance`): its scripts
+     pair the party's leader and the NPC who joins it in Geildarr's Keep
+     (ECL 17: Siulajia with a male leader, Jarbarkas with a female one, the
+     NPC's number in cell 105h, the leader's name in E5h and the NPC's in
+     F5h), and the scripts move the loves themselves too (cells 106h, the
+     member's, and 107h, the NPC's; ECL 18's slap and apology). As each fight
+     starts the two of those names, the last of each, take effect 131 and no
+     one else keeps it (TagRelationshipPair). In the fight a foe felled by a
+     lover (its weapon's, or the one acting) moves the other's love: 2 up
+     for an evil foe, to 255, 20 down for a good one, to 0. A lover strikes
+     1 better while both loves are 100 or more, and 1 worse while its
+     beloved is not fighting, or while it loves 100 or more and is loved
+     below 50. When a lover falls, the other, fighting still and loving it
+     100 or more, goes into a frenzy (2 better to strike, 2 easier to be
+     struck), the computer playing it (`CombatantView::computer_plays`) to
+     the fight's end. At each camp, after the area's camp script, when both
+     stand and a love has passed into another band of 25, the camp tells the
+     LUCK file's scene for the two bands (101 to 113, its names and pronouns
+     put in), and keeps the bands (cells 4Ch and 4Dh). At bands 0 and 4 the
+     NPC leaves the party (104). At 4 and 4 the two propose over PIC 131, the
+     party to accept (115) or refuse them: refused, the NPC leaves (116,
+     117) and the member loses 6 Charisma for good, to 0, and its love is a
+     refused one from now on, 2 worse to strike and 2 easier to be struck
+     (`original::romance_refused`). Dispel Magic takes no love, nor a
+     kampfult's crushing, a stone golem's stone or a yeti's grab (its
+     `magic.pas`, SpellDispelMagic). The original's camp menu tells the
+     scene as it opens; OpenGoldBox's camp tells it as the party camps or
+     Fixes, before the rest.
    - **The party's facing** (2026-11-14; `combatst.pas`,
      `InitCreatureCombatData`; `combatai.pas`, `AiMoveStep`): the fight
      knows the way the party faced as it met its foes
@@ -2299,6 +2341,9 @@ scales Hit Points takes only the table's to-hit and Armor Class.
 | *Treasures:* the Fix says a resurrected member "has been ressurected" (`camp.pas`, `CampFixMenu`) | Spelt "resurrected" |
 | *Treasures* and *Pools of Darkness:* the computer's choice of spell sorts the memorized spells from the second, so the first memorized is never cast (their `combatai.pas`, PickCastableSpell) | Every memorized spell is weighed |
 | *Treasures:* the stone guardian's proofing against thrown weapons (effect 141) reads the weapon type's properties for a bare blow too, from no item (`effhndlr.pas`, EffResistItemTypes) | Only a weapon's type is read |
+| *Treasures:* Lightning Bolt keeps the distance its legs walked before it turns at a wall and takes it, in a byte that wraps, from its first leg after, so a turned bolt most often ends at the first creature it meets (`magic.pas`, LightningPath; *Pools of Darkness*' the same) | Each walk counts its own legs: the turned bolt runs on for what is left |
+| *Treasures:* Lightning Bolt at the field's edge strikes the square before the edge again, so the creature it has just struck there is struck twice (`magic.pas`, LightningPath) | The edge ends the bolt; no one is struck again |
+| *Treasures:* the camp tells the romance's lovers at bands 4 and 3 with the scene of 3 and 3 (LUCK 112, a kiss), where every other pair of bands is told alike either way round and 3 and 4 is 113 (`romance.pas`, UpdateRelationship) | 4 and 3 is told as 3 and 4 (113) |
 | *Gateway:* a giant squid's constricting hold (effect 156) has its squeeze, two blows of 1d2, but the fight never calls it, so the squid only holds (`effhndlr.pas`, condition 14; `cbtacts.pas`, `AttackConstrict`) | It squeezes with them, as the owlbear's hug does |
 | Modify lowers a score below its class's minimum to its race's minimum, which may be lower still: a fighter's Strength of 9 lowered becomes 3 (`chargen.pas`, `ModifyCharacterMenu`) | It stops at the higher of the two, as from *Curse* on |
 | Modify's change of Wisdom awards a cleric's bonus slots of the second and third levels again at each step, with no ceiling (`chargen.pas`, `ModifyCharacterMenu`) | The slots are worked out from Wisdom, so a change of it changes them once |

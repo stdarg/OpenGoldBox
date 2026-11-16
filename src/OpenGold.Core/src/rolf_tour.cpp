@@ -1234,6 +1234,12 @@ void RolfTourSession::advance(double seconds)
     }
     try
     {
+        // A camp whose romance scene is told goes on.
+        if (std::exchange(romance_resumes_camp_, false))
+        {
+            finish_event();
+            return;
+        }
         // A camp waiting for its casters' spells ends once they are chosen.
         if (camp_memorizing_)
         {

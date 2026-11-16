@@ -149,6 +149,8 @@ struct CampaignEncounter
     bool crystals{};
     // Treasures' frightening surprise (rules::Encounter::frightening_surprise).
     bool frightening_surprise{};
+    // Treasures' romance (rules::Encounter::romance).
+    std::optional<rules::Romance> romance;
 };
 
 // What the difficulty does to a fight's monsters and morale, those on the party's

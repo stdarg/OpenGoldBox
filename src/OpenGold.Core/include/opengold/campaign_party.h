@@ -487,6 +487,10 @@ class CampaignParty
     [[nodiscard]] PartyMember preview_advancement(MemberId id,
                                                   const rules::AdvancementChoice &choice) const;
     void advance(MemberId id, const rules::AdvancementChoice &choice);
+    // Keeps a change the rules make on the member for good, outside a level
+    // (the original rules' refused proposal in Treasures' romance), as a
+    // spell's lasting change is kept. Atomic.
+    void keep_lasting_change(MemberId id, const rules::AdvancementChoice &change);
     // Long Rest spell choices for a member offered them by the completed rest.
     [[nodiscard]] rules::SpellChoiceOptions spell_choice_options(MemberId id) const;
     // The rest the pending spell choices follow: a Long Rest, or a Short Rest

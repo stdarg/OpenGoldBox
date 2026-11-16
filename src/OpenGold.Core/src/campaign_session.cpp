@@ -417,6 +417,23 @@ void add_treasures_overland(const por::detail::AreaFiles &files, por::PhlanResou
             root.luck_texts.emplace(record.id, std::move(*text));
         }
     }
+    // Its pictures, PIC1's before PIC1A's, and the records that only set
+    // colors among them.
+    for (const auto *name : {"PIC1.DAX", "PIC1A.DAX"})
+    {
+        for (const auto &record : files.archive(name).records)
+        {
+            if (const auto picture = decode_vga_picture(record.bytes);
+                picture && colors_only(*picture))
+            {
+                root.picture_colors.emplace(record.id, picture->palette);
+            }
+            else if (auto animation = decode_vga_animation(record.bytes))
+            {
+                root.pic_records.emplace(record.id, std::move(*animation));
+            }
+        }
+    }
 }
 
 // Every set of symbols in the files a disk's LOAD PIECES reads, the file

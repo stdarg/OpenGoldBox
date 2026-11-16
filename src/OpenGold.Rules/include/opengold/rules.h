@@ -722,6 +722,17 @@ struct Participant
     std::string character_record;
 };
 
+// Treasures of the Savage Frontier's romance (its romance.pas): the party
+// member and the NPC a script has paired, by name (its cells E5h and F5h,
+// while cell 105h names the NPC), and how much each loves the other (cells
+// 106h and 107h, 0 to 255).
+struct Romance
+{
+    std::string member, npc;
+    int member_love{}, npc_love{};
+    bool operator==(const Romance &) const = default;
+};
+
 struct Encounter
 {
     Battlefield battlefield;
@@ -763,6 +774,9 @@ struct Encounter
     // Treasures' script set its cell 53h for this fight, where its yetis
     // surprise the party: their fear grips it as the fight begins.
     bool frightening_surprise{};
+    // Treasures' romance, while a script has paired a member and an NPC: the
+    // two love each other in the fight (Snapshot::romance).
+    std::optional<Romance> romance;
 };
 
 // A weapon attack as the rules resolve it: the attack roll's bonus and the
@@ -933,6 +947,9 @@ struct CombatantView
     std::string weapon_in_hand;
     // The art a monster shows, which has weapon sets rather than items (#274).
     WeaponSetShown weapon_set_shown{WeaponSetShown::staged};
+    // The computer plays it whatever the player chose: a Treasures lover in a
+    // frenzy (Encounter::romance).
+    bool computer_plays{};
 };
 
 struct TemporaryHpOffer
@@ -1059,6 +1076,8 @@ struct Snapshot
     // The crystal the party took in a crystal battle (Encounter::crystals):
     // 0 red, 1 green, 2 blue.
     std::optional<unsigned> crystal;
+    // Treasures' romance (Encounter::romance), its loves as the fight left them.
+    std::optional<Romance> romance;
     // Squares a spell makes Heavily Obscured, such as Fog Cloud's.
     std::vector<Cell> obscured;
     // Squares inside Silence.

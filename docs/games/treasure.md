@@ -35,9 +35,16 @@ their colors while the overland is shown (since 2026-11-15,
 
 **Records that only set colors.** `PIC1` records 38, 47, 48, 57, 68 and 70 and
 `PIC1A` records 78, 81, 89, 90, 100 and 119 are still pictures of no rows and
-no cells that carry colors 32 to 255. When the picture shown is the one a field
-of the game's state names, the game also loads the record the next field names,
-only for its colors.
+no cells that carry colors 32 to 255, with no color cycle. As it loads a `PIC`
+picture whose number is in cell 4Eh, the game also loads the record cell 4Fh
+names, only for its colors, which it lays over the picture's (its
+portrait.pas, LoadAnimation, which reads the record into a scratch picture and
+frees it at once). Script 16, the new game's, sets cell 4Eh to 10, a picture every
+town's script shows, and each town's script sets cell 4Fh as it starts (89 in
+Secomber's, 57 in Leilon's and so on), so that picture has each town's own
+colors. OpenGoldBox draws the picture so since 2026-11-16
+(`RolfTourSession::pic_frames`), for a script's picture and a monster's close-up
+alike.
 
 **`OVER`, the overland.** Records 51 to 57 are 128x128 maps of the Savage
 Frontier, colors 32 to 255, each with a color cycle. Records 1 to 4 again only
@@ -210,11 +217,14 @@ walk needed besides the opening's:
   alone) loads the opening's map and the overland's too; the game's own
   scripts hold those maps.
 
-Still to come: the records that only set colors for the picture shown, the music and sounds
-other than the footstep and the fights' (which play `ZOUNDS.DAX`'s effects
-since 2026-11-15, Bugs), and the romances
-(the camp dialog's Fix and Crown since 2026-11-15, What the route needed). The romances gate nothing: a lover fights better, or blindly when
-its love falls (the cluebook's Falling in Love).
+Still to come: the music. The scripts' only sound is PLAY SOUND 10, the
+footstep, which a step plays too (its explore.pas, StepForward, and eclvm.pas,
+EclPlaySound): since 2026-11-16 the town view plays it from `ZOUNDS.DAX`
+(record 9, a click of 132 samples) in place of the synthesized footstep of the
+other games; the fights play `ZOUNDS.DAX`'s effects since 2026-11-15 (Bugs).
+The romance plays since 2026-11-16 ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md),
+*Treasures*' romance). It gates nothing: a lover fights better, or worse when
+its love goes unanswered (the cluebook's Falling in Love).
 
 One of the walk's fights no side can finish (map 24 at 1,5): a caster with no
 spells left and no way to reach the party stands across the battlefield from
@@ -611,30 +621,27 @@ game with one stand-in left, the experience and money at Llorkh's hall
 (probably unearnable: a party brought from *Gateway* carries them). Found and
 left:
 
-- **Lightning Bolt's path in the 256-color games** (its magic.pas,
-  LightningPath; *Pools of Darkness*' the same): the bolt walks its 9
-  squares counting each step once, a first bounce within 8 of the caster
-  doubles the distance walked, and it bounces only indoors (location 1, not
-  the overland). OpenGoldBox runs *Pool of Radiance*'s for every game, which
-  takes the whole distance walked from what is left at every creature (so
-  its bolts end sooner), adds 8 at a near bounce and bounces out of doors
-  too. Taking up *Treasures*' own makes its bolts longer: the Way Inn's
-  sorceresses would hit harder, so measure that fight again
-  (`OPENGOLD_FIGHT_TRIES`) after the change.
-- *Pools of Darkness* numbers its item types as *Treasures* does and names
-  its items by their words too since 2026-11-16 (`names_every_item`, and
-  its monsters' items in the creature catalog; darkness.md, Items); it
-  shares the spell table, the AI and the one-square characters as well.
-  *Treasures*' monsters' items are still named by the generic labels where
-  one exists (the creature catalog).
-- The original's sort of the memorized spells passes over the first slot
-  (Bugs); every *Treasures* spellcaster's record begins at the second, so
-  the choice changes nothing in its fights.
-- Still to come: the records that only set colors (Pictures and graphics;
-  the routine that loads them is not found yet in the reconstruction), the
-  scripts' footstep (PLAY SOUND 10, record 9, a click of 132 samples) from
-  `ZOUNDS.DAX` instead of the synthesized one, the romance (131, rules5),
-  the stone golem (147) and the yetis' fear on surprise (152).
+- **Lightning Bolt's path** is *Treasures*' own since 2026-11-16 (treasure9;
+  [ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Lightning Bolt by game): each
+  step counted once, turned only indoors. *Pools of Darkness*' bolt, the
+  same in its reconstruction, still runs *Pool of Radiance*'s path. The
+  route still wins with it, the Way Inn's sorceresses' fight reloading until
+  won as before.
+- **The romance** plays since 2026-11-16 (treasure9): the route's leader,
+  the first paladin, and Siulajia, who joins in Geildarr's Keep, are its
+  pair. Their loves rise as each fells evil foes; the route's camps tell its
+  scenes on the way, up to the pair's proposal before Fireshear's cavern on
+  the sea, which the route accepts, and a lover goes into a frenzy where the
+  other falls. Treasures' own turning plays too: the route's clerics and
+  paladins turn the undead they meet. The cavern's fight (yeti and ice
+  hounds, then the beholder) left the whole party dead in every play while
+  the yetis' fright kept its members fleeing to the fight's end (Bugs);
+  ended with the fright, the route wins it with no member lost, and the
+  game with no re-tuning and no fight won by the test.
+- The records that only set colors (Pictures and graphics; its
+  portrait.pas, LoadAnimation) and the scripts' footstep (PLAY SOUND 10,
+  record 9) play since 2026-11-16; the stone golem (147) and the yetis' fear
+  on surprise (152) since 2026-11-15. Still to come: the music.
 
 ## The ending
 
@@ -662,10 +669,18 @@ in [ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Bugs):
 | The Fix's Resurrection raised no one, the original rules having no such service, and while a cleric had it Raise Dead was not cast either (2026-11-15) | The dead but elves are resurrected, losing nothing |
 | A temple's Heal cured nothing besides wounds in *Treasures*, whose Heal lifts blindness and feeblemind (its `temple.pas`, CureWounds) (2026-11-15) | It lifts them |
 | PROGRAM 5 left feeblemind and drained levels and raised the dead by Raise Dead, at its cost in Constitution (its RepairParty resurrects and restores) (2026-11-15) | As RepairParty |
-| *Treasures*' own effects (128 to 160) did nothing: its kampfults, yetis, remorhazes, harpies, manticores and stone guardians only struck (2026-11-15) | Most play ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), *Treasures*' own effects); the romance, the stone golem and the yetis' fear on surprise are still to come |
+| *Treasures*' own effects (128 to 160) did nothing: its kampfults, yetis, remorhazes, harpies, manticores and stone guardians only struck (2026-11-15) | They play ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), *Treasures*' own effects): the stone golem and the yetis' fear on surprise since 2026-11-15, the romance since 2026-11-16 |
 | No fight played the crystals (128 to 130): a crystal battle's script never heard of a crystal won, and the camp never named those held (2026-11-15) | The first bearer to fall gives its crystal (cells 3Ch and 3Eh) and the others smash theirs; the camp names those held (What the route needed) |
 | A plain item of *Treasures*, a shop's or a treasure's, was named by the earlier games' item types: the Way Inn's saddlery sold "bows" that were belts, boots, cloaks and robes, and its firepots and flasks of oil were "Boulders" (2026-11-15) | Every item of its lists and definitions is named by its own words |
 | Its fights played *Pool of Radiance*'s sounds, none as a spell went off, and *Pools of Darkness*'s and *Treasures*' sound effects were never loaded (2026-11-15) | `ZOUNDS.DAX`'s effects, sound n record n - 1, as their program plays them: a hit (7), a miss (9), a fall (5), a step (10), Fireball (11), Lightning Bolt (8) and any other spell (2) as it goes off (magic.pas, CastSpell) |
 | Lightning Bolt ran *Pool of Radiance*'s bolt of 8 squares, reaching 4 squares and 1 a level, in every game (2026-11-15) | *Treasures*' own: 9 squares, reaching 4 and 4 a level ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Lightning Bolt by game) |
 | The computer chose its spells as *Pool of Radiance*'s does, three random picks a pass, and used its items (2026-11-15) | *Treasures*' own: the spell of highest AI weight with a target, bursts aimed where they take the most enemies, no items (its combatai.pas) |
 | A creature held back could join on a square walled off from its enemies, where no one reached it and the fight never ended (Mirabar's council, 2026-11-15) | It joins on the nearest free square its enemies can walk to |
+| Its romance (131) did nothing: no love in its fights, no scene at its camps (2026-11-16) | As its romance.pas and EffInLove ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), *Treasures*' romance) |
+| Its Lightning Bolt ran *Pool of Radiance*'s path: its length taken again at every creature, a bounce out of doors (2026-11-16) | Its own LightningPath: each step counted once, turned only indoors |
+| Its pictures ignored the records that only set colors: every town showed picture 10 in its own colors (2026-11-16) | The record cell 4Fh names colors the picture cell 4Eh names (LoadAnimation) |
+| Its steps and PLAY SOUND 10 played the other games' synthesized footstep (2026-11-16) | Its own sound 10, `ZOUNDS.DAX` record 9 |
+| Dispel Magic took the love, a kampfult's crushing, a stone golem's stone and a yeti's grab with the rest (2026-11-16) | It leaves them, as its SpellDispelMagic does |
+| Its turning was the earlier games': clerics only, once a fight, the weakest undead first, a failed roll ending it (2026-11-16) | Its own CombatTurnUndead ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Turning undead) |
+| A member its yetis frightened as they surprised the party fled to the fight's end, the fright's 2 rounds over: in Fireshear's cavern on the sea every play of the route left the party dead (2026-11-16) | The flight ends with the fright (its EffFear, as the effect is removed) |
+| A *Gateway* character's items came across renamed and renumbered, but their record's bytes, which the inventory keeps an item by, kept *Gateway*'s type and words (2026-11-16) | The bytes are rewritten with them |

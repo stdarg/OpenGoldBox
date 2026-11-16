@@ -174,6 +174,10 @@ std::optional<int> decode_age(std::string_view data)
     return years;
 }
 
+// Treasures' refused proposal (its romance.pas, UpdateRelationship), as a
+// level history entry.
+constexpr std::string_view romance_refused_entry = "romance refused";
+
 // The Charisma the kit's rot took (effects.c, fx_rotting), as a level
 // history entry: "charisma" and the points lost.
 constexpr std::string_view charisma_word = "charisma";
@@ -621,6 +625,7 @@ class OriginalModule final : public RulesModule
     void raise_character(CharacterSheet &sheet, VitalState &state, Revival by) const;
     void age_character(CharacterSheet &sheet, int years) const;
     static void lose_charisma(CharacterSheet &sheet, VitalState &state, int points);
+    static void refuse_romance(CharacterSheet &sheet, VitalState &state);
     [[nodiscard]] unsigned experience_share(const CharacterSheet &sheet,
                                             unsigned award) const override;
     void recover(VitalState &state, const CharacterSheet &sheet) const override;
@@ -1772,6 +1777,11 @@ bool OriginalModule::advance_character(CharacterSheet &sheet, VitalState &state,
         lose_charisma(sheet, state, *points);
         return true;
     }
+    if (choice.rules_data == romance_refused_entry)
+    {
+        refuse_romance(sheet, state);
+        return true;
+    }
     if (const auto given_back = decode_restoration(choice.rules_data))
     {
         restore_character(sheet, state, *given_back);
@@ -1920,6 +1930,30 @@ void OriginalModule::lose_charisma(CharacterSheet &sheet, VitalState &state, int
     const int score = std::max(sheet.scores[Ability::charisma] - points, lowest);
     sheet.scores[Ability::charisma] = sheet.base[Ability::charisma] = score;
     (void)cure(sheet, state, std::array{charisma_rotted});
+}
+
+// The member whose proposal the party refused loses 6 Charisma for good,
+// to 0 at least, and its love (131) is a refused one from now on: its
+// attacks 2 worse, attacks on it 2 better (its romance.pas,
+// UpdateRelationship; effhndlr.pas, EffInLove).
+void OriginalModule::refuse_romance(CharacterSheet &sheet, VitalState &state)
+{
+    static constexpr int lost = 6, in_love = 1331, refused = 1;
+    sheet.scores[Ability::charisma] = std::max(sheet.scores[Ability::charisma] - lost, 0);
+    sheet.base[Ability::charisma] = std::max(sheet.base[Ability::charisma] - lost, 0);
+    change_conditions(sheet, state,
+                      [](std::vector<Effect> &conditions)
+                      {
+                          const auto love = std::ranges::find(conditions, in_love, &Effect::code);
+                          if (love != conditions.end())
+                          {
+                              love->strength = refused;
+                          }
+                          else
+                          {
+                              conditions.push_back({in_love, 0, refused, false});
+                          }
+                      });
 }
 
 // Restoration leaves the experience the member had when it lost only the
@@ -3188,6 +3222,13 @@ void OriginalModule::cast_exploration_spell(const CharacterSheet &caster, VitalS
 std::unique_ptr<RulesModule> rules_module(Content content)
 {
     return std::make_unique<OriginalModule>(std::move(content));
+}
+
+rules::AdvancementChoice romance_refused()
+{
+    rules::AdvancementChoice change;
+    change.rules_data = std::string(romance_refused_entry);
+    return change;
 }
 
 } // namespace opengold::original

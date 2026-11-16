@@ -248,6 +248,9 @@ void a_gateway_character_comes_across()
         opengold::por::Equipment equipment;
         equipment.stored.type = type;
         equipment.stored.name_components = {type, 0, 0};
+        // Gateway's record bytes: its type and its words (byte 46 on).
+        equipment.stored.raw[46] = type;
+        equipment.stored.raw[47] = type;
         equipment.base = gateway_content.item_types.at(type);
         return equipment;
     };
@@ -289,6 +292,34 @@ void a_gateway_character_comes_across()
     const auto &axe = member.item_sources.at(items.front().id);
     check(axe.stored.type == battle_axe && axe.stored.name_components[0] == battle_axe,
           "The axe keeps its type and its word, as Treasures numbers them");
+    // Its record's bytes, which the inventory keeps it by, say the same: an
+    // item's type and words Treasures renumbers are rewritten there too.
+    const auto kept = opengold::por::item_of_original_key(items.front().definition_id);
+    check(kept && kept->type == axe.stored.type &&
+              kept->name_components == axe.stored.name_components,
+          "The axe's record bytes hold its Treasures type and words");
+    // An item whose type Treasures numbers otherwise is known by its new
+    // number, its record's bytes rewritten with it.
+    const auto convert = opengold::gateway_items_for_treasures(treasures);
+    bool renumbered = false;
+    for (unsigned type = 7; type <= 127 && !renumbered; ++type)
+    {
+        auto gateway_item =
+            item(static_cast<std::uint8_t>(type < gateway_content.item_types.size() ? type : 1));
+        gateway_item.stored.name_components = {battle_axe, 0, 0};
+        gateway_item.stored.raw[47] = battle_axe;
+        const auto converted = convert(gateway_item);
+        if (!converted || converted->stored.type == gateway_item.stored.type)
+        {
+            continue;
+        }
+        renumbered = true;
+        const auto known = opengold::por::item_of_original_key(
+            opengold::por::original_item_key(converted->stored));
+        check(known && known->type == converted->stored.type,
+              "A renumbered item's record bytes hold its Treasures type");
+    }
+    check(renumbered, "Some Gateway item type is numbered otherwise in Treasures");
     check(second.state().wealth[static_cast<std::size_t>(opengold::Coin::platinum)] == 200,
           "With the option off it starts with Treasures' 200 platinum");
 
@@ -532,6 +563,146 @@ void the_fix_restores_and_cures_feeblemind()
           "The Fix tells of it: " + session.snapshot().dialogue);
 }
 
+// Treasures' romance at a camp (romance.pas, UpdateRelationship): once a
+// script has named the NPC (cell 105h) and the pair (cells E5h and F5h), a
+// camp tells the LUCK file's scene for the two loves' bands of 25 (cells 106h
+// and 107h) when one has changed, and only then; at the lowest band of one
+// and the highest of the other the NPC leaves; at the highest of both it
+// proposes, and refused it leaves, the member losing 6 Charisma for good.
+// Here the fighter stands for the party's lover and the paladin for the NPC.
+void the_camp_tells_the_romance()
+{
+    const auto folder = treasures_folder();
+    if (folder.empty())
+    {
+        return;
+    }
+    using opengold::por::EclAddress;
+    using opengold::test::TourAccess;
+    auto session = opengold::load_campaign(folder, treasures_game);
+    const auto party = treasures_party(folder);
+    session.campaign_party(party);
+    const auto run = [&session, &party]
+    {
+        for (int step = 0; step < 50 && session.snapshot().phase == TourPhase::running; ++step)
+        {
+            // The casters keep the spells they had as each rest ends.
+            if (party->state().spell_rest)
+            {
+                for (const auto id : std::vector(party->state().spell_rest->members))
+                {
+                    party->keep_rest_spells(id);
+                }
+            }
+            session.advance(1.0);
+        }
+    };
+    // Through every screen, answering the proposal with `answer`; what was told.
+    const auto settle = [&](std::size_t answer = 0)
+    {
+        std::string told;
+        run();
+        for (int screen = 0;
+             screen < 12 && session.snapshot().phase == TourPhase::awaiting_continue; ++screen)
+        {
+            told += session.snapshot().dialogue + "\n";
+            const auto choice = session.snapshot().choices.size() > 1 ? answer : 0;
+            check(session.choose(session.snapshot().continue_ticket, choice), "A key goes on");
+            run();
+        }
+        return told;
+    };
+    settle();
+    TourAccess::set_variable(session, EclAddress{0x2B}, 0);
+    const auto fighter = party->state().slots[0], paladin = party->state().slots[1];
+    TourAccess::set_variable(session, EclAddress{0x105}, 21);
+    TourAccess::set_string(session, EclAddress{0xE5}, "FIGHTER");
+    TourAccess::set_string(session, EclAddress{0xF5}, "PALADIN");
+    const auto camp_with =
+        [&](std::uint16_t member_love, std::uint16_t npc_love, std::size_t answer = 0)
+    {
+        TourAccess::set_variable(session, EclAddress{0x106}, member_love);
+        TourAccess::set_variable(session, EclAddress{0x107}, npc_love);
+        check(session.camp(opengold::RestKind::long_rest), "The party camps");
+        return settle(answer);
+    };
+    const auto in_party = [&](opengold::MemberId id)
+    {
+        const auto &slots = party->state().slots;
+        return std::ranges::find(slots, id) != slots.end();
+    };
+    // Bands 1 and 2: their scene names the lovers, the stronger first.
+    auto told = camp_with(30, 60);
+    check(told.find("PALADIN") != std::string::npos && told.find("FIGHTER") != std::string::npos,
+          "The camp tells the scene of the pair's bands: " + told);
+    check(session.script_variable(EclAddress{0x4C}) == 2 &&
+              session.script_variable(EclAddress{0x4D}) == 1,
+          "The bands are kept (cells 4Ch and 4Dh)");
+    check(camp_with(40, 70).find("FIGHTER") == std::string::npos,
+          "Loves moved within their bands tell nothing");
+    // The member loves completely and is not loved: the NPC leaves.
+    told = camp_with(100, 10);
+    check(!told.empty() && !in_party(paladin), "Unloved, the NPC leaves the party: " + told);
+
+    // The proposal at the top bands of both, refused.
+    TourAccess::set_variable(session, EclAddress{0x4C}, 0);
+    TourAccess::set_variable(session, EclAddress{0x4D}, 0);
+    TourAccess::set_string(session, EclAddress{0xF5}, "RANGER");
+    const auto ranger = party->state().slots[2];
+    const int charisma =
+        party->member(fighter).character.sheet().scores[opengold::rules::Ability::charisma];
+    TourAccess::set_variable(session, EclAddress{0x106}, 100);
+    TourAccess::set_variable(session, EclAddress{0x107}, 100);
+    check(session.camp(opengold::RestKind::long_rest), "The party camps");
+    run();
+    check(session.snapshot().choices.size() == 2 && session.picture().has_value(),
+          "The pair proposes over its picture, the party to accept or refuse it");
+    told = settle(1);
+    check(!in_party(ranger) &&
+              party->member(fighter).character.sheet().scores[opengold::rules::Ability::charisma] ==
+                  std::max(charisma - 6, 0),
+          "Refused, the NPC leaves and the member loses 6 Charisma: " + told);
+}
+
+// Treasures' pictures (its portrait.pas, LoadAnimation): the PIC record cell
+// 4Eh names is drawn in the colors of the record cell 4Fh names, one of the
+// records that only set colors (each town's script sets its own, script 16
+// picture 10, the town's street).
+void a_picture_takes_a_color_records_colors()
+{
+    const auto folder = treasures_folder();
+    if (folder.empty())
+    {
+        return;
+    }
+    using opengold::por::EclAddress;
+    using opengold::test::TourAccess;
+    auto session = opengold::load_campaign(folder, treasures_game);
+    session.campaign_party(treasures_party(folder));
+    for (int step = 0; step < 200 && session.snapshot().phase != TourPhase::completed; ++step)
+    {
+        if (session.snapshot().phase == TourPhase::awaiting_continue)
+        {
+            check(session.choose(session.snapshot().continue_ticket, 0), "A key goes on");
+        }
+        session.advance(1.0);
+    }
+    const auto image = [&session](std::uint16_t colors)
+    {
+        TourAccess::set_variable(session, EclAddress{0x4E}, 10);
+        TourAccess::set_variable(session, EclAddress{0x4F}, colors);
+        const auto *frames = session.pic_frames(10);
+        check(frames && !frames->empty(), "Picture 10 is there");
+        return frames->front().image.rgba;
+    };
+    const auto own = image(0), yartar = image(0x30), leilon = image(0x39);
+    check(own != yartar && yartar != leilon,
+          "Picture 10 takes the colors of the record cell 4Fh names");
+    TourAccess::set_variable(session, EclAddress{0x4E}, 11);
+    check(session.pic_frames(10)->front().image.rgba == own,
+          "Another picture than cell 4Eh's keeps its own colors");
+}
+
 } // namespace
 
 int main()
@@ -540,6 +711,8 @@ int main()
     {
         the_opening_reaches_the_fortress();
         the_camp_fixes_the_party();
+        the_camp_tells_the_romance();
+        a_picture_takes_a_color_records_colors();
         the_fix_restores_and_cures_feeblemind();
         the_overland_is_drawn_from_above();
         a_gateway_character_comes_across();

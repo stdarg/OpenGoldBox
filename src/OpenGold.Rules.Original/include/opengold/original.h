@@ -30,5 +30,10 @@ struct StartingStock
 // start with `start`.
 [[nodiscard]] std::unique_ptr<rules::CharacterRules> design_character_rules(Aging aging,
                                                                             StartingStock start);
+
+// What a refused proposal of Treasures' romance leaves on its party member,
+// for the party to keep (CampaignParty::keep_lasting_change): 6 Charisma
+// lost for good and a refused love (its romance.pas, UpdateRelationship).
+[[nodiscard]] rules::AdvancementChoice romance_refused();
 } // namespace opengold::original
 #endif

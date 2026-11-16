@@ -2,6 +2,7 @@
 // mean other commands in the other games (docs/games/darkness.md, Scripts).
 #include "opengold/rolf_tour.h"
 #include "area_loading.h"
+#include "opengold/original.h"
 #include "opengold/original_spells.h"
 #include "opengold/vga_picture.h"
 
@@ -1053,12 +1054,331 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
 
 void RolfTourSession::vga_play_sound(unsigned sound)
 {
-    // The footstep plays as the other games' does; the other sound effects
-    // and the music are not played yet.
+    // The footstep plays as the other games' does, Treasures' its own sound 10
+    // (the view's); the other sound effects and the music are not played yet.
     if (sound == footstep_sound)
     {
         ++snapshot_.footsteps;
     }
+}
+
+namespace
+{
+// Treasures' romance cells (its gameState): the NPC's number, which a script
+// sets as the NPC joins (ECL 17), the two loves, the bands they were in at
+// the last camp, and the two names.
+constexpr EclAddress romance_npc_number{0x105}, member_love_cell{0x106}, npc_love_cell{0x107},
+    npc_band_cell{0x4C}, member_band_cell{0x4D}, member_name_cell{0xE5}, npc_name_cell{0xF5};
+// The picture the proposal is made over (PIC 131).
+constexpr unsigned proposal_picture = 131;
+
+std::string capitals(std::string text)
+{
+    std::ranges::transform(text, text.begin(),
+                           [](unsigned char c)
+                           {
+                               return static_cast<char>(std::toupper(c));
+                           });
+    return text;
+}
+
+// A love's band of 25, 0 to 4 (romance.pas, RelationBand).
+unsigned love_band(unsigned love)
+{
+    return std::min(love / 25, 4U);
+}
+
+// The scene for the member's and the NPC's bands, 0 for none (0 and 0) and
+// for the proposal (4 and 4), which the caller tells apart. The original's
+// table told 4 and 3 with 3 and 3's scene (112) where every other pair is
+// told alike either way round (113; an obvious bug, fixed).
+unsigned romance_entry(unsigned member_band, unsigned npc_band)
+{
+    constexpr std::array<std::array<unsigned, 5>, 5> entries{{{0, 101, 102, 103, 104},
+                                                              {101, 105, 106, 107, 108},
+                                                              {102, 106, 109, 110, 111},
+                                                              {103, 107, 110, 112, 113},
+                                                              {104, 108, 111, 113, 0}}};
+    return entries.at(member_band).at(npc_band);
+}
+} // namespace
+
+std::optional<rules::Romance> RolfTourSession::treasures_romance() const
+{
+    if (game() != GoldBoxGame::treasures_of_the_savage_frontier || !town_ ||
+        machine_.variable(romance_npc_number) == 0)
+    {
+        return std::nullopt;
+    }
+    return rules::Romance{machine_.string(member_name_cell), machine_.string(npc_name_cell),
+                          static_cast<int>(machine_.variable(member_love_cell) & 0xFF),
+                          static_cast<int>(machine_.variable(npc_love_cell) & 0xFF)};
+}
+
+bool RolfTourSession::tell_romance()
+{
+    const auto romance = treasures_romance();
+    if (!romance || !campaign_)
+    {
+        return false;
+    }
+    // The members of the pair's names, the last of each (TagRelationshipPair).
+    MemberId member{}, npc{};
+    for (const auto id : campaign_->state().slots)
+    {
+        if (!id)
+        {
+            continue;
+        }
+        const auto name = capitals(campaign_->member(id).character.sheet().name);
+        if (name == capitals(romance->npc))
+        {
+            npc = id;
+        }
+        if (name == capitals(romance->member))
+        {
+            member = id;
+        }
+    }
+    const auto standing = [this](MemberId id)
+    {
+        const auto &vitals = campaign_->member(id).vitals;
+        return !vitals.dead && vitals.hit_points > 0;
+    };
+    if (!member || !npc || !standing(member) || !standing(npc))
+    {
+        return false;
+    }
+    const auto member_band = love_band(static_cast<unsigned>(romance->member_love));
+    const auto npc_band = love_band(static_cast<unsigned>(romance->npc_love));
+    if (member_band == machine_.variable(member_band_cell) &&
+        npc_band == machine_.variable(npc_band_cell))
+    {
+        return false;
+    }
+    machine_.bind_variable(member_band_cell, static_cast<std::uint16_t>(member_band));
+    machine_.bind_variable(npc_band_cell, static_cast<std::uint16_t>(npc_band));
+    using Kind = RomanceStep::Kind;
+    RomanceScene scene{{}, member, npc};
+    constexpr unsigned top = 4, confession = 104, proposal = 114;
+    if (member_band == top && npc_band == top)
+    {
+        scene.steps.push_back({Kind::proposal, proposal});
+    }
+    else if (const auto entry = romance_entry(member_band, npc_band))
+    {
+        scene.steps.push_back({Kind::text, entry});
+        // One who loves completely and is not loved leaves the party.
+        if (entry == confession)
+        {
+            scene.steps.push_back({Kind::npc_leaves, 0});
+        }
+    }
+    if (scene.steps.empty())
+    {
+        return false;
+    }
+    romance_scene_ = std::move(scene);
+    show_romance_step();
+    return true;
+}
+
+void RolfTourSession::show_romance_step()
+{
+    using Kind = RomanceStep::Kind;
+    auto &scene = *romance_scene_;
+    while (!scene.steps.empty())
+    {
+        const auto step = scene.steps.front();
+        if (step.kind == Kind::npc_leaves)
+        {
+            scene.steps.erase(scene.steps.begin());
+            campaign_->remove(scene.npc);
+            continue;
+        }
+        if (step.kind == Kind::refused)
+        {
+            scene.steps.erase(scene.steps.begin());
+            campaign_->keep_lasting_change(scene.member, original::romance_refused());
+            continue;
+        }
+        snapshot_.host_dialogue.clear();
+        snapshot_.host_choices.clear();
+        snapshot_.dialogue = romance_text(step.entry);
+        if (step.kind == Kind::proposal)
+        {
+            // The pair stands before the party over its picture.
+            if (const auto *frames = pic_frames(proposal_picture); frames && !frames->empty())
+            {
+                picture_ = frames->front().image;
+                picture_animation_id_ = proposal_picture;
+                ++snapshot_.picture_revision;
+            }
+            snapshot_.choices = {"Accept them", "Refuse them"};
+            snapshot_.host_choices = {{"Accept them", {}}, {"Refuse them", {}}};
+        }
+        else
+        {
+            snapshot_.choices = {"Continue"};
+        }
+        snapshot_.phase = TourPhase::awaiting_continue;
+        snapshot_.continue_ticket = ++next_ticket_;
+        ++snapshot_.revision;
+        return;
+    }
+    // The scene is over: the camp goes on.
+    romance_scene_.reset();
+    if (picture_animation_id_ == proposal_picture)
+    {
+        picture_.reset();
+        picture_animation_id_.reset();
+        ++snapshot_.picture_revision;
+    }
+    snapshot_.dialogue.clear();
+    snapshot_.choices.clear();
+    snapshot_.host_choices.clear();
+    snapshot_.continue_ticket = 0;
+    snapshot_.phase = TourPhase::running;
+    romance_told_ = romance_resumes_camp_ = true;
+    ++snapshot_.revision;
+}
+
+bool RolfTourSession::choose_in_romance(std::size_t choice)
+{
+    using Kind = RomanceStep::Kind;
+    auto &steps = romance_scene_->steps;
+    const auto step = steps.front();
+    steps.erase(steps.begin());
+    if (step.kind == Kind::proposal)
+    {
+        constexpr unsigned accepted = 115, parting = 116, anger = 117;
+        // Accepted, the couple embraces the party; refused, the NPC leaves
+        // and the member never forgives the party, losing 6 Charisma.
+        const std::vector<RomanceStep> follows =
+            choice == 0 ? std::vector<RomanceStep>{{Kind::text, accepted}}
+                        : std::vector<RomanceStep>{{Kind::text, parting},
+                                                   {Kind::npc_leaves, 0},
+                                                   {Kind::text, anger},
+                                                   {Kind::refused, 0}};
+        steps.insert(steps.begin(), follows.begin(), follows.end());
+    }
+    show_romance_step();
+    return true;
+}
+
+std::string RolfTourSession::romance_text(unsigned entry)
+{
+    const auto found = town_->luck_texts.find(entry);
+    if (found == town_->luck_texts.end())
+    {
+        throw EclError("No romance scene " + std::to_string(entry));
+    }
+    const auto romance = *treasures_romance();
+    const auto &scene = *romance_scene_;
+    const auto member_name = capitals(romance.member), npc_name = capitals(romance.npc);
+    // The one who loves more, and the other (romance.pas, StrongerName).
+    const bool member_stronger = romance.member_love > romance.npc_love;
+    const auto &slots = campaign_->state().slots;
+    const auto in_party = [&slots](MemberId id)
+    {
+        return id && std::ranges::find(slots, id) != slots.end();
+    };
+    const auto pronoun = [&](MemberId id)
+    {
+        return in_party(id) && campaign_->member(id).character.creation_data().gender == "female"
+                   ? std::string("HER")
+                   : std::string("HIS");
+    };
+    // A third member: the first standing one neither of the pair nor named
+    // last time; else the one named last, if it stands; else the leader
+    // (romance.pas, OtherPartyName).
+    const auto bystander = [&]() -> std::string
+    {
+        const auto stands = [&](MemberId id)
+        {
+            return in_party(id) && !campaign_->member(id).vitals.dead &&
+                   campaign_->member(id).vitals.hit_points > 0;
+        };
+        for (const auto id : slots)
+        {
+            if (stands(id) && id != scene.member && id != scene.npc && id != romance_bystander_)
+            {
+                romance_bystander_ = id;
+                return capitals(campaign_->member(id).character.sheet().name);
+            }
+        }
+        if (stands(romance_bystander_) && romance_bystander_ != scene.member)
+        {
+            return capitals(campaign_->member(romance_bystander_).character.sheet().name);
+        }
+        const auto leader = std::ranges::find_if(slots,
+                                                 [](MemberId id)
+                                                 {
+                                                     return id != MemberId{};
+                                                 });
+        return leader == slots.end() ? std::string()
+                                     : capitals(campaign_->member(*leader).character.sheet().name);
+    };
+    std::string text;
+    for (const char code : found->second)
+    {
+        switch (code)
+        {
+        case 2:
+            text += member_stronger ? member_name : npc_name;
+            break;
+        case 3:
+            text += member_stronger ? npc_name : member_name;
+            break;
+        case 4:
+            text += npc_name;
+            break;
+        case 5:
+            text += member_name;
+            break;
+        case 6:
+            text += bystander();
+            break;
+        case 7:
+            text += pronoun(member_stronger ? scene.member : scene.npc);
+            break;
+        case 8:
+            text += pronoun(member_stronger ? scene.npc : scene.member);
+            break;
+        case 12:
+            // The original waits for a key and clears its window.
+            text += "\n\n";
+            break;
+        case 13:
+            text += ' ';
+            break;
+        case 10:
+        case 26:
+            break;
+        default:
+            text += static_cast<char>(std::toupper(static_cast<unsigned char>(code)));
+        }
+    }
+    // Its lines run on as the window wraps them, a page's spaces at its ends
+    // and between words single.
+    std::string tidy;
+    for (const char c : text)
+    {
+        if (c == ' ' && (tidy.empty() || tidy.back() == ' ' || tidy.back() == '\n'))
+        {
+            continue;
+        }
+        if (c == '\n' && !tidy.empty() && tidy.back() == ' ')
+        {
+            tidy.pop_back();
+        }
+        tidy += c;
+    }
+    while (!tidy.empty() && (tidy.back() == ' ' || tidy.back() == '\n'))
+    {
+        tidy.pop_back();
+    }
+    return tidy;
 }
 
 } // namespace opengold::por

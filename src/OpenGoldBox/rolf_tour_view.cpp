@@ -608,6 +608,27 @@ void RolfTourView::prepare_view()
             original_sound_.reset();
         }
     }
+    // Treasures steps to its own footstep (explore.pas, StepForward; eclvm.pas,
+    // EclPlaySound), from the player's copy of the game.
+    if (settings::chosen_game() == opengold::GoldBoxGame::treasures_of_the_savage_frontier)
+    {
+        const auto treasures = presentation::path_from_godot(
+            settings::game_folder(opengold::GoldBoxGame::treasures_of_the_savage_frontier));
+        try
+        {
+            if (std::filesystem::is_directory(treasures))
+            {
+                game_footstep_ = std::make_unique<SoundPlayer>(
+                    SoundBank::load(treasures,
+                                    opengold::GoldBoxGame::treasures_of_the_savage_frontier),
+                    std::make_unique<GodotSoundOutput>(footstep));
+            }
+        }
+        catch (const std::runtime_error &)
+        {
+            game_footstep_.reset();
+        }
+    }
     apply_sound_volume();
     setup_rest();
     restart();
@@ -944,6 +965,11 @@ void RolfTourView::apply_sound_volume()
     if (original_sound_)
     {
         original_sound_->set_volume(settings::sound_volume(settings::SoundKind::effects));
+    }
+    if (game_footstep_)
+    {
+        game_footstep_->set_volume(settings::sound_volume(settings::SoundKind::effects));
+        return;
     }
     const auto share = static_cast<float>(settings::volume_share(settings::SoundKind::effects));
     required_node<AudioStreamPlayer>(*this, "Footstep")
@@ -2186,7 +2212,12 @@ void RolfTourView::advance_frame(double delta)
         if (session_->snapshot().footsteps != played_footsteps_)
         {
             played_footsteps_ = session_->snapshot().footsteps;
-            if (!checking_)
+            constexpr unsigned treasures_footstep = 10;
+            if (!checking_ && game_footstep_)
+            {
+                game_footstep_->play(treasures_footstep);
+            }
+            else if (!checking_)
             {
                 required_node<AudioStreamPlayer>(*this, "Footstep").play();
             }
