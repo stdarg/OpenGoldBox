@@ -843,6 +843,11 @@ pictures, walls and script host, *Treasures* adding only what it changes.
 
 ### 9. The SRD rules for the new games
 
+**On hold** (the user, 2026-11-16): no SRD work for any game but *Pool of
+Radiance* until every Gold Box game plays and wins under its original rules,
+the *Krynn* and *Buck Rogers* games included. The groundwork done so far waits
+on the unmerged branch `srd9`.
+
 Once every game plays: monster conversions, shops and art mappings for each
 game, as *Pool of Radiance* has.
 

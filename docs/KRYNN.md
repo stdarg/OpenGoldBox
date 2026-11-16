@@ -209,7 +209,9 @@ These carry over from the Realms games, per game:
 
 ### K7. The SRD rules for Krynn (later)
 
-Not part of this goal (the user, 2026-11-16); they may be added later. Then,
+Not part of this goal (the user, 2026-11-16). No SRD work comes before every
+Gold Box game, the *Buck Rogers* games included, plays and wins under its
+original rules. Then,
 as the Realms games' plan step 9 has it, they would come as content work:
 monster conversions (each creature stays what its art shows), shops, art
 mappings and an SRD form of the Krynn classes and races.
