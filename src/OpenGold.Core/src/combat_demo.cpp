@@ -236,6 +236,13 @@ void place_as_original(CampaignEncounter &encounter, std::vector<Participant> &p
             stand_nearest(reachable, side[n], starts.front().value_or(centre));
         }
     };
+    // A monster dealt to a side of the party faces it from there
+    // (combatst.pas, PlaceAllCreatures).
+    for (std::size_t n = 0; n < encounter.enemy_quarters.size(); ++n)
+    {
+        encounter.enemies[n].facing =
+            static_cast<int>(2 * index(reversed(encounter.enemy_quarters[n])));
+    }
     // Every original square is claimed before any member falls back.
     claim(party, formation.party);
     claim(encounter.enemies, formation.enemies);

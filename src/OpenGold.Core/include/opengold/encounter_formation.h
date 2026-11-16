@@ -34,6 +34,13 @@ struct EncounterFormation
                                                      std::size_t party_size,
                                                      std::span<const rules::Footprint> enemies,
                                                      std::span<const MapDirection> quarters);
+// The quarter of each of `count` enemies when they come from the sides in
+// `sides` (bit 0 north, 1 east, 2 south, 3 west): dealt one an enemy in turn,
+// from the east round to the north. Empty when `sides` names none, the
+// enemies then standing ahead of the party (Pools of Darkness's and
+// Treasures' SETUP MONSTER, combatst.pas, PlaceAllCreatures; the kit's
+// cmbsetup.c, place_all).
+[[nodiscard]] std::vector<MapDirection> dealt_quarters(unsigned sides, std::size_t count);
 // The same with `enemy_count` enemies of one square each.
 [[nodiscard]] EncounterFormation encounter_formation(const DungeonBattlefield &field,
                                                      MapDirection facing, unsigned distance,

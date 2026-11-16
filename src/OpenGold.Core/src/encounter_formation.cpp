@@ -77,6 +77,9 @@ struct Side
     std::size_t size;
     bool is_party;
     std::span<const rules::Footprint> footprints; // Empty: every member fills one square.
+    // The squares its first rank tries: half the side, rounded up, or for
+    // enemies dealt to several quarters half of an even share of them all.
+    int first_rank;
 };
 
 bool walled(const DungeonBattlefield &field, Cell square, MapDirection side)
@@ -138,7 +141,7 @@ Cell rank_position(Cell centre, MapDirection fills, int n)
 std::vector<Cell> slots(const DungeonBattlefield &field, const Side &side)
 {
     const auto spills = areas(field, side);
-    const int first_rank = static_cast<int>((side.size + 1) / 2);
+    const int first_rank = side.first_rank;
     const bool facing_sideways =
         side.facing == MapDirection::east || side.facing == MapDirection::west;
     bool first = true;
@@ -248,16 +251,26 @@ EncounterFormation encounter_formation(const DungeonBattlefield &field, MapDirec
         throw std::invalid_argument("Each enemy needs its quarter");
     }
     std::set<Cell> occupied;
-    EncounterFormation result{place(field, {{0, 0}, facing, party_size, true, {}}, occupied),
-                              std::vector<std::optional<Cell>>(enemy_footprints.size())};
+    const auto half = [](std::size_t members, std::size_t ranks)
+    {
+        return static_cast<int>((members + 2 * ranks - 1) / (2 * ranks));
+    };
+    EncounterFormation result{
+        place(field, {{0, 0}, facing, party_size, true, {}, half(party_size, 1)}, occupied),
+        std::vector<std::optional<Cell>>(enemy_footprints.size())};
     std::vector<MapDirection> placed_quarters;
     for (const auto quarter : quarters)
     {
-        if (std::ranges::find(placed_quarters, quarter) != placed_quarters.end())
+        if (std::ranges::find(placed_quarters, quarter) == placed_quarters.end())
         {
-            continue;
+            placed_quarters.push_back(quarter);
         }
-        placed_quarters.push_back(quarter);
+    }
+    // Each quarter's first rank is as long as an even share's would be
+    // (combatst.pas, PlaceAllCreatures: its teamRows).
+    const int enemies_first_rank = half(quarters.size(), placed_quarters.size());
+    for (const auto quarter : placed_quarters)
+    {
         std::vector<std::size_t> members;
         std::vector<rules::Footprint> footprints;
         for (std::size_t n = 0; n < quarters.size(); ++n)
@@ -274,7 +287,8 @@ EncounterFormation encounter_formation(const DungeonBattlefield &field, MapDirec
                          reversed(quarter),
                          members.size(),
                          false,
-                         footprints};
+                         footprints,
+                         enemies_first_rank};
         const auto starts = place(field, group, occupied);
         for (std::size_t n = 0; n < members.size(); ++n)
         {
@@ -282,6 +296,20 @@ EncounterFormation encounter_formation(const DungeonBattlefield &field, MapDirec
         }
     }
     return result;
+}
+
+std::vector<MapDirection> dealt_quarters(unsigned sides, std::size_t count)
+{
+    std::vector<MapDirection> quarters;
+    for (std::size_t quarter = 0; (sides & 0xFU) != 0 && quarters.size() < count;)
+    {
+        do
+        {
+            quarter = (quarter + 1) % 4;
+        } while ((sides & 1U << quarter) == 0);
+        quarters.push_back(static_cast<MapDirection>(quarter));
+    }
+    return quarters;
 }
 
 EncounterFormation encounter_formation(const DungeonBattlefield &field, MapDirection facing,

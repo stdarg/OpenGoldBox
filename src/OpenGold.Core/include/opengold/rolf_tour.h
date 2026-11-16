@@ -948,6 +948,10 @@ class RolfTourSession
     bool rest_warded_{};
     std::optional<EclRequest> encounter_menu_;
     unsigned encounter_distance_{};
+    // The sides of the party SETUP MONSTER's monsters come from (Pools of
+    // Darkness's and Treasures' fourth operand: bit 0 north, 1 east, 2 south,
+    // 3 west), which the original keeps until the next SETUP MONSTER.
+    unsigned monster_sides_{};
     std::optional<opengold::CampaignEncounter> encounter_;
     std::optional<unsigned> monster_picture_id_; // SETUP MONSTER's PIC record.
     // CALL 0x8001 before COMBAT: the member WHO chose fights alone.

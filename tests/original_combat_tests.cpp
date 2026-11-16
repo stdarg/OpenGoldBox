@@ -2494,6 +2494,88 @@ void treasures_bolt_turns_only_indoors()
                     127, {{4, 3}}, 100, GoldBoxGame::treasures_of_the_savage_frontier, outdoors);
         auto &session = *fight.session;
         cast_now(session, "Mage", 51,
+// Every game after Pool of Radiance ends a fight in which no one has
+// attacked for 15 rounds (combatst.pas, CombatStart, fightEndRound 15;
+// cbtacts.pas, MakeAttack, which sets it 15 rounds on; combat.pas,
+// EndOfRound), and counts it won (postcbt.pas, DetermineCombatResults), the
+// monsters still standing; Pool of Radiance's fight goes on. A checkpoint
+// keeps the count.
+void a_fight_without_attacks_ends_after_15_rounds()
+{
+    const auto play_quietly =
+        [](rules::CombatSession &session, unsigned attack_round, unsigned until_round)
+    {
+        bool attacked = false;
+        play_until(
+            session,
+            [&](const std::string &actor)
+            {
+                if (actor == "Fighter" && session.snapshot().round == attack_round && !attacked)
+                {
+                    attacked = true;
+                    return order(session, "melee", "Kobold");
+                }
+                return order(session, "end");
+            },
+            [&]
+            {
+                return session.snapshot().round > until_round;
+            },
+            400);
+    };
+    const auto quiet_fight = [](GoldBoxGame game)
+    {
+        return arrange({{"Fighter", rules::Side::party, {3, 3}, creature(500)},
+                        {"Kobold", rules::Side::opposition, {4, 3}, creature(500, 0)}},
+                       5, {}, 100, game);
+    };
+    auto pool = quiet_fight(GoldBoxGame::pool_of_radiance);
+    play_quietly(*pool.session, 0, 40);
+    check(pool.session->snapshot().outcome == rules::Outcome::ongoing,
+          "Pool of Radiance's fight goes on however long no one attacks");
+    for (const auto game :
+         {GoldBoxGame::curse_of_the_azure_bonds, GoldBoxGame::secret_of_the_silver_blades,
+          GoldBoxGame::gateway_to_the_savage_frontier, GoldBoxGame::pools_of_darkness,
+          GoldBoxGame::treasures_of_the_savage_frontier, GoldBoxGame::unlimited_adventures})
+    {
+        auto fight = quiet_fight(game);
+        play_quietly(*fight.session, 0, 40);
+        const auto ended = fight.session->snapshot();
+        check(ended.outcome == rules::Outcome::victory && ended.round_limit_reached &&
+                  ended.round == 15 && view_of(ended, "Kobold").conscious,
+              "A fight with no attack ends won after its 15th round, the monster standing");
+    }
+    // An attack in round 5 puts the end off to 14 rounds after it, through
+    // a checkpoint.
+    auto fight = quiet_fight(GoldBoxGame::secret_of_the_silver_blades);
+    play_quietly(*fight.session, 5, 8);
+    auto restored = fight.module->restore(fight.session->save());
+    check(restored->snapshot().outcome == rules::Outcome::ongoing, "Round 9 begins the same");
+    play_quietly(*restored, 0, 40);
+    const auto later = restored->snapshot();
+    check(later.outcome == rules::Outcome::victory && later.round_limit_reached &&
+              later.round == 19,
+          "An attack puts the end off to 14 rounds after the round it is made in");
+}
+
+// Ice Storm's element (magic.pas, SpellIceStorm; the kit's spellfx.c,
+// spell_ice_storm), and Cone of Cold's (SpellConeOfCold): magic resistance
+// turns them in every game after Curse, whose spells are cold alone
+// (docs/ORIGINAL-RULES.md, Bugs).
+void each_game_storms_by_its_own_element()
+{
+    using original::ClassSlot;
+    const auto resisted = [](GoldBoxGame game, int spell)
+    {
+        auto warded = victim(100);
+        // Magic resistance that turns every spell of a caster below level 8.
+        warded.effects.push_back({106, 0, 0, false});
+        auto fight = arrange(
+            {{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 7, {spell})},
+             {"Warded", rules::Side::opposition, {2, 3}, warded}},
+            31, {}, 100, game);
+        auto &session = *fight.session;
+        cast_now(session, "Mage", spell,
                  [&]
                  {
                      return aim_at_cell(session, {2, 3});
@@ -2673,6 +2755,21 @@ void love_moves_attack_rolls()
     const rules::Romance requited{"HERO", "SIULAJIA", 100, 100}, alone{"HERO", "NOBODY", 0, 0};
     check(hits({}, {}, requited) > plain, "One loving and loved 100 strikes better");
     check(hits({}, {}, alone) < plain, "One whose beloved is not fighting strikes worse");
+        return view_of(session.snapshot(), "Warded").hit_points == 100;
+    };
+    for (const int spell : {187, 192})
+    {
+        check(!resisted(GoldBoxGame::curse_of_the_azure_bonds, spell),
+              "Curse's Ice Storm and Cone of Cold are cold alone");
+        for (const auto game :
+             {GoldBoxGame::secret_of_the_silver_blades, GoldBoxGame::gateway_to_the_savage_frontier,
+              GoldBoxGame::pools_of_darkness, GoldBoxGame::treasures_of_the_savage_frontier,
+              GoldBoxGame::unlimited_adventures})
+        {
+            check(resisted(game, spell), "Magic resistance turns the later games' Ice Storm and "
+                                         "Cone of Cold");
+        }
+    }
 }
 
 // Curse's effects by the fight's numbers: those that work as Pool of
@@ -6745,6 +6842,8 @@ int main()
         later_games_effects_take_their_own_numbers();
         gateway_effects_play_their_own();
         each_game_bolts_its_own_length();
+        a_fight_without_attacks_ends_after_15_rounds();
+        each_game_storms_by_its_own_element();
         treasures_effects_play_their_own();
         treasures_crystal_battle_yields_one_crystal();
         a_stone_guardian_turns_thrown_weapons();

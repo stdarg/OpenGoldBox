@@ -688,6 +688,11 @@ struct Participant
     std::optional<VitalState> state;
     bool surprised{}; // The rules module determines the mechanical effect.
     bool facing_left{};
+    // The way it faces as the fight begins, as Encounter::party_facing numbers
+    // directions: a monster dealt to a side of the party faces it from there
+    // (the original's SETUP MONSTER sides). None: turned along the party's
+    // facing, the party's enemies back toward it.
+    std::optional<int> facing;
     // The encounter interrupted this participant's rest; the rules module
     // decides how it starts (SRD: awake and Prone).
     bool resting{};
@@ -1084,6 +1089,10 @@ struct Snapshot
     std::optional<unsigned> crystal;
     // Treasures' romance (Encounter::romance), its loves as the fight left them.
     std::optional<Romance> romance;
+    // The fight ended won because no one attacked for 15 rounds (the
+    // original's round limit): the monsters still standing leave, worth
+    // neither experience nor treasure.
+    bool round_limit_reached{};
     // Squares a spell makes Heavily Obscured, such as Fog Cloud's.
     std::vector<Cell> obscured;
     // Squares inside Silence.

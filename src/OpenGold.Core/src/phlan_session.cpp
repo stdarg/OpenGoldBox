@@ -6,6 +6,7 @@
 #include "opengold/script_secrets.h"
 #include "opengold/random_treasure.h"
 #include "opengold/ecl_party_host.h"
+#include "opengold/encounter_formation.h"
 #include "opengold/scroll_key.h"
 #include "opengold/authored_items.h"
 #include "opengold/companions.h"
@@ -1652,7 +1653,8 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
             std::ranges::find(turned, unit.id) != turned.end())
         {
             if (!turncoats_seen.insert(unit.id).second ||
-                (result.outcome == rules::Outcome::victory && unit.hit_points > 0 && !unit.fled))
+                (result.outcome == rules::Outcome::victory && unit.hit_points > 0 && !unit.fled &&
+                 !result.round_limit_reached))
             {
                 return false;
             }
@@ -1684,7 +1686,10 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
             {
                 ++defeated;
             }
-            else if (unit.fled)
+            // One that fled pays nothing (postcbt.pas, DetermineLootExp), and
+            // nor does one still standing when the fight ended for want of
+            // attacks: it leaves the field.
+            else if (unit.fled || result.round_limit_reached)
             {
                 unpaid_records.push_back(staged_records_.at(unit.id - 1000));
             }
@@ -3574,6 +3579,12 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             throw EclError("Unsupported encounter distance");
         }
         encounter_distance_ = std::min<unsigned>(arg(1), room_ahead());
+        // Pools of Darkness's and Treasures' SETUP MONSTER names the sides
+        // the monsters come from too (eclvm.pas, EclSetupMonster).
+        if (request.arguments.size() > 3)
+        {
+            monster_sides_ = arg(3) & 0xFFU;
+        }
         // Gateway's monsters have no distance sprites (255; it has no SPRIT
         // files): only the close-up shows, face to face (its DisplayMonster).
         constexpr unsigned no_sprite = 255;
@@ -4256,6 +4267,10 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             // away, whatever SETUP MONSTER asked (PLACE-2); so does Gateway's
             // overland (its MaxMonsterDist).
             encounter_->distance = overland() || gateway_overland() ? 2u : encounter_distance_;
+            // The monsters are dealt to the sides SETUP MONSTER named, in turn
+            // (combatst.pas, PlaceAllCreatures).
+            encounter_->enemy_quarters =
+                por::dealt_quarters(monster_sides_, encounter_->enemies.size());
             // The script sets the encounter's morale before COMBAT.
             encounter_->morale =
                 std::min<unsigned>(machine_.variable(game_cell(ecl_encounter_morale)), 100);

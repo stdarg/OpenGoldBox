@@ -32,7 +32,9 @@ using rules::Side;
 
 // The original counts movement in half-moves: 2 a straight step, 3 a diagonal one.
 constexpr rules::StepCosts half_moves{2, 3, 2, 4, 0};
-constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 26";
+constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 27";
+// The rounds a fight lasts with no one attacking (has_round_limit).
+constexpr unsigned rounds_without_attacks = 15;
 
 enum class Condition : unsigned
 {
@@ -280,6 +282,9 @@ struct Fighter
     bool surprised{};
     // Facing, 0 north and clockwise to 7 north-west.
     int direction{};
+    // The way it starts the fight facing (rules::Participant::facing), which
+    // the session turns it to as the fight begins.
+    std::optional<int> starting_facing;
     // Attacks on it since its own turn began, and the sum of their angles from
     // its facing (0 to 4), mod 8 (cbtacts.pas, NoteAttackDirection).
     int flank_count{}, flank_spread{};
@@ -883,10 +888,13 @@ class Session final : public rules::CombatSession
     {
         rules::validate_battlefield(board_);
         // Each creature starts turned along the party's facing, the party's
-        // enemies back toward it (combatst.pas, InitCreatureCombatData).
+        // enemies back toward it (combatst.pas, InitCreatureCombatData), or
+        // toward the party from the side it was dealt to (PlaceAllCreatures).
         for (auto &f : fighters_)
         {
-            f.direction = (along_party_facing() + (f.side == Side::party ? 0 : 4)) % 8;
+            f.direction = f.starting_facing
+                              ? field_direction(*f.starting_facing)
+                              : (along_party_facing() + (f.side == Side::party ? 0 : 4)) % 8;
         }
         log({"Combat begins.", {}});
         combat_start();
@@ -956,6 +964,11 @@ class Session final : public rules::CombatSession
     // The creature whose weapon strikes now, which a foe it fells counts
     // against; 0 outside a weapon's attack, where the one acting does.
     EntityId striker_{};
+    // The round as which the fight ends unless someone attacks before it
+    // (Pool of Radiance's successors, has_round_limit), and whether it ended
+    // so.
+    unsigned fight_end_round_{rounds_without_attacks};
+    bool round_limit_reached_{};
     // Treasures' surprise that frightens (rules::Encounter), played only as
     // the fight begins.
     bool frightening_surprise_{};
@@ -971,8 +984,15 @@ class Session final : public rules::CombatSession
     // (combatst.pas, quadDir; combatai.pas, AiMoveStep).
     [[nodiscard]] int along_party_facing() const
     {
+        return field_direction(party_facing_);
+    }
+
+    // The direction on the field along a map facing (0 north, 2 east, 4
+    // south, 6 west).
+    [[nodiscard]] static int field_direction(int facing)
+    {
         constexpr std::array<int, 4> turned{7, 2, 3, 6};
-        return turned[static_cast<std::size_t>(party_facing_ / 2 % 4)];
+        return turned[static_cast<std::size_t>(facing / 2 % 4)];
     }
 
     [[nodiscard]] int squares_of_movement(const Fighter &f) const;
@@ -1019,6 +1039,11 @@ class Session final : public rules::CombatSession
     void pair_lovers(std::optional<rules::Romance> romance);
 
   private:
+    [[nodiscard]] bool curse() const
+    {
+        return game_of(identity_) == GoldBoxGame::curse_of_the_azure_bonds;
+    }
+
     [[nodiscard]] bool secret() const
     {
         return game_of(identity_) == GoldBoxGame::secret_of_the_silver_blades;
@@ -1067,6 +1092,18 @@ class Session final : public rules::CombatSession
     {
         return secret_engine() || kit();
     }
+
+    // Every game after Pool of Radiance ends a fight in which no one has
+    // attacked for 15 rounds (Curse's, Secret's, Gateway's, Pools of
+    // Darkness's and Treasures' combatst.pas, CombatStart, and cbtacts.pas,
+    // MakeAttack; the kit's cmbsetup.c and cbaction.c, combat_attack).
+    [[nodiscard]] bool has_round_limit() const
+    {
+        return game_of(identity_) != GoldBoxGame::pool_of_radiance;
+    }
+
+    void win_fight();
+    void end_quiet_fight();
 
     // A spell as this fight's game has it (Gateway changes four rows).
     [[nodiscard]] const Spell *game_spell(int number) const
@@ -1583,6 +1620,10 @@ void Session::end_round()
         }
     }
     settle_outcome();
+    if (outcome_ == rules::Outcome::ongoing && has_round_limit() && round_ >= fight_end_round_)
+    {
+        end_quiet_fight();
+    }
     if (outcome_ == rules::Outcome::ongoing)
     {
         join_arrivals();
@@ -1717,6 +1758,8 @@ void Session::note_attack(const Fighter &attacker, Fighter &defender)
 // the first until the defender goes down; with none left its actions end.
 void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind)
 {
+    // The original counts its rounds from 0, so this round's is one less.
+    fight_end_round_ = round_ - 1 + rounds_without_attacks;
     if (defender.flank_count < 3 && !from_behind)
     {
         defender.direction = direction_toward(defender.cell, attacker.cell);
@@ -3692,15 +3735,24 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         cast_generic(caster, number, level, targets, roll_dice(6, 8), 9);
         break;
     case 187:
-        // Ice Storm: 3d10. Curse marks it acid (docs/ORIGINAL-RULES.md, Bugs).
-        cast_generic(caster, number, level, targets, roll_dice(3, 10), 2);
+        // Ice Storm: 3d10 of cold and magic, so magic resistance can turn it
+        // (Secret's, Gateway's and Treasures' magic.pas, SpellIceStorm), of
+        // magic alone in Pools of Darkness and the kit (its spellfx.c,
+        // spell_ice_storm). Curse marks it acid; it is cold there
+        // (docs/ORIGINAL-RULES.md, Bugs).
+        cast_generic(caster, number, level, targets, roll_dice(3, 10),
+                     curse()               ? 2
+                     : darkness() || kit() ? 8
+                                           : 10);
         break;
     case 192:
     {
-        // Cone of Cold: the caster's level and as many d4, along a path two
-        // wide to half its level. Curse marks it acid (docs/ORIGINAL-RULES.md, Bugs).
+        // Cone of Cold: the caster's level and as many d4 of cold and magic,
+        // along a path two wide to half its level (magic.pas,
+        // SpellConeOfCold; the kit's spellfx.c, spell_cone_of_cold). Curse
+        // marks it acid; it is cold there (docs/ORIGINAL-RULES.md, Bugs).
         cast_generic(caster, number, level, path_area(caster, aim, std::max((level + 1) / 2, 1), 2),
-                     level + roll_dice(level, 4), 2);
+                     level + roll_dice(level, 4), curse() ? 2 : 10);
         break;
     }
     case 198:
@@ -9878,15 +9930,7 @@ void Session::settle_outcome()
     }
     else if (!side_standing(Side::opposition))
     {
-        outcome_ = rules::Outcome::victory;
-        for (auto &f : fighters_)
-        {
-            if (f.side == Side::party && f.condition == Condition::dying)
-            {
-                f.condition = Condition::unconscious;
-                f.overkill = 0;
-            }
-        }
+        win_fight();
     }
     if (outcome_ != rules::Outcome::ongoing)
     {
@@ -9910,6 +9954,36 @@ void Session::settle_outcome()
                                                  : "The party is defeated.",
              {}});
     }
+}
+
+// The party wins, and its dying members wake unconscious (postcbt.pas,
+// DetermineCombatResults).
+void Session::win_fight()
+{
+    outcome_ = rules::Outcome::victory;
+    for (auto &f : fighters_)
+    {
+        if (f.side == Side::party && f.condition == Condition::dying)
+        {
+            f.condition = Condition::unconscious;
+            f.overkill = 0;
+        }
+    }
+}
+
+// A fight in which no one has attacked for 15 rounds ends (combat.pas,
+// EndOfRound). With some of the party still on its feet the original counts
+// it won (postcbt.pas, DetermineCombatResults: a member okay wins the
+// fight); the monsters still standing leave the field, worth neither
+// experience nor treasure, as the original pays only for those put down
+// (DetermineLootExp).
+void Session::end_quiet_fight()
+{
+    round_limit_reached_ = true;
+    log({"No one has attacked for 15 rounds, and the fight ends.", {}});
+    win_fight();
+    actor_ = 0;
+    log({"The party wins the fight.", {}});
 }
 
 rules::MovementGrid Session::grid_for(const Fighter &mover) const
@@ -9957,6 +10031,7 @@ rules::Snapshot Session::snapshot() const
     state.escape_side = escape_side_;
     state.crystal = crystal_;
     state.romance = romance_;
+    state.round_limit_reached = round_limit_reached_;
     state.battlefield = board_;
     state.log_entries = log_;
     std::vector<const Fighter *> order;
@@ -10495,7 +10570,8 @@ std::string Session::save() const
     out(random_.value, round_, revision_, actor_, static_cast<unsigned>(outcome_),
         morale_threshold_, outdoors_, escape_ends_fight_, escape_side_.value_or(4), party_facing_,
         party_move_modifier_, crystals_, crystal_.value_or(3), hostile_hit_points_percent_,
-        turning_tries_, turning_penalty_, romance_.has_value());
+        turning_tries_, turning_penalty_, fight_end_round_, round_limit_reached_,
+        romance_.has_value());
     if (romance_)
     {
         out(romance_->member, romance_->npc, romance_->member_love, romance_->npc_love, lover_,
@@ -10692,6 +10768,8 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
     session->hostile_hit_points_percent_ = in.as<int>();
     session->turning_tries_ = in.as<int>();
     session->turning_penalty_ = in.as<int>();
+    session->fight_end_round_ = in.as<unsigned>();
+    session->round_limit_reached_ = in.as<bool>();
     if (in.as<bool>())
     {
         rules::Romance romance;
@@ -11034,6 +11112,7 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
         f.cell = p.cell;
         f.footprint = p.footprint;
         f.facing_left = p.facing_left;
+        f.starting_facing = p.facing;
         f.surprised = p.surprised;
         if (!p.character_profile.empty())
         {

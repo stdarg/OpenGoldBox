@@ -132,6 +132,40 @@ void full_squares_and_walls()
               cells({{26, 12}, {26, 11}, {25, 11}}),
           "An obstacle in the front rank is skipped");
 }
+
+// Pools of Darkness's and Treasures' SETUP MONSTER deals its monsters to the
+// sides it names, one each in turn from the east (combatst.pas,
+// PlaceAllCreatures); a band beside or behind the party stands a square off
+// it even at distance 0, and its first rank is as long as an even share's.
+void monsters_are_dealt_to_their_sides()
+{
+    using enum MapDirection;
+    check(dealt_quarters(7, 7) == std::vector{east, south, north, east, south, north, east},
+          "North, east and south take the monsters in turn from the east");
+    check(dealt_quarters(8, 2) == std::vector{west, west}, "One side takes them all");
+    check(dealt_quarters(0, 3).empty() && dealt_quarters(0x10, 3).empty(),
+          "With no side named the monsters stand ahead");
+
+    const auto quarters = dealt_quarters(7, 7);
+    const auto dealt = encounter_formation(open_field(), north, 0, 2,
+                                           std::vector<opengold::rules::Footprint>(7), quarters);
+    for (std::size_t n = 0; n < quarters.size(); ++n)
+    {
+        check(dealt.enemies[n].has_value(), "Every dealt monster finds room");
+    }
+    // The party's square is arena rows 10 to 15, the square south of it
+    // from row 15 and the one east from column 28.
+    check(dealt.enemies[1]->y >= 15 && dealt.enemies[4]->y >= 15,
+          "The band dealt south stands a square off the party");
+    check(dealt.enemies[0]->x >= 33 && dealt.enemies[3]->x >= 33 && dealt.enemies[6]->x >= 33,
+          "So does the band dealt east");
+    check(dealt.enemies[2] == Cell{27, 12} && dealt.enemies[5] == Cell{26, 12},
+          "The band dealt the way the party faces stands at the distance asked, right ahead");
+    // Seven among three sides make first ranks of two (ceil(7 / 6)), so the
+    // south band's two stand side by side.
+    check(dealt.enemies[1]->y == dealt.enemies[4]->y,
+          "A band's first rank is as long as an even share's");
+}
 } // namespace
 
 int main()
@@ -142,6 +176,7 @@ int main()
         party_facing_east_leaves_a_gap();
         crowded_band_spills_behind_then_beside();
         full_squares_and_walls();
+        monsters_are_dealt_to_their_sides();
         std::cout << "Encounter formation: original placement checks passed\n";
         return 0;
     }
