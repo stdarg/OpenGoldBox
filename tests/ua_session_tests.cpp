@@ -15,6 +15,7 @@
 #include "opengold/original_spells.h"
 #include "opengold/ua_design.h"
 #include "opengold/ua_session.h"
+#include "original_creation_support.h"
 #include "test_support.h"
 
 #include <array>
@@ -2727,6 +2728,15 @@ bool the_design_plays_to_its_end(const std::filesystem::path &kit)
     const auto content = ua::load_design_content(files);
     auto session = ua::UaSession::start(files);
     auto party = new_party(content);
+    // Its player raises each member to its highest on Modify, as the Forgotten
+    // Realms routes' players do.
+    for (const auto id : party->state().slots)
+    {
+        if (id)
+        {
+            opengold::test::modify_to_the_highest(*party, id);
+        }
+    }
     session.campaign_party(party);
     Player player{session, party, content};
     player.play();

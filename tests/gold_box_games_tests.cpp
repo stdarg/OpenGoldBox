@@ -7755,34 +7755,27 @@ bool walk_census(GoldBoxGame game, bool route)
             creator.select(opengold::rules::CreationField::race, "human");
             creator.select(opengold::rules::CreationField::character_class, klass);
             creator.name(klass + " " + std::to_string(n + 1));
-            // Pools of Darkness's route's player rolls each character again
-            // until its class's ability is 18 and its Constitution 17, as a
-            // player rolls for a party meant to finish the game: its
-            // magic-user's eighth- and ninth-level spells need Intelligence
-            // 16 and 18 (TrimHighSpellSlots).
-            const auto keep = [&](const opengold::rules::CharacterSheet &sheet)
-            {
-                using opengold::rules::Ability;
-                if (!route || game != GoldBoxGame::pools_of_darkness)
-                {
-                    return true;
-                }
-                const auto prime = klass == "magic_user" ? Ability::intelligence
-                                   : klass == "cleric"   ? Ability::wisdom
-                                                         : Ability::strength;
-                return sheet.scores[prime] >= 18 && sheet.scores[Ability::constitution] >= 17;
-            };
-            opengold::test::walk_original_creation(creator, learned_first, keep);
+            opengold::test::walk_original_creation(creator, learned_first);
             const auto id = party->add_pc(creator.create_character());
+            // The route's player raises each member's scores and Hit Points
+            // to their highest on Modify Character, as a player makes a party
+            // meant to finish the game: Pools of Darkness's magic-user's
+            // eighth- and ninth-level spells need Intelligence 16 and 18
+            // (TrimHighSpellSlots).
+            if (route)
+            {
+                opengold::test::modify_to_the_highest(*party, id);
+            }
             // OPENGOLD_FIGHT_GEAR prints each member's scores too.
             if (std::getenv("OPENGOLD_FIGHT_GEAR"))
             {
-                std::cout << "  scores: " << creator.sheet().name;
+                const auto &sheet = party->member(id).character.sheet();
+                std::cout << "  scores: " << sheet.name;
                 for (const auto ability : opengold::rules::all_abilities)
                 {
-                    std::cout << " " << creator.sheet().scores[ability];
+                    std::cout << " " << sheet.scores[ability];
                 }
-                std::cout << "\n";
+                std::cout << " hp " << sheet.hit_points << "\n";
             }
             // Pools of Darkness's route party carries the game's own starting
             // equipment, as a party made in the original does.

@@ -1,9 +1,9 @@
 #pragma once
 
+#include "opengold/campaign_party.h"
 #include "opengold/character_creator.h"
 
 #include <algorithm>
-#include <functional>
 #include <span>
 #include <string_view>
 
@@ -13,22 +13,15 @@ namespace opengold::test
 // Walks a character made under the original rules from its race page to its
 // sheet: it is rolled on the attributes page, and on a page of choices
 // (Treasures' magic-user's spells) each group takes the options naming a
-// `preferred` word first, then the first offered, as a player fills it. With
-// `keep`, the character is rolled again (up to 1,000 times) until it holds,
-// as a player rolls again until the scores suit the class.
-inline void
-walk_original_creation(CharacterCreator &creator, std::span<const std::string_view> preferred = {},
-                       const std::function<bool(const rules::CharacterSheet &)> &keep = {})
+// `preferred` word first, then the first offered, as a player fills it.
+inline void walk_original_creation(CharacterCreator &creator,
+                                   std::span<const std::string_view> preferred = {})
 {
     while (creator.step() != CreationStep::sheet)
     {
         if (creator.step() == CreationStep::attributes)
         {
             creator.roll();
-            for (int rolls = 1; keep && !keep(creator.sheet()) && rolls < 1000; ++rolls)
-            {
-                creator.roll();
-            }
         }
         if (creator.step() == CreationStep::training)
         {
@@ -54,6 +47,33 @@ walk_original_creation(CharacterCreator &creator, std::span<const std::string_vi
         }
         creator.next();
     }
+}
+
+// A new member made as a player makes a party meant to finish the game, as the
+// cluebooks assume: on the party screen's Modify Character
+// (docs/ORIGINAL-RULES.md, Modify Character) each score is raised to its
+// race's and class's highest and the Hit Points to the game's highest.
+inline void modify_to_the_highest(CampaignParty &party, MemberId id)
+{
+    using rules::ModifyRow;
+    const auto &creation = *party.character_rules();
+    auto draft = party.member(id).character.creation_data();
+    // Constitution first, since the Hit Points' highest rises with it.
+    for (const auto row :
+         {ModifyRow::constitution, ModifyRow::strength, ModifyRow::dexterity,
+          ModifyRow::intelligence, ModifyRow::wisdom, ModifyRow::charisma, ModifyRow::hit_points})
+    {
+        for (;;)
+        {
+            auto raised = creation.modified(draft, row, rules::ModifyStep::raise);
+            if (raised.rules_data == draft.rules_data)
+            {
+                break;
+            }
+            draft = std::move(raised);
+        }
+    }
+    party.modify(id, std::move(draft));
 }
 
 } // namespace opengold::test
