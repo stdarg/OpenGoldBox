@@ -135,6 +135,10 @@ func run_checks() -> void:
 	var items := rows(screen.get_node("PartyPanel/Inventory"))
 	require(items.size() == 1 and items[0].contains(" / ") and items[0].to_lower().contains("sword"),
 		"The fighter brings its long sword, readied: " + str(items))
+	# Its 2,001 experience is none Curse's creation gives, so Modify is off
+	# (docs/ORIGINAL-RULES.md, Modify Character).
+	var modify: Button = screen.get_node("PartyPanel/ActionRow1/Modify")
+	require(modify.visible and modify.disabled, "A character with experience cannot be modified")
 
 	# Five more fill the party's six PC positions; then the cleric cannot come.
 	for index in range(2, 7):
