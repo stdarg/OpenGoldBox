@@ -64,6 +64,9 @@ func pick_darkness() -> void:
 	await settle()
 	current_scene.get_node("GamePicker/Buttons/Games/DARKNESS").pressed.emit()
 	await settle()
+	# Its opening film's title card holds about 3.6 seconds before a key ends it.
+	await create_timer(4.0).timeout
+	await settle()
 	await pass_title()
 	var game_menu: Window = current_scene.get_node_or_null("GameMenu")
 	if game_menu and game_menu.visible:
