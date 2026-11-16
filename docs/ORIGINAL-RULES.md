@@ -2362,16 +2362,16 @@ gear.
     - **Ice Storm's and Cone of Cold's elements.** Each reconstruction's
       `SpellIceStorm` and `SpellConeOfCold` pass their damage's element:
       Cone of Cold cold and magic (10) in every game; Ice Storm cold and
-      magic in *Secret*, *Gateway* and *Treasures*, and magic alone (8) in
-      *Pools of Darkness* and the kit (spellfx.c, `spell_ice_storm`), whose
-      cold resistance therefore does not lessen it. OpenGoldBox passed cold
-      (2) everywhere, so magic resistance never turned them. Each game now
-      plays its own; *Curse*'s stay cold (its Bugs entry), and *Pool of
-      Radiance* has neither spell. Open question: *Curse*'s reconstruction
-      passes 10 for both too, which its own effects read as cold and magic
-      (effhndlr.pas, EffResistCold's bit 2; fxengine.pas names bit 16 acid),
-      so the Bugs entry's "acid", taken from coab's ovr023, may not be what
-      the original does; if so *Curse* would play 10 as the others.
+      magic in *Curse*, *Secret*, *Gateway* and *Treasures*, and magic alone
+      (8) in *Pools of Darkness* and the kit (spellfx.c, `spell_ice_storm`),
+      whose cold resistance therefore does not lessen it. OpenGoldBox passed
+      cold (2) everywhere, so magic resistance never turned them. Each game
+      now plays its own; *Pool of Radiance* has neither spell. *Curse*'s
+      reconstruction passes 10 for both, which its own effects read as cold
+      (effhndlr.pas, EffResistCold's bit 2) and magic (MagicResistance's
+      bit 8; fxengine.pas names bit 16 acid). The reconstruction outranks
+      coab, whose ovr023 had them deal acid, so *Curse* plays 10 as the
+      others and that Bugs entry is gone (2026-11-16).
 
 ## Encumbrance
 
@@ -2519,7 +2519,6 @@ scales Hit Points takes only the table's to-hit and Armor Class.
 | *Pools of Darkness* and *Treasures:* LOAD MONSTER keeps a monster's scaled Hit Points in a byte, so Adept or Champion wraps a monster of more than 204 or 170 around to a few (`eclvm.pas`, `EclLoadMonster`) | No wrap |
 | *Curse*, *Gateway* and *Treasures:* training picks the class whose next level needs the most experience, but reads every class at the level of the last one it looked at (TrainingMenu) | Each class at its own level |
 | *Curse:* Hold Monster holds only what Hold Person can, as the spell its resolver exempts from the creature-type rule is Dimension Door (0x53) and not Hold Monster (0x5E) (`ovr023`, `MultiTargetedSpell`) | Any creature |
-| *Curse:* Ice Storm and Cone of Cold deal acid damage, so resisting cold does not lessen them (`ovr023`, `SpellIceStorm`, `SpellConeOfCold`) | Cold |
 | *Curse:* a shambling mound struck by electricity rolls 1d8, throws the roll away and gains 8 Hit Points (`ovr013`, its absorbing of lightning) | It gains the 1d8 |
 | *Curse:* an owlbear's hug pins its victim, but the squeeze that should follow is in no list of the effects the fight calls, so it never hurts (`ovr014`, `AffectOwlbearHugRoundAttack`) | It squeezes for 2d8 each turn |
 | *Curse:* a giant slug's acid sets no damage type, so it takes the last attack's (`ovr023`, `AffectSpitAcid`) | Acid |

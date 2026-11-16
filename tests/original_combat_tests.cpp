@@ -2741,8 +2741,7 @@ void a_fight_without_attacks_ends_after_15_rounds()
 
 // Ice Storm's element (magic.pas, SpellIceStorm; the kit's spellfx.c,
 // spell_ice_storm), and Cone of Cold's (SpellConeOfCold): magic resistance
-// turns them in every game after Curse, whose spells are cold alone
-// (docs/ORIGINAL-RULES.md, Bugs).
+// turns them in every game.
 void each_game_storms_by_its_own_element()
 {
     using original::ClassSlot;
@@ -2765,15 +2764,13 @@ void each_game_storms_by_its_own_element()
     };
     for (const int spell : {187, 192})
     {
-        check(!resisted(GoldBoxGame::curse_of_the_azure_bonds, spell),
-              "Curse's Ice Storm and Cone of Cold are cold alone");
         for (const auto game :
-             {GoldBoxGame::secret_of_the_silver_blades, GoldBoxGame::gateway_to_the_savage_frontier,
-              GoldBoxGame::pools_of_darkness, GoldBoxGame::treasures_of_the_savage_frontier,
-              GoldBoxGame::unlimited_adventures})
+             {GoldBoxGame::curse_of_the_azure_bonds, GoldBoxGame::secret_of_the_silver_blades,
+              GoldBoxGame::gateway_to_the_savage_frontier, GoldBoxGame::pools_of_darkness,
+              GoldBoxGame::treasures_of_the_savage_frontier, GoldBoxGame::unlimited_adventures})
         {
-            check(resisted(game, spell), "Magic resistance turns the later games' Ice Storm and "
-                                         "Cone of Cold");
+            check(resisted(game, spell), "Magic resistance turns each game's Ice Storm and Cone "
+                                         "of Cold");
         }
     }
 }

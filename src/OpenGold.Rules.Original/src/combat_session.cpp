@@ -3736,23 +3736,19 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         break;
     case 187:
         // Ice Storm: 3d10 of cold and magic, so magic resistance can turn it
-        // (Secret's, Gateway's and Treasures' magic.pas, SpellIceStorm), of
-        // magic alone in Pools of Darkness and the kit (its spellfx.c,
-        // spell_ice_storm). Curse marks it acid; it is cold there
-        // (docs/ORIGINAL-RULES.md, Bugs).
+        // (Curse's, Secret's, Gateway's and Treasures' magic.pas,
+        // SpellIceStorm), of magic alone in Pools of Darkness and the kit
+        // (its spellfx.c, spell_ice_storm).
         cast_generic(caster, number, level, targets, roll_dice(3, 10),
-                     curse()               ? 2
-                     : darkness() || kit() ? 8
-                                           : 10);
+                     darkness() || kit() ? 8 : 10);
         break;
     case 192:
     {
         // Cone of Cold: the caster's level and as many d4 of cold and magic,
         // along a path two wide to half its level (magic.pas,
-        // SpellConeOfCold; the kit's spellfx.c, spell_cone_of_cold). Curse
-        // marks it acid; it is cold there (docs/ORIGINAL-RULES.md, Bugs).
+        // SpellConeOfCold; the kit's spellfx.c, spell_cone_of_cold).
         cast_generic(caster, number, level, path_area(caster, aim, std::max((level + 1) / 2, 1), 2),
-                     level + roll_dice(level, 4), curse() ? 2 : 10);
+                     level + roll_dice(level, 4), 10);
         break;
     }
     case 198:
