@@ -9520,10 +9520,12 @@ bool walk_census(GoldBoxGame game, bool route)
             session.attach_restored_party(party);
         }
         std::size_t beat_number = 0;
-        // Pools of Darkness's route gives each beat dice of its own
-        // (beat_dice_seed), so a resumed save plays on as the whole run does;
-        // the other routes keep their one stream.
-        const bool dice_per_beat = game == GoldBoxGame::pools_of_darkness;
+        // Pools of Darkness's and Gateway's routes give each beat dice of
+        // its own (beat_dice_seed), so a resumed save plays on as the whole
+        // run does and an engine change reshuffles only the beats it
+        // touches; the other routes keep their one stream.
+        const bool dice_per_beat = game == GoldBoxGame::pools_of_darkness ||
+                                   game == GoldBoxGame::gateway_to_the_savage_frontier;
         // How many beats like each (by beat_dice_seed's first seed) came before.
         std::map<std::uint64_t, unsigned> beats_seen;
         // A beat that throws ends the route, named with the beat it was in.

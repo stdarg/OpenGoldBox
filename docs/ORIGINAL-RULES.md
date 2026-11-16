@@ -784,7 +784,17 @@ since, the rest's interruptions and the kit's camp of any length (rules5).
    on the overland meets the snakes in camp and leaves the aerie (map 18)
    to one survivor, and a night in Llorkh changes nothing. Next step: a
    player's answer for that fight (fire or Hold at the mounds, a ward, or
-   a camp elsewhere before it), tried with `--gateway-route`.
+   a camp elsewhere before it), tried with `--gateway-route`. Since
+   2026-11-16 the Gateway route gives each beat its own dice
+   (`beat_dice_seed`, as Pools of Darkness's), and it still loses there:
+   with 1 to 4 reloads of that beat (`RouteBeat::reloads`) the party is
+   wiped every time, and with a night's rest before it (rest_first,
+   rest_for_spells) at reloads 0 and 1 too, so the loss looks systematic,
+   not the dice. Next step: print that fight's log (who casts, whom the
+   mounds engulf) on rules5 and on 858410cb8's route, which won it with
+   one member down, and find what differs (the casters' spells after the
+   camps first); then rebase onto origin/main (Treasures part 8,
+   12fb7be3d) and re-tune *Treasures*' route with `reloads_until_won`.
    *Secret*'s route wins since it rests on through six broken camps, not
    three. *Pool of Radiance*'s, *Curse*'s, the kit's and, after Darkness
    part 13, *Pools of Darkness*'s routes win.
