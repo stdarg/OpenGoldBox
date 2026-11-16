@@ -6533,10 +6533,14 @@ const std::vector<RouteBeat> &treasure_route()
         // Fireball, then Charm Monsters and Charm Person): the magic-user
         // memorizes its Fireballs and Charm Person, which frees a charmed
         // member, the clerics Dispel Magic. The sorceresses most often bolt
-        // the party before its magic-user acts: about one play in eleven is
-        // won (2026-11-15), so the party reloads until it wins.
+        // the party before its magic-user acts: about one play in eleven was
+        // won (2026-11-15) while they all stood ahead. Its SETUP MONSTER
+        // deals them ahead and to the right (sides 3, or 9 facing west), so
+        // half of them bolt from beside the party: 3 plays of 3,000 win
+        // (2026-11-16), and 15 of 120 with the sides taken away. A stand-in:
+        // the test wins it.
         route.back().memorize_first_of = {"fireball", "charm_person", "dispel_magic"};
-        route.back().reloads_until_won = 600;
+        route.back().test_wins = true;
         route.back().expect_cell = {{0x129, 1}};
         // Down the stairs (9,13) and out of the Way Inn, then overland north
         // by maps 56 and 54 to Yartar (map 23).

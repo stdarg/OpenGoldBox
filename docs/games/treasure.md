@@ -662,6 +662,26 @@ left:
   OpenGoldBox told them only as the party rested or used Fix, so a camp
   opened for the Crown alone heard none.
 
+### The sides and the round limit (rules round 6, 2026-11-16)
+
+With SETUP MONSTER's sides played ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md),
+Combat, item 10) and the Hit Points of AdjustLevelHitPoints, the route no
+longer wins; where it stops:
+
+- Beat 28 (map 28), lost on the Hit Points fix alone, is won again.
+- The Way Inn's last fight (40: 7,15; Redbeard's captors): its script deals
+  the monsters ahead and to the right (sides 3, or 9 when the party faces
+  west, cell 11h), so half the sorceresses bolt from beside the party. 3
+  plays of 3,000 win (measured before the Hit Points fix), 15 of 120 with
+  the sides taken away, none of 720 facing west. Made a stand-in (the test
+  wins it); its reloads until won are dropped.
+- The council of Mirabar's ambush (30: 7,9): the Krakens and sorceresses
+  come from the north, east and west (11): 1 play of 300 wins, two members
+  dead. The route loses here.
+
+Next: re-plan these fights (and any after them) for the sides, or put
+them to the user as stand-ins.
+
 ## The ending
 
 *Treasures* has no ending of its own. In Freezefire's lair (script 38, Ice
