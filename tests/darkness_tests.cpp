@@ -27,6 +27,7 @@
 #include <iostream>
 #include <iterator>
 #include <memory>
+#include <ranges>
 #include <set>
 #include <string>
 #include <vector>
@@ -749,7 +750,10 @@ bool play_won_script(
 // Xoham's fight left at its beholders' number, so recovery includes the
 // first member too. On the way, the last stand is fought under the script's bar
 // on magic and its to-hit cells: the monsters 6 better, the party 7 worse
-// (cells 1 and 2Fh; fxengine.pas, AttackRoll).
+// (cells 1 and 2Fh; fxengine.pas, AttackRoll). The party's movement modifier
+// (cell 1Ch, which Moander's heart sets; here set by the test) is added to its
+// movement in the next fight, whose end clears it (charhlp.pas,
+// RecalcMovement; postcbt.pas).
 void the_finale_stands_the_fallen_up()
 {
     const auto folder = darkness_folder();
@@ -768,13 +772,18 @@ void the_finale_stands_the_fallen_up()
     opengold::test::TourAccess::set_string(session, EclAddress{0x32B}, "MEMBER 1");
     opengold::test::TourAccess::set_variable(session, EclAddress{0x254}, 0xFF);
     opengold::test::TourAccess::set_variable(session, EclAddress{0x1CF}, 0xFF);
+    constexpr EclAddress party_move_modifier{0x1C};
+    constexpr std::uint16_t six_slower = 250;
+    opengold::test::TourAccess::set_variable(session, party_move_modifier, six_slower);
     opengold::test::TourAccess::enter_script(session, 75, 65,
                                              {9, 7, opengold::por::MapDirection::south});
     bool last_stand_seen = false;
+    std::vector<int> move_modifiers;
     const bool won = play_won_script(
         session, content, party, {"NO", "NO", "YES", "NO"},
         [&](const opengold::CampaignEncounter &encounter)
         {
+            move_modifiers.push_back(encounter.party_move_modifier);
             if (!encounter.no_magic)
             {
                 return std::vector<opengold::MemberId>{};
@@ -793,6 +802,13 @@ void the_finale_stands_the_fallen_up()
     check(last_stand_seen, "Gothmenes makes his last stand");
     check(won, "The game is won");
     check(!session.magic_barred(), "The win lifts the bar on magic");
+    check(move_modifiers.size() > 1 && move_modifiers.front() == six_slower &&
+              std::ranges::all_of(move_modifiers | std::views::drop(1),
+                                  [](int modifier)
+                                  {
+                                      return modifier == 0;
+                                  }),
+          "The first fight takes the movement modifier and its end clears it");
     for (const auto id : members)
     {
         if (id)

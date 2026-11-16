@@ -5715,6 +5715,28 @@ void the_party_facing_and_movement()
     check(movement_feet(3) == std::pair{45, 30}, "3 more squares for the party alone");
     check(movement_feet(253) == std::pair{15, 30}, "253 takes 3 away");
     check(movement_feet(250) == std::pair{5, 30}, "Below 1 is 1");
+
+    // Pools of Darkness adds the modifier after Haste (charhlp.pas,
+    // RecalcMovement): a hasted 12 less 6 is 18, where Pool of Radiance
+    // doubles 12 less 6, 12.
+    const auto hasted_feet = [](GoldBoxGame game, int modifier)
+    {
+        auto walker = creature(50);
+        walker.movement = 12;
+        walker.effects = {{39, 5, 0, false}};
+        auto fight = arrange({{"Walker", rules::Side::party, {0, 3}, walker},
+                              {"Kobold", rules::Side::opposition, {7, 3}, creature(50)}},
+                             21, {}, 100, game, false, false,
+                             [modifier](rules::Encounter &encounter)
+                             {
+                                 encounter.party_move_modifier = modifier;
+                             });
+        return view_of(fight.session->snapshot(), "Walker").movement_feet;
+    };
+    check(hasted_feet(GoldBoxGame::pools_of_darkness, 250) == 90 &&
+              hasted_feet(GoldBoxGame::pool_of_radiance, 250) == 60,
+          "Pools of Darkness takes the 6 from the hasted movement");
+    check(hasted_feet(GoldBoxGame::pools_of_darkness, 230) == 5, "Below 1 is 1 there too");
 }
 
 // Spiritual Hammer (magic.pas, SpellSpiritualHammer; effhndlr.pas,
