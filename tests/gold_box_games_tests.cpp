@@ -863,10 +863,12 @@ const std::vector<RouteBeat> &curse_route()
         // Moander (cell 0x4C5B). The magic-user readies the Wand of
         // Defoliation for the mounds first; the party takes the magic the
         // cult leaves: plate armor +3, a shield +2, a mace +3 and a Cloak of
-        // Displacement.
+        // Displacement. The pseudopods win most plays (8% of the party's
+        // win), so a player reloads until it wins.
         []
         {
             RouteBeat mogion{17, 7, 1, D::north, {"ATTACK"}};
+            mogion.reloads_until_won = 240;
             mogion.ready_types = {{79, "magic_user 6"}};
             mogion.take_items = {{"PLATE", "paladin 1"},
                                  {"SHIELD (", "paladin 2"},

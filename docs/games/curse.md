@@ -211,3 +211,133 @@ its ending in six screens of four lines, Pascal strings in GAME.OVR (at
 265C6h in the release OpenGoldBox reads, 272,137 bytes); OpenGoldBox reads
 them from the player's copy and tells them, followed by "You have won.".
 Another release shows only that line.
+
+## The route
+
+`opengold_curse_route` plays the story from the opening to the ending
+([GAMES.md](../GAMES.md), step 3.7). Each fight is played up to 120 times
+from the party as it stood (40 dice, three tactics each: every member
+casting by Quick, the magic-user alone casting, a player's own choices) and
+the best play kept, as a player reloads. A fight won with members dead
+counts as won: the clerics raise them at the next rest or temple, and the
+last fight wins the game whatever it costs, as the original counts a fight
+won with one member standing.
+
+### Stand-ins re-planned (2026-11-16)
+
+On origin/main 4b5b95686 the route leaned on these stand-ins:
+
+| Stand-in | Measured then |
+|---|---|
+| Test experience: 60,000 each six times and 400,000 twice at the guild's secret hall, to levels 10 and 11, with 60,000 gold | Kept, below |
+| Test gear: weapons +2, armor and shields +1 from the start | Replaced |
+| Heals by the test outside the game's commands before 11 beats (Hap's patrols, Crimdrac, Dracandros, the Yulash mounds, the Pit, Dexam, the caves' exit, the temple) | Replaced |
+| Mogion and the pseudopods: the test set the Gauntlet's cells; the route never walked to Mogion's altar | Replaced |
+| The cultists' last stand, won by the test | Its player won every play (53% with no one dead) |
+| Dexam's lair: the test cleared cell 0x4C03 | Not needed (below) |
+| The final battle, won by the test | Its player won no play of 120 (the best killed 10 of 28 margoyles) |
+
+What changed:
+
+- **Mogion and the pseudopods.** Mogion's altar is event 12 of ECL3.DAX 18
+  (at 7,1 on the Pit's second level). Played there, the party attacks
+  Mogion, her cultists and mounds, and the three pseudopods that follow, and
+  finds the Gauntlet in their remains. The route goes back up the stairs and
+  declines the question to go down again, so the next camp can start.
+- **The cell before Dexam.** The original's NEW ECL runs EclInit, which clears
+  4C00h to 4C1Fh unless a saved game was just loaded (`eclmenu.pas`,
+  `EclInit`). OpenGoldBox has done this since 2026-11-14
+  (`cleared_by_new_script`), after the stand-in was set. The caves' new
+  script clears the hooded woman's 0x4C03, and Dexam's lair meets the party.
+  This was an old stand-in, not a difference from the original. The scripts
+  use the 32 cells as each area's own flags.
+- **Rests instead of heals.** Every map but the ruined temple lets a camp
+  rest ("YOUR BANDS WILL NOT LET YOU REST" is ECL6.DAX 67's alone), so the
+  route rests where a player would:
+  - Hap's patrols come into its camps, which only adds patrols the party
+    hunts anyway.
+  - In Yulash a camp is refused in the Red Plumes' quarters ("HEY, NO
+    SLEEPING HERE!", x up to 4 and y up to 5) and broken by wandering
+    monsters in the streets. The barracks (event 25, at 5,2) are the spot
+    they point out (ECL3.DAX 16's camp entries), and the party rests there
+    before the mounds and before the Pit.
+  - A camp in the Pit draws its wanderers (up to 50 fights a rest before the
+    last stand, all won).
+  - A camp in the Caves of the Beholder draws theirs night after night, so
+    the party leaves first and rests at Zhentil Keep's edge.
+  - In the ruins of Myth Drannor the parley keeps the rakshasas away.
+  - In the temple the clerics cast their cures before the final battle.
+- **The game's own gear.** The party starts with a long sword (a cleric's
+  mace, a magic-user's dagger), plate mail and a shield, unenchanted. It
+  takes what its fights leave and readies each in place of what it carries:
+  - Dracandros: Bracers AC 2 and a Ring of Wizardry for the magic-user, a
+    Ring of Protection +3, and Wands of Ice Storm and Fireballs.
+  - The Yulash spies: broad swords +1, splint mail +2 and a mace +1.
+  - The mounds: a Wand of Lightning besides the Wand of Defoliation, which
+    the magic-user readies again before Mogion.
+  - Mogion: plate armor +3, a shield +2, a mace +3 and a Cloak of
+    Displacement.
+  - Fzoul's men in the shrine: plate armor +1.
+  - The temple's chapel: plate armor +2.
+
+  The Hap dark elves' Drow weapons do not last: Curse's scripts take item
+  types 94, 96 and 97 away (DESTROY ITEMS in ECL5.DAX 48 and 53).
+- **The final battle.** Tyranthraxus (100 Hit Points, 16d6 lightning at a
+  square and along 10 more in each of the first four rounds, `magic.pas`,
+  `EffThrowLightning`), eight high priests and 28 margoyles. The party
+  starts at the bottom of the field, rows 13 and 14, with the enemy packed
+  in rows 7 to 12. The player's tactic follows the cluebook:
+  - fireballs (the magic-user's four, then the wand) at the square whose
+    burst takes the most margoyles and priests and no member;
+  - a cleric's Prayer once;
+  - Hold Person on the high priests, who are people.
+
+  The margoyles shrug off Hold Person, which the old tactic wasted on them.
+  13 plays of 120 win, all with a member or two dead, and the fight is
+  reloaded until won.
+
+### Win rates (2026-11-16)
+
+Each figure is plays won of 120, in the full route on its own dice, with
+the plays won with no one dead in brackets.
+
+| Fight | Won (no one dead) |
+|---|---|
+| The king's guards, the Fire Knife in the guild, the Fire Knives' leader | 100% (92% to 100%) |
+| The wilderness's ambushes and the black dragons | 100% |
+| Hap's four patrols and the barn | 100% |
+| The caves' guards at Hap's gate | 59% (54%) |
+| Camps on the way to the tower (eight fights) | 64% to 100% |
+| Crimdrac's tower, Dracandros | 100% (58%) |
+| Crimdrac on the road back | 92% (61%) |
+| The Zhentil spies | 100% (99%) |
+| The shambling mounds over the dead cleric | 43% (8%) |
+| Mogion, her cultists and mounds | 48% (0%) |
+| The three pseudopods | 8% (0%), reloaded until won |
+| The Pit's wanderers in camp (50 fights) | 100% |
+| The cultists' last stand | 100% (18%) |
+| Fzoul's men | 100% |
+| Dexam's guard and Dexam | 99% and 100% (47%, 58%) |
+| The temple's chapel | 100% (77%) |
+| Tyranthraxus, the high priests and margoyles | 11% (0%), reloaded until won |
+
+### The stand-in left: test experience
+
+The party still trains to levels 10 and 11 at the guild's secret hall on
+1,160,000 test experience and 60,000 gold, for a party as strong as one a
+player brings from *Pool of Radiance* and trains on the way. The route's
+own fights earn each member about 160,000 more, and the original has no
+other training hall on the way before Voonlar's. These were measured:
+
+- **No test experience.** The level-5 party wins Tilverton, the wilderness,
+  Hap's patrols and the barn, then dies to the caves' guards at Hap's gate.
+  Patrolling Shadow Gap's forest for experience (PATROL FOREST) kills five
+  of six at level 5.
+- **360,000 only (levels 9 and 10).** The caves' guards win 30% to 37% of
+  plays, the mounds 50%, Mogion 15%, and the pseudopods none of 120.
+
+Replacing this stand-in needs either a *Pool of Radiance* party brought
+across at the end of that game's route, or the optional fights a player
+takes on the way: the sewers' trolls, the hideout's rooms, and the
+dungeons below Shadowdale, Ashabenford and Essembra, which the cluebook
+says are there to add experience.

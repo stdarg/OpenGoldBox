@@ -272,73 +272,59 @@ In small steps, each with its check:
 7. A route test that plays from the start to the end, like the
    *Pool of Radiance* expedition checks. *In progress (2026-11-13):*
    `opengold_curse_route` plays Tilverton with the cluebook's party (two
-   paladins, a ranger, two clerics and a magic-user, on Quick with Quick
-   magic on): the shops, the sage, the king's carriage and jail, the
-   Thieves' Guild, the sewers and the Fire Knives' hideout, to the leader's
-   fight, the first bond's end and the exile to the wilderness; it trains to
-   levels 10 and 11 at the guild's secret hall on test experience, and carries
-   +2 weapons and +1 armor, as the Pool of Radiance expedition does, for a
-   party as strong as one brought from Pool of Radiance; it camps in the wilderness and journeys by Shadow Gap's
-   displacer beasts to Shadowdale, by boat to Ashabenford, past the Fire
-   Knives' ambush to the Standing Stones, to Essembra, and through three
-   black dragons to Hap, where it hunts four dark elf patrols (healed by the
-   test between them, as camps in Hap draw more) and wins the barn; it
-   follows the efreeti's map out of Hap's gate to the caves, beats their
-   guards, is taken up by Crimdrac the dracolich to the Wizard's Tower,
-   parleys with the dragons on its roof, and kills Dracandros in the
-   courtyard for the Helm of Dragons (the second bond). Each fight is played
-   with up to 40 dice and the best play kept, as a player reloads. It leaves
-   the tower by its secret passage to Hap and has its dead raised at the
-   Temple of Sune; it leaves Hap, beats Crimdrac on the road, passes the
-   bridge's old man and the Standing Stones and the Fire Knives' ambush, and
-   reaches Yulash by Hillsfar. In Yulash it asks the Red Plumes' leave, is
-   taken to their commander, fights the Zhentil spies from his waiting room
-   and pleases him, enters the Pit of Moander, takes Alias and Dragonbait
-   into the party, and goes down to the Pit's second level. It beats the shambling mounds over the dead
-   cleric for the Wand of Defoliation, which its magic-user takes and
-   readies. The route plays as a player would where the original's AI would
-   not: its magic-user learns the spells a player takes, its clerics raise
-   the dead with Raise Dead after a rest, and each fight is tried with every
-   member casting, with the magic-user alone casting, and with the wand and
-   Hold Monster used at the right targets. Its player aims Hold Person at people only
-   and uses the wand on the mounds, and so beats Mogion, her six cultists and
-   five shambling mounds (ECL3.DAX 18 loads them together, as the original
-   does), but not yet the three pseudopods that follow at once (140 Hit
-   Points each, engulfing): the test sets what their fall sets (the Gauntlet
-   of Moander, cells 0x4C5B and 0x4C2D) and the route goes on. It beats the
-   cultists' last stand by the Pit's way out (a fight its player may lose is
-   won by the test, a stand-in named in the route), leaves by the west door
-   at 0,11, where Alias and Dragonbait leave the party (DUMP), raises its
-   dead at Voonlar's temple, camps at Yulash's edge and enters Zhentil Keep,
-   where Olive Ruskettle leads it by a secret way into the Shrine of Bane.
-   It takes Dimswart the sage from his cell and follows the hooded woman
-   (who shows herself every other time it passes) to Dexam the Beholder,
-   who slays Fzoul and so frees it of his bond, and into the Caves of the
-   Beholder. It beats Dexam and his minions there for the Amulet of
-   Lathander (his lair meets the party only while cell 0x4C03 is 0, which
-   the hooded woman set to 1 and nothing on the way clears; until it is
-   known what clears it in the original, the test does: Curse's
-   reconstruction in ~/src/Unsafe reads COMPARE and IF as OpenGoldBox does,
-   its engine never writes the cell and clears zone 0 only when a game
-   starts, no script writes it but the woman's SAVE, and only Dexam's fight
-   sets the Amulet's cell 0x4C5A, so this copy's ECL4.DAX would leave the
-   Amulet out of reach), and leaves by
-   stepping off the map south of 11,15 (LEAVE_MAP), where Olive takes
-   Dimswart away, to Zhentil Keep's edge. With the three
-   artifacts it goes back by Yulash and Hillsfar to the Standing Stones,
-   where the grey man reveals himself as Tyranthraxus ("meet me at Myth
-   Drannor"), and journeys on to the Burial Glen (map 64). It leaves the
-   Glen east by the path to the ruins of Myth Drannor, wins the head
-   Rakshasa over with a haughty parley and goes by the sewer grate into the
-   ruined temple (map 67). There Tyranthraxus takes the bonded party,
-   Nameless frees it and dies, and the party climbs to the second floor and
-   fights the final battle (Tyranthraxus, high priests and margoyles, won by
-   the test for now); the game is won, and Curse's own ending is told, read
-   from the player's GAME.OVR as its WinGame shows it. The route plays Curse
-   from start to end; its stand-ins (test experience and gear, heals where
-   no rest is allowed, the pseudopods' and some fights' wins, the cell
-   before Dexam) are where the route's player or OpenGoldBox still falls
-   short.
+   paladins, a ranger, two clerics and a magic-user, made with Modify at
+   their highest, on Quick with Quick magic on): the shops, the sage, the
+   king's carriage and jail, the Thieves' Guild, the sewers and the Fire
+   Knives' hideout, to the leader's fight, the first bond's end and the
+   exile to the wilderness; it trains to levels 10 and 11 at the guild's
+   secret hall on test experience (its one stand-in left, below); it camps
+   in the wilderness and journeys by Shadow Gap's displacer beasts to
+   Shadowdale, by boat to Ashabenford, past the Fire Knives' ambush to the
+   Standing Stones, to Essembra, and through three black dragons to Hap,
+   where it hunts four dark elf patrols and wins the barn; it follows the
+   efreeti's map out of Hap's gate to the caves, beats their guards, is
+   taken up by Crimdrac the dracolich to the Wizard's Tower, parleys with
+   the dragons on its roof, and kills Dracandros in the courtyard for the
+   Helm of Dragons (the second bond). Each fight is played with up to 40
+   dice and the best play kept, as a player reloads. It leaves the tower by
+   its secret passage to Hap and has its dead raised at the Temple of Sune;
+   it leaves Hap, beats Crimdrac on the road, passes the bridge's old man and
+   the Standing Stones and the Fire Knives' ambush, and reaches Yulash by
+   Hillsfar. In Yulash it asks the Red Plumes' leave, is taken to their
+   commander, fights the Zhentil spies from his waiting room and pleases
+   him, rests at the barracks, beats the shambling mounds over the dead
+   cleric for the Wand of Defoliation, enters the Pit of Moander, takes Alias
+   and Dragonbait into the party, and goes down to the Pit's second level.
+   There it beats Mogion, her cultists and mounds and the three pseudopods
+   of Moander that follow at once, for the Gauntlet of Moander. The route
+   plays as a player would where the original's AI would not: its
+   magic-user learns the spells a player takes, its clerics raise the dead
+   with Raise Dead after a rest, and each fight is tried with every member
+   casting, with the magic-user alone casting, and with a player's own
+   choices. It beats the cultists' last stand by the Pit's way out, leaves by
+   the west door at 0,11, where Alias and Dragonbait leave the party (DUMP),
+   raises its dead at Voonlar's temple, camps at Yulash's edge and enters
+   Zhentil Keep, where Olive Ruskettle leads it by a secret way into the
+   Shrine of Bane. It takes Dimswart the sage from his cell and follows the
+   hooded woman to Dexam the Beholder, who slays Fzoul and so frees it of
+   his bond, and into the Caves of the Beholder, where it beats Dexam and
+   his minions for the Amulet of Lathander, and leaves by stepping off the
+   map south of 11,15 (LEAVE_MAP), where Olive takes Dimswart away. With the
+   three artifacts it goes back by Yulash and Hillsfar to the Standing
+   Stones, where the grey man reveals himself as Tyranthraxus ("meet me at
+   Myth Drannor"), and journeys on to the Burial Glen (map 64). It leaves
+   the Glen east by the path to the ruins of Myth Drannor, wins the head
+   Rakshasa over with a haughty parley, rests, and goes by the sewer grate
+   into the ruined temple (map 67), where no camp rests. There Tyranthraxus
+   takes the bonded party, Nameless frees it and dies, and the party climbs
+   to the second floor and wins the final battle against Tyranthraxus, his
+   high priests and margoyles; the game is won, and Curse's own ending is
+   told, read from the player's GAME.OVR as its WinGame shows it. *Stand-ins
+   re-planned 2026-11-16* ([curse.md](games/curse.md), The route): the party
+   takes the magic arms and wands its fights leave instead of test gear,
+   rests where the scripts let a player rest instead of the test's heals,
+   and wins every fight itself, the final battle included; only the test
+   experience remains.
 
 ### 4. *Secret of the Silver Blades*
 
