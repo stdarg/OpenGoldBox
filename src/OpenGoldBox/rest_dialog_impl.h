@@ -554,6 +554,14 @@ std::optional<String> RolfTourView::use_outside_combat(opengold::MemberId user,
                                                        const String &action_text,
                                                        const String &target_text)
 {
+    // Where a Pools of Darkness script bars magic, the Cast menu refuses
+    // (camp.pas, CanDoSpellActivity).
+    if (dax() && dax()->magic_barred())
+    {
+        return i18n::format(
+            N_("{name} cannot cast spells in this area."),
+            {{"name", String::utf8(campaign_->member(user).character.sheet().name.c_str())}});
+    }
     // HP restored across the party, so a whole-party spell reports its total.
     const auto party_hp = [&]
     {

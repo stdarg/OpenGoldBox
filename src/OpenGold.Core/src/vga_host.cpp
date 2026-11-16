@@ -566,6 +566,10 @@ void RolfTourSession::cast_outside_combat(MemberId caster, MemberId patient,
     {
         throw std::runtime_error("A spell is cast outside combat");
     }
+    if (magic_barred())
+    {
+        throw std::runtime_error("No one can cast spells in this area");
+    }
     campaign_->use_camp_action(caster, patient, action);
     constexpr EclAddress last_spell{0x4B};
     constexpr std::uint16_t awaiting_spell = 0xFF;
@@ -748,6 +752,31 @@ bool RolfTourSession::camp_fix()
         return false;
     }
     return true;
+}
+
+void RolfTourSession::add_script_to_hit()
+{
+    if (game() != GoldBoxGame::pools_of_darkness || !encounter_)
+    {
+        return;
+    }
+    // Each cell holds a signed byte: 250 is 6 worse.
+    const auto signed_cell = [this](EclAddress cell)
+    {
+        return static_cast<int>(static_cast<std::int8_t>(machine_.variable(cell) & 0xFF));
+    };
+    encounter_->party_to_hit += signed_cell(darkness_party_hit_mod);
+    const int monsters_to_hit = signed_cell(darkness_monster_hit_mod);
+    for (auto &enemy : encounter_->enemies)
+    {
+        enemy.original_strength.to_hit += monsters_to_hit;
+    }
+}
+
+bool RolfTourSession::magic_barred() const
+{
+    constexpr EclAddress darkness_anti_magic{0x02};
+    return game() == GoldBoxGame::pools_of_darkness && machine_.variable(darkness_anti_magic) != 0;
 }
 
 bool RolfTourSession::camp_offers_crown() const

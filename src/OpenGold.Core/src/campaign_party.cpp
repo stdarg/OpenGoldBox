@@ -4049,7 +4049,13 @@ std::optional<CoinExchange> CampaignParty::read_character(PartySlot slot, const 
                            " (maximum " + std::to_string(hit_point_maximum(id)) + ", sheet " +
                            std::to_string(current.character.sheet().hit_points) + ")");
     }
-    if (hp > hit_point_maximum(id) || (current.vitals.dead && hp))
+    // The 256-color games' scripts stand a dead member up by setting its
+    // status to okay (0) with its Hit Points: Pools of Darkness's finale
+    // heals so (ECL1:75 0x95BF, "A FOG OF PAIN LIFTS").
+    constexpr std::uint16_t okay = 0;
+    const bool stood_up = vga_engine(game) && current.vitals.dead && hp > 0 &&
+                          vm.variable(por::game_address(por::ecl_character_status, game)) == okay;
+    if (hp > hit_point_maximum(id) || (current.vitals.dead && hp && !stood_up))
     {
         throw std::runtime_error("Unsupported script HP change");
     }
@@ -4067,6 +4073,13 @@ std::optional<CoinExchange> CampaignParty::read_character(PartySlot slot, const 
     auto settled = settle_script_coins(state_.wealth, after_script, coin_rates());
     auto &m = edit(id);
     auto vitals = m.vitals;
+    if (stood_up)
+    {
+        // The script only changes the record's status: nothing of a raising's
+        // cost (take_revival_changes) is taken.
+        vitals.dead = false;
+        vitals.hit_points = 0;
+    }
     rules_->set_hit_points(vitals, m.character.sheet(), hp);
     state_.wealth = settled.purse;
     m.vitals = std::move(vitals);

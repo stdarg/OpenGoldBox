@@ -5,6 +5,7 @@
 #include "opengold/campaign_save.h"
 #include "opengold/campaign_session.h"
 #include "opengold/character_creator.h"
+#include "opengold/combat_demo.h"
 #include "opengold/creature_catalog.h"
 #include "opengold/darkness_import.h"
 #include "opengold/ecl.h"
@@ -22,6 +23,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <iterator>
 #include <memory>
@@ -488,6 +490,248 @@ void a_secret_character_comes_across()
           "It keeps its own platinum, gems and jewelry");
 }
 
+// A Darkness session past its opening, with a party of the original rules
+// whose members are made of `classes` in turn.
+struct DarknessParty
+{
+    opengold::por::RolfTourSession session;
+    opengold::original::Content content;
+    std::shared_ptr<opengold::CampaignParty> party;
+};
+
+DarknessParty darkness_party(const std::filesystem::path &folder,
+                             const std::vector<std::string> &classes)
+{
+    auto content = opengold::load_original_content(folder, darkness_game);
+    std::shared_ptr<const opengold::rules::CharacterRules> creation =
+        opengold::original::character_rules(opengold::original::default_aging, darkness_game);
+    auto party = std::make_shared<opengold::CampaignParty>(
+        opengold::original::rules_module(content), creation);
+    for (std::size_t n = 0; n < classes.size(); ++n)
+    {
+        opengold::CharacterCreator creator(creation, static_cast<unsigned>(40 + n));
+        creator.select(opengold::rules::CreationField::race, "human");
+        creator.select(opengold::rules::CreationField::character_class, classes[n]);
+        creator.name("member " + std::to_string(n + 1));
+        opengold::test::walk_original_creation(creator);
+        (void)party->add_pc(creator.create_character());
+    }
+    auto session = opengold::load_campaign(folder, darkness_game);
+    session.campaign_party(party);
+    // Rolf's opening, declined, to its end.
+    for (int step = 0; step < 200 && session.snapshot().phase != TourPhase::completed; ++step)
+    {
+        const auto &snapshot = session.snapshot();
+        if (snapshot.phase == TourPhase::running)
+        {
+            session.advance(1.0);
+        }
+        else
+        {
+            check(snapshot.phase == TourPhase::awaiting_continue, "The opening only asks");
+            (void)session.choose(snapshot.continue_ticket, snapshot.choices.size() - 1);
+        }
+    }
+    check(session.snapshot().phase == TourPhase::completed, "The opening ends");
+    return {std::move(session), std::move(content), std::move(party)};
+}
+
+// Pools of Darkness's antiMagic (cell 2) bars casting in camp too: "cannot
+// cast spells in this area" (camp.pas, CanDoSpellActivity), and the spell
+// stays memorized; with the cell cleared the same spell is cast.
+void magic_is_barred_in_camp_where_a_script_bars_it()
+{
+    const auto folder = darkness_folder();
+    if (folder.empty())
+    {
+        std::cout << "Pools of Darkness's files are not here; no camp is barred.\n";
+        return;
+    }
+    auto [session, content, party] = darkness_party(folder, {"cleric"});
+    const auto cleric = party->state().slots[0];
+    check(party->rest(), "The cleric rests to choose its spells");
+    const auto options = party->spell_choice_options(cleric);
+    std::vector<std::string> prepared;
+    for (const auto &choice : options.preparation)
+    {
+        if (choice.id.find("cure_light_wounds") != std::string::npos)
+        {
+            prepared.push_back(choice.id);
+        }
+    }
+    check(!prepared.empty(), "The cleric can memorize Cure Light Wounds");
+    party->choose_spells(cleric, {{}, prepared});
+    auto hurt = party->state();
+    hurt.roster.front().vitals.hit_points = 1;
+    party->restore(hurt);
+    const auto cure = [&]
+    {
+        const auto actions = party->camp_actions(cleric);
+        const auto found = std::ranges::find_if(actions,
+                                                [](const opengold::rules::CampAction &action)
+                                                {
+                                                    return action.id.find("cure_light_wounds") !=
+                                                           std::string::npos;
+                                                });
+        return found == actions.end() ? std::string() : found->id;
+    };
+    check(!cure().empty(), "Cure Light Wounds is memorized");
+    constexpr EclAddress anti_magic{0x02};
+    opengold::test::TourAccess::set_variable(session, anti_magic, 1);
+    check(session.magic_barred(), "The script's cell bars magic");
+    bool refused = false;
+    try
+    {
+        session.cast_outside_combat(cleric, cleric, cure());
+    }
+    catch (const std::exception &error)
+    {
+        refused = std::string(error.what()).find("cast spells in this area") != std::string::npos;
+    }
+    check(refused, "No spell is cast in camp while magic is barred");
+    check(!cure().empty() && party->member(cleric).vitals.hit_points == 1,
+          "The spell stays memorized and nothing is healed");
+    opengold::test::TourAccess::set_variable(session, anti_magic, 0);
+    check(!session.magic_barred(), "Cleared, the cell bars nothing");
+    session.cast_outside_combat(cleric, cleric, cure());
+    check(party->member(cleric).vitals.hit_points > 1, "The cleric casts its cure again");
+}
+
+// Plays the session's script to its end: each question is answered with the
+// next of `answers` (by its label), any other stop goes on, and every fight
+// is won by the test, `dead_after` choosing for each fight the members it
+// leaves dead. True when the game's win was shown on the way.
+bool play_won_script(
+    opengold::por::RolfTourSession &session, const opengold::original::Content &content,
+    const std::shared_ptr<opengold::CampaignParty> &party, std::vector<std::string> answers,
+    const std::function<std::vector<opengold::MemberId>(const opengold::CampaignEncounter &)>
+        &dead_after)
+{
+    bool won_shown = false;
+    for (int step = 0; step < 2000; ++step)
+    {
+        const auto &snapshot = session.snapshot();
+        won_shown = won_shown || snapshot.game_won;
+        switch (snapshot.phase)
+        {
+        case TourPhase::running:
+            session.advance(1.0);
+            break;
+        case TourPhase::awaiting_continue:
+        {
+            const auto &choices = snapshot.choices;
+            auto choice = std::size_t{0};
+            if (choices.size() > 1)
+            {
+                check(!answers.empty(),
+                      "The script asks only what the test answers: " + snapshot.dialogue);
+                choice = static_cast<std::size_t>(std::ranges::find(choices, answers.front()) -
+                                                  choices.begin());
+                check(choice < choices.size(), "The script offers " + answers.front());
+                answers.erase(answers.begin());
+            }
+            check(session.choose(snapshot.continue_ticket, choice), "The party answers");
+            break;
+        }
+        case TourPhase::treasure:
+            check(session.leave_treasure(snapshot.continue_ticket), "The party leaves the pile");
+            break;
+        case TourPhase::combat:
+        {
+            if (session.monster_picture())
+            {
+                check(session.start_encounter(), "The fight begins");
+                break;
+            }
+            const auto &encounter = *session.pending_encounter();
+            const auto dead = dead_after(encounter);
+            // The fight is set up as the game sets it up, then left: the
+            // party is out of it again once `won` is gone.
+            auto result = [&]
+            {
+                opengold::CombatDemo won(opengold::original::rules_module(content));
+                won.campaign_party(party);
+                won.encounter(encounter, 7);
+                return won.combat().snapshot();
+            }();
+            result.outcome = opengold::rules::Outcome::victory;
+            for (auto &unit : result.combatants)
+            {
+                if (unit.side == opengold::rules::Side::opposition ||
+                    std::ranges::find(dead, unit.id) != dead.end())
+                {
+                    unit.dead = true;
+                    unit.conscious = false;
+                    unit.hit_points = 0;
+                    unit.status = "dead";
+                }
+            }
+            check(session.resolve_combat(result), "The test wins the fight");
+            break;
+        }
+        default:
+            return won_shown;
+        }
+    }
+    check(false, "The script ends");
+    return won_shown;
+}
+
+// The finale's last words (ECL1:75 0x94D1): once Gothmenes falls the cells
+// that barred magic and moved the to-hit rolls are cleared, and "a fog of
+// pain lifts": the script sets each member it counts to its maximum Hit
+// Points and its status to okay, so one Gothmenes' last stand left dead
+// stands again, unscathed by a raising's cost. Its counter starts where
+// Xoham's fight left it (cell C4h, the beholders' number: 4 when no member
+// was down), so it reaches the members from the fifth on, as the
+// original's. On the way, the last stand is fought under the script's bar
+// on magic and its to-hit cells: the monsters 6 better, the party 7 worse
+// (cells 1 and 2Fh; fxengine.pas, AttackRoll).
+void the_finale_stands_the_fallen_up()
+{
+    const auto folder = darkness_folder();
+    if (folder.empty())
+    {
+        std::cout << "Pools of Darkness's files are not here; the finale is not played.\n";
+        return;
+    }
+    auto [session, content, party] =
+        darkness_party(folder, {"fighter", "fighter", "fighter", "fighter", "fighter", "fighter"});
+    const auto last = party->state().slots[5];
+    // The crystal's bearer, whose name the inner palace keeps (cell 32Bh),
+    // and Gothmenes' summons (cell 254h at FFh), which script 75 begins at.
+    opengold::test::TourAccess::set_string(session, EclAddress{0x32B}, "MEMBER 1");
+    opengold::test::TourAccess::set_variable(session, EclAddress{0x254}, 0xFF);
+    opengold::test::TourAccess::enter_script(session, 75, 65,
+                                             {9, 7, opengold::por::MapDirection::south});
+    bool last_stand_seen = false;
+    const bool won = play_won_script(
+        session, content, party, {"NO", "NO"},
+        [&](const opengold::CampaignEncounter &encounter)
+        {
+            if (!encounter.no_magic)
+            {
+                return std::vector<opengold::MemberId>{};
+            }
+            last_stand_seen = true;
+            check(encounter.party_to_hit == -7 &&
+                      std::ranges::all_of(encounter.enemies,
+                                          [](const opengold::rules::Participant &p)
+                                          {
+                                              return p.original_strength.to_hit == 6;
+                                          }),
+                  "The last stand's monsters are 6 better to hit, the party 7 worse");
+            check(session.magic_barred(), "The last stand bars magic");
+            return std::vector<opengold::MemberId>{last};
+        });
+    check(last_stand_seen, "Gothmenes makes his last stand");
+    check(won, "The game is won");
+    check(!session.magic_barred(), "The win lifts the bar on magic");
+    const auto &stood = party->member(last);
+    check(!stood.vitals.dead && stood.vitals.hit_points == stood.character.sheet().hit_points,
+          "The member the last stand left dead stands again, whole");
+}
+
 int main()
 {
     try
@@ -499,6 +743,8 @@ int main()
         the_opening_reaches_new_phlan();
         every_map_has_its_script();
         a_secret_character_comes_across();
+        magic_is_barred_in_camp_where_a_script_bars_it();
+        the_finale_stands_the_fallen_up();
         std::cout << "Pools of Darkness passed.\n";
     }
     catch (const std::exception &error)

@@ -1903,6 +1903,13 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
             results.push_back(
                 {game_cell(ecl_party_facing), static_cast<std::uint16_t>(*result.escape_side)});
         }
+        // Pools of Darkness's fight's end clears its to-hit cells
+        // (add_script_to_hit).
+        if (game() == GoldBoxGame::pools_of_darkness)
+        {
+            results.push_back({darkness_monster_hit_mod, 0});
+            results.push_back({darkness_party_hit_mod, 0});
+        }
         // A Treasures crystal battle's crystal joins those the party holds
         // (cell 3Ch: 1 red, 2 green, 4 blue), and cell 3Eh tells the script
         // which it was (effhndlr.pas, EffRedCrystal).
@@ -4230,8 +4237,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 // Gothmenes' last stand: no one casts a spell or uses a magic
                 // item (combatai.pas, SelectSpellToCast; combat.pas, the
                 // Cast menu; viewchar.pas, the Use menu).
-                constexpr EclAddress darkness_anti_magic{0x02};
-                encounter_->no_magic = machine_.variable(darkness_anti_magic) != 0;
+                encounter_->no_magic = magic_barred();
             }
             if (std::exchange(duel_, false))
             {
@@ -4289,6 +4295,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 apply_difficulty(*encounter_, difficulty_,
                                  average_party_level(living_member_levels()));
             }
+            add_script_to_hit();
             announce_camp_attack();
             combat_request_ = request.id;
             // The original shows the approached monster's close-up until a key press.

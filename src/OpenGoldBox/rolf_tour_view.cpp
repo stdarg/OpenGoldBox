@@ -1138,11 +1138,14 @@ void RolfTourView::inventory_selected(std::int64_t index)
     give_up_warned_.reset();
     const auto &item = items[index];
     const bool scroll = opengold::rules::parse_scroll_key(item.definition_id).has_value();
+    // Where a Pools of Darkness script bars magic, the items menu offers no
+    // Use (viewchar.pas, UseItemMenu).
     required_node<Button>(*this, "InventoryPanel/%UseItem")
         .set_visible(
-            campaign_->rule_module().usable_outside_combat(item.definition_id) ||
-            !campaign_->copyable_spells(campaign_->selected(), item.id).empty() ||
-            (scroll && !campaign_->scroll_actions(campaign_->selected(), item.id).empty()));
+            !(dax() && dax()->magic_barred()) &&
+            (campaign_->rule_module().usable_outside_combat(item.definition_id) ||
+             !campaign_->copyable_spells(campaign_->selected(), item.id).empty() ||
+             (scroll && !campaign_->scroll_actions(campaign_->selected(), item.id).empty())));
     try
     {
         required_node<Label>(*this, "InventoryPanel/%Status")

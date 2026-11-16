@@ -456,8 +456,14 @@ class RolfTourSession
     // cell, 4Bh, at FFh, as before Cortarra's twins): the spell's number is
     // recorded there and the square's event runs again, as its map menu runs
     // the step and location entries after a cast (its NoncombatCastMenu).
+    // Throws, casting nothing, while magic_barred().
     void cast_outside_combat(opengold::MemberId caster, opengold::MemberId patient,
                              const std::string &action);
+    // True while a Pools of Darkness script bars magic (its cell 2,
+    // antiMagic): no one casts a spell, in a fight or in camp ("cannot cast
+    // spells in this area", camp.pas, CanDoSpellActivity), and no one uses an
+    // item (viewchar.pas, UseItemMenu).
+    [[nodiscard]] bool magic_barred() const;
 
     // The Wand of Secrets (SECRET-1): while the party explores, `member` spends
     // a charge of the wand `item`, and the hidden secret door or armed trap
@@ -1278,6 +1284,12 @@ class RolfTourSession
     // 401h (docs/games/darkness.md, Script memory): the record's fields, last
     // in the reply so that they stand.
     void add_vga_record(PartySlot slot, EclHostReply &reply) const;
+    // Pools of Darkness's to-hit cells, which its scripts set before a fight
+    // and its end clears: cell 1 (monsterHitMod) is added to the monsters'
+    // attack rolls, cell 2Fh (partyHitMod) to the party's side's
+    // (fxengine.pas, AttackRoll; postcbt.pas).
+    void add_script_to_hit();
+    static constexpr EclAddress darkness_monster_hit_mod{0x01}, darkness_party_hit_mod{0x2F};
     // Its item definition of this number, or for FFh a scroll of three
     // random magic-user spells drawn on the request's dice; nothing for an
     // empty definition.
