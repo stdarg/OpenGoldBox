@@ -2577,7 +2577,7 @@ msgstr "Elige el entrenamiento de la clase nueva"
 msgid "Choose the required training options. Back preserves your selections."
 msgstr "Elige las opciones de entrenamiento requeridas. Atrás conserva tus selecciones."
 
-#: src/OpenGoldBox/modify_character_dialog.cpp:223
+#: src/OpenGoldBox/modify_character_dialog.cpp:233
 msgid "Choose the spell book's spells to keep the changes."
 msgstr "Elige los conjuros del libro para guardar los cambios."
 
@@ -4231,7 +4231,7 @@ msgstr "Nombre del personaje"
 msgid "Enter a name before finishing your character."
 msgstr "Introduce un nombre antes de terminar el personaje."
 
-#: src/OpenGoldBox/modify_character_dialog.cpp:211
+#: src/OpenGoldBox/modify_character_dialog.cpp:221
 msgid "Enter a name for your character."
 msgstr "Escribe un nombre para tu personaje."
 
@@ -7499,7 +7499,7 @@ msgstr "Modificar"
 msgid "Modify character"
 msgstr "Modificar personaje"
 
-#: src/OpenGoldBox/modify_character_dialog.cpp:163
+#: src/OpenGoldBox/modify_character_dialog.cpp:173
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Modify {name}"
 msgstr "Modificar a {name}"
@@ -12141,7 +12141,7 @@ msgstr "El viento desvía el disparo."
 msgid "The {spell} on the scroll is lost."
 msgstr "El conjuro {spell} del pergamino se pierde."
 
-#: src/OpenGoldBox/modify_character_dialog.cpp:215
+#: src/OpenGoldBox/modify_character_dialog.cpp:225
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "There is already a {name} in the party."
 msgstr "Ya hay un {name} en el grupo."
@@ -12800,8 +12800,8 @@ msgid "Up"
 msgstr "Subir"
 
 #: src/OpenGoldBox/godot/scenes/character_creation.tscn:1668
-msgid "Up and Down choose a row; Left and Right, or its buttons, lower or raise it within what the character's race, class and Hit Dice allow. Enter keeps the changes; Escape leaves them."
-msgstr "Arriba y Abajo eligen una fila; Izquierda y Derecha, o sus botones, la bajan o la suben dentro de lo que permiten la raza, la clase y los dados de golpe del personaje. Intro guarda los cambios; Escape los descarta."
+msgid "Up and Down choose a row; Left and Right, or its buttons, lower or raise it. Enter keeps the changes; Escape leaves them."
+msgstr "Arriba y Abajo eligen una fila; Izquierda y Derecha, o sus botones, la bajan o la suben. Intro guarda los cambios; Escape los descarta."
 
 #: src/OpenGoldBox/godot/scenes/combat_demo.tscn:858 src/OpenGoldBox/godot/scenes/tour_inventory_panel.tscn:72 src/OpenGoldBox/optional_effect_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:99
 msgid "Use"

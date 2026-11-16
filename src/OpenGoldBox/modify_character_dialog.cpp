@@ -117,7 +117,17 @@ void ModifyCharacterDialog::open(Request request)
     fill_spells();
     refresh();
     const bool spells = required_node<Control>(*this, "Margin/Rows/Spells").is_visible();
-    set_size(Vector2i(760, spells ? 900 : 640));
+    // The spell book's lists take the room left; without them the status line
+    // sits above the buttons.
+    required_node<Label>(*this, "Margin/Rows/Status")
+        .set_v_size_flags(spells ? Control::SIZE_FILL
+                                 : Control::SIZE_EXPAND | Control::SIZE_SHRINK_END);
+    // The spell book's lists scroll; the window keeps within the screen's
+    // smallest window (1120 x 800).
+    const auto *host = Object::cast_to<Control>(get_parent());
+    // Room for the title bar too.
+    const int room = host ? static_cast<int>(host->get_size().y) - 80 : 720;
+    set_size(Vector2i(760, std::min(spells ? 900 : 610, room)));
     popup_centered();
     required_node<Button>(*this, row_path("Raise", row_)).grab_focus();
 }

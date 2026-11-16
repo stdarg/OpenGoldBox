@@ -45,6 +45,11 @@ func apply_layout() -> void:
         var rolled: Control = view.get_node("SwapHint")
         rolled.position = Vector2(roll.position.x + roll.size.x + 24, roll.position.y)
         rolled.size = Vector2(page.position.x + page.size.x - rolled.position.x - 20, roll.size.y)
+        # Unlimited Adventures' Modify, under Roll again.
+        var modify: Control = view.get_node("ModifyRoll")
+        if modify.visible:
+            modify.size = roll.size
+            modify.position = Vector2(roll.position.x, roll.position.y + roll.size.y + 10)
     var identity: Label = view.get_node("PortraitIdentity")
     if identity.visible:
         _place_portrait_rows(view, identity)

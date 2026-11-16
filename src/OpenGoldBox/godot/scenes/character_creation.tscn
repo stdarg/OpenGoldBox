@@ -1665,7 +1665,7 @@ auto_translate_mode = 2
 [node name="Hint" type="Label" parent="ModifyModal/Margin/Rows"]
 layout_mode = 2
 autowrap_mode = 3
-text = "Up and Down choose a row; Left and Right, or its buttons, lower or raise it within what the character's race, class and Hit Dice allow. Enter keeps the changes; Escape leaves them."
+text = "Up and Down choose a row; Left and Right, or its buttons, lower or raise it. Enter keeps the changes; Escape leaves them."
 
 [node name="NameRow" type="HBoxContainer" parent="ModifyModal/Margin/Rows"]
 layout_mode = 2

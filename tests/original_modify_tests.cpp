@@ -367,6 +367,23 @@ void a_new_character_is_modified_while_it_is_made()
     creator.roll();
     check(creator.draft().rules_data.find("modified") == std::string::npos,
           "Rolling again starts over");
+
+    CharacterCreator pool_creator(original::character_rules(), 9);
+    pool_creator.select(CreationField::race, "human");
+    pool_creator.select(CreationField::character_class, "fighter");
+    pool_creator.name("Ava");
+    for (int page = 0; page < 3; ++page)
+    {
+        pool_creator.next();
+    }
+    pool_creator.roll();
+    check(!pool_creator.rules().modify_while_made() &&
+              throws(
+                  [&]
+                  {
+                      pool_creator.modify(pool_creator.draft());
+                  }),
+          "Pool of Radiance offers Modify on its party menu only");
 }
 } // namespace
 

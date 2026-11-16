@@ -2577,7 +2577,7 @@ msgstr "Choose the new class's training"
 msgid "Choose the required training options. Back preserves your selections."
 msgstr "Choose the required training options. Back preserves your selections."
 
-#: src/OpenGoldBox/modify_character_dialog.cpp:223
+#: src/OpenGoldBox/modify_character_dialog.cpp:233
 msgid "Choose the spell book's spells to keep the changes."
 msgstr "Choose the spell book's spells to keep the changes."
 
@@ -4231,7 +4231,7 @@ msgstr "Enter a character name"
 msgid "Enter a name before finishing your character."
 msgstr "Enter a name before finishing your character."
 
-#: src/OpenGoldBox/modify_character_dialog.cpp:211
+#: src/OpenGoldBox/modify_character_dialog.cpp:221
 msgid "Enter a name for your character."
 msgstr "Enter a name for your character."
 
@@ -7499,7 +7499,7 @@ msgstr "Modify"
 msgid "Modify character"
 msgstr "Modify character"
 
-#: src/OpenGoldBox/modify_character_dialog.cpp:163
+#: src/OpenGoldBox/modify_character_dialog.cpp:173
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Modify {name}"
 msgstr "Modify {name}"
@@ -12141,7 +12141,7 @@ msgstr "The wind deflects the shot."
 msgid "The {spell} on the scroll is lost."
 msgstr "The {spell} on the scroll is lost."
 
-#: src/OpenGoldBox/modify_character_dialog.cpp:215
+#: src/OpenGoldBox/modify_character_dialog.cpp:225
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "There is already a {name} in the party."
 msgstr "There is already a {name} in the party."
@@ -12800,8 +12800,8 @@ msgid "Up"
 msgstr "Up"
 
 #: src/OpenGoldBox/godot/scenes/character_creation.tscn:1668
-msgid "Up and Down choose a row; Left and Right, or its buttons, lower or raise it within what the character's race, class and Hit Dice allow. Enter keeps the changes; Escape leaves them."
-msgstr "Up and Down choose a row; Left and Right, or its buttons, lower or raise it within what the character's race, class and Hit Dice allow. Enter keeps the changes; Escape leaves them."
+msgid "Up and Down choose a row; Left and Right, or its buttons, lower or raise it. Enter keeps the changes; Escape leaves them."
+msgstr "Up and Down choose a row; Left and Right, or its buttons, lower or raise it. Enter keeps the changes; Escape leaves them."
 
 #: src/OpenGoldBox/godot/scenes/combat_demo.tscn:858 src/OpenGoldBox/godot/scenes/tour_inventory_panel.tscn:72 src/OpenGoldBox/optional_effect_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:99
 msgid "Use"

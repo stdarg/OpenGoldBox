@@ -46,7 +46,10 @@ func shot(name: String) -> void:
 
 func press(node: Node, path: String) -> void:
 	var button: Button = node.get_node(path)
-	require(button.is_visible_in_tree() and not button.disabled, "Unavailable control: " + path)
+	var status: Label = current_scene.get_node_or_null("Status")
+	var page: Label = current_scene.get_node_or_null("PageTitle")
+	require(button.is_visible_in_tree() and not button.disabled, "Unavailable control: " + path +
+		(" on " + page.text if page else "") + (" (" + status.text + ")" if status else ""))
 	button.pressed.emit()
 	await settle()
 
@@ -62,7 +65,7 @@ func key(code: Key) -> void:
 func choose(text: String) -> void:
 	var list: ItemList = current_scene.get_node("Choices")
 	for i in range(list.item_count):
-		if list.get_item_text(i) == text:
+		if list.get_item_text(i) == text or list.get_item_text(i) == TranslationServer.translate(text):
 			require(not list.is_item_disabled(i), "Disabled choice: " + text)
 			list.select(i)
 			list.item_selected.emit(i)
@@ -73,9 +76,9 @@ func choose(text: String) -> void:
 func game_files_here() -> bool:
 	if folder.is_empty() or folder == "POOLRAD": return true
 	var games := OS.get_environment("OPENGOLD_GOLDBOX_DIR")
-	var kit_file := "CKIT.EXE" if folder == "UA" else "ITEMS"
+	var game_file := "CKIT.EXE" if folder == "UA" else "CBODY.DAX"
 	if folder == "UA" and not DirAccess.dir_exists_absolute(ua_design): return false
-	return not games.is_empty() and FileAccess.file_exists(games.path_join(folder).path_join(kit_file))
+	return not games.is_empty() and FileAccess.file_exists(games.path_join(folder).path_join(game_file))
 
 # The startup scene with --game and --rules goes to the creation screen;
 # Unlimited Adventures asks for its design first.
@@ -90,6 +93,7 @@ func reach_creation() -> void:
 			dialog.get_node("Path").text = ua_design
 			dialog.get_node("Continue").pressed.emit()
 			await settle()
+			continue
 		var game_menu: Window = scene.get_node_or_null("GameMenu")
 		if game_menu and game_menu.visible:
 			game_menu.get_node("Buttons/NewParty").pressed.emit()
@@ -111,13 +115,18 @@ func button(part: String, row: int) -> Button:
 
 # Ticks the first boxes of each spell group until its count is met, as a
 # player fills Treasures' page of choices.
+# A page may build its boxes again after each tick, so each is found anew.
 func fill_choices(container: Node) -> void:
-	for box in container.find_children("*", "CheckBox", true, false):
-		var check := box as CheckBox
-		if check.is_visible_in_tree() and not check.disabled and not check.button_pressed:
-			check.button_pressed = true
-			check.toggled.emit(true)
-			await settle(2)
+	for tick in range(100):
+		var next: CheckBox = null
+		for box in container.find_children("*", "CheckBox", true, false):
+			var check := box as CheckBox
+			if check.is_visible_in_tree() and not check.disabled and not check.button_pressed:
+				next = check
+				break
+		if next == null: return
+		next.set_pressed(true)
+		await settle(2)
 
 # Name, race, class, alignment, the roll (and on the kit's roll its Modify),
 # any page of choices, the look and the sheet, then Add to party.
@@ -149,6 +158,7 @@ func make_character(class_name_shown: String) -> void:
 func modify_on_the_roll() -> void:
 	var dexterity: Button = current_scene.get_node("Score1")
 	var before := dexterity.text
+	await shot("roll-with-modify")
 	await press(current_scene, "ModifyRoll")
 	var dialog := modify_dialog()
 	require(dialog.visible and not dialog.get_node("Margin/Rows/NameRow").visible, "The roll's Modify shows no name")
@@ -190,8 +200,8 @@ func run_checks() -> void:
 	require(dialog.visible, "Modify character opens its window")
 	var renames := not folder.is_empty() and folder != "POOLRAD"
 	require(dialog.get_node("Margin/Rows/NameRow").visible == renames, "The name changes from Curse on")
-	require((dialog.get_node("Margin/Rows/Title") as Label).text == "Modify Tordek", "The window names the character")
-	require(row_text(0).begins_with("> Strength"), "Strength's row is chosen first: " + row_text(0))
+	require((dialog.get_node("Margin/Rows/Title") as Label).text == TranslationServer.translate("Modify {name}").format({"name": "Tordek"}), "The window names the character")
+	require(row_text(0).begins_with("> " + TranslationServer.translate("Strength")), "Strength's row is chosen first: " + row_text(0))
 	var treasures := folder == "TREASURE"
 	require(dialog.get_node("Margin/Rows/Spells").visible == treasures, "Only Treasures' magic-user chooses its spell book")
 	await shot("modify-" + (folder if not folder.is_empty() else "POOLRAD"))
@@ -200,7 +210,7 @@ func run_checks() -> void:
 
 	# The keyboard: Down to the Hit Points, Right to their highest, Left a step.
 	for step in range(6): await key(KEY_DOWN)
-	require(row_text(6).begins_with("> Hit Points") and not row_text(0).begins_with(">"), "Down moves to the Hit Points")
+	require(row_text(6).begins_with("> " + TranslationServer.translate("Hit Points")) and not row_text(0).begins_with(">"), "Down moves to the Hit Points")
 	for step in range(200):
 		if button("Raise", 6).disabled: break
 		await key(KEY_RIGHT)
@@ -209,7 +219,7 @@ func run_checks() -> void:
 	await key(KEY_LEFT)
 	require(int(value(6)) == highest - 1 and not button("Raise", 6).disabled, "Left lowers them a point")
 	await key(KEY_UP)
-	require(row_text(5).begins_with("> Charisma"), "Up moves back a row")
+	require(row_text(5).begins_with("> " + TranslationServer.translate("Charisma")), "Up moves back a row")
 
 	# Escape leaves the character as it was.
 	await key(KEY_ESCAPE)
@@ -218,7 +228,7 @@ func run_checks() -> void:
 	require(value(0) == strength and int(value(6)) == hit_points, "Escape keeps nothing")
 
 	# The mouse: Strength down to the fighter's 9 (a magic-user's race's 3).
-	for step in range(20):
+	for step in range(220):
 		if button("Lower", 0).disabled: break
 		await press(dialog, "Margin/Rows/Grid/Lower0")
 	var lowest := "3" if treasures else "9"
@@ -234,7 +244,7 @@ func run_checks() -> void:
 		await settle()
 	if treasures:
 		var heading: Label = dialog.get_node("Margin/Rows/Spells/List/Heading0")
-		require(heading.text.begins_with("Magic-user spells of level 1 ("), "The spell book's first level: " + heading.text)
+		require(heading.text.begins_with(TranslationServer.translate("Magic-user spells of level 1") + " ("), "The spell book's first level: " + heading.text)
 		var first: CheckBox = null
 		for box in dialog.get_node("Margin/Rows/Spells/List").get_children():
 			if box is CheckBox and box.button_pressed:
@@ -242,7 +252,6 @@ func run_checks() -> void:
 				break
 		require(first != null, "The spells chosen at creation are ticked")
 		first.button_pressed = false
-		first.toggled.emit(false)
 		await settle()
 		require((dialog.get_node("Margin/Rows/Buttons/Keep") as Button).disabled, "Keep waits for the spell book")
 		await fill_choices(dialog.get_node("Margin/Rows/Spells/List"))
