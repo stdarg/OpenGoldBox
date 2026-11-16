@@ -2307,6 +2307,63 @@ gear.
    rules (monsters, allies and party members on Quick) are this AI's: the
    shared command chooser takes `quick` (or `quick_magic`) whenever the rules
    offer it.
+10. The fight's sides and its end, from each game's reconstruction (rules
+    round 6, 2026-11-16):
+    - **SETUP MONSTER's sides.** *Pools of Darkness*'s and *Treasures*'
+      SETUP MONSTER takes a fourth operand, the sides of the party the
+      monsters come from (bit 0 north, 1 east, 2 south, 3 west); *Curse*'s,
+      *Secret*'s and *Gateway*'s take three and have no sides (their
+      `EclSetupMonster`). The original keeps the sides until the next SETUP
+      MONSTER, deals the monsters to them one each in turn, starting east
+      and going round to north, and places each side's band facing the
+      party: the encounter's distance off it that way, at least one square
+      where the side is not the party's facing (`PlaceAllCreatures`,
+      `PrepareCombatOccupancy`), each band's first rank as long as half an
+      even share of all the monsters (its `teamRows`). With no side named the
+      monsters stand ahead, as before. The kit's events name their quarters
+      the same way (cmbsetup.c, `place_all`), which OpenGoldBox already
+      played; both now share the dealing (`dealt_quarters`), the first rank's
+      length, and the monsters' facing toward the party (OpenGoldBox had
+      turned every monster back along the party's facing).
+    - **Fifteen rounds without an attack end a fight.** Every game after
+      *Pool of Radiance* has it: *Curse* (its `combatTargetSlots[0]`),
+      *Secret* and *Gateway* (`roundLimit`), *Pools of Darkness*
+      (`fightEndRound`), *Treasures* (`cbNewFlag`) and the kit
+      (`combat_round_limit`). The limit starts at 15 (CombatStart) and every
+      weapon attack sets it 15 rounds past the round it is made in, counting
+      rounds from 0 (MakeAttack: blows, shots, guards' strikes, the free
+      attack on one who steps away, sweeps, the slaying of the helpless);
+      spells, breaths and gazes do not. As a round ends with the count at
+      the limit the fight is over (EndOfRound; *Pools of Darkness*, *Treasures*
+      and the kit check after each turn too, to the same effect). *Pool of
+      Radiance* has no such limit: its fight goes on until a side is down.
+    - **It is a win.** With a member of the party still on its feet the
+      original counts the fight won (postcbt.pas, DetermineCombatResults: a
+      member okay sets `combatWon` and clears the flight; the kit's
+      postcmbt.c, `combat_results`, the same). So the party's dying wake
+      unconscious as in any win, members who ran rejoin it, and the script
+      hears a win (combat result 0, the win's condition flags); the
+      monsters still standing leave with the fight (PostCombatCreatureCleanup
+      takes every hostile off the list), and like those that fled are worth
+      no experience and leave no treasure, since only the monsters put down
+      pay (DetermineLootExp, `loot_exp`). The script's own TREASURE is won
+      with the fight. The rules report it in `Snapshot::round_limit_reached`
+      beside `Outcome::victory`; the campaign then lets the standing
+      monsters go unpaid instead of refusing the result. The combat
+      checkpoint keeps the limit (format 25).
+    - **Ice Storm's and Cone of Cold's elements.** Each reconstruction's
+      `SpellIceStorm` and `SpellConeOfCold` pass their damage's element:
+      Cone of Cold cold and magic (10) in every game; Ice Storm cold and
+      magic in *Secret*, *Gateway* and *Treasures*, and magic alone (8) in
+      *Pools of Darkness* and the kit (spellfx.c, `spell_ice_storm`), whose
+      cold resistance therefore does not lessen it. OpenGoldBox passed cold
+      (2) everywhere, so magic resistance never turned them. Each game now
+      plays its own; *Curse*'s stay cold (its Bugs entry), and *Pool of
+      Radiance* has neither spell. Open question: *Curse*'s reconstruction
+      passes 10 for both too, which its own effects read as cold and magic
+      (effhndlr.pas, EffResistCold's bit 2; fxengine.pas names bit 16 acid),
+      so the Bugs entry's "acid", taken from coab's ovr023, may not be what
+      the original does; if so *Curse* would play 10 as the others.
 
 ## Encumbrance
 
