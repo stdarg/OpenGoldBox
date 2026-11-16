@@ -798,7 +798,12 @@ with every route winning on them (item 3).
    (10,000 further a reload), as a player's reload rolls them afresh; but
    none of 3,000 plays of this fight with fresh dice wins (the best leaves
    two members dead and the fight lost), so `reloads_until_won` cannot win
-   it and the stand-in stays. On the way the route's parties
+   it. Done (2026-11-16): the route takes the cluebook's answer, the Wand
+   of Ice Storm the pirates of Luskan's lodge carry, keeps it packed to the
+   Star Mounts and fights there as the cluebook bids (Fireball at the
+   snakes, Ice Storm at the mounds clear of the party, the party letting
+   them come); 109 of 300 plays win with no member lost, and the test wins
+   the fight no more ([GAMES.md](GAMES.md), *Gateway* step 5). On the way the route's parties
    of *Curse* and *Gateway* were found wearing chain mail: the test took
    type 55 for plate mail, which is 58 in those games' numbering (their
    `itemTypeNames`); they wear plate mail now, and *Curse*'s route still

@@ -580,6 +580,10 @@ struct RouteBeat
     // and steps again where a wandering monster no play of the party beats
     // came on it (the heart's agents of Tanetal); 0 keeps the beat's own.
     unsigned reloads = 0;
+    // With take_wand, the wand goes in the pack, not readied, so Quick spends
+    // none of its charges until a later beat readies it (ready_types), as a
+    // player keeps Gateway's Wand of Ice Storm for the Star Mounts' mounds.
+    bool pack_wand = false;
 };
 
 // The dice a beat starts with, for a route that gives each beat its own (Pools
@@ -5764,13 +5768,51 @@ const std::vector<RouteBeat> &gateway_route()
                        {9, 11, D::south}},
                       true);
         walk_passages(route, 8,
-                      {{0, 9, D::south}, {0, 10, D::east}, {1, 10, D::east},  {2, 10, D::south},
-                       {2, 11, D::east}, {3, 11, D::east}, {4, 11, D::east},  {5, 11, D::east},
-                       {6, 11, D::east}, {7, 11, D::east}, {8, 11, D::north}, {8, 10, D::north},
-                       {8, 9, D::north}, {8, 8, D::north}, {8, 7, D::north},  {8, 6, D::north},
-                       {8, 5, D::west},  {7, 5, D::west},  {6, 5, D::west},   {5, 5, D::west},
-                       {4, 5, D::west},  {3, 5, D::north}, {3, 4, D::north},  {3, 3, D::north},
-                       {3, 2, D::west},  {2, 2, D::west},  {1, 2, D::west}},
+                      {{0, 9, D::south},
+                       {0, 10, D::east},
+                       {1, 10, D::east},
+                       {2, 10, D::south},
+                       {2, 11, D::east},
+                       {3, 11, D::east},
+                       {4, 11, D::east},
+                       {5, 11, D::east},
+                       {6, 11, D::east},
+                       {7, 11, D::east},
+                       {8, 11, D::north},
+                       {8, 10, D::east},
+                       {9, 10, D::south}},
+                      true);
+        // The captain's lodge south of the street (event 118, ECL4:8
+        // 0x92CF), whose pirates carry their gift, a Wand of Ice Storm: the
+        // cluebook's answer to the Star Mounts' shambling mounds.
+        {
+            auto lodge = step_beat(8, 9, 11, D::south);
+            lodge.rest_first = true;
+            lodge.rest_for_spells = true;
+            lodge.take_wand = true;
+            lodge.pack_wand = true;
+            route.push_back(lodge);
+        }
+        walk_passages(route, 8,
+                      {{9, 12, D::north},
+                       {9, 11, D::north},
+                       {9, 10, D::west},
+                       {8, 10, D::north},
+                       {8, 9, D::north},
+                       {8, 8, D::north},
+                       {8, 7, D::north},
+                       {8, 6, D::north},
+                       {8, 5, D::west},
+                       {7, 5, D::west},
+                       {6, 5, D::west},
+                       {5, 5, D::west},
+                       {4, 5, D::west},
+                       {3, 5, D::north},
+                       {3, 4, D::north},
+                       {3, 3, D::north},
+                       {3, 2, D::west},
+                       {2, 2, D::west},
+                       {1, 2, D::west}},
                       true);
         {
             auto ship = step_beat(8, 0, 2, D::south, {"YES"});
@@ -6042,13 +6084,14 @@ const std::vector<RouteBeat> &gateway_route()
             // The party helps the aarakocra beset by giant snakes and
             // shambling mounds. The mounds (armor class -4, engulfing on 1
             // to 4 of a d10 at each hit) are struck only on 18 or more by
-            // the party's swords +2 and smother it: no play the route's
-            // player found wins it (Prayer, Haste, Magic Missile and Stinking
-            // Cloud at the mounds, Snake Charm at the snakes, 900 dice;
-            // 2026-11-16), where the cluebook's party carries a Wand of Ice
-            // Storm. The test wins it (a stand-in).
+            // the party's swords +2 and smother it, so the party fights as
+            // the cluebook bids: it lets the enemy come to it while the
+            // magic-user readies the Wand of Ice Storm from Luskan's lodge,
+            // which still harms the mounds by half, and burns the snakes
+            // with Fireball (mounds_turn).
+            constexpr int wand_type = 79;
             auto bird = step_beat(26, 2, 3, D::north, {"HELP BIRD", "YES"});
-            bird.test_wins = true;
+            bird.ready_types.emplace_back(wand_type, "magic_user 6");
             route.push_back(bird);
         }
         // Ceptienne's aerie: through the maze of one-way doors and the secret
@@ -7896,6 +7939,215 @@ bool walk_census(GoldBoxGame game, bool route)
         }
         return blow ? std::optional{*blow} : std::nullopt;
     };
+    // A Gateway player's choice where shambling mounds fight, as its cluebook
+    // bids at the foot of the Star Mounts: the Wand of Ice Storm (or the
+    // spell) where its burst takes the most mounds, which still take half,
+    // and Fireball where its burst takes the most giant snakes, each sparing
+    // every member and ally. The caster steps nearer the mounds, out of their
+    // reach, to bring them into range, and where no burst spares the party
+    // casts Magic Missile at a mound or guards; the others let the enemy come
+    // to them for the first rounds. Quick and the player's other choices for
+    // the rest.
+    const auto mounds_turn =
+        [](const opengold::rules::CombatSession &session) -> std::optional<opengold::rules::Command>
+    {
+        constexpr unsigned magic_missile = 15, fireball = 47, ice_storm = 187;
+        const auto state = session.snapshot();
+        const bool mounds =
+            std::ranges::any_of(state.combatants,
+                                [](const opengold::rules::CombatantView &unit)
+                                {
+                                    return unit.conscious && unit.name.starts_with("SHAMBLING");
+                                });
+        if (!mounds)
+        {
+            return std::nullopt;
+        }
+        // The doubled steps of each burst's reach: Ice Storm's 2 squares,
+        // Fireball's 3 (Session::within).
+        const auto reach = [](unsigned spell)
+        {
+            return spell == ice_storm ? 5 : 7;
+        };
+        const auto wanted = [](unsigned spell, const opengold::rules::CombatantView &unit)
+        {
+            return spell == ice_storm ? unit.name.starts_with("SHAMBLING")
+                                      : unit.name.starts_with("GIANT SNAKE");
+        };
+        const auto burst_worth = [&](unsigned spell, opengold::rules::Cell aim)
+        {
+            int worth = 0;
+            for (const auto &unit : state.combatants)
+            {
+                const int dx = std::abs(unit.cell.x - aim.x), dy = std::abs(unit.cell.y - aim.y);
+                if (!unit.conscious || 2 * std::max(dx, dy) + std::min(dx, dy) > reach(spell))
+                {
+                    continue;
+                }
+                worth += unit.side == opengold::rules::Side::party ? -100
+                         : wanted(spell, unit)                     ? 1
+                                                                   : 0;
+            }
+            return worth;
+        };
+        const auto spell_of = [](const opengold::rules::Command &command)
+        {
+            return command.verb == "use" ? command.item % 256 : command.item;
+        };
+        const auto commands = session.legal_commands();
+        const opengold::rules::Command *aim = nullptr;
+        for (const auto &command : commands)
+        {
+            if (command.verb == "aim" && (command.item == ice_storm || command.item == fireball) &&
+                (!aim || burst_worth(command.item, command.destination) >
+                             burst_worth(aim->item, aim->destination)))
+            {
+                aim = &command;
+            }
+        }
+        if (aim && burst_worth(aim->item, aim->destination) > 0)
+        {
+            return *aim;
+        }
+        // Magic Missile at the mound with the fewest Hit Points left.
+        const auto unit_of = [&](opengold::rules::EntityId id)
+        {
+            return std::ranges::find(state.combatants, id, &opengold::rules::CombatantView::id);
+        };
+        const opengold::rules::Command *missile = nullptr;
+        for (const auto &command : commands)
+        {
+            if (command.verb == "aim" && command.item == magic_missile &&
+                unit_of(command.target) != state.combatants.end() &&
+                unit_of(command.target)->conscious &&
+                unit_of(command.target)->name.starts_with("SHAMBLING") &&
+                (!missile ||
+                 unit_of(command.target)->hit_points < unit_of(missile->target)->hit_points))
+            {
+                missile = &command;
+            }
+        }
+        if (missile)
+        {
+            return *missile;
+        }
+        if (aim)
+        {
+            const auto abort = std::ranges::find(commands, std::string_view("abort"),
+                                                 &opengold::rules::Command::verb);
+            if (abort != commands.end())
+            {
+                return *abort;
+            }
+        }
+        const auto actor =
+            std::ranges::find(state.combatants, state.actor, &opengold::rules::CombatantView::id);
+        if (actor == state.combatants.end())
+        {
+            return std::nullopt;
+        }
+        const auto doubled = [](opengold::rules::Cell a, opengold::rules::Cell b)
+        {
+            const int dx = std::abs(a.x - b.x), dy = std::abs(a.y - b.y);
+            return 2 * std::max(dx, dy) + std::min(dx, dy);
+        };
+        // A burst worth casting: a square in its range (Ice Storm from the
+        // wand at level 6, 6 squares; Fireball 10 and 1 a level) takes a
+        // wanted enemy (two snakes for a Fireball) and no friend.
+        const auto &field = state.battlefield;
+        const auto worth_casting = [&](unsigned spell, opengold::rules::Cell from)
+        {
+            const int least = spell == fireball ? 2 : 1, range = spell == fireball ? 16 : 6;
+            for (int y = 0; y < field.height; ++y)
+            {
+                for (int x = 0; x < field.width; ++x)
+                {
+                    if (doubled(from, {x, y}) / 2 <= range && burst_worth(spell, {x, y}) >= least)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        };
+        bool blasting = false;
+        for (const unsigned spell : {ice_storm, fireball})
+        {
+            for (const auto &command : commands)
+            {
+                if ((command.verb == "use" || command.verb == "cast") && spell_of(command) == spell)
+                {
+                    blasting = true;
+                    if (worth_casting(spell, actor->cell))
+                    {
+                        return command;
+                    }
+                }
+            }
+        }
+        const auto nearest_enemy = [&](opengold::rules::Cell cell, bool mounds_only)
+        {
+            int nearest = 999;
+            for (const auto &unit : state.combatants)
+            {
+                if (unit.side == opengold::rules::Side::opposition && unit.conscious &&
+                    (!mounds_only || unit.name.starts_with("SHAMBLING")))
+                {
+                    nearest = std::min(nearest, doubled(cell, unit.cell));
+                }
+            }
+            return nearest;
+        };
+        // The caster with a burst left steps nearer the mounds, out of their
+        // reach and its own burst's, to bring them into its range.
+        if (blasting)
+        {
+            const opengold::rules::Command *step = nullptr;
+            for (const auto &command : commands)
+            {
+                if (command.verb == "move" && nearest_enemy(command.destination, false) > 5 &&
+                    nearest_enemy(command.destination, true) < nearest_enemy(actor->cell, true) &&
+                    (!step || nearest_enemy(command.destination, true) <
+                                  nearest_enemy(step->destination, true)))
+                {
+                    step = &command;
+                }
+            }
+            if (step)
+            {
+                return *step;
+            }
+            // Where no burst spares the party, Magic Missile at a mound, else
+            // a guard: Quick would aim the wand into the melee.
+            for (const auto &command : commands)
+            {
+                if (command.verb == "cast" && command.item == magic_missile)
+                {
+                    return command;
+                }
+            }
+            const auto guard = std::ranges::find(commands, std::string_view("guard"),
+                                                 &opengold::rules::Command::verb);
+            if (guard != commands.end())
+            {
+                return *guard;
+            }
+            return std::nullopt;
+        }
+        // The rest let the enemy come to them for the first rounds, so the
+        // bursts find the mounds clear of the party.
+        constexpr unsigned rounds_held = 6;
+        if (state.round <= rounds_held && nearest_enemy(actor->cell, false) > 3)
+        {
+            const auto guard = std::ranges::find(commands, std::string_view("guard"),
+                                                 &opengold::rules::Command::verb);
+            if (guard != commands.end())
+            {
+                return *guard;
+            }
+        }
+        return std::nullopt;
+    };
     // One play of the pending fight with these dice; the party ends as it left it.
     // A player's own choice for a member's turn, where it has one, as the
     // cluebook fights the Pit of Moander: the Wand of Defoliation (its power,
@@ -8425,6 +8677,11 @@ bool walk_census(GoldBoxGame game, bool route)
             {
                 held = treasures_turn(session);
             }
+            if (!held && member && tactic == 2 && !wanted_exit &&
+                game == GoldBoxGame::gateway_to_the_savage_frontier)
+            {
+                held = mounds_turn(session);
+            }
             // Treasures' Hold Person takes no monster, and its Quick casts by
             // its own AI, which aims its holds where they take: the other
             // games' choices do not serve it.
@@ -8822,6 +9079,8 @@ bool walk_census(GoldBoxGame game, bool route)
     bool declining = false;
     // The beat being played takes the first wand a treasure holds (RouteBeat::take_wand).
     bool taking_wand = false;
+    // The wand it takes stays packed (RouteBeat::pack_wand).
+    bool packing_wand = false;
     // The items the beat being played takes from a treasure, and who takes
     // each (RouteBeat::take_items).
     std::vector<std::pair<std::string, std::string>> items_to_take;
@@ -9328,9 +9587,13 @@ bool walk_census(GoldBoxGame game, bool route)
                     if (taken)
                     {
                         const auto &items = party->member(*mage).character.inventory().items();
-                        party->equip(*mage, items.back().id);
-                        std::cout << "  " << where << ": the magic-user takes and readies "
-                                  << wand_name << "\n";
+                        if (!packing_wand)
+                        {
+                            party->equip(*mage, items.back().id);
+                        }
+                        std::cout << "  " << where << ": the magic-user takes "
+                                  << (packing_wand ? "and packs " : "and readies ") << wand_name
+                                  << "\n";
                         taking_wand = false;
                         continue;
                     }
@@ -9933,6 +10196,7 @@ bool walk_census(GoldBoxGame game, bool route)
                 {
                     answers = beat.answers;
                     taking_wand = beat.take_wand;
+                    packing_wand = beat.pack_wand;
                     items_to_take = beat.take_items;
                     passing = beat.passing;
                     fleeing = beat.fleeing;
