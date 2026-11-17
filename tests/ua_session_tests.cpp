@@ -2749,6 +2749,7 @@ bool the_design_plays_to_its_end(const std::filesystem::path &kit)
     // The stairs down, then the cellar's end.
     const std::vector<Beat> beats{{5, 12, 12}, {6, 8, 8}};
     std::size_t beat = 0;
+    bool resumed = false;
     for (int step = 0; step < 400 && beat < beats.size() && !session.snapshot().game_won; ++step)
     {
         const auto &goal = beats[beat];
@@ -2783,9 +2784,26 @@ bool the_design_plays_to_its_end(const std::filesystem::path &kit)
         if (session.area().number != goal.area && beat + 1 < beats.size() &&
             session.area().number == beats[beat + 1].area)
         {
+            // Continue the winning run from an actual campaign save at the
+            // stairs, preserving its earned rewards, doors and party state.
+            const opengold::DesignSave design{files.design().string(), session.saved_state()};
+            const auto assets = opengold::campaign_asset_identity(kit);
+            const auto bytes = opengold::encode_campaign(
+                *party, nullptr, assets, GoldBoxGame::unlimited_adventures, &design);
+            auto loaded = opengold::decode_campaign(bytes, *party->character_rules(),
+                                                    party->rule_module(), assets, nullptr);
+            check(loaded.design && loaded.design->state == design.state,
+                  "The winning route's saved design state is preserved");
+            party->restore(std::move(loaded.party));
+            session = ua::UaSession::resume(files, loaded.design->state);
+            session.campaign_party(party);
+            resumed = true;
             ++beat;
         }
     }
+    check(resumed, "The winning route resumes its save before the ending");
+    check(player.fights > 0 && player.fights == player.victories,
+          "The winning route wins every fight through combat commands");
     check(session.snapshot().game_won && player.heard("THE TEST IS OVER. WELL DONE.") &&
               session.snapshot().dialogue.find("You have won.") != std::string::npos,
           "The design's end wins the game: " + session.snapshot().dialogue);

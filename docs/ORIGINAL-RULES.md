@@ -1092,7 +1092,10 @@ lines in all:
      as the caster's level) and Protection from Normal Missiles, and Blink
      where the game's table allows (Gateway's), cast in camp, carry their
      effects into the next fight by their minutes, running down as the
-     campaign's clock passes (Time between rests, plan step 6).
+     campaign's clock passes (Time between rests, plan step 6). Minor Globe
+     of Invulnerability, Globe of Invulnerability and Mass Invisibility are
+     also offered before combat (2026-11-16); both globes protect their caster
+     and retain their effects on entering the next fight.
    - **Scribing** (2026-11-14; `CampScribeMenu`, `CheckScribeDone`): a
      member awake and alive scribes a spell from a scroll it carries and can
      read (known, or by Read Magic, or a cleric's scroll for a cleric) into
@@ -2029,6 +2032,7 @@ scales Hit Points takes only the table's to-hit and Armor Class.
 
 | Bug | Direction |
 |---|---|
+| *Pools of Darkness:* the Palace of Gothmenes' wandering selector clears its random index instead of its used-group mask after all eight groups have appeared (ECL1:65, 8B72h), then loops forever rejecting every group | Clear the used-group mask (A9h), starting another cycle; guarded operand override, original files unchanged (2026-11-16) |
 | Creation never applies racial ability adjustments: a leftover variable makes every character human (`chargen.pas`, the ability roll) | Fixed (the user, 2026-11-11) |
 | *Unlimited Adventures:* a ranger above level 8 learns a magic-user spell at every training, its ranger level risen or not (`train.c`, `train_hero`) | Only when its ranger level rises (the user, 2026-11-14) |
 | *Unlimited Adventures:* Protection from Evil's -2 to an evil attacker (monster effects 8 and 45) is set before the attack roll, which overwrites it (`fxcombat.c`) | The fight's own effects 8 and 45 apply it |

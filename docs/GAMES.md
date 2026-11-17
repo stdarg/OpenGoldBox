@@ -427,13 +427,17 @@ The steps of *Curse*'s phase 3, with *Secret*'s differences
    and the gem is shattered (cell 4CD9 set to 1): "Eldamar's soul is free,
    and the Dreadlord is no more. You have won." (`game_won`,
    [secret.md](games/secret.md), The ending). `secret_route_ends_the_game`
-   is true: the check asks for the win, every member alive, as *Curse*'s
-   does. *Stand-ins (2026-11-16):* the experience above, and three fights
-   the test wins: Oswulf's last stand's second fight in the Eastern
-   Crevasses (the Black Circle's guards and six wizards at once after the
-   cloud giants; 0 of 360 plays won), the Dreadlord (0 of 360) and the soul
-   gem's iron golems and medusae (0 of 360); every other fight the route's
-   player wins, its dead raised after where a cleric stands
+   is true: the check asks for the actual ending with a surviving member.
+   *Combat verification (2026-11-16):* the complete route wins every fight,
+   including Oswulf's chained battles, the Dreadlord and the soul gem's
+   guards, with no forced victories. The party spends its earned experience
+   at the free town training hall on its return from the mines, returns
+   through the castle/Well portals to the temple to raise its dead and cure
+   petrification, and trains again before the Sanctum. Its magic-user
+   prepares the globe, Mass Invisibility and Mirror Image at the Well and
+   casts them on the final approach. *Remaining stand-ins:* the experience
+   above and the route's relocations; this is a complete combat replay,
+   not an unassisted campaign certificate
    ([secret.md](games/secret.md), The route). *The route's own play:* each
    beat has dice of its own; the party takes the mayor's pile's shield,
    gauntlets, wand and bracers and the treasures' arms on the way, readies
@@ -443,7 +447,7 @@ The steps of *Curse*'s phase 3, with *Secret*'s differences
    half its spells, flees monsters met in camp while hurt, strikes the
    enemy's spellcasters first (the cluebook's
    advice), reloads a fight it loses in each of 120 tries up to 240 times
-   more from the crevasses on, and one won at the cost of two members up
+   more from the crevasses on, and one won at the cost of a member up
    to 240 times, and gives up resting, but still Fixes, on a map where
    monsters break its camp six times. *Planning aids:*
    `OPENGOLD_ROUTE_SAVE=FILE` saves the game where the route ends,
@@ -710,7 +714,12 @@ new decoders.
    Marcus, the heart's golems, Tanetal's last stand, the Iron Wall's
    minions and the palace's rakshasas (darkness.md, The stand-ins
    measured). Its stand-ins: Kalistes' egg room (both fights) and the
-   finale's first fight.
+   finale's first fight. Current completion evidence and the remaining
+   assistance are tracked in [PLAYABILITY.md](PLAYABILITY.md). The last
+   preparation retains cold protection, Mind Blank, Haste and a globe; the
+   outer-palace rest now survives exhausting the wandering encounter cycle
+   ([ORIGINAL-RULES.md](ORIGINAL-RULES.md), Bugs). The finale remains an
+   unresolved combat replay with forced wins disabled.
    *The area map is drawn (2026-11-14):* the big picture with the party's
    marker, as the original draws it. *Spell levels 8 and 9 and the new
    spells (2026-11-15):* merged, with Restoration giving back a drained

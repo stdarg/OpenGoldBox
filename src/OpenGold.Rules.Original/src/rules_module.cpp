@@ -1660,9 +1660,9 @@ void strengthen_in_camp(const CharacterSheet &caster, const CharacterSheet &targ
 // The spells cast in camp for their effects, which carry into the next fight
 // (lasting_condition); the party is camp target 4.
 constexpr int protection_from_fire = 309, mind_blank = 322;
-constexpr std::array<int, 24> camp_effect_spells{1,  6,  7,  8,   16,  17,  18,  19,
-                                                 24, 29, 30, 32,  42,  45,  48,  50,
-                                                 52, 53, 54, 169, 309, 318, 319, 322};
+constexpr std::array<int, 27> camp_effect_spells{1,  6,   7,   8,   16,  17,  18,  19,  24,
+                                                 29, 30,  32,  42,  45,  48,  50,  52,  53,
+                                                 54, 169, 188, 309, 312, 316, 318, 319, 322};
 constexpr int party_target = 4;
 
 // The spells a player casts outside combat to see what is hidden, spent with

@@ -1156,14 +1156,14 @@ bool elf_weapon(std::uint8_t type, GoldBoxGame game) noexcept
 
 bool lasting_condition(const Effect &effect, GoldBoxGame game) noexcept
 {
-    constexpr std::array<int, 36> lasting{
+    constexpr std::array<int, 38> lasting{
         33, 34, 43, 44, 55, 15, 22, 36, 268, 340, 341, 12, 38, strength_wasted, 23,
         // Treasures' romance's love (131), which its pair keeps.
         1331,
         // The spells cast in camp before a fight (camp.pas, NoncombatCastMenu),
         // Pools of Darkness's Protection from Fire, Fire Touch, Iron Skin and
-        // Mind Blank among them.
-        1, 8, 9, 10, 16, 17, 20, 24, 25, 28, 37, 39, 41, 45, 46, 49, 519, 521, 522, 523};
+        // Mind Blank among them, plus the two globes of invulnerability.
+        1, 8, 9, 10, 16, 17, 20, 24, 25, 28, 37, 39, 41, 45, 46, 49, 263, 457, 519, 521, 522, 523};
     constexpr int rot = 50, mummy_rot = 57, helpless = 31;
     const int code = effect.code;
     const bool pool_rot =

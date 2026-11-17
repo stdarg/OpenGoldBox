@@ -2,8 +2,9 @@
 
 ## Linux verification (2026-11-16)
 
-The full installed-data run on `9a197ba9` passed **all 336 game-build checks,
-with no failures and no skips** (1,383 seconds):
+The playability follow-up based on `e3b2ae9c`, with the changes accompanying
+this record, passed **all 336 game-build checks, with no failures and no skips**
+in one final integrated run (1,211.51 seconds), including 171 Godot checks:
 
 ```bash
 OPENGOLD_GOLDBOX_DIR=/home/edmond/GoldBox \
@@ -11,18 +12,26 @@ OPENGOLD_GAME_DIR=/home/edmond/GoldBox/POOLRAD \
 JOBS=8 ./build.sh --test-all
 ```
 
-With the same data paths, all nine demo/catalog checks, both DOS-probe checks
-(774 seconds for the experiments) and all 21 Python tests passed again.
-The six exported campaigns also launched with their original-rules default
-parties both headlessly and in rendered windows under `cage`, exiting cleanly
-without script or native errors. These used isolated settings and user-data
-folders, leaving the player's configuration unchanged.
+All nine rebuilt demo/catalog checks (10.88 seconds), both DOS-probe checks
+(469.96 seconds) and all 21 Python tests also passed. Localization validates
+all 4,143 messages. The final full route times include Secret (626.13 seconds),
+Darkness (1,194.74 seconds) and the Treasures map walk (1,089.19 seconds).
 
-The full suite covers game selection, character editing, default-party starts,
-exploration, combat, save/load, cross-game imports, all-map walks, the campaign
-routes and Unlimited Adventures' generated-design UI. The campaign routes retain
-the stand-ins documented in [GAMES.md](GAMES.md); passing them does not establish
-unassisted end-to-end completion. Krynn and Buck Rogers remain future work.
+New regressions cover camp availability and persistence of the globes and
+Mass Invisibility, Darkness's palace selector after exhausting every wandering
+group, and the generated UA design's save/reload before its actual winning
+event. Secret's complete route now wins every battle without forced victories.
+See [PLAYABILITY.md](PLAYABILITY.md) for exact evidence and remaining gaps:
+commercial routes retain progression and movement assistance, and Darkness
+still has forced combat outcomes. These passing tests do **not** certify every
+game as an unassisted end-to-end completion. Krynn and Buck Rogers remain future
+work.
+
+The earlier full installed-data run on `9a197ba9` also passed all 336 checks
+(1,383 seconds). At `e3b2ae9c`, the six exported commercial campaigns launched
+with their original-rules default parties both headlessly and in rendered
+windows under `cage`, exiting without script or native failures. Checks use
+isolated settings and user-data folders, leaving player configuration unchanged.
 
 ### Initial fixes and verification
 

@@ -354,19 +354,42 @@ void fix_darkness_scripts(por::PhlanResources &town)
     constexpr unsigned clerics_script = 49;
     constexpr std::uint16_t answer_to_count = 0x816A;
     const auto found = town.programs.find(clerics_script);
-    if (found == town.programs.end())
+    if (found != town.programs.end())
+    {
+        const auto add = found->second->instruction(answer_to_count);
+        constexpr std::uint16_t places_over = 2;
+        if (por::ecl_opcode(add.opcode, GoldBoxGame::pools_of_darkness).name == "ADD" &&
+            add.operands.at(0).value == places_over)
+        {
+            found->second = std::make_shared<const por::EclProgram>(
+                found->second->with_operand_overrides({{answer_to_count, 0, 1}}));
+        }
+    }
+
+    // The palace's wandering selector remembers eight groups in A9h. Once
+    // all are used it mistakenly clears the index (9Eh), then rejects every
+    // group forever. Clear the used mask instead, starting another cycle.
+    constexpr std::uint16_t used_groups = 0xA9, group_index = 0x9E;
+    constexpr std::uint16_t all_used = 0x8B6B, reset_groups = 0x8B72;
+    const auto palace = town.programs.find(65);
+    if (palace == town.programs.end())
     {
         return;
     }
-    const auto add = found->second->instruction(answer_to_count);
-    constexpr std::uint16_t places_over = 2;
-    if (por::ecl_opcode(add.opcode, GoldBoxGame::pools_of_darkness).name != "ADD" ||
-        add.operands.at(0).value != places_over)
+    const auto compare = palace->second->instruction(all_used);
+    const auto reset = palace->second->instruction(reset_groups);
+    if (por::ecl_opcode(compare.opcode, GoldBoxGame::pools_of_darkness).name != "COMPARE" ||
+        compare.operands.size() != 2 || compare.operands[0].tag != 1 ||
+        compare.operands[0].value != used_groups || compare.operands[1].tag != 0 ||
+        compare.operands[1].value != 255 ||
+        por::ecl_opcode(reset.opcode, GoldBoxGame::pools_of_darkness).name != "SAVE" ||
+        reset.operands.size() != 2 || reset.operands[0].tag != 0 || reset.operands[0].value != 0 ||
+        reset.operands[1].tag != 1 || reset.operands[1].value != group_index)
     {
         return;
     }
-    found->second = std::make_shared<const por::EclProgram>(
-        found->second->with_operand_overrides({{answer_to_count, 0, 1}}));
+    palace->second = std::make_shared<const por::EclProgram>(
+        palace->second->with_operand_overrides({{reset_groups, 1, used_groups}}));
 }
 
 void add_treasures_overland(const por::detail::AreaFiles &files, por::PhlanResources &root)

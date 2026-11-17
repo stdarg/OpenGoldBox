@@ -2130,6 +2130,63 @@ void camp_effects_carry_into_fights()
           "Blink is cast in camp only in Gateway");
 }
 
+// Secret's manual marks both globes and Mass Invisibility for use outside a
+// fight. Preparing them must expose camp actions and carry their defenses.
+void high_level_wards_can_be_cast_before_combat()
+{
+    const auto game = GoldBoxGame::secret_of_the_silver_blades;
+    const auto module = original::rules_module({{}, {}, game});
+    auto mage = original_character(game, "magic_user", "neutral_good", 127);
+    mage.level = 15;
+    mage.original->class_levels[5] = 15;
+    mage.scores[rules::Ability::intelligence] = 18;
+    mage.original->magic_user_slots = original::spell_slots(
+        original::ClassSlot::magic_user, 15, mage.scores[rules::Ability::wisdom], 18, game);
+    mage.original->known_spells.insert(mage.original->known_spells.end(), {188, 312, 316});
+    mage.prepared_spells = {"magic_user:minor_globe_of_invulnerability",
+                            "magic_user:globe_of_invulnerability", "magic_user:mass_invisibility"};
+    const auto fighter = original_character(game, "fighter", "neutral_good", 131);
+    rules::VitalState own{mage.hit_points, false, {}, {}};
+    rules::VitalState guard{fighter.hit_points, false, {}, {}};
+    const auto offered = [&](std::string_view id, bool whole_party)
+    {
+        return std::ranges::any_of(module->camp_actions(mage, own),
+                                   [&](const rules::CampAction &action)
+                                   {
+                                       return action.id == id && action.whole_party == whole_party;
+                                   });
+    };
+    check(offered("cast:magic_user:minor_globe_of_invulnerability", false) &&
+              offered("cast:magic_user:globe_of_invulnerability", false) &&
+              offered("cast:magic_user:mass_invisibility", true),
+          "Prepared globes and Mass Invisibility are offered in camp");
+    RandomState random{137};
+    module->use_camp_action(mage, own, fighter, guard,
+                            "cast:magic_user:minor_globe_of_invulnerability", random);
+    module->use_camp_action(mage, own, fighter, guard, "cast:magic_user:globe_of_invulnerability",
+                            random);
+    check(carries(mage, own, 263) && carries(mage, own, 457) && !carries(fighter, guard, 263) &&
+              !carries(fighter, guard, 457),
+          "The globes protect their caster, even when another member is selected");
+    std::vector<rules::CampTarget> party{{mage, own}, {fighter, guard}};
+    module->use_party_camp_action(mage, own, party, "cast:magic_user:mass_invisibility", random);
+    check(carries(mage, own, 25) && carries(fighter, guard, 25),
+          "Mass Invisibility cast in camp protects the party");
+    const auto starts = fought_from(*module, mage, own, game);
+    for (const int code : {263, 457, 25})
+    {
+        check(std::ranges::any_of(starts.effects,
+                                  [code](const original::Effect &effect)
+                                  {
+                                      return effect.code == code;
+                                  }),
+              "The next fight starts with the camp wards");
+    }
+    check(!offered("cast:magic_user:globe_of_invulnerability", false) &&
+              !offered("cast:magic_user:mass_invisibility", true),
+          "Each ward consumes its memorized spell");
+}
+
 // The races' innate effects as each game gives them (chargen.pas): Secret's
 // gnome has no defense against giants (47) and no race the Constitution save
 // against poison (90); its arrows and quarrels are item types 30 and 12, and
@@ -3072,6 +3129,7 @@ int main()
         camp_spells_last_and_diseases_waste();
         secret_races_and_items();
         camp_effects_carry_into_fights();
+        high_level_wards_can_be_cast_before_combat();
         raise_dead_costs_constitution();
         scripts_harm_as_the_original();
         a_potion_heals_outside_a_fight();

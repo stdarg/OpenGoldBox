@@ -123,6 +123,52 @@ void arithmetic_stores_by_the_destinations_width()
     }
 }
 
+// Palace script 65, its wandering selector at 8B65h: after all eight
+// groups have appeared, selecting the next must start a new cycle. This
+// isolated script check stops at SETUP MONSTER, without fabricating combat.
+void palace_wanderers_start_another_cycle()
+{
+    const auto folder = darkness_folder();
+    if (folder.empty())
+    {
+        std::cout << "Pools of Darkness's files are not here; its palace selector is not read.\n";
+        return;
+    }
+    const auto campaign = opengold::load_campaign(folder, darkness_game);
+    const auto program = opengold::test::TourAccess::program(campaign, 65);
+    const auto original =
+        opengold::por::EclCatalog::load(folder, darkness_game).find({"ECL1.DAX", 65});
+    check(original && original->raw() == program->raw(),
+          "The palace correction preserves the user's original script bytes");
+    EclMachine machine(program);
+    for (unsigned address = 0; address < 0x800; ++address)
+    {
+        machine.bind_variable(EclAddress{static_cast<std::uint16_t>(address)}, 0);
+    }
+    constexpr EclAddress used_groups{0xA9};
+    constexpr std::uint32_t selector = 0x8B65;
+    const auto setup = program->instruction(0x8BE6).opcode;
+    machine.enable_host(setup);
+    machine.bind_variable(used_groups, 255);
+    machine.seed_random(19);
+    for (int encounter = 0; encounter < 32; ++encounter)
+    {
+        const auto before = machine.variable(used_groups);
+        check(machine.start_at_for_inspection(selector), "The palace selector starts");
+        const auto selected = machine.run(4000);
+        check(selected.state == EclState::waiting && selected.request &&
+                  selected.request->instruction && selected.request->instruction->opcode == setup,
+              "The palace selects a group instead of looping after all groups were used");
+        const auto after = machine.variable(used_groups);
+        check(before == 255 ? after != 0 && (after & (after - 1)) == 0
+                            : after != before && (after | before) == after,
+              "The palace cycles its groups without repeating one within a cycle");
+        opengold::por::EclHostReply stop;
+        stop.exit = true;
+        check(machine.resume_host(selected.request->id, stop), "The selector check ends");
+    }
+}
+
 // The item words are in GAME.EXE: 125 slots of 21 bytes.
 void the_item_words_are_in_the_game_program()
 {
@@ -738,6 +784,7 @@ int main()
     {
         the_new_commands_run();
         arithmetic_stores_by_the_destinations_width();
+        palace_wanderers_start_another_cycle();
         the_item_words_are_in_the_game_program();
         the_monsters_items_are_named_by_their_words();
         the_opening_reaches_new_phlan();

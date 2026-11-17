@@ -268,8 +268,8 @@ ten in the Eastern Crevasses (the Black Circle's patrols, the three guard
 posts of ancient red dragons, the cloud giants and white dragons, Oswulf's
 last stand), Sargatha's horde and her lone medusa at the Castle Entrance,
 and in the Sanctum the warrior in golden armor, a camp's fights by the
-hydras, the Dreadlord and the soul gem's guards. Now it wins three. What
-changed, each as a player plays it:
+hydras, the Dreadlord and the soul gem's guards. The current route forces
+none of these wins. What changed, each as a player plays it:
 
 - **Dice a beat**, as Pools of Darkness's and Gateway's routes have, so a
   save resumed with `OPENGOLD_ROUTE_RESUME` plays on as the whole run does.
@@ -299,16 +299,28 @@ changed, each as a player plays it:
   turned the Black Circle's patrols from 0 and 8 wins in 120 plays to 31 and
   40.
 - **Reloads:** from the crevasses on, a fight lost in each of 120 plays is
-  played up to 240 more times with new dice, and one won only at the cost
-  of two members (both clerics, who raise the dead) up to 240 more.
+  played up to 240 more times with new dice. It also retries a victory
+  costing one member, including a petrified magic-user who cannot cure itself,
+  within the same budget; a surviving victory is retained when that budget ends.
 
-The three stand-ins, measured from the route's own saves:
+The final three forced victories were removed on 2026-11-16. A fresh
+whole-route run with `OPENGOLD_ROUTE_PLAY_STAND_INS=1` reaches the actual
+ending and wins Oswulf's chained battles, the Dreadlord and the soul-gem
+fight through combat commands. The town hall spends already earned
+experience on the mid-game return; a later temple visit raises the dead and
+cures the petrified magic-user before further training. The last Well rest
+retains the globe, Mass Invisibility, Mirror Image and Haste plan. Globes
+and Mass Invisibility are now available in camp, and the globes persist
+into combat ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md)). Holds prioritize
+hostile casters, clerics retain Dispel Magic, and fireball planning respects
+range and line of sight. An event can be reloaded as a whole when its chained
+battles defeat the party; victories with survivors are kept even with casualties.
 
-| Fight | Plays won |
-|---|---|
-| Oswulf's last stand (82: 15,15), the second fight: five castle guards, four legionaries, three Black Circle and three Legion wizards right after the cloud giants and white dragons, which the party beats in every play; no camp between | 0 of 360 (1 of 486 after a rest there, which draws the castle's guards) |
-| The Dreadlord (98: 3,4) with ten storm giants and six Banite priests dealt about the party, whole and rested | 0 of 360 |
-| The soul gem's twelve iron golems, whom only the weapons +3 of the paladins and Vala harm, and six medusae (98: 1,3) | 0 of 360 |
+The former 0-of-360 measurements describe the old party preparation and
+player tactics, not an engine impossibility. The successful complete replay
+is recorded in [PLAYABILITY.md](../PLAYABILITY.md). It still has the
+progression and relocation assistance below; it is not proof of a complete
+unassisted playthrough.
 
 The experience a party brings from *Curse* stays a stand-in: the four
 awards give each paladin 1,550,000 above Secret's new character's, and the
