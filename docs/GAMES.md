@@ -33,7 +33,10 @@ The user decided these on 2026-11-12:
 | 6 | *Treasures of the Savage Frontier* | 1992 | `TREASURE` | Played to its win by the route test; no fight is won by the test, only Llorkh's experience and money are given ([treasure.md](games/treasure.md)) |
 | 7 | *Forgotten Realms: Unlimited Adventures* | 1993 | `UA` | Designs made with the kit play to their win: walls, events and fights ([ua.md](games/ua.md)) |
 
-The developer's copies live in `/Users/edmond/GoldBox/<folder>`.
+The developer's copies live in `/Users/edmond/GoldBox/<folder>` on macOS
+and `/home/edmond/GoldBox/<folder>` on this Linux computer. For installed-data
+tests here, set `OPENGOLD_GOLDBOX_DIR=/home/edmond/GoldBox` and
+`OPENGOLD_GAME_DIR=/home/edmond/GoldBox/POOLRAD`.
 
 The original let a party travel on: *Curse* imports a *Pool of Radiance*
 party, *Secret* a *Curse* party and *Pools of Darkness* a *Secret* party.

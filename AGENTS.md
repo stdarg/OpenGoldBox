@@ -19,6 +19,13 @@
   the main checkout. If the main checkout has uncommitted changes or cannot
   fast-forward, leave it alone and tell the user.
 
+## Local game files on Edmond's Linux computer
+
+- All original game installations are in `/home/edmond/GoldBox`.
+- For installed-data tests, set `OPENGOLD_GOLDBOX_DIR=/home/edmond/GoldBox`
+  and `OPENGOLD_GAME_DIR=/home/edmond/GoldBox/POOLRAD`.
+- Check this location before reporting game data as unavailable.
+
 ## Coordinating with other sessions
 
 Several Claude and Codex sessions work on this repository at once, each in its

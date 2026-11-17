@@ -57,9 +57,9 @@ or an event).
   x86_64 distribution with glibc 2.28 or newer (Ubuntu 20.04, Debian 10, RHEL 8,
   SteamOS 3 and later; [which systems](docs/BUILD.md#which-linux-systems-it-runs-on)).
 
-The Linux game suite was verified on 2026-11-16: 306 checks passed, with 30
-skipped because the additional Gold Box installations were unavailable. All nine
-demo/catalog checks and 21 Python tooling tests passed; see
+The Linux game suite was verified on 2026-11-16 with all installed games:
+all 336 checks passed, with no skips. All 11 demo/catalog/DOS-probe checks and
+21 Python tooling tests passed; see
 [Linux verification](docs/TESTING.md#linux-verification-2026-11-16).
 
 The last full macOS test run was on 2026-11-06 (commit b4d0aed5, with original

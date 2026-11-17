@@ -2,13 +2,37 @@
 
 ## Linux verification (2026-11-16)
 
+The full installed-data run on `9a197ba9` passed **all 336 game-build checks,
+with no failures and no skips** (1,383 seconds):
+
+```bash
+OPENGOLD_GOLDBOX_DIR=/home/edmond/GoldBox \
+OPENGOLD_GAME_DIR=/home/edmond/GoldBox/POOLRAD \
+JOBS=8 ./build.sh --test-all
+```
+
+With the same data paths, all nine demo/catalog checks, both DOS-probe checks
+(774 seconds for the experiments) and all 21 Python tests passed again.
+The six exported campaigns also launched with their original-rules default
+parties both headlessly and in rendered windows under `cage`, exiting cleanly
+without script or native errors. These used isolated settings and user-data
+folders, leaving the player's configuration unchanged.
+
+The full suite covers game selection, character editing, default-party starts,
+exploration, combat, save/load, cross-game imports, all-map walks, the campaign
+routes and Unlimited Adventures' generated-design UI. The campaign routes retain
+the stand-ins documented in [GAMES.md](GAMES.md); passing them does not establish
+unassisted end-to-end completion. Krynn and Buck Rogers remain future work.
+
+### Initial fixes and verification
+
 Verified the changes based on `ee0a6b28` with GCC 16.2, Godot 4.7.2 and the
 installed Pool of Radiance files (`OPENGOLD_GAME_DIR`). Build warnings remain
 errors. The game build, export and packaged-game smoke check passed.
 
 - `JOBS=8 ./build.sh --test-all`: 306 passed, 30 skipped, no failures out of 336.
-  Skips require additional Gold Box games or an Unlimited Adventures design;
-  `OPENGOLD_GOLDBOX_DIR` was unavailable.
+  This initial run omitted `OPENGOLD_GOLDBOX_DIR`, leaving the installed
+  additional games unused. They are present at `/home/edmond/GoldBox`.
 - Demo/catalog targets built with the same compiler, `OPENGOLD_BUILD_GODOT=ON`
   and `OPENGOLD_BUILD_GAME=OFF` in `build/linux-extras`.
   `ctest --test-dir build/linux-extras --output-on-failure -j 4 -L demo`:
