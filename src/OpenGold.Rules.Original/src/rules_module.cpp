@@ -1574,6 +1574,11 @@ void stand_unpoisoned(const CharacterSheet &sheet, VitalState &state)
 // or magic-user level, or a paladin's or ranger's less 8.
 int camp_caster_level(const CharacterSheet &caster, const Spell &known)
 {
+    // An item's own power casts at level 12 (charhlp.pas, GetCasterLevel).
+    if (known.caster_class == SpellClass::item)
+    {
+        return 12;
+    }
     const auto &levels = original_numbers(caster).class_levels;
     if (known.caster_class == SpellClass::druid)
     {
@@ -1689,7 +1694,9 @@ void lay_camp_effect(const CharacterSheet &caster, const CharacterSheet &target,
     const auto &known = *spell(number, game_of(caster.identity));
     const int level = camp_caster_level(caster, known);
     int minutes = known.minutes_fixed + known.minutes_per_level * level;
-    int strength = number == mirror_image ? roll_die(random_state, 4) : level;
+    int strength = known.caster_class == SpellClass::item ? 0
+                   : number == mirror_image               ? roll_die(random_state, 4)
+                                                          : level;
     int code = known.effect;
     // Mind Blank lasts a day (magic.pas, CalcSpellDuration). Protection from
     // Fire gives a ranger the druid's protection, which lasts until it has
@@ -2988,11 +2995,13 @@ bool OriginalModule::cursed_item(std::string_view item) const
 
 // Out of a fight the original's Potion of Healing heals 2d4+2, and Keoghtum's
 // Ointment takes poison away, else disease, else heals 1d4+8, as in one
-// (magic.pas); the other items' powers are a fight's.
+// (magic.pas). The 256-color games also allow their dragon-breath
+// protection scroll before a fight (viewchar.pas, UseItem).
 bool OriginalModule::usable_outside_combat(std::string_view item) const
 {
     const auto power = item_power(item, content_.game);
-    return power == potion_of_healing || power == keoghtums_ointment || power == youth;
+    return power == potion_of_healing || power == keoghtums_ointment || power == youth ||
+           (vga_engine(content_.game) && power == 195);
 }
 
 void OriginalModule::drink_potion(const CharacterSheet &sheet, VitalState &state,
@@ -3005,6 +3014,11 @@ void OriginalModule::drink_potion(const CharacterSheet &sheet, VitalState &state
     if (item_power(item, content_.game) == youth)
     {
         make_younger(sheet, state, random_state);
+        return;
+    }
+    if (item_power(item, content_.game) == 195)
+    {
+        lay_camp_effect(sheet, sheet, state, 195, random_state);
         return;
     }
     const bool ointment = item_power(item, content_.game) == keoghtums_ointment;

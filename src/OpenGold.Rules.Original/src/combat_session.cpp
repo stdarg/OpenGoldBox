@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <charconv>
+#include <limits>
 #include <numeric>
 #include <optional>
 #include <span>
@@ -143,6 +144,7 @@ constexpr int armor_eaten = kit_effect_offset + 250;
 // 67, 82, 83, 91, 96, 100 and 104, plus darkness_effect_offset): half harm
 // from crushing weapons, death by a blessed bolt, the big red, blue and black
 // dragons' breaths, dragon fear and 4d6 of fire with a hit.
+constexpr int retaliating_shield = 343;
 constexpr int six_weapons = 516, dancing = 518, druid_fire_protection = 519, dragon_feared = 520,
               fire_touch = 521, iron_skin = 522, mind_blank = 523, blade_barrier = 604,
               halves_crushing = 537, slain_by_blessed_bolt = 552, big_red_breath = 553,
@@ -1284,7 +1286,7 @@ class Session final : public rules::CombatSession
     void stand_up(Fighter &f, int hit_points, std::string_view message);
     [[nodiscard]] bool can_target(const Fighter &attacker, const Fighter &target) const;
     [[nodiscard]] bool turned_aside(Fighter &defender);
-    [[nodiscard]] int weapon_damage_defenses(const Fighter &attacker, Fighter &defender, int damage,
+    [[nodiscard]] int weapon_damage_defenses(Fighter &attacker, Fighter &defender, int damage,
                                              int phase, int primary_attacks, int &primary_hits);
     [[nodiscard]] int six_weapons_blow(const Fighter &attacker, int primary_attacks, int damage);
     bool eat_armor(const Fighter &pudding, Fighter &target);
@@ -3667,12 +3669,14 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
     case 185:
     {
         // Fire Shield, hot or cold as its caster chose (the AI and Quick at
-        // random, hot on a d10 above 5), with protection from electricity.
+        // random, hot on a d10 above 5). Darkness pairs them with its
+        // retaliating shield (magic.pas, SpellFireShield).
         const int minutes = known.minutes_fixed + known.minutes_per_level * level;
         const bool hot = flames == Flames::random ? roll(10) > 5 : flames == Flames::hot;
         (void)add_with_message(caster, {hot ? 250 : 254, minutes, level, false}, false, false, 0,
                                level, &known);
-        caster.numbers.effects.push_back({335, minutes, level, false});
+        caster.numbers.effects.push_back(
+            {darkness() ? effect::retaliating_shield : 335, minutes, level, false});
         break;
     }
     case 183:
@@ -9330,8 +9334,8 @@ int Session::six_weapons_blow(const Fighter &attacker, int primary_attacks, int 
 // order (effhndlr.pas, WEAPON_DAMAGE_DEFENDER): evading missiles and boulders
 // from afar, a troll's regeneration beginning, halving by weapon class or
 // magic, weapons that cannot harm it, and oil or holy water.
-int Session::weapon_damage_defenses(const Fighter &attacker, Fighter &defender, int damage,
-                                    int phase, int primary_attacks, int &primary_hits)
+int Session::weapon_damage_defenses(Fighter &attacker, Fighter &defender, int damage, int phase,
+                                    int primary_attacks, int &primary_hits)
 {
     const auto &striker = attacker.numbers.striker;
     const int plus = striker ? striker->plus : 0;
@@ -9459,6 +9463,20 @@ int Session::weapon_damage_defenses(const Fighter &attacker, Fighter &defender, 
     if (defender.has(effect::halved_below_plus_four) && striker && plus < 4)
     {
         damage /= 2;
+    }
+    // Darkness's shield returns twice the damage of an adjacent weapon
+    // as magic, before the blow lands (effhndlr.pas, EffZapAttacker).
+    // A returned magical hit is not another weapon attack, so shields
+    // cannot recursively return one another's retaliation.
+    if (darkness() && defender.has(effect::retaliating_shield) && damage > 0 &&
+        distance(attacker, defender) < 2)
+    {
+        const int returned = damage > std::numeric_limits<int>::max() / 2
+                                 ? std::numeric_limits<int>::max()
+                                 : damage * 2;
+        log({"{name}'s Fire Shield strikes {attacker}.",
+             {{"name", defender.name}, {"attacker", attacker.name}}});
+        nonweapon_damage(attacker, returned, 0, false, 8, 0, 0, false);
     }
     // The kit's need of a weapon of +n (fx_need_plus): one below it does
     // nothing, nor bare blows but a monster's of (n - 1) * 2 + 5 Hit Dice or

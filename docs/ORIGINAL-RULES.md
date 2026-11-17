@@ -545,21 +545,32 @@ Journal), chosen by the game as the others' are (2026-11-14):
   SelectItemToUse uses nothing, so a monster casts the memorized spell of
   highest AI weight that has a target first (Thorne's red dragons their
   Fireball) and never uses an item.
+- **Protection from Dragon Breath** (2026-11-17): the protection scroll
+  can be used from inventory before combat in both 256-color games. It
+  protects its user for twelve minutes (one per item caster level), consumes
+  the scroll and persists into combat until its normal expiry. Earlier games'
+  effect persistence is unchanged.
+- **Fire Shield** (2026-11-17): Darkness's raw effect 112 (canonical 343),
+  innate on Bane minions as well as granted by the spell, returns twice an
+  adjacent weapon hit's damage as magic before that blow lands. It does not
+  return distant shots or zero damage. The spell grants this retaliation
+  alongside the chosen flames; it grants no electricity immunity. Other
+  games' shield mappings are unchanged. Creation and combat regressions
+  cover the scroll lifecycle, retaliation and cast effects.
 - **Its spell table** (its `gdconsts.pas`, 2026-11-15, late) is the
-  256-color engine's: in the 44 rows *Treasures* changes from the earlier
+  256-color engine's: in the 45 rows *Treasures* changes from the earlier
   games' (range, duration, save, when cast, AI weight; *Treasures*, below)
   it holds the same values, so both games play them. Stone to Flesh may be
   cast in camp (its when-cast 2; the camp's FIX uses it too, `camp.pas`):
   a statue comes back at 1 Hit Point (`SpellStoneToFlesh`). A character
   stands on one square (its `chargen.pas` sets every icon's dimensions to
   1), so no weapon strikes one as large. Its table differs from the earlier
-  games' in 13 rows more, which neither game plays yet: Reduce's effect,
+  games' in 12 rows more, which neither game plays yet: Reduce's effect,
   Prayer's and Elixir of Youth's party target, Blink's target and effect,
   Entangle's effect, Barkskin's duration and target, Globe of
   Invulnerability's area, the Potion of Giant Strength's effect, the
   Javelin of Lightning's range, the Potion of Healing's effect, the Wand of
-  Paralyzation's and Wand of Magic Missiles' AI weights and the Scroll of
-  Protection's duration.
+  Paralyzation's and Wand of Magic Missiles' AI weights.
 - **Spell numbers** are *Secret*'s; its new spells, 101 to 109 and 118 to
   126, are numbered 200 higher too.
 - **Training** costs nothing; attacks, thief skills and the experience
@@ -686,8 +697,11 @@ Journal), chosen by the game as the others' are (2026-11-14):
   (`CampaignParty::read_character`, 2026-11-16); until then the session
   threw "Unsupported script HP change" there. The script counts from cell
   C4h, which Xoham's fight left at the beholders' number (4 when no member
-  was down, else 3), not from 0, so the original heals only the members
-  from the fourth or fifth on; OpenGoldBox plays it so (Bugs).
+  was down, else 3), not from 0. Since 2026-11-17 the final combat reply
+  resets that counter for the recognized DOS 1.1 recovery loop, so every
+  member is restored. The original files and save format are unchanged.
+  The regression puts actual dead vitals into the campaign, including its
+  first and last members; display-only casualties did not test recovery.
 - **Arrows and quarrels** are *Secret*'s item types, 30 and 12, and its
   crossbows shoot its blessed bolts (type 74) as quarrels, from the one bolt
   place (`charhlp.pas`, `RecalcStats`, 2026-11-15). Until then OpenGoldBox
@@ -2141,4 +2155,4 @@ scales Hit Points takes only the table's to-hit and Armor Class.
 | *Curse* to *Treasures:* Keep adds up the Constitution's share of the Hit Points in a byte, so a Constitution below 7 wraps it round and the Hit Points rolled come out wrong (`chargen.pas`, `ModifyCharacterMenu`) | Counted with its sign |
 | *Unlimited Adventures:* Modify takes off every item the character has readied and never readies them again (`modify.c`, `modify_hero`) | The items stay readied |
 | Modify's Add on the Hit Points sets them to their highest, which lowers Hit Points creation left above it (the kit's knight), and Subtract likewise raises those below the lowest; a change of Constitution only pulls them back the one way (`chargen.pas`, `ModifyCharacterMenu`; `modify.c`) | A raise never lowers them and a lowering never raises them |
-| *Pools of Darkness:* the finale's last words heal and stand up the members from the count in cell C4h, which Xoham's fight left at its beholders' number (3 or 4), not from 0, so the first three or four members are not healed, though the cluebook says the party is (ECL1:75 0x95BF) | Played as the original for now: a fix would change a script's data, which OpenGoldBox has not done; for the user to decide (2026-11-16) |
+| *Pools of Darkness:* the finale's recovery loop starts at the count in cell C4h left by Xoham's beholders (3 or 4), skipping the first members (ECL1:75 0x95BF) | The final combat reply resets the counter for the recognized recovery loop, restoring every member without changing the original files (2026-11-17) |

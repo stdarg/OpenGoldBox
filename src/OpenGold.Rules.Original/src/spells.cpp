@@ -262,7 +262,7 @@ struct TreasuresRow
         ai_priority;
 };
 
-constexpr std::array<TreasuresRow, 44> treasures_changes{{
+constexpr std::array<TreasuresRow, 45> treasures_changes{{
     {1, 6, 0, 6, 0, 0, 2, 1},     // Bless
     {2, 6, 0, 6, 0, 0, 1, 1},     // Curse
     {3, 0, 0, 0, 0, 0, 2, 0},     // Cure Light Wounds
@@ -304,6 +304,7 @@ constexpr std::array<TreasuresRow, 44> treasures_changes{{
     {188, 0, 16, 0, 1, 0, 2, 6},  // Minor Globe of Invulnerability
     {193, 16, 0, 0, 0, 1, 1, 5},  // Feeblemind
     {194, 0, 2, 0, 1, 1, 1, 7},   // Hold Monster
+    {195, 0, 0, 0, 1, 0, 2, 1},   // Protection from Dragon Breath
     {200, 3, 0, 0, 3, 1, 1, 4},   // Bestow Curse
     {236, 0, 0, 0, 0, 0, 2, 2},   // Heal
     {313, 0, 4, 0, 0, 0, 2, 0},   // Stone to Flesh

@@ -1,5 +1,19 @@
 # Native coverage and fuzz testing
 
+## Darkness follow-up (2026-11-17)
+
+The current [playability record](PLAYABILITY.md#2026-11-17-darkness-defenses-and-finale)
+supersedes the historical forced-finale limitation below. Its checkpoint replay
+now kills Gothmenes through actual combat, with no forced results or ceasefire,
+and reaches the ending with all six members recovered. The fresh Darkness
+whole route passes in 1,307.62 seconds. All 336 checks pass across the complete
+run (335/336 in 1,328.04 seconds, no skips) and Secret's corrected whole-route
+rerun: that single failure caught obsolete forced-win markers, now removed.
+The rebuilt nine demo/catalog checks, both DOS checks, 21 Python tests and
+localization validation also pass. Commercial progression and movement
+assistance remain explicit limitations. The tested tree is based on `742f7840`,
+with the changes accompanying this record.
+
 ## Linux verification (2026-11-16)
 
 The playability follow-up based on `e3b2ae9c`, with the changes accompanying

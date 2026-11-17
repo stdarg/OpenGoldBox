@@ -6,6 +6,24 @@ change, as the census (`opengold_census`, [GAMES.md](../GAMES.md)) reads them.
 The facts come from the reconstructed source of the DOS release 1.1 and from
 the files themselves; the wording is our own.
 
+## Combat compatibility checks (2026-11-17)
+
+The [Original Rules record](../ORIGINAL-RULES.md) describes protection scrolls
+and Fire Shield. The Aerie's actual dragon-breath protection scroll can now
+be used before combat and its twelve-minute effect survives entry into combat.
+Bane minions' innate Fire Shield returns twice an adjacent weapon hit's damage;
+the cast spell grants the same retaliation, without electricity immunity.
+These engine corrections have focused regressions. A current combat replay
+also puts Gothmenes down through weapon damage, reaches the actual ending and
+restores all six party members, without forced outcomes. The fresh whole route
+also passes. Integrated validation and the route's remaining assistance are recorded in
+[PLAYABILITY.md](../PLAYABILITY.md).
+
+Behavior was checked against the DOS reconstruction at
+[`f24a100d`](https://github.com/talonius/pools-of-darkness/tree/f24a100dc00a302aa1962953ba821c7d768d3c3f)
+(`gdconsts.pas`, `viewchar.pas`, `magic.pas`, `effhndlr.pas`). No reconstructed
+implementation is copied into the engine.
+
 ## Pictures and graphics
 
 Since 2026-11-13 every picture, icon, sprite, tile set and wall decodes
@@ -1409,7 +1427,11 @@ slots). With it:
   where it took several (none of 600 won); the monsters reach the party in
   its first turns. No reasonable play of this party wins it.
 
-### The last stand-ins (darkness17, 2026-11-16)
+### Historical stand-in investigation (darkness17, 2026-11-16)
+
+The unsuccessful tactics and counts below predate the November 17 fixes and
+verified finale plan described above. They are historical diagnostics, not
+a claim that Gothmenes remains undefeated by the current replay.
 
 **Rules found and played** ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md),
 *Pools of Darkness*):
@@ -1424,9 +1446,10 @@ slots). With it:
   last stand left dead stands up again (it threw "Unsupported script HP
   change"). The script counts from cell C4h, which Xoham's fight left at the
   beholders' number, so the original heals the members from the fourth or
-  fifth on only; OpenGoldBox plays it so for now (ORIGINAL-RULES.md, Bugs:
-  for the user). `darkness_tests` plays script 75 from Gothmenes' summons
-  to the win, a member dead after the last stand, and sees him stand.
+  fifth on only. Since 2026-11-17 the final combat reply resets the counter
+  for the recognized DOS 1.1 recovery loop. `darkness_tests` now records
+  actual dead campaign vitals for the first and last members and checks
+  that all six recover. Its earlier display-only casualties were insufficient.
 - The scripts' to-hit cells were not read: cell 1 (monsterHitMod) adds to
   the monsters' attack rolls, cell 2Fh (partyHitMod) to the party's, and
   the fight's end clears them (`fxengine.pas`, AttackRoll). Gothmenes' last

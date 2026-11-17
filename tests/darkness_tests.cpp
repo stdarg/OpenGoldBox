@@ -712,6 +712,24 @@ bool play_won_script(
                     unit.status = "dead";
                 }
             }
+            // The scripted fixture must put the requested casualties into
+            // campaign state too. Changing only the display fields leaves
+            // their persistent vitals alive and makes recovery checks vacuous.
+            auto after = party->state();
+            for (auto &unit : result.combatants)
+            {
+                if (std::ranges::find(dead, unit.id) != dead.end())
+                {
+                    unit.persistent.hit_points = 0;
+                    unit.persistent.dead = true;
+                    unit.persistent.description = "Dead.";
+                    const auto member =
+                        std::ranges::find(after.roster, unit.id, &opengold::PartyMember::id);
+                    check(member != after.roster.end(), "The casualty belongs to the party");
+                    member->vitals = unit.persistent;
+                }
+            }
+            party->restore(std::move(after));
             check(session.resolve_combat(result), "The test wins the fight");
             break;
         }
@@ -727,10 +745,9 @@ bool play_won_script(
 // that barred magic and moved the to-hit rolls are cleared, and "a fog of
 // pain lifts": the script sets each member it counts to its maximum Hit
 // Points and its status to okay, so one Gothmenes' last stand left dead
-// stands again, unscathed by a raising's cost. Its counter starts where
-// Xoham's fight left it (cell C4h, the beholders' number: 4 when no member
-// was down), so it reaches the members from the fifth on, as the
-// original's. On the way, the last stand is fought under the script's bar
+// stands again, unscathed by a raising's cost. Reset the counter that
+// Xoham's fight left at its beholders' number, so recovery includes the
+// first member too. On the way, the last stand is fought under the script's bar
 // on magic and its to-hit cells: the monsters 6 better, the party 7 worse
 // (cells 1 and 2Fh; fxengine.pas, AttackRoll).
 void the_finale_stands_the_fallen_up()
@@ -743,16 +760,19 @@ void the_finale_stands_the_fallen_up()
     }
     auto [session, content, party] =
         darkness_party(folder, {"fighter", "fighter", "fighter", "fighter", "fighter", "fighter"});
-    const auto last = party->state().slots[5];
+    const auto members = party->state().slots;
+    const auto first = members[0];
+    const auto last = members[5];
     // The crystal's bearer, whose name the inner palace keeps (cell 32Bh),
     // and Gothmenes' summons (cell 254h at FFh), which script 75 begins at.
     opengold::test::TourAccess::set_string(session, EclAddress{0x32B}, "MEMBER 1");
     opengold::test::TourAccess::set_variable(session, EclAddress{0x254}, 0xFF);
+    opengold::test::TourAccess::set_variable(session, EclAddress{0x1CF}, 0xFF);
     opengold::test::TourAccess::enter_script(session, 75, 65,
                                              {9, 7, opengold::por::MapDirection::south});
     bool last_stand_seen = false;
     const bool won = play_won_script(
-        session, content, party, {"NO", "NO"},
+        session, content, party, {"NO", "NO", "YES", "NO"},
         [&](const opengold::CampaignEncounter &encounter)
         {
             if (!encounter.no_magic)
@@ -768,14 +788,21 @@ void the_finale_stands_the_fallen_up()
                                           }),
                   "The last stand's monsters are 6 better to hit, the party 7 worse");
             check(session.magic_barred(), "The last stand bars magic");
-            return std::vector<opengold::MemberId>{last};
+            return std::vector<opengold::MemberId>{first, last};
         });
     check(last_stand_seen, "Gothmenes makes his last stand");
     check(won, "The game is won");
     check(!session.magic_barred(), "The win lifts the bar on magic");
-    const auto &stood = party->member(last);
-    check(!stood.vitals.dead && stood.vitals.hit_points == stood.character.sheet().hit_points,
-          "The member the last stand left dead stands again, whole");
+    for (const auto id : members)
+    {
+        if (id)
+        {
+            const auto &stood = party->member(id);
+            check(!stood.vitals.dead &&
+                      stood.vitals.hit_points == stood.character.sheet().hit_points,
+                  "Every member, including the first, stands again whole after the last stand");
+        }
+    }
 }
 
 int main()

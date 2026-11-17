@@ -588,6 +588,7 @@ struct RouteBeat
     // with a different result from its first battle.
     bool reload_event = false;
     bool keep_preparation = false;
+    std::string cast_after_by;
 };
 
 // The dice a beat starts with, for a route that gives each beat its own (Pools
@@ -2019,7 +2020,7 @@ const std::vector<RouteBeat> &secret_route()
                        {8, 8, D::south},  {8, 10, D::south}, {8, 11, D::south}, {8, 12, D::south},
                        {8, 13, D::west},  {7, 13, D::south}, {7, 14, D::south}, {7, 15, D::east},
                        {8, 15, D::east},  {13, 0, D::east},  {14, 0, D::east}},
-                      false, true, false, {"YES", "ATTACK MEDUSA"});
+                      false, false, false, {"YES", "ATTACK MEDUSA"});
         // The stairway up to the Middle Level of the Castle (script 97).
         route.push_back(step_beat(96, 15, 0, D::east, {"YES"}));
         // The Middle Level's maze (script 97), from 15,0 to the stairway up
@@ -2038,7 +2039,7 @@ const std::vector<RouteBeat> &secret_route()
                        {0, 9, D::south},  {0, 10, D::south}, {0, 11, D::east}, {1, 11, D::south},
                        {1, 12, D::west},  {0, 12, D::south}, {0, 13, D::east}, {1, 13, D::south},
                        {1, 14, D::west},  {0, 14, D::south}},
-                      false, true);
+                      false, false);
         // The stairway up to the Dreadlord's Sanctum (script 98).
         route.push_back(step_beat(97, 0, 15, D::west, {"YES"}));
         // The Dreadlord's Sanctum (script 98), as the cluebook tells it: the
@@ -2083,7 +2084,7 @@ const std::vector<RouteBeat> &secret_route()
                        {15, 0, D::west},
                        {14, 0, D::west},
                        {13, 0, D::west}},
-                      false, true, false, {"BASH", "YES", "SILVER"});
+                      false, false, false, {"BASH", "YES", "SILVER"});
         // Down the corridor beyond to the door that asks for the Dreadlord's
         // brother (8,9: OSWULF), past Sargatha's ambush at 2,10, to the door
         // at 2,9, which takes the Gold Key.
@@ -2094,7 +2095,7 @@ const std::vector<RouteBeat> &secret_route()
                        {9, 9, D::west},   {8, 9, D::west},   {7, 9, D::south},  {7, 10, D::west},
                        {6, 10, D::west},  {5, 10, D::west},  {4, 10, D::west},  {3, 10, D::west},
                        {2, 10, D::north}},
-                      false, true, false, {"YES", "GOLD"});
+                      false, false, false, {"YES", "GOLD"});
         // North to the warrior in golden armor at 7,1, who bars the door at
         // 6,1; it takes the Brass Key and opens west onto the Dreadlord's
         // own rooms (script 99, on the Sanctum's map): the hydras at 5,1,
@@ -5353,12 +5354,15 @@ const std::vector<RouteBeat> &darkness_route()
             inn_rest.passing = true;
             inn_rest.rest_first = true;
             inn_rest.rest_for_spells = true;
-            // Keep the ward for the dracoliches' cold breaths: the palace
-            // offers no safe rest in which to change the prepared spells.
-            inn_rest.ward_memorized = "resist_cold";
-            inn_rest.memorize_first_of = {"mind_blank", "mind_blank",
-                                          "mind_blank", "globe_of_invulnerability",
-                                          "haste",      "dispel_magic"};
+            // Dracoliches and Bane minions breathe lightning. Save the
+            // protection scroll for the last battle and enlarge the five
+            // melee fighters before the finale.
+            inn_rest.ward_memorized = "enlarge";
+            inn_rest.ward_members = {"paladin 1", "paladin 2", "ranger 3", "cleric 4", "cleric 5"};
+            inn_rest.memorize_first_of = {
+                "mind_blank",   "mind_blank", "mind_blank", "globe_of_invulnerability",
+                "haste",        "haste",      "haste",      "dispel_magic",
+                "mirror_image", "bless",      "prayer"};
             inn_rest.keep_preparation = true;
             route.push_back(inn_rest);
         }
@@ -5395,12 +5399,16 @@ const std::vector<RouteBeat> &darkness_route()
         {
             walk_passages(route, 65, steps, true, false, false, {"EXIT"});
         };
+        const auto palace_entry = route.size();
         walk_palace({{0, 0, D::east},  {1, 0, D::south}, {1, 1, D::east},  {2, 1, D::east},
                      {3, 1, D::north}, {3, 0, D::east},  {4, 0, D::east},  {5, 0, D::east},
                      {6, 0, D::east},  {7, 0, D::south}, {7, 1, D::south}, {7, 2, D::south},
                      {7, 3, D::west},  {6, 3, D::west},  {5, 3, D::north}, {5, 2, D::east},
                      {6, 2, D::north}, {6, 1, D::west},  {5, 1, D::west},  {4, 1, D::south},
                      {4, 2, D::south}});
+        // The mage carries the crystal; the paladin keeps the protection
+        // scroll packed until the last battle.
+        route[palace_entry].answers = {"paladin 1", "magic_user 6", "paladin 2", "EXIT"};
         // "Sasha" and the Phlanerians (4,4, event 0; the cluebook's 4), met
         // with searching off, the clerics curing first (the palace's
         // wandering monsters break a camp): the party will not tell where
@@ -5472,13 +5480,19 @@ const std::vector<RouteBeat> &darkness_route()
         // type 1 ahead) asks who tries: the Crystal Ring's bearer (YES)
         // puts the ring on rather than reach in with it in a pocket (NO,
         // YES) and takes Bane's Crystal (script 75).
+        const auto last_approach = route.size();
         walk_passages(route, 65, {{8, 8, D::north}, {8, 7, D::east}, {9, 7, D::south}});
+        route[last_approach].cast_after = {"bless"};
+        route[last_approach + 1].cast_after = {"prayer"};
+        route[last_approach + 1].cast_after_by = "cleric 4";
         route.back().ward_each_with = "mind_blank";
         route.back().ward_members = {"cleric 4", "cleric 5", "magic_user 6"};
         route.back().cast_after = {"haste"};
-        auto crystal = step_beat(65, 9, 8, D::south, {"YES", "NO", "YES"});
+        auto crystal = step_beat(65, 9, 8, D::south, {"YES", "magic_user 6", "NO", "YES"});
         crystal.ward_each_with = "globe_of_invulnerability";
         crystal.ward_members = {"magic_user 6"};
+        crystal.cast_after = {"mirror_image"};
+        crystal.cast_after_by = "magic_user 6";
         route.push_back(crystal);
         // Six strikes later Gothmenes returns with Elminster in his whip and
         // summons the party to the pool (script 65); it will not trade the
@@ -5491,13 +5505,10 @@ const std::vector<RouteBeat> &darkness_route()
         // swept into the pool, and the party will not bargain for the
         // crystal's word (AGREE? NO): Gothmenes, with the few minions who
         // still answer him, fights to the death, and the crystal crumbles.
-        // A stand-in: the route's party falls to the servants in every play
-        // (none of 600), and to Gothmenes' last stand, under the script's
-        // bar on all magic (cell 2) and its to-hit cells (the monsters 6
-        // better, the party 7 worse), in every play (none of 600; none of
-        // 240 either with a Ring and Cloak of Protection +4 on every
-        // member, 2026-11-16), so the test wins those two fights; Xoham's
-        // the player wins.
+        // The player wins all three battles. It saves Haste copies for
+        // Xoham and reads the collected protection scroll before the last
+        // battle bars magic; that battle must put Gothmenes down, rather
+        // than accepting a quiet-fight victory with him still standing.
         {
             auto finale = step_beat(65, 9, 7, D::south, {"NO", "NO", "YES", "NO"});
             finale.repeat_in_place = true;
@@ -5506,7 +5517,8 @@ const std::vector<RouteBeat> &darkness_route()
             // palace's camps resting nowhere.
             finale.cure_first = true;
             finale.cure_to_full = true;
-            finale.ward_each_with = "resist_cold";
+            finale.ward_each_with = "enlarge";
+            finale.ward_members = {"paladin 1", "paladin 2", "ranger 3", "cleric 4", "cleric 5"};
             // The blessed bolts serve the rakshasas. Restore the fighters'
             // swords and shields for the servants and Gothmenes.
             for (const char *member : {"paladin 1", "paladin 2", "ranger 3"})
@@ -5514,7 +5526,11 @@ const std::vector<RouteBeat> &darkness_route()
                 finale.ready_types.emplace_back(18, member);
                 finale.ready_types.emplace_back(37, member);
             }
-            finale.test_wins = true;
+            for (const char *member : {"cleric 4", "cleric 5"})
+            {
+                finale.ready_types.emplace_back(8, member);
+                finale.ready_types.emplace_back(37, member);
+            }
             finale.reload_event = true;
             finale.repeat_until_at_least = std::pair<std::uint16_t, std::uint16_t>{0x16, 75};
             route.push_back(finale);
@@ -7609,6 +7625,18 @@ bool walk_census(GoldBoxGame game, bool route)
     std::string ward_spell;
     std::vector<std::string> ward_targets;
     bool keeps_preparation = false;
+    const auto ward_target_count = [&]
+    {
+        return static_cast<unsigned>(std::ranges::count_if(
+            party->state().slots,
+            [&](opengold::MemberId id)
+            {
+                return id && !party->member(id).vitals.dead &&
+                       (ward_targets.empty() ||
+                        std::ranges::find(ward_targets, party->member(id).character.sheet().name) !=
+                            ward_targets.end());
+            }));
+    };
     const auto spell_named = [](std::string_view id, std::string_view name)
     {
         id.remove_prefix(id.find_last_of(':') + 1);
@@ -7867,15 +7895,7 @@ bool walk_census(GoldBoxGame game, bool route)
         // Each caster who can memorize the ward takes a copy for every
         // member, as far as its slots go, so that between them there is
         // one for each whatever their slots.
-        const auto ward_copies = static_cast<std::size_t>(std::ranges::count_if(
-            party->state().slots,
-            [&](opengold::MemberId id)
-            {
-                return id && !party->member(id).vitals.dead &&
-                       (ward_targets.empty() ||
-                        std::ranges::find(ward_targets, party->member(id).character.sheet().name) !=
-                            ward_targets.end());
-            }));
+        const auto ward_copies = ward_target_count();
         for (const auto id : choosing)
         {
             const auto options = party->spell_choice_options(id);
@@ -8599,10 +8619,526 @@ bool walk_census(GoldBoxGame game, bool route)
         }
         return std::nullopt;
     };
+    // Fight past the minions' retaliating shields to dragons and casters.
+    // Distant shots can still hit a shielded creature safely.
+    const auto darkness_finale_turn =
+        [&](const opengold::rules::CombatSession &combat,
+            std::set<opengold::rules::EntityId> &spaced) -> std::optional<opengold::rules::Command>
+    {
+        const auto state = combat.snapshot();
+        const auto actor =
+            std::ranges::find(state.combatants, state.actor, &opengold::rules::CombatantView::id);
+        if (actor == state.combatants.end())
+        {
+            return std::nullopt;
+        }
+        const auto commands = combat.legal_commands();
+        const auto enemies_left =
+            std::ranges::count_if(state.combatants,
+                                  [&](const opengold::rules::CombatantView &unit)
+                                  {
+                                      return unit.side != actor->side && unit.conscious;
+                                  });
+        const int healing_threshold = enemies_left <= 2 ? 9 : 4;
+        // The crystal leaves its bearer near death. Heal a badly wounded
+        // neighbour before attacking or starting another support spell.
+        const opengold::rules::CombatantView *patient = nullptr;
+        for (const auto &unit : state.combatants)
+        {
+            if (unit.side == actor->side && !unit.dead &&
+                unit.hit_points * 12 < unit.max_hit_points * healing_threshold &&
+                (!patient || unit.hit_points < patient->hit_points))
+            {
+                patient = &unit;
+            }
+        }
+        if (patient)
+        {
+            for (const auto &command : commands)
+            {
+                if (command.verb == "aim" && command.item == 236 && command.target == patient->id)
+                {
+                    return command;
+                }
+            }
+            for (const auto &command : commands)
+            {
+                if (command.verb == "cast" && command.item == 236)
+                {
+                    const auto range = [&](opengold::rules::Cell cell)
+                    {
+                        return std::max(std::abs(patient->cell.x - cell.x),
+                                        std::abs(patient->cell.y - cell.y));
+                    };
+                    if (range(actor->cell) <= 1)
+                    {
+                        return command;
+                    }
+                    const opengold::rules::Command *nearer = nullptr;
+                    for (const auto &step : commands)
+                    {
+                        if (step.verb == "move" && range(step.destination) < range(actor->cell) &&
+                            (!nearer || range(step.destination) < range(nearer->destination)))
+                        {
+                            nearer = &step;
+                        }
+                    }
+                    if (nearer)
+                    {
+                        return *nearer;
+                    }
+                }
+            }
+        }
+        // Refresh Haste while a chained battle is still in progress;
+        // the next one may bar magic and the first battle's Slow removes it.
+        const bool beholders = std::ranges::any_of(
+            state.combatants,
+            [&](const opengold::rules::CombatantView &unit)
+            {
+                return unit.side != actor->side &&
+                       (unit.name.starts_with("BEHOLDER") || unit.name.starts_with("ELDER ORB") ||
+                        unit.name.starts_with("DEATH TYRANT"));
+            });
+        if (beholders && (state.round == 1 || enemies_left <= 3))
+        {
+            const auto has_haste = [](const opengold::rules::CombatantView &unit)
+            {
+                const auto numbers =
+                    opengold::original::Combatant::decode(unit.persistent.resources);
+                return numbers && std::ranges::any_of(numbers->effects,
+                                                      [](const opengold::original::Effect &effect)
+                                                      {
+                                                          return effect.code == 39;
+                                                      });
+            };
+            const bool needs_haste = std::ranges::any_of(
+                state.combatants,
+                [&](const opengold::rules::CombatantView &unit)
+                {
+                    return unit.side == actor->side && unit.conscious &&
+                           (unit.name.starts_with("paladin") || unit.name.starts_with("ranger")) &&
+                           !has_haste(unit);
+                });
+            if (needs_haste)
+            {
+                const auto cast =
+                    std::ranges::find_if(commands,
+                                         [](const opengold::rules::Command &command)
+                                         {
+                                             return command.verb == "cast" && command.item == 48;
+                                         });
+                if (cast != commands.end())
+                {
+                    return *cast;
+                }
+            }
+        }
+        const auto contains_enemy = [&](std::string_view prefix)
+        {
+            return std::ranges::any_of(state.combatants,
+                                       [&](const opengold::rules::CombatantView &unit)
+                                       {
+                                           return unit.side != actor->side &&
+                                                  unit.name.starts_with(prefix);
+                                       });
+        };
+        const bool servants = contains_enemy("DRACOLICH") && contains_enemy("MINION OF BANE") &&
+                              contains_enemy("PET OF KALISTES") && contains_enemy("BIT O MOANDER");
+        if (servants && actor->name == "magic_user 6")
+        {
+            // Keep the extra Haste copies for Xoham. Blast the susceptible
+            // servants; once only fireproof creatures remain, the fighters
+            // finish them while the clerics recover the party.
+            const bool fire_target = std::ranges::any_of(
+                state.combatants,
+                [&](const opengold::rules::CombatantView &unit)
+                {
+                    if (unit.side == actor->side || !unit.conscious)
+                    {
+                        return false;
+                    }
+                    const auto numbers =
+                        opengold::original::Combatant::decode(unit.persistent.resources);
+                    return numbers &&
+                           std::ranges::none_of(numbers->effects,
+                                                [](const opengold::original::Effect &effect)
+                                                {
+                                                    return effect.code == 112;
+                                                });
+                });
+            if (fire_target)
+            {
+                const auto blast = std::ranges::find_if(
+                    commands,
+                    [](const opengold::rules::Command &command)
+                    {
+                        return command.verb == "cast" && command.label == "Delayed Blast Fireball";
+                    });
+                if (blast != commands.end())
+                {
+                    return *blast;
+                }
+            }
+            const auto end =
+                std::ranges::find(commands, std::string("end"), &opengold::rules::Command::verb);
+            if (end != commands.end())
+            {
+                return *end;
+            }
+            return std::nullopt;
+        }
+        const auto own = opengold::original::Combatant::decode(actor->persistent.resources);
+        const auto warrior = [&](opengold::original::ClassSlot slot)
+        {
+            return own && opengold::original::level_in(own->class_levels, slot) > 0;
+        };
+        const bool magic_barred =
+            own && std::ranges::any_of(own->effects,
+                                       [](const opengold::original::Effect &effect)
+                                       {
+                                           return effect.code == 600;
+                                       });
+        if (!warrior(opengold::original::ClassSlot::fighter) &&
+            !warrior(opengold::original::ClassSlot::paladin) &&
+            !warrior(opengold::original::ClassSlot::ranger) &&
+            !warrior(opengold::original::ClassSlot::cleric) &&
+            !(magic_barred && warrior(opengold::original::ClassSlot::magic_user)))
+        {
+            return std::nullopt;
+        }
+        std::set<opengold::rules::EntityId> shielded;
+        for (const auto &unit : state.combatants)
+        {
+            if (unit.side == actor->side || !unit.conscious)
+            {
+                continue;
+            }
+            const auto numbers = opengold::original::Combatant::decode(unit.persistent.resources);
+            if (numbers && std::ranges::any_of(numbers->effects,
+                                               [](const opengold::original::Effect &effect)
+                                               {
+                                                   return effect.code == 343;
+                                               }))
+            {
+                shielded.insert(unit.id);
+            }
+        }
+        if (shielded.empty())
+        {
+            return std::nullopt;
+        }
+        // The last battle bars spells. Shoot the shielded minions with
+        // missiles collected from actual treasure rather than trading twice
+        // every melee hit back into the party. Ready uses the same free
+        // inventory commands as the combat view.
+        if (magic_barred)
+        {
+            const auto owner = std::ranges::find_if(
+                party->state().slots,
+                [&](opengold::MemberId id)
+                {
+                    return id && party->member(id).character.sheet().name == actor->name;
+                });
+            if (owner != party->state().slots.end())
+            {
+                const auto &member = party->member(*owner);
+                const auto &inventory = member.character.inventory().items();
+                const opengold::InventoryItem *ammunition = nullptr;
+                const opengold::InventoryItem *launcher = nullptr;
+                for (const auto &item : inventory)
+                {
+                    const bool spent =
+                        std::ranges::any_of(actor->item_uses_left,
+                                            [&](const auto &entry)
+                                            {
+                                                return entry.first == item.id && entry.second == 0;
+                                            });
+                    if ((item.original_type == 30 || item.original_type == 12) && !spent &&
+                        item.quantity > 0)
+                    {
+                        const auto plus = [&](const opengold::InventoryItem &entry)
+                        {
+                            const auto source = member.item_sources.find(entry.id);
+                            return source == member.item_sources.end()
+                                       ? 0
+                                       : source->second.stored.magic_bonus;
+                        };
+                        if (!ammunition || plus(item) > plus(*ammunition) ||
+                            (plus(item) == plus(*ammunition) && item.original_type == 30 &&
+                             ammunition->original_type != 30))
+                        {
+                            ammunition = &item;
+                        }
+                    }
+                }
+                if (ammunition)
+                {
+                    const auto type = ammunition->original_type == 30 ? 22 : 27;
+                    const auto found =
+                        std::ranges::find(inventory, type, &opengold::InventoryItem::original_type);
+                    if (found != inventory.end())
+                    {
+                        launcher = &*found;
+                    }
+                }
+                if (launcher)
+                {
+                    // Commands address the carried row, not its displayed
+                    // name: different unidentified stacks have identical
+                    // labels. Preserve the module's order of original items.
+                    const auto ordinal_of =
+                        [&](const opengold::InventoryItem &wanted) -> std::optional<unsigned>
+                    {
+                        unsigned ordinal = 0;
+                        for (const auto &item : inventory)
+                        {
+                            const auto record = opengold::por::item_of_original_key(
+                                opengold::rules_definition(member, item));
+                            if (!record || record->type >= content.item_types.size())
+                            {
+                                continue;
+                            }
+                            if (item.id == wanted.id)
+                            {
+                                return ordinal;
+                            }
+                            ++ordinal;
+                        }
+                        return std::nullopt;
+                    };
+                    const auto &readied =
+                        actor->readied_items ? *actor->readied_items : member.equipped;
+                    const auto wearing = [&](const opengold::InventoryItem &item)
+                    {
+                        return std::ranges::find(readied, item.id) != readied.end();
+                    };
+                    for (const auto *item : {ammunition, launcher})
+                    {
+                        if (wearing(*item))
+                        {
+                            continue;
+                        }
+                        const auto ordinal = ordinal_of(*item);
+                        const auto ready =
+                            std::ranges::find_if(commands,
+                                                 [&](const opengold::rules::Command &command)
+                                                 {
+                                                     return ordinal && command.verb == "ready" &&
+                                                            command.item == *ordinal;
+                                                 });
+                        if (ready != commands.end())
+                        {
+                            return *ready;
+                        }
+                        // Clear the old weapon or shield occupying its hands.
+                        for (const auto &command : commands)
+                        {
+                            if (command.verb != "unready")
+                            {
+                                continue;
+                            }
+                            const auto obstructs = std::ranges::find_if(
+                                inventory,
+                                [&](const opengold::InventoryItem &held)
+                                {
+                                    const auto ordinal = ordinal_of(held);
+                                    return held.id != ammunition->id && held.id != launcher->id &&
+                                           ordinal && command.item == *ordinal &&
+                                           (held.original_type == 18 || held.original_type == 22 ||
+                                            held.original_type == 27 || held.original_type == 37 ||
+                                            held.original_type == 30 || held.original_type == 12);
+                                });
+                            if (obstructs != inventory.end())
+                            {
+                                return command;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (magic_barred && state.round == 1 && !spaced.contains(actor->id))
+        {
+            const auto spacing = [&](opengold::rules::Cell cell)
+            {
+                int nearest = 99, total = 0;
+                for (const auto &unit : state.combatants)
+                {
+                    if (unit.id != actor->id && unit.side == actor->side && unit.conscious)
+                    {
+                        const int apart = std::max(std::abs(cell.x - unit.cell.x),
+                                                   std::abs(cell.y - unit.cell.y));
+                        nearest = std::min(nearest, apart);
+                        total += apart;
+                    }
+                }
+                return std::pair{nearest, total};
+            };
+            if (spacing(actor->cell).first < 3)
+            {
+                const opengold::rules::Command *spread = nullptr;
+                for (const auto &command : commands)
+                {
+                    if (command.verb == "move" &&
+                        spacing(command.destination) > spacing(actor->cell) &&
+                        (!spread || spacing(command.destination) > spacing(spread->destination)))
+                    {
+                        spread = &command;
+                    }
+                }
+                if (spread)
+                {
+                    return *spread;
+                }
+            }
+            spaced.insert(actor->id);
+        }
+        const auto priority = [magic_barred](const opengold::rules::CombatantView &unit)
+        {
+            // In the no-magic battle the minions' repeated lightning is
+            // the main threat. Missile users can kill them without retaliation.
+            if (magic_barred && unit.name.starts_with("MINION OF BANE"))
+            {
+                return -1;
+            }
+            return unit.name.starts_with("DRACOLICH") || unit.name.starts_with("GOTHMENES") ? 0
+                   : unit.name.starts_with("PET OF KALISTES")                               ? 1
+                                                                                            : 2;
+        };
+        const opengold::rules::Command *attack = nullptr;
+        int rank = 100;
+        for (const auto &command : commands)
+        {
+            if (command.verb != "melee" && command.verb != "ranged")
+            {
+                continue;
+            }
+            const auto target = std::ranges::find(state.combatants, command.target,
+                                                  &opengold::rules::CombatantView::id);
+            if (target == state.combatants.end() || target->side == actor->side ||
+                (command.verb == "melee" && shielded.contains(target->id)) ||
+                (command.verb == "ranged" && target->name.starts_with("GOTHMENES") &&
+                 (!own || !own->striker || own->striker->plus < 3)))
+            {
+                continue;
+            }
+            if (!attack || priority(*target) < rank)
+            {
+                attack = &command;
+                rank = priority(*target);
+            }
+        }
+        if (attack)
+        {
+            return *attack;
+        }
+        if (own && own->missile && !own->missile->throwable)
+        {
+            const auto nearest = [&](opengold::rules::Cell cell)
+            {
+                int close = 99;
+                for (const auto &unit : state.combatants)
+                {
+                    if (unit.side != actor->side && unit.conscious)
+                    {
+                        const int dx =
+                            std::max({unit.cell.x - cell.x,
+                                      cell.x - (unit.cell.x + unit.footprint.width - 1), 0});
+                        const int dy =
+                            std::max({unit.cell.y - cell.y,
+                                      cell.y - (unit.cell.y + unit.footprint.height - 1), 0});
+                        close = std::min(close, std::max(dx, dy));
+                    }
+                }
+                return close;
+            };
+            const opengold::rules::Command *clear = nullptr;
+            for (const auto &command : commands)
+            {
+                if (command.verb == "move" && nearest(command.destination) > 1 &&
+                    nearest(command.destination) > nearest(actor->cell) &&
+                    (!clear || nearest(command.destination) > nearest(clear->destination)))
+                {
+                    clear = &command;
+                }
+            }
+            if (clear)
+            {
+                return *clear;
+            }
+        }
+        // A mage without spells keeps clear instead of charging a balor
+        // or guarding into a minion's retaliating shield.
+        if (magic_barred && warrior(opengold::original::ClassSlot::magic_user))
+        {
+            const auto end =
+                std::ranges::find(commands, std::string("end"), &opengold::rules::Command::verb);
+            if (end != commands.end())
+            {
+                return *end;
+            }
+        }
+        const auto distance = [](opengold::rules::Cell a, opengold::rules::Cell b)
+        {
+            return 2 * std::max(std::abs(a.x - b.x), std::abs(a.y - b.y)) +
+                   std::min(std::abs(a.x - b.x), std::abs(a.y - b.y));
+        };
+        const opengold::rules::CombatantView *foe = nullptr;
+        for (const auto &unit : state.combatants)
+        {
+            if (unit.side != actor->side && unit.conscious && !shielded.contains(unit.id) &&
+                (!foe || priority(unit) < priority(*foe) ||
+                 (priority(unit) == priority(*foe) &&
+                  distance(actor->cell, unit.cell) < distance(actor->cell, foe->cell))))
+            {
+                foe = &unit;
+            }
+        }
+        const opengold::rules::Command *step = nullptr;
+        if (foe)
+        {
+            for (const auto &command : commands)
+            {
+                if (command.verb == "move" &&
+                    distance(command.destination, foe->cell) < distance(actor->cell, foe->cell) &&
+                    (!step || distance(command.destination, foe->cell) <
+                                  distance(step->destination, foe->cell)))
+                {
+                    step = &command;
+                }
+            }
+        }
+        if (step)
+        {
+            return *step;
+        }
+        // When another body blocks the way, wait for the mage's blasts to
+        // clear it rather than handing the turn to Quick to hit a shield.
+        const bool mage_stands = std::ranges::any_of(state.combatants,
+                                                     [&](const opengold::rules::CombatantView &unit)
+                                                     {
+                                                         return unit.side == actor->side &&
+                                                                unit.conscious &&
+                                                                unit.name == "magic_user 6";
+                                                     });
+        if ((mage_stands && !magic_barred && state.round <= 10) ||
+            (magic_barred && warrior(opengold::original::ClassSlot::magic_user)))
+        {
+            const auto end =
+                std::ranges::find(commands, std::string("end"), &opengold::rules::Command::verb);
+            if (end != commands.end())
+            {
+                return *end;
+            }
+        }
+        return std::nullopt;
+    };
     const auto player_turn =
-        [game](const opengold::rules::CombatSession &session,
-               std::vector<opengold::rules::EntityId> &picked,
-               const std::set<std::string> &bolt_bearers) -> std::optional<opengold::rules::Command>
+        [game, &keeps_preparation](
+            const opengold::rules::CombatSession &session,
+            std::vector<opengold::rules::EntityId> &picked,
+            const std::set<std::string> &bolt_bearers) -> std::optional<opengold::rules::Command>
     {
         constexpr unsigned blast = 198, hold_monster = 194, hold_person = 23, mage_hold_person = 49;
         const auto spell_of = [](const opengold::rules::Command &command)
@@ -8645,6 +9181,16 @@ bool walk_census(GoldBoxGame game, bool route)
         const auto worth_aiming = [&](opengold::rules::EntityId id, unsigned spell)
         {
             const auto unit = unit_of(id);
+            if (unit != state.combatants.end() && holds_people(spell) &&
+                game == GoldBoxGame::pools_of_darkness && keeps_preparation)
+            {
+                const auto numbers =
+                    opengold::original::Combatant::decode(unit->persistent.resources);
+                if (!numbers || numbers->race == 0)
+                {
+                    return false;
+                }
+            }
             return unit != state.combatants.end() &&
                    unit->side == opengold::rules::Side::opposition && unit->conscious &&
                    unit->status.empty() && std::ranges::find(picked, id) == picked.end() &&
@@ -9062,12 +9608,14 @@ bool walk_census(GoldBoxGame game, bool route)
                 {
                     std::cout << "@" << unit.cell.x << "," << unit.cell.y;
                 }
-                if (std::getenv("OPENGOLD_FIGHT_GEAR") && unit.side == opengold::rules::Side::party)
+                if (std::getenv("OPENGOLD_FIGHT_GEAR"))
                 {
-                    const auto carried =
-                        opengold::original::carried_state(unit.persistent.resources, game);
-                    std::cout << " effects[";
-                    for (const auto &effect : carried.conditions)
+                    const auto numbers =
+                        opengold::original::Combatant::decode(unit.persistent.resources);
+                    check(numbers.has_value(), "A traced original combatant has its numbers");
+                    std::cout << " AC=" << numbers->armor_class << " THAC0=" << numbers->thac0
+                              << " effects[";
+                    for (const auto &effect : numbers->effects)
                     {
                         std::cout << effect.code << ":" << effect.minutes << ",";
                     }
@@ -9121,6 +9669,7 @@ bool walk_census(GoldBoxGame game, bool route)
         // on Quick with Quick magic on (or, as a player may set it, only the
         // magic-user's), everyone else at the default difficulty.
         std::vector<opengold::rules::EntityId> picked;
+        std::set<opengold::rules::EntityId> spaced;
         // Treasures' party on its way past a band it could not flee in the
         // asking (the overland's) runs off the field with the first tactic.
         const bool running =
@@ -9157,6 +9706,11 @@ bool walk_census(GoldBoxGame game, bool route)
             if (!held && member && tactic == 2 && game == GoldBoxGame::curse_of_the_azure_bonds)
             {
                 held = finale_turn(session);
+            }
+            if (!held && member && tactic == 2 && game == GoldBoxGame::pools_of_darkness &&
+                keeps_preparation)
+            {
+                held = darkness_finale_turn(session, spaced);
             }
             // Treasures' Hold Person takes no monster, and its Quick casts by
             // its own AI, which aims its holds where they take: the other
@@ -9217,6 +9771,16 @@ bool walk_census(GoldBoxGame game, bool route)
                 {
                     chosen = *bolt;
                 }
+            }
+            if (std::getenv("OPENGOLD_FIGHT_CELLS") && member && command < 80)
+            {
+                const auto numbers =
+                    opengold::original::Combatant::decode(actor->persistent.resources);
+                std::cout << "  command: " << actor->name << " " << chosen.verb << " "
+                          << chosen.label << " target=" << chosen.target
+                          << " weapon=" << (numbers ? numbers->weapon_type : -1)
+                          << " plus=" << (numbers && numbers->striker ? numbers->striker->plus : 0)
+                          << "\n";
             }
             if (!combat.submit(chosen))
             {
@@ -9389,6 +9953,7 @@ bool walk_census(GoldBoxGame game, bool route)
     // Fights played so far (a camp counts the ones that interrupt it), and
     // those whose kept play lost a member or the fight.
     unsigned fights_fought = 0, fights_lost = 0;
+    bool rejected_boss_win = false;
     // The maze exits the beat being played has yet to take (RouteBeat::maze_exits).
     std::deque<unsigned> maze_exits;
     const auto fight = [&]
@@ -9401,9 +9966,23 @@ bool walk_census(GoldBoxGame game, bool route)
             wanted_exit = maze_exits.front();
             maze_exits.pop_front();
         }
+        const auto boss_still_stands = [&](const opengold::rules::Snapshot &result)
+        {
+            return game == GoldBoxGame::pools_of_darkness &&
+                   std::ranges::any_of(result.combatants,
+                                       [](const opengold::rules::CombatantView &unit)
+                                       {
+                                           return unit.side == opengold::rules::Side::opposition &&
+                                                  unit.name.starts_with("GOTHMENES") &&
+                                                  !unit.dead && unit.hit_points > 0;
+                                       });
+        };
         const auto score = [&](const opengold::rules::Snapshot &result)
         {
-            int lost = result.outcome == opengold::rules::Outcome::victory ? 0 : 1'000'000;
+            int lost =
+                result.outcome == opengold::rules::Outcome::victory && !boss_still_stands(result)
+                    ? 0
+                    : 1'000'000;
             for (const auto &unit : result.combatants)
             {
                 if (unit.side == opengold::rules::Side::party)
@@ -9439,12 +10018,20 @@ bool walk_census(GoldBoxGame game, bool route)
         // count): otherwise a fight the scripts' dice do not change (Gateway's
         // Star Mounts) would play the same dice at every reload.
         const char *forced_tactic = std::getenv("OPENGOLD_FIGHT_TACTIC");
+        const bool darkness_player = route && game == GoldBoxGame::pools_of_darkness;
+        const auto tactic_of = [&](unsigned t)
+        {
+            return forced_tactic     ? static_cast<unsigned>(std::stoul(forced_tactic))
+                   : darkness_player ? 2U
+                                     : t % 3;
+        };
         const std::uint64_t first_seed = 7 + std::uint64_t{beat_reloads} * 10'000;
         const auto play_try = [&](unsigned t)
         {
-            return forced_tactic ? fight_once(first_seed + t,
-                                              static_cast<unsigned>(std::stoul(forced_tactic)))
-                                 : fight_once(first_seed + t / 3, t % 3);
+            // Darkness uses its verified manual plan by default, with the
+            // same reload dice as the explicit tactic-2 diagnostic.
+            return fight_once(first_seed + (forced_tactic || darkness_player ? t : t / 3),
+                              tactic_of(t));
         };
         // OPENGOLD_FIGHT_SCORES plays every try and prints each one's score
         // (a planning aid, to see how often a tactic wins).
@@ -9453,7 +10040,8 @@ bool walk_census(GoldBoxGame game, bool route)
         {
             if (scoring)
             {
-                std::cout << "  try " << t << " (tactic " << t % 3 << "): score " << score(played)
+                const auto tactic = tactic_of(t);
+                std::cout << "  try " << t << " (tactic " << tactic << "): score " << score(played)
                           << "\n";
             }
         };
@@ -9482,9 +10070,12 @@ bool walk_census(GoldBoxGame game, bool route)
                                                 game == GoldBoxGame::secret_of_the_silver_blades
                                             ? 240
                                             : 0;
-        const int costly_score = test_winning || game == GoldBoxGame::secret_of_the_silver_blades
-                                     ? one_member_lost
-                                     : two_members_lost;
+        const bool cannot_raise_between =
+            game == GoldBoxGame::pools_of_darkness && keeps_preparation;
+        const int costly_score =
+            test_winning || cannot_raise_between || game == GoldBoxGame::secret_of_the_silver_blades
+                ? one_member_lost
+                : two_members_lost;
         while (route && !planning && (best > 0 || scoring) &&
                (++last < try_count ||
                 (best >= lost_fight && last < try_count + reloads_until_won) ||
@@ -9536,8 +10127,8 @@ bool walk_census(GoldBoxGame game, bool route)
                                            !opengold::is_ally(unit.id) &&
                                            (unit.dead || unit.status == "stoned");
                                 });
-        if ((test_winning || planning) &&
-            (result.outcome != opengold::rules::Outcome::victory || costly))
+        if ((test_winning || planning) && (result.outcome != opengold::rules::Outcome::victory ||
+                                           costly || boss_still_stands(result)))
         {
             party->restore(before);
             opengold::CombatDemo won(opengold::original::rules_module(content));
@@ -9559,6 +10150,17 @@ bool walk_census(GoldBoxGame game, bool route)
             {
                 std::cout << "  the test wins the fight\n";
             }
+        }
+        if (result.outcome == opengold::rules::Outcome::victory && boss_still_stands(result))
+        {
+            // A quiet fight is a victory under the original rules, but it
+            // does not establish that the finale's boss can be defeated.
+            // Reject that proof and reload the whole chained event.
+            rejected_boss_win = true;
+            ++fights_lost;
+            ++phases["living Gothmenes rejected"];
+            std::cout << "  Gothmenes is still standing; reload the finale.\n";
+            return false;
         }
         ++phases["fights ended " + std::to_string(static_cast<int>(result.outcome))];
         constexpr int a_member_lost = 1000, the_fight_lost = 1'000'000;
@@ -9731,6 +10333,144 @@ bool walk_census(GoldBoxGame game, bool route)
     // was taken.
     const auto take_protection = [&](const std::vector<opengold::por::Equipment> &pile)
     {
+        // Keep the Aerie's protection scroll for the finale's lightning
+        // breaths. It remains packed, so Quick cannot spend it earlier.
+        const auto scroll =
+            std::ranges::find_if(pile,
+                                 [](const opengold::por::Equipment &item)
+                                 {
+                                     return (item.stored.effect_codes[1] & 0x7F) == 95 &&
+                                            item.stored.effect_codes[2] < 0x80;
+                                 });
+        const auto &members = party->state().slots;
+        const auto protector = std::ranges::find_if(
+            members,
+            [&](opengold::MemberId id)
+            {
+                return id && party->member(id).character.sheet().name == "paladin 1";
+            });
+        if (scroll != pile.end() && protector != members.end())
+        {
+            party->select(opengold::PartySlot{static_cast<unsigned>(protector - members.begin())});
+            const auto label = scroll->label();
+            if (session.take_treasure(session.snapshot().continue_ticket,
+                                      static_cast<std::size_t>(scroll - pile.begin())))
+            {
+                std::cout << "  paladin 1 takes and packs " << label << " for the finale\n";
+                return true;
+            }
+        }
+        // Preserve found missiles for shielded enemies in the no-magic
+        // finale. These are real treasure stacks, kept packed until needed.
+        for (std::size_t at = 0; at < pile.size(); ++at)
+        {
+            const auto &offered = pile[at].stored;
+            if ((offered.type != 30 && offered.type != 12) || offered.magic_bonus < 1)
+            {
+                continue;
+            }
+            std::optional<std::size_t> taker;
+            unsigned least = 100;
+            for (std::size_t slot = 0; slot < members.size(); ++slot)
+            {
+                const auto id = members[slot];
+                if (!id || party->member(id).vitals.dead ||
+                    !(party->member(id).character.sheet().name.starts_with("paladin") ||
+                      party->member(id).character.sheet().name.starts_with("ranger")))
+                {
+                    continue;
+                }
+                unsigned count = 0;
+                for (const auto &item : party->member(id).character.inventory().items())
+                {
+                    const auto source = party->member(id).item_sources.find(item.id);
+                    if (item.original_type == offered.type &&
+                        source != party->member(id).item_sources.end() &&
+                        source->second.stored.magic_bonus >= offered.magic_bonus)
+                    {
+                        count += item.quantity;
+                    }
+                }
+                if (count < least)
+                {
+                    least = count;
+                    taker = slot;
+                }
+            }
+            if (!taker)
+            {
+                continue;
+            }
+            const auto id = members[*taker];
+            const auto label = pile[at].label();
+            party->select(opengold::PartySlot{static_cast<unsigned>(*taker)});
+            if (session.take_treasure(session.snapshot().continue_ticket, at))
+            {
+                const auto taken = party->member(id).character.inventory().items().back().id;
+                party->join_like_items(id, taken);
+                std::cout << "  " << party->member(id).character.sheet().name << " takes and packs "
+                          << label << " for shielded enemies\n";
+                return true;
+            }
+        }
+        // Equip upgrades actually found along the route. Leaving the +4
+        // swords and maces behind made the party fight the finale with its
+        // original +3 equipment despite having earned better weapons.
+        for (std::size_t at = 0; at < pile.size(); ++at)
+        {
+            const auto &offered = pile[at].stored;
+            const int type = offered.type;
+            if (type != 18 && type != 8 && type != 15 && type != 36 && type != 37)
+            {
+                continue;
+            }
+            std::optional<std::size_t> taker;
+            int best_gain = 0;
+            for (std::size_t slot = 0; slot < members.size(); ++slot)
+            {
+                const auto id = members[slot];
+                if (!id || party->member(id).vitals.dead || !party->member(id).npc_source.empty())
+                {
+                    continue;
+                }
+                const auto &holder = party->member(id);
+                int best = -1;
+                for (const auto &item : holder.character.inventory().items())
+                {
+                    if (item.original_type == type)
+                    {
+                        const auto source = holder.item_sources.find(item.id);
+                        if (source != holder.item_sources.end())
+                        {
+                            best =
+                                std::max(best, static_cast<int>(source->second.stored.magic_bonus));
+                        }
+                    }
+                }
+                // An upgrade replaces a type this class already carries.
+                // Do not give a mage plate or a cleric a sword.
+                const int gain = best < 0 ? 0 : offered.magic_bonus - best;
+                if (gain > best_gain)
+                {
+                    best_gain = gain;
+                    taker = slot;
+                }
+            }
+            if (taker)
+            {
+                const auto id = members[*taker];
+                const auto label = pile[at].label();
+                party->select(opengold::PartySlot{static_cast<unsigned>(*taker)});
+                if (session.take_treasure(session.snapshot().continue_ticket, at))
+                {
+                    const auto taken = party->member(id).character.inventory().items().back().id;
+                    ready_in_place(id, taken);
+                    std::cout << "  " << party->member(id).character.sheet().name
+                              << " takes and readies an upgrade: " << label << "\n";
+                    return true;
+                }
+            }
+        }
         constexpr std::uint8_t ring_of_protection = 59, cloak_of_protection = 75;
         constexpr std::size_t rings_worn = 2;
         const auto slots = party->state().slots;
@@ -9874,6 +10614,45 @@ bool walk_census(GoldBoxGame game, bool route)
             {
                 game_won_shown = game_won_shown || s.game_won;
                 said = s.dialogue;
+                if (game == GoldBoxGame::pools_of_darkness && keeps_preparation &&
+                    s.dialogue.find("AGREE?") != std::string::npos && shown[s.dialogue] == 0)
+                {
+                    // The inventory's Use remains available during dialogue.
+                    // Save the twelve-minute scroll for the no-magic battle,
+                    // reading it before the Balor bars magic.
+                    check(!session.magic_barred(), "The protection scroll precedes antiMagic");
+                    bool used = false;
+                    for (const auto id : party->state().slots)
+                    {
+                        if (!id || party->member(id).vitals.dead ||
+                            party->member(id).vitals.hit_points <= 0 ||
+                            party->member(id).character.sheet().name != "paladin 1")
+                        {
+                            continue;
+                        }
+                        const auto &member = party->member(id);
+                        const auto &items = member.character.inventory().items();
+                        const auto scroll = std::ranges::find_if(
+                            items,
+                            [&](const opengold::InventoryItem &item)
+                            {
+                                const auto source = member.item_sources.find(item.id);
+                                return source != member.item_sources.end() &&
+                                       (source->second.stored.effect_codes[1] & 0x7F) == 95 &&
+                                       party->rule_module().usable_outside_combat(
+                                           item.definition_id);
+                            });
+                        if (scroll != items.end())
+                        {
+                            party->select(opengold::PartySlot{0});
+                            party->drink_potion(id, scroll->id);
+                            std::cout
+                                << "  paladin 1 uses the collected protection scroll before Gothmenes bars magic\n";
+                            used = true;
+                        }
+                    }
+                    check(used, "The paladin reads the actually collected protection scroll");
+                }
                 // OPENGOLD_CURSE_TRACE prints each square's dialogue, to plan a route by.
                 if (trace && shown[s.dialogue] == 0)
                 {
@@ -10288,6 +11067,10 @@ bool walk_census(GoldBoxGame game, bool route)
                 // must not hide one.
                 if (!session.pending_encounter() || !fight())
                 {
+                    if (rejected_boss_win)
+                    {
+                        return;
+                    }
                     needs[session.pending_encounter()
                               ? "A fight ended without a result: " + session.snapshot().diagnostic
                               : std::string("A fight began with no encounter")]
@@ -10693,7 +11476,7 @@ bool walk_census(GoldBoxGame game, bool route)
                                                     static_cast<unsigned>(
                                                         std::ranges::count(wanted_spells, wanted));
                                          }) ||
-                     (!ward_spell.empty() && copies_ready(ward_spell) < 6));
+                     (!ward_spell.empty() && copies_ready(ward_spell) < ward_target_count()));
                 const bool resting = (a_night_first && day == 0) || !party_whole() || missing_plan;
                 if (!resting || !camp_and_rest())
                 {
@@ -10832,13 +11615,16 @@ bool walk_census(GoldBoxGame game, bool route)
         std::string current_beat = "the route's start";
         // A member casts the first of these spells anyone has memorized,
         // outside combat.
-        const auto cast_one_of = [&](const std::vector<std::string> &wanted)
+        const auto cast_one_of =
+            [&](const std::vector<std::string> &wanted, const std::string &caster_name)
         {
             for (const auto &spell : wanted)
             {
                 for (const auto id : party->state().slots)
                 {
-                    if (!id || party->member(id).vitals.dead)
+                    if (!id || party->member(id).vitals.dead ||
+                        (!caster_name.empty() &&
+                         party->member(id).character.sheet().name != caster_name))
                     {
                         continue;
                     }
@@ -10959,6 +11745,8 @@ bool walk_census(GoldBoxGame game, bool route)
                     break;
                 }
                 ++beat_number;
+                check(planning || !beat.test_wins,
+                      "An ordinary campaign route never forces combat victories");
                 const auto beat_seed = beat_dice_seed(beat, beats_seen[beat_dice_seed(beat, 0)]++);
                 // Reconstruct the player's spell plan across skipped beats too,
                 // so a resumed route prepares the same spells as a whole run.
@@ -11172,7 +11960,9 @@ bool walk_census(GoldBoxGame game, bool route)
                             auto before_step =
                                 reloading ? std::optional(session.detached_copy()) : std::nullopt;
                             const auto party_before = party->state();
+                            const auto answers_before = answers;
                             const unsigned lost_before = fights_lost;
+                            rejected_boss_win = false;
                             opengold::test::TourAccess::place(session, {x, beat.y, beat.facing});
                             if (session.explore(beat.step
                                                     ? opengold::por::ExplorationCommand::forward
@@ -11181,7 +11971,8 @@ bool walk_census(GoldBoxGame game, bool route)
                                 play(where);
                             }
                             const bool failed =
-                                beat.reload_event ? session.snapshot().phase == TourPhase::defeated
+                                beat.reload_event ? rejected_boss_win || session.snapshot().phase ==
+                                                                             TourPhase::defeated
                                                   : fights_lost != lost_before;
                             if (!reloading || !failed || reload >= 20)
                             {
@@ -11190,6 +11981,10 @@ bool walk_census(GoldBoxGame game, bool route)
                             ++phases["overland steps reloaded"];
                             session = std::move(*before_step);
                             party->restore(party_before);
+                            // Reloading the event also replays its decisions.
+                            // Otherwise a lost finale consumes NO/NO/YES/NO
+                            // and the next attempt accepts the Balor's bargain.
+                            answers = answers_before;
                             session.attach_restored_party(party);
                             session.reseed_dice(
                                 static_cast<std::uint32_t>(beat_number * 64 + reload));
@@ -11197,7 +11992,7 @@ bool walk_census(GoldBoxGame game, bool route)
                     }
                     if (!beat.cast_after.empty())
                     {
-                        cast_one_of(beat.cast_after);
+                        cast_one_of(beat.cast_after, beat.cast_after_by);
                         play(where);
                     }
                     const auto &until = beat.repeat_until_at_least;
@@ -11302,6 +12097,14 @@ bool walk_census(GoldBoxGame game, bool route)
                  << opengold::encode_campaign(*party, &session, assets, game);
         }
 
+        // The full route must hear Bane's arrival music. A late checkpoint
+        // does not replay that earlier event; report failures before the
+        // diagnostics summary rather than silently changing the exit status.
+        if (game == GoldBoxGame::pools_of_darkness && beats_resumed == 0 &&
+            std::ranges::find(music_heard, 2U) == music_heard.end())
+        {
+            needs["Bane's coming started no music"].push_back("the route");
+        }
         for (const auto &[phase, count] : phases)
         {
             std::cout << "  ended " << count << "x in phase " << phase << "\n";
@@ -11705,13 +12508,6 @@ bool walk_census(GoldBoxGame game, bool route)
                        party->member(id).vitals.hit_points > 0 &&
                        party->member(id).vitals.description != "Turned to stone.";
             });
-        // Bane's coming to Phlan starts Pools of Darkness's music, piece 2
-        // (script 16; eclvm.pas, EclPlaySound).
-        if (game == GoldBoxGame::pools_of_darkness &&
-            std::ranges::find(music_heard, 2U) == music_heard.end())
-        {
-            needs["Bane's coming started no music"].push_back("the route");
-        }
         const bool played = needs.empty() && end.phase != TourPhase::defeated;
         // Secret's route does not reach its end yet: until it does, it passes
         // when it plays every beat to the map of its last.

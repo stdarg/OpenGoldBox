@@ -3013,6 +3013,82 @@ void secret_ai_shuns_clouds()
     check(!entered, "A monster slower than 7 never steps into the cloudkill");
 }
 
+// Darkness's Fire Shield returns twice an adjacent weapon's damage as
+// magic (effhndlr.pas, EffZapAttacker), including the minions' innate shield.
+void darkness_fire_shield_retaliates()
+{
+    constexpr auto game = GoldBoxGame::pools_of_darkness;
+    constexpr int shield = 343;
+    auto blade = creature(200);
+    blade.thac0 = -100;
+    blade.attacks[0] = {2, 1, 1, 4};
+    auto guarded = victim(200);
+    guarded.effects = {{shield, 0, 0, false}};
+    const auto hit = [](const rules::CombatSession &session)
+    {
+        return logged(session, "{attacker} hits {name} for {damage}.", "Monster") > 0;
+    };
+    auto melee = attack_until(blade, guarded, hit, 47, game);
+    const auto struck = view_of(melee.session->snapshot(), "Victim");
+    const auto striker = view_of(melee.session->snapshot(), "Monster");
+    check(struck.hit_points < 200 && 200 - striker.hit_points == 2 * (200 - struck.hit_points),
+          "A shield returns twice the adjacent weapon damage");
+
+    auto fragile = blade;
+    fragile.hit_points = fragile.max_hit_points = 10;
+    auto lethal = attack_until(fragile, guarded, hit, 47, game);
+    check(view_of(lethal.session->snapshot(), "Monster").hit_points == 0 &&
+              view_of(lethal.session->snapshot(), "Victim").hit_points < 200,
+          "A lethal retaliation still lets the triggering blow land");
+
+    guarded.effects.push_back({460, 0, 0, false});
+    auto turned = attack_until(blade, guarded, hit, 47, game);
+    check(view_of(turned.session->snapshot(), "Victim").hit_points == 200 &&
+              view_of(turned.session->snapshot(), "Monster").hit_points == 200,
+          "A weapon turned aside causes no retaliation");
+
+    guarded.effects = {{shield, 0, 0, false}};
+    auto bow = archer(20);
+    bow.thac0 = -100;
+    auto afar = arrange({{"Archer", rules::Side::party, {1, 3}, bow},
+                         {"Shield", rules::Side::opposition, {4, 3}, guarded}},
+                        47, {}, 100, game);
+    play_until(
+        *afar.session,
+        [&](const std::string &actor)
+        {
+            return actor == "Archer" ? order(*afar.session, "ranged", "Shield")
+                                     : order(*afar.session, "end");
+        },
+        [&]
+        {
+            return view_of(afar.session->snapshot(), "Shield").hit_points < 200;
+        });
+    check(view_of(afar.session->snapshot(), "Archer").hit_points == 50,
+          "The shield does not return a distant arrow's damage");
+
+    auto cast = arrange(
+        {{"Mage", rules::Side::party, {0, 3}, caster(original::ClassSlot::magic_user, 9, {185})},
+         {"Kobold", rules::Side::opposition, {7, 7}, victim(20)}},
+        319, {}, 100, game);
+    cast_now(*cast.session, "Mage", 185,
+             [&]
+             {
+                 return offered(*cast.session, "flames");
+             });
+    const auto protected_mage = left_by_fight(*cast.session, "Mage");
+    const auto has = [&](int code)
+    {
+        return std::ranges::any_of(protected_mage.effects,
+                                   [code](const original::Effect &effect)
+                                   {
+                                       return effect.code == code;
+                                   });
+    };
+    check(has(shield) && !has(335),
+          "The cast shield grants retaliation rather than electricity immunity");
+}
+
 // Fire Shield's caster chooses its flames as it goes off: hot doubles fire,
 // cold doubles cold (Curse's SpellFireShield).
 void fire_shield_flames_are_chosen()
@@ -6916,6 +6992,7 @@ int main()
         cloudkill_poisons();
         secret_ai_shuns_clouds();
         fire_shield_flames_are_chosen();
+        darkness_fire_shield_retaliates();
         dispel_magic_strips();
         the_dead_rise();
         slow_poison_raises();

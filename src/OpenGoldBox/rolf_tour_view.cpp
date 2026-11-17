@@ -1633,7 +1633,7 @@ void RolfTourView::use_inventory_item()
         else
         {
             campaign_->drink_potion(id, item.id);
-            result = i18n::format(N_("{name} drinks the {item}."),
+            result = i18n::format(N_("{name} uses the {item}."),
                                   {{"name", name}, {"item", i18n::text(item.name)}});
         }
         refresh_inventory();

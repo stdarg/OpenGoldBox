@@ -1173,7 +1173,9 @@ bool lasting_condition(const Effect &effect, GoldBoxGame game) noexcept
     const bool kit_rot = game == GoldBoxGame::unlimited_adventures &&
                          (code == rot || code == kit_rotting || code == charisma_rotted);
     const bool helpless_for_good = code == helpless && effect.minutes == 0;
-    return pool_rot || kit_rot || helpless_for_good ||
+    // The 256-color games let a protection scroll be read before combat.
+    const bool breath_scroll = vga_engine(game) && code == 273;
+    return pool_rot || kit_rot || helpless_for_good || breath_scroll ||
            std::ranges::find(lasting, code) != lasting.end();
 }
 

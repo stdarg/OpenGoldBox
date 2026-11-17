@@ -2365,6 +2365,52 @@ void a_potion_heals_outside_a_fight()
           "The Potion of Healing heals 2d4+2");
 }
 
+// Darkness's protection scroll is usable before combat (viewchar.pas,
+// UseItem; spell table 95), at item level 12, and protects only its user.
+void a_dragon_breath_scroll_protects_before_combat()
+{
+    for (const auto game :
+         {GoldBoxGame::pools_of_darkness, GoldBoxGame::treasures_of_the_savage_frontier})
+    {
+        std::vector<por::ItemTemplate> types(256);
+        constexpr std::uint8_t scroll_type = 66;
+        types[scroll_type].class_restrictions = 0xFF;
+        const std::shared_ptr<const rules::CharacterRules> creation =
+            original::character_rules(original::default_aging, game);
+        CampaignParty party(original::rules_module({{}, types, game}), creation);
+        const auto &module = party.rule_module();
+        const auto user = member_with(party, creation, "fighter", "Reader");
+        const auto other = member_with(party, creation, "fighter", "Companion");
+        auto scroll = original_item(types, scroll_type, 1);
+        scroll.stored.raw[60] = 1;
+        scroll.stored.raw[61] = 95;
+        scroll.stored.effect_codes = {1, 95, 0};
+        const auto item = carried(party, user, scroll);
+        const auto key = party.member(user).character.inventory().find(item)->get().definition_id;
+        check(module.usable_outside_combat(key), "The protection scroll is offered before combat");
+        party.drink_potion(user, item);
+        check(!party.member(user).character.inventory().find(item), "The used scroll is consumed");
+        const auto &reader = party.member(user);
+        check(carries(reader.character.sheet(), reader.vitals, 273) &&
+                  !carries(party.member(other).character.sheet(), party.member(other).vitals, 273),
+              "The scroll protects its reader alone");
+        const auto next = fought_from(module, reader.character.sheet(), reader.vitals, game);
+        check(std::ranges::any_of(next.effects,
+                                  [](const original::Effect &effect)
+                                  {
+                                      return effect.code == 273 && effect.minutes == 12;
+                                  }),
+              "The next combat retains the scroll's twelve-minute protection");
+        auto state = reader.vitals;
+        module.pass_time(state, reader.character.sheet(), 0, 11);
+        check(carries(reader.character.sheet(), state, 273),
+              "Protection lasts through minute eleven");
+        module.pass_time(state, reader.character.sheet(), 11, 12);
+        check(!carries(reader.character.sheet(), state, 273),
+              "Protection expires at minute twelve");
+    }
+}
+
 // An NPC who joins under the original rules is its record: its scores,
 // class levels and Hit Points.
 void an_npc_joins_as_its_record()
@@ -3133,6 +3179,7 @@ int main()
         raise_dead_costs_constitution();
         scripts_harm_as_the_original();
         a_potion_heals_outside_a_fight();
+        a_dragon_breath_scroll_protects_before_combat();
         an_npc_joins_as_its_record();
         a_drain_lasts_beyond_the_fight();
         darkness_restoration_gives_levels_back();

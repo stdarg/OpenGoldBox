@@ -23,7 +23,7 @@ UI behavior and the current configured model are retained; no delegation.
 | Curse of the Azure Bonds | Route reaches the ending and wins its fights | Replace injected import experience/gold and relocations with verified gameplay/import |
 | Secret of the Silver Blades | Fresh complete route reaches the actual ending with every fight played, including Oswulf, the Dreadlord and the soul gem; zero forced wins | Replace progression grants and relocations with verified gameplay/import |
 | Gateway to the Savage Frontier | Route reaches the ending and wins its fights | Replace experience/gold/equipment/time grants and relocations |
-| Pools of Darkness | Assisted route reaches the ending; final protective spells verified in actual combat; palace wandering/rest hang reproduced and fixed | Remaining forced fights, including the finale; progression assistance and relocations |
+| Pools of Darkness | Fresh whole route and detailed finale replay defeat Gothmenes, reach the ending and restore all six members; zero forced results | Progression assistance and relocations remain |
 | Treasures of the Savage Frontier | Route reaches the ending and wins its fights | Replace starting experience/money and relocations |
 | Unlimited Adventures | Generated design walks, wins all fights, saves at the stairs, reloads and reaches its actual winning event | Other designs require their own verification |
 
@@ -55,7 +55,7 @@ assisted route completion do not close the gaps above.
   combat was won. No rewards, victory flags or encounter outcomes are injected
   into that generated-design route.
 
-## Reproduction and evidence
+## Previous integrated verification (2026-11-16)
 
 Tested working tree is based on `e3b2ae9c`, with the changes accompanying this
 record. Both environment variables are required:
@@ -87,12 +87,8 @@ Local investigation logs (temporary files, not distributed):
   `/tmp/opengold-playability-dos-tests.log`,
   `/tmp/opengold-playability-python.log`: additional passing suites.
 
-Darkness's finale still defeats the replay party with forced wins disabled.
-The actual initial effects include Resist Cold on all six members, Mind Blank
-on the three casters, Haste and a globe on the magic-user. An experimental
-Meteor Swarm aiming heuristic also lost and was removed. These losses establish
-an unresolved replay/playability gap, not that the native game cannot be won.
-No combat balance change or invented victory was made to conceal the result.
+Darkness's finale gap from this run is addressed by the 2026-11-17 work below.
+These earlier results remain historical evidence, not the current validation.
 
 ## Timing checkpoints
 
@@ -108,3 +104,89 @@ The first captured timestamp was 2026-11-16 18:40 PST; earlier setup was not tim
 No commercial campaign yet has the full unassisted certificate defined above.
 Token/cost measurements are unavailable. This record preserves the remaining
 scope rather than treating green assisted routes as completion of that scope.
+
+
+## 2026-11-17: Darkness defenses and finale
+
+The user approved Darkness's remaining forced battles, followed by one
+unassisted Original Rules Pool of Radiance campaign. This first batch fixes
+proven defects and wins the required finale through player commands; it does
+not certify the route's existing progression grants or relocations.
+
+Three verified corrections, detailed in [ORIGINAL-RULES.md](ORIGINAL-RULES.md)
+and [darkness.md](games/darkness.md):
+
+- The actual dragon-breath protection scroll can be used before combat,
+  is consumed and protects its user for twelve minutes, including across
+  campaign/combat transitions. Both 256-color games have lifecycle regressions.
+- Darkness Fire Shield returns twice an adjacent weapon hit's damage as magic,
+  including Bane minions' innate shield. The cast spell grants retaliation
+  rather than electricity immunity. Earlier games' mappings are unchanged.
+- The recognized DOS 1.1 ending recovery loop starts at character zero instead
+  of Xoham's leftover monster count. Real dead campaign vitals, including the
+  first and last members, are now tested; the old fixture's display-only
+  casualties did not actually exercise recovery. Original files and save
+  serialization are unchanged.
+
+The replay takes real +4 weapon upgrades and missile stacks from treasure,
+keeps its late preparation, restores its answers when reloading an event,
+heals during combat, avoids attacking retaliating shields in melee and uses
+unambiguous inventory row indices. It reserves Haste copies for Xoham and
+reads the paladin's actual protection scroll from Inventory during the AGREE
+prompt, before Gothmenes bars magic. Camp casting remains unavailable between
+chained fights; no new UI behavior is introduced.
+
+The ordinary route now uses this verified manual plan and rejects forced-win
+beats. Its final-battle check also rejects a living Gothmenes: the original
+fifteen-round ceasefire can otherwise trigger the ending without defeating
+him. That original combat rule is preserved; the earlier ceasefire completion
+was withdrawn as boss-defeat evidence.
+
+**Actual defeat evidence:** `/tmp/opengold-darkness-final-suffix.log` (exit 0),
+resumed from the last safe preparation checkpoint. The log shows weapon damage
+putting Gothmenes down, his death from wounds, all three encounters won, the
+actual ending and all six party members restored to maximum Hit Points.
+There are zero forced-win messages and zero ceasefires in that replay. An
+earlier run's exit-status failure was an unrelated audit demanding Bane's
+earlier music event from a late checkpoint; that audit now applies to whole
+routes and reports its diagnostic before returning. Full-route verification
+still requires the music event.
+
+**Final validation:** all 336 checks pass across the complete run and the
+corrected Secret rerun, with no skips, including all 171 Godot checks. The
+complete run passed 335/336 in 1,328.04 seconds; its sole failure exposed four
+obsolete forced-win markers in Secret's castle passages. After removing them,
+the rebuilt Secret whole route passes again (exit 0), with the actual ending
+and no forced results. Darkness's fresh whole route passes in 1,307.62 seconds,
+including its earlier music event and strict Gothmenes-defeat check.
+
+The four focused Original Rules/Darkness checks pass in 2.05 seconds. The
+rebuilt nine demo/catalog checks pass in 9.91 seconds; the earlier two DOS
+checks pass (508.30 seconds together with that run's demos), and 21 Python
+tests pass. Localization validates all 4,143 messages. Formatting passes;
+clang-tidy also passes for the Godot view when given `build/linux` rather than
+the hook's older non-Godot `build` configuration. Tested tree is based on
+`742f7840`, with the changes accompanying this record.
+
+Reproduction uses both data variables shown above. Focused evidence:
+
+- `/tmp/opengold-fireshield-regression-before.log`,
+  `/tmp/opengold-fireshield-focused-after.log`.
+- `/tmp/opengold-darkness-recovery-ctest-before.log`,
+  `/tmp/opengold-darkness-recovery-focused-after.log`.
+- `/tmp/opengold-darkness-secret-regression-recheck.log`.
+- `/tmp/opengold-darkness-integrated-ctest.log` (intermediate 334/336 result).
+- `/tmp/opengold-darkness-final-ctest.log` (335/336 before marker correction),
+  `/tmp/opengold-darkness-final-secret-route.log` (corrected whole-route pass).
+- `/tmp/opengold-darkness-final-whole-route.log` (fresh Darkness route),
+  `/tmp/opengold-darkness-final-suffix.log` (detailed final-battle proof).
+
+Observed start: 07:40 PST on 2026-11-17. Checkpoints were recorded at
+2026-11-17 08:40 PST / 16:40 UTC, 2026-11-17 09:40 PST / 17:40 UTC,
+2026-11-17 10:43 PST and 2026-11-17 11:40 PST / 19:40 UTC. At the latest
+checkpoint the real finale and corrected Secret route had passed; the fresh
+Darkness route and one serial UI check remained in the integrated run.
+The work retained the configured model/effort;
+exact runtime identifiers and token/cost figures were unavailable. No
+model/runtime change or delegation was made. The Pool of Radiance phase has
+not started implementation.

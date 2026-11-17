@@ -1601,6 +1601,33 @@ RolfTourSession::TurncoatLoot RolfTourSession::part_with_turncoats(const rules::
     return loot;
 }
 
+namespace
+{
+// The DOS 1.1 finale reuses Xoham's monster-count cell as the index of its
+// recovery loop, without initializing it. Recognize that exact loop before
+// supplying its missing initial value with the final combat's reply.
+bool darkness_recovery_uses_monster_count(const EclProgram &program)
+{
+    try
+    {
+        const auto load = program.instruction(0x95BF);
+        const auto increment = program.instruction(0x95D0);
+        return ecl_opcode(load.opcode, GoldBoxGame::pools_of_darkness).name == "LOAD CHARACTER" &&
+               load.operands.size() == 1 && load.operands[0].tag == 1 &&
+               load.operands[0].value == 0xC4 &&
+               ecl_opcode(increment.opcode, GoldBoxGame::pools_of_darkness).name == "ADD" &&
+               increment.operands.size() == 3 && increment.operands[0].tag == 0 &&
+               increment.operands[0].value == 1 && increment.operands[1].tag == 1 &&
+               increment.operands[1].value == 0xC4 && increment.operands[2].tag == 1 &&
+               increment.operands[2].value == 0xC4;
+    }
+    catch (const EclError &)
+    {
+        return false;
+    }
+}
+} // namespace
+
 bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
 {
     if (diagnostic_log_enabled())
@@ -1909,6 +1936,18 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
         {
             results.push_back({darkness_monster_hit_mod, 0});
             results.push_back({darkness_party_hit_mod, 0});
+            const auto &request = machine_.pending_request();
+            if (result.outcome == rules::Outcome::victory && current_script_ == 75 && request &&
+                request->id == combat_request_ && request->instruction &&
+                request->instruction->address == 0x94CB && town_)
+            {
+                const auto program = town_->programs.find(75);
+                if (program != town_->programs.end() &&
+                    darkness_recovery_uses_monster_count(*program->second))
+                {
+                    results.push_back({EclAddress{0xC4}, 0});
+                }
+            }
         }
         // A Treasures crystal battle's crystal joins those the party holds
         // (cell 3Ch: 1 red, 2 green, 4 blue), and cell 3Eh tells the script
