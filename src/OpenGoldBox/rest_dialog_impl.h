@@ -150,7 +150,8 @@ void RolfTourView::show_camp_dialog()
 
 std::chrono::minutes RolfTourView::rest_length() const
 {
-    const auto &w = presentation::required_node<Window>(*this, "RestDialog");
+    const NodePath rest_path{"RestDialog"};
+    const auto &w = presentation::required_node<Window>(*this, rest_path);
     const auto chosen = [&](const char *name)
     {
         return static_cast<std::int64_t>(

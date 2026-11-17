@@ -133,7 +133,8 @@ void PortraitDialog::step_new(std::int64_t direction)
     {
         return;
     }
-    const auto &choice = required_node<OptionButton>(*this, "%Choice");
+    const NodePath choice_path{"%Choice"};
+    const auto &choice = required_node<OptionButton>(*this, choice_path);
     const auto count = static_cast<std::int64_t>(offered_.size());
     const std::int64_t at = choice.get_selected();
     new_selected(at < 0 ? (direction > 0 ? 0 : count - 1)

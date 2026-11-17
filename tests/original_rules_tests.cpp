@@ -2,6 +2,7 @@
 #include "opengold/original.h"
 #include "opengold/original_spells.h"
 #include "test_support.h"
+#include <algorithm>
 #include <initializer_list>
 #include <iostream>
 #include <string>

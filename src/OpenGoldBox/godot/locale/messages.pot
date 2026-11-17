@@ -464,7 +464,7 @@ msgstr ""
 msgid "A priest who fights in armor and casts healing and protective spells. Hit Die: d8."
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:369
+#: src/OpenGoldBox/rest_dialog_impl.h:370
 msgid "A rest lasts from 5 minutes to 99 days, 23 hours and 55 minutes"
 msgstr ""
 
@@ -553,11 +553,11 @@ msgstr ""
 msgid "AC {ac} / HP {current}/{maximum}"
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:1106
+#: src/OpenGoldBox/startup_view.cpp:1107
 msgid "AD&D"
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:1105
+#: src/OpenGoldBox/startup_view.cpp:1106
 msgid "AD&D: the scores change again as characters grow older."
 msgstr ""
 
@@ -1173,11 +1173,11 @@ msgstr ""
 msgid "Arrows: choose | Space: use | Escape: skip"
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:1106
+#: src/OpenGoldBox/startup_view.cpp:1107
 msgid "As the original"
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:1102
+#: src/OpenGoldBox/startup_view.cpp:1103
 msgid "As the original: the starting age changes the scores once."
 msgstr ""
 
@@ -1646,7 +1646,7 @@ msgstr ""
 msgid "Blue"
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:316
+#: src/OpenGoldBox/rest_dialog_impl.h:317
 msgid "Blue crystal"
 msgstr ""
 
@@ -1994,7 +1994,7 @@ msgstr ""
 msgid "Can target another creature as a Magic action."
 msgstr ""
 
-#: src/OpenGoldBox/ally_attack_controls.h:32 src/OpenGoldBox/character_creation_view.cpp:923 src/OpenGoldBox/equipment_choice_dialog.cpp:76 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:318 src/OpenGoldBox/godot/scenes/startup.tscn:106 src/OpenGoldBox/godot/scenes/startup.tscn:169 src/OpenGoldBox/level_up_dialog.cpp:146 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:348 src/OpenGoldBox/rest_dialog_impl.h:86 src/OpenGoldBox/save_slots.cpp:133 src/OpenGoldBox/spell_choice_controls.h:249 src/OpenGoldBox/startup_view.cpp:810
+#: src/OpenGoldBox/ally_attack_controls.h:32 src/OpenGoldBox/character_creation_view.cpp:923 src/OpenGoldBox/equipment_choice_dialog.cpp:76 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:318 src/OpenGoldBox/godot/scenes/startup.tscn:106 src/OpenGoldBox/godot/scenes/startup.tscn:169 src/OpenGoldBox/level_up_dialog.cpp:146 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:349 src/OpenGoldBox/rest_dialog_impl.h:86 src/OpenGoldBox/save_slots.cpp:133 src/OpenGoldBox/spell_choice_controls.h:249 src/OpenGoldBox/startup_view.cpp:811
 msgid "Cancel"
 msgstr ""
 
@@ -2070,7 +2070,7 @@ msgstr ""
 msgid "Cannot regain Hit Points."
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:812
+#: src/OpenGoldBox/startup_view.cpp:813
 msgid "Cannot save language."
 msgstr ""
 
@@ -2079,7 +2079,7 @@ msgstr ""
 msgid "Cannot save screenshot: {path}"
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:722
+#: src/OpenGoldBox/startup_view.cpp:723
 msgid "Cannot save settings. Check that settings.cfg in the game's user data folder can be written and is valid."
 msgstr ""
 
@@ -2345,7 +2345,7 @@ msgstr ""
 msgid "Characters"
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:1095
+#: src/OpenGoldBox/startup_view.cpp:1096
 msgid "Characters, fights and magic as the original game had them: AD&D 1st edition."
 msgstr ""
 
@@ -2561,7 +2561,7 @@ msgstr ""
 msgid "Choose game folder"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/startup.tscn:65 src/OpenGoldBox/startup_view.cpp:808
+#: src/OpenGoldBox/godot/scenes/startup.tscn:65 src/OpenGoldBox/startup_view.cpp:809
 msgid "Choose language"
 msgstr ""
 
@@ -2573,11 +2573,11 @@ msgstr ""
 msgid "Choose prepared spells. Unfilled choices remain pending; Back preserves your choices."
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/startup.tscn:138 src/OpenGoldBox/startup_view.cpp:536
+#: src/OpenGoldBox/godot/scenes/startup.tscn:138 src/OpenGoldBox/startup_view.cpp:537
 msgid "Choose the folder containing START.EXE and the original DAX game files."
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:570
+#: src/OpenGoldBox/startup_view.cpp:571
 msgid "Choose the folder of the design to play, which the construction kit names NAME.DSN."
 msgstr ""
 
@@ -3148,7 +3148,7 @@ msgstr ""
 msgid "Contingency: {spell} takes effect on {name}."
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/combat_demo.tscn:334 src/OpenGoldBox/godot/scenes/startup.tscn:177 src/OpenGoldBox/godot/scenes/startup.tscn:242 src/OpenGoldBox/godot/scenes/startup.tscn:280 src/OpenGoldBox/godot/scenes/startup.tscn:375 src/OpenGoldBox/godot/scenes/startup.tscn:88 src/OpenGoldBox/startup_view.cpp:809
+#: src/OpenGoldBox/godot/scenes/combat_demo.tscn:334 src/OpenGoldBox/godot/scenes/startup.tscn:177 src/OpenGoldBox/godot/scenes/startup.tscn:242 src/OpenGoldBox/godot/scenes/startup.tscn:280 src/OpenGoldBox/godot/scenes/startup.tscn:375 src/OpenGoldBox/godot/scenes/startup.tscn:88 src/OpenGoldBox/startup_view.cpp:810
 msgid "Continue"
 msgstr ""
 
@@ -3281,7 +3281,7 @@ msgstr ""
 msgid "Cure Serious Wounds"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/srd5.cpp:31347 src/OpenGold.Rules.Srd5/src/srd5.cpp:31356 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/combat_demo.tscn:188 src/OpenGoldBox/rest_dialog_impl.h:1230 src/OpenGoldBox/rest_dialog_impl.h:1290
+#: src/OpenGold.Rules.Srd5/src/srd5.cpp:31347 src/OpenGold.Rules.Srd5/src/srd5.cpp:31356 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/combat_demo.tscn:188 src/OpenGoldBox/rest_dialog_impl.h:1231 src/OpenGoldBox/rest_dialog_impl.h:1291
 msgid "Cure Wounds"
 msgstr ""
 
@@ -4150,7 +4150,7 @@ msgstr ""
 msgid "Elf Keen Senses"
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:263
+#: src/OpenGoldBox/rest_dialog_impl.h:264
 msgid "Eligible to rest."
 msgstr ""
 
@@ -4711,7 +4711,7 @@ msgstr ""
 msgid "Finger of Death"
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:348
+#: src/OpenGoldBox/rest_dialog_impl.h:349
 msgid "Finish"
 msgstr ""
 
@@ -5408,7 +5408,7 @@ msgstr ""
 msgid "Green"
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:315
+#: src/OpenGoldBox/rest_dialog_impl.h:316
 msgid "Green crystal"
 msgstr ""
 
@@ -5480,11 +5480,11 @@ msgstr ""
 msgid "Gust of Wind"
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:241
+#: src/OpenGoldBox/rest_dialog_impl.h:242
 msgid "HP"
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:1248 src/OpenGoldBox/rest_dialog_impl.h:435 src/OpenGoldBox/rest_dialog_impl.h:657 src/OpenGoldBox/rest_dialog_impl.h:882
+#: src/OpenGoldBox/rest_dialog_impl.h:1249 src/OpenGoldBox/rest_dialog_impl.h:436 src/OpenGoldBox/rest_dialog_impl.h:658 src/OpenGoldBox/rest_dialog_impl.h:883
 msgid "HP restored:"
 msgstr ""
 
@@ -5743,11 +5743,11 @@ msgstr ""
 msgid "History"
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:244
+#: src/OpenGoldBox/rest_dialog_impl.h:245
 msgid "Hit Dice"
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:438
+#: src/OpenGoldBox/rest_dialog_impl.h:439
 msgid "Hit Dice remaining:"
 msgstr ""
 
@@ -6346,7 +6346,7 @@ msgstr ""
 msgid "Keep Quick after a fight"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/srd5.cpp:30507 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/combat_demo.tscn:585 src/OpenGoldBox/level_up_dialog.cpp:325 src/OpenGoldBox/rest_dialog_impl.h:1368 src/OpenGoldBox/rest_dialog_impl.h:21 src/OpenGoldBox/training_replacement_controls.h:37
+#: src/OpenGold.Rules.Srd5/src/srd5.cpp:30507 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/combat_demo.tscn:585 src/OpenGoldBox/level_up_dialog.cpp:325 src/OpenGoldBox/rest_dialog_impl.h:1369 src/OpenGoldBox/rest_dialog_impl.h:21 src/OpenGoldBox/training_replacement_controls.h:37
 msgid "Keep current"
 msgstr ""
 
@@ -6428,7 +6428,7 @@ msgstr ""
 msgid "Land's Aid"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:422 src/OpenGoldBox/godot/scenes/startup.tscn:43 src/OpenGoldBox/startup_view.cpp:807
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:422 src/OpenGoldBox/godot/scenes/startup.tscn:43 src/OpenGoldBox/startup_view.cpp:808
 msgid "Language"
 msgstr ""
 
@@ -6840,11 +6840,11 @@ msgstr ""
 msgid "Locked."
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:1345 src/OpenGoldBox/rest_dialog_impl.h:282 src/OpenGoldBox/rest_dialog_impl.h:50
+#: src/OpenGoldBox/rest_dialog_impl.h:1346 src/OpenGoldBox/rest_dialog_impl.h:283 src/OpenGoldBox/rest_dialog_impl.h:50
 msgid "Long Rest"
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:267
+#: src/OpenGoldBox/rest_dialog_impl.h:268
 msgid "Long Rest cooldown remaining (minutes):"
 msgstr ""
 
@@ -7046,7 +7046,7 @@ msgstr ""
 msgid "Magic Weapon"
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:644
+#: src/OpenGoldBox/rest_dialog_impl.h:645
 msgid "Magic items are marked * for ten minutes."
 msgstr ""
 
@@ -7499,7 +7499,7 @@ msgstr ""
 msgid "Missing HP: {amount}. Damage and other HP losses are not individually recorded."
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:688
+#: src/OpenGoldBox/startup_view.cpp:689
 msgid "Missing or unreadable game files:"
 msgstr ""
 
@@ -7891,7 +7891,7 @@ msgstr ""
 msgid "No further level-up is offered for this character."
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:656
+#: src/OpenGoldBox/rest_dialog_impl.h:657
 msgid "No longer Poisoned."
 msgstr ""
 
@@ -8037,11 +8037,11 @@ msgstr ""
 msgid "Oath of Devotion: Smite of Protection. When you cast Divine Smite, you and allies in your Aura of Protection gain +2 AC and +2 to Dexterity saves until your next turn.\nA second level 4 spell slot."
 msgstr ""
 
-#: src/OpenGoldBox/game_menu_view.cpp:279 src/OpenGoldBox/startup_view.cpp:1106
+#: src/OpenGoldBox/game_menu_view.cpp:279 src/OpenGoldBox/startup_view.cpp:1107
 msgid "Off"
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:1103
+#: src/OpenGoldBox/startup_view.cpp:1104
 msgid "Off: age never changes the scores."
 msgstr ""
 
@@ -8695,7 +8695,7 @@ msgstr ""
 msgid "Pool of Radiance"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/startup.tscn:109 src/OpenGoldBox/godot/scenes/startup.tscn:131 src/OpenGoldBox/startup_view.cpp:530
+#: src/OpenGoldBox/godot/scenes/startup.tscn:109 src/OpenGoldBox/godot/scenes/startup.tscn:131 src/OpenGoldBox/startup_view.cpp:531
 msgid "Pool of Radiance game files"
 msgstr ""
 
@@ -8808,7 +8808,7 @@ msgstr ""
 msgid "Prepared Sorcerer spells and Innate Sorcery; Font of Magic's Sorcery Points at level two; Draconic Sorcery at level three: Draconic Resilience (Hit Points and unarmored AC 10 + Dexterity + Charisma) and Chromatic Orb, Command and Dragon's Breath always prepared. Level four grants a fifth cantrip and an available feat or ability points."
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:265 src/OpenGoldBox/level_up_dialog.cpp:121 src/OpenGoldBox/rest_dialog_impl.h:1206 src/OpenGoldBox/spell_choice_controls.h:102 src/OpenGoldBox/spell_choice_controls.h:265 src/OpenGoldBox/spell_choice_controls.h:279
+#: src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:265 src/OpenGoldBox/level_up_dialog.cpp:121 src/OpenGoldBox/rest_dialog_impl.h:1207 src/OpenGoldBox/spell_choice_controls.h:102 src/OpenGoldBox/spell_choice_controls.h:265 src/OpenGoldBox/spell_choice_controls.h:279
 msgid "Prepared spells"
 msgstr ""
 
@@ -9429,7 +9429,7 @@ msgstr ""
 msgid "Red"
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:315
+#: src/OpenGoldBox/rest_dialog_impl.h:316
 msgid "Red crystal"
 msgstr ""
 
@@ -9791,7 +9791,7 @@ msgstr ""
 msgid "Resolve next"
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:274
+#: src/OpenGoldBox/rest_dialog_impl.h:275
 msgid "Resource recovery"
 msgstr ""
 
@@ -9807,7 +9807,7 @@ msgstr ""
 msgid "Rest is not allowed here."
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:272
+#: src/OpenGoldBox/rest_dialog_impl.h:273
 msgid "Rest requires at least 1 HP."
 msgstr ""
 
@@ -10058,7 +10058,7 @@ msgstr ""
 msgid "Roll {needed} or higher"
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:433
+#: src/OpenGoldBox/rest_dialog_impl.h:434
 msgid "Roll:"
 msgstr ""
 
@@ -10114,7 +10114,7 @@ msgstr ""
 msgid "Run the area's pre-camp check and attempt an eight-hour long rest."
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:1096
+#: src/OpenGoldBox/startup_view.cpp:1097
 msgid "SRD 5.2.1"
 msgstr ""
 
@@ -10523,11 +10523,11 @@ msgstr ""
 msgid "Short Bow +1"
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:1344 src/OpenGoldBox/rest_dialog_impl.h:279 src/OpenGoldBox/rest_dialog_impl.h:49
+#: src/OpenGoldBox/rest_dialog_impl.h:1345 src/OpenGoldBox/rest_dialog_impl.h:280 src/OpenGoldBox/rest_dialog_impl.h:49
 msgid "Short Rest"
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:258
+#: src/OpenGoldBox/rest_dialog_impl.h:259
 msgid "Short Rest completed. Heal with Hit Dice spends dice until full HP or none remain."
 msgstr ""
 
@@ -11582,7 +11582,7 @@ msgstr ""
 msgid "Temporary HP from {source}. Absorbs damage before ordinary HP; does not heal or stack."
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:649 src/OpenGoldBox/rest_dialog_impl.h:735
+#: src/OpenGoldBox/rest_dialog_impl.h:650 src/OpenGoldBox/rest_dialog_impl.h:736
 msgid "Temporary HP:"
 msgstr ""
 
@@ -11848,7 +11848,7 @@ msgstr ""
 msgid "The entire party is killed!"
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:1097
+#: src/OpenGoldBox/startup_view.cpp:1098
 msgid "The fifth edition's System Reference Document, with the original's adventures."
 msgstr ""
 
@@ -11931,11 +11931,11 @@ msgstr ""
 msgid "The original game's art shows until you choose the folder of the OpenGoldBox new art download."
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:1094
+#: src/OpenGoldBox/startup_view.cpp:1095
 msgid "The original rules (Pool of Radiance)"
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:398
+#: src/OpenGoldBox/rest_dialog_impl.h:399
 msgid "The party cannot fix itself here."
 msgstr ""
 
@@ -11971,7 +11971,7 @@ msgstr ""
 msgid "The party has a drink."
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:313
+#: src/OpenGoldBox/rest_dialog_impl.h:314
 msgid "The party has acquired the..."
 msgstr ""
 
@@ -12250,7 +12250,7 @@ msgstr ""
 msgid "This item is cursed. It cannot be unequipped until Remove Curse is cast on its wielder."
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:259
+#: src/OpenGoldBox/rest_dialog_impl.h:260
 msgid "This member did not complete the rest."
 msgstr ""
 
@@ -12747,7 +12747,7 @@ msgstr ""
 msgid "Unlimited Adventures"
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:566
+#: src/OpenGoldBox/startup_view.cpp:567
 msgid "Unlimited Adventures design"
 msgstr ""
 
@@ -13504,7 +13504,7 @@ msgstr ""
 msgid "Worn: ordinary fire deals no damage; magical fire deals 2 less per damage die (at least 1 per die), and saves against it gain +4."
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:512
+#: src/OpenGoldBox/rest_dialog_impl.h:513
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Write a scroll of {spell} (Magic Ink of level {level} or higher, {hours} hours)"
 msgstr ""
@@ -14290,7 +14290,7 @@ msgstr ""
 msgid "{finder} finds {name}."
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:531
+#: src/OpenGoldBox/startup_view.cpp:532
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{game} game files"
 msgstr ""
@@ -14724,7 +14724,7 @@ msgstr ""
 msgid "{name} cannot carry that much weight."
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:562
+#: src/OpenGoldBox/rest_dialog_impl.h:563
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} cannot cast spells in this area."
 msgstr ""
@@ -15934,7 +15934,7 @@ msgstr ""
 msgid "{name} joins the battle."
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:629
+#: src/OpenGoldBox/rest_dialog_impl.h:630
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} joins the party."
 msgstr ""
@@ -17159,7 +17159,7 @@ msgstr ""
 msgid "{name} will scribe the spell at the next rest."
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:681
+#: src/OpenGoldBox/rest_dialog_impl.h:682
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} writes a scroll of {spell}."
 msgstr ""
@@ -17289,7 +17289,7 @@ msgstr ""
 msgid "{name}'s portrait"
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:627
+#: src/OpenGoldBox/rest_dialog_impl.h:628
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name}'s simulacrum"
 msgstr ""

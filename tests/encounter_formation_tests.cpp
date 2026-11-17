@@ -73,6 +73,24 @@ void groups_face_each_other()
           "Facing east, the monsters stand one exploration square to the east");
 }
 
+void empty_sides_are_valid()
+{
+    for (const auto facing :
+         {MapDirection::north, MapDirection::east, MapDirection::south, MapDirection::west})
+    {
+        const auto empty = encounter_formation(open_field(), facing, 0, 0, 0);
+        check(empty.party.empty() && empty.enemies.empty(),
+              "An empty encounter has no starting squares");
+        const auto party = encounter_formation(open_field(), facing, 0, 1, 0);
+        check(party.party.size() == 1 && party.party.front().has_value() && party.enemies.empty(),
+              "A party without enemies still receives its starting squares");
+        const auto enemies = encounter_formation(open_field(), facing, 0, 0, 1);
+        check(enemies.party.empty() && enemies.enemies.size() == 1 &&
+                  enemies.enemies.front().has_value(),
+              "Enemies without a party still receive their starting squares");
+    }
+}
+
 void party_facing_east_leaves_a_gap()
 {
     // The original leaves one rank empty behind a party facing east or west
@@ -173,6 +191,7 @@ int main()
     try
     {
         groups_face_each_other();
+        empty_sides_are_valid();
         party_facing_east_leaves_a_gap();
         crowded_band_spills_behind_then_beside();
         full_squares_and_walls();

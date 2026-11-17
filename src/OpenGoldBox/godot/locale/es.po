@@ -464,7 +464,7 @@ msgstr "Aparece un perro guardián fantasmal."
 msgid "A priest who fights in armor and casts healing and protective spells. Hit Die: d8."
 msgstr "Un sacerdote que lucha con armadura y lanza conjuros de curación y protección. Dado de golpe: d8."
 
-#: src/OpenGoldBox/rest_dialog_impl.h:369
+#: src/OpenGoldBox/rest_dialog_impl.h:370
 msgid "A rest lasts from 5 minutes to 99 days, 23 hours and 55 minutes"
 msgstr "Un descanso dura de 5 minutos a 99 días, 23 horas y 55 minutos"
 
@@ -553,11 +553,11 @@ msgstr "CA {ac}   Velocidad {speed} pies"
 msgid "AC {ac} / HP {current}/{maximum}"
 msgstr "CA {ac} / PG {current}/{maximum}"
 
-#: src/OpenGoldBox/startup_view.cpp:1106
+#: src/OpenGoldBox/startup_view.cpp:1107
 msgid "AD&D"
 msgstr "AD&D"
 
-#: src/OpenGoldBox/startup_view.cpp:1105
+#: src/OpenGoldBox/startup_view.cpp:1106
 msgid "AD&D: the scores change again as characters grow older."
 msgstr "AD&D: las puntuaciones cambian de nuevo a medida que los personajes envejecen."
 
@@ -1173,11 +1173,11 @@ msgstr "Flechas/teclado numérico: mover | Mayús+flecha: diagonal | A: acción 
 msgid "Arrows: choose | Space: use | Escape: skip"
 msgstr "Flechas: elegir | Espacio: usar | Escape: omitir"
 
-#: src/OpenGoldBox/startup_view.cpp:1106
+#: src/OpenGoldBox/startup_view.cpp:1107
 msgid "As the original"
 msgstr "Como el original"
 
-#: src/OpenGoldBox/startup_view.cpp:1102
+#: src/OpenGoldBox/startup_view.cpp:1103
 msgid "As the original: the starting age changes the scores once."
 msgstr "Como el original: la edad inicial cambia las puntuaciones una vez."
 
@@ -1646,7 +1646,7 @@ msgstr "Contundente"
 msgid "Blue"
 msgstr "Azul"
 
-#: src/OpenGoldBox/rest_dialog_impl.h:316
+#: src/OpenGoldBox/rest_dialog_impl.h:317
 msgid "Blue crystal"
 msgstr "Cristal azul"
 
@@ -1994,7 +1994,7 @@ msgstr "Puede volver a tirar un d20 una vez."
 msgid "Can target another creature as a Magic action."
 msgstr "Puede elegir como objetivo a otra criatura como acción mágica."
 
-#: src/OpenGoldBox/ally_attack_controls.h:32 src/OpenGoldBox/character_creation_view.cpp:923 src/OpenGoldBox/equipment_choice_dialog.cpp:76 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:318 src/OpenGoldBox/godot/scenes/startup.tscn:106 src/OpenGoldBox/godot/scenes/startup.tscn:169 src/OpenGoldBox/level_up_dialog.cpp:146 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:348 src/OpenGoldBox/rest_dialog_impl.h:86 src/OpenGoldBox/save_slots.cpp:133 src/OpenGoldBox/spell_choice_controls.h:249 src/OpenGoldBox/startup_view.cpp:810
+#: src/OpenGoldBox/ally_attack_controls.h:32 src/OpenGoldBox/character_creation_view.cpp:923 src/OpenGoldBox/equipment_choice_dialog.cpp:76 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:318 src/OpenGoldBox/godot/scenes/startup.tscn:106 src/OpenGoldBox/godot/scenes/startup.tscn:169 src/OpenGoldBox/level_up_dialog.cpp:146 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:349 src/OpenGoldBox/rest_dialog_impl.h:86 src/OpenGoldBox/save_slots.cpp:133 src/OpenGoldBox/spell_choice_controls.h:249 src/OpenGoldBox/startup_view.cpp:811
 msgid "Cancel"
 msgstr "Cancelar"
 
@@ -2070,7 +2070,7 @@ msgstr "No se puede leer la lista de comprobación de archivos del juego."
 msgid "Cannot regain Hit Points."
 msgstr "No puede recuperar puntos de golpe."
 
-#: src/OpenGoldBox/startup_view.cpp:812
+#: src/OpenGoldBox/startup_view.cpp:813
 msgid "Cannot save language."
 msgstr "No se puede guardar el idioma."
 
@@ -2079,7 +2079,7 @@ msgstr "No se puede guardar el idioma."
 msgid "Cannot save screenshot: {path}"
 msgstr "No se puede guardar la captura de pantalla: {path}"
 
-#: src/OpenGoldBox/startup_view.cpp:722
+#: src/OpenGoldBox/startup_view.cpp:723
 msgid "Cannot save settings. Check that settings.cfg in the game's user data folder can be written and is valid."
 msgstr "No se puede guardar la configuración. Comprueba que settings.cfg, en la carpeta de datos de usuario del juego, se pueda escribir y sea válido."
 
@@ -2345,7 +2345,7 @@ msgstr "Hoja de personaje"
 msgid "Characters"
 msgstr "Personajes"
 
-#: src/OpenGoldBox/startup_view.cpp:1095
+#: src/OpenGoldBox/startup_view.cpp:1096
 msgid "Characters, fights and magic as the original game had them: AD&D 1st edition."
 msgstr "Personajes, combates y magia como los tenía el juego original: AD&D 1.ª edición."
 
@@ -2561,7 +2561,7 @@ msgstr "Elige trucos, entradas del libro de conjuros y conjuros preparados. Atr�
 msgid "Choose game folder"
 msgstr "Elige la carpeta del juego"
 
-#: src/OpenGoldBox/godot/scenes/startup.tscn:65 src/OpenGoldBox/startup_view.cpp:808
+#: src/OpenGoldBox/godot/scenes/startup.tscn:65 src/OpenGoldBox/startup_view.cpp:809
 msgid "Choose language"
 msgstr "Elige idioma"
 
@@ -2573,11 +2573,11 @@ msgstr "Elige una clase inicial. Las clases que marcaste en la página anterior 
 msgid "Choose prepared spells. Unfilled choices remain pending; Back preserves your choices."
 msgstr "Elige conjuros preparados. Las elecciones sin completar quedan pendientes; Atrás conserva tus elecciones."
 
-#: src/OpenGoldBox/godot/scenes/startup.tscn:138 src/OpenGoldBox/startup_view.cpp:536
+#: src/OpenGoldBox/godot/scenes/startup.tscn:138 src/OpenGoldBox/startup_view.cpp:537
 msgid "Choose the folder containing START.EXE and the original DAX game files."
 msgstr "Elige la carpeta que contiene START.EXE y los archivos DAX originales del juego."
 
-#: src/OpenGoldBox/startup_view.cpp:570
+#: src/OpenGoldBox/startup_view.cpp:571
 msgid "Choose the folder of the design to play, which the construction kit names NAME.DSN."
 msgstr "Elige la carpeta del diseño que quieres jugar, que el kit de construcción llama NOMBRE.DSN."
 
@@ -3148,7 +3148,7 @@ msgstr "Contingencia: {spell} ({trigger})"
 msgid "Contingency: {spell} takes effect on {name}."
 msgstr "Contingencia: {spell} surte efecto en {name}."
 
-#: src/OpenGoldBox/godot/scenes/combat_demo.tscn:334 src/OpenGoldBox/godot/scenes/startup.tscn:177 src/OpenGoldBox/godot/scenes/startup.tscn:242 src/OpenGoldBox/godot/scenes/startup.tscn:280 src/OpenGoldBox/godot/scenes/startup.tscn:375 src/OpenGoldBox/godot/scenes/startup.tscn:88 src/OpenGoldBox/startup_view.cpp:809
+#: src/OpenGoldBox/godot/scenes/combat_demo.tscn:334 src/OpenGoldBox/godot/scenes/startup.tscn:177 src/OpenGoldBox/godot/scenes/startup.tscn:242 src/OpenGoldBox/godot/scenes/startup.tscn:280 src/OpenGoldBox/godot/scenes/startup.tscn:375 src/OpenGoldBox/godot/scenes/startup.tscn:88 src/OpenGoldBox/startup_view.cpp:810
 msgid "Continue"
 msgstr "Continuar"
 
@@ -3281,7 +3281,7 @@ msgstr "Curar heridas leves"
 msgid "Cure Serious Wounds"
 msgstr "Curar heridas graves"
 
-#: src/OpenGold.Rules.Srd5/src/srd5.cpp:31347 src/OpenGold.Rules.Srd5/src/srd5.cpp:31356 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/combat_demo.tscn:188 src/OpenGoldBox/rest_dialog_impl.h:1230 src/OpenGoldBox/rest_dialog_impl.h:1290
+#: src/OpenGold.Rules.Srd5/src/srd5.cpp:31347 src/OpenGold.Rules.Srd5/src/srd5.cpp:31356 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/combat_demo.tscn:188 src/OpenGoldBox/rest_dialog_impl.h:1231 src/OpenGoldBox/rest_dialog_impl.h:1291
 msgid "Cure Wounds"
 msgstr "Curar heridas"
 
@@ -4150,7 +4150,7 @@ msgstr "Elfo"
 msgid "Elf Keen Senses"
 msgstr "Sentidos agudos élficos"
 
-#: src/OpenGoldBox/rest_dialog_impl.h:263
+#: src/OpenGoldBox/rest_dialog_impl.h:264
 msgid "Eligible to rest."
 msgstr "Puede descansar."
 
@@ -4711,7 +4711,7 @@ msgstr "Encontrar y desactivar trampas"
 msgid "Finger of Death"
 msgstr "Dedo de la muerte"
 
-#: src/OpenGoldBox/rest_dialog_impl.h:348
+#: src/OpenGoldBox/rest_dialog_impl.h:349
 msgid "Finish"
 msgstr "Terminar"
 
@@ -5408,7 +5408,7 @@ msgstr "Mandoble"
 msgid "Green"
 msgstr "Verde"
 
-#: src/OpenGoldBox/rest_dialog_impl.h:315
+#: src/OpenGoldBox/rest_dialog_impl.h:316
 msgid "Green crystal"
 msgstr "Cristal verde"
 
@@ -5480,11 +5480,11 @@ msgstr "Gundarlun"
 msgid "Gust of Wind"
 msgstr "Ráfaga de viento"
 
-#: src/OpenGoldBox/rest_dialog_impl.h:241
+#: src/OpenGoldBox/rest_dialog_impl.h:242
 msgid "HP"
 msgstr "PG"
 
-#: src/OpenGoldBox/rest_dialog_impl.h:1248 src/OpenGoldBox/rest_dialog_impl.h:435 src/OpenGoldBox/rest_dialog_impl.h:657 src/OpenGoldBox/rest_dialog_impl.h:882
+#: src/OpenGoldBox/rest_dialog_impl.h:1249 src/OpenGoldBox/rest_dialog_impl.h:436 src/OpenGoldBox/rest_dialog_impl.h:658 src/OpenGoldBox/rest_dialog_impl.h:883
 msgid "HP restored:"
 msgstr "PG recuperados:"
 
@@ -5743,11 +5743,11 @@ msgstr "Ruinas de Hillsfar"
 msgid "History"
 msgstr "Historia"
 
-#: src/OpenGoldBox/rest_dialog_impl.h:244
+#: src/OpenGoldBox/rest_dialog_impl.h:245
 msgid "Hit Dice"
 msgstr "Dados de golpe"
 
-#: src/OpenGoldBox/rest_dialog_impl.h:438
+#: src/OpenGoldBox/rest_dialog_impl.h:439
 msgid "Hit Dice remaining:"
 msgstr "Dados de golpe restantes:"
 
@@ -6346,7 +6346,7 @@ msgstr "Guardar"
 msgid "Keep Quick after a fight"
 msgstr "Mantener Rápido tras un combate"
 
-#: src/OpenGold.Rules.Srd5/src/srd5.cpp:30507 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/combat_demo.tscn:585 src/OpenGoldBox/level_up_dialog.cpp:325 src/OpenGoldBox/rest_dialog_impl.h:1368 src/OpenGoldBox/rest_dialog_impl.h:21 src/OpenGoldBox/training_replacement_controls.h:37
+#: src/OpenGold.Rules.Srd5/src/srd5.cpp:30507 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/combat_demo.tscn:585 src/OpenGoldBox/level_up_dialog.cpp:325 src/OpenGoldBox/rest_dialog_impl.h:1369 src/OpenGoldBox/rest_dialog_impl.h:21 src/OpenGoldBox/training_replacement_controls.h:37
 msgid "Keep current"
 msgstr "Conservar actuales"
 
@@ -6428,7 +6428,7 @@ msgstr "Lanza de caballería"
 msgid "Land's Aid"
 msgstr "Ayuda de la tierra"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:422 src/OpenGoldBox/godot/scenes/startup.tscn:43 src/OpenGoldBox/startup_view.cpp:807
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:422 src/OpenGoldBox/godot/scenes/startup.tscn:43 src/OpenGoldBox/startup_view.cpp:808
 msgid "Language"
 msgstr "Idioma"
 
@@ -6840,11 +6840,11 @@ msgstr "¿Cargar esta partida? Se perderá todo el progreso de campaña sin guar
 msgid "Locked."
 msgstr "Cerrada con llave."
 
-#: src/OpenGoldBox/rest_dialog_impl.h:1345 src/OpenGoldBox/rest_dialog_impl.h:282 src/OpenGoldBox/rest_dialog_impl.h:50
+#: src/OpenGoldBox/rest_dialog_impl.h:1346 src/OpenGoldBox/rest_dialog_impl.h:283 src/OpenGoldBox/rest_dialog_impl.h:50
 msgid "Long Rest"
 msgstr "Descanso largo"
 
-#: src/OpenGoldBox/rest_dialog_impl.h:267
+#: src/OpenGoldBox/rest_dialog_impl.h:268
 msgid "Long Rest cooldown remaining (minutes):"
 msgstr "Espera restante para un descanso largo (minutos):"
 
@@ -7046,7 +7046,7 @@ msgstr "Tienda del mago"
 msgid "Magic Weapon"
 msgstr "Arma mágica"
 
-#: src/OpenGoldBox/rest_dialog_impl.h:644
+#: src/OpenGoldBox/rest_dialog_impl.h:645
 msgid "Magic items are marked * for ten minutes."
 msgstr "Los objetos mágicos quedan marcados con * durante diez minutos."
 
@@ -7499,7 +7499,7 @@ msgstr "Los proyectiles no mágicos desde más de 5 pies fallan contra él."
 msgid "Missing HP: {amount}. Damage and other HP losses are not individually recorded."
 msgstr "PG perdidos: {amount}. El daño y otras pérdidas de PG no se registran por separado."
 
-#: src/OpenGoldBox/startup_view.cpp:688
+#: src/OpenGoldBox/startup_view.cpp:689
 msgid "Missing or unreadable game files:"
 msgstr "Faltan archivos del juego o no se pueden leer:"
 
@@ -7891,7 +7891,7 @@ msgstr "Este nivel no otorga dotes ni mejoras de características"
 msgid "No further level-up is offered for this character."
 msgstr "Este personaje no tiene otra subida de nivel disponible."
 
-#: src/OpenGoldBox/rest_dialog_impl.h:656
+#: src/OpenGoldBox/rest_dialog_impl.h:657
 msgid "No longer Poisoned."
 msgstr "Ya no está envenenado."
 
@@ -8037,11 +8037,11 @@ msgstr "Juramento de devoción: Aura de devoción. Ni tú ni tus aliados en tu A
 msgid "Oath of Devotion: Smite of Protection. When you cast Divine Smite, you and allies in your Aura of Protection gain +2 AC and +2 to Dexterity saves until your next turn.\nA second level 4 spell slot."
 msgstr "Juramento de devoción: Castigo de protección. Cuando lanzas Castigo divino, tú y tus aliados en tu Aura de protección obtenéis +2 a la CA y +2 a las salvaciones de Destreza hasta tu siguiente turno.\nUn segundo espacio de conjuro de nivel 4."
 
-#: src/OpenGoldBox/game_menu_view.cpp:279 src/OpenGoldBox/startup_view.cpp:1106
+#: src/OpenGoldBox/game_menu_view.cpp:279 src/OpenGoldBox/startup_view.cpp:1107
 msgid "Off"
 msgstr "No"
 
-#: src/OpenGoldBox/startup_view.cpp:1103
+#: src/OpenGoldBox/startup_view.cpp:1104
 msgid "Off: age never changes the scores."
 msgstr "Desactivado: la edad nunca cambia las puntuaciones."
 
@@ -8695,7 +8695,7 @@ msgstr "Polimorfado"
 msgid "Pool of Radiance"
 msgstr "Pool of Radiance"
 
-#: src/OpenGoldBox/godot/scenes/startup.tscn:109 src/OpenGoldBox/godot/scenes/startup.tscn:131 src/OpenGoldBox/startup_view.cpp:530
+#: src/OpenGoldBox/godot/scenes/startup.tscn:109 src/OpenGoldBox/godot/scenes/startup.tscn:131 src/OpenGoldBox/startup_view.cpp:531
 msgid "Pool of Radiance game files"
 msgstr "Archivos de Pool of Radiance"
 
@@ -8808,7 +8808,7 @@ msgstr "Conjuros de druida preparados y una orden primigenia: Mago (un truco adi
 msgid "Prepared Sorcerer spells and Innate Sorcery; Font of Magic's Sorcery Points at level two; Draconic Sorcery at level three: Draconic Resilience (Hit Points and unarmored AC 10 + Dexterity + Charisma) and Chromatic Orb, Command and Dragon's Breath always prepared. Level four grants a fifth cantrip and an available feat or ability points."
 msgstr "Conjuros de hechicero preparados e Hechicería innata; puntos de hechicería de Fuente de magia en el nivel dos; Hechicería dracónica en el nivel tres: Resistencia dracónica (puntos de golpe y CA sin armadura 10 + Destreza + Carisma) y Orbe cromático, Orden imperiosa y Aliento de dragón siempre preparados. El nivel cuatro concede un quinto truco y una dote disponible o puntos de característica."
 
-#: src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:265 src/OpenGoldBox/level_up_dialog.cpp:121 src/OpenGoldBox/rest_dialog_impl.h:1206 src/OpenGoldBox/spell_choice_controls.h:102 src/OpenGoldBox/spell_choice_controls.h:265 src/OpenGoldBox/spell_choice_controls.h:279
+#: src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:265 src/OpenGoldBox/level_up_dialog.cpp:121 src/OpenGoldBox/rest_dialog_impl.h:1207 src/OpenGoldBox/spell_choice_controls.h:102 src/OpenGoldBox/spell_choice_controls.h:265 src/OpenGoldBox/spell_choice_controls.h:279
 msgid "Prepared spells"
 msgstr "Conjuros preparados"
 
@@ -9429,7 +9429,7 @@ msgstr "Recuperar espacios"
 msgid "Red"
 msgstr "Rojo"
 
-#: src/OpenGoldBox/rest_dialog_impl.h:315
+#: src/OpenGoldBox/rest_dialog_impl.h:316
 msgid "Red crystal"
 msgstr "Cristal rojo"
 
@@ -9791,7 +9791,7 @@ msgstr "Resistencia: trueno"
 msgid "Resolve next"
 msgstr "Resolver ahora"
 
-#: src/OpenGoldBox/rest_dialog_impl.h:274
+#: src/OpenGoldBox/rest_dialog_impl.h:275
 msgid "Resource recovery"
 msgstr "Recuperación de recursos"
 
@@ -9807,7 +9807,7 @@ msgstr "Descanso denegado: ningún miembro activo puede descansar."
 msgid "Rest is not allowed here."
 msgstr "No se permite descansar aquí."
 
-#: src/OpenGoldBox/rest_dialog_impl.h:272
+#: src/OpenGoldBox/rest_dialog_impl.h:273
 msgid "Rest requires at least 1 HP."
 msgstr "Para descansar se necesita al menos 1 PG."
 
@@ -10058,7 +10058,7 @@ msgstr "Haz primero las seis tiradas de características."
 msgid "Roll {needed} or higher"
 msgstr "Saca {needed} o más"
 
-#: src/OpenGoldBox/rest_dialog_impl.h:433
+#: src/OpenGoldBox/rest_dialog_impl.h:434
 msgid "Roll:"
 msgstr "Tirada:"
 
@@ -10114,7 +10114,7 @@ msgstr "Reglas"
 msgid "Run the area's pre-camp check and attempt an eight-hour long rest."
 msgstr "Comprueba si se puede acampar e intenta un descanso largo de ocho horas."
 
-#: src/OpenGoldBox/startup_view.cpp:1096
+#: src/OpenGoldBox/startup_view.cpp:1097
 msgid "SRD 5.2.1"
 msgstr "SRD 5.2.1"
 
@@ -10523,11 +10523,11 @@ msgstr "Tienda / elige un objeto"
 msgid "Short Bow +1"
 msgstr "Arco corto +1"
 
-#: src/OpenGoldBox/rest_dialog_impl.h:1344 src/OpenGoldBox/rest_dialog_impl.h:279 src/OpenGoldBox/rest_dialog_impl.h:49
+#: src/OpenGoldBox/rest_dialog_impl.h:1345 src/OpenGoldBox/rest_dialog_impl.h:280 src/OpenGoldBox/rest_dialog_impl.h:49
 msgid "Short Rest"
 msgstr "Descanso corto"
 
-#: src/OpenGoldBox/rest_dialog_impl.h:258
+#: src/OpenGoldBox/rest_dialog_impl.h:259
 msgid "Short Rest completed. Heal with Hit Dice spends dice until full HP or none remain."
 msgstr "Descanso corto completado. Curar con dados de golpe gasta dados hasta recuperar todos los PG o agotarlos."
 
@@ -11582,7 +11582,7 @@ msgstr "PG temporales"
 msgid "Temporary HP from {source}. Absorbs damage before ordinary HP; does not heal or stack."
 msgstr "PG temporales de {source}. Absorben el daño antes que los PG normales; no curan ni se acumulan."
 
-#: src/OpenGoldBox/rest_dialog_impl.h:649 src/OpenGoldBox/rest_dialog_impl.h:735
+#: src/OpenGoldBox/rest_dialog_impl.h:650 src/OpenGoldBox/rest_dialog_impl.h:736
 msgid "Temporary HP:"
 msgstr "PG temporales:"
 
@@ -11848,7 +11848,7 @@ msgstr "La puerta sigue cerrada."
 msgid "The entire party is killed!"
 msgstr "¡Todo el grupo ha muerto!"
 
-#: src/OpenGoldBox/startup_view.cpp:1097
+#: src/OpenGoldBox/startup_view.cpp:1098
 msgid "The fifth edition's System Reference Document, with the original's adventures."
 msgstr "El System Reference Document de la quinta edición, con las aventuras del original."
 
@@ -11931,11 +11931,11 @@ msgstr "El aceite sobre {name} arde y causa 5 de daño más."
 msgid "The original game's art shows until you choose the folder of the OpenGoldBox new art download."
 msgstr "Se muestra el arte del juego original hasta que elijas la carpeta de la descarga del arte nuevo de OpenGoldBox."
 
-#: src/OpenGoldBox/startup_view.cpp:1094
+#: src/OpenGoldBox/startup_view.cpp:1095
 msgid "The original rules (Pool of Radiance)"
 msgstr "Las reglas originales (Pool of Radiance)"
 
-#: src/OpenGoldBox/rest_dialog_impl.h:398
+#: src/OpenGoldBox/rest_dialog_impl.h:399
 msgid "The party cannot fix itself here."
 msgstr "El grupo no puede curarse aquí."
 
@@ -11971,7 +11971,7 @@ msgstr "El grupo gana experiencia."
 msgid "The party has a drink."
 msgstr "El grupo toma una copa."
 
-#: src/OpenGoldBox/rest_dialog_impl.h:313
+#: src/OpenGoldBox/rest_dialog_impl.h:314
 msgid "The party has acquired the..."
 msgstr "El grupo ha conseguido..."
 
@@ -12250,7 +12250,7 @@ msgstr "Este objeto está maldito. No se puede vender ni tirar."
 msgid "This item is cursed. It cannot be unequipped until Remove Curse is cast on its wielder."
 msgstr "Este objeto está maldito. No se puede desequipar hasta que se lance Quitar maldición sobre quien lo empuña."
 
-#: src/OpenGoldBox/rest_dialog_impl.h:259
+#: src/OpenGoldBox/rest_dialog_impl.h:260
 msgid "This member did not complete the rest."
 msgstr "Este miembro no completó el descanso."
 
@@ -12747,7 +12747,7 @@ msgstr "Opción de entrenamiento desconocida"
 msgid "Unlimited Adventures"
 msgstr "Unlimited Adventures"
 
-#: src/OpenGoldBox/startup_view.cpp:566
+#: src/OpenGoldBox/startup_view.cpp:567
 msgid "Unlimited Adventures design"
 msgstr "Diseño de Unlimited Adventures"
 
@@ -13504,7 +13504,7 @@ msgstr "Llevado: su maldición aplica su penalización a la Clase de Armadura y 
 msgid "Worn: ordinary fire deals no damage; magical fire deals 2 less per damage die (at least 1 per die), and saves against it gain +4."
 msgstr "Llevado: el fuego normal no causa daño; el fuego mágico causa 2 menos por dado de daño (al menos 1 por dado) y las salvaciones contra él ganan +4."
 
-#: src/OpenGoldBox/rest_dialog_impl.h:512
+#: src/OpenGoldBox/rest_dialog_impl.h:513
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Write a scroll of {spell} (Magic Ink of level {level} or higher, {hours} hours)"
 msgstr "Escribir un pergamino de {spell} (tinta mágica de nivel {level} o superior, {hours} horas)"
@@ -14290,7 +14290,7 @@ msgstr "{feat}: {spell}; bonificador de ataque de conjuro {attack}."
 msgid "{finder} finds {name}."
 msgstr "{finder} encuentra a {name}."
 
-#: src/OpenGoldBox/startup_view.cpp:531
+#: src/OpenGoldBox/startup_view.cpp:532
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{game} game files"
 msgstr "Archivos de {game}"
@@ -14724,7 +14724,7 @@ msgstr "{name} ya no se puede modificar."
 msgid "{name} cannot carry that much weight."
 msgstr "{name} no puede cargar tanto peso."
 
-#: src/OpenGoldBox/rest_dialog_impl.h:562
+#: src/OpenGoldBox/rest_dialog_impl.h:563
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} cannot cast spells in this area."
 msgstr "{name} no puede lanzar conjuros en esta zona."
@@ -15934,7 +15934,7 @@ msgstr "{name} queda envuelto en un escudo cálido."
 msgid "{name} joins the battle."
 msgstr "{name} se une a la batalla."
 
-#: src/OpenGoldBox/rest_dialog_impl.h:629
+#: src/OpenGoldBox/rest_dialog_impl.h:630
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} joins the party."
 msgstr "{name} se une al grupo."
@@ -17159,7 +17159,7 @@ msgstr "{name} será:"
 msgid "{name} will scribe the spell at the next rest."
 msgstr "{name} transcribirá el conjuro en el próximo descanso."
 
-#: src/OpenGoldBox/rest_dialog_impl.h:681
+#: src/OpenGoldBox/rest_dialog_impl.h:682
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} writes a scroll of {spell}."
 msgstr "{name} escribe un pergamino de {spell}."
@@ -17289,7 +17289,7 @@ msgstr "La mente de {name} se aclara."
 msgid "{name}'s portrait"
 msgstr "Retrato de {name}"
 
-#: src/OpenGoldBox/rest_dialog_impl.h:627
+#: src/OpenGoldBox/rest_dialog_impl.h:628
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name}'s simulacrum"
 msgstr "Simulacro de {name}"

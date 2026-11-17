@@ -258,6 +258,10 @@ EncounterFormation encounter_formation(const DungeonBattlefield &field, MapDirec
     EncounterFormation result{
         place(field, {{0, 0}, facing, party_size, true, {}, half(party_size, 1)}, occupied),
         std::vector<std::optional<Cell>>(enemy_footprints.size())};
+    if (enemy_footprints.empty())
+    {
+        return result;
+    }
     std::vector<MapDirection> placed_quarters;
     for (const auto quarter : quarters)
     {

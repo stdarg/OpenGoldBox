@@ -31,7 +31,11 @@ foreach(name opengoldbox.x86_64 opengoldbox.pck opengoldbox_game.so)
     endif()
     file(COPY "${EXPORT}/${name}" DESTINATION "${package}")
 endforeach()
-file(COPY "${EXPORT}/data" DESTINATION "${package}")
+file(COPY "${EXPORT}/data" DESTINATION "${package}" PATTERN "monsters" EXCLUDE)
+# Local catalog exports can also contain combat images. Only creature records
+# ship with the game; the images belong to the separate new-art download.
+file(COPY "${EXPORT}/data/monsters" DESTINATION "${package}/data"
+    FILES_MATCHING PATTERN "*.json")
 # The debug information would more than double the library's size, so players
 # get it stripped.
 execute_process(COMMAND "${STRIP}" --strip-debug "${package}/opengoldbox_game.so" RESULT_VARIABLE result)

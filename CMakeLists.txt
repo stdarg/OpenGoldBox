@@ -985,7 +985,8 @@ if(OPENGOLD_BUILD_TESTS AND NOT WIN32)
 endif()
 
 if(OPENGOLD_BUILD_GODOT)
-    set_target_properties(opengold_core opengold_formats opengold_rules opengold_rules_srd5 PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    set_target_properties(opengold_core opengold_formats opengold_rules opengold_rules_srd5
+        opengold_rules_original PROPERTIES POSITION_INDEPENDENT_CODE ON)
     add_subdirectory(demos/src/OpenGold.Godot)
     add_subdirectory(dev_tools/tile_art_viewer/native)
     add_subdirectory(dev_tools/combat_sprite_catalog/native)
@@ -993,7 +994,8 @@ endif()
 
 if(OPENGOLD_BUILD_GAME)
     # The game library is a shared object; on Linux what it links must be PIC.
-    set_target_properties(opengold_core opengold_formats opengold_rules opengold_rules_srd5 PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    set_target_properties(opengold_core opengold_formats opengold_rules opengold_rules_srd5
+        opengold_rules_original PROPERTIES POSITION_INDEPENDENT_CODE ON)
     add_subdirectory(src/OpenGoldBox)
 endif()
 

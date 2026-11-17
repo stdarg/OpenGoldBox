@@ -425,6 +425,12 @@ const rules::CombatantView &view_of(const rules::Snapshot &state, std::string_vi
                          });
 }
 
+// A temporary snapshot cannot own a borrowed view after this call returns.
+rules::CombatantView view_of(rules::Snapshot &&state, std::string_view name)
+{
+    return view_of(static_cast<const rules::Snapshot &>(state), name);
+}
+
 std::string actor_name(const rules::CombatSession &session)
 {
     const auto state = session.snapshot();

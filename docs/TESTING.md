@@ -1,5 +1,37 @@
 # Native coverage and fuzz testing
 
+## Linux verification (2026-11-16)
+
+Verified the changes based on `ee0a6b28` with GCC 16.2, Godot 4.7.2 and the
+installed Pool of Radiance files (`OPENGOLD_GAME_DIR`). Build warnings remain
+errors. The game build, export and packaged-game smoke check passed.
+
+- `JOBS=8 ./build.sh --test-all`: 306 passed, 30 skipped, no failures out of 336.
+  Skips require additional Gold Box games or an Unlimited Adventures design;
+  `OPENGOLD_GOLDBOX_DIR` was unavailable.
+- Demo/catalog targets built with the same compiler, `OPENGOLD_BUILD_GODOT=ON`
+  and `OPENGOLD_BUILD_GAME=OFF` in `build/linux-extras`.
+  `ctest --test-dir build/linux-extras --output-on-failure -j 4 -L demo`:
+  all nine checks passed. The map inspector also passed after rebuilding its
+  exporter with `cmake --build build --target opengold_maps --parallel 8`.
+- `python3 -m unittest discover -s tests -p '*_tests.py'`: all 21 passed.
+- `python3 tools/localization.py --check`: all 4,143 messages validated.
+- With `OPENGOLD_BUILD_DOS_PROBE=ON`,
+  `ctest --test-dir build/linux-extras --output-on-failure -j 2 -R '^opengold_dos_probe_'`:
+  both checks passed, including the original game's VM, dungeon placement,
+  wilderness placement and wilderness-field comparisons (516 seconds).
+
+The encounter-formation regression checks cover empty encounters, party-only
+and enemy-only formations in all four directions. The fix avoids division by
+zero when there are no enemy quarters. Original-combat test lookups now copy
+views obtained from temporary snapshots instead of retaining dangling references.
+The Linux archive stages monster JSON records without the separately distributed
+combat images.
+
+One initial demo import aborted inside Godot. The suite rerun passed, as did a
+cold-cache import under GDB and three cold-cache imports without GDB; no reliable
+reproduction or extension-code failure was found.
+
 ## Running the suite: use `build.cmd`
 
 Run verification through the repository script, not hand-written `cmake` and

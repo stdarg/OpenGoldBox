@@ -22,9 +22,10 @@ void check(bool ok, const char *message)
 
 std::unique_ptr<CombatSession> fight(const RulesModule &rules)
 {
-    Encounter encounter{{6, 3, std::vector<Terrain>(18)},
-                        {{1, "bandit", "Bandit", Side::party, {1, 1}},
-                         {2, "bandit", "Rival", Side::opposition, {2, 1}}}};
+    Encounter encounter{};
+    encounter.battlefield = {6, 3, std::vector<Terrain>(18)};
+    encounter.participants = {{1, "bandit", "Bandit", Side::party, {1, 1}},
+                              {2, "bandit", "Rival", Side::opposition, {2, 1}}};
     return rules.create(std::move(encounter), 7);
 }
 

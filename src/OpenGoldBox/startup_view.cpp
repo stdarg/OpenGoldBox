@@ -439,7 +439,8 @@ void StartupView::load_game()
 
 void StartupView::saves_closed()
 {
-    const auto &slots = required_node<SaveSlots>(*this, "SaveSlots");
+    const NodePath slots_path{"SaveSlots"};
+    const auto &slots = required_node<SaveSlots>(*this, slots_path);
     if (!slots.is_visible() && !starting_)
     {
         // Once the closing window is no longer the exclusive one.
