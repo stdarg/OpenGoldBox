@@ -1020,7 +1020,7 @@ class RolfTourSession
     // The compare flags the script hears with them (Pools of Darkness's COMBAT).
     std::optional<EclConditions> treasure_conditions_;
     void stage_treasure(const EclRequest &request);
-    void award_staged_treasure();
+    void award_staged_treasure(bool with_experience = true);
     [[nodiscard]] std::string treasure_identity(std::uint16_t address) const;
     [[nodiscard]] bool locked_door_ahead() const;
     // Whether the lock ahead is a wizard lock (door code 3).

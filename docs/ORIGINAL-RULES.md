@@ -1613,6 +1613,17 @@ gear.
    - **Treasure's experience:** a won fight's monsters' coins, gems and
      jewelry, and 400 for each plus of a magic item, add to its experience
      (`DetermineLootExp`).
+     Pool of Radiance's script-provided treasure also earns its share, including
+     a `COMBAT` with no monsters: the original still calls its post-combat
+     award there. Corrected on 2026-11-17; the missing award had suppressed
+     early campaign progression. A fight's monster and scripted treasure XP
+     are combined before division and prime-score bonuses, preserving rounding.
+     Each script-authorized payout has its own experience claim, and an event
+     rollback restores experience, money and
+     claims together. SRD rewards are unchanged. Behavioral reference:
+     [`EclCombat` and `PostCombat` at the retail 1.3 reconstruction](https://github.com/talonius/bc-pool-of-radiance/tree/0f8e89d2c73f0539606724c976ab0b75bda13ca5/src).
+     No reconstructed implementation was copied. Existing saves retain their
+     recorded experience; past rewards are not recalculated.
    - **Armor Class** counts down as the original's does on every screen, the
      shop's preview and auto-equip's comparison included.
    - **Readying mid-fight** (2026-11-14; `ToggleReadyItem`, `RecalcStats`,

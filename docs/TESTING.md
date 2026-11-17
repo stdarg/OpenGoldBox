@@ -1,5 +1,40 @@
 # Native coverage and fuzz testing
 
+## Earned Original Rules campaign (2026-11-17)
+
+All 337 Linux checks pass across the complete run and the corrected route
+rerun, with no skips. The two final Original Rules checks pass in 84.11 seconds;
+the fresh campaign takes 83.96 seconds. Nine developer-tool checks, both DOS
+checks, 21 Python tests and localization validation also pass. The tested tree
+is based on `334099c8` with the accompanying changes; detailed evidence and
+timings are in [PLAYABILITY.md](PLAYABILITY.md).
+
+`opengold_original_campaign_route` creates six human characters with zero XP
+and their actual creation gold, uses the original's legal creation Modify
+controls, buys equipment, earns quest and combat rewards, pays the real guilds,
+and plays through Tyranthraxus's defeat and the ending. Arena practice earns XP
+through actual mirror duels; losses, paid lodging, healing spells and save/reload
+remain normal game actions. It supplies no levels, money, equipment, HP, quest
+flags, relocations or combat results. The actual dragon record must be defeated;
+a living boss at a ceasefire cannot pass.
+
+```sh
+OPENGOLD_GOLDBOX_DIR=/home/edmond/GoldBox \
+OPENGOLD_GAME_DIR=/home/edmond/GoldBox/POOLRAD \
+ctest --test-dir build/linux --output-on-failure -R '^opengold_original_campaign_route$'
+```
+
+Missing private game files explicitly skip this installed-data check. With the
+files installed, the fresh test is a start-to-ending route, not a claim of
+unassisted completion of every optional side quest. Other expedition audits
+retain their separate assisted coverage. See [PLAYABILITY.md](PLAYABILITY.md)
+for verification results and limitations.
+
+For diagnostics, `opengold_expedition_tests --original-campaign FOLDER [STAGE]`
+retains real campaign checkpoints. A named-stage resume is useful for debugging;
+the registered test always starts a fresh party. `OPENGOLD_TRACE=1` adds travel
+and casualty diagnostics; `OPENGOLD_TRACE_COMBAT=1` includes full combat logs.
+
 ## Darkness follow-up (2026-11-17)
 
 The current [playability record](PLAYABILITY.md#2026-11-17-darkness-defenses-and-finale)

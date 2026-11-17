@@ -1868,10 +1868,17 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
                     spent.push_back(std::move(gear));
                 }
             }
-            // Monsters that all got away leave nothing to pay.
+            // Pool divides and applies prime-score bonuses once to the whole
+            // post-combat award, including treasure supplied by the script.
+            const bool combine_script_experience =
+                game() == GoldBoxGame::pool_of_radiance && plays_original_records();
+            const bool has_monster_loot = !paying.empty();
+            unsigned experience = combine_script_experience && staged_treasure_
+                                      ? treasure_experience(*staged_treasure_)
+                                      : 0;
+            // Monsters that all got away leave no monster loot to pay.
             if (!paying.empty())
             {
-                unsigned experience = 0;
                 for (auto record : paying)
                 {
                     experience += record_experience(record);
@@ -1880,15 +1887,18 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
                                            machine_.variable(game_cell(EclAddress{0x6DE3})) != 1,
                                            std::move(spent));
                 experience += treasure_experience(loot);
-                campaign_->award_experience(champion ? experience : experience_share(experience),
-                                            reward, champion);
                 pending_loot_.push_back(std::move(loot));
                 pile_loot();
+            }
+            if (has_monster_loot || experience)
+            {
+                campaign_->award_experience(champion ? experience : experience_share(experience),
+                                            reward, champion);
             }
             // Treasure the script added to the fight is won with it.
             if (staged_treasure_)
             {
-                award_staged_treasure();
+                award_staged_treasure(!combine_script_experience);
             }
             // A beaten turncoat's gear is the party's, and its record's
             // experience too.
@@ -2781,7 +2791,7 @@ void RolfTourSession::stage_treasure(const EclRequest &request)
     staged_treasure_ = std::move(loot);
 }
 
-void RolfTourSession::award_staged_treasure()
+void RolfTourSession::award_staged_treasure(bool with_experience)
 {
     auto loot = std::move(*staged_treasure_);
     staged_treasure_.reset();
@@ -2802,6 +2812,19 @@ void RolfTourSession::award_staged_treasure()
     for (unsigned award = 2; awarded(loot.reward_id); ++award)
     {
         loot.reward_id = first_award + ":award:" + std::to_string(award);
+    }
+    // Pool's COMBAT runs its post-combat award even with no monsters. The
+    // script's treasure therefore earns experience too, whether it stands
+    // alone or accompanies a fight (EclCombat, DetermineLootExp). Keep its
+    // claim beside this particular script-authorized treasure award.
+    if (with_experience && game() == GoldBoxGame::pool_of_radiance && plays_original_records())
+    {
+        const auto experience = treasure_experience(loot);
+        if (experience)
+        {
+            campaign_->award_experience(experience_share(experience),
+                                        loot.reward_id + ":experience");
+        }
     }
     pending_loot_.push_back(std::move(loot));
     pile_loot();

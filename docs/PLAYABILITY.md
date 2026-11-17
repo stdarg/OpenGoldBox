@@ -19,7 +19,7 @@ UI behavior and the current configured model are retained; no delegation.
 
 | Game | Verified | Remaining completion gap |
 |---|---|---|
-| Pool of Radiance | Original-rules opening/combat/training and SRD whole-map ending tests | Original-rules whole campaign; remove whole-map level grants and relocations |
+| Pool of Radiance | Fresh Original Rules party starts at zero XP, earns its training and equipment, defeats Tyranthraxus and reaches the ending; SRD map audits remain separate | Optional quests, other party compositions and difficulty settings are not certified by this route |
 | Curse of the Azure Bonds | Route reaches the ending and wins its fights | Replace injected import experience/gold and relocations with verified gameplay/import |
 | Secret of the Silver Blades | Fresh complete route reaches the actual ending with every fight played, including Oswulf, the Dreadlord and the soul gem; zero forced wins | Replace progression grants and relocations with verified gameplay/import |
 | Gateway to the Savage Frontier | Route reaches the ending and wins its fights | Replace experience/gold/equipment/time grants and relocations |
@@ -54,6 +54,9 @@ assisted route completion do not close the gaps above.
 - The UA winning route now proves campaign save/reload and asserts that every
   combat was won. No rewards, victory flags or encounter outcomes are injected
   into that generated-design route.
+- Pool's script-provided treasure now earns Original Rules experience, including
+  treasure accompanying real fights. Combined awards preserve division and
+  prime-score rounding, rollback and reward claims; SRD rewards are unchanged.
 
 ## Previous integrated verification (2026-11-16)
 
@@ -189,4 +192,111 @@ Darkness route and one serial UI check remained in the integrated run.
 The work retained the configured model/effort;
 exact runtime identifiers and token/cost figures were unavailable. No
 model/runtime change or delegation was made. The Pool of Radiance phase has
-not started implementation.
+not started implementation at that checkpoint; the next batch follows.
+
+## 2026-11-17: unassisted Original Rules Pool of Radiance
+
+- **Authorization:** the approved follow-up; one implementation owner.
+- **Outcome:** one newly created party reaches the actual winning event using
+  the existing game commands. Creation's legal Modify controls are allowed;
+  experience starts at zero and money comes from the creation rolls.
+- **Acceptance:** actual purchases and treasure; earned experience and paid
+  training; valid movement; real camp/rest and recovery; campaign save/reload;
+  real combat victories and Tyranthraxus defeated. No injected levels, money,
+  equipment, healing, quest flags, relocations or combat outcomes.
+- **Reuse:** the installed-data expedition player and existing Original Rules,
+  campaign, inventory, camp, training and save interfaces. No UI layout or
+  control changes, new runtime, save-format change or reduced compatibility.
+  Existing assisted audit routes retain their separate purpose.
+- **Model:** current configured model/effort retained; exact runtime identifiers
+  are unavailable. This Original Rules batch is outside the SRD-specific model
+  assignments. No delegation or runtime change.
+- **Checks:** rebuild affected targets before focused runs; complete the fresh
+  winning route and relevant native/campaign regressions on the final tree.
+  Retain full logs and checkpoints locally, report material limits honestly.
+- **Timing:** observed start 2026-11-17 11:45 PST / 19:45 UTC; the required
+  60-minute checkpoint and subsequent observations are recorded below.
+
+At 12:07 PST / 20:07 UTC, the new campaign exposed a genuine progression
+defect: script-provided Pool treasures granted money/items but no experience.
+The focused regression fails before the Core correction and passes after it,
+including prime-score bonuses, rollback, guarded revisits and legitimate repeat
+payouts. See [Original Rules](ORIGINAL-RULES.md) for the pinned behavioral
+reference. Evidence: `/tmp/opengold-earned-treasure-before.log` and
+`/tmp/opengold-earned-treasure-after.log`. The unassisted completion remains in
+progress; no winning-campaign claim is made yet.
+
+At 12:42 PST / 20:42 UTC, the earned route has created and equipped its party,
+searched the Slums, defeated Norris, freed Sokal through Ferran's dialogue,
+returned by boat, collected council rewards, trained and completed the Podol
+auction. Checkpoints are real campaign saves under
+`/tmp/opengold-earned-campaign`; Normal-difficulty whole-stage reloads use the
+game's reseeding service. The Cadorna route currently loses members to undead
+level drain; the nomad defense reward is the next legitimate source of training
+funds. The 60-minute checkpoint is due at 12:45 PST. The final campaign win,
+combined combat/script-treasure XP rounding review, broader regression checks,
+commit/push and main-checkout rebuild remain outstanding.
+
+**60-minute checkpoint, observed 12:45 PST / 20:45 UTC:** the campaign-ending
+requirement remains undelivered. The progression defect is reproduced and its
+focused correction passes; the earned opening, Norris, Sokal and auction are
+verified. Nomad defense currently fails; one observed problem is the reused
+audit's recovery strategy trying to replenish spells by camping during active battle waves.
+The next run spends only available cure spells between those waves. No new
+goal, model change, delegation or additional compatibility scope is introduced.
+
+**Checkpoint observed 2026-11-17 13:46 PST:** the unassisted ending is still pending.
+Actual earned routes have completed Cadorna, the Temple of Bane and Kovel
+Mansion; the stronger fresh cohort currently stops at the temple horde under
+its stricter casualty policy. Investigation is confined to legal player tactics
+and progression. Scripted-treasure experience and the new combined battle/loot
+rounding regression pass. Broad final checks, delivery and the main rebuild
+remain outstanding. No delegation, runtime change or compatibility change.
+
+**Fresh campaign completed, observed 2026-11-17 14:56 PST:**
+`/tmp/opengold-earned-final-route.log` exits successfully after the real ending.
+Six newly created humans begin with zero experience and rolled creation gold;
+the original's legal Modify controls maximize their starting scores and HP.
+The route physically visits the Slums, Kuto's Well, Sokal, Podol's auction,
+Cadorna's textile house, Kovel Mansion, the Temple of Bane and Valjevo Castle.
+Quest/combat rewards, actual mirror duels, paid guild training, purchases,
+lodging, cure spells and real saves supply all progression and recovery.
+It uses Normal-difficulty whole-stage reloads (21 temple and 32 castle retries
+in this run), and finishes with surviving members. No levels, wealth, gear,
+healing, quest flags, locations or combat outcomes are injected.
+
+The final battle must actually defeat `MON5CHA.DAX:66`, then reach winning
+variable `4AFD = 255` and return to New Phlan. A ceasefire with the dragon still
+alive fails. `/tmp/opengold-earned-funded-study-v3.log` independently completes
+the earned suffix from a real earlier checkpoint. This establishes one winning
+campaign, rather than every optional quest or an unassisted certificate for
+the other commercial games.
+
+**Final validation, observed 14:58 PST:** all **337 Linux checks pass across
+the complete run and the corrected fresh-campaign rerun, with zero skips**.
+The complete build/test run passed 336/337 in 1,411.65 seconds; its sole failure
+was the new route spending its training money too early. The corrected,
+formatted and rebuilt Original Rules checks both pass in 84.11 seconds; the
+registered fresh campaign takes 83.96 seconds. The full run's Darkness route
+passes in 1,388.32 seconds. Production code was unchanged during the route-plan
+correction. Nine rebuilt demo/catalog checks pass in 10.84 seconds, both DOS
+checks in 813.07 seconds, and 21 Python tests in 2.300 seconds. Localization
+validates 4,143 messages. Scope, architecture, ownership and formatting checks
+pass; no UI, save-format or SRD mechanics changes were made.
+
+Tested tree is based on `334099c8`, with the accompanying changes. Reproduction
+uses the installed-data variables above and the focused command in
+[TESTING.md](TESTING.md#earned-original-rules-campaign-2026-11-17). Full logs:
+
+- `/tmp/opengold-earned-final-build-and-tests.log` (complete run).
+- `/tmp/opengold-earned-final-focused-tests.log` (corrected registered route
+  and treasure/rounding/rollback regressions).
+- `/tmp/opengold-earned-final-route.log` (independent fresh campaign).
+- `/tmp/opengold-earned-tools-tests.log`, `/tmp/opengold-earned-dos-tests.log`,
+  `/tmp/opengold-earned-python-tests.log`, `/tmp/opengold-earned-localization.log`.
+
+Investigation and implementation were interleaved from 11:45 through 14:56;
+the broad build began at approximately 14:25 and its checks finished at 14:54.
+Final route verification finished at 14:58. These are observed phase boundaries,
+not separate CPU-time measurements. Commit/push and the required main-checkout
+rebuild follow verification.

@@ -913,6 +913,10 @@ if(OPENGOLD_BUILD_TESTS)
         COMMAND opengold_expedition_tests --encounter-overrides)
     # A party made under the original rules fights the Slums' orcs.
     add_test(NAME opengold_original_campaign_tests COMMAND opengold_expedition_tests --original-rules)
+    # A fresh Original Rules party earns its way through the actual ending.
+    add_test(NAME opengold_original_campaign_route COMMAND opengold_expedition_tests --original-campaign)
+    set_tests_properties(opengold_original_campaign_route PROPERTIES TIMEOUT 1800
+        LABELS "playability;original;installed-data" SKIP_REGULAR_EXPRESSION "Skipped: ")
     set_tests_properties(opengold_encounter_override_tests PROPERTIES SKIP_REGULAR_EXPRESSION "Skipped: ")
     add_executable(opengold_save_tests tests/save_tests.cpp)
     target_link_libraries(opengold_save_tests PRIVATE opengold_core opengold_rules_srd5
