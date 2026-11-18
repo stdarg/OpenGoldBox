@@ -160,6 +160,37 @@ opening, in having no wilderness, and in reading the one sprite, combat icon
 and creature file for every disk. *Secret* has no portrait files for its
 scripts.
 
+## Earned town opening (2026-11-18)
+
+`opengold_secret_earned_opening` uses creation's actual 200,000 XP per
+single-class PC, starting money and no granted equipment. Priam's real gift
+supplies the first magic arms, armor and ice-storm wand. The party sells its
+unused leather and scale magic armor for 400/412 gp, then buys the armory's
+actual scale armor, ordinary weapons and six mirrors. The store has no plate
+or shields; the earlier assisted route's starting loadout hid that gap.
+
+The armory is entered from `(14,7)` north. Physical visits step in from
+outside: its script ejects the party when the service ends. Marcus's corridor
+is blocked until Black Circle hostility (`4C4D`) is established. Use the
+mayor's portal `(3,0)`, resolve the fixed confrontation at Well `(4,1)` and
+return through `(1,1)`. This requires no dragon or mine quest. Back in town,
+enter the guarded shop from `(13,11)` east, choose Stay and refuse to leave;
+win the guards, then approach Marcus from `(15,11)` north. His actual symbol
+trap and pet battle run, setting `4C2D` to 255.
+
+Gond's temple is entered from `(10,8)` south. Its free temple actions restore
+casualties; original Heal leaves 1d4 HP missing, so normal Fix/cures/rest in
+Priam's house finish recovery. The fresh ten-beat diagnostic wins four battles
+without defeats or deaths and saves all six at full HP with mirrors and
+221,182 XP each. Haste is not in this new mage's book; the opening uses
+actual known spells. No injected rewards, gear, healing, flags or positions
+are used. The fresh registered opening passes in 9.53s; all eight affected
+integrated checks pass with no skips, including the separate legacy ending
+and earned Curse ending. The normal save loader also round-trips the earned
+checkpoint byte-identically. This opening does not certify Secret's later
+quests or ending. See
+[PLAYABILITY](../PLAYABILITY.md) for current traces and delivery.
+
 ## The script host
 
 What *Secret*'s scripts need beyond *Curse*'s (found by walking every map):

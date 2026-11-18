@@ -348,6 +348,9 @@ if(OPENGOLD_BUILD_TESTS)
         SKIP_REGULAR_EXPRESSION "files are not here")
     # Secret of the Silver Blades' story the same way (plan phase 4, step 4).
     add_test(NAME opengold_secret_route COMMAND opengold_gold_box_games_tests --secret-route)
+    add_test(NAME opengold_secret_earned_opening COMMAND opengold_gold_box_games_tests --secret-earned-opening)
+    set_tests_properties(opengold_secret_earned_opening PROPERTIES TIMEOUT 900
+        SKIP_REGULAR_EXPRESSION "files are not here")
     # Pools of Darkness's story the same way.
     add_test(NAME opengold_darkness_route COMMAND opengold_gold_box_games_tests --darkness-route)
     # Gateway to the Savage Frontier's story the same way (plan phase 5, step 4).

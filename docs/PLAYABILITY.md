@@ -23,7 +23,7 @@ UI behavior and the current configured model are retained; no delegation.
 |---|---|---|
 | Pool of Radiance | Fresh Original Rules party starts at zero XP, earns its training and equipment, defeats Tyranthraxus and reaches the ending; SRD map audits remain separate | Optional quests, other party compositions and difficulty settings are not certified by this route |
 | Curse of the Azure Bonds | Fresh Original Rules party earns all three artifacts, equipment, paid advancement and recovery, physically reaches Myth Drannor, defeats Tyranthraxus and shows the actual ending | Optional quests, other party compositions and difficulty settings are not certified by this route |
-| Secret of the Silver Blades | Fresh complete route reaches the actual ending with every fight played, including Oswulf, the Dreadlord and the soul gem; zero forced wins | Replace progression grants and relocations with verified gameplay/import |
+| Secret of the Silver Blades | Fresh earned town opening wins four fights, recovers all six PCs and round-trips its save; the separate assisted complete route reaches the actual ending with every fight played | Replace later progression grants and relocations with verified gameplay/import |
 | Gateway to the Savage Frontier | Route reaches the ending and wins its fights | Replace experience/gold/equipment/time grants and relocations |
 | Pools of Darkness | Fresh whole route and detailed finale replay defeat Gothmenes, reach the ending and restore all six members; zero forced results | Progression assistance and relocations remain |
 | Treasures of the Savage Frontier | Route reaches the ending and wins its fights | Replace starting experience/money and relocations |
@@ -1023,3 +1023,105 @@ unassisted completion evidence. Other commercial routes, Krynn/Buck Rogers
 implementation and arbitrary UA designs remain as scoped above. Automatic
 availability of every winning party member follows all-game winnability.
 Next is Secret's actual starting party and earned progression.
+
+Delivery observed 10:14 UTC: `8bf25e0c` is pushed to `origin/main`; main and
+origin match. The main game is rebuilt/exported and all four installed-data
+post-push checks pass in 19.81s, with no skips: Gold Box units, Godot
+preparation, Curse Original startup and package smoke. Log:
+`/tmp/opengold-curse-earned-ending-main-recheck.log`. The pre-existing GAMES
+edit remains untouched and the dirty-main guard skips the pull. The Curse
+ending claim is released.
+
+### Active next batch: Secret's earned town opening
+
+- Start observed 2026-11-18 10:15 UTC; checkpoint due 11:15 UTC.
+- Authorization: resumed all-twelve-games task remains active, with automatic
+  winning-character availability following all-game winnability. No questions
+  or delegation. Outcome: start Secret with its actual newly created party,
+  collect Priam's original gift, equip through real treasure/shop actions,
+  obtain the party's mirrors, physically visit Marcus's house and win its
+  actual pet encounter, use Gond's real temple services as needed, and save
+  an idle town checkpoint ready for further earned progression.
+- Acceptance: six PCs alive and not petrified, at least one standing, actual
+  opening treasure and normal shop/temple/encounter commands, zero retained
+  battle defeats, and a successfully reloaded town save. Creation's actual
+  starting XP/resources are allowed; no injected advancement, money, gear,
+  healing, flags, positions or outcomes. The Well, mines, later quests and
+  final ending follow; the existing assisted complete route remains separate.
+- Reuse/model: existing Original creation, treasure, inventory, shop, temple,
+  battle player and physical walker. Same configured Codex, no requested
+  switch, model/effort override or agents. Original Rules work outside SRD
+  model assignments. No new UI/runtime or save-format/history changes planned.
+- Checks: focused earned opening and round-trip, fresh registered milestone,
+  affected Secret/Gold Box neighbors, then commit/push and required main
+  rebuild/installed-data checks. Baseline: `8bf25e0c`, with prior broad coverage
+  and the delivered Curse verification recorded above.
+
+Observed 10:30 UTC: the first earned shop replay collects Priam's actual
+gift, sells unused leather/scale magic armor for 400/412 gp, and buys stocked
+scale armor, ordinary weapons and six mirrors, leaving 502 gp. The armory
+does not stock the old test's granted plate/shields. Physical building visits
+must step in from outside because their scripts eject the party on exit.
+The created mage lacks Haste; the opening now prepares known Bless/Prayer
+and actual attack/cure spells instead of requesting an unknown spell.
+
+The physical approach also exposes a necessary prerequisite to the frozen
+Marcus outcome: his guarded shop only offers Stay when `4C4D` is nonzero.
+The ruins' Black Circle encounter sets that cell through actual combat
+(`ECL1:32 9755h–975Dh`). One bounded prerequisite is active: leave by the
+normal town gate, meet a real ruins patrol, return and continue to Marcus.
+This is covered by the user's all-game authorization and no-questions
+instruction; no new approval is requested. The Well/mines remain deferred.
+No flags or rewards will be injected, and the original six-alive town-save
+acceptance remains unchanged. Research and route checks are still underway.
+
+Observed 10:39 UTC: source inspection narrows that same prerequisite to a
+fixed Well encounter near the return gateway (`ECL1:33 86C2h–86DDh`). Ordinary
+ruins wandering is not the dependable flag-setting event; entering the mines
+would be a much larger detour. The active prerequisite now uses the mayor's
+actual portal, the nearby Black Circle encounter and the actual return portal,
+then resumes Marcus. The Well's dragon/oracle and mine quests stay deferred.
+This explicitly adjusts the preliminary ruins route, without adding another
+active prerequisite or weakening the original acceptance.
+
+Observed 10:52 UTC: a fresh earned opening passes all ten beats: four actual
+victories, zero defeats, all six alive/not petrified and back at full HP in
+Priam's house `(3,3)`. Each has a mirror and 221,182 earned/creation XP;
+creation supplies 200,000, not the legacy route's repeated million-XP awards.
+The party uses the actual initial gift and ordinary armory stock funded by
+the 400/412 gp sales; no 5,000 gp or enchanted starting gear is granted.
+The fixed Well confrontation, guarded corridor and Marcus encounter all run.
+The same single prerequisite is complete, and the route returns to the
+original town outcome; the dragon, oracle and mines remain deferred.
+
+The temple is approached from `(10,8)` south. Approaching it through the
+wrong side repeatedly reentered its service event when the script ejected
+the party. Gond's real free Heal leaves 1d4 HP missing, as the original rules
+specify; actual Fix/cure/rest actions in town finish recovery. The earned
+checkpoint is `/tmp/opengold-secret-opening-earned.sav`; full fresh trace:
+`/tmp/opengold-secret-opening-fresh.log`. Terminal-only reload is a separate
+round-trip probe, since the milestone validator requires an observed battle.
+
+The shared physical walker now has a campaign-neutral name and earned
+routes explicitly reject direct time advancement/area-entry fields as well
+as injected rewards, healing, flags and outcomes. LLVM-23 format/braces passes;
+the final game build and eight affected integrated checks are running under
+`/tmp/opengold-secret-opening-integrated.log`. No production, rules, UI or
+save-format/history changes have been needed. This is an opening milestone,
+not Secret's ending; the all-game and later winner-availability objective remains.
+
+Observed 11:03 UTC: all eight affected integrated checks pass in 509.74s,
+with no skips. The fresh registered earned opening passes in 9.53s; the
+legacy Secret ending passes in 382.65s and the fresh earned Curse ending
+passes in 509.73s. Gold Box units, all-map Secret walk, Original Godot
+startup, its preparation fixture and package smoke also pass. Tested tree:
+`8bf25e0c` plus this batch. Full logs: `/tmp/opengold-secret-opening-integrated.log`
+and `/tmp/opengold-secret-opening-integrated-ctest.log`. The normal loader
+reencodes `/tmp/opengold-secret-opening-earned.sav` byte-identically as
+`/tmp/opengold-secret-opening-roundtrip.sav`; the terminal-only probe has
+no newly observed fight, so it is separate from the milestone validator.
+Scope/architecture review: tests and records only, value-owned resources, no
+production/rules/UI changes or reduced save history. Implementation/research
+and focused verification took approximately 39 minutes; formatting/build and
+final integration completed by minute 48. Tokens/cost are unavailable.
+The delivered outcome is the town opening, not a whole Secret campaign.
