@@ -287,6 +287,30 @@ registered route wins 42 battles without retained defeats and passes in
 separate legacy full ending (403.21s). Other staff pieces and an earned
 campaign ending remain separate completion gaps.
 
+## Earned restored Staff of Oswulf (2026-11-18)
+
+`opengold_secret_earned_staff` continues from the first piece through the
+actual lift, mine passages and searches on levels 2–8. All eight earned
+piece bits (`4C84=255`) allow Derf to restore the staff (`4C86=1`). The
+existing passage plan's necessary searches are preserved; every move and
+quest interaction is played without relocating the party or injecting rewards.
+
+The route recruits Vala through her actual join dialogue. The milestone still
+requires six PCs with their earned XP and mirrors, and checks the health of
+all party members; the NPC retains her original level and XP. Counting her as
+a seventh PC incorrectly rejected the first successful quest replay. The
+corrected validator preserves the companion rather than dismissing her.
+
+The earned continuation wins thirty battles with zero retained defeats and
+finishes with all six PCs and Vala at full HP in the temple, map 50/script 52
+at `(14,3)`. The normal loader reencodes that seven-member save byte-identically.
+An actual deeper-mine checkpoint on map 48/script 50 also round-trips identically,
+exercising the corrected shared-map metadata during real play. The fresh
+993-beat registered route wins 72 battles without retained defeats and passes
+in 168.70s. All ten affected integrated checks pass with no skips. The lower
+mine, crevasses, castle and final campaign ending
+remain separate completion gaps.
+
 ## The script host
 
 What *Secret*'s scripts need beyond *Curse*'s (found by walking every map):

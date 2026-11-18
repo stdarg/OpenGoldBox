@@ -23,7 +23,7 @@ UI behavior and the current configured model are retained; no delegation.
 |---|---|---|
 | Pool of Radiance | Fresh Original Rules party starts at zero XP, earns its training and equipment, defeats Tyranthraxus and reaches the ending; SRD map audits remain separate | Optional quests, other party compositions and difficulty settings are not certified by this route |
 | Curse of the Azure Bonds | Fresh Original Rules party earns all three artifacts, equipment, paid advancement and recovery, physically reaches Myth Drannor, defeats Tyranthraxus and shows the actual ending | Optional quests, other party compositions and difficulty settings are not certified by this route |
-| Secret of the Silver Blades | Fresh earned opening, Well/amulet/headquarters quests, Tyr's Ring and first staff piece route wins 42 fights, recovers all six PCs and round-trips its save; the separate assisted complete route reaches the actual ending with every fight played | Replace later progression grants and relocations with verified gameplay/import |
+| Secret of the Silver Blades | Fresh earned opening and quests through the restored Staff of Oswulf win 72 fights, recovers all six PCs and round-trips its save; the separate assisted complete route reaches the actual ending with every fight played | Replace later progression grants and relocations with verified gameplay/import |
 | Gateway to the Savage Frontier | Route reaches the ending and wins its fights | Replace experience/gold/equipment/time grants and relocations |
 | Pools of Darkness | Fresh whole route and detailed finale replay defeat Gothmenes, reach the ending and restore all six members; zero forced results | Progression assistance and relocations remain |
 | Treasures of the Savage Frontier | Route reaches the ending and wins its fights | Replace starting experience/money and relocations |
@@ -1473,3 +1473,83 @@ focused probes, the reproduced save failure, fix/regressions, final application
 build and seventeen checks. Tokens/cost unavailable. Tyr's Ring, first staff
 piece and usable mine save are delivered outcomes; remaining staff pieces,
 Secret's earned ending and the overall all-game objective stay open.
+
+Delivery observed 12:12 UTC: `3414a31b` is pushed to `origin/main`, which
+matches the main checkout. Main is rebuilt/exported and six installed-data
+post-push checks pass in 22.18s with no skips: Gold Box units, Godot preparation,
+per-game saves, both Secret rules startups and package smoke. Log:
+`/tmp/opengold-secret-first-staff-main-recheck.log`. The existing GAMES edit
+remains untouched, so the dirty-main rule skips the pull. First-staff claim
+is released.
+
+### Active next batch: Secret's restored Staff of Oswulf
+
+- Start observed 2026-11-18 12:13 UTC; checkpoint due 13:13 UTC.
+- Authorization/status: resumed all-twelve-game task remains active; no
+  questions or delegation. Outcome: continue the earned mine save through
+  levels 2–8, find the seven remaining staff pieces and return to Derf for
+  actual restoration of Oswulf's staff.
+- Acceptance: six PCs alive/not petrified, at least one standing, all eight
+  earned staff bits `4C84=255`, restored-staff flag `4C86=1`, zero retained
+  defeats, actual mine movement/digging/lift/quest and recovery commands,
+  and a normal reloadable idle checkpoint. A fresh registered whole route
+  must include all earlier earned milestones. No injected advancement,
+  money, gear, healing, flags, time, positions or outcomes. Lower mine levels,
+  crevasses/castle/finale remain deferred. Preserve UI/runtime, Core/rules
+  boundaries and supported save history.
+- Reuse/model: existing Original quests, physical walker, mine passage plan,
+  battle player, healing/services and corrected shared-map save metadata.
+  Same configured Codex, no requested model/effort switch or override, no
+  agents; Original Rules work outside SRD assignments. Report concrete
+  blockers; do not change runtime settings incidentally.
+- Verification: focused earned suffix, normal save reload, fresh registered
+  restored-staff milestone and affected checks; own commit/push followed by
+  main build/installed-data checks. Baseline `3414a31b`; starting save
+  `/tmp/opengold-secret-first-staff-outer-earned.sav`. Tokens/cost unavailable.
+
+Observed 12:19 UTC: the earned suffix physically traverses the remaining mine
+levels and earns all eight staff pieces. Derf restores the actual staff and
+the party finishes 993 beats into the full route at temple map 50/script 52
+`(14,3)`, with thirty suffix victories and zero retained defeats. All six PCs
+are at full HP; Vala, recruited through her actual dialogue, also has 100/100
+HP. PC XP: 344,247 / 344,247 / 344,247 / 335,332 / 340,120 / 340,120;
+levels 8 / 8 / 9 / 9 / 9 / 10. Vala is an original level-13 NPC with 9,641 XP.
+The first exit 1 was solely the milestone validator treating that companion
+as a seventh PC and applying PC XP/mirror requirements to her. It now counts
+six PCs separately while retaining health checks for everyone. No companion,
+experience, equipment or rules state is changed to satisfy the validator.
+
+Observed 12:25 UTC: the actual seven-member staff save
+`/tmp/opengold-secret-staff-earned.sav` reloads and reencodes byte-identically
+as `/tmp/opengold-secret-staff-roundtrip.sav`. The real deeper checkpoint
+`/tmp/opengold-secret-staff-650.sav`, map 48/script 50 `(10,1)`, also round-trips
+byte-identically (`/tmp/opengold-secret-staff-level5-roundtrip.sav`; filename
+is a diagnostic label, not an assertion of the floor number). These terminal-only
+probes have no observed new fights, so milestone exits 1 remain separate from
+the successful byte assertions. Logs: `/tmp/opengold-secret-staff-suffix.log`,
+`/tmp/opengold-secret-staff-reload.log`,
+`/tmp/opengold-secret-staff-level5-reload.log`. LLVM-23 formatting passes;
+final build and ten affected checks are running in
+`/tmp/opengold-secret-staff-integrated.log`. No production/rules/UI or save
+format/history changes have been needed in this batch. Fresh verification
+and delivery remain pending.
+
+Observed 12:28 UTC: all ten integrated checks have passed in 168.71s, with
+no skips. The fresh 993-beat restored-staff route passes in 168.70s: 72
+victories, zero retained defeats, all six PCs plus Vala alive at full HP at
+map 50/script 52 `(14,3)`. PC XP/levels and Vala match the earned suffix
+recorded above. The final result checks all eight piece bits and the actual
+restored-staff flag. Fresh first-staff (140.36s), headquarters (136.23s),
+all-map Secret walk (56.48s), Gold Box units, generic saves, Original Godot
+startup/preparation, per-game saves and package smoke pass as well.
+
+Evidence: `/tmp/opengold-secret-staff-integrated.log`,
+`/tmp/opengold-secret-staff-integrated-ctest.log`,
+`/tmp/opengold-secret-staff-integrated-fresh.log`. Tested tree: `3414a31b`
+plus this batch. Scope/architecture review passes: tests/config/records only,
+value-owned state, no new production/rules/UI behavior or save-history change.
+Elapsed to observed final verification about fifteen minutes, including the
+focused suffix, NPC-aware validator correction, formatting/build, save probes
+and ten checks. Tokens/cost unavailable. The complete staff/reloadable checkpoint
+outcome is verified. Secret's lower mine, crevasses, castle and earned ending
+remain before that campaign's whole completion certificate.

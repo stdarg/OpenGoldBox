@@ -1414,7 +1414,8 @@ enum class SecretProgress
     well,
     eldamar,
     headquarters,
-    first_staff
+    first_staff,
+    staff
 };
 
 std::vector<RouteBeat> secret_earned_opening()
@@ -1748,10 +1749,24 @@ std::vector<RouteBeat> secret_earned_route(SecretProgress progress)
         check(first_piece != story.end(), "The established route reaches the first staff piece");
         beats.insert(beats.end(), ring + 1, first_piece + 1);
         beats.back().expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C84, 1};
+        if (progress >= SecretProgress::staff)
+        {
+            const auto restored =
+                std::find_if(first_piece + 1, story.end(),
+                             [](const RouteBeat &beat)
+                             {
+                                 return beat.expect_cell && beat.expect_cell->first == 0x4C86;
+                             });
+            check(restored != story.end(), "The established route restores Oswulf's staff");
+            beats.insert(beats.end(), first_piece + 1, restored + 1);
+        }
         for (auto at = first_mine_beat; at < beats.size(); ++at)
         {
             auto &beat = beats[at];
-            beat.searching = false;
+            if (!beat.searching)
+            {
+                beat.searching = false;
+            }
             beat.cure_first = true;
             beat.cure_to_full = true;
             beat.reloads_until_won = std::max(beat.reloads_until_won, 600U);
@@ -14276,17 +14291,23 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     continue;
                 }
                 const auto &member = party->member(id);
+                healthy = healthy && !member.vitals.dead &&
+                          member.vitals.description != "Turned to stone.";
+                if (!member.npc_source.empty())
+                {
+                    continue;
+                }
                 ++pcs;
-                healthy = healthy && member.npc_source.empty() && !member.vitals.dead &&
-                          member.vitals.description != "Turned to stone." &&
-                          member.experience >= 200000 &&
+                healthy = healthy && member.experience >= 200000 &&
                           std::ranges::any_of(member.character.inventory().items(),
                                               [](const opengold::InventoryItem &item)
                                               {
                                                   return item.original_type == mirror_type;
                                               });
             }
-            std::cout << (secret_progress >= SecretProgress::first_staff
+            std::cout << (secret_progress >= SecretProgress::staff
+                              ? "Earned Secret restored staff: "
+                          : secret_progress >= SecretProgress::first_staff
                               ? "Earned Secret first staff piece: "
                           : secret_progress >= SecretProgress::headquarters
                               ? "Earned Secret headquarters: "
@@ -14296,9 +14317,10 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                       << fights_fought << " fights, " << fights_defeated
                       << " defeats; this is not a campaign win.\n";
             return played && pcs == 6 && healthy && someone_standing && session.can_leave() &&
-                   end.area_id == (secret_progress >= SecretProgress::first_staff ? 48U
-                                   : secret_progress >= SecretProgress::eldamar   ? 33U
-                                                                                  : 16U) &&
+                   end.area_id == (secret_progress >= SecretProgress::staff         ? 50U
+                                   : secret_progress >= SecretProgress::first_staff ? 48U
+                                   : secret_progress >= SecretProgress::eldamar     ? 33U
+                                                                                    : 16U) &&
                    session.script_variable(opengold::por::EclAddress{0x4C2D}) == 255 &&
                    fights_fought >= 1 && fights_defeated == 0 &&
                    (secret_progress < SecretProgress::well ||
@@ -14309,7 +14331,10 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     session.script_variable(opengold::por::EclAddress{0x4C98}) == 255) &&
                    (secret_progress < SecretProgress::first_staff ||
                     (session.script_variable(opengold::por::EclAddress{0x4C85}) == 1 &&
-                     (session.script_variable(opengold::por::EclAddress{0x4C84}) & 1) != 0));
+                     (session.script_variable(opengold::por::EclAddress{0x4C84}) & 1) != 0)) &&
+                   (secret_progress < SecretProgress::staff ||
+                    (session.script_variable(opengold::por::EclAddress{0x4C84}) == 255 &&
+                     session.script_variable(opengold::por::EclAddress{0x4C86}) == 1));
         }
         if (sewers)
         {
@@ -14680,6 +14705,13 @@ int main(int argc, char **argv)
         {
             return walk_census(GoldBoxGame::secret_of_the_silver_blades, true, CurseProgress::none,
                                SecretProgress::first_staff)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--secret-earned-staff")
+        {
+            return walk_census(GoldBoxGame::secret_of_the_silver_blades, true, CurseProgress::none,
+                               SecretProgress::staff)
                        ? 0
                        : 1;
         }
