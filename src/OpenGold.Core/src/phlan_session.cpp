@@ -4766,14 +4766,22 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         // gives each call's.
         const auto address = request.instruction->address;
         const bool volley = !(arg(0) & 0x80) && !(arg(4) & 0x80);
-        const bool chosen_member = (arg(0) & 0xC0) == 0x80 && (arg(4) & 0x87) == 0x80;
+        // Curse's chosen-member calls name a save as category plus one;
+        // zero means none (CMD_Damage). The tower's explosive runes use
+        // 90h/84h: bit 10h still deals full damage when the save succeeds.
+        const bool curse_chosen = game() == GoldBoxGame::curse_of_the_azure_bonds &&
+                                  (arg(0) & 0xC0) == 0x80 && (arg(4) & 0x80) &&
+                                  (arg(4) & 7) <= original_save_abilities.size();
+        const bool chosen_member =
+            ((arg(0) & 0xC0) == 0x80 && (arg(4) & 0x87) == 0x80) || curse_chosen;
         const bool random_member =
             (arg(0) & 0xD0) == 0x80 && !(arg(4) & 0x80) && (arg(4) & 7) < original_save_abilities.size();
         // Every member, each saving unless arg(0) has 0x20 (Kovel Mansion's gas).
-        // In Secret 0x10 hurts a member who saves as much as one who fails
-        // (eclvm EclDamage), so no save is rolled.
-        const bool hurt_anyway =
-            game() == GoldBoxGame::secret_of_the_silver_blades && (arg(0) & 0x10) != 0;
+        // In Curse and Secret 0x10 hurts a member who saves as much as one
+        // who fails (CMD_Damage / EclDamage); the save cannot avoid damage.
+        const bool hurt_anyway = (game() == GoldBoxGame::curse_of_the_azure_bonds ||
+                                  game() == GoldBoxGame::secret_of_the_silver_blades) &&
+                                 (arg(0) & 0x10) != 0;
         const bool whole_party = (arg(0) & 0xC0) == 0xC0 && (!(arg(0) & 0x10) || hurt_anyway) &&
                                  (arg(4) & 7) < original_save_abilities.size();
         if (!campaign_ || (!volley && !chosen_member && !random_member && !whole_party))
@@ -4831,6 +4839,14 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             }
             else
             {
+                if (curse_chosen && (arg(4) & 7) != 0 && !(arg(0) & 0x10))
+                {
+                    const auto save = (arg(4) & 7) - 1;
+                    harm.save_ability = original_save_abilities[save];
+                    harm.save_dc = original_save_dc - static_cast<int>(arg(0) & 0x1F);
+                    harm.original_save = static_cast<int>(save);
+                    harm.original_save_modifier = static_cast<int>(arg(0) & 0x1F);
+                }
                 const auto id = campaign_->state().slots.at(selected_character_.index);
                 if (!id)
                 {

@@ -3,10 +3,12 @@
 ## Acceptance and scope
 
 The user authorized fixing all discovered Linux test and playability errors,
-including pre-existing errors. Scope is the seven supported games using the
-installations in `/home/edmond/GoldBox`. Krynn and Buck Rogers are not supported
-yet; arbitrary third-party Unlimited Adventures designs are not certified by
-one generated test design.
+including pre-existing errors. The completion objective covers all twelve Gold
+Box games installed in `/home/edmond/GoldBox`. The seven currently supported
+games are listed below; the three Krynn and two Buck Rogers games still need
+implementation. Arbitrary third-party Unlimited Adventures designs are not
+certified by one generated test design. Winning-character availability in the
+next game follows certification of every game, as requested by the user.
 
 An unassisted completion requires an actual winning event through player
 commands, earned experience/equipment or a verified import, physically valid
@@ -20,7 +22,7 @@ UI behavior and the current configured model are retained; no delegation.
 | Game | Verified | Remaining completion gap |
 |---|---|---|
 | Pool of Radiance | Fresh Original Rules party starts at zero XP, earns its training and equipment, defeats Tyranthraxus and reaches the ending; SRD map audits remain separate | Optional quests, other party compositions and difficulty settings are not certified by this route |
-| Curse of the Azure Bonds | Assisted ending route wins its fights; fresh earned opening, first bond and Hap now verified | Replace injected import experience/gold and relocations with verified gameplay/import |
+| Curse of the Azure Bonds | Assisted ending route wins its fights; fresh earned opening through second-bond recovery verified | Extend earned travel/progression through Moander, Zhentil Keep, Myth Drannor and the actual ending |
 | Secret of the Silver Blades | Fresh complete route reaches the actual ending with every fight played, including Oswulf, the Dreadlord and the soul gem; zero forced wins | Replace progression grants and relocations with verified gameplay/import |
 | Gateway to the Savage Frontier | Route reaches the ending and wins its fights | Replace experience/gold/equipment/time grants and relocations |
 | Pools of Darkness | Fresh whole route and detailed finale replay defeat Gothmenes, reach the ending and restore all six members; zero forced results | Progression assistance and relocations remain |
@@ -509,3 +511,128 @@ Investigation/implementation ran 04:30–04:43, final checks 04:43–04:47.
 One earned Hap outcome is delivered; no additional entire game is certified.
 The next outcome is paid advancement and the path through the caves/tower to
 the second bond, retaining earned progression and actual travel.
+
+
+Delivery: `f1e9f645` pushed to `origin/main`; the affected target rebuilds and
+the fresh Hap check passes there again in 108.43s. Pre-existing GAMES edits
+remain untouched and prevent the requested main pull.
+
+### Verified: paid advancement and second bond
+
+- Start observed 2026-11-18 04:52 UTC; checkpoint due 05:52 UTC.
+- Outcome: train the earned Hap party through actual halls, return to the
+  caves/tower, release the second bond and defeat Dracandros for the Helm.
+- Acceptance: six surviving PCs; paid eligible advancement, legal player paths
+  and original events; tower flags `4C59 = 1` and `4C60 = 1` after victory.
+  No injected rewards, healing, positions, flags or results. Further bonds and
+  ending are later batches; no new UI, save format or SRD changes.
+- Reuse/model: existing original-rules services, earned route and verified
+  twenty-nine-beat Hap save; same configured Codex, no delegation or switch.
+- Checks: suffix from the real save, fresh registered route and affected earned
+  routes, creation/format/save/census regressions before commit/push.
+
+
+Observed 2026-11-18 05:45 UTC: paid Shadowdale advancement and the real cave/
+roof route pass from the earned prefix, with all six PCs at level 6. Training
+must precede the barn: leaving Hap destroys Drow weapons, so the final patrol
+and barn replace them after returning. Actual troll loot supplies the mage's
+bracers. The stair descent exposed two unsupported Curse DAMAGE forms:
+selected `90h/84h` (explosive runes) and whole-party `D0h/00h` (the next trap).
+The first has a failing synthetic reproduction, then a passing focused fix;
+the real second trap independently reproduces the remaining failure. Curse's
+reconstruction (`coab`, revision `9dc46f1`, `engine/ovr003.cs` CMD_Damage)
+confirms that bit `10h` keeps full damage even on a save, unlike the later
+256-color engines. Core decodes these forms through existing rules hazards;
+no damage arithmetic moves into Core. Whole-party coverage is rebuilding.
+The second-bond acceptance and 05:52 checkpoint remain unchanged.
+
+
+60-minute batch checkpoint, observed 2026-11-18 05:52 UTC: the paid advancement,
+caves, roof and complete four-stair descent are reached legally with six
+surviving level-6 PCs. Both discovered DAMAGE blockers now pass synthetic
+coverage and their real tower events. Dracandros is not yet defeated: the
+unprepared and first warded boss attempts lose. Final preparation now takes
+place at the courtyard door and replenishes planned spells after interruptions;
+its Haste casts successfully, but the boss still defeats this party. The
+cluebook recommends fourth-level Ice Storm or breaking the wizard's sight;
+legal tactics/advancement remain under investigation. No whole additional game
+is certified, and winning-character carryover has not begun. Same configured
+Codex, no delegation, UI, SRD or save-format changes. The acceptance remains
+six survivors plus Helm/Dracandros flags, with no injected progression/results.
+
+
+Observed 2026-11-18 05:59 UTC: a legal manual-tactic replay defeats Dracandros
+and gains his actual loot, with three PC deaths. The six-alive endpoint remains
+required. The route now continues through the existing secret passage and
+Temple of Sune rather than treating those deaths as permanent exclusions.
+It separately counts actual battle defeats and fights with casualties; the
+previous `fights_lost` counter conflated them. No actual defeat is accepted.
+The first exit attempt is defeated by remaining wanderers before reaching the
+temple; resting at the cleared courtyard before travel is rebuilding. Boss
+flags and a wounded/three-dead roster are verified in the actual sixty-one-beat
+save `/tmp/opengold-curse-temple-route-61.sav`; this is not a passing endpoint.
+
+
+Observed 2026-11-18 06:06 UTC: the recovery suffix passes from the actual
+sixty-two-beat return save. The general store at (2,5) west identifies the old
+bracers for 200 gp and buys them for 6,750 gp. Sune then receives 5,500 gp for
+each of three Raise Dead services. All six PCs finish alive, the two boss/Helm
+flags pass, and the actual sixty-four-beat format-53 save exists at
+`/tmp/opengold-curse-second-bond-all-six.sav`. This closes the suffix's recovery
+gap without reducing the six-alive acceptance. Fresh complete verification,
+format checks, affected regressions and the game rebuild follow before delivery.
+
+
+Observed 2026-11-18 06:21 UTC: the formatted rebuilt tree based on `f1e9f645`
+passes **24/24 focused checks, zero skips**, in 379.45s. Fresh second-bond
+progression wins 47 real fights, with no battle defeat and one fight costing
+three lives; paid Sune services return all six PCs alive. Its registered check
+takes 264.43s. First bond (120.20s), Hap (151.56s), sewers (52.97s), the existing
+assisted ending route, damage/creation/rules, save/rollback/camp, shop/sale,
+temple/training/census and Godot Curse startup checks pass. The game is exported
+through `./build.sh`; no C++/CMake inputs changed after the final rebuild.
+
+The full repository suite is being covered without repeating the 24 completed
+checks: 317 remaining tests run against those same binaries. The exact name
+sets are in `/tmp/opengold-curse-suite-coverage.json`; focused build/test output
+is `/tmp/opengold-curse-second-bond-integrated.log`, full focused traces are
+`/tmp/opengold-curse-second-bond-focused-ctest.log`, and the remaining run is
+`/tmp/opengold-curse-second-bond-remaining-suite.log`. A separate read-only
+inventory finds 24 DAMAGE calls in all Curse scripts, using 13 constant forms;
+all are accepted by the current dispatcher. This is no claim of an additional
+whole-game completion or of winning-character carryover.
+
+
+Final integrated verification observed 2026-11-18 06:37 UTC: **341/341 unique
+registered checks pass, zero failures and zero skips**, including 171 Godot
+checks. The remaining 317 complete in 1,253.65s; Darkness's ending route takes
+1,237.97s, Treasures' map walk 1,064.10s, and the final serial Slums UI check
+8.73s. The name-set comparison against `ctest --show-only=json-v1` proves the
+focused 24 plus remaining 317 cover every registered check. Remaining full
+traces are saved in `/tmp/opengold-curse-second-bond-remaining-ctest.log`.
+
+The tested working tree is based on `f1e9f645`, with this commit's C++/CMake
+changes; only verification documentation changed after rebuilding. Scope,
+architecture, RAII, save compatibility and staged diff checks pass. The
+repository's LLVM-23 format/braces hook passes. The export completes; its
+nonfatal Godot editor window/debugger diagnostics do not reproduce in the
+packaged-game smoke check or the 171 runtime checks.
+
+To repeat the complete build and registered coverage in one invocation:
+
+```bash
+OPENGOLD_GOLDBOX_DIR=/home/edmond/GoldBox OPENGOLD_GAME_DIR=/home/edmond/GoldBox/POOLRAD JOBS=8 ./build.sh --test-all
+```
+
+The actual run first used `./build.sh --test=original_rules_tests,original_creation_tests,original_modify_tests,original_combat_tests,gold_box_games_tests,curse_route,curse_sewers,curse_first_bond,curse_hap,curse_second_bond,game_census,ecl_tests,kutos_well_tests,combat_rollback_tests,campaign_rest_tests,campaign_recovery_tests,original_campaign_tests,save_tests,shop_sale_tests,shop_data_tests,temple_tests,training_hall_tests,godot_default_party_curse_original`,
+then `ctest --test-dir build/linux -j8 --output-on-failure --exclude-regex`
+with the anchored union of the 24 passed names in the coverage JSON above.
+Both used the installed-data environment shown above and the same binaries.
+
+Observed phases: investigation/implementation 04:52–06:06, formatting/review
+06:06–06:07, integrated build/focused checks 06:07–06:15, remaining suite
+06:15–06:37 UTC. The 05:52 checkpoint was recorded on time. Same configured
+Codex, no model/effort override or delegation; cost/token data unavailable.
+One earned second-bond outcome and its two engine blockers are delivered;
+no additional whole game is certified. Next is earned advancement and Moander,
+with all twelve games and subsequent winning-character availability still open.

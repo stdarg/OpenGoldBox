@@ -57,6 +57,23 @@ party with what it carries, as Alias and Dragonbait leave at the Pit of
 Moander's way out; its slot stays empty. DESTROY ITEMS takes every item of a
 type from the party. FIND SPECIAL is not run yet.
 
+### Script damage
+
+The tower's explosive runes select the reader with `DAMAGE A0h,6,4,6,80h`
+and other healthy members with `90h,6,4,6,84h`; the next stair trap uses
+`D0h,3,6,3,00h` for the whole party. These forms must complete rather than
+roll back the event. In Curse's
+[CMD_Damage](https://github.com/simeonpilgrim/coab/blob/9dc46f1d5911710fb2fcb7a9c0ec0ef74264d17c/engine/ovr003.cs#L1595),
+the chosen-member form's low save category is one-based (zero means none).
+Bit `10h` keeps full damage even after a save; the later engines' half-damage
+interpretation does not apply. Core translates the operands into existing
+rules hazards; the selected rules module resolves saving throws and damage.
+Synthetic event tests exercise chosen and whole-party forms, successful and
+failed original saves, no-save damage and unaffected nonselected members.
+A read-only inventory of all installed Curse scripts finds 24 DAMAGE calls
+using 13 constant operand forms; all pass the dispatcher's form checks after
+this correction (`/tmp/opengold-curse-damage-inventory.txt`).
+
 ### Script memory
 
 Scripts read and write the game through numbered cells. *Curse* moved
@@ -439,3 +456,42 @@ verified at `/tmp/opengold-curse-earned-hap-barn.sav`. The full fresh registered
 all six PCs at full HP and the same XP, and passes its neighboring regressions
 (2026-11-18, working tree based on `0cd46cbd`).
 This does not certify the caves, Dracandros or the campaign ending.
+
+
+### Earned second bond and recovery (2026-11-18)
+
+`opengold_curse_second_bond` (`opengold_gold_box_games_tests --curse-second-bond`)
+extends the earned opening through paid Shadowdale advancement, the caves,
+Crimdrac, the roof's dragon parley, four actual downward stairs and Dracandros.
+Training occurs after four Hap patrols and before the barn: leaving Hap destroys
+Drow weapons, so the final patrol and barn replace them after the party returns.
+Permanent troll-lair bracers protect the mage. No rewards, movement, quest flags,
+healing or battle outcomes are injected.
+
+The tower stairs are (3,1) north, (5,4) west, (14,1) north and (9,12) west.
+Their original events, including the burly guard, illusion, explosive runes and
+spike trap, complete normally. The two DAMAGE forms documented above formerly
+rolled these events back. The party prepares at (4,12), outside the courtyard:
+actual Resist Fire, Enlarge, Bless, Prayer and Haste spells. Interrupted camps
+replenish the planned spells before proceeding. The boss is entered by one
+southward step, avoiding an unnecessary second look after victory.
+
+Dracandros can be beaten at level 6 with casualties. The route reloads actual
+combat attempts, takes his real treasure, rests, uses the secret passage at
+(7,15) east and returns to Hap. The general store is reached from (2,5) west.
+The mage pays 200 gp to identify the older bracers and sells them for 6,750 gp,
+keeping Dracandros's stronger pair. This pays the Temple of Sune's 5,500 gp
+Raise Dead fee for each of the three casualties. The temple is entered from
+(3,8) west. Recovery uses the same ID/sale and temple services as the game UI.
+
+Acceptance requires six living PCs, earned XP and paid advancement, actual
+Dracandros victory and Helm flags (`4C60 = 1`, `4C59 = 1`), and zero battle
+defeats. Fights with casualties are counted separately; death followed by a
+paid resurrection does not turn a won battle into a defeat. The verified
+suffix ends with all six alive in Hap and exports the sixty-four-beat format-53
+checkpoint `/tmp/opengold-curse-second-bond-all-six.sav`. The fresh registered
+milestone passes in 264.43s: 47 real victories, no defeats, one fight with three
+casualties, and all six PCs alive after recovery. The two paladins and mage end
+at 120,502 XP; the ranger and clerics, who died in the boss fight, have 106,648.
+The game is rebuilt and all 341 registered checks pass across the focused
+24 and remaining 317 checks, including 171 Godot checks, with zero skips. This is the second bond, not the campaign ending.
