@@ -577,3 +577,36 @@ whole-milestone run passes in 431.64s with 59 retained victories, zero defeats
 and three casualty fights. Its earned 133-beat save independently reloads and
 passes endpoint acceptance. Ranger also reaches level 8. This is not a
 campaign-ending certificate; see the delivery record for neighboring checks.
+
+### Earned Shrine and Dexam route (2026-11-18)
+
+Olive's secret entrance retains map 32 while switching to script 33. The
+loader now records that shared pairing: an actual earned Shrine save formerly
+failed to reload with `Saved district and script disagree`. Installed-data
+round-trip coverage now exercises both this pairing and Pit map 17/script 18.
+Existing format-53 saves work without changing the serialization format.
+
+The reachable Dimswart cell is `(7,15)`, south of Olive's entry `(7,14)`.
+The assisted route's `(1,7)` instance is in disconnected geometry. Prepare in
+that quiet cell, then physically follow the hooded woman at `(4,10)` into
+the Caves of the Beholder. Her transfer and Dexam's initial confrontation run
+normally. Keep Search off for the short-duration wards.
+
+Leave the altar's guaranteed camp-interruption rectangle before resting.
+Recover and prepare at `(7,5)`, clear the ogres at `(9,5)`, rest there, then
+continue to `(2,10)`. The final preparation is north of Dexam's `(2,11)` lair;
+`(4,12)` is beyond the lair and cannot prepare the approach. Use actual Enlarge
+on all three warriors, Bless, Prayer and Haste. The mage readies its dagger
+instead of wasting the plant wand against these opponents. After the Amulet
+event, clear/rest at `(4,12)` and leave through `(11,15)` south. The original
+exit removes Dimswart/Olive and returns to the wilderness.
+
+The diagnostic earned suffix wins 11 battles without defeats or casualties,
+receives the Amulet, recovers in wilderness camp and returns to the visited
+Pit with all six PCs at full HP. The fresh registered whole milestone passes
+in 498.38s: 70 victories, zero defeats and three earlier casualty fights,
+all six PCs alive at full HP, and all three artifacts retained. All 17 affected
+integrated checks pass in 618.28s, including the existing ending, every earlier
+earned milestone, shared-map saves, both startup rules modes and package smoke.
+The separate earned suffix save at beat 169 independently reloads. This is not
+a campaign-ending certificate; see the delivery record for checks and limits.

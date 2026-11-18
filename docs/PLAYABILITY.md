@@ -22,7 +22,7 @@ UI behavior and the current configured model are retained; no delegation.
 | Game | Verified | Remaining completion gap |
 |---|---|---|
 | Pool of Radiance | Fresh Original Rules party starts at zero XP, earns its training and equipment, defeats Tyranthraxus and reaches the ending; SRD map audits remain separate | Optional quests, other party compositions and difficulty settings are not certified by this route |
-| Curse of the Azure Bonds | Assisted ending route wins its fights; fresh earned opening through Moander, Pit escape and paid recovery/level-8 advancement verified | Continue earned progression through Zhentil Keep, Myth Drannor and the actual ending |
+| Curse of the Azure Bonds | Assisted ending route wins its fights; fresh earned progression through Dexam, all three artifacts, recovery and paid advancement verified | Continue earned progression through Myth Drannor and the actual ending |
 | Secret of the Silver Blades | Fresh complete route reaches the actual ending with every fight played, including Oswulf, the Dreadlord and the soul gem; zero forced wins | Replace progression grants and relocations with verified gameplay/import |
 | Gateway to the Savage Frontier | Route reaches the ending and wins its fights | Replace experience/gold/equipment/time grants and relocations |
 | Pools of Darkness | Fresh whole route and detailed finale replay defeat Gothmenes, reach the ending and restore all six members; zero forced results | Progression assistance and relocations remain |
@@ -820,3 +820,108 @@ unavailable. The 60-minute checkpoint is not due yet. Push and required main
 game rebuild/smoke remain before delivery. Zero additional whole campaigns
 are certified; next are the remaining Curse bonds and ending, then the other
 game gaps, with winning-character availability still following all games.
+
+Delivery observed 09:20 UTC: `3778786d` is pushed to `origin/main`, with main
+and origin matching. The main game is rebuilt/exported and all four installed
+checks pass in 19.83s: Gold Box units, Godot preparation, Curse Original startup
+and packaged Linux smoke. The first post-push command omitted the installed
+environment and skipped startup; the corrected command explicitly sets both
+Gold Box paths and has no skips. Log:
+`/tmp/opengold-curse-moander-recovery-main-installed-recheck.log`.
+The main pull is skipped under the dirty-checkout guard; the pre-existing
+GAMES edit remains untouched at hash
+`d5bf49897b2dddf631b07a2afae4692bd8193c6f`. The recovery claim is released.
+
+### Active next batch: earned Zhentil Keep and Dexam
+
+- Start observed 2026-11-18 09:20 UTC; checkpoint due 10:20 UTC.
+- Authorization: the resumed all-twelve-games task remains active; no questions
+  or delegation. Outcome: physically leave the earned recovery checkpoint,
+  travel to Zhentil Keep, follow Olive and Dimswart through the Shrine of Bane,
+  enter the Caves of the Beholder, defeat Dexam and earn the Amulet, then leave
+  through the actual exit and recover living casualties with actual camps.
+- Acceptance: retain six PCs and the three earned artifacts; actual Dexam and
+  Amulet progression, wilderness exit reached and a reloadable continuation
+  saved in a previously visited district; at least one living PC standing and
+  zero retained battle defeats. Dead PCs may require the next paid recovery;
+  no injected XP, money, healing, flags, positions or combat results. Final
+  Myth Drannor/ending and further games follow this batch.
+- Reuse/model: existing physical walker, original scripts, camp preparation,
+  temples/halls and battle player; actual 133-beat earned recovery save. Same
+  configured Codex, no requested switch, effort override or delegation. This
+  remains Original Rules work outside SRD model assignments; no UI/runtime or
+  save-history changes planned.
+- Checks: focused earned suffix, fresh registered milestone, affected Curse
+  neighbors, save reload and required post-push installed-data game smoke.
+  Baseline is `3778786d`'s verified recovery plus the existing broader coverage.
+
+Observed 09:27 UTC: the earned party exits the Pit, heals through real
+wilderness camps, travels by trail to Zhentil Keep and follows Olive into
+the Shrine. Her entry is `(7,14)`; the reachable Dimswart cell is `(7,15)` and
+the nearby hooded-woman event is `(4,10)`. The assisted route's instances at
+`(1,7)` and `(2,3)` are in a disconnected part of the shared geometry.
+The actual earned Shrine save at beat 138 also reproduces a production
+reload failure: `Saved district and script disagree`. Script 33 uses NEW ECL
+and LOAD PIECES without loading a new map, retaining city map 32. Its shared
+map metadata is now recorded alongside the existing lower-Pit case, with an
+installed-data round-trip regression for both. This is a loader metadata
+repair within the required playable/savable route; no format/history change.
+The unmodified actual Shrine save will be reloaded after the affected build.
+
+Observed 09:35 UTC: the metadata repair reloads the unmodified earned Shrine
+save, and the shared-map unit regression passes both Pit and Shrine round
+trips. The first cave approach then failed after seven consecutive fights:
+it tried to reach `(4,12)` before resting, but the physical path crosses
+Dexam's `(2,11)` lair before that point. The corrected player prepares in
+Dimswart's quiet cell, leaves the altar's guaranteed-interruption rectangle,
+rests/prepares at `(7,5)` and the cleared ogre room `(9,5)`, then prepares at
+`(2,10)` immediately north of Dexam. Actual Enlarge on the three warriors,
+Bless, Prayer and Haste carry through the short approaches with Search off.
+
+The corrected suffix passes from the earned Dimswart save: 11 real victories,
+zero defeats and zero casualty fights. Dexam's actual Amulet event runs,
+followed by the cave exit, wilderness recovery and return to the visited Pit.
+All six PCs are alive and at full HP at beat 169, with the three artifacts
+retained. The actual diagnostic checkpoint is
+`/tmp/opengold-curse-fourth-prepared-diagnostic.sav`; fresh complete milestone
+and integrated verification remain open. No new whole-game win is claimed.
+LLVM-23 format/braces passes; the full game is rebuilt/exported and the final
+installed-data integrated checks are running under
+`/tmp/opengold-curse-dexam-integrated.log`.
+
+Final verification observed 09:46 UTC: all 17 selected integrated checks pass
+in 618.28s, with no failures or skips. They cover every registered Curse walk,
+ending and earned milestone, Gold Box units (including both shared-map saves),
+Original campaign and save units, saves by game, Curse Original/SRD startup,
+Godot preparation and packaged Linux smoke. The new fresh registered fourth
+bond passes in 498.38s: 70 victories, zero defeats, three casualty fights from
+the earlier campaign, all six PCs alive at full HP, all three artifacts retained.
+All 169 beats use earned progression and physical movement. The paladins end
+at levels 7, the ranger/clerics/mage at 8; further eligible training is pending.
+
+The separate actual earned suffix checkpoint, now preserved as
+`/tmp/opengold-curse-fourth-bond-earned.sav`, independently reloads and passes
+final endpoint acceptance on the final formatted native target. It is an
+earned continuation from the previously saved Dimswart route, not an encoding
+of the fresh CTest run. Both end at the upper Pit's `(0,11)` with full HP and
+the same artifact states; their earned XP differs slightly. Fresh trace:
+`/tmp/opengold-curse-dexam-fresh-final.log`; complete integrated trace:
+`/tmp/opengold-curse-dexam-integrated-ctest.log`; reload:
+`/tmp/opengold-curse-fourth-final-reload.log`.
+
+Current registration has 344 checks; this is a 17-check affected regression
+pass, not a claim of a new full 344-check run. The production repair only
+records the valid Curse map-32/script-33 pairing. Scope, architecture, RAII,
+save-history and staged-diff review pass; LLVM-23 format/braces passes. The
+tested tree is based on `3778786d` plus this delivery. The user's GAMES edit
+remains untouched at its recorded hash.
+
+Observed phases: investigation/implementation 09:20–09:34 (reachable Shrine
+events, actual save failure, then corrected cave preparation), final
+format/build 09:34–09:35, integrated checks through the 09:46 observation.
+The 60-minute checkpoint is not yet due. Same configured Codex, no model/effort
+override or delegation; cost/token data unavailable. One earned fourth-bond
+milestone and one save blocker are verified; zero additional whole games are
+certified. Commit/push and required main rebuild/checks remain before delivery.
+Next is Curse's earned Myth Drannor/ending, followed by other game gaps and,
+after every game is winnable, winning-character availability.

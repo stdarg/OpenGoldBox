@@ -699,6 +699,12 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
         {
             scripts.push_back(18);
         }
+        // Olive's NEW ECL 33 enters the Shrine without LOAD FILES as well;
+        // LOAD PIECES changes its walls but retains Zhentil Keep's map 32.
+        if (game == GoldBoxGame::curse_of_the_azure_bonds && map_disk == 4 && map_id.record == 32)
+        {
+            scripts.push_back(33);
+        }
         const por::detail::AreaSource area{scripts.front(), map_disk, {}};
         const por::detail::DistrictMap geo{
             map_id.record, walls, {scripts.begin() + 1, scripts.end()}};

@@ -597,14 +597,14 @@ void curse_opening_reaches_the_first_map()
           "The innkeeper speaks: " + diagnostics());
 }
 
-void curse_lower_pit_saves_reload()
+void curse_shared_map_saves_reload()
 {
     using namespace opengold;
     constexpr auto game = GoldBoxGame::curse_of_the_azure_bonds;
     const auto *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
     if (!games)
     {
-        std::cout << "Curse's files are not here; lower Pit saves are not checked.\n";
+        std::cout << "Curse's files are not here; shared-map saves are not checked.\n";
         return;
     }
     const auto folder = std::filesystem::path(games) / "CURSE";
@@ -633,28 +633,35 @@ void curse_lower_pit_saves_reload()
         }
     }
     check(session.can_leave(), "Curse's opening finishes before entering the save fixture");
-    test::TourAccess::enter_script(session, 18, 17, {15, 14, por::MapDirection::south});
-    for (int n = 0; n < 100 && !session.can_leave(); ++n)
+    for (const auto &[script, map] :
+         std::array<std::pair<unsigned, unsigned>, 2>{{{18, 17}, {33, 32}}})
     {
-        if (session.snapshot().phase == por::TourPhase::running)
+        test::TourAccess::enter_script(session, script, map,
+                                       {script == 18 ? 15U : 7U, 14, por::MapDirection::south});
+        for (int n = 0; n < 100 && !session.can_leave(); ++n)
         {
-            session.advance(1.0);
+            if (session.snapshot().phase == por::TourPhase::running)
+            {
+                session.advance(1.0);
+            }
+            else if (session.snapshot().phase == por::TourPhase::awaiting_continue)
+            {
+                check(session.choose(session.snapshot().continue_ticket, 0),
+                      "Finish the shared-map entry");
+            }
         }
-        else if (session.snapshot().phase == por::TourPhase::awaiting_continue)
-        {
-            check(session.choose(session.snapshot().continue_ticket, 0), "Stay on the lower floor");
-        }
+        check(session.can_leave() && session.snapshot().script_id == script &&
+                  session.snapshot().area_id == map,
+              "The shared script retains its original geometry");
+        const auto bytes = encode_campaign(*party, &session, "shared-map-save", game);
+        const auto restored =
+            decode_campaign(bytes, *creation, *module, "shared-map-save", &session);
+        check(restored.town && restored.town->snapshot().script_id == script &&
+                  restored.town->snapshot().area_id == map &&
+                  restored.town->snapshot().pose == session.snapshot().pose &&
+                  restored.party.slots == party->state().slots,
+              "A saved party reloads with its shared script, map and position");
     }
-    check(session.can_leave() && session.snapshot().script_id == 18 &&
-              session.snapshot().area_id == 17,
-          "The lower Pit retains the upper floor's geometry");
-    const auto bytes = encode_campaign(*party, &session, "pit-save", game);
-    const auto restored = decode_campaign(bytes, *creation, *module, "pit-save", &session);
-    check(restored.town && restored.town->snapshot().script_id == 18 &&
-              restored.town->snapshot().area_id == 17 &&
-              restored.town->snapshot().pose == session.snapshot().pose &&
-              restored.party.slots == party->state().slots,
-          "A saved lower-floor party reloads with its script, map and position");
 }
 
 // Curse's step 2 (docs/GAMES.md): every square of the map the party stands on,
@@ -7827,7 +7834,8 @@ enum class CurseProgress
     hap,
     second_bond,
     third_bond,
-    moander_recovery
+    moander_recovery,
+    fourth_bond
 };
 
 // Earned milestones follow the physical opening, sewer lairs, first bond,
@@ -8262,6 +8270,117 @@ std::vector<RouteBeat> curse_earned_route(CurseProgress progress)
         world({"LEAVE", "JOURNEY", "YULASH", "TRAIL", "stop:JOURNEY"});
         world({"ENTER CITY", "ASK PERMISSION", "PARLAY"});
     }
+    if (progress >= CurseProgress::fourth_bond)
+    {
+        // The recovery save stands at the Pit's back entrance. Leave by
+        // the same physical doorway, then recover in wilderness camp.
+        RouteBeat depart{17, 0, 11, D::west, {"stop:JOURNEY"}};
+        depart.step = true;
+        depart.searching = false;
+        depart.cure_first = true;
+        depart.cure_to_full = true;
+        beats.push_back(depart);
+        world({"stop:JOURNEY"}, true);
+        world({"JOURNEY", "ZHENTIL KEEP", "TRAIL", "stop:JOURNEY"});
+        world({"ENTER CITY"});
+        const std::vector<std::string> cures{"cure_light_wounds", "cure_serious_wounds",
+                                             "magic_missile", "fireball"};
+        const auto prepare_at = [&](unsigned map, unsigned x, unsigned y)
+        {
+            RouteBeat recover{map, x, y, D::north, {}, true};
+            recover.arrive_only = true;
+            recover.rest_for_spells = true;
+            recover.cure_first = true;
+            recover.cure_to_full = true;
+            recover.ready_types.emplace_back(8, "magic_user 6");
+            recover.ward_memorized = "cure_light_wounds";
+            recover.ward_members = {"cleric 4"};
+            recover.memorize_first_of = cures;
+            beats.push_back(recover);
+            auto prepare = recover;
+            prepare.ward_memorized = "enlarge";
+            prepare.ward_members = {"paladin 1", "paladin 2", "ranger 3"};
+            prepare.memorize_first_of = {"enlarge",  "enlarge", "enlarge", "haste",
+                                         "fireball", "bless",   "prayer"};
+            prepare.cast_after = {"bless"};
+            beats.push_back(prepare);
+            RouteBeat enlarge{map, x, y, D::north, {}};
+            enlarge.waiting = true;
+            enlarge.ward_each_with = "enlarge";
+            enlarge.ward_members = prepare.ward_members;
+            enlarge.cast_after = {"prayer"};
+            beats.push_back(enlarge);
+            RouteBeat haste{map, x, y, D::north, {}};
+            haste.waiting = true;
+            haste.cast_after = {"haste"};
+            beats.push_back(haste);
+        };
+        // Olive's secret entrance, Dimswart and the hooded woman's actual
+        // dimension door. These events own the transfers between scripts.
+        for (std::size_t index = 61; index <= 63; ++index)
+        {
+            beats.push_back(story[index]);
+            beats.back().searching = false;
+            beats.back().reloads_until_won = 360;
+            beats.back().cure_first = true;
+            beats.back().cure_to_full = true;
+            if (index == 62)
+            {
+                // Olive's scripted entry is (7,14). The reachable cell is
+                // just south of it; the assisted route used a disconnected
+                // instance of the same event in the western temple rooms.
+                beats.back().x = 7;
+                beats.back().y = 15;
+                beats.back().facing = D::south;
+                beats.back().arrive_only = true;
+                prepare_at(32, 7, 15);
+            }
+            if (index == 63)
+            {
+                beats.back().x = 4;
+                beats.back().y = 10;
+                beats.back().answers = {"YES"};
+                beats.back().arrive_only = true;
+            }
+        }
+        const auto approach_room = [&](unsigned x, unsigned y)
+        {
+            RouteBeat approach{33, x, y, D::north, {"NO", "WAIT", "Bash"}};
+            approach.searching = false;
+            approach.arrive_only = true;
+            approach.cure_first = true;
+            approach.cure_to_full = true;
+            approach.reloads_until_won = 360;
+            approach.ready_types.emplace_back(8, "magic_user 6");
+            beats.push_back(approach);
+            prepare_at(33, x, y);
+        };
+        // The altar's camp interruption is guaranteed. Leave its bounds,
+        // clear the ogres, then approach the lair from the north. The old
+        // rest target (4,12) lies beyond Dexam and cannot prepare that fight.
+        approach_room(7, 5);
+        approach_room(9, 5);
+        approach_room(2, 10);
+        RouteBeat dexam{33, 2, 11, D::south, {}};
+        dexam.arrive_only = true;
+        dexam.searching = false;
+        dexam.reloads_until_won = 1200;
+        dexam.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C5A, 1};
+        beats.push_back(dexam);
+        approach_room(4, 12);
+        beats.push_back(story[66]);
+        beats.back().searching = false;
+        beats.back().reloads_until_won = 360;
+        beats.back().cure_first = true;
+        beats.back().cure_to_full = true;
+        // The exit dismisses Dimswart and Olive and removes the bond.
+        world({"stop:JOURNEY"}, true);
+        beats.back().ward_memorized = "cure_light_wounds";
+        beats.back().ward_members = {"cleric 4"};
+        beats.back().memorize_first_of = cures;
+        world({"JOURNEY", "YULASH", "TRAIL", "stop:JOURNEY"});
+        world({"ENTER CITY"});
+    }
     for (auto &beat : beats)
     {
         if (beat.map == 3)
@@ -8373,6 +8492,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
     const bool second_bond = progress >= CurseProgress::second_bond;
     const bool third_bond = progress >= CurseProgress::third_bond;
     const bool moander_recovery = progress >= CurseProgress::moander_recovery;
+    const bool fourth_bond = progress >= CurseProgress::fourth_bond;
     using opengold::por::TourPhase;
     const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
     const auto folder = games ? std::filesystem::path(games) / std::string(game_folder(game))
@@ -12428,22 +12548,24 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     const bool pit =
                         third_bond && (session.snapshot().script_id == 18 ||
                                        (moander_recovery && session.snapshot().script_id == 17));
+                    const bool cave = fourth_bond && session.snapshot().script_id == 34;
+                    const bool retry_camp = pit || cave;
                     const auto before_camp =
-                        pit ? std::optional(session.detached_copy()) : std::nullopt;
+                        retry_camp ? std::optional(session.detached_copy()) : std::nullopt;
                     const auto party_before = party->state();
                     const auto answers_before = answers;
-                    reload_camp_on_attack = pit && reload < 32;
+                    reload_camp_on_attack = retry_camp && reload < 32;
                     rested = camp_and_rest();
                     if (rested)
                     {
-                        // Choose actual spells as the rest dialog does. A Pit
+                        // Choose actual spells as the rest dialog does. A
                         // player reloads a camp attacked before preparation
                         // finishes rather than spending its wards in that fight.
                         memorize();
                         play("camp");
                     }
                     reload_camp_on_attack = false;
-                    if (!rested || !pit || session.snapshot().phase != TourPhase::combat)
+                    if (!rested || !retry_camp || session.snapshot().phase != TourPhase::combat)
                     {
                         break;
                     }
@@ -12453,7 +12575,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     answers = answers_before;
                     session.reseed_dice(
                         static_cast<std::uint32_t>(party_before.time_minutes + reload + 1));
-                    ++phases["Pit preparation camps reloaded"];
+                    ++phases[pit ? "Pit preparation camps reloaded"
+                                 : "Cave preparation camps reloaded"];
                 }
                 if (!rested)
                 {
@@ -12479,7 +12602,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 // monsters repeatedly undo the natural healing.
                 if ((game == GoldBoxGame::pools_of_darkness && keeps_preparation) ||
                     (third_bond && (session.snapshot().script_id == 18 ||
-                                    (moander_recovery && session.snapshot().script_id == 17))))
+                                    (moander_recovery && session.snapshot().script_id == 17))) ||
+                    (fourth_bond && session.snapshot().script_id == 34))
                 {
                     cure_the_hurt(true);
                 }
@@ -13002,7 +13126,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                 const bool story_walk =
                                     second_bond &&
                                     (session.snapshot().script_id == 50 || beat.map == 51 ||
-                                     (third_bond && (beat.map == 16 || beat.map == 17)));
+                                     (third_bond && (beat.map == 16 || beat.map == 17)) ||
+                                     (fourth_bond && (beat.map == 32 || beat.map == 33)));
                                 passing = !story_walk;
                                 session.set_searching(beat.searching.value_or(true));
                                 walk_earned_curse(
@@ -13591,12 +13716,13 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         const bool played = needs.empty() && end.phase != TourPhase::defeated;
         if (sewers)
         {
-            std::cout << (moander_recovery ? "Earned Moander recovery: "
-                          : third_bond     ? "Earned third-bond progression: "
-                          : second_bond    ? "Earned second-bond progression: "
-                          : hap            ? "Earned Hap progression: "
-                          : first_bond     ? "Earned first-bond progression: "
-                                           : "Earned sewer progression: ")
+            std::cout << (fourth_bond        ? "Earned fourth-bond progression: "
+                          : moander_recovery ? "Earned Moander recovery: "
+                          : third_bond       ? "Earned third-bond progression: "
+                          : second_bond      ? "Earned second-bond progression: "
+                          : hap              ? "Earned Hap progression: "
+                          : first_bond       ? "Earned first-bond progression: "
+                                             : "Earned sewer progression: ")
                       << fights_fought << " fights, " << fights_defeated << " defeats, "
                       << fights_lost << " fights with casualties or defeat; "
                       << "this is not a campaign win.\n";
@@ -13627,6 +13753,15 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                                 std::ranges::max(sheet.original->class_levels) >=
                                                     6);
                                     });
+            if (fourth_bond)
+            {
+                return played && someone_standing && earned_training && session.can_leave() &&
+                       end.script_id == 17 &&
+                       session.script_variable(opengold::por::EclAddress{0x4C59}) == 1 &&
+                       session.script_variable(opengold::por::EclAddress{0x4C5B}) == 255 &&
+                       session.script_variable(opengold::por::EclAddress{0x4C5A}) == 1 &&
+                       fights_defeated == 0;
+            }
             if (moander_recovery)
             {
                 const bool recovered = std::ranges::all_of(
@@ -13829,6 +13964,13 @@ int main(int argc, char **argv)
         {
             return walk_census(GoldBoxGame::curse_of_the_azure_bonds, true) ? 0 : 1;
         }
+        if (argc == 2 && std::string_view(argv[1]) == "--curse-fourth-bond")
+        {
+            return walk_census(GoldBoxGame::curse_of_the_azure_bonds, true,
+                               CurseProgress::fourth_bond)
+                       ? 0
+                       : 1;
+        }
         if (argc == 2 && std::string_view(argv[1]) == "--curse-moander-recovery")
         {
             return walk_census(GoldBoxGame::curse_of_the_azure_bonds, true,
@@ -13912,7 +14054,7 @@ int main(int argc, char **argv)
         a_save_names_its_game();
         item_types_carry_their_properties();
         curse_opening_reaches_the_first_map();
-        curse_lower_pit_saves_reload();
+        curse_shared_map_saves_reload();
         secret_opening_reaches_the_first_map();
         secret_camp_fixes_the_party();
         the_font_has_eight_bytes_a_glyph();
