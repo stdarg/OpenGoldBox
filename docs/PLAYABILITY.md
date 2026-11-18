@@ -23,7 +23,7 @@ UI behavior and the current configured model are retained; no delegation.
 |---|---|---|
 | Pool of Radiance | Fresh Original Rules party starts at zero XP, earns its training and equipment, defeats Tyranthraxus and reaches the ending; SRD map audits remain separate | Optional quests, other party compositions and difficulty settings are not certified by this route |
 | Curse of the Azure Bonds | Fresh Original Rules party earns all three artifacts, equipment, paid advancement and recovery, physically reaches Myth Drannor, defeats Tyranthraxus and shows the actual ending | Optional quests, other party compositions and difficulty settings are not certified by this route |
-| Secret of the Silver Blades | Fresh earned opening, Well dragon and Eldamar amulet route wins twelve fights, recovers all six PCs and round-trips its save; the separate assisted complete route reaches the actual ending with every fight played | Replace later progression grants and relocations with verified gameplay/import |
+| Secret of the Silver Blades | Fresh earned opening, Well/amulet quests and Black Circle headquarters route wins 36 fights, recovers all six PCs and round-trips its save; the separate assisted complete route reaches the actual ending with every fight played | Replace later progression grants and relocations with verified gameplay/import |
 | Gateway to the Savage Frontier | Route reaches the ending and wins its fights | Replace experience/gold/equipment/time grants and relocations |
 | Pools of Darkness | Fresh whole route and detailed finale replay defeat Gothmenes, reach the ending and restore all six members; zero forced results | Progression assistance and relocations remain |
 | Treasures of the Savage Frontier | Route reaches the ending and wins its fights | Replace starting experience/money and relocations |
@@ -1260,3 +1260,121 @@ tests/config/records only, value-owned containers, unchanged production/rules/UI
 and save history. Approximately four minutes elapsed to final verification,
 including focused native build and final integrated build; tokens/cost unavailable.
 The earned amulet outcome is complete; Headquarters, mines and ending remain.
+
+Delivery observed 11:17 UTC: `bbcfc67d` is pushed to `origin/main`, which
+matches the main checkout. Main is rebuilt/exported and all four installed-data
+post-push checks pass in 19.44s, without skips: Gold Box units, Godot preparation,
+Secret Original startup and package smoke. Log:
+`/tmp/opengold-secret-eldamar-main-recheck.log`. The pre-existing GAMES edit
+remains untouched, so the dirty-main rule skips the pull. The amulet claim
+is released.
+
+### Active next batch: Secret's earned Black Circle headquarters
+
+- Start observed 2026-11-18 11:18 UTC; checkpoint due 12:18 UTC.
+- Authorization/status: resumed all-twelve-game task, active; no questions or
+  agents. Outcome: continue the earned amulet route, physically enter the
+  headquarters, defeat its guards/commander/Inner Sanctum, earn its real quest
+  reward and return through normal gateways to a usable safe Well save.
+- Acceptance: six PCs alive/not petrified, at least one standing, actual
+  headquarters victory and `4C98=255`, no retained defeats, actual movement,
+  treasure/services and reloadable idle save. A fresh registered replay must
+  include the earned town, Well and amulet milestones. No injected advancement,
+  money, gear, healing, flags, time, positions or outcomes. Mines/ending remain
+  outside this batch. Preserve production boundaries and supported save history.
+- Reuse/model: existing Original camp/spells, battle player, physical walker,
+  ruins passages and scripted gateways. Same configured Codex, no requested
+  model/effort switch, override or delegation; outside SRD assignments. A concrete
+  rules/architecture failure requires evidence, not an incidental runtime change.
+- Verification: focused suffix from the earned amulet save, save round-trip,
+  fresh registered headquarters milestone and affected checks; own commit/push
+  and required main build/installed-data checks. Baseline `bbcfc67d`; initial
+  save `/tmp/opengold-secret-eldamar-fresh-earned.sav`. Tokens/cost unavailable.
+
+Observed 11:21 UTC: the actual ruins approach, captain, door guards and commander
+are defeated. One cleric dies in the commander sequence and the other raises
+that member through actual prepared Raise Dead during safe Well recovery;
+all six return to full HP. The first suffix then exposes a test-route error:
+after resting at the headquarters return gateway, arrive-only skips the Look
+needed to activate the already-occupied portal. Later coordinates incorrectly
+walk in the Well. The route now activates that gateway and earned Secret
+walking checks its actual area before movement. No flags or positions are
+changed. Initial trace `/tmp/opengold-secret-headquarters-suffix.log`;
+actual post-office gateway checkpoint
+`/tmp/opengold-secret-headquarters67.sav`. Inner Sanctum and final save remain
+pending; no production defect is established by this route error.
+
+Observed 11:29 UTC: the return portal correction works, but the inner approach
+has not yet passed. Two combat probes win initial guards then lose further
+encounters. Investigation finds that the route's cure helper excluded Secret
+entirely, while Search adds ten minutes per forward step and can exhaust its
+short-duration protections. Earned Secret now uses actual campaign camp-casting
+for requested cures, including between physical steps. The headquarters uses
+normal movement and a Look for the secret door; fire wards, Bless and Prayer
+are deferred until past that search and locked door. No rules outcomes change.
+
+The commander sequence's earned XP can also fund a real free-hall mage level,
+so the route visits town through the existing Well gateway before returning.
+A diagnostic exposed destination answers leaking into unrelated portals while
+walking: accepting Yes at every intermediate Well gateway entered the ruins.
+Earned Well movement now declines off-target portals and reserves the requested
+answer for its destination. This is a test player correction, with strict actual
+area checks retained. The new suffix is still being verified; no losing probe
+is completion evidence. Logs: `...headquarters-corrected.log`,
+`...headquarters-prepared.log`, `...headquarters-late-wards.log` under `/tmp/opengold-secret-`.
+
+Observed 11:43 UTC: the corrected room route passes its suffix with thirteen
+victories and zero retained defeats. The actual Inner Sanctum falls and its
+quest flag/reward are earned. A fresh 123-beat replay then passes 36 battles,
+zero retained defeats, all six alive at full HP at Well `(1,1)`. XP varies
+with casualties and actual encounters: PCs finish 312,451 / 312,451 / 312,451 /
+303,536 / 308,324 / 308,324 XP, with paladins 8, ranger/clerics 9 and mage 10.
+This is still a headquarters milestone, not the full Secret ending.
+
+The final plan separates the entrance confrontation near `(1,13)`, practice
+room `(7,9)` and later guarded room `(9,15)`, with actual out-and-back journeys
+to Gond's temple and Priam's camp between them. It does not try to chain every
+fight on an exhausted party. The initial coarse waypoint incorrectly included
+two rooms; map/script inspection established the correct earlier stop. Losing
+trials remain diagnostics only. Final loot collection takes the Sanctum's
+visible unidentified girdle, bracers and wand, pays for actual identification
+at the armory and readies those identified items before the terminal save.
+That final update is still under verification.
+
+Evidence: `/tmp/opengold-secret-headquarters-room-route.log`,
+`/tmp/opengold-secret-headquarters-fresh.log` and its earned save. LLVM-23
+formatting passes; final build and nine affected integrated checks are running
+in `/tmp/opengold-secret-headquarters-integrated.log`. No production, rules,
+UI/runtime or save-history changes have been needed. Investigation/implementation
+and focused probes took about 26 elapsed minutes, including the native builds;
+final integration/delivery is ongoing. Tokens/cost unavailable.
+
+Observed 11:46 UTC: the final fresh 124-beat registered headquarters route
+passes in 113.61s: 36 victories, zero retained defeats, all six alive/full HP
+at Well `(1,1)`. It actually takes the girdle, bracers and wand, pays at the
+armory to identify them, and readies the identified Girdle of Giant Strength,
+Bracers AC 3 and Wand of Lightning before saving. All nine affected integrated
+checks pass in 113.62s with no skips: fresh headquarters, Eldamar (30.05s),
+Well (14.10s), opening (9.58s), all-map Secret walk (50.04s), Gold Box units,
+Original Godot startup/preparation and package smoke.
+
+The updated ending suffix also passes two battles and preserves all six at
+full HP. Its actual earned save `/tmp/opengold-secret-headquarters-final-earned.sav`
+uses the independently fresh pre-boss checkpoint and final updated commands.
+The normal loader reencodes it byte-identically as
+`/tmp/opengold-secret-headquarters-roundtrip.sav`. The terminal-only milestone
+probe again exits 1 because it observes no new fight; the separate byte
+comparison passes. Logs:
+`/tmp/opengold-secret-headquarters-final-suffix.log`,
+`/tmp/opengold-secret-headquarters-reload.log`,
+`/tmp/opengold-secret-headquarters-integrated.log`,
+`/tmp/opengold-secret-headquarters-integrated-ctest.log`,
+`/tmp/opengold-secret-headquarters-integrated-fresh.log`.
+
+Tested tree: `bbcfc67d` plus this batch. Diff/scope/architecture review passes:
+tests/configuration/records only, RAII/value-owned state, no production rules,
+UI/runtime or save-history changes. Elapsed to final validation about 29 minutes,
+including the failed strategy probes and native builds, then final formatting,
+application build and integrated checks. Tokens/cost unavailable. One earned
+headquarters outcome is verified; Secret's mines/ending, the other commercial
+gaps, five additional engines and later winning-character availability remain.

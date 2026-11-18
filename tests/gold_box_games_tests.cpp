@@ -1400,7 +1400,8 @@ enum class SecretProgress
     none,
     opening,
     well,
-    eldamar
+    eldamar,
+    headquarters
 };
 
 std::vector<RouteBeat> secret_earned_opening()
@@ -1553,6 +1554,139 @@ std::vector<RouteBeat> secret_earned_route(SecretProgress progress)
         recover.memorize_first_of = {"magic_missile", "fireball", "cure_light_wounds",
                                      "cure_serious_wounds"};
         beats.push_back(recover);
+    }
+    if (progress >= SecretProgress::headquarters)
+    {
+        const auto first_hq_beat = beats.size();
+        RouteBeat prepare{33, 1, 1, D::north, {"NO"}, true};
+        prepare.arrive_only = true;
+        prepare.rest_for_spells = true;
+        prepare.cure_first = true;
+        prepare.cure_to_full = true;
+        prepare.memorize_first_of = {"magic_missile", "fireball", "hold_monster", "bless",
+                                     "prayer"};
+        prepare.cast_after = {"bless"};
+        beats.push_back(prepare);
+        RouteBeat prayer{33, 1, 1, D::north, {}};
+        prayer.waiting = true;
+        prayer.cast_after = {"prayer"};
+        beats.push_back(prayer);
+        auto leave_well = step_beat(33, 0, 0, D::north);
+        leave_well.searching = false;
+        beats.push_back(leave_well);
+        walk_ruins(beats, {{2, 0, D::north},
+                           {6, 0, D::west},
+                           {1, 2, D::west},
+                           {1, 14, D::south},
+                           {7, 11, D::south},
+                           {2, 10, D::west},
+                           {1, 14, D::south},
+                           {2, 14, D::south},
+                           {11, 2, D::west},
+                           {3, 5, D::south},
+                           {7, 13, D::west},
+                           {1, 1, D::west},
+                           {0, 6, D::south},
+                           {1, 0, D::south},
+                           {0, 3, D::west}});
+        beats.push_back(step_beat(32, 0, 2, D::south, {"ATTACK"}));
+        beats.push_back({34, 12, 6, D::north, {}});
+        beats.back().arrive_only = true;
+        beats.push_back({34, 10, 5, D::north, {}});
+        beats.back().arrive_only = true;
+        beats.push_back({34, 10, 6, D::north, {"YES"}});
+        beats.back().arrive_only = true;
+        // The commander fights can earn another mage level. Use the real
+        // town portal and free hall before the final headquarters approach.
+        beats.push_back({33, 1, 1, D::north, {"YES"}, true});
+        beats.back().arrive_only = true;
+        beats.back().rest_for_spells = true;
+        beats.push_back(step_beat(16, 7, 7, D::north, train_everyone()));
+        beats.push_back({16, 3, 0, D::north, {"YES"}});
+        beats.back().arrive_only = true;
+        RouteBeat return_hq{33, 14, 14, D::north, {"YES"}, true};
+        return_hq.rest_for_spells = true;
+        return_hq.cure_first = true;
+        return_hq.cure_to_full = true;
+        return_hq.ward_memorized = "resist_fire";
+        return_hq.memorize_first_of = prepare.memorize_first_of;
+        beats.push_back(return_hq);
+        // Look searches this square; do not search on every approach step.
+        beats.push_back({34, 8, 4, D::south, {}});
+        beats.push_back(step_beat(34, 8, 4, D::south));
+        beats.push_back(step_beat(34, 8, 7, D::south, {"Bash", "Bash", "Bash", "Bash"}));
+        RouteBeat late_wards{34, 8, 8, D::south, {}};
+        late_wards.waiting = true;
+        late_wards.ward_each_with = "resist_fire";
+        late_wards.cast_after = {"bless"};
+        beats.push_back(late_wards);
+        auto renewed_prayer = prayer;
+        renewed_prayer.map = 34;
+        renewed_prayer.x = 8;
+        renewed_prayer.y = 8;
+        beats.push_back(renewed_prayer);
+        const auto town_recovery = [&](bool identify = false)
+        {
+            beats.push_back({33, 1, 1, D::north, {"YES"}});
+            beats.back().arrive_only = true;
+            beats.push_back(opening[opening.size() - 2]);
+            beats.push_back(opening.back());
+            beats.push_back(step_beat(16, 7, 7, D::north, train_everyone()));
+            if (identify)
+            {
+                beats.push_back(
+                    step_beat(16, 14, 7, D::north,
+                              {"YES", "identify:GIRDLE@paladin 1", "identify:BRACERS@magic_user 6",
+                               "identify:WAND@magic_user 6"}));
+            }
+            beats.push_back({16, 3, 0, D::north, {"YES"}});
+            beats.back().arrive_only = true;
+        };
+        for (const auto &[x, y] : {std::pair{1U, 13U}, std::pair{7U, 9U}, std::pair{9U, 15U}})
+        {
+            beats.push_back({34, x, y, D::south, {"CONTINUE"}});
+            beats.back().arrive_only = true;
+            beats.push_back({34, 10, 6, D::north, {"YES"}});
+            beats.back().arrive_only = true;
+            town_recovery();
+            beats.push_back(return_hq);
+            beats.push_back({34, 8, 4, D::south, {}});
+            beats.push_back(step_beat(34, 8, 4, D::south));
+            beats.push_back(step_beat(34, 8, 7, D::south, {"Bash", "Bash", "Bash", "Bash"}));
+            beats.push_back(late_wards);
+            beats.push_back(renewed_prayer);
+        }
+        beats.push_back({34, 13, 13, D::south, {"GO FORWARD"}});
+        beats.back().arrive_only = true;
+        auto sanctum = RouteBeat{34, 13, 14, D::south, {"ATTACK", "YES"}};
+        sanctum.arrive_only = true;
+        sanctum.cure_first = true;
+        sanctum.cure_to_full = true;
+        sanctum.reloads_until_won = 1200;
+        sanctum.take_items = {
+            {"Girdle", "paladin 1"}, {"Bracers", "magic_user 6"}, {"Wand", "magic_user 6"}};
+        sanctum.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C98, 255};
+        beats.push_back(sanctum);
+        town_recovery(true);
+        auto recover = prepare;
+        recover.memorize_first_of = {"magic_missile", "fireball", "cure_light_wounds",
+                                     "cure_serious_wounds"};
+        recover.cast_after.clear();
+        recover.ready_names = {{"Girdle of Giant Strength", "paladin 1"},
+                               {"Bracers AC 3", "magic_user 6"},
+                               {"Wand of Lightning", "magic_user 6"}};
+        beats.push_back(recover);
+        for (auto at = first_hq_beat; at < beats.size(); ++at)
+        {
+            auto &beat = beats[at];
+            if (!beat.searching)
+            {
+                beat.searching = false;
+            }
+            beat.cure_first = true;
+            beat.cure_to_full = true;
+            beat.reloads_until_won = std::max(beat.reloads_until_won, 600U);
+        }
     }
     return beats;
 }
@@ -12589,14 +12723,14 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         const auto cure_the_hurt = [&](bool to_full = false)
         {
             if (game != GoldBoxGame::pools_of_darkness &&
-                game != GoldBoxGame::curse_of_the_azure_bonds)
+                game != GoldBoxGame::curse_of_the_azure_bonds && !earned_secret)
             {
                 return;
             }
             const auto cast_cure =
                 [&](opengold::MemberId healer, opengold::MemberId target, const std::string &action)
             {
-                if (sewers)
+                if (sewers || earned_secret)
                 {
                     session.cast_outside_combat(healer, target, action);
                 }
@@ -13450,6 +13584,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                             rejected_boss_win = false;
                             if (earned)
                             {
+                                check(
+                                    !earned_secret || session.snapshot().area_id == beat.map,
+                                    "Earned Secret walking begins in its actual destination area");
                                 const auto destination_script = session.snapshot().script_id;
                                 const auto destination_answers = answers;
                                 const bool destination_passing = passing;
@@ -13472,11 +13609,23 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                                       ? std::vector<std::string>{"YES", "Bash"}
                                                       : std::vector<std::string>{
                                                             "BARGAIN", "BURN THEM", "NO", "Bash"};
+                                        if (earned_secret && beat.map == 33 &&
+                                            (session.snapshot().pose.x != x ||
+                                             session.snapshot().pose.y != beat.y))
+                                        {
+                                            // Pass other Well gateways on the way to the
+                                            // chosen portal without entering them.
+                                            answers = {"NO"};
+                                        }
                                         if (first_bond && beat.map == 4)
                                         {
                                             answers.insert(answers.begin(), "stop:JOURNEY");
                                         }
                                         play(where);
+                                        if (earned_secret && beat.cure_first && session.can_leave())
+                                        {
+                                            cure_the_hurt(beat.cure_to_full);
+                                        }
                                     },
                                     third_bond && beat.map == 16);
                                 passing = destination_passing;
@@ -14068,9 +14217,11 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                                   return item.original_type == mirror_type;
                                               });
             }
-            std::cout << (secret_progress >= SecretProgress::eldamar ? "Earned Secret Eldamar: "
-                          : secret_progress >= SecretProgress::well  ? "Earned Secret Well: "
-                                                                     : "Earned Secret opening: ")
+            std::cout << (secret_progress >= SecretProgress::headquarters
+                              ? "Earned Secret headquarters: "
+                          : secret_progress >= SecretProgress::eldamar ? "Earned Secret Eldamar: "
+                          : secret_progress >= SecretProgress::well    ? "Earned Secret Well: "
+                                                                       : "Earned Secret opening: ")
                       << fights_fought << " fights, " << fights_defeated
                       << " defeats; this is not a campaign win.\n";
             return played && pcs == 6 && healthy && someone_standing && session.can_leave() &&
@@ -14080,7 +14231,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                    (secret_progress < SecretProgress::well ||
                     session.script_variable(opengold::por::EclAddress{0x4C63}) == 255) &&
                    (secret_progress < SecretProgress::eldamar ||
-                    session.script_variable(opengold::por::EclAddress{0x4C53}) == 255);
+                    session.script_variable(opengold::por::EclAddress{0x4C53}) == 255) &&
+                   (secret_progress < SecretProgress::headquarters ||
+                    session.script_variable(opengold::por::EclAddress{0x4C98}) == 255);
         }
         if (sewers)
         {
@@ -14437,6 +14590,13 @@ int main(int argc, char **argv)
         {
             return walk_census(GoldBoxGame::secret_of_the_silver_blades, true, CurseProgress::none,
                                SecretProgress::eldamar)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--secret-earned-headquarters")
+        {
+            return walk_census(GoldBoxGame::secret_of_the_silver_blades, true, CurseProgress::none,
+                               SecretProgress::headquarters)
                        ? 0
                        : 1;
         }

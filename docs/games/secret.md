@@ -229,6 +229,37 @@ registered milestone passes in 17.75s and all eight affected checks pass
 with no skips; the normal loader round-trips the earned save byte-identically.
 Headquarters, mines and the final ending remain separate completion gaps.
 
+## Earned Black Circle headquarters (2026-11-18)
+
+`opengold_secret_earned_headquarters` continues the earned amulet route through
+actual ruins passages, the captain, door guards, commander and office. The
+commanders' rewards permit a normal free-hall mage advancement to level 10.
+The office's real portal opens the Well return gateway at `(14,14)`. Activate
+an already-occupied gateway explicitly after resting; when walking across the
+Well, decline other portals until reaching the intended destination.
+
+Use normal movement in the headquarters and Look at `(8,4)` to search with
+the actual key, then open the corridor and bash the locked door from `(8,7)`.
+Search on every step adds ten minutes each time and exhausts short protections.
+Memorize fire wards at the safe Well, then cast them with Bless and Prayer
+past the door at `(8,8)`. The entrance confrontation ends near `(1,13)`;
+`(7,9)` is already the next practice-room fight. Stop separately at those
+places and at the later guarded room `(9,15)`, returning through cleared
+passages and actual gateways for Gond's temple recovery and normal camp rest.
+The six characters can then approach the pool and Inner Sanctum with their
+real equipment and replenished spells.
+
+The actual Sanctum victory sets `4C98=255`, awards its quest XP and opens its
+return gateway. Recover at town afterward. A fresh diagnostic has completed
+all 124 final beats with 36 victories and zero retained defeats, ending with
+all six alive at full HP at the safe Well. It collects and pays to identify
+the real girdle, bracers and lightning wand, then readies them before saving.
+The fresh registered milestone passes in 113.61s; all nine affected integrated
+checks pass with no skips. The normal loader reencodes the earned save
+byte-identically. No advancement,
+rewards, healing, flags, time, positions or outcomes are injected. This is
+headquarters completion, not the remaining mines or final campaign ending.
+
 ## The script host
 
 What *Secret*'s scripts need beyond *Curse*'s (found by walking every map):
