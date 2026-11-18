@@ -392,3 +392,24 @@ Observed fresh run: eight fights won, zero losses, all six characters alive,
 combat retries remain allowed. This proves the opening and optional sewer
 progression, **not the remainder of the campaign**. The existing full story
 route still uses injected progression and relocation.
+
+
+### Earned first bond (2026-11-18)
+
+`opengold_curse_first_bond` (`opengold_gold_box_games_tests --curse-first-bond`)
+extends the fresh physical opening through the first bond. After earned sewer
+training, the party walks to (13,15), steps south and follows ECL2:3 into the
+Fire Knives' hideout at (11,0). It walks the hideout to its leader at (3,13),
+wins the encounter and reaches the wilderness's Journey menu.
+
+A fresh run wins twelve fights, loses none and keeps all six player characters
+alive, each at 35,912 XP; the magic-user ends unconscious. The test reads the
+first-bond flag `4C2A = 1` after the original event sets it and requires the
+wilderness area. No rewards, healing, positions, flags or combat results are
+injected. The real fourteen-beat checkpoint is
+`/tmp/opengold-curse-earned-first-bond-fresh.sav`; the twelve-beat opening save
+also replays the hideout successfully. A resumed diagnostic's four suffix
+fights alone do not satisfy the fresh route's minimum fight count.
+
+This proves one bond from legal new characters, not the remaining four or the
+campaign ending. The assisted full story route remains a separate regression.

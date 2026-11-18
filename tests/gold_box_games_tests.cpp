@@ -7598,7 +7598,7 @@ void prepare_treasures_entry(opengold::por::RolfTourSession &session, unsigned m
 // The optional sewer lairs are an earned progression path before the first
 // bond is broken. Keep this check separate from the assisted story route:
 // clearing these rooms alone does not establish a campaign win.
-std::vector<RouteBeat> curse_sewers_route()
+std::vector<RouteBeat> curse_sewers_route(bool first_bond)
 {
     using D = opengold::por::MapDirection;
     const auto &story = curse_route();
@@ -7637,6 +7637,12 @@ std::vector<RouteBeat> curse_sewers_route()
     {
         beats.push_back({3, x, y, D::north, {}, true});
         beats.push_back({3, 14, 6, D::north, train_everyone(), true});
+    }
+    if (first_bond)
+    {
+        beats.push_back({3, 13, 15, D::south, {}, true});
+        beats.back().step = true;
+        beats.push_back({4, 3, 13, D::north, {"stop:JOURNEY"}, true});
     }
     return beats;
 }
@@ -7726,7 +7732,7 @@ void walk_earned_curse(opengold::por::RolfTourSession &session, unsigned tx, uns
     throw std::runtime_error("Earned Curse walking did not arrive");
 }
 
-bool walk_census(GoldBoxGame game, bool route, bool sewers = false)
+bool walk_census(GoldBoxGame game, bool route, bool sewers = false, bool first_bond = false)
 {
     using opengold::por::TourPhase;
     const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
@@ -11884,7 +11890,8 @@ bool walk_census(GoldBoxGame game, bool route, bool sewers = false)
         };
         try
         {
-            const auto sewer_beats = sewers ? curse_sewers_route() : std::vector<RouteBeat>{};
+            const auto sewer_beats =
+                sewers ? curse_sewers_route(first_bond) : std::vector<RouteBeat>{};
             for (const auto &beat : sewers ? sewer_beats : route_for(game))
             {
                 if (beat_number == beat_limit)
@@ -12114,7 +12121,7 @@ bool walk_census(GoldBoxGame game, bool route, bool sewers = false)
                             const auto answers_before = answers;
                             const unsigned lost_before = fights_lost;
                             rejected_boss_win = false;
-                            if (sewers && (beat.map == 3 || beat.map == 1))
+                            if (sewers)
                             {
                                 const auto destination_script = session.snapshot().script_id;
                                 const auto destination_answers = answers;
@@ -12128,6 +12135,10 @@ bool walk_census(GoldBoxGame game, bool route, bool sewers = false)
                                                       ? std::vector<std::string>{"YES", "Bash"}
                                                       : std::vector<std::string>{
                                                             "BARGAIN", "BURN THEM", "NO", "Bash"};
+                                        if (first_bond && beat.map == 4)
+                                        {
+                                            answers.insert(answers.begin(), "stop:JOURNEY");
+                                        }
                                         play(where);
                                     });
                                 passing = destination_passing;
@@ -12699,7 +12710,9 @@ bool walk_census(GoldBoxGame game, bool route, bool sewers = false)
         const bool played = needs.empty() && end.phase != TourPhase::defeated;
         if (sewers)
         {
-            std::cout << "Earned sewer progression: " << fights_fought << " fights, " << fights_lost
+            std::cout << (first_bond ? "Earned first-bond progression: "
+                                     : "Earned sewer progression: ")
+                      << fights_fought << " fights, " << fights_lost
                       << " lost; this is not a campaign win.\n";
             const bool earned_training = std::ranges::all_of(
                 party->state().slots,
@@ -12710,11 +12723,21 @@ bool walk_census(GoldBoxGame game, bool route, bool sewers = false)
                         return true;
                     }
                     const auto &member = party->member(id);
+                    if (!member.npc_source.empty())
+                    {
+                        return true;
+                    }
                     const auto &sheet = member.character.sheet();
                     return !member.vitals.dead && member.experience > 25000 &&
                            (!sheet.name.starts_with("cleric") ||
                             std::ranges::max(sheet.original->class_levels) >= 6);
                 });
+            if (first_bond)
+            {
+                return played && end.area_id == 0 && someone_standing && earned_training &&
+                       session.script_variable(opengold::por::EclAddress{0x4C2A}) == 1 &&
+                       fights_fought >= 6 && fights_lost == 0;
+            }
             return played && end.area_id == 3 && someone_standing && earned_training &&
                    fights_fought >= 6 && fights_lost == 0;
         }
@@ -12846,6 +12869,10 @@ int main(int argc, char **argv)
         if (argc == 2 && std::string_view(argv[1]) == "--curse-route")
         {
             return walk_census(GoldBoxGame::curse_of_the_azure_bonds, true) ? 0 : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--curse-first-bond")
+        {
+            return walk_census(GoldBoxGame::curse_of_the_azure_bonds, true, true, true) ? 0 : 1;
         }
         if (argc == 2 && std::string_view(argv[1]) == "--curse-sewers")
         {

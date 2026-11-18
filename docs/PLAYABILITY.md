@@ -20,7 +20,7 @@ UI behavior and the current configured model are retained; no delegation.
 | Game | Verified | Remaining completion gap |
 |---|---|---|
 | Pool of Radiance | Fresh Original Rules party starts at zero XP, earns its training and equipment, defeats Tyranthraxus and reaches the ending; SRD map audits remain separate | Optional quests, other party compositions and difficulty settings are not certified by this route |
-| Curse of the Azure Bonds | Route reaches the ending and wins its fights | Replace injected import experience/gold and relocations with verified gameplay/import |
+| Curse of the Azure Bonds | Assisted ending route wins its fights; fresh earned opening, sewers and first bond now verified | Replace injected import experience/gold and relocations with verified gameplay/import |
 | Secret of the Silver Blades | Fresh complete route reaches the actual ending with every fight played, including Oswulf, the Dreadlord and the soul gem; zero forced wins | Replace progression grants and relocations with verified gameplay/import |
 | Gateway to the Savage Frontier | Route reaches the ending and wins its fights | Replace experience/gold/equipment/time grants and relocations |
 | Pools of Darkness | Fresh whole route and detailed finale replay defeat Gothmenes, reach the ending and restore all six members; zero forced results | Progression assistance and relocations remain |
@@ -400,3 +400,46 @@ remain in this opening/sewer segment. Scope, architecture, RAII and diff checks
 pass. Investigation and implementation ran from 04:07 to 04:17, followed by
 final verification ending 04:18. This completes the physical-opening batch;
 it does not certify the rest of Curse or any additional whole game.
+
+
+Delivery: `f816a093` pushed to `origin/main`; the affected target rebuilds in
+main and the opening/sewer check passes again in 34.38s. Pre-existing GAMES
+edits still prevent the requested pull and remain untouched.
+
+### Active next batch: earned first bond
+
+- Start observed 2026-11-18 04:20 UTC; checkpoint due 05:20 UTC.
+- Outcome: take the fresh opening party through the actual sewer exit and
+  Fire Knives' hideout, break the first bond and reach the wilderness menu.
+- Acceptance: actual movement and transfers, earned rewards and gear, legal
+  camps/training and real combat wins; first-bond flag set by its event, no
+  dead player character. No direct entry, relocation, reward or outcome grants.
+- Reuse/model: existing earned route, original rules and configured Codex;
+  no delegation, model/runtime change, new UI or save-format change.
+- Checks: resume diagnostic from the legitimate opening save, then fresh
+  registered route and affected creation/format/save/census regressions.
+
+
+Observed 2026-11-18 04:24 UTC: fresh first-bond route passes twelve real fights
+with zero losses and all six PCs alive at 35,912 XP, after the actual first-bond
+event and wilderness transfer. The wizard is unconscious, not dead. A resumed
+hideout diagnostic also reaches that event; it reports only its four suffix
+fights and therefore does not satisfy the fresh route's minimum fight count.
+No production-rule fix was needed. Registered final checks follow after rebuild.
+
+
+Final first-bond verification, observed 2026-11-18 04:27 UTC: **6/6 checks
+pass, zero skips**, in 118.41s on the rebuilt tree based on `f816a093`.
+Creation, Gold Box format checks, earned opening/sewers (34.36s), fresh first
+bond (83.15s), seven-game census and campaign save checks pass. Command:
+
+```bash
+OPENGOLD_GOLDBOX_DIR=/home/edmond/GoldBox OPENGOLD_GAME_DIR=/home/edmond/GoldBox/POOLRAD ctest --test-dir build/linux -R '^(opengold_original_creation_tests|opengold_gold_box_games_tests|opengold_curse_sewers|opengold_curse_first_bond|opengold_game_census|opengold_save_tests)$' --output-on-failure
+```
+
+Log: `/tmp/opengold-curse-first-bond-regression.log`; fresh independent trace:
+`/tmp/opengold-curse-first-bond-fresh.log`. Scope, architecture, ownership and
+diff checks pass; no production code, UI, save format or SRD rules changed.
+Investigation/implementation ran 04:20–04:25; registered verification ended
+04:27. One requested player milestone is delivered: the first bond earned
+from new characters. Curse's ending and the all-games objective remain open.
