@@ -22,7 +22,7 @@ UI behavior and the current configured model are retained; no delegation.
 | Game | Verified | Remaining completion gap |
 |---|---|---|
 | Pool of Radiance | Fresh Original Rules party starts at zero XP, earns its training and equipment, defeats Tyranthraxus and reaches the ending; SRD map audits remain separate | Optional quests, other party compositions and difficulty settings are not certified by this route |
-| Curse of the Azure Bonds | Assisted ending route wins its fights; fresh earned opening through second-bond recovery verified | Extend earned travel/progression through Moander, Zhentil Keep, Myth Drannor and the actual ending |
+| Curse of the Azure Bonds | Assisted ending route wins its fights; fresh earned opening through Moander/Gauntlet verified | Recover the Moander casualties and continue earned progression through Zhentil Keep, Myth Drannor and the actual ending |
 | Secret of the Silver Blades | Fresh complete route reaches the actual ending with every fight played, including Oswulf, the Dreadlord and the soul gem; zero forced wins | Replace progression grants and relocations with verified gameplay/import |
 | Gateway to the Savage Frontier | Route reaches the ending and wins its fights | Replace experience/gold/equipment/time grants and relocations |
 | Pools of Darkness | Fresh whole route and detailed finale replay defeat Gothmenes, reach the ending and restore all six members; zero forced results | Progression assistance and relocations remain |
@@ -636,3 +636,110 @@ Codex, no model/effort override or delegation; cost/token data unavailable.
 One earned second-bond outcome and its two engine blockers are delivered;
 no additional whole game is certified. Next is earned advancement and Moander,
 with all twelve games and subsequent winning-character availability still open.
+
+
+Delivery: `bfd1b1e3` pushed to `origin/main`; main matches origin. The
+pre-existing GAMES edits remain untouched, so the main pull is skipped under
+the dirty-checkout guard. The required main game rebuild and all four selected
+checks pass again (damage/Gold Box units, Godot preparation/Curse startup and
+packaged Linux smoke) in 19.89s. Log:
+`/tmp/opengold-curse-second-bond-main-recheck.log`. The session claim is released.
+
+### Earned advancement and Moander (delivered, 2026-11-18)
+
+- Start observed 2026-11-18 06:45 UTC; checkpoint due 07:45 UTC.
+- Outcome: advance eligible earned characters through paid halls, travel into
+  Yulash, recruit the actual companions, enter the Pit of Moander and win the
+  Gauntlet through the original battles and player-accessible paths.
+- Acceptance: Gauntlet `4C5B = 1` and Moander victory `4C2D = 1`; all six PCs
+  retained in the party, at least one PC standing and zero actual battle
+  defeats. Casualties are reported, with paid recovery where needed/affordable;
+  the six-alive second-bond check remains unchanged. No injected XP, money,
+  healing, positions, flags or results. Further bonds/ending remain later work.
+- Reuse/model: existing earned checkpoint at beat 64, original-rules hall,
+  travel, companions and combat; same configured Codex, no model/effort override
+  or delegation. No UI, save format, runtime or SRD changes planned.
+- Checks: real earned suffix, fresh registered milestone and affected earned
+  neighbors/format/save/companion regressions before commit/push. Current shared
+  engine baseline is the 341-check verified `bfd1b1e3` delivery above.
+
+Observed 07:37 UTC: the earned suffix reaches Yulash, obtains the real Wand of
+Defoliation, enters the Pit and recruits Alias and Dragonbait. The reachable
+stair is `(7,14)` on the western half of map 17; script 18 retains that map
+and uses its eastern half. Its altar is event 12 at `(11,3)/(12,3)`.
+Two player-facing blockers are corrected in the working tree: healing cast
+while a script menu retains its character record is no longer overwritten by
+the next LOAD CHARACTER, and valid lower-floor saves (map 17/script 18) reload.
+The existing format-53 earned beat-95 checkpoint now decodes; the independent
+installed-data save regression passes (`/tmp/opengold-curse-pit-save-unit4.log`,
+0.46s). The healing regression was proved red and then green. Save format and
+rules calculations are unchanged. The route still needs a winning prepared
+Mogion/Moander chain; no third bond or whole additional game is certified yet.
+
+60-minute checkpoint, observed 07:45 UTC: same owner/configured Codex, no
+model/effort override or delegation; cost/token data unavailable. The two
+engine regressions pass, including actual lower-floor save restoration. The
+earned suffix obtains the wand and companions, rests in room `(13,6)` rather
+than the guaranteed-attack altar corridor, and casts real Bless, Enlarge,
+Prayer and Haste. Its saved prepared party at beat 99 is valid. Targeted
+Fireball/holds improve the Mogion battle, but the retained party still loses
+to the pseudopods. Acceptance remains open; no milestone is counted yet.
+Failed diagnostic routes and build logs remain in `/tmp/opengold-curse-*`;
+the current prepared checkpoint is `/tmp/opengold-curse-room-prepared-99.sav`.
+The next bounded step is the surviving party's legal Moander tactics, followed
+by fresh-route and integrated checks; further bonds and carryover remain later.
+
+Observed 08:27 UTC: the fresh registered third-bond route passes in 364.64s:
+56 retained victories, zero battle defeats, two fights with casualties, all
+six PCs retained, Gauntlet and Moander flags earned. The mage stands at 6/41
+HP, Dragonbait at 50/50; the paladins/ranger/clerics need recovery. The tested
+Core and game build pass 341 of 342 broad checks, including all 170 checks
+named `opengold_godot_*` and the separate packaged Linux smoke. No checks skip.
+Earlier summaries reported 171 Godot checks; current registration proves
+170 named Godot checks plus the separate package smoke.
+Full trace: `/tmp/opengold-curse-moander-integrated-ctest.log`; results and
+registration names agree in `/tmp/opengold-curse-moander-suite-coverage.json`
+and `/tmp/opengold-curse-moander-registered.json`.
+
+The sole broad failure is the assisted Curse ending route: new Mogion tactics
+changed its later party and it lost in Dexam's caves. Those tactics are now
+restricted to earned third-bond progression, preserving the older route's
+choices. This last correction changes only the test player; Core/game inputs
+remain the broadly tested ones. Format/braces pass, the affected native target
+is rebuilt, all six shorter Curse/Gold Box checks are rerunning, and a second
+fresh earned third-bond run will retain its actual checkpoint for continuation.
+Logs: `/tmp/opengold-curse-moander-corrected-curse.log` and
+`/tmp/opengold-curse-moander-corrected-earned.log`. Acceptance is still open
+until these final affected checks pass; this is not a whole-game certificate.
+
+Final verification observed 08:34 UTC: the corrected native target passes all
+six selected checks in 397.75s, including the assisted ending route (397.74s),
+the six-alive second bond (325.16s), Hap, first bond, sewers and Gold Box units.
+The independent second fresh third-bond replay also passes: 56 fights, zero
+defeats, two fights with casualties, actual Gauntlet and Moander flags, all six
+PCs retained. It reproduces the registered run's endpoint: mage 6/41 and
+Dragonbait 50/50 standing; paladin 2 and ranger dead; paladin 1, both clerics
+and Alias unconscious. It saves the actual format-53 earned party at beat 101
+to `/tmp/opengold-curse-third-bond-earned.sav` and
+`/tmp/opengold-curse-third-final-101.sav`. Earlier legal checkpoints are retained
+under that prefix, including the side room and prepared altar doorway.
+
+Every one of the 342 registered checks is covered by the broad run and final
+affected replays, with no remaining failure or skip. The final test-player-only
+scoping correction leaves the broadly tested Core, game and other-game paths
+unchanged; third-bond behavior is independently replayed from a fresh party.
+`/tmp/opengold-curse-moander-final-coverage.json` records that comparison.
+The full game is rebuilt and exported, LLVM-23 format/braces and staged diff
+checks pass, and scope/architecture/RAII/save-history review passes. The tested
+tree is based on `bfd1b1e3` plus this delivery's changes. The user's pre-existing
+`docs/GAMES.md` edits remain unstaged and untouched.
+
+Observed phases: investigation/implementation 06:45–07:53, format/review
+07:53–07:54, full game build 07:54–07:59, broad checks through 08:24
+(1506.10s), test-player scoping/rebuild 08:24–08:26, final affected checks
+08:26–08:34. The 07:45 checkpoint was recorded on time. Same configured Codex,
+no model/effort override or delegation; cost/token data unavailable. One earned
+Moander milestone and two engine blockers are delivered; zero additional whole
+games are certified. Next: earned Pit escape/recovery, then the remaining
+bonds/ending; all twelve-game certification and subsequent winning-character
+availability remain open.

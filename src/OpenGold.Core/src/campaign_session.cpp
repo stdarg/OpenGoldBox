@@ -692,6 +692,13 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
         {
             continue;
         }
+        // Curse's lower Pit uses NEW ECL 18 without LOAD FILES: it retains
+        // script 17's geometry and walls (ECL3:17 8DC9h, ECL3:18 8039h).
+        // Record the shared map so an ordinary lower-floor save can reload.
+        if (game == GoldBoxGame::curse_of_the_azure_bonds && map_disk == 3 && map_id.record == 17)
+        {
+            scripts.push_back(18);
+        }
         const por::detail::AreaSource area{scripts.front(), map_disk, {}};
         const por::detail::DistrictMap geo{
             map_id.record, walls, {scripts.begin() + 1, scripts.end()}};

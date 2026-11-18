@@ -9,6 +9,7 @@
 #include <optional>
 #include <random>
 #include <set>
+#include <span>
 
 namespace opengold
 {
@@ -171,6 +172,10 @@ class EclMachine
     bool resume(std::uint64_t request_id, std::optional<std::size_t> choice = std::nullopt);
     bool resume_input(std::uint64_t request_id, std::string_view input);
     bool resume_host(std::uint64_t request_id, const EclHostReply &reply);
+    // Refresh live host data while keeping the current request paused. Only
+    // its active ticket may update bound data cells; no control flow changes.
+    // Invalid/stale updates are atomic and leave the request available.
+    bool refresh_host_variables(std::uint64_t request_id, std::span<const EclMemoryWrite> writes);
     // Host dice share the checkpointed script RNG. Returns [0, count).
     unsigned host_random(std::uint64_t request_id, unsigned count);
     // Engine dice rolled between scripts, such as camp interruption checks. They

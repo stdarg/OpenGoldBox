@@ -321,6 +321,18 @@ void suspension()
     check(result.state == EclState::waiting && result.request->choices.size() == 2,
           "Menu suspends");
     const auto id = result.request->id;
+    const std::array updates{EclMemoryWrite{EclAddress{0x9700}, 7}};
+    check(!vm.refresh_host_variables(id + 1, updates) && vm.variable(EclAddress{0x9700}) == 0,
+          "Stale live-data updates do not change the paused machine");
+    check(vm.refresh_host_variables(id, updates) && vm.variable(EclAddress{0x9700}) == 7 &&
+              !vm.consume_script_write(EclAddress{0x9700}),
+          "Live host data changes without being a script write");
+    const std::array invalid{EclMemoryWrite{EclAddress{0x9700}, 9},
+                             EclMemoryWrite{EclAddress{0x1234}, 1}};
+    check(!vm.refresh_host_variables(id, invalid) && vm.variable(EclAddress{0x9700}) == 7,
+          "Invalid live-data updates are atomic");
+    const std::array code{EclMemoryWrite{EclAddress{0x9914}, 0}};
+    check(!vm.refresh_host_variables(id, code), "Live-data updates cannot patch the program");
     check(vm.run().instructions == 0 && vm.run().request->id == id,
           "Waiting does not reexecute menu");
     check(!vm.resume(id + 1, 0) && !vm.resume(id) && !vm.resume(id, 2),

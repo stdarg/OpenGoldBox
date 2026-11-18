@@ -1189,6 +1189,36 @@ unsigned EclMachine::draw(unsigned count)
     return value % count;
 }
 
+bool EclMachine::refresh_host_variables(std::uint64_t id, std::span<const EclMemoryWrite> writes)
+{
+    if (state_ != EclState::waiting || !pending_ || pending_->id != id)
+    {
+        return false;
+    }
+    std::set<EclAddress> addresses;
+    try
+    {
+        for (const auto &update : writes)
+        {
+            const auto address = named(update.address);
+            if (program_address(*program_, address) || !addresses.insert(address).second)
+            {
+                return false;
+            }
+            (void)variable(address);
+        }
+    }
+    catch (const EclError &)
+    {
+        return false;
+    }
+    for (const auto &update : writes)
+    {
+        write(update.address, update.value);
+    }
+    return true;
+}
+
 bool EclMachine::resume_host(std::uint64_t id, const EclHostReply &reply)
 {
     if (state_ != EclState::waiting || !pending_ || pending_->id != id ||

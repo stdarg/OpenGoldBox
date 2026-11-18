@@ -570,7 +570,24 @@ void RolfTourSession::cast_outside_combat(MemberId caster, MemberId patient,
     {
         throw std::runtime_error("No one can cast spells in this area");
     }
+    const auto selected = selected_character_.index < campaign_->state().slots.size()
+                              ? campaign_->state().slots[selected_character_.index]
+                              : MemberId{};
+    const auto before_hp = selected ? campaign_->member(selected).vitals.hit_points : 0;
     campaign_->use_camp_action(caster, patient, action);
+    // A journey/camp menu can retain a loaded character record. Keep its HP
+    // current after the player's spell, so the next LOAD cannot undo healing.
+    if (selected && machine_.pending_request() &&
+        campaign_->member(selected).vitals.hit_points != before_hp)
+    {
+        const std::array updates{EclMemoryWrite{
+            game_cell(ecl_character_hit_points),
+            static_cast<std::uint16_t>(campaign_->member(selected).vitals.hit_points)}};
+        if (!machine_.refresh_host_variables(machine_.pending_request()->id, updates))
+        {
+            throw EclError("Cannot refresh the selected character after casting");
+        }
+    }
     constexpr EclAddress last_spell{0x4B};
     constexpr std::uint16_t awaiting_spell = 0xFF;
     constexpr std::string_view cast_prefix = "cast:";

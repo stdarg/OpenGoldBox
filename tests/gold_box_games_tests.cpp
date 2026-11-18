@@ -391,6 +391,69 @@ void curse_selected_damage()
     check(saved && failed, "The regression exercises successful and failed original saves");
 }
 
+// A camp cure changes the live party while the script retains its selected
+// record. The next LOAD CHARACTER must not undo a spell already consumed.
+void curse_camp_healing_survives_script_reads()
+{
+    using namespace opengold;
+    using namespace opengold::por;
+    constexpr auto game = GoldBoxGame::curse_of_the_azure_bonds;
+    const std::shared_ptr<const rules::CharacterRules> creation =
+        original::character_rules(original::default_aging, game);
+    original::Content content;
+    content.game = game;
+    auto party = std::make_shared<CampaignParty>(original::rules_module(content), creation);
+    CharacterCreator creator(creation, 42);
+    creator.select(rules::CreationField::race, "human");
+    creator.select(rules::CreationField::character_class, "cleric");
+    creator.name("Camp healer");
+    test::walk_original_creation(creator);
+    const auto id = party->add_pc(creator.create_character());
+    test::modify_to_the_highest(*party, id);
+    check(static_cast<bool>(party->rest()), "The cleric rests to prepare a cure");
+    party->choose_spells(id, {{}, std::vector<std::string>{"cleric:cure_light_wounds"}});
+    rules::HazardAttack hurt{0, 0, 1, 12, {}};
+    hurt.automatic = true;
+    (void)party->hazard_attack(id, hurt);
+    const auto damaged = party->member(id).vitals.hit_points;
+    std::vector<std::uint8_t> record{0, 0, 1, 1, 0x14, 0x80};
+    for (int entry = 1; entry < 5; ++entry)
+    {
+        record.insert(record.end(), {1, 1, 0x15, 0x80});
+    }
+    // EXIT for loading; LOAD 0, one-choice menu, LOAD 0, EXIT for looking.
+    record.insert(record.end(),
+                  {0, 10, 0, 0, 43, 1, 0, 0x40, 0, 1, 128, 3, 4, 32, 192, 10, 0, 0, 0});
+    auto program =
+        std::make_shared<const EclProgram>(EclProgram::decode(record, "Curse camp cure", game));
+    RolfTourSession session({}, program, {}, 0x8014, {}, std::make_shared<PhlanResources>());
+    session.campaign_party(party);
+    const auto settle = [&]
+    {
+        for (int n = 0; n < 50 && session.snapshot().phase == TourPhase::running; ++n)
+        {
+            session.advance(1.0);
+        }
+    };
+    settle();
+    test::TourAccess::set_variable(session, EclAddress{0x4000}, 0);
+    check(session.explore(ExplorationCommand::look), "The script loads its selected character");
+    settle();
+    check(session.snapshot().phase == TourPhase::awaiting_continue &&
+              session.snapshot().choices.size() == 1,
+          "The character record is retained across a paused journey-style menu");
+    session.cast_outside_combat(id, id, "cast:cleric:cure_light_wounds");
+    const auto healed = party->member(id).vitals.hit_points;
+    check(healed > damaged && party->memorized_spells(id).empty(),
+          "The actual cure heals and is consumed");
+    check(session.choose(session.snapshot().continue_ticket, 0),
+          "Resume the menu and read the character again");
+    settle();
+    check(session.snapshot().phase == TourPhase::completed &&
+              party->member(id).vitals.hit_points == healed && party->memorized_spells(id).empty(),
+          "Cast healing survives the next script character read");
+}
+
 void the_font_has_eight_bytes_a_glyph()
 {
     std::vector<std::uint8_t> font(64 * 8);
@@ -532,6 +595,66 @@ void curse_opening_reaches_the_first_map()
     check(session.snapshot().pose.x == 6 && session.snapshot().pose.y == 13 &&
               session.snapshot().dialogue.find("TILVERTON") != std::string::npos,
           "The innkeeper speaks: " + diagnostics());
+}
+
+void curse_lower_pit_saves_reload()
+{
+    using namespace opengold;
+    constexpr auto game = GoldBoxGame::curse_of_the_azure_bonds;
+    const auto *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
+    if (!games)
+    {
+        std::cout << "Curse's files are not here; lower Pit saves are not checked.\n";
+        return;
+    }
+    const auto folder = std::filesystem::path(games) / "CURSE";
+    const auto content = load_original_content(folder, game);
+    const std::shared_ptr<const rules::CharacterRules> creation =
+        original::character_rules(original::default_aging, game);
+    const auto module = original::rules_module(content);
+    auto party = std::make_shared<CampaignParty>(original::rules_module(content), creation);
+    CharacterCreator creator(creation, 42);
+    creator.select(rules::CreationField::race, "human");
+    creator.select(rules::CreationField::character_class, "fighter");
+    creator.name("Pit explorer");
+    test::walk_original_creation(creator);
+    party->add_pc(creator.create_character());
+    auto session = load_campaign(folder, game);
+    session.campaign_party(party);
+    for (int n = 0; n < 200 && !session.can_leave(); ++n)
+    {
+        if (session.snapshot().phase == por::TourPhase::running)
+        {
+            session.advance(1.0);
+        }
+        else if (session.snapshot().phase == por::TourPhase::awaiting_continue)
+        {
+            check(session.choose(session.snapshot().continue_ticket, 0), "Finish Curse's opening");
+        }
+    }
+    check(session.can_leave(), "Curse's opening finishes before entering the save fixture");
+    test::TourAccess::enter_script(session, 18, 17, {15, 14, por::MapDirection::south});
+    for (int n = 0; n < 100 && !session.can_leave(); ++n)
+    {
+        if (session.snapshot().phase == por::TourPhase::running)
+        {
+            session.advance(1.0);
+        }
+        else if (session.snapshot().phase == por::TourPhase::awaiting_continue)
+        {
+            check(session.choose(session.snapshot().continue_ticket, 0), "Stay on the lower floor");
+        }
+    }
+    check(session.can_leave() && session.snapshot().script_id == 18 &&
+              session.snapshot().area_id == 17,
+          "The lower Pit retains the upper floor's geometry");
+    const auto bytes = encode_campaign(*party, &session, "pit-save", game);
+    const auto restored = decode_campaign(bytes, *creation, *module, "pit-save", &session);
+    check(restored.town && restored.town->snapshot().script_id == 18 &&
+              restored.town->snapshot().area_id == 17 &&
+              restored.town->snapshot().pose == session.snapshot().pose &&
+              restored.party.slots == party->state().slots,
+          "A saved lower-floor party reloads with its script, map and position");
 }
 
 // Curse's step 2 (docs/GAMES.md): every square of the map the party stands on,
@@ -7699,7 +7822,8 @@ enum class CurseProgress
     sewers,
     first_bond,
     hap,
-    second_bond
+    second_bond,
+    third_bond
 };
 
 // Earned milestones follow the physical opening, sewer lairs, first bond,
@@ -7710,6 +7834,11 @@ std::vector<RouteBeat> curse_earned_route(CurseProgress progress)
     using D = opengold::por::MapDirection;
     const auto &story = curse_route();
     std::vector<RouteBeat> beats(story.begin(), story.begin() + 6);
+    const auto world = [&](std::vector<std::string> choices, bool rest = false)
+    {
+        beats.push_back({0, 0, 0, D::north, std::move(choices), rest, false, true});
+        beats.back().rest_for_spells = rest;
+    };
     // The same shop event appears in disconnected geometry. Use the town
     // shop a party can actually reach from the inn, not the assisted route's.
     beats.front().x = 3;
@@ -7780,11 +7909,6 @@ std::vector<RouteBeat> curse_earned_route(CurseProgress progress)
         barn.rest_for_spells = true;
         beats.push_back({50, 3, 0, D::north, {"YES", "stop:JOURNEY"}});
         beats.back().step = true;
-        const auto world = [&](std::vector<std::string> choices, bool rest = false)
-        {
-            beats.push_back({0, 0, 0, D::north, std::move(choices), rest, false, true});
-            beats.back().rest_for_spells = rest;
-        };
         world({"stop:JOURNEY"}, true);
         world({"JOURNEY", "ESSEMBRA", "stop:JOURNEY"});
         world({"stop:JOURNEY"}, true);
@@ -7860,6 +7984,154 @@ std::vector<RouteBeat> curse_earned_route(CurseProgress progress)
         beats.push_back(story[35]);
         beats.back().step = true;
     }
+    if (progress >= CurseProgress::third_bond)
+    {
+        RouteBeat depart{50, 3, 0, D::north, {"YES", "WILDERNESS", "stop:JOURNEY"}, true};
+        depart.step = true;
+        depart.rest_for_spells = true;
+        beats.push_back(depart);
+        world({"stop:JOURNEY"}, true);
+        for (const char *name : {"paladin 1", "paladin 2", "ranger 3"})
+        {
+            beats.back().ready_types.emplace_back(36, name);
+        }
+        beats.back().ready_types.emplace_back(23, "cleric 4");
+        beats.back().ready_types.emplace_back(12, "cleric 5");
+        world({"JOURNEY", "ESSEMBRA", "stop:JOURNEY"});
+        beats.back().reloads_until_won = 360;
+        world({"stop:JOURNEY"}, true);
+        world({"JOURNEY", "STANDING STONE", "stop:JOURNEY"});
+        world({"stop:JOURNEY"}, true);
+        world({"JOURNEY", "ASHABENFORD", "stop:JOURNEY"});
+        world({"stop:JOURNEY"}, true);
+        world({"JOURNEY", "SHADOWDALE", "BY BOAT", "stop:JOURNEY"});
+        world({"stop:JOURNEY"}, true);
+        // Spend the earned purse on the fourth-level arcane spells and
+        // clerical advancement first; the remaining fighters train when funded.
+        world({"ENTER CITY", "HALL", "magic_user 6", "magic_user 6", "cleric 4", "cleric 5",
+               "paladin 1", "paladin 2", "ranger 3", "Leave", "LEAVE", "stop:JOURNEY"});
+        world({"stop:JOURNEY"}, true);
+        world({"JOURNEY", "ASHABENFORD", "BY BOAT", "stop:JOURNEY"});
+        world({"stop:JOURNEY"}, true);
+        world({"JOURNEY", "STANDING STONE", "stop:JOURNEY"});
+        world({"stop:JOURNEY"}, true);
+        world({"JOURNEY", "HILLSFAR", "stop:JOURNEY"});
+        world({"stop:JOURNEY"}, true);
+        world({"JOURNEY", "YULASH", "TRAIL", "stop:JOURNEY"});
+        world({"ENTER CITY", "ASK PERMISSION", "PARLAY"}, true);
+        const auto spies =
+            std::ranges::find_if(story,
+                                 [](const RouteBeat &beat)
+                                 {
+                                     return beat.map == 16 && beat.x == 0 && beat.y == 3;
+                                 });
+        const auto mogion =
+            std::ranges::find_if(story,
+                                 [](const RouteBeat &beat)
+                                 {
+                                     return beat.map == 17 && beat.x == 7 && beat.y == 1;
+                                 });
+        check(spies != story.end() && mogion != story.end(),
+              "The existing Moander story is present");
+        beats.insert(beats.end(), spies, mogion + 1);
+        const auto mounds =
+            std::ranges::find_if(beats,
+                                 [](const RouteBeat &beat)
+                                 {
+                                     return beat.map == 16 && beat.x == 11 && beat.y == 8;
+                                 });
+        check(mounds != beats.end(), "The mound encounter is in the earned route");
+        const auto mound_index = static_cast<std::size_t>(mounds - beats.begin());
+        // Take the open streets around the houses, not the shorter path
+        // through eight locked doors and their interior encounters.
+        std::vector<RouteBeat> streets;
+        for (const auto &[x, y] :
+             std::array<std::pair<unsigned, unsigned>, 4>{{{3, 9}, {5, 15}, {13, 15}, {13, 8}}})
+        {
+            streets.push_back({16, x, y, D::north, {"Parley", "Nice", "NO", "Bash"}});
+        }
+        streets.front().rest_first = true;
+        streets.front().rest_for_spells = true;
+        streets.front().cure_first = true;
+        streets.front().cure_to_full = true;
+        beats[mound_index].rest_first = false;
+        beats.insert(beats.begin() + static_cast<std::ptrdiff_t>(mound_index), streets.begin(),
+                     streets.end());
+        // The pit is entered by actually stepping off Yulash's north edge.
+        for (auto &beat : beats)
+        {
+            if (beat.map == 17 && beat.x == 15 && beat.y == 11)
+            {
+                // The eastern stair is sealed off from the entrance. The
+                // southern stair reaches the same lower temple by foot.
+                beat.x = 7;
+                beat.y = 14;
+                beat.ready_types.emplace_back(79, "magic_user 6");
+            }
+            else if (beat.map == 17 && beat.x == 7 && beat.y == 1)
+            {
+                // Script 18 uses the eastern half of the shared geometry;
+                // its altar is event 12 at (11,3), not the upper floor's.
+                beat.x = 11;
+                beat.y = 3;
+                beat.step = true;
+                beat.cure_first = true;
+                beat.cure_to_full = true;
+            }
+            if (beat.map == 16 && beat.x == 11 && beat.y == 0)
+            {
+                beat.step = true;
+            }
+            if (beat.map == 16 && beat.x == 5 && beat.y == 2)
+            {
+                beat.cure_first = true;
+                beat.cure_to_full = true;
+                beat.answers = {"Parley", "Nice", "NO", "Bash"};
+            }
+        }
+        auto boss = beats.back();
+        beats.pop_back();
+        // The corridor outside the altar has a guaranteed camp attack.
+        // Prepare in the side room, then walk back to its north door.
+        beats.push_back({17, 13, 6, D::north, {"WAIT", "NO", "Bash"}});
+        beats.back().ready_types.emplace_back(79, "magic_user 6");
+        RouteBeat prepare{17, 13, 6, D::north, {}, true};
+        prepare.keep_preparation = true;
+        prepare.rest_for_spells = true;
+        prepare.ward_memorized = "enlarge";
+        prepare.ward_members = {"paladin 1", "paladin 2"};
+        prepare.memorize_first_of = {"enlarge", "enlarge", "haste", "fireball", "bless", "prayer"};
+        beats.push_back(prepare);
+        RouteBeat approach{17, 12, 4, D::north, {}};
+        approach.keep_preparation = true;
+        approach.cure_first = true;
+        approach.cure_to_full = true;
+        approach.cast_after = {"bless"};
+        beats.push_back(approach);
+        // Look costs ten minutes. Cast the short wards without another
+        // look or walk between them and the single step into the altar.
+        RouteBeat enlarge{17, 12, 4, D::north, {}};
+        enlarge.waiting = true;
+        enlarge.keep_preparation = true;
+        enlarge.ward_each_with = "enlarge";
+        enlarge.ward_members = {"paladin 1", "paladin 2"};
+        enlarge.cure_first = true;
+        enlarge.cure_to_full = true;
+        enlarge.cast_after = {"prayer"};
+        beats.push_back(enlarge);
+        RouteBeat haste{17, 12, 4, D::north, {}};
+        haste.waiting = true;
+        haste.keep_preparation = true;
+        haste.cast_after = {"haste"};
+        beats.push_back(haste);
+        boss.x = 12;
+        boss.y = 4;
+        boss.keep_preparation = true;
+        // Search adds ten minutes even to this one step, outlasting the
+        // short Bless, Prayer and Haste spells just cast at the altar door.
+        boss.searching = false;
+        beats.push_back(boss);
+    }
     for (auto &beat : beats)
     {
         if (beat.map == 3)
@@ -7873,11 +8145,10 @@ std::vector<RouteBeat> curse_earned_route(CurseProgress progress)
 // Replan after each actual step: encounters, doors and scripts may interrupt it.
 // This route never places the party on a target square; scripts own transfers.
 void walk_earned_curse(opengold::por::RolfTourSession &session, unsigned tx, unsigned ty,
-                       const std::function<void()> &settle)
+                       const std::function<void()> &settle, bool prefer_open = false)
 {
     using C = opengold::por::ExplorationCommand;
     constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
-    session.set_searching(true);
     const auto area = session.snapshot().area_id;
     const auto script = session.snapshot().script_id;
     for (unsigned moves = 0; moves < 400; ++moves)
@@ -7894,46 +8165,55 @@ void walk_earned_curse(opengold::por::RolfTourSession &session, unsigned tx, uns
         }
         std::array<int, 256> previous;
         std::array<unsigned, 256> direction{};
-        previous.fill(-1);
-        std::deque<int> pending;
         const int origin = before.pose.y * 16 + before.pose.x;
-        previous[origin] = origin;
-        pending.push_back(origin);
-        while (!pending.empty())
+        // Yulash's open streets are safer than the shorter path through
+        // locked houses. Fall back to locks only when the destination needs one.
+        for (unsigned door_limit = prefer_open ? 1 : 2; door_limit <= 2; ++door_limit)
         {
-            const int at = pending.front();
-            pending.pop_front();
-            for (unsigned d = 0; d < 4; ++d)
+            previous.fill(-1);
+            std::deque<int> pending;
+            previous[origin] = origin;
+            pending.push_back(origin);
+            while (!pending.empty())
             {
-                int x = at % 16 + dx[d], y = at / 16 + dy[d];
-                // ECL2:3 folds the sewer corridors across its north/south
-                // edges. These are actual scripted steps, not map wrapping.
-                if (area == 3 && y == 16 && (x == 2 || x == 5 || x == 9))
+                const int at = pending.front();
+                pending.pop_front();
+                for (unsigned d = 0; d < 4; ++d)
                 {
-                    x = x == 2 ? 9 : x == 5 ? 11 : 15;
-                    y = 0;
+                    int x = at % 16 + dx[d], y = at / 16 + dy[d];
+                    // ECL2:3 folds the sewer corridors across its north/south
+                    // edges. These are actual scripted steps, not map wrapping.
+                    if (area == 3 && y == 16 && (x == 2 || x == 5 || x == 9))
+                    {
+                        x = x == 2 ? 9 : x == 5 ? 11 : 15;
+                        y = 0;
+                    }
+                    else if (area == 3 && y == -1 && (x == 9 || x == 11 || x == 15))
+                    {
+                        x = x == 9 ? 2 : x - 6;
+                        y = 15;
+                    }
+                    if (x < 0 || y < 0 || x >= 16 || y >= 16)
+                    {
+                        continue;
+                    }
+                    const auto &edge = session.map().at(at % 16, at / 16);
+                    if (edge.doors[d] > door_limit || (edge.walls[d] && !edge.doors[d]))
+                    {
+                        continue;
+                    }
+                    const int next = y * 16 + x;
+                    if (previous[next] < 0)
+                    {
+                        previous[next] = at;
+                        direction[next] = d;
+                        pending.push_back(next);
+                    }
                 }
-                else if (area == 3 && y == -1 && (x == 9 || x == 11 || x == 15))
-                {
-                    x = x == 9 ? 2 : x - 6;
-                    y = 15;
-                }
-                if (x < 0 || y < 0 || x >= 16 || y >= 16)
-                {
-                    continue;
-                }
-                const auto &edge = session.map().at(at % 16, at / 16);
-                if (edge.doors[d] > 2 || (edge.walls[d] && !edge.doors[d]))
-                {
-                    continue;
-                }
-                const int next = y * 16 + x;
-                if (previous[next] < 0)
-                {
-                    previous[next] = at;
-                    direction[next] = d;
-                    pending.push_back(next);
-                }
+            }
+            if (previous[ty * 16 + tx] >= 0)
+            {
+                break;
             }
         }
         int next = ty * 16 + tx;
@@ -7961,6 +8241,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
     const bool first_bond = progress >= CurseProgress::first_bond;
     const bool hap = progress >= CurseProgress::hap;
     const bool second_bond = progress >= CurseProgress::second_bond;
+    const bool third_bond = progress >= CurseProgress::third_bond;
     using opengold::por::TourPhase;
     const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
     const auto folder = games ? std::filesystem::path(games) / std::string(game_folder(game))
@@ -8671,11 +8952,19 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
     {
         constexpr unsigned magic_missile = 15, fireball = 47, ice_storm = 187;
         const auto state = session.snapshot();
+        const bool dracolich =
+            std::ranges::any_of(state.combatants,
+                                [](const opengold::rules::CombatantView &unit)
+                                {
+                                    return unit.side == opengold::rules::Side::opposition &&
+                                           unit.conscious && unit.name.starts_with("DRACOLICH");
+                                });
         const bool mounds =
             std::ranges::any_of(state.combatants,
                                 [](const opengold::rules::CombatantView &unit)
                                 {
-                                    return unit.conscious && unit.name.starts_with("SHAMBLING");
+                                    return unit.conscious && (unit.name.starts_with("SHAMBLING") ||
+                                                              unit.name.starts_with("DRACOLICH"));
                                 });
         if (!mounds)
         {
@@ -8687,8 +8976,12 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         {
             return spell == ice_storm ? 5 : 7;
         };
-        const auto wanted = [](unsigned spell, const opengold::rules::CombatantView &unit)
+        const auto wanted = [dracolich](unsigned spell, const opengold::rules::CombatantView &unit)
         {
+            if (dracolich)
+            {
+                return spell == fireball && unit.name.starts_with("DRACOLICH");
+            }
             return spell == ice_storm ? unit.name.starts_with("SHAMBLING")
                                       : unit.name.starts_with("GIANT SNAKE");
         };
@@ -8738,7 +9031,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             if (command.verb == "aim" && command.item == magic_missile &&
                 unit_of(command.target) != state.combatants.end() &&
                 unit_of(command.target)->conscious &&
-                unit_of(command.target)->name.starts_with("SHAMBLING") &&
+                (unit_of(command.target)->name.starts_with("SHAMBLING") ||
+                 unit_of(command.target)->name.starts_with("DRACOLICH")) &&
                 (!missile ||
                  unit_of(command.target)->hit_points < unit_of(missile->target)->hit_points))
             {
@@ -8775,7 +9069,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         const auto &field = state.battlefield;
         const auto worth_casting = [&](unsigned spell, opengold::rules::Cell from)
         {
-            const int least = spell == fireball ? 2 : 1, range = spell == fireball ? 16 : 6;
+            const int least = spell == fireball && !dracolich ? 2 : 1,
+                      range = spell == fireball ? 16 : 6;
             for (int y = 0; y < field.height; ++y)
             {
                 for (int x = 0; x < field.width; ++x)
@@ -8788,9 +9083,25 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             }
             return false;
         };
+        // Crimdrac is immune to cold; his cluebook recommends the immediate
+        // Magic Missile first, then Fireball. All are real offered commands.
+        if (dracolich)
+        {
+            for (const auto &command : commands)
+            {
+                if (command.verb == "cast" && command.item == magic_missile)
+                {
+                    return command;
+                }
+            }
+        }
         bool blasting = false;
         for (const unsigned spell : {ice_storm, fireball})
         {
+            if (dracolich && spell == ice_storm)
+            {
+                continue;
+            }
             for (const auto &command : commands)
             {
                 if ((command.verb == "use" || command.verb == "cast") && spell_of(command) == spell)
@@ -8809,7 +9120,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             for (const auto &unit : state.combatants)
             {
                 if (unit.side == opengold::rules::Side::opposition && unit.conscious &&
-                    (!mounds_only || unit.name.starts_with("SHAMBLING")))
+                    (!mounds_only ||
+                     (unit.name.starts_with("SHAMBLING") || unit.name.starts_with("DRACOLICH"))))
                 {
                     nearest = std::min(nearest, doubled(cell, unit.cell));
                 }
@@ -8879,12 +9191,20 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
     // member; a cleric's Prayer once; then Hold Person on the high priests,
     // who are people, before they cast. Anything else the member's Quick
     // chooses.
-    const auto finale_turn =
-        [](const opengold::rules::CombatSession &session) -> std::optional<opengold::rules::Command>
+    const auto finale_turn = [third_bond](const opengold::rules::CombatSession &session)
+        -> std::optional<opengold::rules::Command>
     {
         constexpr unsigned fireball = 47, prayer = 42, hold_person = 23;
         constexpr int burst_reach = 7; // doubled steps: Fireball's 3 squares
         const auto state = session.snapshot();
+        const bool mogion =
+            third_bond &&
+            std::ranges::any_of(state.combatants,
+                                [](const opengold::rules::CombatantView &unit)
+                                {
+                                    return unit.side == opengold::rules::Side::opposition &&
+                                           unit.name.starts_with("MOGION");
+                                });
         const auto foe = [](const opengold::rules::CombatantView &unit)
         {
             return unit.side == opengold::rules::Side::opposition && unit.conscious;
@@ -8892,14 +9212,19 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         if (std::ranges::none_of(state.combatants,
                                  [&](const opengold::rules::CombatantView &unit)
                                  {
-                                     return foe(unit) && unit.name.starts_with("TYRANTHRAXUS");
+                                     return foe(unit) &&
+                                            (unit.name.starts_with("TYRANTHRAXUS") ||
+                                             (mogion && unit.name.starts_with("MOGION")));
                                  }))
         {
             return std::nullopt;
         }
         const auto priest = [&](const opengold::rules::CombatantView &unit)
         {
-            return foe(unit) && unit.name.starts_with("HIGH PRIEST") && unit.status.empty();
+            return foe(unit) && unit.status.empty() &&
+                   (unit.name.starts_with("HIGH PRIEST") ||
+                    (mogion &&
+                     (unit.name.starts_with("MOGION") || unit.name.starts_with("CULTIST"))));
         };
         const auto burst_worth = [&](opengold::rules::Cell aim)
         {
@@ -8911,9 +9236,12 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 {
                     continue;
                 }
-                worth += unit.side == opengold::rules::Side::party ? -100
-                         : unit.name.starts_with("HIGH PRIEST")    ? 2
-                                                                   : 1;
+                // Fireball interrupts Mogion's human casters. Her mounds
+                // resist fire and are kept for the Defoliation wand.
+                worth += unit.side == opengold::rules::Side::party              ? -100
+                         : priest(unit) || unit.name.starts_with("HIGH PRIEST") ? 2
+                         : mogion && unit.name.starts_with("SHAMBLING")         ? 0
+                                                                                : 1;
             }
             return worth;
         };
@@ -10047,6 +10375,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         // asking (the overland's) runs off the field with the first tactic.
         const bool running =
             game == GoldBoxGame::treasures_of_the_savage_frontier && fleeing && tactic == 0;
+        const bool yulash_mounds = third_bond && session.snapshot().script_id == 16;
         for (int command = 0;
              !running && command < 3000 &&
              combat.combat().snapshot().outcome == opengold::rules::Outcome::ongoing;
@@ -10072,8 +10401,18 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 held = treasures_turn(session);
             }
             if (!held && member && tactic == 2 && !wanted_exit &&
-                game == GoldBoxGame::gateway_to_the_savage_frontier)
+                (game == GoldBoxGame::gateway_to_the_savage_frontier || yulash_mounds ||
+                 (third_bond &&
+                  std::ranges::any_of(state.combatants,
+                                      [](const opengold::rules::CombatantView &unit)
+                                      {
+                                          return unit.side == opengold::rules::Side::opposition &&
+                                                 unit.conscious &&
+                                                 unit.name.starts_with("DRACOLICH");
+                                      }))))
             {
+                // Crimdrac is fought with the real Fireball wand won from
+                // Dracandros. These are ordinary targeting/movement commands.
                 held = mounds_turn(session);
             }
             if (!held && member && tactic == 2 && game == GoldBoxGame::curse_of_the_azure_bonds)
@@ -10945,6 +11284,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         }
         return false;
     };
+    bool reload_camp_on_attack = false;
     const auto play = [&](const std::string &where)
     {
         const auto attribute = [&]
@@ -11485,6 +11825,10 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 continue;
             }
             case TourPhase::combat:
+                if (reload_camp_on_attack)
+                {
+                    return;
+                }
                 if (session.monster_picture())
                 {
                     (void)session.start_encounter();
@@ -11694,6 +12038,18 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             {
                 return;
             }
+            const auto cast_cure =
+                [&](opengold::MemberId healer, opengold::MemberId target, const std::string &action)
+            {
+                if (sewers)
+                {
+                    session.cast_outside_combat(healer, target, action);
+                }
+                else
+                {
+                    party->use_camp_action(healer, target, action);
+                }
+            };
             for (const auto dead : party->state().slots)
             {
                 for (const auto healer : party->state().slots)
@@ -11721,7 +12077,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                         std::cout << "  " << party->member(healer).character.sheet().name
                                   << " casts " << raise->id << " on "
                                   << party->member(dead).character.sheet().name << "\n";
-                        party->use_camp_action(healer, dead, raise->id);
+                        cast_cure(healer, dead, raise->id);
                     }
                     catch (const std::exception &)
                     {
@@ -11777,7 +12133,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                             std::cout << "  " << party->member(healer).character.sheet().name
                                       << " casts " << found->id << " on "
                                       << party->member(hurt).character.sheet().name << "\n";
-                            party->use_camp_action(healer, hurt, found->id);
+                            cast_cure(healer, hurt, found->id);
                         }
                     }
                 }
@@ -11906,16 +12262,47 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                          }) ||
                      (!ward_spell.empty() && copies_ready(ward_spell) < ward_target_count()));
                 const bool resting = (a_night_first && day == 0) || !party_whole() || missing_plan;
-                if (!resting || !camp_and_rest())
+                if (!resting)
                 {
                     break;
                 }
-                // The spells are chosen as the rest ends, as the rest dialog
-                // has it, before a camp's interruption or the map's script.
-                memorize();
                 const auto fights_before = fights_fought;
                 const auto hit_points_before = party_hit_points();
-                play("camp");
+                bool rested = false;
+                for (unsigned reload = 0; reload <= 32; ++reload)
+                {
+                    const bool pit = third_bond && session.snapshot().script_id == 18;
+                    const auto before_camp =
+                        pit ? std::optional(session.detached_copy()) : std::nullopt;
+                    const auto party_before = party->state();
+                    const auto answers_before = answers;
+                    reload_camp_on_attack = pit && reload < 32;
+                    rested = camp_and_rest();
+                    if (rested)
+                    {
+                        // Choose actual spells as the rest dialog does. A Pit
+                        // player reloads a camp attacked before preparation
+                        // finishes rather than spending its wards in that fight.
+                        memorize();
+                        play("camp");
+                    }
+                    reload_camp_on_attack = false;
+                    if (!rested || !pit || session.snapshot().phase != TourPhase::combat)
+                    {
+                        break;
+                    }
+                    session = before_camp->detached_copy();
+                    party->restore(party_before);
+                    session.attach_restored_party(party);
+                    answers = answers_before;
+                    session.reseed_dice(
+                        static_cast<std::uint32_t>(party_before.time_minutes + reload + 1));
+                    ++phases["Pit preparation camps reloaded"];
+                }
+                if (!rested)
+                {
+                    break;
+                }
                 // A camp whose script speaks first rests only once its
                 // words are answered; finish any choices left by it.
                 if (party->state().spell_rest)
@@ -11934,7 +12321,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 // At the final preparation camps, use the refreshed cures
                 // instead of waiting a day per Hit Point while wandering
                 // monsters repeatedly undo the natural healing.
-                if (game == GoldBoxGame::pools_of_darkness && keeps_preparation)
+                if ((game == GoldBoxGame::pools_of_darkness && keeps_preparation) ||
+                    (third_bond && session.snapshot().script_id == 18))
                 {
                     cure_the_hurt(true);
                 }
@@ -12084,6 +12472,23 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                             return;
                         }
                     }
+                }
+            }
+            if (std::getenv("OPENGOLD_FIGHT_GEAR"))
+            {
+                for (const auto id : party->state().slots)
+                {
+                    if (!id)
+                    {
+                        continue;
+                    }
+                    std::cout << "  available after failed camp cast for "
+                              << party->member(id).character.sheet().name << ":";
+                    for (const auto &spell : party->memorized_spells(id))
+                    {
+                        std::cout << " " << spell;
+                    }
+                    std::cout << "\n";
                 }
             }
             needs["No one can cast what the beat asks"].push_back(current_beat);
@@ -12439,8 +12844,10 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                 const bool destination_passing = passing;
                                 const bool story_walk =
                                     second_bond &&
-                                    (session.snapshot().script_id == 50 || beat.map == 51);
+                                    (session.snapshot().script_id == 50 || beat.map == 51 ||
+                                     (third_bond && (beat.map == 16 || beat.map == 17)));
                                 passing = !story_walk;
+                                session.set_searching(beat.searching.value_or(true));
                                 walk_earned_curse(
                                     session, x, beat.y,
                                     [&]
@@ -12455,7 +12862,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                             answers.insert(answers.begin(), "stop:JOURNEY");
                                         }
                                         play(where);
-                                    });
+                                    },
+                                    third_bond && beat.map == 16);
                                 passing = destination_passing;
                                 answers = destination_answers;
                                 if (session.snapshot().script_id != destination_script)
@@ -13025,10 +13433,11 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         const bool played = needs.empty() && end.phase != TourPhase::defeated;
         if (sewers)
         {
-            std::cout << (second_bond  ? "Earned second-bond progression: "
-                          : hap        ? "Earned Hap progression: "
-                          : first_bond ? "Earned first-bond progression: "
-                                       : "Earned sewer progression: ")
+            std::cout << (third_bond    ? "Earned third-bond progression: "
+                          : second_bond ? "Earned second-bond progression: "
+                          : hap         ? "Earned Hap progression: "
+                          : first_bond  ? "Earned first-bond progression: "
+                                        : "Earned sewer progression: ")
                       << fights_fought << " fights, " << fights_defeated << " defeats, "
                       << fights_lost << " fights with casualties or defeat; "
                       << "this is not a campaign win.\n";
@@ -13053,11 +13462,28 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                             return true;
                                         }
                                         const auto &sheet = member.character.sheet();
-                                        return !member.vitals.dead && member.experience > 25000 &&
+                                        return (third_bond || !member.vitals.dead) &&
+                                               member.experience > 25000 &&
                                                (!sheet.name.starts_with("cleric") ||
                                                 std::ranges::max(sheet.original->class_levels) >=
                                                     6);
                                     });
+            if (third_bond)
+            {
+                const bool pc_standing = std::ranges::any_of(
+                    party->state().slots,
+                    [&](opengold::MemberId id)
+                    {
+                        return id && party->member(id).npc_source.empty() &&
+                               !party->member(id).vitals.dead &&
+                               party->member(id).vitals.hit_points > 0 &&
+                               party->member(id).vitals.description != "Turned to stone.";
+                    });
+                return played && pc_standing && earned_training &&
+                       session.script_variable(opengold::por::EclAddress{0x4C5B}) == 1 &&
+                       session.script_variable(opengold::por::EclAddress{0x4C2D}) == 1 &&
+                       fights_defeated == 0;
+            }
             if (second_bond)
             {
                 const bool advanced = std::ranges::all_of(
@@ -13218,6 +13644,13 @@ int main(int argc, char **argv)
         {
             return walk_census(GoldBoxGame::curse_of_the_azure_bonds, true) ? 0 : 1;
         }
+        if (argc == 2 && std::string_view(argv[1]) == "--curse-third-bond")
+        {
+            return walk_census(GoldBoxGame::curse_of_the_azure_bonds, true,
+                               CurseProgress::third_bond)
+                       ? 0
+                       : 1;
+        }
         if (argc == 2 && std::string_view(argv[1]) == "--curse-second-bond")
         {
             return walk_census(GoldBoxGame::curse_of_the_azure_bonds, true,
@@ -13282,10 +13715,12 @@ int main(int argc, char **argv)
         curse_script_memory_is_pool_of_radiance_moved();
         engine_routines_are_the_games();
         curse_selected_damage();
+        curse_camp_healing_survives_script_reads();
         the_loaders_read_curse();
         a_save_names_its_game();
         item_types_carry_their_properties();
         curse_opening_reaches_the_first_map();
+        curse_lower_pit_saves_reload();
         secret_opening_reaches_the_first_map();
         secret_camp_fixes_the_party();
         the_font_has_eight_bytes_a_glyph();

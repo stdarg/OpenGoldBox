@@ -256,8 +256,10 @@ On origin/main 4b5b95686 the route leaned on these stand-ins:
 
 What changed:
 
-- **Mogion and the pseudopods.** Mogion's altar is event 12 of ECL3.DAX 18
-  (at 7,1 on the Pit's second level). Played there, the party attacks
+- **Mogion and the pseudopods.** Mogion's altar is event 12 of ECL3.DAX 18.
+  The assisted route used `(7,1)` in the western half of the shared map;
+  the physically reachable lower altar is `(11,3)/(12,3)` in its eastern half.
+  Played there, the party attacks
   Mogion, her cultists and mounds, and the three pseudopods that follow, and
   finds the Gauntlet in their remains. The route goes back up the stairs and
   declines the question to go down again, so the next camp can start.
@@ -495,3 +497,51 @@ casualties, and all six PCs alive after recovery. The two paladins and mage end
 at 120,502 XP; the ranger and clerics, who died in the boss fight, have 106,648.
 The game is rebuilt and all 341 registered checks pass across the focused
 24 and remaining 317 checks, including 171 Godot checks, with zero skips. This is the second bond, not the campaign ending.
+
+### Camp healing and shared-map saves (2026-11-18)
+
+A journey menu can retain a selected character record across a camp cure.
+The live party healed, but the next LOAD CHARACTER read back the older HP,
+undoing the consumed spell. `cast_outside_combat` now refreshes that record's
+HP through the active paused request. The machine validates every host update
+before writing, rejects stale tickets and program addresses, and retains the
+same request and control flow. A synthetic paused-menu regression casts the
+actual original-rules cure and checks both retained healing and consumption.
+
+The lower Pit's script 18 uses NEW ECL without LOAD FILES, retaining script
+17's map and walls. It now appears among map 17's shared scripts. This repairs
+ordinary saves which were written successfully but rejected on reload as a
+district/script mismatch. The installed-data regression enters the lower
+floor, saves and reloads the actual party, position and script. Existing
+format-53 earned lower-floor saves also reload; the save format is unchanged.
+
+### Earned Moander route (2026-11-18)
+
+`opengold_curse_third_bond` extends the earned route through Crimdrac's revenge,
+paid advancement, Yulash, the Wand of Defoliation and Alias/Dragonbait's actual
+recruitment. Crimdrac resists cold; Magic Missile and the real Fireball wand
+won from Dracandros work. The route prefers Yulash's open streets over locked
+house shortcuts. It enters the Pit by stepping north from `(11,0)` and takes
+the reachable upper stair `(7,14)` to the lower floor.
+
+Camp in the side room `(13,6)`, where interruptions are occasional, rather
+than the altar corridor, where they are guaranteed. Reload interrupted
+preparation camps; retained battles still require real victories. At `(12,4)`
+north, cast Bless, Enlarge, Prayer and Haste without intervening Look actions.
+Look costs ten minutes; Search adds ten minutes to even the final six-second
+step, so turn Search off before entering the altar. The actual fight snapshot
+then retains Bless, Prayer and Haste instead of silently expiring them.
+Fireball and holds interrupt Mogion's human casters; the Defoliation wand
+attacks plants.
+
+The fresh registered route wins both chained fights and receives the actual
+Gauntlet (`4C5B = 1`, `4C2D = 1`) in 364.64s: 56 retained victories, zero
+battle defeats and two fights with casualties. All six PCs remain in the
+party. The mage (6/41 HP) and Dragonbait (50/50) stand; paladin 2 and the
+ranger are dead, while paladin 1, both clerics and Alias are unconscious.
+A second fresh replay on the final test player reproduces that endpoint and
+saves `/tmp/opengold-curse-third-bond-earned.sav` at beat 101. Recovery and the
+remaining campaign are still open. All 342 registered checks have passing
+coverage across the broad run and final affected replays; no additional whole
+campaign is certified here.
+See [the delivery record](../PLAYABILITY.md) for current checks and limitations.
