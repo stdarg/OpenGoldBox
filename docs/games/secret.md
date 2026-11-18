@@ -191,6 +191,24 @@ checkpoint byte-identically. This opening does not certify Secret's later
 quests or ending. See
 [PLAYABILITY](../PLAYABILITY.md) for current traces and delivery.
 
+## Earned Well dragon (2026-11-18)
+
+The next earned milestone, `opengold_secret_earned_well`, keeps the actual
+starting party and all town-opening actions. At Priam's house the clerics
+memorize and cast Resist Fire on all six members, then Bless and Prayer.
+Use the mayor's actual portal, approach the Well from `(7,6)` south and
+step into its event once. The ancient dragon starts its actual fight with 88 HP. Its actual death sets `4C63=255` and makes the Well safe.
+Declining the gem request pushes the party back to `(7,6)`; the route must
+not repeatedly try to remain inside the completed event.
+
+The party uses the real return portal, Gond's services and normal camp
+recovery. A fresh seventeen-beat diagnostic wins nine battles with zero
+retained defeats, ending with all six alive at full HP and 234,012 XP each
+in town. No advancement, money, equipment, healing, flags, time or positions
+are injected. The fresh registered milestone passes in 15.62s; seven affected
+checks pass with no skips. The normal loader reencodes the earned save
+byte-identically. This milestone does not certify the later ruins, mines or ending.
+
 ## The script host
 
 What *Secret*'s scripts need beyond *Curse*'s (found by walking every map):

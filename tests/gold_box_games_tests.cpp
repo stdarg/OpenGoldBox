@@ -1395,6 +1395,13 @@ std::vector<std::pair<std::string, std::string>> secret_town_gear()
             {"Bracers", "magic_user 6"}};
 }
 
+enum class SecretProgress
+{
+    none,
+    opening,
+    well
+};
+
 std::vector<RouteBeat> secret_earned_opening()
 {
     using D = opengold::por::MapDirection;
@@ -1466,6 +1473,49 @@ std::vector<RouteBeat> secret_earned_opening()
     home.memorize_first_of = {"magic_missile", "fireball", "cure_light_wounds",
                               "cure_serious_wounds"};
     beats.push_back(home);
+    return beats;
+}
+
+std::vector<RouteBeat> secret_earned_route(SecretProgress progress)
+{
+    using D = opengold::por::MapDirection;
+    auto beats = secret_earned_opening();
+    if (progress < SecretProgress::well)
+    {
+        return beats;
+    }
+    RouteBeat prepare{16, 3, 3, D::south, {}, true};
+    prepare.arrive_only = true;
+    prepare.rest_for_spells = true;
+    prepare.cure_first = true;
+    prepare.cure_to_full = true;
+    prepare.ward_each_with = "resist_fire";
+    prepare.memorize_first_of = {"magic_missile", "hold_monster", "bless", "prayer"};
+    prepare.cast_after = {"bless"};
+    beats.push_back(prepare);
+    RouteBeat prayer{16, 3, 3, D::south, {}};
+    prayer.waiting = true;
+    prayer.cast_after = {"prayer"};
+    beats.push_back(prayer);
+    RouteBeat portal{16, 3, 0, D::north, {"YES"}};
+    portal.arrive_only = true;
+    portal.searching = false;
+    beats.push_back(portal);
+    RouteBeat dragon{33, 7, 6, D::south, {"NO"}};
+    dragon.step = true;
+    dragon.searching = false;
+    dragon.cure_first = true;
+    dragon.cure_to_full = true;
+    dragon.reloads_until_won = 600;
+    dragon.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C63, 255};
+    beats.push_back(dragon);
+    RouteBeat return_home{33, 1, 1, D::north, {"YES"}};
+    return_home.arrive_only = true;
+    return_home.searching = false;
+    beats.push_back(return_home);
+    // Reuse the actual temple visit and town camp from the opening.
+    const auto opening = secret_earned_opening();
+    beats.insert(beats.end(), opening.end() - 2, opening.end());
     return beats;
 }
 
@@ -8633,9 +8683,10 @@ void walk_earned_campaign(opengold::por::RolfTourSession &session, unsigned tx, 
 }
 
 bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CurseProgress::none,
-                 bool earned_secret = false)
+                 SecretProgress secret_progress = SecretProgress::none)
 {
     const bool sewers = progress != CurseProgress::none;
+    const bool earned_secret = secret_progress != SecretProgress::none;
     const bool earned = sewers || earned_secret;
     const bool first_bond = progress >= CurseProgress::first_bond;
     const bool hap = progress >= CurseProgress::hap;
@@ -13076,7 +13127,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         try
         {
             const auto earned_beats = sewers          ? curse_earned_route(progress)
-                                      : earned_secret ? secret_earned_opening()
+                                      : earned_secret ? secret_earned_route(secret_progress)
                                                       : std::vector<RouteBeat>{};
             for (const auto &beat : earned ? earned_beats : route_for(game))
             {
@@ -13979,12 +14030,16 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                                   return item.original_type == mirror_type;
                                               });
             }
-            std::cout << "Earned Secret opening: " << fights_fought << " fights, "
-                      << fights_defeated << " defeats; this is not a campaign win.\n";
+            std::cout << (secret_progress >= SecretProgress::well ? "Earned Secret Well: "
+                                                                  : "Earned Secret opening: ")
+                      << fights_fought << " fights, " << fights_defeated
+                      << " defeats; this is not a campaign win.\n";
             return played && pcs == 6 && healthy && someone_standing && session.can_leave() &&
                    end.area_id == 16 &&
                    session.script_variable(opengold::por::EclAddress{0x4C2D}) == 255 &&
-                   fights_fought >= 1 && fights_defeated == 0;
+                   fights_fought >= 1 && fights_defeated == 0 &&
+                   (secret_progress < SecretProgress::well ||
+                    session.script_variable(opengold::por::EclAddress{0x4C63}) == 255);
         }
         if (sewers)
         {
@@ -14326,7 +14381,14 @@ int main(int argc, char **argv)
         if (argc == 2 && std::string_view(argv[1]) == "--secret-earned-opening")
         {
             return walk_census(GoldBoxGame::secret_of_the_silver_blades, true, CurseProgress::none,
-                               true)
+                               SecretProgress::opening)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--secret-earned-well")
+        {
+            return walk_census(GoldBoxGame::secret_of_the_silver_blades, true, CurseProgress::none,
+                               SecretProgress::well)
                        ? 0
                        : 1;
         }

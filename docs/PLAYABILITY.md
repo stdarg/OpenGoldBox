@@ -23,7 +23,7 @@ UI behavior and the current configured model are retained; no delegation.
 |---|---|---|
 | Pool of Radiance | Fresh Original Rules party starts at zero XP, earns its training and equipment, defeats Tyranthraxus and reaches the ending; SRD map audits remain separate | Optional quests, other party compositions and difficulty settings are not certified by this route |
 | Curse of the Azure Bonds | Fresh Original Rules party earns all three artifacts, equipment, paid advancement and recovery, physically reaches Myth Drannor, defeats Tyranthraxus and shows the actual ending | Optional quests, other party compositions and difficulty settings are not certified by this route |
-| Secret of the Silver Blades | Fresh earned town opening wins four fights, recovers all six PCs and round-trips its save; the separate assisted complete route reaches the actual ending with every fight played | Replace later progression grants and relocations with verified gameplay/import |
+| Secret of the Silver Blades | Fresh earned opening and Well-dragon route wins nine fights, recovers all six PCs and round-trips its save; the separate assisted complete route reaches the actual ending with every fight played | Replace later progression grants and relocations with verified gameplay/import |
 | Gateway to the Savage Frontier | Route reaches the ending and wins its fights | Replace experience/gold/equipment/time grants and relocations |
 | Pools of Darkness | Fresh whole route and detailed finale replay defeat Gothmenes, reach the ending and restore all six members; zero forced results | Progression assistance and relocations remain |
 | Treasures of the Savage Frontier | Route reaches the ending and wins its fights | Replace starting experience/money and relocations |
@@ -1125,3 +1125,73 @@ production/rules/UI changes or reduced save history. Implementation/research
 and focused verification took approximately 39 minutes; formatting/build and
 final integration completed by minute 48. Tokens/cost are unavailable.
 The delivered outcome is the town opening, not a whole Secret campaign.
+
+Delivery observed 11:05 UTC: `945fe934` is pushed to `origin/main`, which
+matches the main checkout. The main game is rebuilt/exported and four
+installed-data post-push checks pass in 19.62s with no skips: Gold Box units,
+Godot preparation, Secret Original startup and package smoke. Log:
+`/tmp/opengold-secret-opening-main-recheck.log`. The pre-existing GAMES edit
+remains untouched, so the dirty-main rule skips the pull. The opening claim
+is released.
+
+### Active next batch: Secret's earned Well dragon
+
+- Start observed 2026-11-18 11:05 UTC; checkpoint due 12:05 UTC.
+- Authorization/status: resumed all-twelve-game task remains active; no
+  questions or delegation. Outcome: continue the earned Secret opening through
+  the actual mayor's portal, defeat the Well's ancient red dragon, recover
+  through normal camp/temple services and save a usable checkpoint.
+- Acceptance: six PCs alive/not petrified, at least one standing, actual
+  dragon defeat and Well-safe flag `4C63=255`, no retained defeats, physically
+  valid movement and a reloadable idle save. Fresh whole-route verification
+  must include the town opening. No injected XP, gold, gear, healing, flags,
+  time, positions or outcomes. Later ruins/mines/ending stay outside this batch;
+  the separate assisted route remains distinct.
+- Reuse/model: existing Original spells/items, camp, physical walker and battle
+  player. Same configured Codex, no requested switch/override or agents;
+  Original Rules work outside SRD assignments. No new UI/runtime or save-history
+  changes planned. Escalate a concrete rules/architecture failure with evidence;
+  do not change runtime settings incidentally.
+- Verification: focused earned suffix and save reload, fresh registered Well
+  milestone, affected route/unit checks, then own commit/push and main rebuild.
+  Baseline `945fe934`. The opening's actual save is
+  `/tmp/opengold-secret-opening-earned.sav`; later certification must also run
+  fresh. Tokens/cost unavailable.
+
+Observed 11:07 UTC: the earned opening save reaches and defeats the actual
+88-HP ancient dragon using normal commands, memorized fire wards and its
+carried equipment. The first route probe then loops: its target is inside
+the Well, whose completed event pushes the party to `(7,6)` after declining
+the gem request. The test must approach `(7,6)` south and step in once, rather
+than repeatedly trying to remain at `(7,7)`. The correction is in the route,
+not production; the dragon and safety event already ran. Evidence:
+`/tmp/opengold-secret-well-suffix.log`. Recovery/save acceptance is pending.
+
+Observed 11:08 UTC: the corrected suffix passes five actual fights, and a
+fresh seventeen-beat run from creation passes nine fights with zero retained
+defeats. All six PCs finish at full HP, 234,012 XP each, back in Priam's house.
+The earned safety flag is checked. No production correction was necessary.
+Fresh trace/save: `/tmp/opengold-secret-well-fresh.log` and
+`/tmp/opengold-secret-well-fresh-earned.sav`; suffix trace:
+`/tmp/opengold-secret-well-corrected.log`. LLVM-23 formatting passes; the
+final build and seven affected checks are running. The previous commit's
+legacy complete Secret and earned Curse ending results remain separate
+regression evidence; this batch changes only the earned Secret selector and
+appends its Well route. Save round-trip and delivery remain pending.
+
+Observed 11:10 UTC: all seven affected integrated checks pass in 42.99s,
+with no skips. Fresh earned opening 8.57s, fresh earned Well 15.62s, Secret
+all-map walk 42.98s, Gold Box units, Original Godot startup/preparation and
+package smoke pass. The normal loader reencodes the earned fresh Well save
+byte-identically (`/tmp/opengold-secret-well-roundtrip.sav`); its terminal-only
+probe has zero newly observed fights, so the milestone validator's exit 1
+is expected and separate from the successful round-trip assertion. Full logs:
+`/tmp/opengold-secret-well-integrated.log`,
+`/tmp/opengold-secret-well-integrated-ctest.log`,
+`/tmp/opengold-secret-well-reload.log`. Tested tree: `945fe934` plus this
+batch. Scope/architecture review passes: tests/config/records only, value-owned
+containers, no production/rules/UI or save-history changes. Elapsed to final
+verification approximately five minutes; native builds and final integration
+are recorded in the corresponding `/tmp/opengold-secret-well-*-build.log`
+and integrated logs. Tokens/cost unavailable. One Well-dragon/recovery outcome
+is verified; the whole Secret ending and all-game objective remain open.
