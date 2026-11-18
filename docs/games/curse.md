@@ -545,3 +545,35 @@ remaining campaign are still open. All 342 registered checks have passing
 coverage across the broad run and final affected replays; no additional whole
 campaign is certified here.
 See [the delivery record](../PLAYABILITY.md) for current checks and limitations.
+
+### Earned Pit escape and recovery (2026-11-18)
+
+`opengold_curse_moander_recovery` continues the earned third-bond party.
+Dragonbait's actual Lay on Hands wakes a cleric at the cleared altar `(12,3)`.
+Rest and memorized cures restore living casualties before walking to the lower
+stair `(15,14)`. On the upper floor, rest at `(7,14)` and each cleared room:
+`(6,11)`, `(2,13)` and `(0,13)`. Prepare actual Bless, Enlarge, Prayer and Haste
+before entering the next occupied room. Keep Search off on the approach;
+physical walking already resolves arrival, so do not spend a redundant
+ten-minute Look after it. The final guard event is `(0,12)`; leave from
+`(0,11)` west. Retained battles must be won, with casualties recorded separately.
+
+The guard event advances `4C2D` to 255; departure advances the Gauntlet cell
+`4C5B` to 255 and removes Alias/Dragonbait through the original script. These
+are progression transitions from the altar's value 1. Return to Voonlar by
+trail and sell Dracandros's actually collected Ring of Wizardry at the shop.
+Its 18,750 gp offer funds both 5,500 gp resurrections and 1,000 gp eligible
+training. Pay for Cure Light Wounds to wake surviving unconscious PCs before
+the hall, which only trains conscious characters.
+
+Yulash is closed by the original invasion after the Pit escape. Returning by
+trail and entering redirects the party to the upper Pit's back entrance,
+where idle exploration can be saved. Reentry changes the visit cell `4C2D`
+to 128 while the completed Gauntlet cell remains 255. A pending wilderness
+city menu is not an idle save point. The final recovery segment and its
+format-53 reload pass with all six PCs alive, both clerics and the mage at
+level 8, no NPCs remaining and zero battle defeats. The fresh registered
+whole-milestone run passes in 431.64s with 59 retained victories, zero defeats
+and three casualty fights. Its earned 133-beat save independently reloads and
+passes endpoint acceptance. Ranger also reaches level 8. This is not a
+campaign-ending certificate; see the delivery record for neighboring checks.

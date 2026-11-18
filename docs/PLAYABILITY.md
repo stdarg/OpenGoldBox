@@ -22,7 +22,7 @@ UI behavior and the current configured model are retained; no delegation.
 | Game | Verified | Remaining completion gap |
 |---|---|---|
 | Pool of Radiance | Fresh Original Rules party starts at zero XP, earns its training and equipment, defeats Tyranthraxus and reaches the ending; SRD map audits remain separate | Optional quests, other party compositions and difficulty settings are not certified by this route |
-| Curse of the Azure Bonds | Assisted ending route wins its fights; fresh earned opening through Moander/Gauntlet verified | Recover the Moander casualties and continue earned progression through Zhentil Keep, Myth Drannor and the actual ending |
+| Curse of the Azure Bonds | Assisted ending route wins its fights; fresh earned opening through Moander, Pit escape and paid recovery/level-8 advancement verified | Continue earned progression through Zhentil Keep, Myth Drannor and the actual ending |
 | Secret of the Silver Blades | Fresh complete route reaches the actual ending with every fight played, including Oswulf, the Dreadlord and the soul gem; zero forced wins | Replace progression grants and relocations with verified gameplay/import |
 | Gateway to the Savage Frontier | Route reaches the ending and wins its fights | Replace experience/gold/equipment/time grants and relocations |
 | Pools of Darkness | Fresh whole route and detailed finale replay defeat Gothmenes, reach the ending and restore all six members; zero forced results | Progression assistance and relocations remain |
@@ -743,3 +743,80 @@ Moander milestone and two engine blockers are delivered; zero additional whole
 games are certified. Next: earned Pit escape/recovery, then the remaining
 bonds/ending; all twelve-game certification and subsequent winning-character
 availability remain open.
+
+Delivery: `96a47c98` is pushed to `origin/main`; main and origin match. The
+main game is rebuilt/exported after the push, and all four selected checks
+pass in 20.46s (Gold Box units, Godot preparation, Curse Original startup and
+packaged Linux smoke). Log: `/tmp/opengold-curse-moander-main-recheck.log`.
+The main pull is skipped because the user's pre-existing GAMES edit remains
+dirty, as required by the checkout guard. That file retains its original
+`d5bf49897b2dddf631b07a2afae4692bd8193c6f` content hash. The claim is released.
+
+### Active next batch: earned Pit escape and recovery
+
+- Start observed 2026-11-18 08:39 UTC; checkpoint due 09:39 UTC.
+- Outcome: recover the earned Moander party through actual companion/clerical
+  healing, walk out of both Pit levels, win the real exit encounters, travel
+  to Voonlar and pay its temple/hall for recovery and eligible advancement,
+  then return to visited Yulash for an idle, reloadable continuation checkpoint
+  (the pending wilderness city menu cannot be saved). The original invasion
+  closes Yulash after the Pit escape and redirects entry to the visited upper
+  Pit entrance; that actual entry is the continuation checkpoint.
+- Acceptance: Gauntlet/Moander victory retained; all six PCs alive after paid
+  recovery, at least one PC standing, Alias/Dragonbait leave through their
+  original departure script; mage and both clerics reach at least level 8
+  through paid eligible training; zero retained battle defeats. No injected
+  XP, money, healing, flags, positions or combat outcomes. Further bonds and
+  the ending remain subsequent work.
+- Reuse/model: actual beat-101 earned checkpoint from the verified fresh run;
+  existing camp actions, travel, temple, hall and physical walking. Same
+  configured Codex, no model/effort override or delegation. Original Rules work;
+  no SRD, new UI, runtime or save-format changes planned.
+- Checks: earned recovery suffix, fresh registered recovery milestone and
+  affected Curse neighbors before commit/push; baseline is the 342-check
+  passing coverage and post-push main smoke recorded above.
+
+Observed 09:06 UTC: the resumed earned route physically clears the upper Pit
+and leaves with zero retained battle defeats. Actual Enlarge, Bless, Prayer
+and Haste preparation, short steps with Search off, and rests in cleared rooms
+allow the weakened party to pass the slug/mound rooms and final guards.
+Alias and Dragonbait depart through the original script. Voonlar's shop pays
+18,750 gp for the actually collected Ring of Wizardry, funding both 5,500 gp
+resurrections and eligible 1,000 gp hall training. The first suffix replay
+raises both fallen PCs and trains the mage and ranger to level 8; it correctly
+refuses the unconscious clerics. Paid Cure Light Wounds is now selected for
+living unconscious casualties before requesting their hall training. Final
+suffix and fresh-route verification remain open. No whole-game win is claimed.
+
+Final verification observed 09:17 UTC: the fresh registered recovery milestone
+passes in 431.64s, with 59 retained victories, zero battle defeats and three
+fights with casualties. All six PCs are alive and standing after actual paid
+recovery. The mage, both clerics and ranger train to level 8; the paladins
+remain level 7. Original exit-guard, departure and reentry state transitions
+are checked, and neither companion remains in the active party. The earned
+format-53 checkpoint is `/tmp/opengold-curse-moander-recovery-earned.sav`
+(133 completed beats, upper Pit entrance at `0,12`); an independent load
+passes the same endpoint acceptance. The fresh beat-101 save is byte-identical
+to the prior verified Moander checkpoint. No injected progression is used.
+
+Gold Box units, the existing assisted Curse ending and the fresh third-bond
+regression also pass on the final formatted native target. The third-bond
+neighbor retains 56 victories, zero defeats and two casualty fights. Current
+registration has 343 checks; this delivery adds one recovery check and leaves
+production Core/rules/game inputs unchanged from `96a47c98`'s broad coverage.
+Logs: `/tmp/opengold-curse-moander-recovery-fresh.log`,
+`/tmp/opengold-curse-moander-recovery-assisted.log`,
+`/tmp/opengold-curse-moander-recovery-third-neighbor.log`,
+`/tmp/opengold-curse-moander-recovery-unit.log` and
+`/tmp/opengold-curse-moander-recovery-earned-reload.log`.
+
+Observed phases: investigation/route implementation 08:39–09:07, final
+format/braces and native rebuild 09:07–09:08, suffix/reload and fresh/neighbor
+checks 09:08–09:17. Final scope, architecture, RAII and compatibility review
+passes; no production API, UI, runtime, rules or save-history changes. Only
+the test route/player, CTest registration and verification docs change. Same
+configured Codex, no effort/model override or delegation; cost/token data
+unavailable. The 60-minute checkpoint is not due yet. Push and required main
+game rebuild/smoke remain before delivery. Zero additional whole campaigns
+are certified; next are the remaining Curse bonds and ending, then the other
+game gaps, with winning-character availability still following all games.

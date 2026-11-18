@@ -337,6 +337,9 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_curse_third_bond COMMAND opengold_gold_box_games_tests --curse-third-bond)
     set_tests_properties(opengold_curse_third_bond PROPERTIES TIMEOUT 1800
         SKIP_REGULAR_EXPRESSION "files are not here")
+    add_test(NAME opengold_curse_moander_recovery COMMAND opengold_gold_box_games_tests --curse-moander-recovery)
+    set_tests_properties(opengold_curse_moander_recovery PROPERTIES TIMEOUT 1800
+        SKIP_REGULAR_EXPRESSION "files are not here")
     # Secret of the Silver Blades' story the same way (plan phase 4, step 4).
     add_test(NAME opengold_secret_route COMMAND opengold_gold_box_games_tests --secret-route)
     # Pools of Darkness's story the same way.

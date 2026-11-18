@@ -811,6 +811,9 @@ struct RouteBeat
     bool reload_event = false;
     bool keep_preparation = false;
     std::string cast_after_by;
+    // Physical walking already resolves arrival. Do not add a ten-minute
+    // Look when a cleared-room waypoint needs no further command.
+    bool arrive_only = false;
 };
 
 // The dice a beat starts with, for a route that gives each beat its own (Pools
@@ -7823,7 +7826,8 @@ enum class CurseProgress
     first_bond,
     hap,
     second_bond,
-    third_bond
+    third_bond,
+    moander_recovery
 };
 
 // Earned milestones follow the physical opening, sewer lairs, first bond,
@@ -8132,6 +8136,132 @@ std::vector<RouteBeat> curse_earned_route(CurseProgress progress)
         boss.searching = false;
         beats.push_back(boss);
     }
+    if (progress >= CurseProgress::moander_recovery)
+    {
+        // Dragonbait's real paladin ability stands a cleric up. The other
+        // surviving PCs are unconscious after the pseudopods, not dead.
+        RouteBeat hands{17, 12, 3, D::north, {}};
+        hands.waiting = true;
+        hands.ward_each_with = "lay_on_hands";
+        hands.ward_members = {"cleric 4"};
+        beats.push_back(hands);
+        // The altar is a room too. Heal here before crossing hostile
+        // corridors; a newly conscious cleric can prepare its cures here.
+        RouteBeat room{17, 12, 3, D::north, {"NO", "WAIT", "Bash"}, true};
+        room.rest_for_spells = true;
+        room.arrive_only = true;
+        room.cure_first = true;
+        room.cure_to_full = true;
+        room.ward_memorized = "cure_light_wounds";
+        room.ward_members = {"cleric 4"};
+        room.memorize_first_of = {"cure_light_wounds", "cure_serious_wounds", "magic_missile",
+                                  "fireball"};
+        beats.push_back(room);
+        RouteBeat rest{17, 12, 3, D::north, {}, true};
+        rest.rest_for_spells = true;
+        rest.arrive_only = true;
+        rest.cure_first = true;
+        rest.cure_to_full = true;
+        beats.push_back(rest);
+        // The lower stair returns to the western upper half of map 17.
+        beats.push_back({17, 15, 14, D::north, {"YES", "NO"}});
+        beats.back().cure_first = true;
+        beats.back().cure_to_full = true;
+        beats.back().searching = false;
+        // Rest in the upper stair room, then in each cleared room on the
+        // way out. The slug and mound rooms lie across the only exit path.
+        const auto recover_at = [&](unsigned x, unsigned y)
+        {
+            RouteBeat camp{17, x, y, D::north, {}, true};
+            camp.rest_for_spells = true;
+            camp.cure_first = true;
+            camp.cure_to_full = true;
+            camp.arrive_only = true;
+            camp.ward_memorized = "cure_light_wounds";
+            camp.ward_members = {"cleric 4"};
+            camp.memorize_first_of = {"cure_light_wounds", "cure_serious_wounds", "magic_missile",
+                                      "fireball"};
+            beats.push_back(camp);
+        };
+        const auto prepare_at = [&](unsigned x, unsigned y)
+        {
+            RouteBeat prepare{17, x, y, D::north, {}, true};
+            prepare.rest_for_spells = true;
+            prepare.arrive_only = true;
+            prepare.ward_memorized = "enlarge";
+            prepare.ward_members = {"paladin 1", "Dragonbait"};
+            prepare.memorize_first_of = {"enlarge",  "enlarge", "haste",
+                                         "fireball", "bless",   "prayer"};
+            prepare.cast_after = {"bless"};
+            beats.push_back(prepare);
+            RouteBeat enlarge{17, x, y, D::north, {}};
+            enlarge.waiting = true;
+            enlarge.ward_each_with = "enlarge";
+            enlarge.ward_members = {"paladin 1", "Dragonbait"};
+            enlarge.cast_after = {"prayer"};
+            beats.push_back(enlarge);
+            RouteBeat haste{17, x, y, D::north, {}};
+            haste.waiting = true;
+            haste.cast_after = {"haste"};
+            beats.push_back(haste);
+        };
+        recover_at(7, 14);
+        prepare_at(7, 14);
+        // Pause on each corridor square so real remaining cures can be
+        // cast after a door's wandering encounter, before the room's fight.
+        for (unsigned y : {13U, 12U, 11U})
+        {
+            RouteBeat corridor{17, 7, y, D::north, {"NO", "WAIT", "Bash"}};
+            corridor.cure_first = true;
+            corridor.cure_to_full = true;
+            corridor.searching = false;
+            corridor.arrive_only = true;
+            corridor.reloads_until_won = 360;
+            beats.push_back(corridor);
+        }
+        for (const auto &[x, y] :
+             std::array<std::pair<unsigned, unsigned>, 3>{{{6, 11}, {2, 13}, {0, 13}}})
+        {
+            RouteBeat fight{17, x, y, D::north, {"NO", "WAIT", "Bash"}};
+            fight.cure_first = true;
+            fight.cure_to_full = true;
+            fight.ready_types.emplace_back(79, "magic_user 6");
+            fight.reloads_until_won = 360;
+            fight.searching = false;
+            fight.arrive_only = true;
+            beats.push_back(fight);
+            recover_at(x, y);
+            prepare_at(x, y);
+        }
+        RouteBeat exit_guard{17, 0, 12, D::west, {"NO", "WAIT", "Bash"}};
+        exit_guard.cure_first = true;
+        exit_guard.cure_to_full = true;
+        exit_guard.ready_types.emplace_back(79, "magic_user 6");
+        exit_guard.reloads_until_won = 360;
+        exit_guard.searching = false;
+        exit_guard.arrive_only = true;
+        exit_guard.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C2D, 255};
+        beats.push_back(exit_guard);
+        beats.push_back({17, 0, 11, D::west, {"stop:JOURNEY"}});
+        beats.back().step = true;
+        beats.back().searching = false;
+        beats.back().expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C5B, 255};
+        // Sell Dracandros's ring through the real shop to pay for the
+        // fallen PCs' resurrection and the next eligible hall training.
+        world({"JOURNEY", "VOONLAR", "TRAIL", "ENTER CITY", "STORE", "sell:RING@magic_user 6",
+               "TEMPLE", "raise:dead", "cure:unconscious", "Leave", "stop:INN"});
+        beats.back().ward_memorized = "cure_light_wounds";
+        beats.back().ward_members = {"cleric 4"};
+        beats.back().memorize_first_of = {"cure_light_wounds", "cure_serious_wounds",
+                                          "magic_missile", "fireball"};
+        world({"HALL", "magic_user 6", "cleric 4", "cleric 5", "ranger 3", "paladin 1", "paladin 2",
+               "Leave", "stop:INN"});
+        // Save from idle exploration rather than a pending city menu.
+        // The invasion now closes Yulash: its original entry redirects to
+        // the visited upper Pit entrance instead.
+        world({"LEAVE", "JOURNEY", "YULASH", "TRAIL", "stop:JOURNEY"});
+        world({"ENTER CITY", "ASK PERMISSION", "PARLAY"});
+    }
     for (auto &beat : beats)
     {
         if (beat.map == 3)
@@ -8242,6 +8372,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
     const bool hap = progress >= CurseProgress::hap;
     const bool second_bond = progress >= CurseProgress::second_bond;
     const bool third_bond = progress >= CurseProgress::third_bond;
+    const bool moander_recovery = progress >= CurseProgress::moander_recovery;
     using opengold::por::TourPhase;
     const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
     const auto folder = games ? std::filesystem::path(games) / std::string(game_folder(game))
@@ -11539,6 +11670,29 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                         }
                     }
                 }
+                // Wake living casualties with paid temple cures before
+                // requesting training, which requires consciousness.
+                if (!answers.empty() && answers.front() == "cure:unconscious" &&
+                    std::ranges::any_of(s.choices,
+                                        [](const std::string &choice)
+                                        {
+                                            return choice.starts_with("Cure Light Wounds");
+                                        }))
+                {
+                    answers.erase(answers.begin());
+                    for (const auto id : party->state().slots)
+                    {
+                        if (id && !party->member(id).vitals.dead &&
+                            party->member(id).vitals.hit_points <= 0)
+                        {
+                            answers.insert(answers.begin(),
+                                           {"Cure Light Wounds",
+                                            party->member(id).character.sheet().name, "Pay",
+                                            "cure:unconscious"});
+                            break;
+                        }
+                    }
+                }
                 // "stone:flesh" likewise has the temple's Stone to Flesh bring
                 // back each member turned to stone.
                 if (!answers.empty() && answers.front() == "stone:flesh" &&
@@ -12271,7 +12425,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 bool rested = false;
                 for (unsigned reload = 0; reload <= 32; ++reload)
                 {
-                    const bool pit = third_bond && session.snapshot().script_id == 18;
+                    const bool pit =
+                        third_bond && (session.snapshot().script_id == 18 ||
+                                       (moander_recovery && session.snapshot().script_id == 17));
                     const auto before_camp =
                         pit ? std::optional(session.detached_copy()) : std::nullopt;
                     const auto party_before = party->state();
@@ -12322,7 +12478,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 // instead of waiting a day per Hit Point while wandering
                 // monsters repeatedly undo the natural healing.
                 if ((game == GoldBoxGame::pools_of_darkness && keeps_preparation) ||
-                    (third_bond && session.snapshot().script_id == 18))
+                    (third_bond && (session.snapshot().script_id == 18 ||
+                                    (moander_recovery && session.snapshot().script_id == 17))))
                 {
                     cure_the_hurt(true);
                 }
@@ -12886,7 +13043,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                 opengold::test::TourAccess::place(session,
                                                                   {x, beat.y, beat.facing});
                             }
-                            if (session.explore(beat.step
+                            if (!beat.arrive_only &&
+                                session.explore(beat.step
                                                     ? opengold::por::ExplorationCommand::forward
                                                     : opengold::por::ExplorationCommand::look))
                             {
@@ -13433,11 +13591,12 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         const bool played = needs.empty() && end.phase != TourPhase::defeated;
         if (sewers)
         {
-            std::cout << (third_bond    ? "Earned third-bond progression: "
-                          : second_bond ? "Earned second-bond progression: "
-                          : hap         ? "Earned Hap progression: "
-                          : first_bond  ? "Earned first-bond progression: "
-                                        : "Earned sewer progression: ")
+            std::cout << (moander_recovery ? "Earned Moander recovery: "
+                          : third_bond     ? "Earned third-bond progression: "
+                          : second_bond    ? "Earned second-bond progression: "
+                          : hap            ? "Earned Hap progression: "
+                          : first_bond     ? "Earned first-bond progression: "
+                                           : "Earned sewer progression: ")
                       << fights_fought << " fights, " << fights_defeated << " defeats, "
                       << fights_lost << " fights with casualties or defeat; "
                       << "this is not a campaign win.\n";
@@ -13468,6 +13627,32 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                                 std::ranges::max(sheet.original->class_levels) >=
                                                     6);
                                     });
+            if (moander_recovery)
+            {
+                const bool recovered = std::ranges::all_of(
+                    party->state().slots,
+                    [&](opengold::MemberId id)
+                    {
+                        if (!id)
+                        {
+                            return true;
+                        }
+                        const auto &member = party->member(id);
+                        const auto &sheet = member.character.sheet();
+                        return member.npc_source.empty() && !member.vitals.dead &&
+                               ((!sheet.name.starts_with("cleric") &&
+                                 !sheet.name.starts_with("magic_user")) ||
+                                std::ranges::max(sheet.original->class_levels) >= 8);
+                    });
+                // The guard and departure scripts advance these cells to
+                // 255. Reentering the cleared Pit resets its visit cell to
+                // 128 while retaining the completed Gauntlet state.
+                return played && someone_standing && earned_training && recovered &&
+                       session.can_leave() && end.script_id == 17 &&
+                       session.script_variable(opengold::por::EclAddress{0x4C5B}) == 255 &&
+                       session.script_variable(opengold::por::EclAddress{0x4C2D}) == 128 &&
+                       fights_defeated == 0;
+            }
             if (third_bond)
             {
                 const bool pc_standing = std::ranges::any_of(
@@ -13643,6 +13828,13 @@ int main(int argc, char **argv)
         if (argc == 2 && std::string_view(argv[1]) == "--curse-route")
         {
             return walk_census(GoldBoxGame::curse_of_the_azure_bonds, true) ? 0 : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--curse-moander-recovery")
+        {
+            return walk_census(GoldBoxGame::curse_of_the_azure_bonds, true,
+                               CurseProgress::moander_recovery)
+                       ? 0
+                       : 1;
         }
         if (argc == 2 && std::string_view(argv[1]) == "--curse-third-bond")
         {
