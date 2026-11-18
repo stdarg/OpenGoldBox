@@ -1109,7 +1109,7 @@ void RolfTourSession::handle_host(const EclRequest &request)
         // The address of the original engine routine the script calls.
         const auto service = request.arguments[0].address();
         const auto routines = ecl_engine_routines(game());
-        const auto refresh_gateway_barrier = [&](const MapCell &cell, unsigned side)
+        const auto refresh_gateway_barrier = [&](const MapCell &cell, std::size_t side)
         {
             if (game() == GoldBoxGame::gateway_to_the_savage_frontier)
             {
