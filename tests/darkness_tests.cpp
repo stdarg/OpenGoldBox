@@ -750,10 +750,11 @@ bool play_won_script(
 // Xoham's fight left at its beholders' number, so recovery includes the
 // first member too. On the way, the last stand is fought under the script's bar
 // on magic and its to-hit cells: the monsters 6 better, the party 7 worse
-// (cells 1 and 2Fh; fxengine.pas, AttackRoll). The party's movement modifier
-// (cell 1Ch, which Moander's heart sets; here set by the test) is added to its
-// movement in the next fight, whose end clears it (charhlp.pas,
-// RecalcMovement; postcbt.pas).
+// (cells 1 and 2Fh; fxengine.pas, AttackRoll). Every fight's monsters break
+// only as cell 1Bh, which the script sets to 100, allows (combatai.pas,
+// CheckMorale): never. The party's movement modifier (cell 1Ch, which
+// Moander's heart sets; here set by the test) is added to its movement in the
+// next fight, whose end clears it (charhlp.pas, RecalcMovement; postcbt.pas).
 void the_finale_stands_the_fallen_up()
 {
     const auto folder = darkness_folder();
@@ -783,6 +784,7 @@ void the_finale_stands_the_fallen_up()
         session, content, party, {"NO", "NO", "YES", "NO"},
         [&](const opengold::CampaignEncounter &encounter)
         {
+            check(encounter.morale == 100, "The finale's monsters never break (cell 1Bh at 100)");
             move_modifiers.push_back(encounter.party_move_modifier);
             if (!encounter.no_magic)
             {

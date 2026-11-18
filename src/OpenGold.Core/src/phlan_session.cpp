@@ -4351,8 +4351,10 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             encounter_->enemy_quarters =
                 por::dealt_quarters(monster_sides_, encounter_->enemies.size());
             // The script sets the encounter's morale before COMBAT.
-            encounter_->morale =
-                std::min<unsigned>(machine_.variable(game_cell(ecl_encounter_morale)), 100);
+            const auto morale_cell = game() == GoldBoxGame::pools_of_darkness
+                                         ? darkness_break_point
+                                         : game_cell(ecl_encounter_morale);
+            encounter_->morale = std::min<unsigned>(machine_.variable(morale_cell), 100);
             if (plays_original_records())
             {
                 apply_original_difficulty(*encounter_, difficulty_, game());

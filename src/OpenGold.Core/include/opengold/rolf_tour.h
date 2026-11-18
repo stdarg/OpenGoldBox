@@ -1294,10 +1294,11 @@ class RolfTourSession
     // (fxengine.pas, AttackRoll; postcbt.pas).
     void add_script_to_hit();
     static constexpr EclAddress darkness_monster_hit_mod{0x01}, darkness_party_hit_mod{0x2F};
-    // Pools of Darkness's cell 1Ch (partyMoveMod), added to the party's
-    // movement and cleared by the fight's end (charhlp.pas, RecalcMovement;
-    // postcbt.pas).
-    static constexpr EclAddress darkness_party_move_mod{0x1C};
+    // Pools of Darkness's cell 1Bh (breakLossPct): the encounter's morale,
+    // which its monsters' side breaks below (combatai.pas, CheckMorale); and
+    // cell 1Ch (partyMoveMod), added to the party's movement and cleared by
+    // the fight's end (charhlp.pas, RecalcMovement; postcbt.pas).
+    static constexpr EclAddress darkness_break_point{0x1B}, darkness_party_move_mod{0x1C};
     // Its item definition of this number, or for FFh a scroll of three
     // random magic-user spells drawn on the request's dice; nothing for an
     // empty definition.
