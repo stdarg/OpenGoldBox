@@ -24,7 +24,7 @@ UI behavior and the current configured model are retained; no delegation.
 | Pool of Radiance | Fresh Original Rules party starts at zero XP, earns its training and equipment, defeats Tyranthraxus and reaches the ending; SRD map audits remain separate | Optional quests, other party compositions and difficulty settings are not certified by this route |
 | Curse of the Azure Bonds | Fresh Original Rules party earns all three artifacts, equipment, paid advancement and recovery, physically reaches Myth Drannor, defeats Tyranthraxus and shows the actual ending | Optional quests, other party compositions and difficulty settings are not certified by this route |
 | Secret of the Silver Blades | Fresh Original Rules party earns its equipment, advancement and recovery, wins 168 battles and reaches the actual soul-gem ending; all six PCs and Vala are retained and the winning save round-trips byte-identically | Optional quests, other party compositions and difficulty settings are not certified by this route |
-| Gateway to the Savage Frontier | Route reaches the ending and wins its fights | Replace experience/gold/equipment/time grants and relocations |
+| Gateway to the Savage Frontier | Fresh Original Rules party buys ordinary gear, takes earned magic items, pays for training/recovery, resolves 67 encounters and reaches the actual Ascore ending; the normal post-ending save round-trips byte-identically | Optional quests, other party compositions and difficulty settings are not certified by this route |
 | Pools of Darkness | Fresh whole route and detailed finale replay defeat Gothmenes, reach the ending and restore all six members; zero forced results | Progression assistance and relocations remain |
 | Treasures of the Savage Frontier | Route reaches the ending and wins its fights | Replace starting experience/money and relocations |
 | Unlimited Adventures | Generated design walks, wins all fights, saves at the stairs, reloads and reaches its actual winning event | Other designs require their own verification |
@@ -1683,3 +1683,91 @@ separate morale cell and Kalistes preparation). It also merges cleanly in
 the isolated worktree; the rebuilt merged six-check suite passes again with
 no skips. Secret's earned route remains unchanged. Evidence:
 `/tmp/opengold-secret-ending-merge2-checks.log`.
+
+Secret delivery: `7453965d` is included in `origin/main` at `d3562fdf`,
+with concurrent Darkness commits integrated and checked in isolation. Main
+checkout `./build.sh` succeeds; six installed Gold Box/Godot startup, Secret
+Original default-party, per-game save and package checks pass with no skips
+in 22.46s (`/tmp/opengold-secret-ending-main-checks.log`). Main remains at
+`7453965d` because its user-owned `docs/GAMES.md` edit blocks the instructed
+fast-forward pull; its hash stays `d5bf49897b2dddf631b07a2afae4692bd8193c6f`.
+The merged integration branch/worktree are removed; no remote feature branch
+was created. Further work uses a clean checkout of the integrated remote.
+
+### Gateway's earned full campaign (2026-11-18)
+
+- Start observed 16:13 UTC; acceptance reached 16:49, before the 17:13 checkpoint.
+- Authorization: active all-twelve-game request. Frozen outcome: fresh Gateway
+  party reaches the actual ending through earned equipment/advancement, valid
+  travel and player waits; retain six PCs, at least one standing, actual NPC
+  joins/departures, zero retained defeats and normal usable saves.
+- No injected XP/money/gear/healing/flags/positions/time or forced outcomes.
+  Actual camp/Look commands replace clock grants. Necessary concrete blockers
+  on this route are included; other games and automatic winner availability
+  follow. No new UI/runtime, SRD mechanics or save-schema/history changes.
+- Reuse: Original campaign/rules, creation money, real shops, existing story,
+  physical walker, camp/combat choices/reloads and normal serializer.
+- Model: same configured Codex, no model/effort switch requested or performed,
+  no delegation; Original Rules is outside SRD assignments. Tokens/cost unavailable.
+- Baseline `d3562fdf`; tested final source accompanies this record. Formatting,
+  diff, RAII/ownership and architecture review pass. Commit/push, main dirty guard
+  and rebuild/installed startup/save/package checks follow.
+
+Concrete corrections and failed evidence:
+
+- Gateway's redraw, current-cell refresh and scripted move now return the actual
+  movement barrier (`4CF6`) alongside the current map cell. The first boat step
+  previously read a stale blocked town barrier; assisted placements refreshed
+  it and hid the production bug. The three-routine native regression fails
+  before the correction and passes afterward. Original files are unchanged.
+  `/tmp/opengold-gateway-barrier-before.log` and `barrier-checks.log` preserve
+  the failure and four passing native checks (0.93s).
+- The route buys chain armor, shields and ordinary weapons from Yartar's real
+  armory using the actual 1,050gp creation purse. Real service visits approach
+  exterior doors and step inside instead of repeatedly walking to the service's
+  ejection square. A first whole run reached Yartar's hall after ten victories
+  before exposing that waypoint error (`full-before-training.log`).
+- Luskan's pier guards forbid camping. The route waits with the player's actual
+  ten-minute Look command and normal events until the departure window. No clock
+  is set. The camp-only attempt reached 37 victories (`full-before-wait.log`).
+- A margoyle resisted ordinary weapons while the route had discarded earned
+  upgrades. It now takes/readies Nesme's magic mace, chain mail and ring,
+  Sub-Yartar's +2 sword and the Hosttower's bracers from their actual piles.
+  The obsolete stalled continuation is terminated (`voyage.log`).
+- Sundabar's real temple raises/cures casualties and casts Stone to Flesh on the
+  petrified paladin. The route then takes the actual daytime descent to Ascore
+  and the finale's intended northward maze exits (`sundabar.log`).
+- After the winning event is shown, the test presses actual Continue so the
+  normal save is legal. The ending script dismisses Krevish and returns the
+  six healthy PCs to Yartar. All six PCs and Krevish are healthy at the winning
+  event; the resumed-play save contains the six PCs after his actual departure.
+  Later winner-availability work must capture the roster at the winning event,
+  before scripted departures. No such automatic feature is implemented here.
+
+Fresh final certificate: **67 actual encounters resolved, zero retained defeats**,
+actual Ascore winning event, all six PCs healthy, normal post-ending save. The
+registered `opengold_gateway_earned_ending` passes **135.22s**, no skips, at beat
+771. Ten integrated Original rules/creation/modify/combat/campaign, recovery,
+rest, save, Gateway and Gold Box checks pass with no skips in **1.91s**. The
+older assisted Gateway route also passes after the engine correction (57.47s).
+
+```bash
+cmake --build build --target opengold_gold_box_games_tests opengold_gateway_tests -j8
+OPENGOLD_GOLDBOX_DIR=/home/edmond/GoldBox OPENGOLD_GAME_DIR=/home/edmond/GoldBox/POOLRAD \
+  ctest --test-dir build -V -R '^opengold_gateway_earned_ending$'
+```
+
+Evidence under `/tmp/opengold-gateway-earned-`:
+`saveable-fresh.log`, `saveable-fresh.sav`, `saveable-fresh-roundtrip.sav`,
+`integrated-checks.log`, `legacy-check.log`. The winning resumed-play save
+reencodes byte-identically; the terminal-only replay correctly exits 1 because
+it shows no new win. Its byte comparison passes. Earlier diagnostics are not
+substituted for this fresh final certificate. Failed logs above use the same
+prefix, except `opengold-gateway-barrier-*`.
+
+Approximately 36 minutes elapsed: investigation, routing/engine corrections,
+focused continuations and builds were interleaved through 16:45; final native
+checks and the 2m15 fresh proof ran concurrently, with save/scope verification
+through 16:49. One full earned campaign is completed by this batch. Treasure,
+Darkness, Krynn, Buck Rogers, installed UA design coverage and subsequent
+winning-character availability remain unfinished.

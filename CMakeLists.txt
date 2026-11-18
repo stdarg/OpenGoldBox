@@ -373,6 +373,9 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_darkness_route COMMAND opengold_gold_box_games_tests --darkness-route)
     # Gateway to the Savage Frontier's story the same way (plan phase 5, step 4).
     add_test(NAME opengold_gateway_route COMMAND opengold_gold_box_games_tests --gateway-route)
+    add_test(NAME opengold_gateway_earned_ending COMMAND opengold_gold_box_games_tests --gateway-earned-ending)
+    set_tests_properties(opengold_gateway_earned_ending PROPERTIES TIMEOUT 3600
+        SKIP_REGULAR_EXPRESSION "files are not here")
     # Treasures of the Savage Frontier's story the same way.
     add_test(NAME opengold_treasure_route COMMAND opengold_gold_box_games_tests --treasure-route)
     # It plays ten towns' fights, each with many dice: about 18 minutes alone.

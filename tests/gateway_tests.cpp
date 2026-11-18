@@ -114,6 +114,43 @@ void coins_change_up_into_larger_ones()
           "The purse is worth what it was");
 }
 
+// The overland's pre-step script reads its barrier cache immediately after
+// a map refresh. A stale town barrier must not block the boat's first step.
+void map_refreshes_update_the_movement_barrier()
+{
+    using namespace opengold::por;
+    for (const unsigned routine : {0x2E10U, 0xC01AU, 0xC01EU})
+    {
+        GeoMap map;
+        map.cells[0].walls[0] = 1;
+        map.cells[0].doors[0] = 1;
+        map.cells[15 * 16].walls[0] = 1;
+        map.cells[15 * 16].doors[0] = 3;
+        const std::vector<std::uint8_t> body{9,
+                                             0,
+                                             0,
+                                             1,
+                                             0xE6,
+                                             0x4B, // SAVE 0 to the in-dungeon cell.
+                                             0x2D,
+                                             2,
+                                             static_cast<std::uint8_t>(routine & 255),
+                                             static_cast<std::uint8_t>(routine >> 8)};
+        RolfTourSession session(std::move(map), script(body), {}, 0x8014, {},
+                                std::make_shared<PhlanResources>());
+        for (unsigned n = 0; n < 50 && session.snapshot().phase == TourPhase::running; ++n)
+        {
+            session.advance(1.0);
+        }
+        check(session.snapshot().phase == TourPhase::completed,
+              "The map refresh completes without a player turn");
+        const auto barrier =
+            opengold::test::TourAccess::machine(session).variable(EclAddress{0x4CF6});
+        check(barrier == (routine == 0xC01E ? 3 : 1),
+              "The refreshed map's actual barrier is available before the next step");
+    }
+}
+
 // A party of six fighters made under Gateway's rules, for the events that
 // need one.
 std::shared_ptr<opengold::CampaignParty> gateway_party(const std::filesystem::path &folder)
@@ -404,6 +441,7 @@ int main()
     {
         the_engine_prompts_are_menus();
         coins_change_up_into_larger_ones();
+        map_refreshes_update_the_movement_barrier();
         the_item_words_are_in_the_game_program();
         the_opening_reaches_yartar();
         overland_fights_are_on_grass();

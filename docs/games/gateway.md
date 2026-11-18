@@ -283,6 +283,39 @@ What else the overland changes, as the original has it:
   (`gateway_wilderness`); movement costs above 1 are open ground, as in
   *Curse*'s fields.
 
+## Earned campaign verification (2026-11-18)
+
+The earned route (`opengold_gateway_earned_ending`) starts with Gateway's
+actual 3,000 XP and 35 platinum per character. It buys ordinary weapons,
+chain armor and shields from Yartar's real armory. Training and recovery
+use the earned purse and actual services. Its invariants reject injected
+rewards, equipment, healing, flags, positions, time and combat victories.
+The fresh full route passes in 135.22s: 67 actual encounters resolved, zero
+retained defeats and the actual Ascore winning event. Evidence is recorded in
+[PLAYABILITY.md](../PLAYABILITY.md).
+
+Physical travel exposed a movement bug hidden by the older diagnostic's
+placements. On entering the overland, `4CF6` could retain a blocked town
+barrier despite the open path ahead. Gateway's redraw (`2E10h`), current-cell
+refresh (`C01Ah`) and scripted step (`C01Eh`) now refresh the barrier with
+the cell, as RefreshCurrentMapCell does. The native regression fails before
+the correction and checks both an open barrier and the next cell's locked
+barrier. Original files and the save format are unchanged.
+
+Service visits approach the exterior door and step inside, respecting the
+hall's ejection after training. Where pier guards forbid camping, the route
+waits with actual ten-minute Look commands and normal events until the ship's
+departure window. No clock is set directly.
+
+The route collects Nesme's magic mace, chain mail and ring, Sub-Yartar's +2
+sword and the Hosttower's bracers from actual treasure. Its paid Sundabar
+temple visit restores the petrified paladin before Ascore. The final maze
+uses the intended northward exits. All six PCs and Krevish are healthy at the
+win; after actual Continue, the script dismisses Krevish and returns the six
+PCs to Yartar. That normal post-ending save reencodes byte-identically. The
+later winner-availability feature must retain the roster present at the win,
+before these scripted departures.
+
 ## The walk
 
 `opengold_gateway_walk` (`opengold_gold_box_games_tests --gateway-walk`)

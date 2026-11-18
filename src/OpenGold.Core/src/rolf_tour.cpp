@@ -1109,6 +1109,16 @@ void RolfTourSession::handle_host(const EclRequest &request)
         // The address of the original engine routine the script calls.
         const auto service = request.arguments[0].address();
         const auto routines = ecl_engine_routines(game());
+        const auto refresh_gateway_barrier = [&](const MapCell &cell, unsigned side)
+        {
+            if (game() == GoldBoxGame::gateway_to_the_savage_frontier)
+            {
+                // RefreshCurrentMapCell also refreshes GetBarrierType. The
+                // overland's next pre-step script reads this cache directly.
+                const auto barrier = cell.walls[side] || gateway_overland() ? cell.doors[side] : 1;
+                reply.writes.push_back({EclAddress{0x4CF6}, static_cast<std::uint16_t>(barrier)});
+            }
+        };
         if (service == EclAddress{routines.move_forward})
         {
             const auto facing = map_direction(machine_.variable(game_cell(ecl_party_facing)));
@@ -1126,6 +1136,7 @@ void RolfTourSession::handle_host(const EclRequest &request)
                             {game_cell(ecl_party_y), static_cast<std::uint16_t>(pose.y)},
                             {game_cell(ecl_wall_ahead), cell.walls[index(pose.facing)]},
                             {game_cell(ecl_cell_event), cell.event_raw}};
+            refresh_gateway_barrier(cell, index(pose.facing));
         }
         else if (service == EclAddress{routines.redraw_view} ||
                  service == EclAddress{routines.refresh_wall_ahead})
@@ -1145,6 +1156,10 @@ void RolfTourSession::handle_host(const EclRequest &request)
                              static_cast<std::uint16_t>(off_map ? 0 : map_.at(x, y).walls[f])},
                             {game_cell(ecl_cell_event),
                              static_cast<std::uint16_t>(off_map ? 0 : map_.at(x, y).event_raw)}};
+            if (!off_map)
+            {
+                refresh_gateway_barrier(map_.at(x, y), f);
+            }
             ++snapshot_.redraws;
             // Curse's redraw draws the view over the picture a script showed.
             if (game() != GoldBoxGame::pool_of_radiance &&
