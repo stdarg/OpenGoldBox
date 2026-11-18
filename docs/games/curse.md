@@ -362,7 +362,33 @@ Paid training advances both clerics to level 6 on earned experience.
 
 The observed run wins seven fights with no lost fight and retains all six
 characters; each finishes with 30,912 experience. This is **not a campaign-win
-certificate**: the Tilverton opening still relocates between event squares and
-enters the sewers directly, and the full story route retains its progression
-grants. The test separately asserts earned experience and cleric advancement,
+certificate**. At the initial checkpoint `b54db7ba`, the Tilverton opening
+still relocated between event squares and entered the sewers directly; that
+opening assistance is removed by the subsequent work below. The full story
+route retains its progression grants. The test separately asserts earned experience and cleric advancement,
 rather than accepting only successful event decoding or a count of encounters.
+
+
+### Physical opening and sewer progression (2026-11-18)
+
+The earned route now starts in the inn at (7,13), walks out to hear the
+innkeeper's explanation, and buys equipment by stepping west from (3,12)
+into the town shop. The shop event also appears in disconnected geometry;
+the assisted story's (12,7) was not reachable from the inn. The sage is visited
+by stepping east from (5,5). Both services leave the party outside their doors,
+so navigation must visit the doorway, rather than insist on occupying a shop's
+event square.
+
+The party approaches the royal guards, is sent back, witnesses the carriage
+attack, surrenders and follows the jail escape and guide into the guild.
+Navigation recognizes script-driven transfers. Guild corridors and fights
+lead to the southern exit at (10,15), whose script brings the party into the
+sewers at (0,0). It then clears the earned progression segment above. The
+route rejects any test relocation or direct area entry, as well as injected
+rewards, healing, flags or victories.
+
+Observed fresh run: eight fights won, zero losses, all six characters alive,
+31,876 XP each and both clerics at level 6. Legal original Modify controls and
+combat retries remain allowed. This proves the opening and optional sewer
+progression, **not the remainder of the campaign**. The existing full story
+route still uses injected progression and relocation.

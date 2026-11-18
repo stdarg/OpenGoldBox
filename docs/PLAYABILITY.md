@@ -359,3 +359,44 @@ Next bounded outcome: replace the assisted Tilverton opening in this segment
 with real movement from the inn through town and the guild to the sewers.
 Retain paid equipment, earned progression and all current passing checks.
 Pre-existing edits in `docs/GAMES.md` are outside this checkpoint's commit.
+
+
+Delivery: `b54db7ba` pushed to `origin/main`; the affected target rebuilds in
+the main checkout and the registered sewer check passes there again (30.35s).
+The main pull was skipped because pre-existing `docs/GAMES.md` edits remain.
+
+### Active next batch: physical Tilverton opening
+
+- Start observed 2026-11-18 04:07 UTC; checkpoint due 05:07 UTC.
+- Outcome: reach the sewer progression segment from the actual inn start,
+  through town and the guild, without test relocation or direct area entry.
+- Acceptance: retain paid starting equipment, legal character creation, original
+  script decisions and earned sewer progression. No production-rule, save-format,
+  UI or SRD change unless a reproduced in-scope defect requires it.
+- Owner/model: same configured Codex session; no delegation or model switch.
+- Checks: incremental opening diagnostics, then rebuilt sewer regression and
+  relevant existing original-rules checks on final inputs.
+
+
+Observed 2026-11-18 04:17 UTC: fresh physical opening and earned sewer route
+passes with eight fights won, no losses, all six members alive at 31,876 XP,
+and both clerics trained to level 6. Navigation now uses the actual service
+doorways, accepts the carriage surrender and follows script-owned transfers
+through the guild exit. No engine defect was established or production rule
+changed. Final guarded regression and save-checkpoint verification follow.
+
+
+Final opening verification, observed 2026-11-18 04:18 UTC: **5/5 checks pass,
+zero skips**, in 35.33 seconds on the guarded rebuilt tree based on `b54db7ba`.
+Creation, Gold Box format checks, earned opening/sewers (34.42s), census and
+campaign save tests pass. Log: `/tmp/opengold-curse-opening-regression.log`.
+The same installed-data environment was used, with
+`OPENGOLD_ROUTE_SAVE=/tmp/opengold-curse-earned-opening.sav`; the real checkpoint
+contains twelve completed beats and campaign format 53. The full assisted
+Curse route passed in the prior checkpoint; its behavior is unchanged here.
+
+No test relocation, direct area entry, extra rewards or forced combat results
+remain in this opening/sewer segment. Scope, architecture, RAII and diff checks
+pass. Investigation and implementation ran from 04:07 to 04:17, followed by
+final verification ending 04:18. This completes the physical-opening batch;
+it does not certify the rest of Curse or any additional whole game.

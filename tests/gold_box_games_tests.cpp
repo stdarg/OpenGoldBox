@@ -7603,12 +7603,28 @@ std::vector<RouteBeat> curse_sewers_route()
     using D = opengold::por::MapDirection;
     const auto &story = curse_route();
     std::vector<RouteBeat> beats(story.begin(), story.begin() + 6);
+    // The same shop event appears in disconnected geometry. Use the town
+    // shop a party can actually reach from the inn, not the assisted route's.
+    beats.front().x = 3;
+    beats.front().y = 12;
+    beats.front().facing = D::west;
+    beats.front().step = true;
     beats.front().answers = {"YES",
                              "buy:LONG SWORD@paladin 1,paladin 2,ranger 3",
                              "buy:MACE@cleric 4,cleric 5",
                              "buy:DAGGER@magic_user 6",
                              "buy:PLATE ARMOR@paladin 1,paladin 2,ranger 3,cleric 4,cleric 5",
                              "buy:SHIELD@paladin 1,paladin 2,ranger 3,cleric 4,cleric 5"};
+    beats[1].x = 5;
+    beats[1].y = 5;
+    beats[1].facing = D::east;
+    beats[1].step = true;
+    beats[2].y = 1;
+    beats[2].step = true;
+    // The guards' refusal, carriage and surrender lead into the guild.
+    beats.erase(beats.begin() + 3);
+    beats.back() = {1, 10, 15, D::south, {}, true};
+    beats.back().step = true;
     // Clear the western lairs first, resting in each cleared room before
     // crossing to the next one. The folded corridors are player-accessible.
     for (const auto &[x, y] : std::array<std::pair<unsigned, unsigned>, 2>{{{1, 14}, {8, 14}}})
@@ -7626,18 +7642,23 @@ std::vector<RouteBeat> curse_sewers_route()
 }
 
 // Replan after each actual step: encounters, doors and scripts may interrupt it.
-// The earlier story setup is still assisted; sewer movement itself never places
-// the party on a target square.
-void walk_earned_sewers(opengold::por::RolfTourSession &session, unsigned tx, unsigned ty,
-                        const std::function<void()> &settle)
+// This route never places the party on a target square; scripts own transfers.
+void walk_earned_curse(opengold::por::RolfTourSession &session, unsigned tx, unsigned ty,
+                       const std::function<void()> &settle)
 {
     using C = opengold::por::ExplorationCommand;
     constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
     session.set_searching(true);
+    const auto area = session.snapshot().area_id;
+    const auto script = session.snapshot().script_id;
     for (unsigned moves = 0; moves < 400; ++moves)
     {
         const auto before = session.snapshot();
-        check(before.area_id == 3, "Earned sewer walking stays in the sewers");
+        if (before.script_id != script)
+        {
+            return;
+        }
+        check(before.area_id == area, "Earned walking stays in its current area");
         if (before.pose.x == tx && before.pose.y == ty)
         {
             return;
@@ -7658,12 +7679,12 @@ void walk_earned_sewers(opengold::por::RolfTourSession &session, unsigned tx, un
                 int x = at % 16 + dx[d], y = at / 16 + dy[d];
                 // ECL2:3 folds the sewer corridors across its north/south
                 // edges. These are actual scripted steps, not map wrapping.
-                if (y == 16 && (x == 2 || x == 5 || x == 9))
+                if (area == 3 && y == 16 && (x == 2 || x == 5 || x == 9))
                 {
                     x = x == 2 ? 9 : x == 5 ? 11 : 15;
                     y = 0;
                 }
-                else if (y == -1 && (x == 9 || x == 11 || x == 15))
+                else if (area == 3 && y == -1 && (x == 9 || x == 11 || x == 15))
                 {
                     x = x == 9 ? 2 : x - 6;
                     y = 15;
@@ -7687,7 +7708,7 @@ void walk_earned_sewers(opengold::por::RolfTourSession &session, unsigned tx, un
             }
         }
         int next = ty * 16 + tx;
-        check(previous[next] >= 0, "The sewer destination has a walkable route");
+        check(previous[next] >= 0, "The earned destination has a walkable route");
         while (previous[next] != origin)
         {
             next = previous[next];
@@ -7702,7 +7723,7 @@ void walk_earned_sewers(opengold::por::RolfTourSession &session, unsigned tx, un
         check(session.explore(C::forward), "The sewer party can attempt its next step");
         settle();
     }
-    throw std::runtime_error("Earned sewer walking did not arrive");
+    throw std::runtime_error("Earned Curse walking did not arrive");
 }
 
 bool walk_census(GoldBoxGame game, bool route, bool sewers = false)
@@ -12056,6 +12077,7 @@ bool walk_census(GoldBoxGame game, bool route, bool sewers = false)
                     }
                     else if (beat.enter_map)
                     {
+                        check(!sewers, "The earned opening enters areas through their scripts");
                         opengold::test::TourAccess::enter(session, beat.map,
                                                           {beat.x, beat.y, beat.facing});
                         play(where);
@@ -12092,23 +12114,41 @@ bool walk_census(GoldBoxGame game, bool route, bool sewers = false)
                             const auto answers_before = answers;
                             const unsigned lost_before = fights_lost;
                             rejected_boss_win = false;
-                            if (sewers && beat.map == 3)
+                            if (sewers && (beat.map == 3 || beat.map == 1))
                             {
+                                const auto destination_script = session.snapshot().script_id;
                                 const auto destination_answers = answers;
                                 const bool destination_passing = passing;
                                 passing = true;
-                                walk_earned_sewers(session, x, beat.y,
-                                                   [&]
-                                                   {
-                                                       answers = {"BARGAIN", "BURN THEM", "NO",
-                                                                  "Bash"};
-                                                       play(where);
-                                                   });
+                                walk_earned_curse(
+                                    session, x, beat.y,
+                                    [&]
+                                    {
+                                        answers = beat_number == 3
+                                                      ? std::vector<std::string>{"YES", "Bash"}
+                                                      : std::vector<std::string>{
+                                                            "BARGAIN", "BURN THEM", "NO", "Bash"};
+                                        play(where);
+                                    });
                                 passing = destination_passing;
                                 answers = destination_answers;
+                                if (session.snapshot().script_id != destination_script)
+                                {
+                                    break;
+                                }
+                                for (unsigned turns = 0;
+                                     session.snapshot().pose.facing != beat.facing && turns < 4;
+                                     ++turns)
+                                {
+                                    check(session.explore(
+                                              opengold::por::ExplorationCommand::turn_right),
+                                          "The earned party faces its destination");
+                                    play(where);
+                                }
                             }
                             else
                             {
+                                check(!sewers, "The earned opening never relocates the party");
                                 opengold::test::TourAccess::place(session,
                                                                   {x, beat.y, beat.facing});
                             }
