@@ -1388,9 +1388,16 @@ int Session::squares_of_movement(const Fighter &f) const
 }
 
 // The half-moves it has this round: twice its movement, doubled by Haste and
-// halved by Slow.
+// halved by Slow. Pools of Darkness adds its script's modifier (cell 1Ch, a
+// signed byte) to a party member's movement after Haste and Slow, and a sum
+// below 1 is 1 (charhlp.pas, RecalcMovement).
 int Session::half_moves_of(const Fighter &f) const
 {
+    if (darkness() && f.side == Side::party && party_move_modifier_ != 0)
+    {
+        const int modifier = static_cast<std::int8_t>(party_move_modifier_ & 0xFF);
+        return 2 * std::max(paced(f, f.numbers.movement) + modifier, 1);
+    }
     return paced(f, 2 * squares_of_movement(f));
 }
 

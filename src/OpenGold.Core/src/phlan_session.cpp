@@ -1941,11 +1941,12 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
                 {game_cell(ecl_party_facing), static_cast<std::uint16_t>(*result.escape_side)});
         }
         // Pools of Darkness's fight's end clears its to-hit cells
-        // (add_script_to_hit).
+        // (add_script_to_hit) and its party's movement modifier.
         if (game() == GoldBoxGame::pools_of_darkness)
         {
             results.push_back({darkness_monster_hit_mod, 0});
             results.push_back({darkness_party_hit_mod, 0});
+            results.push_back({darkness_party_move_mod, 0});
             const auto &request = machine_.pending_request();
             if (result.outcome == rules::Outcome::victory && current_script_ == 75 && request &&
                 request->id == combat_request_ && request->instruction &&
@@ -4300,6 +4301,10 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 // item (combatai.pas, SelectSpellToCast; combat.pas, the
                 // Cast menu; viewchar.pas, the Use menu).
                 encounter_->no_magic = magic_barred();
+                // Its own cell for the party's movement modifier, which
+                // Moander's heart sets (ECL1:53 0x9C8C).
+                encounter_->party_move_modifier =
+                    static_cast<int>(machine_.variable(darkness_party_move_mod) & 0xFF);
             }
             if (std::exchange(duel_, false))
             {

@@ -313,6 +313,8 @@ keeps nothing. The cells the engine itself reads or writes:
 | 16h | The area's script (0 at a new game) |
 | 17h, 18h | The party's square before its last step |
 | 19h | Searching (bit 0) and looking (bit 1) |
+| 1Bh | The fight's morale: the monsters' side breaks below 100 less this of its Hit Points (CheckMorale). Not played yet (below) |
+| 1Ch | Added to the party's movement in the next fight, whose end clears it (RecalcMovement) |
 | 20h | The party's size |
 | 22h | 1 in a dungeon (the 3D view), 0 on the area map |
 | 23h | The facing as the compass's 0 to 7 |
@@ -324,6 +326,17 @@ keeps nothing. The cells the engine itself reads or writes:
 | 36h | 1 when a member attacked its own side |
 | 39h | The color of PRINT's text |
 | 3Ah | The tile set and picture of the area map |
+
+Cell 1Bh, the break point, is not played yet: OpenGoldBox's Darkness
+monsters break as soon as their side is hurt, where the original's stand
+until the side has lost what the script sets (70 to 100 in nearly every
+script; 100 in Kalistes' egg room and the finale, so there they never
+break). Played so (measured 2026-11-18 from a save before the beat, the
+same dice either way), the route's party wins Kalistes in 6 plays of 480,
+none with no one lost, against 67 of 240 without it, and the spy's band
+after her in 0 of 480, against 148 of 240. The route must re-plan Kalistes'
+egg room (84: 3,6) before 1Bh can be played; the code is kept on the local
+branch `darkness18-1bh`.
 
 OpenGoldBox's engine names the cells by *Pool of Radiance*'s addresses, and
 `game_address` gives each its Darkness cell; a *Pool of Radiance* cell

@@ -1665,3 +1665,15 @@ fresh proof took 9m45, with documentation/save validation through 16:02.
 Only Secret's full earned completion is delivered by this batch. The remaining
 commercial campaigns, Krynn, Buck Rogers, installed UA design coverage and
 subsequent automatic winning-character availability remain unfinished.
+
+Integration observed 16:08 UTC: the direct push of `7453965d` was rejected
+because `origin/main` acquired `ad957335` and `d8e21ba0` (Darkness movement
+modifier and catalog references). An isolated worktree merges these commits
+without conflicts, leaving the main checkout's pre-existing `docs/GAMES.md`
+edit untouched. Rebuilt merged targets pass all six combat, campaign, save,
+Darkness, Gold Box and earned Secret-opening checks, no skips, in 5.67s.
+Log: `/tmp/opengold-secret-ending-merge-checks.log`. The only changes relative
+to updated origin remain the four intended Secret test/documentation files.
+The incoming production behavior is gated to Darkness; Secret's full earned
+certificate above is unchanged. The dirty-main guard still prevents pulling
+into the user's checkout. Its own Secret commit remains installed there.
