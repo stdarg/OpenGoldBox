@@ -321,6 +321,10 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_treasure_walk COMMAND opengold_gold_box_games_tests --treasure-walk)
     # Curse's story, beat by beat, with a party made for it (plan step 7).
     add_test(NAME opengold_curse_route COMMAND opengold_gold_box_games_tests --curse-route)
+    # Earned sewer rewards and training, reached with real sewer movement.
+    add_test(NAME opengold_curse_sewers COMMAND opengold_gold_box_games_tests --curse-sewers)
+    set_tests_properties(opengold_curse_sewers PROPERTIES TIMEOUT 300
+        SKIP_REGULAR_EXPRESSION "files are not here")
     # Secret of the Silver Blades' story the same way (plan phase 4, step 4).
     add_test(NAME opengold_secret_route COMMAND opengold_gold_box_games_tests --secret-route)
     # Pools of Darkness's story the same way.

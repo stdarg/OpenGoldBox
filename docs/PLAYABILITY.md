@@ -300,3 +300,62 @@ the broad build began at approximately 14:25 and its checks finished at 14:54.
 Final route verification finished at 14:58. These are observed phase boundaries,
 not separate CPU-time measurements. Commit/push and the required main-checkout
 rebuild follow verification.
+
+
+## Active all-games delivery (2026-11-18)
+
+- Authorization: user requests every Gold Box game playable and winnable,
+  followed by availability of every winning character for the next game.
+  Includes all twelve installations; supersedes the earlier seven-game scope
+  and Krynn's former wait for a separate instruction. No delegation.
+- First batch: Curse earned progression through Tilverton's sewer lairs.
+  Acceptance: no injected rewards, healing, flags or combat results; paid
+  training and normal camp recovery; actual combat wins. This diagnostic route
+  retains assisted opening setup and cannot certify a campaign win. Sewer
+  travel is being replaced with real steps, including scripted folded corridors.
+- Reuse: original-rules campaign, combat and route player. No SRD changes,
+  save-format changes, new controls or runtime changes in this batch.
+- Model: current configured Codex model retained, no switch requested or made;
+  SRD assignments do not apply to this original-rules batch.
+- Verification: rebuild native route target, execute earned sewer route against
+  installed data, then relevant native regressions before delivery.
+- Timing: investigation observed 2026-11-18 03:44 UTC; checkpoint due 04:44 UTC,
+  no later than 05:14 UTC. Earlier local edits were present at task start.
+- Remaining: all assisted commercial routes, Krynn, Buck Rogers, UA design
+  coverage, then automatic winning-character availability.
+
+
+Observed 2026-11-18 04:00 UTC: the earned sewer segment passes seven real fights,
+with zero losses and all six members alive at 30,912 XP. Both clerics train to
+level 6. Creation money pays for real shop purchases; real steps traverse the
+sewers and their folded edge passages. Earlier failures exposed test-route
+assistance (relocation), an unintended checkpoint surrender, and an avoidable
+attack on the bargaining otyughs. No production-rule change was needed.
+See [Curse](games/curse.md#earned-sewer-progression-2026-11-18). Final registered
+regression verification and delivery remain pending. The full all-games goal
+and subsequent winning-character availability remain incomplete.
+
+
+Final focused verification, observed 2026-11-18 04:06 UTC: **5/5 checks pass,
+zero skips**, in 329.39 seconds against the working tree based on `37f6cc45`.
+The target was rebuilt before the run. Command (with both installed-data
+variables set as above):
+
+```bash
+cmake --build build/linux --target opengold_gold_box_games_tests -j 8
+ctest --test-dir build/linux -R '^(opengold_game_census|opengold_gold_box_games_tests|opengold_curse_sewers|opengold_curse_route|opengold_original_creation_tests)$' --output-on-failure
+```
+
+The full assisted Curse regression passes in 298.19 seconds; earned sewer
+progression passes in 30.44 seconds. Creation, format checks and the seven-game
+census pass too. Log: `/tmp/opengold-curse-sewers-regression.log`. Scope,
+architecture, RAII and diff checks pass; no production code, UI, save schema or
+SRD mechanics changed. Investigation, test implementation and focused builds
+were interleaved from 03:44 to 04:00 UTC; final checks ran from approximately
+04:01 to 04:06. The brief user pause was not separately timed. Completion is
+one earned progression segment, not a new winning commercial campaign.
+
+Next bounded outcome: replace the assisted Tilverton opening in this segment
+with real movement from the inn through town and the guild to the sewers.
+Retain paid equipment, earned progression and all current passing checks.
+Pre-existing edits in `docs/GAMES.md` are outside this checkpoint's commit.

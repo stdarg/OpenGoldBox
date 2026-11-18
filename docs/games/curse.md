@@ -341,3 +341,28 @@ across at the end of that game's route, or the optional fights a player
 takes on the way: the sewers' trolls, the hideout's rooms, and the
 dungeons below Shadowdale, Ashabenford and Essembra, which the cluebook
 says are there to add experience.
+
+
+### Earned sewer progression (2026-11-18)
+
+`opengold_curse_sewers` (`opengold_gold_box_games_tests --curse-sewers`)
+checks one earned progression segment independently of the assisted full route.
+The party uses its creation money (300 platinum per character) to buy ordinary
+weapons, plate and shields at Tilverton's actual shop. It receives no extra
+experience, money, items, healing, quest flags or combat victories.
+
+From the sewer arrival at (0,0), movement uses actual turns and steps, including
+locks, checkpoints and the original script's folded corridors. ECL2:3 connects
+southward steps at (2,15), (5,15) and (9,15) to (9,0), (11,0) and (15,0);
+the northward passages reverse those connections. They are script transitions,
+not ordinary coordinate wrapping. The route refuses checkpoint surrender,
+bargains with the otyughs offering a trade, burns the scattered troll pieces,
+clears four lairs and rests in cleared rooms and the hidden guild chambers.
+Paid training advances both clerics to level 6 on earned experience.
+
+The observed run wins seven fights with no lost fight and retains all six
+characters; each finishes with 30,912 experience. This is **not a campaign-win
+certificate**: the Tilverton opening still relocates between event squares and
+enters the sewers directly, and the full story route retains its progression
+grants. The test separately asserts earned experience and cleric advancement,
+rather than accepting only successful event decoding or a count of encounters.
