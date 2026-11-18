@@ -610,3 +610,36 @@ integrated checks pass in 618.28s, including the existing ending, every earlier
 earned milestone, shared-map saves, both startup rules modes and package smoke.
 The separate earned suffix save at beat 169 independently reloads. This is not
 a campaign-ending certificate; see the delivery record for checks and limits.
+
+### Fresh earned campaign ending (2026-11-18)
+
+`opengold_curse_earned_ending` extends all earned milestones to the actual
+ending. Leave the Pit, return to Voonlar and pay to identify the carried
+wands. Ready the actual Wand of Fireballs; the hall advances the mage to 9
+and both paladins to 8 using earned XP and 1,000 gp fees. Recover in wilderness
+camp, then travel through Hillsfar, the Standing Stone and Myth Drannor.
+
+Physically cross the Burial Glen to its eastern exit and parley haughtily
+with the rakshasas in the ruins. Their room `(9,6)` is the preparation camp:
+actual cures, Enlarge on all three warriors, Bless, Prayer and Haste. Keep
+Search off and do not rest again before entering the temple at `(5,6)`;
+the temple's bands refuse camp. After the chapel encounter and Nameless,
+approach the stairs at `(10,8)` north and step onto `(10,7)`. This original
+warp stays in map/script 67. Continue to Tyranthraxus at `(6,1)`, casting
+remaining real cures before entering the fight. The existing player aims
+fireballs at packed margoyles/priests and holds hostile casters.
+
+The fresh registered whole campaign passes in 545.33s: 187 beats, 84 retained
+victories, zero battle defeats and four casualty fights. The actual ending
+is shown after Tyranthraxus falls. All six PCs remain; paladin 1, ranger,
+cleric 4 and mage stand, while paladin 2 and cleric 5 are dead. This is a
+complete earned Original Rules campaign for this party, without injected
+rewards, healing, flags, movement or battle results. Other party compositions,
+difficulties and optional quests require their own coverage.
+
+All seven affected integrated checks pass in 545.35s, including the existing
+ending, fresh fourth bond, units, startup and package smoke. A separate actual
+earned suffix winner save also decodes and reencodes byte-identically. The
+win notification is transient and is not replayed by loading that terminal
+save; the saved party, map and ending dialogue are intact. See
+[PLAYABILITY](../PLAYABILITY.md) for traces, exact tested tree and delivery.

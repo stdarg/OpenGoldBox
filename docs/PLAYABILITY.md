@@ -22,7 +22,7 @@ UI behavior and the current configured model are retained; no delegation.
 | Game | Verified | Remaining completion gap |
 |---|---|---|
 | Pool of Radiance | Fresh Original Rules party starts at zero XP, earns its training and equipment, defeats Tyranthraxus and reaches the ending; SRD map audits remain separate | Optional quests, other party compositions and difficulty settings are not certified by this route |
-| Curse of the Azure Bonds | Assisted ending route wins its fights; fresh earned progression through Dexam, all three artifacts, recovery and paid advancement verified | Continue earned progression through Myth Drannor and the actual ending |
+| Curse of the Azure Bonds | Fresh Original Rules party earns all three artifacts, equipment, paid advancement and recovery, physically reaches Myth Drannor, defeats Tyranthraxus and shows the actual ending | Optional quests, other party compositions and difficulty settings are not certified by this route |
 | Secret of the Silver Blades | Fresh complete route reaches the actual ending with every fight played, including Oswulf, the Dreadlord and the soul gem; zero forced wins | Replace progression grants and relocations with verified gameplay/import |
 | Gateway to the Savage Frontier | Route reaches the ending and wins its fights | Replace experience/gold/equipment/time grants and relocations |
 | Pools of Darkness | Fresh whole route and detailed finale replay defeat Gothmenes, reach the ending and restore all six members; zero forced results | Progression assistance and relocations remain |
@@ -925,3 +925,101 @@ milestone and one save blocker are verified; zero additional whole games are
 certified. Commit/push and required main rebuild/checks remain before delivery.
 Next is Curse's earned Myth Drannor/ending, followed by other game gaps and,
 after every game is winnable, winning-character availability.
+
+Delivery observed 09:49 UTC: `47cb08a0` is pushed to `origin/main`; main and
+origin match. The main game is rebuilt/exported and all four post-push
+installed-data checks pass in 19.76s (Gold Box units, Godot preparation,
+Curse Original startup and packaged Linux smoke), with no skips. Log:
+`/tmp/opengold-curse-dexam-main-recheck.log`. The dirty-main guard again skips
+the pull; the pre-existing GAMES edit stays untouched. The Dexam claim is released.
+
+### Active next batch: earned Curse campaign ending
+
+- Start observed 2026-11-18 09:49 UTC; checkpoint due 10:49 UTC.
+- Authorization: resumed all-twelve-games task remains active; no questions or
+  delegation. Outcome: take the earned three-artifact party through actual
+  paid eligible training and preparation, the Standing Stone, Burial Glen,
+  Myth Drannor's ruins and temple, defeat Tyranthraxus and reach the actual
+  campaign ending through physical movement and original scripts.
+- Acceptance: a fresh Original Rules whole-campaign route earns its rewards,
+  equipment and advancement, retains six PCs, wins Tyranthraxus's actual
+  battle and shows the game's real winning event with at least one living PC
+  standing and zero retained battle defeats. No injected XP, money, healing,
+  time, flags, positions or outcomes. A continuation from the actual earned
+  beat-169 save is diagnostic; fresh completion is required for certification.
+  Optional quests and other-party/difficulty coverage remain outside this
+  certificate. Other games and automatic winning-character availability follow.
+- Reuse/model: existing original camp/shop/hall actions, expedition player,
+  manual ending tactics and physical walker; actual earned fourth-bond save.
+  Same configured Codex, no requested switch, model/effort override or agents.
+  Original Rules work outside SRD model assignments; no new UI/runtime or
+  save-format/history changes planned.
+- Checks: earned ending suffix, fresh registered whole campaign, affected Curse
+  neighbors and relevant save/startup/package checks; final review and
+  commit/push followed by the required main rebuild/installed-data smoke.
+  Baseline is `47cb08a0`'s 17-check integrated pass and four post-push checks.
+
+Observed 09:58 UTC: the ending route's first diagnostic stopped while choosing
+the fireball wand. Its new Identify helper had copied an inventory span rather
+than its values; the first paid identification replaced that borrowed view.
+The helper now takes an owned value snapshot before any shop mutation, and
+the real paid services identify both Ice Storm and Fireballs. No production
+inventory change was needed. The replay readies the actually identified
+fireball wand and pays for mage level 9 and both paladins' level 8 training.
+It is continuing toward the Standing Stone and Myth Drannor. Fresh ending
+verification remains open; no new whole-game certificate is counted yet.
+
+Observed 10:03 UTC: the earned continuation reaches Tyranthraxus and the actual
+winning event in 12 retained victories, zero battle defeats and one casualty
+fight. Four PCs stand at the end; paladin 2 and cleric 5 are dead, with all six
+still in the party. Actual winner save:
+`/tmp/opengold-curse-ending-identified-187.sav` (also the diagnostic final save).
+The normal loader decodes it and reencodes it byte-identically to
+`/tmp/opengold-curse-winning-roundtrip.sav`. The diagnostic route validator
+returns false on that terminal-only resume because no new win notification is
+played; the persisted party/map/dialogue are intact. This is a save round-trip
+probe, not a new campaign play or a failing registered check.
+
+The whole-campaign certificate still requires the fresh registered ending run.
+LLVM-23 format/braces passes and the final game is rebuilt/exported. Seven
+affected integrated checks are running under
+`/tmp/opengold-curse-earned-ending-integrated.log`, including the new fresh
+ending, the existing assisted ending, the prior fourth bond, Gold Box units,
+Godot preparation/Curse Original startup and package smoke. No production,
+rules, UI or save-format changes have been needed in this batch.
+
+Final verification observed 10:12 UTC: the fresh registered whole campaign
+passes in 545.33s. All 187 beats use creation's actual starting resources,
+earned rewards/equipment, paid eligible training and real movement. The
+party wins 84 retained battles with zero defeats and four casualty fights,
+defeats Tyranthraxus and sees the actual winning event. All six PCs remain;
+paladin 1 (7/108), ranger (25/98), cleric 4 (67/67) and mage (52/52) stand.
+Paladin 2 and cleric 5 are dead. Warriors/clerics are level 8 and mage level 9.
+This certifies the named fresh Original Rules party through Curse's actual
+ending; it does not certify every optional quest, party or difficulty.
+
+All seven affected integrated checks pass in 545.35s with no skips: the new
+fresh campaign, existing assisted ending, fresh fourth bond, Gold Box units,
+Godot preparation/Curse Original startup and packaged Linux smoke. Complete
+trace: `/tmp/opengold-curse-earned-ending-integrated-ctest.log`; fresh campaign:
+`/tmp/opengold-curse-earned-ending-fresh-final.log`. The separately retained
+earned suffix winner save at beat 187 round-trips byte-identically, as recorded
+above; it is not an encoding of the fresh CTest run. Registration now has
+345 checks; this delivery's final regression pass selects seven, with the
+previous batch's 17-check integrated and post-push coverage still recorded.
+
+Observed phases: route/diagnostic work 09:49–10:00 (including correction of
+the new Identify helper's borrowed view), format/braces/final build
+10:00–10:02, integrated checks through the 10:12 observation. Review passes
+scope, architecture, RAII, compatibility and staged-diff checks. The tested
+tree is based on `47cb08a0` plus this delivery; production Core, rules, UI and
+save format/history are unchanged. The user's GAMES edit remains untouched.
+Same configured Codex, no effort/model override or delegation; cost/token data
+unavailable. The 60-minute checkpoint is not due. Commit/push and required
+main rebuild/checks remain before delivery.
+
+One additional whole commercial campaign is verified: Pool and Curse now have
+unassisted completion evidence. Other commercial routes, Krynn/Buck Rogers
+implementation and arbitrary UA designs remain as scoped above. Automatic
+availability of every winning party member follows all-game winnability.
+Next is Secret's actual starting party and earned progression.
