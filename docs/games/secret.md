@@ -209,6 +209,26 @@ are injected. The fresh registered milestone passes in 15.62s; seven affected
 checks pass with no skips. The normal loader reencodes the earned save
 byte-identically. This milestone does not certify the later ruins, mines or ending.
 
+## Earned Eldamar amulet (2026-11-18)
+
+`opengold_secret_earned_eldamar` continues the earned opening and Well route.
+At the free training hall, approached from `(7,7)` north, only the eligible
+ranger and two clerics advance to level 9. Leave by the actual east gate and
+walk the ruins' scripted passages toward the Old Red Dragon's lair. These
+rooms share map 32; the passages, rather than arbitrary relocation, advance
+their sector cell `4C4B`.
+
+Before the lair, normal camp prepares fire wards and known attack/cure spells.
+Approach `(0,3)` north, step forward and Attack. Victory earns Eldamar's amulet
+(`4C53=255`); collect the visible unidentified cloak, ring, plate armor and
+long sword as equipment. The actual lair gateway returns to the safe Well,
+where normal rest/cures finish recovery before saving at `(1,1)` without
+entering the town portal. The fresh 45-beat replay wins twelve battles with
+zero retained defeats and all six at full HP, 238,054 XP each. The fresh
+registered milestone passes in 17.75s and all eight affected checks pass
+with no skips; the normal loader round-trips the earned save byte-identically.
+Headquarters, mines and the final ending remain separate completion gaps.
+
 ## The script host
 
 What *Secret*'s scripts need beyond *Curse*'s (found by walking every map):

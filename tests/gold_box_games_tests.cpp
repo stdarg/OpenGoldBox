@@ -1399,7 +1399,8 @@ enum class SecretProgress
 {
     none,
     opening,
-    well
+    well,
+    eldamar
 };
 
 std::vector<RouteBeat> secret_earned_opening()
@@ -1516,6 +1517,43 @@ std::vector<RouteBeat> secret_earned_route(SecretProgress progress)
     // Reuse the actual temple visit and town camp from the opening.
     const auto opening = secret_earned_opening();
     beats.insert(beats.end(), opening.end() - 2, opening.end());
+    if (progress >= SecretProgress::eldamar)
+    {
+        auto hall = step_beat(16, 7, 7, D::north, train_everyone());
+        hall.searching = false;
+        beats.push_back(hall);
+        beats.push_back(step_beat(16, 15, 8, D::east, {"YES"}));
+        walk_ruins(beats,
+                   {{14, 2, D::east},  {15, 5, D::east},  {10, 2, D::south}, {5, 0, D::north},
+                    {10, 4, D::north}, {0, 11, D::south}, {2, 10, D::west},  {0, 6, D::south},
+                    {14, 2, D::east},  {13, 4, D::west},  {6, 0, D::west},   {1, 14, D::south},
+                    {3, 0, D::north},  {0, 4, D::west},   {3, 5, D::south},  {7, 11, D::south},
+                    {8, 12, D::north}, {1, 9, D::south},  {2, 10, D::west},  {0, 6, D::south},
+                    {0, 5, D::east},   {13, 4, D::west},  {1, 1, D::west},   {5, 0, D::north}});
+        auto lair = step_beat(32, 0, 3, D::north, {"ATTACK", "YES"});
+        lair.rest_first = true;
+        lair.rest_for_spells = true;
+        lair.cure_first = true;
+        lair.cure_to_full = true;
+        lair.ward_each_with = "resist_fire";
+        lair.memorize_first_of = {"magic_missile", "hold_monster", "bless", "prayer"};
+        // Select the visible, unidentified treasure by its ordinary labels.
+        lair.take_items = {{"Cloak", "magic_user 6"},
+                           {"Ring", "cleric 5"},
+                           {"Plate Mail", "paladin 2"},
+                           {"Long Sword", "ranger 3"}};
+        lair.reloads_until_won = 600;
+        lair.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C53, 255};
+        beats.push_back(lair);
+        RouteBeat recover{33, 1, 1, D::north, {"NO"}, true};
+        recover.arrive_only = true;
+        recover.rest_for_spells = true;
+        recover.cure_first = true;
+        recover.cure_to_full = true;
+        recover.memorize_first_of = {"magic_missile", "fireball", "cure_light_wounds",
+                                     "cure_serious_wounds"};
+        beats.push_back(recover);
+    }
     return beats;
 }
 
@@ -14030,16 +14068,19 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                                   return item.original_type == mirror_type;
                                               });
             }
-            std::cout << (secret_progress >= SecretProgress::well ? "Earned Secret Well: "
-                                                                  : "Earned Secret opening: ")
+            std::cout << (secret_progress >= SecretProgress::eldamar ? "Earned Secret Eldamar: "
+                          : secret_progress >= SecretProgress::well  ? "Earned Secret Well: "
+                                                                     : "Earned Secret opening: ")
                       << fights_fought << " fights, " << fights_defeated
                       << " defeats; this is not a campaign win.\n";
             return played && pcs == 6 && healthy && someone_standing && session.can_leave() &&
-                   end.area_id == 16 &&
+                   end.area_id == (secret_progress >= SecretProgress::eldamar ? 33U : 16U) &&
                    session.script_variable(opengold::por::EclAddress{0x4C2D}) == 255 &&
                    fights_fought >= 1 && fights_defeated == 0 &&
                    (secret_progress < SecretProgress::well ||
-                    session.script_variable(opengold::por::EclAddress{0x4C63}) == 255);
+                    session.script_variable(opengold::por::EclAddress{0x4C63}) == 255) &&
+                   (secret_progress < SecretProgress::eldamar ||
+                    session.script_variable(opengold::por::EclAddress{0x4C53}) == 255);
         }
         if (sewers)
         {
@@ -14389,6 +14430,13 @@ int main(int argc, char **argv)
         {
             return walk_census(GoldBoxGame::secret_of_the_silver_blades, true, CurseProgress::none,
                                SecretProgress::well)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--secret-earned-eldamar")
+        {
+            return walk_census(GoldBoxGame::secret_of_the_silver_blades, true, CurseProgress::none,
+                               SecretProgress::eldamar)
                        ? 0
                        : 1;
         }

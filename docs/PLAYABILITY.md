@@ -23,7 +23,7 @@ UI behavior and the current configured model are retained; no delegation.
 |---|---|---|
 | Pool of Radiance | Fresh Original Rules party starts at zero XP, earns its training and equipment, defeats Tyranthraxus and reaches the ending; SRD map audits remain separate | Optional quests, other party compositions and difficulty settings are not certified by this route |
 | Curse of the Azure Bonds | Fresh Original Rules party earns all three artifacts, equipment, paid advancement and recovery, physically reaches Myth Drannor, defeats Tyranthraxus and shows the actual ending | Optional quests, other party compositions and difficulty settings are not certified by this route |
-| Secret of the Silver Blades | Fresh earned opening and Well-dragon route wins nine fights, recovers all six PCs and round-trips its save; the separate assisted complete route reaches the actual ending with every fight played | Replace later progression grants and relocations with verified gameplay/import |
+| Secret of the Silver Blades | Fresh earned opening, Well dragon and Eldamar amulet route wins twelve fights, recovers all six PCs and round-trips its save; the separate assisted complete route reaches the actual ending with every fight played | Replace later progression grants and relocations with verified gameplay/import |
 | Gateway to the Savage Frontier | Route reaches the ending and wins its fights | Replace experience/gold/equipment/time grants and relocations |
 | Pools of Darkness | Fresh whole route and detailed finale replay defeat Gothmenes, reach the ending and restore all six members; zero forced results | Progression assistance and relocations remain |
 | Treasures of the Savage Frontier | Route reaches the ending and wins its fights | Replace starting experience/money and relocations |
@@ -1195,3 +1195,68 @@ verification approximately five minutes; native builds and final integration
 are recorded in the corresponding `/tmp/opengold-secret-well-*-build.log`
 and integrated logs. Tokens/cost unavailable. One Well-dragon/recovery outcome
 is verified; the whole Secret ending and all-game objective remain open.
+
+Delivery observed 11:11 UTC: `61fa217a` is pushed to `origin/main`; the main
+checkout matches it and is rebuilt/exported. All four installed-data post-push
+checks pass in 19.77s with no skips: Gold Box units, Godot preparation, Secret
+Original startup and package smoke. Log:
+`/tmp/opengold-secret-well-main-recheck.log`. The existing GAMES edit remains
+untouched and prevents the pull under the dirty-main rule. The Well claim
+is released.
+
+### Active next batch: Secret's earned Eldamar amulet
+
+- Start observed 2026-11-18 11:11 UTC; checkpoint due 12:11 UTC.
+- Authorization/status: resumed all-twelve-game task, active; no questions or
+  delegation. Outcome: train only with earned XP at the actual free town hall,
+  physically traverse the ruins, defeat the Old Red Dragon, earn the Amulet of
+  Eldamar and return through the actual lair gateway to a usable safe save.
+- Acceptance: six PCs alive/not petrified, at least one standing, actual dragon
+  victory and amulet flag `4C53=255`, no retained defeats, physically valid
+  movement and reloadable idle save. A fresh registered replay must include
+  the earned opening and Well dragon. No injected advancement, money, gear,
+  healing, flags, time, positions or outcomes. Headquarters, mines and ending
+  stay deferred; no new UI/runtime or save-history changes planned.
+- Reuse/model: existing training, spell preparation, physical walker, ruins
+  passages and battle player. Same configured Codex, no requested switch/model
+  or effort override and no agents. Original Rules work outside SRD assignments.
+  Report a concrete rules/architecture blocker with evidence instead of changing
+  runtimes or reducing acceptance. One owner, no new issues.
+- Verification: focused suffix from the earned Well save, save round-trip,
+  fresh registered milestone and affected checks; own commit/push followed by
+  required main build and installed-data checks. Baseline `61fa217a`; initial
+  save `/tmp/opengold-secret-well-fresh-earned.sav`. Tokens/cost unavailable.
+
+Observed 11:14 UTC: the earned Well suffix physically completes all 24 ruins
+passages, wins three battles including the lair's actual dragon, earns the
+amulet and returns by its real gateway to the safe Well `(1,1)`. All six
+finish alive at full HP, with 238,054 XP each before collecting the lair's
+magic equipment. The real free hall advances the eligible ranger and both
+clerics to level 9; the paladins remain 8 and mage 9. The final route also
+selects the lair's visible unidentified cloak/ring/plate/sword treasure for
+its actual holders, rather than leaving earned equipment behind. No production
+changes have been needed. Initial suffix trace:
+`/tmp/opengold-secret-eldamar-suffix.log`; LLVM-23 formatting passes and the
+final build/eight affected checks are running. Final fresh replay and save
+round-trip remain pending.
+
+Observed 11:15 UTC: the final fresh 45-beat replay wins twelve battles with
+zero retained defeats; all six end alive at full HP, 238,054 XP each, at the
+safe Well `(1,1)`. All four visible unidentified treasure items are actually
+taken/readied. Save `/tmp/opengold-secret-eldamar-fresh-earned.sav` reloads
+and reencodes byte-identically as `/tmp/opengold-secret-eldamar-roundtrip.sav`.
+The terminal-only probe's zero newly observed fights again makes its milestone
+exit 1 expected; the independent byte comparison passes.
+
+All eight final integrated checks pass in 44.84s with no skips. Fresh earned
+Eldamar 17.75s, Well 16.00s, opening 8.71s, Secret all-map walk 44.84s,
+Gold Box units, Original Godot startup/preparation and package smoke pass.
+Tested tree: `61fa217a` plus this batch. Logs:
+`/tmp/opengold-secret-eldamar-integrated.log`,
+`/tmp/opengold-secret-eldamar-integrated-ctest.log`,
+`/tmp/opengold-secret-eldamar-fresh.log`,
+`/tmp/opengold-secret-eldamar-reload.log`. Scope/architecture review passes:
+tests/config/records only, value-owned containers, unchanged production/rules/UI
+and save history. Approximately four minutes elapsed to final verification,
+including focused native build and final integrated build; tokens/cost unavailable.
+The earned amulet outcome is complete; Headquarters, mines and ending remain.

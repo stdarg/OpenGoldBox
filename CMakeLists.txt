@@ -354,6 +354,9 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_secret_earned_well COMMAND opengold_gold_box_games_tests --secret-earned-well)
     set_tests_properties(opengold_secret_earned_well PROPERTIES TIMEOUT 900
         SKIP_REGULAR_EXPRESSION "files are not here")
+    add_test(NAME opengold_secret_earned_eldamar COMMAND opengold_gold_box_games_tests --secret-earned-eldamar)
+    set_tests_properties(opengold_secret_earned_eldamar PROPERTIES TIMEOUT 900
+        SKIP_REGULAR_EXPRESSION "files are not here")
     # Pools of Darkness's story the same way.
     add_test(NAME opengold_darkness_route COMMAND opengold_gold_box_games_tests --darkness-route)
     # Gateway to the Savage Frontier's story the same way (plan phase 5, step 4).
