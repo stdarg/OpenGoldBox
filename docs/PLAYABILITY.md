@@ -1677,3 +1677,9 @@ to updated origin remain the four intended Secret test/documentation files.
 The incoming production behavior is gated to Darkness; Secret's full earned
 certificate above is unchanged. The dirty-main guard still prevents pulling
 into the user's checkout. Its own Secret commit remains installed there.
+
+A second concurrent commit, `55d0a92e`, arrived before push (Darkness's
+separate morale cell and Kalistes preparation). It also merges cleanly in
+the isolated worktree; the rebuilt merged six-check suite passes again with
+no skips. Secret's earned route remains unchanged. Evidence:
+`/tmp/opengold-secret-ending-merge2-checks.log`.

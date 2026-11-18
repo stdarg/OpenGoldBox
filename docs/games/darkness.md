@@ -313,7 +313,7 @@ keeps nothing. The cells the engine itself reads or writes:
 | 16h | The area's script (0 at a new game) |
 | 17h, 18h | The party's square before its last step |
 | 19h | Searching (bit 0) and looking (bit 1) |
-| 1Bh | The fight's morale: the monsters' side breaks below 100 less this of its Hit Points (CheckMorale). Not played yet (below) |
+| 1Bh | The fight's morale: the monsters' side breaks below 100 less this of its Hit Points (CheckMorale) |
 | 1Ch | Added to the party's movement in the next fight, whose end clears it (RecalcMovement) |
 | 20h | The party's size |
 | 22h | 1 in a dungeon (the 3D view), 0 on the area map |
@@ -326,17 +326,6 @@ keeps nothing. The cells the engine itself reads or writes:
 | 36h | 1 when a member attacked its own side |
 | 39h | The color of PRINT's text |
 | 3Ah | The tile set and picture of the area map |
-
-Cell 1Bh, the break point, is not played yet: OpenGoldBox's Darkness
-monsters break as soon as their side is hurt, where the original's stand
-until the side has lost what the script sets (70 to 100 in nearly every
-script; 100 in Kalistes' egg room and the finale, so there they never
-break). Played so (measured 2026-11-18 from a save before the beat, the
-same dice either way), the route's party wins Kalistes in 6 plays of 480,
-none with no one lost, against 67 of 240 without it, and the spy's band
-after her in 0 of 480, against 148 of 240. The route must re-plan Kalistes'
-egg room (84: 3,6) before 1Bh can be played; the code is kept on the local
-branch `darkness18-1bh`.
 
 OpenGoldBox's engine names the cells by *Pool of Radiance*'s addresses, and
 `game_address` gives each its Darkness cell; a *Pool of Radiance* cell
@@ -728,8 +717,10 @@ by what it is offered:
   as they ask (IGNORE), and east and round the lower level to the egg room
   (2,6), where the party destroys the eggs (DESTROY): Kalistes
   comes with seven drow champions, eight drow wizards and five pets, and
-  once she falls the slave who is Tanetal's spy calls basilisks, medusae
-  and earth elementals (journal entry 40). The party holds the Crystal Ring
+  once she falls the slave who is Tanetal's spy calls salamanders, an earth
+  elemental, bits of Moander and poisonous snakes (journal entry 40). Before
+  the eggs the party wards itself (The break point and Kalistes' egg room,
+  below). The party holds the Crystal Ring
   (cell 208h 1). Up the stairs (13,4 on map 84, YES), through the upper
   level and out by the main doors (7,15, YES); twelve squares south-west
   and eighteen west along the paths to the ruined temple, and through the
@@ -1520,6 +1511,71 @@ measured from saves and not kept: every member in a Ring and a Cloak of
 Protection +4, more than the whole game holds, wins Kalistes in 156 plays
 of 240, but neither of the finale's stand-ins (none of 240 each). Those two
 stay: no reasonable play of this party wins them.
+
+### The break point and Kalistes' egg room (2026-11-18)
+
+Cell 1Bh, the fight's break point, is played since 2026-11-18
+([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), *Pools of Darkness*). Kalistes'
+script sets it to 100 before her fight (ECL1:82 0x9AA6), and the spy's band
+after her keeps it, so neither band ever breaks; without the cell both broke
+as soon as they were hurt. Played so, the route as it was lost there:
+Kalistes was won in 6 plays of 360, none with no one lost, and the spy's
+band after the kept play in none of 360.
+
+What the script and the cluebook offer (script 82's egg room, 0x993E to
+0x9BB7):
+
+- **Resting first.** The Parlor's camps rest only in the guards' quarters
+  on the upper level (the cluebook: "There is no safe resting place in the
+  lower level"), and the route already rests there before the larder.
+  The spy's fight follows Kalistes' at once (her COMBAT, then the event the
+  script sets in cell 212h, the ring and the spy's words between), so no
+  rest comes between the two fights.
+- **Fleeing and coming back.** The original allows it: once the commotion
+  has been raised (cell 20Bh bit 7), stepping back on the eggs brings
+  "KALISTES SPOTS YOU AND ATTACKS", the same band from ahead at distance 1
+  (0x9A08) with the same break point of 100. Measured with the wards below,
+  from the same save with the bit set: Kalistes is won in 72 plays of 244,
+  as often as from three sides, and the spy's band after the kept play in 5
+  of 120. Fleeing her first fight would cost the party for nothing.
+- **Skipping the spy.** The spy does not come when the party holds the
+  Talisman of Bane (cell 245h 1, Tanetal beaten in Moander's heart,
+  0x9AE7), as the cluebook has it ("if Tanetal has not already fallen").
+  The route goes to the Parlor before the heart; changing that order is a
+  change outside the egg room, not made.
+- **Spells for this fight.** Kalistes, her drow and her pets are all evil,
+  so a Protection from Evil on each member makes their blows 2 worse and the
+  members' saving throws against their Hold Monster, Feeblemind, Charm
+  Monsters and Disintegrate 2 better. Ice Storm, the eight wizards' first
+  spell, does magical harm (element 8, magic.pas, SpellIceStorm), so Resist
+  Cold does nothing against it. Haste doubles the members' attacks.
+- **Protection gear.** The party already wears the Rings and Cloaks of
+  Protection it has found (`take_protection`). The Parlor's Elfin Chain +4
+  (the cluebook's Major Magic Items) lies in the treasure room behind the
+  locked door, off the cluebook's way through the larder.
+
+What was measured (from a save before the Parlor's last rest, each play
+with new dice; "clean" is a win with no one lost; the spy's band is played
+from the kept Kalistes play):
+
+| Plan | Kalistes | The spy's band |
+|---|---|---|
+| As the route was | 6 of 360, 0 clean | 0 of 360 |
+| Protection from Evil on each member | 11 of 360, 0 clean | 2 of 120 |
+| That, and the magic-user's Haste cast in the fight | 25 of 120, 0 clean | 40 of 120, 10 clean |
+| That, the clerics' Prayers and Kalistes struck first | 83 of 360, 0 clean | 60 of 120, 14 clean |
+| Protection from Evil and Haste cast before the eggs (the route's) | 60 of 240, 0 clean | 224 of 240, 102 clean |
+| That, and the clerics' Prayers in the fight | 94 of 360, 0 clean | 100 of 120, 75 clean |
+| From ahead after fleeing, warded as the route | 72 of 244, 0 clean | 5 of 120, 2 clean |
+
+The route's player now rests in the guards' quarters memorizing a
+Protection from Evil for each member and two Hastes, casts the Protections
+on the square before the eggs (the paladins' and the magic-user's), and the
+magic-user's Haste, which takes the whole party, as it steps onto them. Its
+fights are its own: Kalistes is won in about a play in four, never with no
+one lost, so the player reloads her fight until a play wins
+(`reloads_until_won`), and the member lost is raised after it. The route has
+no stand-in here.
 
 ### Creatures
 

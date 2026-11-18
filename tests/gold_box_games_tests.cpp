@@ -4835,6 +4835,11 @@ const std::vector<RouteBeat> &darkness_route()
         }
         auto rested_for_the_larder = step_beat(82, 2, 14, D::east);
         rested_for_the_larder.rest_first = true;
+        // The lower level has no camp that rests, so this rest readies the
+        // egg room's wards: a Protection from Evil for each member and the
+        // magic-user's Hastes.
+        rested_for_the_larder.ward_memorized = "protection_from_evil";
+        rested_for_the_larder.memorize_first_of = {"haste", "haste"};
         route.push_back(rested_for_the_larder);
         // Rested, back to the kitchen and down through the trapdoor (YES) to
         // the larder (map 84 at 2,2), where the party leaves the slaves bound
@@ -4856,14 +4861,22 @@ const std::vector<RouteBeat> &darkness_route()
                       false, false, false, {"IGNORE"});
         // Kalistes comes with seven drow champions, eight drow wizards and
         // five of her pets, and once she falls the slave who shows himself
-        // Tanetal's spy calls basilisks, medusae and earth elementals: the
-        // wizards' Ice Storms and Confusion, the pets' Disintegrate and
-        // Kalistes' six blows beat the route's party in most plays. Wearing
-        // the Rings and Cloaks of Protection it has found (take_protection),
-        // it wins 33 plays of 240, a member lost in each, and the spy's
-        // fight after it 156 (2026-11-16), so the player reloads her fight
-        // until a play wins. Beaten, she leaves the Crystal Ring (cell 208h).
+        // Tanetal's spy calls salamanders, an earth elemental, bits of
+        // Moander and poisonous snakes. Her script sets the break point to
+        // 100 (cell 1Bh), so neither band ever breaks: the wizards' Ice
+        // Storms, Hold Monster and Feeblemind, the pets' Disintegrate and
+        // Kalistes' six blows beat the party in most plays. Before the eggs
+        // the party wards itself as a player does: a Protection from Evil
+        // on each member (Kalistes, her drow and her pets are all evil),
+        // then the magic-user's Haste, which takes the whole party. So warded it wins Kalistes in
+        // about a play in four, a member lost in each (6 of 360 unwarded),
+        // and the spy's band after the kept play in nine of ten
+        // (2026-11-18), so the player reloads her fight until a play wins.
+        // Beaten, she leaves the Crystal Ring (cell 208h).
+        route.back().ward_each_with = "protection_from_evil";
         auto eggs = step_beat(84, 3, 6, D::west, {"DESTROY"});
+        eggs.ward_each_with = "haste";
+        eggs.ward_members = {"paladin 1"};
         eggs.reloads_until_won = 240;
         eggs.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x208, 1};
         route.push_back(eggs);

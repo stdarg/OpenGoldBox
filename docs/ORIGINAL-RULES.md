@@ -702,25 +702,21 @@ Journal), chosen by the game as the others' are (2026-11-14):
   member is restored. The original files and save format are unchanged.
   The regression puts actual dead vitals into the campaign, including its
   first and last members; display-only casualties did not test recovery.
-- **Its scripts' movement cell**: cell 1Ch (partyMoveMod, a signed byte) is
-  added to each party member's movement after Haste and Slow, a sum below 1
-  being 1 (`charhlp.pas`, RecalcMovement), and the fight's end clears it
-  (`postcbt.pas`); Moander's heart sets it by its table (ECL1:53 0x9C8C).
-  Played since 2026-11-18 (darkness18,
-  `RolfTourSession::darkness_party_move_mod`); until then OpenGoldBox did
-  not read it.
-- **Its scripts' break point is not played yet**: cell 1Bh (breakLossPct)
+- **Its scripts' break point and movement cells**: cell 1Bh (breakLossPct)
   is the fight's morale: a monster whose own morale fails breaks only when
   its side has less than 100 less this of its Hit Points left (`combatai.pas`,
   CheckMorale), as Pool of Radiance's encounter morale. Nearly every script
   sets it (70 to 100 most often; the finale and Kalistes' egg room 100, so
-  their monsters never break). OpenGoldBox does not read it, so every
-  Darkness fight's monsters break as soon as their side is hurt. Played as
-  the original, it beats the route's party in Kalistes' egg room (84: 3,6),
-  measured from a save before the beat on 2026-11-18: Kalistes is won in 6
-  plays of 480 (67 of 240 without it) and the spy's band after her in 0 of
-  480 (148 of 240). The route must re-plan Kalistes' egg room before 1Bh
-  can be played ([darkness.md](games/darkness.md), Script memory).
+  their monsters never break; the spy's band after Kalistes keeps her 100,
+  its script setting none). Cell 1Ch (partyMoveMod, a signed byte) is
+  added to each party member's movement after Haste and Slow, a sum below 1
+  being 1 (`charhlp.pas`, RecalcMovement), and the fight's end clears it
+  (`postcbt.pas`); Moander's heart sets it by its table (ECL1:53 0x9C8C).
+  Played since 2026-11-18 (darkness18, `RolfTourSession::darkness_break_point`
+  and `darkness_party_move_mod`); until then OpenGoldBox read neither, so
+  every Darkness fight's monsters broke as soon as their side was hurt. The
+  route re-planned Kalistes' egg room for it (84: 3,6; [darkness.md](games/darkness.md),
+  The break point and Kalistes' egg room).
 - **Arrows and quarrels** are *Secret*'s item types, 30 and 12, and its
   crossbows shoot its blessed bolts (type 74) as quarrels, from the one bolt
   place (`charhlp.pas`, `RecalcStats`, 2026-11-15). Until then OpenGoldBox
