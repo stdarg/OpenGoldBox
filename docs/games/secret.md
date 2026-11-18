@@ -311,6 +311,43 @@ in 168.70s. All ten affected integrated checks pass with no skips. The lower
 mine, crevasses, castle and final campaign ending
 remain separate completion gaps.
 
+## Earned campaign ending (2026-11-18)
+
+`opengold_secret_earned_ending` extends the earned staff route through the
+Dungeon, both crevasses, Oswulf, the castle and the soul gem. Its invariant
+rejects injected experience, money, equipment, healing, quest flags, time,
+positions and forced combat outcomes. The complete fresh registered test
+passes in 584.75s: 168 battle victories, zero retained defeats, actual ending
+shown and a byte-identical winning-save roundtrip.
+
+The eastern crevasses reuse local coordinates on two sides (`4C6B`). The
+teleporter guardian event is active on side 0. The route walks the actual
+passages to that side, fights the three remorhaz, returns through the Well
+and uses town's real temple and training hall. Original advancement caps XP
+one point below the following threshold; a later earned camp battle enables
+another hall visit for the next caster levels. No training reward is granted.
+
+The finale uses the available Invisibility, 10' Radius, Haste, Mirror Image
+and Globe of Invulnerability. It prepares cures and Raise Dead at the Well,
+then follows cleared corridors without camping in the hostile castle. Its
+healing sequence wakes unconscious members first, allowing a fallen cleric
+to contribute its unspent spells. Camp and whole-event reloads restore the
+battle counters together with their actual saved party/session; discarded
+attempts remain visible in the diagnostic phase totals.
+
+A victory over the Dreadlord may leave the mage as sole survivor. The route
+uses script 99's eastern exit, selects the conscious mage at the key doors,
+and carries the fallen through the cleared corridor and Well to Gond. The
+actual temple raises and heals all six companions, including Vala. They
+prepare again and return through the cleared rooms. A second memorized Haste
+is cast after finding the soul chamber's secret door, before the final fight.
+
+The fresh earned campaign finishes at beat 3069 with `4CD9=1` and the
+actual winning event shown. All six PCs and Vala remain in the party, with
+several PCs standing. No retained battle defeat accompanies this win.
+The normal seven-member winning save reencodes byte-identically. Fresh whole
+route results and integrated checks are recorded in [PLAYABILITY.md](../PLAYABILITY.md).
+
 ## The script host
 
 What *Secret*'s scripts need beyond *Curse*'s (found by walking every map):
@@ -473,9 +510,9 @@ is recorded in [PLAYABILITY.md](../PLAYABILITY.md). It still has the
 progression and relocation assistance below; it is not proof of a complete
 unassisted playthrough.
 
-The experience a party brings from *Curse* stays a stand-in: the four
-awards give each paladin 1,550,000 above Secret's new character's, and the
-whole route earns about 664,000 a member, too little to replace it.
+The older assisted route still grants stand-in experience for a party from
+*Curse*. The earned campaign above replaces those grants with actual
+advancement and recovery; the older route remains a separate diagnostic.
 
 The castle as the route plays it: the Castle Entrance's rotating alcoves turn
 the party into the rooms beside the great hall and back only once the room's

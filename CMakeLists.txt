@@ -366,6 +366,9 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_secret_earned_staff COMMAND opengold_gold_box_games_tests --secret-earned-staff)
     set_tests_properties(opengold_secret_earned_staff PROPERTIES TIMEOUT 1800
         SKIP_REGULAR_EXPRESSION "files are not here")
+    add_test(NAME opengold_secret_earned_ending COMMAND opengold_gold_box_games_tests --secret-earned-ending)
+    set_tests_properties(opengold_secret_earned_ending PROPERTIES TIMEOUT 3600
+        SKIP_REGULAR_EXPRESSION "files are not here")
     # Pools of Darkness's story the same way.
     add_test(NAME opengold_darkness_route COMMAND opengold_gold_box_games_tests --darkness-route)
     # Gateway to the Savage Frontier's story the same way (plan phase 5, step 4).

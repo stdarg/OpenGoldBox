@@ -23,7 +23,7 @@ UI behavior and the current configured model are retained; no delegation.
 |---|---|---|
 | Pool of Radiance | Fresh Original Rules party starts at zero XP, earns its training and equipment, defeats Tyranthraxus and reaches the ending; SRD map audits remain separate | Optional quests, other party compositions and difficulty settings are not certified by this route |
 | Curse of the Azure Bonds | Fresh Original Rules party earns all three artifacts, equipment, paid advancement and recovery, physically reaches Myth Drannor, defeats Tyranthraxus and shows the actual ending | Optional quests, other party compositions and difficulty settings are not certified by this route |
-| Secret of the Silver Blades | Fresh earned opening and quests through the restored Staff of Oswulf win 72 fights, recovers all six PCs and round-trips its save; the separate assisted complete route reaches the actual ending with every fight played | Replace later progression grants and relocations with verified gameplay/import |
+| Secret of the Silver Blades | Fresh Original Rules party earns its equipment, advancement and recovery, wins 168 battles and reaches the actual soul-gem ending; all six PCs and Vala are retained and the winning save round-trips byte-identically | Optional quests, other party compositions and difficulty settings are not certified by this route |
 | Gateway to the Savage Frontier | Route reaches the ending and wins its fights | Replace experience/gold/equipment/time grants and relocations |
 | Pools of Darkness | Fresh whole route and detailed finale replay defeat Gothmenes, reach the ending and restore all six members; zero forced results | Progression assistance and relocations remain |
 | Treasures of the Savage Frontier | Route reaches the ending and wins its fights | Replace starting experience/money and relocations |
@@ -1553,3 +1553,115 @@ focused suffix, NPC-aware validator correction, formatting/build, save probes
 and ten checks. Tokens/cost unavailable. The complete staff/reloadable checkpoint
 outcome is verified. Secret's lower mine, crevasses, castle and earned ending
 remain before that campaign's whole completion certificate.
+
+Delivery observed 12:32 UTC: `25bd8ede` is pushed to `origin/main`, which
+matches the main checkout. Main is rebuilt/exported and all five installed-data
+post-push checks pass in 22.01s with no skips: Gold Box units, Godot preparation,
+per-game saves, Secret Original startup and package smoke. Log:
+`/tmp/opengold-secret-staff-main-recheck.log`. The pre-existing GAMES edit
+remains untouched and prevents the pull under the dirty-main rule. Staff claim
+is released.
+
+### Active next batch: Secret's earned campaign ending
+
+- Start observed 2026-11-18 12:33 UTC; same configured Codex, no requested
+  model/effort switch or delegation. Original Rules is outside SRD assignments.
+- Authorized outcome: earned staff campaign through the lower mine, crevasses,
+  Oswulf/castle, Dreadlord and soul gem. Other games and winner availability follow.
+- Frozen acceptance: actual winning event and soul-gem completion `4CD9=1`, six
+  retained PCs with at least one PC standing, zero retained battle defeats,
+  actual movement/quests/treasure/training/preparation/recovery and normal saves.
+  Casualties are allowed; no member is discarded. Preserve companion joins/departures.
+  A fresh registered whole route from actual Secret creation must pass. No injected
+  XP, money, gear, healing, flags, time, positions or forced combat outcomes.
+- Reuse: Original campaign, physical walker, story plan, battle player and actual
+  services. No production mechanics, UI/runtime, Core/rules or save-format changes.
+- Verification: earned checkpoint continuations, byte-identical normal save
+  roundtrip, fresh registered ending, integrated checks, own commit/push and main
+  rebuild/installed-data startup/save/package checks. Baseline `25bd8ede`.
+  Tokens/cost unavailable. Whole certificate and delivery remain pending.
+
+Observed route corrections, 12:38–14:30 UTC:
+
+- Temple/armory/training visits use the verified exterior approach and actual
+  step; entering the ejection square directly repeated the service indefinitely.
+- The two eastern crevasse sides reuse local coordinates (`4C6B`). The route walks
+  112 actual passages to the active gateway on side 0, defeats its remorhaz and
+  returns through the Well for real temple recovery and advancement. A later
+  earned camp battle enables the next caster levels after the training XP cap.
+- The route uses known Invisibility, 10' Radius, Haste, Mirror Image and Globe of
+  Invulnerability. It carries the chosen preparation through intervening camps,
+  wakes unconscious healers before spending full-party cures, and avoids hostile
+  castle camps/search delays. The cleared approach is followed waypoint by
+  waypoint; a distant destination otherwise cut through an uncleared golem room.
+- After Dreadlord, actual script 99's eastern exit, cleared corridors and Well lead
+  to Gond. Key prompts select the conscious mage. The temple raises/heals fallen
+  companions including Vala. They return and cast another memorized Haste after
+  finding the soul chamber's secret door, before its actual final fight.
+
+Checkpoints: 13:33 UTC (one hour), no complete earned ending yet; 14:33 UTC
+(two hours), genuine earned continuation reaches the actual ending at beat 2765
+and its seven-member save round-trips byte-identically; 15:34 UTC (three hours),
+no fresh whole certificate yet, real outbound training trip verified, Oswulf
+chain still defeating the lower-XP fresh party. Fourteen integrated native and
+Secret milestone checks passed with no skips in 183.01s. Log:
+`/tmp/opengold-secret-ending-integrated-checks.log`. Earlier focused checks also
+passed the earned Curse ending (504.03s) and Secret staff (151.63s).
+
+Fresh-proof failures and bounded corrections, 14:39–15:52 UTC:
+
+- A previous hostile camp suppressed opportunistic resting on the fresh retreat;
+  the route explicitly requests an actual spell rest before leaving the army.
+- The known Minor Globe's per-member ward setting prepared only one self-cast;
+  the explicit spell list now requests three copies. Major Globe and Haste are
+  reserved for Oswulf's fixed battle. Real step save/load replaces a special
+  cardinal-input branch that bypassed normal replay.
+- Optional map-82 patrol avoidance reloads actual pre-step saves only for event-zero
+  corridor encounters. After twenty unsuccessful avoidances it plays the fight.
+  Fixed story battles remain mandatory. Restored counters follow the actual saved
+  party/scripts: discarded combat attempts cannot become retained victories or defeats.
+- Oswulf may leave the party unable to beat the castle guards. The route walks the
+  cleared crevasses and gateway back to Gond, raises/heals every fallen companion,
+  and returns through the same cleared route before the guards.
+- Dreadlord uses the existing whole-event save/load replay, like Oswulf, after a
+  lost battle. It still requires an actual combat victory; no result is forced.
+
+Observed 15:55 UTC: the current focused continuation from an earned castle save
+passes at beat 3069: actual `4CD9=1` ending, four further victories, zero retained
+defeats, six PCs plus Vala retained and several PCs standing. Its winning save
+reencodes byte-identically. Logs/saves:
+`/tmp/opengold-secret-ending-dreadlord-reload.log`,
+`/tmp/opengold-secret-ending-dreadlord-reload-earned.sav`,
+`/tmp/opengold-secret-ending-dreadlord-roundtrip.sav`.
+The terminal-only replay exits 1 (no new fights/ending display); byte comparison passes.
+
+Fresh completion observed 16:02 UTC: the registered whole test from actual
+Secret creation **passes in 584.75s**, no skips, at beat 3069: **168 actual
+battle victories, zero retained defeats**, `4CD9=1` and the winning event shown.
+All six PCs and Vala remain; five PCs are standing, cleric 4 unconscious.
+The winning normal save reencodes byte-identically. Final source is the working
+tree based on `25bd8ede`; build inputs were finished and the native target
+rebuilt before the run. LLVM formatting, diff, RAII/ownership and architecture
+review pass. No production or SRD mechanics, new UI or save-schema changes.
+
+```bash
+cmake --build build/linux --target opengold_gold_box_games_tests -j4
+OPENGOLD_GOLDBOX_DIR=/home/edmond/GoldBox OPENGOLD_GAME_DIR=/home/edmond/GoldBox/POOLRAD \
+  ctest --test-dir build/linux -V -R '^opengold_secret_earned_ending$'
+```
+
+Evidence: `/tmp/opengold-secret-ending-fresh-current-test.log`,
+`/tmp/opengold-secret-ending-fresh-earned.sav`,
+`/tmp/opengold-secret-ending-fresh-roundtrip.sav`.
+Failed earlier whole logs remain preserved separately (`fresh-before-retreat-rest`,
+`fresh-before-patrol-protection`, `fresh-before-oswulf-recovery` under
+`/tmp/opengold-secret-ending-`). Fourteen integrated checks passed on this
+batch before the final ending-only event replay addition; the final fresh run
+exercises that addition. Commit/push and main rebuild/checks follow.
+
+Elapsed 3h29 from the observed start: investigation, route/preparation/recovery
+corrections and focused continuations were interleaved through 15:52; the final
+fresh proof took 9m45, with documentation/save validation through 16:02.
+Only Secret's full earned completion is delivered by this batch. The remaining
+commercial campaigns, Krynn, Buck Rogers, installed UA design coverage and
+subsequent automatic winning-character availability remain unfinished.

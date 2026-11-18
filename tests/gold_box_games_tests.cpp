@@ -1415,7 +1415,8 @@ enum class SecretProgress
     eldamar,
     headquarters,
     first_staff,
-    staff
+    staff,
+    ending
 };
 
 std::vector<RouteBeat> secret_earned_opening()
@@ -1759,6 +1760,426 @@ std::vector<RouteBeat> secret_earned_route(SecretProgress progress)
                              });
             check(restored != story.end(), "The established route restores Oswulf's staff");
             beats.insert(beats.end(), first_piece + 1, restored + 1);
+            if (progress >= SecretProgress::ending)
+            {
+                const auto first_ending_beat = beats.size();
+                // Leave Derf's chamber through the same verified outer aisle.
+                beats.push_back({50, 11, 11, D::north, {}});
+                beats.back().arrive_only = true;
+                beats.insert(beats.end(), restored + 1, story.end());
+                // Return from the castle patrol approach through the actual
+                // eastern gateway for the advancement this journey has earned.
+                const auto army_from_end =
+                    std::find_if(beats.rbegin(), beats.rend(),
+                                 [](const RouteBeat &beat)
+                                 {
+                                     return beat.map == 82 && beat.x == 5 && beat.y == 8 &&
+                                            beat.facing == D::east && beat.step;
+                                 });
+                check(army_from_end != beats.rend(),
+                      "The earned route includes the castle patrol approach");
+                const auto army = std::prev(army_from_end.base());
+                // The crevasses reuse their local coordinates on two sides.
+                // The gateway is active only with 4C6B=0; reach its western
+                // doorway on that side, then return through the same passages.
+                const std::vector<std::array<unsigned, 5>> training_road{
+                    {5, 8, 3, 4, 8},     {4, 8, 3, 3, 8},     {3, 8, 3, 2, 8},
+                    {2, 8, 3, 1, 8},     {1, 8, 3, 14, 9},    {14, 9, 3, 13, 9},
+                    {13, 9, 2, 13, 10},  {13, 10, 3, 12, 10}, {12, 10, 3, 11, 10},
+                    {11, 10, 2, 11, 11}, {11, 11, 3, 10, 11}, {10, 11, 3, 9, 11},
+                    {9, 11, 2, 9, 12},   {9, 12, 3, 8, 12},   {8, 12, 3, 7, 12},
+                    {7, 12, 2, 7, 13},   {7, 13, 3, 6, 13},   {6, 13, 3, 5, 13},
+                    {5, 13, 2, 5, 14},   {5, 14, 3, 4, 14},   {4, 14, 3, 3, 14},
+                    {3, 14, 2, 3, 15},   {3, 15, 3, 2, 15},   {2, 15, 3, 14, 0},
+                    {14, 0, 3, 13, 0},   {13, 0, 3, 12, 0},   {12, 0, 3, 11, 0},
+                    {11, 0, 3, 10, 0},   {10, 0, 3, 9, 0},    {9, 0, 3, 8, 0},
+                    {8, 0, 3, 7, 0},     {7, 0, 3, 6, 0},     {6, 0, 3, 5, 0},
+                    {5, 0, 3, 4, 0},     {4, 0, 3, 7, 9},     {7, 9, 3, 6, 9},
+                    {6, 9, 2, 6, 10},    {6, 10, 3, 5, 10},   {5, 10, 2, 5, 11},
+                    {5, 11, 3, 4, 11},   {4, 11, 2, 4, 12},   {4, 12, 3, 3, 12},
+                    {3, 12, 2, 3, 13},   {3, 13, 3, 2, 13},   {2, 13, 2, 2, 14},
+                    {2, 14, 3, 1, 14},   {1, 14, 3, 14, 8},   {14, 8, 3, 13, 8},
+                    {13, 8, 3, 12, 8},   {12, 8, 3, 11, 8},   {11, 8, 3, 10, 8},
+                    {10, 8, 3, 9, 8},    {9, 8, 3, 8, 8},     {8, 8, 3, 7, 8},
+                    {7, 8, 3, 6, 8},     {6, 8, 3, 5, 8},     {5, 8, 3, 4, 8},
+                    {4, 8, 3, 3, 8},     {3, 8, 3, 2, 8},     {2, 8, 3, 1, 8},
+                    {1, 8, 3, 14, 3},    {14, 3, 3, 13, 3},   {13, 3, 0, 13, 2},
+                    {13, 2, 3, 12, 2},   {12, 2, 3, 11, 2},   {11, 2, 0, 11, 1},
+                    {11, 1, 0, 11, 0},   {11, 0, 1, 12, 0},   {12, 0, 1, 13, 0},
+                    {13, 0, 1, 14, 0},   {14, 0, 1, 8, 9},    {8, 9, 1, 9, 9},
+                    {9, 9, 1, 10, 9},    {10, 9, 1, 11, 9},   {11, 9, 1, 12, 9},
+                    {12, 9, 1, 15, 9},   {15, 9, 0, 15, 8},   {15, 8, 0, 15, 7},
+                    {15, 7, 0, 15, 6},   {15, 6, 0, 15, 5},   {15, 5, 3, 14, 5},
+                    {14, 5, 3, 1, 15},   {1, 15, 3, 0, 15},   {0, 15, 0, 0, 14},
+                    {0, 14, 0, 0, 13},   {0, 13, 0, 0, 12},   {0, 12, 0, 0, 11},
+                    {0, 11, 0, 0, 10},   {0, 10, 0, 0, 9},    {0, 9, 1, 1, 9},
+                    {1, 9, 1, 2, 9},     {2, 9, 1, 3, 9},     {3, 9, 1, 1, 14},
+                    {1, 14, 1, 2, 14},   {2, 14, 0, 2, 13},   {2, 13, 1, 3, 13},
+                    {3, 13, 0, 3, 12},   {3, 12, 1, 4, 12},   {4, 12, 0, 4, 11},
+                    {4, 11, 1, 5, 11},   {5, 11, 0, 5, 10},   {5, 10, 1, 6, 10},
+                    {6, 10, 0, 6, 9},    {6, 9, 1, 7, 9},     {7, 9, 1, 6, 1},
+                    {6, 1, 1, 7, 1},     {7, 1, 1, 8, 1},     {8, 1, 2, 8, 2},
+                    {8, 2, 1, 9, 2},     {9, 2, 1, 10, 2},    {10, 2, 2, 10, 3},
+                    {10, 3, 1, 11, 3},
+                };
+                std::vector<RouteBeat> training;
+                const auto add = [&](RouteBeat beat)
+                {
+                    beat.searching = false;
+                    beat.cure_first = true;
+                    beat.cure_to_full = true;
+                    beat.reloads_until_won = 600;
+                    training.push_back(std::move(beat));
+                };
+                for (const auto &step : training_road)
+                {
+                    auto beat = step_beat(82, step[0], step[1], static_cast<D>(step[2]), {"NO"});
+                    beat.reload_event = true;
+                    beat.passing = true;
+                    add(std::move(beat));
+                }
+                // Deliberately try to refresh before the retreat. Earlier
+                // interrupted camps must not silently suppress this decision.
+                training.front().rest_first = true;
+                training.front().rest_for_spells = true;
+                add(step_beat(82, 11, 3, D::east, {"ATTACK", "YES"}));
+                RouteBeat town{33, 1, 1, D::north, {"YES"}};
+                town.arrive_only = true;
+                add(town);
+                add(opening[opening.size() - 2]);
+                add(step_beat(16, 7, 7, D::north, train_everyone()));
+                add(step_beat(16, 7, 7, D::north, train_everyone()));
+                add(opening.back());
+                add(step_beat(16, 7, 7, D::north, train_everyone()));
+                auto travel_preparation = opening.back();
+                travel_preparation.keep_preparation = true;
+                // These are successive self-casts, not one ward per member.
+                // The explicit spell list requests three memorized copies.
+                travel_preparation.memorize_first_of = {"minor_globe_of_invulnerability",
+                                                        "minor_globe_of_invulnerability",
+                                                        "minor_globe_of_invulnerability",
+                                                        "haste",
+                                                        "invisibility_10_radius",
+                                                        "heal",
+                                                        "heal",
+                                                        "raise_dead",
+                                                        "cure_critical_wounds",
+                                                        "cure_serious_wounds",
+                                                        "cure_light_wounds",
+                                                        "dispel_magic"};
+                add(travel_preparation);
+                RouteBeat mayor{16, 3, 0, D::north, {"YES"}};
+                mayor.arrive_only = true;
+                add(mayor);
+                RouteBeat eastern{33, 14, 7, D::north, {"YES"}};
+                eastern.arrive_only = true;
+                add(eastern);
+                add(step_beat(82, 12, 3, D::west, {"NO"}));
+                for (auto step = training_road.rbegin(); step != training_road.rend(); ++step)
+                {
+                    if (*step == std::array<unsigned, 5>{9, 12, 3, 8, 12})
+                    {
+                        RouteBeat protect{82, 8, 12, D::east, {}};
+                        protect.waiting = true;
+                        protect.cast_after = {"minor_globe_of_invulnerability"};
+                        add(protect);
+                    }
+                    auto beat = step_beat(82, (*step)[3], (*step)[4],
+                                          static_cast<D>(((*step)[2] + 2) % 4), {"NO"});
+                    beat.reload_event = true;
+                    beat.passing = true;
+                    beat.camp_broken = true;
+                    beat.avoiding = true;
+                    add(std::move(beat));
+                }
+                RouteBeat prepare_army{82, 5, 8, D::east, {}};
+                prepare_army.waiting = true;
+                prepare_army.cast_after = {"invisibility_10_radius", "prayer"};
+                prepare_army.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C6B, 1};
+                add(prepare_army);
+                auto prayer_army = prepare_army;
+                prayer_army.expect_cell.reset();
+                prayer_army.cast_after = {"prayer"};
+                add(prayer_army);
+                for (auto at = army; at != beats.end() && at->map == 82; ++at)
+                {
+                    at->camp_broken = true;
+                    at->searching = false;
+                    at->avoiding = !at->reload_event; // Preserve Oswulf's fixed event.
+                    at->reload_event = true;
+                }
+                const auto original_oswulf = std::find_if(army, beats.end(),
+                                                          [](const RouteBeat &beat)
+                                                          {
+                                                              return beat.map == 82 &&
+                                                                     beat.x == 15 && beat.y == 15 &&
+                                                                     beat.reload_event;
+                                                          });
+                check(original_oswulf != beats.end(), "The castle approach reaches Oswulf");
+                const std::vector<RouteBeat> castle_approach(army, original_oswulf);
+                beats.insert(army, training.begin(), training.end());
+                const auto oswulf = std::find_if(beats.begin() + first_ending_beat, beats.end(),
+                                                 [](const RouteBeat &beat)
+                                                 {
+                                                     return beat.map == 82 && beat.x == 15 &&
+                                                            beat.y == 15 && beat.reload_event;
+                                                 });
+                check(oswulf != beats.end(), "The earned route reaches Oswulf's chained battles");
+                const auto oswulf_index = static_cast<std::size_t>(oswulf - beats.begin());
+                std::vector<RouteBeat> recover_after_oswulf;
+                const auto append_oswulf_recovery = [&](RouteBeat beat)
+                {
+                    beat.searching = false;
+                    beat.camp_broken = true;
+                    beat.cure_first = true;
+                    beat.cure_to_full = true;
+                    beat.reloads_until_won = std::max(beat.reloads_until_won, 600U);
+                    if (beat.map == 82)
+                    {
+                        beat.avoiding = !beat.reload_event;
+                        beat.reload_event = true;
+                    }
+                    recover_after_oswulf.push_back(std::move(beat));
+                };
+                auto leave_oswulf = step_beat(82, 15, 14, D::south, {"NO"});
+                leave_oswulf.reload_event = true;
+                append_oswulf_recovery(leave_oswulf);
+                for (std::size_t i = castle_approach.size(); i-- > 0;)
+                {
+                    const auto [x, y] =
+                        i + 1 == castle_approach.size()
+                            ? std::pair{15U, 15U}
+                            : std::pair{castle_approach[i + 1].x, castle_approach[i + 1].y};
+                    append_oswulf_recovery(step_beat(
+                        82, x, y,
+                        static_cast<D>((static_cast<unsigned>(castle_approach[i].facing) + 2) % 4),
+                        {"NO"}));
+                }
+                for (const auto &step : training_road)
+                {
+                    append_oswulf_recovery(
+                        step_beat(82, step[0], step[1], static_cast<D>(step[2]), {"NO"}));
+                }
+                auto well_after_oswulf = step_beat(82, 11, 3, D::east, {"ATTACK", "YES"});
+                well_after_oswulf.reload_event = true;
+                append_oswulf_recovery(well_after_oswulf);
+                RouteBeat town_after_oswulf{33, 1, 1, D::north, {"YES"}};
+                town_after_oswulf.arrive_only = true;
+                append_oswulf_recovery(town_after_oswulf);
+                append_oswulf_recovery(opening[opening.size() - 2]);
+                append_oswulf_recovery(travel_preparation);
+                append_oswulf_recovery(mayor);
+                append_oswulf_recovery(eastern);
+                append_oswulf_recovery(step_beat(82, 12, 3, D::west, {"NO"}));
+                for (auto step = training_road.rbegin(); step != training_road.rend(); ++step)
+                {
+                    append_oswulf_recovery(step_beat(82, (*step)[3], (*step)[4],
+                                                     static_cast<D>(((*step)[2] + 2) % 4), {"NO"}));
+                }
+                for (const auto &step : castle_approach)
+                {
+                    append_oswulf_recovery(step_beat(82, step.x, step.y, step.facing, {"NO"}));
+                }
+                auto revisit_oswulf = step_beat(82, 15, 15, D::north, {"NO"});
+                revisit_oswulf.reload_event = true;
+                append_oswulf_recovery(revisit_oswulf);
+                beats.insert(std::next(oswulf), recover_after_oswulf.begin(),
+                             recover_after_oswulf.end());
+                RouteBeat protect_oswulf{82, 15, 15, D::north, {}};
+                protect_oswulf.waiting = true;
+                protect_oswulf.cast_after = {"globe_of_invulnerability"};
+                protect_oswulf.searching = false;
+                protect_oswulf.camp_broken = true;
+                auto hasten_oswulf = protect_oswulf;
+                hasten_oswulf.cast_after = {"haste"};
+                const std::array oswulf_preparation{protect_oswulf, hasten_oswulf};
+                beats.insert(beats.begin() + oswulf_index, oswulf_preparation.begin(),
+                             oswulf_preparation.end());
+                const auto castle_gate =
+                    std::find_if(beats.begin() + first_ending_beat, beats.end(),
+                                 [](const RouteBeat &beat)
+                                 {
+                                     return beat.map == 82 && beat.x == 15 && beat.y == 11 &&
+                                            beat.facing == D::east && beat.step &&
+                                            beat.answers.size() == 1 &&
+                                            beat.answers.front() == "YES";
+                                 });
+                check(castle_gate != beats.end(), "The earned route enters the castle");
+                RouteBeat protect_castle{82, 15, 11, D::east, {}};
+                protect_castle.waiting = true;
+                protect_castle.cast_after = {"globe_of_invulnerability"};
+                auto hasten_castle = protect_castle;
+                hasten_castle.cast_after = {"haste"};
+                const std::array castle_preparation{protect_castle, hasten_castle};
+                beats.insert(castle_gate, castle_preparation.begin(), castle_preparation.end());
+                const auto sanctum_camp =
+                    std::find_if(beats.begin() + first_ending_beat, beats.end(),
+                                 [](const RouteBeat &beat)
+                                 {
+                                     return beat.map == 33 && beat.x == 12 && beat.y == 3 &&
+                                            beat.keep_preparation;
+                                 });
+                check(sanctum_camp != beats.end(), "The earned route prepares at the Well");
+                sanctum_camp->memorize_first_of = {"haste",
+                                                   "haste",
+                                                   "mirror_image",
+                                                   "invisibility_10_radius",
+                                                   "prayer",
+                                                   "bless",
+                                                   "heal",
+                                                   "heal",
+                                                   "raise_dead",
+                                                   "cure_critical_wounds",
+                                                   "cure_serious_wounds",
+                                                   "cure_light_wounds",
+                                                   "dispel_magic"};
+                const auto camp_index = static_cast<std::size_t>(sanctum_camp - beats.begin());
+                const auto final_preparation = *sanctum_camp;
+                const auto brass_door = std::find_if(std::next(sanctum_camp), beats.end(),
+                                                     [](const RouteBeat &beat)
+                                                     {
+                                                         return beat.map == 98 && beat.x == 7 &&
+                                                                beat.y == 1 &&
+                                                                beat.facing == D::west;
+                                                     });
+                check(brass_door != beats.end(), "The earned route reaches the final chambers");
+                const std::vector<RouteBeat> cleared_approach(std::next(sanctum_camp), brass_door);
+                std::vector<RouteBeat> recovery{step_beat(98, 13, 11, D::west, {"YES"}),
+                                                final_preparation};
+                // Return along the cleared approach. A single distant waypoint
+                // can take a shorter path through an uncleared golem chamber.
+                recovery.insert(recovery.end(), std::next(sanctum_camp), brass_door);
+                beats.insert(brass_door, recovery.begin(), recovery.end());
+                for (auto at = beats.begin() + camp_index + 1; at != beats.end(); ++at)
+                {
+                    if (at->map == 98 && at->x == 1 && at->y == 3)
+                    {
+                        break; // Keep the soul chamber's actual secret-door search.
+                    }
+                    at->camp_broken = true;
+                    at->searching = false;
+                    if (at->map == 98 && at->x == 4 && at->y == 3)
+                    {
+                        at->cast_after = {"invisibility_10_radius"};
+                    }
+                }
+                const auto dreadlord =
+                    std::find_if(beats.begin() + first_ending_beat, beats.end(),
+                                 [](const RouteBeat &beat)
+                                 {
+                                     return beat.map == 98 && beat.x == 3 && beat.y == 4;
+                                 });
+                const auto chambers = std::find_if(beats.begin() + first_ending_beat, dreadlord,
+                                                   [](const RouteBeat &beat)
+                                                   {
+                                                       return beat.map == 98 && beat.x == 7 &&
+                                                              beat.y == 1 && beat.facing == D::west;
+                                                   });
+                check(dreadlord != beats.end() && chambers != dreadlord,
+                      "The earned route includes the Dreadlord's chambers");
+                // Replay the actual event after a lost battle, preserving the
+                // party and its prepared wards in the player's pre-step save.
+                dreadlord->reload_event = true;
+                const std::vector<RouteBeat> inner_approach(chambers, std::next(dreadlord));
+                std::vector<RouteBeat> final_recovery;
+                const auto append_recovery = [&](RouteBeat beat)
+                {
+                    beat.searching = false;
+                    beat.camp_broken = true;
+                    beat.cure_first = true;
+                    beat.cure_to_full = true;
+                    beat.reloads_until_won = std::max(beat.reloads_until_won, 600U);
+                    final_recovery.push_back(std::move(beat));
+                };
+                // A surviving member can carry the fallen back to Gond. Leave
+                // script 99 through its actual eastern exit, not the gem room.
+                for (const auto &[x, y] : {std::pair{3U, 4U}, std::pair{4U, 4U}, std::pair{4U, 3U},
+                                           std::pair{4U, 2U}, std::pair{5U, 2U}, std::pair{5U, 1U}})
+                {
+                    RouteBeat back{98, x, y, D::east, {"NO"}};
+                    back.arrive_only = true;
+                    append_recovery(std::move(back));
+                }
+                append_recovery(step_beat(98, 5, 1, D::east, {"YES", "magic_user 6", "BRASS"}));
+                for (auto at = cleared_approach.rbegin(); at != cleared_approach.rend(); ++at)
+                {
+                    RouteBeat back{98, at->x, at->y, D::north, at->answers};
+                    back.arrive_only = true;
+                    back.passing = true;
+                    if (at->x == 2 && at->y == 9)
+                    {
+                        back.answers = {"YES", "magic_user 6", "GOLD"};
+                    }
+                    else if (at->x == 12 && at->y == 0)
+                    {
+                        back.answers = {"YES", "magic_user 6", "SILVER"};
+                    }
+                    else
+                    {
+                        back.answers.insert(back.answers.begin(), "magic_user 6");
+                    }
+                    if (std::next(at) == cleared_approach.rend())
+                    {
+                        back.answers = {"YES"}; // Walk into the Well gateway.
+                    }
+                    append_recovery(std::move(back));
+                }
+                RouteBeat return_town{33, 1, 1, D::north, {"YES"}};
+                return_town.arrive_only = true;
+                append_recovery(return_town);
+                append_recovery(opening[opening.size() - 2]);
+                append_recovery(opening.back());
+                RouteBeat leave_town{16, 3, 0, D::north, {"YES"}};
+                leave_town.arrive_only = true;
+                append_recovery(leave_town);
+                append_recovery(final_preparation);
+                for (const auto &beat : cleared_approach)
+                {
+                    append_recovery(beat);
+                }
+                for (const auto &beat : inner_approach)
+                {
+                    append_recovery(beat);
+                }
+                beats.insert(std::next(dreadlord), final_recovery.begin(), final_recovery.end());
+                const auto gem =
+                    std::find_if(beats.begin() + first_ending_beat, beats.end(),
+                                 [](const RouteBeat &beat)
+                                 {
+                                     return beat.expect_cell && beat.expect_cell->first == 0x4CD9;
+                                 });
+                check(gem != beats.end(), "The earned route reaches the soul gem");
+                RouteBeat hasten_for_gem{98, 1, 3, D::north, {}};
+                hasten_for_gem.waiting = true;
+                hasten_for_gem.cast_after = {"haste"};
+                beats.insert(gem, hasten_for_gem);
+                for (auto at = first_ending_beat; at < beats.size(); ++at)
+                {
+                    auto &beat = beats[at];
+                    if (beat.map != 16)
+                    {
+                        continue;
+                    }
+                    if (beat.x == 10 && beat.y == 9)
+                    {
+                        beat.y = 8;
+                        beat.facing = D::south;
+                        beat.step = true;
+                    }
+                    else if (beat.x == 14 && beat.y == 6)
+                    {
+                        beat.y = 7;
+                        beat.facing = D::north;
+                        beat.step = true;
+                    }
+                    else if (beat.x == 7 && beat.y == 6)
+                    {
+                        beat.y = 7;
+                        beat.facing = D::north;
+                        beat.step = true;
+                    }
+                }
+            }
         }
         for (auto at = first_mine_beat; at < beats.size(); ++at)
         {
@@ -11994,6 +12415,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         return false;
     };
     bool reload_camp_on_attack = false;
+    bool reload_optional_encounter = false;
     const auto play = [&](const std::string &where)
     {
         const auto attribute = [&]
@@ -12598,7 +13020,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 continue;
             }
             case TourPhase::combat:
-                if (reload_camp_on_attack)
+                if (reload_camp_on_attack ||
+                    (reload_optional_encounter && s.area_id == 82 &&
+                     session.map().at(s.pose.x, s.pose.y).event_number() == 0))
                 {
                     return;
                 }
@@ -12857,6 +13281,49 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     }
                 }
             }
+            // Wake unconscious members before spending the standing cleric's
+            // cures on the first wounded fighter. A fallen healer can then
+            // contribute its still-memorized spells to the recovery.
+            if (earned_secret)
+            {
+                for (const auto fallen : party->state().slots)
+                {
+                    if (!fallen || party->member(fallen).vitals.dead ||
+                        party->member(fallen).vitals.hit_points > 0 ||
+                        party->member(fallen).vitals.description == "Turned to stone.")
+                    {
+                        continue;
+                    }
+                    for (const char *cure : {"cure_light_wounds", "cure_serious_wounds",
+                                             "cure_critical_wounds", "heal"})
+                    {
+                        for (const auto healer : party->state().slots)
+                        {
+                            if (!healer || party->member(healer).vitals.dead ||
+                                party->member(healer).vitals.hit_points <= 0 ||
+                                party->member(fallen).vitals.hit_points > 0)
+                            {
+                                continue;
+                            }
+                            const auto actions = party->camp_actions(healer);
+                            const auto action =
+                                std::ranges::find_if(actions,
+                                                     [&](const opengold::rules::CampAction &offered)
+                                                     {
+                                                         return offered.id.ends_with(cure);
+                                                     });
+                            if (action != actions.end())
+                            {
+                                std::cout << "  " << party->member(healer).character.sheet().name
+                                          << " wakes "
+                                          << party->member(fallen).character.sheet().name
+                                          << " with " << action->id << "\n";
+                                cast_cure(healer, fallen, action->id);
+                            }
+                        }
+                    }
+                }
+            }
             // A member knocked out (0 Hit Points) is cured too, as
             // wake_the_fallen does in camp.
             const auto below_half = [&](opengold::MemberId id)
@@ -12941,6 +13408,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 const auto before_camp = session.detached_copy();
                 const auto party_before = party->state();
                 const auto reloads_before = beat_reloads;
+                const auto fights_before_reload = fights_fought;
+                const auto lost_before_reload = fights_lost;
+                const auto defeated_before_reload = fights_defeated;
                 bool fixed = false;
                 for (unsigned reload = 0; reload < 8; ++reload)
                 {
@@ -12952,6 +13422,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                         session.reseed_dice(
                             static_cast<std::uint32_t>(party_before.time_minutes + reload));
                         beat_reloads = reloads_before + reload;
+                        fights_fought = fights_before_reload;
+                        fights_lost = lost_before_reload;
+                        fights_defeated = defeated_before_reload;
                         ++phases["camp attacks reloaded"];
                     }
                     if (!session.camp_fix())
@@ -13024,8 +13497,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     return count;
                 };
                 const bool missing_plan =
-                    (game == GoldBoxGame::pools_of_darkness || second_bond) && keeps_preparation &&
-                    a_night_first &&
+                    (game == GoldBoxGame::pools_of_darkness || second_bond || earned_secret) &&
+                    keeps_preparation && a_night_first &&
                     (std::ranges::any_of(wanted_spells,
                                          [&](const std::string &wanted)
                                          {
@@ -13464,7 +13937,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                                      beat.rest_through_period);
                 }
                 else if (game == GoldBoxGame::secret_of_the_silver_blades && route &&
-                         beat.passing && !party_whole())
+                         beat.passing && !beat.camp_broken && !party_whole())
                 {
                     // Secret's party Fixes whenever a member is hurt, as a
                     // player does after a fight, and where it gives up
@@ -13665,7 +14138,12 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                             const auto party_before = party->state();
                             const auto answers_before = answers;
                             const unsigned lost_before = fights_lost;
+                            const unsigned fights_before_event = fights_fought;
+                            const unsigned defeated_before_event = fights_defeated;
                             rejected_boss_win = false;
+                            reload_optional_encounter = earned_secret && beat.map == 82 &&
+                                                        beat.avoiding && beat.reload_event &&
+                                                        reload < 20;
                             if (earned)
                             {
                                 check(
@@ -13741,26 +14219,35 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                             {
                                 play(where);
                             }
+                            const bool interrupted = reload_optional_encounter &&
+                                                     session.snapshot().phase == TourPhase::combat;
+                            reload_optional_encounter = false;
                             const bool failed =
-                                beat.reload_event ? rejected_boss_win || session.snapshot().phase ==
-                                                                             TourPhase::defeated
-                                                  : fights_lost != lost_before;
+                                interrupted || (beat.reload_event ? rejected_boss_win ||
+                                                                        session.snapshot().phase ==
+                                                                            TourPhase::defeated
+                                                                  : fights_lost != lost_before);
                             if (!reloading || !failed || reload >= 20)
                             {
                                 break;
                             }
-                            ++phases["overland steps reloaded"];
+                            ++phases[interrupted ? "optional patrols reloaded"
+                                                 : "overland steps reloaded"];
                             session = std::move(*before_step);
                             party->restore(party_before);
                             // Reloading the event also replays its decisions.
                             // Otherwise a lost finale consumes NO/NO/YES/NO
                             // and the next attempt accepts the Balor's bargain.
                             answers = answers_before;
+                            fights_fought = fights_before_event;
+                            fights_lost = lost_before;
+                            fights_defeated = defeated_before_event;
                             session.attach_restored_party(party);
                             session.reseed_dice(
                                 static_cast<std::uint32_t>(beat_number * 64 + reload));
                         }
                     }
+                    reload_optional_encounter = false;
                     if (!beat.cast_after.empty())
                     {
                         cast_one_of(beat.cast_after, beat.cast_after_by);
@@ -14280,6 +14767,30 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                        party->member(id).vitals.description != "Turned to stone.";
             });
         const bool played = needs.empty() && end.phase != TourPhase::defeated;
+        if (earned_secret && secret_progress >= SecretProgress::ending)
+        {
+            const auto pcs =
+                std::ranges::count_if(party->state().slots,
+                                      [&](opengold::MemberId id)
+                                      {
+                                          return id && party->member(id).npc_source.empty();
+                                      });
+            const bool pc_standing = std::ranges::any_of(
+                party->state().slots,
+                [&](opengold::MemberId id)
+                {
+                    return id && party->member(id).npc_source.empty() &&
+                           !party->member(id).vitals.dead &&
+                           party->member(id).vitals.hit_points > 0 &&
+                           party->member(id).vitals.description != "Turned to stone.";
+                });
+            const bool won = played && pcs == 6 && pc_standing && game_won_shown &&
+                             fights_defeated == 0 &&
+                             session.script_variable(opengold::por::EclAddress{0x4CD9}) == 1;
+            std::cout << "Earned Secret ending: " << fights_fought << " fights, " << fights_defeated
+                      << " defeats; actual campaign " << (won ? "won" : "not won") << ".\n";
+            return won;
+        }
         if (earned_secret)
         {
             unsigned pcs = 0;
@@ -14712,6 +15223,13 @@ int main(int argc, char **argv)
         {
             return walk_census(GoldBoxGame::secret_of_the_silver_blades, true, CurseProgress::none,
                                SecretProgress::staff)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--secret-earned-ending")
+        {
+            return walk_census(GoldBoxGame::secret_of_the_silver_blades, true, CurseProgress::none,
+                               SecretProgress::ending)
                        ? 0
                        : 1;
         }
