@@ -20,7 +20,7 @@ UI behavior and the current configured model are retained; no delegation.
 | Game | Verified | Remaining completion gap |
 |---|---|---|
 | Pool of Radiance | Fresh Original Rules party starts at zero XP, earns its training and equipment, defeats Tyranthraxus and reaches the ending; SRD map audits remain separate | Optional quests, other party compositions and difficulty settings are not certified by this route |
-| Curse of the Azure Bonds | Assisted ending route wins its fights; fresh earned opening, sewers and first bond now verified | Replace injected import experience/gold and relocations with verified gameplay/import |
+| Curse of the Azure Bonds | Assisted ending route wins its fights; fresh earned opening, first bond and Hap now verified | Replace injected import experience/gold and relocations with verified gameplay/import |
 | Secret of the Silver Blades | Fresh complete route reaches the actual ending with every fight played, including Oswulf, the Dreadlord and the soul gem; zero forced wins | Replace progression grants and relocations with verified gameplay/import |
 | Gateway to the Savage Frontier | Route reaches the ending and wins its fights | Replace experience/gold/equipment/time grants and relocations |
 | Pools of Darkness | Fresh whole route and detailed finale replay defeat Gothmenes, reach the ending and restore all six members; zero forced results | Progression assistance and relocations remain |
@@ -443,3 +443,69 @@ diff checks pass; no production code, UI, save format or SRD rules changed.
 Investigation/implementation ran 04:20–04:25; registered verification ended
 04:27. One requested player milestone is delivered: the first bond earned
 from new characters. Curse's ending and the all-games objective remain open.
+
+
+Delivery: `0cd46cbd` pushed to `origin/main`; affected target rebuilt there,
+and the registered fresh first-bond check passes again (83.53s). Main's
+pre-existing GAMES edits remain untouched, so no pull was attempted.
+
+### Active next batch: earned Hap progression
+
+- Start observed 2026-11-18 04:30 UTC; checkpoint due 05:30 UTC.
+- Outcome: continue the earned party through actual wilderness journeys to
+  Hap, defeat four patrols and the barn encounter, retaining all PCs alive.
+- Acceptance: no rewards, healing, flags, positions or outcomes injected;
+  real camps, cleric cures, legal travel and actual combat wins. Training is
+  paid if earned eligibility allows it. Dracandros is a later batch.
+- Discovery: optional town dungeons are gated until Hap, Yulash or Zhentil
+  Keep is completed, so they cannot fund pre-Hap advancement (cluebook and
+  ECL1:80's conditional Search Area menu).
+- Reuse/model: existing route, original rules, verified opening save and current
+  configured Codex; no delegation, model switch, UI or save-format change.
+- Checks: suffix diagnostics, fresh registered route, neighboring earned
+  route, creation/format/save/census checks; no stale binary testing.
+
+
+Checkpoint correction, observed 2026-11-18 04:32 UTC: the first-bond endpoint
+at Journey does not export a route save because `can_leave` is false. The
+claimed fourteen-beat checkpoint was not written. The verified twelve-beat
+opening checkpoint exists and successfully replays the hideout; Hap diagnostics
+resume there instead. The first-bond gameplay/flag verification remains valid.
+
+
+Observed 2026-11-18 04:40 UTC: the Hap suffix passes six fights with no losses,
+all six PCs alive at 53,073 XP and both the four-patrol and barn-clear conditions
+satisfied. Drow weapons are actual collected/readied loot. The real barn is
+(3,13), while the assisted route's (8,4) lies across a scripted wilderness exit.
+Verified saved files: twelve-beat opening, twenty-seven-beat Hap arrival and
+twenty-nine-beat cleared barn, all campaign format 53. Fresh final checks follow.
+
+
+Overall checkpoint observed 2026-11-18 04:45 UTC (about one hour after the
+03:44 start; brief user pause not separately measured): zero additional whole
+commercial campaigns certified complete. Curse's earned opening/first bond
+is pushed and passes from new characters; the earned Hap suffix passes, with
+fresh Hap and neighboring checks running. All twelve games plus subsequent
+winning-character availability remain the objective; Krynn and Buck Rogers
+are still unimplemented. No delegation, new runtime, UI or save-format change.
+This is a progress checkpoint, not a pause or a completion claim.
+
+
+Final Hap verification observed 2026-11-18 04:47 UTC: **7/7 checks pass,
+zero skips**, in 227.14s on the formatted rebuilt tree based on `0cd46cbd`.
+Fresh Hap wins twenty-one real fights with no loss, all six PCs at full HP and
+53,073 XP; its registered check takes 108.68s. Earned opening/sewers (34.40s),
+first bond (83.16s), creation, formats, seven-game census and saves also pass.
+
+```bash
+OPENGOLD_GOLDBOX_DIR=/home/edmond/GoldBox OPENGOLD_GAME_DIR=/home/edmond/GoldBox/POOLRAD ctest --test-dir build/linux -R '^(opengold_original_creation_tests|opengold_gold_box_games_tests|opengold_curse_sewers|opengold_curse_first_bond|opengold_curse_hap|opengold_game_census|opengold_save_tests)$' --output-on-failure
+```
+
+Log: `/tmp/opengold-curse-hap-regression.log`; suffix trace:
+`/tmp/opengold-curse-real-hap-barn.log`. The staged C++ passed the repository's
+format/braces hook before the final rebuild and tests. Scope, architecture,
+RAII and diff checks pass. No production code, UI, save format or SRD changes.
+Investigation/implementation ran 04:30–04:43, final checks 04:43–04:47.
+One earned Hap outcome is delivered; no additional entire game is certified.
+The next outcome is paid advancement and the path through the caves/tower to
+the second bond, retaining earned progression and actual travel.

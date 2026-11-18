@@ -406,10 +406,36 @@ A fresh run wins twelve fights, loses none and keeps all six player characters
 alive, each at 35,912 XP; the magic-user ends unconscious. The test reads the
 first-bond flag `4C2A = 1` after the original event sets it and requires the
 wilderness area. No rewards, healing, positions, flags or combat results are
-injected. The real fourteen-beat checkpoint is
-`/tmp/opengold-curse-earned-first-bond-fresh.sav`; the twelve-beat opening save
-also replays the hideout successfully. A resumed diagnostic's four suffix
+injected. The verified twelve-beat opening save replays the hideout
+successfully. The first-bond endpoint stops at Journey, where the route
+harness does not export a checkpoint (`can_leave` is false). An earlier claim
+that a fourteen-beat endpoint file existed was incorrect; that file was not
+written. A resumed diagnostic's four suffix
 fights alone do not satisfy the fresh route's minimum fight count.
 
 This proves one bond from legal new characters, not the remaining four or the
 campaign ending. The assisted full story route remains a separate regression.
+
+
+### Earned journeys and Hap (2026-11-18)
+
+`opengold_curse_hap` (`opengold_gold_box_games_tests --curse-hap`) continues
+the same earned party overland via Shadowdale, Ashabenford, the Standing Stone
+and Essembra to Hap. Real camps replenish spells; clerics spend actual cure
+spells after resting. Hap's real arrival is (3,0); its barn is at (3,13),
+not the disconnected event copy at (8,4) used by the assisted route.
+
+The party camps and fights until at least four patrols have fallen, collects
+and readies their Drow Long Swords and Maces, then walks to and defeats the
+barn's efreeti and dark elves. Loot selections apply to camp encounters too.
+The test requires the patrol counter `4C47 >= 4`, barn-clear flag `4C5E = 1`,
+six living player characters and real combat victories. It supplies no rewards,
+healing, positions, flags or outcomes. NPCs do not replace a missing PC in the
+cohort check.
+
+The suffix from the verified Hap arrival wins six fights without a loss;
+all six PCs finish alive at 53,073 XP. Its actual twenty-nine-beat save was
+verified at `/tmp/opengold-curse-earned-hap-barn.sav`. The full fresh registered route wins twenty-one fights with no loss, retains
+all six PCs at full HP and the same XP, and passes its neighboring regressions
+(2026-11-18, working tree based on `0cd46cbd`).
+This does not certify the caves, Dracandros or the campaign ending.
