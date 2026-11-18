@@ -705,6 +705,14 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
         {
             scripts.push_back(33);
         }
+        // Secret's wheel lift loads map 48, then enters scripts 49/50
+        // without LOAD FILES (ECL2:48 819Ah/81A8h, 826Eh).
+        if (game == GoldBoxGame::secret_of_the_silver_blades && map_disk == 2 &&
+            map_id.record == 48)
+        {
+            scripts.push_back(49);
+            scripts.push_back(50);
+        }
         const por::detail::AreaSource area{scripts.front(), map_disk, {}};
         const por::detail::DistrictMap geo{
             map_id.record, walls, {scripts.begin() + 1, scripts.end()}};

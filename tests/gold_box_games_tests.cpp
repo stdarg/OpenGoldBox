@@ -597,17 +597,17 @@ void curse_opening_reaches_the_first_map()
           "The innkeeper speaks: " + diagnostics());
 }
 
-void curse_shared_map_saves_reload()
+void shared_map_saves_reload(GoldBoxGame game)
 {
     using namespace opengold;
-    constexpr auto game = GoldBoxGame::curse_of_the_azure_bonds;
     const auto *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
     if (!games)
     {
-        std::cout << "Curse's files are not here; shared-map saves are not checked.\n";
+        std::cout << game_title(game) << " files are not here; shared-map saves are not checked.\n";
         return;
     }
-    const auto folder = std::filesystem::path(games) / "CURSE";
+    const bool curse = game == GoldBoxGame::curse_of_the_azure_bonds;
+    const auto folder = std::filesystem::path(games) / (curse ? "CURSE" : "SECRET");
     const auto content = load_original_content(folder, game);
     const std::shared_ptr<const rules::CharacterRules> creation =
         original::character_rules(original::default_aging, game);
@@ -616,7 +616,7 @@ void curse_shared_map_saves_reload()
     CharacterCreator creator(creation, 42);
     creator.select(rules::CreationField::race, "human");
     creator.select(rules::CreationField::character_class, "fighter");
-    creator.name("Pit explorer");
+    creator.name("Shared-map explorer");
     test::walk_original_creation(creator);
     party->add_pc(creator.create_character());
     auto session = load_campaign(folder, game);
@@ -629,13 +629,25 @@ void curse_shared_map_saves_reload()
         }
         else if (session.snapshot().phase == por::TourPhase::awaiting_continue)
         {
-            check(session.choose(session.snapshot().continue_ticket, 0), "Finish Curse's opening");
+            check(session.choose(session.snapshot().continue_ticket, 0),
+                  "Finish the shared-map fixture opening");
+        }
+        else if (session.snapshot().phase == por::TourPhase::treasure)
+        {
+            check(session.leave_treasure(session.snapshot().continue_ticket),
+                  "Leave the opening treasure in this save fixture");
         }
     }
-    check(session.can_leave(), "Curse's opening finishes before entering the save fixture");
-    for (const auto &[script, map] :
-         std::array<std::pair<unsigned, unsigned>, 2>{{{18, 17}, {33, 32}}})
+    check(session.can_leave(), "The opening finishes before entering the save fixture");
+    const auto layouts = curse ? std::array<std::pair<unsigned, unsigned>, 2>{{{18, 17}, {33, 32}}}
+                               : std::array<std::pair<unsigned, unsigned>, 2>{{{49, 48}, {50, 48}}};
+    for (const auto &[script, map] : layouts)
     {
+        if (!curse)
+        {
+            test::TourAccess::set_variable(session, por::EclAddress{0x4C69}, script == 49 ? 1 : 5);
+            test::TourAccess::set_variable(session, por::EclAddress{0x4C6E}, 1);
+        }
         test::TourAccess::enter_script(session, script, map,
                                        {script == 18 ? 15U : 7U, 14, por::MapDirection::south});
         for (int n = 0; n < 100 && !session.can_leave(); ++n)
@@ -1401,7 +1413,8 @@ enum class SecretProgress
     opening,
     well,
     eldamar,
-    headquarters
+    headquarters,
+    first_staff
 };
 
 std::vector<RouteBeat> secret_earned_opening()
@@ -1477,6 +1490,8 @@ std::vector<RouteBeat> secret_earned_opening()
     beats.push_back(home);
     return beats;
 }
+
+const std::vector<RouteBeat> &secret_route();
 
 std::vector<RouteBeat> secret_earned_route(SecretProgress progress)
 {
@@ -1683,6 +1698,60 @@ std::vector<RouteBeat> secret_earned_route(SecretProgress progress)
             {
                 beat.searching = false;
             }
+            beat.cure_first = true;
+            beat.cure_to_full = true;
+            beat.reloads_until_won = std::max(beat.reloads_until_won, 600U);
+        }
+    }
+    if (progress >= SecretProgress::first_staff)
+    {
+        const auto first_mine_beat = beats.size();
+        auto leave_well = step_beat(33, 0, 0, D::north);
+        leave_well.rest_first = true;
+        leave_well.rest_for_spells = true;
+        beats.push_back(leave_well);
+        walk_ruins(beats, {{2, 0, D::north},
+                           {6, 0, D::west},
+                           {1, 2, D::west},
+                           {1, 14, D::south},
+                           {7, 11, D::south},
+                           {2, 10, D::west},
+                           {1, 14, D::south}});
+        beats.push_back({32, 3, 12, D::north, {"YES"}});
+        beats.back().arrive_only = true;
+        beats.push_back(step_beat(49, 3, 6, D::south, {"ATTACK"}));
+        beats.push_back(step_beat(49, 5, 15, D::south, {"ENTER"}));
+        auto derf = step_beat(50, 14, 3, D::north, {"TALK", "NO"});
+        derf.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C85, 1};
+        beats.push_back(derf);
+        // Derf shoos the party south. Leave by the outer temple aisle;
+        // the shorter geometric path repeatedly reenters his chamber.
+        beats.push_back({50, 11, 11, D::north, {}});
+        beats.back().arrive_only = true;
+        // Reuse the existing contiguous passage/digging plan after Derf,
+        // but walk every square rather than placing the party on it.
+        const auto &story = secret_route();
+        const auto ring =
+            std::ranges::find_if(story,
+                                 [](const RouteBeat &beat)
+                                 {
+                                     return beat.expect_cell && beat.expect_cell->first == 0x4C85;
+                                 });
+        check(ring != story.end(), "The established mine route includes Derf's quest");
+        const auto first_piece = std::find_if(ring + 1, story.end(),
+                                              [](const RouteBeat &beat)
+                                              {
+                                                  return beat.map == 48 && beat.x == 0 &&
+                                                         beat.y == 5 && beat.facing == D::north &&
+                                                         beat.step;
+                                              });
+        check(first_piece != story.end(), "The established route reaches the first staff piece");
+        beats.insert(beats.end(), ring + 1, first_piece + 1);
+        beats.back().expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C84, 1};
+        for (auto at = first_mine_beat; at < beats.size(); ++at)
+        {
+            auto &beat = beats[at];
+            beat.searching = false;
             beat.cure_first = true;
             beat.cure_to_full = true;
             beat.reloads_until_won = std::max(beat.reloads_until_won, 600U);
@@ -14217,7 +14286,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                                   return item.original_type == mirror_type;
                                               });
             }
-            std::cout << (secret_progress >= SecretProgress::headquarters
+            std::cout << (secret_progress >= SecretProgress::first_staff
+                              ? "Earned Secret first staff piece: "
+                          : secret_progress >= SecretProgress::headquarters
                               ? "Earned Secret headquarters: "
                           : secret_progress >= SecretProgress::eldamar ? "Earned Secret Eldamar: "
                           : secret_progress >= SecretProgress::well    ? "Earned Secret Well: "
@@ -14225,7 +14296,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                       << fights_fought << " fights, " << fights_defeated
                       << " defeats; this is not a campaign win.\n";
             return played && pcs == 6 && healthy && someone_standing && session.can_leave() &&
-                   end.area_id == (secret_progress >= SecretProgress::eldamar ? 33U : 16U) &&
+                   end.area_id == (secret_progress >= SecretProgress::first_staff ? 48U
+                                   : secret_progress >= SecretProgress::eldamar   ? 33U
+                                                                                  : 16U) &&
                    session.script_variable(opengold::por::EclAddress{0x4C2D}) == 255 &&
                    fights_fought >= 1 && fights_defeated == 0 &&
                    (secret_progress < SecretProgress::well ||
@@ -14233,7 +14306,10 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                    (secret_progress < SecretProgress::eldamar ||
                     session.script_variable(opengold::por::EclAddress{0x4C53}) == 255) &&
                    (secret_progress < SecretProgress::headquarters ||
-                    session.script_variable(opengold::por::EclAddress{0x4C98}) == 255);
+                    session.script_variable(opengold::por::EclAddress{0x4C98}) == 255) &&
+                   (secret_progress < SecretProgress::first_staff ||
+                    (session.script_variable(opengold::por::EclAddress{0x4C85}) == 1 &&
+                     (session.script_variable(opengold::por::EclAddress{0x4C84}) & 1) != 0));
         }
         if (sewers)
         {
@@ -14600,6 +14676,13 @@ int main(int argc, char **argv)
                        ? 0
                        : 1;
         }
+        if (argc == 2 && std::string_view(argv[1]) == "--secret-earned-first-staff")
+        {
+            return walk_census(GoldBoxGame::secret_of_the_silver_blades, true, CurseProgress::none,
+                               SecretProgress::first_staff)
+                       ? 0
+                       : 1;
+        }
         if (argc == 2 && std::string_view(argv[1]) == "--secret-route")
         {
             return walk_census(GoldBoxGame::secret_of_the_silver_blades, true) ? 0 : 1;
@@ -14628,7 +14711,8 @@ int main(int argc, char **argv)
         a_save_names_its_game();
         item_types_carry_their_properties();
         curse_opening_reaches_the_first_map();
-        curse_shared_map_saves_reload();
+        shared_map_saves_reload(GoldBoxGame::curse_of_the_azure_bonds);
+        shared_map_saves_reload(GoldBoxGame::secret_of_the_silver_blades);
         secret_opening_reaches_the_first_map();
         secret_camp_fixes_the_party();
         the_font_has_eight_bytes_a_glyph();

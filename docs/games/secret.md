@@ -260,6 +260,33 @@ byte-identically. No advancement,
 rewards, healing, flags, time, positions or outcomes are injected. This is
 headquarters completion, not the remaining mines or final campaign ending.
 
+## Earned Ring of Tyr and first staff piece (2026-11-18)
+
+`opengold_secret_earned_first_staff` continues the earned headquarters campaign
+through the real ruins and mine entrance. It defeats the minotaurs and talks
+to Derf Strongarm for the Ring of Tyr quest (`4C85=1`). Derf shoos the party
+south after the conversation. Leave through the outer temple aisle `(11,11)`
+before approaching the exit `(8,0)`; the shorter geometric path reenters his
+chamber and repeats the conversation without progress.
+
+The actual wheel lift takes the party to level 1, whose established passage
+plan is now walked throughout. Searching the dead adventurer finds the first
+Staff of Oswulf piece (`4C84 & 1`) through Tyr's Ring. The earned continuation
+finishes with all six at full HP on map 48/script 49, at `(1,1)`. No experience,
+money, equipment, healing, flags, time, positions or outcomes are injected.
+
+The mine save exposed a missing shared-map relationship. The lift loader
+`ECL2:48` loads map 48 at 826Eh, then enters scripts 49/50 at 819Ah/81A8h
+without another LOAD FILES. Both scripts retain that geometry. Core now records
+those actual aliases so ordinary mine saves reload; the prior loader rejected
+the earned checkpoint with a district/script disagreement. The normal loader
+now reencodes it byte-identically, and both mine-script save regressions pass.
+The save format/history and rules outcomes are unchanged. The fresh 219-beat
+registered route wins 42 battles without retained defeats and passes in
+145.62s. All seventeen affected checks pass with no skips, including the
+separate legacy full ending (403.21s). Other staff pieces and an earned
+campaign ending remain separate completion gaps.
+
 ## The script host
 
 What *Secret*'s scripts need beyond *Curse*'s (found by walking every map):

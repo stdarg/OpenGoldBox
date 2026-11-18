@@ -23,7 +23,7 @@ UI behavior and the current configured model are retained; no delegation.
 |---|---|---|
 | Pool of Radiance | Fresh Original Rules party starts at zero XP, earns its training and equipment, defeats Tyranthraxus and reaches the ending; SRD map audits remain separate | Optional quests, other party compositions and difficulty settings are not certified by this route |
 | Curse of the Azure Bonds | Fresh Original Rules party earns all three artifacts, equipment, paid advancement and recovery, physically reaches Myth Drannor, defeats Tyranthraxus and shows the actual ending | Optional quests, other party compositions and difficulty settings are not certified by this route |
-| Secret of the Silver Blades | Fresh earned opening, Well/amulet quests and Black Circle headquarters route wins 36 fights, recovers all six PCs and round-trips its save; the separate assisted complete route reaches the actual ending with every fight played | Replace later progression grants and relocations with verified gameplay/import |
+| Secret of the Silver Blades | Fresh earned opening, Well/amulet/headquarters quests, Tyr's Ring and first staff piece route wins 42 fights, recovers all six PCs and round-trips its save; the separate assisted complete route reaches the actual ending with every fight played | Replace later progression grants and relocations with verified gameplay/import |
 | Gateway to the Savage Frontier | Route reaches the ending and wins its fights | Replace experience/gold/equipment/time grants and relocations |
 | Pools of Darkness | Fresh whole route and detailed finale replay defeat Gothmenes, reach the ending and restore all six members; zero forced results | Progression assistance and relocations remain |
 | Treasures of the Savage Frontier | Route reaches the ending and wins its fights | Replace starting experience/money and relocations |
@@ -1377,4 +1377,99 @@ UI/runtime or save-history changes. Elapsed to final validation about 29 minutes
 including the failed strategy probes and native builds, then final formatting,
 application build and integrated checks. Tokens/cost unavailable. One earned
 headquarters outcome is verified; Secret's mines/ending, the other commercial
-gaps, five additional engines and later winning-character availability remain.
+gaps, five additional games and later winning-character availability remain.
+
+Delivery observed 11:49 UTC: `bad583c7` is pushed to `origin/main`; the main
+checkout matches it and is rebuilt/exported. All four installed-data post-push
+checks pass in 21.27s with no skips: Gold Box units, Godot preparation, Secret
+Original startup and package smoke. Log:
+`/tmp/opengold-secret-headquarters-main-recheck.log`. The existing GAMES edit
+remains untouched and prevents the pull under the dirty-main rule. The
+headquarters claim is released.
+
+### Active next batch: Secret's Ring of Tyr and first staff piece
+
+- Start observed 2026-11-18 11:50 UTC; checkpoint due 12:50 UTC.
+- Authorization/status: resumed all-twelve-game task remains active; no
+  questions or delegation. Outcome: physically enter the mines, pass the
+  minotaurs, receive Derf's actual Ring of Tyr quest and find the first Staff
+  of Oswulf piece through the mine's normal passage/digging actions.
+- Acceptance: six PCs alive/not petrified, at least one standing, actual
+  ring quest `4C85=1` and first staff bit `4C84 & 1`, zero retained defeats,
+  physically valid movement and a reloadable idle mine checkpoint. Fresh
+  registered verification must include the earned opening, Well, amulet and
+  headquarters. No injected XP, money, gear, healing, flags, time, positions
+  or outcomes. Other staff pieces, restored staff and ending remain deferred.
+- Reuse/model: existing Original quests, battle player, physical walker,
+  actual mine commands and the established first-piece passage plan. Same
+  configured Codex, no requested model/effort switch, overrides or agents;
+  Original Rules work outside SRD assignments. Keep Core/rules boundaries,
+  existing UI/runtime and supported save history. Report concrete blockers.
+- Verification: focused suffix from the earned headquarters save, normal
+  save reload, fresh registered milestone and affected checks; own commit/push
+  followed by main rebuild and installed-data checks. Baseline `bad583c7`;
+  source save `/tmp/opengold-secret-headquarters-final-earned.sav`.
+  Tokens/cost unavailable.
+
+Observed 11:57 UTC: the actual mine suffix earns Derf's Ring of Tyr and the
+first staff bit, with six actual victories across its initial and corrected
+continuations, no retained defeats and all six at full HP. The temple exit
+needs an outer-aisle waypoint `(11,11)`; the geometric shortcut repeatedly
+reenters Derf's chamber, which shoos the party back. The real lift and level-1
+passage plan then find the dead adventurer's piece. The actual checkpoint is
+`/tmp/opengold-secret-first-staff-outer-earned.sav`, map 48/script 49 at `(1,1)`.
+Its trace is `/tmp/opengold-secret-first-staff-outer.log`; the initial route
+error is in `/tmp/opengold-secret-first-staff-suffix.log`.
+
+The required normal reload exposes a production defect: `Saved district and
+script disagree`, reproduced in `/tmp/opengold-secret-first-staff-reload.log`.
+The mine loader `ECL2:48` loads map 48 at 826Eh, then enters scripts 49/50 at
+819Ah/81A8h without another LOAD FILES. Its retained geometry was missing from
+save metadata, as Curse's lower Pit/Shrine had been earlier. This accepted
+batch's usable-save outcome requires that correction. Core now registers both
+actual shared scripts for Secret's disk-2 map 48. The existing shared-map
+regression is reused for both mine scripts as well as the two Curse cases;
+no save-format/history or rules/UI change is made. Original source traces:
+`/tmp/opengold-secret-mines-loader-script.txt` and
+`/tmp/opengold-secret-mine-level1-script.txt`. Claim updated to include Core.
+Focused rebuild/regressions and fresh integrated verification remain pending.
+
+Observed 12:02 UTC: the rebuilt shared-map regression passes all four cases
+(two Curse maps and Secret's mine scripts 49/50) in the Gold Box unit check
+(0.49s). The previously rejected actual first-piece save now reloads and
+reencodes byte-identically. Before/after evidence:
+`/tmp/opengold-secret-first-staff-reload-before.log`,
+`/tmp/opengold-secret-first-staff-reload-after.log`,
+`/tmp/opengold-secret-first-staff-roundtrip.sav`.
+The terminal-only milestone exits 1 because there is no newly observed fight;
+the independent round-trip assertion passes. Focused build/test logs:
+`/tmp/opengold-secret-first-staff-save-build.log`,
+`/tmp/opengold-secret-first-staff-save-focused.log`. LLVM-23 formatting passes.
+The final application build and seventeen affected checks are running in
+`/tmp/opengold-secret-first-staff-integrated.log`, including the fresh complete
+first-piece route, neighboring earned milestones, legacy full Secret ending,
+campaign/save/recovery tests, both rules startups, per-game saves and package
+smoke. Final integration and delivery remain pending.
+
+Observed 12:09 UTC: all seventeen integrated checks pass in 403.22s with no
+skips. The fresh 219-beat first-staff route passes in 145.62s: 42 victories,
+zero retained defeats, all six alive/full HP at map 48/script 49 `(1,1)`.
+XP: 319,711 / 319,711 / 319,711 / 310,796 / 315,584 / 315,584; levels remain
+8 / 8 / 9 / 9 / 9 / 10. Both Ring and staff flags are checked. The separate
+legacy complete ending passes in 403.21s, earned headquarters 146.38s,
+Eldamar 35.72s, Well 16.29s, opening and all-map walk pass. Campaign recovery,
+rest, Original campaign, generic saves, shared-map unit regressions, both rules
+startups, per-game Godot saves, preparation and package smoke all pass.
+
+Final evidence: `/tmp/opengold-secret-first-staff-integrated.log`,
+`/tmp/opengold-secret-first-staff-integrated-ctest.log`,
+`/tmp/opengold-secret-first-staff-integrated-fresh.log`. Tested tree:
+`bad583c7` plus this batch. Scope/architecture review passes: the eight-line
+Core correction records actual shared geometry without changing rules outcomes,
+UI/runtime, save format or supported history. Tests reuse the existing save
+fixture and passage plan; all owned state uses RAII/value containers. Elapsed
+to final validation approximately nineteen minutes, including route research,
+focused probes, the reproduced save failure, fix/regressions, final application
+build and seventeen checks. Tokens/cost unavailable. Tyr's Ring, first staff
+piece and usable mine save are delivered outcomes; remaining staff pieces,
+Secret's earned ending and the overall all-game objective stay open.
