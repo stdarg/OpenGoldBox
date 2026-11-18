@@ -3277,10 +3277,13 @@ const std::vector<RouteBeat> &darkness_route()
     {
         using D = opengold::por::MapDirection;
         std::vector<RouteBeat> route;
-        // Rolf's tour ends in the park; the party walks west off the docks'
-        // map into West Phlan (map 17), which the script loads as the party
-        // leaves the edge (cell 21h).
-        route.push_back(step_beat(16, 0, 4, D::west));
+        // Rolf's tour ends in the park, where the new party camps for its
+        // first spells; it walks west off the docks' map into West Phlan (map
+        // 17), which the script loads as the party leaves the edge (cell 21h).
+        auto off_the_docks = step_beat(16, 0, 4, D::west);
+        off_the_docks.rest_first = true;
+        off_the_docks.rest_for_spells = true;
+        route.push_back(off_the_docks);
         // Sasha waits at the west gate (17: 0,4): the party takes her escort
         // duty, and on the hill outside the storm takes Phlan; Elminster
         // meets the party in Limbo and sends it back through the portal.
@@ -4059,12 +4062,8 @@ const std::vector<RouteBeat> &darkness_route()
         // steps through to Thorne's cave.
         walk_passages(route, 33, {{7, 1, D::east}, {8, 1, D::north}});
         // It comes out in Limbo, where Elminster offers his help: the party
-        // rests, trains, and moves on to Thorne's cave. The route walks
-        // straight to its goals, where a player meets wandering monsters on
-        // the way (the cluebook's "Wandering Monsters" of every area): the
-        // test gives each member experience for those of the Lands of Thar
-        // to the Aerie, 300,000 (a stand-in), and the party trains as far as
-        // it goes.
+        // rests, trains as far as the experience it earned goes, and moves on
+        // to Thorne's cave.
         route.push_back(step_beat(33, 8, 0, D::west, {"YES", "stop:REST"}));
         // Its clerics and paladins memorize Resist Fire for every member, as
         // a player readies the ward against Thorne's breath: no camp in his
@@ -4076,7 +4075,6 @@ const std::vector<RouteBeat> &darkness_route()
         RouteBeat limbo{18, 0, 0, D::north,
                         train_darkness_party(2, {"TRAIN"}, {"MOVE ON", "THORNE"})};
         limbo.waiting = true;
-        limbo.test_experience = 300'000;
         route.push_back(limbo);
         // In Thorne's cave (map 34) the party beats the red dragons at the
         // gate and goes straight for Thorne's chamber, by the way the
@@ -4209,11 +4207,7 @@ const std::vector<RouteBeat> &darkness_route()
                        {5, 11, D::west},
                        {4, 11, D::west}});
         route.push_back(step_beat(19, 3, 11, D::north, {"YES"}));
-        // The wandering monsters of Thorne's cave and the Moonsea's shore
-        // a player meets on the way are a stand-in: 300,000 experience each.
-        auto zhentil_hall = step_beat(19, 3, 10, D::north, train_darkness_party(2));
-        zhentil_hall.test_experience = 300'000;
-        route.push_back(zhentil_hall);
+        route.push_back(step_beat(19, 3, 10, D::north, train_darkness_party(2)));
         // East along the streets to the Purple Plume Tavern (12,14), entered
         // from its sign (13,14) facing west: the party stays and rests there,
         // where no patrol breaks a camp while the guards have not been roused
@@ -4302,6 +4296,19 @@ const std::vector<RouteBeat> &darkness_route()
                        {2, 3, D::south},
                        {2, 4, D::south},
                        {2, 5, D::east}});
+        // Where a step asks GO ON? (the wagon the drow drag slaves out of, a
+        // ladder down, the door into a labyrinth) or the like, the party goes
+        // on (YES): a NO holds the step back.
+        const auto go_on = [&route](unsigned map, unsigned x, unsigned y)
+        {
+            const auto beat = std::find_if(route.rbegin(), route.rend(),
+                                           [&](const RouteBeat &b)
+                                           {
+                                               return b.map == map && b.x == x && b.y == y;
+                                           });
+            beat->answers = {"YES"};
+        };
+        go_on(35, 1, 3);
         route.push_back(step_beat(35, 3, 5, D::east, {"YES"}));
         walk_passages(
             route, 35,
@@ -4316,6 +4323,9 @@ const std::vector<RouteBeat> &darkness_route()
              {15, 10, D::south}, {15, 11, D::south}, {15, 12, D::south}, {15, 13, D::west},
              {14, 13, D::west},  {13, 13, D::south}, {13, 14, D::south}, {13, 15, D::east},
              {14, 15, D::east}});
+        go_on(35, 6, 12);
+        go_on(35, 11, 15);
+        go_on(35, 13, 14);
         route.push_back(step_beat(35, 15, 15, D::east, {"YES"}));
         walk_passages(route, 35,
                       {{0, 15, D::north},
@@ -4423,6 +4433,10 @@ const std::vector<RouteBeat> &darkness_route()
                        {7, 2, D::west},
                        {9, 1, D::east},
                        {10, 1, D::east}});
+        // The iron golem's room (10,1; the cluebook's 16): the party enters
+        // (YES) and beats the golem, which attacks a party without the
+        // medallion of the cluebook's 21; a NO holds the step back.
+        go_on(68, 9, 1);
         route.push_back(step_beat(68, 11, 1, D::east, {"YES"}));
         walk_passages(route, 68, {{12, 1, D::east}});
         route.push_back(step_beat(68, 13, 1, D::east, {"YES"}));
@@ -4519,16 +4533,12 @@ const std::vector<RouteBeat> &darkness_route()
         RouteBeat web_rest{18, 0, 0, D::north, {}};
         web_rest.rest_choice = "REST";
         route.push_back(web_rest);
-        // The drow stronghold's and the temple's wandering drow, and the Web
-        // Dimension's minis, where the cluebook bids the party "gain as much
-        // experience as you can" before Kalistes, are a stand-in: 400,000
-        // experience each, trained here.
+        // It trains here on the experience it earned.
         RouteBeat to_web{
             18, 0, 0, D::north,
             train_darkness_party(2, {"TRAIN"},
                                  {"MOVE ON", "KALISTES LAND", "YES", "YES", "type:SILK"})};
         to_web.waiting = true;
-        to_web.test_experience = 400'000;
         route.push_back(to_web);
         // Cynthia's first favor: drow prisoners. North round the temple's
         // ruins and west to the drow patrol at (4,4), which the party
@@ -4948,51 +4958,63 @@ const std::vector<RouteBeat> &darkness_route()
                        {8, 14, D::south}});
         route.push_back(step_beat(69, 8, 15, D::south, {"YES"}));
         // West round the stronghold's edge, which wraps to its east side,
-        // and north up the eastern way to the path up to Manshoon's tower
-        // (12,6, the path's walls north: "THE PATH LEADS UP").
-        walk_passages(route, 35, {{2, 7, D::west},    {1, 7, D::west},    {0, 7, D::west},
-                                  {15, 7, D::west},   {14, 7, D::south},  {14, 8, D::east},
-                                  {15, 8, D::south},  {15, 9, D::south},  {15, 10, D::west},
-                                  {14, 10, D::north}, {14, 9, D::west},   {13, 9, D::west},
-                                  {12, 9, D::north},  {12, 8, D::north},  {12, 7, D::north},
-                                  {12, 6, D::south},  {12, 7, D::south},  {12, 8, D::south},
-                                  {12, 9, D::south},  {12, 10, D::south}, {12, 11, D::south},
-                                  {12, 12, D::south}, {12, 13, D::south}, {12, 14, D::south}});
-        route.push_back(step_beat(35, 12, 15, D::west, {"YES"}));
-        // Through the skirmishers' rooms (the cluebook's 14), whose archers
-        // shoot from behind: the party goes on each time (GO ON? YES).
+        // and north up the eastern way past the path up to Manshoon's tower
+        // (12,6, the path's walls north: "THE PATH LEADS UP"). The ladders
+        // the party came down by are drawn up behind it ("THE LADDER IS
+        // GONE!"), so it goes back by the stronghold's upper halls, as the
+        // planning aid finds the way: east and north round to (8,5), north
+        // and west to (7,2), south and west to (5,5), and south to (5,10),
+        // then west and north to the wagons that take slaves up to the keep
+        // (2,5), the cluebook's 3.
         walk_passages(route, 35,
-                      {{11, 15, D::west},
-                       {10, 15, D::west},
-                       {9, 15, D::north},
-                       {9, 14, D::east},
-                       {10, 14, D::east},
-                       {11, 14, D::north}});
+                      {{2, 7, D::west},
+                       {1, 7, D::west},
+                       {0, 7, D::west},
+                       {15, 7, D::west},
+                       {14, 7, D::south},
+                       {14, 8, D::east},
+                       {15, 8, D::south},
+                       {15, 9, D::south},
+                       {15, 10, D::west},
+                       {14, 10, D::north},
+                       {14, 9, D::west},
+                       {13, 9, D::west},
+                       {12, 9, D::north},
+                       {12, 8, D::north},
+                       {12, 7, D::north}});
+        // The upper halls' ladders (12,6 east, 5,5 south) ask GO ON?: YES.
         walk_passages(route, 35,
-                      {{11, 13, D::north},
-                       {11, 12, D::west},
-                       {10, 12, D::south},
-                       {10, 13, D::west},
-                       {9, 13, D::west},
-                       {8, 13, D::west}},
+                      {{12, 6, D::east}, {13, 6, D::east}, {14, 6, D::north}, {14, 5, D::west},
+                       {13, 5, D::west}, {12, 5, D::west}, {11, 5, D::west},  {10, 5, D::west},
+                       {9, 5, D::west},  {8, 5, D::north}, {8, 4, D::north},  {8, 3, D::east},
+                       {9, 3, D::north}, {9, 2, D::west},  {8, 2, D::west},   {7, 2, D::south},
+                       {7, 3, D::south}, {7, 4, D::south}, {7, 5, D::west},   {6, 5, D::west},
+                       {5, 5, D::south}, {5, 6, D::south}, {5, 7, D::south},  {5, 8, D::south},
+                       {5, 9, D::south}},
                       false, false, false, {"YES"});
-        // West to the ladder up (7,12, YES) and on to the wagons that take
-        // slaves up to the keep (2,5), the cluebook's 3.
-        route.push_back(step_beat(35, 7, 13, D::north));
-        route.push_back(step_beat(35, 7, 12, D::west, {"YES"}));
         walk_passages(route, 35,
-                      {{6, 12, D::north}, {6, 11, D::north}, {6, 10, D::west},  {5, 10, D::west},
-                       {4, 10, D::west},  {3, 10, D::west},  {2, 10, D::west},  {1, 10, D::south},
-                       {1, 11, D::west},  {0, 11, D::north}, {0, 10, D::north}, {0, 9, D::north},
-                       {0, 8, D::east},   {1, 8, D::east},   {2, 8, D::east},   {3, 8, D::east},
-                       {4, 8, D::north},  {4, 7, D::north},  {4, 6, D::north},  {4, 5, D::west},
+                      {{5, 10, D::west},
+                       {4, 10, D::west},
+                       {3, 10, D::west},
+                       {2, 10, D::west},
+                       {1, 10, D::south},
+                       {1, 11, D::west},
+                       {0, 11, D::north},
+                       {0, 10, D::north},
+                       {0, 9, D::north},
+                       {0, 8, D::east},
+                       {1, 8, D::east},
+                       {2, 8, D::east},
+                       {3, 8, D::east},
+                       {4, 8, D::north},
+                       {4, 7, D::north},
+                       {4, 6, D::north},
+                       {4, 5, D::west},
                        {3, 5, D::west}});
         route.push_back(step_beat(35, 2, 5, D::north, {"YES"}));
         // Out of the wagon inside Zhentil Keep's gate (map 19 at 7,8),
         // unseen, and south through the city's south half to its training
-        // hall (3,9), as on the way in: the wandering monsters of the Web
-        // Dimension's paths and the Descent a player meets on the way are a
-        // stand-in, 500,000 experience each, and the party trains up to two
+        // hall (3,9), as on the way in, where the party trains up to two
         // levels for Myth Drannor's rakshasas. Then off the map by the city's
         // gate (8,15) to the area map.
         walk_passages(route, 19,
@@ -5006,12 +5028,9 @@ const std::vector<RouteBeat> &darkness_route()
                        {5, 11, D::west},
                        {4, 11, D::west}});
         route.push_back(step_beat(19, 3, 11, D::north, {"YES"}));
-        auto zhentil_hall_again = step_beat(19, 3, 10, D::north, train_darkness_party(2));
-        zhentil_hall_again.test_experience = 500'000;
-        route.push_back(zhentil_hall_again);
+        route.push_back(step_beat(19, 3, 10, D::north, train_darkness_party(2)));
         walk_passages(route, 19,
-                      {{3, 9, D::south},
-                       {3, 10, D::south},
+                      {{3, 10, D::south},
                        {3, 11, D::east},
                        {4, 11, D::east},
                        {5, 11, D::east},
@@ -5078,7 +5097,8 @@ const std::vector<RouteBeat> &darkness_route()
                               {"Bolt", "paladin 2"},     {"Bolt", "paladin 2"},
                               {"Bolt", "paladin 2"},     {"Bolt", "paladin 2"}};
         route.push_back(archery);
-        auto searched = step_beat(66, 15, 9, D::west);
+        // Back out by the narrow passage, single file (CONTINUE? YES).
+        auto searched = step_beat(66, 15, 9, D::west, {"YES"});
         searched.camp_broken = true;
         searched.passing = true;
         searched.searching = false;
@@ -5810,10 +5830,8 @@ const std::vector<RouteBeat> &darkness_route()
                     {11, 10, D::east},
                     {12, 10, D::east}});
         tower_step(13, 10, D::north, {"stop:REST"});
-        // In Limbo Shal leaves the party, and Elminster's camp rests it. The
-        // tower's wandering mages, cultists and bits of Moander a player
-        // meets on its levels are a stand-in: 500,000 experience each,
-        // trained here (up to two levels). Then on to Moander (MOVE ON,
+        // In Limbo Shal leaves the party, and Elminster's camp rests it; it
+        // trains (up to two levels) and goes on to Moander (MOVE ON,
         // MOANDER).
         RouteBeat tower_rest{18, 0, 0, D::north, {}};
         tower_rest.rest_choice = "REST";
@@ -5821,7 +5839,6 @@ const std::vector<RouteBeat> &darkness_route()
         RouteBeat to_moander{18, 0, 0, D::north,
                              train_darkness_party(2, {"TRAIN"}, {"MOVE ON", "MOANDER"})};
         to_moander.waiting = true;
-        to_moander.test_experience = 500'000;
         route.push_back(to_moander);
         // Moander (scripts 51 to 53; the cluebook's 57 to 60): the party
         // arrives by the gate in the depression (map 52) and climbs out by
@@ -6327,6 +6344,8 @@ const std::vector<RouteBeat> &darkness_route()
                        {12, 5, D::south},
                        {12, 6, D::south},
                        {12, 7, D::south}});
+        // The door into the labyrinth (11,4 south) asks GO ON?: YES.
+        go_on(36, 11, 4);
         cave_way(12, 8, D::north);
         walk_passages(route, 36, {{14, 9, D::north}, {14, 8, D::east}});
         cave_way(15, 8, D::east);
@@ -6581,6 +6600,10 @@ const std::vector<RouteBeat> &darkness_route()
                 finale.ready_types.emplace_back(37, member);
             }
             finale.reload_event = true;
+            // Gothmenes' last stand, under Bane's bar on magic, beats the
+            // party in most plays: the player reloads that fight until a
+            // play wins, before reloading the whole event.
+            finale.reloads_until_won = 480;
             finale.repeat_until_at_least = std::pair<std::uint16_t, std::uint16_t>{0x16, 75};
             route.push_back(finale);
         }
@@ -9480,6 +9503,23 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
     std::shared_ptr<const opengold::rules::CharacterRules> creation =
         opengold::original::character_rules(opengold::original::default_aging, game);
     std::shared_ptr<opengold::CampaignParty> party;
+    // Pools of Darkness's route plays with no test assistance: its party
+    // brings only what creation gives, walks every step and casts out of
+    // combat only through the game's own camp (cast_in_camp).
+    const bool darkness_route_party = route && game == GoldBoxGame::pools_of_darkness;
+    // A spell cast out of combat, as the player casts it in camp; where the
+    // area bars magic the game refuses it. Pools of Darkness's route casts
+    // through the session; the other routes through the party, as before.
+    const auto cast_in_camp =
+        [&](opengold::MemberId caster, opengold::MemberId target, const std::string &action)
+    {
+        if (darkness_route_party)
+        {
+            session.cast_outside_combat(caster, target, action);
+            return;
+        }
+        party->use_camp_action(caster, target, action);
+    };
     // The walk's party is six fighters; the route's the cluebook's: two
     // paladins, a ranger, two clerics and a magic-user.
     const std::array<std::string, 6> walk_classes{"fighter", "fighter", "fighter",
@@ -9553,7 +9593,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     std::cout << "  " << party->member(caster).character.sheet().name << " casts "
                               << spell->id << " on " << party->member(statue).character.sheet().name
                               << "\n";
-                    party->use_camp_action(caster, statue, spell->id);
+                    cast_in_camp(caster, statue, spell->id);
                     break;
                 }
             }
@@ -9660,7 +9700,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     }
                     try
                     {
-                        party->use_camp_action(cleric, lost, restore->id);
+                        cast_in_camp(cleric, lost, restore->id);
                         break;
                     }
                     catch (const std::exception &)
@@ -9695,7 +9735,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     }
                     try
                     {
-                        party->use_camp_action(cleric, lost, raise->id);
+                        cast_in_camp(cleric, lost, raise->id);
                         break;
                     }
                     catch (const std::exception &)
@@ -9742,7 +9782,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     }
                     try
                     {
-                        party->use_camp_action(healer, fallen, cure->id);
+                        cast_in_camp(healer, fallen, cure->id);
                         break;
                     }
                     catch (const std::exception &)
@@ -9901,7 +9941,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             creator.name(klass + " " + std::to_string(n + 1));
             opengold::test::walk_original_creation(creator, learned_first);
             const auto id = party->add_pc(creator.create_character());
-            if (earned)
+            // Pools of Darkness's route party brings what its creation gives
+            // (200 platinum a member, chargen.pas), as the earned routes do.
+            if (earned || darkness_route_party)
             {
                 party->add_coins(opengold::Coin::gold, creator.starting_gold());
                 party->add_coins(opengold::Coin::platinum, creator.starting_platinum());
@@ -9966,11 +10008,13 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 party->equip(id, party->member(id).character.inventory().items().back().id);
             }
         }
-        if (!earned)
+        if (!earned && !darkness_route_party)
         {
             party->add_coins(opengold::Coin::gold, 5000);
         }
-        if (route && party->rest())
+        // Pools of Darkness's party camps for its first spells in the game
+        // (its route's first beat) instead.
+        if (route && !darkness_route_party && party->rest())
         {
             memorize();
         }
@@ -10738,12 +10782,16 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             {
                 continue;
             }
+            // In the last stand, under Bane's bar, the Minions of Bane's
+            // innate Fire Shield is known from the cluebook ("avoid melee
+            // attacking" them), whatever their sheet shows.
             const auto numbers = opengold::original::Combatant::decode(unit.persistent.resources);
-            if (numbers && std::ranges::any_of(numbers->effects,
-                                               [](const opengold::original::Effect &effect)
-                                               {
-                                                   return effect.code == 343;
-                                               }))
+            if ((magic_barred && unit.name.starts_with("MINION OF BANE")) ||
+                (numbers && std::ranges::any_of(numbers->effects,
+                                                [](const opengold::original::Effect &effect)
+                                                {
+                                                    return effect.code == 343;
+                                                })))
             {
                 shielded.insert(unit.id);
             }
@@ -11046,8 +11094,13 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                                                 unit.conscious &&
                                                                 unit.name == "magic_user 6";
                                                      });
+        // Under Bane's bar a fighter whose way to Gothmenes, the dragons or
+        // the bits of Moander is blocked waits too, rather than strike a
+        // minion's Fire Shield for twice the blow back (the cluebook: avoid
+        // melee attacking the minions), until only minions are left.
         if ((mage_stands && !magic_barred && state.round <= 10) ||
-            (magic_barred && warrior(opengold::original::ClassSlot::magic_user)))
+            (magic_barred && warrior(opengold::original::ClassSlot::magic_user)) ||
+            (magic_barred && foe))
         {
             const auto end =
                 std::ranges::find(commands, std::string("end"), &opengold::rules::Command::verb);
@@ -11942,6 +11995,34 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             {
                 lost += 1'000'000;
             }
+            // Pools of Darkness's player reloads a fight that leaves no
+            // cleric standing: no one could raise the dead before the next
+            // healer (Aeghwaet, in Moander's body). Gothmenes' last stand is
+            // the exception: its win stands every member up again.
+            const bool last_stand =
+                std::ranges::any_of(result.combatants,
+                                    [](const opengold::rules::CombatantView &unit)
+                                    {
+                                        return unit.side == opengold::rules::Side::opposition &&
+                                               unit.name.starts_with("GOTHMENES");
+                                    });
+            if (darkness_route_party && !last_stand)
+            {
+                bool cleric_fought = false, cleric_stands = false;
+                for (const auto &unit : result.combatants)
+                {
+                    if (unit.side == opengold::rules::Side::party &&
+                        unit.name.starts_with("cleric "))
+                    {
+                        cleric_fought = true;
+                        cleric_stands = cleric_stands || (!unit.dead && unit.status != "stoned");
+                    }
+                }
+                if (cleric_fought && !cleric_stands)
+                {
+                    lost += 1'000'000;
+                }
+            }
             return lost;
         };
         // Try t plays seed 7 + t / 3 with tactic t % 3: everyone casting, the
@@ -12593,7 +12674,26 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                             used = true;
                         }
                     }
-                    check(used, "The paladin reads the actually collected protection scroll");
+                    // A play of the finale whose fights left the scroll's
+                    // reader down cannot be won as planned: the player
+                    // reloads the whole event (RouteBeat::reload_event).
+                    const bool reader_down = std::ranges::any_of(
+                        party->state().slots,
+                        [&](opengold::MemberId id)
+                        {
+                            return id && party->member(id).character.sheet().name == "paladin 1" &&
+                                   (party->member(id).vitals.dead ||
+                                    party->member(id).vitals.hit_points <= 0);
+                        });
+                    if (!used && reader_down)
+                    {
+                        std::cout << "  the protection scroll's reader is down; reload the "
+                                     "finale\n";
+                        ++phases["finales reloaded with the scroll's reader down"];
+                        rejected_boss_win = true;
+                    }
+                    check(used || reader_down,
+                          "The paladin reads the actually collected protection scroll");
                 }
                 // OPENGOLD_CURSE_TRACE prints each square's dialogue, to plan a route by.
                 if (trace && shown[s.dialogue] == 0)
@@ -13337,7 +13437,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 }
                 else
                 {
-                    party->use_camp_action(healer, target, action);
+                    cast_in_camp(healer, target, action);
                 }
             };
             for (const auto dead : party->state().slots)
@@ -13943,7 +14043,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 std::cout << "  " << party->member(*caster).character.sheet().name << " casts "
                           << action->id << " on " << party->member(target).character.sheet().name
                           << "\n";
-                party->use_camp_action(*caster, target, action->id);
+                cast_in_camp(*caster, target, action->id);
             }
         };
         try
@@ -13959,9 +14059,10 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     break;
                 }
                 ++beat_number;
-                check(!earned || (beat.test_experience == 0 && beat.test_gold == 0 &&
-                                  !beat.test_heal && !beat.test_wins && beat.test_cells.empty() &&
-                                  !beat.wait_until_minute && !beat.enter_map),
+                check((!earned && !darkness_route_party) ||
+                          (beat.test_experience == 0 && beat.test_gold == 0 && !beat.test_heal &&
+                           !beat.test_wins && beat.test_cells.empty() && !beat.wait_until_minute &&
+                           !beat.enter_map),
                       "Earned progression uses no injected rewards, healing or victories");
                 check(planning || !beat.test_wins,
                       "An ordinary campaign route never forces combat victories");
@@ -14301,6 +14402,49 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                     play(where);
                                 }
                             }
+                            else if (darkness_route_party)
+                            {
+                                // Pools of Darkness's party walks, a step at a
+                                // time, to a beat's square the beats before it
+                                // did not reach (an arrival a square off, a
+                                // corridor that sends it back), passing by
+                                // what it meets, and turns to face its way.
+                                if (session.snapshot().area_id == beat.map)
+                                {
+                                    const auto destination_answers = answers;
+                                    const bool destination_passing = passing;
+                                    answers.clear();
+                                    passing = true;
+                                    walk_earned_campaign(session, x, beat.y,
+                                                         [&]
+                                                         {
+                                                             play(where);
+                                                         });
+                                    answers = destination_answers;
+                                    passing = destination_passing;
+                                }
+                                const auto here = session.snapshot();
+                                if (here.area_id != beat.map || here.pose.x != x ||
+                                    here.pose.y != beat.y)
+                                {
+                                    needs["The party is put on a square it did not walk to"]
+                                        .push_back(current_beat + " from map " +
+                                                   std::to_string(here.area_id) + " " +
+                                                   std::to_string(here.pose.x) + "," +
+                                                   std::to_string(here.pose.y));
+                                    opengold::test::TourAccess::place(session,
+                                                                      {x, beat.y, beat.facing});
+                                }
+                                for (unsigned turns = 0;
+                                     session.snapshot().pose.facing != beat.facing && turns < 4;
+                                     ++turns)
+                                {
+                                    check(session.explore(
+                                              opengold::por::ExplorationCommand::turn_right),
+                                          "The party turns to face its way");
+                                    play(where);
+                                }
+                            }
                             else
                             {
                                 check(!earned, "The earned opening never relocates the party");
@@ -14373,7 +14517,12 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                         (beat.rest_choice && !party_whole()) ||
                         (until && cell(until->first) < until->second) ||
                         (bits && (cell(bits->first) & bits->second) != bits->second);
-                    if (!repeating || session.snapshot().phase == TourPhase::defeated)
+                    // Pools of Darkness's rounds stop once the party has left
+                    // the beat's map: the finale's win takes it to Phlan.
+                    const bool left_the_map = darkness_route_party && !beat.rest_choice &&
+                                              session.snapshot().area_id != beat.map;
+                    if (!repeating || left_the_map ||
+                        session.snapshot().phase == TourPhase::defeated)
                     {
                         break;
                     }
@@ -14467,6 +14616,27 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             std::ofstream file(save, std::ios::binary);
             file << beat_number << '\n'
                  << opengold::encode_campaign(*party, &session, assets, game);
+        }
+        // Pools of Darkness's party saves where the route ends, after the
+        // win: the save reloads and saves again byte for byte.
+        if (darkness_route_party && session.can_leave())
+        {
+            const auto bytes = opengold::encode_campaign(*party, &session, assets, game);
+            auto saved = opengold::decode_campaign(
+                bytes, *creation, *opengold::original::rules_module(content), assets, &session);
+            auto reloaded = std::make_shared<opengold::CampaignParty>(
+                opengold::original::rules_module(content), creation);
+            reloaded->restore(saved.party);
+            if (saved.town)
+            {
+                saved.town->attach_restored_party(reloaded);
+            }
+            if (!saved.town ||
+                opengold::encode_campaign(*reloaded, &*saved.town, assets, game) != bytes)
+            {
+                needs["The route's last save does not reload as it was saved"].push_back(
+                    current_beat);
+            }
         }
 
         // The full route must hear Bane's arrival music. A late checkpoint

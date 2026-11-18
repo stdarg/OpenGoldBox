@@ -371,6 +371,8 @@ if(OPENGOLD_BUILD_TESTS)
         SKIP_REGULAR_EXPRESSION "files are not here")
     # Pools of Darkness's story the same way.
     add_test(NAME opengold_darkness_route COMMAND opengold_gold_box_games_tests --darkness-route)
+    # It plays the whole game, its finale reloaded until Gothmenes falls.
+    set_tests_properties(opengold_darkness_route PROPERTIES TIMEOUT 14400)
     # Gateway to the Savage Frontier's story the same way (plan phase 5, step 4).
     add_test(NAME opengold_gateway_route COMMAND opengold_gold_box_games_tests --gateway-route)
     add_test(NAME opengold_gateway_earned_ending COMMAND opengold_gold_box_games_tests --gateway-earned-ending)

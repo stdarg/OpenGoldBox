@@ -161,6 +161,9 @@ constexpr std::uint8_t vga_wait_key = 0x1D, vga_journal_entry = 0x1F, vga_yes_no
 // coins are words, FIND NPC names a member and the cell for its place, and
 // STORE (3Ch, PROTECTION elsewhere) reads its shop's number.
 constexpr std::uint8_t vga_treasure = 0x27, vga_find_npc = 0x37;
+// AWARD EXPERIENCE, whose amount Pools of Darkness reads as a word (its
+// EclAwardExperience; GetEclVar combines an operand of type 2's two bytes).
+constexpr std::uint8_t award_experience = 0x41;
 
 // Whether a game's EclInit clears this cell, one of the map's own, as each new
 // script starts. The original skips it on the first start after a saved game
@@ -1004,7 +1007,10 @@ void EclMachine::request_host(const EclInstruction &i)
         else
         {
             std::uint16_t number = value(operand);
-            const bool word = vga ? op == vga_treasure && n < 3 : op == 39 && n != 7;
+            const bool darkness_award = program_->game() == GoldBoxGame::pools_of_darkness &&
+                                        op == award_experience && n == 1;
+            const bool word =
+                vga ? (op == vga_treasure && n < 3) || darkness_award : op == 39 && n != 7;
             if (!word)
             {
                 number &= 255;

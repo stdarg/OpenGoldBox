@@ -25,7 +25,7 @@ UI behavior and the current configured model are retained; no delegation.
 | Curse of the Azure Bonds | Fresh Original Rules party earns all three artifacts, equipment, paid advancement and recovery, physically reaches Myth Drannor, defeats Tyranthraxus and shows the actual ending | Optional quests, other party compositions and difficulty settings are not certified by this route |
 | Secret of the Silver Blades | Fresh Original Rules party earns its equipment, advancement and recovery, wins 168 battles and reaches the actual soul-gem ending; all six PCs and Vala are retained and the winning save round-trips byte-identically | Optional quests, other party compositions and difficulty settings are not certified by this route |
 | Gateway to the Savage Frontier | Fresh Original Rules party buys ordinary gear, takes earned magic items, pays for training/recovery, resolves 67 encounters and reaches the actual Ascore ending; the normal post-ending save round-trips byte-identically | Optional quests, other party compositions and difficulty settings are not certified by this route |
-| Pools of Darkness | Fresh whole route and detailed finale replay defeat Gothmenes, reach the ending and restore all six members; zero forced results | Progression assistance and relocations remain |
+| Pools of Darkness | Fresh Original Rules party, as the original's creation makes it (1,500,001 experience, 200 platinum and the starting gear), earns its experience and equipment, walks every step, travels by the area map and Elminster's Limbo, defeats Gothmenes and reaches the ending; no forced results, grants or relocations | Optional quests, other party compositions and difficulty settings are not certified by this route |
 | Treasures of the Savage Frontier | Route reaches the ending and wins its fights | Replace starting experience/money and relocations |
 | Unlimited Adventures | Generated design walks, wins all fights, saves at the stairs, reloads and reaches its actual winning event | Other designs require their own verification |
 
@@ -40,6 +40,13 @@ assisted route completion do not close the gaps above.
   Invulnerability and Mass Invisibility. Both globes were also discarded
   between casting and combat. The regression checks actual action availability,
   self/party targets, consumption and effects in the next combat.
+- Darkness's script experience awards paid a hundredth of the original's,
+  cut to a byte: its AWARD EXPERIENCE counts the amount in hundreds and reads
+  a word operand whole (`eclvm.pas`, `eclmenu.pas`). Thorne's fall gave each
+  member 232 instead of 100,000. The regression checks a byte award (25,000)
+  and a word award (50,000) in Vala's cave; it failed before the correction.
+  Secret is unchanged; Treasures' original scales the same way and is left
+  to its own work. See [darkness.md](games/darkness.md).
 - Darkness palace script 65 clears random index 9Eh instead of used-group mask
   A9h after exhausting its eight wandering groups, looping forever at 8B6Bh.
   A guarded operand override clears A9h without modifying original bytes or the
@@ -1771,3 +1778,50 @@ checks and the 2m15 fresh proof ran concurrently, with save/scope verification
 through 16:49. One full earned campaign is completed by this batch. Treasure,
 Darkness, Krynn, Buck Rogers, installed UA design coverage and subsequent
 winning-character availability remain unfinished.
+
+## 2026-11-18: Pools of Darkness without test assistance
+
+The Darkness route (`opengold_darkness_route`) now plays the whole game with
+no test assistance. Removed: five experience grants (300,000 to 500,000 a
+member at Limbo and Zhentil Keep's hall), the 5,000 gold the test gave the
+party, the rest outside the game before the first beat, and every relocation
+(a beat put the party on its square; at least 32 moved it, some past a NO that
+had held a step back). The party is made as Darkness's creation makes it
+(1,500,001 experience, 200 platinum, the starting gear, Modify's scores),
+camps in New Phlan for its first spells, walks every square, and casts out of
+combat through the game's camp, which refuses where a script bars magic. The
+route now fails if a beat would put the party on a square it did not walk to,
+or carries any grant, forced win, set cell or direct entry.
+
+The grants had hidden an engine fault: Darkness's AWARD EXPERIENCE is counted
+in hundreds and reads a word amount whole (see Corrections). With the
+scripts' real awards and training's one-level cap, the party reaches each
+hall at the levels the grants had given it (13 to 15 after the Aerie, 19 to
+22 at the end).
+
+Replanned by play, as the planning aid finds the ways: the Descent's ladders
+and the drow wagon (GO ON? YES; the ladders are drawn up behind the party,
+which leaves by the stronghold's upper halls), the iron golem's room (the
+party fights the golem), Myth Drannor's narrow passage and the Cave of the
+Beholder's labyrinth door. The player also reloads a fight that leaves no
+cleric standing (Kalistes' egg room had kept one that killed both), reloads
+the finale when its fights left the protection scroll's reader down, and
+replays Gothmenes' last stand up to 600 times a play of the event. In the
+last stand it now treats the Minions of Bane as shielded, as the cluebook
+warns, and waits rather than strike their Fire Shields: none of 2,520 plays
+from one save won before, the first now wins at play 257.
+
+The route also saves where it ends, after the win, and checks that the save
+reloads and saves again byte for byte. Its whole run is deterministic: a run
+resumed from any of its saves (`OPENGOLD_ROUTE_SAVES`, `OPENGOLD_ROUTE_RESUME`)
+plays on exactly as the fresh run does. The route test's timeout is now 14,400
+seconds, as its finale may reload.
+
+Verification (macOS, 2026-11-18, `OPENGOLD_GAME_DIR=/Users/edmond/POOLRAD`,
+`OPENGOLD_GOLDBOX_DIR=/Users/edmond/GoldBox`): the native suite in `build/`
+passes 173 of 173 (`ctest -j4`, 1,864 seconds), the fresh Darkness route in
+1,070.5 seconds; the game suite in `build/macos-universal` passes 353 of 353
+(`ctest -j3`, 2,407 seconds), its Darkness route in 1,052.4 seconds. No test
+was skipped. Localization validates 4,143 messages; the catalogs are
+unchanged. Upstream's Gateway barrier refresh (`3e508ab2`) did not build
+with clang's `-Wshorten-64-to-32`; its side parameter is now a `std::size_t`.

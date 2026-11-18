@@ -4659,7 +4659,9 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     {
         // AWARD EXPERIENCE (Secret, eclvm EclAwardExperience): the second
         // operand to every member, or with a first of 0 to the selected
-        // character alone, each share divided among its classes.
+        // character alone, each share divided among its classes. Pools of
+        // Darkness counts the operand in hundreds (its EclAwardExperience
+        // multiplies it by 100): Thorne's fall is worth 100,000 a member.
         const bool whole_party = arg(0) != 0;
         MemberId only{};
         if (!whole_party)
@@ -4667,7 +4669,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             read_character();
             only = campaign_->state().slots.at(selected_character_.index);
         }
-        campaign_->grant_script_experience(arg(1), only);
+        const unsigned award_unit = game() == GoldBoxGame::pools_of_darkness ? 100 : 1;
+        campaign_->grant_script_experience(arg(1) * award_unit, only);
         const auto line = whole_party || !only ? std::string("The party gains experience.")
                                                : campaign_->member(only).character.sheet().name +
                                                      " gains experience.";

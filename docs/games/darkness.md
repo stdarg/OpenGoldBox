@@ -860,8 +860,7 @@ by what it is offered:
   it reels as the tower falls, the party leaps aboard, and the ichor ebbs
   into a Pool of Darkness and Limbo, where Shal leaves.
 - **Limbo and Moander (2026-11-15).** Elminster's camp rests the party and
-  it trains (500,000 test experience a member, a stand-in for the tower's
-  wandering mages, cultists and bits of Moander); MOVE ON, MOANDER, and
+  it trains on the experience it earned; MOVE ON, MOANDER, and
   the party arrives in the depression on Moander's body (map 52, script
   52, 7,10). It climbs out by the footholds north of 7,9 (YES; the event
   asks only with a wall ahead), onto the body (script 51), and declines to
@@ -1121,18 +1120,14 @@ original registers their handlers but never runs them, so off (the
 default, which the route plays) they do nothing, and on they work as the
 handlers describe (CONFIGURATION.md, `[darkness_gazes]`; DEVIATIONS.md).
 
-The route walks straight to its goals, where a player meets the wandering
-monsters of every area (the cluebook names them for each) and, in the Web
-Dimension, gains "as much experience as you can" before Kalistes. So the
-test gives each member experience at the training points a player would
-come to stronger, a stand-in for those fights (2026-11-15): 300,000 in
-Limbo after the Aerie, 300,000 at Zhentil Keep's hall, 400,000 in
-Limbo before the Web Dimension and 500,000 at Zhentil Keep's hall again on
-the way out to Myth Drannor (the Web Dimension's paths and the Descent),
-and the party trains up to two levels a
-visit (each class's award stops short of the level after next, as
-training keeps it). It reaches Kalistes at levels 15 to 18 (the
-magic-user 17, with eighth-level spells).
+From 2026-11-15 to 2026-11-18 the test gave each member experience at the
+training points (300,000 in Limbo after the Aerie, 300,000 at Zhentil
+Keep's hall, 400,000 before the Web Dimension, 500,000 at the hall again
+and 500,000 before Moander), a stand-in for wandering monsters the route
+does not meet. The real shortfall was the engine's: it paid the scripts'
+experience awards a hundredth of what the original pays (Played with no
+test assistance, below). The grants are gone; the party trains on what it
+earns.
 
 The route's dice (2026-11-15, late): each beat plays with dice of its own,
 seeded from where it plays, what it answers and how many like it came
@@ -1576,6 +1571,74 @@ fights are its own: Kalistes is won in about a play in four, never with no
 one lost, so the player reloads her fight until a play wins
 (`reloads_until_won`), and the member lost is raised after it. The route has
 no stand-in here.
+
+### Played with no test assistance (2026-11-18)
+
+The route now plays the whole game the way a player can, to the standard of
+[PLAYABILITY.md](../PLAYABILITY.md) ("Acceptance and scope"). What the test
+used to do for the party, and what the party does now:
+
+- **Experience.** Five grants of 300,000 to 500,000 a member (Limbo after
+  the Aerie, Zhentil Keep's hall twice, Limbo before the Web Dimension and
+  before Moander) are gone. The party trains on what it earns.
+- **Money.** The test gave the party 5,000 gold. Now each member brings what
+  Darkness's creation gives: 200 platinum (`chargen.pas`) and the game's
+  starting gear. New characters start with 1,500,001
+  experience (750,000 or 500,000 a class for a multi-class one), which is
+  the original's own creation, not a grant.
+- **First spells.** The test rested the new party outside the game before
+  its first beat. Now it camps in New Phlan's park, after Rolf's tour.
+- **Movement.** Each beat used to put the party on its square. Where the
+  beats before it had left the party elsewhere (an arrival a square off,
+  a step held back by a NO, the Tantalus Clock's and the heart's pacing,
+  the Fire Giant Cave's corridor) that was a jump. Now the party walks
+  there a step at a time, turning to face its way, and the route fails if
+  a beat would put the party anywhere it did not walk. The jumps that hid
+  a wrong answer are answered as a player answers: the drow wagon, the
+  Descent's three ladders down, the narrow passage in Myth Drannor and
+  the door into the Cave of the Beholder's labyrinth (GO ON?/CONTINUE?
+  YES), and the iron golem's room in the slave pens
+  (YES: the party fights the golem, having no medallion). The ladders the
+  party comes down are drawn up behind it, so it leaves the Descent by
+  the stronghold's upper halls (the planning aid's way) instead of
+  climbing back. The second visit to Zhentil Keep's hall no longer starts
+  a square inside the hall.
+- **Spells out of combat.** The route's cures, raisings, restorations,
+  Stone to Flesh and wards are cast through the game's camp
+  (`RolfTourSession::cast_outside_combat`), which refuses where a script
+  bars magic, instead of straight on the party.
+- **Fights.** None is won by the test; the player reloads a fight (each
+  try is a reload with new dice) as before. It also reloads a play that
+  leaves no cleric standing, as no one could raise the dead before
+  Aeghwaet in Moander's body: Kalistes' egg room otherwise kept a play
+  that killed both clerics (Gothmenes' last stand excepted, whose win
+  stands everyone up). In the finale it reloads the whole event when the
+  fights before the last stand left the protection scroll's reader down,
+  and replays the last stand up to 600 times before that.
+- **Gothmenes' last stand.** Under Bane's bar on magic the route's player
+  treats the Minions of Bane as shielded (the cluebook: avoid melee
+  attacking them; their sheets do not show the innate Fire Shield, so the
+  player's plan for shielded foes had never run), shoots them with what
+  missiles it carries, and a fighter with no other foe in reach waits
+  rather than strike a minion for twice the blow back. Before, the
+  computer's Quick play took those turns and struck the shields: none of
+  2,520 plays from one save won; now the first won is play 257.
+
+The experience grants stood in for a shortfall that was the engine's own.
+Darkness's AWARD EXPERIENCE counts its amount in hundreds (`eclvm.pas`,
+`EclAwardExperience`), and the amount is a word when its operand is of
+type 2 (`eclmenu.pas`, `GetEclVar`). OpenGoldBox paid the amount itself,
+cut to a byte: Thorne's fall (ECL1:34 0x923A, a word of 1,000) gave each
+member 232 where the original gives 100,000. *Secret*'s award is the
+amount itself, as before. Both are fixed (`phlan_session.cpp`, `ecl_machine.cpp`), with a check in
+`opengold_darkness_tests` (the Worldstone's 250 gives 25,000; Vala's
+welcome, a word of 500, gives 50,000). *Treasures*' `EclAwardExperience`
+multiplies by 100 the same way; it is left for that game's own work.
+
+Training keeps at most one level's worth past the level trained, as the
+original's (`chargen.pas`, TrainingMenu's experience cap), so the party
+reaches each hall about where the grants had put it: after Limbo at levels
+13 to 15, as before.
 
 ### Creatures
 

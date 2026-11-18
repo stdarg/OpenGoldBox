@@ -823,6 +823,108 @@ void the_finale_stands_the_fallen_up()
     }
 }
 
+// The experience a member of a fresh two-fighter party gains from the award
+// in Vala's cave (script 37) that a step from `pose` leads to: the first
+// choice taken at each question, its fights won by the test, the gain counted
+// from the last stop before the award.
+unsigned award_in_valas_cave(const std::filesystem::path &folder, opengold::por::PartyPose pose)
+{
+    auto [session, content, party] = darkness_party(folder, {"fighter", "fighter"});
+    const auto first = party->state().slots[0];
+    opengold::test::TourAccess::enter_script(session, 37, 37, pose);
+    for (int step = 0; step < 50 && !session.can_leave(); ++step)
+    {
+        const auto &snapshot = session.snapshot();
+        if (snapshot.phase == TourPhase::running)
+        {
+            session.advance(1.0);
+            continue;
+        }
+        check(snapshot.phase == TourPhase::awaiting_continue &&
+                  session.choose(snapshot.continue_ticket, 0),
+              "The cave's entry only tells");
+    }
+    check(session.explore(ExplorationCommand::forward), "The party steps on");
+    auto experience_before = party->member(first).experience;
+    for (int step = 0; step < 500; ++step)
+    {
+        const auto &snapshot = session.snapshot();
+        if (snapshot.phase == TourPhase::running)
+        {
+            session.advance(1.0);
+        }
+        else if (snapshot.phase == TourPhase::awaiting_continue)
+        {
+            if (snapshot.dialogue.find("The party gains experience.") != std::string::npos)
+            {
+                return party->member(first).experience - experience_before;
+            }
+            experience_before = party->member(first).experience;
+            check(session.choose(snapshot.continue_ticket, 0), "The party answers");
+        }
+        else if (snapshot.phase == TourPhase::combat)
+        {
+            if (session.monster_picture())
+            {
+                check(session.start_encounter(), "The fight begins");
+                continue;
+            }
+            auto result = [&]
+            {
+                opengold::CombatDemo won(opengold::original::rules_module(content));
+                won.campaign_party(party);
+                won.encounter(*session.pending_encounter(), 7);
+                return won.combat().snapshot();
+            }();
+            result.outcome = opengold::rules::Outcome::victory;
+            for (auto &unit : result.combatants)
+            {
+                if (unit.side == opengold::rules::Side::opposition)
+                {
+                    unit.dead = true;
+                    unit.conscious = false;
+                    unit.hit_points = 0;
+                    unit.status = "dead";
+                }
+            }
+            check(session.resolve_combat(result), "The test wins the fight");
+            experience_before = party->member(first).experience;
+        }
+        else if (snapshot.phase == TourPhase::treasure)
+        {
+            check(session.leave_treasure(snapshot.continue_ticket), "The party leaves the pile");
+            experience_before = party->member(first).experience;
+        }
+        else
+        {
+            break;
+        }
+    }
+    check(false, "The step leads to an award");
+    return 0;
+}
+
+// Pools of Darkness's AWARD EXPERIENCE counts its operand in hundreds and
+// reads a word operand whole (eclvm.pas, EclAwardExperience; eclmenu.pas,
+// GetEclVar): the Worldstone, taken once its hill giants fall (ECL1:37
+// 0x886F, a byte of 250), gives each single-class member 25,000, and Vala's
+// welcome to her fellow Blades (0x866C, a word of 500) 50,000. Secret's
+// award is the operand itself.
+void script_awards_count_in_hundreds()
+{
+    const auto folder = darkness_folder();
+    if (folder.empty())
+    {
+        std::cout << "Pools of Darkness's files are not here; no award is counted.\n";
+        return;
+    }
+    using opengold::por::MapDirection;
+    check(award_in_valas_cave(folder, {9, 1, MapDirection::north}) == 25'000,
+          "The Worldstone's award of 250 gives each member 25,000");
+    check(award_in_valas_cave(folder, {2, 7, MapDirection::north}) == 50'000,
+          "Vala's award of 500, a word, gives each member 50,000");
+}
+
 int main()
 {
     try
@@ -837,6 +939,7 @@ int main()
         a_secret_character_comes_across();
         magic_is_barred_in_camp_where_a_script_bars_it();
         the_finale_stands_the_fallen_up();
+        script_awards_count_in_hundreds();
         std::cout << "Pools of Darkness passed.\n";
     }
     catch (const std::exception &error)
