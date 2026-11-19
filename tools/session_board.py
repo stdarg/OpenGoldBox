@@ -28,6 +28,10 @@ open GitHub issue with the label `message`, and each message is a comment on
 it; closing the conversation closes the issue. A session is addressed by its
 claim's issue number or its name; the user can read and join on GitHub.
 
+A Claude session is known by its session id and its worktree, so each of its
+agents, in a worktree of its own, claims and talks on its own. A finished
+worktree's claim and messages fall to its session.
+
     tools/session_board.py send --to 287 "May I take GoldBoxGame ID 10?"
     tools/session_board.py reply 301 "Yes; 9 stays mine."
     tools/session_board.py inbox                   (unread messages, then the open conversations)
@@ -105,14 +109,42 @@ def board_folder(cwd=None):
 
 
 def own_id(explicit=None, worktree=""):
-    """A Claude session is known by its session id; anything else by its
-    machine and the worktree it works in."""
+    """Who is asking: a Claude session by its session id and the worktree it
+    works in, since its agents share its session id and each works in a
+    worktree of its own; anything else by its machine and worktree."""
     if explicit:
         return explicit
+    folder = last_part(worktree or git("rev-parse", "--show-toplevel") or os.getcwd())
     if os.environ.get("CLAUDE_CODE_SESSION_ID"):
-        return os.environ["CLAUDE_CODE_SESSION_ID"]
-    folder = Path(worktree or git("rev-parse", "--show-toplevel") or os.getcwd()).name
+        return f"{os.environ['CLAUDE_CODE_SESSION_ID']}@{folder}"
     return f"worktree-{platform.node()}-{folder}"
+
+
+def hook_id(session_id, cwd):
+    """The id own_id gives the session's commands in the worktree the hook runs in."""
+    return f"{session_id}@{last_part(git('rev-parse', '--show-toplevel', cwd=cwd) or cwd or os.getcwd())}"
+
+
+def left_behind(identity, records):
+    """The other ids of this Claude session whose worktree is gone: a finished
+    agent's, or one from before ids named the worktree. Its claims and
+    messages fall to the session."""
+    if "@" not in identity:
+        return []
+    session = identity.split("@", 1)[0]
+    found = []
+    for record in records:
+        other = record["id"]
+        worktree = record.get("worktree")
+        if other == session:
+            # From before ids named the worktree: any of the session's agents'.
+            gone = not worktree or not Path(worktree).exists()
+        else:
+            gone = other.startswith(session + "@") and other != identity \
+                and bool(worktree) and not Path(worktree).exists()
+        if gone and other not in found:
+            found.append(other)
+    return found
 
 
 def safe_name(session_id):
@@ -145,7 +177,12 @@ def save_json(path, value):
 # The claim's issue
 
 def claim_title(claim):
-    return f"Claim: {claim['task']} ({claim.get('name') or claim['id'][:8]})"
+    return f"Claim: {claim['task']} ({claim.get('name') or short_id(claim['id'])})"
+
+
+def short_id(session_id):
+    """A session id's start, for people: a Claude id's worktree part is shown elsewhere."""
+    return session_id.split("@", 1)[0][:8]
 
 
 def claim_body(claim):
@@ -348,11 +385,12 @@ def session_label(session_id, claim=None):
 def this_session(args, claims):
     session_id = own_id(args.id)
     claim = next((c for c in claims if c["id"] == session_id), None)
+    worktree = git("rev-parse", "--show-toplevel") or os.getcwd()
     if claim:
-        return {"id": session_id, "label": session_label(session_id, claim)}
+        return {"id": session_id, "label": session_label(session_id, claim), "worktree": worktree}
     agent = args.agent or ("claude" if os.environ.get("CLAUDE_CODE_SESSION_ID") else "other")
-    folder = last_part(git("rev-parse", "--show-toplevel") or os.getcwd())
-    return {"id": session_id, "label": f"{agent} on {platform.node()}, {folder}"}
+    return {"id": session_id, "label": f"{agent} on {platform.node()}, {last_part(worktree)}",
+            "worktree": worktree}
 
 
 def find_session(text, claims):
@@ -362,7 +400,8 @@ def find_session(text, claims):
     for claim in claims:
         if (wanted.isdigit() and claim.get("number") == int(wanted)) \
                 or wanted.lower() in ((claim.get("name") or "").lower(), claim["id"].lower()):
-            return {"id": claim["id"], "label": session_label(claim["id"], claim)}
+            return {"id": claim["id"], "label": session_label(claim["id"], claim),
+                    "worktree": claim.get("worktree", "")}
     if wanted.isdigit() or " " in wanted:
         raise SystemExit(f"No session on the board is {text}; tools/session_board.py list shows them.")
     return {"id": wanted, "label": wanted}
@@ -448,12 +487,21 @@ def read_path(folder, session_id):
     return folder / (".read-" + safe_name(session_id))
 
 
-def unread_messages(conversations, session_id, folder):
-    """(conversation, message) pairs this session has not yet seen."""
-    seen = set((load_json(read_path(folder, session_id)) or {}).get("read", []))
-    return [(conversation, message) for conversation in conversations if takes_part(conversation, session_id)
+def readers(identity, conversations):
+    """Whose messages this session reads: its own, and those of its ids left behind."""
+    participants = [p for conversation in conversations for p in conversation["participants"]]
+    return [identity] + left_behind(identity, participants)
+
+
+def unread_messages(conversations, reader_ids, folder):
+    """(conversation, message) pairs that none of reader_ids has seen."""
+    seen = set()
+    for reader in reader_ids:
+        seen |= set((load_json(read_path(folder, reader)) or {}).get("read", []))
+    return [(conversation, message) for conversation in conversations
+            if any(takes_part(conversation, reader) for reader in reader_ids)
             for message in conversation["messages"]
-            if message["from"] != session_id and message["id"] not in seen]
+            if message["from"] not in reader_ids and message["id"] not in seen]
 
 
 def mark_read(folder, session_id, conversations, messages):
@@ -522,7 +570,7 @@ def idle_text(seconds):
 def describe(claim, now=None):
     now = now or time.time()
     idle = now - claim.get("updated", now)
-    who = claim.get("name") or claim["id"][:8]
+    who = claim.get("name") or short_id(claim["id"])
     where = last_part(claim.get("worktree", ""))
     if claim.get("branch"):
         where += " @ " + claim["branch"]
@@ -566,7 +614,7 @@ def overlap_warnings(mine, claims):
             continue
         shared = overlaps(mine, other)
         if shared:
-            who = other.get("name") or other["id"][:8]
+            who = other.get("name") or short_id(other["id"])
             warnings.append(f"WARNING: overlaps {who} ({other.get('task', '?')}): " + "; ".join(shared)
                             + ". Message that session or ask the user before going on.")
     return warnings
@@ -583,7 +631,8 @@ def board_text(claims, exclude=None, now=None):
 
 def claim_command(args):
     folder = board_folder()
-    worktree = str(Path(args.worktree).resolve()) if args.worktree else git("rev-parse", "--show-toplevel")
+    worktree = str(Path(args.worktree).resolve()) if args.worktree \
+        else git("rev-parse", "--show-toplevel") or os.getcwd()
     session_id = own_id(args.id, worktree)
     claims, note = read_claims(folder)
     if note:
@@ -660,8 +709,10 @@ def list_command(args):
         print("Session board: no claims.")
         return
     mine = own_id(args.id)
+    left = left_behind(mine, claims)
     for claim in claims:
-        print(describe(claim) + ("  <- this session" if claim["id"] == mine else ""))
+        print(describe(claim) + ("  <- this session" if claim["id"] == mine else "")
+              + ("  <- left by this session's finished worktree" if claim["id"] in left else ""))
 
 
 def hook_command(_args):
@@ -673,7 +724,7 @@ def hook_command(_args):
         folder = board_folder(cwd)
         if not folder:
             return
-        session_id = event.get("session_id") or own_id()
+        session_id = hook_id(event["session_id"], cwd) if event.get("session_id") else own_id()
         claims, note = read_claims(folder, cwd, fresh=False)
         mine = next((c for c in claims if c["id"] == session_id), None)
         if mine and not mine.get("pending") and time.time() - mine.get("updated", 0) > HEARTBEAT_SECONDS:
@@ -693,13 +744,18 @@ def hook_command(_args):
             print(board_text(claims, session_id))
             for warning in overlap_warnings(mine, claims) if mine else []:
                 print(warning)
+            for claim in claims:
+                if claim["id"] in left_behind(session_id, claims):
+                    print(f"Claim #{claim['number']} ({claim.get('task', '?')}) was left open by this session's "
+                          f"finished worktree {last_part(claim.get('worktree', ''))}; release it with "
+                          f"tools/session_board.py release --claim {claim['number']} once its work is pushed.")
             folder.mkdir(parents=True, exist_ok=True)
             seen.write_text(signature, encoding="utf-8")
         if not mine:
-            print("This session has no claim on the session board. Before starting work, run "
-                  "tools/session_board.py claim --task ... --areas ... from its worktree (CLAUDE.md §9).")
+            print("This session has no claim on the session board for this worktree. Before starting work, "
+                  "run tools/session_board.py claim --task ... --areas ... from its worktree (CLAUDE.md §9).")
         conversations = read_conversations(folder, cwd, fresh=False)
-        unread = unread_messages(conversations, session_id, folder)
+        unread = unread_messages(conversations, readers(session_id, conversations), folder)
         if unread:
             print(unread_text(unread))
             mark_read(folder, session_id, conversations, [message for _, message in unread])
@@ -783,14 +839,15 @@ def inbox_command(args):
         show_conversation(conversation)
         mark_read(folder, session_id, conversations, conversation["messages"])
         return
-    unread = unread_messages(conversations, session_id, folder)
+    reader_ids = readers(session_id, conversations)
+    unread = unread_messages(conversations, reader_ids, folder)
     print(unread_text(unread) if unread else "No new messages.")
     mark_read(folder, session_id, conversations, [message for _, message in unread])
-    mine = [c for c in conversations if takes_part(c, session_id)]
+    mine = [c for c in conversations if any(takes_part(c, reader) for reader in reader_ids)]
     if mine:
         print("Open conversations:")
     for conversation in mine:
-        others = [p["label"] for p in conversation["participants"] if p["id"] != session_id]
+        others = [p["label"] for p in conversation["participants"] if p["id"] not in reader_ids]
         print(f"- #{conversation['number']} \"{conversation['subject']}\" with {', '.join(others)}, "
               f"last message {when_text(last_activity(conversation))}")
 
@@ -810,7 +867,7 @@ def wait_command(args):
     deadline = time.time() + duration_seconds(args.timeout)
     while True:
         conversations = read_conversations(folder)
-        unread = [(c, m) for c, m in unread_messages(conversations, session_id, folder)
+        unread = [(c, m) for c, m in unread_messages(conversations, readers(session_id, conversations), folder)
                   if not args.conversation or c["number"] == int(str(args.conversation).lstrip("#"))]
         if unread:
             print(unread_text(unread))

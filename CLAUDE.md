@@ -121,6 +121,12 @@ The tool needs the GitHub CLI logged in (`gh auth login`).
   your ListAgents name so others can message you:
   `tools/session_board.py claim --name opengold-08 --task "Wand traps" --issue 4 --areas "src/OpenGold.Core/src/phlan_session.cpp, Kovel Mansion" --versions "campaign format"`
   This opens the claim's own issue, even when the work has an issue of its own.
+- The board knows a Claude session by its session id and its worktree. Agents
+  share their session's id, so each agent, in its own worktree, holds its own
+  claims and receives its own messages. Agents get no hooks: like Codex, an
+  agent runs `inbox` at each step of its work. When a worktree is removed, its
+  open claim and unread messages fall to the session that made it, and the
+  hook shows them.
 - Update the claim with `update` when the work spreads to new areas, and claim
   a shared number before raising it. A new `claim` closes your old claim's
   issue and opens a new one.

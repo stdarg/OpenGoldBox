@@ -32,7 +32,9 @@ class SessionBoardTests(unittest.TestCase):
         path.mkdir(exist_ok=True)
         return str(path)
 
-    def run_board(self, session, *args, stdin=""):
+    def run_board(self, session, *args, stdin="", cwd=None):
+        """Runs the tool as `session` (a Claude session id) would from cwd,
+        by default the test's folder."""
         environment = dict(os.environ, OPENGOLD_SESSION_BOARD=str(self.board), OPENGOLD_GH=str(FAKE_GH),
                            FAKE_GH_STATE=str(self.github), OPENGOLD_MESSAGE_POLL="0.1")
         environment.pop("CLAUDE_CODE_SESSION_ID", None)
@@ -42,12 +44,12 @@ class SessionBoardTests(unittest.TestCase):
         if session:
             environment["CLAUDE_CODE_SESSION_ID"] = session
         result = subprocess.run([sys.executable, str(SCRIPT), *args], input=stdin, env=environment,
-                                capture_output=True, text=True)
+                                capture_output=True, text=True, cwd=cwd or self.folder.name)
         return result.returncode, result.stdout + result.stderr
 
-    def hook(self, session, event):
+    def hook(self, session, event, cwd=None):
         return self.run_board(None, "hook", stdin=json.dumps(
-            {"session_id": session, "hook_event_name": event, "cwd": self.folder.name}))[1]
+            {"session_id": session, "hook_event_name": event, "cwd": cwd or self.folder.name}))[1]
 
     def state(self):
         return json.loads(self.github.read_text()) if self.github.exists() else {"issues": [], "calls": []}
@@ -205,7 +207,7 @@ class SessionBoardTests(unittest.TestCase):
         state = self.state()
         other = dict(self.issues()[0], number=99, title="Claim: Far work")
         other["body"] = other["body"].replace('"task": "Traps"', '"task": "Far work"').replace(
-            '"id": "first"', '"id": "far"')
+            '"id": "first@', '"id": "far@')
         state["issues"].append(other)
         self.github.write_text(json.dumps(state))
         calls = len(self.state()["calls"])
@@ -363,6 +365,53 @@ class SessionBoardTests(unittest.TestCase):
         self.assertIn("GitHub unreachable", output)
         self.offline = False
         self.assertEqual(self.conversations(), [])
+
+    def test_agents_of_one_session_hold_their_own_claims_and_inboxes(self):
+        # A Claude session's agents share its session id; each works in its own worktree.
+        art, rules = self.worktree("agent-art"), self.worktree("agent-rules")
+        self.run_board("first", "claim", "--task", "Combat art", cwd=art)
+        self.run_board("first", "claim", "--task", "Rules", cwd=rules)
+        self.assertEqual(sorted(self.stored(i)["task"] for i in self.issues()), ["Combat art", "Rules"])
+        _, listing = self.run_board("first", "list", cwd=art)
+        self.assertIn("Combat art  <- this session", listing)
+        self.assertNotIn("Rules  <- this session", listing)
+        self.run_board("second", "send", "--to", "1", "Art question")
+        self.assertIn("Art question", self.run_board("first", "inbox", cwd=art)[1])
+        self.assertNotIn("Art question", self.run_board("first", "inbox", cwd=rules)[1])
+        self.assertNotIn("Art question", self.hook("first", "UserPromptSubmit"))
+        self.run_board("first", "send", "--to", "2", "Rules question", cwd=art)
+        self.assertIn("Rules question", self.run_board("first", "inbox", cwd=rules)[1])
+        self.run_board("first", "release", cwd=art)
+        self.assertEqual([self.stored(i)["task"] for i in self.issues()], ["Rules"])
+
+    def test_a_finished_worktrees_claim_and_messages_fall_to_the_session(self):
+        art = self.worktree("agent-art")
+        self.run_board("first", "claim", "--task", "Combat art", cwd=art)
+        self.run_board("second", "send", "--to", "1", "Is the art pushed?")
+        Path(art).rmdir()
+        prompt = self.hook("first", "UserPromptSubmit")
+        self.assertIn("Is the art pushed?", prompt)
+        self.assertIn("Claim #1 (Combat art) was left open by this session's finished worktree agent-art", prompt)
+        self.assertIn("left by this session's finished worktree", self.run_board("first", "list")[1])
+        _, inbox = self.run_board("first", "inbox")
+        self.assertIn("No new messages.", inbox)
+        self.assertIn('#2 "Is the art pushed?" with claude on', inbox)
+        self.assertNotIn("Combat art", self.hook("third", "UserPromptSubmit").split("other sessions' claims")[0])
+
+    def test_claims_made_before_ids_named_the_worktree_still_work(self):
+        art = self.worktree("agent-art")
+        self.run_board("first", "claim", "--task", "Old style", cwd=art)
+        state = self.state()
+        issue = state["issues"][0]
+        issue["body"] = issue["body"].replace('"id": "first@agent-art"', '"id": "first"')
+        self.github.write_text(json.dumps(state))
+        _, listing = self.run_board("first", "list")
+        self.assertIn("Old style", listing)
+        self.assertNotIn("left by this session's finished worktree", listing)
+        Path(art).rmdir()
+        self.assertIn("left by this session's finished worktree", self.run_board("first", "list")[1])
+        self.assertEqual(self.run_board("first", "release", "--claim", "1")[0], 0)
+        self.assertEqual(self.issues(), [])
 
     def test_hook_never_fails_a_prompt(self):
         code, output = self.run_board(None, "hook", stdin="not json")
