@@ -158,7 +158,12 @@ func run_checks() -> void:
 	await settle()
 	var picker := window("GamePicker")
 	if not require(picker.visible and not main.visible, "Pick game opens the games"): return
-	if not require(labels(picker.get_node("Buttons")) == ["Pool of Radiance", "Curse of the Azure Bonds", "Champions of Krynn", "Secret of the Silver Blades", "Death Knights of Krynn", "Gateway to the Savage Frontier", "Pools of Darkness", "Treasures of the Savage Frontier", "Unlimited Adventures", "Back"], "The games: " + str(labels(picker.get_node("Buttons")))): return
+	if not require(labels(picker.get_node("Buttons")) == ["Pool of Radiance", "Curse of the Azure Bonds", "Champions of Krynn", "Secret of the Silver Blades", "Buck Rogers: Countdown to Doomsday", "Death Knights of Krynn", "Gateway to the Savage Frontier", "Pools of Darkness", "Buck Rogers: Matrix Cubed", "Treasures of the Savage Frontier", "Unlimited Adventures", "Back"], "The games: " + str(labels(picker.get_node("Buttons")))): return
+	# The Buck Rogers games are listed but wait until they play.
+	var waiting := []
+	for button in picker.get_node("Buttons/Games").get_children():
+		if button.disabled: waiting.append(String(button.name))
+	if not require(waiting == ["buck-rogers-countdown-to-doomsday", "buck-rogers-matrix-cubed"], "The games not playable yet: " + str(waiting)): return
 	await capture("pick-game.png")
 	await escape_in(picker)
 	if not require(main.visible and not picker.visible, "Escape goes back from the games to the main menu"): return

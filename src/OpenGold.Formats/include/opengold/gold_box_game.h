@@ -3,6 +3,7 @@
 
 #include <array>
 #include <cstdint>
+#include <optional>
 #include <string_view>
 #include <vector>
 
@@ -10,6 +11,8 @@ namespace opengold
 {
 
 // Stable campaign-save IDs. Append new games without renumbering old ones.
+// The numbers need not be contiguous: 9 is kept for The Dark Queen of Krynn,
+// which another session adds after Death Knights (docs/BUCK-ROGERS.md, B0).
 enum class GoldBoxGame : std::uint8_t
 {
     pool_of_radiance,
@@ -20,10 +23,12 @@ enum class GoldBoxGame : std::uint8_t
     treasures_of_the_savage_frontier,
     unlimited_adventures,
     champions_of_krynn,
-    death_knights_of_krynn
+    death_knights_of_krynn,
+    countdown_to_doomsday = 10,
+    matrix_cubed = 11
 };
 
-inline constexpr std::array<GoldBoxGame, 9> gold_box_games{
+inline constexpr std::array<GoldBoxGame, 11> gold_box_games{
     GoldBoxGame::pool_of_radiance,
     GoldBoxGame::curse_of_the_azure_bonds,
     GoldBoxGame::secret_of_the_silver_blades,
@@ -32,7 +37,22 @@ inline constexpr std::array<GoldBoxGame, 9> gold_box_games{
     GoldBoxGame::treasures_of_the_savage_frontier,
     GoldBoxGame::unlimited_adventures,
     GoldBoxGame::champions_of_krynn,
-    GoldBoxGame::death_knights_of_krynn};
+    GoldBoxGame::death_knights_of_krynn,
+    GoldBoxGame::countdown_to_doomsday,
+    GoldBoxGame::matrix_cubed};
+
+// The game a save's number names, or none for a number no game has.
+[[nodiscard]] constexpr std::optional<GoldBoxGame> game_numbered(unsigned number) noexcept
+{
+    for (const auto game : gold_box_games)
+    {
+        if (static_cast<unsigned>(game) == number)
+        {
+            return game;
+        }
+    }
+    return std::nullopt;
+}
 
 [[nodiscard]] constexpr std::string_view game_title(GoldBoxGame game) noexcept
 {
@@ -56,6 +76,10 @@ inline constexpr std::array<GoldBoxGame, 9> gold_box_games{
         return "Champions of Krynn";
     case GoldBoxGame::death_knights_of_krynn:
         return "Death Knights of Krynn";
+    case GoldBoxGame::countdown_to_doomsday:
+        return "Buck Rogers: Countdown to Doomsday";
+    case GoldBoxGame::matrix_cubed:
+        return "Buck Rogers: Matrix Cubed";
     }
     return {};
 }
@@ -83,6 +107,10 @@ inline constexpr std::array<GoldBoxGame, 9> gold_box_games{
         return "COK";
     case GoldBoxGame::death_knights_of_krynn:
         return "DKK";
+    case GoldBoxGame::countdown_to_doomsday:
+        return "buck-rogers-countdown-to-doomsday";
+    case GoldBoxGame::matrix_cubed:
+        return "buck-rogers-matrix-cubed";
     }
     return {};
 }

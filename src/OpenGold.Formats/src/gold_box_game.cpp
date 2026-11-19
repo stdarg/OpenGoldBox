@@ -30,6 +30,11 @@ GameDisks game_disks(GoldBoxGame game)
         // One file of each kind, numbered 1; TREASURE names its items itself,
         // so there are no item lists.
         return {{1}, {}, {}, {}};
+    case GoldBoxGame::countdown_to_doomsday:
+    case GoldBoxGame::matrix_cubed:
+        // One creature file, numbered 0. ITEM0.DAX holds the item templates,
+        // not item lists, and there are no HEAD or BODY files.
+        return {{0}, {}, {}, {}};
     default:
         throw std::invalid_argument("The files of " + std::string(game_title(game)) +
                                     " are not mapped yet");

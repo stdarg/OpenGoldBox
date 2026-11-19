@@ -697,6 +697,26 @@ std::vector<GameFile> folder_files(const std::filesystem::path &folder,
     return files;
 }
 
+// SHIPS.DAX marks the Buck Rogers games. Matrix Cubed's XMI music tells it
+// from Countdown to Doomsday, whose sixth disk holds ECL6.DAX. ECL6.DAX alone
+// marks nothing: Pool, Curse and Gateway have one too.
+std::optional<GoldBoxGame> buck_rogers_game(const std::set<std::string, std::less<>> &names)
+{
+    if (!names.contains("SHIPS.DAX"))
+    {
+        return std::nullopt;
+    }
+    if (names.contains("BUCKA.XMI"))
+    {
+        return GoldBoxGame::matrix_cubed;
+    }
+    if (names.contains("ECL6.DAX"))
+    {
+        return GoldBoxGame::countdown_to_doomsday;
+    }
+    return std::nullopt;
+}
+
 } // namespace
 
 bool GameCensus::complete() const noexcept
@@ -740,7 +760,7 @@ std::optional<GoldBoxGame> identify_game(const std::filesystem::path &folder)
             return game;
         }
     }
-    return std::nullopt;
+    return buck_rogers_game(names);
 }
 
 GameCensus take_census(const std::filesystem::path &folder, GoldBoxGame game)

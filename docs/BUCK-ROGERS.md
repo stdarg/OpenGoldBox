@@ -4,7 +4,8 @@ The plan for OpenGoldBox to play the two *Buck Rogers XXVc* Gold Box games
 from start to finish under their original rules: *Countdown to Doomsday*
 (1990) and *Matrix Cubed* (1992). It follows the method of the *Forgotten
 Realms* games ([GAMES.md](GAMES.md)) and of the *Krynn* games
-([KRYNN.md](KRYNN.md)). Written 2026-11-19; not started.
+([KRYNN.md](KRYNN.md)). Written 2026-11-19. B0 (groundwork) done
+2026-11-19; B1 not started.
 
 Each game must meet the standard in [PLAYABILITY.md](PLAYABILITY.md)
 ("Acceptance and scope"). The route reaches the game's actual winning event
@@ -470,6 +471,15 @@ suite.
 
 Risks: the game number collides with a Krynn game landing at the same time
 (claim it first); a marker that also matches another game's folder.
+
+**Status:** done 2026-11-19. *The Dark Queen* had claimed number 9 on the
+session board, so *Countdown* is 10 and *Matrix Cubed* 11, and a save's
+number finds its game by value (`game_numbered`), not by place. The menu
+lists both, disabled, in the existing picker. `ECL6.DAX` counts only beside
+`SHIPS.DAX`: *Pool*, *Curse* and *Gateway* have one too. The Linux machine's
+copies were not checked from macOS: the docs record only that its games are
+under `/home/edmond/GoldBox/<folder>`, with no listing of the Buck Rogers
+folders.
 
 ### B1. A reading census for each game
 

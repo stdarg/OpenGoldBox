@@ -81,17 +81,22 @@ struct MenuGame
 {
     opengold::GoldBoxGame game;
     const char *title;
+    // A game that does not play yet shows a disabled button.
+    bool plays = true;
 };
 
 // The games the startup menu offers, in release order (docs/GAMES.md).
-constexpr std::array<MenuGame, 9> playable_games{
+constexpr std::array<MenuGame, 11> playable_games{
     {{opengold::GoldBoxGame::pool_of_radiance, N_("Pool of Radiance")},
      {opengold::GoldBoxGame::curse_of_the_azure_bonds, N_("Curse of the Azure Bonds")},
      {opengold::GoldBoxGame::champions_of_krynn, N_("Champions of Krynn")},
      {opengold::GoldBoxGame::secret_of_the_silver_blades, N_("Secret of the Silver Blades")},
+     {opengold::GoldBoxGame::countdown_to_doomsday, N_("Buck Rogers: Countdown to Doomsday"),
+      false},
      {opengold::GoldBoxGame::death_knights_of_krynn, N_("Death Knights of Krynn")},
      {opengold::GoldBoxGame::gateway_to_the_savage_frontier, N_("Gateway to the Savage Frontier")},
      {opengold::GoldBoxGame::pools_of_darkness, N_("Pools of Darkness")},
+     {opengold::GoldBoxGame::matrix_cubed, N_("Buck Rogers: Matrix Cubed"), false},
      {opengold::GoldBoxGame::treasures_of_the_savage_frontier,
       N_("Treasures of the Savage Frontier")},
      {opengold::GoldBoxGame::unlimited_adventures, N_("Unlimited Adventures")}}};
@@ -151,9 +156,9 @@ std::optional<opengold::GoldBoxGame> game_from_command_line()
                 continue;
             }
             const auto folder = arguments[i].trim_prefix("--game=");
-            for (const auto &[game, title] : playable_games)
+            for (const auto &[game, title, plays] : playable_games)
             {
-                if (folder == String(std::string(opengold::game_folder(game)).c_str()))
+                if (plays && folder == String(std::string(opengold::game_folder(game)).c_str()))
                 {
                     return game;
                 }
@@ -287,11 +292,12 @@ void StartupView::show_game_picker()
         required_node<Button>(*picker, "Buttons/Back")
             .connect("pressed", presentation::guarded(this, &StartupView::show_main_menu));
         auto *games = &required_node<VBoxContainer>(*picker, "Buttons/Games");
-        for (const auto &[game, title] : playable_games)
+        for (const auto &[game, title, plays] : playable_games)
         {
             auto *button = memnew(Button); // owned by the picker once added
             button->set_name(std::string(opengold::game_folder(game)).c_str());
             button->set_text(i18n::text(title));
+            button->set_disabled(!plays);
             button->set_custom_minimum_size({0, 52});
             button->connect("pressed", presentation::guarded(this, &StartupView::game_chosen)
                                            .bind(static_cast<std::int64_t>(game)));

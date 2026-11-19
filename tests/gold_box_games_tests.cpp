@@ -26,6 +26,7 @@
 #include <map>
 #include "opengold/game_census.h"
 #include "opengold/magic_item_catalog.h"
+#include "opengold/path_text.h"
 #include "opengold/pool_radiance.h"
 #include "opengold/sound_bank.h"
 #include "opengold/srd5.h"
@@ -40,6 +41,7 @@
 #include <functional>
 #include <iostream>
 #include <iterator>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <string>
@@ -83,10 +85,49 @@ void each_game_is_told_apart_by_its_files()
               marker + " must identify " + std::string(opengold::game_title(game)));
         std::filesystem::remove_all(folder);
     }
+    // SHIPS.DAX marks Buck Rogers, and BUCKA.XMI or ECL6.DAX beside it the game.
+    const std::vector<std::pair<std::vector<std::string>, std::optional<GoldBoxGame>>> buck_rogers{
+        {{"SHIPS.DAX", "ECL6.DAX"}, GoldBoxGame::countdown_to_doomsday},
+        {{"SHIPS.DAX", "BUCKA.XMI"}, GoldBoxGame::matrix_cubed},
+        {{"SHIPS.DAX"}, std::nullopt},
+        {{"BUCKA.XMI"}, std::nullopt},
+        {{"ECL6.DAX"}, std::nullopt}};
+    for (const auto &[files, game] : buck_rogers)
+    {
+        const auto folder = empty_folder("buck-rogers");
+        std::ofstream(folder / "GEO1.DAX").put('\0');
+        std::string named;
+        for (const auto &file : files)
+        {
+            std::ofstream(folder / file).put('\0');
+            named += file + " ";
+        }
+        check(opengold::identify_game(folder) == game,
+              named + "must identify " +
+                  (game ? std::string(opengold::game_title(*game)) : "no game"));
+        std::filesystem::remove_all(folder);
+    }
     const auto folder = empty_folder("none");
     std::ofstream(folder / "GEO1.DAX").put('\0');
     check(!opengold::identify_game(folder), "A folder without a game's files is no game");
     std::filesystem::remove_all(folder);
+
+    // Every real game's folder is its own game: no marker matches another's.
+    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
+    if (!games)
+    {
+        return;
+    }
+    for (const auto game : opengold::gold_box_games)
+    {
+        const auto real = std::filesystem::path(games) / std::string(opengold::game_folder(game));
+        if (std::filesystem::is_directory(real))
+        {
+            check(opengold::identify_game(real) == game,
+                  opengold::path_text(real) + " must identify " +
+                      std::string(opengold::game_title(game)));
+        }
+    }
 }
 
 // Curse's 422-byte creature record, each field at its place.
@@ -19438,6 +19479,38 @@ void a_save_names_its_game()
                 party, nullptr, "files", 47, GoldBoxGame::curse_of_the_azure_bonds));
         },
         "Format 47 cannot record another game");
+
+    // The numbers saves carry stay as released; 9 waits for The Dark Queen of
+    // Krynn, so the Buck Rogers games are 10 and 11.
+    const std::vector<std::pair<GoldBoxGame, unsigned>> numbers{
+        {GoldBoxGame::pool_of_radiance, 0},
+        {GoldBoxGame::curse_of_the_azure_bonds, 1},
+        {GoldBoxGame::secret_of_the_silver_blades, 2},
+        {GoldBoxGame::gateway_to_the_savage_frontier, 3},
+        {GoldBoxGame::pools_of_darkness, 4},
+        {GoldBoxGame::treasures_of_the_savage_frontier, 5},
+        {GoldBoxGame::unlimited_adventures, 6},
+        {GoldBoxGame::champions_of_krynn, 7},
+        {GoldBoxGame::death_knights_of_krynn, 8},
+        {GoldBoxGame::countdown_to_doomsday, 10},
+        {GoldBoxGame::matrix_cubed, 11}};
+    check(numbers.size() == opengold::gold_box_games.size(), "Every game has its number");
+    for (const auto &[game, number] : numbers)
+    {
+        const auto title = std::string(opengold::game_title(game));
+        check(static_cast<unsigned>(game) == number && opengold::game_numbered(number) == game,
+              title + " is number " + std::to_string(number));
+        // A design's save needs its design; the other games' saves need none.
+        if (game == GoldBoxGame::unlimited_adventures)
+        {
+            continue;
+        }
+        const auto save = opengold::encode_campaign(party, nullptr, "files", game);
+        check(opengold::decode_campaign(save, creation, *module, "files", nullptr).game == game &&
+                  opengold::saved_campaign_rules(save).game == game,
+              title + "'s save loads as its own game");
+    }
+    check(!opengold::game_numbered(9) && !opengold::game_numbered(12), "No game has 9 or 12 yet");
 }
 
 } // namespace

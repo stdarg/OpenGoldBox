@@ -578,11 +578,11 @@ msgstr ""
 msgid "AC {ac} / HP {current}/{maximum}"
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:1109
+#: src/OpenGoldBox/startup_view.cpp:1115
 msgid "AD&D"
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:1108
+#: src/OpenGoldBox/startup_view.cpp:1114
 msgid "AD&D: the scores change again as characters grow older."
 msgstr ""
 
@@ -1210,11 +1210,11 @@ msgstr ""
 msgid "Arrows: choose | Space: use | Escape: skip"
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:1109
+#: src/OpenGoldBox/startup_view.cpp:1115
 msgid "As the original"
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:1105
+#: src/OpenGoldBox/startup_view.cpp:1111
 msgid "As the original: the starting age changes the scores once."
 msgstr ""
 
@@ -1925,6 +1925,14 @@ msgstr ""
 msgid "Buccaneers' Base"
 msgstr ""
 
+#: src/OpenGoldBox/startup_view.cpp:94
+msgid "Buck Rogers: Countdown to Doomsday"
+msgstr ""
+
+#: src/OpenGoldBox/startup_view.cpp:99
+msgid "Buck Rogers: Matrix Cubed"
+msgstr ""
+
 #: src/OpenGoldBox/godot/scenes/level_up_lab.tscn:63
 msgid "Build an isolated character, then open the same level-up dialog used in the game."
 msgstr ""
@@ -2035,7 +2043,7 @@ msgstr ""
 msgid "Can target another creature as a Magic action."
 msgstr ""
 
-#: src/OpenGoldBox/ally_attack_controls.h:32 src/OpenGoldBox/character_creation_view.cpp:957 src/OpenGoldBox/equipment_choice_dialog.cpp:76 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:318 src/OpenGoldBox/godot/scenes/startup.tscn:106 src/OpenGoldBox/godot/scenes/startup.tscn:169 src/OpenGoldBox/level_up_dialog.cpp:146 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:349 src/OpenGoldBox/rest_dialog_impl.h:86 src/OpenGoldBox/save_slots.cpp:133 src/OpenGoldBox/spell_choice_controls.h:249 src/OpenGoldBox/startup_view.cpp:813
+#: src/OpenGoldBox/ally_attack_controls.h:32 src/OpenGoldBox/character_creation_view.cpp:957 src/OpenGoldBox/equipment_choice_dialog.cpp:76 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:318 src/OpenGoldBox/godot/scenes/startup.tscn:106 src/OpenGoldBox/godot/scenes/startup.tscn:169 src/OpenGoldBox/level_up_dialog.cpp:146 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:349 src/OpenGoldBox/rest_dialog_impl.h:86 src/OpenGoldBox/save_slots.cpp:133 src/OpenGoldBox/spell_choice_controls.h:249 src/OpenGoldBox/startup_view.cpp:819
 msgid "Cancel"
 msgstr ""
 
@@ -2111,7 +2119,7 @@ msgstr ""
 msgid "Cannot regain Hit Points."
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:815
+#: src/OpenGoldBox/startup_view.cpp:821
 msgid "Cannot save language."
 msgstr ""
 
@@ -2120,7 +2128,7 @@ msgstr ""
 msgid "Cannot save screenshot: {path}"
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:725
+#: src/OpenGoldBox/startup_view.cpp:731
 msgid "Cannot save settings. Check that settings.cfg in the game's user data folder can be written and is valid."
 msgstr ""
 
@@ -2306,7 +2314,7 @@ msgstr ""
 msgid "Champion: weapon/unarmed criticals on 19–20.\nAdvantage on Initiative and Strength (Athletics).\nCritical hit: optional half-Speed move, no opportunity attacks."
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:90
+#: src/OpenGoldBox/startup_view.cpp:92
 msgid "Champions of Krynn"
 msgstr ""
 
@@ -2390,7 +2398,7 @@ msgstr ""
 msgid "Characters"
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:1098
+#: src/OpenGoldBox/startup_view.cpp:1104
 msgid "Characters, fights and magic as the original game had them: AD&D 1st edition."
 msgstr ""
 
@@ -2606,7 +2614,7 @@ msgstr ""
 msgid "Choose game folder"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/startup.tscn:65 src/OpenGoldBox/startup_view.cpp:811
+#: src/OpenGoldBox/godot/scenes/startup.tscn:65 src/OpenGoldBox/startup_view.cpp:817
 msgid "Choose language"
 msgstr ""
 
@@ -2618,11 +2626,11 @@ msgstr ""
 msgid "Choose prepared spells. Unfilled choices remain pending; Back preserves your choices."
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/startup.tscn:138 src/OpenGoldBox/startup_view.cpp:539
+#: src/OpenGoldBox/godot/scenes/startup.tscn:138 src/OpenGoldBox/startup_view.cpp:545
 msgid "Choose the folder containing START.EXE and the original DAX game files."
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:573
+#: src/OpenGoldBox/startup_view.cpp:579
 msgid "Choose the folder of the design to play, which the construction kit names NAME.DSN."
 msgstr ""
 
@@ -3197,7 +3205,7 @@ msgstr ""
 msgid "Contingency: {spell} takes effect on {name}."
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/combat_demo.tscn:334 src/OpenGoldBox/godot/scenes/startup.tscn:177 src/OpenGoldBox/godot/scenes/startup.tscn:242 src/OpenGoldBox/godot/scenes/startup.tscn:280 src/OpenGoldBox/godot/scenes/startup.tscn:375 src/OpenGoldBox/godot/scenes/startup.tscn:88 src/OpenGoldBox/startup_view.cpp:812
+#: src/OpenGoldBox/godot/scenes/combat_demo.tscn:334 src/OpenGoldBox/godot/scenes/startup.tscn:177 src/OpenGoldBox/godot/scenes/startup.tscn:242 src/OpenGoldBox/godot/scenes/startup.tscn:280 src/OpenGoldBox/godot/scenes/startup.tscn:375 src/OpenGoldBox/godot/scenes/startup.tscn:88 src/OpenGoldBox/startup_view.cpp:818
 msgid "Continue"
 msgstr ""
 
@@ -3354,7 +3362,7 @@ msgstr ""
 msgid "Curse"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:142 src/OpenGoldBox/rolf_tour_view.cpp:370 src/OpenGoldBox/startup_view.cpp:89
+#: src/OpenGoldBox/rolf_tour_view.cpp:142 src/OpenGoldBox/rolf_tour_view.cpp:370 src/OpenGoldBox/startup_view.cpp:91
 msgid "Curse of the Azure Bonds"
 msgstr ""
 
@@ -3475,7 +3483,7 @@ msgstr ""
 msgid "Dead"
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:92
+#: src/OpenGoldBox/startup_view.cpp:96
 msgid "Death Knights of Krynn"
 msgstr ""
 
@@ -5252,7 +5260,7 @@ msgstr ""
 msgid "Gameplay"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:255 src/OpenGoldBox/startup_view.cpp:93
+#: src/OpenGoldBox/rolf_tour_view.cpp:255 src/OpenGoldBox/startup_view.cpp:97
 msgid "Gateway to the Savage Frontier"
 msgstr ""
 
@@ -6546,7 +6554,7 @@ msgstr ""
 msgid "Land's Aid"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:422 src/OpenGoldBox/godot/scenes/startup.tscn:43 src/OpenGoldBox/startup_view.cpp:810
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:422 src/OpenGoldBox/godot/scenes/startup.tscn:43 src/OpenGoldBox/startup_view.cpp:816
 msgid "Language"
 msgstr ""
 
@@ -7625,7 +7633,7 @@ msgstr ""
 msgid "Missing HP: {amount}. Damage and other HP losses are not individually recorded."
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:691
+#: src/OpenGoldBox/startup_view.cpp:697
 msgid "Missing or unreadable game files:"
 msgstr ""
 
@@ -8183,11 +8191,11 @@ msgstr ""
 msgid "Oath of Devotion: Smite of Protection. When you cast Divine Smite, you and allies in your Aura of Protection gain +2 AC and +2 to Dexterity saves until your next turn.\nA second level 4 spell slot."
 msgstr ""
 
-#: src/OpenGoldBox/game_menu_view.cpp:279 src/OpenGoldBox/startup_view.cpp:1109
+#: src/OpenGoldBox/game_menu_view.cpp:279 src/OpenGoldBox/startup_view.cpp:1115
 msgid "Off"
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:1106
+#: src/OpenGoldBox/startup_view.cpp:1112
 msgid "Off: age never changes the scores."
 msgstr ""
 
@@ -8849,15 +8857,15 @@ msgstr ""
 msgid "Polymorphed"
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:88
+#: src/OpenGoldBox/startup_view.cpp:90
 msgid "Pool of Radiance"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/startup.tscn:109 src/OpenGoldBox/godot/scenes/startup.tscn:131 src/OpenGoldBox/startup_view.cpp:533
+#: src/OpenGoldBox/godot/scenes/startup.tscn:109 src/OpenGoldBox/godot/scenes/startup.tscn:131 src/OpenGoldBox/startup_view.cpp:539
 msgid "Pool of Radiance game files"
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:94
+#: src/OpenGoldBox/startup_view.cpp:98
 msgid "Pools of Darkness"
 msgstr ""
 
@@ -10284,7 +10292,7 @@ msgstr ""
 msgid "Run the area's pre-camp check and attempt an eight-hour long rest."
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:1099
+#: src/OpenGoldBox/startup_view.cpp:1105
 msgid "SRD 5.2.1"
 msgstr ""
 
@@ -10497,7 +10505,7 @@ msgstr ""
 msgid "Second level"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:187 src/OpenGoldBox/startup_view.cpp:91
+#: src/OpenGoldBox/rolf_tour_view.cpp:187 src/OpenGoldBox/startup_view.cpp:93
 msgid "Secret of the Silver Blades"
 msgstr ""
 
@@ -12048,7 +12056,7 @@ msgstr ""
 msgid "The entire party is killed!"
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:1100
+#: src/OpenGoldBox/startup_view.cpp:1106
 msgid "The fifth edition's System Reference Document, with the original's adventures."
 msgstr ""
 
@@ -12131,7 +12139,7 @@ msgstr ""
 msgid "The original game's art shows until you choose the folder of the OpenGoldBox new art download."
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:1097
+#: src/OpenGoldBox/startup_view.cpp:1103
 msgid "The original rules (Pool of Radiance)"
 msgstr ""
 
@@ -12703,7 +12711,7 @@ msgstr ""
 msgid "Treasure is still left here. Go back for it?"
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:96
+#: src/OpenGoldBox/startup_view.cpp:101
 msgid "Treasures of the Savage Frontier"
 msgstr ""
 
@@ -12956,11 +12964,11 @@ msgstr ""
 msgid "Unknown training choice"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:355 src/OpenGoldBox/startup_view.cpp:97
+#: src/OpenGoldBox/rolf_tour_view.cpp:355 src/OpenGoldBox/startup_view.cpp:102
 msgid "Unlimited Adventures"
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:569
+#: src/OpenGoldBox/startup_view.cpp:575
 msgid "Unlimited Adventures design"
 msgstr ""
 
@@ -14536,7 +14544,7 @@ msgstr ""
 msgid "{finder} finds {name}."
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:534
+#: src/OpenGoldBox/startup_view.cpp:540
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{game} game files"
 msgstr ""

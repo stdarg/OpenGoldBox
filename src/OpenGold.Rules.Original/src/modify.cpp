@@ -437,6 +437,10 @@ bool modify_allowed(int experience, GoldBoxGame game, int design_start)
         return one_of(experience, {1500, 1251, 2000, 2001, 2251, 2500, 5000});
     case GoldBoxGame::death_knights_of_krynn:
         return one_of(experience, {210003, 105002, 70001});
+    case GoldBoxGame::countdown_to_doomsday:
+    case GoldBoxGame::matrix_cubed:
+        // The Buck Rogers rules come in step B2 (docs/BUCK-ROGERS.md).
+        return false;
     }
     return false;
 }

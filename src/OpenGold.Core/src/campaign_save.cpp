@@ -1119,8 +1119,9 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
     {
         unsigned game_number{};
         in.field(game_number);
-        require(game_number < gold_box_games.size(), "Unknown campaign game");
-        result.game = gold_box_games[game_number];
+        const auto game = game_numbered(game_number);
+        require(game.has_value(), "Unknown campaign game");
+        result.game = *game;
     }
     std::string setting;
     if (version >= rules_setting_format)
@@ -1180,8 +1181,9 @@ CampaignRules saved_campaign_rules(std::string_view bytes)
     {
         unsigned game_number{};
         in.field(game_number);
-        require(game_number < gold_box_games.size(), "Unknown campaign game");
-        saved.game = gold_box_games[game_number];
+        const auto game = game_numbered(game_number);
+        require(game.has_value(), "Unknown campaign game");
+        saved.game = *game;
     }
     if (version >= rules_setting_format)
     {
