@@ -1,8 +1,11 @@
-"""tools/session_board.py as sessions and Claude Code's hook use it: claims,
-overlap warnings, the hook's board and reminders, stale and forgotten claims."""
+"""tools/session_board.py as sessions and Claude Code's hook use it: claims
+kept as GitHub issues labelled `claim` (through a stand-in for gh), overlap
+warnings, the hook's board, cache and reminders, stale and forgotten claims,
+and claims waiting on the machine while GitHub is unreachable."""
 import json
 import os
 from pathlib import Path
+import platform
 import subprocess
 import sys
 import tempfile
@@ -10,12 +13,15 @@ import time
 import unittest
 
 SCRIPT = Path(__file__).resolve().parents[1] / "tools/session_board.py"
+FAKE_GH = Path(__file__).resolve().parent / "fake_gh.py"
 
 
 class SessionBoardTests(unittest.TestCase):
     def setUp(self):
         self.folder = tempfile.TemporaryDirectory()
         self.board = Path(self.folder.name) / ".sessions"
+        self.github = Path(self.folder.name) / "github.json"
+        self.offline = False
 
     def tearDown(self):
         self.folder.cleanup()
@@ -26,8 +32,12 @@ class SessionBoardTests(unittest.TestCase):
         return str(path)
 
     def run_board(self, session, *args, stdin=""):
-        environment = dict(os.environ, OPENGOLD_SESSION_BOARD=str(self.board))
+        environment = dict(os.environ, OPENGOLD_SESSION_BOARD=str(self.board), OPENGOLD_GH=str(FAKE_GH),
+                           FAKE_GH_STATE=str(self.github))
         environment.pop("CLAUDE_CODE_SESSION_ID", None)
+        environment.pop("FAKE_GH_OFFLINE", None)
+        if self.offline:
+            environment["FAKE_GH_OFFLINE"] = "1"
         if session:
             environment["CLAUDE_CODE_SESSION_ID"] = session
         result = subprocess.run([sys.executable, str(SCRIPT), *args], input=stdin, env=environment,
@@ -38,11 +48,54 @@ class SessionBoardTests(unittest.TestCase):
         return self.run_board(None, "hook", stdin=json.dumps(
             {"session_id": session, "hook_event_name": event, "cwd": self.folder.name}))[1]
 
-    def test_claims_show_on_the_board_and_overlaps_warn(self):
+    def state(self):
+        return json.loads(self.github.read_text()) if self.github.exists() else {"issues": [], "calls": []}
+
+    def issues(self, state="open"):
+        return [issue for issue in self.state()["issues"] if issue["state"] == state]
+
+    def stored(self, issue):
+        body = issue["body"]
+        start = body.index("<!-- session-board\n") + len("<!-- session-board\n")
+        return json.loads(body[start:body.index("\n-->", start)])
+
+    def age_claim(self, task, seconds):
+        """Makes a claim look idle, as if written that long ago on any machine."""
+        state = self.state()
+        issue = next(i for i in state["issues"] if i["state"] == "open" and self.stored(i)["task"] == task)
+        claim = self.stored(issue)
+        claim["updated"] = time.time() - seconds
+        issue["body"] = issue["body"][:issue["body"].index("<!-- session-board")] \
+            + "<!-- session-board\n" + json.dumps(claim) + "\n-->\n"
+        self.github.write_text(json.dumps(state))
+
+    def age_cache(self):
+        """Makes the hook's last look at GitHub (or try) an hour old."""
+        cache = self.board / ".github-claims.json"
+        if not cache.exists():
+            return
+        data = json.loads(cache.read_text())
+        for key in ("fetched", "tried"):
+            data[key] = data.get(key, 0) - 3600
+        cache.write_text(json.dumps(data))
+
+    def test_a_claim_is_an_issue_labelled_claim(self):
         code, _ = self.run_board("first", "claim", "--task", "Wand traps", "--name", "opengold-08",
                                  "--areas", "src/OpenGold.Core, Kovel Mansion",
                                  "--versions", "campaign format", "--issue", "4")
         self.assertEqual(code, 0)
+        [issue] = self.issues()
+        self.assertEqual(issue["labels"], ["claim"])
+        self.assertEqual(issue["title"], "Claim: Wand traps (opengold-08)")
+        for words in ("**Task:** Wand traps", "**Work issue:** #4", "**Areas:** src/OpenGold.Core, Kovel Mansion",
+                      "**Raises:** campaign format", "**Last active:**"):
+            self.assertIn(words, issue["body"])
+        self.assertEqual(self.stored(issue)["host"], platform.node())
+
+    def test_claims_show_on_the_board_and_overlaps_warn(self):
+        self.run_board("first", "claim", "--task", "Wand traps", "--name", "opengold-08",
+                       "--areas", "src/OpenGold.Core, Kovel Mansion",
+                       "--versions", "campaign format", "--issue", "4")
         code, output = self.run_board("second", "claim", "--task", "Shop prices",
                                       "--areas", "src/OpenGold.Core/src/shop_data.cpp, kovel mansion",
                                       "--versions", "Campaign Format, rules version")
@@ -53,11 +106,16 @@ class SessionBoardTests(unittest.TestCase):
         self.assertIn("version Campaign Format", output)
         self.assertNotIn("rules version;", output)
         _, listing = self.run_board("second", "list")
-        self.assertIn("opengold-08 (claude", listing)
-        self.assertIn("Wand traps (#4)", listing)
+        self.assertIn("opengold-08 (claude on", listing)
+        self.assertIn("[claim #1]: Wand traps (#4)", listing)
         self.assertIn("raises: campaign format", listing)
         self.assertIn("Shop prices", listing)
         self.assertIn("<- this session", listing)
+
+    def test_a_task_cannot_end_the_hidden_data(self):
+        self.run_board("first", "claim", "--task", "Arrows --> and <!-- comments")
+        _, listing = self.run_board("first", "list")
+        self.assertIn("Arrows --> and <!-- comments", listing)
 
     def test_separate_areas_in_separate_worktrees_do_not_warn(self):
         self.run_board("first", "claim", "--task", "Combat art", "--areas", "src/OpenGoldBox",
@@ -71,25 +129,49 @@ class SessionBoardTests(unittest.TestCase):
         _, output = self.run_board("second", "claim", "--task", "Rules", "--worktree", self.worktree("art"))
         self.assertIn("WARNING: overlaps first (Combat art): worktree", output)
 
-    def test_update_changes_only_what_it_names_and_release_removes(self):
+    def test_update_edits_the_issue_a_new_claim_opens_another_and_release_closes(self):
         self.assertEqual(self.run_board("first", "update", "--task", "x")[0], 1)
         self.run_board("first", "claim", "--task", "Traps", "--areas", "a, b", "--name", "opengold-08")
         self.run_board("first", "update", "--areas", "c")
-        claim = json.loads(next(self.board.glob("*.json")).read_text())
+        [issue] = self.issues()
+        claim = self.stored(issue)
         self.assertEqual((claim["task"], claim["areas"], claim["name"]), ("Traps", ["c"], "opengold-08"))
         self.run_board("first", "claim", "--task", "Next task")
-        claim = json.loads(next(self.board.glob("*.json")).read_text())
+        [old] = self.issues("closed")
+        [new] = self.issues()
+        self.assertEqual((old["number"], old["reason"]), (issue["number"], "completed"))
+        claim = self.stored(new)
         self.assertEqual((claim["task"], claim.get("areas"), claim["name"]), ("Next task", None, "opengold-08"))
         code, _ = self.run_board("first", "release")
         self.assertEqual(code, 0)
-        self.assertEqual(list(self.board.glob("*.json")), [])
+        self.assertEqual(self.issues(), [])
         self.assertEqual(self.run_board("first", "release")[0], 1)
 
-    def test_codex_is_known_by_its_worktree(self):
+    def test_a_second_open_claim_of_a_session_is_closed(self):
+        # GitHub's list can miss a just-opened issue, so a claim made right
+        # after another may not close the first.
+        self.run_board("first", "claim", "--task", "Traps")
+        state = self.state()
+        older = dict(state["issues"][0], number=50)
+        older["body"] = older["body"].replace('"started": ', '"started": 1')
+        state["issues"].append(older)
+        self.github.write_text(json.dumps(state))
+        _, listing = self.run_board("first", "list")
+        self.assertEqual(listing.count("Traps"), 1)
+        self.assertEqual([issue["number"] for issue in self.issues()], [50])
+
+    def test_release_by_number_frees_another_sessions_claim(self):
+        self.run_board("first", "claim", "--task", "Old work")
+        code, output = self.run_board("second", "release", "--claim", "1")
+        self.assertEqual(code, 0)
+        self.assertIn("Released claim #1", output)
+        self.assertEqual(self.issues(), [])
+
+    def test_codex_is_known_by_its_machine_and_worktree(self):
         self.run_board(None, "claim", "--task", "Frog art", "--agent", "codex",
                        "--worktree", self.folder.name)
-        claim = json.loads(next(self.board.glob("*.json")).read_text())
-        self.assertEqual(claim["id"], "worktree-" + Path(self.folder.name).name)
+        claim = self.stored(self.issues()[0])
+        self.assertEqual(claim["id"], f"worktree-{platform.node()}-{Path(self.folder.name).name}")
         self.assertEqual(claim["agent"], "codex")
 
     def test_hook_shows_the_board_when_it_changes(self):
@@ -107,22 +189,59 @@ class SessionBoardTests(unittest.TestCase):
         self.run_board("second", "release")
         self.assertIn("no other session has a claim", self.hook("first", "UserPromptSubmit"))
 
-    def test_hook_keeps_a_claim_fresh_and_drops_forgotten_ones(self):
+    def test_hook_asks_github_at_most_every_two_minutes(self):
+        self.run_board("first", "claim", "--task", "Traps")
+        self.hook("first", "SessionStart")
+        # Another machine claims; this machine's cache does not know yet.
+        state = self.state()
+        other = dict(self.issues()[0], number=99, title="Claim: Far work")
+        other["body"] = other["body"].replace('"task": "Traps"', '"task": "Far work"').replace(
+            '"id": "first"', '"id": "far"')
+        state["issues"].append(other)
+        self.github.write_text(json.dumps(state))
+        calls = len(self.state()["calls"])
+        self.assertNotIn("Far work", self.hook("first", "UserPromptSubmit"))
+        self.assertEqual(len(self.state()["calls"]), calls)
+        self.age_cache()
+        self.assertIn("Far work", self.hook("first", "UserPromptSubmit"))
+
+    def test_hook_keeps_a_claim_fresh_and_closes_forgotten_ones(self):
         self.run_board("first", "claim", "--task", "Traps")
         self.run_board("second", "claim", "--task", "Old work")
-        paths = {json.loads(p.read_text())["task"]: p for p in self.board.glob("*.json")}
-        for task, age in (("Traps", 3600), ("Old work", 5 * 3600)):
-            claim = json.loads(paths[task].read_text())
-            claim["updated"] = time.time() - age
-            paths[task].write_text(json.dumps(claim))
+        self.age_claim("Traps", 3600)
+        self.age_claim("Old work", 5 * 3600)
+        self.age_cache()
         output = self.hook("first", "UserPromptSubmit")
         self.assertIn("idle 5 h, STALE", output)
-        self.assertGreater(json.loads(paths["Traps"].read_text())["updated"], time.time() - 60)
-        claim = json.loads(paths["Old work"].read_text())
-        claim["updated"] = time.time() - 4 * 24 * 3600
-        paths["Old work"].write_text(json.dumps(claim))
+        mine = next(i for i in self.issues() if self.stored(i)["task"] == "Traps")
+        self.assertGreater(self.stored(mine)["updated"], time.time() - 60)
+        self.age_claim("Old work", 4 * 24 * 3600)
+        self.age_cache()
         self.assertIn("no other session has a claim", self.hook("first", "UserPromptSubmit"))
-        self.assertFalse(paths["Old work"].exists())
+        [forgotten] = self.issues("closed")
+        self.assertEqual(forgotten["reason"], "not planned")
+        self.assertIn("idle for over 3 days", forgotten["comments"][0])
+
+    def test_offline_claims_and_releases_wait_on_the_machine(self):
+        self.offline = True
+        code, output = self.run_board("first", "claim", "--task", "Traps")
+        self.assertEqual(code, 0)
+        self.assertIn("GitHub unreachable", output)
+        _, listing = self.run_board("first", "list")
+        self.assertIn("[not yet on GitHub]: Traps", listing)
+        self.offline = False
+        _, listing = self.run_board("first", "list")
+        self.assertIn("[claim #1]: Traps", listing)
+        self.assertEqual(len(self.issues()), 1)
+        self.assertEqual(list(self.board.glob("pending-*")), [])
+        self.offline = True
+        self.assertEqual(self.run_board("first", "release")[0], 0)
+        self.assertIn("no claims", self.run_board("first", "list")[1])
+        self.offline = False
+        self.age_cache()
+        self.hook("first", "UserPromptSubmit")
+        self.assertEqual(self.issues(), [])
+        self.assertEqual(list(self.board.glob("pending-*")), [])
 
     def test_hook_never_fails_a_prompt(self):
         code, output = self.run_board(None, "hook", stdin="not json")

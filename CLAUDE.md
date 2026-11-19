@@ -109,20 +109,32 @@ Always adhere to the rules laid out in Scott Meyers' Effective Modern C++.
 
 ## 9. Coordinate with other sessions
 
-Several Claude and Codex sessions work on this repository at once, each in its
-own git worktree. `tools/session_board.py` keeps a board of what each one is
-doing, in `.sessions/` at the main checkout's root (ignored by git, shared by
-every worktree).
+Several Claude and Codex sessions work on this repository at once, on Linux,
+Windows and macOS, each in its own git worktree. Each claims its task on the
+session board, `tools/session_board.py`: a claim is an open GitHub issue with
+the label `claim` in stdarg/OpenGoldBox, so every machine sees every claim.
+The tool needs the GitHub CLI logged in (`gh auth login`).
 
-- Before starting a task, claim it from your worktree: the task, its issue, the
-  areas it touches (files, folders or systems) and the shared numbers it will
-  raise (campaign format, rules version, combat format). Pass your ListAgents
-  name so others can message you:
+- Before starting a task, claim it from your worktree: the task, its work
+  issue, the areas it touches (files, folders or systems) and the shared
+  numbers it will raise (campaign format, rules version, combat format). Pass
+  your ListAgents name so others can message you:
   `tools/session_board.py claim --name opengold-08 --task "Wand traps" --issue 4 --areas "src/OpenGold.Core/src/phlan_session.cpp, Kovel Mansion" --versions "campaign format"`
+  This opens the claim's own issue, even when the work has an issue of its own.
 - Update the claim with `update` when the work spreads to new areas, and claim
-  a shared number before raising it.
+  a shared number before raising it. A new `claim` closes your old claim's
+  issue and opens a new one.
 - An overlap is a warning, not a block: message the other session (SendMessage)
-  or ask the user before working in the same area.
-- Release the claim with `release` once the work is pushed.
+  or ask the user before working in the same area. A session on another
+  machine cannot be messaged; ask the user.
+- Release the claim with `release` once the work is pushed; that closes its
+  issue. Never close or edit a claim issue by hand.
 - The project's hooks show the board at session start and whenever another
-  session's claim changes; `tools/session_board.py list` shows it any time.
+  session's claim changes (asking GitHub at most every 2 minutes), and keep
+  your claim active. `tools/session_board.py list` shows the board any time.
+- A claim idle for 4 hours shows as STALE; after 3 days the next session to
+  read the board closes it. To free a stale claim sooner, ask the user, then
+  run `tools/session_board.py release --claim <issue number>`.
+- When GitHub cannot be reached, the tool says so and keeps the claim, update
+  or release in `.sessions/` at the main checkout's root; it goes to GitHub
+  the next time a command or hook reaches it.

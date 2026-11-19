@@ -28,18 +28,32 @@
 
 ## Coordinating with other sessions
 
-Several Claude and Codex sessions work on this repository at once, each in its
-own git worktree. `tools/session_board.py` keeps a board of what each one is
-doing, in `.sessions/` at the main checkout's root (ignored by git).
+Several Claude and Codex sessions work on this repository at once, on Linux,
+Windows and macOS, each in its own git worktree. Each claims its task on the
+session board, `tools/session_board.py`: a claim is an open GitHub issue with
+the label `claim` in stdarg/OpenGoldBox, so every machine sees every claim.
+The tool needs the GitHub CLI logged in (`gh auth login`).
 
 - At the start of a task, run `tools/session_board.py list` and read the other
   sessions' claims.
-- Claim the task from your worktree before changing files, naming the areas it
-  touches and the shared numbers it will raise:
-  `tools/session_board.py claim --agent codex --task "Frog art" --areas "data/monsters, dev_tools/combat_sprite_catalog/json/cpic4_dax_18.json"`
+- Claim the task from your worktree before changing files, naming the work
+  issue if there is one, the areas it touches and the shared numbers it will
+  raise (campaign format, rules version, combat format):
+  `tools/session_board.py claim --agent codex --task "Frog art" --issue 12 --areas "data/monsters, dev_tools/combat_sprite_catalog/json/cpic4_dax_18.json"`
+  This opens the claim's own issue, even when the work has an issue of its own.
 - An overlap is a warning, not a block: tell the user before working in the
   same area as another session.
-- Run `update` when the work spreads, and `release` once it is pushed.
+- Run `update` with the changed fields when the work spreads. Codex has no
+  hooks, so also run `tools/session_board.py update` with no fields every few
+  hours of work to keep the claim active.
+- Run `release` once the work is pushed; that closes the claim's issue. Never
+  close or edit a claim issue by hand.
+- A claim idle for 4 hours shows as STALE; after 3 days the next session to
+  read the board closes it. To free a stale claim sooner, ask the user, then
+  run `tools/session_board.py release --claim <issue number>`.
+- When GitHub cannot be reached, the tool says so and keeps the claim, update
+  or release in `.sessions/` at the main checkout's root; it goes to GitHub
+  the next time the tool reaches it.
 
 ## Scope and review boundaries
 
