@@ -77,29 +77,49 @@ void StartupView::show_backdrop()
 namespace
 {
 
+// The worlds the game picker groups its games under, in the picker's order.
+enum class World
+{
+    forgotten_realms,
+    krynn,
+    buck_rogers
+};
+
+constexpr std::array<std::pair<World, const char *>, 3> worlds{
+    {{World::forgotten_realms, N_("Forgotten Realms")},
+     {World::krynn, N_("Krynn")},
+     {World::buck_rogers, N_("Buck Rogers")}}};
+
 struct MenuGame
 {
     opengold::GoldBoxGame game;
     const char *title;
+    World world;
     // A game that does not play yet shows a disabled button.
     bool plays = true;
 };
 
-// The games the startup menu offers, in release order (docs/GAMES.md).
+// The games the startup menu offers, in release order (docs/GAMES.md); the
+// picker lists them under their worlds, in this order within each.
 constexpr std::array<MenuGame, 11> playable_games{
-    {{opengold::GoldBoxGame::pool_of_radiance, N_("Pool of Radiance")},
-     {opengold::GoldBoxGame::curse_of_the_azure_bonds, N_("Curse of the Azure Bonds")},
-     {opengold::GoldBoxGame::champions_of_krynn, N_("Champions of Krynn")},
-     {opengold::GoldBoxGame::secret_of_the_silver_blades, N_("Secret of the Silver Blades")},
+    {{opengold::GoldBoxGame::pool_of_radiance, N_("Pool of Radiance"), World::forgotten_realms},
+     {opengold::GoldBoxGame::curse_of_the_azure_bonds, N_("Curse of the Azure Bonds"),
+      World::forgotten_realms},
+     {opengold::GoldBoxGame::champions_of_krynn, N_("Champions of Krynn"), World::krynn},
+     {opengold::GoldBoxGame::secret_of_the_silver_blades, N_("Secret of the Silver Blades"),
+      World::forgotten_realms},
      {opengold::GoldBoxGame::countdown_to_doomsday, N_("Buck Rogers: Countdown to Doomsday"),
+      World::buck_rogers, false},
+     {opengold::GoldBoxGame::death_knights_of_krynn, N_("Death Knights of Krynn"), World::krynn},
+     {opengold::GoldBoxGame::gateway_to_the_savage_frontier, N_("Gateway to the Savage Frontier"),
+      World::forgotten_realms},
+     {opengold::GoldBoxGame::pools_of_darkness, N_("Pools of Darkness"), World::forgotten_realms},
+     {opengold::GoldBoxGame::matrix_cubed, N_("Buck Rogers: Matrix Cubed"), World::buck_rogers,
       false},
-     {opengold::GoldBoxGame::death_knights_of_krynn, N_("Death Knights of Krynn")},
-     {opengold::GoldBoxGame::gateway_to_the_savage_frontier, N_("Gateway to the Savage Frontier")},
-     {opengold::GoldBoxGame::pools_of_darkness, N_("Pools of Darkness")},
-     {opengold::GoldBoxGame::matrix_cubed, N_("Buck Rogers: Matrix Cubed"), false},
      {opengold::GoldBoxGame::treasures_of_the_savage_frontier,
-      N_("Treasures of the Savage Frontier")},
-     {opengold::GoldBoxGame::unlimited_adventures, N_("Unlimited Adventures")}}};
+      N_("Treasures of the Savage Frontier"), World::forgotten_realms},
+     {opengold::GoldBoxGame::unlimited_adventures, N_("Unlimited Adventures"),
+      World::forgotten_realms}}};
 
 const char *menu_title(opengold::GoldBoxGame game)
 {
@@ -156,7 +176,7 @@ std::optional<opengold::GoldBoxGame> game_from_command_line()
                 continue;
             }
             const auto folder = arguments[i].trim_prefix("--game=");
-            for (const auto &[game, title, plays] : playable_games)
+            for (const auto &[game, title, world, plays] : playable_games)
             {
                 if (plays && folder == String(std::string(opengold::game_folder(game)).c_str()))
                 {
@@ -291,24 +311,50 @@ void StartupView::show_game_picker()
         connect_escape(*picker, &StartupView::show_main_menu);
         required_node<Button>(*picker, "Buttons/Back")
             .connect("pressed", presentation::guarded(this, &StartupView::show_main_menu));
-        auto *games = &required_node<VBoxContainer>(*picker, "Buttons/Games");
-        for (const auto &[game, title, plays] : playable_games)
-        {
-            auto *button = memnew(Button); // owned by the picker once added
-            button->set_name(std::string(opengold::game_folder(game)).c_str());
-            button->set_text(i18n::text(title));
-            button->set_disabled(!plays);
-            button->set_custom_minimum_size({0, 52});
-            button->connect("pressed", presentation::guarded(this, &StartupView::game_chosen)
-                                           .bind(static_cast<std::int64_t>(game)));
-            games->add_child(button);
-        }
+        add_game_buttons(required_node<VBoxContainer>(*picker, "Buttons/Games"));
+        // As tall as its games need: all twelve fit the smallest window
+        // (1120 x 800).
+        const auto needed = required_node<Control>(*picker, "Buttons").get_combined_minimum_size();
+        const Vector2i size{picker->get_size().x, static_cast<int>(needed.y) + 56};
+        picker->set_min_size(size);
+        picker->set_size(size);
     }
     stage_ = Stage::menus;
     required_node<Window>(*this, "MainMenu").hide();
     required_node<Window>(*this, "GameMenu").hide();
     picker->popup_centered();
     focus_first_enabled(required_node<Node>(*picker, "Buttons/Games"));
+}
+
+// Each world's heading over its games' buttons, in one column so Up and Down
+// walk every game; the buttons keep their game folders' names.
+void StartupView::add_game_buttons(VBoxContainer &games)
+{
+    for (const auto &[world, name] : worlds)
+    {
+        auto *heading = memnew(Label); // owned by the picker once added
+        heading->set_text(i18n::text(name));
+        heading->set_theme_type_variation("PickerWorldHeading");
+        heading->set_vertical_alignment(VERTICAL_ALIGNMENT_BOTTOM);
+        // Space above every heading but the first.
+        heading->set_custom_minimum_size({0, games.get_child_count() == 0 ? 0.0f : 40.0f});
+        games.add_child(heading);
+        for (const auto &entry : playable_games)
+        {
+            if (entry.world != world)
+            {
+                continue;
+            }
+            auto *button = memnew(Button); // owned by the picker once added
+            button->set_name(std::string(opengold::game_folder(entry.game)).c_str());
+            button->set_text(i18n::text(entry.title));
+            button->set_disabled(!entry.plays);
+            button->set_custom_minimum_size({0, 36});
+            button->connect("pressed", presentation::guarded(this, &StartupView::game_chosen)
+                                           .bind(static_cast<std::int64_t>(entry.game)));
+            games.add_child(button);
+        }
+    }
 }
 
 void StartupView::game_chosen(std::int64_t chosen)

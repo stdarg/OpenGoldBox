@@ -297,8 +297,8 @@ text = "Exit to desktop"
 [node name="GamePicker" type="Window" parent="."]
 title = "Pick game"
 initial_position = 1
-size = Vector2i(480, 340)
-min_size = Vector2i(480, 340)
+size = Vector2i(520, 340)
+min_size = Vector2i(520, 340)
 visible = false
 unresizable = true
 transient = true
@@ -329,7 +329,7 @@ alignment = 1
 
 [node name="Games" type="VBoxContainer" parent="GamePicker/Buttons"]
 layout_mode = 2
-theme_override_constants/separation = 14
+theme_override_constants/separation = 4
 
 [node name="Back" type="Button" parent="GamePicker/Buttons"]
 custom_minimum_size = Vector2(0, 52)

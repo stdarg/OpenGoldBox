@@ -15,6 +15,11 @@
 #include "opengold/sound_player.h"
 #include "opengold/title_screens.h"
 
+namespace godot
+{
+class VBoxContainer;
+}
+
 class StartupView : public godot::Control
 {
     GDCLASS(StartupView, godot::Control)
@@ -105,6 +110,7 @@ class StartupView : public godot::Control
     void show_main_menu();
     void continue_newest();
     void show_game_picker();
+    void add_game_buttons(godot::VBoxContainer &games);
     void game_chosen(std::int64_t game);
     // The chosen game's menu after its title.
     void show_game_menu();
