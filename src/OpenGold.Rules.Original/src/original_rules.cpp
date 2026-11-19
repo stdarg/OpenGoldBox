@@ -978,16 +978,19 @@ int starting_platinum(GoldBoxGame game)
 
 std::vector<StartingItem> starting_items(const ClassLevels &levels, GoldBoxGame game)
 {
-    if (game != GoldBoxGame::pools_of_darkness)
+    const bool darkness = game == GoldBoxGame::pools_of_darkness;
+    if (!darkness && game != GoldBoxGame::treasures_of_the_savage_frontier)
     {
         return {};
     }
 
-    // Its ITEM0 definitions by class family, as GAME.EXE lists them: a
-    // fighter's long sword, plate mail, shield, long bow and arrows; a thief's
-    // bracers, ring, long sword and sling; a cleric's mace, plate mail,
-    // shield, staff sling and two scrolls; the rest's bracers, ring,
-    // quarterstaff and darts.
+    // Their ITEM0 definitions by class family, as each GAME.EXE lists them.
+    // Pools of Darkness's: a fighter's long sword, plate mail, shield, long
+    // bow and arrows; a thief's bracers, ring, long sword and sling; a
+    // cleric's mace, plate mail, shield, staff sling and two scrolls; the
+    // rest's bracers, ring, quarterstaff and darts. Treasures' (its gdconsts
+    // startingItems): a fighter's five, a thief's two, a cleric's four and
+    // the rest's three.
     enum Family : std::size_t
     {
         fighters,
@@ -996,12 +999,19 @@ std::vector<StartingItem> starting_items(const ClassLevels &levels, GoldBoxGame 
         the_rest
     };
 
-    static constexpr std::array<std::array<unsigned, 6>, 4> definitions{{
+    static constexpr std::array<std::array<unsigned, 6>, 4> darkness_definitions{{
         {126, 135, 108, 83, 80},
         {211, 226, 126, 93},
         {120, 135, 108, 95, 250, 250},
         {211, 226, 124, 86},
     }};
+    static constexpr std::array<std::array<unsigned, 6>, 4> treasures_definitions{{
+        {66, 40, 78, 5, 1},
+        {66, 63},
+        {60, 40, 78, 25},
+        {64, 11, 210},
+    }};
+    const auto &definitions = darkness ? darkness_definitions : treasures_definitions;
     const bool fights = level_in(levels, ClassSlot::fighter) > 0 ||
                         level_in(levels, ClassSlot::ranger) > 0 ||
                         level_in(levels, ClassSlot::paladin) > 0;
@@ -1009,8 +1019,9 @@ std::vector<StartingItem> starting_items(const ClassLevels &levels, GoldBoxGame 
                         : level_in(levels, ClassSlot::thief) > 0  ? thieves
                         : level_in(levels, ClassSlot::cleric) > 0 ? clerics
                                                                   : the_rest;
-    // The fourth item is carried, not readied; a fighter's arrows (the fifth)
-    // and the rest's darts (the fourth) come 50 to the bundle.
+    // Pools of Darkness readies all but the fourth item; Treasures readies
+    // none (its CreateStartingItems copies them unreadied). A fighter's
+    // fifth item and the rest's fourth come 50 to the bundle.
     constexpr std::size_t carried_only = 3;
     const auto bundled = [family](std::size_t at)
     {
@@ -1026,7 +1037,7 @@ std::vector<StartingItem> starting_items(const ClassLevels &levels, GoldBoxGame 
             continue;
         }
         items.push_back({definition, bundled(at) ? std::optional{bundle_count} : std::nullopt,
-                         at != carried_only});
+                         darkness && at != carried_only});
     }
     return items;
 }

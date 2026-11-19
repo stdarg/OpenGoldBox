@@ -1530,6 +1530,56 @@ void darkness_characters_start_equipped()
           "A magic-user readies its bracers, ring and quarterstaff and carries 50 darts");
 }
 
+// Treasures gives a new character up to five of its ITEM0 definitions by
+// class family (its CreateStartingItems, gdconsts startingItems), none of
+// them readied, a fighter's fifth 50 to the bundle.
+void treasures_characters_start_equipped()
+{
+    const auto treasures = GoldBoxGame::treasures_of_the_savage_frontier;
+    using original::StartingItem;
+    original::ClassLevels levels{};
+    level_in(levels, original::ClassSlot::paladin) = 5;
+    check(original::starting_items(levels, treasures) ==
+              std::vector<StartingItem>{{66, std::nullopt, false},
+                                        {40, std::nullopt, false},
+                                        {78, std::nullopt, false},
+                                        {5, std::nullopt, false},
+                                        {1, 50, false}},
+          "A paladin takes a fighter's kit: ITEM0's 66, 40, 78, 5 and 50 of 1, carried");
+    original::ClassLevels mage{};
+    level_in(mage, original::ClassSlot::magic_user) = 5;
+    check(original::starting_items(mage, treasures) ==
+              std::vector<StartingItem>{
+                  {64, std::nullopt, false}, {11, std::nullopt, false}, {210, std::nullopt, false}},
+          "The rest's kit: ITEM0's 64, 11 and 210");
+
+    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
+    const auto folder =
+        games ? std::filesystem::path(games) / game_folder(treasures) : std::filesystem::path();
+    if (!games || !std::filesystem::exists(folder / "ITEM0.DAX"))
+    {
+        std::cout << "Treasures' files are not here; its starting equipment is not checked.\n";
+        return;
+    }
+    const auto definitions = load_item_definitions(folder, treasures);
+    std::shared_ptr<const rules::CharacterRules> creation =
+        original::character_rules(original::default_aging, treasures);
+    CampaignParty party(original::rules_module(load_original_content(folder, treasures)), creation);
+    const auto fighter = member_with(party, creation, "fighter", "Brok");
+    outfit_original_character(party, fighter, definitions);
+    const auto &warrior = party.member(fighter);
+    const auto &carried = warrior.character.inventory().items();
+    check(carried.size() == 5 && carried.front().name == "Long Sword +1" &&
+              carried.back().quantity == 50 && warrior.equipped.empty(),
+          "A fighter carries five items, known for what they are, 50 arrows among them, none "
+          "readied: " +
+              carried.front().name);
+    const auto cleric = member_with(party, creation, "cleric", "Ilsa");
+    outfit_original_character(party, cleric, definitions);
+    check(party.member(cleric).character.inventory().items().size() == 4,
+          "A cleric carries four items");
+}
+
 // Treasures of the Savage Frontier: a new character starts with 22,600
 // experience (11,300 for each class of two, 7,533 of three), trained at once,
 // and 200 platinum, on the tables of Pools of Darkness, its engine's.
@@ -3198,6 +3248,7 @@ int main()
         gateway_characters_start_low_and_stop_at_caps();
         darkness_characters_start_high();
         darkness_characters_start_equipped();
+        treasures_characters_start_equipped();
         treasures_characters_start_with_their_experience();
         treasures_magic_users_choose_their_spells();
         std::cout << "Original creation tests passed\n";

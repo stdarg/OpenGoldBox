@@ -778,6 +778,7 @@ in [ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Bugs):
 | Its turning was the earlier games': clerics only, once a fight, the weakest undead first, a failed roll ending it (2026-11-16) | Its own CombatTurnUndead ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Turning undead) |
 | A member its yetis frightened as they surprised the party fled to the fight's end, the fright's 2 rounds over: in Fireshear's cavern on the sea every play of the route left the party dead (2026-11-16) | The flight ends with the fright (its EffFear, as the effect is removed) |
 | A *Gateway* character's items came across renamed and renumbered, but their record's bytes, which the inventory keeps an item by, kept *Gateway*'s type and words (2026-11-16) | The bytes are rewritten with them |
+| A new character had no equipment (2026-11-19) | Its class family's `ITEM0` items, unreadied, as its CreateStartingItems: a fighter, paladin or ranger a long sword +1, plate mail, a shield +1, a composite long bow and 50 arrows; a thief two, a cleric four, anyone else three. It counts what it carries, not the original's three, as *Pools of Darkness* does ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Bugs) |
 
 The earned campaign also exposed stale square data after a script moves the
 party within a map. Leilon's underground stairs put it at the farmhouse

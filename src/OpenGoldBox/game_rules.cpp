@@ -62,8 +62,10 @@ void outfit_for_game(opengold::CampaignParty &party, opengold::MemberId id, cons
         opengold::ua::outfit_new_character(
             party, id, opengold::ua::DesignFiles(files.original_game, files.design));
     }
-    // Pools of Darkness gives its characters their equipment at creation.
-    if (files.game == opengold::GoldBoxGame::pools_of_darkness &&
+    // Pools of Darkness and Treasures give their characters their equipment
+    // at creation.
+    if ((files.game == opengold::GoldBoxGame::pools_of_darkness ||
+         files.game == opengold::GoldBoxGame::treasures_of_the_savage_frontier) &&
         game_rules_of(party).set == GameRules::Set::original)
     {
         opengold::outfit_original_character(

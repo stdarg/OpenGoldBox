@@ -51,9 +51,9 @@ make_rules_module(const GameRules &rules, const RulesFiles &files);
 
 // A new character's start besides what creation gives it: under an
 // Unlimited Adventures design, its game record's gems, jewelry and equipment
-// (opengold::ua::outfit_new_character); under Pools of Darkness's original
-// rules, its equipment (opengold::outfit_original_character); nothing in the
-// other games.
+// (opengold::ua::outfit_new_character); under Pools of Darkness's and
+// Treasures' original rules, its equipment
+// (opengold::outfit_original_character); nothing in the other games.
 void outfit_for_game(opengold::CampaignParty &party, opengold::MemberId id,
                      const RulesFiles &files);
 
