@@ -1,7 +1,8 @@
 """tools/session_board.py as sessions and Claude Code's hook use it: claims
 kept as GitHub issues labelled `claim` (through a stand-in for gh), overlap
 warnings, the hook's board, cache and reminders, stale and forgotten claims,
-and claims waiting on the machine while GitHub is unreachable."""
+claims waiting on the machine while GitHub is unreachable, and conversations
+between sessions kept as issues labelled `message`."""
 import json
 import os
 from pathlib import Path
@@ -33,7 +34,7 @@ class SessionBoardTests(unittest.TestCase):
 
     def run_board(self, session, *args, stdin=""):
         environment = dict(os.environ, OPENGOLD_SESSION_BOARD=str(self.board), OPENGOLD_GH=str(FAKE_GH),
-                           FAKE_GH_STATE=str(self.github))
+                           FAKE_GH_STATE=str(self.github), OPENGOLD_MESSAGE_POLL="0.1")
         environment.pop("CLAUDE_CODE_SESSION_ID", None)
         environment.pop("FAKE_GH_OFFLINE", None)
         if self.offline:
@@ -51,8 +52,16 @@ class SessionBoardTests(unittest.TestCase):
     def state(self):
         return json.loads(self.github.read_text()) if self.github.exists() else {"issues": [], "calls": []}
 
-    def issues(self, state="open"):
-        return [issue for issue in self.state()["issues"] if issue["state"] == state]
+    def issues(self, state="open", label="claim"):
+        return [issue for issue in self.state()["issues"] if issue["state"] == state and label in issue["labels"]]
+
+    def conversations(self, state="open"):
+        return self.issues(state, "message")
+
+    def two_sessions(self):
+        """first (named opengold-08) holds claim #1; second holds claim #2."""
+        self.run_board("first", "claim", "--task", "Dark Queen", "--name", "opengold-08")
+        self.run_board("second", "claim", "--task", "Buck Rogers")
 
     def stored(self, issue):
         body = issue["body"]
@@ -220,7 +229,7 @@ class SessionBoardTests(unittest.TestCase):
         self.assertIn("no other session has a claim", self.hook("first", "UserPromptSubmit"))
         [forgotten] = self.issues("closed")
         self.assertEqual(forgotten["reason"], "not planned")
-        self.assertIn("idle for over 3 days", forgotten["comments"][0])
+        self.assertIn("idle for over 3 days", forgotten["comments"][0]["body"])
 
     def test_offline_claims_and_releases_wait_on_the_machine(self):
         self.offline = True
@@ -242,6 +251,118 @@ class SessionBoardTests(unittest.TestCase):
         self.hook("first", "UserPromptSubmit")
         self.assertEqual(self.issues(), [])
         self.assertEqual(list(self.board.glob("pending-*")), [])
+
+    def test_a_message_opens_a_conversation_issue_the_recipient_reads(self):
+        self.two_sessions()
+        code, output = self.run_board("second", "send", "--to", "1", "--subject", "Game numbers",
+                                      "May I take GoldBoxGame IDs 10 and 11?")
+        self.assertEqual(code, 0, output)
+        self.assertIn("Sent to opengold-08 in conversation #3", output)
+        [conversation] = self.conversations()
+        self.assertEqual(conversation["labels"], ["message"])
+        self.assertIn("Message: Game numbers (", conversation["title"])
+        self.assertIn("**Subject:** Game numbers", conversation["body"])
+        [comment] = conversation["comments"]
+        self.assertIn("May I take GoldBoxGame IDs 10 and 11?", comment["body"])
+        self.assertIn("to opengold-08:", comment["body"])
+        _, inbox = self.run_board("first", "inbox")
+        self.assertIn('#3 "Game numbers" from claude on', inbox)
+        self.assertIn("    May I take GoldBoxGame IDs 10 and 11?", inbox)
+        self.assertIn("Open conversations:", inbox)
+        self.assertIn("No new messages.", self.run_board("first", "inbox")[1])
+        self.assertIn("No new messages.", self.run_board("second", "inbox")[1])
+        self.assertEqual(self.run_board("third", "inbox")[1].strip(), "No new messages.")
+
+    def test_replies_and_new_messages_stay_in_one_conversation(self):
+        self.two_sessions()
+        self.run_board("second", "send", "--to", "opengold-08", "--subject", "Rebase", "First question")
+        code, output = self.run_board("first", "reply", "3", "An answer")
+        self.assertEqual(code, 0, output)
+        self.assertIn("An answer", self.run_board("second", "inbox")[1])
+        self.run_board("second", "send", "--to", "1", "Second question")
+        [conversation] = self.conversations()
+        self.assertEqual(len(conversation["comments"]), 3)
+        _, inbox = self.run_board("first", "inbox")
+        self.assertIn("Second question", inbox)
+        self.assertNotIn("First question", inbox)
+        _, whole = self.run_board("first", "inbox", "--conversation", "3")
+        for text in ("First question", "An answer", "Second question"):
+            self.assertIn(text, whole)
+
+    def test_a_third_session_joins_by_replying(self):
+        self.two_sessions()
+        self.run_board("second", "send", "--to", "1", "Who owns the menu?")
+        self.run_board("third", "reply", "3", "I do")
+        for session in ("first", "second"):
+            self.assertIn("I do", self.run_board(session, "inbox")[1])
+        self.run_board("first", "reply", "3", "Thanks")
+        self.assertIn("Thanks", self.run_board("third", "inbox")[1])
+
+    def test_hook_shows_a_new_message_once(self):
+        self.two_sessions()
+        self.hook("first", "SessionStart")
+        self.run_board("second", "send", "--to", "1", "Rebase before you push")
+        self.age_cache()
+        (self.board / ".github-messages.json").unlink(missing_ok=True)
+        prompt = self.hook("first", "UserPromptSubmit")
+        self.assertIn("Messages for this session", prompt)
+        self.assertIn("Rebase before you push", prompt)
+        self.assertNotIn("Rebase before you push", self.hook("first", "UserPromptSubmit"))
+        self.assertNotIn("Rebase before you push", self.hook("second", "UserPromptSubmit"))
+
+    def test_a_comment_written_on_github_is_the_users(self):
+        self.two_sessions()
+        self.run_board("second", "send", "--to", "1", "Shall I take ID 10?")
+        state = self.state()
+        issue = next(i for i in state["issues"] if "message" in i["labels"])
+        issue["comments"].append({"id": "IC_user", "body": "Yes, go ahead.", "author": {"login": "someone"},
+                                  "createdAt": "2026-11-19T18:00:00Z"})
+        self.github.write_text(json.dumps(state))
+        for session in ("first", "second"):
+            _, inbox = self.run_board(session, "inbox")
+            self.assertIn("from the user (someone on GitHub)", inbox)
+            self.assertIn("Yes, go ahead.", inbox)
+
+    def test_wait_returns_with_a_message_or_times_out(self):
+        self.two_sessions()
+        code, output = self.run_board("first", "wait", "--timeout", "0.3s")
+        self.assertEqual(code, 1)
+        self.assertIn("No new message within 0.3s", output)
+        self.run_board("second", "send", "--to", "1", "Pushed")
+        code, output = self.run_board("first", "wait", "--timeout", "5s")
+        self.assertEqual(code, 0)
+        self.assertIn("Pushed", output)
+
+    def test_close_ends_a_conversation_and_forgotten_ones_close(self):
+        self.two_sessions()
+        self.run_board("second", "send", "--to", "1", "Done?")
+        code, _ = self.run_board("first", "close", "3", "Settled")
+        self.assertEqual(code, 0)
+        [closed] = self.conversations("closed")
+        self.assertIn("Settled", closed["comments"][-1]["body"])
+        self.assertEqual(self.run_board("first", "reply", "3", "More")[0], 1)
+        self.run_board("second", "send", "--to", "1", "A new topic")
+        state = self.state()
+        issue = next(i for i in state["issues"] if "message" in i["labels"] and i["state"] == "open")
+        for comment in issue["comments"]:
+            comment["body"] = comment["body"].replace('"sent": ', '"sent": -')
+        issue["body"] = issue["body"].replace('"started": ', '"started": -')
+        self.github.write_text(json.dumps(state))
+        self.run_board("first", "inbox")
+        self.assertEqual(self.conversations(), [])
+        self.assertEqual(self.conversations("closed")[-1]["reason"], "not planned")
+
+    def test_messages_need_github_and_a_known_recipient(self):
+        self.two_sessions()
+        code, output = self.run_board("second", "send", "--to", "99", "Hello")
+        self.assertEqual(code, 1)
+        self.assertIn("No session on the board is 99", output)
+        self.offline = True
+        code, output = self.run_board("second", "send", "--to", "1", "Hello")
+        self.assertEqual(code, 1)
+        self.assertIn("GitHub unreachable", output)
+        self.offline = False
+        self.assertEqual(self.conversations(), [])
 
     def test_hook_never_fails_a_prompt(self):
         code, output = self.run_board(None, "hook", stdin="not json")

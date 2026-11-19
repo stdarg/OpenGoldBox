@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import sys
+import time
 
 
 def option(args, name):
@@ -16,10 +17,17 @@ def find(state, number):
     return next(issue for issue in state["issues"] if issue["number"] == int(number))
 
 
+def add_comment(state, issue, body):
+    state["next_comment"] = state.get("next_comment", 1) + 1
+    issue["comments"].append({"id": f"IC_{state['next_comment']}", "body": body, "author": {"login": "someone"},
+                              "createdAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+
+
 def run(args, state):
     if args[:2] == ["issue", "list"]:
         label, wanted = option(args, "--label"), option(args, "--state")
-        print(json.dumps([{"number": issue["number"], "body": issue["body"]} for issue in state["issues"]
+        fields = option(args, "--json").split(",")
+        print(json.dumps([{field: issue[field] for field in fields} for issue in state["issues"]
                           if label in issue["labels"] and issue["state"] == wanted]))
     elif args[:2] == ["issue", "create"]:
         number = state["next"]
@@ -30,12 +38,16 @@ def run(args, state):
         print(f"https://github.com/example/repo/issues/{number}")
     elif args[:2] == ["issue", "edit"]:
         issue = find(state, args[2])
-        issue["title"], issue["body"] = option(args, "--title"), option(args, "--body")
+        issue["title"] = option(args, "--title") or issue["title"]
+        issue["body"] = option(args, "--body") or issue["body"]
+    elif args[:2] == ["issue", "comment"]:
+        add_comment(state, find(state, args[2]), option(args, "--body"))
+        print(f"https://github.com/example/repo/issues/{args[2]}#issuecomment-1")
     elif args[:2] == ["issue", "close"]:
         issue = find(state, args[2])
         issue["state"], issue["reason"] = "closed", option(args, "--reason")
         if option(args, "--comment"):
-            issue["comments"].append(option(args, "--comment"))
+            add_comment(state, issue, option(args, "--comment"))
     else:
         print("unknown command: " + " ".join(args), file=sys.stderr)
         return 2
