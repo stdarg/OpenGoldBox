@@ -157,7 +157,7 @@ func make_character(class_name_shown: String) -> void:
 				break
 		require(selected and faith.get_item_text(faith.selected) == "Mishakal", "The cleric keeps the selected deity")
 	await press(current_scene, "Roll")
-	if folder == "COK":
+	if folder in ["COK", "DKK"]:
 		require(current_scene.get_node("SwapHint").text.contains("Steel"), "Champions creation shows starting steel")
 	if champions_cleric: await shot("champions-cleric-deity")
 	var on_roll: Button = current_scene.get_node("ModifyRoll")

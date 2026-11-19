@@ -47,14 +47,19 @@ std::optional<WallTiles> decode_color_header_tiles(std::span<const std::uint8_t>
 
 std::optional<WallTiles> decode_wall_tiles(std::span<const std::uint8_t> record)
 {
+    // Death Knights uses FFh for a complete 256-tile sheet. Keep literal
+    // 255-frame archives valid too, distinguishing them by their full size.
+    const std::size_t frames =
+        record.size() >= 17 && record[8] == 255 && record.size() == 17 + 256 * 32 ? 256
+        : record.size() >= 17                                                     ? record[8]
+                                                                                  : 0;
     // PoR 8X8D: one 17-byte image header, then count packed 8x8 frames.
     if (record.size() < 17 || record[0] != 8 || record[1] != 0 || record[2] != 1 ||
-        record[3] != 0 || !record[8] ||
-        record.size() != 17 + static_cast<std::size_t>(record[8]) * 32)
+        record[3] != 0 || !record[8] || record.size() != 17 + frames * 32)
     {
         return decode_color_header_tiles(record);
     }
-    WallTiles result(record[8]);
+    WallTiles result(frames);
     for (std::size_t frame = 0; frame < result.size(); ++frame)
     {
         for (std::size_t pixel = 0; pixel < 64; ++pixel)

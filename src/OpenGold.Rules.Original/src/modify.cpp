@@ -359,12 +359,13 @@ template <class Visit> void each_class(const ClassLevels &levels, Visit &&visit)
         return has(C::fighter);
     }
     return has(C::fighter) || has(C::paladin) || has(C::ranger) ||
-           (game == GoldBoxGame::champions_of_krynn && has(C::monk));
+           (krynn_game(game) && has(C::monk));
 }
 
 int champions_constitution(ClassSlot slot, int constitution)
 {
-    const bool warrior = slot == C::fighter || slot == C::ranger || slot == C::monk;
+    const bool warrior =
+        slot == C::fighter || slot == C::ranger || slot == C::monk || slot == C::paladin;
     return table_bonus(constitution) + (warrior ? warrior_extra(constitution) : 0);
 }
 
@@ -380,9 +381,9 @@ int champions_maximum(const ModifiedCharacter &character, int constitution)
                                       (slot == C::cleric && character.orders.deity <= 4);
                    const int dice = std::min(level, caps[at_slot] - 1) + (extra ? 1 : 0);
                    const int sides = slot == C::monk ? 10 : hit_die_sides[at_slot];
-                   const int fixed = slot == C::fighter || slot == C::monk ? 3
-                                     : slot == C::magic_user               ? 1
-                                                                           : 2;
+                   const int fixed = slot == C::fighter || slot == C::monk || slot == C::paladin ? 3
+                                     : slot == C::magic_user ? 1
+                                                             : 2;
                    total += dice * (sides + champions_constitution(slot, constitution)) +
                             std::max(0, level - caps[at_slot] + 1) * fixed;
                });
@@ -434,13 +435,15 @@ bool modify_allowed(int experience, GoldBoxGame game, int design_start)
     case GoldBoxGame::champions_of_krynn:
         // CharGen.ModifyCharacter's creation/import experience values.
         return one_of(experience, {1500, 1251, 2000, 2001, 2251, 2500, 5000});
+    case GoldBoxGame::death_knights_of_krynn:
+        return one_of(experience, {210003, 105002, 70001});
     }
     return false;
 }
 
 int modify_hit_point_minimum(const ModifiedCharacter &character, int constitution, GoldBoxGame game)
 {
-    if (game == GoldBoxGame::champions_of_krynn)
+    if (krynn_game(game))
     {
         int dice = 0, bonus = 0;
         each_class(character.levels,
@@ -462,7 +465,7 @@ int modify_hit_point_minimum(const ModifiedCharacter &character, int constitutio
 
 int modify_hit_point_maximum(const ModifiedCharacter &character, int constitution, GoldBoxGame game)
 {
-    if (game == GoldBoxGame::champions_of_krynn)
+    if (krynn_game(game))
     {
         return champions_maximum(character, constitution);
     }
@@ -497,7 +500,7 @@ ModifiedNumbers modify_step(const ModifiedNumbers &numbers, const ModifiedCharac
         return step_hit_points(numbers, character, step, game);
     }
     const auto ability = static_cast<Ability>(row);
-    const auto limits = ability_limits(character.race, character.gender);
+    const auto limits = ability_limits(character.race, character.gender, game);
     const auto minimums = class_minimums(character.profession, game);
     auto next = numbers;
     auto &score = next.scores[ability];
@@ -544,7 +547,7 @@ ModifiedNumbers modify_step(const ModifiedNumbers &numbers, const ModifiedCharac
 int modified_rolled_hit_points(const ModifiedCharacter &character, int constitution, int hit_points,
                                int rolled_before, GoldBoxGame game)
 {
-    if (game == GoldBoxGame::champions_of_krynn)
+    if (krynn_game(game))
     {
         int bonus = 0;
         each_class(character.levels,

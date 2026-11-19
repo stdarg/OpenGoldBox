@@ -19,10 +19,11 @@ enum class GoldBoxGame : std::uint8_t
     pools_of_darkness,
     treasures_of_the_savage_frontier,
     unlimited_adventures,
-    champions_of_krynn
+    champions_of_krynn,
+    death_knights_of_krynn
 };
 
-inline constexpr std::array<GoldBoxGame, 8> gold_box_games{
+inline constexpr std::array<GoldBoxGame, 9> gold_box_games{
     GoldBoxGame::pool_of_radiance,
     GoldBoxGame::curse_of_the_azure_bonds,
     GoldBoxGame::secret_of_the_silver_blades,
@@ -30,7 +31,8 @@ inline constexpr std::array<GoldBoxGame, 8> gold_box_games{
     GoldBoxGame::pools_of_darkness,
     GoldBoxGame::treasures_of_the_savage_frontier,
     GoldBoxGame::unlimited_adventures,
-    GoldBoxGame::champions_of_krynn};
+    GoldBoxGame::champions_of_krynn,
+    GoldBoxGame::death_knights_of_krynn};
 
 [[nodiscard]] constexpr std::string_view game_title(GoldBoxGame game) noexcept
 {
@@ -52,6 +54,8 @@ inline constexpr std::array<GoldBoxGame, 8> gold_box_games{
         return "Unlimited Adventures";
     case GoldBoxGame::champions_of_krynn:
         return "Champions of Krynn";
+    case GoldBoxGame::death_knights_of_krynn:
+        return "Death Knights of Krynn";
     }
     return {};
 }
@@ -77,6 +81,8 @@ inline constexpr std::array<GoldBoxGame, 8> gold_box_games{
         return "UA";
     case GoldBoxGame::champions_of_krynn:
         return "COK";
+    case GoldBoxGame::death_knights_of_krynn:
+        return "DKK";
     }
     return {};
 }
@@ -88,6 +94,13 @@ inline constexpr std::array<GoldBoxGame, 8> gold_box_games{
 {
     return game == GoldBoxGame::pools_of_darkness ||
            game == GoldBoxGame::treasures_of_the_savage_frontier;
+}
+
+// Death Knights introduced these script commands while retaining EGA art and
+// the earlier memory zones. The VGA games inherit the command variants.
+[[nodiscard]] constexpr bool later_ecl_commands(GoldBoxGame game) noexcept
+{
+    return game == GoldBoxGame::death_knights_of_krynn || vga_engine(game);
 }
 
 // The file of the game's item types: Gateway to the Savage Frontier names it

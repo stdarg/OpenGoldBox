@@ -3,6 +3,8 @@
 #include "opengold/secret_records.h"
 #include "opengold/late_records.h"
 #include "opengold/champions_records.h"
+#include "opengold/death_knights_records.h"
+#include "death_knights_rules.h"
 #include "opengold/pool_radiance.h"
 #include "opengold/original_spells.h"
 #include <algorithm>
@@ -338,6 +340,16 @@ struct Choices
 std::optional<por::CharacterRecord> decode_record(std::span<const std::uint8_t> bytes,
                                                   GoldBoxGame game)
 {
+    if (game == GoldBoxGame::death_knights_of_krynn && (bytes.size() == 216 || bytes.size() == 436))
+    {
+        auto record = death_knights::decode_creature(bytes.first(216));
+        if (record && bytes.size() == 436 &&
+            !death_knights::attach_spells(*record, bytes.subspan(216)))
+        {
+            return std::nullopt;
+        }
+        return record;
+    }
     switch (bytes.size())
     {
     case 409:
@@ -372,13 +384,14 @@ struct Imported
     int deity{}, robe{}, knight{};
     std::vector<int> learned;
     std::optional<int> rolled_hit_points;
+    std::optional<std::vector<std::string>> prepared;
 };
 
 std::string encode_imported(const Imported &from)
 {
     std::ostringstream out;
-    const bool krynn = from.deity || from.robe || from.knight;
-    out << imported_prefix << (krynn ? 3 : from.rolled_hit_points ? 2 : 1);
+    const bool krynn = from.deity || from.robe || from.knight || from.prepared.has_value();
+    out << imported_prefix << (from.prepared ? 4 : krynn ? 3 : from.rolled_hit_points ? 2 : 1);
     for (const auto ability : rules::all_abilities)
     {
         out << ' ' << from.scores[ability];
@@ -402,6 +415,14 @@ std::string encode_imported(const Imported &from)
     if (krynn)
     {
         out << ' ' << from.deity << ' ' << from.robe << ' ' << from.knight;
+    }
+    if (from.prepared)
+    {
+        out << ' ' << from.prepared->size();
+        for (const auto &id : *from.prepared)
+        {
+            out << ' ' << id;
+        }
     }
     return out.str();
 }
@@ -440,12 +461,30 @@ std::optional<Imported> imported_of(const CharacterDraft &draft)
         in >> rolled;
         from.rolled_hit_points = rolled;
     }
-    if (version == 3)
+    if (version >= 3)
     {
         in >> from.deity >> from.robe >> from.knight;
     }
+    if (version == 4)
+    {
+        std::size_t count = 0;
+        in >> count;
+        if (count > 74)
+        {
+            throw std::invalid_argument("Too many imported prepared spells");
+        }
+        from.prepared = std::vector<std::string>(count);
+        for (auto &id : *from.prepared)
+        {
+            in >> id;
+            if (id.empty() || id.size() > 128)
+            {
+                throw std::invalid_argument("Invalid imported prepared spell");
+            }
+        }
+    }
     std::string rest;
-    if (!in || version < 1 || version > 3 || (in >> rest) || from.hit_points < 1 ||
+    if (!in || version < 1 || version > 4 || (in >> rest) || from.hit_points < 1 ||
         from.deity < 0 || from.deity > 7 || from.robe < 0 || from.robe > 3 || from.knight < 0 ||
         from.knight > 3)
     {
@@ -641,12 +680,14 @@ class OriginalCharacterRules final : public rules::CharacterRules
         const auto &o = *from.original;
         const auto race = static_cast<Race>(o.race);
         const auto gender = from.gender == "Female" ? Gender::female : Gender::male;
-        const auto limits = ability_limits(race, gender);
+        const auto limits = ability_limits(race, gender, game_);
         Imported in;
         for (const auto ability : rules::all_abilities)
         {
-            in.scores[ability] =
-                std::clamp(from.scores[ability], limits.minimum[ability], limits.maximum[ability]);
+            in.scores[ability] = game_ == GoldBoxGame::death_knights_of_krynn
+                                     ? from.scores[ability]
+                                     : std::clamp(from.scores[ability], limits.minimum[ability],
+                                                  limits.maximum[ability]);
         }
         in.exceptional_strength =
             in.scores[Ability::strength] == 18
@@ -655,6 +696,31 @@ class OriginalCharacterRules final : public rules::CharacterRules
         in.levels = o.class_levels;
         in.hit_points = std::max(from.hit_points, 1);
         in.age = o.age;
+        if (game_ == GoldBoxGame::death_knights_of_krynn)
+        {
+            switch (race)
+            {
+            case Race::qualinesti_elf:
+            case Race::silvanesti_elf:
+                in.age = std::min(in.age, 1200);
+                break;
+            case Race::krynn_half_elf:
+                in.age = std::min(in.age, 200);
+                break;
+            case Race::mountain_dwarf:
+            case Race::hill_dwarf:
+                in.age = std::min(in.age, 300);
+                break;
+            case Race::kender:
+                in.age = in.age > 199 ? 70 : in.age;
+                break;
+            case Race::krynn_human:
+                in.age = std::min(in.age, 50);
+                break;
+            default:
+                break;
+            }
+        }
         in.experience = static_cast<int>(std::min<unsigned>(experience, 100000000));
         const bool darkness = game_ == GoldBoxGame::pools_of_darkness;
         in.drained_levels = darkness ? 0 : o.drained_levels;
@@ -669,15 +735,20 @@ class OriginalCharacterRules final : public rules::CharacterRules
         {
             in.rolled_hit_points = o.rolled_hit_points;
         }
-        if (darkness)
+        if (darkness || game_ == GoldBoxGame::death_knights_of_krynn)
         {
             in.rolled_hit_points = o.rolled_hit_points;
+        }
+        if (game_ == GoldBoxGame::death_knights_of_krynn)
+        {
+            in.prepared = from.prepared_spells;
         }
         constexpr int animate_dead = 36;
         for (const int number : o.known_spells)
         {
-            const auto *known = spell(number);
-            if (known && known->caster_class == SpellClass::magic_user && number != animate_dead)
+            const auto *known = spell(number, game_);
+            if (known && known->caster_class == SpellClass::magic_user &&
+                (game_ == GoldBoxGame::death_knights_of_krynn || number != animate_dead))
             {
                 in.learned.push_back(number);
             }
@@ -781,7 +852,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
         case CreationField::alignment:
         {
             auto choices = listed(alignments);
-            if (game_ == GoldBoxGame::champions_of_krynn)
+            if (krynn_game(game_))
             {
                 std::erase_if(
                     choices,
@@ -793,8 +864,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
             return choices;
         }
         case CreationField::background:
-            return game_ == GoldBoxGame::champions_of_krynn ? listed(deities)
-                                                            : std::vector<CreationChoice>{};
+            return krynn_game(game_) ? listed(deities) : std::vector<CreationChoice>{};
         }
         throw std::invalid_argument("Unknown creation field");
     }
@@ -819,7 +889,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
                                 const CharacterDraft &after) const override
     {
         return CharacterRules::choices_require_reroll(before, after) ||
-               (game_ == GoldBoxGame::champions_of_krynn &&
+               (krynn_game(game_) &&
                 (before.background != after.background || before.alignment != after.alignment));
     }
 
@@ -872,7 +942,12 @@ class OriginalCharacterRules final : public rules::CharacterRules
             {
                 return false;
             }
-            if (game_ == GoldBoxGame::champions_of_krynn)
+            if (game_ == GoldBoxGame::death_knights_of_krynn &&
+                !death_knights_alignment_allowed(*profession, *alignment))
+            {
+                return false;
+            }
+            if (krynn_game(game_))
             {
                 const auto number = static_cast<unsigned>(*alignment);
                 if (number % 3 == 2)
@@ -885,7 +960,8 @@ class OriginalCharacterRules final : public rules::CharacterRules
                 }
                 const bool thief = std::ranges::find(classes_of(*profession), ClassSlot::thief) !=
                                    classes_of(*profession).end();
-                if (thief && number != 1 && number != 3 && number != 4)
+                if (game_ == GoldBoxGame::champions_of_krynn && thief && number != 1 &&
+                    number != 3 && number != 4)
                 {
                     return false;
                 }
@@ -897,12 +973,16 @@ class OriginalCharacterRules final : public rules::CharacterRules
                     return false;
                 }
             }
+            if (game_ == GoldBoxGame::death_knights_of_krynn)
+            {
+                return true;
+            }
             const auto open = alignments_for(*profession);
             return std::ranges::find(open, *alignment) != open.end();
         }
         case CreationField::background:
         {
-            if (game_ != GoldBoxGame::champions_of_krynn)
+            if (!krynn_game(game_))
             {
                 return false;
             }
@@ -1002,7 +1082,10 @@ class OriginalCharacterRules final : public rules::CharacterRules
         // Curse's character starts trained to its starting experience.
         const auto trained =
             starting_training(chosen.race, chosen.profession, rolled_ability, rolled, game_,
-                              experience_of(chosen.profession, draft.alignment));
+                              experience_of(chosen.profession, draft.alignment),
+                              {static_cast<int>(find_id(deities, draft.background).value_or(0)),
+                               static_cast<int>(alignment) % 3 == 0 ? 1 : 2,
+                               chosen.profession == Profession::knight ? 1 : 0});
         const auto &levels = trained.levels;
         sheet.level = *std::max_element(levels.begin(), levels.end());
         sheet.hit_points =
@@ -1050,7 +1133,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
         original.race = static_cast<int>(chosen.race);
         original.profession = static_cast<int>(chosen.profession);
         original.alignment = static_cast<int>(alignment);
-        if (game_ == GoldBoxGame::champions_of_krynn)
+        if (krynn_game(game_))
         {
             if (level_in(levels, ClassSlot::cleric))
             {
@@ -1079,12 +1162,21 @@ class OriginalCharacterRules final : public rules::CharacterRules
         original.known_spells = known_spells(
             levels, ability[Ability::wisdom],
             chosen_spells(draft, trained.learned_spells, training_options(draft)), game_);
-        if (game_ == GoldBoxGame::champions_of_krynn)
+        if (krynn_game(game_))
         {
             original.known_spells = level_in(levels, ClassSlot::magic_user)
                                         ? std::vector<int>{11, 18, 12, 15, 21}
                                         : std::vector<int>{};
-            recalculate_champions_numbers(original, ability);
+            if (game_ == GoldBoxGame::death_knights_of_krynn)
+            {
+                original.known_spells = death_knights_starting_spells(
+                    original.robe_order, level_in(levels, ClassSlot::magic_user));
+                recalculate_death_knights_numbers(original, ability);
+            }
+            else
+            {
+                recalculate_champions_numbers(original, ability);
+            }
         }
         sheet.original = original;
         return sheet;
@@ -1204,6 +1296,10 @@ class OriginalCharacterRules final : public rules::CharacterRules
         sheet.scores = from.scores;
         sheet.level = std::max(1, *std::max_element(from.levels.begin(), from.levels.end()));
         sheet.hit_points = from.hit_points;
+        if (game_ == GoldBoxGame::death_knights_of_krynn && from.prepared)
+        {
+            sheet.prepared_spells = *from.prepared;
+        }
         for (std::size_t at = 0; at < class_slot_count; ++at)
         {
             if (from.levels[at] > 0)
@@ -1225,7 +1321,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
         numbers.robe_order = from.robe;
         numbers.knight_order = from.knight;
         numbers.experience = from.experience;
-        numbers.platinum = platinum();
+        numbers.platinum = game_ == GoldBoxGame::death_knights_of_krynn ? 0 : platinum();
         numbers.drained_levels = from.drained_levels;
         numbers.drained_hit_points = from.drained_hit_points;
         // Its Hit Points less a level's Constitution bonus, as Curse's
@@ -1253,9 +1349,17 @@ class OriginalCharacterRules final : public rules::CharacterRules
                           return spell(number)->caster_class == SpellClass::magic_user &&
                                  std::ranges::find(from.learned, number) == from.learned.end();
                       });
-        if (game_ == GoldBoxGame::champions_of_krynn)
+        if (krynn_game(game_))
         {
-            recalculate_champions_numbers(numbers, sheet.scores);
+            if (game_ == GoldBoxGame::death_knights_of_krynn)
+            {
+                numbers.known_spells = from.learned;
+                recalculate_death_knights_numbers(numbers, sheet.scores);
+            }
+            else
+            {
+                recalculate_champions_numbers(numbers, sheet.scores);
+            }
         }
         sheet.original = numbers;
         return sheet;
@@ -1326,11 +1430,18 @@ class OriginalCharacterRules final : public rules::CharacterRules
             }
         }
         numbers.known_spells = known_spells(levels, ability[Ability::wisdom], learned, game_);
-        if (game_ == GoldBoxGame::champions_of_krynn)
+        if (krynn_game(game_))
         {
             numbers.experience = record.experience;
             numbers.known_spells = learned;
-            recalculate_champions_numbers(numbers, ability);
+            if (game_ == GoldBoxGame::death_knights_of_krynn)
+            {
+                recalculate_death_knights_numbers(numbers, ability);
+            }
+            else
+            {
+                recalculate_champions_numbers(numbers, ability);
+            }
         }
         sheet.original = numbers;
         for (const auto memorized : record.memorized_spells)
@@ -1394,6 +1505,7 @@ constexpr std::string_view curse_edition = "curse-of-the-azure-bonds";
 constexpr std::string_view secret_edition = "secret-of-the-silver-blades";
 constexpr std::string_view gateway_edition = "gateway-to-the-savage-frontier";
 constexpr std::string_view champions_edition = "champions-of-krynn";
+constexpr std::string_view death_knights_edition = "death-knights-of-krynn";
 constexpr std::string_view ua_edition = "unlimited-adventures";
 constexpr std::string_view darkness_edition = "pools-of-darkness";
 constexpr std::string_view treasures_edition = "treasures-of-the-savage-frontier";
@@ -1401,9 +1513,10 @@ constexpr std::string_view treasures_edition = "treasures-of-the-savage-frontier
 
 rules::Identity identity(GoldBoxGame game)
 {
-    const auto edition = game == GoldBoxGame::champions_of_krynn                 ? champions_edition
-                         : game == GoldBoxGame::curse_of_the_azure_bonds         ? curse_edition
-                         : game == GoldBoxGame::secret_of_the_silver_blades      ? secret_edition
+    const auto edition = game == GoldBoxGame::death_knights_of_krynn        ? death_knights_edition
+                         : game == GoldBoxGame::champions_of_krynn          ? champions_edition
+                         : game == GoldBoxGame::curse_of_the_azure_bonds    ? curse_edition
+                         : game == GoldBoxGame::secret_of_the_silver_blades ? secret_edition
                          : game == GoldBoxGame::gateway_to_the_savage_frontier   ? gateway_edition
                          : game == GoldBoxGame::unlimited_adventures             ? ua_edition
                          : game == GoldBoxGame::pools_of_darkness                ? darkness_edition
@@ -1414,6 +1527,10 @@ rules::Identity identity(GoldBoxGame game)
 
 GoldBoxGame game_of(const rules::Identity &identity)
 {
+    if (identity.content == death_knights_edition)
+    {
+        return GoldBoxGame::death_knights_of_krynn;
+    }
     if (identity.content == champions_edition)
     {
         return GoldBoxGame::champions_of_krynn;

@@ -699,7 +699,7 @@ void CharacterCreationView::refresh_party()
         .set_text(
             error_.is_empty()
                 ? i18n::text(
-                      original::game_of(campaign_->identity()) == GoldBoxGame::champions_of_krynn
+                      original::krynn_game(original::game_of(campaign_->identity()))
                           ? N_("Each new character brings starting steel and equipment for this campaign. Save game keeps this party to play on later.")
                           : N_("Each new character brings 3d6 × 10 gold pieces. Save game keeps this party to play on later."))
                 : error_);
@@ -718,10 +718,11 @@ void CharacterCreationView::refresh_party()
     auto &from_earlier_game = required_node<Button>(*this, "PartyPanel/FromPool");
     from_earlier_game.set_visible(bringing_across());
     const auto game = original::game_of(campaign_->identity());
-    from_earlier_game.set_text(
-        i18n::text(game == GoldBoxGame::treasures_of_the_savage_frontier ? N_("Add from Gateway")
-                   : game == GoldBoxGame::pools_of_darkness ? N_("Add from Secret")
-                                                            : N_("Add from Pool of Radiance")));
+    from_earlier_game.set_text(i18n::text(
+        game == GoldBoxGame::treasures_of_the_savage_frontier ? N_("Add from Gateway")
+        : game == GoldBoxGame::pools_of_darkness              ? N_("Add from Secret")
+        : game == GoldBoxGame::death_knights_of_krynn         ? N_("Add from Champions")
+                                                              : N_("Add from Pool of Radiance")));
     // Only an active member who is not already the leader can be made leader.
     const auto chosen = state.roster.empty() ? MemberId{} : state.roster[roster_index_].id;
     // The original games' party menu offers Modify for a character before

@@ -17,6 +17,11 @@
 // The tables are the originals'; the code is OpenGoldBox's own.
 namespace opengold::original
 {
+[[nodiscard]] constexpr bool krynn_game(GoldBoxGame game) noexcept
+{
+    return game == GoldBoxGame::champions_of_krynn || game == GoldBoxGame::death_knights_of_krynn;
+}
+
 // In the original's order, which its scripts read as race codes 1 to 7.
 enum class Race : unsigned
 {
@@ -154,6 +159,7 @@ struct AbilityLimits
 };
 
 [[nodiscard]] AbilityLimits ability_limits(Race race, Gender gender);
+[[nodiscard]] AbilityLimits ability_limits(Race race, Gender gender, GoldBoxGame game);
 // What the race adds to each 3d6 roll. The original's creation never applied
 // these (a bug, docs/ORIGINAL-RULES.md); OpenGoldBox does.
 [[nodiscard]] rules::AbilityArray<int> racial_adjustments(Race race);
@@ -270,7 +276,7 @@ struct StartingTraining
 [[nodiscard]] StartingTraining starting_training(Race race, Profession profession,
                                                  const rules::AbilityArray<int> &scores,
                                                  const RolledCharacter &rolled, GoldBoxGame game,
-                                                 int experience);
+                                                 int experience, KrynnOrders orders = {});
 
 // The character's scores at its current age. At its starting age each
 // ability is changed for age, kept within the race's limits and raised to the

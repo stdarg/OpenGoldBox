@@ -583,6 +583,7 @@ std::vector<SoundEffect> load_sound_effects(const std::filesystem::path &game_di
     // and no songs past the title's.
     case GoldBoxGame::secret_of_the_silver_blades:
     case GoldBoxGame::champions_of_krynn:
+    case GoldBoxGame::death_knights_of_krynn:
     {
         auto path = game_directory / "START.EXE";
         if (!std::filesystem::exists(path))

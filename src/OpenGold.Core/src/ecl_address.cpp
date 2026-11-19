@@ -32,6 +32,7 @@ ZoneStarts zone_starts(GoldBoxGame game)
     case GoldBoxGame::secret_of_the_silver_blades:
     case GoldBoxGame::gateway_to_the_savage_frontier:
     case GoldBoxGame::champions_of_krynn:
+    case GoldBoxGame::death_knights_of_krynn:
         return {0x4B00, 0x7C00, 0x7A00};
     default:
         throw EclError("The script memory of " + std::string(game_title(game)) +

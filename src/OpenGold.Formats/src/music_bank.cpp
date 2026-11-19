@@ -194,6 +194,13 @@ std::optional<MusicBank> decode_music_bank(Bytes bytes, GoldBoxGame game)
     {
         return decode_champions_music(bytes);
     }
+    if (game == GoldBoxGame::death_knights_of_krynn)
+    {
+        if (const auto score = decode_champions_music(bytes))
+        {
+            return score;
+        }
+    }
     if (bytes.size() < library_header_size || !has_tag(bytes, 0, "GLBR"))
     {
         return std::nullopt;

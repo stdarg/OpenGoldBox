@@ -84,11 +84,12 @@ struct MenuGame
 };
 
 // The games the startup menu offers, in release order (docs/GAMES.md).
-constexpr std::array<MenuGame, 8> playable_games{
+constexpr std::array<MenuGame, 9> playable_games{
     {{opengold::GoldBoxGame::pool_of_radiance, N_("Pool of Radiance")},
      {opengold::GoldBoxGame::curse_of_the_azure_bonds, N_("Curse of the Azure Bonds")},
      {opengold::GoldBoxGame::champions_of_krynn, N_("Champions of Krynn")},
      {opengold::GoldBoxGame::secret_of_the_silver_blades, N_("Secret of the Silver Blades")},
+     {opengold::GoldBoxGame::death_knights_of_krynn, N_("Death Knights of Krynn")},
      {opengold::GoldBoxGame::gateway_to_the_savage_frontier, N_("Gateway to the Savage Frontier")},
      {opengold::GoldBoxGame::pools_of_darkness, N_("Pools of Darkness")},
      {opengold::GoldBoxGame::treasures_of_the_savage_frontier,

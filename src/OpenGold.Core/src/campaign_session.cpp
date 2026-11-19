@@ -1,4 +1,5 @@
 #include "opengold/campaign_session.h"
+#include "opengold/death_knights_records.h"
 
 #include "area_loading.h"
 #include "opengold/creature_catalog.h"
@@ -52,6 +53,8 @@ LaterCampaign later_campaign(GoldBoxGame game)
         // A new game runs script 1 of disk 2 (Yartar); the overland's script
         // is on disk 6.
         return {1, 2, 6, false};
+    case GoldBoxGame::death_knights_of_krynn:
+        return {16, 1, 1, false};
     case GoldBoxGame::champions_of_krynn:
         return {36, 1, 1, false};
     case GoldBoxGame::pools_of_darkness:
@@ -243,9 +246,15 @@ std::vector<std::string> read_ending(std::span<const std::uint8_t> overlay,
 
 // Fights out of doors (the script's 3D-area cell clear) are on open ground
 // drawn with WILDCOM's 34 tiles, then RANDCOM's 6.
-void add_wilderness_art(const std::filesystem::path &folder, por::PhlanResources &root)
+void add_wilderness_art(const std::filesystem::path &folder, por::PhlanResources &root,
+                        GoldBoxGame game = GoldBoxGame::pool_of_radiance)
 {
-    for (const auto &[name, frames] : {std::pair{"WILDCOM.DAX", 34u}, std::pair{"RANDCOM.DAX", 6u}})
+    const std::vector<std::pair<std::string, unsigned>> banks =
+        game == GoldBoxGame::death_knights_of_krynn
+            ? std::vector<std::pair<std::string, unsigned>>{{"WILDCOM.DAX", 38}}
+            : std::vector<std::pair<std::string, unsigned>>{{"WILDCOM.DAX", 34},
+                                                            {"RANDCOM.DAX", 6}};
+    for (const auto &[name, frames] : banks)
     {
         const auto archive = por::detail::read_archive(por::detail::resolve_archive(folder, name));
         for (unsigned frame = 0; frame < frames; ++frame)
@@ -554,17 +563,24 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
     root->map = por::GeoMap{};
     // Pools of Darkness's TREASURE and STORE name ITEM0's definitions: it has
     // no lists.
-    if (vga_engine(game))
+    if (vga_engine(game) || game == GoldBoxGame::death_knights_of_krynn)
     {
         constexpr auto definitions = "ITEM0.DAX";
         root->item_definitions =
             files.item_definitions(definitions, files.archive(definitions).records.at(0).id);
-        root->stores = treasures ? treasures_stores(program_image) : darkness_stores(program_image);
+        root->stores = game == GoldBoxGame::death_knights_of_krynn
+                           ? death_knights::decode_stores(program_image)
+                                 .value_or(std::vector<std::vector<std::uint8_t>>{})
+                       : treasures ? treasures_stores(program_image)
+                                   : darkness_stores(program_image);
         if (root->stores.empty())
         {
             throw EclError(std::string(game_title(game)) + "'s GAME.EXE has no store lists");
         }
-        root->area_map_marker = por::detail::load_darkness_area_map_marker(files);
+        if (vga_engine(game))
+        {
+            root->area_map_marker = por::detail::load_darkness_area_map_marker(files);
+        }
     }
     else
     {
@@ -593,28 +609,62 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
     {
         add_gateway_wilderness(folder, program_image, *root);
     }
-    if (game == GoldBoxGame::champions_of_krynn)
+    if (game == GoldBoxGame::champions_of_krynn || game == GoldBoxGame::death_knights_of_krynn)
     {
         root->gateway_wilderness = por::champions_wilderness(program_image);
         if (!root->gateway_wilderness)
         {
-            throw EclError("Champions' START.EXE has no wilderness tables");
+            throw EclError(std::string(game_title(game)) + " START.EXE has no wilderness tables");
         }
-        add_wilderness_art(folder, *root);
-        auto marker = decode_ega_picture(files.record("CURSOR.DAX", 1));
+        add_wilderness_art(folder, *root, game);
+        const bool death_knights = game == GoldBoxGame::death_knights_of_krynn;
+        const auto marker_file = death_knights ? "8X8D1.DAX" : "CURSOR.DAX";
+        auto marker = decode_ega_picture(files.record(marker_file, death_knights ? 204 : 1));
         if (!marker)
         {
-            throw EclError("Champions' CURSOR.DAX has no party marker");
+            throw EclError(std::string(game_title(game)) + " " + marker_file +
+                           " has no party marker");
         }
         for (std::size_t at = 0; at < marker.image.rgba.size(); at += 4)
         {
-            if (marker.image.rgba[at] == 0 && marker.image.rgba[at + 1] == 0 &&
-                marker.image.rgba[at + 2] == 0)
+            const bool background =
+                death_knights ? marker.image.rgba[at] == 255 && marker.image.rgba[at + 1] == 85 &&
+                                    marker.image.rgba[at + 2] == 255
+                              : marker.image.rgba[at] == 0 && marker.image.rgba[at + 1] == 0 &&
+                                    marker.image.rgba[at + 2] == 0;
+            if (background)
             {
                 marker.image.rgba[at + 3] = 0;
             }
         }
         root->area_map_marker = std::move(marker.image);
+        if (death_knights)
+        {
+            const auto sprites =
+                por::detail::read_archive(por::detail::resolve_archive(folder, "SPRIT4.DAX"));
+            for (const unsigned id : {2U, 64U, 66U, 70U})
+            {
+                std::array<Image, 3> frames;
+                for (unsigned distance = 0; distance < frames.size(); ++distance)
+                {
+                    auto image = decode_ega_sprite(sprites, static_cast<std::uint8_t>(id),
+                                                   static_cast<std::uint8_t>(distance));
+                    if (!image && distance > 0)
+                    {
+                        frames[distance] = frames[distance - 1];
+                    }
+                    else if (image)
+                    {
+                        frames[distance] = std::move(image.image);
+                    }
+                    else
+                    {
+                        throw EclError("Invalid Death Knights shared sprite " + std::to_string(id));
+                    }
+                }
+                root->shared_sprites.emplace(id, std::move(frames));
+            }
+        }
     }
     if (treasures)
     {
@@ -657,7 +707,14 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
     {
         picture_files = {"PIC.DAX", "BIGPIC.DAX"};
     }
-    for (unsigned picture_disk = 1; picture_disk <= 6; ++picture_disk)
+    if (game == GoldBoxGame::death_knights_of_krynn)
+    {
+        // Native Portrait.LoadAnimation explicitly routes Maya (96) here;
+        // PIC2 contains another record with that number.
+        picture_files.emplace_back("PIC5.DAX");
+    }
+    const unsigned last_picture_disk = game == GoldBoxGame::death_knights_of_krynn ? 7 : 6;
+    for (unsigned picture_disk = 1; picture_disk <= last_picture_disk; ++picture_disk)
     {
         for (const auto *family : {"PIC", "BIGPIC"})
         {
@@ -784,6 +841,7 @@ por::RolfTourSession load_campaign(const std::filesystem::path &folder, GoldBoxG
     case GoldBoxGame::treasures_of_the_savage_frontier:
         return load_later_campaign(folder, game);
     case GoldBoxGame::champions_of_krynn:
+    case GoldBoxGame::death_knights_of_krynn:
         return load_later_campaign(folder, game);
     default:
         throw std::invalid_argument(std::string(game_title(game)) + " cannot be played yet");

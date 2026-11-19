@@ -4,6 +4,7 @@
 // 256-color decoders it builds on (vga_picture.h).
 #include "opengold/rolf_tour.h"
 #include "area_loading.h"
+#include "opengold/original_rules.h"
 #include "opengold/vga_picture.h"
 
 #include <algorithm>
@@ -72,28 +73,27 @@ std::optional<Image> load_darkness_area_map_marker(const AreaFiles &files)
 
 bool RolfTourSession::darkness_area_map() const
 {
-    return (game() == GoldBoxGame::pools_of_darkness ||
-            game() == GoldBoxGame::champions_of_krynn) &&
+    return (game() == GoldBoxGame::pools_of_darkness || original::krynn_game(game())) &&
            vga_area_map();
 }
 
 void RolfTourSession::publish_darkness_area_square()
 {
     snapshot_.overland = true;
-    snapshot_.overland_x = machine_.variable(
-        game() == GoldBoxGame::champions_of_krynn ? game_cell(ecl_overland_x) : column_cell);
-    snapshot_.overland_y = machine_.variable(
-        game() == GoldBoxGame::champions_of_krynn ? game_cell(ecl_overland_y) : row_cell);
+    snapshot_.overland_x =
+        machine_.variable(original::krynn_game(game()) ? game_cell(ecl_overland_x) : column_cell);
+    snapshot_.overland_y =
+        machine_.variable(original::krynn_game(game()) ? game_cell(ecl_overland_y) : row_cell);
     snapshot_.overland_direction = machine_.variable(game_cell(ecl_overland_direction)) % 8;
 }
 
 Image RolfTourSession::render_darkness_area_map() const
 {
-    const auto tile_set =
-        game() == GoldBoxGame::champions_of_krynn ? 0U : machine_.variable(tile_set_cell);
-    const auto picture_id = game() == GoldBoxGame::champions_of_krynn ? 121
-                            : tile_set < area_pictures.size()         ? area_pictures[tile_set]
-                                                                      : 0;
+    const auto tile_set = original::krynn_game(game()) ? 0U : machine_.variable(tile_set_cell);
+    const auto picture_id = game() == GoldBoxGame::death_knights_of_krynn ? 112
+                            : game() == GoldBoxGame::champions_of_krynn   ? 121
+                            : tile_set < area_pictures.size()             ? area_pictures[tile_set]
+                                                                          : 0;
     const auto &pictures = area_resources().pictures;
     const auto found = pictures.find(picture_id);
     if (found == pictures.end())
@@ -103,10 +103,10 @@ Image RolfTourSession::render_darkness_area_map() const
     auto map = found->second;
     if (town_->area_map_marker)
     {
-        const auto x = machine_.variable(
-            game() == GoldBoxGame::champions_of_krynn ? game_cell(ecl_overland_x) : column_cell);
-        const auto y = machine_.variable(
-            game() == GoldBoxGame::champions_of_krynn ? game_cell(ecl_overland_y) : row_cell);
+        const auto x = machine_.variable(original::krynn_game(game()) ? game_cell(ecl_overland_x)
+                                                                      : column_cell);
+        const auto y =
+            machine_.variable(original::krynn_game(game()) ? game_cell(ecl_overland_y) : row_cell);
         draw_over(map, *town_->area_map_marker, x * square_size, y * square_size);
     }
     return map;

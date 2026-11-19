@@ -141,6 +141,8 @@ struct PhlanResources
     // ITEMS templates, indexed by original item type, for generated treasure.
     std::vector<ItemTemplate> item_templates;
     std::vector<std::uint8_t> sprite_archive;
+    // Native cross-disk sprites, decoded once on the root resources.
+    std::map<unsigned, std::array<Image, 3>> shared_sprites;
     std::map<unsigned, Image> heads, bodies, pictures;
     // PIC records: monster close-ups shown before combat, looping until a key press.
     std::map<unsigned, std::vector<AnimationFrame>> animations;

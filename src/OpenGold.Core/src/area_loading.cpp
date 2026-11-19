@@ -1,4 +1,5 @@
 #include "area_loading.h"
+#include "opengold/death_knights_records.h"
 
 #include "archive_io.h"
 #include "opengold/creature_catalog.h"
@@ -48,8 +49,10 @@ const DaxDecodeResult &AreaFiles::archive(const std::string &name) const
 
 std::string AreaFiles::disk_archive(std::string_view family, unsigned disk) const
 {
-    const bool one_for_every_disk = game_ == GoldBoxGame::secret_of_the_silver_blades &&
-                                    (family == "SPRIT" || family == "CPIC");
+    const bool one_for_every_disk =
+        (game_ == GoldBoxGame::secret_of_the_silver_blades &&
+         (family == "SPRIT" || family == "CPIC")) ||
+        (game_ == GoldBoxGame::death_knights_of_krynn && family == "CPIC");
     return std::string(family) + std::to_string(one_for_every_disk ? 1 : disk) + ".DAX";
 }
 
@@ -81,6 +84,12 @@ std::vector<std::string> AreaFiles::disk_archives(std::string_view family, unsig
 std::string AreaFiles::disk_record_archive(std::string_view family, unsigned disk,
                                            unsigned id) const
 {
+    if (game_ == GoldBoxGame::death_knights_of_krynn &&
+        (family == "WALLDEF" || family == "8X8D" || family == "BACK") && id >= 1 && id <= 7)
+    {
+        constexpr std::array<unsigned, 7> disks{1, 4, 2, 2, 3, 3, 5};
+        disk = disks[id - 1];
+    }
     for (const auto &name : disk_archives(family, disk))
     {
         if (!archives_.contains(name) && !has_archive(name))
@@ -121,7 +130,7 @@ namespace
 // there is named by its own words, magic or not (their itemNameParts).
 bool names_every_item(GoldBoxGame game) noexcept
 {
-    return game == GoldBoxGame::champions_of_krynn ||
+    return game == GoldBoxGame::death_knights_of_krynn || game == GoldBoxGame::champions_of_krynn ||
            game == GoldBoxGame::treasures_of_the_savage_frontier ||
            game == GoldBoxGame::pools_of_darkness;
 }
@@ -169,7 +178,9 @@ std::map<unsigned, Equipment> AreaFiles::item_definitions(const std::string &nam
                                                           unsigned record_id) const
 {
     constexpr std::uint8_t empty = 0xFF;
-    const auto items = decode_items(record(name, record_id), game_);
+    const auto items = game_ == GoldBoxGame::death_knights_of_krynn
+                           ? death_knights::decode_item_list(record(name, record_id))
+                           : decode_items(record(name, record_id), game_);
     if (!items)
     {
         throw EclError("Invalid item definitions in " + name);
@@ -180,6 +191,19 @@ std::map<unsigned, Equipment> AreaFiles::item_definitions(const std::string &nam
         const auto &item = (*items)[n];
         if (item.type == empty)
         {
+            continue;
+        }
+        if (game_ == GoldBoxGame::death_knights_of_krynn &&
+            (item.type >= templates_.size() || item.magic_bonus < -10 || item.magic_bonus > 10 ||
+             std::ranges::any_of(item.name_components,
+                                 [this](auto word)
+                                 {
+                                     return word >= item_words_.size();
+                                 })))
+        {
+            // This release's ITEM0 allocation includes trailing machine-code
+            // and screen-fill bytes. Preserve them in the format reader, but
+            // never expose those non-items as inventory or shop definitions.
             continue;
         }
         if (item.type >= templates_.size())
@@ -374,6 +398,52 @@ WallArtSet load_wall_art(const AreaFiles &files, unsigned disk,
                          const std::array<unsigned, 3> &pieces,
                          const WallArtReplacements &new_wall_art)
 {
+    if (files.game() == GoldBoxGame::death_knights_of_krynn)
+    {
+        WallArtSet walls;
+        walls.appearances.resize(15);
+        walls.originals.resize(15);
+        for (std::size_t slot = 0; slot < pieces.size(); ++slot)
+        {
+            const auto bank = pieces[slot];
+            if (bank == no_wall_bank || bank == 127)
+            {
+                continue;
+            }
+            const auto archive = files.disk_record_archive("WALLDEF", disk, bank);
+            const auto &bytes = files.record(archive, bank);
+            const auto tiles = decode_wall_tiles(
+                files.record(files.disk_record_archive("8X8D", disk, bank), bank));
+            auto decoded = tiles ? decode_wall_art(bytes, *tiles) : std::nullopt;
+            if (!decoded || decoded->appearances.size() + slot * 5 > 15)
+            {
+                throw EclError("Invalid Death Knights wall bank " + std::to_string(bank));
+            }
+            auto replaced = with_replacements(
+                std::move(*decoded),
+                wall_appearance_keys(archive, bank, bytes.size() / wall_block_size * 5),
+                new_wall_art);
+            std::copy(replaced.appearances.begin(), replaced.appearances.end(),
+                      walls.appearances.begin() + slot * 5);
+            replaced.originals.resize(replaced.appearances.size());
+            std::copy(replaced.originals.begin(), replaced.originals.end(),
+                      walls.originals.begin() + slot * 5);
+            walls.scale = replaced.scale;
+            if (slot == 0)
+            {
+                auto backdrop = decode_ega_picture(
+                    files.record(files.disk_record_archive("BACK", disk, bank), bank));
+                auto sky = decode_ega_picture(files.record("SKYGRND.DAX", 2));
+                if (!backdrop || !sky)
+                {
+                    throw EclError("Invalid Death Knights backdrop");
+                }
+                walls.indoor_backdrop = std::move(backdrop.image);
+                walls.sky_backdrop = std::move(sky.image);
+            }
+        }
+        return walls;
+    }
     // The view draws every slot's walls from one space of symbols: blank, the
     // shared 45, then each slot's first 70. A slot left empty is blank, and a
     // wall may draw on the slots beside its own (docs/games/secret.md).
@@ -544,7 +614,7 @@ std::shared_ptr<PhlanResources> load_district(const AreaFiles &files, const MapC
     district->pieces = geo.pieces;
     // Pools of Darkness's TREASURE names its items itself: it has no lists.
     const bool vga = vga_engine(files.game());
-    if (!vga)
+    if (!vga && files.game() != GoldBoxGame::death_knights_of_krynn)
     {
         district->treasure = files.item_lists("ITEM" + bank + ".DAX");
     }

@@ -76,7 +76,7 @@ std::string original_identity_and_attributes(const Character &character, const P
     text += i18n::formatted("   THAC0 {thac0}", {{"thac0", original.thac0}});
     if (member)
     {
-        text += i18n::formatted(original::game_of(s.identity) == GoldBoxGame::champions_of_krynn
+        text += i18n::formatted(original::krynn_game(original::game_of(s.identity))
                                     ? N_("   Party steel {gold}   XP {xp}")
                                     : N_("   Party gold {gold}   XP {xp}"),
                                 {{"gold", party->purse_gold()}, {"xp", member->experience}});

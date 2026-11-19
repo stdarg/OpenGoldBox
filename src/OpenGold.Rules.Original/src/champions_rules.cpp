@@ -87,7 +87,7 @@ constexpr std::array<std::array<Row, 7>, 4> slot_increments{{{{{1, 0, 0, 0, 0},
 
 unsigned record_race(Race race, GoldBoxGame game) noexcept
 {
-    if (game == GoldBoxGame::champions_of_krynn && champions_race(race))
+    if (krynn_game(game) && champions_race(race))
     {
         return static_cast<unsigned>(race) - static_cast<unsigned>(Race::silvanesti_elf);
     }
@@ -96,7 +96,7 @@ unsigned record_race(Race race, GoldBoxGame game) noexcept
 
 Race race_from_record(unsigned code, GoldBoxGame game) noexcept
 {
-    if (game == GoldBoxGame::champions_of_krynn)
+    if (krynn_game(game))
     {
         return code <= 6 ? static_cast<Race>(static_cast<unsigned>(Race::silvanesti_elf) + code)
                          : Race::krynn_human;

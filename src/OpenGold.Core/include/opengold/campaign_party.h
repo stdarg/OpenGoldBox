@@ -295,6 +295,7 @@ class CampaignParty
     struct BroughtMoney
     {
         std::uint32_t platinum{}, gems{}, jewelry{};
+        std::uint32_t copper{}, silver{}, electrum{}, gold{};
     };
 
     enum class ConvertedItems

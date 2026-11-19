@@ -386,6 +386,7 @@ std::optional<unsigned> title_music_piece(GoldBoxGame game) noexcept
     case GoldBoxGame::pools_of_darkness:
     case GoldBoxGame::treasures_of_the_savage_frontier:
     case GoldBoxGame::champions_of_krynn:
+    case GoldBoxGame::death_knights_of_krynn:
         return 1;
     default:
         return std::nullopt;

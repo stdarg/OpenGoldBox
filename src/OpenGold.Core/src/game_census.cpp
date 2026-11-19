@@ -5,6 +5,7 @@
 #include "ua_census.h"
 #include "opengold/character_art.h"
 #include "opengold/curse_records.h"
+#include "opengold/death_knights_records.h"
 #include "opengold/ecl.h"
 #include "opengold/formats.h"
 #include "opengold/gateway_formats.h"
@@ -256,12 +257,28 @@ const Bytes *find_record(const std::vector<DaxRecord> &records, unsigned id)
 // A wall definition block is drawn with the shared tiles (8X8D1 record 203) and
 // the tiles of its own disk's 8X8D file: record id, or id * 10 + n for block n
 // of a bank of several blocks (the original's LoadWallSet).
-void check_wall_art(const std::map<std::string, GameFile> &by_name, const GameFile &file,
-                    const DaxRecord &record)
+void check_wall_art(GoldBoxGame game, const std::map<std::string, GameFile> &by_name,
+                    const GameFile &file, const DaxRecord &record)
 {
     constexpr std::size_t block_size = 780;
     const auto blocks = record.bytes.size() / block_size;
     require(blocks > 0 && record.bytes.size() % block_size == 0, "not whole wall blocks");
+    if (game == GoldBoxGame::death_knights_of_krynn)
+    {
+        // Each DKK bank has its complete 256-symbol sheet, shared by all
+        // appearances in this definition record rather than split by block.
+        const auto disk = file.name.substr(std::string_view("WALLDEF").size());
+        const auto local_file = by_name.find("8X8D" + disk);
+        require(local_file != by_name.end(), "the wall bank's 8X8D file is missing");
+        const auto local = archive_records(local_file->second);
+        const auto *bank = find_record(local, record.id);
+        require(bank != nullptr, "the wall bank's tile sheet is missing");
+        const auto tiles = por::decode_wall_tiles(*bank);
+        require(tiles.has_value(), "the wall bank's tile sheet does not decode");
+        const auto art = por::decode_wall_art(record.bytes, *tiles);
+        require(art && art->appearances.size() == 5 * blocks, "not Death Knights wall art");
+        return;
+    }
     const auto shared_file = by_name.find("8X8D1.DAX");
     require(shared_file != by_name.end(), "8X8D1.DAX is missing");
     const auto shared = archive_records(shared_file->second);
@@ -369,7 +386,7 @@ void check_names_and_sounds(RowBuilder &row, GoldBoxGame game, const GameFile &s
     row.check(start.name + " spell names",
               [&]
               {
-                  require(por::decode_spell_names(image).has_value(), "no spell name table");
+                  require(por::decode_spell_names(image, game).has_value(), "no spell name table");
               });
     row.check(start.name + " sound effects",
               [&]
@@ -544,9 +561,9 @@ family_decoders(GoldBoxGame game, const std::map<std::string, GameFile> &by_name
           }}},
         {"WALLDEF",
          {"wall art",
-          [&by_name](const GameFile &file, const DaxRecord &record)
+          [game, &by_name](const GameFile &file, const DaxRecord &record)
           {
-              check_wall_art(by_name, file, record);
+              check_wall_art(game, by_name, file, record);
           }}},
         {"MONCHA",
          {"creatures",
@@ -555,7 +572,25 @@ family_decoders(GoldBoxGame game, const std::map<std::string, GameFile> &by_name
               check_creature(game, record.bytes);
           }}},
         {"MONITM", {"creatures' items", items}},
-        {"ITEM", {"item lists", items}},
+        {"ITEM",
+         {"item lists",
+          [game, items](const GameFile &file, const DaxRecord &record)
+          {
+              if (game == GoldBoxGame::death_knights_of_krynn)
+              {
+                  require(death_knights::decode_item_list(record.bytes).has_value(),
+                          "not a numbered item-template list");
+                  return;
+              }
+              items(file, record);
+          }}},
+        {"MONWIZ",
+         {"creatures' spells",
+          [](const GameFile &, const DaxRecord &record)
+          {
+              require(death_knights::decode_spells(record.bytes).has_value(),
+                      "not a Death Knights spell block");
+          }}},
         {"MONSPC",
          {"creatures' effects",
           [](const GameFile &, const DaxRecord &record)
@@ -569,8 +604,8 @@ family_decoders(GoldBoxGame game, const std::map<std::string, GameFile> &by_name
           {
               check_sprite(file, record);
           }}}};
-    for (const auto *name :
-         {"HEAD", "BODY", "PIC", "TITLE", "BIGPIC", "BACPAC", "SQRPACI", "FINAL", "SKY"})
+    for (const auto *name : {"HEAD", "BODY", "PIC", "TITLE", "BIGPIC", "BACPAC", "SQRPACI", "FINAL",
+                             "SKY", "BACK", "SKYGRND"})
     {
         decoders.emplace(name, FamilyDecoder{"pictures", picture});
     }
@@ -676,8 +711,9 @@ bool GameCensus::complete() const noexcept
 std::optional<GoldBoxGame> identify_game(const std::filesystem::path &folder)
 {
     // Each file below exists in only one of the games' folders.
-    constexpr std::array<std::pair<std::string_view, GoldBoxGame>, 8> markers{{
+    constexpr std::array<std::pair<std::string_view, GoldBoxGame>, 9> markers{{
         {"CKIT.EXE", GoldBoxGame::unlimited_adventures},
+        {"DKK.CFG", GoldBoxGame::death_knights_of_krynn},
         // Champions also has TILES.DAX and SOUND.DAX; prefer its own marker.
         {"KRYNN.CFG", GoldBoxGame::champions_of_krynn},
         {"SQRPACI.DAX", GoldBoxGame::pool_of_radiance},

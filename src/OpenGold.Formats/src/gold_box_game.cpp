@@ -20,6 +20,8 @@ GameDisks game_disks(GoldBoxGame game)
         return {{1}, {}, {1, 2, 3}, {}};
     case GoldBoxGame::champions_of_krynn:
         return {{1, 2, 3}, {}, {1, 2, 3}, {}};
+    case GoldBoxGame::death_knights_of_krynn:
+        return {{1}, {}, {0}, {}};
     case GoldBoxGame::gateway_to_the_savage_frontier:
         // Its HEAD and BODY files have no disk number.
         return {{2, 3, 4, 5, 6}, {}, {2, 3, 4, 5, 6}, {}};

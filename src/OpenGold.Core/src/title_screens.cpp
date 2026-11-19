@@ -68,6 +68,12 @@ TitleScript title_script(GoldBoxGame game)
                        {{{2, 0, 0}, {3, 6, 11}}, 10, {}},
                        {{{4, 0, 11}}, 10, title_sound}}};
     }
+    case GoldBoxGame::death_knights_of_krynn:
+        return {.steps{{{{1, 0, 0}}, 5, {}, ends_title},
+                       {{{2, 0, 0}}, 5, {}, ends_title},
+                       {{{2, 0, 0}, {3, 0, 11}}, 5, {}, ends_title},
+                       {{{2, 0, 0}, {4, 0, 11}}, 20, {}, ends_title}},
+                .clears_between = true};
     case GoldBoxGame::secret_of_the_silver_blades:
         return {.steps{{{{1, 0, 0}}, 15, {}, ends_title},
                        {{{2, 0, 0}}, 50, {}, ends_title},

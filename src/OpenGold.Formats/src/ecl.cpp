@@ -96,6 +96,25 @@ std::vector<EclOpcode> secret_opcodes()
     return opcodes;
 }
 
+std::vector<EclOpcode> death_knights_opcodes()
+{
+    auto opcodes = secret_opcodes();
+    opcodes.at(0x0C).operands = 4;
+    opcodes.at(0x1D) = {"WAIT KEY", 0, false, true};
+    opcodes.at(0x1F) = {"JOURNAL ENTRY", 1, false, true};
+    opcodes.at(0x22) = {"YES NO", 0, false, true};
+    opcodes.at(0x23) = {"CLEAR AND EXIT", 0, false, true};
+    // Steel, gems and jewelry, followed by the item-template list.
+    opcodes.at(0x27) = {"TREASURE", 4, true, true, true};
+    opcodes.at(0x29) = {"UNUSED 29", 0, false, true};
+    // As in the earlier engine, sound commands are native host calls.
+    opcodes.at(0x2C) = {"PLAY SOUND", 1, false, true, true};
+    opcodes.at(0x31) = {"ACTION MENU", 2, true, true};
+    opcodes.at(0x37) = {"LOAD FILES", 3, false, true, true};
+    opcodes.at(0x3C) = {"STORE", 1, false, true, true};
+    return opcodes;
+}
+
 // Pools of Darkness keeps Secret's numbering but replaces nine commands and
 // changes the operands of four (docs/games/darkness.md). The machine runs WAIT
 // KEY, JOURNAL ENTRY, YES NO, CLEAR AND EXIT, ACTION MENU and the unused 29h;
@@ -147,6 +166,7 @@ std::span<const EclOpcode> game_opcodes(GoldBoxGame game)
     static const std::vector<EclOpcode> darkness = darkness_opcodes();
     static const std::vector<EclOpcode> treasures = treasures_opcodes();
     static const std::vector<EclOpcode> gateway = gateway_opcodes();
+    static const std::vector<EclOpcode> death_knights = death_knights_opcodes();
     switch (game)
     {
     case GoldBoxGame::pool_of_radiance:
@@ -156,6 +176,8 @@ std::span<const EclOpcode> game_opcodes(GoldBoxGame game)
     case GoldBoxGame::secret_of_the_silver_blades:
     case GoldBoxGame::champions_of_krynn:
         return secret;
+    case GoldBoxGame::death_knights_of_krynn:
+        return death_knights;
     case GoldBoxGame::pools_of_darkness:
         return darkness;
     case GoldBoxGame::treasures_of_the_savage_frontier:
@@ -173,8 +195,9 @@ std::span<const EclOpcode> game_opcodes(GoldBoxGame game)
 bool falls_through(std::uint8_t opcode, GoldBoxGame game)
 {
     const bool clears_and_exits =
-        opcode == 0x23 && (game == GoldBoxGame::pools_of_darkness ||
-                           game == GoldBoxGame::treasures_of_the_savage_frontier);
+        opcode == 0x23 &&
+        (game == GoldBoxGame::death_knights_of_krynn || game == GoldBoxGame::pools_of_darkness ||
+         game == GoldBoxGame::treasures_of_the_savage_frontier);
     return opcode != 0 && opcode != 1 && opcode != 19 && opcode != 32 && !clears_and_exits;
 }
 
@@ -203,6 +226,8 @@ EclEngineRoutines ecl_engine_routines(GoldBoxGame game)
     case GoldBoxGame::secret_of_the_silver_blades:
         // As Curse, matched less 7FFFh (ADCCh, 4019h, 401Fh, 3204h, E804h);
         // Secret has no duels.
+        return {0x2DCB, 0xC018, 0xC01E, 0, 0, 0xB203, 0x6803};
+    case GoldBoxGame::death_knights_of_krynn:
         return {0x2DCB, 0xC018, 0xC01E, 0, 0, 0xB203, 0x6803};
     case GoldBoxGame::champions_of_krynn:
         // Its EclCall uses Curse's redraw and Secret's sound routine;
@@ -235,6 +260,8 @@ EclMemory ecl_memory(GoldBoxGame game)
     case GoldBoxGame::pools_of_darkness:
     case GoldBoxGame::gateway_to_the_savage_frontier:
     case GoldBoxGame::champions_of_krynn:
+        return {0x8000, 0x9E00};
+    case GoldBoxGame::death_knights_of_krynn:
         return {0x8000, 0x9E00};
     case GoldBoxGame::treasures_of_the_savage_frontier:
         return {0x8000, 0xB6B1};

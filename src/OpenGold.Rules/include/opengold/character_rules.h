@@ -168,6 +168,9 @@ struct CharacterSheet
         // Rebuilt from the creation draft or preserved import/raw record.
         // Slot seven is a Solamnic knight in the Krynn games.
         int deity{}, robe_order{}, knight_order{};
+        // Death Knights calendar, rebuilt from chronological rules history.
+        std::uint64_t krynn_calendar_days{};
+        std::array<int, 3> krynn_moon_phases{2, 2, 2}, krynn_moon_counters{};
         std::array<int, 9> deity_spell_slots{};
         // Percent chances, empty for a character without thief levels.
         std::array<int, 8> thief_skills{};

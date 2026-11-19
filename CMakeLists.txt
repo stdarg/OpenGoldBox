@@ -123,6 +123,7 @@ target_link_libraries(opengold_rules_srd5 PUBLIC opengold_rules)
 add_library(opengold_rules_original STATIC
     src/OpenGold.Rules.Original/src/original_rules.cpp
     src/OpenGold.Rules.Original/src/champions_rules.cpp
+    src/OpenGold.Rules.Original/src/death_knights_rules.cpp
     src/OpenGold.Rules.Original/src/character_rules.cpp
     src/OpenGold.Rules.Original/src/modify.cpp
     src/OpenGold.Rules.Original/src/combatant.cpp
@@ -144,6 +145,7 @@ add_library(opengold_formats STATIC
     src/OpenGold.Formats/src/por_sound.cpp
     src/OpenGold.Formats/src/curse_records.cpp
     src/OpenGold.Formats/src/champions_records.cpp
+    src/OpenGold.Formats/src/death_knights_records.cpp
     src/OpenGold.Formats/src/secret_records.cpp
     src/OpenGold.Formats/src/treasures_texts.cpp
     src/OpenGold.Formats/src/vga_picture.cpp
@@ -213,6 +215,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/darkness_area_map.cpp
     src/OpenGold.Core/src/treasures_import.cpp
     src/OpenGold.Core/src/darkness_import.cpp
+    src/OpenGold.Core/src/death_knights_import.cpp
     src/OpenGold.Core/src/random_treasure.cpp
     src/OpenGold.Core/src/magic_item_catalog.cpp
     src/OpenGold.Core/src/encounter_budget.cpp
@@ -315,6 +318,10 @@ if(OPENGOLD_BUILD_TESTS)
     add_executable(opengold_champions_tests tests/champions_tests.cpp)
     target_link_libraries(opengold_champions_tests PRIVATE opengold_core opengold_rules_original)
     add_test(NAME opengold_champions_tests COMMAND opengold_champions_tests)
+    add_executable(opengold_death_knights_tests tests/death_knights_tests.cpp)
+    target_link_libraries(opengold_death_knights_tests PRIVATE opengold_core opengold_rules_original)
+    target_include_directories(opengold_death_knights_tests PRIVATE src/OpenGold.Rules.Original/src)
+    add_test(NAME opengold_death_knights_tests COMMAND opengold_death_knights_tests)
     # Every map of Curse walked with an original-rules party: each event runs.
     add_test(NAME opengold_curse_walk COMMAND opengold_gold_box_games_tests --curse-walk)
     # Every map of Secret of the Silver Blades walked the same way.
@@ -326,6 +333,16 @@ if(OPENGOLD_BUILD_TESTS)
     # And every map of Treasures of the Savage Frontier, its overland too.
     add_test(NAME opengold_treasure_walk COMMAND opengold_gold_box_games_tests --treasure-walk)
     add_test(NAME opengold_champions_walk COMMAND opengold_gold_box_games_tests --champions-walk)
+    add_test(NAME opengold_death_knights_walk COMMAND opengold_gold_box_games_tests --death-knights-walk)
+    set_tests_properties(opengold_death_knights_walk PROPERTIES TIMEOUT 1800
+        SKIP_REGULAR_EXPRESSION "files are not here")
+    add_test(NAME opengold_death_knights_earned_opening COMMAND opengold_gold_box_games_tests --death-knights-earned-opening)
+    set_tests_properties(opengold_death_knights_earned_opening PROPERTIES TIMEOUT 1800
+        SKIP_REGULAR_EXPRESSION "files are not here|Champions winners are not supplied")
+    add_test(NAME opengold_death_knights_earned_ending COMMAND opengold_gold_box_games_tests --death-knights-earned-ending)
+    set_tests_properties(opengold_death_knights_earned_ending PROPERTIES TIMEOUT 7200
+        SKIP_REGULAR_EXPRESSION "files are not here|Champions winners are not supplied"
+        ENVIRONMENT "OPENGOLD_ROUTE_SAVE=${CMAKE_CURRENT_BINARY_DIR}/death-knights-earned-winners.sav")
     set_tests_properties(opengold_champions_walk PROPERTIES TIMEOUT 1800
         SKIP_REGULAR_EXPRESSION "files are not here")
     # Curse's story, beat by beat, with a party made for it (plan step 7).

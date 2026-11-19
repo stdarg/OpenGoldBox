@@ -6,11 +6,13 @@ and *The Dark Queen of Krynn* (1992). It follows the method of the *Forgotten
 Realms* games ([GAMES.md](GAMES.md)). The active all-twelve-game request
 supersedes the earlier wait for another instruction. Champions' fresh earned
 ending is verified (123 battles, zero defeats, all six PCs alive), with native,
-Godot and Linux package checks complete. Death Knights is the next sequential
-delivery batch, after Champions and Treasure's earned completion (`2f20d568`).
-See [its implementation record](games/champions.md) and
-[playability](PLAYABILITY.md). Death Knights and Dark Queen follow it; the
-current task does not authorize SRD work or delegation.
+Godot and Linux package checks complete. Death Knights' fresh imported campaign
+also reaches its authored ending, with all six imported PCs alive and a
+byte-identical ordinary winning-save roundtrip. Its native integration,
+application and Linux package checks pass. See the implementation records for
+[Champions](games/champions.md), [Death Knights](games/death-knights.md) and
+[playability](PLAYABILITY.md). Dark Queen follows Death Knights; the current
+task does not authorize SRD work or delegation.
 
 ## Where the files are
 
@@ -189,6 +191,12 @@ The same four parts, and:
 
 Done when the route test, starting from a party brought in from *Champions*,
 sets `game_won`.
+
+The fresh 331-beat imported route passes in 425.62 seconds and reaches the
+native council's victory. All six PCs survive; ordinary healing after the
+council leaves all six standing. The normal format-53 winning save reloads
+byte-identically. Native integration and application/package checks pass; see
+[the evidence](games/death-knights.md#fresh-earned-campaign).
 
 ### K5. *The Dark Queen of Krynn*
 

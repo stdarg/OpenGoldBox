@@ -80,7 +80,9 @@ original_mask_classes(unsigned class_mask, GoldBoxGame game = GoldBoxGame::pool_
 [[nodiscard]] constexpr std::uint32_t original_training_fee(GoldBoxGame game) noexcept
 {
     return game == GoldBoxGame::secret_of_the_silver_blades ||
-                   game == GoldBoxGame::pools_of_darkness || game == GoldBoxGame::champions_of_krynn
+                   game == GoldBoxGame::pools_of_darkness ||
+                   game == GoldBoxGame::champions_of_krynn ||
+                   game == GoldBoxGame::death_knights_of_krynn
                ? 0
                : 1000;
 }

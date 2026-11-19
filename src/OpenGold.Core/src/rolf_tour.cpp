@@ -829,7 +829,7 @@ void RolfTourSession::enable_encounter_commands()
     for (const std::uint8_t opcode : std::initializer_list<std::uint8_t>{12, 13, 14, 45, 49, 58})
     {
         // Pools of Darkness's 31h is ACTION MENU, which the machine runs.
-        if (opcode == 49 && vga_engine(game()))
+        if (opcode == 49 && later_ecl_commands(game()))
         {
             continue;
         }

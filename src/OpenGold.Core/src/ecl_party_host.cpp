@@ -265,7 +265,11 @@ unsigned thief_skill(const CampaignParty &party, MemberId id, unsigned field)
 unsigned member_movement(const CampaignParty &party, MemberId id)
 {
     const auto &m = party.member(id);
-    return m.vitals.dead || m.vitals.hit_points == 0 ? 0 : party.profile(id).movement_feet * 2 / 5;
+    const bool death_knights =
+        original::game_of(m.character.sheet().identity) == GoldBoxGame::death_knights_of_krynn;
+    return m.vitals.dead || m.vitals.hit_points == 0
+               ? 0
+               : party.profile(id).movement_feet * (death_knights ? 1 : 2) / 5;
 }
 } // namespace
 
@@ -280,10 +284,10 @@ unsigned secret_race(const rules::CharacterSheet &sheet)
     {
         return 0;
     }
-    if (original::game_of(sheet.identity) == GoldBoxGame::champions_of_krynn)
+    if (original::krynn_game(original::game_of(sheet.identity)))
     {
         return original::record_race(static_cast<original::Race>(sheet.original->race),
-                                     GoldBoxGame::champions_of_krynn);
+                                     original::game_of(sheet.identity));
     }
     switch (static_cast<original::Race>(sheet.original->race))
     {
@@ -392,15 +396,15 @@ std::array<unsigned, 4> check_party(const CampaignParty &party, EclAddress attri
         return {0, 0, 0, party.finding_traps() ? 1U : 0U};
     }
     const auto field = attribute.location - ecl_character_record.location;
-    if (game == GoldBoxGame::secret_of_the_silver_blades || game == GoldBoxGame::champions_of_krynn)
+    if (game == GoldBoxGame::secret_of_the_silver_blades || original::krynn_game(game))
     {
         if (const auto values = secret_check_party(party, static_cast<unsigned>(field), effect))
         {
             return *values;
         }
     }
-    const bool movement = attribute == EclAddress{0x6C1B} ||
-                          (game == GoldBoxGame::champions_of_krynn && field == 0x9F);
+    const bool movement =
+        attribute == EclAddress{0x6C1B} || (original::krynn_game(game) && field == 0x9F);
     if (effect || (!movement && (field < 0xA5 || field > 0xAC)))
     {
         throw std::runtime_error("Unsupported CHECK PARTY attribute/effect conversion");

@@ -14,6 +14,7 @@
 #include "opengold/campaign_save.h"
 #include "opengold/campaign_session.h"
 #include "opengold/darkness_import.h"
+#include "opengold/death_knights_import.h"
 #include "opengold/diagnostic_log.h"
 #include "opengold/original.h"
 #include "opengold/treasures_import.h"
@@ -119,6 +120,8 @@ std::optional<GoldBoxGame> earlier_game_of(GoldBoxGame game)
         return GoldBoxGame::gateway_to_the_savage_frontier;
     case GoldBoxGame::pools_of_darkness:
         return GoldBoxGame::secret_of_the_silver_blades;
+    case GoldBoxGame::death_knights_of_krynn:
+        return GoldBoxGame::champions_of_krynn;
     default:
         return std::nullopt;
     }
@@ -235,6 +238,7 @@ void EarlierGameDialog::select_save(std::int64_t index)
     required_node<Button>(*this, "Margin/Rows/Buttons/Add").set_disabled(true);
     const auto earlier = earlier_game();
     auto party = saved_party(saves_[static_cast<std::size_t>(index)], earlier);
+    source_wealth_ = party.wealth;
     for (auto &member : party.roster)
     {
         if (member.npc_source.empty())
@@ -278,7 +282,9 @@ void EarlierGameDialog::show_member_state()
     // gems and jewelry, and its spells.
     const auto earlier = earlier_game();
     const auto arrival =
-        earlier == GoldBoxGame::pool_of_radiance
+        earlier == GoldBoxGame::champions_of_krynn
+            ? N_("Brings its earned levels, experience, wounds, spells, surviving items and share of all party money.")
+        : earlier == GoldBoxGame::pool_of_radiance
             ? N_("Brings its levels, experience and items, and 300 platinum; its money stays behind.")
         : earlier == GoldBoxGame::secret_of_the_silver_blades
             ? N_("Brings its levels, experience, spells and items, and its share of the party's platinum, gems and jewelry.")
@@ -299,7 +305,15 @@ void EarlierGameDialog::add()
     }
     const auto &member = members_[member_index_];
     const auto earlier = earlier_game();
-    if (earlier == GoldBoxGame::secret_of_the_silver_blades)
+    if (earlier == GoldBoxGame::champions_of_krynn)
+    {
+        const auto folder = game_folder_of(GoldBoxGame::death_knights_of_krynn);
+        (void)campaign_().bring_across(
+            member, champions_items_for_death_knights(folder),
+            champions_money_for_death_knights(source_wealth_, member_index_, members_.size()),
+            CampaignParty::ConvertedItems::readied_as_they_were);
+    }
+    else if (earlier == GoldBoxGame::secret_of_the_silver_blades)
     {
         const auto darkness = game_folder_of(GoldBoxGame::pools_of_darkness);
         (void)campaign_().bring_across(member, secret_items_for_darkness(darkness), money_share_,

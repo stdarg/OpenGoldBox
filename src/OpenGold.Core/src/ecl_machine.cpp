@@ -215,7 +215,7 @@ void EclMachine::enable_host(std::uint8_t opcode)
     require_configurable();
     if (!ecl_opcode(opcode, program_->game()).requires_host)
     {
-        throw EclError("Opcode is not a host operation");
+        throw EclError("Opcode " + std::to_string(opcode) + " is not a host operation");
     }
     host_opcodes_.insert(opcode);
 }
@@ -534,7 +534,7 @@ void EclMachine::execute(const EclInstruction &i)
     {
         throw EclError("Unsupported execution: " + std::string(spec.name));
     }
-    if (vga_engine(program_->game()) && execute_vga_command(i))
+    if (later_ecl_commands(program_->game()) && execute_later_command(i))
     {
         return;
     }
@@ -610,7 +610,8 @@ void EclMachine::execute(const EclInstruction &i)
         if (stack_.empty())
         {
             // Champions uses a top-level RETURN to end an event (ECL3:81).
-            if (program_->game() == GoldBoxGame::champions_of_krynn)
+            if (program_->game() == GoldBoxGame::champions_of_krynn ||
+                program_->game() == GoldBoxGame::death_knights_of_krynn)
             {
                 state_ = EclState::completed;
             }
@@ -685,10 +686,10 @@ void EclMachine::execute(const EclInstruction &i)
         {
             v = lhs | rhs;
         }
-        // Pools of Darkness and Treasures store a result in as many bytes as
+        // Death Knights and the VGA games store a result in as many bytes as
         // its destination's operand names (their WriteGbvm): a byte cell
         // counting down from 0 reads 255, as Luskan's script waits for.
-        const bool byte_cell = vga_engine(program_->game()) && a[2].tag < 2;
+        const bool byte_cell = later_ecl_commands(program_->game()) && a[2].tag < 2;
         write(dest, static_cast<std::uint16_t>(v & (byte_cell ? 255 : 65535)));
         if (i.opcode == 47 || i.opcode == 48)
         {
@@ -926,7 +927,7 @@ void EclMachine::request_engine_prompt(const EclInstruction &i, bool yes_or_no)
     state_ = EclState::waiting;
 }
 
-bool EclMachine::execute_vga_command(const EclInstruction &i)
+bool EclMachine::execute_later_command(const EclInstruction &i)
 {
     switch (i.opcode)
     {
@@ -990,13 +991,14 @@ void EclMachine::request_host(const EclInstruction &i)
         const auto &operand = i.operands[n];
         const auto op = i.opcode;
         const bool vga = vga_engine(program_->game());
-        const bool output =
-            vga ? (op == 30 && n >= 2) || (op == vga_find_npc && n == 1) || (op == 59 && n >= 1)
-                : (op == 29 && n == 0) || (op == 30 && n >= 2) || op == 34 ||
-                      (op == 41 && n == 3) || (op == 59 && n >= 1);
+        const bool later = later_ecl_commands(program_->game());
+        const bool output = later ? (op == 30 && n >= 2) || (vga && op == vga_find_npc && n == 1) ||
+                                        (op == 59 && n >= 1)
+                                  : (op == 29 && n == 0) || (op == 30 && n >= 2) || op == 34 ||
+                                        (op == 41 && n == 3) || (op == 59 && n >= 1);
         const bool address = output || (op == 30 && n == 0) || op == 45 ||
-                             (!vga && ((op == 35 && n < 2) || op == 60));
-        const bool is_text = op == 57 || (!vga && op == 41 && n >= 9 && n <= 11) ||
+                             (!later && ((op == 35 && n < 2) || op == 60));
+        const bool is_text = op == 57 || (!later && op == 41 && n >= 9 && n <= 11) ||
                              (vga && op == vga_find_npc && n == 0);
         if (address)
         {
@@ -1012,14 +1014,11 @@ void EclMachine::request_host(const EclInstruction &i)
         else
         {
             std::uint16_t number = value(operand);
-            const bool vga_award =
-                (program_->game() == GoldBoxGame::pools_of_darkness ||
-                 program_->game() == GoldBoxGame::treasures_of_the_savage_frontier) &&
+            const bool word_award =
+                (later || program_->game() == GoldBoxGame::champions_of_krynn) &&
                 op == award_experience && n == 1;
-            const bool champions_award = program_->game() == GoldBoxGame::champions_of_krynn &&
-                                         op == award_experience && n == 1;
-            const bool word = vga ? (op == vga_treasure && n < 3) || vga_award
-                                  : (op == 39 && n != 7) || champions_award;
+            const bool word = later ? (op == vga_treasure && n < 3) || word_award
+                                    : (op == 39 && n != 7) || word_award;
             if (!word)
             {
                 number &= 255;
@@ -1092,7 +1091,7 @@ bool EclMachine::resume(std::uint64_t id, std::optional<std::size_t> choice)
             conditions_ = relation(chosen < 1 ? -1 : chosen > 1 ? 1 : 0);
         }
         // The 256-color engine's YES NO: yes sets the equal flag, no the not-equal.
-        if (pending_->instruction && vga_engine(program_->game()) &&
+        if (pending_->instruction && later_ecl_commands(program_->game()) &&
             pending_->instruction->opcode == vga_yes_no)
         {
             conditions_ = equality(*choice == 0);
@@ -1102,7 +1101,7 @@ bool EclMachine::resume(std::uint64_t id, std::optional<std::size_t> choice)
     {
         return false;
     }
-    const bool ends_script = vga_engine(program_->game()) && pending_->instruction &&
+    const bool ends_script = later_ecl_commands(program_->game()) && pending_->instruction &&
                              pending_->instruction->opcode == vga_clear_and_exit;
     finish_request();
     if (ends_script)

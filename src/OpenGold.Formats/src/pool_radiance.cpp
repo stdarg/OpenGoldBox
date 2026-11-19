@@ -1,6 +1,7 @@
 #include "opengold/pool_radiance.h"
 #include "opengold/curse_records.h"
 #include "opengold/champions_records.h"
+#include "opengold/death_knights_records.h"
 #include "opengold/late_records.h"
 #include "opengold/secret_records.h"
 #include "little_endian.h"
@@ -178,6 +179,8 @@ std::optional<CharacterRecord> decode_character(std::span<const std::uint8_t> by
         return secret::decode_creature(bytes);
     case GoldBoxGame::champions_of_krynn:
         return champions::decode_creature(bytes);
+    case GoldBoxGame::death_knights_of_krynn:
+        return death_knights::decode_creature(bytes);
     case GoldBoxGame::pools_of_darkness:
     case GoldBoxGame::treasures_of_the_savage_frontier:
         return late::decode_creature(bytes, game);
@@ -323,12 +326,14 @@ std::optional<std::vector<std::string>> decode_item_words(std::span<const std::u
 std::optional<std::vector<std::string>> decode_item_words(std::span<const std::uint8_t> image,
                                                           GoldBoxGame game)
 {
-    const std::size_t count = (game == GoldBoxGame::secret_of_the_silver_blades ||
-                               game == GoldBoxGame::champions_of_krynn)
-                                  ? 123
-                              : game == GoldBoxGame::pools_of_darkness                ? 125
-                              : game == GoldBoxGame::treasures_of_the_savage_frontier ? 181
-                                                                                      : 255;
+    const std::size_t count =
+        (game == GoldBoxGame::secret_of_the_silver_blades ||
+         game == GoldBoxGame::champions_of_krynn)
+            ? 123
+        : game == GoldBoxGame::pools_of_darkness || game == GoldBoxGame::death_knights_of_krynn
+            ? 125
+        : game == GoldBoxGame::treasures_of_the_savage_frontier ? 181
+                                                                : 255;
     const auto table = find_string_table(image, "Battle Axe", "Hand Axe");
 
     if (!table)
@@ -355,7 +360,14 @@ std::optional<std::vector<std::string>> decode_item_words(std::span<const std::u
 
 std::optional<std::vector<std::string>> decode_spell_names(std::span<const std::uint8_t> image)
 {
-    const auto table = find_string_table(image, "Bless", "Curse");
+    return decode_spell_names(image, GoldBoxGame::pool_of_radiance);
+}
+
+std::optional<std::vector<std::string>> decode_spell_names(std::span<const std::uint8_t> image,
+                                                           GoldBoxGame game)
+{
+    const bool death_knights = game == GoldBoxGame::death_knights_of_krynn;
+    const auto table = find_string_table(image, "Bless", death_knights ? "Barkskin" : "Curse");
 
     if (!table)
     {
@@ -367,9 +379,16 @@ std::optional<std::vector<std::string>> decode_spell_names(std::span<const std::
 
     for (std::size_t index = 0;; ++index)
     {
+        if (death_knights && index == 114)
+        {
+            return spells;
+        }
         auto text = slot_text(image, *table, index);
-
-        if (!text || text->empty())
+        if (!text)
+        {
+            return death_knights ? std::nullopt : std::optional{spells};
+        }
+        if (!death_knights && text->empty())
         {
             return spells;
         }

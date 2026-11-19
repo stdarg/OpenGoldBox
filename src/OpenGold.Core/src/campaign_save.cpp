@@ -677,7 +677,8 @@ template <bool Reading> struct SaveCodec
             const bool darkness = v.game() == GoldBoxGame::pools_of_darkness;
             // Champions' wilderness (16) and outposts (17) also retain
             // the last 3D district while running their own scripts.
-            const bool champions_overland = v.game() == GoldBoxGame::champions_of_krynn &&
+            const bool champions_overland = (v.game() == GoldBoxGame::champions_of_krynn ||
+                                             v.game() == GoldBoxGame::death_knights_of_krynn) &&
                                             (v.current_script_ == 16 || v.current_script_ == 17);
             require(area == 0 ? !std::any_of(v.town_->districts.begin(), v.town_->districts.end(),
                                              [&](const auto &d)

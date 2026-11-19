@@ -1224,7 +1224,18 @@ MemberId CampaignParty::bring_across(const PartyMember &from, const ItemConversi
     {
         throw std::runtime_error("These rules take in no character from another game");
     }
-    const auto id = add_pc(Character(*character_rules(), *draft, from.character.appearance()));
+    Character converted_character(*character_rules(), *draft, from.character.appearance());
+    const auto converted_state =
+        rules_->imported_state(from.character.sheet(), from.vitals, converted_character.sheet());
+    if (converted_state)
+    {
+        rules_->validate_character_state(converted_character.sheet(), *converted_state);
+    }
+    const auto id = add_pc(std::move(converted_character));
+    if (converted_state)
+    {
+        edit(id).vitals = *converted_state;
+    }
     for (const auto &item : from.character.inventory().items())
     {
         const auto source = from.item_sources.find(item.id);
@@ -1253,6 +1264,10 @@ MemberId CampaignParty::bring_across(const PartyMember &from, const ItemConversi
         add_coins(Coin::platinum, own_money->platinum);
         add_coins(Coin::gems, own_money->gems);
         add_coins(Coin::jewelry, own_money->jewelry);
+        add_coins(Coin::copper, own_money->copper);
+        add_coins(Coin::silver, own_money->silver);
+        add_coins(Coin::electrum, own_money->electrum);
+        add_coins(Coin::gold, own_money->gold);
         return id;
     }
     add_coins(Coin::platinum,
@@ -4123,8 +4138,11 @@ std::optional<CoinExchange> CampaignParty::read_character(PartySlot slot, const 
     {
         throw std::runtime_error("Unsupported script HP change");
     }
-    Purse after_script;
-    for (unsigned n = 0; n < 7; ++n)
+    // Death Knights reuses the former low-denomination fields for robes and
+    // knightly orders. Its SpecialRead/WriteZ1 exposes only steel, gems and
+    // jewelry here; the other four denominations remain in the shared purse.
+    auto after_script = script_coins(state_.wealth, coin_rates());
+    for (unsigned n = game == GoldBoxGame::death_knights_of_krynn ? 4U : 0U; n < 7; ++n)
     {
         after_script[n] = vm.variable(por::game_address(por::ecl_coin_addresses[n], game));
     }
@@ -4563,6 +4581,21 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
                 (void)rules_->character_profile(member.character.sheet(),
                                                 equipped_definitions(member));
                 newly_checked.emplace_back(actor.id, actor.max_hit_points);
+            }
+            // Combat advances active actors' transient effects itself. Lasting
+            // calendar outcomes still belong in their replayable character history.
+            const auto &clock_character = changed ? changed->character : it->character;
+            for (const auto &change : rules_->clock_changes(
+                     clock_character.sheet(), lasting, state_.time_minutes, reserves.time_minutes))
+            {
+                if (!changed)
+                {
+                    changed = *it;
+                }
+                if (!changed->character.advance(*rules_, lasting, change))
+                {
+                    throw std::runtime_error("A combat clock change cannot be kept");
+                }
             }
             vitals.emplace_back(actor.id, lasting);
             const bool items_changed = !actor.thrown_gear_left.empty() || actor.curse_lifted ||

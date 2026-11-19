@@ -1,4 +1,5 @@
 #include "opengold/original_spells.h"
+#include "death_knights_spell_table.h"
 #include <cctype>
 
 #include <array>
@@ -329,6 +330,12 @@ constexpr std::array<int, 30> curse_castable{158, 166, 167, 168, 169, 170, 171, 
 
 int canonical_spell(int number, GoldBoxGame game) noexcept
 {
+    if (game == GoldBoxGame::death_knights_of_krynn)
+    {
+        return number >= 1 && number <= 114
+                   ? death_knights_data::spells[static_cast<std::size_t>(number - 1)].canonical
+                   : 0;
+    }
     if (game == GoldBoxGame::champions_of_krynn && number >= 101 && number <= 107)
     {
         return number + 400;
@@ -349,9 +356,44 @@ int canonical_spell(int number, GoldBoxGame game) noexcept
                                                                : number;
 }
 
+int native_spell(int number, GoldBoxGame game) noexcept
+{
+    if (game == GoldBoxGame::death_knights_of_krynn)
+    {
+        if (number <= 0)
+        {
+            return 0;
+        }
+        for (std::size_t at = 0; at < death_knights_data::spells.size(); ++at)
+        {
+            if (death_knights_data::spells[at].canonical == number)
+            {
+                return static_cast<int>(at + 1);
+            }
+        }
+        return 0;
+    }
+    return number >= 501 && number <= 507 ? number - 400
+           : number > secret_spell_offset ? number - secret_spell_offset
+           : number > curse_spell_offset  ? number - curse_spell_offset
+                                          : number;
+}
+
 std::vector<int> castable_spells(GoldBoxGame game)
 {
     std::vector<int> numbers;
+    if (game == GoldBoxGame::death_knights_of_krynn)
+    {
+        for (const auto &row : death_knights_data::spells)
+        {
+            if (const auto *known = spell(row.canonical);
+                known && known->caster_class != SpellClass::item)
+            {
+                numbers.push_back(row.canonical);
+            }
+        }
+        return numbers;
+    }
     if (game == GoldBoxGame::secret_of_the_silver_blades || darkness_table(game))
     {
         // Secret's table in its order: Curse's spells, with its own where
@@ -534,6 +576,50 @@ const Spell *spell(int number) noexcept
 
 const Spell *spell(int number, GoldBoxGame game) noexcept
 {
+    if (game == GoldBoxGame::death_knights_of_krynn)
+    {
+        static const auto changed = []
+        {
+            std::array<NumberedSpell, death_knights_data::spells.size()> rows{};
+            for (std::size_t at = 0; at < rows.size(); ++at)
+            {
+                const auto &native = death_knights_data::spells[at];
+                const auto *base = spell(native.canonical);
+                if (!base)
+                {
+                    continue;
+                }
+                auto value = *base;
+                // Deity gifts use the existing separate level-zero allowance.
+                value.level = native.castClass == 2 ? 0 : native.level;
+                value.range_fixed = native.range;
+                value.range_per_level = native.rangePerLevel;
+                value.minutes_fixed = native.duration;
+                value.minutes_per_level = native.durationPerLevel;
+                value.area = native.targeting & 15;
+                value.camp_target = native.campTarget == 3 ? 4 : native.campTarget;
+                value.save_result = native.saveEffect;
+                value.save_type = native.saveType;
+                value.when = native.combatOk;
+                value.casting_time = native.castingTime;
+                value.ai_priority = native.aiPriority;
+                value.offensive = native.hostile != 0;
+                rows[at] = {native.canonical, value};
+            }
+            return rows;
+        }();
+        if (number > 0)
+        {
+            for (const auto &entry : changed)
+            {
+                if (entry.number == number)
+                {
+                    return &entry.spell;
+                }
+            }
+        }
+        return nullptr;
+    }
     if (vga_engine(game))
     {
         static const auto changed = []

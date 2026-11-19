@@ -77,6 +77,8 @@ inline constexpr int secret_spell_offset = 200;
 // scripts'): Curse's spells beyond Pool of Radiance's, 58 and 66 up, are
 // curse_spell_offset higher.
 [[nodiscard]] int canonical_spell(int number, GoldBoxGame game) noexcept;
+// The record/item number for a canonical spell; zero when this game lacks it.
+[[nodiscard]] int native_spell(int number, GoldBoxGame game) noexcept;
 // The spells a game's characters may know, in its table's order.
 [[nodiscard]] std::vector<int> castable_spells(GoldBoxGame game);
 

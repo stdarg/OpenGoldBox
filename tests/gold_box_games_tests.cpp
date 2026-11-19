@@ -4,6 +4,7 @@
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_save.h"
 #include "opengold/treasures_import.h"
+#include "opengold/death_knights_import.h"
 #include "opengold/campaign_session.h"
 #include "opengold/character_art.h"
 #include "opengold/creature_catalog.h"
@@ -10359,6 +10360,18 @@ void walk_earned_campaign(opengold::por::RolfTourSession &session, unsigned tx, 
                             }
                         }
                     }
+                    if (session.game() == GoldBoxGame::death_knights_of_krynn && script == 33)
+                    {
+                        // Vingaard's maze wraps at its edges. Its two signed
+                        // exits still leave town through their native scripts.
+                        const auto event = session.map().at(at % 16, at / 16).event_number();
+                        if ((event == 14 && d == 0) || (event == 15 && d == 3))
+                        {
+                            continue;
+                        }
+                        x = (x + 16) % 16;
+                        y = (y + 16) % 16;
+                    }
                     if (x < 0 || y < 0 || x >= 16 || y >= 16)
                     {
                         continue;
@@ -10368,6 +10381,32 @@ void walk_earned_campaign(opengold::por::RolfTourSession &session, unsigned tx, 
                         continue;
                     }
                     const auto &edge = session.map().at(at % 16, at / 16);
+                    if (session.game() == GoldBoxGame::death_knights_of_krynn && script == 97 &&
+                        d == 2)
+                    {
+                        const auto event = edge.event_number() & 63;
+                        const auto levers =
+                            session.script_variable(opengold::por::EclAddress{0x4CCC});
+                        if ((event == 20 && levers < 2) || (event == 21 && levers < 4))
+                        {
+                            continue;
+                        }
+                    }
+                    if (session.game() == GoldBoxGame::death_knights_of_krynn && script == 32)
+                    {
+                        // Kalaman's step entry closes its bazaar gates at night
+                        // and seals the inner gates during the kidnapping.
+                        // Walk around those barriers to the native night entrance.
+                        const bool night =
+                            session.script_variable(opengold::por::EclAddress{0x4BFD}) == 8;
+                        if ((edge.walls[d] == 3 && night) ||
+                            (edge.walls[d] == 5 &&
+                             (night ||
+                              session.script_variable(opengold::por::EclAddress{0x4C08}) != 0)))
+                        {
+                            continue;
+                        }
+                    }
                     if (!scripted_passage &&
                         (edge.doors[d] > door_limit || (edge.walls[d] && !edge.doors[d])))
                     {
@@ -10408,6 +10447,15 @@ void walk_earned_campaign(opengold::por::RolfTourSession &session, unsigned tx, 
         check(session.explore(C::forward), "The earned party can attempt its next step");
         settle();
         if ((session.game() == opengold::GoldBoxGame::treasures_of_the_savage_frontier ||
+             (session.game() == opengold::GoldBoxGame::death_knights_of_krynn && script == 33 &&
+              session.map().at(tx, ty).event_number() == 34) ||
+             (session.game() == opengold::GoldBoxGame::death_knights_of_krynn && script == 32 &&
+              session.map().at(tx, ty).event_number() == 29) ||
+             (session.game() == opengold::GoldBoxGame::death_knights_of_krynn && script == 36 &&
+              (session.map().at(tx, ty).event_number() == 3 ||
+               session.map().at(tx, ty).event_number() == 9 ||
+               session.map().at(tx, ty).event_number() == 15 ||
+               session.map().at(tx, ty).event_number() == 5)) ||
              (session.game() == opengold::GoldBoxGame::champions_of_krynn &&
               (script == 49 || (script == 97 && session.map().at(tx, ty).event_number() == 12)))) &&
             next == static_cast<int>(ty * 16 + tx))
@@ -10419,6 +10467,895 @@ void walk_earned_campaign(opengold::por::RolfTourSession &session, unsigned tx, 
         }
     }
     throw std::runtime_error("Earned walking did not arrive");
+}
+
+enum class DeathKnightsProgress
+{
+    none,
+    opening,
+    outpost,
+    kalaman,
+    kalaman_audience,
+    kalaman_parley,
+    vingaard,
+    vingaard_dream,
+    vingaard_nightmare,
+    sebas,
+    tower,
+    crypt_entry,
+    crypt_dragon,
+    crypt_garren,
+    crypt_complete,
+    dragon_mission,
+    dragon_pit_entry,
+    dragon_pit_wolf,
+    dragon_pit,
+    sebas_abducted,
+    kalaman_ariela,
+    kalaman_rescue,
+    dulcimer_entry,
+    dulcimer,
+    voice_wood,
+    rod,
+    dargaard,
+    dargaard_upper,
+    dargaard_sturm,
+    dargaard_top,
+    dargaard_durfey,
+    dargaard_final,
+    ending
+};
+
+std::vector<RouteBeat> death_knights_earned_route(DeathKnightsProgress progress)
+{
+    using D = opengold::por::MapDirection;
+    if (progress == DeathKnightsProgress::opening)
+    {
+        return {};
+    }
+    // Reach the inn's assigned room by actual steps before camping.
+    RouteBeat room{36, 7, 4, D::north, {"NO"}};
+    RouteBeat recover{36, 7, 4, D::north, {}, true};
+    recover.arrive_only = true;
+    recover.rest_for_spells = true;
+    recover.cure_first = true;
+    recover.cure_to_full = true;
+    recover.memorize_first_of = {"cure_light_wounds", "bless", "fireball", "magic_missile"};
+    RouteBeat stairs{36, 8, 7, D::north, {"YES"}};
+    RouteBeat commander{36, 11, 8, D::north, {"YES"}};
+    RouteBeat temple{36, 6, 9, D::east, {"YES"}};
+    temple.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C2D, 3};
+    RouteBeat report{36, 11, 8, D::north, {"NO", "YES", "CEMETERY"}};
+    RouteBeat tavern{36, 5, 9, D::north, {"YES", "TALK", "LEAVE"}};
+    tavern.arrive_only = true;
+    std::vector<RouteBeat> beats{room,   recover, stairs, commander, stairs, temple,
+                                 stairs, report,  tavern, stairs,    report};
+    if (progress == DeathKnightsProgress::outpost)
+    {
+        return beats;
+    }
+    RouteBeat train{36,
+                    10,
+                    11,
+                    D::north,
+                    {"YES", "knight 1", "knight 2", "knight 3", "cleric 4", "cleric 5",
+                     "magic_user 6", "Leave", "NO"}};
+    beats.push_back(train);
+    beats.push_back(room);
+    beats.push_back(recover);
+    // The western gate actually moves visitors from (4,7) to (2,7).
+    // Walk across the remaining outside squares and leave over the map edge.
+    beats.push_back(step_beat(36, 4, 7, D::west, {"NO"}));
+    beats.push_back(step_beat(36, 2, 7, D::west, {"NO"}));
+    beats.push_back(step_beat(36, 1, 7, D::west, {"NO"}));
+    beats.push_back(step_beat(36, 0, 7, D::west, {"YES", "NO"}));
+    using C = opengold::por::ExplorationCommand;
+    const std::vector<C> journey{C::north,     C::northwest, C::north,     C::northwest,
+                                 C::north,     C::north,     C::northwest, C::northwest,
+                                 C::northwest, C::northwest, C::northwest, C::northwest};
+    for (std::size_t i = 0; i < journey.size(); ++i)
+    {
+        RouteBeat travel{17, 0, 0, D::north,
+                         i + 1 == journey.size() ? std::vector<std::string>{"YES"}
+                                                 : std::vector<std::string>{"FLEE", "NO"}};
+        travel.area_steps = {journey[i]};
+        travel.fleeing = i + 1 != journey.size();
+        beats.push_back(travel);
+    }
+    if (progress == DeathKnightsProgress::kalaman)
+    {
+        return beats;
+    }
+    RouteBeat audience{32, 15, 3, D::north, {"YES", "YES"}};
+    audience.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C4E, 1};
+    beats.push_back(audience);
+    if (progress == DeathKnightsProgress::kalaman_audience)
+    {
+        return beats;
+    }
+    // Reach opening time through the player's ordinary ten-minute Looks.
+    // The bazaar gates remain closed at night.
+    RouteBeat morning{32, 15, 5, D::north, {"NO"}};
+    morning.arrive_only = true;
+    morning.look_until_minute = 8 * 60;
+    beats.push_back(morning);
+    RouteBeat pavilion{32, 2, 3, D::north, {"YES"}};
+    pavilion.reload_event = true;
+    pavilion.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C4C, 1};
+    beats.push_back(pavilion);
+    RouteBeat note{32, 4, 14, D::west, {"YES"}};
+    note.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C4C, 2};
+    beats.push_back(note);
+    RouteBeat night{32, 4, 14, D::west, {"NO"}};
+    night.arrive_only = true;
+    night.look_until_minute = 20 * 60;
+    beats.push_back(night);
+    RouteBeat parley{32, 6, 6, D::north, {"LISTEN", "YES", "LISTEN"}};
+    parley.reload_event = true;
+    parley.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C4C, 3};
+    beats.push_back(parley);
+    if (progress == DeathKnightsProgress::kalaman_parley)
+    {
+        return beats;
+    }
+    auto report_escape = audience;
+    report_escape.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C4C, 4};
+    beats.push_back(report_escape);
+    RouteBeat inn_room{32, 3, 14, D::north, {"YES"}};
+    beats.push_back(inn_room);
+    auto recover_inn = recover;
+    recover_inn.map = 32;
+    recover_inn.x = 3;
+    recover_inn.y = 14;
+    beats.push_back(recover_inn);
+    beats.push_back(step_beat(32, 6, 15, D::south, {"YES", "NO"}));
+    const std::vector<C> to_vingaard{C::southwest, C::west,      C::southwest, C::southwest,
+                                     C::southwest, C::southwest, C::southwest, C::southwest,
+                                     C::southwest, C::southwest, C::southwest, C::west,
+                                     C::northwest, C::northwest};
+    for (std::size_t i = 0; i < to_vingaard.size(); ++i)
+    {
+        RouteBeat travel{17, 0, 0, D::north,
+                         i + 1 == to_vingaard.size() ? std::vector<std::string>{"YES"}
+                                                     : std::vector<std::string>{"FLEE", "NO"}};
+        travel.area_steps = {to_vingaard[i]};
+        travel.fleeing = i + 1 != to_vingaard.size();
+        beats.push_back(travel);
+    }
+    if (progress == DeathKnightsProgress::vingaard)
+    {
+        return beats;
+    }
+    RouteBeat merchant{33, 8, 14, D::north, {"YES", "AGREE"}};
+    merchant.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C53, 1};
+    beats.push_back(merchant);
+    RouteBeat dream_nap{33, 9, 14, D::north, {}, true};
+    dream_nap.arrive_only = true;
+    dream_nap.rest_for_spells = true;
+    dream_nap.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C53, 2};
+    beats.push_back(dream_nap);
+    RouteBeat interpretation{33, 8, 14, D::north, {"DREAM", "NO"}};
+    interpretation.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C53, 3};
+    beats.push_back(interpretation);
+    if (progress == DeathKnightsProgress::vingaard_dream)
+    {
+        return beats;
+    }
+    RouteBeat nightmare{33, 8, 14, D::north, {"SLEEP", "YES", "FIGHT", "FIGHT"}};
+    nightmare.reload_event = true;
+    nightmare.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C54, 2};
+    beats.push_back(nightmare);
+    if (progress == DeathKnightsProgress::vingaard_nightmare)
+    {
+        return beats;
+    }
+    RouteBeat approach_training{33, 5, 4, D::south, {"YES"}};
+    approach_training.arrive_only = true;
+    approach_training.reload_event = true;
+    beats.push_back(approach_training);
+    auto train_here = step_beat(33, 5, 4, D::south,
+                                {"YES", "knight 1", "knight 2", "knight 3", "cleric 4", "cleric 5",
+                                 "magic_user 6", "Leave", "NO"});
+    beats.push_back(train_here);
+    RouteBeat candle{33, 4, 9, D::south, {"NO"}};
+    candle.arrive_only = true;
+    beats.push_back(candle);
+    // Return through the candle shop's unpainted side to restart any
+    // whispers encountered while walking across town, using ordinary moves.
+    beats.push_back(step_beat(33, 4, 9, D::south, {"NO"}));
+    beats.push_back(step_beat(33, 4, 10, D::north, {"NO"}));
+    // Native ECL1:33 starts the whispers at the candle shop, then reveals
+    // Sebas after nine red doors. Replay every actual step, including wraps.
+    const std::vector<std::tuple<unsigned, unsigned, D>> red_trail{
+        {4, 9, D::south},  {4, 10, D::east},  {5, 10, D::south}, {5, 11, D::east},
+        {6, 11, D::south}, {6, 12, D::south}, {6, 13, D::south}, {6, 14, D::south},
+        {6, 15, D::east},  {7, 15, D::east},  {8, 15, D::east},  {9, 15, D::south},
+        {9, 0, D::south},  {9, 1, D::west},   {8, 1, D::south},  {8, 2, D::south},
+        {8, 3, D::south},  {8, 4, D::east},   {9, 4, D::east},   {10, 4, D::east},
+        {11, 4, D::south}, {11, 5, D::south}, {11, 6, D::west},  {10, 6, D::south},
+        {10, 7, D::south}, {10, 8, D::east},  {11, 8, D::north}, {11, 7, D::east},
+        {12, 7, D::south}, {12, 8, D::south}, {12, 9, D::south}, {12, 10, D::south}};
+    for (const auto &[x, y, facing] : red_trail)
+    {
+        auto step = step_beat(33, x, y, facing, {"TALK", "GOOD", "YES", "YES"});
+        step.reload_event = true;
+        beats.push_back(step);
+    }
+    beats.back().expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C68, 1};
+    if (progress == DeathKnightsProgress::sebas)
+    {
+        return beats;
+    }
+    beats.push_back(approach_training);
+    beats.push_back(
+        step_beat(33, 5, 4, D::south, {"YES", "magic_user 6", "Cone of Cold", "Leave", "NO"}));
+    RouteBeat safe_room{33, 13, 1, D::north, {"YES"}};
+    beats.push_back(safe_room);
+    auto prepare_tower = recover;
+    prepare_tower.map = 33;
+    prepare_tower.x = 13;
+    prepare_tower.y = 1;
+    prepare_tower.memorize_first_of = {"cure_light_wounds",
+                                       "cure_serious_wounds",
+                                       "cure_critical_wounds",
+                                       "bless",
+                                       "prayer",
+                                       "ice_storm",
+                                       "fireball",
+                                       "magic_missile",
+                                       "cone_of_cold"};
+    beats.push_back(prepare_tower);
+    beats.push_back(step_beat(33, 0, 15, D::north, {"YES", "NO"}));
+    const std::vector<C> to_tower{C::west, C::west, C::west, C::west,     C::west,
+                                  C::west, C::west, C::west, C::northwest};
+    for (std::size_t i = 0; i < to_tower.size(); ++i)
+    {
+        RouteBeat travel{17, 0, 0, D::north,
+                         i + 1 == to_tower.size() ? std::vector<std::string>{"YES"}
+                                                  : std::vector<std::string>{"FLEE", "NO"}};
+        travel.area_steps = {to_tower[i]};
+        travel.fleeing = i + 1 != to_tower.size();
+        beats.push_back(travel);
+    }
+    if (progress == DeathKnightsProgress::tower)
+    {
+        return beats;
+    }
+    auto tunnel = step_beat(48, 1, 15, D::south, {"YES"});
+    tunnel.reload_event = true;
+    tunnel.cure_first = true;
+    beats.push_back(tunnel);
+    if (progress == DeathKnightsProgress::crypt_entry)
+    {
+        return beats;
+    }
+    auto prepare_crypt = recover;
+    prepare_crypt.map = 49;
+    prepare_crypt.x = 1;
+    prepare_crypt.y = 0;
+    prepare_crypt.ward_memorized = "resist_fire";
+    prepare_crypt.keep_preparation = true;
+    prepare_crypt.memorize_first_of = {"cure_light_wounds",
+                                       "cure_serious_wounds",
+                                       "cure_critical_wounds",
+                                       "bless",
+                                       "prayer",
+                                       "ice_storm",
+                                       "fireball",
+                                       "magic_missile"};
+    beats.push_back(prepare_crypt);
+    RouteBeat before_flare{49, 11, 2, D::east, {"NO"}};
+    before_flare.arrive_only = true;
+    before_flare.reload_event = true;
+    before_flare.cure_first = true;
+    before_flare.cure_to_full = true;
+    beats.push_back(before_flare);
+    auto prepare_flare = prepare_crypt;
+    prepare_flare.x = 11;
+    prepare_flare.y = 2;
+    beats.push_back(prepare_flare);
+    RouteBeat fire_wards{49, 11, 2, D::east, {}};
+    fire_wards.waiting = true;
+    fire_wards.ward_each_with = "resist_fire";
+    beats.push_back(fire_wards);
+    auto flare = step_beat(49, 11, 2, D::east, {"YES"});
+    flare.reload_event = true;
+    flare.holding_foes = true;
+    beats.push_back(flare);
+    if (progress == DeathKnightsProgress::crypt_dragon)
+    {
+        return beats;
+    }
+    RouteBeat before_garren{49, 8, 11, D::west, {"NO"}};
+    before_garren.arrive_only = true;
+    before_garren.reload_event = true;
+    before_garren.cure_first = true;
+    before_garren.cure_to_full = true;
+    before_garren.take_items = {
+        {"Short Sword", "knight 2"}, {"Staff Sling", "cleric 4"}, {"Plate", "knight 3"}};
+    beats.push_back(before_garren);
+    auto prepare_garren = prepare_crypt;
+    prepare_garren.x = 8;
+    prepare_garren.y = 11;
+    prepare_garren.ward_memorized.clear();
+    beats.push_back(prepare_garren);
+    auto rescue = step_beat(49, 8, 11, D::west, {"TAKE SWORD", "LEAP IN FRONT", "knight 1"});
+    rescue.reload_event = true;
+    rescue.cure_first = true;
+    rescue.cure_to_full = true;
+    beats.push_back(rescue);
+    if (progress == DeathKnightsProgress::crypt_garren)
+    {
+        return beats;
+    }
+    auto recover_garren = prepare_garren;
+    recover_garren.x = 7;
+    recover_garren.y = 11;
+    beats.push_back(recover_garren);
+    RouteBeat leave_crypt{49, 5, 15, D::south, {"WATCH", "NO"}};
+    leave_crypt.arrive_only = true;
+    leave_crypt.reload_event = true;
+    leave_crypt.cure_first = true;
+    leave_crypt.cure_to_full = true;
+    beats.push_back(leave_crypt);
+    if (progress == DeathKnightsProgress::crypt_complete)
+    {
+        return beats;
+    }
+    const std::vector<C> back_to_vingaard{C::east, C::east, C::east, C::east,     C::east,
+                                          C::east, C::east, C::east, C::southeast};
+    for (std::size_t i = 0; i < back_to_vingaard.size(); ++i)
+    {
+        RouteBeat travel{17, 0, 0, D::north,
+                         i + 1 == back_to_vingaard.size() ? std::vector<std::string>{"YES"}
+                                                          : std::vector<std::string>{"FLEE", "NO"}};
+        travel.area_steps = {back_to_vingaard[i]};
+        travel.fleeing = i + 1 != back_to_vingaard.size();
+        beats.push_back(travel);
+    }
+    beats.push_back(approach_training);
+    beats.push_back(train_here);
+    beats.push_back(safe_room);
+    beats.push_back(prepare_tower);
+    beats.push_back(candle);
+    beats.push_back(step_beat(33, 4, 9, D::south, {"NO"}));
+    beats.push_back(step_beat(33, 4, 10, D::north, {"NO"}));
+    for (const auto &[x, y, facing] : red_trail)
+    {
+        auto step = step_beat(33, x, y, facing, {"YES", "NO"});
+        step.reload_event = true;
+        beats.push_back(step);
+    }
+    beats.back().expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C57, 2};
+    if (progress == DeathKnightsProgress::dragon_mission)
+    {
+        return beats;
+    }
+    beats.push_back(step_beat(33, 0, 15, D::north, {"YES", "NO"}));
+    const std::vector<C> to_pit{C::north,     C::north,     C::northwest, C::northwest,
+                                C::northwest, C::northwest, C::northwest, C::west};
+    for (std::size_t i = 0; i < to_pit.size(); ++i)
+    {
+        RouteBeat travel{17, 0, 0, D::north,
+                         i + 1 == to_pit.size() ? std::vector<std::string>{"YES"}
+                                                : std::vector<std::string>{"FLEE", "NO"}};
+        travel.area_steps = {to_pit[i]};
+        travel.fleeing = i + 1 != to_pit.size();
+        beats.push_back(travel);
+    }
+    if (progress == DeathKnightsProgress::dragon_pit_entry)
+    {
+        return beats;
+    }
+    RouteBeat secret_door{50, 13, 2, D::west, {"NO"}};
+    secret_door.arrive_only = true;
+    secret_door.reload_event = true;
+    secret_door.cure_first = true;
+    beats.push_back(secret_door);
+    beats.push_back(step_beat(50, 13, 2, D::west, {"NO"}));
+    RouteBeat temple_entry{50, 10, 2, D::west, {"NO"}};
+    temple_entry.arrive_only = true;
+    temple_entry.reload_event = true;
+    temple_entry.cure_first = true;
+    beats.push_back(temple_entry);
+    RouteBeat altar{50, 9, 7, D::south, {"NO"}};
+    altar.arrive_only = true;
+    altar.reload_event = true;
+    altar.cure_first = true;
+    altar.take_items = {{"Plate", "knight 3"},
+                        {"Shield", "knight 2"},
+                        {"Scroll", "magic_user 6"},
+                        {"Scroll", "cleric 5"}};
+    beats.push_back(altar);
+    RouteBeat karl{50, 4, 12, D::north, {"NO"}};
+    karl.arrive_only = true;
+    karl.reload_event = true;
+    karl.cure_first = true;
+    karl.cure_to_full = true;
+    beats.push_back(karl);
+    auto before_wolf = karl;
+    before_wolf.x = 3;
+    before_wolf.y = 11;
+    beats.push_back(before_wolf);
+    auto prepare_wolf = prepare_garren;
+    prepare_wolf.map = 50;
+    prepare_wolf.x = 3;
+    prepare_wolf.y = 11;
+    beats.push_back(prepare_wolf);
+    auto wolf = step_beat(50, 3, 11, D::north, {"YES"});
+    wolf.reload_event = true;
+    wolf.holding_foes = true;
+    wolf.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C81, 1};
+    beats.push_back(wolf);
+    if (progress == DeathKnightsProgress::dragon_pit_wolf)
+    {
+        return beats;
+    }
+    auto before_courtyard = karl;
+    before_courtyard.x = 5;
+    before_courtyard.y = 8;
+    before_courtyard.facing = D::east;
+    beats.push_back(before_courtyard);
+    auto prepare_dragon = prepare_wolf;
+    prepare_dragon.x = 5;
+    prepare_dragon.y = 8;
+    beats.push_back(prepare_dragon);
+    auto death_dragon = step_beat(50, 5, 8, D::east, {"YES"});
+    death_dragon.reload_event = true;
+    death_dragon.holding_foes = true;
+    death_dragon.take_items = {{"Dragonlance", "knight 1"}};
+    death_dragon.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C7C, 255};
+    beats.push_back(death_dragon);
+    if (progress == DeathKnightsProgress::dragon_pit)
+    {
+        return beats;
+    }
+    auto recover_pit = prepare_wolf;
+    recover_pit.x = 6;
+    recover_pit.y = 8;
+    beats.push_back(recover_pit);
+    auto leave_pit = step_beat(50, 15, 8, D::east, {"YES", "NO"});
+    leave_pit.reload_event = true;
+    leave_pit.cure_first = true;
+    beats.push_back(leave_pit);
+    const std::vector<C> from_pit{C::east,      C::southeast, C::southeast, C::southeast,
+                                  C::southeast, C::southeast, C::south,     C::south};
+    for (std::size_t i = 0; i < from_pit.size(); ++i)
+    {
+        RouteBeat travel{17, 0, 0, D::north,
+                         i + 1 == from_pit.size() ? std::vector<std::string>{"YES"}
+                                                  : std::vector<std::string>{"FLEE", "NO"}};
+        travel.area_steps = {from_pit[i]};
+        travel.fleeing = i + 1 != from_pit.size();
+        beats.push_back(travel);
+    }
+    beats.push_back(approach_training);
+    beats.push_back(train_here);
+    beats.push_back(safe_room);
+    beats.push_back(prepare_tower);
+    beats.push_back(candle);
+    beats.push_back(step_beat(33, 4, 9, D::south, {"NO"}));
+    beats.push_back(step_beat(33, 4, 10, D::north, {"NO"}));
+    for (const auto &[x, y, facing] : red_trail)
+    {
+        auto step = step_beat(33, x, y, facing, {"NO"});
+        step.reload_event = true;
+        beats.push_back(step);
+    }
+    // The third visit requires ten red doors, continuing to the southern
+    // whisper square after the first nine rather than revealing Sebas.
+    const std::vector<std::tuple<unsigned, unsigned, D>> tenth_door{
+        {12, 11, D::east}, {13, 11, D::south}, {13, 12, D::south}, {13, 13, D::west},
+        {12, 13, D::west}, {11, 13, D::south}, {11, 14, D::south}};
+    for (const auto &[x, y, facing] : tenth_door)
+    {
+        auto step = step_beat(33, x, y, facing, {"NO"});
+        step.reload_event = true;
+        beats.push_back(step);
+    }
+    beats.back().expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C57, 3};
+    beats.push_back(safe_room);
+    beats.push_back(prepare_tower);
+    RouteBeat hideout{33, 12, 14, D::north, {"NO"}};
+    hideout.arrive_only = true;
+    hideout.reload_event = true;
+    hideout.cure_first = true;
+    hideout.cure_to_full = true;
+    beats.push_back(hideout);
+    hideout.arrive_only = false;
+    hideout.repeat_in_place = true;
+    hideout.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C57, 5};
+    beats.push_back(hideout);
+    if (progress == DeathKnightsProgress::sebas_abducted)
+    {
+        return beats;
+    }
+    beats.push_back(safe_room);
+    beats.push_back(prepare_tower);
+    beats.push_back(step_beat(33, 0, 15, D::north, {"YES", "NO"}));
+    const std::vector<C> back_to_kalaman{C::southeast, C::southeast, C::east,      C::northeast,
+                                         C::northeast, C::northeast, C::northeast, C::northeast,
+                                         C::northeast, C::northeast, C::northeast, C::northeast,
+                                         C::east,      C::northeast};
+    for (std::size_t i = 0; i < back_to_kalaman.size(); ++i)
+    {
+        RouteBeat travel{17, 0, 0, D::north,
+                         i + 1 == back_to_kalaman.size() ? std::vector<std::string>{"YES"}
+                                                         : std::vector<std::string>{"FLEE", "NO"}};
+        travel.area_steps = {back_to_kalaman[i]};
+        travel.fleeing = i + 1 != back_to_kalaman.size();
+        beats.push_back(travel);
+    }
+    RouteBeat kalaman_room{32, 3, 14, D::north, {"YES"}};
+    beats.push_back(kalaman_room);
+    auto prepare_ariela = prepare_crypt;
+    prepare_ariela.map = 32;
+    prepare_ariela.x = 3;
+    prepare_ariela.y = 14;
+    beats.push_back(prepare_ariela);
+    auto ariela_wards = fire_wards;
+    ariela_wards.map = 32;
+    ariela_wards.x = 3;
+    ariela_wards.y = 14;
+    beats.push_back(ariela_wards);
+    RouteBeat confront_ariela{32, 15, 3, D::north, {"YES"}};
+    confront_ariela.arrive_only = true;
+    confront_ariela.reload_event = true;
+    confront_ariela.cure_first = true;
+    confront_ariela.cure_to_full = true;
+    confront_ariela.holding_foes = true;
+    confront_ariela.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C4A, 1};
+    beats.push_back(confront_ariela);
+    if (progress == DeathKnightsProgress::kalaman_ariela)
+    {
+        return beats;
+    }
+    RouteBeat captive{32, 0, 11, D::north, {"YES"}};
+    captive.arrive_only = true;
+    captive.reload_event = true;
+    captive.cure_first = true;
+    captive.cure_to_full = true;
+    captive.take_items = {{"Dart", "magic_user 6"}, {"Banded", "knight 3"}};
+    captive.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C4A, 2};
+    beats.push_back(captive);
+    if (progress == DeathKnightsProgress::kalaman_rescue)
+    {
+        return beats;
+    }
+    beats.push_back(kalaman_room);
+    RouteBeat training_morning{32, 3, 14, D::north, {"NO"}};
+    training_morning.arrive_only = true;
+    training_morning.look_until_minute = 8 * 60;
+    beats.push_back(training_morning);
+    auto kalaman_training = train_here;
+    kalaman_training.map = 32;
+    kalaman_training.x = 13;
+    kalaman_training.y = 8;
+    kalaman_training.facing = D::north;
+    beats.push_back(kalaman_training);
+    beats.push_back(kalaman_room);
+    auto prepare_dulcimer = prepare_garren;
+    prepare_dulcimer.map = 32;
+    prepare_dulcimer.x = 3;
+    prepare_dulcimer.y = 14;
+    prepare_dulcimer.memorize_first_of.insert(prepare_dulcimer.memorize_first_of.begin(), "heal");
+    beats.push_back(prepare_dulcimer);
+    beats.push_back(step_beat(32, 6, 15, D::south, {"YES", "NO"}));
+    const std::vector<C> to_dulcimer{C::southeast, C::southeast, C::southeast,
+                                     C::southeast, C::southeast, C::northeast};
+    for (std::size_t i = 0; i < to_dulcimer.size(); ++i)
+    {
+        RouteBeat travel{17, 0, 0, D::north,
+                         i + 1 == to_dulcimer.size() ? std::vector<std::string>{"YES"}
+                                                     : std::vector<std::string>{"FLEE", "NO"}};
+        travel.area_steps = {to_dulcimer[i]};
+        travel.fleeing = i + 1 != to_dulcimer.size();
+        beats.push_back(travel);
+    }
+    if (progress == DeathKnightsProgress::dulcimer_entry)
+    {
+        return beats;
+    }
+    RouteBeat before_guards{80, 9, 1, D::north, {"YES"}};
+    before_guards.arrive_only = true;
+    before_guards.reload_event = true;
+    before_guards.cure_first = true;
+    before_guards.cure_to_full = true;
+    beats.push_back(before_guards);
+    auto prepare_guards = prepare_dulcimer;
+    prepare_guards.map = 80;
+    prepare_guards.x = 9;
+    prepare_guards.y = 1;
+    // Enter with the spells prepared at Kalaman's inn. Resting here draws
+    // unlimited undead patrols; recover with those actual prepared cures.
+    prepare_guards.rest_first = false;
+    prepare_guards.rest_for_spells = false;
+    beats.push_back(prepare_guards);
+    RouteBeat guards{80, 9, 0, D::north, {"YES"}};
+    guards.arrive_only = true;
+    guards.reload_event = true;
+    guards.cure_first = true;
+    guards.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CB1, 1};
+    beats.push_back(guards);
+    guards.arrive_only = false;
+    guards.facing = D::east;
+    guards.repeat_in_place = true;
+    guards.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CB1, 2};
+    beats.push_back(guards);
+    prepare_guards.y = 0;
+    beats.push_back(prepare_guards);
+    RouteBeat lich{80, 5, 0, D::north, {"YES", "YES"}};
+    lich.arrive_only = true;
+    lich.reload_event = true;
+    lich.cure_first = true;
+    lich.cure_to_full = true;
+    lich.holding_foes = true;
+    lich.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CAF, 1};
+    beats.push_back(lich);
+    RouteBeat phylactery{80, 2, 13, D::south, {"YES"}};
+    phylactery.arrive_only = true;
+    phylactery.reload_event = true;
+    phylactery.cure_first = true;
+    phylactery.cure_to_full = true;
+    phylactery.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CAF, 2};
+    beats.push_back(phylactery);
+    if (progress == DeathKnightsProgress::dulcimer)
+    {
+        return beats;
+    }
+    auto prepare_wood = prepare_guards;
+    prepare_wood.x = 2;
+    prepare_wood.y = 13;
+    prepare_wood.rest_first = true;
+    prepare_wood.rest_for_spells = true;
+    beats.push_back(prepare_wood);
+    auto wood_gate = step_beat(80, 15, 8, D::east, {"YES"});
+    wood_gate.reload_event = true;
+    wood_gate.cure_first = true;
+    wood_gate.cure_to_full = true;
+    beats.push_back(wood_gate);
+    if (progress == DeathKnightsProgress::voice_wood)
+    {
+        return beats;
+    }
+    RouteBeat rod{82, 12, 7, D::east, {"MOVE", "YES"}};
+    rod.arrive_only = true;
+    rod.reload_event = true;
+    rod.cure_first = true;
+    rod.cure_to_full = true;
+    rod.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CB8, 1};
+    beats.push_back(rod);
+    if (progress == DeathKnightsProgress::rod)
+    {
+        return beats;
+    }
+    auto leave_wood = step_beat(82, 13, 0, D::north, {"YES", "NO"});
+    leave_wood.reload_event = true;
+    leave_wood.cure_first = true;
+    beats.push_back(leave_wood);
+    const std::vector<C> to_dargaard{C::west, C::west, C::west,      C::west,     C::west,
+                                     C::west, C::west, C::northwest, C::southwest};
+    for (std::size_t i = 0; i < to_dargaard.size(); ++i)
+    {
+        RouteBeat travel{17, 0, 0, D::north,
+                         i + 1 == to_dargaard.size()
+                             ? std::vector<std::string>{"YES", "SPEAK", "type:DENISSA"}
+                             : std::vector<std::string>{"FLEE", "NO"}};
+        travel.area_steps = {to_dargaard[i]};
+        travel.fleeing = i + 1 != to_dargaard.size();
+        beats.push_back(travel);
+    }
+    if (progress == DeathKnightsProgress::dargaard)
+    {
+        return beats;
+    }
+    RouteBeat controls{96, 8, 14, D::north, {"YES"}};
+    controls.arrive_only = true;
+    controls.reload_event = true;
+    controls.cure_first = true;
+    controls.cure_to_full = true;
+    controls.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CCA, 1};
+    beats.push_back(controls);
+    RouteBeat upper{96, 14, 0, D::north, {"YES"}};
+    upper.arrive_only = true;
+    upper.reload_event = true;
+    upper.cure_first = true;
+    upper.cure_to_full = true;
+    beats.push_back(upper);
+    if (progress == DeathKnightsProgress::dargaard_upper)
+    {
+        return beats;
+    }
+    RouteBeat chase{97, 6, 1, D::west, {"NO"}};
+    chase.arrive_only = true;
+    chase.reload_event = true;
+    chase.cure_first = true;
+    chase.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CCB, 2};
+    beats.push_back(chase);
+    RouteBeat vampires{97, 4, 2, D::north, {"ATTACK"}};
+    vampires.arrive_only = true;
+    vampires.reload_event = true;
+    vampires.cure_first = true;
+    vampires.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CCC, 1};
+    beats.push_back(vampires);
+    RouteBeat first_lever{97, 1, 1, D::north, {"YES"}};
+    first_lever.arrive_only = true;
+    first_lever.reload_event = true;
+    first_lever.cure_first = true;
+    first_lever.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CCC, 2};
+    beats.push_back(first_lever);
+    RouteBeat flesh_golems{97, 3, 5, D::north, {"YES"}};
+    flesh_golems.arrive_only = true;
+    flesh_golems.reload_event = true;
+    flesh_golems.cure_first = true;
+    flesh_golems.cure_to_full = true;
+    flesh_golems.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CCC, 3};
+    beats.push_back(flesh_golems);
+    RouteBeat second_lever{97, 3, 3, D::north, {"YES"}};
+    second_lever.arrive_only = true;
+    second_lever.reload_event = true;
+    second_lever.cure_first = true;
+    second_lever.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CCC, 4};
+    beats.push_back(second_lever);
+    RouteBeat rescued_clerics{97, 5, 5, D::south, {"YES"}};
+    rescued_clerics.arrive_only = true;
+    rescued_clerics.reload_event = true;
+    rescued_clerics.cure_first = true;
+    rescued_clerics.cure_to_full = true;
+    rescued_clerics.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CCB, 3};
+    beats.push_back(rescued_clerics);
+    RouteBeat safe_cell{97, 3, 7, D::north, {"NO"}};
+    safe_cell.arrive_only = true;
+    safe_cell.reload_event = true;
+    safe_cell.cure_first = true;
+    beats.push_back(safe_cell);
+    auto prepare_cell = prepare_dulcimer;
+    prepare_cell.map = 97;
+    prepare_cell.x = 3;
+    prepare_cell.y = 7;
+    prepare_cell.ward_memorized = "resist_fire";
+    prepare_cell.keep_preparation = true;
+    prepare_cell.ready_types = {{36, "knight 3"}};
+    prepare_cell.memorize_first_of = {"heal",
+                                      "enlarge",
+                                      "enlarge",
+                                      "enlarge",
+                                      "enlarge",
+                                      "cone_of_cold",
+                                      "bless",
+                                      "bless",
+                                      "prayer",
+                                      "prayer",
+                                      "protection_from_evil_10_radius",
+                                      "protection_from_evil_10_radius",
+                                      "cure_light_wounds",
+                                      "cure_serious_wounds",
+                                      "cure_critical_wounds",
+                                      "ice_storm",
+                                      "lightning_bolt"};
+    beats.push_back(prepare_cell);
+    RouteBeat prison_guards{97, 5, 9, D::south, {"YES"}};
+    prison_guards.arrive_only = true;
+    prison_guards.reload_event = true;
+    prison_guards.cure_first = true;
+    prison_guards.cure_to_full = true;
+    prison_guards.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CCC, 5};
+    beats.push_back(prison_guards);
+    RouteBeat sebas{97, 8, 7, D::east, {"YES"}};
+    sebas.arrive_only = true;
+    sebas.reload_event = true;
+    sebas.cure_first = true;
+    sebas.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CCC, 7};
+    beats.push_back(sebas);
+    safe_cell.x = 9;
+    beats.push_back(safe_cell);
+    prepare_cell.x = 9;
+    beats.push_back(prepare_cell);
+    RouteBeat cache{97, 7, 3, D::west, {"YES"}};
+    cache.arrive_only = true;
+    cache.reload_event = true;
+    cache.cure_first = true;
+    cache.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CCE, 1};
+    beats.push_back(cache);
+    auto sturm_wards = fire_wards;
+    sturm_wards.map = 97;
+    sturm_wards.x = 7;
+    sturm_wards.y = 3;
+    sturm_wards.facing = D::west;
+    beats.push_back(sturm_wards);
+    RouteBeat sturm{97, 14, 13, D::south, {"YES"}};
+    sturm.arrive_only = true;
+    sturm.reload_event = true;
+    sturm.cure_first = true;
+    sturm.cure_to_full = true;
+    sturm.holding_foes = true;
+    sturm.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CCB, 4};
+    beats.push_back(sturm);
+    if (progress == DeathKnightsProgress::dargaard_sturm)
+    {
+        return beats;
+    }
+    beats.push_back(safe_cell);
+    beats.push_back(prepare_cell);
+    RouteBeat top_floor{97, 8, 14, D::north, {"YES"}};
+    top_floor.arrive_only = true;
+    top_floor.reload_event = true;
+    top_floor.cure_first = true;
+    top_floor.cure_to_full = true;
+    beats.push_back(top_floor);
+    if (progress == DeathKnightsProgress::dargaard_top)
+    {
+        return beats;
+    }
+    RouteBeat lenore{98, 1, 4, D::north, {"YES"}};
+    lenore.arrive_only = true;
+    lenore.reload_event = true;
+    lenore.cure_first = true;
+    lenore.cure_to_full = true;
+    lenore.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CCF, 4};
+    beats.push_back(lenore);
+    RouteBeat statues{98, 10, 11, D::east, {"ATTACK", "knight 1"}};
+    statues.arrive_only = true;
+    statues.reload_event = true;
+    statues.cure_first = true;
+    statues.cure_to_full = true;
+    statues.holding_foes = true;
+    statues.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C02, 2};
+    beats.push_back(statues);
+    RouteBeat undead_durfey{98, 11, 11, D::east, {"YES"}};
+    undead_durfey.arrive_only = true;
+    undead_durfey.reload_event = true;
+    undead_durfey.cure_first = true;
+    undead_durfey.cure_to_full = true;
+    undead_durfey.holding_foes = true;
+    undead_durfey.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C03, 1};
+    beats.push_back(undead_durfey);
+    if (progress == DeathKnightsProgress::dargaard_durfey)
+    {
+        return beats;
+    }
+    RouteBeat before_soth{98, 12, 7, D::north, {"NO"}};
+    before_soth.arrive_only = true;
+    before_soth.reload_event = true;
+    before_soth.cure_first = true;
+    before_soth.cure_to_full = true;
+    before_soth.cast_after = {"protection_from_evil_10_radius"};
+    beats.push_back(before_soth);
+    auto final_wards = fire_wards;
+    final_wards.map = 98;
+    final_wards.x = 12;
+    final_wards.y = 7;
+    final_wards.facing = D::north;
+    final_wards.cast_after = {"prayer"};
+    beats.push_back(final_wards);
+    RouteBeat final_bless{98, 12, 7, D::north, {}};
+    final_bless.waiting = true;
+    final_bless.cast_after = {"bless"};
+    beats.push_back(final_bless);
+    RouteBeat final_enlarge{98, 12, 7, D::north, {}};
+    final_enlarge.waiting = true;
+    final_enlarge.ward_each_with = "enlarge";
+    final_enlarge.ward_members = {"knight 1", "knight 2", "knight 3"};
+    beats.push_back(final_enlarge);
+    if (progress == DeathKnightsProgress::dargaard_final)
+    {
+        return beats;
+    }
+    auto soth = step_beat(98, 12, 7, D::north, {"YES", "YES"});
+    soth.reload_event = true;
+    soth.holding_foes = true;
+    soth.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CD0, 1};
+    beats.push_back(soth);
+
+    // The council leaves the party in ordinary exploration. A surviving
+    // cleric can cure someone knocked unconscious in the final battle.
+    RouteBeat recovery{48, 2, 1, D::north, {}};
+    recovery.waiting = true;
+    recovery.cure_first = true;
+    recovery.cure_to_full = true;
+    beats.push_back(recovery);
+
+    return beats;
 }
 
 enum class ChampionsProgress
@@ -11355,13 +12292,15 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
 bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CurseProgress::none,
                  SecretProgress secret_progress = SecretProgress::none, bool earned_gateway = false,
                  bool earned_treasure = false,
-                 ChampionsProgress champions_progress = ChampionsProgress::none)
+                 ChampionsProgress champions_progress = ChampionsProgress::none,
+                 DeathKnightsProgress death_knights_progress = DeathKnightsProgress::none)
 {
     const bool sewers = progress != CurseProgress::none;
     const bool earned_secret = secret_progress != SecretProgress::none;
     const bool earned_champions = champions_progress != ChampionsProgress::none;
-    const bool earned =
-        sewers || earned_secret || earned_gateway || earned_treasure || earned_champions;
+    const bool earned_death_knights = death_knights_progress != DeathKnightsProgress::none;
+    const bool earned = sewers || earned_secret || earned_gateway || earned_treasure ||
+                        earned_champions || earned_death_knights;
     const bool first_bond = progress >= CurseProgress::first_bond;
     const bool hap = progress >= CurseProgress::hap;
     const bool second_bond = progress >= CurseProgress::second_bond;
@@ -11376,6 +12315,11 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
     if (!games || opengold::identify_game(folder) != game)
     {
         std::cout << game_title(game) << "'s files are not here.\n";
+        return true;
+    }
+    if (earned_death_knights && !std::getenv("OPENGOLD_CHAMPIONS_WINNERS"))
+    {
+        std::cout << "Earned Champions winners are not supplied: set OPENGOLD_CHAMPIONS_WINNERS.\n";
         return true;
     }
     auto session = opengold::load_campaign(folder, game);
@@ -11407,7 +12351,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
     const auto cast_in_camp =
         [&](opengold::MemberId caster, opengold::MemberId target, const std::string &action)
     {
-        if (darkness_route_party || earned_champions)
+        if (darkness_route_party || earned_champions || earned_death_knights)
         {
             session.cast_outside_combat(caster, target, action);
             return;
@@ -11426,8 +12370,10 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
     // Spells the next beat casts outside combat (RouteBeat::cast_after),
     // which each caster takes first.
     std::vector<std::string> wanted_spells =
-        earned_champions ? std::vector<std::string>{"sleep", "cure_light_wounds", "bless"}
-                         : std::vector<std::string>{};
+        earned_death_knights
+            ? std::vector<std::string>{"cure_light_wounds", "bless", "fireball", "magic_missile"}
+        : earned_champions ? std::vector<std::string>{"sleep", "cure_light_wounds", "bless"}
+                           : std::vector<std::string>{};
     // The spell the next beat casts on each member (RouteBeat::ward_each_with),
     // of which the casters memorize a copy for each member between them.
     std::string ward_spell;
@@ -11705,7 +12651,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         // one for each whatever their slots.
         const auto requested_wards = ward_target_count();
         std::map<opengold::MemberId, unsigned> ward_assignments;
-        if (earned_champions && !ward_spell.empty())
+        if ((earned_champions || earned_death_knights) && !ward_spell.empty())
         {
             std::vector<std::pair<unsigned, opengold::MemberId>> capacities;
             for (const auto id : choosing)
@@ -11755,7 +12701,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         for (const auto id : choosing)
         {
             const auto ward_copies =
-                earned_champions && !ward_spell.empty() ? ward_assignments[id] : requested_wards;
+                (earned_champions || earned_death_knights) && !ward_spell.empty()
+                    ? ward_assignments[id]
+                    : requested_wards;
             const auto options = party->spell_choice_options(id);
             const auto &numbers = *party->member(id).character.sheet().original;
             if (!options.may_prepare)
@@ -11866,7 +12814,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     }
                 }
             }
-            if (earned_champions)
+            if (earned_champions || earned_death_knights)
             {
                 unsigned gifts = 0;
                 for (const auto *gift :
@@ -11902,13 +12850,66 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         wake_the_fallen();
         unstone_the_statues();
     };
-    const auto item_definitions = (game == GoldBoxGame::pools_of_darkness || earned_champions)
+    const auto item_definitions = (game == GoldBoxGame::pools_of_darkness || earned_champions ||
+                                   game == GoldBoxGame::death_knights_of_krynn)
                                       ? opengold::load_item_definitions(folder, game)
                                       : std::map<unsigned, opengold::por::Equipment>{};
     const auto new_party = [&]
     {
         party = std::make_shared<opengold::CampaignParty>(opengold::original::rules_module(content),
                                                           creation);
+        if (earned_death_knights)
+        {
+            const auto source = std::getenv("OPENGOLD_CHAMPIONS_WINNERS");
+            check(source && *source, "The earned campaign needs its actual Champions winners");
+            const auto previous_folder = folder.parent_path() / "COK";
+            constexpr auto previous = GoldBoxGame::champions_of_krynn;
+            const auto previous_creation =
+                opengold::original::character_rules(opengold::original::default_aging, previous);
+            const auto previous_rules = opengold::original::rules_module(
+                opengold::load_original_content(previous_folder, previous));
+            const auto previous_world = opengold::load_campaign(previous_folder, previous);
+            const auto saved = opengold::decode_campaign(
+                opengold::read_campaign_file(source), *previous_creation, *previous_rules,
+                opengold::campaign_asset_identity(previous_folder), &previous_world);
+            check(saved.game == previous && saved.town &&
+                      saved.town->script_variable(opengold::por::EclAddress{0x4C3A}) == 1,
+                  "The imported source is the actual earned Champions ending");
+            std::vector<opengold::MemberId> winners;
+            for (const auto slot : saved.party.slots)
+            {
+                const auto member =
+                    std::ranges::find(saved.party.roster, slot, &opengold::PartyMember::id);
+                if (slot && member != saved.party.roster.end() && member->npc_source.empty())
+                {
+                    winners.push_back(slot);
+                }
+            }
+            check(winners.size() == 6,
+                  "All six actual Champions winners enter the earned campaign");
+            const auto convert = opengold::champions_items_for_death_knights(folder);
+            for (std::size_t index = 0; index < winners.size(); ++index)
+            {
+                const auto &from = *std::ranges::find(saved.party.roster, winners[index],
+                                                      &opengold::PartyMember::id);
+                const auto id = party->bring_across(
+                    from, convert,
+                    opengold::champions_money_for_death_knights(saved.party.wealth, index,
+                                                                winners.size()),
+                    opengold::CampaignParty::ConvertedItems::readied_as_they_were);
+                const auto &to = party->member(id);
+                check(to.experience == from.experience &&
+                          to.vitals.hit_points == from.vitals.hit_points &&
+                          to.character.sheet().original->class_levels ==
+                              from.character.sheet().original->class_levels,
+                      "The route starts with earned XP, levels and actual wounds");
+            }
+            check(party->state().wealth == saved.party.wealth,
+                  "The route imports the actual purse without a starting-money grant");
+            std::cout
+                << "Imported six actual Champions winners for the earned Death Knights campaign.\n";
+            return;
+        }
         if (earned_treasure)
         {
             const char *source = std::getenv("OPENGOLD_GATEWAY_WINNERS");
@@ -11990,7 +12991,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             const auto &klass = classes[n];
             opengold::CharacterCreator creator(creation, 90 + n);
             creator.select(opengold::rules::CreationField::race,
-                           game == GoldBoxGame::champions_of_krynn ? "krynn_human" : "human");
+                           opengold::original::krynn_game(game) ? "krynn_human" : "human");
             creator.select(opengold::rules::CreationField::character_class, klass);
             if (earned_champions && klass == "cleric")
             {
@@ -12001,7 +13002,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             const auto id = party->add_pc(creator.create_character());
             // Pools of Darkness's route party brings what its creation gives
             // (200 platinum a member, chargen.pas), as the earned routes do.
-            if (earned || darkness_route_party)
+            if (earned || darkness_route_party || game == GoldBoxGame::death_knights_of_krynn)
             {
                 party->add_coins(opengold::Coin::gold, creator.starting_gold());
                 party->add_coins(opengold::Coin::platinum, creator.starting_platinum());
@@ -12011,7 +13012,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             // meant to finish the game: Pools of Darkness's magic-user's
             // eighth- and ninth-level spells need Intelligence 16 and 18
             // (TrimHighSpellSlots).
-            if (route)
+            if (route || game == GoldBoxGame::death_knights_of_krynn)
             {
                 opengold::test::modify_to_the_highest(*party, id);
             }
@@ -12028,7 +13029,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             }
             // Pools of Darkness's route party carries the game's own starting
             // equipment, as a party made in the original does.
-            if (route && (game == GoldBoxGame::pools_of_darkness || earned_champions))
+            if ((route && (game == GoldBoxGame::pools_of_darkness || earned_champions)) ||
+                game == GoldBoxGame::death_knights_of_krynn)
             {
                 opengold::outfit_original_character(*party, id, item_definitions);
                 if (earned_champions)
@@ -12075,7 +13077,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 party->equip(id, party->member(id).character.inventory().items().back().id);
             }
         }
-        if (!earned && !darkness_route_party)
+        if (!earned && !darkness_route_party && game != GoldBoxGame::death_knights_of_krynn)
         {
             party->add_coins(opengold::Coin::gold, 5000);
         }
@@ -13870,7 +14872,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             // Quick computer would, whatever its tactic: the member fights
             // with its weapon instead.
             const bool iron_golems = game == GoldBoxGame::pools_of_darkness ||
-                                     game == GoldBoxGame::secret_of_the_silver_blades;
+                                     game == GoldBoxGame::secret_of_the_silver_blades ||
+                                     earned_death_knights;
             if (member && iron_golems && wasted_on_golems(state, chosen))
             {
                 chosen =
@@ -14229,7 +15232,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                                  return member.character.sheet().name == unit.name;
                                              });
                     const bool drained =
-                        earned_treasure && original != before.roster.end() &&
+                        (earned_treasure || earned_death_knights) &&
+                        original != before.roster.end() &&
                         unit.max_hit_points < original->character.sheet().hit_points;
                     lost += (unit.dead || unit.status == "stoned" || left_behind || healer_fallen ||
                                      drained
@@ -14343,14 +15347,15 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         // can be unwinnable before the party reaches the town's temple again.
         const unsigned costly_reloads = game == GoldBoxGame::pools_of_darkness ||
                                                 game == GoldBoxGame::secret_of_the_silver_blades ||
-                                                earned_treasure || earned_champions
+                                                earned_treasure || earned_champions ||
+                                                earned_death_knights
                                             ? 240
                                             : 0;
         const bool cannot_raise_between =
             game == GoldBoxGame::pools_of_darkness && keeps_preparation;
         const int costly_score = test_winning || cannot_raise_between ||
                                          game == GoldBoxGame::secret_of_the_silver_blades ||
-                                         earned_treasure || earned_champions
+                                         earned_treasure || earned_champions || earned_death_knights
                                      ? one_member_lost
                                      : two_members_lost;
         while (route && !planning && (best > 0 || scoring) &&
@@ -14564,14 +15569,15 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             }
             const int type = offered.type;
             const bool found_weapon =
-                (earned_treasure || earned_champions) &&
+                (earned_treasure || earned_champions || earned_death_knights) &&
                 party->equipment_slot(pile[at]) == opengold::rules::EquipmentSlot::weapon &&
                 pile[at].base.range == 0;
             const auto slot = party->equipment_slot(pile[at]);
-            const bool found_defense = (earned_treasure || earned_champions) &&
-                                       (slot == opengold::rules::EquipmentSlot::armor ||
-                                        slot == opengold::rules::EquipmentSlot::shield ||
-                                        slot == opengold::rules::EquipmentSlot::worn);
+            const bool found_defense =
+                (earned_treasure || earned_champions || earned_death_knights) &&
+                (slot == opengold::rules::EquipmentSlot::armor ||
+                 slot == opengold::rules::EquipmentSlot::shield ||
+                 slot == opengold::rules::EquipmentSlot::worn);
             if (!found_weapon && !found_defense && type != 18 && type != 8 && type != 15 &&
                 type != 36 && type != 37)
             {
@@ -14587,7 +15593,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     continue;
                 }
                 const auto &holder = party->member(id);
-                if ((earned_treasure || earned_champions) && !party->can_use(id, pile[at]))
+                if ((earned_treasure || earned_champions || earned_death_knights) &&
+                    !party->can_use(id, pile[at]))
                 {
                     continue;
                 }
@@ -14855,6 +15862,10 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             if (!s.diagnostic.empty() && !s.diagnostic.starts_with("Bought "))
             {
                 needs[s.diagnostic].push_back(where);
+                if (trace)
+                {
+                    std::cout << where << ": diagnostic: " << s.diagnostic << "\n";
+                }
             }
             if (s.music_starts != music_starts_seen)
             {
@@ -15196,6 +16207,85 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                         }
                     }
                 }
+                // Deny knowing Sebas when his pursuers question the party;
+                // the native dialogue lets them leave without betraying him.
+                if (earned_death_knights &&
+                    (s.dialogue.find("GO DOWN THE STAIRS?") != std::string::npos ||
+                     s.dialogue.find("DESCEND THE STAIRS?") != std::string::npos))
+                {
+                    const auto no = std::ranges::find(s.choices, "NO");
+                    if (no != s.choices.end())
+                    {
+                        check(session.choose(s.continue_ticket,
+                                             static_cast<unsigned>(no - s.choices.begin())),
+                              "Stay on the current floor while continuing toward Soth");
+                        continue;
+                    }
+                }
+                if (earned_death_knights &&
+                    (s.dialogue.find("CHANTING STOPS COMPLETELY") != std::string::npos ||
+                     s.dialogue.find("THE ROOM IS SILENT.") != std::string::npos))
+                {
+                    const auto enter = std::ranges::find(s.choices, "ENTER");
+                    if (enter != s.choices.end())
+                    {
+                        check(session.choose(s.continue_ticket,
+                                             static_cast<unsigned>(enter - s.choices.begin())),
+                              "Enter the chapel after its chanting stops");
+                        continue;
+                    }
+                }
+                if (earned_death_knights &&
+                    s.dialogue.find("KNOW YOU A MAN IN DARK ROBES, NAMED SEBAS?") !=
+                        std::string::npos)
+                {
+                    const auto no = std::ranges::find(s.choices, "NO");
+                    if (no != s.choices.end())
+                    {
+                        check(session.choose(s.continue_ticket,
+                                             static_cast<std::size_t>(no - s.choices.begin())),
+                              "The party does not identify Sebas to his pursuers");
+                        continue;
+                    }
+                }
+                // The hostile searchers must not learn Sebas' hiding place.
+                if (earned_death_knights && s.dialogue.find("WHERE BE HE?") != std::string::npos)
+                {
+                    const auto lie = std::ranges::find(s.choices, "LIE");
+                    if (lie != s.choices.end())
+                    {
+                        check(session.choose(s.continue_ticket,
+                                             static_cast<std::size_t>(lie - s.choices.begin())),
+                              "The party protects Sebas from the hostile searchers");
+                        continue;
+                    }
+                }
+                // Pass Vingaard's training rooms on other errands. Accept
+                // training only when the route actually names a member to train.
+                if (earned_death_knights &&
+                    (s.dialogue.find("WILL YOU TRAIN?") != std::string::npos ||
+                     s.dialogue.find("TRAINING WARRIORS. JOIN THEM?") != std::string::npos) &&
+                    !std::ranges::any_of(
+                        answers,
+                        [&](const std::string &answer)
+                        {
+                            return std::ranges::any_of(
+                                party->state().slots,
+                                [&](opengold::MemberId id)
+                                {
+                                    return id && party->member(id).character.sheet().name == answer;
+                                });
+                        }))
+                {
+                    const auto no = std::ranges::find(s.choices, "NO");
+                    if (no != s.choices.end())
+                    {
+                        check(session.choose(s.continue_ticket,
+                                             static_cast<std::size_t>(no - s.choices.begin())),
+                              "The party declines training while passing through");
+                        continue;
+                    }
+                }
                 // In order; a passing beat's answers are each for whatever asks
                 // it on the way, so the first one offered is taken.
                 for (auto answer = answers.begin(); answer != answers.end(); ++answer)
@@ -15519,7 +16609,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 {
                     continue;
                 }
-                if ((earned_treasure || earned_champions) && take_equipment_upgrade(pile))
+                if ((earned_treasure || earned_champions || earned_death_knights) &&
+                    take_equipment_upgrade(pile))
                 {
                     continue;
                 }
@@ -15558,6 +16649,16 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     return;
                 }
                 continue;
+            case TourPhase::completed:
+                if (earned_death_knights && party->state().spell_rest)
+                {
+                    // PROGRAM 9 may finish the script immediately after rest.
+                    // Complete the UI's pending spell choices before moving.
+                    memorize();
+                    session.advance(0);
+                    continue;
+                }
+                [[fallthrough]];
             default:
                 ++phases[std::to_string(static_cast<int>(s.phase))];
                 attribute();
@@ -15590,6 +16691,11 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         play("opening");
         if (session.snapshot().area_id == map)
         {
+            if (!session.can_leave())
+            {
+                needs["Map is not ready after its opening"].push_back("map " + std::to_string(map));
+                return false;
+            }
             return true;
         }
         const auto where = "map " + std::to_string(map) + " entry";
@@ -15743,7 +16849,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         {
             if (game != GoldBoxGame::pools_of_darkness &&
                 game != GoldBoxGame::curse_of_the_azure_bonds && !earned_secret &&
-                !earned_gateway && !earned_treasure && !earned_champions)
+                !earned_gateway && !earned_treasure && !earned_champions && !earned_death_knights)
             {
                 return;
             }
@@ -15796,11 +16902,12 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             // Wake unconscious members before spending the standing cleric's
             // cures on the first wounded fighter. A fallen healer can then
             // contribute its still-memorized spells to the recovery.
-            if (earned_secret || earned_gateway || earned_treasure || earned_champions)
+            if (earned_secret || earned_gateway || earned_treasure || earned_champions ||
+                earned_death_knights)
             {
                 auto fallen_order =
                     std::vector(party->state().slots.begin(), party->state().slots.end());
-                if (earned_champions)
+                if (earned_champions || earned_death_knights)
                 {
                     std::ranges::stable_sort(
                         fallen_order, {},
@@ -16049,7 +17156,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 };
                 const bool missing_plan =
                     (game == GoldBoxGame::pools_of_darkness || second_bond || earned_secret ||
-                     earned_treasure || earned_champions) &&
+                     earned_treasure || earned_champions || earned_death_knights) &&
                     keeps_preparation && a_night_first &&
                     (std::ranges::any_of(wanted_spells,
                                          [&](const std::string &wanted)
@@ -16135,7 +17242,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 // At the final preparation camps, use the refreshed cures
                 // instead of waiting a day per Hit Point while wandering
                 // monsters repeatedly undo the natural healing.
-                if (earned_treasure || earned_champions ||
+                if (earned_treasure || earned_champions || earned_death_knights ||
                     (game == GoldBoxGame::pools_of_darkness && keeps_preparation) ||
                     (third_bond && (session.snapshot().script_id == 18 ||
                                     (moander_recovery && session.snapshot().script_id == 17))) ||
@@ -16247,7 +17354,10 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         {
             answers = {"LEAVE", "stop:YES"};
         }
-        play("opening");
+        if (!earned_death_knights || !std::getenv("OPENGOLD_ROUTE_RESUME"))
+        {
+            play("opening");
+        }
         const auto treasure_streets = earned_treasure ? std::optional(session.map()) : std::nullopt;
         // Planning aids, so a search can start where the route ends without
         // replaying it: OPENGOLD_ROUTE_BEATS=N plays only the route's first N
@@ -16444,13 +17554,14 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         };
         try
         {
-            const auto earned_beats = sewers            ? curse_earned_route(progress)
-                                      : earned_secret   ? secret_earned_route(secret_progress)
-                                      : earned_gateway  ? gateway_earned_route()
-                                      : earned_treasure ? treasure_earned_route()
-                                      : earned_champions
-                                          ? champions_earned_route(champions_progress)
-                                          : std::vector<RouteBeat>{};
+            const auto earned_beats =
+                sewers                 ? curse_earned_route(progress)
+                : earned_secret        ? secret_earned_route(secret_progress)
+                : earned_gateway       ? gateway_earned_route()
+                : earned_treasure      ? treasure_earned_route()
+                : earned_death_knights ? death_knights_earned_route(death_knights_progress)
+                : earned_champions     ? champions_earned_route(champions_progress)
+                                       : std::vector<RouteBeat>{};
             for (const auto &beat : earned ? earned_beats : route_for(game))
             {
                 if (beat_number == beat_limit)
@@ -16770,7 +17881,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                             if (earned)
                             {
                                 check(!(earned_secret || earned_gateway || earned_treasure ||
-                                        earned_champions) ||
+                                        earned_champions || earned_death_knights) ||
                                           session.snapshot().area_id == beat.map,
                                       "Earned walking begins in its actual destination area");
                                 const auto destination_script = session.snapshot().script_id;
@@ -16778,7 +17889,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                 const bool destination_passing = passing;
                                 const bool story_walk =
                                     earned_secret || earned_gateway || earned_treasure ||
-                                    earned_champions ||
+                                    earned_champions || earned_death_knights ||
                                     (second_bond &&
                                      (session.snapshot().script_id == 50 || beat.map == 51 ||
                                       (third_bond && (beat.map == 16 || beat.map == 17)) ||
@@ -16788,6 +17899,89 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                 passing = !story_walk;
                                 session.set_searching(beat.searching.value_or(true));
                                 std::set<unsigned> blocked_quests;
+                                if (earned_death_knights && session.snapshot().script_id == 98)
+                                {
+                                    const auto destination =
+                                        session.map().at(x, beat.y).event_number();
+                                    for (const unsigned event : {1u, 10u, 13u})
+                                    {
+                                        if (event != destination)
+                                        {
+                                            blocked_quests.insert(event);
+                                        }
+                                    }
+                                }
+                                if (earned_death_knights && session.snapshot().script_id == 97)
+                                {
+                                    const auto destination =
+                                        session.map().at(x, beat.y).event_number();
+                                    for (const unsigned event : {11u, 16u, 17u})
+                                    {
+                                        const bool completed_temple =
+                                            event == 11 &&
+                                            session.script_variable(
+                                                opengold::por::EclAddress{0x4CCB}) == 4;
+                                        if (event != destination && !completed_temple)
+                                        {
+                                            blocked_quests.insert(event);
+                                        }
+                                    }
+                                }
+                                if (earned_death_knights && session.snapshot().script_id == 81 &&
+                                    session.map().at(x, beat.y).event_number() != 21 &&
+                                    session.script_variable(opengold::por::EclAddress{0x4CAF}) == 0)
+                                {
+                                    blocked_quests.insert(21);
+                                }
+                                if (earned_death_knights && session.snapshot().script_id == 50)
+                                {
+                                    // Meet Karl and the Dread Wolf before entering
+                                    // the courtyard for the death dragon encounter.
+                                    const auto destination =
+                                        session.map().at(x, beat.y).event_number();
+                                    for (unsigned yy = 0; yy < 16; ++yy)
+                                    {
+                                        for (unsigned xx = 0; xx < 16; ++xx)
+                                        {
+                                            const auto event =
+                                                session.map().at(xx, yy).event_number();
+                                            const bool pending_wolf =
+                                                (event & 63) == 25 &&
+                                                session.script_variable(
+                                                    opengold::por::EclAddress{0x4C81}) == 0;
+                                            const bool pending_dragon =
+                                                (event & 63) == 26 &&
+                                                session.script_variable(
+                                                    opengold::por::EclAddress{0x4C7C}) != 255;
+                                            if ((pending_wolf || pending_dragon) &&
+                                                event != destination)
+                                            {
+                                                blocked_quests.insert(event);
+                                            }
+                                        }
+                                    }
+                                }
+                                if (earned_death_knights && session.snapshot().script_id == 49)
+                                {
+                                    const auto destination_event =
+                                        session.map().at(x, beat.y).event_number();
+                                    // Approach Flare's chamber before entering; reserve
+                                    // Garren and the tunnel exit for their own errands.
+                                    for (const unsigned event : {11u, 19u, 22u})
+                                    {
+                                        if (event != destination_event)
+                                        {
+                                            blocked_quests.insert(event);
+                                        }
+                                    }
+                                }
+                                if (earned_death_knights && session.snapshot().script_id == 32 &&
+                                    session.map().at(x, beat.y).event_number() != 29)
+                                {
+                                    // Daine's audience returns guests to the lane.
+                                    // Pass his house on other errands.
+                                    blocked_quests.insert(29);
+                                }
                                 if (earned_champions && session.snapshot().script_id == 33 &&
                                     beat.map == 32)
                                 {
@@ -16904,7 +18098,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                         }
                                         play(where);
                                         if ((earned_secret || earned_gateway || earned_treasure ||
-                                             earned_champions) &&
+                                             earned_champions || earned_death_knights) &&
                                             beat.cure_first && session.can_leave())
                                         {
                                             cure_the_hurt(beat.cure_to_full);
@@ -17055,7 +18249,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                                 party->member(id).vitals.hit_points > 0);
                                     });
                             const bool lost_champions_member =
-                                earned_champions &&
+                                (earned_champions || earned_death_knights) &&
                                 std::ranges::any_of(party_before.roster,
                                                     [&](const auto &member)
                                                     {
@@ -17140,7 +18334,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 // trace leaves out when they ask nothing (an event that exits).
                 if (std::getenv("OPENGOLD_BEAT_WORDS"))
                 {
-                    std::cout << "  words: " << session.snapshot().dialogue.substr(0, 150) << "\n";
+                    std::cout << "  words at " << session.snapshot().pose.x << ","
+                              << session.snapshot().pose.y << ": "
+                              << session.snapshot().dialogue.substr(0, 150) << "\n";
                 }
                 std::cout << "  party after " << where << " (" << beat_number << "):";
                 for (const auto id : party->state().slots)
@@ -17211,7 +18407,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         }
         // Pools of Darkness's party saves where the route ends, after the
         // win: the save reloads and saves again byte for byte.
-        if ((darkness_route_party || earned_champions) && session.can_leave())
+        if ((darkness_route_party || earned_champions || earned_death_knights) &&
+            session.can_leave())
         {
             const auto bytes = opengold::encode_campaign(*party, &session, assets, game);
             auto saved = opengold::decode_campaign(
@@ -17643,6 +18840,125 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                        party->member(id).vitals.description != "Turned to stone.";
             });
         const bool played = needs.empty() && end.phase != TourPhase::defeated;
+        if (earned_death_knights)
+        {
+            const bool final_ending = death_knights_progress == DeathKnightsProgress::ending;
+            const bool imported_six =
+                std::ranges::count_if(party->state().slots,
+                                      [&](opengold::MemberId id)
+                                      {
+                                          return id && party->member(id).npc_source.empty();
+                                      }) == 6;
+            const bool everyone_standing = std::ranges::all_of(
+                party->state().slots,
+                [&](opengold::MemberId id)
+                {
+                    return !id || (!party->member(id).vitals.dead &&
+                                   party->member(id).vitals.hit_points > 0 &&
+                                   party->member(id).vitals.description != "Turned to stone.");
+                });
+            const bool opening = death_knights_progress == DeathKnightsProgress::opening;
+            const bool instructed =
+                opening || session.script_variable(opengold::por::EclAddress{0x4C2D}) == 7;
+            const bool merchant_mentioned =
+                death_knights_progress < DeathKnightsProgress::kalaman_audience ||
+                session.script_variable(opengold::por::EclAddress{0x4C4E}) == 1;
+            const auto merchant_stage = session.script_variable(opengold::por::EclAddress{0x4C4C});
+            const bool parley_completed =
+                death_knights_progress < DeathKnightsProgress::kalaman_parley ||
+                (death_knights_progress >= DeathKnightsProgress::vingaard_dream
+                     ? (merchant_stage == 6 || merchant_stage == 7)
+                     : merchant_stage ==
+                           (death_knights_progress >= DeathKnightsProgress::vingaard ? 4 : 3));
+            const bool dream_interpreted =
+                death_knights_progress < DeathKnightsProgress::vingaard_dream ||
+                session.script_variable(opengold::por::EclAddress{0x4C53}) == 3;
+            const bool nightmares_ended =
+                death_knights_progress < DeathKnightsProgress::vingaard_nightmare ||
+                (session.script_variable(opengold::por::EclAddress{0x4C54}) == 2 &&
+                 session.script_variable(opengold::por::EclAddress{0x4C55}) == 2);
+            const bool sebas_trust =
+                death_knights_progress < DeathKnightsProgress::sebas ||
+                (session.script_variable(opengold::por::EclAddress{0x4C57}) ==
+                     (death_knights_progress >= DeathKnightsProgress::sebas_abducted   ? 5
+                      : death_knights_progress >= DeathKnightsProgress::dragon_mission ? 2
+                                                                                       : 1) &&
+                 session.script_variable(opengold::por::EclAddress{0x4C68}) ==
+                     (death_knights_progress >= DeathKnightsProgress::crypt_complete ? 255 : 1));
+            const bool durfey_rescued =
+                death_knights_progress < DeathKnightsProgress::tower ||
+                (death_knights_progress >= DeathKnightsProgress::dargaard_upper &&
+                 session.script_variable(opengold::por::EclAddress{0x4CD1}) == 1) ||
+                std::ranges::any_of(
+                    party->state().slots,
+                    [&](opengold::MemberId id)
+                    {
+                        return id && !party->member(id).npc_source.empty() &&
+                               party->member(id).character.sheet().name == "Durfey";
+                    });
+            const bool flare_defeated =
+                death_knights_progress < DeathKnightsProgress::crypt_dragon ||
+                (session.script_variable(opengold::por::EclAddress{0x4C6C}) & 2) != 0;
+            const bool ariela_defeated =
+                death_knights_progress < DeathKnightsProgress::kalaman_ariela ||
+                session.script_variable(opengold::por::EclAddress{0x4C4A}) ==
+                    (death_knights_progress >= DeathKnightsProgress::kalaman_rescue ? 2 : 1);
+            const bool lich_destroyed =
+                death_knights_progress < DeathKnightsProgress::dulcimer ||
+                (session.script_variable(opengold::por::EclAddress{0x4CAF}) == 2 &&
+                 session.script_variable(opengold::por::EclAddress{0x4CB2}) == 1);
+            const bool sturm_recovered =
+                death_knights_progress < DeathKnightsProgress::dargaard_sturm ||
+                (session.script_variable(opengold::por::EclAddress{0x4CCB}) == 4 &&
+                 session.script_variable(opengold::por::EclAddress{0x4CCC}) == 7);
+            const bool rod_received =
+                death_knights_progress < DeathKnightsProgress::rod ||
+                session.script_variable(opengold::por::EclAddress{0x4CB8}) == 1;
+            const bool pit_complete =
+                death_knights_progress < DeathKnightsProgress::dragon_pit ||
+                session.script_variable(opengold::por::EclAddress{0x4C7C}) == 255;
+            const bool wolf_defeated =
+                death_knights_progress < DeathKnightsProgress::dragon_pit_wolf ||
+                session.script_variable(opengold::por::EclAddress{0x4C81}) == 1;
+            const bool garren_rescued =
+                death_knights_progress < DeathKnightsProgress::crypt_garren ||
+                (session.script_variable(opengold::por::EclAddress{0x4C6D}) & 2) != 0;
+            return played && imported_six && instructed && merchant_mentioned && parley_completed &&
+                   dream_interpreted && nightmares_ended && sebas_trust && durfey_rescued &&
+                   flare_defeated && garren_rescued && pit_complete && wolf_defeated &&
+                   ariela_defeated && lich_destroyed && rod_received && sturm_recovered &&
+                   (!final_ending ||
+                    (game_won_shown &&
+                     session.script_variable(opengold::por::EclAddress{0x4CD0}) == 1)) &&
+                   end.area_id ==
+                       (final_ending                                                       ? 48u
+                        : death_knights_progress >= DeathKnightsProgress::dargaard_top     ? 98u
+                        : death_knights_progress >= DeathKnightsProgress::dargaard_upper   ? 97u
+                        : death_knights_progress >= DeathKnightsProgress::dargaard         ? 96u
+                        : death_knights_progress >= DeathKnightsProgress::voice_wood       ? 82u
+                        : death_knights_progress >= DeathKnightsProgress::dulcimer_entry   ? 80u
+                        : death_knights_progress >= DeathKnightsProgress::kalaman_ariela   ? 32u
+                        : death_knights_progress >= DeathKnightsProgress::sebas_abducted   ? 33u
+                        : death_knights_progress >= DeathKnightsProgress::dragon_pit_entry ? 50u
+                        : death_knights_progress >= DeathKnightsProgress::dragon_mission   ? 33u
+                        : death_knights_progress >= DeathKnightsProgress::crypt_entry      ? 49u
+                        : death_knights_progress >= DeathKnightsProgress::tower            ? 48u
+                        : death_knights_progress >= DeathKnightsProgress::vingaard         ? 33u
+                        : death_knights_progress >= DeathKnightsProgress::kalaman          ? 32u
+                                                                                           : 36u) &&
+                   end.script_id ==
+                       (death_knights_progress >= DeathKnightsProgress::dargaard     ? end.area_id
+                        : death_knights_progress >= DeathKnightsProgress::voice_wood ? 82u
+                        : death_knights_progress >= DeathKnightsProgress::dulcimer_entry ? 81u
+                        : death_knights_progress == DeathKnightsProgress::crypt_complete
+                            ? 17u
+                            : end.area_id) &&
+                   session.can_leave() && everyone_standing &&
+                   (!opening ||
+                    phases["fights ended " + std::to_string(static_cast<int>(
+                                                 opengold::rules::Outcome::victory))] >= 1) &&
+                   fights_defeated == 0;
+        }
         if (earned_champions)
         {
             const bool final_ending = champions_progress == ChampionsProgress::ending;
@@ -18437,6 +19753,266 @@ int main(int argc, char **argv)
         if (argc == 2 && std::string_view(argv[1]) == "--champions-walk")
         {
             return walk_census(GoldBoxGame::champions_of_krynn, false) ? 0 : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-walk")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, false) ? 0 : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-ending")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::ending)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-dargaard-final")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::dargaard_final)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-dargaard-durfey")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::dargaard_durfey)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-dargaard-top")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::dargaard_top)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-dargaard-sturm")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::dargaard_sturm)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-dargaard-upper")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::dargaard_upper)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-dargaard")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::dargaard)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-rod")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::rod)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-voice-wood")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::voice_wood)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-dulcimer")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::dulcimer)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-dulcimer-entry")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::dulcimer_entry)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-kalaman-rescue")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::kalaman_rescue)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-kalaman-ariela")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::kalaman_ariela)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-sebas-abducted")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::sebas_abducted)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-dragon-pit")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::dragon_pit)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-dragon-pit-wolf")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::dragon_pit_wolf)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-dragon-pit-entry")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::dragon_pit_entry)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-dragon-mission")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::dragon_mission)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-crypt-complete")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::crypt_complete)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-crypt-garren")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::crypt_garren)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-crypt-dragon")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::crypt_dragon)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-crypt-entry")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::crypt_entry)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-tower")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::tower)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-sebas")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::sebas)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-vingaard-nightmare")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::vingaard_nightmare)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-vingaard-dream")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::vingaard_dream)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-vingaard")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::vingaard)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-kalaman-parley")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::kalaman_parley)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-kalaman-audience")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::kalaman_audience)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-kalaman")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::kalaman)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-outpost")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::outpost)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--death-knights-earned-opening")
+        {
+            return walk_census(GoldBoxGame::death_knights_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::none,
+                               DeathKnightsProgress::opening)
+                       ? 0
+                       : 1;
         }
         if (argc == 2 && std::string_view(argv[1]) == "--secret-walk")
         {

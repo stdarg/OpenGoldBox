@@ -788,6 +788,9 @@ struct Encounter
     // earlier games turn once a fight.
     int turning_tries{1};
     int turning_penalty{};
+    // Campaign clock at the encounter's start. Rules decide how combat time
+    // affects calendar-dependent mechanics; Core supplies only the context.
+    std::uint64_t time_minutes{};
 };
 
 // A weapon attack as the rules resolve it: the attack roll's bonus and the
@@ -1371,6 +1374,18 @@ class RulesModule
     [[nodiscard]] virtual std::array<std::uint64_t, 5> coin_worth() const
     {
         return {2, 20, 100, 200, 2000};
+    }
+
+    // A sequel's conversion of a character's wounds and unspent resources.
+    // No override keeps the destination's ordinary new-character state.
+    [[nodiscard]] virtual std::optional<VitalState> imported_state(const CharacterSheet &from,
+                                                                   const VitalState &state,
+                                                                   const CharacterSheet &to) const
+    {
+        (void)from;
+        (void)state;
+        (void)to;
+        return std::nullopt;
     }
 
     // What a fight, or an item used outside one, left on a character for

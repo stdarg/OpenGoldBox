@@ -1,5 +1,6 @@
 #include "opengold/original_combat.h"
 #include "champions_rules.h"
+#include "death_knights_effects.h"
 #include "opengold/original_rules.h"
 #include "opengold/original_spells.h"
 #include "opengold/secret_records.h"
@@ -224,7 +225,8 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
     for (int n = 0; n < effect_count; ++n, next += 4)
     {
         // Canonical effects include the later games' distinct numeric banks.
-        if (next[0] < 1 || next[0] > 255 + champions_effect_offset || next[1] < 0 || next[2] < 0)
+        if (next[0] < 1 || next[0] > 255 + death_knights_effect::offset || next[1] < 0 ||
+            next[2] < 0)
         {
             return std::nullopt;
         }
@@ -271,7 +273,7 @@ constexpr std::uint8_t monster_race = 0, elf_race = 2;
 
 std::uint8_t combat_race(const por::CharacterRecord &record)
 {
-    if (record.game != GoldBoxGame::champions_of_krynn)
+    if (!krynn_game(record.game))
     {
         return record.race;
     }
@@ -658,7 +660,7 @@ bool secret_backstab_weapon(const CarriedItem *weapon, GoldBoxGame game)
 {
     const int type = weapon ? weapon->item.type : 0;
     const bool darkness_type = game == GoldBoxGame::pools_of_darkness && (type == 63 || type == 67);
-    const bool hoopak = game == GoldBoxGame::champions_of_krynn && type == 67;
+    const bool hoopak = krynn_game(game) && type == 67;
     return !weapon || hoopak || type == 3 || type == 4 || (type >= 17 && type <= 19) ||
            darkness_type;
 }
@@ -897,6 +899,26 @@ int canonical_effect(int code, GoldBoxGame game) noexcept
     {
         return 0;
     }
+    if (game == GoldBoxGame::death_knights_of_krynn)
+    {
+        // Matched by the native handler's behavior, not by the reused ID.
+        constexpr std::array<std::pair<int, int>, 89> shared{
+            {{1, 1},     {3, 203},    {5, 5},      {6, 336},    {8, 8},     {9, 474},   {10, 10},
+             {11, 11},   {12, 12},    {13, 207},   {14, 14},    {15, 15},   {16, 16},   {17, 17},
+             {18, 124},  {19, 19},    {20, 20},    {21, 21},    {22, 22},   {23, 23},   {24, 24},
+             {25, 25},   {26, 26},    {27, 506},   {28, 28},    {29, 29},   {30, 30},   {31, 31},
+             {32, 56},   {33, 33},    {34, 345},   {35, 235},   {36, 36},   {37, 237},  {38, 38},
+             {39, 39},   {41, 41},    {42, 42},    {45, 45},    {47, 47},   {48, 413},  {49, 49},
+             {50, 250},  {52, 52},    {53, 53},    {54, 254},   {55, 55},   {57, 518},  {58, 523},
+             {59, 457},  {60, 522},   {61, 268},   {63, 263},   {64, 64},   {65, 335},  {67, 85},
+             {68, 86},   {69, 1469},  {71, 1471},  {72, 1472},  {73, 273},  {77, 277},  {78, 1478},
+             {79, 1479}, {81, 524},   {85, 561},   {86, 486},   {87, 479},  {88, 1488}, {89, 89},
+             {90, 566},  {92, 492},   {93, 115},   {94, 494},   {95, 107},  {96, 108},  {97, 109},
+             {98, 310},  {99, 111},   {103, 119},  {105, 334},  {107, 337}, {111, 342}, {112, 343},
+             {113, 113}, {114, 1514}, {115, 1515}, {117, 1517}, {118, 1518}}};
+        const auto found = std::ranges::find(shared, code, &std::pair<int, int>::first);
+        return found != shared.end() ? found->second : death_knights_effect::offset + code;
+    }
     if (game == GoldBoxGame::champions_of_krynn)
     {
         constexpr std::array<std::pair<int, int>, 27> shared{
@@ -1047,8 +1069,7 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
         {
             ++plus;
         }
-        if (record.game == GoldBoxGame::champions_of_krynn && record.race == 5 &&
-            weapon->item.type == 67)
+        if (krynn_game(record.game) && record.race == 5 && weapon->item.type == 67)
         {
             plus += 2; // Kender's hoopak accuracy, after damage's bonus was applied.
         }
@@ -1116,8 +1137,7 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
     // Pools of Darkness reads its records' flags, backstabs and mirrors as
     // Secret does (its reconstruction's cbtacts.pas, effhndlr.pas and magic.pas).
     const bool secret = record.game == GoldBoxGame::secret_of_the_silver_blades ||
-                        record.game == GoldBoxGame::pools_of_darkness ||
-                        record.game == GoldBoxGame::champions_of_krynn;
+                        record.game == GoldBoxGame::pools_of_darkness || krynn_game(record.game);
     if (secret)
     {
         c.backstabs = l.thief > 0 && secret_backstab_weapon(weapon, record.game);
@@ -1137,12 +1157,18 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
     c.alignment = record.alignment;
     c.creature_type = record.type;
     c.kin = secret ? secret_kin(record) : kit ? kit_kin(record) : kin_of(record);
-    c.traits = record.game == GoldBoxGame::champions_of_krynn ? champions_traits(record)
-               : secret                                       ? secret_traits(record)
-               : kit                                          ? kit_traits(record)
+    c.traits = krynn_game(record.game) ? champions_traits(record)
+               : secret                ? secret_traits(record)
+               : kit                   ? kit_traits(record)
                : record.game == GoldBoxGame::treasures_of_the_savage_frontier
                    ? treasures_traits(record)
                    : 0;
+    if (record.game == GoldBoxGame::death_knights_of_krynn && l.mage > 0 &&
+        record.robe_order >= 1 && record.robe_order <= 3)
+    {
+        c.effects.push_back(
+            {death_knights_effect::casting_moon, 0, 4 * record.robe_order + 2, false});
+    }
     c.magic_resistance = record.magic_resistance;
     c.items = usable_items(carried, record.game);
     // Memorized spells; those still being learned (bit 0x80) are not ready.
@@ -1331,8 +1357,8 @@ std::uint8_t usability_of(const std::array<int, 8> &class_levels, GoldBoxGame ga
         if (class_levels[at] > 0)
         {
             const bool ranger = static_cast<ClassSlot>(at) == ClassSlot::ranger;
-            bits |= game == GoldBoxGame::champions_of_krynn && at == 7   ? 0x10
-                    : game == GoldBoxGame::champions_of_krynn && at == 1 ? 0x20
+            bits |= krynn_game(game) && at == 7   ? 0x10
+                    : krynn_game(game) && at == 1 ? 0x20
                     : secret && ranger ? bits_of[static_cast<std::size_t>(ClassSlot::paladin)]
                                        : bits_of[at];
         }

@@ -4,6 +4,7 @@
 #include "opengold/creature_catalog.h"
 #include "opengold/formats.h"
 #include "opengold/por_sound.h"
+#include "opengold/death_knights_records.h"
 
 #include <algorithm>
 #include <fstream>
@@ -493,6 +494,19 @@ CreatureCatalog CreatureCatalog::load(const std::filesystem::path &directory, Go
             const std::string prefix = "MON" + std::to_string(bank);
             auto characters = read_archive(required(prefix + "CHA.DAX"));
             auto items = read_archive(required(prefix + "ITM.DAX"));
+            Archive spells;
+            if (game == GoldBoxGame::death_knights_of_krynn)
+            {
+                spells = read_archive(required(prefix + "WIZ.DAX"));
+                for (const auto &[id, bytes] : spells)
+                {
+                    if (!characters.contains(id) || !death_knights::decode_spells(bytes))
+                    {
+                        throw CatalogError("Invalid or orphaned spell block " + prefix +
+                                           "WIZ.DAX:" + std::to_string(id));
+                    }
+                }
+            }
             Archive effects;
             const auto spc_name = prefix + "SPC.DAX";
             const bool has_no_effects = std::find(disks.monsters_without_effects.begin(),
@@ -527,6 +541,13 @@ CreatureCatalog CreatureCatalog::load(const std::filesystem::path &directory, Go
                 {
                     throw CatalogError("Invalid character " + creature.id.key());
                 }
+                if (const auto block = spells.find(id); block != spells.end())
+                {
+                    if (!death_knights::attach_spells(*character, block->second))
+                    {
+                        throw CatalogError("Invalid spell block for " + creature.id.key());
+                    }
+                }
                 creature.stored = std::move(*character);
                 creature.abilities = ability_modifiers(creature.stored);
                 if (const auto entry = items.find(id); entry != items.end())
@@ -555,7 +576,8 @@ CreatureCatalog CreatureCatalog::load(const std::filesystem::path &directory, Go
                         // by that game's own words, just as its shops do.
                         const bool by_words =
                             item_type_name(equipment.stored.type).empty() ||
-                            ((game == GoldBoxGame::champions_of_krynn ||
+                            ((game == GoldBoxGame::death_knights_of_krynn ||
+                              game == GoldBoxGame::champions_of_krynn ||
                               game == GoldBoxGame::pools_of_darkness ||
                               game == GoldBoxGame::treasures_of_the_savage_frontier) &&
                              !item_words.empty());

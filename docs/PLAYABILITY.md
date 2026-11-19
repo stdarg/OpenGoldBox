@@ -2108,3 +2108,81 @@ Logs: `/tmp/opengold-cok-linux-delivery-build-v1.log`,
 `/tmp/opengold-cok-poststyle-focused.log` and
 `/tmp/opengold-cok-poststyle-ending.log`. No original data, released save history,
 mechanics or runtime/model selection changed in this style pass.
+
+### Death Knights of Krynn delivery
+
+- Authorization/status: continuation of the same user-authorized all-twelve-game
+  request, after Champions `233b6282`. Start observed **2026-11-19 10:23:28 UTC**;
+  checkpoint due **11:23:28**, no later than **11:53:28**. One owner, no new
+  issues, delegation or model/runtime changes.
+- Player outcome: the installed Death Knights campaign is playable with its
+  Original Rules, and a party imported from the actual Champions earned ending
+  reaches the authored Death Knights ending with a compatible winning save.
+- Acceptance: identify DKK correctly; complete installed-data census; native
+  creation, deities/robes/knights, progression, moon/time and spell behavior;
+  actual COK-save conversion; campaign events, art/audio, combat, services and
+  camps; every-map walk; actual earned ending and ordinary byte-identical save
+  roundtrip. Existing game checks remain green. No forced wins, XP/money/healing
+  grants, quest edits, arbitrary placement, original-data edits or loss of
+  supported released-save history.
+- Reuse: Champions/Realms DAX/ECL and Original Rules mechanisms, existing Godot
+  controls, established C++20/GDExtension build/launch, actual installed art.
+  Append stable game ID 8 without renumbering 0..7. Share code only where this
+  second Krynn game requires it; no speculative framework or tooling project.
+- Exclusions: Dark Queen, both Buck Rogers games and the actual installed UA
+  design remain later sequential batches of the same task. Implement automatic
+  availability of every winning PC/permanent NPC only after all games win,
+  capturing at victory before Continue/departures. No SRD mechanics work.
+- Model routing: no particular model/effort requested. Continue with the same
+  configured model/effort; exact identifiers are not exposed. Routing policy
+  explicitly applies to SRD. No model switch or parallel agents authorized.
+- Verification: focused real-record and native rule/campaign tests during
+  development; final earned imported campaign, save compatibility and relevant
+  native/Godot/Linux package checks on final source. Measure actual phases and
+  checkpoint time, not child-test count as delivered player requirements.
+- Delivery: commit/push owned changes, preserve artifacts, delete merged branch
+  and worktree. The main checkout's existing dirty `docs/GAMES.md` exception
+  remains in force; do not alter that file or pull/build there while dirty.
+
+Initial baseline and primary references are recorded in
+[Death Knights](games/death-knights.md). No complete player outcome of this
+batch is accepted yet.
+
+The first Death Knights reading checkpoint passes on base `233b6282` plus the
+active changes: complete installed-data census
+(`/tmp/opengold-dkk-census-v5.log`) and **4/4 focused new-reader/Champions/archive/
+ECL checks in 0.68 seconds** (`/tmp/opengold-dkk-reader-checks-v1.log`). Details
+are in [Death Knights](games/death-knights.md#reading-checkpoint). This is reader
+coverage, not an earned campaign; **zero complete player outcomes of one
+planned** are accepted yet. No original files or released save histories changed.
+
+The mandatory Death Knights checkpoint is observed at **2026-11-19 11:23:39
+UTC**, **60.18 minutes** after the recorded start. Native script-runtime checks
+and existing Champions/Darkness/ECL regressions pass **4/4 in 2.19 seconds**;
+native base progression and existing creation/Champions checks pass **3/3 in
+0.66 seconds**. Details and logs are in
+[Death Knights](games/death-knights.md#first-implementation-checkpoint).
+Character/spell/clock integration, actual imported campaign and earned ending,
+and final game/package validation remain; **zero accepted player outcomes of
+one planned** in this batch. Same configured model/effort, one owner, no
+delegation or model/runtime changes. This checkpoint does not pause the task.
+
+The fresh complete Death Knights campaign now passes **331 beats in 425.62
+seconds**, importing the actual Champions winning save without a route resume.
+The native ending is reached and all six PCs survive; available healing spells
+after the council leave all six standing. The ordinary format-53 winning save
+uses the installed DKK asset identity and reloads byte-identically. See
+[the campaign evidence](games/death-knights.md#fresh-earned-campaign).
+Final native regressions, Godot checks and Linux package verification remain
+before accepting and delivering the complete batch.
+
+Final verification passes: **150/150 native integration checks in 192.48
+seconds**, **19/19 application/package checks in 61.63 seconds**, and the Linux
+game/export build. The complete earned route and normal save are verified
+separately above. **One complete player outcome of one planned is accepted**;
+eight commercial campaigns now have earned-ending proof. See the
+[delivery record](games/death-knights.md#delivery-verification) for commands,
+logs, observed timings, the interrupted legacy diagnostic batch and fidelity
+limitations. The main checkout's existing `docs/GAMES.md` edit remains untouched.
+Dark Queen, both Buck Rogers games and the installed UA design remain, followed
+by the victory-time library of every winning PC and permanent NPC.

@@ -63,6 +63,7 @@ class EarlierGameDialog : public godot::Window
     // jewelry, which Treasures' Gateway's-money option lets it keep and Pools
     // of Darkness always does.
     std::optional<opengold::CampaignParty::BroughtMoney> money_share_;
+    opengold::Purse source_wealth_{};
 };
 
 // The game whose characters a campaign of `game` brings across on its party

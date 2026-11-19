@@ -100,6 +100,26 @@ std::vector<std::string_view> original_hall_classes(TrainingHall hall)
 
 std::vector<std::string_view> original_mask_classes(unsigned class_mask, GoldBoxGame game)
 {
+    if (game == GoldBoxGame::death_knights_of_krynn)
+    {
+        constexpr std::array<std::pair<std::string_view, unsigned>, 7> krynn_bits{
+            {{"magic_user", 1},
+             {"cleric", 2},
+             {"thief", 4},
+             {"fighter", 8},
+             {"knight", 16},
+             {"paladin", 64},
+             {"ranger", 128}}};
+        std::vector<std::string_view> classes;
+        for (const auto &[klass, bit] : krynn_bits)
+        {
+            if ((class_mask & bit) != 0)
+            {
+                classes.push_back(klass);
+            }
+        }
+        return classes;
+    }
     constexpr std::array<std::pair<std::string_view, unsigned>, 8> class_bits{{
         {"cleric", 0x02},
         {"druid", 0x02},

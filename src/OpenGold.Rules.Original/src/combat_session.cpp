@@ -1,5 +1,7 @@
 #include "combat_session.h"
 #include "champions_rules.h"
+#include "death_knights_rules.h"
+#include "death_knights_effects.h"
 
 #include "opengold/dice.h"
 #include "opengold/movement_grid.h"
@@ -26,6 +28,8 @@ namespace opengold::original::detail
 namespace
 {
 
+namespace dkk_effect = ::opengold::original::death_knights_effect;
+
 using original::ClassSlot;
 using rules::Cell;
 using rules::EntityId;
@@ -35,6 +39,7 @@ using rules::Side;
 // The original counts movement in half-moves: 2 a straight step, 3 a diagonal one.
 constexpr rules::StepCosts half_moves{2, 3, 2, 4, 0};
 constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 27";
+constexpr std::string_view death_knights_checkpoint_format = "OGORIGINALCOMBAT 28";
 // The rounds a fight lasts with no one attacking (has_round_limit).
 constexpr unsigned rounds_without_attacks = 15;
 // Champions' removed creatures wait for a gating power, never a timed arrival.
@@ -237,8 +242,8 @@ constexpr int aurak_energy = champions_effect_offset + 4, maya_breath = champion
 // What a hit carries, by the attacker's effects, in the original's order: a
 // primary attack's hit and a secondary one's (effhndlr.pas, HIT_PHASE_1 and
 // HIT_PHASE_2).
-constexpr std::array<int, 38> primary_hit_effects{
-    85, 86, 87, 68, 79, 80, 76, 73, 77,
+constexpr std::array<int, 40> primary_hit_effects{
+    dkk_effect::stunning_hit, dkk_effect::fire_touch, 85, 86, 87, 68, 79, 80, 76, 73, 77,
     // Curse's (canonical_effect).
     257, 296, 322, 323, 345,
     // Secret's (fxengine.pas, its conditions 2 and 3, in its reconstruction).
@@ -252,8 +257,8 @@ constexpr std::array<int, 38> primary_hit_effects{
     effect::crushes, effect::rat_disease, effect::grabs_2d8, effect::grabs_4d5, effect::grabs_6d4,
     effect::swallows_on_twenty, effect::kapak_paralysis, effect::paralyzing_strike,
     effect::slight_poison, effect::champions_ghoul_touch};
-constexpr std::array<int, 25> secondary_hit_effects{
-    64, 65, 66, 67, 68, 69, 70, 79, 85, 86, 87,
+constexpr std::array<int, 27> secondary_hit_effects{
+    dkk_effect::stunning_hit, dkk_effect::fire_touch, 64, 65, 66, 67, 68, 69, 70, 79, 85, 86, 87,
     // Secret's.
     effect::poison_touch, effect::stone_touch, effect::strong_poison_touch, effect::ghoul_touch,
     // The kit's (fx_trigger_group 3).
@@ -800,6 +805,13 @@ int caster_level(const Fighter &caster, const Spell &spell, GoldBoxGame game)
     {
         return 12;
     }
+    if (game == GoldBoxGame::death_knights_of_krynn)
+    {
+        const auto *moon = caster.find_effect(dkk_effect::casting_moon);
+        const int encoded = moon ? moon->strength : 3;
+        return death_knights_caster_level(caster.numbers.class_levels, spell.caster_class,
+                                          encoded / 4, encoded % 4);
+    }
     if (game == GoldBoxGame::pool_of_radiance)
     {
         return level(spell.caster_class == SpellClass::cleric ? ClassSlot::cleric
@@ -926,13 +938,13 @@ class Session final : public rules::CombatSession
     Session(rules::Identity identity, rules::Battlefield board, std::vector<Fighter> fighters,
             std::uint64_t seed, unsigned morale, bool outdoors, bool escape_ends_fight,
             int party_facing, int party_move_modifier, bool crystals, bool frightening_surprise,
-            int turning_tries, int turning_penalty)
+            int turning_tries, int turning_penalty, std::uint64_t time_minutes)
         : identity_(std::move(identity)), board_(std::move(board)), fighters_(std::move(fighters)),
           random_{seed}, morale_threshold_(std::min(morale, 100U)), outdoors_(outdoors),
           escape_ends_fight_(escape_ends_fight), party_facing_(party_facing),
           party_move_modifier_(party_move_modifier), crystals_(crystals),
           frightening_surprise_(frightening_surprise), turning_tries_(turning_tries),
-          turning_penalty_(turning_penalty)
+          turning_penalty_(turning_penalty), starting_time_minutes_(time_minutes)
     {
         rules::validate_battlefield(board_);
         // Each creature starts turned along the party's facing, the party's
@@ -1025,6 +1037,7 @@ class Session final : public rules::CombatSession
     // (rules::Encounter::turning_tries, turning_penalty).
     int turning_tries_{};
     int turning_penalty_{};
+    std::uint64_t starting_time_minutes_{};
     std::vector<por::ItemTemplate> item_types_;
 
     // The direction along the party's facing on the field: north gives
@@ -1109,7 +1122,7 @@ class Session final : public rules::CombatSession
 
     [[nodiscard]] bool champions() const
     {
-        return game_of(identity_) == GoldBoxGame::champions_of_krynn;
+        return krynn_game(game_of(identity_));
     }
 
     [[nodiscard]] bool treasures() const
@@ -1143,7 +1156,8 @@ class Session final : public rules::CombatSession
     // combat.pas, OrderCreatures; the kit's combat.c and cbaction.c).
     [[nodiscard]] bool ordered_rounds() const
     {
-        return secret_engine() || kit();
+        return secret_engine() || kit() ||
+               game_of(identity_) == GoldBoxGame::death_knights_of_krynn;
     }
 
     // Every game after Pool of Radiance ends a fight in which no one has
@@ -1469,6 +1483,32 @@ int Session::movement_of(const Fighter &f) const
 void Session::begin_round()
 {
     ++round_;
+    rules::CharacterSheet::Original calendar;
+    if (game_of(identity_) == GoldBoxGame::death_knights_of_krynn)
+    {
+        const auto passed = static_cast<std::uint64_t>(round_ - 1);
+        if (starting_time_minutes_ > std::numeric_limits<std::uint64_t>::max() - passed)
+        {
+            throw std::overflow_error("Combat calendar overflow");
+        }
+        death_knights_calendar(calendar,
+                               death_knights_calendar_day(starting_time_minutes_ + passed));
+    }
+    for (auto &f : fighters_)
+    {
+        if (game_of(identity_) == GoldBoxGame::death_knights_of_krynn)
+        {
+            if (auto *moon = f.find_effect(dkk_effect::casting_moon))
+            {
+                const int robe = moon->strength / 4;
+                if (robe >= 1 && robe <= 3)
+                {
+                    moon->strength =
+                        robe * 4 + calendar.krynn_moon_phases[static_cast<std::size_t>(robe - 1)];
+                }
+            }
+        }
+    }
     for (auto &f : fighters_)
     {
         f.initiative = 0;
@@ -2003,6 +2043,12 @@ int attack_modifier(const Fighter &attacker, const Fighter &defender, GoldBoxGam
     modifier -= defender.has(effect::aurak_combat_bonus) ? 2 : 0;
     // Blindness and Bestow Curse take 4 from the attacker's rolls (effhndlr.pas, 33, 36).
     modifier -= attacker.has(effect::blind) ? 4 : 0;
+    modifier -= attacker.has(dkk_effect::smoked) ? 2 : 0;
+    if (defender.has(dkk_effect::dispel_evil_ward) &&
+        (attacker.numbers.traits & trait::dispel_evil))
+    {
+        modifier -= 7;
+    }
     modifier -= attacker.has(effect::bestow_curse) ? 4 : 0;
     // The kit's 148, which a ghast's stench gives, takes 2 (effects.c); so
     // does Pools of Darkness's dragon fear (effhndlr.pas, EffDragonFeared).
@@ -2602,6 +2648,17 @@ void Session::on_hit(Fighter &attacker, Fighter &defender, int phase, int primar
         }
         switch (code)
         {
+        case dkk_effect::stunning_hit:
+            if (!saving_throw(defender, 1, 0, &attacker))
+            {
+                (void)add_with_message(defender, {336, 3, 0, false}, false, false, 0,
+                                       attacker.numbers.level, nullptr);
+            }
+            break;
+        case dkk_effect::fire_touch:
+            nonweapon_damage(defender, roll(6) + roll(6), 2,
+                             saving_throw(defender, 4, 0, &attacker), 0, 0, 0, false);
+            break;
         case effect::kapak_paralysis:
         case effect::paralyzing_strike:
             paralyze(defender, 100, 0);
@@ -5535,6 +5592,8 @@ bool Session::add_with_message(Fighter &target, Effect added, bool negates, bool
     immune = immune || (target.has(effect::mind_blank) &&
                         is({effect::charm, 235, effect::paralysis, 268, effect::fear}));
     immune = immune || target.has(effect::iron_golem);
+    immune = immune || (target.has(dkk_effect::confusion_proof) && code == 235);
+    immune = immune || target.has(dkk_effect::flesh_golem);
     // The kit's (effects.c): a spell below the eighth level takes no hold
     // (40; Pools of Darkness's Rakshasa too, effhndlr.pas, EffRakshasaProt),
     // nor does disease on an otyugh (76).
@@ -5575,6 +5634,38 @@ void Session::nonweapon_damage(Fighter &target, int damage, int save_result, boo
     {
         iron_golem_absorbs(target, damage, element);
         return;
+    }
+    if (target.has(dkk_effect::flesh_golem))
+    {
+        if ((element & 4) && (element & 8))
+        {
+            target.hit_points = std::min(target.hit_points + std::max(damage_dice_, 0),
+                                         target.numbers.max_hit_points);
+            log({"{name} is healed.", {{"name", target.name}}});
+        }
+        else if ((element & 3) && (element & 8))
+        {
+            target.numbers.effects.push_back({effect::slowed, roll(6) + roll(6), 255, false});
+            log({"{name} is slowed.", {{"name", target.name}}});
+        }
+        return;
+    }
+    if (target.has(dkk_effect::fire_heals) && (element & 1))
+    {
+        if (element & 8)
+        {
+            target.hit_points = std::min(target.hit_points + damage, target.numbers.max_hit_points);
+            log({"{name} is healed.", {{"name", target.name}}});
+        }
+        return;
+    }
+    if (target.has(dkk_effect::cold_vulnerable) && (element & 2))
+    {
+        damage *= 2;
+    }
+    if (target.has(dkk_effect::cold_electricity_resistance) && (element & 6))
+    {
+        damage /= 2;
     }
     // Mirror images take a single target's spell (effhndlr.pas, EffMirrorImage).
     if (single_target && mirror_absorbs(target))
@@ -6734,6 +6825,53 @@ void Session::darkness_gazes(Fighter &f)
 // breath and the ankheg's acid, at its lock.
 void Session::monster_specials(Fighter &f)
 {
+    if (game_of(identity_) == GoldBoxGame::death_knights_of_krynn)
+    {
+        if (f.has(dkk_effect::death_breath) && f.able() && f.initiative > 0)
+        {
+            (void)secret_breath(f, dkk_effect::death_breath, 8, 0x60, 1);
+        }
+        if (f.has(effect::darkness_charming_gaze) && f.able() && f.initiative > 0)
+        {
+            if (auto *target = secret_target(f, 6, false))
+            {
+                log({"{name} gazes.", {{"name", f.name}}});
+                if (!saving_throw(*target, 4, 0, &f) &&
+                    add_with_message(*target, {effect::charm, 0, 255, true}, false, false, 0,
+                                     f.numbers.level, game_spell(10)))
+                {
+                    charm(*target, f.side);
+                }
+            }
+        }
+        if (f.has(dkk_effect::smoke) && f.able() && f.initiative > 0)
+        {
+            Fighter *best = nullptr; // Borrowed from fighters_ for this query only.
+            int rating = 0;
+            for (auto &target : fighters_)
+            {
+                if (target.side == f.side || !target.able() || distance(f, target) > 1 ||
+                    target.has(dkk_effect::smoked))
+                {
+                    continue;
+                }
+                const int score = 60 - target.numbers.thac0 +
+                                  target.attacks_left[0] * (6 * target.numbers.attacks[0].dice +
+                                                            target.numbers.attacks[0].modifier);
+                if (score > rating)
+                {
+                    best = &target;
+                    rating = score;
+                }
+            }
+            if (best && !saving_throw(*best, 3, 0, &f))
+            {
+                (void)add_with_message(*best, {dkk_effect::smoked, 0, 0, false}, false, false, 0,
+                                       f.numbers.level, nullptr);
+                log({"{name} is blinded by smoke.", {{"name", best->name}}});
+            }
+        }
+    }
     auto *lock = find(f.lock);
     // Gateway's gazes only at one it sees within 20 squares, not one hidden
     // (its EffPetrifyingGaze).
@@ -9547,6 +9685,20 @@ void Session::champions_turn_start(Fighter &f)
     {
         return;
     }
+    if (f.has(dkk_effect::regenerate_three))
+    {
+        f.hit_points = std::min(f.hit_points + 3, f.numbers.max_hit_points);
+    }
+    if (f.has(dkk_effect::immolation))
+    {
+        for (auto &other : fighters_)
+        {
+            if (other.id != f.id && other.able() && distance(f, other) <= 1)
+            {
+                nonweapon_damage(other, roll(6), 0, false, 1, 0, 0, false);
+            }
+        }
+    }
     if (f.has(effect::death_knight_gate) && f.hit_points < f.numbers.max_hit_points / 2)
     {
         f.remove(effect::death_knight_gate);
@@ -9948,6 +10100,10 @@ int Session::weapon_damage_defenses(Fighter &attacker, Fighter &defender, int da
     {
         damage = std::max(damage - 2, 0);
     }
+    if (attacker.has(dkk_effect::smoked))
+    {
+        damage = std::max(0, damage - 2);
+    }
     if (attacker.has(effect::six_weapons))
     {
         damage = six_weapons_blow(attacker, primary_attacks, damage);
@@ -9994,6 +10150,11 @@ int Session::weapon_damage_defenses(Fighter &attacker, Fighter &defender, int da
     // Secret's: an iron golem takes harm only from a weapon of +3 or better,
     // and a giant slug none from a bludgeoning one (effhndlr.pas,
     // EffNeedMagicWeapon and EffHalfBash, in its reconstruction).
+    if (defender.has(dkk_effect::needs_plus_three) && (!striker || plus < 3) &&
+        (attacker.numbers.race > 0 || attacker.numbers.level < 4))
+    {
+        damage = 0;
+    }
     if (defender.has(effect::needs_plus_three) && (!striker || plus < 3))
     {
         damage = 0;
@@ -10596,6 +10757,13 @@ rules::Snapshot Session::snapshot() const
     state.identity = identity_;
     state.revision = revision_;
     state.round = round_;
+    if (game_of(identity_) == GoldBoxGame::death_knights_of_krynn)
+    {
+        // EndOfRound advances one minute, including a fight's final round.
+        const auto finished =
+            round_ - (round_ > 0 && outcome_ == rules::Outcome::ongoing ? 1U : 0U);
+        state.elapsed_milliseconds = static_cast<std::uint64_t>(finished) * 60000;
+    }
     state.actor = actor_;
     state.outcome = outcome_;
     state.escape_side = escape_side_;
@@ -11149,7 +11317,13 @@ void Session::turn_against_party(const std::vector<EntityId> &turning)
 std::string Session::save() const
 {
     Writer out;
-    out(std::string(checkpoint_format), board_.width, board_.height);
+    const bool native_calendar = game_of(identity_) == GoldBoxGame::death_knights_of_krynn;
+    out(std::string(native_calendar ? death_knights_checkpoint_format : checkpoint_format),
+        board_.width, board_.height);
+    if (native_calendar)
+    {
+        out(starting_time_minutes_);
+    }
     for (const auto tile : board_.terrain)
     {
         out(static_cast<unsigned>(tile));
@@ -11304,7 +11478,9 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
                                            const Content &content)
 {
     Reader in(checkpoint);
-    if (in.text() != checkpoint_format)
+    const auto format = in.text();
+    const bool native_calendar = format == death_knights_checkpoint_format;
+    if (format != checkpoint_format && !native_calendar)
     {
         throw std::runtime_error(rules::older_save_message);
     }
@@ -11314,6 +11490,10 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
     auto &board = session->board_;
     board.width = in.as<int>();
     board.height = in.as<int>();
+    if (native_calendar)
+    {
+        session->starting_time_minutes_ = in.as<std::uint64_t>();
+    }
     if (board.width < 2 || board.height < 2 || board.width > 64 || board.height > 64)
     {
         throw std::runtime_error("Invalid original-rules combat checkpoint");
@@ -11811,7 +11991,7 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
         std::move(identity), std::move(encounter.battlefield), std::move(fighters), seed, threshold,
         encounter.outdoors, encounter.escape_ends_fight, encounter.party_facing,
         encounter.party_move_modifier, encounter.crystals, encounter.frightening_surprise,
-        encounter.turning_tries, encounter.turning_penalty);
+        encounter.turning_tries, encounter.turning_penalty, encounter.time_minutes);
     session->know_item_types(content.item_types);
     session->play_gazes(gazes_played);
     session->pair_lovers(std::move(encounter.romance));

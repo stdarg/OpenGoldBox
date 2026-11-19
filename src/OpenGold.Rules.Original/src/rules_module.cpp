@@ -1,5 +1,7 @@
 #include "combat_session.h"
 #include "champions_rules.h"
+#include "death_knights_rules.h"
+#include "death_knights_effects.h"
 #include "opengold/original.h"
 #include "opengold/original_combat.h"
 #include "opengold/original_spells.h"
@@ -53,9 +55,31 @@ KrynnOrders krynn_orders(const CharacterSheet &sheet)
     return {n.deity, n.robe_order, n.knight_order};
 }
 
+std::optional<std::string_view> krynn_item_refusal(const CharacterSheet &sheet,
+                                                   const por::ItemRecord &item)
+{
+    const auto game = game_of(sheet.identity);
+    if (!krynn_game(game))
+    {
+        return std::nullopt;
+    }
+    const auto &numbers = original_numbers(sheet);
+    if (game == GoldBoxGame::death_knights_of_krynn && item.type == 39 &&
+        numbers.class_levels[static_cast<std::size_t>(ClassSlot::thief)] >= 10)
+    {
+        return std::nullopt;
+    }
+    return champions_ready_refusal(item, record_race(static_cast<Race>(numbers.race), game),
+                                   numbers.robe_order);
+}
+
 std::optional<int> class_experience(const CharacterSheet &sheet, ClassSlot slot, int level)
 {
     const auto game = game_of(sheet.identity);
+    if (game == GoldBoxGame::death_knights_of_krynn)
+    {
+        return death_knights_experience_for_level(slot, level, krynn_orders(sheet));
+    }
     return game == GoldBoxGame::champions_of_krynn
                ? champions_experience_for_level(slot, level, krynn_orders(sheet))
                : experience_for_level(slot, level, game);
@@ -72,7 +96,7 @@ std::vector<ClassSlot> ready_classes(const CharacterSheet &sheet, unsigned exper
     const auto game = game_of(sheet.identity);
     auto ready = classes_ready_to_train(static_cast<Race>(numbers.race), numbers.class_levels,
                                         sheet.scores, static_cast<int>(capped), game);
-    if (game == GoldBoxGame::champions_of_krynn)
+    if (krynn_game(game))
     {
         ready.clear();
         for (std::size_t at = 0; at < class_slot_count; ++at)
@@ -180,6 +204,25 @@ std::optional<Revival> decode_raised(std::string_view data)
         throw std::invalid_argument("Unreadable original-rules raising");
     }
     return std::nullopt;
+}
+
+constexpr std::string_view krynn_calendar_word = "krynn_days ";
+
+std::optional<std::uint64_t> decode_krynn_calendar(std::string_view data)
+{
+    if (!data.starts_with(krynn_calendar_word))
+    {
+        return std::nullopt;
+    }
+    data.remove_prefix(krynn_calendar_word.size());
+    std::uint64_t days{};
+    const auto [end, error] = std::from_chars(data.data(), data.data() + data.size(), days);
+    if (error != std::errc{} || end != data.data() + data.size() ||
+        days > std::numeric_limits<std::uint64_t>::max() / 1440 + 1)
+    {
+        throw std::invalid_argument("Unreadable Krynn calendar");
+    }
+    return days;
 }
 
 // The years a character's age changed by after creation (Haste ages a year,
@@ -382,7 +425,11 @@ void recount_levels(CharacterSheet &sheet)
         }
     }
     numbers.known_spells = known_spells(levels, sheet.scores[Ability::wisdom], learned, game);
-    if (game == GoldBoxGame::champions_of_krynn)
+    if (game == GoldBoxGame::death_knights_of_krynn)
+    {
+        recalculate_death_knights_numbers(numbers, sheet.scores);
+    }
+    else if (game == GoldBoxGame::champions_of_krynn)
     {
         recalculate_champions_numbers(numbers, sheet.scores);
     }
@@ -426,10 +473,8 @@ por::CharacterRecord character_record(const CharacterSheet &sheet)
     int attacks = fighter > 6 ? 3 : 2;
     if (game != GoldBoxGame::pool_of_radiance)
     {
-        const bool warrior =
-            std::max({fighter, level_in(l, ClassSlot::paladin),
-                      game == GoldBoxGame::champions_of_krynn ? level_in(l, ClassSlot::monk) : 0}) >
-            6;
+        const bool warrior = std::max({fighter, level_in(l, ClassSlot::paladin),
+                                       krynn_game(game) ? level_in(l, ClassSlot::monk) : 0}) > 6;
         attacks = warrior || level_in(l, ClassSlot::ranger) > 7 ? 3 : 2;
     }
     // Pools of Darkness's are Secret's.
@@ -439,6 +484,15 @@ por::CharacterRecord character_record(const CharacterSheet &sheet)
         const auto ranger = level_in(l, ClassSlot::ranger);
         attacks = std::max({2, warrior > 6 ? 3 : 2, warrior > 12 ? 4 : 2, ranger > 7 ? 3 : 2,
                             ranger > 14 ? 4 : 2});
+    }
+    if (game == GoldBoxGame::death_knights_of_krynn)
+    {
+        const auto warrior =
+            std::max({fighter, level_in(l, ClassSlot::paladin), level_in(l, ClassSlot::monk)});
+        attacks = std::max(warrior > 12  ? 4
+                           : warrior > 6 ? 3
+                                         : 2,
+                           level_in(l, ClassSlot::ranger) > 7 ? 3 : 2);
     }
     record.base_attacks[0] = {static_cast<std::uint8_t>(attacks), {1, 2, 0}};
     record.base_thac0 = original.thac0;
@@ -475,7 +529,7 @@ por::CharacterRecord character_record(const CharacterSheet &sheet)
     // stand every character on one square, a tall one too (their
     // chargen.pas: the icon's height is only drawn), so no weapon strikes
     // one as large and every size check passes it.
-    if (vga_engine(record.game) || record.game == GoldBoxGame::champions_of_krynn)
+    if (vga_engine(record.game) || krynn_game(record.game))
     {
         record.icon_size_raw = 1;
     }
@@ -484,11 +538,11 @@ por::CharacterRecord character_record(const CharacterSheet &sheet)
         if (const auto number = spell_number(id, game_of(sheet.identity)))
         {
             // As the game's own record holds it (canonical_spell undone).
-            const int own = *number >= 501 && *number <= 507 ? *number - 400
-                            : *number > secret_spell_offset  ? *number - secret_spell_offset
-                            : *number > curse_spell_offset   ? *number - curse_spell_offset
-                                                             : *number;
-            record.memorized_spells.push_back(static_cast<std::uint8_t>(own));
+            const int own = native_spell(*number, record.game);
+            if (own > 0)
+            {
+                record.memorized_spells.push_back(static_cast<std::uint8_t>(own));
+            }
         }
     }
     return record;
@@ -515,10 +569,21 @@ Combatant character_combatant(const CharacterSheet &sheet,
     {
         c.effects.push_back({code, 0, 255, false});
     };
+    if (game_of(sheet.identity) == GoldBoxGame::death_knights_of_krynn)
+    {
+        const auto &n = *sheet.original;
+        const auto marker =
+            std::ranges::find(c.effects, death_knights_effect::casting_moon, &Effect::code);
+        if (marker != c.effects.end())
+        {
+            marker->strength =
+                4 * n.robe_order + n.krynn_moon_phases[static_cast<std::size_t>(n.robe_order - 1)];
+        }
+    }
     const bool secret_or_kit =
         game_of(sheet.identity) == GoldBoxGame::secret_of_the_silver_blades ||
         game_of(sheet.identity) == GoldBoxGame::unlimited_adventures;
-    if (game_of(sheet.identity) == GoldBoxGame::champions_of_krynn)
+    if (krynn_game(game_of(sheet.identity)))
     {
         if (c.race == dwarf || c.race == halfling)
         {
@@ -643,6 +708,9 @@ class OriginalModule final : public RulesModule
                                                               RandomState &) const override;
     [[nodiscard]] unsigned experience_for_level(unsigned level) const override;
     [[nodiscard]] CreatureStats creature_stats(const Participant &creature) const override;
+    [[nodiscard]] std::optional<VitalState> imported_state(const CharacterSheet &,
+                                                           const VitalState &,
+                                                           const CharacterSheet &) const override;
     [[nodiscard]] std::vector<TrainingReplacementOptions>
     rest_training_options(const CharacterSheet &, RestKind) const override;
     TrainingChoices replace_rest_training(CharacterSheet &,
@@ -695,7 +763,7 @@ class OriginalModule final : public RulesModule
     // party pays at 10 gold the piece (the user's answer, 2026-11-14).
     [[nodiscard]] std::array<std::uint64_t, 5> coin_worth() const override
     {
-        if (content_.game == GoldBoxGame::champions_of_krynn)
+        if (krynn_game(content_.game))
         {
             return {1, 5, 10, 25, 50};
         }
@@ -706,7 +774,7 @@ class OriginalModule final : public RulesModule
 
     [[nodiscard]] std::size_t price_coin() const override
     {
-        return content_.game == GoldBoxGame::champions_of_krynn ? 4 : 3;
+        return krynn_game(content_.game) ? 4 : 3;
     }
 
     void drain_character(CharacterSheet &sheet, VitalState &state, const Drain &drain) const;
@@ -850,6 +918,10 @@ CharacterProfile OriginalModule::character_profile(const CharacterSheet &sheet,
     profile.record = encode_fight_record(character_record(sheet));
     profile.hit_points = combatant.max_hit_points;
     profile.armor_class = combatant.armor_class;
+    if (game_of(sheet.identity) == GoldBoxGame::death_knights_of_krynn)
+    {
+        profile.melee_attack_bonus = 20 - combatant.thac0;
+    }
     profile.movement_feet = combatant.movement * 5;
     profile.item_save_bonus = combatant.save_bonus;
     for (const auto &item : carried)
@@ -1018,12 +1090,7 @@ unsigned OriginalModule::carrying_capacity_pounds(const CharacterSheet &sheet) c
 bool OriginalModule::can_use_item(const CharacterSheet &sheet, std::string_view key) const
 {
     const auto item = item_for(key);
-    const auto &numbers = original_numbers(sheet);
-    if (game_of(sheet.identity) == GoldBoxGame::champions_of_krynn &&
-        champions_ready_refusal(
-            item.item,
-            record_race(static_cast<Race>(numbers.race), GoldBoxGame::champions_of_krynn),
-            numbers.robe_order))
+    if (krynn_item_refusal(sheet, item.item))
     {
         return false;
     }
@@ -1068,16 +1135,9 @@ EquipmentChange OriginalModule::equipment_change(const CharacterSheet &sheet,
         }
         return change;
     }
-    if (game_of(sheet.identity) == GoldBoxGame::champions_of_krynn)
+    if (const auto refusal = krynn_item_refusal(sheet, chosen.item))
     {
-        const auto &numbers = original_numbers(sheet);
-        if (const auto refusal = champions_ready_refusal(
-                chosen.item,
-                record_race(static_cast<Race>(numbers.race), GoldBoxGame::champions_of_krynn),
-                numbers.robe_order))
-        {
-            throw std::runtime_error(std::string(*refusal));
-        }
+        throw std::runtime_error(std::string(*refusal));
     }
     std::vector<CarriedItem> others;
     for (unsigned n = 0; n < candidates.size(); ++n)
@@ -1166,10 +1226,19 @@ SpellChoiceOptions OriginalModule::spell_choice_options(const CharacterSheet &sh
         return options;
     }
     const auto &numbers = *sheet.original;
+    const auto game = game_of(sheet.identity);
+    const int moon =
+        game == GoldBoxGame::death_knights_of_krynn ? death_knights_moon_allowance(numbers) : 0;
     for (const int number : numbers.known_spells)
     {
-        const auto *known = spell(number);
-        const int slots = slots_for(numbers, *known);
+        const auto *known = spell(number, game);
+        if (!known)
+        {
+            continue;
+        }
+        const int base = slots_for(numbers, *known);
+        const int slots =
+            base + (base > 0 && known->caster_class == SpellClass::magic_user ? moon : 0);
         for (int copy = 1; copy <= slots; ++copy)
         {
             options.preparation.push_back(
@@ -1185,7 +1254,7 @@ SpellChoiceOptions OriginalModule::spell_choice_options(const CharacterSheet &sh
             options.prepared_count += static_cast<unsigned>(count);
         }
     }
-    options.prepared_count += static_cast<unsigned>(numbers.deity_spell_slots[0]);
+    options.prepared_count += static_cast<unsigned>(numbers.deity_spell_slots[0] + moon);
     options.may_prepare = options.prepared_count > 0;
     return options;
 }
@@ -1199,6 +1268,11 @@ void OriginalModule::apply_spell_choices(CharacterSheet &sheet, const SpellChoic
     }
     const auto offered = spell_choice_options(sheet, context).preparation;
     std::map<std::pair<SpellClass, int>, int> taken;
+    const auto game = game_of(sheet.identity);
+    const int moon = game == GoldBoxGame::death_knights_of_krynn
+                         ? death_knights_moon_allowance(*sheet.original)
+                         : 0;
+    int extra = 0;
     for (const auto &id : *choices.prepared)
     {
         if (std::ranges::none_of(offered,
@@ -1210,10 +1284,14 @@ void OriginalModule::apply_spell_choices(CharacterSheet &sheet, const SpellChoic
         {
             throw std::runtime_error("That spell cannot be memorized");
         }
-        const auto *chosen = spell(*spell_number(id, game_of(sheet.identity)));
-        if (++taken[{chosen->caster_class, chosen->level}] > slots_for(*sheet.original, *chosen))
+        const auto *chosen = spell(*spell_number(id, game), game);
+        const int base = slots_for(*sheet.original, *chosen);
+        if (++taken[{chosen->caster_class, chosen->level}] > base)
         {
-            throw std::runtime_error("Too many spells of that level");
+            if (chosen->caster_class != SpellClass::magic_user || base == 0 || ++extra > moon)
+            {
+                throw std::runtime_error("Too many spells of that level");
+            }
         }
     }
     sheet.prepared_spells = *choices.prepared;
@@ -1415,7 +1493,7 @@ OriginalModule::hall_training_options(const CharacterSheet &sheet,
                                       std::span<const std::string> classes) const
 {
     TrainingChoiceGroup options;
-    if (game_of(sheet.identity) != GoldBoxGame::champions_of_krynn || !sheet.original ||
+    if (!krynn_game(game_of(sheet.identity)) || !sheet.original ||
         std::ranges::find(classes, "knight") == classes.end())
     {
         return options;
@@ -1484,17 +1562,24 @@ void OriginalModule::train_at_hall(CharacterSheet &sheet, std::string_view grant
         }
         auto &numbers = *next.original;
         const int old_level = numbers.class_levels[7];
-        if (experience < champions_experience_for_level(ClassSlot::monk, old_level,
-                                                        {numbers.deity, numbers.robe_order, order}))
+        const auto game = game_of(next.identity);
+        const KrynnOrders target_order{numbers.deity, numbers.robe_order, order};
+        const auto threshold =
+            game == GoldBoxGame::death_knights_of_krynn
+                ? death_knights_experience_for_level(ClassSlot::monk, old_level, target_order)
+                : champions_experience_for_level(ClassSlot::monk, old_level, target_order);
+        if (threshold && experience < *threshold)
         {
             --numbers.class_levels[7];
-            const int lost = numbers.rolled_hit_points / (old_level + 1);
+            const bool fixed_loss = game == GoldBoxGame::death_knights_of_krynn && old_level > 9;
+            const int lost = fixed_loss ? 2 : numbers.rolled_hit_points / (old_level + 1);
             numbers.rolled_hit_points -= lost;
             next.hit_points =
                 std::max(1, next.hit_points - lost -
-                                constitution_hit_point_bonus(Profession::knight,
-                                                             next.scores[Ability::constitution],
-                                                             GoldBoxGame::champions_of_krynn));
+                                (fixed_loss ? 0
+                                            : constitution_hit_point_bonus(
+                                                  Profession::knight,
+                                                  next.scores[Ability::constitution], game)));
             const auto last = std::ranges::find(next.level_classes | std::views::reverse, "knight");
             if (last != next.level_classes.rend() && next.level_classes.size() > 1)
             {
@@ -1561,10 +1646,17 @@ AdvancementOptions OriginalModule::advancement_options(const CharacterSheet &she
             : spell_slots(ClassSlot::magic_user, magic_user + 1, sheet.scores[Ability::wisdom],
                           sheet.scores[Ability::intelligence], game);
     std::vector<int> robe_spells;
-    if (game == GoldBoxGame::champions_of_krynn)
+    if (krynn_game(game))
     {
         slots = champions_spell_slots(ClassSlot::magic_user, magic_user + 1,
                                       sheet.scores[Ability::wisdom], krynn_orders(sheet));
+        if (game == GoldBoxGame::death_knights_of_krynn)
+        {
+            auto next = numbers.class_levels;
+            level_in(next, ClassSlot::magic_user) = magic_user + 1;
+            slots = death_knights_base_slots(next, sheet.scores[Ability::wisdom],
+                                             krynn_orders(sheet))[3];
+        }
         int highest = 0;
         for (std::size_t at = 0; at < slots.size(); ++at)
         {
@@ -1573,13 +1665,14 @@ AdvancementOptions OriginalModule::advancement_options(const CharacterSheet &she
                 highest = static_cast<int>(at + 1);
             }
         }
-        robe_spells = champions_learning_spells(numbers.robe_order, highest);
+        robe_spells = game == GoldBoxGame::death_knights_of_krynn
+                          ? death_knights_learning_spells(numbers.robe_order, highest)
+                          : champions_learning_spells(numbers.robe_order, highest);
     }
     for (const int number : castable_spells(game_of(sheet.identity)))
     {
-        const auto *offered = spell(number);
-        if (game == GoldBoxGame::champions_of_krynn &&
-            std::ranges::find(robe_spells, number) == robe_spells.end())
+        const auto *offered = spell(number, game);
+        if (krynn_game(game) && std::ranges::find(robe_spells, number) == robe_spells.end())
         {
             continue;
         }
@@ -1773,7 +1866,8 @@ std::vector<int> heal_cures(GoldBoxGame game)
         cured.insert(cured.end(), {blind, feebleminded});
         return cured;
     }
-    if (game == GoldBoxGame::treasures_of_the_savage_frontier)
+    if (game == GoldBoxGame::treasures_of_the_savage_frontier ||
+        game == GoldBoxGame::death_knights_of_krynn)
     {
         return {blind, feebleminded};
     }
@@ -1797,6 +1891,30 @@ std::vector<int> spells_left(const CharacterSheet &sheet, const VitalState &stat
         }
     }
     return memorized;
+}
+
+std::optional<VitalState> OriginalModule::imported_state(const CharacterSheet &from,
+                                                         const VitalState &state,
+                                                         const CharacterSheet &to) const
+{
+    if (game_of(to.identity) != GoldBoxGame::death_knights_of_krynn ||
+        game_of(from.identity) != GoldBoxGame::champions_of_krynn)
+    {
+        return std::nullopt;
+    }
+    // Native LoadChar copies HP and the spell block, clearing the linked
+    // effects. Rebuild the destination's combat numbers rather than carrying
+    // Champions' derived statistics and temporary spell effects across.
+    auto numbers = character_combatant(to);
+    numbers.hit_points = std::min(state.hit_points, to.hit_points);
+    numbers.spells = spells_left(from, state);
+    std::erase_if(numbers.spells,
+                  [](int id)
+                  {
+                      return spell(id, GoldBoxGame::death_knights_of_krynn) == nullptr;
+                  });
+    return VitalState{numbers.hit_points, state.dead, numbers.encode(),
+                      state.description == stoned_description ? state.description : std::string{}};
 }
 
 // The conditions a member carries out of its fights (lasting_condition).
@@ -1914,6 +2032,14 @@ int camp_caster_level(const CharacterSheet &caster, const Spell &known)
     {
         return 12;
     }
+    if (game_of(caster.identity) == GoldBoxGame::death_knights_of_krynn)
+    {
+        const auto &n = *caster.original;
+        const int phase = n.robe_order >= 1 && n.robe_order <= 3
+                              ? n.krynn_moon_phases[static_cast<std::size_t>(n.robe_order - 1)]
+                              : 3;
+        return death_knights_caster_level(n.class_levels, known.caster_class, n.robe_order, phase);
+    }
     const auto &levels = original_numbers(caster).class_levels;
     if (known.caster_class == SpellClass::druid)
     {
@@ -1961,7 +2087,7 @@ void strengthen_in_camp(const CharacterSheet &caster, const CharacterSheet &targ
                         VitalState &state, int number, RandomState &random_state)
 {
     constexpr int enlarge_number = 12, reduce_number = 13, enlarged = 12, strength_effect = 38;
-    const auto &known = *spell(number);
+    const auto &known = *spell(number, game_of(caster.identity));
     const auto game = game_of(target.identity);
     const int level = camp_caster_level(caster, known);
     const int minutes = known.minutes_fixed + known.minutes_per_level * level;
@@ -2116,6 +2242,36 @@ bool OriginalModule::advance_character(CharacterSheet &sheet, VitalState &state,
         return true;
     }
     const auto &numbers = original_numbers(sheet);
+    if (const auto days = decode_krynn_calendar(choice.rules_data))
+    {
+        if (game_of(sheet.identity) != GoldBoxGame::death_knights_of_krynn ||
+            *days < numbers.krynn_calendar_days)
+        {
+            throw std::invalid_argument("Invalid Krynn calendar change");
+        }
+        death_knights_calendar(*sheet.original, *days);
+        std::map<std::pair<SpellClass, int>, int> taken;
+        int extra = 0;
+        const int moon = death_knights_moon_allowance(*sheet.original);
+        std::erase_if(
+            sheet.prepared_spells,
+            [&](const std::string &id)
+            {
+                const auto number = spell_number(id, game_of(sheet.identity));
+                const auto *known = number ? spell(*number, game_of(sheet.identity)) : nullptr;
+                if (!known)
+                {
+                    return true;
+                }
+                const int base = slots_for(*sheet.original, *known);
+                if (++taken[{known->caster_class, known->level}] <= base)
+                {
+                    return false;
+                }
+                return known->caster_class != SpellClass::magic_user || base == 0 || ++extra > moon;
+            });
+        return true;
+    }
     if (const auto drain = decode_drain(choice.rules_data))
     {
         drain_character(sheet, state, *drain);
@@ -2351,7 +2507,7 @@ void OriginalModule::age_character(CharacterSheet &sheet, int years) const
     {
         const auto race = static_cast<Race>(numbers.race);
         const auto gender = next.gender == "Female" ? Gender::female : Gender::male;
-        const auto limits = ability_limits(race, gender);
+        const auto limits = ability_limits(race, gender, game_of(next.identity));
         const auto then = age_changes(Aging::add, race, before);
         const auto now = age_changes(Aging::add, race, numbers.age);
         for (const auto ability : rules::all_abilities)
@@ -2473,7 +2629,7 @@ unsigned OriginalModule::experience_after_advance(const CharacterSheet &before,
 {
     const auto trained = ready_classes(before, experience);
     const auto capped = std::min<unsigned>(experience, std::numeric_limits<int>::max());
-    if (game_of(before.identity) == GoldBoxGame::champions_of_krynn)
+    if (krynn_game(game_of(before.identity)))
     {
         int cap = 0;
         for (const auto slot : trained)
@@ -2757,6 +2913,14 @@ std::vector<AdvancementChoice> OriginalModule::clock_changes(const CharacterShee
     {
         AdvancementChoice change;
         change.rules_data = encode_age(years);
+        changes.push_back(std::move(change));
+    }
+    if (sheet.original && game_of(sheet.identity) == GoldBoxGame::death_knights_of_krynn &&
+        death_knights_calendar_day(to) != sheet.original->krynn_calendar_days)
+    {
+        AdvancementChoice change;
+        change.rules_data =
+            std::string(krynn_calendar_word) + std::to_string(death_knights_calendar_day(to));
         changes.push_back(std::move(change));
     }
     if (!sheet.original || state.resources.empty())

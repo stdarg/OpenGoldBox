@@ -97,6 +97,9 @@ struct CharacterRecord
     std::uint8_t creature_type_flags{}, target_flags{}, magic_resistance{};
     // Byte values are retained: known-spell flags/counters and memorized spell IDs.
     std::vector<std::uint8_t> spell_book, memorized_spells;
+    // Death Knights stores its full eight-level spell rows separately in WIZ.
+    // Retain them intact; the earlier common rows below expose their first five.
+    std::vector<std::uint8_t> raw_spell_block;
     // Spell slots by list (cleric, druid, magic-user) and spell level from 1.
     std::array<std::array<std::uint8_t, 5>, 3> spell_slots{};
     // Champions' fourth list is the deity's gifts, separate from ordinary
@@ -216,6 +219,8 @@ decode_item_words(std::span<const std::uint8_t> image);
 decode_item_words(std::span<const std::uint8_t> image, GoldBoxGame game);
 [[nodiscard]] std::optional<std::vector<std::string>>
 decode_spell_names(std::span<const std::uint8_t> image);
+[[nodiscard]] std::optional<std::vector<std::string>>
+decode_spell_names(std::span<const std::uint8_t> image, GoldBoxGame game);
 // The name shown: the components' words, last component first ("Ring Of Protection +1"),
 // leaving out the ones `hidden` masks as the record's hidden_name_words does ("Ring").
 [[nodiscard]] std::string item_name(const ItemRecord &item, std::span<const std::string> words,
