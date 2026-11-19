@@ -381,6 +381,10 @@ engine, each as the original does it:
 
 ## The route
 
+The assisted fixture described here is retained for regression and historical
+comparison. The [earned imported campaign](#earned-imported-campaign-2026-11-19-utc)
+now verifies a fresh actual ending without those stand-ins.
+
 `opengold_treasure_route` (`opengold_gold_box_games_tests --treasure-route`)
 plays the story in the cluebook's order with its party (two paladins, a
 ranger, two clerics and a magic-user, made under *Treasures*' rules, carrying
@@ -712,6 +716,38 @@ Waterdeep's honors, and leaves the party on the overland outside Waterdeep
 ends: "You have won." follows the script's closing words (`game_won`) until
 the player goes on ([DEVIATIONS.md](../DEVIATIONS.md)).
 
+## Earned imported campaign (2026-11-19 UTC)
+
+`opengold_treasure_earned_ending` first earns a new Gateway victory, then brings
+all six winning PCs across through the canonical conversion. They keep their
+earned levels, HP and experience, ready their actual converted gear, and start
+with Treasure's normal 200 platinum each. The player physically follows the
+river/coast/roads, pays for earned training and services, buys and takes actual
+equipment, and uses memorized spells and saved-event reloads. Wands retain
+finite charges and thrown firepots are bought and consumed normally. No XP,
+gold, gear, healing, quest flags, positions or victories are test-granted.
+
+The fresh registered chain passes: Gateway **67 fights, zero defeats in
+154.25s**; Treasure **145 fights, zero defeats in 1561.40s**; **1715.66s total**.
+All six PCs plus Siulajia and Gauhok finish healthy. Freezefire's death sets
+25Ch = 1; the original PROGRAM 5 performs its recovery, the actual ending is
+shown, and the party reaches map 54/script 51 at (7,1). The normal format-53
+winning save roundtrips byte-identically. Save formats/history are unchanged.
+
+Run with the installed files:
+
+```sh
+OPENGOLD_GOLDBOX_DIR=/home/edmond/GoldBox \
+OPENGOLD_GAME_DIR=/home/edmond/GoldBox/POOLRAD \
+ctest --test-dir build -V -R '^opengold_treasure_earned_ending$'
+```
+
+The Gateway setup is a required fixture; no resume or forced combat settings
+are needed. Exact checks, limitations, final logs and the four exposed engine
+corrections are recorded in [PLAYABILITY.md](../PLAYABILITY.md#treasure-earned-imported-campaign).
+The earlier assisted fixture remains separate. Optional quests, other party
+compositions and difficulties are not certified by this route.
+
 ## Bugs
 
 OpenGoldBox's own bugs found in *Treasures* and fixed (the original's are
@@ -742,3 +778,39 @@ in [ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Bugs):
 | Its turning was the earlier games': clerics only, once a fight, the weakest undead first, a failed roll ending it (2026-11-16) | Its own CombatTurnUndead ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Turning undead) |
 | A member its yetis frightened as they surprised the party fled to the fight's end, the fright's 2 rounds over: in Fireshear's cavern on the sea every play of the route left the party dead (2026-11-16) | The flight ends with the fright (its EffFear, as the effect is removed) |
 | A *Gateway* character's items came across renamed and renumbered, but their record's bytes, which the inventory keeps an item by, kept *Gateway*'s type and words (2026-11-16) | The bytes are rewritten with them |
+
+The earned campaign also exposed stale square data after a script moves the
+party within a map. Leilon's underground stairs put it at the farmhouse
+(4,3), still facing east, but left the event cell naming the stairs. Another
+forward step repeated the stairs forever; turning refreshed the cell and
+hid the defect. The engine now refreshes Treasure's current square before
+the next command, while preserving its intentional off-map overland
+coordinates. `a_scripted_stair_move_refreshes_the_next_step` runs the real
+Leilon script and verifies continuing east to (5,3) without turning; it fails
+before the fix and passes afterwards. No original files or save formats change.
+
+Daggerford's Temple of Eldath waives its donations after the headquarters
+releases its leaders (ECL1:39, flag 265h). The engine now honors that promise
+for every offered service, including raising, while retaining normal prices
+before the rescue. The real-script regression first rejects a penniless
+party's paid cure, then frees the leaders and completes a cure with no gold;
+it also checks that raising is quoted at zero. This fixes the campaign's
+intended recovery service without changing rules outcomes or save formats.
+
+Monster equipment and battle loot now use Treasure's own item-name words,
+as its shops already do. Generic labels belonged to another numbering scheme:
+plate armor (type 36) appeared as a long sword, for example, and a carried
+weapon (type 20) appeared as a hammer. The installed-data regression compares
+every decoded monster item with GAME.EXE's original name table; it fails on
+MON1CHA:2 before this fix. Types, item records and mechanics are unchanged.
+
+**Scripted experience (2026-11-18).** Like Pools of Darkness, Treasure's
+AWARD EXPERIENCE reads a whole word amount and multiplies it by 100 before
+sharing it among each recipient's classes. The reconstructed original's
+[`EclAwardExperience`](https://github.com/talonius/treasures-of-the-savage-frontier/blob/main/src/eclvm.pas)
+and `GetEclVar` confirm both operations. OpenGoldBox previously granted the
+raw byte, paying a hundredth of a byte award and truncating larger amounts.
+The regression visits the actual Waterdeep Dock cavern-escape event
+(ECL1:21, 8786h): its award of 5 must give each single-class member 500 XP.
+A separate VM check preserves a word amount of 500. Save formats and
+Secret's unscaled awards are unchanged.

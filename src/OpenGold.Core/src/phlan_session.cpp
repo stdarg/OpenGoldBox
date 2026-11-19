@@ -979,6 +979,16 @@ bool RolfTourSession::move_party(ExplorationCommand command)
 void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_t> entry,
                                   std::chrono::minutes takes)
 {
+    // The original refreshes the current square before accepting the next
+    // command. A Treasure script may have moved the party within the map
+    // without updating the event/wall cells (Leilon's farmhouse stairs).
+    // Preserve the overland scripts' intentional off-map coordinates.
+    if (game() == GoldBoxGame::treasures_of_the_savage_frontier &&
+        machine_.variable(game_cell(ecl_party_x)) < 16 &&
+        machine_.variable(game_cell(ecl_party_y)) < 16)
+    {
+        bind_pose(snapshot_.pose);
+    }
     if (const auto won = game_won_cell(game()))
     {
         won_cell_at_event_start_ = machine_.variable(*won);
@@ -4660,7 +4670,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         // AWARD EXPERIENCE (Secret, eclvm EclAwardExperience): the second
         // operand to every member, or with a first of 0 to the selected
         // character alone, each share divided among its classes. Pools of
-        // Darkness counts the operand in hundreds (its EclAwardExperience
+        // Darkness and Treasures count the operand in hundreds (EclAwardExperience
         // multiplies it by 100): Thorne's fall is worth 100,000 a member.
         const bool whole_party = arg(0) != 0;
         MemberId only{};
@@ -4669,7 +4679,10 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             read_character();
             only = campaign_->state().slots.at(selected_character_.index);
         }
-        const unsigned award_unit = game() == GoldBoxGame::pools_of_darkness ? 100 : 1;
+        const unsigned award_unit = game() == GoldBoxGame::pools_of_darkness ||
+                                            game() == GoldBoxGame::treasures_of_the_savage_frontier
+                                        ? 100
+                                        : 1;
         campaign_->grant_script_experience(arg(1) * award_unit, only);
         const auto line = whole_party || !only ? std::string("The party gains experience.")
                                                : campaign_->member(only).character.sheet().name +
@@ -5753,9 +5766,11 @@ void RolfTourSession::open_temple(std::uint64_t request)
                              (offering.service == opengold::rules::TempleService::resurrection &&
                               difficulty_ > opengold::Difficulty::normal);
                   });
-    // Secret's temple heals the town's champions for nothing (its HealMenu
-    // takes no money).
-    if (game() == GoldBoxGame::secret_of_the_silver_blades)
+    // Secret's HealMenu takes no money. Daggerford's released Eldath
+    // priests also waive every donation (ECL1:39, rescue flag 265h).
+    const bool freed_eldath = game() == GoldBoxGame::treasures_of_the_savage_frontier &&
+                              snapshot_.area_id == 39 && machine_.variable(EclAddress{0x265}) != 0;
+    if (game() == GoldBoxGame::secret_of_the_silver_blades || freed_eldath)
     {
         for (auto &offering : offerings)
         {

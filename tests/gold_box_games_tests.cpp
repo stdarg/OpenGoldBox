@@ -3,6 +3,7 @@
 // runs in tests/game_census.cmake.
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_save.h"
+#include "opengold/treasures_import.h"
 #include "opengold/campaign_session.h"
 #include "opengold/character_art.h"
 #include "opengold/creature_catalog.h"
@@ -8473,6 +8474,854 @@ const std::vector<RouteBeat> &treasure_route()
     return beats;
 }
 
+std::vector<RouteBeat> treasure_earned_route()
+{
+    using D = opengold::por::MapDirection;
+    auto beats = treasure_route();
+    // Further advancement needs actual intervening experience.
+    beats.erase(beats.begin() + 1, beats.begin() + 4);
+    // These two rooms are inside the Keep's courtyard. Clear the accessible
+    // city fights before entering that courtyard, then visit its inner rooms.
+    std::vector<RouteBeat> inner_rooms;
+    for (const auto &[x, y] : {std::pair{8U, 13U}, std::pair{8U, 8U}})
+    {
+        const auto room =
+            std::ranges::find_if(beats,
+                                 [&](const RouteBeat &beat)
+                                 {
+                                     return beat.map == 16 && beat.x == x && beat.y == y;
+                                 });
+        check(room != beats.end() && room - beats.begin() >= 2,
+              "The inside room has its recovery visits");
+        inner_rooms.insert(inner_rooms.end(), room - 2, std::next(room));
+        beats.erase(room - 2, std::next(room));
+    }
+    const auto courtyard =
+        std::ranges::find_if(beats,
+                             [](const RouteBeat &beat)
+                             {
+                                 return beat.map == 16 && beat.x == 8 && beat.y == 10;
+                             });
+    check(courtyard != beats.end(), "The earned route fights at the actual courtyard entrance");
+    beats.insert(std::next(courtyard), inner_rooms.begin(), inner_rooms.end());
+    for (auto &beat : beats)
+    {
+        beat.test_experience = 0;
+        beat.test_gold = 0;
+        beat.look_until_minute = beat.wait_until_minute;
+        beat.wait_until_minute.reset();
+        beat.cure_first = true;
+        beat.cure_to_full = true;
+        beat.reloads_until_won = std::max(beat.reloads_until_won, 600U);
+        beat.reload_event = true;
+        if (beat.map == 16 && beat.x == 1 && beat.y == 3)
+        {
+            beat.x = 2;
+            beat.facing = D::west;
+            beat.step = true;
+            // Spend the normal import purse on the casters first: the
+            // fighters already carry their earned magic weapons and armor.
+            beat.answers = {"YES", "magic_user 6", "cleric 4", "cleric 5", "Leave"};
+        }
+        else if (beat.map == 16 && beat.x == 15 && beat.y == 3)
+        {
+            beat.y = 2;
+            beat.facing = D::south;
+            beat.step = true;
+            beat.answers = {"stone:flesh", "raise:dead", "cure:unconscious", "Leave"};
+        }
+        else if (beat.map == 16 && beat.x == 12 && beat.y == 1)
+        {
+            beat.y = 2;
+            beat.facing = D::north;
+            beat.step = true;
+        }
+        else if (beat.map == 19 && beat.x == 7 && beat.y == 10)
+        {
+            // Erek receives visitors from the street and returns them there.
+            beat.y = 11;
+            beat.facing = D::north;
+            beat.step = true;
+        }
+        else if (beat.map == 20 && beat.x == 9 && beat.y == 7)
+        {
+            // Dinner transfers the party to the barn on the same map.
+            beat.y = 8;
+            beat.facing = D::north;
+            beat.step = true;
+            beat.keep_preparation = true;
+            beat.rest_for_spells = true;
+        }
+    }
+    const auto train_after = [&](unsigned x, unsigned y, std::vector<std::string> answers)
+    {
+        const auto battle =
+            std::ranges::find_if(beats,
+                                 [&](const RouteBeat &beat)
+                                 {
+                                     return beat.map == 16 && beat.x == x && beat.y == y;
+                                 });
+        check(battle != beats.end(), "Earned advancement follows an actual Llorkh fight");
+        auto hall = beats.front();
+        hall.answers = std::move(answers);
+        beats.insert(std::next(battle), std::move(hall));
+    };
+    train_after(9, 14, {"YES", "magic_user 6", "cleric 4", "Leave"});
+    for (const auto &[x, y] :
+         {std::pair{13U, 13U}, std::pair{11U, 12U}, std::pair{1U, 8U}, std::pair{6U, 8U},
+          std::pair{14U, 1U}, std::pair{4U, 1U}, std::pair{1U, 1U}, std::pair{0U, 6U},
+          std::pair{5U, 5U}, std::pair{8U, 0U}, std::pair{8U, 10U}, std::pair{8U, 13U},
+          std::pair{8U, 8U}})
+    {
+        train_after(x, y, {"YES", "magic_user 6", "cleric 5", "Leave"});
+    }
+    // The physically reachable streets leave the imported mage just short
+    // of its next level. Clear the remaining street room before the
+    // courtyard, then use the already scheduled paid hall visit.
+    const auto last_street =
+        std::ranges::find_if(beats,
+                             [](const RouteBeat &beat)
+                             {
+                                 return beat.map == 16 && beat.x == 8 && beat.y == 0;
+                             });
+    const auto city_temple =
+        std::ranges::find_if(beats,
+                             [](const RouteBeat &beat)
+                             {
+                                 return beat.map == 16 && beat.x == 15 && beat.y == 2;
+                             });
+    const auto city_inn =
+        std::ranges::find_if(beats,
+                             [](const RouteBeat &beat)
+                             {
+                                 return beat.map == 16 && beat.x == 12 && beat.y == 2;
+                             });
+    check(last_street != beats.end() && city_temple != beats.end() && city_inn != beats.end(),
+          "The last accessible street fight has real recovery services");
+    RouteBeat remaining_street{16, 4, 3, D::north, {}};
+    remaining_street.cure_first = true;
+    remaining_street.cure_to_full = true;
+    remaining_street.reload_event = true;
+    remaining_street.reloads_until_won = 600;
+    const std::vector<RouteBeat> extra_street{*city_temple, *city_inn, remaining_street};
+    beats.insert(std::next(last_street), extra_street.begin(), extra_street.end());
+    // Restore Cortarra's petrification before leaving the freed city.
+    const auto boat = std::ranges::find_if(beats,
+                                           [](const RouteBeat &beat)
+                                           {
+                                               return beat.map == 16 && beat.x == 3 && beat.y == 15;
+                                           });
+    check(boat != beats.end(), "The earned party leaves Llorkh by its boat rental");
+    RouteBeat temple =
+        step_beat(16, 15, 2, D::south, {"stone:flesh", "raise:dead", "cure:unconscious", "Leave"});
+    RouteBeat inn = step_beat(16, 12, 2, D::north, {"YES"});
+    inn.memorize_first_of = {"fireball"};
+    beats.insert(boat, {temple, inn});
+    // Follow the real river west from Llorkh. The assisted route's
+    // waypoints skip most of this river and approach Secomber from land.
+    const auto river = std::ranges::find_if(beats,
+                                            [](const RouteBeat &beat)
+                                            {
+                                                return beat.map == 57;
+                                            });
+    const auto secomber = std::ranges::find_if(river, beats.end(),
+                                               [](const RouteBeat &beat)
+                                               {
+                                                   return beat.map == 19;
+                                               });
+    check(river != beats.end() && secomber != beats.end(), "The river reaches Secomber");
+    const auto river_offset = river - beats.begin();
+    beats.erase(river, secomber);
+    std::vector<RouteBeat> river_steps;
+    walk_overland(river_steps, 57,
+                  {{15, 3, D::west}, {14, 3, D::west}, {13, 3, D::north}, {13, 2, D::west},
+                   {12, 2, D::west}, {11, 2, D::west}, {10, 2, D::west},  {9, 2, D::west},
+                   {8, 2, D::west},  {7, 2, D::south}, {7, 3, D::south},  {7, 4, D::west},
+                   {6, 4, D::south}, {6, 5, D::west},  {5, 5, D::west},   {4, 5, D::south},
+                   {4, 6, D::west},  {3, 6, D::west},  {2, 6, D::west},   {1, 6, D::south},
+                   {1, 7, D::south}, {1, 8, D::west}});
+    walk_overland(river_steps, 56, {{14, 8, D::west}, {13, 8, D::west}, {12, 8, D::west}});
+    river_steps.push_back(step_beat(56, 11, 8, D::north, {"YES"}));
+    for (auto &beat : river_steps)
+    {
+        beat.cure_first = true;
+        beat.cure_to_full = true;
+        beat.reloads_until_won = 600;
+        beat.reload_event = true;
+    }
+    beats.insert(beats.begin() + river_offset, river_steps.begin(), river_steps.end());
+    const auto coast =
+        std::ranges::find_if(beats,
+                             [](const RouteBeat &beat)
+                             {
+                                 return beat.map == 54 && beat.x == 15 && beat.y == 9;
+                             });
+    const auto leilon = std::ranges::find_if(coast, beats.end(),
+                                             [](const RouteBeat &beat)
+                                             {
+                                                 return beat.map == 20;
+                                             });
+    check(coast != beats.end() && leilon != beats.end(), "The westward road reaches Leilon");
+    const auto coast_offset = coast - beats.begin();
+    beats.erase(coast, leilon);
+    std::vector<RouteBeat> coast_steps;
+    walk_overland(coast_steps, 54,
+                  {{15, 9, D::north},
+                   {15, 8, D::west},
+                   {14, 8, D::west},
+                   {13, 8, D::west},
+                   {12, 8, D::west},
+                   {11, 8, D::west},
+                   {10, 8, D::west},
+                   {9, 8, D::west},
+                   {8, 8, D::west},
+                   {7, 8, D::west},
+                   {6, 8, D::west},
+                   {5, 8, D::west},
+                   {4, 8, D::west},
+                   {3, 8, D::west},
+                   {2, 8, D::west},
+                   {1, 8, D::west}});
+    walk_overland(coast_steps, 53,
+                  {{14, 8, D::west},
+                   {13, 8, D::west},
+                   {12, 8, D::west},
+                   {11, 8, D::west},
+                   {10, 8, D::west},
+                   {9, 8, D::west},
+                   {8, 8, D::west},
+                   {7, 8, D::west},
+                   {6, 8, D::west}});
+    coast_steps.push_back(step_beat(53, 5, 8, D::west, {"YES"}));
+    for (auto &beat : coast_steps)
+    {
+        beat.cure_first = true;
+        beat.cure_to_full = true;
+        beat.reloads_until_won = 600;
+        beat.reload_event = true;
+    }
+    beats.insert(beats.begin() + coast_offset, coast_steps.begin(), coast_steps.end());
+    const auto high_road =
+        std::ranges::find_if(beats,
+                             [](const RouteBeat &beat)
+                             {
+                                 return beat.map == 53 && beat.x == 4 && beat.y == 7;
+                             });
+    const auto caverns = std::ranges::find_if(high_road, beats.end(),
+                                              [](const RouteBeat &beat)
+                                              {
+                                                  return beat.map == 22;
+                                              });
+    check(high_road != beats.end() && caverns != beats.end(), "The High Road reaches the caverns");
+    const auto high_road_offset = high_road - beats.begin();
+    beats.erase(high_road, caverns);
+    std::vector<RouteBeat> high_road_steps;
+    walk_overland(high_road_steps, 53,
+                  {{4, 7, D::north},
+                   {4, 6, D::north},
+                   {4, 5, D::north},
+                   {4, 4, D::north},
+                   {4, 3, D::north},
+                   {4, 2, D::west},
+                   {3, 2, D::west},
+                   {2, 2, D::north},
+                   {2, 1, D::north}});
+    walk_overland(high_road_steps, 51, {{13, 14, D::north}});
+    for (auto &beat : high_road_steps)
+    {
+        beat.cure_first = true;
+        beat.cure_to_full = true;
+        beat.reloads_until_won = 600;
+        beat.reload_event = true;
+    }
+    beats.insert(beats.begin() + high_road_offset, high_road_steps.begin(), high_road_steps.end());
+    const auto way_inn = std::ranges::find_if(beats,
+                                              [](const RouteBeat &beat)
+                                              {
+                                                  return beat.map == 40;
+                                              });
+    check(way_inn != beats.end() && std::next(way_inn) != beats.end() && way_inn->x == 13 &&
+              way_inn->y == 1 && std::next(way_inn)->x == 12 && std::next(way_inn)->y == 2,
+          "The Way Inn's first fight follows its resting room");
+    // The old room is behind Coz's shop, which backs customers out after
+    // he is freed. The public empty room at (10,0) remains accessible.
+    unsigned downstairs_rooms = 0;
+    for (auto &beat : beats)
+    {
+        if (beat.map == 40)
+        {
+            // Clear the right-side guard room and barracks from their
+            // near entrances before crossing the inn's guarded anteroom.
+            if (beat.x == 4 && beat.y == 4)
+            {
+                beat.x = 13;
+                beat.y = 7;
+            }
+            else if (beat.x == 7 && beat.y == 6)
+            {
+                beat.x = 11;
+                beat.y = 4;
+            }
+            else if (beat.x == 2 && beat.y == 7)
+            {
+                beat.x = 7;
+                beat.y = 6;
+            }
+            if (beat.x == 14 && beat.y == 14)
+            {
+                beat.x = 11;
+            }
+            else if (beat.x == 4 && beat.y == 15)
+            {
+                beat.x = 11;
+            }
+            beat.searching = false;
+            if (beat.x == 13 && beat.y == 1)
+            {
+                ++downstairs_rooms;
+                beat.x = downstairs_rooms <= 2 ? 10 : 13;
+                beat.y = downstairs_rooms <= 2 ? 0 : 5;
+            }
+        }
+    }
+    auto firepot_shop =
+        step_beat(40, 13, 3, D::north, std::vector<std::string>(4, "buy:FIREPOT@magic_user 6"));
+    firepot_shop.rest_first = true;
+    firepot_shop.rest_for_spells = true;
+    firepot_shop.cure_first = true;
+    firepot_shop.cure_to_full = true;
+    firepot_shop.reload_event = true;
+    firepot_shop.reloads_until_won = 600;
+    // Rest in the public room before shopping; do not then start a second
+    // exposed camp at the shop's doorstep before the barracks.
+    firepot_shop.searching = false;
+    std::next(way_inn, 3)->rest_first = false;
+    std::next(way_inn, 3)->rest_for_spells = false;
+    beats.insert(std::next(way_inn, 3), std::move(firepot_shop));
+    const auto upstairs_room =
+        std::ranges::find_if(beats,
+                             [](const RouteBeat &beat)
+                             {
+                                 return beat.map == 40 && beat.x == 11 && beat.y == 14;
+                             });
+    check(upstairs_room != beats.end(), "The earned route reaches the Way Inn's upstairs rooms");
+    // The right spiral staircase adds eight to the actual Y coordinate.
+    auto stairs = step_beat(40, 9, 6, D::north, {"YES"});
+    stairs.searching = false;
+    stairs.cure_first = true;
+    stairs.cure_to_full = true;
+    stairs.reload_event = true;
+    beats.insert(upstairs_room, std::move(stairs));
+    const auto dock_exit =
+        std::ranges::find_if(beats,
+                             [](const RouteBeat &beat)
+                             {
+                                 return beat.map == 21 && beat.x == 15 && beat.y == 9;
+                             });
+    check(dock_exit != beats.end(), "The earned party leaves the Smuggler's Dock through its gate");
+    // Salinia's actual boarding house: heal and prepare after the caverns,
+    // before risking the road and Daggerford's street patrols.
+    beats.insert(dock_exit, step_beat(21, 14, 9, D::south, {"YES"}));
+    const auto daggerford = std::ranges::find_if(beats,
+                                                 [](const RouteBeat &beat)
+                                                 {
+                                                     return beat.map == 39;
+                                                 });
+    check(daggerford != beats.end(), "The earned party reaches Daggerford");
+    auto eldath =
+        step_beat(39, 14, 10, D::east,
+                  {"HEAL", "cure:unconscious", "stone:flesh", "raise:dead", "Leave", "LEAVE"});
+    eldath.fleeing = true;
+    eldath.reload_event = true;
+    eldath.reloads_until_won = 600;
+    for (std::size_t i = 0; i < beats.size(); ++i)
+    {
+        if (beats[i].map == 39 && beats[i].x == 14 && beats[i].y == 7)
+        {
+            beats.insert(beats.begin() + static_cast<std::ptrdiff_t>(i), eldath);
+            ++i;
+        }
+    }
+    const auto fire_giants =
+        std::ranges::find_if(beats,
+                             [](const RouteBeat &beat)
+                             {
+                                 return beat.map == 39 && beat.x == 0 && beat.y == 0;
+                             });
+    check(fire_giants != beats.end(), "Daggerford's fire giants have a real doorway");
+    check(fire_giants != beats.begin() && std::prev(fire_giants)->map == 39 &&
+              std::prev(fire_giants)->x == 14 && std::prev(fire_giants)->y == 7,
+          "The fire-giant approach follows the paid inn");
+    std::prev(fire_giants)->ward_memorized = "resist_fire";
+    fire_giants->ward_each_with = "resist_fire";
+    RouteBeat approach{39, 0, 1, D::north, {}};
+    approach.arrive_only = true;
+    approach.cure_first = true;
+    approach.cure_to_full = true;
+    approach.reload_event = true;
+    approach.reloads_until_won = 600;
+    beats.insert(fire_giants, std::move(approach));
+    for (auto &beat : beats)
+    {
+        if (beat.map == 23 && beat.x == 11 && beat.y == 9)
+        {
+            // The Waterbaron's home returns visitors to the street; its
+            // interior is not a reachable camp. Use the actual paid inn.
+            beat.x = 1;
+            beat.y = 8;
+            beat.facing = D::south;
+            beat.step = true;
+            beat.answers = {"YES"};
+            beat.memorize_first_of = {"fireball", "minor_globe_of_invulnerability"};
+        }
+        else if (beat.map == 23 &&
+                 ((beat.x == 11 && beat.y == 14) || (beat.x == 14 && beat.y == 15)))
+        {
+            // Preparation was completed at the inn, before walking here.
+            beat.rest_first = false;
+            beat.rest_for_spells = false;
+        }
+    }
+    // Fixed-price inns and service doors must be entered from the street.
+    // Assisted placements could stand in houses whose scripts eject visitors.
+    const std::map<unsigned, std::tuple<unsigned, unsigned, D>> inn_doors{
+        {24, {6, 9, D::south}},  {25, {7, 7, D::east}},  {26, {7, 3, D::west}},
+        {27, {10, 13, D::west}}, {28, {12, 6, D::east}}, {31, {14, 13, D::east}}};
+    const auto paid_inn = [&](unsigned map)
+    {
+        const auto &[x, y, facing] = inn_doors.at(map);
+        auto stop = step_beat(map, x, y, facing, {"YES"});
+        stop.searching = false;
+        stop.cure_first = true;
+        stop.cure_to_full = true;
+        stop.reload_event = true;
+        stop.reloads_until_won = 600;
+        return stop;
+    };
+    for (auto &beat : beats)
+    {
+        const bool resting_room = (beat.map == 24 && beat.x == 13 && beat.y == 7) ||
+                                  (beat.map == 25 && beat.x == 8 && beat.y == 7) ||
+                                  (beat.map == 26 && beat.x == 6 && beat.y == 6) ||
+                                  (beat.map == 27 && beat.x == 3 && beat.y == 3) ||
+                                  (beat.map == 31 && beat.x == 11 && beat.y == 6) ||
+                                  (beat.map == 28 && !beat.rest_first && beat.answers.empty() &&
+                                   beat.x == 6 && beat.y == 13);
+        if (resting_room)
+        {
+            beat = paid_inn(beat.map);
+        }
+        else if ((beat.map == 26 && beat.x == 1 && beat.y == 5) ||
+                 (beat.map == 28 && beat.x == 6 && beat.y == 11))
+        {
+            ++beat.x;
+            beat.facing = D::west;
+            beat.step = true;
+        }
+        else if (beat.map == 37 && beat.x == 15 && beat.y == 6)
+        {
+            ++beat.y;
+            beat.facing = D::north;
+            beat.step = true;
+        }
+        else if ((beat.map == 26 && beat.x == 9 && beat.y == 5) ||
+                 (beat.map == 28 && beat.x == 9 && beat.y == 10))
+        {
+            --beat.y;
+            beat.facing = D::south;
+            beat.step = true;
+            beat.answers = {"YES", "stone:flesh", "raise:dead", "cure:unconscious", "Leave"};
+        }
+        if (beat.map >= 24 && beat.map <= 27)
+        {
+            beat.rest_first = false;
+            beat.rest_for_spells = false;
+        }
+    }
+    for (std::size_t i = 0; i < beats.size(); ++i)
+    {
+        if ((beats[i].map != 28 && beats[i].map != 31) || !beats[i].rest_first)
+        {
+            continue;
+        }
+        auto stop = paid_inn(beats[i].map);
+        stop.ward_memorized = beats[i].ward_each_with;
+        stop.ward_members = beats[i].ward_members;
+        stop.memorize_first_of = beats[i].memorize_first_of;
+        beats[i].rest_first = false;
+        beats[i].rest_for_spells = false;
+        if (!beats[i].ward_each_with.empty())
+        {
+            beats[i].searching = false;
+        }
+        const bool already_at_inn = i > 0 && beats[i - 1].map == stop.map &&
+                                    beats[i - 1].x == stop.x && beats[i - 1].y == stop.y &&
+                                    beats[i - 1].step;
+        if (already_at_inn)
+        {
+            beats[i - 1].ward_memorized = stop.ward_memorized;
+            beats[i - 1].ward_members = stop.ward_members;
+            beats[i - 1].memorize_first_of = stop.memorize_first_of;
+        }
+        else
+        {
+            beats.insert(beats.begin() + static_cast<std::ptrdiff_t>(i), std::move(stop));
+            ++i;
+        }
+    }
+    // Enter story visits once; their scripts may return the party to the
+    // street after speaking, so standing on an interior is not the goal.
+    const std::map<std::pair<unsigned, unsigned>, std::tuple<unsigned, unsigned, D>> ranch_doors{
+        {{7, 12}, {7, 11, D::south}},  {{12, 0}, {12, 1, D::north}},
+        {{10, 1}, {11, 1, D::west}},   {{2, 2}, {2, 3, D::north}},
+        {{3, 1}, {2, 1, D::east}},     {{2, 9}, {1, 9, D::east}},
+        {{3, 8}, {3, 9, D::north}},    {{14, 10}, {14, 11, D::north}},
+        {{13, 11}, {14, 11, D::west}}, {{15, 12}, {14, 12, D::east}},
+        {{10, 4}, {10, 5, D::north}},  {{3, 13}, {3, 14, D::north}},
+        {{1, 15}, {1, 14, D::south}}};
+    for (auto &beat : beats)
+    {
+        if (beat.step)
+        {
+            continue;
+        }
+        if (beat.map == 28 && beat.x == 4 && beat.y == 12)
+        {
+            --beat.x;
+            beat.facing = D::east;
+            beat.step = true;
+        }
+        else if ((beat.map == 24 && beat.x == 12 && beat.y == 2) ||
+                 (beat.map == 27 && beat.x == 11 && beat.y == 3))
+        {
+            ++beat.y;
+            beat.facing = D::north;
+            beat.step = true;
+        }
+        else if (beat.map == 25)
+        {
+            const auto door = ranch_doors.find({beat.x, beat.y});
+            if (door != ranch_doors.end())
+            {
+                std::tie(beat.x, beat.y, beat.facing) = door->second;
+                beat.step = true;
+            }
+        }
+    }
+    // Prepare at Luskan's paid inn, then cast the short-lived wards at the
+    // stronghold doorway. Casting before the walk from the inn spends their
+    // duration on the streets; its Banites can then hold the whole party.
+    const auto prisoner =
+        std::ranges::find_if(beats,
+                             [](const RouteBeat &beat)
+                             {
+                                 return beat.map == 31 && beat.x == 11 && beat.y == 1;
+                             });
+    check(prisoner != beats.end() && prisoner != beats.begin(),
+          "Luskan's rescue follows its real inn");
+    auto &rescue_inn = *std::prev(prisoner);
+    check(rescue_inn.map == 31 && rescue_inn.x == 14 && rescue_inn.y == 13,
+          "The rescue prepares spells at Luskan's paid inn");
+    const std::vector<std::string> rescuers{"paladin 1", "paladin 2", "ranger 3",
+                                            "cleric 4",  "cleric 5",  "magic_user 6"};
+    rescue_inn.memorize_first_of = {"haste", "minor_globe_of_invulnerability", "dispel_magic"};
+    rescue_inn.ward_memorized = "protection_from_evil";
+    rescue_inn.ward_members = rescuers;
+    rescue_inn.keep_preparation = true;
+    auto rescue_approach = RouteBeat{31, 10, 3, D::east, {}};
+    rescue_approach.arrive_only = true;
+    rescue_approach.searching = false;
+    rescue_approach.cure_first = true;
+    rescue_approach.cure_to_full = true;
+    rescue_approach.reload_event = true;
+    rescue_approach.reloads_until_won = 600;
+    rescue_approach.keep_preparation = true;
+    auto protection_at_door = rescue_approach;
+    protection_at_door.ward_each_with = "protection_from_evil";
+    protection_at_door.ward_members = rescuers;
+    auto speed_at_door = rescue_approach;
+    speed_at_door.ward_each_with = "haste";
+    speed_at_door.ward_members = {"magic_user 6"};
+    speed_at_door.cast_after = {"minor_globe_of_invulnerability"};
+    prisoner->ward_each_with.clear();
+    prisoner->rest_first = false;
+    prisoner->rest_for_spells = false;
+    prisoner->keep_preparation = true;
+    beats.insert(prisoner, {rescue_approach, protection_at_door, speed_at_door});
+
+    // Return to the actual hall with the experience and money won since
+    // Llorkh. The imported winners started below Treasures' new-party levels.
+    for (std::size_t i = 0; i + 1 < beats.size(); ++i)
+    {
+        if (beats[i].map == 31 && beats[i].x == 8 && beats[i].y == 3)
+        {
+            // Redleg's refuge is behind the captain's stronghold. Rest
+            // here and protect the party before walking through its mages.
+            beats[i].rest_first = true;
+            beats[i].rest_for_spells = true;
+            beats[i].memorize_first_of = {"fireball", "minor_globe_of_invulnerability"};
+            beats[i].ward_memorized = "resist_fire";
+            beats[i].ward_members = {"paladin 1", "paladin 2", "ranger 3",
+                                     "cleric 4",  "cleric 5",  "magic_user 6"};
+            auto protection = RouteBeat{31, 10, 3, D::east, {}};
+            protection.arrive_only = true;
+            protection.searching = false;
+            protection.ward_each_with = "resist_fire";
+            protection.ward_members = beats[i].ward_members;
+            protection.cast_after = {"minor_globe_of_invulnerability"};
+            protection.cure_first = true;
+            protection.cure_to_full = true;
+            protection.reload_event = true;
+            protection.reloads_until_won = 600;
+            beats[i + 1].searching = false;
+            beats.insert(beats.begin() + static_cast<std::ptrdiff_t>(i + 1), std::move(protection));
+            ++i;
+        }
+    }
+    const auto council =
+        std::ranges::find_if(beats,
+                             [](const RouteBeat &beat)
+                             {
+                                 return beat.map == 30 && beat.x == 7 && beat.y == 9;
+                             });
+    check(council != beats.end(), "The earned route visits Mirabar's council");
+    auto council_protection = RouteBeat{30, 6, 9, D::east, {}};
+    council_protection.arrive_only = true;
+    council_protection.rest_first = true;
+    council_protection.rest_for_spells = true;
+    council_protection.cure_first = true;
+    council_protection.cure_to_full = true;
+    council_protection.searching = false;
+    council_protection.keep_preparation = true;
+    // Three first-level copies per cleric cover the six PCs. Resist Fire's
+    // separate second-level allocation must not leave only one protection
+    // per caster for the next beat.
+    council_protection.memorize_first_of = {"fireball",
+                                            "haste",
+                                            "protection_from_evil",
+                                            "protection_from_evil",
+                                            "protection_from_evil",
+                                            "resist_fire",
+                                            "dispel_magic",
+                                            "minor_globe_of_invulnerability"};
+    council_protection.ward_each_with = "resist_fire";
+    council_protection.ward_members = {"paladin 1", "paladin 2", "ranger 3",
+                                       "cleric 4",  "cleric 5",  "magic_user 6"};
+    auto council_globe = RouteBeat{30, 6, 9, D::east, {}};
+    council_globe.arrive_only = true;
+    council_globe.searching = false;
+    council_globe.ward_each_with = "protection_from_evil";
+    council_globe.ward_members = council_protection.ward_members;
+    council_globe.cast_after = {"haste"};
+    auto council_last_globe = RouteBeat{30, 6, 9, D::east, {}};
+    council_last_globe.arrive_only = true;
+    council_last_globe.searching = false;
+    council_last_globe.cast_after = {"minor_globe_of_invulnerability"};
+    council_last_globe.reload_event = true;
+    council_last_globe.reloads_until_won = 600;
+    council_globe.reload_event = true;
+    council_globe.reloads_until_won = 600;
+    council_protection.reload_event = true;
+    council_protection.reloads_until_won = 600;
+    council->rest_first = false;
+    council->rest_for_spells = false;
+    council->searching = false;
+    auto mirabar_hall = step_beat(30, 11, 11, D::west,
+                                  {"YES", "magic_user 6", "cleric 4", "cleric 5", "paladin 1",
+                                   "paladin 2", "ranger 3", "Leave"});
+    mirabar_hall.searching = false;
+    mirabar_hall.reload_event = true;
+    mirabar_hall.reloads_until_won = 600;
+    auto mirabar_inn = RouteBeat{30, 4, 11, D::north, {"YES"}};
+    mirabar_inn.searching = false;
+    mirabar_inn.reload_event = true;
+    mirabar_inn.reloads_until_won = 600;
+    auto outfit_prisoner = step_beat(
+        30, 9, 13, D::south,
+        {"YES", "buy:LONG SWORD@Siulajia", "buy:PLATE MAIL@Siulajia", "buy:SHIELD@Siulajia"});
+    outfit_prisoner.searching = false;
+    outfit_prisoner.reload_event = true;
+    outfit_prisoner.reloads_until_won = 600;
+    const std::vector<RouteBeat> council_preparation{mirabar_hall,    mirabar_inn,
+                                                     outfit_prisoner, council_protection,
+                                                     council_globe,   council_last_globe};
+    const auto council_index = static_cast<std::size_t>(council - beats.begin());
+    beats.insert(council, council_preparation.begin(), council_preparation.end());
+    // A surviving ninth-level cleric prepares and casts Raise Dead after
+    // a costly council victory. Each recovery night pays the actual inn.
+    auto recovery_inn = mirabar_inn;
+    recovery_inn.cure_first = true;
+    recovery_inn.cure_to_full = true;
+    recovery_inn.memorize_first_of = {"raise_dead", "cure_light_wounds", "cure_serious_wounds",
+                                      "fireball"};
+    std::vector<RouteBeat> recovery_visits{recovery_inn};
+    recovery_inn.rest_first = true;
+    recovery_visits.insert(recovery_visits.end(), 4, recovery_inn);
+    beats.insert(beats.begin() +
+                     static_cast<std::ptrdiff_t>(council_index + council_preparation.size() + 1),
+                 recovery_visits.begin(), recovery_visits.end());
+    std::vector<RouteBeat> training_trip;
+    training_trip.push_back(step_beat(40, 7, 0, D::north));
+    walk_overland(training_trip, 56,
+                  {{5, 14, D::north},
+                   {5, 13, D::north},
+                   {5, 12, D::east},
+                   {6, 12, D::east},
+                   {7, 12, D::east},
+                   {8, 12, D::east},
+                   {9, 12, D::east},
+                   {10, 12, D::east},
+                   {11, 12, D::east},
+                   {12, 12, D::east},
+                   {13, 12, D::east},
+                   {14, 12, D::east}});
+    walk_overland(training_trip, 57,
+                  {{1, 12, D::east},   {2, 12, D::east},   {3, 12, D::east},   {4, 12, D::east},
+                   {5, 12, D::east},   {6, 12, D::east},   {7, 12, D::east},   {8, 12, D::east},
+                   {9, 12, D::east},   {10, 12, D::east},  {11, 12, D::north}, {11, 11, D::east},
+                   {12, 11, D::north}, {12, 10, D::north}, {12, 9, D::north},  {12, 8, D::north},
+                   {12, 7, D::north},  {12, 6, D::north},  {12, 5, D::north},  {12, 4, D::east},
+                   {13, 4, D::east}});
+    training_trip.push_back(step_beat(57, 14, 4, D::east, {"YES"}));
+    auto hall = step_beat(16, 2, 3, D::west,
+                          {"YES", "magic_user 6", "cleric 4", "cleric 5", "paladin 1", "paladin 2",
+                           "ranger 3", "Leave"});
+    auto recovery = step_beat(16, 12, 2, D::north, {"YES"});
+    recovery.memorize_first_of = {"fireball", "minor_globe_of_invulnerability"};
+    training_trip.push_back(hall);
+    training_trip.push_back(recovery);
+    // Training caps excess XP. Meet actual road encounters between the
+    // next visits; no experience is supplied by a hall waypoint.
+    for (unsigned visit = 0; visit < 3; ++visit)
+    {
+        training_trip.push_back(step_beat(16, 0, 10, D::west, {"YES"}));
+        walk_passages(training_trip, 57,
+                      {{14, 4, D::west},
+                       {13, 4, D::west},
+                       {12, 4, D::south},
+                       {12, 5, D::south},
+                       {12, 6, D::south},
+                       {12, 7, D::south},
+                       {12, 8, D::north},
+                       {12, 7, D::north},
+                       {12, 6, D::north},
+                       {12, 5, D::north},
+                       {12, 4, D::east},
+                       {13, 4, D::east}},
+                      false, false, false, {"ATTACK", "FIGHT", "NO"});
+        training_trip.push_back(step_beat(57, 14, 4, D::east, {"YES"}));
+        training_trip.push_back(step_beat(16, 2, 3, D::west, {"YES", "magic_user 6", "Leave"}));
+        training_trip.push_back(recovery);
+    }
+    training_trip.push_back(step_beat(16, 0, 10, D::west, {"YES"}));
+    walk_overland(training_trip, 57,
+                  {{14, 4, D::west},   {13, 4, D::west},  {12, 4, D::south},  {12, 5, D::south},
+                   {12, 6, D::south},  {12, 7, D::south}, {12, 8, D::south},  {12, 9, D::south},
+                   {12, 10, D::south}, {12, 11, D::west}, {11, 11, D::south}, {11, 12, D::west},
+                   {10, 12, D::west},  {9, 12, D::west},  {8, 12, D::west},   {7, 12, D::west},
+                   {6, 12, D::west},   {5, 12, D::west},  {4, 12, D::west},   {3, 12, D::west},
+                   {2, 12, D::west},   {1, 12, D::west}});
+    walk_overland(training_trip, 56,
+                  {{14, 12, D::west},
+                   {13, 12, D::west},
+                   {12, 12, D::west},
+                   {11, 12, D::west},
+                   {10, 12, D::west},
+                   {9, 12, D::west},
+                   {8, 12, D::west},
+                   {7, 12, D::west},
+                   {6, 12, D::west},
+                   {5, 12, D::south},
+                   {5, 13, D::south}});
+    training_trip.push_back(step_beat(56, 5, 14, D::south, {"YES"}));
+    for (auto &beat : training_trip)
+    {
+        beat.searching = false;
+        // Use the main route's policy: recover at the inn, not in a
+        // roadside camp after a minor encounter or one spent spell.
+        beat.camp_broken = beat.map >= 51 && beat.map <= 57;
+        beat.cure_first = true;
+        beat.cure_to_full = true;
+        beat.reload_event = true;
+        beat.reloads_until_won = 600;
+    }
+    const auto first_room =
+        std::ranges::find_if(beats,
+                             [](const RouteBeat &beat)
+                             {
+                                 return beat.map == 40 && beat.x == 10 && beat.y == 0;
+                             });
+    check(first_room != beats.end(), "The training trip returns before the Way Inn's first fight");
+    beats.insert(first_room, training_trip.begin(), training_trip.end());
+    const auto avalanche =
+        std::ranges::find_if(beats,
+                             [](const RouteBeat &beat)
+                             {
+                                 return beat.map == 38 && beat.x == 9 && beat.y == 10;
+                             });
+    check(avalanche != beats.end(), "The earned route finds Ice Peak's avalanche tunnel");
+    // The mountain paths are separate components. Use the actual southern
+    // descent into Aurilssbaarg's northern trail, then its other ascent.
+    auto warm_spring = RouteBeat{38, 13, 12, D::north, {}};
+    warm_spring.arrive_only = true;
+    warm_spring.cure_first = true;
+    warm_spring.cure_to_full = true;
+    warm_spring.reload_event = true;
+    warm_spring.reloads_until_won = 600;
+    auto southern_descent = step_beat(38, 7, 15, D::south);
+    southern_descent.rest_first = true;
+    southern_descent.rest_for_spells = true;
+    southern_descent.cure_first = true;
+    southern_descent.cure_to_full = true;
+    southern_descent.reload_event = true;
+    southern_descent.reloads_until_won = 600;
+    auto other_ascent = step_beat(35, 10, 0, D::north);
+    other_ascent.searching = false;
+    other_ascent.camp_broken = true;
+    other_ascent.reload_event = true;
+    other_ascent.reloads_until_won = 600;
+    const std::vector<RouteBeat> mountain_path{warm_spring, southern_descent, other_ascent};
+    beats.insert(avalanche, mountain_path.begin(), mountain_path.end());
+    const auto redbeard = std::ranges::find_if(beats,
+                                               [](const RouteBeat &beat)
+                                               {
+                                                   return beat.map == 40 && beat.x == 7 &&
+                                                          beat.y == 15 &&
+                                                          beat.expect_cell.has_value();
+                                               });
+    check(redbeard != beats.end(), "The earned route frees Redbeard through his actual encounter");
+    auto protection = RouteBeat{40, 9, 15, D::west, {}};
+    protection.arrive_only = true;
+    protection.rest_first = true;
+    protection.rest_for_spells = true;
+    protection.cure_first = true;
+    protection.cure_to_full = true;
+    protection.memorize_first_of = {"fireball", "charm_person", "dispel_magic",
+                                    "minor_globe_of_invulnerability"};
+    protection.ward_memorized = "haste";
+    protection.ward_members = {"magic_user 6"};
+    protection.cast_after = {"haste"};
+    protection.reload_event = true;
+    protection.reloads_until_won = 600;
+    redbeard->rest_first = false;
+    redbeard->rest_for_spells = false;
+    redbeard->memorize_first_of = protection.memorize_first_of;
+    redbeard->ward_each_with = "minor_globe_of_invulnerability";
+    redbeard->ward_members = {"magic_user 6"};
+    beats.insert(redbeard, std::move(protection));
+    for (auto &beat : beats)
+    {
+        if (beat.map >= 51 && beat.map <= 57)
+        {
+            // Travel normally rather than spending ten extra Search minutes
+            // every step; use actual camps when the living party is depleted.
+            beat.searching = false;
+            beat.passing = true;
+        }
+    }
+    return beats;
+}
+
 const std::vector<RouteBeat> &route_for(GoldBoxGame game)
 {
     switch (game)
@@ -9383,7 +10232,8 @@ std::vector<RouteBeat> curse_earned_route(CurseProgress progress)
 // Replan after each actual step: encounters, doors and scripts may interrupt it.
 // This route never places the party on a target square; scripts own transfers.
 void walk_earned_campaign(opengold::por::RolfTourSession &session, unsigned tx, unsigned ty,
-                          const std::function<void()> &settle, bool prefer_open = false)
+                          const std::function<void()> &settle, bool prefer_open = false,
+                          const std::set<unsigned> &blocked_events = {})
 {
     using C = opengold::por::ExplorationCommand;
     constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
@@ -9392,8 +10242,10 @@ void walk_earned_campaign(opengold::por::RolfTourSession &session, unsigned tx, 
     for (unsigned moves = 0; moves < 400; ++moves)
     {
         const auto before = session.snapshot();
-        if (before.script_id != script)
+        if (before.phase == opengold::por::TourPhase::defeated || before.script_id != script)
         {
+            // Let the caller reload the whole event, as it does for a lost
+            // fight triggered by the final step of a beat.
             return;
         }
         check(before.area_id == area, "Earned walking stays in its current area");
@@ -9437,6 +10289,10 @@ void walk_earned_campaign(opengold::por::RolfTourSession &session, unsigned tx, 
                     {
                         continue;
                     }
+                    if (blocked_events.contains(session.map().at(x, y).event_number()))
+                    {
+                        continue;
+                    }
                     const auto &edge = session.map().at(at % 16, at / 16);
                     if (edge.doors[d] > door_limit || (edge.walls[d] && !edge.doors[d]))
                     {
@@ -9463,24 +10319,38 @@ void walk_earned_campaign(opengold::por::RolfTourSession &session, unsigned tx, 
             next = previous[next];
         }
         const unsigned facing = direction[next];
-        for (unsigned turns = 0; unsigned(session.snapshot().pose.facing) != facing && turns < 4;
+        for (unsigned turns = 0; session.snapshot().phase != opengold::por::TourPhase::defeated &&
+                                 unsigned(session.snapshot().pose.facing) != facing && turns < 4;
              ++turns)
         {
             check(session.explore(C::turn_right), "The earned party can turn");
             settle();
         }
+        if (session.snapshot().phase == opengold::por::TourPhase::defeated)
+        {
+            return;
+        }
         check(session.explore(C::forward), "The earned party can attempt its next step");
         settle();
+        if (session.game() == opengold::GoldBoxGame::treasures_of_the_savage_frontier &&
+            next == static_cast<int>(ty * 16 + tx))
+        {
+            // That real step visited the destination. An audience may have
+            // returned the party to the street while its script ran; do not
+            // repeat the same conversation in pursuit of an interior pose.
+            return;
+        }
     }
     throw std::runtime_error("Earned walking did not arrive");
 }
 
 bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CurseProgress::none,
-                 SecretProgress secret_progress = SecretProgress::none, bool earned_gateway = false)
+                 SecretProgress secret_progress = SecretProgress::none, bool earned_gateway = false,
+                 bool earned_treasure = false)
 {
     const bool sewers = progress != CurseProgress::none;
     const bool earned_secret = secret_progress != SecretProgress::none;
-    const bool earned = sewers || earned_secret || earned_gateway;
+    const bool earned = sewers || earned_secret || earned_gateway || earned_treasure;
     const bool first_bond = progress >= CurseProgress::first_bond;
     const bool hap = progress >= CurseProgress::hap;
     const bool second_bond = progress >= CurseProgress::second_bond;
@@ -9498,6 +10368,19 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         return true;
     }
     auto session = opengold::load_campaign(folder, game);
+    const auto optional_treasure_patrol = [&]
+    {
+        if (!earned_treasure)
+        {
+            return false;
+        }
+        const auto pose = session.snapshot().pose;
+        const auto event = session.map().at(pose.x, pose.y).event_number();
+        // Preserve Daggerford's room battles and southern escaping army,
+        // and the Way Inn's seven authored room battles (events 121..127).
+        return (session.snapshot().area_id == 39 && pose.y < 14 && event < 123) ||
+               (session.snapshot().area_id == 40 && event < 121);
+    };
     // A party under the original rules, fighting Curse's own creatures.
     const auto content = opengold::load_original_content(folder, game);
     std::shared_ptr<const opengold::rules::CharacterRules> creation =
@@ -9931,6 +10814,81 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
     {
         party = std::make_shared<opengold::CampaignParty>(opengold::original::rules_module(content),
                                                           creation);
+        if (earned_treasure)
+        {
+            const char *source = std::getenv("OPENGOLD_GATEWAY_WINNERS");
+            check(source && *source, "The earned sequel needs its verified Gateway winners");
+            std::ifstream file(source, std::ios::binary);
+            check(static_cast<bool>(file), "The verified Gateway winning save exists");
+            std::size_t source_beats = 0;
+            file >> source_beats;
+            file.get();
+            const std::string bytes{std::istreambuf_iterator<char>(file), {}};
+            const auto gateway_folder = folder.parent_path() / "GATEWAY";
+            const auto gateway_content = opengold::load_original_content(
+                gateway_folder, GoldBoxGame::gateway_to_the_savage_frontier);
+            const auto gateway_module = opengold::original::rules_module(gateway_content);
+            const auto gateway_creation = opengold::original::character_rules(
+                opengold::original::default_aging, GoldBoxGame::gateway_to_the_savage_frontier);
+            const auto gateway_world = opengold::load_campaign(
+                gateway_folder, GoldBoxGame::gateway_to_the_savage_frontier);
+            auto saved = opengold::decode_campaign(bytes, *gateway_creation, *gateway_module,
+                                                   "route-checkpoint", &gateway_world);
+            check(source_beats > 0 && saved.game == GoldBoxGame::gateway_to_the_savage_frontier,
+                  "The sequel imports the actual Gateway campaign");
+            const auto convert = opengold::gateway_items_for_treasures(folder);
+            unsigned imported = 0;
+            for (const auto slot : saved.party.slots)
+            {
+                const auto from =
+                    std::ranges::find(saved.party.roster, slot, &opengold::PartyMember::id);
+                if (!slot || from == saved.party.roster.end() || !from->npc_source.empty())
+                {
+                    continue;
+                }
+                const auto id = party->bring_across(*from, convert);
+                const auto &arrived = party->member(id);
+                check(arrived.experience == from->experience &&
+                          arrived.character.sheet().original->class_levels ==
+                              from->character.sheet().original->class_levels &&
+                          arrived.character.sheet().hit_points ==
+                              from->character.sheet().hit_points,
+                      "Imported winners keep their earned experience, levels and Hit Points");
+                // Treasures imports unreadied. Ready the same converted gear
+                // through the normal equipment command, as the player does.
+                for (const auto readied : from->equipped)
+                {
+                    const auto item = convert(from->item_sources.at(readied));
+                    if (!item)
+                    {
+                        continue;
+                    }
+                    const auto key = opengold::por::original_item_key(item->stored);
+                    const auto &carried = party->member(id).character.inventory().items();
+                    const auto found =
+                        std::ranges::find_if(carried,
+                                             [&](const opengold::InventoryItem &entry)
+                                             {
+                                                 return entry.definition_id.starts_with(key);
+                                             });
+                    check(found != carried.end(), "The imported readied item is actually carried");
+                    const auto item_id = found->id;
+                    (void)party->equip(id, item_id);
+                    const auto &readied_now = party->member(id).equipped;
+                    check(std::ranges::find(readied_now, item_id) != readied_now.end(),
+                          "The winner readies its converted equipment");
+                }
+                ++imported;
+            }
+            check(imported == 6, "All six verified Gateway PCs enter the sequel");
+            std::cout << "Imported six earned Gateway winners; actual starting purse "
+                      << party->purse_gold() << " gold.\n";
+            if (party->rest())
+            {
+                memorize();
+            }
+            return;
+        }
         const auto &classes = route ? route_classes : walk_classes;
         for (unsigned n = 0; n < 6; ++n)
         {
@@ -10034,11 +10992,21 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
     // to injure enemy spellcasters every round to prevent them from
     // casting"): the Black Circle's wizards and necromancers, the Legion's
     // wizards and the Banite priests.
-    const auto treasures_turn = [game, &party](const opengold::rules::CombatSession &session)
+    const auto treasures_turn = [game, &party, earned_treasure,
+                                 &tour = session](const opengold::rules::CombatSession &session)
         -> std::optional<opengold::rules::Command>
     {
-        constexpr unsigned fireball = 47;
-        constexpr int burst_reach = 7; // doubled steps: Fireball's 3 squares
+        constexpr unsigned fireball = 47, ice_storm = 187;
+        // Use the genuinely inherited wand against the Keep, crystal,
+        // cavern and Daggerford casters; its immediate burst interrupts them.
+        const bool crystal =
+            earned_treasure && (tour.snapshot().area_id == 17 || tour.snapshot().area_id == 19 ||
+                                tour.snapshot().area_id == 22 || tour.snapshot().area_id == 39 ||
+                                tour.snapshot().area_id == 40 || tour.snapshot().area_id == 31);
+        const auto burst_reach = [](unsigned spell)
+        {
+            return spell == ice_storm ? 5 : 7;
+        };
         const auto state = session.snapshot();
         const auto commands = session.legal_commands();
         const auto actor =
@@ -10056,8 +11024,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                         8);
             }
         }
-        const auto *spell = opengold::original::spell(fireball, game);
-        const auto reachable = [&](opengold::rules::Cell aim, bool item)
+        const auto reachable = [&](opengold::rules::Cell aim, unsigned number, bool item)
         {
             if (actor == state.combatants.end())
             {
@@ -10065,6 +11032,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             }
             const int dx = std::abs(aim.x - actor->cell.x);
             const int dy = std::abs(aim.y - actor->cell.y);
+            const auto *spell = opengold::original::spell(number, game);
             const int range =
                 spell->range_fixed + spell->range_per_level * (item ? 6 : caster_level);
             return 2 * std::max(dx, dy) + std::min(dx, dy) <= 2 * range &&
@@ -10087,8 +11055,12 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                        unit.name.find("NECROMANCER") != std::string::npos ||
                        unit.name.find("PRIEST") != std::string::npos;
             }
-            return unit.name.find("SORC") != std::string::npos ||
-                   unit.name.find("MAGE") != std::string::npos;
+            return unit.name.find("KRAKEN MASTER") != std::string::npos ||
+                   unit.name.find("BANITE") != std::string::npos ||
+                   unit.name.find("PRIEST") != std::string::npos ||
+                   unit.name.find("SORC") != std::string::npos ||
+                   unit.name.find("MAGE") != std::string::npos ||
+                   unit.name.find("GEILDARR") != std::string::npos;
         };
         // Begun casting: its latest word in the log is that it begins.
         const auto casting = [&](const opengold::rules::CombatantView &unit)
@@ -10102,17 +11074,35 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             return latest != state.log_entries.rend() &&
                    latest->english.find(" begins casting ") != std::string::npos;
         };
-        const auto burst_worth = [&](opengold::rules::Cell aim)
+        const auto burst_worth = [&](opengold::rules::Cell aim, unsigned spell)
         {
             int worth = 0;
             for (const auto &unit : state.combatants)
             {
                 const int dx = std::abs(unit.cell.x - aim.x), dy = std::abs(unit.cell.y - aim.y);
-                if (!unit.conscious || 2 * std::max(dx, dy) + std::min(dx, dy) > burst_reach)
+                const bool fallen_friend = earned_treasure &&
+                                           unit.side == opengold::rules::Side::party &&
+                                           !unit.dead && !unit.fled;
+                if ((!unit.conscious && !fallen_friend) ||
+                    2 * std::max(dx, dy) + std::min(dx, dy) > burst_reach(spell))
                 {
                     continue;
                 }
-                worth += unit.side == opengold::rules::Side::party ? -100 : caster(unit) ? 3 : 1;
+                if (earned_treasure && tour.snapshot().area_id == 30 && unit.name == "DWARF HERO" &&
+                    unit.side == opengold::rules::Side::party && opengold::is_ally(unit.id) &&
+                    unit.hit_points > (spell == ice_storm ? 30 : 6 * caster_level))
+                {
+                    // A fresh dwarven reinforcement can survive even the
+                    // burst's maximum damage. Count its injury as a cost,
+                    // rather than ruling out every shot at the sorceresses.
+                    --worth;
+                }
+                else
+                {
+                    worth += unit.side == opengold::rules::Side::party ? -100
+                             : caster(unit)                            ? 3
+                                                                       : 1;
+                }
             }
             return worth;
         };
@@ -10123,13 +11113,15 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         const opengold::rules::Command *aim = nullptr;
         for (const auto &command : commands)
         {
-            if (command.verb == "aim" && command.item == fireball &&
-                (!aim || burst_worth(command.destination) > burst_worth(aim->destination)))
+            if (command.verb == "aim" &&
+                (command.item == fireball || (crystal && command.item == ice_storm)) &&
+                (!aim || burst_worth(command.destination, command.item) >
+                             burst_worth(aim->destination, aim->item)))
             {
                 aim = &command;
             }
         }
-        if (aim && burst_worth(aim->destination) > 0)
+        if (aim && burst_worth(aim->destination, aim->item) > 0)
         {
             return *aim;
         }
@@ -10142,46 +11134,54 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 return *abort;
             }
         }
-        // Fireball, where a square of the field would take three enemies'
-        // worth and no friend.
-        const auto &field = state.battlefield;
-        const auto offered = [&](std::string_view verb)
+        // Prefer the immediate wand burst to a spell with casting time.
+        for (const unsigned number : {ice_storm, fireball})
         {
-            return std::ranges::any_of(commands,
-                                       [&](const opengold::rules::Command &command)
-                                       {
-                                           return command.verb == verb &&
-                                                  spell_of(command) == fireball;
-                                       });
-        };
-        const bool may_cast = offered("cast"), may_use = offered("use");
-        bool worth_a_fireball = false, worth_an_item = false;
-        const auto searching = [&]
-        {
-            return (may_cast && !worth_a_fireball) || (may_use && !worth_an_item);
-        };
-        for (int y = 0; y < field.height && searching(); ++y)
-        {
-            for (int x = 0; x < field.width && searching(); ++x)
+            if (number == ice_storm && !crystal)
             {
-                // A tempting burst behind a wall or beyond range wastes the
-                // caster's spell and turn when its aim has to be aborted.
-                const bool cast_here = may_cast && !worth_a_fireball && reachable({x, y}, false);
-                const bool use_here = may_use && !worth_an_item && reachable({x, y}, true);
-                if ((cast_here || use_here) && burst_worth({x, y}) >= 3)
+                continue;
+            }
+            const auto &field = state.battlefield;
+            const auto offered = [&](std::string_view verb)
+            {
+                return std::ranges::any_of(commands,
+                                           [&](const opengold::rules::Command &command)
+                                           {
+                                               return command.verb == verb &&
+                                                      spell_of(command) == number;
+                                           });
+            };
+            const bool may_cast = offered("cast"), may_use = offered("use");
+            bool worth_a_fireball = false, worth_an_item = false;
+            const auto searching = [&]
+            {
+                return (may_cast && !worth_a_fireball) || (may_use && !worth_an_item);
+            };
+            for (int y = 0; y < field.height && searching(); ++y)
+            {
+                for (int x = 0; x < field.width && searching(); ++x)
                 {
-                    worth_a_fireball = worth_a_fireball || cast_here;
-                    worth_an_item = worth_an_item || use_here;
+                    // A tempting burst behind a wall or beyond range wastes the
+                    // caster's spell and turn when its aim has to be aborted.
+                    const bool cast_here =
+                        may_cast && !worth_a_fireball && reachable({x, y}, number, false);
+                    const bool use_here =
+                        may_use && !worth_an_item && reachable({x, y}, number, true);
+                    if ((cast_here || use_here) && burst_worth({x, y}, number) >= 3)
+                    {
+                        worth_a_fireball = worth_a_fireball || cast_here;
+                        worth_an_item = worth_an_item || use_here;
+                    }
                 }
             }
-        }
-        for (const auto &command : commands)
-        {
-            if (((command.verb == "cast" && worth_a_fireball) ||
-                 (command.verb == "use" && worth_an_item)) &&
-                spell_of(command) == fireball)
+            for (const auto &command : commands)
             {
-                return command;
+                if (((command.verb == "cast" && worth_a_fireball) ||
+                     (command.verb == "use" && worth_an_item)) &&
+                    spell_of(command) == number)
+                {
+                    return command;
+                }
             }
         }
         const auto unit_of = [&](opengold::rules::EntityId id)
@@ -10196,7 +11196,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         };
         for (const auto &command : commands)
         {
-            if ((command.verb == "melee" || command.verb == "ranged") &&
+            if ((command.verb == "melee" || command.verb == "ranged" || command.verb == "throw") &&
                 unit_of(command.target) != state.combatants.end() && rank(command) < 2 &&
                 (!blow || rank(command) < rank(*blow)))
             {
@@ -11649,11 +12649,15 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         std::set<opengold::rules::EntityId> spaced;
         // Treasures' party on its way past a band it could not flee in the
         // asking (the overland's) runs off the field with the first tactic.
-        const bool running =
-            game == GoldBoxGame::treasures_of_the_savage_frontier && fleeing && tactic == 0;
+        const bool running = game == GoldBoxGame::treasures_of_the_savage_frontier &&
+                             (fleeing || optional_treasure_patrol()) && tactic == 0;
         const bool yulash_mounds = third_bond && session.snapshot().script_id == 16;
+        // The council's large armies need more ordinary player commands
+        // than the smaller encounters before its real combat outcome.
+        const int command_limit =
+            earned_treasure && session.snapshot().area_id == 30 ? 12'000 : 3'000;
         for (int command = 0;
-             !running && command < 3000 &&
+             !running && command < command_limit &&
              combat.combat().snapshot().outcome == opengold::rules::Outcome::ongoing;
              ++command)
         {
@@ -11945,9 +12949,112 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
     bool rejected_boss_win = false;
     // The maze exits the beat being played has yet to take (RouteBeat::maze_exits).
     std::deque<unsigned> maze_exits;
+    // Readies the member's item, putting away the one item, or else the two,
+    // whose place it takes (quarrels where bolts go, a sword and shield where
+    // a crossbow goes), as a player readies gear.
+    const auto ready_in_place = [&](opengold::MemberId taker, std::uint64_t taken)
+    {
+        try
+        {
+            party->equip(taker, taken);
+        }
+        catch (const std::exception &)
+        {
+            // Something readied is in its place (quarrels where bolts go,
+            // a sword and shield where a crossbow goes): the member puts
+            // away the one item, or else the two, whose place it takes.
+            auto readied = std::vector(party->member(taker).equipped);
+            // Secret's player puts away a shield or a mirror (its types 37
+            // and 48) before a weapon, as a mirror or a shield takes the
+            // other's hand.
+            if (game == GoldBoxGame::secret_of_the_silver_blades)
+            {
+                const auto &inventory = party->member(taker).character.inventory();
+                std::ranges::stable_partition(
+                    readied,
+                    [&](std::uint64_t item)
+                    {
+                        const auto entry = inventory.find(item);
+                        return entry && (entry->get().original_type == shield_type ||
+                                         entry->get().original_type == mirror_type);
+                    });
+            }
+            const auto fits_without = [&](std::vector<std::uint64_t> away)
+            {
+                for (const auto item : away)
+                {
+                    party->unequip(taker, item);
+                }
+                try
+                {
+                    party->equip(taker, taken);
+                    return true;
+                }
+                catch (const std::exception &)
+                {
+                    for (const auto item : away)
+                    {
+                        party->equip(taker, item);
+                    }
+                    return false;
+                }
+            };
+            bool fitted = false;
+            for (std::size_t a = 0; a < readied.size() && !fitted; ++a)
+            {
+                fitted = fits_without({readied[a]});
+            }
+            for (std::size_t a = 0; a < readied.size() && !fitted; ++a)
+            {
+                for (std::size_t b = a + 1; b < readied.size() && !fitted; ++b)
+                {
+                    fitted = fits_without({readied[a], readied[b]});
+                }
+            }
+        }
+    };
     const auto fight = [&]
     {
         ++fights_fought;
+        if (earned_treasure)
+        {
+            // Keep the inherited, finite wand for the two caster strongholds.
+            // These are ordinary READY/UNREADY choices, never extra charges.
+            const auto &where = session.snapshot();
+            const bool use_wand =
+                (where.area_id == 17 && where.pose.x == 15 && where.pose.y == 4) ||
+                (where.area_id == 31 && where.pose.x == 11 && where.pose.y == 3) ||
+                (where.area_id == 40 && (where.pose.x == 7 || where.pose.x == 8) &&
+                 where.pose.y == 15);
+            for (const auto id : party->state().slots)
+            {
+                if (!id || party->member(id).vitals.dead)
+                {
+                    continue;
+                }
+                std::vector<std::uint64_t> wands;
+                for (const auto &item : party->member(id).character.inventory().items())
+                {
+                    if (item.name == "Wand of Ice Storm")
+                    {
+                        wands.push_back(item.id);
+                    }
+                }
+                for (const auto item : wands)
+                {
+                    const bool readied = std::ranges::find(party->member(id).equipped, item) !=
+                                         party->member(id).equipped.end();
+                    if (use_wand && !readied)
+                    {
+                        ready_in_place(id, item);
+                    }
+                    else if (!use_wand && readied)
+                    {
+                        party->unequip(id, item);
+                    }
+                }
+            }
+        }
         const auto before = party->state();
         wanted_exit.reset();
         if (session.pending_encounter()->escape_ends_fight && !maze_exits.empty())
@@ -11968,19 +13075,39 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         };
         const auto score = [&](const opengold::rules::Snapshot &result)
         {
-            int lost =
-                result.outcome == opengold::rules::Outcome::victory && !boss_still_stands(result)
-                    ? 0
-                    : 1'000'000;
+            // A healthy retreat from an optional road band is preferable
+            // to a victory that leaves the campaign party dead.
+            const bool escaped = earned_treasure && (fleeing || optional_treasure_patrol()) &&
+                                 result.outcome == opengold::rules::Outcome::fled;
+            int lost = (result.outcome == opengold::rules::Outcome::victory &&
+                        !boss_still_stands(result)) ||
+                               escaped
+                           ? 0
+                           : 1'000'000;
             for (const auto &unit : result.combatants)
             {
-                if (unit.side == opengold::rules::Side::party)
+                if (unit.side == opengold::rules::Side::party &&
+                    !(earned_treasure && opengold::is_ally(unit.id)))
                 {
                     // A member turned to stone is as lost as a dead one, and
                     // so is one left on the field the party fled.
                     const bool left_behind =
                         result.outcome == opengold::rules::Outcome::fled && !unit.fled;
-                    lost += (unit.dead || unit.status == "stoned" || left_behind ? 1000 : 0) +
+                    const bool healer_fallen =
+                        earned_treasure && unit.hit_points <= 0 && unit.name.starts_with("cleric");
+                    const auto original =
+                        std::ranges::find_if(before.roster,
+                                             [&](const opengold::PartyMember &member)
+                                             {
+                                                 return member.character.sheet().name == unit.name;
+                                             });
+                    const bool drained =
+                        earned_treasure && original != before.roster.end() &&
+                        unit.max_hit_points < original->character.sheet().hit_points;
+                    lost += (unit.dead || unit.status == "stoned" || left_behind || healer_fallen ||
+                                     drained
+                                 ? 1000
+                                 : 0) +
                             unit.max_hit_points - std::max(unit.hit_points, 0);
                 }
                 // An enemy that got away is a fight lost where its flight
@@ -12006,7 +13133,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                         return unit.side == opengold::rules::Side::opposition &&
                                                unit.name.starts_with("GOTHMENES");
                                     });
-            if (darkness_route_party && !last_stand)
+            const bool council_recovery = earned_treasure && session.snapshot().area_id == 30;
+            if ((darkness_route_party && !last_stand) || council_recovery)
             {
                 bool cleric_fought = false, cleric_stands = false;
                 for (const auto &unit : result.combatants)
@@ -12015,7 +13143,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                         unit.name.starts_with("cleric "))
                     {
                         cleric_fought = true;
-                        cleric_stands = cleric_stands || (!unit.dead && unit.status != "stoned");
+                        cleric_stands =
+                            cleric_stands || (!unit.dead && unit.status != "stoned" &&
+                                              (!council_recovery || unit.hit_points > 0));
                     }
                 }
                 if (cleric_fought && !cleric_stands)
@@ -12059,7 +13189,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             {
                 const auto tactic = tactic_of(t);
                 std::cout << "  try " << t << " (tactic " << tactic << "): score " << score(played)
-                          << "\n";
+                          << " outcome " << static_cast<int>(played.outcome) << " round "
+                          << played.round << "\n";
             }
         };
         unsigned last = 0, best_try = 0;
@@ -12084,15 +13215,17 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         // turned to stone cannot cast Stone to Flesh, and the next hard fight
         // can be unwinnable before the party reaches the town's temple again.
         const unsigned costly_reloads = game == GoldBoxGame::pools_of_darkness ||
-                                                game == GoldBoxGame::secret_of_the_silver_blades
+                                                game == GoldBoxGame::secret_of_the_silver_blades ||
+                                                earned_treasure
                                             ? 240
                                             : 0;
         const bool cannot_raise_between =
             game == GoldBoxGame::pools_of_darkness && keeps_preparation;
-        const int costly_score =
-            test_winning || cannot_raise_between || game == GoldBoxGame::secret_of_the_silver_blades
-                ? one_member_lost
-                : two_members_lost;
+        const int costly_score = test_winning || cannot_raise_between ||
+                                         game == GoldBoxGame::secret_of_the_silver_blades ||
+                                         earned_treasure
+                                     ? one_member_lost
+                                     : two_members_lost;
         while (route && !planning && (best > 0 || scoring) &&
                (++last < try_count ||
                 (best >= lost_fight && last < try_count + reloads_until_won) ||
@@ -12214,70 +13347,6 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
     bool passing = false;
     // The beat being played avoids the monsters it meets (RouteBeat::avoiding).
     bool avoiding = false;
-    // Readies the member's item, putting away the one item, or else the two,
-    // whose place it takes (quarrels where bolts go, a sword and shield where
-    // a crossbow goes), as a player readies gear.
-    const auto ready_in_place = [&](opengold::MemberId taker, std::uint64_t taken)
-    {
-        try
-        {
-            party->equip(taker, taken);
-        }
-        catch (const std::exception &)
-        {
-            // Something readied is in its place (quarrels where bolts go,
-            // a sword and shield where a crossbow goes): the member puts
-            // away the one item, or else the two, whose place it takes.
-            auto readied = std::vector(party->member(taker).equipped);
-            // Secret's player puts away a shield or a mirror (its types 37
-            // and 48) before a weapon, as a mirror or a shield takes the
-            // other's hand.
-            if (game == GoldBoxGame::secret_of_the_silver_blades)
-            {
-                const auto &inventory = party->member(taker).character.inventory();
-                std::ranges::stable_partition(
-                    readied,
-                    [&](std::uint64_t item)
-                    {
-                        const auto entry = inventory.find(item);
-                        return entry && (entry->get().original_type == shield_type ||
-                                         entry->get().original_type == mirror_type);
-                    });
-            }
-            const auto fits_without = [&](std::vector<std::uint64_t> away)
-            {
-                for (const auto item : away)
-                {
-                    party->unequip(taker, item);
-                }
-                try
-                {
-                    party->equip(taker, taken);
-                    return true;
-                }
-                catch (const std::exception &)
-                {
-                    for (const auto item : away)
-                    {
-                        party->equip(taker, item);
-                    }
-                    return false;
-                }
-            };
-            bool fitted = false;
-            for (std::size_t a = 0; a < readied.size() && !fitted; ++a)
-            {
-                fitted = fits_without({readied[a]});
-            }
-            for (std::size_t a = 0; a < readied.size() && !fitted; ++a)
-            {
-                for (std::size_t b = a + 1; b < readied.size() && !fitted; ++b)
-                {
-                    fitted = fits_without({readied[a], readied[b]});
-                }
-            }
-        }
-    };
     // Takes the first of the beat's items still to take that the treasure
     // holds, for the member named with it, and readies it, as a player gears
     // the party: true when one was taken.
@@ -12343,6 +13412,99 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             std::cout << "  " << wanted->second << " takes and readies " << item_name << "\n";
             items_to_take.erase(wanted);
             return true;
+        }
+        return false;
+    };
+    // Keep and ready better weapons and armor actually won in treasure.
+    // Treasures also keeps usable enchanted melee weapons of another type.
+    const auto take_equipment_upgrade = [&](const std::vector<opengold::por::Equipment> &pile)
+    {
+        const auto &members = party->state().slots;
+        // Equip upgrades actually found along the route. Leaving the +4
+        // swords and maces behind made the party fight the finale with its
+        // original +3 equipment despite having earned better weapons.
+        for (std::size_t at = 0; at < pile.size(); ++at)
+        {
+            const auto &offered = pile[at].stored;
+            const int type = offered.type;
+            const bool found_weapon =
+                earned_treasure &&
+                party->equipment_slot(pile[at]) == opengold::rules::EquipmentSlot::weapon &&
+                pile[at].base.range == 0;
+            const auto slot = party->equipment_slot(pile[at]);
+            const bool found_defense =
+                earned_treasure && (slot == opengold::rules::EquipmentSlot::armor ||
+                                    slot == opengold::rules::EquipmentSlot::shield ||
+                                    slot == opengold::rules::EquipmentSlot::worn);
+            if (!found_weapon && !found_defense && type != 18 && type != 8 && type != 15 &&
+                type != 36 && type != 37)
+            {
+                continue;
+            }
+            std::optional<std::size_t> taker;
+            int best_gain = 0;
+            for (std::size_t slot = 0; slot < members.size(); ++slot)
+            {
+                const auto id = members[slot];
+                if (!id || party->member(id).vitals.dead || !party->member(id).npc_source.empty())
+                {
+                    continue;
+                }
+                const auto &holder = party->member(id);
+                if (earned_treasure && !party->can_use(id, pile[at]))
+                {
+                    continue;
+                }
+                int best = -1;
+                for (const auto &item : holder.character.inventory().items())
+                {
+                    const auto source = holder.item_sources.find(item.id);
+                    const bool melee = found_weapon && source != holder.item_sources.end() &&
+                                       party->equipment_slot(source->second) ==
+                                           opengold::rules::EquipmentSlot::weapon &&
+                                       source->second.base.range == 0;
+                    if (item.original_type == type || melee)
+                    {
+                        if (source != holder.item_sources.end())
+                        {
+                            best =
+                                std::max(best, static_cast<int>(source->second.stored.magic_bonus));
+                        }
+                    }
+                }
+                // The rules decide usability. Treasures may replace an
+                // ordinary melee weapon with any usable enchanted one;
+                // armor and shields replace the same carried type.
+                int gain = best < 0 ? 0 : offered.magic_bonus - best;
+                if (found_defense)
+                {
+                    const auto preview = party->preview(id, pile[at]);
+                    gain = preview.armor_class
+                               ? (preview.descending_armor_class
+                                      ? preview.armor_class_now - *preview.armor_class
+                                      : *preview.armor_class - preview.armor_class_now)
+                               : 0;
+                }
+                if (gain > best_gain)
+                {
+                    best_gain = gain;
+                    taker = slot;
+                }
+            }
+            if (taker)
+            {
+                const auto id = members[*taker];
+                const auto label = pile[at].label();
+                party->select(opengold::PartySlot{static_cast<unsigned>(*taker)});
+                if (session.take_treasure(session.snapshot().continue_ticket, at))
+                {
+                    const auto taken = party->member(id).character.inventory().items().back().id;
+                    ready_in_place(id, taken);
+                    std::cout << "  " << party->member(id).character.sheet().name
+                              << " takes and readies an upgrade: " << label << "\n";
+                    return true;
+                }
+            }
         }
         return false;
     };
@@ -12434,63 +13596,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 return true;
             }
         }
-        // Equip upgrades actually found along the route. Leaving the +4
-        // swords and maces behind made the party fight the finale with its
-        // original +3 equipment despite having earned better weapons.
-        for (std::size_t at = 0; at < pile.size(); ++at)
+        if (take_equipment_upgrade(pile))
         {
-            const auto &offered = pile[at].stored;
-            const int type = offered.type;
-            if (type != 18 && type != 8 && type != 15 && type != 36 && type != 37)
-            {
-                continue;
-            }
-            std::optional<std::size_t> taker;
-            int best_gain = 0;
-            for (std::size_t slot = 0; slot < members.size(); ++slot)
-            {
-                const auto id = members[slot];
-                if (!id || party->member(id).vitals.dead || !party->member(id).npc_source.empty())
-                {
-                    continue;
-                }
-                const auto &holder = party->member(id);
-                int best = -1;
-                for (const auto &item : holder.character.inventory().items())
-                {
-                    if (item.original_type == type)
-                    {
-                        const auto source = holder.item_sources.find(item.id);
-                        if (source != holder.item_sources.end())
-                        {
-                            best =
-                                std::max(best, static_cast<int>(source->second.stored.magic_bonus));
-                        }
-                    }
-                }
-                // An upgrade replaces a type this class already carries.
-                // Do not give a mage plate or a cleric a sword.
-                const int gain = best < 0 ? 0 : offered.magic_bonus - best;
-                if (gain > best_gain)
-                {
-                    best_gain = gain;
-                    taker = slot;
-                }
-            }
-            if (taker)
-            {
-                const auto id = members[*taker];
-                const auto label = pile[at].label();
-                party->select(opengold::PartySlot{static_cast<unsigned>(*taker)});
-                if (session.take_treasure(session.snapshot().continue_ticket, at))
-                {
-                    const auto taken = party->member(id).character.inventory().items().back().id;
-                    ready_in_place(id, taken);
-                    std::cout << "  " << party->member(id).character.sheet().name
-                              << " takes and readies an upgrade: " << label << "\n";
-                    return true;
-                }
-            }
+            return true;
         }
         constexpr std::uint8_t ring_of_protection = 59, cloak_of_protection = 75;
         constexpr std::size_t rings_worn = 2;
@@ -12764,8 +13872,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 // Treasures' party walking the overland flees the bands that
                 // fall on it (sixteen fire giants and their mages after
                 // Mirabar), as a player hurries on to the next town.
-                else if (game == GoldBoxGame::treasures_of_the_savage_frontier && fleeing &&
-                         where != "camp" && flee != s.choices.end())
+                else if (game == GoldBoxGame::treasures_of_the_savage_frontier &&
+                         (fleeing || optional_treasure_patrol()) && where != "camp" &&
+                         flee != s.choices.end())
                 {
                     pick = static_cast<std::size_t>(flee - s.choices.begin());
                 }
@@ -12824,6 +13933,10 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                         "Mass Invisibility", "Globe of Invulnerability", "Disintegrate",
                         "Stone to Flesh"};
                     std::vector<std::string_view> wanted(learned.begin(), learned.end());
+                    if (earned_treasure)
+                    {
+                        wanted.insert(wanted.begin(), "Minor Globe of Invulnerability");
+                    }
                     if (game == GoldBoxGame::pools_of_darkness)
                     {
                         wanted.insert(wanted.begin(), darkness_first.begin(), darkness_first.end());
@@ -12842,6 +13955,39 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                         }
                     }
                 }
+                // Read the temple's quoted fee, so an earned party never
+                // loops on a service it cannot currently afford.
+                const auto affordable_service = [&](std::string_view spell)
+                {
+                    if (!earned_treasure)
+                    {
+                        return true;
+                    }
+                    for (std::size_t i = 0; i < s.choices.size(); ++i)
+                    {
+                        if (!s.choices[i].starts_with(spell) || i >= s.host_choices.size())
+                        {
+                            continue;
+                        }
+                        for (const auto &argument : s.host_choices[i].arguments)
+                        {
+                            if (argument.name == "fee")
+                            {
+                                std::string digits;
+                                for (const char c : argument.value)
+                                {
+                                    if (c >= '0' && c <= '9')
+                                    {
+                                        digits.push_back(c);
+                                    }
+                                }
+                                check(!digits.empty(), "The temple quotes its service price");
+                                return party->purse_gold() >= std::stoul(digits);
+                            }
+                        }
+                    }
+                    return false;
+                };
                 // "raise:dead" at a temple's services raises each dead member,
                 // whoever the fights have left dead, then goes on.
                 if (!answers.empty() && answers.front() == "raise:dead" &&
@@ -12854,7 +14000,11 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     answers.erase(answers.begin());
                     for (const auto id : party->state().slots)
                     {
-                        if (id && party->member(id).vitals.dead)
+                        if (id && party->member(id).vitals.dead &&
+                            (!earned_treasure ||
+                             party->temple_service_helps(
+                                 id, opengold::rules::TempleService::raise_dead)) &&
+                            affordable_service("Raise Dead"))
                         {
                             answers.insert(answers.begin(),
                                            {"Raise Dead", party->member(id).character.sheet().name,
@@ -12876,7 +14026,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     for (const auto id : party->state().slots)
                     {
                         if (id && !party->member(id).vitals.dead &&
-                            party->member(id).vitals.hit_points <= 0)
+                            party->member(id).vitals.hit_points <= 0 &&
+                            affordable_service("Cure Light Wounds"))
                         {
                             answers.insert(answers.begin(),
                                            {"Cure Light Wounds",
@@ -12898,7 +14049,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     answers.erase(answers.begin());
                     for (const auto id : party->state().slots)
                     {
-                        if (id && party->member(id).vitals.description == "Turned to stone.")
+                        if (id && party->member(id).vitals.description == "Turned to stone." &&
+                            affordable_service("Stone to Flesh"))
                         {
                             answers.insert(answers.begin(),
                                            {"Stone to Flesh",
@@ -12992,7 +14144,16 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     std::cout << where << ": the shop sells";
                     for (const auto &offered : session.shop_stock())
                     {
-                        std::cout << " " << offered.label() << ";";
+                        std::cout << " " << offered.label();
+                        if (std::getenv("OPENGOLD_FIGHT_GEAR"))
+                        {
+                            std::cout << " [type " << unsigned(offered.stored.type) << ", "
+                                      << offered.stored.value << " gp, quantity "
+                                      << unsigned(offered.stored.stack_size) << ", range "
+                                      << unsigned(offered.base.range) << ", properties "
+                                      << unsigned(offered.base.properties) << "]";
+                        }
+                        std::cout << ";";
                     }
                     std::cout << " (the party has " << party->purse_gold() << " gold)\n";
                 }
@@ -13111,7 +14272,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                 std::ranges::transform(name, name.begin(), ::toupper);
                                 return name.find(wanted) != std::string::npos;
                             });
-                        check(!(sewers || earned_gateway) || !slots[slot] || item != stock.end(),
+                        check(!(sewers || earned_gateway || earned_treasure) || !slots[slot] ||
+                                  item != stock.end(),
                               "The real shop stocks the sewer party's requested equipment");
                         if (!slots[slot] || item == stock.end())
                         {
@@ -13121,7 +14283,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                         const bool bought =
                             session.buy(session.snapshot().continue_ticket,
                                         static_cast<std::size_t>(item - stock.begin()));
-                        check(!(sewers || earned_gateway) || bought,
+                        check(!(sewers || earned_gateway || earned_treasure) || bought,
                               "Creation money pays for the sewer party's equipment");
                         if (bought)
                         {
@@ -13129,7 +14291,14 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                 party->member(slots[slot]).character.inventory().items();
                             try
                             {
-                                party->equip(slots[slot], items.back().id);
+                                if (earned_treasure)
+                                {
+                                    ready_in_place(slots[slot], items.back().id);
+                                }
+                                else
+                                {
+                                    party->equip(slots[slot], items.back().id);
+                                }
                             }
                             catch (const std::exception &)
                             {
@@ -13153,7 +14322,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     // bonus too.
                     for (const auto &item : pile)
                     {
-                        std::cout << " [" << item.label();
+                        std::cout << " [" << item.label() << " (type " << unsigned(item.stored.type)
+                                  << ")";
                         if (!item.identified())
                         {
                             std::cout << " = " << item.decoded_name << " " << std::showpos
@@ -13202,6 +14372,10 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     }
                 }
                 if (route && take_named_item(pile))
+                {
+                    continue;
+                }
+                if (earned_treasure && take_equipment_upgrade(pile))
                 {
                     continue;
                 }
@@ -13424,7 +14598,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         const auto cure_the_hurt = [&](bool to_full = false)
         {
             if (game != GoldBoxGame::pools_of_darkness &&
-                game != GoldBoxGame::curse_of_the_azure_bonds && !earned_secret && !earned_gateway)
+                game != GoldBoxGame::curse_of_the_azure_bonds && !earned_secret &&
+                !earned_gateway && !earned_treasure)
             {
                 return;
             }
@@ -13477,7 +14652,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             // Wake unconscious members before spending the standing cleric's
             // cures on the first wounded fighter. A fallen healer can then
             // contribute its still-memorized spells to the recovery.
-            if (earned_secret || earned_gateway)
+            if (earned_secret || earned_gateway || earned_treasure)
             {
                 for (const auto fallen : party->state().slots)
                 {
@@ -13661,14 +14836,17 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             unsigned interrupted = 0;
             unsigned idle_camps = 0;
             // Secret's party Fixes first, then rests a night for its spells.
-            if (game == GoldBoxGame::secret_of_the_silver_blades && route && !party_whole())
+            if ((game == GoldBoxGame::secret_of_the_silver_blades || earned_treasure) && route &&
+                !party_whole())
             {
                 if (!fix_party(interrupted))
                 {
                     restless_map = session.snapshot().area_id;
                     return;
                 }
-                a_night_first = true;
+                // Treasure's Fix already supplies healing without spending
+                // memorized spells. Do not add an unrequested exposed night.
+                a_night_first = a_night_first || !earned_treasure;
             }
             for (int day = 0; day < 90 && session.can_leave(); ++day)
             {
@@ -13690,7 +14868,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     return count;
                 };
                 const bool missing_plan =
-                    (game == GoldBoxGame::pools_of_darkness || second_bond || earned_secret) &&
+                    (game == GoldBoxGame::pools_of_darkness || second_bond || earned_secret ||
+                     earned_treasure) &&
                     keeps_preparation && a_night_first &&
                     (std::ranges::any_of(wanted_spells,
                                          [&](const std::string &wanted)
@@ -13765,7 +14944,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 // At the final preparation camps, use the refreshed cures
                 // instead of waiting a day per Hit Point while wandering
                 // monsters repeatedly undo the natural healing.
-                if ((game == GoldBoxGame::pools_of_darkness && keeps_preparation) ||
+                if (earned_treasure ||
+                    (game == GoldBoxGame::pools_of_darkness && keeps_preparation) ||
                     (third_bond && (session.snapshot().script_id == 18 ||
                                     (moander_recovery && session.snapshot().script_id == 17))) ||
                     (fourth_bond && session.snapshot().script_id == 34))
@@ -13857,6 +15037,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     : secret_town_gear();
         }
         play("opening");
+        const auto treasure_streets = earned_treasure ? std::optional(session.map()) : std::nullopt;
         // Planning aids, so a search can start where the route ends without
         // replaying it: OPENGOLD_ROUTE_BEATS=N plays only the route's first N
         // beats, OPENGOLD_ROUTE_SAVE=FILE saves the game where the beats end
@@ -13904,6 +15085,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                    game == GoldBoxGame::secret_of_the_silver_blades;
         // How many beats like each (by beat_dice_seed's first seed) came before.
         std::map<std::uint64_t, unsigned> beats_seen;
+        std::set<unsigned> intended_treasure_quests;
+        std::set<std::pair<unsigned, unsigned>> intended_way_inn_rooms;
         // A beat that throws ends the route, named with the beat it was in.
         std::string current_beat = "the route's start";
         // A member casts the first of these spells anyone has memorized,
@@ -14030,7 +15213,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                             std::cout << "\n";
                         }
                     }
-                    needs["No one has the ward memorized for every member"].push_back(current_beat);
+                    needs["No one has " + spell_id + " memorized for every member"].push_back(
+                        current_beat);
                     return;
                 }
                 const auto actions = party->camp_actions(*caster);
@@ -14048,10 +15232,11 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         };
         try
         {
-            const auto earned_beats = sewers           ? curse_earned_route(progress)
-                                      : earned_secret  ? secret_earned_route(secret_progress)
-                                      : earned_gateway ? gateway_earned_route()
-                                                       : std::vector<RouteBeat>{};
+            const auto earned_beats = sewers            ? curse_earned_route(progress)
+                                      : earned_secret   ? secret_earned_route(secret_progress)
+                                      : earned_gateway  ? gateway_earned_route()
+                                      : earned_treasure ? treasure_earned_route()
+                                                        : std::vector<RouteBeat>{};
             for (const auto &beat : earned ? earned_beats : route_for(game))
             {
                 if (beat_number == beat_limit)
@@ -14072,6 +15257,14 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 // Keep the finale's preparation through intervening camps.
                 // Healing after a guard fight must not silently replace the
                 // wards selected at the last safe inn with ordinary attacks.
+                if (earned_treasure && beat.map == 21 && beat.x == 14 && beat.y == 9)
+                {
+                    // The cavern's fire wards are spent. At Salinia's inn,
+                    // return to ordinary combat spells for the next towns.
+                    keeps_preparation = false;
+                    ward_spell.clear();
+                    ward_targets.clear();
+                }
                 keeps_preparation = keeps_preparation || beat.keep_preparation;
                 const auto &next_ward =
                     beat.ward_each_with.empty() ? beat.ward_memorized : beat.ward_each_with;
@@ -14086,6 +15279,18 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 }
                 wanted_spells.insert(wanted_spells.end(), beat.cast_after.begin(),
                                      beat.cast_after.end());
+                if (earned_treasure && beat.map == 16)
+                {
+                    const auto event = treasure_streets->at(beat.x, beat.y).event_number();
+                    if (event >= 112)
+                    {
+                        intended_treasure_quests.insert(event);
+                    }
+                }
+                if (earned_treasure && beat.map == 40)
+                {
+                    intended_way_inn_rooms.emplace(beat.x, beat.y);
+                }
                 if (beat_number <= beats_resumed)
                 {
                     continue;
@@ -14341,14 +15546,14 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                                         reload < 20;
                             if (earned)
                             {
-                                check(!(earned_secret || earned_gateway) ||
+                                check(!(earned_secret || earned_gateway || earned_treasure) ||
                                           session.snapshot().area_id == beat.map,
                                       "Earned walking begins in its actual destination area");
                                 const auto destination_script = session.snapshot().script_id;
                                 const auto destination_answers = answers;
                                 const bool destination_passing = passing;
                                 const bool story_walk =
-                                    earned_secret || earned_gateway ||
+                                    earned_secret || earned_gateway || earned_treasure ||
                                     (second_bond &&
                                      (session.snapshot().script_id == 50 || beat.map == 51 ||
                                       (third_bond && (beat.map == 16 || beat.map == 17)) ||
@@ -14357,6 +15562,49 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                        (beat.map == 64 || beat.map == 66 || beat.map == 67))));
                                 passing = !story_walk;
                                 session.set_searching(beat.searching.value_or(true));
+                                std::set<unsigned> blocked_quests;
+                                if (earned_treasure && beat.map == 28 &&
+                                    session.map().at(x, beat.y).event_number() != 30)
+                                {
+                                    // Do not cut through Nasher's residence while
+                                    // carrying the forged orders. Allow entry
+                                    // when the audience itself is the destination.
+                                    blocked_quests.insert(30);
+                                }
+                                if (earned_treasure && beat.map == 36 && x == 15 && beat.y == 3)
+                                {
+                                    // Bjorn's audience returns visitors to the
+                                    // entrance. Reach the pier around his hall.
+                                    blocked_quests.insert(9);
+                                }
+                                if (earned_treasure && beat.map == 16)
+                                {
+                                    for (unsigned event = 112; event <= 127; ++event)
+                                    {
+                                        if (!intended_treasure_quests.contains(event))
+                                        {
+                                            blocked_quests.insert(event);
+                                        }
+                                    }
+                                }
+                                if (earned_treasure && beat.map == 40)
+                                {
+                                    for (unsigned event = 121; event <= 127; ++event)
+                                    {
+                                        const bool intended = std::ranges::any_of(
+                                            intended_way_inn_rooms,
+                                            [&](const auto &square)
+                                            {
+                                                return session.map()
+                                                           .at(square.first, square.second)
+                                                           .event_number() == event;
+                                            });
+                                        if (!intended)
+                                        {
+                                            blocked_quests.insert(event);
+                                        }
+                                    }
+                                }
                                 walk_earned_campaign(
                                     session, x, beat.y,
                                     [&]
@@ -14379,20 +15627,40 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                             answers.insert(answers.begin(), "stop:JOURNEY");
                                         }
                                         play(where);
-                                        if ((earned_secret || earned_gateway) && beat.cure_first &&
-                                            session.can_leave())
+                                        if ((earned_secret || earned_gateway || earned_treasure) &&
+                                            beat.cure_first && session.can_leave())
                                         {
                                             cure_the_hurt(beat.cure_to_full);
                                         }
                                     },
-                                    third_bond && beat.map == 16);
+                                    third_bond && beat.map == 16, blocked_quests);
                                 passing = destination_passing;
                                 answers = destination_answers;
-                                if (session.snapshot().script_id != destination_script)
+                                if (session.snapshot().script_id != destination_script &&
+                                    session.snapshot().phase != TourPhase::defeated)
                                 {
+                                    if (earned_treasure && beat.map == 28 &&
+                                        session.snapshot().area_id == 47 && before_step &&
+                                        reload < 20)
+                                    {
+                                        // Reload the real saved walk after a
+                                        // random guard search, before exile.
+                                        ++phases["Neverwinter arrests reloaded"];
+                                        session = std::move(*before_step);
+                                        party->restore(party_before);
+                                        answers = answers_before;
+                                        fights_fought = fights_before_event;
+                                        fights_lost = lost_before;
+                                        fights_defeated = defeated_before_event;
+                                        session.attach_restored_party(party);
+                                        session.reseed_dice(
+                                            static_cast<std::uint32_t>(beat_number * 64 + reload));
+                                        continue;
+                                    }
                                     break;
                                 }
                                 for (unsigned turns = 0;
+                                     session.snapshot().phase != TourPhase::defeated &&
                                      session.snapshot().pose.facing != beat.facing && turns < 4;
                                      ++turns)
                                 {
@@ -14451,7 +15719,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                 opengold::test::TourAccess::place(session,
                                                                   {x, beat.y, beat.facing});
                             }
-                            if (beat.look_until_minute)
+                            if (beat.look_until_minute &&
+                                session.snapshot().phase != TourPhase::defeated)
                             {
                                 constexpr std::uint64_t day = 24 * 60, noon = 12 * 60;
                                 const auto now = (party->state().time_minutes + noon) % day;
@@ -14480,11 +15749,41 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                             const bool interrupted = reload_optional_encounter &&
                                                      session.snapshot().phase == TourPhase::combat;
                             reload_optional_encounter = false;
-                            const bool failed =
-                                interrupted || (beat.reload_event ? rejected_boss_win ||
-                                                                        session.snapshot().phase ==
-                                                                            TourPhase::defeated
-                                                                  : fights_lost != lost_before);
+                            const bool council_can_recover =
+                                earned_treasure && beat.map == 30 && x == 7 && beat.y == 9 &&
+                                session.can_leave() && fights_fought > fights_before_event &&
+                                fights_defeated == defeated_before_event &&
+                                std::ranges::any_of(
+                                    party->state().slots,
+                                    [&](opengold::MemberId id)
+                                    {
+                                        return id && !party->member(id).vitals.dead &&
+                                               party->member(id).vitals.hit_points > 0 &&
+                                               opengold::original::level_in(
+                                                   party->member(id)
+                                                       .character.sheet()
+                                                       .original->class_levels,
+                                                   opengold::original::ClassSlot::cleric) >= 9;
+                                    });
+                            const bool treasure_finished =
+                                earned_treasure && game_won_shown && session.can_leave() &&
+                                session.script_variable(opengold::por::EclAddress{0x25C}) == 1 &&
+                                fights_defeated == defeated_before_event &&
+                                std::ranges::all_of(
+                                    party->state().slots,
+                                    [&](opengold::MemberId id)
+                                    {
+                                        return !id || !party->member(id).npc_source.empty() ||
+                                               (!party->member(id).vitals.dead &&
+                                                party->member(id).vitals.hit_points > 0);
+                                    });
+                            const bool failed = interrupted ||
+                                                (earned_treasure && fights_lost != lost_before &&
+                                                 !council_can_recover && !treasure_finished) ||
+                                                (beat.reload_event ? rejected_boss_win ||
+                                                                         session.snapshot().phase ==
+                                                                             TourPhase::defeated
+                                                                   : fights_lost != lost_before);
                             if (!reloading || !failed || reload >= 20)
                             {
                                 break;
@@ -14534,7 +15833,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 }
                 if (session.snapshot().camp_offered)
                 {
-                    rest_until_healed();
+                    // Spend the paid inn's night preparing spells even
+                    // when Fix has already restored Hit Points.
+                    rest_until_healed(earned_treasure);
                 }
                 if (beat.expect_cell)
                 {
@@ -14575,6 +15876,10 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                       << std::ranges::max(numbers->class_levels) << ")";
                         }
                     }
+                }
+                if (earned_treasure)
+                {
+                    std::cout << " (purse " << party->purse_gold() << " gold)";
                 }
                 std::cout << (session.snapshot().camp_offered ? " (camp offered)" : "") << "\n";
                 if (std::getenv("OPENGOLD_CURSE_CELL"))
@@ -15051,7 +16356,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                        party->member(id).vitals.description != "Turned to stone.";
             });
         const bool played = needs.empty() && end.phase != TourPhase::defeated;
-        if (earned_gateway)
+        if (earned_gateway || earned_treasure)
         {
             const auto pcs =
                 std::ranges::count_if(party->state().slots,
@@ -15069,10 +16374,12 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                            party->member(id).vitals.description != "Turned to stone.";
                 });
             const bool won = played && pcs == 6 && pc_standing && game_won_shown &&
-                             session.can_leave() && fights_fought > 0 && fights_defeated == 0;
-            std::cout << "Earned Gateway ending: " << fights_fought << " fights, "
-                      << fights_defeated << " defeats; actual campaign "
-                      << (won ? "won" : "not won") << ".\n";
+                             session.can_leave() && fights_fought > 0 && fights_defeated == 0 &&
+                             (!earned_treasure ||
+                              session.script_variable(opengold::por::EclAddress{0x25C}) == 1);
+            std::cout << (earned_treasure ? "Earned Treasure ending: " : "Earned Gateway ending: ")
+                      << fights_fought << " fights, " << fights_defeated
+                      << " defeats; actual campaign " << (won ? "won" : "not won") << ".\n";
             return won;
         }
         if (earned_secret && secret_progress >= SecretProgress::ending)
@@ -15559,6 +16866,13 @@ int main(int argc, char **argv)
         if (argc == 2 && std::string_view(argv[1]) == "--gateway-route")
         {
             return walk_census(GoldBoxGame::gateway_to_the_savage_frontier, true) ? 0 : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--treasure-earned-ending")
+        {
+            return walk_census(GoldBoxGame::treasures_of_the_savage_frontier, true,
+                               CurseProgress::none, SecretProgress::none, false, true)
+                       ? 0
+                       : 1;
         }
         if (argc == 2 && std::string_view(argv[1]) == "--treasure-route")
         {

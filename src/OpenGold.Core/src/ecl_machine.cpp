@@ -1007,10 +1007,11 @@ void EclMachine::request_host(const EclInstruction &i)
         else
         {
             std::uint16_t number = value(operand);
-            const bool darkness_award = program_->game() == GoldBoxGame::pools_of_darkness &&
-                                        op == award_experience && n == 1;
-            const bool word =
-                vga ? (op == vga_treasure && n < 3) || darkness_award : op == 39 && n != 7;
+            const bool vga_award =
+                (program_->game() == GoldBoxGame::pools_of_darkness ||
+                 program_->game() == GoldBoxGame::treasures_of_the_savage_frontier) &&
+                op == award_experience && n == 1;
+            const bool word = vga ? (op == vga_treasure && n < 3) || vga_award : op == 39 && n != 7;
             if (!word)
             {
                 number &= 255;

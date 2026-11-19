@@ -26,7 +26,7 @@ UI behavior and the current configured model are retained; no delegation.
 | Secret of the Silver Blades | Fresh Original Rules party earns its equipment, advancement and recovery, wins 168 battles and reaches the actual soul-gem ending; all six PCs and Vala are retained and the winning save round-trips byte-identically | Optional quests, other party compositions and difficulty settings are not certified by this route |
 | Gateway to the Savage Frontier | Fresh Original Rules party buys ordinary gear, takes earned magic items, pays for training/recovery, resolves 67 encounters and reaches the actual Ascore ending; the normal post-ending save round-trips byte-identically | Optional quests, other party compositions and difficulty settings are not certified by this route |
 | Pools of Darkness | Fresh Original Rules party, as the original's creation makes it (1,500,001 experience, 200 platinum and the starting gear), earns its experience and equipment, walks every step, travels by the area map and Elminster's Limbo, defeats Gothmenes and reaches the ending; no forced results, grants or relocations | Optional quests, other party compositions and difficulty settings are not certified by this route |
-| Treasures of the Savage Frontier | Route reaches the ending and wins its fights | Replace starting experience/money and relocations |
+| Treasures of the Savage Frontier | Fresh verified Gateway-winning PCs earn their way through 145 real battles to Freezefire's actual ending; all six PCs plus Siulajia and Gauhok finish healthy, with zero defeats and a byte-identical normal-save roundtrip | Optional quests, other party compositions and difficulty settings are not certified by this route |
 | Unlimited Adventures | Generated design walks, wins all fights, saves at the stairs, reloads and reaches its actual winning event | Other designs require their own verification |
 
 The six exported commercial campaigns previously passed headless and rendered
@@ -45,8 +45,9 @@ assisted route completion do not close the gaps above.
   a word operand whole (`eclvm.pas`, `eclmenu.pas`). Thorne's fall gave each
   member 232 instead of 100,000. The regression checks a byte award (25,000)
   and a word award (50,000) in Vala's cave; it failed before the correction.
-  Secret is unchanged; Treasures' original scales the same way and is left
-  to its own work. See [darkness.md](games/darkness.md).
+  Secret is unchanged. Treasure's corresponding correction now has its own
+  actual cavern-escape and whole-word regressions; see
+  [darkness.md](games/darkness.md) and [treasure.md](games/treasure.md).
 - Darkness palace script 65 clears random index 9Eh instead of used-group mask
   A9h after exhausting its eight wandering groups, looping forever at 8B6Bh.
   A guarded operand override clears A9h without modifying original bytes or the
@@ -1779,6 +1780,7 @@ through 16:49. One full earned campaign is completed by this batch. Treasure,
 Darkness, Krynn, Buck Rogers, installed UA design coverage and subsequent
 winning-character availability remain unfinished.
 
+
 ## 2026-11-18: Pools of Darkness without test assistance
 
 The Darkness route (`opengold_darkness_route`) now plays the whole game with
@@ -1825,3 +1827,141 @@ passes 173 of 173 (`ctest -j4`, 1,864 seconds), the fresh Darkness route in
 was skipped. Localization validates 4,143 messages; the catalogs are
 unchanged. Upstream's Gateway barrier refresh (`3e508ab2`) did not build
 with clang's `-Wshorten-64-to-32`; its side parameter is now a `std::size_t`.
+
+Gateway delivery: `3e508ab2` is pushed to `origin/main`. Main checkout
+`./build.sh` succeeds and six startup/default-Gateway-party, per-game save,
+Gold Box and package checks pass with no skips in 22.66s. Log:
+`/tmp/opengold-gateway-earned-main-checks.log`. The dirty-main guard preserves
+its user-owned `docs/GAMES.md` edit and leaves main at `7453965d`; Gateway's
+new source is verified in the clean delivery checkout, not claimed installed
+in that older main source. The merged branch/worktree are removed; no remote
+feature branch was created.
+
+### Treasure: earned imported campaign
+
+- Authorization: current all-twelve-game request. Start: 2026-11-18 16:53 UTC.
+  Baseline `3e508ab2`; integrated Darkness's delivery through `06207553`.
+- Outcome: Treasure's actual ending with six verified Gateway-winning PCs,
+  canonical item conversion, earned XP/levels/HP and its normal 200 platinum
+  per imported PC (6,000 gold total).
+- Acceptance: actual ending (25Ch = 1), six retained PCs with at least one
+  standing, original NPC joins/departures, zero retained defeats and a
+  byte-identical normal format-53 save roundtrip. The registered test must
+  start from a freshly earned Gateway fixture. No arbitrary grants, placements,
+  healing, clock/quest edits or forced combat outcomes.
+- Boundaries: existing Original Rules, imports, physical exploration, paid
+  shops/training/temples/inns, camp spells, saved-event reloads and saves.
+  No new UI/runtime, SRD decisions or save/history changes. Same configured
+  Codex session; no model/effort setting change or delegation. Exact effort/cost
+  is unavailable. The routing policy explicitly concerns SRD work.
+
+Four production corrections, with installed-data red/green regressions and
+primary-source details in [treasure.md](games/treasure.md):
+
+| Defect | Correction and evidence |
+|---|---|
+| A scripted stair move leaves the previous square's event live | Refresh Treasure's current square before the next command, preserving intentional off-map coordinates. The actual Leilon staircase regression fails before correction and passes after. |
+| Freed Eldath priests still demand a donation | Daggerford's temple quotes zero after its original rescue flag. Before rescue a penniless party cannot buy the service; after rescue it receives an actual free cure. Raising is also quoted at zero. |
+| Monster gear and loot use another game's item names | Decode Treasure's equipment with its own GAME.EXE words, as its shops already do. The real monster comparison fails on MON1CHA:2 before correction. Types and mechanics are unchanged. |
+| Scripted XP pays a raw byte rather than a whole-word amount in hundreds | Match EclAwardExperience/GetEclVar. The actual Waterdeep Dock escape gives 5 XP before correction and 500 after; a VM check preserves a word amount of 500. Darkness's scaling and Secret's unscaled awards remain unchanged. |
+
+The earned player imports actual winners through the existing canonical
+conversion and readies their actual converted gear. It follows river/coast and
+high-road paths, enters real service doorways, pays for earned training and
+outfits rescued Siulajia through Mirabar's shop. Camping, curing, raising and
+restoration use available spells or actual temple services. Found wands retain
+finite charges; thrown firepots are bought and consumed normally.
+
+Paid training at Llorkh provides the mage's normal Haste/Minor Globe choices
+before Redbeard. Luskan's paid inn prepares Haste, Minor Globe and Dispel Magic;
+the party then walks to (10,3), casts its protections there, and only then
+approaches Siulajia's guards. Mirabar prepares three first-level Protection
+from Evil copies per cleric for six actual casts, followed by Haste and Minor
+Globe. Requiring six casts after preparing two correctly failed verification;
+the plan was corrected without relaxing that check.
+
+Bjorn's pier path avoids his repeated audience (event 9), preserving the initial
+visit. The mountain route visits the actual warm spring at 38:(13,12), descends
+at 38:(7,15) into map 35's northern trail, then ascends at 35:(10,0) into the
+other component of 38 and reaches the avalanche tunnel. These are physical
+player routes, not relocations. Temporary dwarf reinforcements do not replace
+retained PCs. The original finale's PROGRAM 5 performs its own recovery.
+
+Current ending evidence:
+
+- A genuine ending continuation reaches Freezefire, 25Ch = 1 and the actual
+  winning event, retains all six PCs plus Siulajia/Gauhok healthy, and passes
+  the normal save roundtrip: `/tmp/opengold-treasure-actual-earned-win.log`.
+- The corrected council-to-ending continuation passes with **20 real battles,
+  zero defeats**, all eight characters healthy and a normal byte-identical
+  winning-save roundtrip: `/tmp/opengold-treasure-council-copies-ending.log`.
+- **The whole fresh registered chain passes**, observed 2026-11-19
+  01:19:15 UTC: Gateway **67 fights, zero defeats in 154.25s**; Treasure
+  **145 fights, zero defeats in 1561.40s**; **2/2 tests, 1715.66s total**.
+  All six PCs plus Siulajia and Gauhok finish healthy. Freezefire is dead,
+  25Ch = 1, the actual winning event is shown, and the final pose is map 54,
+  script 51, (7,1). The normal format-53 winning save roundtrips byte-identically.
+  Log: `/tmp/opengold-treasure-final-chain-v3.log`; terminal checkpoint:
+  `/tmp/opengold-treasure-final-chain-v3.sav` (854 completed beats, then normal
+  save payload). No resume, beat cap, forced result or outcome override is set
+  in this run. **Treasure's accepted player outcome is complete.**
+
+Verification of the four final engine corrections:
+
+| Checks | Result | Evidence |
+|---|---|---|
+| Fresh registered Gateway-to-Treasure earned chain | 2/2, 1715.66s | `/tmp/opengold-treasure-final-chain-v3.log` |
+| Rebuilt native selection, including the whole Treasure map walk | 155/155, 1104.43s | `/tmp/opengold-treasure-native-delivery-checks-validated.log` |
+| Rebuilt Linux game integration: startup/default parties/editing, saves, canonical imports, Treasure camp, town/training/crossings and packaged launches | 47/47 (43 selected plus four required fixtures), 429.27s | `/tmp/opengold-treasure-game-delivery-checks.log` |
+| Linux package smoke, including an actual rendered window | Passed, 24.58s | Same game-integration log |
+| Rebuilt Gold Box/Treasure checks after the final test-player spell-copy change | 2/2, 3.23s | `/tmp/opengold-treasure-council-copies-focused.log` |
+| Final test-player target in the Linux configuration | Rebuilt successfully | `/tmp/opengold-treasure-council-copies-linux-build.log` |
+
+Native targets were built before testing. The native selection explicitly
+excludes 19 previously delivered long campaign replays; the new fresh earned
+chain runs separately. Exact selections are in
+`/tmp/opengold-treasure-native-check-selection.json` and
+`/tmp/opengold-treasure-game-delivery-selection.json`. Only the test player's
+preparation changed after the 155 native and 47 game checks; engine/game inputs
+remain identical. The first native filter used unsupported CTest regex syntax
+and was stopped; the successful selection was explicitly validated before use.
+
+`./build.sh` first stopped linking because GCC 16.2.1-3.fc45 lacked its static
+C++ runtime. The exact matching Fedora `libstdc++-static` RPM was downloaded,
+its signature/digests checked, and extracted under `/tmp/opengold-gcc16-runtime`.
+The established build then succeeded with that library directory in
+`LIBRARY_PATH` and `JOBS=2`; no system/compiler/link policy was changed. Logs:
+`/tmp/opengold-treasure-game-delivery-build-retry.log` and
+`/tmp/opengold-treasure-rescue-game-build.log`. Repository formatting/braces
+checks passed before the final test-player copy correction; the commit hook
+checks the final staged inputs again before delivery.
+
+Failures remain development evidence, never certificates. The first fresh
+registered attempt failed at Luskan after exhausting its real reloads
+(`/tmp/opengold-treasure-final-registered.log`, 2539.80s). The next fresh run was
+stopped after discovering the concrete Mirabar copy-count defect in its
+parallel continuation. The latter reached the actual ending with all eight
+healthy and 47 victories/zero defeats but was correctly rejected for its
+missing requested wards. Its corrected preparation probe actually casts all
+six: `/tmp/opengold-treasure-council-copies.log`.
+
+Recorded checkpoints: 17:53 UTC (60 minutes), 18:23 (90), 19:53 (180),
+20:53 (240), 21:54 (about 300), 22:54 (about 360), 00:01 (428) and
+2026-11-19 00:53:21 (**480.35 minutes**). At the last checkpoint the actual
+ending had been reached with all eight healthy, but the copy-count correction
+and a clean fresh replay were still required. No delivery commit was claimed.
+
+The main checkout's pre-existing `docs/GAMES.md` edit remains untouched
+(hash `d5bf49897b2dddf631b07a2afae4692bd8193c6f`); its dirty guard prevents
+pulling that checkout automatically. Krynn, Buck Rogers, installed UA-design
+coverage and then automatic winning-character availability remain outstanding
+parts of the same active user request.
+
+Functional acceptance completes at the observed 01:19:15 UTC checkpoint,
+**506.25 minutes** after the recorded start: **one accepted player outcome
+of one planned for this batch**, four concrete production corrections. The
+tested tree is base `06207553` plus this commit's changes; no original files,
+save format or supported history changed. Scope/architecture review confirms
+RAII/value ownership, existing Godot/C++20/GDExtension boundaries and no SRD
+implementation/decision branches in Core or UI. Only these eight owned files
+are included. The main checkout's dirty-document exception remains in force.

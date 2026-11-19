@@ -5,12 +5,14 @@
 #include "opengold/campaign_save.h"
 #include "opengold/campaign_session.h"
 #include "opengold/character_creator.h"
+#include "opengold/creature_catalog.h"
 #include "opengold/ecl_machine.h"
 #include "opengold/game_census.h"
 #include "opengold/original.h"
 #include "opengold/original_combat.h"
 #include "opengold/original_content.h"
 #include "opengold/pool_radiance.h"
+#include "opengold/por_sound.h"
 #include "opengold/treasures_import.h"
 #include "original_creation_support.h"
 #include "test_support.h"
@@ -18,6 +20,8 @@
 
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <iostream>
 #include <memory>
 #include <set>
@@ -215,6 +219,244 @@ void the_overland_is_drawn_from_above()
               session.snapshot().picture_revision != revision &&
               session.observe_view().rgba != still.rgba,
           "The overland's colors turn as time passes");
+}
+
+// The real Waterdeep Dock escape grants 5 hundreds of experience to
+// every member (ECL1:21, 8786h; eclvm.pas, EclAwardExperience).
+void script_awards_count_in_hundreds()
+{
+    using namespace opengold::por;
+    using opengold::test::TourAccess;
+    const auto folder = treasures_folder();
+    if (folder.empty())
+    {
+        return;
+    }
+    auto session = opengold::load_campaign(folder, treasures_game);
+    auto party = treasures_party(folder);
+    session.campaign_party(party);
+    const auto play = [&]
+    {
+        for (unsigned step = 0; step < 200; ++step)
+        {
+            const auto snapshot = session.snapshot();
+            if (snapshot.phase == TourPhase::running)
+            {
+                session.advance(1.0);
+            }
+            else if (snapshot.phase == TourPhase::awaiting_continue)
+            {
+                check(session.choose(snapshot.continue_ticket, 0), "Read the escape dialogue");
+            }
+            else
+            {
+                return;
+            }
+        }
+        throw std::runtime_error("The escape dialogue did not finish");
+    };
+    play();
+    const auto first = party->state().slots.front();
+    const auto before = party->member(first).experience;
+    TourAccess::set_variable(session, EclAddress{0x128}, 1);
+    // NEW ECL records the previous script itself; enter from the caverns.
+    TourAccess::enter(session, 22, {0, 15, MapDirection::north});
+    play();
+    TourAccess::enter(session, 21, {15, 6, MapDirection::south});
+    play();
+    check(party->member(first).experience - before == 500,
+          "The actual cavern escape award of 5 gives each member 500 experience; got " +
+              std::to_string(party->member(first).experience - before));
+
+    // GetEclVar also preserves a word amount, before the host scales it.
+    std::vector<std::uint8_t> bytes{0, 0};
+    for (unsigned entry = 0; entry < 5; ++entry)
+    {
+        bytes.insert(bytes.end(), {1, 1, 0x14, 0x80});
+    }
+    bytes.insert(bytes.end(), {0x41, 0, 1, 2, 0xF4, 1, 0});
+    EclMachine machine(std::make_shared<const EclProgram>(
+        EclProgram::decode(bytes, "award-word", treasures_game)));
+    machine.enable_host(65);
+    check(machine.start(0), "Start the word award");
+    static_cast<void>(machine.run());
+    check(machine.pending_request() && machine.pending_request()->arguments.at(1).number() == 500,
+          "A scripted award keeps its whole word amount");
+}
+
+void monster_loot_uses_treasures_item_names()
+{
+    const auto folder = treasures_folder();
+    if (folder.empty())
+    {
+        return;
+    }
+    std::ifstream program(folder / std::string(opengold::item_words_program(treasures_game)),
+                          std::ios::binary);
+    check(static_cast<bool>(program), "Treasure's item-name program exists");
+    const std::vector<std::uint8_t> bytes{std::istreambuf_iterator<char>(program), {}};
+    const auto words = opengold::por::decode_item_words(
+        opengold::por::unpack_sound_executable(bytes), treasures_game);
+    check(words.has_value(), "Treasure's original item words exist");
+    const auto catalog = opengold::por::CreatureCatalog::load(folder, treasures_game);
+    unsigned compared = 0;
+    for (const auto &[id, creature] : catalog.all())
+    {
+        for (const auto &item : creature.equipment)
+        {
+            if (!item.stored.stored_name.empty())
+            {
+                continue;
+            }
+            check(item.decoded_name == opengold::por::item_name(item.stored, *words),
+                  "Treasure monster loot uses its own item words: " + id.key() + ": " +
+                      item.label());
+            ++compared;
+        }
+    }
+    check(compared > 0, "The installed monsters supplied actual equipment names");
+}
+
+// The Leilon stairs put the party in a farmhouse without a NEW ECL.
+// Continuing straight ahead must read the farmhouse, not the old stair event.
+void a_scripted_stair_move_refreshes_the_next_step()
+{
+    using namespace opengold::por;
+    using opengold::test::TourAccess;
+    const auto folder = treasures_folder();
+    if (folder.empty())
+    {
+        std::cout << "Treasures' files are not here; its stairs are not played.\n";
+        return;
+    }
+    auto session = opengold::load_campaign(folder, treasures_game);
+    session.campaign_party(treasures_party(folder));
+    const auto play = [&]
+    {
+        for (unsigned step = 0; step < 100; ++step)
+        {
+            const auto snapshot = session.snapshot();
+            if (snapshot.phase == TourPhase::running)
+            {
+                session.advance(1.0);
+            }
+            else if (snapshot.phase == TourPhase::awaiting_continue)
+            {
+                check(session.choose(snapshot.continue_ticket, 0), "Continue the stair dialogue");
+            }
+            else
+            {
+                check(snapshot.phase == TourPhase::completed,
+                      "The stairs finish without another service: " + snapshot.diagnostic);
+                return;
+            }
+        }
+        throw std::runtime_error("The stair dialogue did not finish");
+    };
+    play();
+    TourAccess::set_variable(session, EclAddress{0x2EB}, 1);
+    TourAccess::set_variable(session, EclAddress{0x2EC}, 15);
+    TourAccess::set_variable(session, EclAddress{0x2ED}, 6);
+    TourAccess::enter(session, 20, {15, 6, MapDirection::east});
+    play();
+    if (session.snapshot().pose.x == 15 && session.snapshot().pose.y == 6)
+    {
+        check(session.explore(ExplorationCommand::forward), "Climb the actual Leilon stairs");
+        play();
+    }
+    check(session.snapshot().pose.x == 4 && session.snapshot().pose.y == 3 &&
+              session.snapshot().pose.facing == MapDirection::east,
+          "The stairs deliver the party to the farmhouse facing east");
+    check(session.explore(ExplorationCommand::forward), "Continue east without turning");
+    play();
+    check(session.snapshot().pose.x == 5 && session.snapshot().pose.y == 3,
+          "The next forward step leaves the stairs instead of repeating them");
+}
+
+// Daggerford's released temple leaders explicitly waive their donation.
+void daggerfords_freed_temple_heals_without_gold()
+{
+    using namespace opengold::por;
+    using opengold::test::TourAccess;
+    const auto folder = treasures_folder();
+    if (folder.empty())
+    {
+        std::cout << "Treasures' files are not here; Daggerford's temple is not visited.\n";
+        return;
+    }
+    auto session = opengold::load_campaign(folder, treasures_game);
+    auto party = treasures_party(folder);
+    auto wounded = party->checkpoint();
+    wounded.wealth.fill(0);
+    const auto fighter = wounded.slots.front();
+    for (auto &member : wounded.roster)
+    {
+        if (member.id == fighter)
+        {
+            member.vitals.hit_points = 1;
+        }
+    }
+    party->restore(std::move(wounded));
+    session.campaign_party(party);
+    const auto settle = [&]
+    {
+        for (unsigned step = 0; step < 100; ++step)
+        {
+            const auto snapshot = session.snapshot();
+            if (snapshot.phase == TourPhase::running)
+            {
+                session.advance(1.0);
+            }
+            else if (snapshot.phase == TourPhase::awaiting_continue && snapshot.choices.size() == 1)
+            {
+                check(session.choose(snapshot.continue_ticket, 0), "Read the temple's dialogue");
+            }
+            else
+            {
+                return;
+            }
+        }
+        throw std::runtime_error("The temple's dialogue did not finish");
+    };
+    const auto choose = [&](const std::string &label)
+    {
+        const auto snapshot = session.snapshot();
+        const auto found = std::ranges::find(snapshot.choices, label);
+        check(found != snapshot.choices.end(),
+              "The temple offers " + label + ": " + snapshot.dialogue);
+        check(session.choose(snapshot.continue_ticket,
+                             static_cast<std::size_t>(found - snapshot.choices.begin())),
+              "Choose the temple's " + label);
+        settle();
+    };
+    settle();
+    TourAccess::set_variable(session, EclAddress{0x2EB}, 1);
+    TourAccess::set_variable(session, EclAddress{0x2EC}, 14);
+    TourAccess::set_variable(session, EclAddress{0x2ED}, 10);
+    TourAccess::enter(session, 39, {14, 10, MapDirection::east});
+    settle();
+    check(session.explore(ExplorationCommand::forward), "Enter the Temple of Eldath");
+    settle();
+    choose("HEAL");
+    choose("Cure Light Wounds (100 gp)");
+    choose("fighter");
+    check(party->member(fighter).vitals.hit_points == 1 && party->purse_gold() == 0,
+          "Before the rescue the penniless party cannot buy a cure");
+    choose("Back");
+    choose("Leave");
+    // Isolated service fixture: the real headquarters sets this rescue flag.
+    TourAccess::set_variable(session, EclAddress{0x265}, 1);
+    check(session.explore(ExplorationCommand::forward), "Visit the freed temple leaders");
+    settle();
+    choose("HEAL");
+    check(std::ranges::find(session.snapshot().choices, "Raise Dead (0 gp)") !=
+              session.snapshot().choices.end(),
+          "The freed temple waives even the raising donation");
+    choose("Cure Light Wounds (0 gp)");
+    choose("fighter");
+    choose("Pay");
+    check(party->member(fighter).vitals.hit_points > 1 && party->purse_gold() == 0,
+          "The grateful temple actually heals the penniless party");
 }
 
 // A Gateway character comes to Treasures as its LoadChar takes one in: its
@@ -802,6 +1044,10 @@ int main()
         a_picture_takes_a_color_records_colors();
         the_fix_restores_and_cures_feeblemind();
         the_overland_is_drawn_from_above();
+        script_awards_count_in_hundreds();
+        monster_loot_uses_treasures_item_names();
+        a_scripted_stair_move_refreshes_the_next_step();
+        daggerfords_freed_temple_heals_without_gold();
         a_gateway_character_comes_across();
         std::cout << "Treasures passed.\n";
     }
