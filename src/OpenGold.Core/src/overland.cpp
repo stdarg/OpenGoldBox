@@ -11,8 +11,8 @@ namespace
 // START.EXE's data segment holds the wilderness at fixed offsets; its start
 // is found from the landmark table, whose first entry is the Silver Dragon's
 // pass at (10,9) and the Outpost of Zhentil Keep at (3,32).
-constexpr std::size_t landmark_offset = 0x0C36, squares_offset = 0x3648,
-                      window_offset = 0x3C78, combat_tile_offset = 0x2744;
+constexpr std::size_t landmark_offset = 0x0C36, squares_offset = 0x3648, window_offset = 0x3C78,
+                      combat_tile_offset = 0x2744;
 constexpr std::size_t combat_tile_count = 0x42;
 // Gateway's terrains, numbered from 1.
 constexpr std::size_t gateway_terrain_count = 65;
@@ -552,10 +552,10 @@ std::optional<OverlandWorld> read_overland_world(std::span<const std::uint8_t> i
     }
     const auto data = at - landmark_offset;
     OverlandWorld world;
-    world.squares.assign(image.begin() + static_cast<std::ptrdiff_t>(data + squares_offset),
-                         image.begin() + static_cast<std::ptrdiff_t>(
-                                             data + squares_offset +
-                                             OverlandWorld::columns * OverlandWorld::rows));
+    world.squares.assign(
+        image.begin() + static_cast<std::ptrdiff_t>(data + squares_offset),
+        image.begin() + static_cast<std::ptrdiff_t>(data + squares_offset +
+                                                    OverlandWorld::columns * OverlandWorld::rows));
     for (std::size_t k = 0; k < world.landmarks.size(); ++k)
     {
         const auto entry = data + landmark_offset + k * 6;
@@ -859,5 +859,40 @@ std::optional<CurseWilderness> curse_wilderness(std::span<const std::uint8_t> im
                                   image.begin() +
                                       static_cast<std::ptrdiff_t>(place_offset + place_count));
     return wilderness;
+}
+
+std::optional<GatewayWilderness> champions_wilderness(std::span<const std::uint8_t> image)
+{
+    // GDConsts' first five terrain records and the complete terrain-class
+    // table identify the data without executing START.EXE or fixing its load address.
+    constexpr std::array<std::uint8_t, 20> first_tiles{255, 1, 2,   0, 255, 1, 2, 1, 255, 1,
+                                                       2,   2, 255, 1, 2,   3, 1, 1, 0,   4};
+    constexpr std::array<std::uint8_t, 32> classes{0,  24,  17, 21, 1, 1,  96, 20, 8,  1,  0,
+                                                   33, 113, 9,  6,  4, 1,  9,  9,  8,  89, 0,
+                                                   17, 17,  0,  0,  1, 17, 0,  0,  32, 32};
+    const auto tiles =
+        std::search(image.begin(), image.end(), first_tiles.begin(), first_tiles.end());
+    const auto terrain = std::search(image.begin(), image.end(), classes.begin(), classes.end());
+    if (tiles == image.end() || terrain == image.end() ||
+        static_cast<std::size_t>(image.end() - tiles) < gateway_terrain_count * 4)
+    {
+        return std::nullopt;
+    }
+    GatewayWilderness result;
+    result.combat_tiles.push_back({255, 0, 0, 2});
+    for (std::size_t at = 0; at < gateway_terrain_count; ++at)
+    {
+        const auto entry = tiles + static_cast<std::ptrdiff_t>(4 * at);
+        // Terrain IDs and art frames are separate: a corpse reuses RANDCOM
+        // frame 34, while trees reuse WILDCOM frames 0..5.
+        if (entry[3] >= 40 || entry[1] > 2 || entry[2] > 2 ||
+            (entry[0] != 1 && entry[0] != 2 && entry[0] != 4 && entry[0] != 255))
+        {
+            return std::nullopt;
+        }
+        result.combat_tiles.push_back({entry[0], entry[3], entry[1], entry[2]});
+    }
+    result.terrain_classes.assign(terrain, terrain + classes.size());
+    return result;
 }
 } // namespace opengold::por

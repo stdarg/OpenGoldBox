@@ -62,6 +62,8 @@ struct SettledPurse
 struct CoinRates
 {
     std::array<std::uint64_t, 5> worth;
+    // Index of the coin used by prices: gold normally, steel in Krynn.
+    std::size_t price_coin{3};
 };
 
 inline constexpr CoinRates srd_coin_rates{{2, 20, 100, 200, 2000}};

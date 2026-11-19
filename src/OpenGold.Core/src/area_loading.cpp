@@ -121,7 +121,8 @@ namespace
 // there is named by its own words, magic or not (their itemNameParts).
 bool names_every_item(GoldBoxGame game) noexcept
 {
-    return game == GoldBoxGame::treasures_of_the_savage_frontier ||
+    return game == GoldBoxGame::champions_of_krynn ||
+           game == GoldBoxGame::treasures_of_the_savage_frontier ||
            game == GoldBoxGame::pools_of_darkness;
 }
 } // namespace

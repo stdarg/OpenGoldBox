@@ -1,4 +1,5 @@
 #include "combat_session.h"
+#include "champions_rules.h"
 
 #include "opengold/dice.h"
 #include "opengold/movement_grid.h"
@@ -36,6 +37,9 @@ constexpr rules::StepCosts half_moves{2, 3, 2, 4, 0};
 constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 27";
 // The rounds a fight lasts with no one attacking (has_round_limit).
 constexpr unsigned rounds_without_attacks = 15;
+// Champions' removed creatures wait for a gating power, never a timed arrival.
+// Reuse the existing off-field arrival state and its saved representation.
+constexpr int gated_reserve_round = std::numeric_limits<int>::max();
 
 enum class Condition : unsigned
 {
@@ -195,12 +199,45 @@ constexpr int squeezing = vga_effect_offset + 201, held_still = 336;
 // and charming gaze (its 124, plus secret_effect_offset), which its original
 // registers but no fight runs.
 constexpr int darkness_paralyzing_gaze = 584, darkness_charming_gaze = 524;
+constexpr int aurak_energy = champions_effect_offset + 4, maya_breath = champions_effect_offset + 6,
+              death_knight_dispel = champions_effect_offset + 74,
+              death_knight_fireball = champions_effect_offset + 78,
+              death_knight_gate = champions_effect_offset + 76,
+              dragon_slayer = champions_effect_offset + 75,
+              dragonlance = champions_effect_offset + 114,
+              reptile_bane = champions_effect_offset + 115,
+              mace_disruption = champions_effect_offset + 117,
+              aurak_madness = champions_effect_offset + 13,
+              aurak_transformation = champions_effect_offset + 32,
+              aurak_immolation = champions_effect_offset + 48,
+              aurak_combat_bonus = champions_effect_offset + 57,
+              aurak_transformation_timer = champions_effect_offset + 58,
+              aurak_invulnerable = champions_effect_offset + 59,
+              aurak_explosion = champions_effect_offset + 60,
+              aurak_zap = champions_effect_offset + 66,
+              bozak_explosion = champions_effect_offset + 68,
+              baaz_disarm = champions_effect_offset + 67,
+              kapak_paralysis = champions_effect_offset + 69,
+              kapak_acid = champions_effect_offset + 70,
+              death_knight_reflects = champions_effect_offset + 71,
+              death_knight_fear = champions_effect_offset + 72,
+              ghast_stench = champions_effect_offset + 79,
+              acid_pool_timer = champions_effect_offset + 80,
+              paralyzing_strike = champions_effect_offset + 81,
+              champions_dragon_fear = champions_effect_offset + 82,
+              slight_poison = champions_effect_offset + 87,
+              champions_ghoul_touch = champions_effect_offset + 88,
+              champions_sickened = champions_effect_offset + 118,
+              champions_afraid = champions_effect_offset + 119,
+              kender_taunted = champions_effect_offset + 91,
+              kender_yelled = champions_effect_offset + 253,
+              baaz_banked_weapon = champions_effect_offset + 254;
 } // namespace effect
 
 // What a hit carries, by the attacker's effects, in the original's order: a
 // primary attack's hit and a secondary one's (effhndlr.pas, HIT_PHASE_1 and
 // HIT_PHASE_2).
-constexpr std::array<int, 34> primary_hit_effects{
+constexpr std::array<int, 38> primary_hit_effects{
     85, 86, 87, 68, 79, 80, 76, 73, 77,
     // Curse's (canonical_effect).
     257, 296, 322, 323, 345,
@@ -213,15 +250,17 @@ constexpr std::array<int, 34> primary_hit_effects{
     64, 67, effect::drinks_blood, effect::charming_touch, effect::constricts, effect::disease_touch,
     // Treasures' (its condition 2).
     effect::crushes, effect::rat_disease, effect::grabs_2d8, effect::grabs_4d5, effect::grabs_6d4,
-    effect::swallows_on_twenty};
-constexpr std::array<int, 22> secondary_hit_effects{
+    effect::swallows_on_twenty, effect::kapak_paralysis, effect::paralyzing_strike,
+    effect::slight_poison, effect::champions_ghoul_touch};
+constexpr std::array<int, 25> secondary_hit_effects{
     64, 65, 66, 67, 68, 69, 70, 79, 85, 86, 87,
     // Secret's.
     effect::poison_touch, effect::stone_touch, effect::strong_poison_touch, effect::ghoul_touch,
     // The kit's (fx_trigger_group 3).
     effect::adjacent_paralysis, effect::fire_blow, effect::rot_touch,
     // Treasures' (its condition 3).
-    effect::grabs_2d8, effect::grabs_4d5, effect::grabs_6d4, effect::swallows_on_twenty};
+    effect::grabs_2d8, effect::grabs_4d5, effect::grabs_6d4, effect::swallows_on_twenty,
+    effect::kapak_paralysis, effect::paralyzing_strike, effect::slight_poison};
 
 // An item a creature carries, which it may ready or put away in a fight
 // (viewchar.pas, ToggleReadyItem): its record, readied or not, with what is
@@ -826,7 +865,8 @@ bool spell_built(int number)
         // Secret's (spells.cpp, secret_spells).
         236, 256, 290, 296, 298, 310, 311, 312, 313, 314, 315, 316, 317,
         // Pools of Darkness's that are cast in fights (spells.cpp, darkness_spells).
-        301, 303, 304, 308, 309, 318, 319, 320, 321, 322, 323, 324, 325, 326};
+        301, 303, 304, 308, 309, 318, 319, 320, 321, 322, 323, 324, 325, 326, 501, 502, 503, 504,
+        505, 506, 507};
     return std::find(built.begin(), built.end(), number) != built.end();
 }
 
@@ -841,7 +881,9 @@ enum class CloudKind
     deadly,
     // Pools of Darkness's Blade Barrier, on a stinking cloud's four squares
     // (its SpellStinkingCloud).
-    blades
+    blades,
+    // A kapak leaves acid on its single square when it dissolves.
+    acid
 };
 
 struct Cloud
@@ -854,6 +896,10 @@ struct Cloud
 
     [[nodiscard]] std::vector<Cell> squares() const
     {
+        if (kind == CloudKind::acid)
+        {
+            return {corner};
+        }
         if (kind != CloudKind::deadly)
         {
             return {corner, Cell{corner.x + 1, corner.y}, Cell{corner.x + 1, corner.y + 1},
@@ -1059,6 +1105,11 @@ class Session final : public rules::CombatSession
     [[nodiscard]] bool darkness() const
     {
         return game_of(identity_) == GoldBoxGame::pools_of_darkness;
+    }
+
+    [[nodiscard]] bool champions() const
+    {
+        return game_of(identity_) == GoldBoxGame::champions_of_krynn;
     }
 
     [[nodiscard]] bool treasures() const
@@ -1282,6 +1333,10 @@ class Session final : public rules::CombatSession
     void round_end_effects();
     void expire(Fighter &f, const Effect &ended);
     void went_down(Fighter &f);
+    void aurak_final_form(Fighter &f, bool revived);
+    void draconian_explosion(Fighter &f, int dice, bool stuns);
+    void champions_turn_start(Fighter &f);
+    void kender_yell(Fighter &f);
     [[nodiscard]] bool cell_free(const Fighter &f) const;
     void stand_up(Fighter &f, int hit_points, std::string_view message);
     [[nodiscard]] bool can_target(const Fighter &attacker, const Fighter &target) const;
@@ -1570,6 +1625,7 @@ void Session::next_actor()
             attached_turn(*best);
             curse_turn_start(*best);
             kit_turn_start(*best);
+            champions_turn_start(*best);
             if (best->initiative <= 0 || !best->able() || check_morale(*best))
             {
                 continue;
@@ -1895,6 +1951,10 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
                   {"name", defender.name},
                   {"damage", std::to_string(damage)}}});
             primary_hits += phase == 0 ? 1 : 0;
+            if (attacker.has(effect::paralyzing_strike))
+            {
+                damage = 0;
+            }
             striker_ = attacker.id;
             inflict(defender, damage);
             striker_ = 0;
@@ -1939,6 +1999,8 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
 int attack_modifier(const Fighter &attacker, const Fighter &defender, GoldBoxGame game)
 {
     int modifier = (attacker.has(effect::bless) ? 1 : 0) - (attacker.has(effect::curse) ? 1 : 0);
+    modifier += attacker.has(effect::aurak_combat_bonus) ? 2 : 0;
+    modifier -= defender.has(effect::aurak_combat_bonus) ? 2 : 0;
     // Blindness and Bestow Curse take 4 from the attacker's rolls (effhndlr.pas, 33, 36).
     modifier -= attacker.has(effect::blind) ? 4 : 0;
     modifier -= attacker.has(effect::bestow_curse) ? 4 : 0;
@@ -1946,6 +2008,8 @@ int attack_modifier(const Fighter &attacker, const Fighter &defender, GoldBoxGam
     // does Pools of Darkness's dragon fear (effhndlr.pas, EffDragonFeared).
     modifier -= attacker.has(effect::sickened) ? 2 : 0;
     modifier -= attacker.has(effect::dragon_feared) ? 2 : 0;
+    modifier -= attacker.has(effect::champions_sickened) ? 2 : 0;
+    modifier -= attacker.has(effect::champions_afraid) ? 1 : 0;
     if (defender.has(effect::invisible) || defender.has(effect::dust))
     {
         modifier -= 4;
@@ -1973,6 +2037,10 @@ int attack_modifier(const Fighter &attacker, const Fighter &defender, GoldBoxGam
     // after the roll, where it changed nothing (an obvious bug, fixed;
     // fxcombat.c, fx_damage_vs_immunity1).
     modifier += giant_bane_strikes(attacker, defender, game) ? 1 : 0;
+    modifier +=
+        attacker.has(effect::dragon_slayer) && (defender.numbers.traits & champions_dragon_trait)
+            ? 2
+            : 0;
     return modifier;
 }
 
@@ -2196,6 +2264,10 @@ bool Session::can_bandage(const Fighter &bandager, const Fighter &dying) const
 // more than 9 below 0 dead (charhlp.pas, InflictDamage).
 void Session::inflict(Fighter &target, int damage)
 {
+    if (target.has(effect::aurak_invulnerable))
+    {
+        return;
+    }
     // Any damage stops casting this round and loses a spell being cast
     // (cbtacts.pas, ProcessAttackResult).
     if (damage > 0)
@@ -2509,6 +2581,10 @@ bool Session::armor_named(const Fighter &f, int word) const
 void Session::on_hit(Fighter &attacker, Fighter &defender, int phase, int primary_hits, int natural,
                      int attack_roll)
 {
+    if (champions() && phase == 0 && attacker.has(65) && defender.able())
+    {
+        poison(defender, 4);
+    }
     const auto effects = phase == 0 ? std::span<const int>(primary_hit_effects)
                                     : std::span<const int>(secondary_hit_effects);
     for (const auto code : effects)
@@ -2519,12 +2595,26 @@ void Session::on_hit(Fighter &attacker, Fighter &defender, int phase, int primar
         }
         // Gateway's poison rides only the first attack, its paralysis both;
         // the other games' the second only (effhndlr.pas, conditions 2 and 3).
-        if ((code == 64 && (phase == 0) != gateway()) || (code == 67 && phase == 0 && !gateway()))
+        if (!champions() &&
+            ((code == 64 && (phase == 0) != gateway()) || (code == 67 && phase == 0 && !gateway())))
         {
             continue;
         }
         switch (code)
         {
+        case effect::kapak_paralysis:
+        case effect::paralyzing_strike:
+            paralyze(defender, 100, 0);
+            break;
+        case effect::champions_ghoul_touch:
+            if (defender.numbers.race != elf_race)
+            {
+                paralyze(defender, 100, 0);
+            }
+            break;
+        case effect::slight_poison:
+            poison(defender, 1);
+            break;
         case 64:
             poison(defender, 0);
             break;
@@ -3231,6 +3321,19 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         }
         return total;
     };
+    if (champions())
+    {
+        for (auto &id : targets)
+        {
+            const auto *target = find(id);
+            if (target && target->has(effect::death_knight_reflects) &&
+                ((known.area < 8 && roll(10) == 1) || known.area > 14))
+            {
+                log({"{name} reflects the spell.", {{"name", target->name}}});
+                id = caster.id;
+            }
+        }
+    }
     std::erase_if(targets,
                   [&](EntityId id)
                   {
@@ -3245,6 +3348,7 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
     std::vector<EntityId> kept;
     switch (number)
     {
+    case 505:
     case 1:
         // Bless: the caster's side, but not one with an enemy next to it.
         for (const auto id : targets)
@@ -3290,10 +3394,12 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
     case 4:
         cast_generic(caster, number, level, targets, roll(8), 8);
         break;
+    case 507:
     case 9:
         // Burning Hands: the caster's level in fire.
         cast_generic(caster, number, level, targets, level, 9);
         break;
+    case 506:
     case 10:
         // Charm Person cannot take a creature of type above 1 or a large one
         // (magic.pas, the charm); Secret and Pools of Darkness judge by race
@@ -3309,7 +3415,7 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
                 treasures() ? f.numbers.race == 0 &&
                                   ((f.numbers.traits & trait::person) == 0 || f.numbers.large)
                             : f.numbers.creature_type > 1 || f.numbers.large;
-            if (!secret_engine() && refused)
+            if (!secret_engine() && !champions() && refused)
             {
                 log({"{name} is unaffected.", {{"name", f.name}}});
                 continue;
@@ -3403,6 +3509,7 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
                                    false, false, 0, level, &known);
         }
         break;
+    case 504:
     case 43:
     case 189:
         for (const auto id : targets)
@@ -3437,8 +3544,9 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         for (auto &f : fighters_)
         {
             const bool snake =
-                secret_engine() ? (f.numbers.traits & trait::snake) && !f.has(effect::snake_charm)
-                                : f.numbers.creature_type == 14;
+                (secret_engine() || champions())
+                    ? (f.numbers.traits & trait::snake) && !f.has(effect::snake_charm)
+                    : f.numbers.creature_type == 14;
             if (!f.able() || !snake || f.hit_points > pool)
             {
                 continue;
@@ -4342,7 +4450,19 @@ void Session::equip_best(Fighter &f)
     {
         const auto &held = after[at];
         const auto &type = held.carried.type;
-        if (held.gone || (type.class_restrictions & f.record->item_limit) == 0)
+        const bool banked =
+            std::ranges::any_of(f.numbers.effects,
+                                [at](const Effect &power)
+                                {
+                                    return power.code == effect::baaz_banked_weapon &&
+                                           power.strength == static_cast<int>(at + 1);
+                                });
+        const bool wrong_order =
+            champions() &&
+            champions_ready_refusal(held.carried.item, f.record->race, f.record->robe_order)
+                .has_value();
+        if (held.gone || banked || wrong_order ||
+            (type.class_restrictions & f.record->item_limit) == 0)
         {
             continue;
         }
@@ -4667,6 +4787,13 @@ bool Session::refuses_spell(const Fighter &target, int number) const
 {
     constexpr int charm_person = 10, slay_living = 176, charm_person_or_mammal = 296,
                   death_spell = 310;
+    if (champions() && (number == charm_person || number == 506))
+    {
+        // The native person flag admits humanoid monsters; draconians and
+        // undead carry different type flags, and cannot be charmed as people.
+        return target.numbers.large ||
+               (target.numbers.race == 0 && (target.numbers.traits & trait::person) == 0);
+    }
     if (treasures())
     {
         return treasures_refuses_spell(target, number);
@@ -5375,7 +5502,8 @@ bool Session::add_with_message(Fighter &target, Effect added, bool negates, bool
     {
         return std::find(codes.begin(), codes.end(), code) != codes.end();
     };
-    bool immune = resists_magic_at_all(target) && magic_resists(target, caster_level, roll(100));
+    bool immune = target.has(effect::aurak_invulnerable) ||
+                  (resists_magic_at_all(target) && magic_resists(target, caster_level, roll(100)));
     immune = immune || (target.has(107) && is({effect::sleep, effect::charm}) && roll(100) <= 90);
     immune = immune || (target.has(124) && is({effect::sleep, effect::charm}) && roll(100) <= 30);
     immune = immune || (target.has(108) && is({effect::charm, effect::sleep}));
@@ -6016,6 +6144,11 @@ void Session::breathe_cloud(Fighter &f, bool round_ends)
         breathe_cloudkill(f);
     }
     cut_by_blades(f, false);
+    if (f.able() && in_cloud(f, CloudKind::acid))
+    {
+        log({"{name} is burned by acid.", {{"name", f.name}}});
+        nonweapon_damage(f, roll(6), 0, false, 16, 0, 0, false);
+    }
 }
 
 // The level of the caster of the first cloud of the kind, for the magic
@@ -6389,10 +6522,18 @@ bool Session::acquire_target(Fighter &f, int range, bool relaxed, bool force_new
     {
         const bool through_walls = pass == 2 && !force_new;
         auto candidates = enemies_within(f, range, !through_walls);
+        const auto *taunt = f.find_effect(effect::kender_taunted);
+        const auto yeller = taunt ? static_cast<EntityId>(taunt->strength) : EntityId{};
+        if (const auto target = std::ranges::find(candidates, yeller); target != candidates.end())
+        {
+            std::iter_swap(candidates.begin(), target);
+        }
         for (int tries = 0; tries < 20 && !candidates.empty(); ++tries)
         {
-            auto &pick =
-                candidates[static_cast<std::size_t>(roll(static_cast<int>(candidates.size())) - 1)];
+            auto &pick = candidates[tries == 0 && yeller != 0 && candidates.front() == yeller
+                                        ? 0
+                                        : static_cast<std::size_t>(
+                                              roll(static_cast<int>(candidates.size())) - 1)];
             if (pick == 0)
             {
                 continue;
@@ -6995,6 +7136,11 @@ void Session::secret_specials(Fighter &f)
             }
         }
     }
+    // Maya's native cold cone reaches eight squares and is used once.
+    if (champions() && f.has(effect::maya_breath) && f.able() && f.initiative > 0)
+    {
+        (void)secret_breath(f, effect::maya_breath, 8, 0x22);
+    }
     // A white dragon breathes cold 7 squares long, a red one fire 9 long
     // (magic.pas, EffDragonBreath).
     if (f.has(effect::cold_breath) && f.able() && f.initiative > 0)
@@ -7049,7 +7195,7 @@ bool Session::secret_breath(Fighter &dragon, int code, int length, int element, 
     auto *breath = dragon.find_effect(code);
     if (round_ == 1 || breath->strength > 3)
     {
-        breath->strength = 3;
+        breath->strength = champions() && code == effect::maya_breath ? 1 : 3;
     }
     if (breath->strength <= 0)
     {
@@ -7093,7 +7239,7 @@ bool Session::secret_breath(Fighter &dragon, int code, int length, int element, 
 // runs, so the gaze spider and the vampires never gaze, as there.
 void Session::darkness_specials(Fighter &f)
 {
-    if (!darkness() || !f.able() || f.initiative <= 0)
+    if ((!darkness() && !champions()) || !f.able() || f.initiative <= 0)
     {
         return;
     }
@@ -8656,6 +8802,10 @@ void Session::treasures_turn_undead(Fighter &turner)
 // Killed outright, whatever its Hit Points.
 void Session::kill(Fighter &victim, std::string_view message)
 {
+    if (victim.has(effect::aurak_invulnerable))
+    {
+        return;
+    }
     victim.condition = Condition::dead;
     victim.hit_points = 0;
     victim.initiative = 0;
@@ -8951,6 +9101,20 @@ void Session::expire(Fighter &f, const Effect &ended)
 {
     switch (ended.code)
     {
+    case effect::acid_pool_timer:
+        std::erase_if(clouds_,
+                      [&f](const Cloud &cloud)
+                      {
+                          return cloud.caster == f.id && cloud.kind == CloudKind::acid;
+                      });
+        log({"The acid drains away.", {}});
+        break;
+    case effect::aurak_transformation_timer:
+        aurak_final_form(f, false);
+        break;
+    case effect::aurak_explosion:
+        draconian_explosion(f, 3, true);
+        break;
     case effect::delayed_blast:
         delayed_blast_goes_off(f, ended.strength);
         break;
@@ -9055,6 +9219,13 @@ void Session::combat_start()
     bool feared = false;
     for (auto &f : fighters_)
     {
+        if (champions())
+        {
+            if (auto *power = f.find_effect(effect::aurak_energy))
+            {
+                power->strength = 3;
+            }
+        }
         // What its lasting effects make of its Strength (a Strength spell cast
         // in camp, a disease's wasting).
         if (f.has(effect::enlarged) || f.has(effect::strengthened) ||
@@ -9119,6 +9290,30 @@ void Session::combat_start()
         if (f.has(effect::renew_invisibility) && !gateway())
         {
             f.numbers.effects.push_back({effect::invisible, 1, 12, false});
+        }
+        if (champions() && f.has(effect::champions_dragon_fear) && f.able())
+        {
+            for (auto &other : fighters_)
+            {
+                if (other.side == f.side || !other.able() || other.has(effect::fearless) ||
+                    other.has(effect::fear) || other.has(effect::champions_afraid))
+                {
+                    continue;
+                }
+                if (other.numbers.level <= 3)
+                {
+                    if (add_with_message(other, {effect::fear, 0, 255, true}, false, false, 0,
+                                         f.numbers.level, game_spell(184)))
+                    {
+                        other.turned = true;
+                    }
+                }
+                else if (!saving_throw(other, 4, 0, &f))
+                {
+                    other.numbers.effects.push_back({effect::champions_afraid, 0, 255, false});
+                    log({"{name} is afraid.", {{"name", other.name}}});
+                }
+            }
         }
         // A Secret dragon's fear grips the weaker of its enemies (EffDragonFear).
         if (f.has(effect::dragon_fear) && f.able())
@@ -9195,6 +9390,71 @@ void Session::round_end_effects()
 // acid (any weapon) comes back in 3d6 rounds.
 void Session::went_down(Fighter &f)
 {
+    if (champions())
+    {
+        if (f.has(effect::baaz_disarm))
+        {
+            auto *attacker = find(striker_);
+            if (attacker && attacker->record && distance(*attacker, f) <= 1 &&
+                roll(20) >= attacker->record->current_abilities.dexterity - 3)
+            {
+                const auto held = held_now(*attacker);
+                const auto weapon =
+                    std::ranges::find_if(held,
+                                         [](const Held &item)
+                                         {
+                                             return !item.gone && !item.conjured &&
+                                                    item.carried.item.readied() &&
+                                                    item.carried.item.cursed_raw == 0 &&
+                                                    item.carried.type.worn_location == 0;
+                                         });
+                if (weapon != held.end())
+                {
+                    const auto at = static_cast<std::size_t>(weapon - held.begin());
+                    toggle_readied(*attacker, at);
+                    attacker->numbers.effects.push_back(
+                        {effect::baaz_banked_weapon, 0, static_cast<int>(at + 1), false});
+                    log({"{name} loses a weapon in the Baaz's stone body.",
+                         {{"name", attacker->name}}});
+                }
+            }
+        }
+        if (f.has(effect::kapak_acid))
+        {
+            f.remove(effect::kapak_acid);
+            Cloud pool;
+            pool.caster = f.id;
+            pool.corner = f.cell;
+            pool.covers[0] = true;
+            pool.kind = CloudKind::acid;
+            clouds_.push_back(pool);
+            put_out_of_play(f, Condition::gone);
+            f.numbers.effects.push_back({effect::acid_pool_timer, roll(6), 0, true});
+            log({"{name} dissolves into acid.", {{"name", f.name}}});
+            return;
+        }
+        if (f.has(effect::aurak_madness))
+        {
+            f.remove(effect::aurak_madness);
+            stand_up(f, 20, "{name} rises in a frenzy.");
+            f.numbers.spells.clear();
+            f.numbers.effects.push_back({effect::aurak_transformation, 0, 255, false});
+            f.numbers.effects.push_back({effect::aurak_immolation, 0, 255, false});
+            f.numbers.effects.push_back({effect::aurak_combat_bonus, 0, 255, false});
+            f.numbers.effects.push_back({effect::aurak_transformation_timer, 6, 255, true});
+            return;
+        }
+        if (f.has(effect::aurak_transformation))
+        {
+            aurak_final_form(f, true);
+            return;
+        }
+        if (f.has(effect::bozak_explosion))
+        {
+            draconian_explosion(f, 1, false);
+            return;
+        }
+    }
     if (f.has(effect::fights_while_down) &&
         ((f.condition == Condition::dying && f.overkill < 6) ||
          f.condition == Condition::unconscious) &&
@@ -9209,6 +9469,267 @@ void Session::went_down(Fighter &f)
     if (f.has(effect::troll_burn) && !f.able() && !f.has(effect::troll_return))
     {
         f.numbers.effects.push_back({effect::troll_return, roll(6) + roll(6) + roll(6), 0, true});
+    }
+}
+
+void Session::aurak_final_form(Fighter &f, bool revived)
+{
+    for (const auto code :
+         {effect::aurak_madness, effect::aurak_transformation, effect::aurak_immolation,
+          effect::aurak_combat_bonus, effect::aurak_transformation_timer})
+    {
+        f.remove(code);
+    }
+    if (revived)
+    {
+        stand_up(f, 20, "{name} becomes a blazing shape.");
+    }
+    else
+    {
+        log({"{name} becomes a blazing shape.", {{"name", f.name}}});
+    }
+    f.numbers.effects.push_back({effect::aurak_invulnerable, 0, 255, false});
+    f.numbers.effects.push_back({effect::aurak_explosion, 3, 255, true});
+    f.numbers.effects.push_back({effect::aurak_zap, 0, 255, false});
+}
+
+void Session::draconian_explosion(Fighter &f, int dice, bool stuns)
+{
+    for (const auto code : {effect::bozak_explosion, effect::aurak_invulnerable,
+                            effect::aurak_explosion, effect::aurak_zap})
+    {
+        f.remove(code);
+    }
+    log({"{name} explodes.", {{"name", f.name}}});
+    put_out_of_play(f, Condition::gone);
+    for (auto &other : fighters_)
+    {
+        if (other.id == f.id || !other.able() || distance(f, other) > 1)
+        {
+            continue;
+        }
+        int damage = 0;
+        for (int count = 0; count < dice; ++count)
+        {
+            damage += roll(6);
+        }
+        nonweapon_damage(other, damage, 0, false, 0, 0, 0, false);
+        if (stuns && other.able() && !saving_throw(other, 4, 0))
+        {
+            other.numbers.effects.push_back({effect::stunned, 0, 255, false});
+            log({"{name} is stunned.", {{"name", other.name}}});
+        }
+    }
+}
+
+void Session::kender_yell(Fighter &f)
+{
+    // Once a fight, even when every opponent saves; the mark is checkpointed
+    // with ordinary combat effects and does not carry into another fight.
+    f.numbers.effects.push_back({effect::kender_yelled, 0, 0, false});
+    log({"{name} yells a taunt.", {{"name", f.name}}});
+    for (auto &other : fighters_)
+    {
+        if (other.side != f.side && other.able() && !other.helpless() &&
+            other.numbers.intelligence > 3 && !saving_throw(other, 4, 0, &f))
+        {
+            other.numbers.effects.push_back(
+                {effect::kender_taunted, 0, static_cast<int>(f.id), false});
+            log({"{name} wants to kill {yeller}.", {{"name", other.name}, {"yeller", f.name}}});
+        }
+    }
+    end_actions(f);
+}
+
+void Session::champions_turn_start(Fighter &f)
+{
+    if (!champions() || !f.able())
+    {
+        return;
+    }
+    if (f.has(effect::death_knight_gate) && f.hit_points < f.numbers.max_hit_points / 2)
+    {
+        f.remove(effect::death_knight_gate);
+        for (auto &reserve : fighters_)
+        {
+            if (reserve.side != f.side || reserve.arrival_round != gated_reserve_round)
+            {
+                continue;
+            }
+            const auto old_cell = reserve.cell;
+            bool placed = false;
+            for (const auto &enemy : fighters_)
+            {
+                if (enemy.side == f.side || !enemy.able())
+                {
+                    continue;
+                }
+                for (std::size_t direction = 0; direction < step_x.size(); ++direction)
+                {
+                    reserve.cell = {enemy.cell.x + step_x[direction],
+                                    enemy.cell.y + step_y[direction]};
+                    const auto squares = squares_of(reserve);
+                    if (cell_free(reserve) &&
+                        std::ranges::all_of(squares,
+                                            [&](Cell cell)
+                                            {
+                                                return board_.contains(cell) &&
+                                                       board_.at(cell) == rules::Terrain::open;
+                                            }))
+                    {
+                        reserve.condition = Condition::okay;
+                        reserve.arrival_round = 0;
+                        reserve.hit_points = reserve.numbers.max_hit_points;
+                        reserve.initiative = 0;
+                        log({"{name} gates in.", {{"name", reserve.name}}});
+                        placed = true;
+                        break;
+                    }
+                }
+                if (placed)
+                {
+                    break;
+                }
+            }
+            if (!placed)
+            {
+                reserve.cell = old_cell;
+            }
+        }
+    }
+    if (f.has(effect::death_knight_fireball))
+    {
+        const auto &fireball = *game_spell(47);
+        const int level = caster_level(f, fireball, game_of(identity_));
+        const int range = spell_range(fireball, level);
+        for (unsigned attempt = 0; attempt < 20; ++attempt)
+        {
+            const auto *target = secret_target(f, range, false);
+            if (!target)
+            {
+                break;
+            }
+            const auto aim = target->cell;
+            if (std::ranges::any_of(fighters_,
+                                    [&](const Fighter &other)
+                                    {
+                                        return other.side == f.side && other.able() &&
+                                               distance(other, *target) <= fireball.ai_radius;
+                                    }))
+            {
+                continue;
+            }
+            log({"{name} throws a fireball.", {{"name", f.name}}});
+            f.remove(effect::death_knight_fireball);
+            const auto targets = fireball_reach(within(aim, fireball.area & 7), aim);
+            int damage = 0;
+            for (unsigned die = 0; die < 15; ++die)
+            {
+                damage += roll(6);
+            }
+            cast_generic(f, 47, level, targets, damage, 9);
+            break;
+        }
+    }
+    if (f.has(effect::death_knight_dispel) && roll(20) == 1)
+    {
+        const auto &spell = *game_spell(41);
+        const int level = caster_level(f, spell, game_of(identity_));
+        if (const auto *target = secret_target(f, spell_range(spell, level), false))
+        {
+            log({"{name} invokes Dispel Magic.", {{"name", f.name}}});
+            for (const auto id : within(target->cell, spell.area & 7))
+            {
+                dispel(*find(id), level);
+            }
+        }
+    }
+    if (f.has(effect::ghast_stench) || f.has(effect::death_knight_fear))
+    {
+        for (auto &other : fighters_)
+        {
+            if (other.side == f.side || !other.able() || distance(f, other) > 1)
+            {
+                continue;
+            }
+            if (f.has(effect::ghast_stench) && !other.has(effect::champions_sickened) &&
+                !saving_throw(other, 4, 0, &f))
+            {
+                other.numbers.effects.push_back({effect::champions_sickened, 0, 255, false});
+                log({"{name} is affected by the evil stench.", {{"name", other.name}}});
+            }
+            if (f.has(effect::death_knight_fear) && !other.has(effect::fearless) &&
+                !other.has(effect::fear) && !saving_throw(other, 4, 0, &f))
+            {
+                if (add_with_message(other, {effect::fear, 0, 255, true}, false, false, 0,
+                                     f.numbers.level, game_spell(184)))
+                {
+                    other.turned = true;
+                }
+            }
+        }
+    }
+    if (f.has(effect::aurak_immolation))
+    {
+        for (auto &other : fighters_)
+        {
+            if (other.id != f.id && other.able() && distance(f, other) <= 1)
+            {
+                nonweapon_damage(other, roll(6), 0, false, 0, 0, 0, false);
+            }
+        }
+    }
+    if (f.has(effect::aurak_zap))
+    {
+        for (auto &other : fighters_)
+        {
+            if (other.side != f.side && other.able() && distance(f, other) <= 1)
+            {
+                log({"{name} is struck by an energy bolt.", {{"name", other.name}}});
+                nonweapon_damage(other, roll(6) + roll(6), 0, false, 0, 0, 0, false);
+                end_actions(f);
+                break;
+            }
+        }
+    }
+    if (f.able() && f.initiative > 0 && f.has(effect::aurak_energy) && roll(100) <= 75)
+    {
+        auto *power = f.find_effect(effect::aurak_energy);
+        if (power->strength > 0 && roll(100) <= 25)
+        {
+            Fighter *target = nullptr;
+            for (auto &other : fighters_)
+            {
+                if (other.side != f.side && other.able() && distance(f, other) <= 1)
+                {
+                    target = &other;
+                }
+            }
+            if (target)
+            {
+                --power->strength;
+                log({"{name} breathes a blinding cloud.", {{"name", f.name}}});
+                const bool saved = saving_throw(*target, 3, 0, &f);
+                nonweapon_damage(*target, saved ? 10 : 20, 0, false, 0, 0, 0, false);
+                if (!saved)
+                {
+                    (void)add_with_message(*target, {effect::blind, 0, 0, false}, false, false, 0,
+                                           0, nullptr);
+                    end_actions(f);
+                }
+                return;
+            }
+        }
+        if (auto *target = secret_target(f, 6, true))
+        {
+            log({"{name} fires an energy bolt.", {{"name", f.name}}});
+            nonweapon_damage(*target, roll(8) + 2, 0, false, 0, 0, 0, false);
+            if (target->able())
+            {
+                nonweapon_damage(*target, roll(8) + 2, 0, false, 0, 0, 0, false);
+            }
+            end_actions(f);
+        }
     }
 }
 
@@ -9391,6 +9912,36 @@ int Session::weapon_damage_defenses(Fighter &attacker, Fighter &defender, int da
     if (attacker.has(effect::enfeebled))
     {
         damage -= damage / 4;
+    }
+    if (champions())
+    {
+        const bool dragon = (defender.numbers.traits & champions_dragon_trait) != 0;
+        if (dragon && attacker.has(effect::dragon_slayer))
+        {
+            // The native handler triples one d12, then adds 4 and Strength.
+            damage = 3 * roll(12) + 4 +
+                     strength_damage_bonus(attacker.numbers.strength,
+                                           attacker.numbers.exceptional_strength);
+        }
+        if (dragon && attacker.has(effect::dragonlance))
+        {
+            damage = attacker.hit_points;
+        }
+        if (attacker.has(effect::reptile_bane) &&
+            (defender.numbers.traits & champions_reptile_trait))
+        {
+            damage += 3;
+        }
+        if (attacker.has(effect::mace_disruption) && (defender.numbers.traits & trait::unliving))
+        {
+            if (defender.numbers.undead_level > 0)
+            {
+                log({"{name} is disrupted.", {{"name", defender.name}}});
+                put_out_of_play(defender, Condition::gone);
+                return 0;
+            }
+            damage *= 2;
+        }
     }
     // Pools of Darkness's dragon fear takes 2 from a blow (EffDragonFeared).
     if (attacker.has(effect::dragon_feared))
@@ -9577,10 +10128,10 @@ int Session::weapon_damage_defenses(Fighter &attacker, Fighter &defender, int da
     // Secret and Pools of Darkness against the creatures its flags name, and
     // in the kit those its monster types do, from next to them
     // (EffRangerDamageBonus; the kit's effects.c, 105).
-    const bool ranger_foe = secret_engine() || kit()
-                                ? (defender.numbers.traits & trait::ranger_foe) &&
-                                      adjacent(attacker, defender)
-                                : (defender.numbers.kin & kin::giant) != 0;
+    const bool ranger_foe =
+        secret_engine() || kit()
+            ? (defender.numbers.traits & trait::ranger_foe) && adjacent(attacker, defender)
+            : (defender.numbers.kin & kin::giant) != 0;
     if (attacker.has(334) && ranger_foe && damage > 0)
     {
         damage += attacker.numbers.class_levels[static_cast<std::size_t>(ClassSlot::ranger)];
@@ -10085,7 +10636,8 @@ rules::Snapshot Session::snapshot() const
         view.status = f->condition == Condition::dead          ? "dead"
                       : f->condition == Condition::dying       ? "dying"
                       : f->condition == Condition::unconscious ? "unconscious"
-                      : f->condition == Condition::fled        ? "fled"
+                      : f->condition == Condition::fled
+                          ? (f->arrival_round == gated_reserve_round ? "waiting" : "fled")
                       : f->condition == Condition::surrendered ? "surrendered"
                       : f->condition == Condition::gone        ? "gone"
                       : f->condition == Condition::stoned      ? "stoned"
@@ -10316,7 +10868,19 @@ std::vector<rules::Command> Session::legal_commands() const
         {
             const auto &item = held[at];
             const bool is_readied = item.carried.item.readied();
-            if (item.gone || (!item.inventory_id && !item.conjured) ||
+            const bool banked =
+                std::ranges::any_of(actor->numbers.effects,
+                                    [at](const Effect &power)
+                                    {
+                                        return power.code == effect::baaz_banked_weapon &&
+                                               power.strength == static_cast<int>(at + 1);
+                                    });
+            const bool wrong_order =
+                champions() && champions_ready_refusal(item.carried.item, actor->record->race,
+                                                       actor->record->robe_order)
+                                   .has_value();
+            if (item.gone || banked || (!is_readied && wrong_order) ||
+                (!item.inventory_id && !item.conjured) ||
                 (is_readied ? item.carried.item.cursed_raw != 0
                             : readying_refusal(item.carried, readied, actor->record->item_limit,
                                                game_of(identity_))
@@ -10351,6 +10915,15 @@ std::vector<rules::Command> Session::legal_commands() const
     if (may_turn(*actor))
     {
         offer("turn");
+    }
+    if (champions() && actor->numbers.race == 5 &&
+        std::ranges::none_of(fighters_,
+                             [](const Fighter &fighter)
+                             {
+                                 return fighter.has(effect::kender_yelled);
+                             }))
+    {
+        offer("yell");
     }
     for (const auto &f : fighters_)
     {
@@ -10443,6 +11016,10 @@ bool Session::submit(const rules::Command &command)
         auto &target = *find(command.target);
         note_attack(actor, target);
         shoot(actor, target);
+    }
+    else if (command.verb == "yell")
+    {
+        kender_yell(actor);
     }
     else if (command.verb == "turn")
     {
@@ -10813,7 +11390,7 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
         cloud.index = in.as<int>();
         cloud.corner = {in.as<int>(), in.as<int>()};
         const auto kind = in.as<unsigned>();
-        if (kind > static_cast<unsigned>(CloudKind::blades))
+        if (kind > static_cast<unsigned>(CloudKind::acid))
         {
             throw std::runtime_error("Invalid original-rules combat checkpoint");
         }
@@ -11196,6 +11773,14 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
         {
             f.condition = Condition::fled;
             f.arrival_round = static_cast<int>(p.arrival_round);
+        }
+        else if (game_of(identity) == GoldBoxGame::champions_of_krynn && f.record &&
+                 f.record->status == 9)
+        {
+            // The native REMOVED status is a gated reserve. Sir Lebaum's
+            // four ghasts wait off the arena until his power brings them in.
+            f.condition = Condition::fled;
+            f.arrival_round = gated_reserve_round;
         }
         fighters.push_back(std::move(f));
     }

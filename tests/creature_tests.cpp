@@ -235,7 +235,16 @@ void parsing()
     require(decode_dax_archive(archive).records.size() == 2, "Complete DAX enumeration");
     archive.pop_back();
     require(!decode_dax_archive(archive), "Truncated second record fails entire archive");
-    require(!decode_dax_archive(dax({{1, {}}, {1, {}}})), "Duplicate DAX IDs rejected");
+    auto duplicates = dax({{1, {41}}, {1, {42}}});
+    const auto duplicate_records = decode_dax_archive(duplicates);
+    require(duplicate_records && duplicate_records.records.size() == 2 &&
+                duplicate_records.records[0].bytes == Bytes{41} &&
+                duplicate_records.records[1].bytes == Bytes{42},
+            "Repeated DAX IDs preserve each physical payload");
+    require(decode_dax_record(duplicates, 1) == Bytes{41},
+            "Indexed DAX lookup chooses the first repeated ID");
+    duplicates.pop_back();
+    require(!decode_dax_archive(duplicates), "A malformed repeated payload rejects the archive");
     Bytes repeated{9, 0, 7, 0, 0, 0, 0, 128, 0, 2, 0, 128, 42};
     const auto decoded = decode_dax_archive(repeated);
     require(decoded && decoded.records[0].bytes == Bytes(128, 42), "RLE -128 repeats 128 bytes");
@@ -688,7 +697,12 @@ void maps()
         rejected = std::string_view(e.what()).find("GEO2.DAX:7") != std::string_view::npos;
     }
     require(rejected && loaded.all().size() == 3, "Bad map diagnosed; previous catalog unchanged");
-    write(f.path() / "GEO2.DAX", dax({{7, bytes}, {7, bytes}}));
+    write(f.path() / "GEO2.DAX", dax({{7, bytes}, {7, Bytes(1026)}}));
+    const auto duplicate_maps = MapCatalog::load(f.path());
+    require(duplicate_maps.all().size() == 3 &&
+                duplicate_maps.find({"GEO2.DAX", 7})->get().at(0, 0).event_raw == 0x85,
+            "The map catalog selects the first repeated DAX ID");
+    write(f.path() / "GEO2.DAX", dax({{7, bytes}, {7, Bytes(1025)}}));
     rejected = false;
     try
     {
@@ -698,7 +712,7 @@ void maps()
     {
         rejected = true;
     }
-    require(rejected, "Duplicate DAX record rejected");
+    require(rejected, "Malformed map behind a repeated DAX ID rejected");
     Fixture empty;
     rejected = false;
     try

@@ -699,7 +699,9 @@ void CharacterCreationView::refresh_party()
         .set_text(
             error_.is_empty()
                 ? i18n::text(
-                      "Each new character brings 3d6 × 10 gold pieces. Save game keeps this party to play on later.")
+                      original::game_of(campaign_->identity()) == GoldBoxGame::champions_of_krynn
+                          ? N_("Each new character brings starting steel and equipment for this campaign. Save game keeps this party to play on later.")
+                          : N_("Each new character brings 3d6 × 10 gold pieces. Save game keeps this party to play on later."))
                 : error_);
     for (const char *name : {"Remove", "Rejoin", "Equip"})
     {

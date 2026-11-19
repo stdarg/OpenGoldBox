@@ -3,9 +3,14 @@
 The plan for OpenGoldBox to play the three *Dragonlance* Gold Box games from
 start to finish: *Champions of Krynn* (1990), *Death Knights of Krynn* (1991)
 and *The Dark Queen of Krynn* (1992). It follows the method of the *Forgotten
-Realms* games ([GAMES.md](GAMES.md)). This plan is written but not started. It
-waits for the user's word: when the *Forgotten Realms* games are playable and
-winnable, the user decides what comes next (2026-11-16).
+Realms* games ([GAMES.md](GAMES.md)). The active all-twelve-game request
+supersedes the earlier wait for another instruction. Champions' fresh earned
+ending is verified (123 battles, zero defeats, all six PCs alive), with native,
+Godot and Linux package checks complete. Death Knights is the next sequential
+delivery batch, after Champions and Treasure's earned completion (`2f20d568`).
+See [its implementation record](games/champions.md) and
+[playability](PLAYABILITY.md). Death Knights and Dark Queen follow it; the
+current task does not authorize SRD work or delegation.
 
 ## Where the files are
 
@@ -164,8 +169,9 @@ the original-rules combat and camp tests pass for that game.
    load.
 3. **A route test** plays from the opening to the end with the game's default
    party, as the Realms routes do. It uses the same planning aids, per-beat
-   dice and reloads where a player would reload. A fight is won by the test (a
-   stand-in) only when no reasonable play wins it, and each stand-in is named.
+   dice and reloads where a player would reload. Certification requires actual
+   wins, earned rewards and physically valid movement. Forced outcomes, grants,
+   healing or placements remain diagnostic assistance and cannot certify a win.
 4. The ending is shown, with room for a drop-in ending film
    (`endings/COK.ogv`, made by the user).
 
@@ -216,7 +222,10 @@ as the Realms games' plan step 9 has it, they would come as content work:
 monster conversions (each creature stays what its art shows), shops, art
 mappings and an SRD form of the Krynn classes and races.
 
-## Working in parallel
+## Historical parallelization sketch
+
+Current execution is sequential. This older sketch is not authorization to
+spawn agents; the active session uses one implementation owner.
 
 Each step runs in agents' own worktrees, claimed on the session board. The
 agents share no file except the shared numbers (campaign format, combat

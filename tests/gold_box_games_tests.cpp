@@ -10258,7 +10258,9 @@ void walk_earned_campaign(opengold::por::RolfTourSession &session, unsigned tx, 
         const int origin = before.pose.y * 16 + before.pose.x;
         // Yulash's open streets are safer than the shorter path through
         // locked houses. Fall back to locks only when the destination needs one.
-        for (unsigned door_limit = prefer_open ? 1 : 2; door_limit <= 2; ++door_limit)
+        const unsigned last_door =
+            session.game() == opengold::GoldBoxGame::champions_of_krynn ? 3 : 2;
+        for (unsigned door_limit = prefer_open ? 1 : 2; door_limit <= last_door; ++door_limit)
         {
             previous.fill(-1);
             std::deque<int> pending;
@@ -10271,6 +10273,7 @@ void walk_earned_campaign(opengold::por::RolfTourSession &session, unsigned tx, 
                 for (unsigned d = 0; d < 4; ++d)
                 {
                     int x = at % 16 + dx[d], y = at / 16 + dy[d];
+                    bool scripted_passage = false;
                     // ECL2:3 folds the sewer corridors across its north/south
                     // edges. These are actual scripted steps, not map wrapping.
                     if (session.game() == GoldBoxGame::curse_of_the_azure_bonds && area == 3 &&
@@ -10285,6 +10288,77 @@ void walk_earned_campaign(opengold::por::RolfTourSession &session, unsigned tx, 
                         x = x == 9 ? 2 : x - 6;
                         y = 15;
                     }
+                    if (session.game() == GoldBoxGame::champions_of_krynn &&
+                        (script == 34 || script == 49 || script == 81 || script == 82))
+                    {
+                        // Native pre-step transfers connect catacomb
+                        // corridors, keep floors and the Sanction temples. Execute the
+                        // ordinary step; the script changes the actual pose.
+                        struct Passage
+                        {
+                            int from;
+                            unsigned facing;
+                            int x, y;
+                        };
+
+                        static constexpr std::array<Passage, 6> catacombs{{{15, 1, 0, 1},
+                                                                           {16, 3, 15, 0},
+                                                                           {31, 1, 0, 3},
+                                                                           {48, 3, 15, 1},
+                                                                           {128, 3, 15, 4},
+                                                                           {79, 1, 0, 8}}};
+                        static constexpr std::array<Passage, 18> keep{{{14, 3, 8, 6},
+                                                                       {15, 1, 1, 15},
+                                                                       {45, 3, 6, 3},
+                                                                       {54, 1, 13, 2},
+                                                                       {64, 3, 8, 11},
+                                                                       {90, 2, 15, 5},
+                                                                       {94, 2, 1, 11},
+                                                                       {95, 2, 10, 5},
+                                                                       {104, 0, 14, 0},
+                                                                       {126, 3, 1, 13},
+                                                                       {177, 2, 14, 5},
+                                                                       {178, 2, 5, 11},
+                                                                       {181, 2, 2, 11},
+                                                                       {184, 3, 0, 4},
+                                                                       {208, 3, 7, 13},
+                                                                       {209, 1, 14, 7},
+                                                                       {215, 1, 0, 13},
+                                                                       {241, 2, 15, 0}}};
+                        static constexpr std::array<Passage, 8> shadow{{{168, 1, 0, 13},
+                                                                        {203, 1, 0, 14},
+                                                                        {208, 3, 8, 10},
+                                                                        {224, 3, 11, 12},
+                                                                        {234, 1, 0, 15},
+                                                                        {240, 3, 10, 14},
+                                                                        {255, 1, 13, 0},
+                                                                        {13, 3, 15, 15}}};
+                        static constexpr std::array<Passage, 6> duerghast{{{245, 2, 12, 0},
+                                                                           {12, 0, 5, 15},
+                                                                           {83, 1, 0, 15},
+                                                                           {80, 3, 0, 12},
+                                                                           {240, 3, 3, 5},
+                                                                           {192, 3, 0, 5}}};
+                        const auto passages = script == 34   ? std::span<const Passage>(catacombs)
+                                              : script == 49 ? std::span<const Passage>(keep)
+                                              : script == 81 ? std::span<const Passage>(shadow)
+                                                             : std::span<const Passage>(duerghast);
+                        for (const auto &passage : passages)
+                        {
+                            if (at == passage.from && d == passage.facing)
+                            {
+                                if (script == 81 && at == 13 &&
+                                    session.script_variable(opengold::por::EclAddress{0x4CB7}) == 0)
+                                {
+                                    continue;
+                                }
+                                x = passage.x;
+                                y = passage.y;
+                                scripted_passage = true;
+                                break;
+                            }
+                        }
+                    }
                     if (x < 0 || y < 0 || x >= 16 || y >= 16)
                     {
                         continue;
@@ -10294,7 +10368,8 @@ void walk_earned_campaign(opengold::por::RolfTourSession &session, unsigned tx, 
                         continue;
                     }
                     const auto &edge = session.map().at(at % 16, at / 16);
-                    if (edge.doors[d] > door_limit || (edge.walls[d] && !edge.doors[d]))
+                    if (!scripted_passage &&
+                        (edge.doors[d] > door_limit || (edge.walls[d] && !edge.doors[d])))
                     {
                         continue;
                     }
@@ -10332,7 +10407,9 @@ void walk_earned_campaign(opengold::por::RolfTourSession &session, unsigned tx, 
         }
         check(session.explore(C::forward), "The earned party can attempt its next step");
         settle();
-        if (session.game() == opengold::GoldBoxGame::treasures_of_the_savage_frontier &&
+        if ((session.game() == opengold::GoldBoxGame::treasures_of_the_savage_frontier ||
+             (session.game() == opengold::GoldBoxGame::champions_of_krynn &&
+              (script == 49 || (script == 97 && session.map().at(tx, ty).event_number() == 12)))) &&
             next == static_cast<int>(ty * 16 + tx))
         {
             // That real step visited the destination. An audience may have
@@ -10344,13 +10421,947 @@ void walk_earned_campaign(opengold::por::RolfTourSession &session, unsigned tx, 
     throw std::runtime_error("Earned walking did not arrive");
 }
 
+enum class ChampionsProgress
+{
+    none,
+    opening,
+    throtl,
+    temple,
+    altar,
+    catacombs,
+    report,
+    gargath,
+    keep_entry,
+    keep_sanctuary,
+    keep,
+    keep_report,
+    jelek,
+    jelek_rose,
+    jelek_report,
+    tomb_entry,
+    tomb_fear,
+    tomb_honor,
+    tomb,
+    neraka_entry,
+    neraka_prison,
+    neraka,
+    sanction_entry,
+    sanction_temple,
+    duerghast_entry,
+    dragonlance,
+    lebaum,
+    flying_citadel,
+    citadel_top,
+    citadel_collision,
+    kernen_square,
+    kernen_gate,
+    base_salve,
+    base_master,
+    ending
+};
+
+std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
+{
+    using D = opengold::por::MapDirection;
+    using C = opengold::por::ExplorationCommand;
+    RouteBeat outpost{17,
+                      1,
+                      3,
+                      D::north,
+                      {"YES", "COMMANDANT", "ARMOURY", "buy:MACE@cleric 4,cleric 5",
+                       "buy:LEATHER@cleric 4,cleric 5", "buy:SHIELD@cleric 4,cleric 5",
+                       "buy:QUARTER STAFF@magic_user 6",
+                       "buy:MACE@knight 1,knight 2,knight 3,cleric 4,cleric 5", "LEAVE", "NO"}};
+    outpost.waiting = true;
+    RouteBeat caravan{16, 1, 2, D::north, {"YES", "LEAVE", "NO"}};
+    caravan.area_steps = {C::north};
+    RouteBeat throtl{32, 0, 0, D::north, {"YES", "FIGHT"}};
+    throtl.area_steps = {C::north, C::northeast, C::look};
+    throtl.memorize_first_of = {"sleep", "cure_light_wounds", "bless"};
+    std::vector<RouteBeat> beats{outpost, caravan, throtl};
+    if (progress == ChampionsProgress::opening)
+    {
+        return beats;
+    }
+    // ECL1:32's pre-camp entry permits uninterrupted rest on event 9.
+    // The native map's room at (1,11) has that event; reach it by walking.
+    RouteBeat shelter{32, 1, 11, D::north, {}};
+    shelter.reload_event = true;
+    beats.push_back(shelter);
+    RouteBeat prepare{32, 1, 11, D::north, {}, true};
+    prepare.arrive_only = true;
+    prepare.rest_for_spells = true;
+    prepare.cure_first = true;
+    prepare.cure_to_full = true;
+    prepare.memorize_first_of = {"sleep", "cure_light_wounds", "bless"};
+    beats.push_back(prepare);
+    RouteBeat larcent{32, 2, 6, D::north, {"YES"}};
+    larcent.reload_event = true;
+    beats.push_back(larcent);
+    RouteBeat caramon{32, 6, 11, D::south, {"YES"}};
+    caramon.reload_event = true;
+    beats.push_back(caramon);
+    beats.push_back(shelter);
+    prepare.memorize_first_of = {"magic_missile", "cure_light_wounds", "bless"};
+    beats.push_back(prepare);
+    RouteBeat key{32, 0, 13, D::north, {"ATTACK"}};
+    key.reload_event = true;
+    key.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C46, 1};
+    beats.push_back(key);
+    if (progress >= ChampionsProgress::altar)
+    {
+        // Return through Throtl's actual southern gate and train with the
+        // experience earned so far. No experience or money is supplied here.
+        auto leave = step_beat(32, 7, 15, D::south, {"NO"});
+        leave.reload_event = true;
+        beats.push_back(leave);
+        RouteBeat train{16,
+                        1,
+                        3,
+                        D::north,
+                        {"YES", "HALL", "knight 1", "knight 2", "knight 3", "cleric 4", "cleric 5",
+                         "magic_user 6", "Leave", "LEAVE", "NO"}};
+        train.area_steps = {C::southwest, C::south};
+        beats.push_back(train);
+        // The earlier caravan has already been escorted home.
+        beats.push_back(throtl);
+        beats.push_back(shelter);
+        prepare.memorize_first_of = {"hold_person", "sleep", "cure_light_wounds", "bless"};
+        beats.push_back(prepare);
+    }
+    if (progress >= ChampionsProgress::temple)
+    {
+        RouteBeat door{32, 7, 6, D::east, {}};
+        door.step = true;
+        door.reload_event = true;
+        beats.push_back(door);
+    }
+    if (progress >= ChampionsProgress::altar)
+    {
+        RouteBeat altar{32, 12, 7, D::south, {"ATTACK"}};
+        altar.reload_event = true;
+        altar.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C61, 255};
+        beats.push_back(altar);
+    }
+    if (progress >= ChampionsProgress::catacombs)
+    {
+        RouteBeat recover{32, 12, 7, D::south, {}, true};
+        recover.arrive_only = true;
+        recover.rest_for_spells = true;
+        recover.cure_first = true;
+        recover.cure_to_full = true;
+        recover.memorize_first_of = {"sleep", "cure_light_wounds", "bless"};
+        beats.push_back(recover);
+        // The priests have earned third level from the altar encounter.
+        // Return by the real city gate for training before the long descent.
+        auto temple_exit = step_beat(32, 8, 6, D::west);
+        temple_exit.reload_event = true;
+        beats.push_back(temple_exit);
+        auto city_exit = step_beat(32, 7, 15, D::south, {"NO"});
+        city_exit.reload_event = true;
+        beats.push_back(city_exit);
+        auto train_priests = beats.at(11);
+        train_priests.answers = {"YES", "HALL", "cleric 4", "cleric 5", "Leave", "LEAVE", "NO"};
+        beats.push_back(train_priests);
+        beats.push_back(throtl);
+        beats.push_back(beats.at(15));
+        auto stairs = step_beat(32, 9, 0, D::north);
+        stairs.reload_event = true;
+        beats.push_back(stairs);
+        // ECL1:34 event 7 is both the native treasure room and a safe camp.
+        RouteBeat supplies{34, 5, 4, D::south, {"ATTACK"}};
+        supplies.reload_event = true;
+        supplies.take_wand = true;
+        supplies.take_items = {{"BRACERS", "magic_user 6"}};
+        beats.push_back(supplies);
+        recover.map = 34;
+        recover.x = 5;
+        recover.y = 4;
+        recover.ward_memorized = "resist_cold";
+        recover.keep_preparation = true;
+        recover.memorize_first_of = {"resist_cold", "cure_light_wounds", "sleep"};
+        beats.push_back(recover);
+        RouteBeat approach{34, 2, 9, D::west, {"ATTACK"}};
+        approach.arrive_only = true;
+        approach.reload_event = true;
+        approach.keep_preparation = true;
+        approach.cure_first = true;
+        beats.push_back(approach);
+        RouteBeat dragons{34, 1, 9, D::west, {"ATTACK THE REMAINING FORCE"}};
+        dragons.reload_event = true;
+        dragons.cure_first = true;
+        dragons.cure_to_full = true;
+        dragons.keep_preparation = true;
+        dragons.ward_each_with = "resist_cold";
+        // Patrols may have spent prepared copies; protect the low-HP mage
+        // with the remaining spell rather than assuming six still remain.
+        dragons.ward_members = {"magic_user 6"};
+        dragons.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C5C, 255};
+        beats.push_back(dragons);
+    }
+    if (progress >= ChampionsProgress::report)
+    {
+        auto shelter = beats.at(25);
+        shelter.rest_first = false;
+        shelter.rest_for_spells = false;
+        shelter.cure_first = true;
+        shelter.keep_preparation = true;
+        shelter.reload_event = true;
+        beats.push_back(shelter);
+        auto recover = beats.at(25);
+        recover.ward_memorized = "cure_light_wounds";
+        recover.memorize_first_of = {"cure_light_wounds", "sleep", "bless"};
+        beats.push_back(recover);
+        auto upstairs = step_beat(34, 0, 0, D::west);
+        upstairs.reload_event = true;
+        beats.push_back(upstairs);
+        beats.push_back(beats.at(18));
+        beats.push_back(beats.at(19));
+        auto report = beats.at(11);
+        report.answers = {"YES",          "COMMANDANT", "HALL",     "knight 1",
+                          "knight 2",     "knight 3",   "cleric 4", "cleric 5",
+                          "magic_user 6", "Leave",      "LEAVE",    "NO"};
+        beats.push_back(report);
+    }
+    if (progress >= ChampionsProgress::gargath)
+    {
+        RouteBeat second_outpost{16, 13, 5, D::north, {"YES", "COMMANDANT", "LEAVE", "NO"}};
+        second_outpost.area_steps.assign(12, C::east);
+        second_outpost.area_steps.push_back(C::south);
+        second_outpost.area_steps.push_back(C::south);
+        second_outpost.reload_event = true;
+        beats.push_back(second_outpost);
+        RouteBeat gargath{48, 9, 15, D::north, {"YES", "GARGATH"}};
+        gargath.area_steps = {C::north, C::northeast, C::look};
+        gargath.reload_event = true;
+        beats.push_back(gargath);
+    }
+
+    if (progress >= ChampionsProgress::keep_entry)
+    {
+        RouteBeat resistance{48, 7, 14, D::north, {"YES", "YES"}};
+        resistance.reload_event = true;
+        resistance.cure_first = true;
+        beats.push_back(resistance);
+        RouteBeat inn{48, 6, 9, D::north, {"YES", "REST", "LEAVE"}};
+        inn.arrive_only = true;
+        inn.reload_event = true;
+        inn.cure_first = true;
+        beats.push_back(inn);
+        auto prepare = inn;
+        prepare.rest_first = true;
+        prepare.rest_for_spells = true;
+        prepare.keep_preparation = true;
+        prepare.cure_to_full = true;
+        prepare.ward_memorized = "cure_light_wounds";
+        prepare.memorize_first_of = {"stinking_cloud", "hold_person", "cure_light_wounds",
+                                     "magic_missile"};
+        beats.push_back(prepare);
+        RouteBeat approach{48, 4, 1, D::north, {"ATTACK"}};
+        approach.arrive_only = true;
+        approach.reload_event = true;
+        approach.cure_first = true;
+        beats.push_back(approach);
+        auto gate = step_beat(48, 4, 0, D::north, {"ATTACK"});
+        gate.reload_event = true;
+        gate.cure_first = true;
+        gate.cure_to_full = true;
+        beats.push_back(gate);
+    }
+
+    if (progress >= ChampionsProgress::keep_sanctuary)
+    {
+        RouteBeat castellan{49, 5, 5, D::north, {"GREET"}};
+        castellan.reload_event = true;
+        castellan.cure_first = true;
+        castellan.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C70, 255};
+        beats.push_back(castellan);
+        RouteBeat sanctuary{49, 4, 9, D::north, {"ATTACK"}};
+        sanctuary.reload_event = true;
+        sanctuary.cure_first = true;
+        sanctuary.take_items = {{"Long Sword", "knight 1"}};
+        beats.push_back(sanctuary);
+        sanctuary.arrive_only = true;
+        sanctuary.rest_first = true;
+        sanctuary.rest_for_spells = true;
+        sanctuary.cure_to_full = true;
+        sanctuary.keep_preparation = true;
+        sanctuary.ward_memorized = "cure_light_wounds";
+        sanctuary.memorize_first_of = {"stinking_cloud", "hold_person", "cure_light_wounds",
+                                       "magic_missile"};
+        beats.push_back(sanctuary);
+    }
+
+    if (progress >= ChampionsProgress::keep)
+    {
+        RouteBeat myrtani{49, 6, 10, D::north, {"NO"}};
+        myrtani.arrive_only = true;
+        myrtani.reload_event = true;
+        myrtani.cure_first = true;
+        myrtani.cure_to_full = true;
+        myrtani.ward_each_with = "bless";
+        myrtani.ward_members = {"knight 1"};
+        beats.push_back(myrtani);
+        auto shelter = beats.at(42);
+        shelter.arrive_only = true;
+        shelter.cure_to_full = true;
+        beats.push_back(shelter);
+        beats.push_back(beats.at(43));
+        myrtani.answers = {"YES", "STAY"};
+        myrtani.ward_each_with.clear();
+        myrtani.ward_members.clear();
+        beats.push_back(myrtani);
+        for (const auto &[x, y] : {std::pair{0u, 12u}, std::pair{2u, 12u}, std::pair{4u, 12u}})
+        {
+            RouteBeat up{49, x, y, D::north, {"UP", "STAY"}};
+            up.reload_event = true;
+            up.cure_first = true;
+            up.cure_to_full = true;
+            beats.push_back(up);
+        }
+        RouteBeat roof{49, 0, 14, D::north, {"UP", "NO"}};
+        roof.reload_event = true;
+        roof.cure_first = true;
+        roof.cure_to_full = true;
+        roof.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C7D, 255};
+        beats.push_back(roof);
+    }
+
+    if (progress >= ChampionsProgress::keep_report)
+    {
+        RouteBeat down{49, 0, 15, D::north, {"YES", "DOWN", "DOWN", "DOWN", "DOWN", "NO"}};
+        down.reload_event = true;
+        down.cure_first = true;
+        beats.push_back(down);
+        auto shelter = beats.at(42);
+        shelter.arrive_only = true;
+        shelter.cure_to_full = true;
+        beats.push_back(shelter);
+        beats.push_back(beats.at(43));
+        auto secret_exit = step_beat(49, 15, 8, D::east, {"YES", "NO"});
+        secret_exit.reload_event = true;
+        secret_exit.cure_first = true;
+        beats.push_back(secret_exit);
+        RouteBeat report{16,
+                         13,
+                         5,
+                         D::north,
+                         {"YES", "COMMANDANT", "HALL", "knight 1", "knight 2", "knight 3",
+                          "cleric 4", "cleric 5", "magic_user 6",
+                          "knight 1: Petition for the Order of the Sword", "Leave", "INN", "LEAVE",
+                          "NO"}};
+        report.rest_for_spells = true;
+        report.keep_preparation = true;
+        report.ward_memorized = "cure_light_wounds";
+        report.memorize_first_of = {"dispel_magic", "stinking_cloud", "hold_person",
+                                    "cure_light_wounds", "magic_missile"};
+        report.area_steps = {C::southwest, C::south};
+        report.reload_event = true;
+        beats.push_back(report);
+    }
+    if (progress >= ChampionsProgress::jelek)
+    {
+        RouteBeat jelek{50, 2, 15, D::north, {"YES"}};
+        jelek.area_steps = {C::south, C::southwest, C::look};
+        jelek.reload_event = true;
+        beats.push_back(jelek);
+    }
+
+    if (progress >= ChampionsProgress::jelek_rose)
+    {
+        RouteBeat ambush{50, 10, 14, D::north, {"ALLOW HER TO JOIN"}};
+        ambush.reload_event = true;
+        ambush.cure_first = true;
+        beats.push_back(ambush);
+        RouteBeat contact{50, 13, 0, D::north, {"RUMOR", "YES"}};
+        contact.reload_event = true;
+        contact.cure_first = true;
+        beats.push_back(contact);
+        RouteBeat refuge{50, 15, 3, D::north, {}};
+        refuge.arrive_only = true;
+        refuge.reload_event = true;
+        refuge.cure_first = true;
+        beats.push_back(refuge);
+        auto prepare = refuge;
+        prepare.rest_first = true;
+        prepare.rest_for_spells = true;
+        prepare.cure_to_full = true;
+        prepare.keep_preparation = true;
+        prepare.ward_memorized = "cure_light_wounds";
+        prepare.memorize_first_of = {"dispel_magic", "stinking_cloud", "hold_person",
+                                     "cure_light_wounds", "magic_missile"};
+        beats.push_back(prepare);
+        RouteBeat office{50, 12, 7, D::north, {}};
+        office.reload_event = true;
+        office.cure_first = true;
+        beats.push_back(office);
+        RouteBeat rose{50, 2, 2, D::north, {"ATTACK"}};
+        rose.reload_event = true;
+        rose.cure_first = true;
+        rose.cure_to_full = true;
+        rose.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C7B, 255};
+        beats.push_back(rose);
+        RouteBeat undead{50, 2, 1, D::north, {"ATTACK"}};
+        undead.reload_event = true;
+        undead.cure_first = true;
+        undead.take_wand = true;
+        undead.take_items = {{"SCROLL", "magic_user 6"}, {"PERIAPT", "magic_user 6"}};
+        beats.push_back(undead);
+        beats.push_back(refuge);
+        beats.push_back(prepare);
+    }
+    if (progress >= ChampionsProgress::jelek_report)
+    {
+        auto leave = step_beat(50, 2, 15, D::south, {"YES", "NO"});
+        leave.reload_event = true;
+        leave.cure_first = true;
+        beats.push_back(leave);
+        auto report = beats.at(56);
+        report.answers = {"YES",      "COMMANDANT", "HALL",     "knight 1",     "knight 2",
+                          "knight 3", "cleric 4",   "cleric 5", "magic_user 6", "Leave",
+                          "INN",      "LEAVE",      "NO"};
+        report.area_steps = {C::northeast, C::north};
+        beats.push_back(report);
+    }
+    if (progress >= ChampionsProgress::tomb_entry)
+    {
+        RouteBeat tomb{67, 7, 7, D::north, {"YES"}};
+        tomb.area_steps = {C::northwest, C::northwest, C::look};
+        tomb.reload_event = true;
+        tomb.cure_first = true;
+        beats.push_back(tomb);
+    }
+    if (progress >= ChampionsProgress::tomb_fear)
+    {
+        RouteBeat fear{67, 9, 8, D::north, {}};
+        fear.reload_event = true;
+        fear.cure_first = true;
+        beats.push_back(fear);
+        for (const auto &[x, y] : {std::pair{9u, 11u}, std::pair{14u, 10u}, std::pair{14u, 5u}})
+        {
+            auto ring = fear;
+            ring.x = x;
+            ring.y = y;
+            ring.answers = {"YES", "knight 1"};
+            // The final ring heals the knight. Keep the prepared cures for
+            // the later battles instead of healing between these safe rings.
+            ring.cure_first = false;
+            beats.push_back(ring);
+        }
+        beats.back().expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C9A, 1};
+    }
+    if (progress >= ChampionsProgress::tomb_honor)
+    {
+        RouteBeat honor{67, 9, 4, D::north, {}};
+        honor.reload_event = true;
+        honor.cure_first = true;
+        beats.push_back(honor);
+        auto gift = honor;
+        gift.x = 10;
+        gift.answers = {"MONEY"};
+        beats.push_back(gift);
+        auto sword = honor;
+        sword.x = 14;
+        sword.y = 3;
+        sword.answers = {"RIGHT"};
+        sword.take_items = {{"Long Sword", "knight 1"}};
+        beats.push_back(sword);
+        auto sacrifice = honor;
+        sacrifice.y = 2;
+        sacrifice.answers = {"YES"};
+        sacrifice.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C9A, 2};
+        beats.push_back(sacrifice);
+    }
+    if (progress >= ChampionsProgress::tomb)
+    {
+        RouteBeat battle{67, 3, 6, D::north, {"NO", "ATTACK"}};
+        battle.reload_event = true;
+        battle.cure_first = true;
+        beats.push_back(battle);
+        auto skeletons = battle;
+        skeletons.x = 4;
+        skeletons.y = 10;
+        skeletons.answers = {"ATTACK"};
+        skeletons.cure_to_full = true;
+        beats.push_back(skeletons);
+        auto dragons = skeletons;
+        dragons.x = 1;
+        dragons.y = 12;
+        dragons.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C9A, 3};
+        beats.push_back(dragons);
+        for (const auto &[x, y] : {std::pair{12u, 13u}, std::pair{9u, 13u}, std::pair{12u, 15u}})
+        {
+            auto gate = battle;
+            gate.x = x;
+            gate.y = y;
+            gate.answers = {"knight 1", "ATTACK"};
+            beats.push_back(gate);
+        }
+        auto spirit = battle;
+        spirit.x = 13;
+        spirit.y = 15;
+        spirit.answers.clear();
+        spirit.take_items = {{"Girdle", "knight 1"},
+                             {"Solamnic Plate", "knight 1"},
+                             {"Solamnic Plate", "knight 2"},
+                             {"Solamnic Plate", "knight 3"},
+                             {"Long Sword", "knight 2"}};
+        spirit.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C9B, 1};
+        beats.push_back(spirit);
+    }
+    if (progress >= ChampionsProgress::neraka_entry)
+    {
+        RouteBeat leave{67, 7, 7, D::north, {"YES", "NO"}};
+        leave.reload_event = true;
+        leave.cure_first = true;
+        beats.push_back(leave);
+        auto report = beats.at(68);
+        report.area_steps = {C::southeast, C::southeast};
+        beats.push_back(report);
+        RouteBeat maya{64, 15, 7, D::west, {"YES", "COMMANDANT", "YES"}};
+        maya.area_steps = {C::look};
+        maya.reload_event = true;
+        maya.cure_first = true;
+        maya.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C8B, 1};
+        beats.push_back(maya);
+    }
+    if (progress >= ChampionsProgress::neraka_prison)
+    {
+        RouteBeat approach{64, 13, 7, D::south, {}};
+        approach.arrive_only = true;
+        approach.reload_event = true;
+        approach.cure_first = true;
+        beats.push_back(approach);
+        auto door = step_beat(64, 13, 7, D::south, {"ATTACK"});
+        door.reload_event = true;
+        door.cure_first = true;
+        beats.push_back(door);
+        RouteBeat reinforcements{64, 15, 11, D::south, {"ATTACK"}};
+        reinforcements.reload_event = true;
+        reinforcements.cure_first = true;
+        beats.push_back(reinforcements);
+        RouteBeat karl{64, 8, 14, D::south, {"ATTACK"}};
+        karl.reload_event = true;
+        karl.cure_first = true;
+        beats.push_back(karl);
+        auto stairs = step_beat(64, 8, 14, D::south, {"YES"});
+        stairs.reload_event = true;
+        stairs.cure_first = true;
+        beats.push_back(stairs);
+    }
+    if (progress >= ChampionsProgress::neraka)
+    {
+        RouteBeat tanis{66, 11, 6, D::south, {}};
+        tanis.reload_event = true;
+        tanis.cure_first = true;
+        beats.push_back(tanis);
+        for (const auto &[x, y] : {std::pair{10u, 10u}, std::pair{11u, 10u}, std::pair{13u, 10u},
+                                   std::pair{10u, 13u}, std::pair{11u, 13u}, std::pair{14u, 13u}})
+        {
+            auto cell = tanis;
+            cell.x = x;
+            cell.y = y;
+            cell.answers = {"ATTACK"};
+            beats.push_back(cell);
+        }
+        auto report = tanis;
+        report.x = 15;
+        report.y = 8;
+        report.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C98, 7};
+        beats.push_back(report);
+        auto exit = step_beat(66, 0, 9, D::west, {"YES", "NO"});
+        exit.reload_event = true;
+        exit.cure_first = true;
+        exit.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C97, 1};
+        beats.push_back(exit);
+    }
+    if (progress >= ChampionsProgress::sanction_entry)
+    {
+        auto report = beats.at(68);
+        report.area_steps = {C::northwest, C::northwest, C::northwest, C::west};
+        report.cure_first = true;
+        beats.push_back(report);
+        RouteBeat sanction{80, 10, 0, D::south, {"YES"}};
+        sanction.area_steps = {C::southwest, C::southwest, C::southwest, C::south, C::south,
+                               C::south,     C::south,     C::south,     C::look};
+        sanction.reload_event = true;
+        sanction.cure_first = true;
+        beats.push_back(sanction);
+    }
+    if (progress >= ChampionsProgress::sanction_temple)
+    {
+        RouteBeat reception{80, 13, 14, D::south, {"YES"}};
+        reception.reload_event = true;
+        reception.cure_first = true;
+        beats.push_back(reception);
+        RouteBeat room{80, 15, 14, D::east, {}};
+        room.arrive_only = true;
+        room.reload_event = true;
+        room.cure_first = true;
+        beats.push_back(room);
+        auto prepare = room;
+        prepare.rest_first = true;
+        prepare.rest_for_spells = true;
+        prepare.cure_to_full = true;
+        prepare.keep_preparation = true;
+        prepare.ward_memorized = "cure_light_wounds";
+        prepare.memorize_first_of = {"dispel_magic", "fireball",          "stinking_cloud",
+                                     "hold_person",  "cure_light_wounds", "magic_missile"};
+        beats.push_back(prepare);
+        RouteBeat dark_elf{80, 14, 11, D::north, {"ATTACK"}};
+        dark_elf.reload_event = true;
+        dark_elf.cure_first = true;
+        dark_elf.cure_to_full = true;
+        dark_elf.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CB3, 255};
+        beats.push_back(dark_elf);
+        beats.push_back(room);
+        beats.push_back(prepare);
+        RouteBeat minotaurs{80, 9, 5, D::south, {"ATTACK"}};
+        minotaurs.reload_event = true;
+        minotaurs.cure_first = true;
+        minotaurs.cure_to_full = true;
+        beats.push_back(minotaurs);
+        RouteBeat woman{80, 9, 6, D::south, {}};
+        woman.reload_event = true;
+        woman.cure_first = true;
+        beats.push_back(woman);
+        RouteBeat pier{80, 1, 12, D::south, {}};
+        pier.reload_event = true;
+        pier.cure_first = true;
+        pier.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CB4, 255};
+        beats.push_back(pier);
+        RouteBeat entrance{80, 8, 9, D::east, {"YES"}};
+        entrance.arrive_only = true;
+        entrance.reload_event = true;
+        entrance.cure_first = true;
+        beats.push_back(entrance);
+    }
+    if (progress >= ChampionsProgress::duerghast_entry)
+    {
+        RouteBeat guards{81, 14, 2, D::south, {"ATTACK"}};
+        guards.reload_event = true;
+        guards.cure_first = true;
+        guards.cure_to_full = true;
+        guards.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CB7, 255};
+        beats.push_back(guards);
+        RouteBeat conclave{81, 13, 12, D::south, {}};
+        conclave.reload_event = true;
+        conclave.cure_first = true;
+        beats.push_back(conclave);
+        RouteBeat common{81, 7, 11, D::south, {}};
+        common.arrive_only = true;
+        common.reload_event = true;
+        common.cure_first = true;
+        beats.push_back(common);
+        auto prepare = common;
+        prepare.rest_first = true;
+        prepare.rest_for_spells = true;
+        prepare.cure_to_full = true;
+        prepare.keep_preparation = true;
+        prepare.ward_memorized = "resist_fire";
+        prepare.memorize_first_of = {"dispel_magic", "fireball", "cure_light_wounds",
+                                     "stinking_cloud", "magic_missile"};
+        beats.push_back(prepare);
+        RouteBeat revered{81, 2, 10, D::west, {}};
+        revered.reload_event = true;
+        revered.cure_first = true;
+        beats.push_back(revered);
+        auto exit = step_beat(81, 0, 10, D::west, {});
+        exit.reload_event = true;
+        exit.cure_first = true;
+        beats.push_back(exit);
+    }
+    if (progress >= ChampionsProgress::dragonlance)
+    {
+        RouteBeat lance{82, 11, 13, D::north, {"ATTACK", "NO"}};
+        lance.reload_event = true;
+        lance.cure_first = true;
+        lance.cure_to_full = true;
+        lance.take_items = {{"Dragonlance", "knight 1"}};
+        beats.push_back(lance);
+        auto prepare = lance;
+        prepare.arrive_only = true;
+        prepare.rest_first = true;
+        prepare.rest_for_spells = true;
+        prepare.keep_preparation = true;
+        prepare.ward_memorized = "resist_fire";
+        prepare.memorize_first_of = {"dispel_magic", "fireball", "cure_light_wounds",
+                                     "stinking_cloud", "magic_missile"};
+        beats.push_back(prepare);
+    }
+    if (progress >= ChampionsProgress::lebaum)
+    {
+        RouteBeat approach{82, 0, 12, D::south, {"NO", "ATTACK"}};
+        approach.arrive_only = true;
+        approach.reload_event = true;
+        approach.cure_first = true;
+        approach.cure_to_full = true;
+        beats.push_back(approach);
+        auto wards = approach;
+        wards.waiting = true;
+        wards.answers.clear();
+        // The low-HP mage needs the remaining fire protection most.
+        // The other members can withstand an ordinary saved fireball.
+        wards.ward_each_with = "resist_fire";
+        wards.ward_members = {"magic_user 6"};
+        beats.push_back(wards);
+        auto lord = step_beat(82, 0, 12, D::south, {"ATTACK"});
+        lord.reload_event = true;
+        lord.cure_first = true;
+        lord.cure_to_full = true;
+        lord.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CC5, 255};
+        beats.push_back(lord);
+    }
+    if (progress >= ChampionsProgress::flying_citadel)
+    {
+        RouteBeat pursuit{82, 0, 8, D::north, {"YES"}};
+        pursuit.arrive_only = true;
+        pursuit.reload_event = true;
+        pursuit.cure_first = true;
+        pursuit.cure_to_full = true;
+        pursuit.rest_for_spells = true;
+        pursuit.keep_preparation = true;
+        pursuit.ward_memorized = "cure_light_wounds";
+        pursuit.memorize_first_of = {"dispel_magic", "fireball", "cure_light_wounds",
+                                     "stinking_cloud", "magic_missile"};
+        beats.push_back(pursuit);
+    }
+
+    if (progress >= ChampionsProgress::citadel_top)
+    {
+        RouteBeat gate{96, 6, 12, D::north, {"ATTACK"}};
+        gate.reload_event = true;
+        gate.cure_first = true;
+        gate.cure_to_full = true;
+        beats.push_back(gate);
+        const auto stair = [&](unsigned x, unsigned y, D facing)
+        {
+            RouteBeat approach{96, x, y, facing, {"NO"}};
+            approach.arrive_only = true;
+            approach.reload_event = true;
+            approach.cure_first = true;
+            approach.cure_to_full = true;
+            beats.push_back(approach);
+            auto climb = step_beat(96, x, y, facing, {"YES"});
+            climb.reload_event = true;
+            climb.cure_first = true;
+            climb.cure_to_full = true;
+            beats.push_back(climb);
+        };
+        // The main tower's native stair events fold successive floors
+        // onto the same map. Each ascent is an ordinary, prompted step.
+        stair(8, 9, D::east);
+        for (unsigned floor = 2; floor < 8; floor += 2)
+        {
+            stair(10, 9, D::south);
+            stair(10, 11, D::east);
+        }
+    }
+
+    if (progress >= ChampionsProgress::citadel_collision)
+    {
+        RouteBeat captain{96, 11, 11, D::east, {"YES"}};
+        captain.waiting = true;
+        captain.reload_event = true;
+        captain.cure_first = true;
+        captain.cure_to_full = true;
+        captain.rest_for_spells = true;
+        captain.keep_preparation = true;
+        captain.ward_memorized = "cure_light_wounds";
+        captain.memorize_first_of = {"dispel_magic", "fireball", "cure_light_wounds",
+                                     "stinking_cloud", "magic_missile"};
+        captain.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C04, 1};
+        beats.push_back(captain);
+    }
+
+    if (progress >= ChampionsProgress::kernen_square)
+    {
+        const auto passage = [&](unsigned x, unsigned y, D facing)
+        {
+            RouteBeat approach{96, x, y, facing};
+            approach.arrive_only = true;
+            approach.reload_event = true;
+            approach.cure_first = true;
+            approach.cure_to_full = true;
+            beats.push_back(approach);
+            auto step = step_beat(96, x, y, facing);
+            step.reload_event = true;
+            step.cure_first = true;
+            step.cure_to_full = true;
+            beats.push_back(step);
+        };
+        passage(11, 4, D::west);
+        RouteBeat uniforms{96, 0, 9, D::south, {"YES", "YES"}};
+        uniforms.reload_event = true;
+        uniforms.cure_first = true;
+        uniforms.cure_to_full = true;
+        uniforms.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CD1, 1};
+        beats.push_back(uniforms);
+    }
+
+    if (progress >= ChampionsProgress::kernen_gate)
+    {
+        RouteBeat prepare{97, 12, 13, D::south};
+        prepare.arrive_only = true;
+        prepare.reload_event = true;
+        prepare.rest_first = true;
+        prepare.rest_for_spells = true;
+        prepare.cure_first = true;
+        prepare.cure_to_full = true;
+        prepare.keep_preparation = true;
+        prepare.ward_memorized = "resist_fire";
+        prepare.memorize_first_of = {"dispel_magic", "fireball", "cure_light_wounds",
+                                     "stinking_cloud", "magic_missile"};
+        beats.push_back(prepare);
+        const auto visit = [&](unsigned x, unsigned y, std::vector<std::string> answers)
+        {
+            RouteBeat beat{97, x, y, D::north, std::move(answers)};
+            beat.reload_event = true;
+            beat.cure_first = true;
+            beat.cure_to_full = true;
+            beats.push_back(beat);
+        };
+        visit(14, 2, {"ENCOURAGE THE PLOT"});
+        visit(10, 14, {"TALK", "YES"});
+        visit(5, 11, {"TALK", "YES"});
+        visit(14, 7, {"YES"});
+        visit(3, 11, {"YES"});
+        visit(6, 14,
+              {"YES", "knight 1", "knight 2", "knight 3", "cleric 4", "cleric 5", "magic_user 6",
+               "Leave"});
+        prepare.x = 6;
+        prepare.y = 13;
+        beats.push_back(prepare);
+        RouteBeat gate{97, 7, 8, D::north, {"ATTACK", "NO"}};
+        gate.reload_event = true;
+        gate.cure_first = true;
+        gate.cure_to_full = true;
+        gate.ward_each_with = "resist_fire";
+        gate.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CE7, 1};
+        beats.push_back(gate);
+    }
+
+    if (progress >= ChampionsProgress::base_salve)
+    {
+        auto entrance = step_beat(97, 7, 8, D::north, {"ATTACK"});
+        entrance.reload_event = true;
+        entrance.cure_first = true;
+        entrance.cure_to_full = true;
+        beats.push_back(entrance);
+        RouteBeat vault{97, 7, 1, D::north, {"NO", "Bash"}};
+        vault.reload_event = true;
+        vault.cure_first = true;
+        vault.cure_to_full = true;
+        beats.push_back(vault);
+        auto prepare = vault;
+        prepare.arrive_only = true;
+        prepare.rest_first = true;
+        prepare.rest_for_spells = true;
+        prepare.keep_preparation = true;
+        prepare.ward_memorized = "resist_fire";
+        prepare.memorize_first_of = {"ice_storm",         "dispel_magic",   "fireball",
+                                     "cure_light_wounds", "stinking_cloud", "magic_missile"};
+        beats.push_back(prepare);
+        RouteBeat key{97, 10, 5, D::north, {"NO"}};
+        key.reload_event = true;
+        key.cure_first = true;
+        key.cure_to_full = true;
+        key.searching = true;
+        key.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C07, 1};
+        beats.push_back(key);
+        auto library = key;
+        library.x = 9;
+        library.y = 2;
+        library.answers = {"USE KEY"};
+        library.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C08, 2};
+        beats.push_back(library);
+        auto laboratory = library;
+        laboratory.x = 11;
+        laboratory.answers.clear();
+        laboratory.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C0A, 1};
+        beats.push_back(laboratory);
+    }
+
+    if (progress >= ChampionsProgress::base_master)
+    {
+        RouteBeat vault{97, 7, 1, D::south, {"NO", "Bash"}};
+        vault.arrive_only = true;
+        vault.reload_event = true;
+        vault.cure_first = true;
+        vault.cure_to_full = true;
+        beats.push_back(vault);
+        auto prepare = vault;
+        prepare.rest_first = true;
+        prepare.rest_for_spells = true;
+        prepare.keep_preparation = true;
+        prepare.ward_memorized = "resist_fire";
+        prepare.memorize_first_of = {"ice_storm",         "dispel_magic",   "fireball",
+                                     "cure_light_wounds", "stinking_cloud", "magic_missile"};
+        beats.push_back(prepare);
+        RouteBeat guardian{97, 4, 3, D::south, {"NO"}};
+        guardian.reload_event = true;
+        guardian.cure_first = true;
+        guardian.cure_to_full = true;
+        guardian.ward_each_with = "resist_fire";
+        beats.push_back(guardian);
+        // Patrols and the inner guards can spend the party's cures on the
+        // way to the guardian. Revisit the actual vault before the next guards.
+        beats.push_back(vault);
+        beats.push_back(prepare);
+        RouteBeat master{97, 4, 6, D::south, {"NO"}};
+        master.reload_event = true;
+        master.cure_first = true;
+        master.cure_to_full = true;
+        master.ward_each_with = "resist_fire";
+        master.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C04, 1};
+        beats.push_back(master);
+    }
+
+    if (progress >= ChampionsProgress::ending)
+    {
+        RouteBeat vault{97, 7, 1, D::south, {"NO", "Bash"}};
+        vault.arrive_only = true;
+        vault.reload_event = true;
+        vault.cure_first = true;
+        vault.cure_to_full = true;
+        beats.push_back(vault);
+        auto prepare = vault;
+        prepare.rest_first = true;
+        prepare.rest_for_spells = true;
+        prepare.keep_preparation = true;
+        prepare.ward_memorized = "resist_fire";
+        prepare.memorize_first_of = {
+            "ice_storm",         "prayer",         "dispel_magic", "fireball",
+            "cure_light_wounds", "stinking_cloud", "magic_missile"};
+        beats.push_back(prepare);
+        RouteBeat passage{97, 4, 6, D::south, {"NO"}};
+        passage.arrive_only = true;
+        passage.reload_event = true;
+        passage.cure_first = true;
+        passage.cure_to_full = true;
+        beats.push_back(passage);
+        auto finale = passage;
+        finale.arrive_only = false;
+        finale.answers = {"YES"};
+        finale.ward_each_with = "resist_fire";
+        finale.ward_members = {"magic_user 6"};
+        finale.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C3A, 1};
+        beats.push_back(finale);
+    }
+
+    return beats;
+}
+
 bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CurseProgress::none,
                  SecretProgress secret_progress = SecretProgress::none, bool earned_gateway = false,
-                 bool earned_treasure = false)
+                 bool earned_treasure = false,
+                 ChampionsProgress champions_progress = ChampionsProgress::none)
 {
     const bool sewers = progress != CurseProgress::none;
     const bool earned_secret = secret_progress != SecretProgress::none;
-    const bool earned = sewers || earned_secret || earned_gateway || earned_treasure;
+    const bool earned_champions = champions_progress != ChampionsProgress::none;
+    const bool earned =
+        sewers || earned_secret || earned_gateway || earned_treasure || earned_champions;
     const bool first_bond = progress >= CurseProgress::first_bond;
     const bool hap = progress >= CurseProgress::hap;
     const bool second_bond = progress >= CurseProgress::second_bond;
@@ -10396,7 +11407,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
     const auto cast_in_camp =
         [&](opengold::MemberId caster, opengold::MemberId target, const std::string &action)
     {
-        if (darkness_route_party)
+        if (darkness_route_party || earned_champions)
         {
             session.cast_outside_combat(caster, target, action);
             return;
@@ -10407,11 +11418,16 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
     // paladins, a ranger, two clerics and a magic-user.
     const std::array<std::string, 6> walk_classes{"fighter", "fighter", "fighter",
                                                   "fighter", "fighter", "fighter"};
-    const std::array<std::string, 6> route_classes{"paladin", "paladin", "ranger",
-                                                   "cleric",  "cleric",  "magic_user"};
+    const std::array<std::string, 6> route_classes =
+        earned_champions ? std::array<std::string, 6>{"knight", "knight", "knight",
+                                                      "cleric", "cleric", "magic_user"}
+                         : std::array<std::string, 6>{"paladin", "paladin", "ranger",
+                                                      "cleric",  "cleric",  "magic_user"};
     // Spells the next beat casts outside combat (RouteBeat::cast_after),
     // which each caster takes first.
-    std::vector<std::string> wanted_spells;
+    std::vector<std::string> wanted_spells =
+        earned_champions ? std::vector<std::string>{"sleep", "cure_light_wounds", "bless"}
+                         : std::vector<std::string>{};
     // The spell the next beat casts on each member (RouteBeat::ward_each_with),
     // of which the casters memorize a copy for each member between them.
     std::string ward_spell;
@@ -10687,9 +11703,59 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         // Each caster who can memorize the ward takes a copy for every
         // member, as far as its slots go, so that between them there is
         // one for each whatever their slots.
-        const auto ward_copies = ward_target_count();
+        const auto requested_wards = ward_target_count();
+        std::map<opengold::MemberId, unsigned> ward_assignments;
+        if (earned_champions && !ward_spell.empty())
+        {
+            std::vector<std::pair<unsigned, opengold::MemberId>> capacities;
+            for (const auto id : choosing)
+            {
+                const auto choices = party->spell_choice_options(id);
+                if (!choices.may_prepare)
+                {
+                    continue;
+                }
+                const auto wanted =
+                    std::ranges::find_if(choices.preparation,
+                                         [&](const auto &choice)
+                                         {
+                                             return spell_named(choice.id, ward_spell);
+                                         });
+                if (wanted == choices.preparation.end())
+                {
+                    continue;
+                }
+                const auto number = opengold::original::spell_number(wanted->id);
+                if (!number)
+                {
+                    continue;
+                }
+                const auto &numbers = *party->member(id).character.sheet().original;
+                const auto &slots = wanted->id.starts_with("magic_user:") ? numbers.magic_user_slots
+                                                                          : numbers.cleric_slots;
+                const auto level = opengold::original::spell(*number)->level;
+                const auto capacity = static_cast<unsigned>(slots.at(level - 1));
+                if (capacity > 0)
+                {
+                    capacities.emplace_back(capacity, id);
+                }
+            }
+            // Limited casters take their usable share first; the other
+            // casters prepare the remaining copies instead of leaving a gap.
+            std::ranges::sort(capacities);
+            auto remaining = requested_wards;
+            for (std::size_t n = 0; n < capacities.size(); ++n)
+            {
+                const auto left = static_cast<unsigned>(capacities.size() - n);
+                const auto copies = std::min(capacities[n].first, (remaining + left - 1) / left);
+                ward_assignments[capacities[n].second] = copies;
+                remaining -= copies;
+            }
+        }
         for (const auto id : choosing)
         {
+            const auto ward_copies =
+                earned_champions && !ward_spell.empty() ? ward_assignments[id] : requested_wards;
             const auto options = party->spell_choice_options(id);
             const auto &numbers = *party->member(id).character.sheet().original;
             if (!options.may_prepare)
@@ -10800,6 +11866,35 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     }
                 }
             }
+            if (earned_champions)
+            {
+                unsigned gifts = 0;
+                for (const auto *gift :
+                     {"deity:bless", "deity:charm_person", "deity:charm_person#2"})
+                {
+                    if (gifts < static_cast<unsigned>(numbers.deity_spell_slots[0]) &&
+                        std::ranges::any_of(
+                            options.preparation,
+                            [gift](const auto &choice)
+                            {
+                                return choice.id == gift;
+                            }))
+                    {
+                        prepared.emplace_back(gift);
+                        ++gifts;
+                    }
+                }
+                for (const auto &choice : options.preparation)
+                {
+                    if (gifts < static_cast<unsigned>(numbers.deity_spell_slots[0]) &&
+                        choice.id.starts_with("deity:") &&
+                        std::ranges::find(prepared, choice.id) == prepared.end())
+                    {
+                        prepared.push_back(choice.id);
+                        ++gifts;
+                    }
+                }
+            }
             party->choose_spells(id, {{}, prepared});
         }
         raise_the_dead();
@@ -10807,7 +11902,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         wake_the_fallen();
         unstone_the_statues();
     };
-    const auto item_definitions = game == GoldBoxGame::pools_of_darkness
+    const auto item_definitions = (game == GoldBoxGame::pools_of_darkness || earned_champions)
                                       ? opengold::load_item_definitions(folder, game)
                                       : std::map<unsigned, opengold::por::Equipment>{};
     const auto new_party = [&]
@@ -10894,8 +11989,13 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         {
             const auto &klass = classes[n];
             opengold::CharacterCreator creator(creation, 90 + n);
-            creator.select(opengold::rules::CreationField::race, "human");
+            creator.select(opengold::rules::CreationField::race,
+                           game == GoldBoxGame::champions_of_krynn ? "krynn_human" : "human");
             creator.select(opengold::rules::CreationField::character_class, klass);
+            if (earned_champions && klass == "cleric")
+            {
+                creator.select(opengold::rules::CreationField::background, "mishakal");
+            }
             creator.name(klass + " " + std::to_string(n + 1));
             opengold::test::walk_original_creation(creator, learned_first);
             const auto id = party->add_pc(creator.create_character());
@@ -10928,16 +12028,25 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             }
             // Pools of Darkness's route party carries the game's own starting
             // equipment, as a party made in the original does.
-            if (route && game == GoldBoxGame::pools_of_darkness)
+            if (route && (game == GoldBoxGame::pools_of_darkness || earned_champions))
             {
                 opengold::outfit_original_character(*party, id, item_definitions);
+                if (earned_champions)
+                {
+                    const auto items = party->member(id).character.inventory().items();
+                    for (const auto &item : items)
+                    {
+                        (void)party->equip(id, item.id);
+                    }
+                }
                 continue;
             }
             // A long sword, plate mail and a shield of the game's own item
             // types; a cleric's mace; a magic-user's dagger. Secret, Pools of
             // Darkness and Treasures number their types as Pool of Radiance
             // does, not as Curse.
-            const bool secret = game == GoldBoxGame::secret_of_the_silver_blades ||
+            const bool secret = game == GoldBoxGame::champions_of_krynn ||
+                                game == GoldBoxGame::secret_of_the_silver_blades ||
                                 game == GoldBoxGame::pools_of_darkness ||
                                 game == GoldBoxGame::treasures_of_the_savage_frontier;
             const std::uint8_t sword = secret ? 18 : 36, plate = secret ? 36 : 58,
@@ -10996,16 +12105,20 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                  &tour = session](const opengold::rules::CombatSession &session)
         -> std::optional<opengold::rules::Command>
     {
-        constexpr unsigned fireball = 47, ice_storm = 187;
+        constexpr unsigned sleep = 21, fireball = 47, ice_storm = 187;
+        const bool early_champions =
+            game == GoldBoxGame::champions_of_krynn &&
+            (tour.snapshot().script_id == 32 || tour.snapshot().script_id == 33);
         // Use the genuinely inherited wand against the Keep, crystal,
         // cavern and Daggerford casters; its immediate burst interrupts them.
         const bool crystal =
-            earned_treasure && (tour.snapshot().area_id == 17 || tour.snapshot().area_id == 19 ||
-                                tour.snapshot().area_id == 22 || tour.snapshot().area_id == 39 ||
-                                tour.snapshot().area_id == 40 || tour.snapshot().area_id == 31);
+            game == GoldBoxGame::champions_of_krynn ||
+            (earned_treasure && (tour.snapshot().area_id == 17 || tour.snapshot().area_id == 19 ||
+                                 tour.snapshot().area_id == 22 || tour.snapshot().area_id == 39 ||
+                                 tour.snapshot().area_id == 40 || tour.snapshot().area_id == 31));
         const auto burst_reach = [](unsigned spell)
         {
-            return spell == ice_storm ? 5 : 7;
+            return spell == sleep ? 3 : spell == ice_storm ? 5 : 7;
         };
         const auto state = session.snapshot();
         const auto commands = session.legal_commands();
@@ -11055,6 +12168,13 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                        unit.name.find("NECROMANCER") != std::string::npos ||
                        unit.name.find("PRIEST") != std::string::npos;
             }
+            if (game == GoldBoxGame::champions_of_krynn &&
+                (unit.name.find("CLERIC") != std::string::npos ||
+                 unit.name.find("CURATE") != std::string::npos ||
+                 unit.name.find("ENCHANTER") != std::string::npos))
+            {
+                return true;
+            }
             return unit.name.find("KRAKEN MASTER") != std::string::npos ||
                    unit.name.find("BANITE") != std::string::npos ||
                    unit.name.find("PRIEST") != std::string::npos ||
@@ -11099,9 +12219,12 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 }
                 else
                 {
+                    // Sleep is reserved for the temple's low-level living
+                    // spellcasters; aim away from allies and undead.
                     worth += unit.side == opengold::rules::Side::party ? -100
-                             : caster(unit)                            ? 3
-                                                                       : 1;
+                             : spell == sleep ? (caster(unit) && unit.max_hit_points <= 24 ? 4 : 0)
+                             : caster(unit)   ? 3
+                                              : 1;
                 }
             }
             return worth;
@@ -11114,7 +12237,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         for (const auto &command : commands)
         {
             if (command.verb == "aim" &&
-                (command.item == fireball || (crystal && command.item == ice_storm)) &&
+                (command.item == fireball || (crystal && command.item == ice_storm) ||
+                 (early_champions && command.item == sleep)) &&
                 (!aim || burst_worth(command.destination, command.item) >
                              burst_worth(aim->destination, aim->item)))
             {
@@ -11135,9 +12259,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             }
         }
         // Prefer the immediate wand burst to a spell with casting time.
-        for (const unsigned number : {ice_storm, fireball})
+        for (const unsigned number : {ice_storm, fireball, sleep})
         {
-            if (number == ice_storm && !crystal)
+            if ((number == ice_storm && !crystal) || (number == sleep && !early_champions))
             {
                 continue;
             }
@@ -12669,14 +13793,15 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                 actor->side == opengold::rules::Side::party &&
                                 !opengold::is_ally(state.actor);
             // Dispel Magic can free a held or charmed member in Secret too.
-            auto held = member && (game == GoldBoxGame::treasures_of_the_savage_frontier ||
-                                   game == GoldBoxGame::pools_of_darkness ||
-                                   game == GoldBoxGame::secret_of_the_silver_blades)
-                            ? free_the_bound(session)
-                            : std::nullopt;
+            auto held =
+                member && (game == GoldBoxGame::treasures_of_the_savage_frontier ||
+                           game == GoldBoxGame::pools_of_darkness ||
+                           game == GoldBoxGame::secret_of_the_silver_blades || earned_champions)
+                    ? free_the_bound(session)
+                    : std::nullopt;
             if (!held && member && tactic == 2 &&
                 (game == GoldBoxGame::treasures_of_the_savage_frontier ||
-                 game == GoldBoxGame::secret_of_the_silver_blades))
+                 game == GoldBoxGame::secret_of_the_silver_blades || earned_champions))
             {
                 held = treasures_turn(session);
             }
@@ -13064,14 +14189,16 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         }
         const auto boss_still_stands = [&](const opengold::rules::Snapshot &result)
         {
-            return game == GoldBoxGame::pools_of_darkness &&
-                   std::ranges::any_of(result.combatants,
-                                       [](const opengold::rules::CombatantView &unit)
-                                       {
-                                           return unit.side == opengold::rules::Side::opposition &&
-                                                  unit.name.starts_with("GOTHMENES") &&
-                                                  !unit.dead && unit.hit_points > 0;
-                                       });
+            return std::ranges::any_of(
+                result.combatants,
+                [&](const opengold::rules::CombatantView &unit)
+                {
+                    const bool final_boss = (game == GoldBoxGame::pools_of_darkness &&
+                                             unit.name.starts_with("GOTHMENES")) ||
+                                            (earned_champions && unit.name.starts_with("MYRTANI"));
+                    return unit.side == opengold::rules::Side::opposition && final_boss &&
+                           !unit.dead && unit.hit_points > 0;
+                });
         };
         const auto score = [&](const opengold::rules::Snapshot &result)
         {
@@ -13216,14 +14343,14 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         // can be unwinnable before the party reaches the town's temple again.
         const unsigned costly_reloads = game == GoldBoxGame::pools_of_darkness ||
                                                 game == GoldBoxGame::secret_of_the_silver_blades ||
-                                                earned_treasure
+                                                earned_treasure || earned_champions
                                             ? 240
                                             : 0;
         const bool cannot_raise_between =
             game == GoldBoxGame::pools_of_darkness && keeps_preparation;
         const int costly_score = test_winning || cannot_raise_between ||
                                          game == GoldBoxGame::secret_of_the_silver_blades ||
-                                         earned_treasure
+                                         earned_treasure || earned_champions
                                      ? one_member_lost
                                      : two_members_lost;
         while (route && !planning && (best > 0 || scoring) &&
@@ -13308,8 +14435,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             // Reject that proof and reload the whole chained event.
             rejected_boss_win = true;
             ++fights_lost;
-            ++phases["living Gothmenes rejected"];
-            std::cout << "  Gothmenes is still standing; reload the finale.\n";
+            ++phases["living final boss rejected"];
+            std::cout << "  The final boss is still standing; reload the finale.\n";
             return false;
         }
         ++phases["fights ended " + std::to_string(static_cast<int>(result.outcome))];
@@ -13426,16 +14553,25 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         for (std::size_t at = 0; at < pile.size(); ++at)
         {
             const auto &offered = pile[at].stored;
+            if (earned_champions && session.snapshot().script_id == 49 &&
+                session.snapshot().pose.x == 4 &&
+                (session.snapshot().pose.y == 8 || session.snapshot().pose.y == 9) &&
+                pile[at].label().starts_with("Two-Handed Sword"))
+            {
+                // The cluebook explicitly warns against the berserking
+                // sword left in Gargath's nearly empty treasure room.
+                continue;
+            }
             const int type = offered.type;
             const bool found_weapon =
-                earned_treasure &&
+                (earned_treasure || earned_champions) &&
                 party->equipment_slot(pile[at]) == opengold::rules::EquipmentSlot::weapon &&
                 pile[at].base.range == 0;
             const auto slot = party->equipment_slot(pile[at]);
-            const bool found_defense =
-                earned_treasure && (slot == opengold::rules::EquipmentSlot::armor ||
-                                    slot == opengold::rules::EquipmentSlot::shield ||
-                                    slot == opengold::rules::EquipmentSlot::worn);
+            const bool found_defense = (earned_treasure || earned_champions) &&
+                                       (slot == opengold::rules::EquipmentSlot::armor ||
+                                        slot == opengold::rules::EquipmentSlot::shield ||
+                                        slot == opengold::rules::EquipmentSlot::worn);
             if (!found_weapon && !found_defense && type != 18 && type != 8 && type != 15 &&
                 type != 36 && type != 37)
             {
@@ -13451,7 +14587,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     continue;
                 }
                 const auto &holder = party->member(id);
-                if (earned_treasure && !party->can_use(id, pile[at]))
+                if ((earned_treasure || earned_champions) && !party->can_use(id, pile[at]))
                 {
                     continue;
                 }
@@ -14272,8 +15408,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                 std::ranges::transform(name, name.begin(), ::toupper);
                                 return name.find(wanted) != std::string::npos;
                             });
-                        check(!(sewers || earned_gateway || earned_treasure) || !slots[slot] ||
-                                  item != stock.end(),
+                        check(!(sewers || earned_gateway || earned_treasure || earned_champions) ||
+                                  !slots[slot] || item != stock.end(),
                               "The real shop stocks the sewer party's requested equipment");
                         if (!slots[slot] || item == stock.end())
                         {
@@ -14283,7 +15419,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                         const bool bought =
                             session.buy(session.snapshot().continue_ticket,
                                         static_cast<std::size_t>(item - stock.begin()));
-                        check(!(sewers || earned_gateway || earned_treasure) || bought,
+                        check(!(sewers || earned_gateway || earned_treasure || earned_champions) ||
+                                  bought,
                               "Creation money pays for the sewer party's equipment");
                         if (bought)
                         {
@@ -14358,6 +15495,13 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     if (taken)
                     {
                         const auto &items = party->member(*mage).character.inventory().items();
+                        check(!earned_champions || std::ranges::any_of(items,
+                                                                       [&](const auto &it)
+                                                                       {
+                                                                           return it.name ==
+                                                                                  wand_name;
+                                                                       }),
+                              "The actually taken wand is present in the campaign inventory");
                         // In place of a wand readied already (Curse's
                         // Dracandros leaves two).
                         if (!packing_wand)
@@ -14375,7 +15519,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 {
                     continue;
                 }
-                if (earned_treasure && take_equipment_upgrade(pile))
+                if ((earned_treasure || earned_champions) && take_equipment_upgrade(pile))
                 {
                     continue;
                 }
@@ -14599,7 +15743,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         {
             if (game != GoldBoxGame::pools_of_darkness &&
                 game != GoldBoxGame::curse_of_the_azure_bonds && !earned_secret &&
-                !earned_gateway && !earned_treasure)
+                !earned_gateway && !earned_treasure && !earned_champions)
             {
                 return;
             }
@@ -14652,9 +15796,26 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             // Wake unconscious members before spending the standing cleric's
             // cures on the first wounded fighter. A fallen healer can then
             // contribute its still-memorized spells to the recovery.
-            if (earned_secret || earned_gateway || earned_treasure)
+            if (earned_secret || earned_gateway || earned_treasure || earned_champions)
             {
-                for (const auto fallen : party->state().slots)
+                auto fallen_order =
+                    std::vector(party->state().slots.begin(), party->state().slots.end());
+                if (earned_champions)
+                {
+                    std::ranges::stable_sort(
+                        fallen_order, {},
+                        [&](opengold::MemberId id)
+                        {
+                            return id && opengold::original::level_in(
+                                             party->member(id)
+                                                 .character.sheet()
+                                                 .original->class_levels,
+                                             opengold::original::ClassSlot::cleric) > 0
+                                       ? 0
+                                       : 1;
+                        });
+                }
+                for (const auto fallen : fallen_order)
                 {
                     if (!fallen || party->member(fallen).vitals.dead ||
                         party->member(fallen).vitals.hit_points > 0 ||
@@ -14828,6 +15989,21 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         // casters choose their spells anew (RouteBeat::rest_for_spells).
         const auto rest_until_healed = [&](bool a_night_first = false, bool through_period = false)
         {
+            const bool outpost = earned_champions && session.snapshot().script_id == 17 &&
+                                 session.snapshot().camp_offered;
+            const bool dragon_rest =
+                earned_champions && session.snapshot().script_id == 96 &&
+                session.script_variable(opengold::por::EclAddress{0x4C0A}) == 1 &&
+                session.snapshot().camp_offered;
+            const bool captain_rest =
+                earned_champions && session.snapshot().script_id == 96 &&
+                session.script_variable(opengold::por::EclAddress{0x4C07}) == 1 &&
+                session.snapshot().camp_offered;
+            const auto after_outpost = answers;
+            if (outpost)
+            {
+                answers = {"stop:INN"};
+            }
             // Secret's party gives up resting where monsters break its camp
             // six times (its castle's guards come every night), and on that
             // map rests no more while it only passes by. A broken rest keeps
@@ -14848,7 +16024,11 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 // memorized spells. Do not add an unrequested exposed night.
                 a_night_first = a_night_first || !earned_treasure;
             }
-            for (int day = 0; day < 90 && session.can_leave(); ++day)
+            for (int day = 0;
+                 day < 90 && (session.can_leave() ||
+                              (outpost && session.snapshot().script_id == 17 &&
+                               session.snapshot().phase == TourPhase::awaiting_continue));
+                 ++day)
             {
                 const auto copies_ready = [&](std::string_view wanted)
                 {
@@ -14869,7 +16049,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 };
                 const bool missing_plan =
                     (game == GoldBoxGame::pools_of_darkness || second_bond || earned_secret ||
-                     earned_treasure) &&
+                     earned_treasure || earned_champions) &&
                     keeps_preparation && a_night_first &&
                     (std::ranges::any_of(wanted_spells,
                                          [&](const std::string &wanted)
@@ -14883,6 +16063,17 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 if (!resting)
                 {
                     break;
+                }
+                // After healing spends the newly prepared cures, revisit
+                // the inn through its menu for another safe night. Leaving
+                // the outpost is deferred until its preparation is complete.
+                if (outpost && session.snapshot().phase == TourPhase::awaiting_continue)
+                {
+                    answers = {"INN"};
+                    play("outpost inn");
+                    answers = {"stop:INN"};
+                    check(session.snapshot().camp_offered && session.snapshot().script_id == 17,
+                          "The outpost offers another actual inn rest");
                 }
                 const auto fights_before = fights_fought;
                 const auto hit_points_before = party_hit_points();
@@ -14944,13 +16135,19 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 // At the final preparation camps, use the refreshed cures
                 // instead of waiting a day per Hit Point while wandering
                 // monsters repeatedly undo the natural healing.
-                if (earned_treasure ||
+                if (earned_treasure || earned_champions ||
                     (game == GoldBoxGame::pools_of_darkness && keeps_preparation) ||
                     (third_bond && (session.snapshot().script_id == 18 ||
                                     (moander_recovery && session.snapshot().script_id == 17))) ||
                     (fourth_bond && session.snapshot().script_id == 34))
                 {
                     cure_the_hurt(true);
+                }
+                // The windcaptain offers one rest before the scripted
+                // counterattack and collision. Do not camp in the wreckage.
+                if (captain_rest && session.script_variable(opengold::por::EclAddress{0x4C07}) != 1)
+                {
+                    break;
                 }
                 if (fights_fought != fights_before &&
                     game == GoldBoxGame::secret_of_the_silver_blades && ++interrupted >= 6)
@@ -14981,6 +16178,16 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     cure_the_hurt();
                     break;
                 }
+            }
+            if (outpost)
+            {
+                answers = after_outpost;
+                play("outpost after rest");
+            }
+            if (dragon_rest || captain_rest)
+            {
+                session.decline_camp();
+                play(dragon_rest ? "leave the gold dragons' camp" : "leave the windcaptain's camp");
             }
         };
         // Days in camp from the wilderness's menu until every member is whole:
@@ -15035,6 +16242,10 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                                           {"Leather Armor +1", "ranger 3"},
                                                           {"Scale Mail +2", "cleric 5"}}
                     : secret_town_gear();
+        }
+        if (earned_champions)
+        {
+            answers = {"LEAVE", "stop:YES"};
         }
         play("opening");
         const auto treasure_streets = earned_treasure ? std::optional(session.map()) : std::nullopt;
@@ -15187,6 +16398,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             for (const auto target : party->state().slots)
             {
                 if (!target || party->member(target).vitals.dead ||
+                    (earned_champions && party->member(target).vitals.hit_points <= 0) ||
                     (!members.empty() &&
                      std::ranges::find(members, party->member(target).character.sheet().name) ==
                          members.end()))
@@ -15236,7 +16448,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                       : earned_secret   ? secret_earned_route(secret_progress)
                                       : earned_gateway  ? gateway_earned_route()
                                       : earned_treasure ? treasure_earned_route()
-                                                        : std::vector<RouteBeat>{};
+                                      : earned_champions
+                                          ? champions_earned_route(champions_progress)
+                                          : std::vector<RouteBeat>{};
             for (const auto &beat : earned ? earned_beats : route_for(game))
             {
                 if (beat_number == beat_limit)
@@ -15532,6 +16746,15 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                             (game == GoldBoxGame::treasures_of_the_savage_frontier && beat.fleeing);
                         for (unsigned reload = 0;; ++reload)
                         {
+                            if (earned_champions)
+                            {
+                                // Reloading the walk discards its pickups as
+                                // well as its fights. Repeat the same actual
+                                // treasure choices on the replacement attempt.
+                                taking_wand = beat.take_wand;
+                                packing_wand = beat.pack_wand;
+                                items_to_take = beat.take_items;
+                            }
                             beat_reloads = beat.reloads + reload;
                             auto before_step =
                                 reloading ? std::optional(session.detached_copy()) : std::nullopt;
@@ -15546,7 +16769,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                                         reload < 20;
                             if (earned)
                             {
-                                check(!(earned_secret || earned_gateway || earned_treasure) ||
+                                check(!(earned_secret || earned_gateway || earned_treasure ||
+                                        earned_champions) ||
                                           session.snapshot().area_id == beat.map,
                                       "Earned walking begins in its actual destination area");
                                 const auto destination_script = session.snapshot().script_id;
@@ -15554,6 +16778,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                 const bool destination_passing = passing;
                                 const bool story_walk =
                                     earned_secret || earned_gateway || earned_treasure ||
+                                    earned_champions ||
                                     (second_bond &&
                                      (session.snapshot().script_id == 50 || beat.map == 51 ||
                                       (third_bond && (beat.map == 16 || beat.map == 17)) ||
@@ -15563,6 +16788,57 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                 passing = !story_walk;
                                 session.set_searching(beat.searching.value_or(true));
                                 std::set<unsigned> blocked_quests;
+                                if (earned_champions && session.snapshot().script_id == 33 &&
+                                    beat.map == 32)
+                                {
+                                    // Throtl and its temple share GEO32. Walking
+                                    // through either city-side doorway changes
+                                    // scripts before the next step; stay inside
+                                    // the temple while approaching its altar.
+                                    blocked_quests.insert(28);
+                                    blocked_quests.insert(29);
+                                }
+                                if (earned_champions && session.snapshot().script_id == 80)
+                                {
+                                    // Shop and hall entrances send visitors back
+                                    // outside. Walk around them on another errand.
+                                    const auto destination_event =
+                                        session.map().at(x, beat.y).event_number();
+                                    for (const unsigned event : {8u, 16u, 17u})
+                                    {
+                                        if (destination_event != event)
+                                        {
+                                            blocked_quests.insert(event);
+                                        }
+                                    }
+                                }
+                                if (earned_champions && session.snapshot().script_id == 98)
+                                {
+                                    const auto destination =
+                                        session.map().at(x, beat.y).event_number();
+                                    for (const auto event : {5U, 6U, 8U, 13U})
+                                    {
+                                        if (destination != event &&
+                                            !(event == 13 &&
+                                              session.script_variable(
+                                                  opengold::por::EclAddress{0x4C0A}) == 1))
+                                        {
+                                            blocked_quests.insert(event);
+                                        }
+                                    }
+                                }
+                                if (earned_champions && session.snapshot().script_id == 97)
+                                {
+                                    const auto destination =
+                                        session.map().at(x, beat.y).event_number();
+                                    for (const auto event : {2U, 12U})
+                                    {
+                                        if (destination != event)
+                                        {
+                                            blocked_quests.insert(event);
+                                        }
+                                    }
+                                }
                                 if (earned_treasure && beat.map == 28 &&
                                     session.map().at(x, beat.y).event_number() != 30)
                                 {
@@ -15627,7 +16903,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                             answers.insert(answers.begin(), "stop:JOURNEY");
                                         }
                                         play(where);
-                                        if ((earned_secret || earned_gateway || earned_treasure) &&
+                                        if ((earned_secret || earned_gateway || earned_treasure ||
+                                             earned_champions) &&
                                             beat.cure_first && session.can_leave())
                                         {
                                             cure_the_hurt(beat.cure_to_full);
@@ -15777,7 +17054,16 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                                (!party->member(id).vitals.dead &&
                                                 party->member(id).vitals.hit_points > 0);
                                     });
-                            const bool failed = interrupted ||
+                            const bool lost_champions_member =
+                                earned_champions &&
+                                std::ranges::any_of(party_before.roster,
+                                                    [&](const auto &member)
+                                                    {
+                                                        return member.npc_source.empty() &&
+                                                               !member.vitals.dead &&
+                                                               party->member(member.id).vitals.dead;
+                                                    });
+                            const bool failed = interrupted || lost_champions_member ||
                                                 (earned_treasure && fights_lost != lost_before &&
                                                  !council_can_recover && !treasure_finished) ||
                                                 (beat.reload_event ? rejected_boss_win ||
@@ -15835,7 +17121,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 {
                     // Spend the paid inn's night preparing spells even
                     // when Fix has already restored Hit Points.
-                    rest_until_healed(earned_treasure);
+                    rest_until_healed(earned_treasure ||
+                                      (earned_champions && beat.rest_for_spells));
                 }
                 if (beat.expect_cell)
                 {
@@ -15924,7 +17211,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         }
         // Pools of Darkness's party saves where the route ends, after the
         // win: the save reloads and saves again byte for byte.
-        if (darkness_route_party && session.can_leave())
+        if ((darkness_route_party || earned_champions) && session.can_leave())
         {
             const auto bytes = opengold::encode_campaign(*party, &session, assets, game);
             auto saved = opengold::decode_campaign(
@@ -16356,6 +17643,127 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                        party->member(id).vitals.description != "Turned to stone.";
             });
         const bool played = needs.empty() && end.phase != TourPhase::defeated;
+        if (earned_champions)
+        {
+            const bool final_ending = champions_progress == ChampionsProgress::ending;
+            const unsigned destination =
+                champions_progress >= ChampionsProgress::kernen_square     ? 97
+                : champions_progress >= ChampionsProgress::flying_citadel  ? 96
+                : champions_progress >= ChampionsProgress::duerghast_entry ? 82
+                : champions_progress >= ChampionsProgress::sanction_temple ? 81
+                : champions_progress >= ChampionsProgress::sanction_entry  ? 80
+                : champions_progress >= ChampionsProgress::neraka          ? 16
+                : champions_progress >= ChampionsProgress::neraka_prison   ? 66
+                : champions_progress >= ChampionsProgress::neraka_entry    ? 64
+                : champions_progress >= ChampionsProgress::tomb_entry      ? 67
+                : champions_progress == ChampionsProgress::jelek_report    ? 16
+                : champions_progress >= ChampionsProgress::jelek           ? 50
+                : champions_progress >= ChampionsProgress::keep_entry      ? 49
+                : champions_progress >= ChampionsProgress::gargath         ? 48
+                : champions_progress >= ChampionsProgress::report          ? 16
+                : champions_progress >= ChampionsProgress::catacombs       ? 34
+                                                                           : 32;
+            const unsigned destination_script =
+                final_ending                                               ? 16
+                : champions_progress >= ChampionsProgress::base_salve      ? 98
+                : champions_progress >= ChampionsProgress::kernen_square   ? 97
+                : champions_progress >= ChampionsProgress::flying_citadel  ? 96
+                : champions_progress >= ChampionsProgress::duerghast_entry ? 82
+                : champions_progress >= ChampionsProgress::sanction_temple ? 81
+                : champions_progress >= ChampionsProgress::sanction_entry  ? 80
+                : champions_progress >= ChampionsProgress::neraka          ? 16
+                : champions_progress >= ChampionsProgress::neraka_prison   ? 66
+                : champions_progress >= ChampionsProgress::neraka_entry    ? 64
+                : champions_progress >= ChampionsProgress::tomb_entry      ? 67
+                : champions_progress == ChampionsProgress::jelek_report    ? 16
+                : champions_progress == ChampionsProgress::keep_report     ? 16
+                : champions_progress >= ChampionsProgress::jelek           ? 50
+                : champions_progress >= ChampionsProgress::keep_entry      ? 49
+                : champions_progress >= ChampionsProgress::gargath         ? 48
+                : champions_progress >= ChampionsProgress::report          ? 16
+                : champions_progress >= ChampionsProgress::catacombs       ? 34
+                : champions_progress >= ChampionsProgress::temple          ? 33
+                                                                           : 32;
+            const bool rescued =
+                champions_progress == ChampionsProgress::opening ||
+                (session.script_variable(opengold::por::EclAddress{0x4C4C}) & 8) != 0;
+            const bool key = champions_progress == ChampionsProgress::opening ||
+                             session.script_variable(opengold::por::EclAddress{0x4C46}) == 1;
+            const bool altar = champions_progress < ChampionsProgress::altar ||
+                               session.script_variable(opengold::por::EclAddress{0x4C61}) == 255;
+            const bool all_pcs_alive =
+                std::ranges::all_of(party->state().slots,
+                                    [&](auto id)
+                                    {
+                                        return !id || !party->member(id).npc_source.empty() ||
+                                               !party->member(id).vitals.dead;
+                                    });
+            const bool eggs = champions_progress < ChampionsProgress::catacombs ||
+                              session.script_variable(opengold::por::EclAddress{0x4C5C}) == 255;
+            // The harness observes the actual win screen, then presses
+            // Continue so the ordinary campaign save is legal. The return
+            // script still retains the stronghold's last displayed pose.
+            const bool at_destination =
+                final_ending ? game_won_shown && end.area_id == 97
+                : champions_progress == ChampionsProgress::neraka
+                    ? end.overland && end.overland_x == 17 && end.overland_y == 8
+                : champions_progress == ChampionsProgress::report
+                    ? end.overland && end.overland_x == 1 && end.overland_y == 3
+                : (champions_progress == ChampionsProgress::keep_report ||
+                   champions_progress == ChampionsProgress::jelek_report)
+                    ? end.overland && end.overland_x == 13 && end.overland_y == 5
+                    : end.area_id == destination;
+            const bool keep_cleared =
+                champions_progress < ChampionsProgress::keep ||
+                session.script_variable(opengold::por::EclAddress{0x4C7D}) == 255;
+            const bool rose_taken =
+                champions_progress < ChampionsProgress::jelek_rose ||
+                session.script_variable(opengold::por::EclAddress{0x4C7B}) == 255;
+            const bool tomb_freed = champions_progress < ChampionsProgress::tomb ||
+                                    session.script_variable(opengold::por::EclAddress{0x4C9B}) == 1;
+            const bool lebaum_defeated =
+                champions_progress < ChampionsProgress::lebaum ||
+                session.script_variable(opengold::por::EclAddress{0x4CC5}) == 255;
+            const bool gate_open = champions_progress < ChampionsProgress::kernen_gate ||
+                                   session.script_variable(opengold::por::EclAddress{0x4CE7}) == 1;
+            const bool salve_made = final_ending ||
+                                    champions_progress < ChampionsProgress::base_salve ||
+                                    session.script_variable(opengold::por::EclAddress{0x4C0A}) == 1;
+            const bool master_defeated =
+                final_ending || champions_progress < ChampionsProgress::base_master ||
+                session.script_variable(opengold::por::EclAddress{0x4C04}) == 1;
+            const bool won =
+                !final_ending ||
+                (game_won_shown && session.script_variable(opengold::por::EclAddress{0x4C3A}) == 1);
+            const bool reached = won && master_defeated && salve_made && played && at_destination &&
+                                 keep_cleared && rose_taken && tomb_freed && lebaum_defeated &&
+                                 gate_open && end.script_id == destination_script &&
+                                 fights_defeated == 0 && someone_standing && all_pcs_alive &&
+                                 rescued && key && altar && eggs;
+            std::cout << "Earned Champions checkpoint: " << fights_fought << " fights, "
+                      << fights_defeated << " defeats; map " << destination << " "
+                      << (reached ? "reached" : "not reached") << "; Caramon " << rescued
+                      << ", key " << key << ", all PCs alive " << all_pcs_alive << ", altar "
+                      << altar << ".\n";
+            for (const auto id : party->state().slots)
+            {
+                if (id)
+                {
+                    const auto &member = party->member(id);
+                    std::cout << "  " << member.character.sheet().name << " level "
+                              << member.character.sheet().level << " XP " << member.experience
+                              << " HP " << member.vitals.hit_points << "/"
+                              << member.character.sheet().hit_points
+                              << (member.vitals.dead ? " dead" : "") << "\n";
+                }
+            }
+            for (const auto &[message, places] : needs)
+            {
+                std::cout << places.size() << "x " << message << " (first at " << places.front()
+                          << ")\n";
+            }
+            return reached;
+        }
         if (earned_gateway || earned_treasure)
         {
             const auto pcs =
@@ -16484,25 +17892,24 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                       });
             const bool earned_training =
                 player_count == 6 &&
-                std::ranges::all_of(party->state().slots,
-                                    [&](opengold::MemberId id)
-                                    {
-                                        if (!id)
-                                        {
-                                            return true;
-                                        }
-                                        const auto &member = party->member(id);
-                                        if (!member.npc_source.empty())
-                                        {
-                                            return true;
-                                        }
-                                        const auto &sheet = member.character.sheet();
-                                        return (third_bond || !member.vitals.dead) &&
-                                               member.experience > 25000 &&
-                                               (!sheet.name.starts_with("cleric") ||
-                                                std::ranges::max(sheet.original->class_levels) >=
-                                                    6);
-                                    });
+                std::ranges::all_of(
+                    party->state().slots,
+                    [&](opengold::MemberId id)
+                    {
+                        if (!id)
+                        {
+                            return true;
+                        }
+                        const auto &member = party->member(id);
+                        if (!member.npc_source.empty())
+                        {
+                            return true;
+                        }
+                        const auto &sheet = member.character.sheet();
+                        return (third_bond || !member.vitals.dead) && member.experience > 25000 &&
+                               (!sheet.name.starts_with("cleric") ||
+                                std::ranges::max(sheet.original->class_levels) >= 6);
+                    });
             if (earned_ending)
             {
                 const bool pc_standing = std::ranges::any_of(
@@ -16782,6 +18189,254 @@ int main(int argc, char **argv)
             return walk_census(GoldBoxGame::curse_of_the_azure_bonds, true, CurseProgress::sewers)
                        ? 0
                        : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-opening")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::opening)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-throtl")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::throtl)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-temple")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::temple)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-altar")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::altar)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-report")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::report)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-keep-report")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::keep_report)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-jelek-report")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::jelek_report)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-tomb-entry")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::tomb_entry)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-citadel-collision")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false,
+                               ChampionsProgress::citadel_collision)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-ending")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::ending)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-base-master")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::base_master)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-base-salve")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::base_salve)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-kernen-gate")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::kernen_gate)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-kernen-square")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::kernen_square)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-citadel-top")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::citadel_top)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-flying-citadel")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false,
+                               ChampionsProgress::flying_citadel)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-dragonlance")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::dragonlance)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-lebaum")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::lebaum)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-duerghast-entry")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false,
+                               ChampionsProgress::duerghast_entry)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-sanction-temple")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false,
+                               ChampionsProgress::sanction_temple)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-sanction-entry")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false,
+                               ChampionsProgress::sanction_entry)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-neraka")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::neraka)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-neraka-prison")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::neraka_prison)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-neraka-entry")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::neraka_entry)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-tomb-honor")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::tomb_honor)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-tomb")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::tomb)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-tomb-fear")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::tomb_fear)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-jelek-rose")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::jelek_rose)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-jelek")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::jelek)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-keep")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::keep)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-keep-sanctuary")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false,
+                               ChampionsProgress::keep_sanctuary)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-keep-entry")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::keep_entry)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-gargath")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::gargath)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-earned-catacombs")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, true, CurseProgress::none,
+                               SecretProgress::none, false, false, ChampionsProgress::catacombs)
+                       ? 0
+                       : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--champions-walk")
+        {
+            return walk_census(GoldBoxGame::champions_of_krynn, false) ? 0 : 1;
         }
         if (argc == 2 && std::string_view(argv[1]) == "--secret-walk")
         {

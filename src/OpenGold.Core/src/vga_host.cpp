@@ -151,14 +151,19 @@ void RolfTourSession::open_vga_store(const EclRequest &request)
 
 bool RolfTourSession::vga_area_map() const
 {
-    return vga_engine(game()) && machine_.variable(game_cell(ecl_in_3d_area)) == 0;
+    return (vga_engine(game()) || game() == GoldBoxGame::champions_of_krynn) &&
+           machine_.variable(game_cell(ecl_in_3d_area)) == 0;
 }
 
 void RolfTourSession::vga_area_step()
 {
     // The party's square on the area map, 38 columns by 15 rows (its
     // MovePartyWilderness), and the square it left.
-    constexpr EclAddress column{0x0025}, row{0x0026}, previous_column{0x0017}, previous_row{0x0018};
+    const bool champions = game() == GoldBoxGame::champions_of_krynn;
+    const auto column = champions ? game_cell(ecl_overland_x) : EclAddress{0x0025};
+    const auto row = champions ? game_cell(ecl_overland_y) : EclAddress{0x0026};
+    const auto previous_column = champions ? game_cell(EclAddress{0x49F0}) : EclAddress{0x0017};
+    const auto previous_row = champions ? game_cell(EclAddress{0x49F1}) : EclAddress{0x0018};
     constexpr int columns = 38, rows = 15;
     // North and on clockwise to north-west (its dirDeltaX and dirDeltaY).
     constexpr std::array<int, 8> step_columns{0, 1, 1, 1, 0, -1, -1, -1},

@@ -11,6 +11,7 @@
 #include "character_text.h"
 #include "modify_character_dialog.h"
 #include "opengold/srd5.h"
+#include "opengold/original.h"
 #include "godot_path.h"
 #include "guarded_handlers.h"
 #include "scoped_flag.h"
@@ -508,6 +509,39 @@ void CharacterCreationView::refresh()
                           "DiceHint", "TargetsTitle", "Targets", "TargetHint"})
     {
         show(n, stats && !in_place);
+    }
+    const auto faith_choices = creator_->rules().choices(CreationField::background);
+    const bool choosing_deity =
+        stats && in_place &&
+        std::ranges::any_of(faith_choices,
+                            [&](const auto &choice)
+                            {
+                                return creator_->rules().allows(d, CreationField::background,
+                                                                choice.id);
+                            });
+    if (choosing_deity)
+    {
+        show("BackgroundLabel", true);
+        show("Background", true);
+        required_node<Label>(*this, "BackgroundLabel").set_text(i18n::text(N_("Deity")));
+        auto &list = required_node<OptionButton>(*this, "Background");
+        list.clear();
+        for (std::size_t at = 0; at < faith_choices.size(); ++at)
+        {
+            const auto &choice = faith_choices[at];
+            list.add_item(i18n::text(choice.label));
+            list.set_item_disabled(
+                static_cast<int>(at),
+                !creator_->rules().allows(d, CreationField::background, choice.id));
+            if (choice.id == d.background)
+            {
+                list.select(static_cast<int>(at));
+            }
+        }
+    }
+    else
+    {
+        required_node<Label>(*this, "BackgroundLabel").set_text(i18n::text(N_("Background")));
     }
     show("Instructions", !stats || in_place);
     // Unlimited Adventures' roll offers Modify beside Reroll (create.c).
@@ -1016,16 +1050,19 @@ void CharacterCreationView::show_rolled_character(const CharacterSheet *sheet)
     // the game's Godot class list leaves TextServer out.
     required_node<Label>(*this, "SwapHint").set("autowrap_mode", autowrap_off);
     required_node<Label>(*this, "SwapHint")
-        .set_text(!rolled ? String()
-                  : sheet->original->platinum > 0
-                      ? i18n::format("Hit Points {hp}   Age {age}   Platinum {pp}",
-                                     {{"hp", sheet->hit_points},
-                                      {"age", sheet->original->age},
-                                      {"pp", sheet->original->platinum}})
-                      : i18n::format("Hit Points {hp}   Age {age}   Gold {gold}",
-                                     {{"hp", sheet->hit_points},
-                                      {"age", sheet->original->age},
-                                      {"gold", sheet->original->gold}}));
+        .set_text(
+            !rolled ? String()
+            : sheet->original->platinum > 0
+                ? i18n::format(original::game_of(sheet->identity) == GoldBoxGame::champions_of_krynn
+                                   ? N_("Hit Points {hp}   Age {age}   Steel {pp}")
+                                   : N_("Hit Points {hp}   Age {age}   Platinum {pp}"),
+                               {{"hp", sheet->hit_points},
+                                {"age", sheet->original->age},
+                                {"pp", sheet->original->platinum}})
+                : i18n::format("Hit Points {hp}   Age {age}   Gold {gold}",
+                               {{"hp", sheet->hit_points},
+                                {"age", sheet->original->age},
+                                {"gold", sheet->original->gold}}));
 }
 
 void CharacterCreationView::_draw()

@@ -122,6 +122,7 @@ target_include_directories(opengold_rules_srd5 PUBLIC src/OpenGold.Rules.Srd5/in
 target_link_libraries(opengold_rules_srd5 PUBLIC opengold_rules)
 add_library(opengold_rules_original STATIC
     src/OpenGold.Rules.Original/src/original_rules.cpp
+    src/OpenGold.Rules.Original/src/champions_rules.cpp
     src/OpenGold.Rules.Original/src/character_rules.cpp
     src/OpenGold.Rules.Original/src/modify.cpp
     src/OpenGold.Rules.Original/src/combatant.cpp
@@ -142,12 +143,14 @@ add_library(opengold_formats STATIC
     src/OpenGold.Formats/src/wall_art.cpp
     src/OpenGold.Formats/src/por_sound.cpp
     src/OpenGold.Formats/src/curse_records.cpp
+    src/OpenGold.Formats/src/champions_records.cpp
     src/OpenGold.Formats/src/secret_records.cpp
     src/OpenGold.Formats/src/treasures_texts.cpp
     src/OpenGold.Formats/src/vga_picture.cpp
     src/OpenGold.Formats/src/late_records.cpp
     src/OpenGold.Formats/src/vace_film.cpp
     src/OpenGold.Formats/src/music_bank.cpp
+    src/OpenGold.Formats/src/champions_music.cpp
     src/OpenGold.Formats/src/gold_box_game.cpp
     src/OpenGold.Formats/src/ua_formats.cpp
     src/OpenGold.Formats/src/ua_media.cpp
@@ -309,6 +312,9 @@ if(OPENGOLD_BUILD_TESTS)
     target_link_libraries(opengold_treasure_tests PRIVATE opengold_core opengold_rules_srd5
         opengold_rules_original)
     add_test(NAME opengold_treasure_tests COMMAND opengold_treasure_tests)
+    add_executable(opengold_champions_tests tests/champions_tests.cpp)
+    target_link_libraries(opengold_champions_tests PRIVATE opengold_core opengold_rules_original)
+    add_test(NAME opengold_champions_tests COMMAND opengold_champions_tests)
     # Every map of Curse walked with an original-rules party: each event runs.
     add_test(NAME opengold_curse_walk COMMAND opengold_gold_box_games_tests --curse-walk)
     # Every map of Secret of the Silver Blades walked the same way.
@@ -319,6 +325,9 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_darkness_walk COMMAND opengold_gold_box_games_tests --darkness-walk)
     # And every map of Treasures of the Savage Frontier, its overland too.
     add_test(NAME opengold_treasure_walk COMMAND opengold_gold_box_games_tests --treasure-walk)
+    add_test(NAME opengold_champions_walk COMMAND opengold_gold_box_games_tests --champions-walk)
+    set_tests_properties(opengold_champions_walk PROPERTIES TIMEOUT 1800
+        SKIP_REGULAR_EXPRESSION "files are not here")
     # Curse's story, beat by beat, with a party made for it (plan step 7).
     add_test(NAME opengold_curse_route COMMAND opengold_gold_box_games_tests --curse-route)
     # Earned sewer rewards and training, reached with real sewer movement.
@@ -386,6 +395,12 @@ if(OPENGOLD_BUILD_TESTS)
     set_tests_properties(opengold_treasure_earned_ending PROPERTIES TIMEOUT 7200
         SKIP_REGULAR_EXPRESSION "files are not here" FIXTURES_REQUIRED gateway_earned_winners
         ENVIRONMENT "OPENGOLD_GATEWAY_WINNERS=${CMAKE_CURRENT_BINARY_DIR}/gateway-earned-winners.sav")
+    # A legal fresh Champions party earns the native ending without grants.
+    add_test(NAME opengold_champions_earned_ending COMMAND opengold_gold_box_games_tests --champions-earned-ending)
+    set_tests_properties(opengold_champions_earned_ending PROPERTIES TIMEOUT 7200
+        SKIP_REGULAR_EXPRESSION "files are not here"
+        FIXTURES_SETUP champions_earned_winners
+        ENVIRONMENT "OPENGOLD_ROUTE_SAVE=${CMAKE_CURRENT_BINARY_DIR}/champions-earned-winners.sav")
     # It plays ten towns' fights, each with many dice: about 18 minutes alone.
     set_tests_properties(opengold_treasure_route PROPERTIES TIMEOUT 3600)
     # Each game's title pictures, as its original shows them when it starts.

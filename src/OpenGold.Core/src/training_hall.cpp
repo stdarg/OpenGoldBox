@@ -98,7 +98,7 @@ std::vector<std::string_view> original_hall_classes(TrainingHall hall)
     return original_mask_classes(original_class_mask(hall));
 }
 
-std::vector<std::string_view> original_mask_classes(unsigned class_mask)
+std::vector<std::string_view> original_mask_classes(unsigned class_mask, GoldBoxGame game)
 {
     constexpr std::array<std::pair<std::string_view, unsigned>, 8> class_bits{{
         {"cleric", 0x02},
@@ -115,7 +115,12 @@ std::vector<std::string_view> original_mask_classes(unsigned class_mask)
     {
         if ((class_mask & bit) != 0)
         {
-            classes.push_back(klass);
+            if (game == GoldBoxGame::champions_of_krynn && klass == "monk")
+            {
+                continue;
+            }
+            classes.push_back(
+                game == GoldBoxGame::champions_of_krynn && klass == "paladin" ? "knight" : klass);
         }
     }
     return classes;

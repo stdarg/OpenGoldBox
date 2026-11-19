@@ -1140,6 +1140,7 @@ class RolfTourSession
     void interrupt_camp();
     void announce_camp_attack();
     [[nodiscard]] bool in_curse_wilderness() const;
+    [[nodiscard]] bool in_champions_story_rest() const;
     [[nodiscard]] bool camp_warded() const;
     bool transition_{}, message_only_{};
 

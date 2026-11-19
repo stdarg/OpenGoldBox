@@ -81,6 +81,8 @@ struct CharacterRecord
     // The race by Pool of Radiance's numbers (0 a monster, 1 to 7 dwarf, elf,
     // gnome, half-elf, halfling, half-orc and human), Secret's translated.
     std::uint8_t race{}, character_class{}, gender{}, alignment{}, type{};
+    // Krynn's independent order/deity/robe fields; zero in the Realms games.
+    std::uint8_t knight_order{}, deity{}, robe_order{};
     // The combat icon's size: 2 one by two squares, 3 two by one, 4 two by two.
     std::uint8_t icon_size_raw{};
     std::uint16_t age{};
@@ -97,6 +99,9 @@ struct CharacterRecord
     std::vector<std::uint8_t> spell_book, memorized_spells;
     // Spell slots by list (cleric, druid, magic-user) and spell level from 1.
     std::array<std::array<std::uint8_t, 5>, 3> spell_slots{};
+    // Champions' fourth list is the deity's gifts, separate from ordinary
+    // cleric and mage preparation. The three common rows keep their meanings.
+    std::array<std::uint8_t, 5> deity_spell_slots{};
     std::uint8_t spell_byte_44_raw{};
     std::uint32_t experience{};
     std::uint16_t base_xp_award{};

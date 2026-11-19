@@ -9,7 +9,7 @@
 namespace opengold
 {
 
-// The Forgotten Realms Gold Box games, in release order (docs/GAMES.md).
+// Stable campaign-save IDs. Append new games without renumbering old ones.
 enum class GoldBoxGame : std::uint8_t
 {
     pool_of_radiance,
@@ -18,17 +18,19 @@ enum class GoldBoxGame : std::uint8_t
     gateway_to_the_savage_frontier,
     pools_of_darkness,
     treasures_of_the_savage_frontier,
-    unlimited_adventures
+    unlimited_adventures,
+    champions_of_krynn
 };
 
-inline constexpr std::array<GoldBoxGame, 7> gold_box_games{
+inline constexpr std::array<GoldBoxGame, 8> gold_box_games{
     GoldBoxGame::pool_of_radiance,
     GoldBoxGame::curse_of_the_azure_bonds,
     GoldBoxGame::secret_of_the_silver_blades,
     GoldBoxGame::gateway_to_the_savage_frontier,
     GoldBoxGame::pools_of_darkness,
     GoldBoxGame::treasures_of_the_savage_frontier,
-    GoldBoxGame::unlimited_adventures};
+    GoldBoxGame::unlimited_adventures,
+    GoldBoxGame::champions_of_krynn};
 
 [[nodiscard]] constexpr std::string_view game_title(GoldBoxGame game) noexcept
 {
@@ -48,6 +50,8 @@ inline constexpr std::array<GoldBoxGame, 7> gold_box_games{
         return "Treasures of the Savage Frontier";
     case GoldBoxGame::unlimited_adventures:
         return "Unlimited Adventures";
+    case GoldBoxGame::champions_of_krynn:
+        return "Champions of Krynn";
     }
     return {};
 }
@@ -71,6 +75,8 @@ inline constexpr std::array<GoldBoxGame, 7> gold_box_games{
         return "TREASURE";
     case GoldBoxGame::unlimited_adventures:
         return "UA";
+    case GoldBoxGame::champions_of_krynn:
+        return "COK";
     }
     return {};
 }

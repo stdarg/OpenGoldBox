@@ -2,6 +2,7 @@
 #include "opengold/item_key.h"
 #include "opengold/coin_purse.h"
 #include "opengold/original_rules.h"
+#include "opengold/original.h"
 #include <algorithm>
 #include <limits>
 #include <array>
@@ -142,8 +143,7 @@ AdndCombatValues adnd_combat_values(const PartyMember &m)
     {
         if (const int levels = group_levels(m, group))
         {
-            values.thac0 =
-                std::min(values.thac0, adnd_thac0(group, static_cast<unsigned>(levels)));
+            values.thac0 = std::min(values.thac0, adnd_thac0(group, static_cast<unsigned>(levels)));
         }
     }
     int weapon_bonus = 0;
@@ -280,6 +280,11 @@ unsigned secret_race(const rules::CharacterSheet &sheet)
     {
         return 0;
     }
+    if (original::game_of(sheet.identity) == GoldBoxGame::champions_of_krynn)
+    {
+        return original::record_race(static_cast<original::Race>(sheet.original->race),
+                                     GoldBoxGame::champions_of_krynn);
+    }
     switch (static_cast<original::Race>(sheet.original->race))
     {
     case original::Race::elf:
@@ -387,14 +392,15 @@ std::array<unsigned, 4> check_party(const CampaignParty &party, EclAddress attri
         return {0, 0, 0, party.finding_traps() ? 1U : 0U};
     }
     const auto field = attribute.location - ecl_character_record.location;
-    if (game == GoldBoxGame::secret_of_the_silver_blades)
+    if (game == GoldBoxGame::secret_of_the_silver_blades || game == GoldBoxGame::champions_of_krynn)
     {
         if (const auto values = secret_check_party(party, static_cast<unsigned>(field), effect))
         {
             return *values;
         }
     }
-    const bool movement = attribute == EclAddress{0x6C1B};
+    const bool movement = attribute == EclAddress{0x6C1B} ||
+                          (game == GoldBoxGame::champions_of_krynn && field == 0x9F);
     if (effect || (!movement && (field < 0xA5 || field > 0xAC)))
     {
         throw std::runtime_error("Unsupported CHECK PARTY attribute/effect conversion");
@@ -449,8 +455,8 @@ EclHostReply party_character_reply(const CampaignParty &party, PartySlot slot)
         // (Skullcrusher's search, ECL4:2 0xAAA5).
         for (std::size_t n = 0; n < name.size() && n < 15; ++n)
         {
-            fields[n] = static_cast<unsigned char>(
-                std::toupper(static_cast<unsigned char>(name[n])));
+            fields[n] =
+                static_cast<unsigned char>(std::toupper(static_cast<unsigned char>(name[n])));
         }
         fields[0x18] = static_cast<std::uint16_t>(sheet.scores[rules::Ability::constitution]);
         fields[0x72] = adnd_race_code(m.character.creation_data().race);

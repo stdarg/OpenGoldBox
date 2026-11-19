@@ -2,6 +2,7 @@
 #include "opengold/curse_records.h"
 #include "opengold/secret_records.h"
 #include "opengold/late_records.h"
+#include "opengold/champions_records.h"
 #include "opengold/pool_radiance.h"
 #include "opengold/original_spells.h"
 #include <algorithm>
@@ -28,7 +29,7 @@ template <class Enum> struct Named
 };
 
 // The six races the original's creation offers; it skips the half-orc.
-constexpr std::array<Named<Race>, 6> races{{
+constexpr std::array<Named<Race>, 13> races{{
     {Race::dwarf, "dwarf", "Dwarf",
      "Stout, hardy folk who resist poison and magic and fight giants and goblins well. A dwarf "
      "may be a fighter, a thief or both."},
@@ -47,6 +48,13 @@ constexpr std::array<Named<Race>, 6> races{{
     {Race::human, "human", "Human",
      "The most common folk of the Realms, who may follow any one class with no limit on their "
      "levels."},
+    {Race::silvanesti_elf, "silvanesti_elf", "Silvanesti Elf", "An elf of Silvanesti."},
+    {Race::qualinesti_elf, "qualinesti_elf", "Qualinesti Elf", "An elf of Qualinesti."},
+    {Race::krynn_half_elf, "krynn_half_elf", "Half-Elf", "A half-elf of Krynn."},
+    {Race::mountain_dwarf, "mountain_dwarf", "Mountain Dwarf", "A dwarf of the mountain clans."},
+    {Race::hill_dwarf, "hill_dwarf", "Hill Dwarf", "A dwarf of the hill clans."},
+    {Race::kender, "kender", "Kender", "Nimble, fearless folk whose taunts provoke enemies."},
+    {Race::krynn_human, "krynn_human", "Human", "A human of Krynn."},
 }};
 
 constexpr std::array<Named<Gender>, 2> genders{{
@@ -54,7 +62,7 @@ constexpr std::array<Named<Gender>, 2> genders{{
     {Gender::female, "female", "Female", "A female's Strength may be lower than a male's."},
 }};
 
-constexpr std::array<Named<Profession>, 15> professions{{
+constexpr std::array<Named<Profession>, 16> professions{{
     {Profession::cleric, "cleric", "Cleric",
      "A priest who fights in armor and casts healing and protective spells. Hit Die: d8."},
     {Profession::fighter, "fighter", "Fighter",
@@ -90,7 +98,23 @@ constexpr std::array<Named<Profession>, 15> professions{{
      "A fighter, magic-user and thief at once, sharing experience among the three."},
     {Profession::magic_user_thief, "magic_user_thief", "Magic-User/Thief",
      "A magic-user and a thief at once, sharing experience between the two."},
+    {Profession::knight, "knight", "Knight of Solamnia",
+     "A lawful good warrior of the Crown, who may petition the Sword and Rose. First Hit Dice: 2d10."},
 }};
+
+constexpr std::array<Named<unsigned>, 7> deities{
+    {{1, "paladine", "Paladine", "Good; grants Protection from Evil in a radius."},
+     {2, "majere", "Majere", "Good; grants Silence."},
+     {3, "kiri_jolith", "Kiri-Jolith", "Good; improves attacks and grants Detect Magic."},
+     {4, "mishakal", "Mishakal", "Good; grants Remove Curse, Bless and Charm Person."},
+     {5, "sirrion", "Sirrion", "Neutral; grants Burning Hands."},
+     {6, "reorx", "Reorx", "Neutral; improves a dwarf's attacks."},
+     {7, "shinare", "Shinare", "Neutral; grants Charm Person."}}};
+
+bool dwarf_race(Race race)
+{
+    return race == Race::mountain_dwarf || race == Race::hill_dwarf;
+}
 
 // The SRD module's alignment ids, which the scripts' host already reads.
 constexpr std::array<Named<Alignment>, 9> alignments{{
@@ -275,7 +299,9 @@ constexpr int modified_data_version = 1;
         std::ranges::any_of(rolled.rolls,
                             [](int roll)
                             {
-                                return roll < 2 || roll > 20;
+                                // Champions' +2 Dexterity plus the original
+                                // creation's +1 can leave a raw roll of 21.
+                                return roll < 2 || roll > 21;
                             }) ||
         rolled.strength_percentile < 1 || rolled.strength_percentile > 100 ||
         rolled.starting_age < 1 || rolled.gold < 0)
@@ -314,6 +340,8 @@ std::optional<por::CharacterRecord> decode_record(std::span<const std::uint8_t> 
 {
     switch (bytes.size())
     {
+    case 409:
+        return champions::decode_creature(bytes);
     case 422:
         return curse::decode_creature(bytes);
     case 439:
@@ -341,6 +369,7 @@ struct Imported
     ClassLevels levels{};
     int hit_points{}, age{}, experience{}, drained_levels{}, drained_hit_points{};
     int race{}, profession{}, alignment{};
+    int deity{}, robe{}, knight{};
     std::vector<int> learned;
     std::optional<int> rolled_hit_points;
 };
@@ -348,7 +377,8 @@ struct Imported
 std::string encode_imported(const Imported &from)
 {
     std::ostringstream out;
-    out << imported_prefix << (from.rolled_hit_points ? 2 : 1);
+    const bool krynn = from.deity || from.robe || from.knight;
+    out << imported_prefix << (krynn ? 3 : from.rolled_hit_points ? 2 : 1);
     for (const auto ability : rules::all_abilities)
     {
         out << ' ' << from.scores[ability];
@@ -365,9 +395,13 @@ std::string encode_imported(const Imported &from)
     {
         out << ' ' << number;
     }
-    if (from.rolled_hit_points)
+    if (from.rolled_hit_points || krynn)
     {
-        out << ' ' << *from.rolled_hit_points;
+        out << ' ' << from.rolled_hit_points.value_or(0);
+    }
+    if (krynn)
+    {
+        out << ' ' << from.deity << ' ' << from.robe << ' ' << from.knight;
     }
     return out.str();
 }
@@ -400,19 +434,26 @@ std::optional<Imported> imported_of(const CharacterDraft &draft)
     {
         in >> number;
     }
-    if (version == 2)
+    if (version >= 2)
     {
         int rolled = 0;
         in >> rolled;
         from.rolled_hit_points = rolled;
     }
+    if (version == 3)
+    {
+        in >> from.deity >> from.robe >> from.knight;
+    }
     std::string rest;
-    if (!in || (version != 1 && version != 2) || (in >> rest) || from.hit_points < 1)
+    if (!in || version < 1 || version > 3 || (in >> rest) || from.hit_points < 1 ||
+        from.deity < 0 || from.deity > 7 || from.robe < 0 || from.robe > 3 || from.knight < 0 ||
+        from.knight > 3)
     {
         throw std::invalid_argument("Unreadable imported character");
     }
     return from;
 }
+
 constexpr std::string_view hex = "0123456789abcdef";
 
 // A record's bytes as a draft keeps them.
@@ -573,11 +614,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
         }
         CharacterDraft draft;
         draft.name = title_case(record->name);
-        draft.race =
-            std::string(named(races, record->race >= 1 && record->race <= 7 && record->race != 6
-                                         ? static_cast<Race>(record->race - 1)
-                                         : Race::human)
-                            .id);
+        draft.race = std::string(named(races, race_from_record(record->race, record->game)).id);
         draft.gender = record->gender ? "female" : "male";
         draft.character_class = std::string(named(professions, record_profession(*record)).id);
         draft.alignment = std::string(
@@ -625,6 +662,13 @@ class OriginalCharacterRules final : public rules::CharacterRules
         in.race = o.race;
         in.profession = o.profession;
         in.alignment = o.alignment;
+        in.deity = o.deity;
+        in.robe = o.robe_order;
+        in.knight = o.knight_order;
+        if (in.deity || in.robe || in.knight)
+        {
+            in.rolled_hit_points = o.rolled_hit_points;
+        }
         if (darkness)
         {
             in.rolled_hit_points = o.rolled_hit_points;
@@ -735,9 +779,22 @@ class OriginalCharacterRules final : public rules::CharacterRules
             return offered;
         }
         case CreationField::alignment:
-            return listed(alignments);
+        {
+            auto choices = listed(alignments);
+            if (game_ == GoldBoxGame::champions_of_krynn)
+            {
+                std::erase_if(
+                    choices,
+                    [](const auto &choice)
+                    {
+                        return static_cast<unsigned>(*find_id(alignments, choice.id)) % 3 == 2;
+                    });
+            }
+            return choices;
+        }
         case CreationField::background:
-            return {};
+            return game_ == GoldBoxGame::champions_of_krynn ? listed(deities)
+                                                            : std::vector<CreationChoice>{};
         }
         throw std::invalid_argument("Unknown creation field");
     }
@@ -758,11 +815,21 @@ class OriginalCharacterRules final : public rules::CharacterRules
         return rules::AbilityGeneration::rolled_in_place;
     }
 
+    bool choices_require_reroll(const CharacterDraft &before,
+                                const CharacterDraft &after) const override
+    {
+        return CharacterRules::choices_require_reroll(before, after) ||
+               (game_ == GoldBoxGame::champions_of_krynn &&
+                (before.background != after.background || before.alignment != after.alignment));
+    }
+
     void roll_in_place(CharacterDraft &draft, RandomState &random) const override
     {
         const auto chosen = read_choices(draft, game_);
-        draft.rules_data = encode(roll_character(chosen.race, chosen.profession, game_,
-                                                 experience_of(chosen.profession), random));
+        draft.rules_data = encode(roll_character(
+            chosen.race, chosen.profession, game_,
+            experience_of(chosen.profession, draft.alignment), random,
+            {static_cast<int>(find_id(deities, draft.background).value_or(0)), 0, 0}));
         draft.rolled = true;
     }
 
@@ -805,11 +872,51 @@ class OriginalCharacterRules final : public rules::CharacterRules
             {
                 return false;
             }
+            if (game_ == GoldBoxGame::champions_of_krynn)
+            {
+                const auto number = static_cast<unsigned>(*alignment);
+                if (number % 3 == 2)
+                {
+                    return false;
+                }
+                if (*profession == Profession::knight)
+                {
+                    return number == 0;
+                }
+                const bool thief = std::ranges::find(classes_of(*profession), ClassSlot::thief) !=
+                                   classes_of(*profession).end();
+                if (thief && number != 1 && number != 3 && number != 4)
+                {
+                    return false;
+                }
+                const auto deity = find_id(deities, draft.background);
+                if (deity &&
+                    ((*deity <= 4 && number % 3 != 0) ||
+                     (*deity > 4 && number != 1 && number != 3 && number != 4 && number != 7)))
+                {
+                    return false;
+                }
+            }
             const auto open = alignments_for(*profession);
             return std::ranges::find(open, *alignment) != open.end();
         }
         case CreationField::background:
-            return false;
+        {
+            if (game_ != GoldBoxGame::champions_of_krynn)
+            {
+                return false;
+            }
+            const auto profession = find_id(professions, draft.character_class);
+            const auto deity = find_id(deities, id);
+            const auto race = find_id(races, draft.race);
+            if (!profession || !deity || !race)
+            {
+                return false;
+            }
+            const auto classes = classes_of(*profession);
+            return std::ranges::find(classes, ClassSlot::cleric) != classes.end() &&
+                   (!dwarf_race(*race) || *deity == 6);
+        }
         }
         return false;
     }
@@ -868,8 +975,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
         }
         const auto chosen = read_choices(draft, game_);
         const auto alignment = require_id(alignments, draft.alignment, "alignment");
-        const auto open = alignments_for(chosen.profession);
-        if (std::ranges::find(open, alignment) == open.end())
+        if (!allows(draft, CreationField::alignment, draft.alignment))
         {
             throw std::invalid_argument("The class does not allow that alignment");
         }
@@ -894,24 +1000,27 @@ class OriginalCharacterRules final : public rules::CharacterRules
         sheet.base = ability;
         sheet.scores = ability;
         // Curse's character starts trained to its starting experience.
-        const auto trained = starting_training(chosen.race, chosen.profession, rolled_ability,
-                                               rolled, game_, experience_of(chosen.profession));
+        const auto trained =
+            starting_training(chosen.race, chosen.profession, rolled_ability, rolled, game_,
+                              experience_of(chosen.profession, draft.alignment));
         const auto &levels = trained.levels;
         sheet.level = *std::max_element(levels.begin(), levels.end());
-        sheet.hit_points = modified
-                               ? modified->hit_points
-                               : first_level_hit_points(chosen.profession, rolled,
-                                                        ability[Ability::constitution], game_) +
-                                     trained.hit_points;
+        sheet.hit_points =
+            modified
+                ? modified->hit_points
+                : first_level_hit_points(
+                      chosen.profession, rolled, ability[Ability::constitution], game_,
+                      {static_cast<int>(find_id(deities, draft.background).value_or(0)), 0, 0}) +
+                      trained.hit_points;
         for (const auto slot : classes_of(chosen.profession))
         {
-            sheet.level_classes.emplace_back(class_slot_id(slot));
+            sheet.level_classes.emplace_back(class_slot_id(slot, game_));
         }
         CharacterSheet::Original original;
         original.class_levels = levels;
         original.thac0 = thac0(levels, game_);
         original.saving_throws = saving_throws(levels, game_);
-        original.experience = experience_of(chosen.profession);
+        original.experience = experience_of(chosen.profession, draft.alignment);
         original.platinum = platinum();
         original.exceptional_strength =
             modified ? modified->exceptional_strength
@@ -921,17 +1030,45 @@ class OriginalCharacterRules final : public rules::CharacterRules
             first_level_rolled_hit_points(chosen.profession, rolled) + trained.rolled_hit_points;
         if (modified)
         {
-            original.rolled_hit_points =
-                modified_rolled_hit_points({chosen.race, chosen.gender, chosen.profession, levels},
-                                           ability[Ability::constitution], modified->hit_points,
-                                           original.rolled_hit_points, game_);
+            original.rolled_hit_points = modified_rolled_hit_points(
+                {chosen.race,
+                 chosen.gender,
+                 chosen.profession,
+                 levels,
+                 {static_cast<int>(find_id(deities, draft.background).value_or(0)), 0, 0}},
+                ability[Ability::constitution], modified->hit_points, original.rolled_hit_points,
+                game_);
         }
         original.age = rolled.starting_age;
         original.aging_changes_scores = aging_ == Aging::add;
         original.gold = rolled.gold;
+        if (game_ == GoldBoxGame::champions_of_krynn)
+        {
+            original.platinum = rolled.gold;
+            original.gold = 0;
+        }
         original.race = static_cast<int>(chosen.race);
         original.profession = static_cast<int>(chosen.profession);
         original.alignment = static_cast<int>(alignment);
+        if (game_ == GoldBoxGame::champions_of_krynn)
+        {
+            if (level_in(levels, ClassSlot::cleric))
+            {
+                if (!allows(draft, CreationField::background, draft.background))
+                {
+                    throw std::invalid_argument("A cleric must choose an eligible deity");
+                }
+                original.deity = static_cast<int>(*find_id(deities, draft.background));
+            }
+            original.robe_order = level_in(levels, ClassSlot::magic_user)
+                                      ? (static_cast<int>(alignment) % 3 == 0 ? 1 : 2)
+                                      : 0;
+            original.knight_order = chosen.profession == Profession::knight ? 1 : 0;
+            sheet.background =
+                original.deity
+                    ? std::string(named(deities, static_cast<unsigned>(original.deity)).label)
+                    : "";
+        }
         original.thief_skills = thief_skills(chosen.race, level_in(levels, ClassSlot::thief),
                                              ability[Ability::dexterity], game_);
         const auto slots =
@@ -942,6 +1079,13 @@ class OriginalCharacterRules final : public rules::CharacterRules
         original.known_spells = known_spells(
             levels, ability[Ability::wisdom],
             chosen_spells(draft, trained.learned_spells, training_options(draft)), game_);
+        if (game_ == GoldBoxGame::champions_of_krynn)
+        {
+            original.known_spells = level_in(levels, ClassSlot::magic_user)
+                                        ? std::vector<int>{11, 18, 12, 15, 21}
+                                        : std::vector<int>{};
+            recalculate_champions_numbers(original, ability);
+        }
         sheet.original = original;
         return sheet;
     }
@@ -1024,7 +1168,9 @@ class OriginalCharacterRules final : public rules::CharacterRules
         const auto &numbers = *sheet.original;
         return {static_cast<Race>(numbers.race),
                 draft.gender == "female" ? Gender::female : Gender::male,
-                static_cast<Profession>(numbers.profession), numbers.class_levels};
+                static_cast<Profession>(numbers.profession),
+                numbers.class_levels,
+                {numbers.deity, numbers.robe_order, numbers.knight_order}};
     }
 
     // A character brought from another game with Modify's numbers, when the
@@ -1062,7 +1208,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
         {
             if (from.levels[at] > 0)
             {
-                sheet.level_classes.emplace_back(class_slot_id(static_cast<ClassSlot>(at)));
+                sheet.level_classes.emplace_back(class_slot_id(static_cast<ClassSlot>(at), game_));
             }
         }
         CharacterSheet::Original numbers;
@@ -1075,6 +1221,9 @@ class OriginalCharacterRules final : public rules::CharacterRules
         numbers.race = from.race;
         numbers.profession = from.profession;
         numbers.alignment = from.alignment;
+        numbers.deity = from.deity;
+        numbers.robe_order = from.robe;
+        numbers.knight_order = from.knight;
         numbers.experience = from.experience;
         numbers.platinum = platinum();
         numbers.drained_levels = from.drained_levels;
@@ -1104,6 +1253,10 @@ class OriginalCharacterRules final : public rules::CharacterRules
                           return spell(number)->caster_class == SpellClass::magic_user &&
                                  std::ranges::find(from.learned, number) == from.learned.end();
                       });
+        if (game_ == GoldBoxGame::champions_of_krynn)
+        {
+            recalculate_champions_numbers(numbers, sheet.scores);
+        }
         sheet.original = numbers;
         return sheet;
     }
@@ -1134,7 +1287,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
         {
             if (levels[at] > 0)
             {
-                sheet.level_classes.emplace_back(class_slot_id(static_cast<ClassSlot>(at)));
+                sheet.level_classes.emplace_back(class_slot_id(static_cast<ClassSlot>(at), game_));
             }
         }
         CharacterSheet::Original numbers;
@@ -1148,6 +1301,11 @@ class OriginalCharacterRules final : public rules::CharacterRules
         numbers.race = static_cast<int>(race);
         numbers.profession = static_cast<int>(profession);
         numbers.alignment = static_cast<int>(alignment);
+        numbers.deity = record.deity;
+        numbers.robe_order = record.robe_order;
+        numbers.knight_order = record.knight_order;
+        std::copy(record.deity_spell_slots.begin(), record.deity_spell_slots.end(),
+                  numbers.deity_spell_slots.begin());
         numbers.thief_skills = thief_skills(race, level_in(levels, ClassSlot::thief),
                                             ability[Ability::dexterity], game_);
         const auto slots =
@@ -1168,6 +1326,12 @@ class OriginalCharacterRules final : public rules::CharacterRules
             }
         }
         numbers.known_spells = known_spells(levels, ability[Ability::wisdom], learned, game_);
+        if (game_ == GoldBoxGame::champions_of_krynn)
+        {
+            numbers.experience = record.experience;
+            numbers.known_spells = learned;
+            recalculate_champions_numbers(numbers, ability);
+        }
         sheet.original = numbers;
         for (const auto memorized : record.memorized_spells)
         {
@@ -1197,8 +1361,14 @@ class OriginalCharacterRules final : public rules::CharacterRules
 
     // A new character's experience for each class and its platinum: the
     // game's, or what a design's game record sets.
-    [[nodiscard]] int experience_of(Profession profession) const
+    [[nodiscard]] int experience_of(Profession profession, std::string_view alignment = {}) const
     {
+        if (game_ == GoldBoxGame::champions_of_krynn &&
+            (profession == Profession::cleric || profession == Profession::cleric_thief))
+        {
+            const auto chosen = find_id(alignments, alignment);
+            return chosen && static_cast<unsigned>(*chosen) % 3 == 1 ? 1500 : 2000;
+        }
         if (!start_)
         {
             return starting_experience(profession, game_);
@@ -1223,6 +1393,7 @@ constexpr std::string_view pool_edition = "pool-of-radiance-1.3";
 constexpr std::string_view curse_edition = "curse-of-the-azure-bonds";
 constexpr std::string_view secret_edition = "secret-of-the-silver-blades";
 constexpr std::string_view gateway_edition = "gateway-to-the-savage-frontier";
+constexpr std::string_view champions_edition = "champions-of-krynn";
 constexpr std::string_view ua_edition = "unlimited-adventures";
 constexpr std::string_view darkness_edition = "pools-of-darkness";
 constexpr std::string_view treasures_edition = "treasures-of-the-savage-frontier";
@@ -1230,7 +1401,8 @@ constexpr std::string_view treasures_edition = "treasures-of-the-savage-frontier
 
 rules::Identity identity(GoldBoxGame game)
 {
-    const auto edition = game == GoldBoxGame::curse_of_the_azure_bonds           ? curse_edition
+    const auto edition = game == GoldBoxGame::champions_of_krynn                 ? champions_edition
+                         : game == GoldBoxGame::curse_of_the_azure_bonds         ? curse_edition
                          : game == GoldBoxGame::secret_of_the_silver_blades      ? secret_edition
                          : game == GoldBoxGame::gateway_to_the_savage_frontier   ? gateway_edition
                          : game == GoldBoxGame::unlimited_adventures             ? ua_edition
@@ -1242,6 +1414,10 @@ rules::Identity identity(GoldBoxGame game)
 
 GoldBoxGame game_of(const rules::Identity &identity)
 {
+    if (identity.content == champions_edition)
+    {
+        return GoldBoxGame::champions_of_krynn;
+    }
     if (identity.content == curse_edition)
     {
         return GoldBoxGame::curse_of_the_azure_bonds;

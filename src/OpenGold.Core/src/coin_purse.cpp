@@ -1,5 +1,6 @@
 #include "opengold/coin_purse.h"
 #include <algorithm>
+#include <numeric>
 #include <stdexcept>
 
 namespace opengold
@@ -68,7 +69,7 @@ void pay(Purse &purse, CoinExchange &exchange, std::uint64_t copper, const CoinR
 
 std::uint64_t gold_value(const Purse &purse, const CoinRates &rates)
 {
-    return coin_value(purse, rates) / rates.worth[static_cast<std::size_t>(Coin::gold)];
+    return coin_value(purse, rates) / rates.worth.at(rates.price_coin);
 }
 
 std::uint32_t spendable_gold(const Purse &purse, const CoinRates &rates)
@@ -79,7 +80,7 @@ std::uint32_t spendable_gold(const Purse &purse, const CoinRates &rates)
 
 SettledPurse pay_gold(const Purse &purse, std::uint64_t gold, const CoinRates &rates)
 {
-    constexpr auto gold_coin = static_cast<std::size_t>(Coin::gold);
+    const auto gold_coin = rates.price_coin;
     if (gold > gold_value(purse, rates))
     {
         throw std::runtime_error("The party's coins cannot pay the price");
@@ -102,10 +103,12 @@ Purse change_coins_up(Purse purse, const CoinRates &rates)
 {
     for (std::size_t coin = 0; coin + 1 < rates.worth.size(); ++coin)
     {
-        const auto coins_a_larger = rates.worth[coin + 1] / rates.worth[coin];
-        const auto larger = purse[coin] / coins_a_larger;
-        add_coins(purse, coin + 1, larger);
-        purse[coin] = static_cast<std::uint32_t>(purse[coin] - larger * coins_a_larger);
+        const auto divisor = std::gcd(rates.worth[coin + 1], rates.worth[coin]);
+        const auto smaller_per_trade = rates.worth[coin + 1] / divisor;
+        const auto larger_per_trade = rates.worth[coin] / divisor;
+        const auto trades = purse[coin] / smaller_per_trade;
+        add_coins(purse, coin + 1, trades * larger_per_trade);
+        purse[coin] = static_cast<std::uint32_t>(purse[coin] - trades * smaller_per_trade);
     }
     return purse;
 }

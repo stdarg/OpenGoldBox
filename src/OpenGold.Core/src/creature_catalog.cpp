@@ -462,7 +462,8 @@ CreatureCatalog CreatureCatalog::load(const std::filesystem::path &directory, Go
             const auto file = files.find(name);
             if (file == files.end())
             {
-                throw CatalogError("Missing required asset " + name + " in " + path_text(directory));
+                throw CatalogError("Missing required asset " + name + " in " +
+                                   path_text(directory));
             }
             return file->second;
         };
@@ -554,7 +555,8 @@ CreatureCatalog CreatureCatalog::load(const std::filesystem::path &directory, Go
                         // by that game's own words, just as its shops do.
                         const bool by_words =
                             item_type_name(equipment.stored.type).empty() ||
-                            ((game == GoldBoxGame::pools_of_darkness ||
+                            ((game == GoldBoxGame::champions_of_krynn ||
+                              game == GoldBoxGame::pools_of_darkness ||
                               game == GoldBoxGame::treasures_of_the_savage_frontier) &&
                              !item_words.empty());
                         if (by_words && equipment.stored.stored_name.empty())

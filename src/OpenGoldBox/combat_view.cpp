@@ -114,6 +114,7 @@ String original_action_label(const Command &command)
     const char *label = command.verb == "guard"      ? N_("Guard")
                         : command.verb == "delay"    ? N_("Delay")
                         : command.verb == "turn"     ? N_("Turn undead")
+                        : command.verb == "yell"     ? N_("Yell")
                         : command.verb == "bandage"  ? N_("Bandage")
                         : command.verb == "aim_done" ? N_("Done aiming")
                         : command.verb == "abort"    ? N_("Abort the spell")
@@ -3366,9 +3367,8 @@ void CombatView::refresh()
     item_verbs_.clear();
     if (player && throwing != s.combatants.end())
     {
-        for (const std::string_view verb :
-             {"torch", "throw_oil", "throw_alchemists_fire", "throw_acid", "shoot",
-              "javelin_lightning"})
+        for (const std::string_view verb : {"torch", "throw_oil", "throw_alchemists_fire",
+                                            "throw_acid", "shoot", "javelin_lightning"})
         {
             const auto command = std::find_if(offered.begin(), offered.end(),
                                               [&](const auto &c)
@@ -3933,8 +3933,8 @@ void CombatView::draw_view()
                 const auto &sheet = member.character.sheet();
                 entry["selected"] = id == selected_;
                 entry["name"] = gs(sheet.name);
-                entry["detail"] = i18n::class_summary(sheet) + " / " +
-                                  i18n::text(sheet.race) + " / " + i18n::text(sheet.gender);
+                entry["detail"] = i18n::class_summary(sheet) + " / " + i18n::text(sheet.race) +
+                                  " / " + i18n::text(sheet.gender);
                 entry["hp"] = hp;
                 entry["maximum"] = maximum;
                 entry["quick"] = is_quick(id);

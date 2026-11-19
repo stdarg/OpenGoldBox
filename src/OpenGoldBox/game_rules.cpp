@@ -62,10 +62,10 @@ void outfit_for_game(opengold::CampaignParty &party, opengold::MemberId id, cons
         opengold::ua::outfit_new_character(
             party, id, opengold::ua::DesignFiles(files.original_game, files.design));
     }
-    // Pools of Darkness and Treasures give their characters their equipment
-    // at creation.
+    // These games supply equipment during native character creation.
     if ((files.game == opengold::GoldBoxGame::pools_of_darkness ||
-         files.game == opengold::GoldBoxGame::treasures_of_the_savage_frontier) &&
+         files.game == opengold::GoldBoxGame::treasures_of_the_savage_frontier ||
+         files.game == opengold::GoldBoxGame::champions_of_krynn) &&
         game_rules_of(party).set == GameRules::Set::original)
     {
         opengold::outfit_original_character(

@@ -26,7 +26,14 @@ enum class Race : unsigned
     half_elf,
     halfling,
     half_orc,
-    human
+    human,
+    silvanesti_elf,
+    qualinesti_elf,
+    krynn_half_elf,
+    mountain_dwarf,
+    hill_dwarf,
+    kender,
+    krynn_human
 };
 
 enum class Gender : unsigned
@@ -70,7 +77,8 @@ enum class Profession : unsigned
     fighter_magic_user,
     fighter_thief,
     fighter_magic_user_thief,
-    magic_user_thief
+    magic_user_thief,
+    knight
 };
 
 enum class Alignment : unsigned
@@ -113,6 +121,23 @@ using ClassLevels = std::array<int, class_slot_count>;
 [[nodiscard]] std::span<const ClassSlot> classes_of(Profession profession);
 // A class's stable ID ("magic_user"), as sheets list the classes of their levels.
 [[nodiscard]] std::string_view class_slot_id(ClassSlot slot) noexcept;
+[[nodiscard]] std::string_view class_slot_id(ClassSlot slot, GoldBoxGame game) noexcept;
+[[nodiscard]] unsigned record_race(Race race, GoldBoxGame game) noexcept;
+[[nodiscard]] Race race_from_record(unsigned code, GoldBoxGame game) noexcept;
+
+// Early Krynn's class suborders select genuinely different progressions.
+struct KrynnOrders
+{
+    int deity{}, robe{}, knight{};
+};
+
+[[nodiscard]] std::optional<int> champions_experience_for_level(ClassSlot slot, int level,
+                                                                KrynnOrders orders = {});
+[[nodiscard]] std::array<int, 9> champions_spell_slots(ClassSlot slot, int level, int wisdom,
+                                                       KrynnOrders orders);
+void recalculate_champions_numbers(rules::CharacterSheet::Original &numbers,
+                                   const rules::AbilityArray<int> &scores);
+[[nodiscard]] std::vector<int> champions_learning_spells(int robe, int highest_spell_level);
 // A new character of the profession: level 1 in each of its classes.
 [[nodiscard]] ClassLevels first_levels(Profession profession);
 // The professions creation offers a race in the game, in its menu order:
@@ -196,7 +221,8 @@ struct RolledCharacter
 // The same with `experience` for each class, as a game that sets it does (an
 // Unlimited Adventures design's game record).
 [[nodiscard]] RolledCharacter roll_character(Race race, Profession profession, GoldBoxGame game,
-                                             int experience, RandomState &random);
+                                             int experience, RandomState &random,
+                                             KrynnOrders orders = {});
 
 // The experience a new character starts with: none in Pool of Radiance;
 // 25,000 in Curse, shared among a multi-class character's classes.
@@ -264,7 +290,8 @@ ability_scores(Race race, Gender gender, Profession profession, const RolledChar
 // among a multi-class character's classes (Secret divides the two apart).
 [[nodiscard]] int first_level_hit_points(Profession profession, const RolledCharacter &rolled,
                                          int constitution,
-                                         GoldBoxGame game = GoldBoxGame::pool_of_radiance);
+                                         GoldBoxGame game = GoldBoxGame::pool_of_radiance,
+                                         KrynnOrders orders = {});
 // What first level adds to the Hit Points rolled (the original's hpRolled):
 // the class dice divided among the classes, with no Constitution bonus.
 [[nodiscard]] int first_level_rolled_hit_points(Profession profession,
@@ -400,6 +427,7 @@ struct ModifiedCharacter
     Gender gender{};
     Profession profession{};
     ClassLevels levels{};
+    KrynnOrders orders{};
 };
 
 // Whether the game's Modify still takes a character with this much

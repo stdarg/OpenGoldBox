@@ -8,6 +8,7 @@
 #include "status_effect_text.h"
 #include "training_control.h"
 #include "opengold/srd5.h"
+#include "opengold/original.h"
 #include <algorithm>
 #include <array>
 #include <span>
@@ -75,7 +76,9 @@ std::string original_identity_and_attributes(const Character &character, const P
     text += i18n::formatted("   THAC0 {thac0}", {{"thac0", original.thac0}});
     if (member)
     {
-        text += i18n::formatted("   Party gold {gold}   XP {xp}",
+        text += i18n::formatted(original::game_of(s.identity) == GoldBoxGame::champions_of_krynn
+                                    ? N_("   Party steel {gold}   XP {xp}")
+                                    : N_("   Party gold {gold}   XP {xp}"),
                                 {{"gold", party->purse_gold()}, {"xp", member->experience}});
     }
     if (member && member->vitals.dead)
@@ -341,10 +344,10 @@ std::string details(const Character &character, const PartyMember *member,
     }
     for (const auto &item : character.inventory().items())
     {
-        text += "\n" + rich_text_literal(
-                            (member ? inventory_label(*member, item) : inventory_label(item))
-                                .utf8()
-                                .get_data());
+        text += "\n" +
+                rich_text_literal((member ? inventory_label(*member, item) : inventory_label(item))
+                                      .utf8()
+                                      .get_data());
         if (member)
         {
             const auto held = std::find(member->equipped.begin(), member->equipped.end(), item.id);

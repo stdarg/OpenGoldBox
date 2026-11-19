@@ -358,7 +358,35 @@ template <class Visit> void each_class(const ClassLevels &levels, Visit &&visit)
     {
         return has(C::fighter);
     }
-    return has(C::fighter) || has(C::paladin) || has(C::ranger);
+    return has(C::fighter) || has(C::paladin) || has(C::ranger) ||
+           (game == GoldBoxGame::champions_of_krynn && has(C::monk));
+}
+
+int champions_constitution(ClassSlot slot, int constitution)
+{
+    const bool warrior = slot == C::fighter || slot == C::ranger || slot == C::monk;
+    return table_bonus(constitution) + (warrior ? warrior_extra(constitution) : 0);
+}
+
+int champions_maximum(const ModifiedCharacter &character, int constitution)
+{
+    constexpr std::array<int, 8> caps{10, 15, 10, 10, 11, 12, 11, 10};
+    int total = 0;
+    each_class(character.levels,
+               [&](ClassSlot slot, int level)
+               {
+                   const auto at_slot = at(slot);
+                   const bool extra = slot == C::ranger || slot == C::monk ||
+                                      (slot == C::cleric && character.orders.deity <= 4);
+                   const int dice = std::min(level, caps[at_slot] - 1) + (extra ? 1 : 0);
+                   const int sides = slot == C::monk ? 10 : hit_die_sides[at_slot];
+                   const int fixed = slot == C::fighter || slot == C::monk ? 3
+                                     : slot == C::magic_user               ? 1
+                                                                           : 2;
+                   total += dice * (sides + champions_constitution(slot, constitution)) +
+                            std::max(0, level - caps[at_slot] + 1) * fixed;
+               });
+    return std::max(1, total / class_count(character.levels));
 }
 
 [[nodiscard]] ModifiedNumbers step_hit_points(const ModifiedNumbers &numbers,
@@ -403,12 +431,26 @@ bool modify_allowed(int experience, GoldBoxGame game, int design_start)
         return one_of(experience, {7533, 11300, 22600});
     case GoldBoxGame::unlimited_adventures:
         return one_of(experience, {design_start, design_start / 2, design_start / 3});
+    case GoldBoxGame::champions_of_krynn:
+        // CharGen.ModifyCharacter's creation/import experience values.
+        return one_of(experience, {1500, 1251, 2000, 2001, 2251, 2500, 5000});
     }
     return false;
 }
 
 int modify_hit_point_minimum(const ModifiedCharacter &character, int constitution, GoldBoxGame game)
 {
+    if (game == GoldBoxGame::champions_of_krynn)
+    {
+        int dice = 0, bonus = 0;
+        each_class(character.levels,
+                   [&](ClassSlot slot, int level)
+                   {
+                       dice += level + (slot == C::ranger || slot == C::monk ? 1 : 0);
+                       bonus += champions_constitution(slot, constitution);
+                   });
+        return divided(dice, bonus, class_count(character.levels));
+    }
     if (hit_point_rules(game) == HitPointRules::darkness)
     {
         return darkness_minimum(character, constitution, game);
@@ -420,6 +462,10 @@ int modify_hit_point_minimum(const ModifiedCharacter &character, int constitutio
 
 int modify_hit_point_maximum(const ModifiedCharacter &character, int constitution, GoldBoxGame game)
 {
+    if (game == GoldBoxGame::champions_of_krynn)
+    {
+        return champions_maximum(character, constitution);
+    }
     switch (hit_point_rules(game))
     {
     case HitPointRules::pool:
@@ -498,6 +544,19 @@ ModifiedNumbers modify_step(const ModifiedNumbers &numbers, const ModifiedCharac
 int modified_rolled_hit_points(const ModifiedCharacter &character, int constitution, int hit_points,
                                int rolled_before, GoldBoxGame game)
 {
+    if (game == GoldBoxGame::champions_of_krynn)
+    {
+        int bonus = 0;
+        each_class(character.levels,
+                   [&](ClassSlot slot, int level)
+                   {
+                       const bool extra = slot == C::ranger || slot == C::monk ||
+                                          (slot == C::cleric && character.orders.deity <= 4);
+                       bonus +=
+                           (level + (extra ? 1 : 0)) * champions_constitution(slot, constitution);
+                   });
+        return std::max(0, hit_points - bonus / class_count(character.levels));
+    }
     if (game == GoldBoxGame::pool_of_radiance)
     {
         return rolled_before;

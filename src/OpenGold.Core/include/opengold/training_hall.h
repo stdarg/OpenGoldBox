@@ -67,7 +67,8 @@ enum class TrainingDenial
 // sets (TRAIN_MASK, cell 6DA8h; the classBits of Curse's gdconsts.pas): 1
 // magic-users, 2 clerics and druids, 4 thieves and monks, 8 fighters, 10h
 // paladins and 20h rangers; 127 every class.
-[[nodiscard]] std::vector<std::string_view> original_mask_classes(unsigned class_mask);
+[[nodiscard]] std::vector<std::string_view>
+original_mask_classes(unsigned class_mask, GoldBoxGame game = GoldBoxGame::pool_of_radiance);
 
 // The class mask of one of Pool of Radiance's halls, which name their classes.
 [[nodiscard]] unsigned original_class_mask(TrainingHall hall);
@@ -79,7 +80,7 @@ enum class TrainingDenial
 [[nodiscard]] constexpr std::uint32_t original_training_fee(GoldBoxGame game) noexcept
 {
     return game == GoldBoxGame::secret_of_the_silver_blades ||
-                   game == GoldBoxGame::pools_of_darkness
+                   game == GoldBoxGame::pools_of_darkness || game == GoldBoxGame::champions_of_krynn
                ? 0
                : 1000;
 }

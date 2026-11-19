@@ -1236,6 +1236,7 @@ class RulesModule
     {
         (void)played;
     }
+
     [[nodiscard]] virtual CharacterProfile
     character_profile(const CharacterSheet &, std::span<const std::string>) const = 0;
     [[nodiscard]] virtual EquipmentInfo equipment_info(std::string_view) const = 0;
@@ -1294,6 +1295,17 @@ class RulesModule
                        std::span<const std::string> gear, Ability ability, std::string_view skill,
                        RandomState &random_state) const = 0;
 
+    // A check whose rules also depend on the requested difficulty, such as
+    // Original Rules' distinct ordinary and magically locked door tables.
+    // A module using the same roll at every difficulty keeps its usual check.
+    [[nodiscard]] virtual AbilityCheckRoll roll_ability_check_against(
+        const CharacterSheet &sheet, const VitalState &state, std::span<const std::string> gear,
+        Ability ability, std::string_view skill, int difficulty, RandomState &random_state) const
+    {
+        (void)difficulty;
+        return roll_ability_check(sheet, state, gear, ability, skill, random_state);
+    }
+
     // Whether characters gain levels only by training at a hall that teaches
     // their classes, for a fee, as the original's do; otherwise anywhere.
     [[nodiscard]] virtual bool trains_at_halls() const
@@ -1351,6 +1363,11 @@ class RulesModule
 
     // What each coin, copper to platinum, is worth in 200ths of a gold piece:
     // the SRD's rates by default (10 sp, 2 ep or 1/10 pp to the gold piece).
+    [[nodiscard]] virtual std::size_t price_coin() const
+    {
+        return 3;
+    }
+
     [[nodiscard]] virtual std::array<std::uint64_t, 5> coin_worth() const
     {
         return {2, 20, 100, 200, 2000};
@@ -1562,6 +1579,7 @@ class RulesModule
         (void)definition;
         return true;
     }
+
     virtual void validate_character_state(const CharacterSheet &, const VitalState &) const = 0;
     [[nodiscard]] virtual RestPolicy long_rest_policy() const = 0;
     [[nodiscard]] virtual RestPolicy short_rest_policy() const = 0;
@@ -1580,6 +1598,7 @@ class RulesModule
         (void)service;
         return true;
     }
+
     // Casts the service on the member, as a temple's cleric with Wisdom +3;
     // throws when it would not help.
     virtual void temple_service(VitalState &state, const CharacterSheet &sheet,
@@ -1648,12 +1667,13 @@ class RulesModule
     // from the scroll. False when the reading failed and did nothing, as Use
     // Magic Device's Arcana check can.
     [[nodiscard]] virtual bool use_scroll(const CharacterSheet &user, VitalState &user_state,
-                            const CharacterSheet &target, VitalState &target_state,
-                            std::string_view scroll, std::string_view action,
-                            RandomState &random_state) const = 0;
+                                          const CharacterSheet &target, VitalState &target_state,
+                                          std::string_view scroll, std::string_view action,
+                                          RandomState &random_state) const = 0;
     [[nodiscard]] virtual bool use_party_scroll(const CharacterSheet &user, VitalState &user_state,
-                                  std::span<CampTarget> party, std::string_view scroll,
-                                  std::string_view action, RandomState &random_state) const = 0;
+                                                std::span<CampTarget> party,
+                                                std::string_view scroll, std::string_view action,
+                                                RandomState &random_state) const = 0;
     // The spell's level when the member can copy it into a spellbook (MAGIC-6):
     // a Wizard spell of a level the Wizard can prepare, not yet in its book.
     [[nodiscard]] virtual std::optional<unsigned>
@@ -1700,6 +1720,7 @@ class RulesModule
         const auto finishes = preparation_finishes(levels);
         return finishes.empty() ? std::chrono::minutes{} : finishes.back();
     }
+
     // The spells the member can write on a scroll (MAGIC-6): those on its
     // class's list it can cast, with a slot of the spell's level or a Mystic
     // Arcanum. No cantrip; writing spends no slot.

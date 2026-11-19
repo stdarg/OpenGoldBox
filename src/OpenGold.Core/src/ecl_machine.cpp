@@ -609,7 +609,12 @@ void EclMachine::execute(const EclInstruction &i)
     case 19:
         if (stack_.empty())
         {
-            break; // PoR ignores an empty return stack.
+            // Champions uses a top-level RETURN to end an event (ECL3:81).
+            if (program_->game() == GoldBoxGame::champions_of_krynn)
+            {
+                state_ = EclState::completed;
+            }
+            break; // Pool ignores an empty return stack.
         }
         jump(stack_.back());
         stack_.pop_back();
@@ -1011,7 +1016,10 @@ void EclMachine::request_host(const EclInstruction &i)
                 (program_->game() == GoldBoxGame::pools_of_darkness ||
                  program_->game() == GoldBoxGame::treasures_of_the_savage_frontier) &&
                 op == award_experience && n == 1;
-            const bool word = vga ? (op == vga_treasure && n < 3) || vga_award : op == 39 && n != 7;
+            const bool champions_award = program_->game() == GoldBoxGame::champions_of_krynn &&
+                                         op == award_experience && n == 1;
+            const bool word = vga ? (op == vga_treasure && n < 3) || vga_award
+                                  : (op == 39 && n != 7) || champions_award;
             if (!word)
             {
                 number &= 255;

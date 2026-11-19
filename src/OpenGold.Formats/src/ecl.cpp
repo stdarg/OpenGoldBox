@@ -154,6 +154,7 @@ std::span<const EclOpcode> game_opcodes(GoldBoxGame game)
     case GoldBoxGame::curse_of_the_azure_bonds:
         return curse;
     case GoldBoxGame::secret_of_the_silver_blades:
+    case GoldBoxGame::champions_of_krynn:
         return secret;
     case GoldBoxGame::pools_of_darkness:
         return darkness;
@@ -203,6 +204,10 @@ EclEngineRoutines ecl_engine_routines(GoldBoxGame game)
         // As Curse, matched less 7FFFh (ADCCh, 4019h, 401Fh, 3204h, E804h);
         // Secret has no duels.
         return {0x2DCB, 0xC018, 0xC01E, 0, 0, 0xB203, 0x6803};
+    case GoldBoxGame::champions_of_krynn:
+        // Its EclCall uses Curse's redraw and Secret's sound routine;
+        // it has neither of Curse's duel calls.
+        return {0x2E10, 0xC018, 0xC01E, 0, 0, 0xB203, 0x6803};
     case GoldBoxGame::gateway_to_the_savage_frontier:
         // As Curse, matched less 7FFFh (AE11h, 401Bh, 401Fh, 2, 1, 3201h,
         // E804h, 880Ah, 880Dh, 8810h); 401Bh rereads the party's cell. Its
@@ -229,6 +234,7 @@ EclMemory ecl_memory(GoldBoxGame game)
     case GoldBoxGame::secret_of_the_silver_blades:
     case GoldBoxGame::pools_of_darkness:
     case GoldBoxGame::gateway_to_the_savage_frontier:
+    case GoldBoxGame::champions_of_krynn:
         return {0x8000, 0x9E00};
     case GoldBoxGame::treasures_of_the_savage_frontier:
         return {0x8000, 0xB6B1};

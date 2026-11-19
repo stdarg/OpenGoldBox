@@ -329,6 +329,10 @@ constexpr std::array<int, 30> curse_castable{158, 166, 167, 168, 169, 170, 171, 
 
 int canonical_spell(int number, GoldBoxGame game) noexcept
 {
+    if (game == GoldBoxGame::champions_of_krynn && number >= 101 && number <= 107)
+    {
+        return number + 400;
+    }
     // Pools of Darkness numbers its spells as Secret does, and its new ones
     // (101 to 109, 118 to 126) take numbers Secret leaves free.
     if (game == GoldBoxGame::secret_of_the_silver_blades || darkness_table(game))
@@ -381,6 +385,15 @@ std::vector<int> castable_spells(GoldBoxGame game)
     {
         numbers.insert(numbers.end(), curse_castable.begin(), curse_castable.end());
     }
+    if (game == GoldBoxGame::champions_of_krynn)
+    {
+        std::erase(numbers, 36); // Champions' Animate Dead has no implementation in the original.
+        std::erase(numbers, 190);
+        for (int gift = 501; gift <= 507; ++gift)
+        {
+            numbers.push_back(gift);
+        }
+    }
     return numbers;
 }
 
@@ -391,9 +404,10 @@ std::string spell_id(int number)
     {
         return {};
     }
-    std::string id = known->caster_class == SpellClass::cleric  ? "cleric:"
-                     : known->caster_class == SpellClass::druid ? "druid:"
-                                                                : "magic_user:";
+    std::string id = number >= 501 && number <= 507              ? "deity:"
+                     : known->caster_class == SpellClass::cleric ? "cleric:"
+                     : known->caster_class == SpellClass::druid  ? "druid:"
+                                                                 : "magic_user:";
     bool gap = false;
     for (const char c : known->name)
     {
@@ -449,6 +463,13 @@ std::optional<int> spell_number(std::string_view id)
             return entry.number;
         }
     }
+    for (int gift = 501; gift <= 507; ++gift)
+    {
+        if (spell_id(gift) == id)
+        {
+            return gift;
+        }
+    }
     return std::nullopt;
 }
 
@@ -467,6 +488,22 @@ std::optional<int> spell_number(std::string_view id, GoldBoxGame game)
 
 const Spell *spell(int number) noexcept
 {
+    // Champions' deity gifts share a separate level-zero preparation allowance.
+    // Their caster level is the cleric's; IDs stay distinct from ordinary spells.
+    static constexpr std::array<Spell, 7> gifts{
+        {{"Protection From Evil 10' Radius", SpellClass::cleric, 0, 0, 0, 0, 2, 4, 2, 0, 4, 45, 2,
+          3, 1, false, 0},
+         {"Silence 15' Radius", SpellClass::cleric, 0, 12, 0, 0, 2, 31, 0, 1, 4, 21, 1, 5, 2, true,
+          1},
+         {"Detect Magic", SpellClass::cleric, 0, 0, 0, 10, 0, 0, 1, 0, 4, 5, 2, 0, 1, false, 0},
+         {"Remove Curse", SpellClass::cleric, 0, 0, 0, 0, 0, 4, 2, 0, 4, 2, 2, 6, 0, false, 0},
+         {"Bless", SpellClass::cleric, 0, 6, 0, 6, 0, 10, 4, 0, 4, 1, 2, 10, 1, false, 0},
+         {"Charm Person", SpellClass::cleric, 0, 12, 0, 0, 0, 4, 0, 1, 4, 11, 1, 1, 4, true, 0},
+         {"Burning Hands", SpellClass::cleric, 0, 0, 0, 0, 0, 4, 1, 0, 4, 0, 1, 1, 3, true, 0}}};
+    if (number >= 501 && number <= 507)
+    {
+        return &gifts[static_cast<std::size_t>(number - 501)];
+    }
     if (number >= 1 && number <= static_cast<int>(spells.size()))
     {
         return &spells[static_cast<std::size_t>(number - 1)];

@@ -1,10 +1,12 @@
 #include "combat_session.h"
+#include "champions_rules.h"
 #include "opengold/original.h"
 #include "opengold/original_combat.h"
 #include "opengold/original_spells.h"
 #include "opengold/dice.h"
 
 #include <algorithm>
+#include <charconv>
 #include <functional>
 #include <limits>
 #include <map>
@@ -45,6 +47,20 @@ const CharacterSheet::Original &original_numbers(const CharacterSheet &sheet)
     return *sheet.original;
 }
 
+KrynnOrders krynn_orders(const CharacterSheet &sheet)
+{
+    const auto &n = original_numbers(sheet);
+    return {n.deity, n.robe_order, n.knight_order};
+}
+
+std::optional<int> class_experience(const CharacterSheet &sheet, ClassSlot slot, int level)
+{
+    const auto game = game_of(sheet.identity);
+    return game == GoldBoxGame::champions_of_krynn
+               ? champions_experience_for_level(slot, level, krynn_orders(sheet))
+               : experience_for_level(slot, level, game);
+}
+
 // The classes the character would train in at a hall with this much
 // experience. Curse, Gateway and Treasures train one a visit: the ready class whose next
 // level needs the most experience (their TrainingMenu, which read every class
@@ -56,6 +72,23 @@ std::vector<ClassSlot> ready_classes(const CharacterSheet &sheet, unsigned exper
     const auto game = game_of(sheet.identity);
     auto ready = classes_ready_to_train(static_cast<Race>(numbers.race), numbers.class_levels,
                                         sheet.scores, static_cast<int>(capped), game);
+    if (game == GoldBoxGame::champions_of_krynn)
+    {
+        ready.clear();
+        for (std::size_t at = 0; at < class_slot_count; ++at)
+        {
+            const auto slot = static_cast<ClassSlot>(at);
+            const auto level = numbers.class_levels[at];
+            const auto needed = class_experience(sheet, slot, level + 1);
+            const auto limit =
+                racial_level_limit(static_cast<Race>(numbers.race), slot, sheet.scores, game);
+            if (level > 0 && needed && *needed <= static_cast<int>(capped) &&
+                (!limit || level < *limit))
+            {
+                ready.push_back(slot);
+            }
+        }
+    }
     if (ready.size() > 1 && (game == GoldBoxGame::curse_of_the_azure_bonds ||
                              game == GoldBoxGame::gateway_to_the_savage_frontier ||
                              game == GoldBoxGame::treasures_of_the_savage_frontier))
@@ -312,6 +345,10 @@ std::optional<Restoration> restoration_of(const CharacterSheet &sheet)
 // The slots a character has for a spell's class and level.
 int slots_for(const CharacterSheet::Original &numbers, const Spell &known)
 {
+    if (known.caster_class == SpellClass::cleric && known.level == 0)
+    {
+        return numbers.deity_spell_slots[0];
+    }
     const auto &slots = known.caster_class == SpellClass::cleric  ? numbers.cleric_slots
                         : known.caster_class == SpellClass::druid ? numbers.druid_slots
                                                                   : numbers.magic_user_slots;
@@ -345,6 +382,10 @@ void recount_levels(CharacterSheet &sheet)
         }
     }
     numbers.known_spells = known_spells(levels, sheet.scores[Ability::wisdom], learned, game);
+    if (game == GoldBoxGame::champions_of_krynn)
+    {
+        recalculate_champions_numbers(numbers, sheet.scores);
+    }
 }
 
 // A character's record as the original keeps one, from its sheet: what
@@ -385,7 +426,10 @@ por::CharacterRecord character_record(const CharacterSheet &sheet)
     int attacks = fighter > 6 ? 3 : 2;
     if (game != GoldBoxGame::pool_of_radiance)
     {
-        const bool warrior = std::max(fighter, level_in(l, ClassSlot::paladin)) > 6;
+        const bool warrior =
+            std::max({fighter, level_in(l, ClassSlot::paladin),
+                      game == GoldBoxGame::champions_of_krynn ? level_in(l, ClassSlot::monk) : 0}) >
+            6;
         attacks = warrior || level_in(l, ClassSlot::ranger) > 7 ? 3 : 2;
     }
     // Pools of Darkness's are Secret's.
@@ -415,17 +459,23 @@ por::CharacterRecord character_record(const CharacterSheet &sheet)
                      level(ClassSlot::thief),   level(ClassSlot::monk)};
     record.highest_level_raw = *std::max_element(l.begin(), l.end());
     // The original's race numbers run from 1 (dwarf) to 7 (human).
-    record.race = static_cast<std::uint8_t>(original.race + 1);
+    record.race =
+        static_cast<std::uint8_t>(record_race(static_cast<Race>(original.race), record.game));
+    record.deity = static_cast<std::uint8_t>(original.deity);
+    record.robe_order = static_cast<std::uint8_t>(original.robe_order);
+    record.knight_order = static_cast<std::uint8_t>(original.knight_order);
     record.alignment = static_cast<std::uint8_t>(original.alignment);
     // Dwarves, gnomes and halflings stand one square short (chargen.pas).
     const auto race = static_cast<Race>(original.race);
-    const bool short_folk = race == Race::dwarf || race == Race::gnome || race == Race::halfling;
+    const bool short_folk = race == Race::dwarf || race == Race::gnome || race == Race::halfling ||
+                            race == Race::mountain_dwarf || race == Race::hill_dwarf ||
+                            race == Race::kender;
     record.icon_size_raw = short_folk ? 1 : 2;
     // The 256-color engine's fights (Pools of Darkness's and Treasures')
     // stand every character on one square, a tall one too (their
     // chargen.pas: the icon's height is only drawn), so no weapon strikes
     // one as large and every size check passes it.
-    if (vga_engine(record.game))
+    if (vga_engine(record.game) || record.game == GoldBoxGame::champions_of_krynn)
     {
         record.icon_size_raw = 1;
     }
@@ -434,9 +484,10 @@ por::CharacterRecord character_record(const CharacterSheet &sheet)
         if (const auto number = spell_number(id, game_of(sheet.identity)))
         {
             // As the game's own record holds it (canonical_spell undone).
-            const int own = *number > secret_spell_offset  ? *number - secret_spell_offset
-                            : *number > curse_spell_offset ? *number - curse_spell_offset
-                                                           : *number;
+            const int own = *number >= 501 && *number <= 507 ? *number - 400
+                            : *number > secret_spell_offset  ? *number - secret_spell_offset
+                            : *number > curse_spell_offset   ? *number - curse_spell_offset
+                                                             : *number;
             record.memorized_spells.push_back(static_cast<std::uint8_t>(own));
         }
     }
@@ -467,34 +518,61 @@ Combatant character_combatant(const CharacterSheet &sheet,
     const bool secret_or_kit =
         game_of(sheet.identity) == GoldBoxGame::secret_of_the_silver_blades ||
         game_of(sheet.identity) == GoldBoxGame::unlimited_adventures;
-    if (!secret_or_kit && (c.race == dwarf || c.race == halfling))
+    if (game_of(sheet.identity) == GoldBoxGame::champions_of_krynn)
     {
-        innate(90);
+        if (c.race == dwarf || c.race == halfling)
+        {
+            innate(494); // Constitution against poison, spells and wands.
+        }
+        if (c.race == halfling) // The canonical combat race of a kender.
+        {
+            innate(492); // Fearless.
+        }
+        if (c.race == dwarf)
+        {
+            innate(dwarf_attack);
+            innate(giant_defense);
+        }
+        if (c.race == elf)
+        {
+            innate(107);
+        }
+        if (c.race == half_elf)
+        {
+            innate(124);
+        }
     }
-    if (c.race == dwarf || c.race == halfling || c.race == gnome)
+    else
     {
-        innate(97);
-    }
-    if (c.race == dwarf)
-    {
-        innate(dwarf_attack);
-    }
-    if (c.race == gnome)
-    {
-        innate(gnome_attack);
-        innate(bugbear_defense);
-    }
-    if (c.race == dwarf || (c.race == gnome && !secret_or_kit))
-    {
-        innate(giant_defense);
-    }
-    if (c.race == elf)
-    {
-        innate(107);
-    }
-    if (c.race == half_elf)
-    {
-        innate(124);
+        if (!secret_or_kit && (c.race == dwarf || c.race == halfling))
+        {
+            innate(90);
+        }
+        if (c.race == dwarf || c.race == halfling || c.race == gnome)
+        {
+            innate(97);
+        }
+        if (c.race == dwarf)
+        {
+            innate(dwarf_attack);
+        }
+        if (c.race == gnome)
+        {
+            innate(gnome_attack);
+            innate(bugbear_defense);
+        }
+        if (c.race == dwarf || (c.race == gnome && !secret_or_kit))
+        {
+            innate(giant_defense);
+        }
+        if (c.race == elf)
+        {
+            innate(107);
+        }
+        if (c.race == half_elf)
+        {
+            innate(124);
+        }
     }
     // Curse's paladin is protected from evil, and its ranger strikes giants
     // harder (createPlayer in its reconstruction).
@@ -558,6 +636,11 @@ class OriginalModule final : public RulesModule
                                                       std::span<const std::string> gear,
                                                       Ability ability, std::string_view skill,
                                                       RandomState &random_state) const override;
+    [[nodiscard]] AbilityCheckRoll roll_ability_check_against(const CharacterSheet &,
+                                                              const VitalState &,
+                                                              std::span<const std::string>, Ability,
+                                                              std::string_view, int difficulty,
+                                                              RandomState &) const override;
     [[nodiscard]] unsigned experience_for_level(unsigned level) const override;
     [[nodiscard]] CreatureStats creature_stats(const Participant &creature) const override;
     [[nodiscard]] std::vector<TrainingReplacementOptions>
@@ -612,10 +695,20 @@ class OriginalModule final : public RulesModule
     // party pays at 10 gold the piece (the user's answer, 2026-11-14).
     [[nodiscard]] std::array<std::uint64_t, 5> coin_worth() const override
     {
+        if (content_.game == GoldBoxGame::champions_of_krynn)
+        {
+            return {1, 5, 10, 25, 50};
+        }
         const std::uint64_t platinum =
             content_.game == GoldBoxGame::unlimited_adventures ? 2000 : 1000;
         return {1, 10, 100, 200, platinum};
     }
+
+    [[nodiscard]] std::size_t price_coin() const override
+    {
+        return content_.game == GoldBoxGame::champions_of_krynn ? 4 : 3;
+    }
+
     void drain_character(CharacterSheet &sheet, VitalState &state, const Drain &drain) const;
     void restore_character(CharacterSheet &sheet, VitalState &state,
                            const Restoration &given_back) const;
@@ -673,6 +766,7 @@ class OriginalModule final : public RulesModule
     {
         return service != TempleService::resurrection && service != TempleService::cure_feeblemind;
     }
+
     [[nodiscard]] bool temple_service_helps(const CharacterSheet &sheet, const VitalState &state,
                                             TempleService service) const override;
     void temple_service(VitalState &state, const CharacterSheet &sheet, TempleService service,
@@ -923,7 +1017,17 @@ unsigned OriginalModule::carrying_capacity_pounds(const CharacterSheet &sheet) c
 
 bool OriginalModule::can_use_item(const CharacterSheet &sheet, std::string_view key) const
 {
-    return (item_for(key).type.class_restrictions & usability(sheet)) != 0;
+    const auto item = item_for(key);
+    const auto &numbers = original_numbers(sheet);
+    if (game_of(sheet.identity) == GoldBoxGame::champions_of_krynn &&
+        champions_ready_refusal(
+            item.item,
+            record_race(static_cast<Race>(numbers.race), GoldBoxGame::champions_of_krynn),
+            numbers.robe_order))
+    {
+        return false;
+    }
+    return (item.type.class_restrictions & usability(sheet)) != 0;
 }
 
 // The original readies an item or refuses; it never chooses a hand.
@@ -963,6 +1067,17 @@ EquipmentChange OriginalModule::equipment_change(const CharacterSheet &sheet,
             }
         }
         return change;
+    }
+    if (game_of(sheet.identity) == GoldBoxGame::champions_of_krynn)
+    {
+        const auto &numbers = original_numbers(sheet);
+        if (const auto refusal = champions_ready_refusal(
+                chosen.item,
+                record_race(static_cast<Race>(numbers.race), GoldBoxGame::champions_of_krynn),
+                numbers.robe_order))
+        {
+            throw std::runtime_error(std::string(*refusal));
+        }
     }
     std::vector<CarriedItem> others;
     for (unsigned n = 0; n < candidates.size(); ++n)
@@ -1070,6 +1185,7 @@ SpellChoiceOptions OriginalModule::spell_choice_options(const CharacterSheet &sh
             options.prepared_count += static_cast<unsigned>(count);
         }
     }
+    options.prepared_count += static_cast<unsigned>(numbers.deity_spell_slots[0]);
     options.may_prepare = options.prepared_count > 0;
     return options;
 }
@@ -1156,6 +1272,75 @@ unsigned original_chance(const CharacterSheet &sheet, Ability ability, std::stri
     }
     return 0;
 }
+
+// Krynn's BashDoor uses separate exact dice for ordinary and magical
+// barriers. Exceptional Strength 18/91 is the first that can force magic.
+std::pair<unsigned, unsigned> krynn_door_die(const CharacterSheet &sheet, bool magical)
+{
+    const int strength = sheet.scores[Ability::strength];
+    const int exceptional = original_numbers(sheet).exceptional_strength;
+    if (magical)
+    {
+        if (strength < 18 || (strength == 18 && exceptional < 91))
+        {
+            return {0, 6};
+        }
+        if (strength == 18)
+        {
+            return {exceptional == 100 ? 2U : 1U, 6};
+        }
+        if (strength <= 20)
+        {
+            return {3, 6};
+        }
+        if (strength <= 22)
+        {
+            return {4, 6};
+        }
+        if (strength == 23)
+        {
+            return {5, 6};
+        }
+        if (strength == 24)
+        {
+            return {7, 8};
+        }
+        return {1, 1};
+    }
+    if (strength <= 7)
+    {
+        return {1, 6};
+    }
+    if (strength <= 15)
+    {
+        return {2, 6};
+    }
+    if (strength <= 17)
+    {
+        return {3, 6};
+    }
+    if (strength == 18)
+    {
+        return {exceptional == 100 ? 5U : exceptional > 50 ? 4U : 3U, 6};
+    }
+    if (strength <= 20)
+    {
+        return {7, 8};
+    }
+    if (strength == 21)
+    {
+        return {9, 10};
+    }
+    if (strength <= 23)
+    {
+        return {11, 12};
+    }
+    if (strength == 24)
+    {
+        return {19, 20};
+    }
+    return {1, 1};
+}
 } // namespace
 
 unsigned OriginalModule::climbing_chance(const CharacterSheet &sheet, const VitalState &,
@@ -1166,9 +1351,30 @@ unsigned OriginalModule::climbing_chance(const CharacterSheet &sheet, const Vita
 
 unsigned OriginalModule::check_chance(const CharacterSheet &sheet, const VitalState &,
                                       std::span<const std::string>, Ability ability,
-                                      std::string_view skill, int) const
+                                      std::string_view skill, int difficulty) const
 {
+    if (game_of(sheet.identity) == GoldBoxGame::champions_of_krynn &&
+        ability == Ability::strength && skill == "athletics")
+    {
+        const auto [faces, sides] = krynn_door_die(sheet, difficulty == 35);
+        return faces * 100 / sides;
+    }
     return original_chance(sheet, ability, skill);
+}
+
+AbilityCheckRoll OriginalModule::roll_ability_check_against(
+    const CharacterSheet &sheet, const VitalState &state, std::span<const std::string> gear,
+    Ability ability, std::string_view skill, int difficulty, RandomState &random_state) const
+{
+    if (game_of(sheet.identity) != GoldBoxGame::champions_of_krynn ||
+        ability != Ability::strength || skill != "athletics")
+    {
+        return roll_ability_check(sheet, state, gear, ability, skill, random_state);
+    }
+    const auto [faces, sides] = krynn_door_die(sheet, difficulty == 35);
+    const int die = faces ? roll_die(random_state, static_cast<int>(sides)) : 0;
+    const bool opened = faces && die <= static_cast<int>(faces);
+    return {die, opened ? difficulty : difficulty - 1};
 }
 
 // A d20 whose modifier gives the original's chance against the game's usual
@@ -1204,10 +1410,43 @@ std::vector<TrainingChoiceGroup> OriginalModule::training_options(const Characte
     return {};
 }
 
-TrainingChoiceGroup OriginalModule::hall_training_options(const CharacterSheet &,
-                                                          std::span<const std::string>) const
+TrainingChoiceGroup
+OriginalModule::hall_training_options(const CharacterSheet &sheet,
+                                      std::span<const std::string> classes) const
 {
-    throw unavailable("hall_training_options");
+    TrainingChoiceGroup options;
+    if (game_of(sheet.identity) != GoldBoxGame::champions_of_krynn || !sheet.original ||
+        std::ranges::find(classes, "knight") == classes.end())
+    {
+        return options;
+    }
+    const auto &numbers = *sheet.original;
+    const auto order = numbers.knight_order;
+    const auto level = level_in(numbers.class_levels, ClassSlot::monk);
+    if ((order != 1 && order != 2) || level < (order == 1 ? 3 : 4) ||
+        numbers.experience < (order == 1 ? 12000 : 27000))
+    {
+        return options;
+    }
+    constexpr std::array<std::array<int, 6>, 2> requirements{
+        {{12, 9, 13, 9, 10, 3}, {15, 10, 13, 12, 15, 3}}};
+    constexpr std::array abilities{Ability::strength,  Ability::intelligence, Ability::wisdom,
+                                   Ability::dexterity, Ability::constitution, Ability::charisma};
+    for (std::size_t at = 0; at < abilities.size(); ++at)
+    {
+        if (sheet.base[abilities[at]] < requirements[static_cast<std::size_t>(order - 1)][at])
+        {
+            return options;
+        }
+    }
+    options.id = "knight_order";
+    options.label = "Knightly order";
+    options.count = 1;
+    options.options.push_back(
+        {"boon:knight:" + std::to_string(order + 1) + ":" + std::to_string(numbers.experience),
+         order == 1 ? "Petition for the Order of the Sword" : "Petition for the Order of the Rose",
+         {}});
+    return options;
 }
 
 // A spell scribed from a scroll into the book (camp.pas, CampScribeMenu):
@@ -1216,6 +1455,58 @@ TrainingChoiceGroup OriginalModule::hall_training_options(const CharacterSheet &
 // comes back to after a drain replays it.
 void OriginalModule::train_at_hall(CharacterSheet &sheet, std::string_view grant) const
 {
+    constexpr std::string_view promotion = "boon:knight:";
+    if (grant.starts_with(promotion))
+    {
+        const auto rest = grant.substr(promotion.size());
+        const auto colon = rest.find(':');
+        int order{}, experience{};
+        const auto read = [](std::string_view text, int &value)
+        {
+            const auto parsed = std::from_chars(text.data(), text.data() + text.size(), value);
+            return parsed.ec == std::errc{} && parsed.ptr == text.data() + text.size();
+        };
+        if (colon == std::string_view::npos || !read(rest.substr(0, colon), order) ||
+            !read(rest.substr(colon + 1), experience) || !sheet.original)
+        {
+            throw std::invalid_argument("Invalid knight petition");
+        }
+        auto next = sheet;
+        next.original->experience = experience;
+        const auto eligible = hall_training_options(next, std::array<std::string, 1>{"knight"});
+        if (std::ranges::none_of(eligible.options,
+                                 [grant](const auto &option)
+                                 {
+                                     return option.id == grant;
+                                 }))
+        {
+            throw std::invalid_argument("This knight does not qualify for the next order");
+        }
+        auto &numbers = *next.original;
+        const int old_level = numbers.class_levels[7];
+        if (experience < champions_experience_for_level(ClassSlot::monk, old_level,
+                                                        {numbers.deity, numbers.robe_order, order}))
+        {
+            --numbers.class_levels[7];
+            const int lost = numbers.rolled_hit_points / (old_level + 1);
+            numbers.rolled_hit_points -= lost;
+            next.hit_points =
+                std::max(1, next.hit_points - lost -
+                                constitution_hit_point_bonus(Profession::knight,
+                                                             next.scores[Ability::constitution],
+                                                             GoldBoxGame::champions_of_krynn));
+            const auto last = std::ranges::find(next.level_classes | std::views::reverse, "knight");
+            if (last != next.level_classes.rend() && next.level_classes.size() > 1)
+            {
+                next.level_classes.erase(std::next(last).base());
+            }
+            --next.level;
+        }
+        numbers.knight_order = order;
+        recount_levels(next);
+        sheet = std::move(next);
+        return;
+    }
     constexpr std::string_view scribed = "boon:scroll:";
     const auto number =
         grant.starts_with(scribed) ? spell_number(grant.substr(scribed.size())) : std::nullopt;
@@ -1264,14 +1555,34 @@ AdvancementOptions OriginalModule::advancement_options(const CharacterSheet &she
     }
     ClassLevels next_ranger{};
     level_in(next_ranger, ClassSlot::ranger) = ranger + 1;
-    const auto slots =
+    auto slots =
         kit_ranger
             ? caster_slots(next_ranger, sheet.scores[Ability::wisdom], 9, game).magic_user
             : spell_slots(ClassSlot::magic_user, magic_user + 1, sheet.scores[Ability::wisdom],
                           sheet.scores[Ability::intelligence], game);
+    std::vector<int> robe_spells;
+    if (game == GoldBoxGame::champions_of_krynn)
+    {
+        slots = champions_spell_slots(ClassSlot::magic_user, magic_user + 1,
+                                      sheet.scores[Ability::wisdom], krynn_orders(sheet));
+        int highest = 0;
+        for (std::size_t at = 0; at < slots.size(); ++at)
+        {
+            if (slots[at])
+            {
+                highest = static_cast<int>(at + 1);
+            }
+        }
+        robe_spells = champions_learning_spells(numbers.robe_order, highest);
+    }
     for (const int number : castable_spells(game_of(sheet.identity)))
     {
         const auto *offered = spell(number);
+        if (game == GoldBoxGame::champions_of_krynn &&
+            std::ranges::find(robe_spells, number) == robe_spells.end())
+        {
+            continue;
+        }
         if (offered->caster_class == SpellClass::magic_user &&
             slots[static_cast<std::size_t>(offered->level - 1)] > 0 &&
             std::ranges::find(numbers.known_spells, number) == numbers.known_spells.end())
@@ -1315,7 +1626,7 @@ std::vector<std::string> OriginalModule::classes_to_train(const CharacterSheet &
     std::vector<std::string> classes;
     for (const auto slot : ready_classes(sheet, experience))
     {
-        classes.emplace_back(class_slot_id(slot));
+        classes.emplace_back(class_slot_id(slot, game_of(sheet.identity)));
     }
     return classes;
 }
@@ -1325,13 +1636,36 @@ std::vector<std::string> OriginalModule::classes_to_train(const CharacterSheet &
 void OriginalModule::roll_advancement(const CharacterSheet &sheet, unsigned experience,
                                       AdvancementChoice &choice, RandomState &random_state) const
 {
+    if (const auto petition = choice.training.find("hall_petition");
+        petition != choice.training.end())
+    {
+        auto eligible_sheet = sheet;
+        if (!eligible_sheet.original || petition->second.size() != 1)
+        {
+            throw std::invalid_argument("Invalid hall petition");
+        }
+        eligible_sheet.original->experience = static_cast<int>(experience);
+        const auto offered =
+            hall_training_options(eligible_sheet, std::array<std::string, 1>{"knight"});
+        if (std::ranges::none_of(offered.options,
+                                 [&petition](const auto &option)
+                                 {
+                                     return option.id == petition->second.front();
+                                 }))
+        {
+            throw std::invalid_argument("This petition is unavailable");
+        }
+        choice.rules_data = petition->second.front();
+        return;
+    }
     auto trained = ready_classes(sheet, experience);
     if (const auto hall = choice.training.find("hall"); hall != choice.training.end())
     {
         std::erase_if(trained,
-                      [&hall](ClassSlot slot)
+                      [&hall, &sheet](ClassSlot slot)
                       {
-                          return std::ranges::find(hall->second, class_slot_id(slot)) ==
+                          return std::ranges::find(hall->second,
+                                                   class_slot_id(slot, game_of(sheet.identity))) ==
                                  hall->second.end();
                       });
     }
@@ -1364,7 +1698,7 @@ constexpr int cure_light_wounds = 3, cure_serious_wounds = 158, cure_critical_wo
 // fight, Pools of Darkness's Resurrection, Restoration and its ranger's
 // Cure Disease and Neutralize Poison, and Stone to Flesh, which the later
 // games' table lets be cast out of a fight.
-constexpr std::array<int, 21> camp_spells{cure_light_wounds,
+constexpr std::array<int, 22> camp_spells{cure_light_wounds,
                                           cure_serious_wounds,
                                           cure_critical_wounds,
                                           raise_dead,
@@ -1374,6 +1708,7 @@ constexpr std::array<int, 21> camp_spells{cure_light_wounds,
                                           cure_blindness,
                                           cure_disease,
                                           remove_curse,
+                                          504,
                                           magic_user_remove_curse,
                                           neutralize_poison,
                                           enlarge,
@@ -1665,9 +2000,9 @@ void strengthen_in_camp(const CharacterSheet &caster, const CharacterSheet &targ
 // The spells cast in camp for their effects, which carry into the next fight
 // (lasting_condition); the party is camp target 4.
 constexpr int protection_from_fire = 309, mind_blank = 322;
-constexpr std::array<int, 27> camp_effect_spells{1,  6,   7,   8,   16,  17,  18,  19,  24,
-                                                 29, 30,  32,  42,  45,  48,  50,  52,  53,
-                                                 54, 169, 188, 309, 312, 316, 318, 319, 322};
+constexpr std::array<int, 29> camp_effect_spells{1,   6,   7,   8,   16,  17,  18,  19,  24, 29,
+                                                 30,  32,  42,  45,  48,  50,  52,  53,  54, 169,
+                                                 188, 309, 312, 316, 318, 319, 322, 501, 505};
 constexpr int party_target = 4;
 
 // The spells a player casts outside combat to see what is hidden, spent with
@@ -1675,8 +2010,9 @@ constexpr int party_target = 4;
 // through when Detect Magic is cast before her twin).
 [[nodiscard]] bool sight_spell(int number)
 {
-    constexpr std::array<std::string_view, 3> sight{
-        "cleric:detect_magic", "magic_user:detect_magic", "druid:detect_magic"};
+    constexpr std::array<std::string_view, 4> sight{"cleric:detect_magic",
+                                                    "magic_user:detect_magic", "druid:detect_magic",
+                                                    "deity:detect_magic"};
     return std::ranges::any_of(sight,
                                [number](std::string_view id)
                                {
@@ -1765,6 +2101,20 @@ void spend_spell(const CharacterSheet &user, VitalState &state, int number)
 bool OriginalModule::advance_character(CharacterSheet &sheet, VitalState &state,
                                        const AdvancementChoice &choice) const
 {
+    if (choice.rules_data.starts_with("boon:knight:"))
+    {
+        const auto petition = choice.training.find("hall_petition");
+        if (petition == choice.training.end() ||
+            petition->second != std::vector<std::string>{choice.rules_data})
+        {
+            throw std::invalid_argument("Invalid recorded hall petition");
+        }
+        auto next = sheet;
+        train_at_hall(next, choice.rules_data);
+        state.hit_points = std::min(state.hit_points, next.hit_points);
+        sheet = std::move(next);
+        return true;
+    }
     const auto &numbers = original_numbers(sheet);
     if (const auto drain = decode_drain(choice.rules_data))
     {
@@ -1843,7 +2193,8 @@ bool OriginalModule::advance_character(CharacterSheet &sheet, VitalState &state,
             throw std::invalid_argument("The character has no levels in a class it trained in");
         }
         ++levels[at];
-        next.level_classes.emplace_back(class_slot_id(static_cast<ClassSlot>(at)));
+        next.level_classes.emplace_back(
+            class_slot_id(static_cast<ClassSlot>(at), game_of(sheet.identity)));
         // Each class trained gives back a drained level, whose Hit Points are
         // forgotten (chargen.pas, TrainingMenu).
         auto &drained = *next.original;
@@ -1889,7 +2240,7 @@ void OriginalModule::drain_character(CharacterSheet &sheet, VitalState &state,
         }
         numbers.class_levels[at] -= lost;
         total += lost;
-        const auto id = class_slot_id(static_cast<ClassSlot>(at));
+        const auto id = class_slot_id(static_cast<ClassSlot>(at), game_of(sheet.identity));
         for (int n = 0; n < lost; ++n)
         {
             const auto last = std::ranges::find(next.level_classes | std::views::reverse, id);
@@ -1918,7 +2269,7 @@ void OriginalModule::restore_character(CharacterSheet &sheet, VitalState &state,
     auto next = sheet;
     auto &numbers = *next.original;
     ++level_in(numbers.class_levels, given_back.slot);
-    next.level_classes.emplace_back(class_slot_id(given_back.slot));
+    next.level_classes.emplace_back(class_slot_id(given_back.slot, game_of(sheet.identity)));
     ++next.level;
     recount_levels(next);
     next.hit_points += given_back.hit_points;
@@ -2122,6 +2473,20 @@ unsigned OriginalModule::experience_after_advance(const CharacterSheet &before,
 {
     const auto trained = ready_classes(before, experience);
     const auto capped = std::min<unsigned>(experience, std::numeric_limits<int>::max());
+    if (game_of(before.identity) == GoldBoxGame::champions_of_krynn)
+    {
+        int cap = 0;
+        for (const auto slot : trained)
+        {
+            const auto needed = class_experience(
+                before, slot, level_in(original_numbers(before).class_levels, slot) + 2);
+            if (needed && capped >= static_cast<unsigned>(*needed))
+            {
+                cap = std::max(cap, *needed - 1);
+            }
+        }
+        return cap > 0 ? static_cast<unsigned>(cap) : capped;
+    }
     return static_cast<unsigned>(experience_after_training(original_numbers(before).class_levels,
                                                            trained, static_cast<int>(capped),
                                                            game_of(before.identity)));
@@ -2917,6 +3282,7 @@ void OriginalModule::use_camp_action(const CharacterSheet &user, VitalState &use
         (void)cure(target, target_state, disease_codes(game));
         return;
     case remove_curse:
+    case 504:
     case magic_user_remove_curse:
         (void)cure(target, target_state, std::array{bestow_curse});
         return;
@@ -3203,7 +3569,7 @@ OriginalModule::preparation_finishes(std::span<const unsigned> levels) const
     std::vector<std::chrono::minutes> finishes;
     for (const auto level : levels)
     {
-        done += std::chrono::minutes{15 * level};
+        done += std::chrono::minutes{15 * std::max(level, 1U)};
         finishes.push_back(done);
     }
     return finishes;

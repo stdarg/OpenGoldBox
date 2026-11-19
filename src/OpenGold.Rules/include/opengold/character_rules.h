@@ -165,6 +165,10 @@ struct CharacterSheet
         // The race, class and alignment by the original's numbers
         // (original::Race, original::Profession and original::Alignment).
         int race{}, profession{}, alignment{};
+        // Rebuilt from the creation draft or preserved import/raw record.
+        // Slot seven is a Solamnic knight in the Krynn games.
+        int deity{}, robe_order{}, knight_order{};
+        std::array<int, 9> deity_spell_slots{};
         // Percent chances, empty for a character without thief levels.
         std::array<int, 8> thief_skills{};
         // Spell slots of levels 1 to 9, by the list the spells come from.
@@ -282,11 +286,20 @@ class CharacterRules
     {
         return false;
     }
+
     [[nodiscard]] virtual std::vector<CreationChoice> choices(CreationField field) const = 0;
     [[nodiscard]] virtual std::vector<ScoreAdjustment>
     adjustments(std::string_view background) const = 0;
     [[nodiscard]] virtual std::array<AbilityRoll, 6> roll(RandomState &random_state) const = 0;
     [[nodiscard]] virtual AbilityGeneration ability_generation() const = 0;
+
+    // Rules decide which choices invalidate numbers rolled at creation.
+    [[nodiscard]] virtual bool choices_require_reroll(const CharacterDraft &before,
+                                                      const CharacterDraft &after) const
+    {
+        return before.race != after.race || before.character_class != after.character_class;
+    }
+
     // Rolls a rolled_in_place draft's abilities, with what the rules roll
     // alongside them, replacing any earlier roll. The draft's race and class
     // must be chosen first, since they set the limits. Assigned-total rules
@@ -304,6 +317,7 @@ class CharacterRules
         (void)rolls;
         throw std::logic_error("These rules assign rolled totals; set the draft's rolls");
     }
+
     // Whether the draft's earlier choices allow this one: the original limits
     // classes by race and alignments by class. The SRD allows every choice.
     [[nodiscard]] virtual bool allows(const CharacterDraft &draft, CreationField field,

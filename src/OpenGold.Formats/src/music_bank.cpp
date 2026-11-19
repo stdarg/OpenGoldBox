@@ -190,6 +190,10 @@ std::optional<std::vector<MusicSong>> decode_songs(Bytes list, GoldBoxGame game)
 
 std::optional<MusicBank> decode_music_bank(Bytes bytes, GoldBoxGame game)
 {
+    if (game == GoldBoxGame::champions_of_krynn)
+    {
+        return decode_champions_music(bytes);
+    }
     if (bytes.size() < library_header_size || !has_tag(bytes, 0, "GLBR"))
     {
         return std::nullopt;
@@ -216,8 +220,27 @@ std::optional<MusicBank> decode_music_bank(Bytes bytes, GoldBoxGame game)
     return MusicBank{std::move(*instruments), std::move(*songs)};
 }
 
-bool is_music_driver(Bytes bytes) noexcept
+bool is_music_driver(Bytes bytes, GoldBoxGame game) noexcept
 {
+    if (game == GoldBoxGame::champions_of_krynn)
+    {
+        if (bytes.size() < 18)
+        {
+            return false;
+        }
+        for (std::size_t entry = 0; entry < 18; entry += 3)
+        {
+            const auto displacement = static_cast<std::int16_t>(
+                static_cast<unsigned>(bytes[entry + 1]) | (bytes[entry + 2] << 8));
+            const auto target = static_cast<std::int64_t>(entry + 3) + displacement;
+            if (bytes[entry] != 0xE9 || target < 18 ||
+                target >= static_cast<std::int64_t>(bytes.size()))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
     // Its far entry sets its data segment from its code segment, and it names
     // the banks it refuses.
     constexpr std::array<std::uint8_t, 8> entry{0x55, 0x8B, 0xEC, 0x1E, 0x06, 0x8C, 0xC8, 0x05};

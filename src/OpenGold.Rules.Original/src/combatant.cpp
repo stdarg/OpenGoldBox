@@ -1,4 +1,5 @@
 #include "opengold/original_combat.h"
+#include "champions_rules.h"
 #include "opengold/original_rules.h"
 #include "opengold/original_spells.h"
 #include "opengold/secret_records.h"
@@ -222,8 +223,8 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
     const auto effect_count = *next++;
     for (int n = 0; n < effect_count; ++n, next += 4)
     {
-        // The later games' and the kit's own effects run past 255 (canonical_effect).
-        if (next[0] < 1 || next[0] > 255 + vga_effect_offset || next[1] < 0 || next[2] < 0)
+        // Canonical effects include the later games' distinct numeric banks.
+        if (next[0] < 1 || next[0] > 255 + champions_effect_offset || next[1] < 0 || next[2] < 0)
         {
             return std::nullopt;
         }
@@ -267,6 +268,16 @@ constexpr std::uint8_t weapon_slot = 0, shield_slot = 1, first_ring_slot = 9;
 // Arrows and quarrels take their places by their item type, not their type's
 // slot (charhlp.pas, RecalcStats).
 constexpr std::uint8_t monster_race = 0, elf_race = 2;
+
+std::uint8_t combat_race(const por::CharacterRecord &record)
+{
+    if (record.game != GoldBoxGame::champions_of_krynn)
+    {
+        return record.race;
+    }
+    constexpr std::array<std::uint8_t, 8> canonical{2, 2, 4, 1, 1, 5, 7, 0};
+    return record.race < canonical.size() ? canonical[record.race] : 0;
+}
 
 // The original keeps Armor Class as 60 minus it, so that better is more: its
 // adjustments add in that form.
@@ -485,6 +496,20 @@ int secret_kin(const por::CharacterRecord &record)
     return kinds;
 }
 
+int champions_traits(const por::CharacterRecord &record)
+{
+    const auto flags = record.creature_type_flags;
+    int traits = 0;
+    traits |= flags & 0x01 ? trait::dispel_evil : 0;
+    traits |= flags & 0x02 ? trait::unliving : 0;
+    traits |= flags & 0x08 ? trait::ranger_foe : 0;
+    traits |= flags & 0x10 ? trait::snake : 0;
+    traits |= flags & 0x20 ? champions_reptile_trait : 0;
+    traits |= record.target_flags & 0x01 ? champions_dragon_trait : 0;
+    traits |= record.target_flags & 0x02 ? trait::person : 0;
+    return traits;
+}
+
 int secret_traits(const por::CharacterRecord &record)
 {
     namespace type = secret::creature_type;
@@ -633,7 +658,9 @@ bool secret_backstab_weapon(const CarriedItem *weapon, GoldBoxGame game)
 {
     const int type = weapon ? weapon->item.type : 0;
     const bool darkness_type = game == GoldBoxGame::pools_of_darkness && (type == 63 || type == 67);
-    return !weapon || type == 3 || type == 4 || (type >= 17 && type <= 19) || darkness_type;
+    const bool hoopak = game == GoldBoxGame::champions_of_krynn && type == 67;
+    return !weapon || hoopak || type == 3 || type == 4 || (type >= 17 && type <= 19) ||
+           darkness_type;
 }
 
 } // namespace
@@ -870,6 +897,45 @@ int canonical_effect(int code, GoldBoxGame game) noexcept
     {
         return 0;
     }
+    if (game == GoldBoxGame::champions_of_krynn)
+    {
+        constexpr std::array<std::pair<int, int>, 27> shared{
+            {{18, 124},  {61, 61},   {63, 263},  {64, 64},   {65, 65},   {73, 273}, {77, 277},
+             {83, 483},  {84, 690},  {85, 561},  {86, 486},  {89, 89},   {90, 566}, {92, 492},
+             {93, 94},   {94, 494},  {95, 107},  {96, 108},  {97, 109},  {98, 110}, {99, 111},
+             {100, 115}, {101, 117}, {103, 119}, {104, 504}, {105, 334}, {106, 506}}};
+        const auto found = std::ranges::find(shared, code, &std::pair<int, int>::first);
+        if (found != shared.end())
+        {
+            return found->second;
+        }
+        if (code == 107)
+        {
+            return 337;
+        }
+        if (code == 108)
+        {
+            return 338;
+        }
+        if (code == 111)
+        {
+            return 342;
+        }
+        if (code == 112)
+        {
+            return 343;
+        }
+        if (code == 113)
+        {
+            return 113;
+        }
+        constexpr std::array<int, 6> own_low{4, 6, 7, 13, 32, 48};
+        if (code < 57 && std::ranges::find(own_low, code) == own_low.end())
+        {
+            return canonical_effect(code, GoldBoxGame::curse_of_the_azure_bonds);
+        }
+        return champions_effect_offset + code;
+    }
     if (game == GoldBoxGame::gateway_to_the_savage_frontier)
     {
         return gateway_canonical_effect(code);
@@ -977,9 +1043,14 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
         c.large_attack = AttackForm{
             c.attacks[0].rate_per_two_rounds, type.large_damage.count, type.large_damage.sides,
             c.attacks[0].modifier - type.small_medium_damage.modifier + type.large_damage.modifier};
-        if (record.race == elf_race && elf_weapon(weapon->item.type, record.game))
+        if (combat_race(record) == elf_race && elf_weapon(weapon->item.type, record.game))
         {
             ++plus;
+        }
+        if (record.game == GoldBoxGame::champions_of_krynn && record.race == 5 &&
+            weapon->item.type == 67)
+        {
+            plus += 2; // Kender's hoopak accuracy, after damage's bonus was applied.
         }
         c.thac0 -= plus;
     }
@@ -1030,7 +1101,7 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
         std::max({l.cleric, l.druid, l.fighter, l.paladin, l.ranger, l.mage, l.thief, l.monk});
     c.level = std::max<int>(c.level, record.highest_level_raw);
     c.class_levels = {l.cleric, l.druid, l.fighter, l.paladin, l.ranger, l.mage, l.thief, l.monk};
-    c.attack_level = l.fighter > 0 && record.race > monster_race ? l.fighter : 1;
+    c.attack_level = l.fighter > 0 && combat_race(record) > monster_race ? l.fighter : 1;
     c.initiative_bonus = dexterity_missile_bonus(dexterity);
     c.morale = record.npc_flag;
     c.intelligence = record.current_abilities.intelligence;
@@ -1045,7 +1116,8 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
     // Pools of Darkness reads its records' flags, backstabs and mirrors as
     // Secret does (its reconstruction's cbtacts.pas, effhndlr.pas and magic.pas).
     const bool secret = record.game == GoldBoxGame::secret_of_the_silver_blades ||
-                        record.game == GoldBoxGame::pools_of_darkness;
+                        record.game == GoldBoxGame::pools_of_darkness ||
+                        record.game == GoldBoxGame::champions_of_krynn;
     if (secret)
     {
         c.backstabs = l.thief > 0 && secret_backstab_weapon(weapon, record.game);
@@ -1065,8 +1137,9 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
     c.alignment = record.alignment;
     c.creature_type = record.type;
     c.kin = secret ? secret_kin(record) : kit ? kit_kin(record) : kin_of(record);
-    c.traits = secret ? secret_traits(record)
-               : kit  ? kit_traits(record)
+    c.traits = record.game == GoldBoxGame::champions_of_krynn ? champions_traits(record)
+               : secret                                       ? secret_traits(record)
+               : kit                                          ? kit_traits(record)
                : record.game == GoldBoxGame::treasures_of_the_savage_frontier
                    ? treasures_traits(record)
                    : 0;
@@ -1080,7 +1153,7 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
             c.spells.push_back(canonical_spell(memorized, record.game));
         }
     }
-    c.race = record.race;
+    c.race = combat_race(record);
     c.weapon_type = weapon ? weapon->item.type : -1;
     c.striker = striker_of(carried, weapon, record.game);
     c.wards_gaze = std::any_of(carried.begin(), carried.end(),
@@ -1258,8 +1331,10 @@ std::uint8_t usability_of(const std::array<int, 8> &class_levels, GoldBoxGame ga
         if (class_levels[at] > 0)
         {
             const bool ranger = static_cast<ClassSlot>(at) == ClassSlot::ranger;
-            bits |= secret && ranger ? bits_of[static_cast<std::size_t>(ClassSlot::paladin)]
-                                     : bits_of[at];
+            bits |= game == GoldBoxGame::champions_of_krynn && at == 7   ? 0x10
+                    : game == GoldBoxGame::champions_of_krynn && at == 1 ? 0x20
+                    : secret && ranger ? bits_of[static_cast<std::size_t>(ClassSlot::paladin)]
+                                       : bits_of[at];
         }
     }
     return bits;

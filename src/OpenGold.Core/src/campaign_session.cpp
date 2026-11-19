@@ -52,6 +52,8 @@ LaterCampaign later_campaign(GoldBoxGame game)
         // A new game runs script 1 of disk 2 (Yartar); the overland's script
         // is on disk 6.
         return {1, 2, 6, false};
+    case GoldBoxGame::champions_of_krynn:
+        return {36, 1, 1, false};
     case GoldBoxGame::pools_of_darkness:
     case GoldBoxGame::treasures_of_the_savage_frontier:
         // One disk: a new game runs script 16 (its GameLoop), New Phlan's
@@ -591,6 +593,29 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
     {
         add_gateway_wilderness(folder, program_image, *root);
     }
+    if (game == GoldBoxGame::champions_of_krynn)
+    {
+        root->gateway_wilderness = por::champions_wilderness(program_image);
+        if (!root->gateway_wilderness)
+        {
+            throw EclError("Champions' START.EXE has no wilderness tables");
+        }
+        add_wilderness_art(folder, *root);
+        auto marker = decode_ega_picture(files.record("CURSOR.DAX", 1));
+        if (!marker)
+        {
+            throw EclError("Champions' CURSOR.DAX has no party marker");
+        }
+        for (std::size_t at = 0; at < marker.image.rgba.size(); at += 4)
+        {
+            if (marker.image.rgba[at] == 0 && marker.image.rgba[at + 1] == 0 &&
+                marker.image.rgba[at + 2] == 0)
+            {
+                marker.image.rgba[at + 3] = 0;
+            }
+        }
+        root->area_map_marker = std::move(marker.image);
+    }
     if (treasures)
     {
         add_treasures_overland(files, *root);
@@ -713,6 +738,12 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
             scripts.push_back(49);
             scripts.push_back(50);
         }
+        // Kernen's gate enters Myrtani's stronghold without LOAD FILES
+        // (ECL3:97 81C0h); script 98 retains Kernen's map and wall banks.
+        if (game == GoldBoxGame::champions_of_krynn && map_disk == 3 && map_id.record == 97)
+        {
+            scripts.push_back(98);
+        }
         const por::detail::AreaSource area{scripts.front(), map_disk, {}};
         const por::detail::DistrictMap geo{
             map_id.record, walls, {scripts.begin() + 1, scripts.end()}};
@@ -751,6 +782,8 @@ por::RolfTourSession load_campaign(const std::filesystem::path &folder, GoldBoxG
     case GoldBoxGame::gateway_to_the_savage_frontier:
     case GoldBoxGame::pools_of_darkness:
     case GoldBoxGame::treasures_of_the_savage_frontier:
+        return load_later_campaign(folder, game);
+    case GoldBoxGame::champions_of_krynn:
         return load_later_campaign(folder, game);
     default:
         throw std::invalid_argument(std::string(game_title(game)) + " cannot be played yet");

@@ -1965,3 +1965,146 @@ save format or supported history changed. Scope/architecture review confirms
 RAII/value ownership, existing Godot/C++20/GDExtension boundaries and no SRD
 implementation/decision branches in Core or UI. Only these eight owned files
 are included. The main checkout's dirty-document exception remains in force.
+
+### Active batch: Champions of Krynn
+
+- Authorization/status: same active all-twelve-game request, sequential after
+  Treasure delivery `2f20d568`. Start observed 2026-11-19 01:28:19 UTC;
+  checkpoint due 02:28:19, no later than 02:58:19. No new GitHub issues.
+- Outcome: Champions installed data is recognized/read, its Original Rules
+  create legal characters and run its campaign/services/combat, and a fresh
+  party reaches the actual authored ending with a compatible winning save.
+- Acceptance: complete installed-data census; normal creation/race/class,
+  deities/robes/knights, spell/effect/camp/service behavior; every-map walk;
+  actual earned ending and byte-identical normal save roundtrip. Existing
+  game checks remain green. No forced victories, grants, quest edits, arbitrary
+  placement, save-history loss or edits to original installations.
+- Reuse: DAX/ECL, existing Original Rules and Godot controls, campaign/saves,
+  actual data/art and established build/launch. No new runtime/framework,
+  speculative tools or generated combat art. Append stable Game ID 7; keep
+  existing IDs/history. Module-local metadata must preserve prior encodings.
+- Exclusions: Death Knights/Dark Queen/Buck/installed UA completion and then
+  automatic winning-character availability remain later parts of the same
+  task. No SRD mechanics/content work before all twelve original games win.
+- Execution: same configured Codex model/effort; no particular model/effort
+  requested or settings changed, exact configuration not exposed. The routing
+  policy explicitly applies to SRD. One owner, no delegation. Existing UI
+  patterns are reused; the user explicitly forbids questions.
+- Checks: focused real-record/formats/ECL/creation/combat/camp/save tests during
+  implementation, full earned campaign and appropriate native/game regression
+  checks on final inputs. Commit/push owned changes and clean merged worktree.
+- Initial evidence: 88 MON records of 409 bytes, 22 ECL scripts, 15 GEO maps.
+  Most art/items/effects already decode with the earlier DAX readers. Current
+  identification wrongly chooses Curse via TILES.DAX; the correct marker is
+  KRYNN.CFG. Two original archives contain duplicate IDs, which the original
+  first-match loader accepts; no source installation will be rewritten.
+
+At the observed **2026-11-19 02:28:23 UTC** checkpoint (**60.07 minutes**),
+Champions' full installed-data census passed, including all 88 creatures,
+22 scripts, 15 maps, duplicate-ID archives, cursor, item words, score and
+sound effects. Evidence: `/tmp/opengold-cok-census-v2.log` and
+`/tmp/opengold-cok-audio-checks-v3.log`. All offered native race/class
+combinations, deity/robe/order import metadata, progression selection and
+steel-value checks passed together with existing Original creation, **2/2 in
+0.43 seconds** (`/tmp/opengold-cok-native-creation-checks-v2.log`).
+The newer opening integration reached script 17, its first outpost, at the
+scripted (1,3), exposing the test's incorrect assumption that it would stop
+in wilderness script 16 at GameInit's earlier (7,13). This is being checked
+against the authored transitions before changing that expectation. Native
+campaign/startup/save integration, combat powers/effects, hall promotion,
+the every-map walk, earned ending, game-window checks and final regressions
+remain. **Zero complete player outcomes of one planned** are accepted in this
+batch yet. No commit/push or winning-campaign claim; no assistance, original
+data edits, released-history reduction, model/runtime changes or delegation.
+Compilation errors to date were local include/API corrections; raw-roll and
+terrain-table checks caught real game-specific differences. Same one owner,
+current configured model/effort (exact identifiers and cost unavailable).
+
+At **2026-11-19 03:16:06 UTC** (observed during this batch), the native creation,
+Original combat and Champions checks passed **3/3 in 1.14 seconds** after deity
+gifts, knight birth equipment and order petitions were implemented. Separate
+Champions/ECL checks passed **2/2 in 0.54 seconds**. The first full map walk
+exposed two production faults: top-level RETURN fell through into script 81's
+embedded data, and script 66's whole-party damage form was rejected. The
+Champions-specific RETURN and shared damage-form corrections preserve the
+original files and prior game behavior. The repeat full installed-map walk
+completed without runtime errors (`/tmp/opengold-cok-map-walk-v2.log`): 4674
+completed event executions, with combats played by the existing walk harness.
+This walk uses its synthetic test party and includes defeats; **it does not
+certify an earned ending**. Focused logs are
+`/tmp/opengold-cok-knight-checks-v2.log` and
+`/tmp/opengold-cok-script-checks-v1.log`. The tested tree remains base
+`2f20d568` plus current changes. Frontend build, combat-power completion,
+fresh earned campaign, winning-save roundtrip and final regressions remain.
+
+Observed **2026-11-19 05:31:23 UTC**: Champions remains incomplete. The earned
+Throtl rescue/key, temple altar and catacomb white dragons/eggs checkpoints have
+passed with all six PCs alive; they are not a full-campaign certificate. The
+return from the dragons failed with a depleted party, exposing missing
+Champions handling in the test player's ordinary camp-healing plan and excess
+ward preparation. That plan is being corrected and replayed from an earlier
+native checkpoint. No grants or combat/quest shortcuts are used. Focused
+Original combat/Champions checks passed 2/2 after the native gate, breath,
+dispel and weapon-power changes; the subsequent dedicated acid/reflection
+checks passed. The game frontend, final integrated regression and fresh full
+ending remain outstanding. Six commercial earned campaigns are delivered;
+Champions, both other Krynn games, both Buck Rogers games and the actual
+installed UA design remain, followed by the winning-character library.
+
+Champions' acceptance completes at the observed **2026-11-19 10:11:15 UTC**,
+**522.93 minutes** after the recorded start: **one accepted player outcome of
+one planned** for this batch. Tested source is base `2879fa06` plus this batch's
+changes, preserving the user's merged Treasures class-family starting kits.
+The detailed implementation and proof are in [Champions](games/champions.md).
+
+- The registered fresh `opengold_champions_earned_ending` passes in
+  **475.39 seconds**: **123 kept battles, zero defeats, all six PCs alive**.
+  It follows actual movement, services, preparation, rests and combats to
+  Myrtani's final Aurak form, the three red dragons and the authored ending.
+  No grants, forced outcomes, quest edits or arbitrary placements certify it.
+  Log: `/tmp/opengold-cok-fresh-ending-integrated-v1.log`.
+- The ordinary format-53 winning save roundtrips byte for byte. A standalone
+  `.ogs` with the actual installed asset identity also passes, preserving all
+  six characters' actual HP, XP, gear and campaign state. Victory is observed
+  before Continue; Continue then reaches a normal savable boundary.
+- The full integrated Linux build/export succeeds. The final installed-data
+  regression selection runs **339 checks in 2174.53 seconds**: **337 pass**,
+  with two stale archive/startup expectations corrected afterward. The rebuilt
+  creature check and updated startup check pass by name, with Godot preparation,
+  **3/3 in 13.39 seconds**. No gameplay behavior changed after the build or
+  fresh ending. Logs: `/tmp/opengold-cok-linux-integrated-build-v1.log`,
+  `/tmp/opengold-cok-linux-integrated-checks-v1.log` and
+  `/tmp/opengold-cok-linux-integrated-focused-final.log`.
+- The final Champions map walk completes **4700 events in 79.56 seconds**;
+  its synthetic fights are separate runtime coverage. Existing games' walks,
+  ordinary routes and native checks pass. Older long earned subroutes retain
+  their prior delivered proofs and were excluded from this routine selection.
+  Godot fighter/cleric creation (including deity and steel), startup, services,
+  saves and Linux package smoke pass. Localization validates all **4221**
+  English/Spanish messages, placeholders and BBCode.
+
+Recorded elapsed verification phases are the fresh replay (475.39s), broad
+regressions (2174.53s) and final focused checks (13.39s); earlier phase timings
+were not retroactively estimated. The 60-minute checkpoint remains recorded
+above. One owner used the same configured model/effort; exact identifiers and
+cost are unavailable, with no model/runtime changes or delegation. Review
+confirms RAII/value ownership, Godot/C++20/GDExtension boundaries, no SRD
+calculations in Core/UI, and preservation of stable IDs and released saves.
+
+The main checkout still has the user's pre-existing `docs/GAMES.md` edit; its
+dirty-checkout exception prevents automatic pull/build there. It is untouched.
+Seven commercial earned campaigns are now verified. Death Knights, Dark Queen,
+both Buck Rogers games and the actual installed UA design remain, followed by
+the automatic library of **all** characters present at victory, captured before
+Continue or scripted departures. This batch does not complete that whole goal.
+
+After the commit hook's layout/brace cleanup and four equivalent aggregate
+initializations in synthetic fixtures, the final Linux rebuild/export passes.
+Post-cleanup verification passes **13/13 in 23.67 seconds**; an actual earned
+pre-finale checkpoint also reaches the ending with **two victories, zero
+defeats and all six alive**, with a compatible normal save. This continuation
+verifies the final binary; it does not replace the fresh full-campaign proof.
+Logs: `/tmp/opengold-cok-linux-delivery-build-v1.log`,
+`/tmp/opengold-cok-poststyle-focused.log` and
+`/tmp/opengold-cok-poststyle-ending.log`. No original data, released save history,
+mechanics or runtime/model selection changed in this style pass.

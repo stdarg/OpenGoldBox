@@ -324,6 +324,7 @@ class CampaignParty
     {
         npc_positions_ = NpcPositions::open_to_player_characters;
     }
+
     MemberId recruit(std::string source, Character converted, unsigned morale = 100);
     // Simulacrum from camp (LEVELS-3): `action`, one of the caster's camp
     // actions for the spell, makes a copy of `original` named `name` that
@@ -451,8 +452,10 @@ class CampaignParty
     // nothing for a dead member.
     void grant_experience_share(unsigned amount, MemberId id);
     // The first member who can cast this spell out of a fight casts it (a
-    // script's SPELL); none when no one can.
-    [[nodiscard]] std::optional<MemberId> cast_exploration_spell(std::string_view spell);
+    // script's SPELL); or only `only`, when a script chose the caster.
+    // None when the chosen member (or the party) cannot cast it.
+    [[nodiscard]] std::optional<MemberId> cast_exploration_spell(std::string_view spell,
+                                                                 MemberId only = {});
     // A training hall's experience session: half the experience between the
     // member's level and the next, once per level, paid in the party's gold.
     [[nodiscard]] ExperienceOffer experience_offer(MemberId id, TrainingHall hall) const;
@@ -475,6 +478,9 @@ class CampaignParty
     // throws, changing nothing, when the hall cannot.
     void train_at_hall_level(MemberId id, TrainingHall hall, std::vector<std::string> spells);
     void train_at_hall_level(MemberId id, unsigned class_mask, std::vector<std::string> spells);
+    // Rules-provided petitions at an Original Rules hall, recorded for save replay.
+    [[nodiscard]] rules::TrainingChoiceGroup hall_lessons(MemberId id, unsigned class_mask) const;
+    void train_hall_lesson(MemberId id, unsigned class_mask, const std::string &grant);
     // Whether the member has the experience and the state to gain a level,
     // wherever the rules let it.
     [[nodiscard]] bool ready_to_advance(MemberId id) const;
@@ -551,6 +557,7 @@ class CampaignParty
     {
         return last_rest_minutes_;
     }
+
     // Spends Hit Dice one at a time until the member is at full HP or out of dice.
     [[nodiscard]] std::vector<rules::HitDieResult> heal_with_hit_dice(RestTicket ticket,
                                                                       MemberId id);
@@ -598,11 +605,13 @@ class CampaignParty
     // Identify, cast by `caster` on an item `holder` carries. False when the
     // item hid nothing; the spell slot is spent either way.
     bool cast_identify(MemberId caster, MemberId holder, std::uint64_t item);
+
     // Whether Detect Magic is in effect: item lists mark magic items.
     [[nodiscard]] bool detecting_magic() const noexcept
     {
         return state_.time_minutes < state_.detect_magic_until;
     }
+
     // Whether Detect Magic would sense the member's item: an enchantment, a
     // curse, charges or a spell.
     [[nodiscard]] bool magical(MemberId id, std::uint64_t item) const;
@@ -614,8 +623,7 @@ class CampaignParty
     // party ignores; the spell leaves the scroll, and a scroll with none left
     // is gone. False when the reading failed (Use Magic Device's Arcana check)
     // and the spell was lost to no effect. Atomic: on a throw nothing changes.
-    bool read_scroll(MemberId reader, std::uint64_t item, MemberId target,
-                     std::string_view action);
+    bool read_scroll(MemberId reader, std::uint64_t item, MemberId target, std::string_view action);
     // A spell on a scroll the member can copy into its spellbook now: its place
     // on the scroll and its level.
     using ScrollCopy = rules::ScrollCopy;
@@ -637,11 +645,13 @@ class CampaignParty
     void write_scroll(MemberId id, std::string_view spell);
     // The member's Charisma as the party's spokesman, with Friends (MAGIC-6).
     [[nodiscard]] int reaction_charisma(MemberId id) const;
+
     // Whether Find Traps is in effect (MAGIC-6).
     [[nodiscard]] bool finding_traps() const noexcept
     {
         return state_.time_minutes < state_.find_traps_until;
     }
+
     // Eligible active members, in party order, try once each until one meets
     // the difficulty. Returns every attempt; the door opens if the last succeeded.
     [[nodiscard]] std::vector<DoorAttempt> try_door(DoorMethod method, int difficulty);

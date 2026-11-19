@@ -19,8 +19,6 @@ namespace
 
 // On the AdLib the driver plays tracks 1 to 3, one voice each; track 0 is
 // the single voice the PC speaker plays.
-constexpr std::size_t first_adlib_track = 1;
-constexpr std::size_t adlib_voices = 3;
 constexpr std::size_t adlib_instrument_size = 12;
 
 constexpr std::uint8_t end_of_track = 0xFF;
@@ -88,15 +86,17 @@ class AdlibDriver
 {
   public:
     AdlibDriver(const MusicBank &bank, const MusicSong &song, FmSynth &chip)
-        : bank_(bank), chip_(chip)
+        : bank_(bank), chip_(chip), rhythm_(song.rhythm_enabled ? rhythm_register : 0),
+          transposed_(!song.rhythm_enabled)
     {
         chip_.write(0x01, 0);
-        chip_.write(0xBD, rhythm_register);
+        chip_.write(0xBD, rhythm_);
         chip_.write(0x08, note_select);
         silence();
-        for (std::size_t index = 0; index < adlib_voices; ++index)
+        for (std::size_t index = 0; index < std::min<std::size_t>(9, song.adlib_voice_count);
+             ++index)
         {
-            const auto track = first_adlib_track + index;
+            const auto track = song.first_adlib_track + index;
             if (track >= song.tracks.size())
             {
                 break;
@@ -142,7 +142,7 @@ class AdlibDriver
         {
             chip_.write(static_cast<std::uint8_t>(0xB0 + channel), release_block_and_high);
         }
-        chip_.write(0xBD, rhythm_register);
+        chip_.write(0xBD, rhythm_);
     }
 
     // Returns whether the track ended.
@@ -194,6 +194,14 @@ class AdlibDriver
         {
             voice.velocity = full_velocity;
         }
+        else if (event.code == 0x85)
+        {
+            load_instrument(voice, event.argument);
+        }
+        else if (event.code == 0x86)
+        {
+            voice.velocity = event.argument;
+        }
     }
 
     void play_note(Voice &voice, const MusicEvent &event)
@@ -201,7 +209,11 @@ class AdlibDriver
         if (voice.state != VoiceState::tied)
         {
             silence_voice(voice);
-            strike(voice, event.code);
+            const auto transpose =
+                transposed_ && !voice.instrument.empty()
+                    ? static_cast<int>(static_cast<std::int8_t>(voice.instrument[0]))
+                    : 0;
+            strike(voice, static_cast<std::uint8_t>(std::clamp(event.code + transpose, 0, 127)));
         }
         const auto &events = voice.track->events;
         const auto next_code =
@@ -289,6 +301,8 @@ class AdlibDriver
     const MusicBank &bank_;
     FmSynth &chip_;
     std::vector<Voice> voices_;
+    std::uint8_t rhythm_{};
+    bool transposed_{};
     bool finished_{};
 };
 
@@ -325,8 +339,10 @@ std::vector<std::uint8_t> read_game_archive(const std::filesystem::path &directo
 MusicBank load_music_bank(const std::filesystem::path &game_directory, GoldBoxGame game,
                           unsigned piece)
 {
-    const std::string name =
-        game == GoldBoxGame::secret_of_the_silver_blades ? "SOUND.DAX" : "MUSIC.DAX";
+    const std::string name = (game == GoldBoxGame::secret_of_the_silver_blades ||
+                              game == GoldBoxGame::champions_of_krynn)
+                                 ? "SOUND.DAX"
+                                 : "MUSIC.DAX";
     const auto archive = decode_dax_archive(read_game_archive(game_directory, name));
     if (!archive)
     {
@@ -342,6 +358,21 @@ MusicBank load_music_bank(const std::filesystem::path &game_directory, GoldBoxGa
     {
         throw std::runtime_error(name + " record " + std::to_string(piece) + " is not music");
     }
+    if (game == GoldBoxGame::champions_of_krynn)
+    {
+        const auto drivers = decode_dax_archive(read_game_archive(game_directory, "MIDI.DAX"));
+        const auto adlib = std::ranges::find(drivers.records, 3, &DaxRecord::id);
+        if (!drivers || adlib == drivers.records.end())
+        {
+            throw std::runtime_error("MIDI.DAX has no readable AdLib driver");
+        }
+        auto instruments = decode_champions_instruments(adlib->bytes);
+        if (!instruments)
+        {
+            throw std::runtime_error("MIDI.DAX has no readable AdLib instruments");
+        }
+        bank->instruments = std::move(*instruments);
+    }
     return std::move(*bank);
 }
 
@@ -354,6 +385,7 @@ std::optional<unsigned> title_music_piece(GoldBoxGame game) noexcept
     case GoldBoxGame::gateway_to_the_savage_frontier:
     case GoldBoxGame::pools_of_darkness:
     case GoldBoxGame::treasures_of_the_savage_frontier:
+    case GoldBoxGame::champions_of_krynn:
         return 1;
     default:
         return std::nullopt;
@@ -369,7 +401,7 @@ std::vector<std::int16_t> render_music(const MusicBank &bank, std::size_t song,
     }
     FmSynth chip(sample_rate);
     AdlibDriver driver(bank, bank.songs[song], chip);
-    const auto samples_per_tick = sample_rate / music_ticks_per_second;
+    const auto samples_per_tick = sample_rate / bank.songs[song].ticks_per_second;
     std::vector<std::int16_t> samples;
     for (std::uint32_t tick = 0; !driver.finished(); ++tick)
     {

@@ -1898,5 +1898,22 @@
   "Keep",
   "And {count} items.",
   "Vault is full!",
-  "Your {item} will be left in the vault."
+  "Your {item} will be left in the vault.",
+  "Paladine",
+  "Majere",
+  "Kiri-Jolith",
+  "Mishakal",
+  "Sirrion",
+  "Reorx",
+  "Shinare",
+  "Good; grants Protection from Evil in a radius.",
+  "Good; grants Silence.",
+  "Good; improves attacks and grants Detect Magic.",
+  "Good; grants Remove Curse, Bless and Charm Person.",
+  "Neutral; grants Burning Hands.",
+  "Neutral; improves a dwarf's attacks.",
+  "Neutral; grants Charm Person.",
+  "The clerics will cast {spell} on {name} for {fee} steel.",
+  "{spell} ({fee} steel)",
+  "The party's steel cannot pay {fee} steel."
 ]

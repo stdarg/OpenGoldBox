@@ -225,7 +225,7 @@ std::vector<ColorHeaderFamily> color_header_families()
 // parameter blocks of instruments and songs.
 void check_music(GoldBoxGame game, const Bytes &bytes)
 {
-    if (is_music_driver(bytes))
+    if (is_music_driver(bytes, game))
     {
         return;
     }
@@ -594,6 +594,11 @@ family_decoders(GoldBoxGame game, const std::map<std::string, GameFile> &by_name
     // Secret of the Silver Blades names the music driver's archive SOUND.DAX.
     decoders.emplace("MUSIC", FamilyDecoder{"music", music});
     decoders.emplace("SOUND", FamilyDecoder{"music", music});
+    if (game == GoldBoxGame::champions_of_krynn)
+    {
+        decoders.emplace("MIDI", FamilyDecoder{"music drivers", music});
+        decoders.emplace("CURSOR", FamilyDecoder{"the cursor", picture});
+    }
     if (game == GoldBoxGame::pools_of_darkness ||
         game == GoldBoxGame::treasures_of_the_savage_frontier)
     {
@@ -671,8 +676,10 @@ bool GameCensus::complete() const noexcept
 std::optional<GoldBoxGame> identify_game(const std::filesystem::path &folder)
 {
     // Each file below exists in only one of the games' folders.
-    constexpr std::array<std::pair<std::string_view, GoldBoxGame>, 7> markers{{
+    constexpr std::array<std::pair<std::string_view, GoldBoxGame>, 8> markers{{
         {"CKIT.EXE", GoldBoxGame::unlimited_adventures},
+        // Champions also has TILES.DAX and SOUND.DAX; prefer its own marker.
+        {"KRYNN.CFG", GoldBoxGame::champions_of_krynn},
         {"SQRPACI.DAX", GoldBoxGame::pool_of_radiance},
         {"TILES.DAX", GoldBoxGame::curse_of_the_azure_bonds},
         {"SOUND.DAX", GoldBoxGame::secret_of_the_silver_blades},

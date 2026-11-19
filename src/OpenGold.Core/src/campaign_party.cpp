@@ -650,7 +650,7 @@ std::string_view scroll_spell(std::uint8_t number)
         "shocking_grasp",
         "sleep",
         "find_traps",
-        "hold_person", // cleric
+        "hold_person",            // cleric
         "protection_from_energy", // Resist Fire
         "silence",
         "protection_from_poison", // Slow Poison
@@ -714,8 +714,8 @@ std::string scroll_conversion(const por::ItemRecord &raw)
 std::string worn_conversion(const por::ItemRecord &raw)
 {
     constexpr std::uint8_t gauntlets_type = 63, fire_resistance_type = 69,
-                           cursed_necklace_type = 76, bracers_type = 77,
-                           feather_falling_type = 90, cloak_type = 92, protection_type = 93;
+                           cursed_necklace_type = 76, bracers_type = 77, feather_falling_type = 90,
+                           cloak_type = 92, protection_type = 93;
     constexpr std::uint8_t ogre_power = 0x83, grants_effect = 0x81, cloak_effect = 0x85;
     constexpr std::uint8_t fire_resistance = 61, displacement = 89;
     const auto [charges, argument, effect] = raw.effect_codes;
@@ -813,7 +813,7 @@ unsigned carried_quantity(const por::Equipment &item)
 {
     // A stack counts its items; a single charged item, its charges or doses.
     const unsigned stack = item.stored.stack_size;
-    return stack > 1                                   ? stack
+    return stack > 1                                 ? stack
            : charged_conversion(item.stored).empty() ? 1u
                                                      : item.stored.effect_codes[0];
 }
@@ -1643,8 +1643,8 @@ std::vector<rules::EquipmentChoice> CampaignParty::equipment_choices(MemberId id
                                      static_cast<unsigned>(keys.size() - 1));
 }
 
-std::optional<rules::HazardAttackResult>
-CampaignParty::equip(MemberId id, std::uint64_t item, rules::EquipmentOperation operation)
+std::optional<rules::HazardAttackResult> CampaignParty::equip(MemberId id, std::uint64_t item,
+                                                              rules::EquipmentOperation operation)
 {
     if (operation == rules::EquipmentOperation::unequip)
     {
@@ -2370,7 +2370,7 @@ void CampaignParty::join_like_items(MemberId id, std::uint64_t item)
 
 CoinRates CampaignParty::coin_rates() const
 {
-    return {rules_->coin_worth()};
+    return {rules_->coin_worth(), rules_->price_coin()};
 }
 
 std::uint64_t CampaignParty::purse_gold() const
@@ -2633,7 +2633,7 @@ CampaignParty::HallTraining CampaignParty::hall_training(MemberId id, unsigned c
 {
     const auto &m = member(id);
     const auto &sheet = m.character.sheet();
-    const auto taught = original_mask_classes(class_mask);
+    const auto taught = original_mask_classes(class_mask, original::game_of(rules_->identity()));
     const auto here = [&taught](const std::string &klass)
     {
         return std::ranges::find(taught, klass) != taught.end();
@@ -2689,7 +2689,8 @@ void CampaignParty::train_at_hall_level(MemberId id, unsigned class_mask,
         throw std::runtime_error("The hall cannot train this member now");
     }
     auto choice = rules_->default_advancement(member(id).character.sheet());
-    for (const auto klass : original_mask_classes(class_mask))
+    for (const auto klass :
+         original_mask_classes(class_mask, original::game_of(rules_->identity())))
     {
         choice.training["hall"].emplace_back(klass);
     }
@@ -2700,6 +2701,59 @@ void CampaignParty::train_at_hall_level(MemberId id, unsigned class_mask,
             .purse;
     advance(id, choice);
     state_.wealth = purse;
+}
+
+rules::TrainingChoiceGroup CampaignParty::hall_lessons(MemberId id, unsigned class_mask) const
+{
+    if (!rules_->trains_at_halls())
+    {
+        return {};
+    }
+    auto sheet = member(id).character.sheet();
+    if (sheet.original)
+    {
+        sheet.original->experience = static_cast<int>(member(id).experience);
+    }
+    std::vector<std::string> classes;
+    for (const auto klass :
+         original_mask_classes(class_mask, original::game_of(rules_->identity())))
+    {
+        classes.emplace_back(klass);
+    }
+    return rules_->hall_training_options(sheet, classes);
+}
+
+void CampaignParty::train_hall_lesson(MemberId id, unsigned class_mask, const std::string &grant)
+{
+    editable();
+    const auto &before = member(id);
+    const auto options = hall_lessons(id, class_mask).options;
+    const auto fee = original_training_fee(original::game_of(rules_->identity()));
+    if (std::ranges::find(state_.slots, id) == state_.slots.end() || before.vitals.dead ||
+        before.vitals.hit_points <= 0 || gold_value(state_.wealth, coin_rates()) < fee ||
+        std::ranges::none_of(options,
+                             [&grant](const auto &option)
+                             {
+                                 return option.id == grant;
+                             }))
+    {
+        throw std::runtime_error("The hall cannot teach this lesson now");
+    }
+    // A petition can change level. Record it in the chronological advancement
+    // stream, as drains are, so later rests and regained levels replay in order.
+    auto changed = before;
+    auto random = state_.random_state;
+    rules::AdvancementChoice choice;
+    choice.training["hall_petition"] = {grant};
+    rules_->roll_advancement(changed.character.sheet(), changed.experience, choice, random);
+    if (!changed.character.advance(*rules_, changed.vitals, choice))
+    {
+        throw std::runtime_error("The hall could not complete this petition");
+    }
+    const auto purse = pay_gold(state_.wealth, fee, coin_rates()).purse;
+    edit(id) = std::move(changed);
+    state_.wealth = purse;
+    state_.random_state = random;
 }
 
 ExperienceOffer CampaignParty::experience_offer(MemberId id, TrainingHall hall) const
@@ -3226,7 +3280,10 @@ bool carries_thieves_tools(const PartyMember &m)
 {
     const auto &items = m.character.inventory().items();
     return std::any_of(items.begin(), items.end(),
-                       [](const auto &item) { return item.definition_id == "thieves_tools"; });
+                       [](const auto &item)
+                       {
+                           return item.definition_id == "thieves_tools";
+                       });
 }
 
 // The Magic Lock Picks a member carries, if any (SECRET-1).
@@ -3296,11 +3353,12 @@ std::vector<DoorAttempt> CampaignParty::try_door(DoorMethod method, int difficul
         }
         const auto roll =
             method == DoorMethod::bash
-                ? rules_->roll_ability_check(m.character.sheet(), m.vitals, gear,
-                                             rules::Ability::strength, "athletics", random_state)
-                : rules_->roll_ability_check(m.character.sheet(), m.vitals, gear,
-                                             rules::Ability::dexterity, "sleight_of_hand",
-                                             random_state);
+                ? rules_->roll_ability_check_against(m.character.sheet(), m.vitals, gear,
+                                                     rules::Ability::strength, "athletics",
+                                                     difficulty, random_state)
+                : rules_->roll_ability_check_against(m.character.sheet(), m.vitals, gear,
+                                                     rules::Ability::dexterity, "sleight_of_hand",
+                                                     difficulty, random_state);
         const bool thieves_tools = method == DoorMethod::pick && carries_thieves_tools(m);
         const int needed = thieves_tools
                                ? doubled_chance_difficulty(difficulty, roll.total - roll.die)
@@ -3347,13 +3405,13 @@ std::vector<SecretDoorRoll> CampaignParty::search_for_secret_door(bool searching
     return rolls;
 }
 
-std::optional<MemberId> CampaignParty::cast_exploration_spell(std::string_view spell)
+std::optional<MemberId> CampaignParty::cast_exploration_spell(std::string_view spell, MemberId only)
 {
     editable();
     auto next = state_;
     for (const auto id : next.slots)
     {
-        if (!id)
+        if (!id || (only && id != only))
         {
             continue;
         }
@@ -3760,14 +3818,14 @@ bool CampaignParty::read_scroll(MemberId user, std::uint64_t item, MemberId targ
                 party.push_back({m.character.sheet(), m.vitals});
             }
         }
-        cast = rules_->use_party_scroll(reader.character.sheet(), reader.vitals, party, key,
-                                        action, next.random_state);
+        cast = rules_->use_party_scroll(reader.character.sheet(), reader.vitals, party, key, action,
+                                        next.random_state);
     }
     else
     {
-        cast = rules_->use_scroll(reader.character.sheet(), reader.vitals,
-                                  patient.character.sheet(), patient.vitals, key, action,
-                                  next.random_state);
+        cast =
+            rules_->use_scroll(reader.character.sheet(), reader.vitals, patient.character.sheet(),
+                               patient.vitals, key, action, next.random_state);
     }
     if (cast)
     {
@@ -4101,12 +4159,11 @@ void CampaignParty::validate(const PartyState &state, NpcPositions npc_positions
          std::find(state.slots.begin(), state.slots.end(), state.leader) == state.slots.end()) ||
         // Friends adds 2d4 to one member's Charisma (MAGIC-6).
         state.friends_bonus < 0 || state.friends_bonus > 8 ||
-        (state.friends_member &&
-         std::none_of(state.roster.begin(), state.roster.end(),
-                      [&](const auto &m)
-                      {
-                          return m.id == state.friends_member;
-                      })))
+        (state.friends_member && std::none_of(state.roster.begin(), state.roster.end(),
+                                              [&](const auto &m)
+                                              {
+                                                  return m.id == state.friends_member;
+                                              })))
     {
         throw std::runtime_error("Invalid party checkpoint");
     }
@@ -4511,8 +4568,7 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
             const bool items_changed = !actor.thrown_gear_left.empty() || actor.curse_lifted ||
                                        !actor.item_uses_left.empty() ||
                                        actor.readied_items.has_value() ||
-                                       !actor.item_pluses.empty() ||
-                                       !actor.items_gained.empty();
+                                       !actor.item_pluses.empty() || !actor.items_gained.empty();
             if (changed && !items_changed)
             {
                 thrown.push_back(std::move(*changed));

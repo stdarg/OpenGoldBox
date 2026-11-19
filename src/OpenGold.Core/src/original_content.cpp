@@ -63,6 +63,33 @@ std::map<unsigned, por::Equipment> load_item_definitions(const std::filesystem::
     {
         throw std::runtime_error(std::string(program) + " has no item name table");
     }
+    if (game == GoldBoxGame::champions_of_krynn)
+    {
+        // The knight's three creation items are constructed by CharGen, not ITEM0.
+        std::map<unsigned, por::Equipment> definitions;
+        constexpr std::array<unsigned, 3> kinds{36, 18, 37};
+        constexpr std::array<unsigned, 3> weights{450, 50, 60};
+        for (std::size_t at = 0; at < kinds.size(); ++at)
+        {
+            std::array<std::uint8_t, 63> raw{};
+            raw[46] = static_cast<std::uint8_t>(kinds[at]);
+            raw[49] = raw[46];
+            if (at == 0)
+            {
+                raw[48] = 47;
+            }
+            raw[55] = static_cast<std::uint8_t>(weights[at] & 255);
+            raw[56] = static_cast<std::uint8_t>(weights[at] >> 8);
+            por::Equipment item;
+            item.stored = por::decode_items(raw, game)->front();
+            item.base = types->at(kinds[at]);
+            item.bonuses = por::equipment_bonuses(item.stored, item.base);
+            item.decoded_name = por::item_name(item.stored, *words);
+            item.unidentified_name = item.decoded_name;
+            definitions.emplace(kinds[at], std::move(item));
+        }
+        return definitions;
+    }
     const por::detail::AreaFiles files(folder, *types, std::move(*words), game);
     constexpr auto definitions = "ITEM0.DAX";
     return files.item_definitions(definitions, files.archive(definitions).records.at(0).id);

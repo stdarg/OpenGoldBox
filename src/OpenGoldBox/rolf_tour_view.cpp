@@ -2381,10 +2381,16 @@ String choice_label(const std::string &resource, const std::string &choice)
     return i18n::campaign(resource + "/choices", choice);
 }
 
-String coin_list(const opengold::Coins &coins)
+String coin_list(const opengold::Coins &coins,
+                 opengold::GoldBoxGame game = opengold::GoldBoxGame::pool_of_radiance)
 {
     static constexpr std::array<const char *, 5> amounts{
         N_("{count} cp"), N_("{count} sp"), N_("{count} ep"), N_("{count} gp"), N_("{count} pp")};
+    static constexpr std::array<const char *, 5> champions_amounts{
+        N_("{count} silver"), N_("{count} copper"), N_("{count} bronze"), N_("{count} platinum"),
+        N_("{count} steel")};
+    const auto &labels =
+        game == opengold::GoldBoxGame::champions_of_krynn ? champions_amounts : amounts;
     String result;
     for (std::size_t coin = coins.size(); coin-- > 0;)
     {
@@ -2396,26 +2402,28 @@ String coin_list(const opengold::Coins &coins)
         {
             result += ", ";
         }
-        result += i18n::format(amounts[coin], {{"count", coins[coin]}});
+        result += i18n::format(labels[coin], {{"count", coins[coin]}});
     }
     return result;
 }
 
-String payment_notice(const CoinPayment &payment)
+String payment_notice(const CoinPayment &payment,
+                      opengold::GoldBoxGame game = opengold::GoldBoxGame::pool_of_radiance)
 {
     const auto &coins = payment.coins;
     const auto name = String::utf8(payment.payer.c_str());
     if (coins.change == opengold::Coins{})
     {
-        return i18n::format(
-            "{name} pays {paid} for {owed}.",
-            {{"name", name}, {"paid", coin_list(coins.paid)}, {"owed", coin_list(coins.owed)}});
+        return i18n::format("{name} pays {paid} for {owed}.",
+                            {{"name", name},
+                             {"paid", coin_list(coins.paid, game)},
+                             {"owed", coin_list(coins.owed, game)}});
     }
     return i18n::format("{name} pays {paid} for {owed} and receives {change} in change.",
                         {{"name", name},
-                         {"paid", coin_list(coins.paid)},
-                         {"owed", coin_list(coins.owed)},
-                         {"change", coin_list(coins.change)}});
+                         {"paid", coin_list(coins.paid, game)},
+                         {"owed", coin_list(coins.owed, game)},
+                         {"change", coin_list(coins.change, game)}});
 }
 
 // Dark red, for items the chosen member cannot use fully; light enough to read
@@ -2491,7 +2499,8 @@ String pounds(unsigned hundredths)
 // weapon's roll to hit and damage, armor or a shield's Armor Class on the
 // member, and every item's price and weight.
 String shop_item_hover(const opengold::ItemPreview &preview, const String &item,
-                       const String &buyer, std::uint32_t price)
+                       const String &buyer, std::uint32_t price,
+                       opengold::GoldBoxGame game = opengold::GoldBoxGame::pool_of_radiance)
 {
     String text = item;
     if (preview.attack)
@@ -2506,7 +2515,9 @@ String shop_item_hover(const opengold::ItemPreview &preview, const String &item,
                                      {"now", preview.armor_class_now}});
     }
     return text + "\n" +
-           i18n::format(N_("{price} gp, {weight} lb"),
+           i18n::format(game == opengold::GoldBoxGame::champions_of_krynn
+                            ? N_("{price} steel, {weight} lb")
+                            : N_("{price} gp, {weight} lb"),
                         {{"price", price}, {"weight", pounds(preview.weight_hundredths)}});
 }
 
@@ -2522,11 +2533,12 @@ std::int64_t carried_pounds(const opengold::CampaignParty &party, opengold::Memb
 [[maybe_unused]] constexpr std::array shop_refusals{N_("Not enough gold"),
                                                      N_("Too heavy to carry")};
 
-String loot_notice(const LootTaken &loot)
+String loot_notice(const LootTaken &loot,
+                   opengold::GoldBoxGame game = opengold::GoldBoxGame::pool_of_radiance)
 {
     PackedStringArray parts;
-    const auto coins =
-        coin_list({loot.wealth[0], loot.wealth[1], loot.wealth[2], loot.wealth[3], loot.wealth[4]});
+    const auto coins = coin_list(
+        {loot.wealth[0], loot.wealth[1], loot.wealth[2], loot.wealth[3], loot.wealth[4]}, game);
     if (!coins.is_empty())
     {
         parts.push_back(coins);
@@ -2617,9 +2629,16 @@ String gear_change_notices(const TourSnapshot &s)
     return notices;
 }
 
-String door_check_notice(const DoorCheck &check)
+String door_check_notice(const DoorCheck &check, opengold::GoldBoxGame game)
 {
     const auto name = String::utf8(check.member.c_str());
+    if (game == opengold::GoldBoxGame::champions_of_krynn &&
+        check.method == opengold::DoorMethod::bash)
+    {
+        // Krynn uses its native Strength table and variable-sided dice;
+        // the overall door result is printed below the attempts.
+        return i18n::format("{name} tries to force the door using Strength.", {{"name", name}});
+    }
     if (check.method == opengold::DoorMethod::knock)
     {
         return i18n::format("{name} casts Knock, and the lock opens.", {{"name", name}});
@@ -2662,7 +2681,8 @@ String secret_door_search_notice(const SecretDoorSearch &search)
 
 // Script dialogue followed by the coins the party's purses exchanged for it,
 // any checks made against a locked door and any search for a secret door.
-String event_dialogue(const std::string &resource, const TourSnapshot &s)
+String event_dialogue(const std::string &resource, const TourSnapshot &s,
+                      opengold::GoldBoxGame game = opengold::GoldBoxGame::pool_of_radiance)
 {
     // Our campaign host's own dialogue, such as a training hall's, is
     // translated from its messages; the script's text is original.
@@ -2670,11 +2690,11 @@ String event_dialogue(const std::string &resource, const TourSnapshot &s)
         s.host_dialogue.empty() ? rest_notice(resource, s.dialogue) : i18n::render(s.host_dialogue);
     for (const auto &payment : s.payments)
     {
-        result += "\n" + payment_notice(payment);
+        result += "\n" + payment_notice(payment, game);
     }
     for (const auto &loot : s.loot_taken)
     {
-        const auto notice = loot_notice(loot);
+        const auto notice = loot_notice(loot, game);
         if (!notice.is_empty())
         {
             result += (result.is_empty() ? "" : "\n") + notice;
@@ -2683,7 +2703,7 @@ String event_dialogue(const std::string &resource, const TourSnapshot &s)
     result += gear_change_notices(s);
     for (const auto &check : s.door_checks)
     {
-        result += "\n" + door_check_notice(check);
+        result += "\n" + door_check_notice(check, game);
     }
     if (!s.door_checks.empty())
     {
@@ -3041,6 +3061,8 @@ void RolfTourView::refresh()
         }
     }
     const bool loaded = session_ != nullptr;
+    const auto game = dax() ? dax()->game() : opengold::GoldBoxGame::pool_of_radiance;
+    const bool champions = game == opengold::GoldBoxGame::champions_of_krynn;
     static const TourSnapshot none;
     const TourSnapshot &s = loaded ? session_->snapshot() : none;
     refresh_rest();
@@ -3112,7 +3134,9 @@ void RolfTourView::refresh()
         const auto &buyer = campaign_->member(campaign_->selected());
         required_node<Label>(*this, "%Speaker")
             .set_text(i18n::format(
-                "Shop / buying for {name}: party {gold} gp, carrying {carried}/{capacity} lb",
+                champions
+                    ? N_("Shop / buying for {name}: party {gold} steel, carrying {carried}/{capacity} lb")
+                    : N_("Shop / buying for {name}: party {gold} gp, carrying {carried}/{capacity} lb"),
                 {{"name", String::utf8(buyer.character.sheet().name.c_str())},
                  {"gold", campaign_->purse_gold()},
                  {"carried", carried_pounds(*campaign_, campaign_->selected())},
@@ -3131,7 +3155,7 @@ void RolfTourView::refresh()
                               "Restart with --reset-game-path to choose your Pool of Radiance data folder.")
                 : s.dialogue.empty() && s.secret_door_searches.empty() && s.loot_taken.empty()
                     ? (s.tour_finished ? String() : i18n::text("Following Rolf..."))
-                    : event_dialogue(resource + "/dialogue", s));
+                    : event_dialogue(resource + "/dialogue", s, game));
     }
     required_node<Button>(*this, "%Continue")
         .set_disabled(fight_waits_on_picture_ || (!waiting && !shopping && !answer));
@@ -3220,10 +3244,12 @@ void RolfTourView::refresh()
                 // Stock without an equipment conversion stays for sale, disclosed.
                 const bool usable =
                     !opengold::equipment_conversion(item).starts_with("por:unsupported:");
-                choices->add_item(i18n::format(usable
-                                                   ? N_("{item} / {price} gp")
-                                                   : N_("{item} / {price} gp / cannot be equipped"),
-                                               {{"item", names[n]}, {"price", item.stored.value}}));
+                choices->add_item(i18n::format(
+                    champions ? (usable ? N_("{item} / {price} steel")
+                                        : N_("{item} / {price} steel / cannot be equipped"))
+                              : (usable ? N_("{item} / {price} gp")
+                                        : N_("{item} / {price} gp / cannot be equipped")),
+                    {{"item", names[n]}, {"price", item.stored.value}}));
             }
         }
         else if (!s.host_choices.empty())
@@ -3294,7 +3320,7 @@ void RolfTourView::refresh()
             {
                 choices->set_item_tooltip(row, shop_item_hover(campaign_->preview(chosen, item),
                                                                i18n::text(item.label()), name,
-                                                               item.stored.value));
+                                                               item.stored.value, game));
             }
         }
         std::vector<String> notes;
@@ -3339,7 +3365,7 @@ void RolfTourView::refresh()
         {
             if (line.is_empty())
             {
-                line = loot_notice(loot);
+                line = loot_notice(loot, game);
             }
         }
         // The dark red note follows the coins or the prompt, not a take or
@@ -3368,7 +3394,8 @@ void RolfTourView::refresh()
     if (waiting && !s.diagnostic.empty())
     {
         required_node<RichTextLabel>(*this, "%Dialogue")
-            .set_text(i18n::text(s.diagnostic) + "\n" + event_dialogue(resource + "/dialogue", s));
+            .set_text(i18n::text(s.diagnostic) + "\n" +
+                      event_dialogue(resource + "/dialogue", s, game));
     }
     if (const auto *campaign = dax())
     {
@@ -3387,7 +3414,8 @@ void RolfTourView::refresh()
         const auto &m = campaign_->member(campaign_->selected());
         required_node<Label>(*this, "%Party")
             .set_text(i18n::format(
-                "{name} / HP {current}/{maximum}\nparty {gold} gp / {items}",
+                champions ? N_("{name} / HP {current}/{maximum}\nparty {gold} steel / {items}")
+                          : N_("{name} / HP {current}/{maximum}\nparty {gold} gp / {items}"),
                 {{"name", String::utf8(m.character.sheet().name.c_str())},
                  {"current", m.vitals.hit_points},
                  {"maximum", campaign_->hit_point_maximum(campaign_->selected())},

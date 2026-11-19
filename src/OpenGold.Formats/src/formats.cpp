@@ -20,6 +20,58 @@ struct RecordResult
     std::vector<std::uint8_t> bytes;
 };
 
+// Decode the actual table entry, not another entry sharing its ID. Some
+// original archives repeat IDs; indexed lookup still chooses the first one.
+RecordResult extract_entry(std::span<const std::uint8_t> dax, std::size_t toc_size,
+                           std::size_t header)
+{
+    const std::size_t offset = read_u32(dax, header + 1);
+    const std::size_t raw_size = read_u16(dax, header + 5);
+    const std::size_t compressed_size = read_u16(dax, header + 7);
+    if (offset > dax.size() - 2 - toc_size)
+    {
+        return {};
+    }
+    const std::size_t data_start = 2 + toc_size + offset;
+    if (data_start > dax.size() || compressed_size > dax.size() - data_start)
+    {
+        return {};
+    }
+
+    std::vector<std::uint8_t> output;
+    output.reserve(raw_size);
+    std::size_t input = data_start;
+    const std::size_t input_end = data_start + compressed_size;
+    while (input < input_end)
+    {
+        const auto command = static_cast<std::int8_t>(dax[input++]);
+        if (command >= 0)
+        {
+            const std::size_t count = static_cast<std::size_t>(command) + 1;
+            if (count > input_end - input || count > raw_size - output.size())
+            {
+                return {};
+            }
+            output.insert(output.end(), dax.begin() + input, dax.begin() + input + count);
+            input += count;
+        }
+        else
+        {
+            const std::size_t count = static_cast<std::size_t>(-command);
+            if (input >= input_end || count > raw_size - output.size())
+            {
+                return {};
+            }
+            output.insert(output.end(), count, dax[input++]);
+        }
+    }
+    if (output.size() != raw_size)
+    {
+        return {};
+    }
+    return {FormatResult::ok, std::move(output)};
+}
+
 RecordResult extract_record(std::span<const std::uint8_t> dax, std::uint8_t wanted_id)
 {
     if (dax.size() < 2)
@@ -31,59 +83,12 @@ RecordResult extract_record(std::span<const std::uint8_t> dax, std::uint8_t want
     {
         return {};
     }
-
-    for (std::size_t entry = 0; entry < toc_size / 9; ++entry)
+    for (std::size_t header = 2; header < 2 + toc_size; header += 9)
     {
-        const std::size_t header = 2 + entry * 9;
-        if (dax[header] != wanted_id)
+        if (dax[header] == wanted_id)
         {
-            continue;
+            return extract_entry(dax, toc_size, header);
         }
-        const std::size_t offset = read_u32(dax, header + 1);
-        const std::size_t raw_size = read_u16(dax, header + 5);
-        const std::size_t compressed_size = read_u16(dax, header + 7);
-        if (offset > dax.size() - 2 - toc_size)
-        {
-            return {};
-        }
-        const std::size_t data_start = 2 + toc_size + offset;
-        if (data_start > dax.size() || compressed_size > dax.size() - data_start)
-        {
-            return {};
-        }
-
-        std::vector<std::uint8_t> output;
-        output.reserve(raw_size);
-        std::size_t input = data_start;
-        const std::size_t input_end = data_start + compressed_size;
-        while (input < input_end)
-        {
-            const auto command = static_cast<std::int8_t>(dax[input++]);
-            if (command >= 0)
-            {
-                const std::size_t count = static_cast<std::size_t>(command) + 1;
-                if (count > input_end - input || count > raw_size - output.size())
-                {
-                    return {};
-                }
-                output.insert(output.end(), dax.begin() + input, dax.begin() + input + count);
-                input += count;
-            }
-            else
-            {
-                const std::size_t count = static_cast<std::size_t>(-command);
-                if (input >= input_end || count > raw_size - output.size())
-                {
-                    return {};
-                }
-                output.insert(output.end(), count, dax[input++]);
-            }
-        }
-        if (output.size() != raw_size)
-        {
-            return {};
-        }
-        return {FormatResult::ok, std::move(output)};
     }
     return {FormatResult::not_found, {}};
 }
@@ -123,18 +128,12 @@ DaxDecodeResult decode_dax_archive(std::span<const std::uint8_t> bytes)
     {
         return {};
     }
-    std::array<bool, 256> seen{};
     std::vector<DaxRecord> records;
     records.reserve(toc_size / 9);
     for (std::size_t offset = 2; offset < 2 + toc_size; offset += 9)
     {
         const auto id = bytes[offset];
-        if (seen[id])
-        {
-            return {};
-        }
-        seen[id] = true;
-        auto record = extract_record(bytes, id);
+        auto record = extract_entry(bytes, toc_size, offset);
         if (record.status != FormatResult::ok)
         {
             return {};

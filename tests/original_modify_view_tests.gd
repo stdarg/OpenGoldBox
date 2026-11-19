@@ -18,11 +18,13 @@ var folder := ""
 var srd := false
 var ua_design := ""
 var shots := ""
+var champions_cleric := false
 
 func _initialize() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--game="): folder = arg.trim_prefix("--game=")
 		if arg == "--rules=srd": srd = true
+		if arg == "--cleric-deity-check": champions_cleric = true
 		if arg.begins_with("--ua-design="): ua_design = arg.trim_prefix("--ua-design=")
 		if arg.begins_with("--shots="): shots = arg.trim_prefix("--shots=")
 	call_deferred("run_checks")
@@ -141,7 +143,23 @@ func make_character(class_name_shown: String) -> void:
 	await press(current_scene, "Next")
 	await choose("Neutral Good" if class_name_shown != "Paladin" else "Lawful Good")
 	await press(current_scene, "Next")
+	if champions_cleric:
+		var faith: OptionButton = current_scene.get_node("Background")
+		require(faith.is_visible_in_tree() and current_scene.get_node("BackgroundLabel").text == "Deity", "The native cleric exposes the existing deity selector")
+		var selected := false
+		for i in range(faith.item_count):
+			if faith.get_item_text(i) == "Mishakal":
+				require(not faith.is_item_disabled(i), "Mishakal accepts the good cleric")
+				faith.select(i)
+				faith.item_selected.emit(i)
+				selected = true
+				await settle()
+				break
+		require(selected and faith.get_item_text(faith.selected) == "Mishakal", "The cleric keeps the selected deity")
 	await press(current_scene, "Roll")
+	if folder == "COK":
+		require(current_scene.get_node("SwapHint").text.contains("Steel"), "Champions creation shows starting steel")
+	if champions_cleric: await shot("champions-cleric-deity")
 	var on_roll: Button = current_scene.get_node("ModifyRoll")
 	require(on_roll.visible == (folder == "UA"), "Only the kit's roll offers Modify")
 	if folder == "UA":
@@ -193,7 +211,7 @@ func run_checks() -> void:
 		print("Modify view passed: the SRD offers none.")
 		quit(0)
 		return
-	await make_character("Magic-User" if folder == "TREASURE" else "Fighter")
+	await make_character("Cleric" if champions_cleric else "Magic-User" if folder == "TREASURE" else "Fighter")
 	require(modify.visible and not modify.disabled, "A new member can be modified")
 	await press(screen, "PartyPanel/ActionRow1/Modify")
 	var dialog := modify_dialog()
@@ -231,7 +249,7 @@ func run_checks() -> void:
 	for step in range(220):
 		if button("Lower", 0).disabled: break
 		await press(dialog, "Margin/Rows/Grid/Lower0")
-	var lowest := "3" if treasures else "9"
+	var lowest := "6" if champions_cleric else "3" if treasures else "9"
 	require(value(0) == lowest, "Strength stops at its class's minimum: " + value(0))
 	if renames:
 		var field: LineEdit = dialog.get_node("Margin/Rows/NameRow/Name")

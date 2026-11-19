@@ -57,6 +57,11 @@ struct MusicSong
     std::uint16_t tick_divisor{};
     std::uint8_t velocity{};
     std::vector<MusicTrack> tracks;
+    // The early Krynn driver uses nine melodic voices and a different timer.
+    std::size_t first_adlib_track{1};
+    std::size_t adlib_voice_count{3};
+    double ticks_per_second{music_ticks_per_second};
+    bool rhythm_enabled{true};
 };
 
 struct MusicBank
@@ -75,7 +80,13 @@ struct MusicBank
 
 // Whether the bytes are the music driver program that plays these banks. It is
 // recognized, not run: OpenGoldBox reads the banks instead.
-[[nodiscard]] bool is_music_driver(std::span<const std::uint8_t> bytes) noexcept;
+[[nodiscard]] bool is_music_driver(std::span<const std::uint8_t> bytes,
+                                   GoldBoxGame game = GoldBoxGame::pool_of_radiance) noexcept;
+
+// Champions' score and the AdLib driver's instrument data, read as data only.
+[[nodiscard]] std::optional<MusicBank> decode_champions_music(std::span<const std::uint8_t> bytes);
+[[nodiscard]] std::optional<std::vector<std::vector<std::uint8_t>>>
+decode_champions_instruments(std::span<const std::uint8_t> driver);
 
 } // namespace opengold
 

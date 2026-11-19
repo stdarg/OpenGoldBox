@@ -1,5 +1,6 @@
 #include "opengold/pool_radiance.h"
 #include "opengold/curse_records.h"
+#include "opengold/champions_records.h"
 #include "opengold/late_records.h"
 #include "opengold/secret_records.h"
 #include "little_endian.h"
@@ -175,6 +176,8 @@ std::optional<CharacterRecord> decode_character(std::span<const std::uint8_t> by
         return curse::decode_creature(bytes);
     case GoldBoxGame::secret_of_the_silver_blades:
         return secret::decode_creature(bytes);
+    case GoldBoxGame::champions_of_krynn:
+        return champions::decode_creature(bytes);
     case GoldBoxGame::pools_of_darkness:
     case GoldBoxGame::treasures_of_the_savage_frontier:
         return late::decode_creature(bytes, game);
@@ -320,7 +323,9 @@ std::optional<std::vector<std::string>> decode_item_words(std::span<const std::u
 std::optional<std::vector<std::string>> decode_item_words(std::span<const std::uint8_t> image,
                                                           GoldBoxGame game)
 {
-    const std::size_t count = game == GoldBoxGame::secret_of_the_silver_blades        ? 123
+    const std::size_t count = (game == GoldBoxGame::secret_of_the_silver_blades ||
+                               game == GoldBoxGame::champions_of_krynn)
+                                  ? 123
                               : game == GoldBoxGame::pools_of_darkness                ? 125
                               : game == GoldBoxGame::treasures_of_the_savage_frontier ? 181
                                                                                       : 255;

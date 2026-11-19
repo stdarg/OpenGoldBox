@@ -103,6 +103,8 @@ inline constexpr int kit_effect_offset = 600;
 // (above 127) vga_effect_offset higher.
 inline constexpr int gateway_effect_offset = 1000;
 inline constexpr int vga_effect_offset = 1200;
+// Champions reuses numbers for different powers, including draconian deaths.
+inline constexpr int champions_effect_offset = 1400;
 
 // The number the fight knows a game's own effect by (its records', items'
 // and spells'): Pool of Radiance's as they are; Curse's that work as Pool of

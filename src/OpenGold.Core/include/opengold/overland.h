@@ -40,6 +40,7 @@ struct OverlandWorld
     {
         std::uint8_t cost{}, frame{}, clearance{}, blocking{};
     };
+
     std::vector<CombatTile> combat_tiles;
 
     // The valley's healing once the Pyramid's pollution is stopped (the
@@ -105,9 +106,8 @@ struct OverlandView
                                       std::span<const WallTile> marks, unsigned x, unsigned y,
                                       MapDirection facing);
 
-[[nodiscard]] Image render_overland_window(const OverlandWorld &world,
-                                           std::span<const Image> tiles, const Image &party_icon,
-                                           const OverlandView &view);
+[[nodiscard]] Image render_overland_window(const OverlandWorld &world, std::span<const Image> tiles,
+                                           const Image &party_icon, const OverlandView &view);
 
 // The original's battlefield for a fight on the overland square of tile
 // `tile`: open ground, with trees, ground cover, a road or ridge with its
@@ -146,6 +146,9 @@ struct GatewayWilderness
 
 [[nodiscard]] std::optional<GatewayWilderness>
 gateway_wilderness(std::span<const std::uint8_t> image);
+
+[[nodiscard]] std::optional<GatewayWilderness>
+champions_wilderness(std::span<const std::uint8_t> image);
 
 // Gateway's field out of doors (its BuildWildernessArena): grass, a river by
 // chance on rough ground, trees and scattered features, as the ground's class

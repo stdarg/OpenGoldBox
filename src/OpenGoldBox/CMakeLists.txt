@@ -658,11 +658,13 @@ if(OPENGOLD_BUILD_TESTS)
     # Each later game's Modify Character (original_modify_view_tests), with its
     # name and, in Treasures, a magic-user's spell book; the kit's on its roll
     # too. Skipped without a game's files.
-    foreach(folder CURSE SECRET GATEWAY DARKNESS TREASURE)
+    foreach(folder CURSE SECRET GATEWAY DARKNESS TREASURE COK)
         string(TOLOWER "${folder}" lower)
         opengold_settings_check(original_modify_${lower} original_modify_view_tests
             "Modify view passed: ${folder}" "-DARGS=--game=${folder}\;--rules=original")
     endforeach()
+    opengold_settings_check(champions_cleric original_modify_view_tests
+        "Modify view passed: COK" "-DARGS=--game=COK\;--rules=original\;--cleric-deity-check")
     opengold_settings_check(original_modify_ua original_modify_view_tests
         "Modify view passed: UA"
         "-DARGS=--game=UA\;--rules=original\;--ua-design=${OPENGOLD_UA_DESIGN_FIXTURE}")

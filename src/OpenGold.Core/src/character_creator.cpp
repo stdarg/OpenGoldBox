@@ -276,13 +276,19 @@ bool CharacterCreator::rolls_in_place() const
 
 void CharacterCreator::keep_allowed(CharacterDraft &candidate) const
 {
-    for (const auto field : {CreationField::character_class, CreationField::alignment})
+    for (const auto field :
+         {CreationField::character_class, CreationField::background, CreationField::alignment})
     {
         auto &chosen = field == CreationField::character_class ? candidate.character_class
+                       : field == CreationField::background    ? candidate.background
                                                                : candidate.alignment;
         if (rules_->allows(candidate, field, chosen))
         {
             continue;
+        }
+        if (field == CreationField::background)
+        {
+            chosen.clear();
         }
         for (const auto &option : rules_->choices(field))
         {
@@ -494,8 +500,7 @@ void CharacterCreator::select(CreationField field, std::string_view id)
     keep_allowed(candidate);
     // The original's roll follows from the race and class (the age, the
     // limits, the Hit Dice and the gold), so another of either rolls again.
-    if (rolls_in_place() &&
-        (candidate.race != draft_.race || candidate.character_class != draft_.character_class))
+    if (rolls_in_place() && rules_->choices_require_reroll(draft_, candidate))
     {
         candidate.rules_data.clear();
         candidate.rolled = false;
