@@ -10,6 +10,7 @@ namespace opengold::original
 namespace
 {
 using buck_rogers::Ship;
+using Status = BuckRogersStatus;
 
 constexpr std::size_t system_count = Ship::systems;
 constexpr std::size_t mount_count = 8;
@@ -31,6 +32,9 @@ constexpr int party_gunnery_bonus = 3;
 constexpr int crew_per_repair_pass = 10;
 // The dying fall into a coma once they have been dying for more rounds.
 constexpr int most_dying_rounds = 9;
+// The saving throw a burst of enemy fire tests (types.pas saves[2]).
+constexpr std::size_t blast_save = 2;
+constexpr std::size_t dexterity = 1;
 
 constexpr std::array<ShipWeaponFacts, 8> weapon_table{{
     {6, 0, 10, 1, "Beam laser"},
@@ -97,29 +101,33 @@ void require_buck_rogers(GoldBoxGame game)
     return side == ShipSide::party ? ShipSide::enemy : ShipSide::party;
 }
 
-[[nodiscard]] bool okay(const ShipCrewMember &member) noexcept
+[[nodiscard]] bool okay(const TeamMember &member) noexcept
 {
-    return member.status == CrewStatus::okay;
+    return status_of(member.character) == Status::okay;
 }
 
 // The repair skill each system takes (gdconsts.pas repairSkills); fuel has
 // none.
-[[nodiscard]] int repair_skill(const ShipCrewMember &member, ShipSystem system)
+[[nodiscard]] int repair_skill(const TeamMember &member, ShipSystem system)
 {
+    const auto value = [&member](Skill skill)
+    {
+        return skill_value(member.character, skill);
+    };
     switch (system)
     {
     case ShipSystem::hull:
-        return member.repair_hull;
+        return value(Skill::repair_rocket_hull);
     case ShipSystem::sensors:
-        return member.repair_electrical;
+        return value(Skill::repair_electrical);
     case ShipSystem::controls:
-        return member.repair_mechanical;
+        return value(Skill::repair_mechanical);
     case ShipSystem::life_support:
-        return member.repair_life_support;
+        return value(Skill::repair_life_support);
     case ShipSystem::engines:
-        return member.repair_nuclear_engine;
+        return value(Skill::repair_nuclear_engine);
     case ShipSystem::weapons:
-        return member.repair_weapon;
+        return value(Skill::repair_weapon);
     case ShipSystem::fuel:
         break;
     }
@@ -203,7 +211,7 @@ int ship_speed(const Ship &ship, int boosts)
 
 ShipCombat::ShipCombat(ShipCombatStart start, ShipDice dice)
     : game_(start.game), enemy_ship_number_(start.enemy_ship_number), dice_(std::move(dice)),
-      crew_(std::move(start.crew))
+      options_(start.options), crew_(std::move(start.crew)), dying_rounds_(crew_.size(), 0)
 {
     require_buck_rogers(game_);
     experience_ = ship_combat_experience(game_, enemy_ship_number_);
@@ -231,16 +239,16 @@ ShipCombat::ShipCombat(ShipCombatStart start, ShipDice dice)
     // stands down.
     for (std::size_t member = 0; member < crew_.size(); ++member)
     {
-        crew_[member].dying_rounds = 0;
-        if (!crew_[member].pilot)
+        auto &character = crew_[member].character;
+        if (character.pilot == 0)
         {
             continue;
         }
         if (pilot_)
         {
-            crew_[member].pilot = false;
+            character.pilot = 0;
         }
-        else if (crew_[member].enabled)
+        else if (character.enabled != 0)
         {
             pilot_ = member;
         }
@@ -298,7 +306,7 @@ int ShipCombat::boosts(ShipSide side) const noexcept
     return state(side).boosts;
 }
 
-std::span<const ShipCrewMember> ShipCombat::crew() const noexcept
+std::span<const TeamMember> ShipCombat::crew() const noexcept
 {
     return crew_;
 }
@@ -366,6 +374,10 @@ void ShipCombat::run()
                 start_party_turn();
                 if (phase_ == Phase::helpless)
                 {
+                    if (helpless_round_ && !enemy_progress_)
+                    {
+                        break_off();
+                    }
                     return;
                 }
             }
@@ -396,6 +408,8 @@ void ShipCombat::play_round()
     }
     phase_ = Phase::member_turn;
     member_ = crew_.size();
+    helpless_round_ = true;
+    enemy_progress_ = false;
     run();
 }
 
@@ -407,7 +421,9 @@ void ShipCombat::start_party_turn()
     if (!combat_over_ && std::none_of(crew_.begin(), crew_.end(), okay))
     {
         phase_ = Phase::helpless;
+        return;
     }
+    helpless_round_ = false;
 }
 
 // Members act in party order; one who fell earlier in the round is passed.
@@ -477,23 +493,22 @@ std::vector<ShipOrder> ShipCombat::legal_orders() const
         }
         return orders;
     }
-    const auto &crew_member = crew_[member];
-    if (!command_taken_)
+    if (!command_taken_ && (options_.command_every_round || pilot_down()))
     {
         orders.push_back({.action = ShipAction::command});
     }
-    if (!patients(member).empty())
+    if (!find_patients(member, crew_).empty())
     {
         orders.push_back({.action = ShipAction::aid});
     }
-    if (member_skill(member, crew_member.repair_nuclear_engine) > 0 &&
+    if (member_skill(member, Skill::repair_nuclear_engine) > 0 &&
         party.ship.system_status[index(ShipSystem::engines)] > 0 &&
         party.boosts < most_party_boosts)
     {
         orders.push_back({.action = ShipAction::boost_engines});
     }
     if (party.ship.system_status[index(ShipSystem::sensors)] > 0 &&
-        member_skill(member, crew_member.sensor_operation) > 0)
+        member_skill(member, Skill::sensor_operation) > 0)
     {
         orders.push_back({.action = ShipAction::sensors});
     }
@@ -556,7 +571,7 @@ void ShipCombat::submit(const ShipOrder &order)
     {
         // Sensor Operation at twice the skill (charhlp.pas SelectSkillCharacter,
         // difficulty 1).
-        const bool success = percent(2 * member_skill(member, crew_[member].sensor_operation));
+        const bool success = percent(2 * member_skill(member, Skill::sensor_operation));
         emit({.kind = ShipEventKind::sensors,
               .side = ShipSide::party,
               .member = member,
@@ -648,9 +663,13 @@ void ShipCombat::continue_enemy_turn()
         return;
     }
     const auto &enemy = state(ShipSide::enemy).ship;
-    bool boost_pending = strategy_ == Strategy::flee && ship_can_move(enemy) &&
-                         speed(ShipSide::enemy) < speed(ShipSide::party) && enemy_can_maneuver_ &&
-                         percent(enemy.system_skill);
+    const bool may_boost = strategy_ == Strategy::flee && ship_can_move(enemy) &&
+                           speed(ShipSide::enemy) < speed(ShipSide::party) && enemy_can_maneuver_;
+    if (may_boost && enemy.system_skill > 0)
+    {
+        note_enemy_progress();
+    }
+    bool boost_pending = may_boost && percent(enemy.system_skill);
 
     burst_pending_ = false;
     burst_damage_ = 0;
@@ -731,6 +750,8 @@ void ShipCombat::continue_enemy_turn()
 // The round's moves take effect at its end, and the dying count a round.
 void ShipCombat::end_round()
 {
+    const int range_before = range_;
+    const bool could_maneuver = enemy_can_maneuver_;
     if (!combat_over_)
     {
         if (next_range_ < 0)
@@ -751,21 +772,25 @@ void ShipCombat::end_round()
     }
     for (std::size_t member = 0; member < crew_.size(); ++member)
     {
-        auto &crew_member = crew_[member];
-        if (crew_member.status != CrewStatus::dying)
+        auto &character = crew_[member].character;
+        if (status_of(character) != Status::dying)
         {
             continue;
         }
-        if (++crew_member.dying_rounds > most_dying_rounds)
+        if (++dying_rounds_[member] > most_dying_rounds)
         {
-            crew_member.status = CrewStatus::comatose;
+            set_status(character, Status::comatose);
             emit({.kind = ShipEventKind::member_comatose,
                   .side = ShipSide::party,
                   .member = member,
-                  .status = CrewStatus::comatose});
+                  .status = Status::comatose});
         }
     }
     range_ = next_range_;
+    if (range_ != range_before || enemy_can_maneuver_ != could_maneuver)
+    {
+        note_enemy_progress();
+    }
 }
 
 void ShipCombat::finish()
@@ -797,9 +822,29 @@ bool ShipCombat::percent(int chance)
     return die(100) <= chance;
 }
 
-int ShipCombat::member_skill(std::size_t member, int value) const
+// A skill's value (charhlp.pas SkillValue): none for a member who cannot act.
+int ShipCombat::member_skill(std::size_t member, Skill skill) const
 {
-    return crew_[member].enabled ? value : 0;
+    return skill_value(crew_[member].character, skill);
+}
+
+// No one at the helm, or its pilot dead or incapacitated: COMMAND's time, as
+// the Rule Book says.
+bool ShipCombat::pilot_down() const
+{
+    return !pilot_ || !okay(crew_[*pilot_]);
+}
+
+// The Pilot Rocket the team's ship dodges a ram with: its pilot's, or with no
+// one at the helm 0, or the ship's own pilot value as the original has it
+// (ShipCombatOptions).
+int ShipCombat::party_dodge_skill() const
+{
+    if (pilot_)
+    {
+        return member_skill(*pilot_, Skill::pilot_rocket);
+    }
+    return options_.empty_helm_dodges ? state(ShipSide::party).ship.pilot_skill : 0;
 }
 
 ShipCombat::ShipState &ShipCombat::state(ShipSide side) noexcept
@@ -889,9 +934,13 @@ int ShipCombat::target_number(ShipSide attacker, std::size_t mount,
     int total = shooter.gunnery;
     if (gunner)
     {
-        const auto &member = crew_[*gunner];
-        total = member.combat_value + buck_rogers_missile_adjustment(member.dexterity) +
-                (member.rocketjock ? member.level : 0);
+        const auto &character = crew_[*gunner].character;
+        total =
+            character.base_combat + buck_rogers_missile_adjustment(character.abilities[dexterity]);
+        if (career_from_record(character.career) == Profession::rocket_jock)
+        {
+            total += character.level;
+        }
     }
     if (attacker == ShipSide::party)
     {
@@ -950,7 +999,7 @@ bool ShipCombat::can_reload(ShipSide side, std::size_t mount) const
 
 std::vector<ShipOrder> ShipCombat::jury_rig_choices(std::size_t member) const
 {
-    if (member_skill(member, crew_[member].jury_rig) <= 0)
+    if (member_skill(member, Skill::jury_rig) <= 0)
     {
         return {};
     }
@@ -978,28 +1027,6 @@ std::vector<ShipOrder> ShipCombat::jury_rig_choices(std::size_t member) const
     return choices;
 }
 
-// The members AID would treat: the dying, for a member with First Aid or
-// Treat Light Wounds, and the stunned, for one with Treat Stun (viewchar.pas
-// FindPatients).
-std::vector<std::size_t> ShipCombat::patients(std::size_t aider) const
-{
-    const auto &medic = crew_[aider];
-    const bool bandages = member_skill(aider, medic.first_aid) > 0 ||
-                          member_skill(aider, medic.treat_light_wounds) > 0;
-    const bool treats_stun = member_skill(aider, medic.treat_stun) > 0;
-    std::vector<std::size_t> found;
-    for (std::size_t member = 0; member < crew_.size(); ++member)
-    {
-        const auto &patient = crew_[member];
-        if ((patient.status == CrewStatus::dying && bandages) ||
-            (patient.enabled && patient.stunned && treats_stun))
-        {
-            found.push_back(member);
-        }
-    }
-    return found;
-}
-
 // At range 1 or less the enemy fires rather than rams when its weapons'
 // chance outweighs the team pilot's chance to dodge (shipcbt.pas
 // EnemyFireWorthwhile).
@@ -1010,10 +1037,10 @@ bool ShipCombat::enemy_fire_worthwhile() const
     {
         return false;
     }
-    // With no one at the helm there is no pilot's skill; the original reads
-    // one from no one.
-    const int pilot_value = pilot_ ? member_skill(*pilot_, crew_[*pilot_].pilot_rocket) : 0;
-    const int dodge_score = pilot_value + (speed(ShipSide::party) - speed(ShipSide::enemy)) * 10;
+    // The dodge the team's ship would try; with no one at the helm the
+    // original weighs the skill of no one.
+    const int dodge_score =
+        party_dodge_skill() + (speed(ShipSide::party) - speed(ShipSide::enemy)) * 10;
     if (dodge_score >= 90)
     {
         return true;
@@ -1059,6 +1086,7 @@ void ShipCombat::fire(ShipSide side, std::size_t mount, std::optional<std::size_
     {
         burst_pending_ = true;
         burst_damage_ += damage;
+        note_enemy_progress();
     }
     if (hit)
     {
@@ -1229,7 +1257,7 @@ void ShipCombat::hurt_crew(int chance)
         if (chance < 100)
         {
             const int save = die(20);
-            if (save == 20 || (save != 1 && save >= crew_[member].blast_save))
+            if (save == 20 || (save != 1 && save >= crew_[member].character.saves[blast_save]))
             {
                 emit({.kind = ShipEventKind::member_leaps_clear,
                       .side = ShipSide::party,
@@ -1248,19 +1276,18 @@ void ShipCombat::explode_crew()
 {
     for (std::size_t member = 0; member < crew_.size(); ++member)
     {
-        auto &crew_member = crew_[member];
-        if (crew_member.status == CrewStatus::dead)
+        auto &character = crew_[member].character;
+        if (status_of(character) == Status::dead)
         {
             continue;
         }
-        crew_member.status = CrewStatus::dead;
-        crew_member.hit_points = 0;
-        crew_member.enabled = false;
-        crew_member.pilot = false;
+        set_status(character, Status::dead);
+        character.hit_points = 0;
+        character.pilot = 0;
         emit({.kind = ShipEventKind::member_killed,
               .side = ShipSide::party,
               .member = member,
-              .status = CrewStatus::dead});
+              .status = Status::dead});
     }
     pilot_.reset();
 }
@@ -1269,31 +1296,33 @@ void ShipCombat::explode_crew()
 // (charhlp.pas InflictDamage). A pilot who falls leaves the helm.
 void ShipCombat::inflict(std::size_t member, int damage)
 {
-    auto &crew_member = crew_[member];
-    const int overkill = std::max(damage - crew_member.hit_points, 0);
-    crew_member.hit_points = std::max(crew_member.hit_points - damage, 0);
+    auto &character = crew_[member].character;
+    const int hit_points = character.hit_points;
+    const int overkill = std::max(damage - hit_points, 0);
+    character.hit_points = static_cast<std::uint16_t>(std::max(hit_points - damage, 0));
+    auto status = status_of(character);
     if (overkill > 29)
     {
-        crew_member.status = CrewStatus::dead;
+        status = Status::dead;
     }
     else if (overkill > 9)
     {
-        crew_member.status = CrewStatus::comatose;
+        status = Status::comatose;
     }
     else if (overkill > 0)
     {
-        crew_member.status = CrewStatus::dying;
+        status = Status::dying;
     }
-    else if (crew_member.hit_points == 0)
+    else if (character.hit_points == 0)
     {
-        crew_member.status = CrewStatus::unconscious;
+        status = Status::unconscious;
     }
-    if (crew_member.status != CrewStatus::okay)
+    if (status != Status::okay)
     {
-        crew_member.enabled = false;
+        set_status(character, status);
         if (pilot_ == member)
         {
-            crew_member.pilot = false;
+            character.pilot = 0;
             pilot_.reset();
             command_taken_ = false;
         }
@@ -1302,7 +1331,7 @@ void ShipCombat::inflict(std::size_t member, int damage)
           .side = ShipSide::party,
           .member = member,
           .amount = damage,
-          .status = crew_member.status});
+          .status = status});
 }
 
 // Each hull takes the other ship's tonnage, unless the rammed ship, moving,
@@ -1327,12 +1356,15 @@ void ShipCombat::ram(ShipSide rammer, std::optional<bool> party_dodges)
                                : party_dodges.value_or(false);
         if (tries)
         {
-            int skill = rammed_ship.pilot_skill;
-            if (rammed == ShipSide::party && pilot_)
+            const int skill =
+                rammed == ShipSide::party ? party_dodge_skill() : rammed_ship.pilot_skill;
+            const int chance = skill + (speed(rammed) - speed(rammer)) * 10;
+            dodged = percent(chance);
+            // A dodge that could not fail leaves nothing to change.
+            if (rammer == ShipSide::enemy && chance < 100)
             {
-                skill = member_skill(*pilot_, crew_[*pilot_].pilot_rocket);
+                note_enemy_progress();
             }
-            dodged = percent(skill + (speed(rammed) - speed(rammer)) * 10);
         }
     }
     if (dodged)
@@ -1358,7 +1390,7 @@ void ShipCombat::move(ShipSide side, ShipEventKind kind, int distance)
 void ShipCombat::boost(ShipSide side, std::optional<std::size_t> engineer)
 {
     auto &ship_state = state(side);
-    const int skill = engineer ? member_skill(*engineer, crew_[*engineer].repair_nuclear_engine)
+    const int skill = engineer ? member_skill(*engineer, Skill::repair_nuclear_engine)
                                : ship_state.ship.system_skill;
     const bool success = percent(skill / 2);
     const int damage = success ? 0 : die(100);
@@ -1381,8 +1413,12 @@ void ShipCombat::jury_rig(ShipSide side, std::optional<std::size_t> engineer,
                           const ShipOrder &choice)
 {
     auto &ship_state = state(side);
-    const int skill = engineer ? member_skill(*engineer, crew_[*engineer].jury_rig)
-                               : ship_state.ship.system_skill;
+    const int skill =
+        engineer ? member_skill(*engineer, Skill::jury_rig) : ship_state.ship.system_skill;
+    if (side == ShipSide::enemy && skill > 0)
+    {
+        note_enemy_progress();
+    }
     const bool success = percent(skill);
     int amount = 0;
     if (success && choice.system == ShipSystem::weapons)
@@ -1467,6 +1503,10 @@ bool ShipCombat::enemy_jury_rig()
 
 void ShipCombat::reload(ShipSide side, std::size_t mount, std::optional<std::size_t> loader)
 {
+    if (side == ShipSide::enemy)
+    {
+        note_enemy_progress();
+    }
     auto &weapon = state(side).ship.weapons[mount];
     --weapon.reloads;
     weapon.ammunition =
@@ -1478,37 +1518,40 @@ void ShipCombat::reload(ShipSide side, std::size_t mount, std::optional<std::siz
           .mount = static_cast<int>(mount)});
 }
 
-// AID bandages each dying patient, who falls unconscious, and treats each
-// stunned one with Treat Stun (viewchar.pas TreatPatients). The original
-// looks the patients up among the last ground fight's combatants, which a
-// ship combat never sets; here they are the crew.
+// AID (viewchar.pas TreatPatients, as a ground fight treats): bandages each
+// dying patient, who falls unconscious, and tries Treat Stun on each stunned
+// one. The original looks the patients up among the last ground fight's
+// combatants, which a ship combat never sets; here they are the crew, as
+// FindPatients finds them.
 void ShipCombat::aid(std::size_t aider)
 {
-    const auto &medic = crew_[aider];
-    const bool bandages = member_skill(aider, medic.first_aid) > 0 ||
-                          member_skill(aider, medic.treat_light_wounds) > 0;
-    for (const std::size_t member : patients(aider))
+    const auto patients = find_patients(aider, crew_);
+    const auto treated = treat_patients(aider, crew_, patients,
+                                        [this](int sides)
+                                        {
+                                            return die(sides);
+                                        });
+    for (const std::size_t member : patients)
     {
-        auto &patient = crew_[member];
-        if (patient.status == CrewStatus::dying && bandages)
+        const auto found = std::find_if(treated.begin(), treated.end(),
+                                        [member](const PatientTreatment &treatment)
+                                        {
+                                            return treatment.patient == member;
+                                        });
+        if (found != treated.end() && found->kind == PatientTreatment::Kind::bandaged)
         {
-            patient.status = CrewStatus::unconscious;
-            patient.dying_rounds = 0;
+            dying_rounds_[member] = 0;
             emit({.kind = ShipEventKind::bandage,
                   .side = ShipSide::party,
                   .member = member,
                   .success = true,
-                  .status = CrewStatus::unconscious});
+                  .status = Status::unconscious});
+            continue;
         }
-        else if (patient.stunned)
-        {
-            const bool success = percent(member_skill(aider, medic.treat_stun));
-            patient.stunned = !success;
-            emit({.kind = ShipEventKind::treat_stun,
-                  .side = ShipSide::party,
-                  .member = member,
-                  .success = success});
-        }
+        emit({.kind = ShipEventKind::treat_stun,
+              .side = ShipSide::party,
+              .member = member,
+              .success = found != treated.end()});
     }
 }
 
@@ -1519,10 +1562,10 @@ void ShipCombat::take_command(std::size_t member)
 {
     if (pilot_)
     {
-        crew_[*pilot_].pilot = false;
+        crew_[*pilot_].character.pilot = 0;
     }
     pilot_ = member;
-    crew_[member].pilot = true;
+    crew_[member].character.pilot = 1;
     command_taken_ = true;
     emit({.kind = ShipEventKind::command, .side = ShipSide::party, .member = member});
 }
@@ -1545,6 +1588,26 @@ void ShipCombat::remove_jury_rigs()
         weapon.status = static_cast<std::uint8_t>(
             std::max(static_cast<int>(weapon.status) - party.weapon_rigs[mount], 0));
     }
+}
+
+// Something the enemy did in a round that could change the fight: a shot, a
+// ram that might land, a reload, a boost or jury-rig that might work, or a
+// move. A helpless round without any repeats itself for ever.
+void ShipCombat::note_enemy_progress() noexcept
+{
+    enemy_progress_ = true;
+}
+
+// The team lies helpless and the enemy can neither finish its ship nor get
+// away: it breaks off, and the fight ends as when the enemy is lost from the
+// scanners. The original waits for ever (docs/games/countdown.md, Bugs).
+void ShipCombat::break_off()
+{
+    emit({.kind = ShipEventKind::breaks_off, .side = ShipSide::enemy});
+    combat_over_ = true;
+    experience_ = 0;
+    outcome_ = 1;
+    finish();
 }
 
 void ShipCombat::emit(ShipEvent event)
@@ -1612,22 +1675,22 @@ std::vector<ShipMemoryWrite> ship_combat_memory(const ShipCombatEnd &end)
     return writes;
 }
 
-ShipRepairReport repair_ship(GoldBoxGame game, Ship &party_ship,
-                             std::span<const ShipCrewMember> crew, int experience, Ship *enemy_ship,
-                             const ShipDice &dice)
+ShipRepairReport repair_ship(GoldBoxGame game, Ship &party_ship, std::span<const TeamMember> crew,
+                             int experience, Ship *enemy_ship, bool after_boarding,
+                             const ShipCombatOptions &options, const ShipDice &dice)
 {
     require_buck_rogers(game);
     // A repair skill at its own value (charhlp.pas SelectSkillCharacter,
     // difficulty 2).
-    const auto skill_succeeds = [&dice](const ShipCrewMember &member, int value)
+    const auto skill_succeeds = [&dice](int value)
     {
-        return checked_die(dice, 100) <= (member.enabled ? value : 0);
+        return checked_die(dice, 100) <= value;
     };
     ShipRepairReport report;
     const auto enabled = std::count_if(crew.begin(), crew.end(),
-                                       [](const ShipCrewMember &member)
+                                       [](const TeamMember &member)
                                        {
-                                           return member.enabled;
+                                           return member.character.enabled != 0;
                                        });
     if (enabled > 0)
     {
@@ -1646,8 +1709,7 @@ ShipRepairReport repair_ship(GoldBoxGame game, Ship &party_ship,
         }
         for (std::size_t member = 0; member < crew.size(); ++member)
         {
-            if (!okay(crew[member]) ||
-                !skill_succeeds(crew[member], repair_skill(crew[member], repaired)))
+            if (!okay(crew[member]) || !skill_succeeds(repair_skill(crew[member], repaired)))
             {
                 continue;
             }
@@ -1674,7 +1736,7 @@ ShipRepairReport repair_ship(GoldBoxGame game, Ship &party_ship,
             for (std::size_t member = 0; member < crew.size(); ++member)
             {
                 if (!okay(crew[member]) ||
-                    !skill_succeeds(crew[member], crew[member].repair_weapon))
+                    !skill_succeeds(repair_skill(crew[member], ShipSystem::weapons)))
                 {
                     continue;
                 }
@@ -1688,9 +1750,10 @@ ShipRepairReport repair_ship(GoldBoxGame game, Ship &party_ship,
         }
     }
 
-    // Matrix Cubed reads the enemy's fuel when there is no enemy ship, as
-    // after a boarding; Countdown takes none then, and so does OpenGoldBox.
-    if (!enemy_ship)
+    // After a boarding the original takes no fuel (Countdown), or reads it
+    // from a ship that is gone (Matrix Cubed); the Rule Book transfers the
+    // captured ship's.
+    if (!enemy_ship || (after_boarding && options.no_boarding_fuel))
     {
         return report;
     }

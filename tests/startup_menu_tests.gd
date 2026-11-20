@@ -7,7 +7,8 @@ extends SceneTree
 # with --secret Secret of the Silver Blades' button, with --gateway Gateway
 # to the Savage Frontier's, with --darkness Pools of Darkness', with
 # --treasure Treasures of the Savage Frontier's, with --ua and --ua-design=FOLDER Unlimited
-# Adventures' with the test design in FOLDER. A game other than Pool
+# Adventures' with the test design in FOLDER, with --buck-rogers the Buck
+# Rogers games' ship-combat options. A game other than Pool
 # of Radiance first shows its own title pictures (TITLE.DAX), as its original
 # does when it starts, then its menu.
 
@@ -18,6 +19,7 @@ var gateway_case := false
 var darkness_case := false
 var treasure_case := false
 var ua_case := false
+var buck_rogers_case := false
 var ua_design := ""
 
 func _initialize() -> void:
@@ -29,6 +31,7 @@ func _initialize() -> void:
 		if arg == "--darkness": darkness_case = true
 		if arg == "--treasure": treasure_case = true
 		if arg == "--ua": ua_case = true
+		if arg == "--buck-rogers": buck_rogers_case = true
 		if arg.begins_with("--ua-design="): ua_design = arg.trim_prefix("--ua-design=")
 	call_deferred("run_checks")
 
@@ -174,6 +177,13 @@ func run_checks() -> void:
 	var options: Control = current_scene.get_node("Options")
 	require(options.visible and options.get_node("Options").visible and not options.get_node("Menu").visible,
 		"Options must open without the in-game menu")
+	# Pool of Radiance, the game until another is chosen, shows its own and
+	# the other games' options, not the Buck Rogers games' ship combat.
+	var gameplay: Control = options.get_node("Options/Gameplay")
+	require(gameplay.get_node("OriginalShops").visible and gameplay.get_node("DarknessGazes").visible
+		and not gameplay.get_node("CommandEveryRound").visible and not gameplay.get_node("EmptyHelmDodges").visible
+		and not gameplay.get_node("BoardingFuel").visible,
+		"Another game's Options leave out the ship-combat options")
 	require(not menu.visible, "The menu steps aside for Options")
 	options.get_node("Options/Close").pressed.emit()
 	await settle()
@@ -192,6 +202,9 @@ func run_checks() -> void:
 		return
 	if ua_case:
 		await check_ua()
+		return
+	if buck_rogers_case:
+		await check_buck_rogers()
 		return
 	# Pool of Radiance's title is its new one, which a key passes; Options from
 	# its menu returns to its menu, and closing the question too.
@@ -531,6 +544,56 @@ func check_secret(menu: Window) -> void:
 # (a folder that is not a design refused), no title, its default party offered, the
 # original rules only, then a fighter made under the kit's rules plays the
 # design's start: its welcome, the 3D view drawn, and a step.
+# The ship-combat options (docs/CONFIGURATION.md) show while a Buck Rogers
+# game is the game, each at its default, and each choice is saved under that
+# game's folder. The games' buttons wait until they play, so the check
+# presses them as the startup menu will.
+func check_buck_rogers() -> void:
+	var options := {"CommandEveryRound": ["command_every_round", 1],
+		"EmptyHelmDodges": ["empty_helm_dodges", 1], "BoardingFuel": ["boarding_fuel", 0]}
+	for folder in ["buck-rogers-countdown-to-doomsday", "buck-rogers-matrix-cubed"]:
+		if StartupView.game_folder(folder).is_empty():
+			print("Skipped: the Buck Rogers games' files are not here.")
+			quit(0)
+			return
+		await pick(folder)
+		var game_menu: Window = current_scene.get_node("GameMenu")
+		for wait in range(40):
+			if game_menu.visible: break
+			await press_key()
+		require(game_menu.visible, folder + "'s menu follows its title")
+		game_menu.get_node("Buttons/Options").pressed.emit()
+		await settle()
+		var gameplay: Control = current_scene.get_node("Options/Options/Gameplay")
+		require(not gameplay.get_node("OriginalShops").visible and not gameplay.get_node("DarknessGazes").visible,
+			"The other games' options step aside for the ship combat's")
+		for name in options:
+			var choice: OptionButton = gameplay.get_node(name)
+			require(choice.visible and gameplay.get_node(name + "Label").visible and choice.item_count == 2
+				and choice.get_item_text(0) == "On" and choice.selected == options[name][1],
+				name + " shows its default for " + folder)
+			var other: int = 1 - options[name][1]
+			choice.select(other)
+			choice.item_selected.emit(other)
+		var config := ConfigFile.new()
+		config.load(OS.get_environment("OPENGOLD_SETTINGS_FILE"))
+		for name in options:
+			var saved: String = config.get_value(options[name][0], folder, "")
+			require(saved == ("on" if options[name][1] == 1 else "off"),
+				name + " is saved for " + folder + ": " + saved)
+		await press("Options/Options/Close")
+		game_menu.get_node("Buttons/Options").pressed.emit()
+		await settle()
+		gameplay = current_scene.get_node("Options/Options/Gameplay")
+		for name in options:
+			require((gameplay.get_node(name) as OptionButton).selected == 1 - options[name][1],
+				name + " shows the saved choice again for " + folder)
+		await press("Options/Options/Close")
+		game_menu.get_node("Buttons/MainMenu").pressed.emit()
+		await settle()
+	print("Startup menu passed: Buck Rogers' ship-combat options, each game's own, at their defaults and saved.")
+	quit(0)
+
 func check_ua() -> void:
 	var kit := StartupView.game_folder("UA")
 	if kit.is_empty() or not FileAccess.file_exists(kit.path_join("CKIT.EXE")) \

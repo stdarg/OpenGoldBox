@@ -32,6 +32,15 @@ POOLRAD="on"
 [darkness_gazes]
 DARKNESS="off"
 
+[command_every_round]
+buck-rogers-countdown-to-doomsday="off"
+
+[empty_helm_dodges]
+buck-rogers-countdown-to-doomsday="off"
+
+[boarding_fuel]
+buck-rogers-countdown-to-doomsday="on"
+
 [design_difficulty]
 UA="both"
 
@@ -94,7 +103,8 @@ files receive the default. See
 
 The in-game menu's **Options** screen (Escape) sets these settings and writes
 them at once: under Gameplay `difficulty`, `encounter_challenge`, the
-`[gear]` section, `keep_quick`, `[original_shops]`, `[darkness_gazes]`, `[design_difficulty]` and the `[monsters]` section below; under Interface `language`, which takes effect the
+`[gear]` section, `keep_quick`, `[original_shops]`, `[darkness_gazes]`, the ship-combat
+options, `[design_difficulty]` and the `[monsters]` section below; under Interface `language`, which takes effect the
 next time the game starts, `combat_zoom`, read when a fight opens, the
 `[art]` section below, which takes effect at once, and `[sound]`.
 
@@ -159,6 +169,32 @@ it saves against paralysis at +3, and the charming gaze casts Charm Person.
 `off`, the default, also used for any value but `on`, leaves them doing
 nothing, as in the original. The combat screen reads it when a fight
 starts.
+
+The ship-combat options are the Buck Rogers games' (the user, 2026-11-20;
+[games/countdown.md](games/countdown.md), "Ship combat"), one key per game
+named by its folder (`buck-rogers-countdown-to-doomsday`,
+`buck-rogers-matrix-cubed`). The Options screen shows them, in the place of
+Original shops, Gateway's money and Darkness's gazes, only while a Buck
+Rogers game is the game, and sets that game's. Each default is the Rule
+Book's or OpenGoldBox's, and the other value plays the original's way
+([DEVIATIONS.md](DEVIATIONS.md)):
+
+- `[command_every_round]`, COMMAND every round: `off`, the default, also
+  used for any value but `on`, offers a crew member COMMAND only while the
+  pilot is dead or incapacitated, as the Rule Book says. `on` offers it once
+  a round even with the pilot well, as the original does, so a second member
+  may ram again in the same round.
+- `[empty_helm_dodges]`, Empty helm dodges: `off`, the default, also used
+  for any value but `on`, lets a ship with no one at the helm dodge a ram
+  with 0, and the enemy weighs that. `on` dodges by the ship's own pilot
+  value, 100 for the Maelstrom Rider, as the original does.
+- `[boarding_fuel]`, Fuel from a boarded ship: `on`, the default, also used
+  for any value but `off`, transfers the captured ship's fuel after a
+  boarding, as the Rule Book says. `off` takes none, as the original does.
+
+A ship fight takes them as it starts (`ShipCombatOptions`,
+`buck_rogers_ship_combat.h`); the game plays ship fights from step B3 of
+[BUCK-ROGERS.md](BUCK-ROGERS.md).
 
 `[design_difficulty] UA` is the Options screen's Design difficulty: how
 `difficulty` plays in an *Unlimited Adventures* design (the user, 2026-11-15;

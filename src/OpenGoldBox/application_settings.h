@@ -67,6 +67,20 @@ bool save_gateway_money_kept(bool kept);
 // never runs; otherwise they do nothing, as in the original.
 bool darkness_gazes();
 bool save_darkness_gazes(bool played);
+// The Buck Rogers games' ship-combat options, by game folder
+// (opengold::original::ShipCombatOptions). [command_every_round]: "on"
+// offers COMMAND once a round even while the pilot is well, as the original
+// does; otherwise only while the pilot is down, as the Rule Book says.
+// [empty_helm_dodges]: "on" lets a ship with no one at the helm dodge a ram
+// by its own pilot value, as the original does; otherwise it dodges with 0.
+// [boarding_fuel]: "off" takes no fuel from a boarded ship, as the original;
+// otherwise the captured ship's fuel is transferred, as the Rule Book says.
+bool command_every_round(opengold::GoldBoxGame game);
+bool save_command_every_round(opengold::GoldBoxGame game, bool on);
+bool empty_helm_dodges(opengold::GoldBoxGame game);
+bool save_empty_helm_dodges(opengold::GoldBoxGame game, bool on);
+bool boarding_fuel(opengold::GoldBoxGame game);
+bool save_boarding_fuel(opengold::GoldBoxGame game, bool on);
 // [design_difficulty] UA: how the difficulty plays in an Unlimited Adventures
 // design, "design" (the kit's own levels), "table" (OpenGoldBox's table) or
 // "both", the default.

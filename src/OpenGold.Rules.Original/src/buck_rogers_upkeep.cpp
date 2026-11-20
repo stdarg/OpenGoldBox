@@ -97,6 +97,13 @@ constexpr std::array<ScriptTagFix, 4> script_tag_fixes{{
     return grade == SkillCheckGrade::success || grade == SkillCheckGrade::great_success;
 }
 
+// The same check, rolled with `roll`: a d100 against the scaled value.
+[[nodiscard]] bool skill_check_succeeds(int scaled_value, const DieRoll &roll)
+{
+    const auto grade = skill_check_grade(scaled_value, roll(100));
+    return grade == SkillCheckGrade::success || grade == SkillCheckGrade::great_success;
+}
+
 [[nodiscard]] int hit_points_missing(const Creature &character) noexcept
 {
     return std::max(0, character.hit_point_maximum - character.hit_points);
@@ -476,6 +483,17 @@ std::vector<PatientTreatment> treat_patients(std::size_t medic, std::span<TeamMe
                                              std::span<const std::size_t> patients,
                                              RandomState &random)
 {
+    return treat_patients(medic, team, patients,
+                          [&random](int sides)
+                          {
+                              return roll_die(random, sides);
+                          });
+}
+
+std::vector<PatientTreatment> treat_patients(std::size_t medic, std::span<TeamMember> team,
+                                             std::span<const std::size_t> patients,
+                                             const DieRoll &roll)
+{
     const auto &healer = team[medic].character;
     const bool bandages = level_of(healer.skills, Skill::first_aid) > 0 ||
                           level_of(healer.skills, Skill::treat_light_wounds) > 0;
@@ -490,7 +508,10 @@ std::vector<PatientTreatment> treat_patients(std::size_t medic, std::span<TeamMe
             continue;
         }
 
-        if (member.stunned && succeeds(healer, Skill::treat_stun, standard_difficulty, random))
+        // A single character's check (check_skill with one value).
+        const int needed =
+            scaled_skill_value(skill_value(healer, Skill::treat_stun), standard_difficulty);
+        if (member.stunned && skill_check_succeeds(needed, roll))
         {
             member.stunned = false;
             done.push_back({patient, PatientTreatment::Kind::stun_ended});

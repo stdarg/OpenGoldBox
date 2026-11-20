@@ -315,6 +315,31 @@ Departures from the original game's own rules, when OpenGoldBox plays by them
   target for 10 rounds unless it saves against paralysis at +3 or meets
   gazes unharmed, a mirror turning it back on the gazer; the charming gaze
   casts Charm Person. Off, the default, they do nothing, as in the original.
+- **The Buck Rogers games' ship combat, three options** (the user,
+  2026-11-20; [games/countdown.md](games/countdown.md), "Ship combat"). Each
+  is set per game on the Options screen while a Buck Rogers game plays
+  ([CONFIGURATION.md](CONFIGURATION.md)), and the default departs from the
+  original:
+  - COMMAND every round (`[command_every_round]`): the original offers
+    COMMAND once a round even with the pilot well, so a second member may
+    ram again in the same round. By default it is offered only while the
+    pilot is dead or incapacitated, as the Rule Book says; on plays the
+    original's way.
+  - Empty helm dodges (`[empty_helm_dodges]`): with no one at the helm the
+    original's ship dodges a ram by its own pilot value, 100 for the
+    Maelstrom Rider, better than most pilots. By default an empty helm
+    dodges with 0, and the enemy weighs that dodge; on plays the
+    original's way.
+  - Fuel from a boarded ship (`[boarding_fuel]`): after a boarding the
+    original's repairs take no fuel (*Matrix Cubed* reads it from a ship
+    that is gone). By default the captured ship's fuel is transferred, as the
+    Rule Book says, by the share the repairs take after a kill; off plays the
+    original's way.
+- **A ship fight no one can end ends** (the user, 2026-11-20). When no team
+  member can act and the enemy can neither destroy the team's ship nor get
+  away, the original's fight never ends. After a round in which the enemy did
+  nothing that could change the fight, it breaks off, and the fight ends as
+  when the enemy is lost from the scanners: outcome 1, no experience.
 
 ## Party and parley
 

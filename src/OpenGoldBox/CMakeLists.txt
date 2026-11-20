@@ -660,6 +660,9 @@ if(OPENGOLD_BUILD_TESTS)
         "Startup menu passed: Pools of Darkness" -DARGS=--darkness)
     opengold_settings_check(startup_menu_treasure startup_menu_tests
         "Startup menu passed: Treasures" -DARGS=--treasure)
+    # The Buck Rogers games' ship-combat options on the Options screen.
+    opengold_settings_check(startup_menu_buck_rogers startup_menu_tests
+        "Startup menu passed: Buck Rogers" -DARGS=--buck-rogers)
     # Unlimited Adventures: the kit's folder, the test design's folder (written
     # by opengold_ua_session_tests), a party made under the kit's rules and the
     # design's start.

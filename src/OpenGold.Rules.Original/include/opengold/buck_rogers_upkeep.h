@@ -164,12 +164,20 @@ struct PatientTreatment
     Kind kind{};
 };
 
+// One die of `sides` faces, 1 to `sides`, from wherever the caller's dice
+// come: the ship fight's AID rolls with its own dice.
+using DieRoll = std::function<int(int sides)>;
+
 // AID (viewchar.pas TreatPatients): the medic bandages each bleeding patient
 // without a roll and tries Treat Stun on each dizzy or stunned one. Returns
-// what it did, in the patients' order.
+// what it did, in the patients' order. The ground fight and the ship fight
+// both treat by it.
 std::vector<PatientTreatment> treat_patients(std::size_t medic, std::span<TeamMember> team,
                                              std::span<const std::size_t> patients,
                                              RandomState &random);
+std::vector<PatientTreatment> treat_patients(std::size_t medic, std::span<TeamMember> team,
+                                             std::span<const std::size_t> patients,
+                                             const DieRoll &roll);
 
 // How many days pass for a rest of the rest menu (PROGRAM 9; explore.pas
 // RestMenu) and for a step of the rocket on the solar map (explore.pas

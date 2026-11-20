@@ -205,6 +205,7 @@ void GameMenuView::open_options()
         .select(settings::darkness_gazes() ? 0 : 1);
     required_node<OptionButton>(*this, "Options/Gameplay/DesignDifficulty")
         .select(static_cast<int>(settings::design_difficulty()));
+    show_game_options();
     const auto language = settings::language();
     const auto found = std::find_if(language_codes.begin(), language_codes.end(),
                                     [&](const char *code)
@@ -272,7 +273,11 @@ void GameMenuView::build_options()
           std::pair{"Options/Gameplay/KeepQuick", &GameMenuView::keep_quick_selected},
           std::pair{"Options/Gameplay/OriginalShops", &GameMenuView::original_shops_selected},
           std::pair{"Options/Gameplay/TreasuresMoney", &GameMenuView::treasures_money_selected},
-          std::pair{"Options/Gameplay/DarknessGazes", &GameMenuView::darkness_gazes_selected}})
+          std::pair{"Options/Gameplay/DarknessGazes", &GameMenuView::darkness_gazes_selected},
+          std::pair{"Options/Gameplay/CommandEveryRound",
+                    &GameMenuView::command_every_round_selected},
+          std::pair{"Options/Gameplay/EmptyHelmDodges", &GameMenuView::empty_helm_dodges_selected},
+          std::pair{"Options/Gameplay/BoardingFuel", &GameMenuView::boarding_fuel_selected}})
     {
         auto &choice = required_node<OptionButton>(*this, path);
         choice.add_item(i18n::text(N_("On")));
@@ -527,6 +532,50 @@ void GameMenuView::darkness_gazes_selected(std::int64_t index)
 void GameMenuView::design_difficulty_selected(std::int64_t index)
 {
     settings::save_design_difficulty(static_cast<opengold::ua::DesignDifficulty>(index));
+}
+
+void GameMenuView::command_every_round_selected(std::int64_t index)
+{
+    settings::save_command_every_round(settings::chosen_game(), index == 0);
+}
+
+void GameMenuView::empty_helm_dodges_selected(std::int64_t index)
+{
+    settings::save_empty_helm_dodges(settings::chosen_game(), index == 0);
+}
+
+void GameMenuView::boarding_fuel_selected(std::int64_t index)
+{
+    settings::save_boarding_fuel(settings::chosen_game(), index == 0);
+}
+
+void GameMenuView::show_game_options()
+{
+    const auto game = settings::chosen_game();
+    const bool buck_rogers = opengold::is_buck_rogers(game);
+    auto &gameplay = required_node<Control>(*this, "Options/Gameplay");
+    for (const char *name : {"OriginalShopsLabel", "OriginalShops", "OriginalShopsNote",
+                             "TreasuresMoneyLabel", "TreasuresMoney", "TreasuresMoneyNote",
+                             "DarknessGazesLabel", "DarknessGazes", "DarknessGazesNote"})
+    {
+        required_node<Control>(gameplay, name).set_visible(!buck_rogers);
+    }
+    for (const char *name : {"CommandEveryRoundLabel", "CommandEveryRound", "CommandEveryRoundNote",
+                             "EmptyHelmDodgesLabel", "EmptyHelmDodges", "EmptyHelmDodgesNote",
+                             "BoardingFuelLabel", "BoardingFuel", "BoardingFuelNote"})
+    {
+        required_node<Control>(gameplay, name).set_visible(buck_rogers);
+    }
+    if (!buck_rogers)
+    {
+        return;
+    }
+    required_node<OptionButton>(gameplay, "CommandEveryRound")
+        .select(settings::command_every_round(game) ? 0 : 1);
+    required_node<OptionButton>(gameplay, "EmptyHelmDodges")
+        .select(settings::empty_helm_dodges(game) ? 0 : 1);
+    required_node<OptionButton>(gameplay, "BoardingFuel")
+        .select(settings::boarding_fuel(game) ? 0 : 1);
 }
 
 void GameMenuView::show_unidentified_magic(bool shown)

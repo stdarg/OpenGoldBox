@@ -207,8 +207,11 @@ in [countdown.md](countdown.md), "Bugs".
 The fight and the repairs after it are *Countdown*'s: the same tables, the
 same experience by enemy ship and the same rules, which
 [countdown.md](countdown.md) ("Ship combat") describes with its bugs and
-open questions. OpenGoldBox plays both games with one session, keyed by game
-(`buck_rogers_ship_combat.h`). After a boarding the solar-map script 19 loads
+the user's decisions. The three ship-combat options (COMMAND every round,
+Empty helm dodges, Fuel from a boarded ship) are set for *Matrix Cubed* apart
+from *Countdown*, under its own folder name
+([CONFIGURATION.md](../CONFIGURATION.md)). OpenGoldBox plays both games with
+one session, keyed by game (`buck_rogers_ship_combat.h`). After a boarding the solar-map script 19 loads
 script 21, where *Countdown*'s loads 52. The program differs in two places:
 
 - The ship's explosion deals each okay member its maximum Hit Points and 30,
@@ -223,7 +226,7 @@ script 21, where *Countdown*'s loads 52. The program differs in two places:
 
 | Bug in the original | In OpenGoldBox |
 |---|---|
-| After a boarding, the repairs take fuel from the enemy ship, which no longer exists, so the amount is whatever the memory holds (`RepairShip`; *Countdown* checks and takes none) | None, as *Countdown* (countdown.md, open question 5) |
+| After a boarding, the repairs take fuel from the enemy ship, which no longer exists, so the amount is whatever the memory holds (`RepairShip`; *Countdown* checks and takes none) | The captured ship's fuel, as the Rule Book says, from the wreck the fight's end saved; with Fuel from a boarded ship off, none, as *Countdown* (countdown.md, decision 5) |
 | The ship-combat bugs of *Countdown* but the explosion's coma | Fixed as there |
 
 ## Next

@@ -409,6 +409,42 @@ bool save_darkness_gazes(bool played)
     return save("darkness_gazes", folder.c_str(), played ? "on" : "off");
 }
 
+bool command_every_round(opengold::GoldBoxGame game)
+{
+    const std::string folder(opengold::game_folder(game));
+    return read("command_every_round", folder.c_str()).to_lower() == "on";
+}
+
+bool save_command_every_round(opengold::GoldBoxGame game, bool on)
+{
+    const std::string folder(opengold::game_folder(game));
+    return save("command_every_round", folder.c_str(), on ? "on" : "off");
+}
+
+bool empty_helm_dodges(opengold::GoldBoxGame game)
+{
+    const std::string folder(opengold::game_folder(game));
+    return read("empty_helm_dodges", folder.c_str()).to_lower() == "on";
+}
+
+bool save_empty_helm_dodges(opengold::GoldBoxGame game, bool on)
+{
+    const std::string folder(opengold::game_folder(game));
+    return save("empty_helm_dodges", folder.c_str(), on ? "on" : "off");
+}
+
+bool boarding_fuel(opengold::GoldBoxGame game)
+{
+    const std::string folder(opengold::game_folder(game));
+    return read("boarding_fuel", folder.c_str()).to_lower() != "off";
+}
+
+bool save_boarding_fuel(opengold::GoldBoxGame game, bool on)
+{
+    const std::string folder(opengold::game_folder(game));
+    return save("boarding_fuel", folder.c_str(), on ? "on" : "off");
+}
+
 namespace
 {
 // The names settings.cfg spells design_difficulty's choices with, in order.

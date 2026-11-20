@@ -770,3 +770,16 @@ Decided:
    below level 7 learns several in the one level it trains to 7, and so
    matches a new character. Above level 7 it learns one a level, as every
    character does.
+4. **Ship combat** (found in B2; the user, 2026-11-20, for both games;
+   [games/countdown.md](games/countdown.md), "Ship combat", Decisions).
+   Three of the original's ways are options, set per game on the Options
+   screen while a Buck Rogers game plays, each defaulting to the Rule Book
+   or to OpenGoldBox's choice ([CONFIGURATION.md](CONFIGURATION.md)):
+   COMMAND only while the pilot is down (COMMAND every round on plays the
+   original's once a round), an empty helm dodging with 0 (Empty helm
+   dodges on plays the ship's own pilot value, 100 for the Maelstrom Rider),
+   and a boarded ship's fuel transferred (Fuel from a boarded ship off plays
+   the original's none). A fight no one can end, the team helpless and the
+   enemy unable to finish the ship or leave, ends as if the enemy broke off
+   (a bug, fixed). The enemy moving first each round after the team wins the
+   pilot roll, and its boosting without limit, stay as in the original.

@@ -76,6 +76,13 @@ class GameMenuView : public godot::Control
     void darkness_gazes_selected(std::int64_t index);
     // How the difficulty plays in an Unlimited Adventures design.
     void design_difficulty_selected(std::int64_t index);
+    // The Buck Rogers games' ship-combat options, for the game being played.
+    void command_every_round_selected(std::int64_t index);
+    void empty_helm_dodges_selected(std::int64_t index);
+    void boarding_fuel_selected(std::int64_t index);
+    // A Buck Rogers game shows its ship-combat options where the other games'
+    // own options stand.
+    void show_game_options();
     // "Do not equip unidentified magic items" is offered only while auto-equip is on.
     void show_unidentified_magic(bool shown);
     bool may_change_art_folder_{};

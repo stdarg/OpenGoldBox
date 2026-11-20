@@ -170,7 +170,7 @@ msgstr "2 puntos de hechicería: lanza un conjuro de acción como acción adicio
 msgid "2 Sorcery Points: one target has Disadvantage on its save against the spell."
 msgstr "2 puntos de hechicería: un objetivo tiene desventaja en su salvación contra el conjuro."
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:473
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:551
 msgid "3D view art"
 msgstr "Arte de la vista 3D"
 
@@ -590,7 +590,7 @@ msgstr "AD&D: las puntuaciones cambian de nuevo a medida que los personajes enve
 msgid "Aberrations, Celestials, Elementals, Fey, Fiends and Undead have Disadvantage on attack rolls against it."
 msgstr "Las aberraciones, celestiales, elementales, feéricos, infernales y muertos vivientes tienen desventaja en las tiradas de ataque contra él."
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:358
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:436
 msgid "Ability"
 msgstr "Habilidad"
 
@@ -1784,7 +1784,7 @@ msgstr "Botas"
 msgid "Boots of Elvenkind"
 msgstr "Botas élficas"
 
-#: src/OpenGoldBox/game_menu_view.cpp:286
+#: src/OpenGoldBox/game_menu_view.cpp:291
 msgid "Both"
 msgstr "Ambas"
 
@@ -1981,6 +1981,10 @@ msgstr "Comprar [Enter]"
 msgid "CHA"
 msgstr "CAR"
 
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:327
+msgid "COMMAND every round"
+msgstr "COMMAND en cada ronda"
+
 #: src/OpenGold.Rules.Srd5/src/character_rules.cpp:20 src/OpenGoldBox/character_text.h:12
 msgid "CON"
 msgstr "CON"
@@ -2136,7 +2140,7 @@ msgstr "No se puede guardar la captura de pantalla: {path}"
 msgid "Cannot save settings. Check that settings.cfg in the game's user data folder can be written and is valid."
 msgstr "No se puede guardar la configuración. Comprueba que settings.cfg, en la carpeta de datos de usuario del juego, se pueda escribir y sea válido."
 
-#: src/OpenGoldBox/game_menu_view.cpp:488
+#: src/OpenGoldBox/game_menu_view.cpp:493
 msgid "Cannot save the settings."
 msgstr "No se puede guardar la configuración."
 
@@ -2540,7 +2544,7 @@ msgstr "Elige un personaje para traer al grupo."
 msgid "Choose a class. Classes in gray are not open to your race."
 msgstr "Elige una clase. Las clases en gris no están abiertas a tu raza."
 
-#: src/OpenGoldBox/application_settings.cpp:730
+#: src/OpenGoldBox/application_settings.cpp:766
 msgid "Choose a design's folder: its name ends in .DSN."
 msgstr "Elige la carpeta de un diseño: su nombre termina en .DSN."
 
@@ -2642,11 +2646,11 @@ msgstr "Elige la carpeta que contiene START.EXE y los archivos DAX originales de
 msgid "Choose the folder of the design to play, which the construction kit names NAME.DSN."
 msgstr "Elige la carpeta del diseño que quieres jugar, que el kit de construcción llama NOMBRE.DSN."
 
-#: src/OpenGoldBox/application_settings.cpp:702
+#: src/OpenGoldBox/application_settings.cpp:738
 msgid "Choose the folder that holds this game's files."
 msgstr "Elige la carpeta con los archivos de este juego."
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:606
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:684
 msgid "Choose the new art folder"
 msgstr "Elige la carpeta del arte nuevo"
 
@@ -2700,7 +2704,7 @@ msgstr "Elige quién recibe {spell}."
 msgid "Choose your available cantrips. Unfilled choices remain pending; Back preserves your selections."
 msgstr "Elige los trucos disponibles. Las elecciones sin completar quedan pendientes; Atrás conserva tus selecciones."
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:559
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:637
 msgid "Choose…"
 msgstr "Elegir…"
 
@@ -2917,7 +2921,7 @@ msgstr "Capa de desplazamiento"
 msgid "Cloak of Elvenkind"
 msgstr "Capa élfica"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1260 src/OpenGoldBox/godot/scenes/character_creation.tscn:1345 src/OpenGoldBox/godot/scenes/character_creation.tscn:1390 src/OpenGoldBox/godot/scenes/character_creation.tscn:1435 src/OpenGoldBox/godot/scenes/character_creation.tscn:1634 src/OpenGoldBox/godot/scenes/game_menu.tscn:623 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:301 src/OpenGoldBox/godot/scenes/portrait_dialog.tscn:80 src/OpenGoldBox/godot/scenes/tour_cast_panel.tscn:46 src/OpenGoldBox/godot/scenes/tour_member_sheet.tscn:39
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1260 src/OpenGoldBox/godot/scenes/character_creation.tscn:1345 src/OpenGoldBox/godot/scenes/character_creation.tscn:1390 src/OpenGoldBox/godot/scenes/character_creation.tscn:1435 src/OpenGoldBox/godot/scenes/character_creation.tscn:1634 src/OpenGoldBox/godot/scenes/game_menu.tscn:701 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:301 src/OpenGoldBox/godot/scenes/portrait_dialog.tscn:80 src/OpenGoldBox/godot/scenes/tour_cast_panel.tscn:46 src/OpenGoldBox/godot/scenes/tour_member_sheet.tscn:39
 msgid "Close"
 msgstr "Cerrar"
 
@@ -2982,7 +2986,7 @@ msgstr "Asesino de colosos añade {damage} de daño."
 msgid "Combat appearance"
 msgstr "Aspecto en combate"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:496
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:574
 msgid "Combat art"
 msgstr "Arte de combate"
 
@@ -3002,7 +3006,7 @@ msgstr "Desbordamiento del calendario de combate"
 msgid "Combat icon"
 msgstr "Icono de combate"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:445
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:523
 msgid "Combat zoom"
 msgstr "Zoom del combate"
 
@@ -3595,7 +3599,7 @@ msgstr "Bola de fuego de explosión retardada"
 msgid "Delayed Blast Fireball goes off."
 msgstr "Estalla la bola de fuego retardada."
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:326
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:404
 msgid "Design difficulty"
 msgstr "Dificultad del diseño"
 
@@ -4263,6 +4267,10 @@ msgstr "Golpes potenciados: los ataques sin armas infligen daño de fuerza.\nMan
 msgid "Empty"
 msgstr "Vacío"
 
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:353
+msgid "Empty helm dodges"
+msgstr "Esquiva sin nadie al timón"
+
 #: src/OpenGoldBox/godot/scenes/game_menu.tscn:181
 msgid "Encounter challenge"
 msgstr "Desafío de los encuentros"
@@ -4820,7 +4828,7 @@ msgstr "Termina el diálogo o sal de la tienda primero"
 msgid "Finish the fight before returning to the party"
 msgstr "Termina el combate antes de volver al grupo"
 
-#: src/OpenGoldBox/game_menu_view.cpp:455
+#: src/OpenGoldBox/game_menu_view.cpp:460
 msgid "Finish the fight or event to choose another folder."
 msgstr "Termina el combate o el evento para elegir otra carpeta."
 
@@ -5190,7 +5198,7 @@ msgstr "Asustado del lanzador hasta el comienzo de su siguiente turno."
 msgid "Frightened of the mummy until the end of its next turn."
 msgstr "Asustado de la momia hasta el final de su siguiente turno."
 
-#: src/OpenGoldBox/game_menu_view.cpp:382 src/OpenGoldBox/godot/scenes/game_menu.tscn:174
+#: src/OpenGoldBox/game_menu_view.cpp:387 src/OpenGoldBox/godot/scenes/game_menu.tscn:174
 msgid "From Hard: monsters use their potions, wands and scrolls, and temples cast no Resurrection. Each monster ability below has its own lowest difficulty."
 msgstr "Desde Difícil: los monstruos usan sus pociones, varitas y pergaminos, y los templos no lanzan Resurrección. Cada habilidad de monstruo de abajo tiene su propia dificultad mínima."
 
@@ -5205,6 +5213,10 @@ msgstr "Escalofrío de la escarcha"
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:9281 src/OpenGold.Rules.Srd5/src/srd5.cpp:9282
 msgid "Frost's Chill: Speed reduced by 10 feet."
 msgstr "Escalofrío de la escarcha: Velocidad reducida en 10 pies."
+
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:379
+msgid "Fuel from a boarded ship"
+msgstr "Combustible de una nave abordada"
 
 #: src/OpenGoldBox/hp_presentation.h:52
 msgid "Full hit points."
@@ -6134,7 +6146,7 @@ msgstr "En combate, una acción adicional unta tu arma: su siguiente impacto per
 msgid "In the form of a {value}."
 msgstr "En forma de {value}."
 
-#: src/OpenGoldBox/game_menu_view.cpp:385
+#: src/OpenGoldBox/game_menu_view.cpp:390
 msgid "In this design, the difficulty plays as Design difficulty below sets it."
 msgstr "En este diseño, la dificultad se juega como indica Dificultad del diseño, más abajo."
 
@@ -6570,7 +6582,7 @@ msgstr "Lanza de caballería"
 msgid "Land's Aid"
 msgstr "Ayuda de la tierra"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:422 src/OpenGoldBox/godot/scenes/startup.tscn:43 src/OpenGoldBox/startup_view.cpp:918
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:500 src/OpenGoldBox/godot/scenes/startup.tscn:43 src/OpenGoldBox/startup_view.cpp:918
 msgid "Language"
 msgstr "Idioma"
 
@@ -7702,11 +7714,11 @@ msgstr "Concentración del monje"
 msgid "Monster Summoning"
 msgstr "Convocar monstruos"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:350
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:428
 msgid "Monster abilities"
 msgstr "Habilidades de los monstruos"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:366
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:444
 msgid "Monsters that have it"
 msgstr "Monstruos que la tienen"
 
@@ -7787,7 +7799,7 @@ msgstr "Defensa contra ataques múltiples"
 msgid "Multiclass training"
 msgstr "Entrenamiento multiclase"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:594
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:672
 msgid "Music"
 msgstr "Música"
 
@@ -7937,7 +7949,7 @@ msgstr "Nunca"
 msgid "Neverwinter"
 msgstr "Neverwinter"
 
-#: src/OpenGoldBox/game_menu_view.cpp:340
+#: src/OpenGoldBox/game_menu_view.cpp:345
 msgid "New"
 msgstr "Nuevo"
 
@@ -7949,7 +7961,7 @@ msgstr "Nueva Phlan"
 msgid "New Verdigris"
 msgstr "Nueva Verdigris"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:542
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:620
 msgid "New art folder"
 msgstr "Carpeta del arte nuevo"
 
@@ -8130,7 +8142,7 @@ msgstr "No binario"
 msgid "Nonbinary"
 msgstr "No binario"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:304 src/OpenGoldBox/game_menu_view.cpp:448
+#: src/OpenGoldBox/character_sheet_text.cpp:304 src/OpenGoldBox/game_menu_view.cpp:453
 msgid "None"
 msgstr "Ninguno"
 
@@ -8207,7 +8219,7 @@ msgstr "Juramento de devoción: Aura de devoción. Ni tú ni tus aliados en tu A
 msgid "Oath of Devotion: Smite of Protection. When you cast Divine Smite, you and allies in your Aura of Protection gain +2 AC and +2 to Dexterity saves until your next turn.\nA second level 4 spell slot."
 msgstr "Juramento de devoción: Castigo de protección. Cuando lanzas Castigo divino, tú y tus aliados en tu Aura de protección obtenéis +2 a la CA y +2 a las salvaciones de Destreza hasta tu siguiente turno.\nUn segundo espacio de conjuro de nivel 4."
 
-#: src/OpenGoldBox/game_menu_view.cpp:279 src/OpenGoldBox/startup_view.cpp:1217
+#: src/OpenGoldBox/game_menu_view.cpp:284 src/OpenGoldBox/startup_view.cpp:1217
 msgid "Off"
 msgstr "No"
 
@@ -8231,7 +8243,7 @@ msgstr "Aceite"
 msgid "Old Town"
 msgstr "Ciudad Vieja"
 
-#: src/OpenGoldBox/game_menu_view.cpp:278
+#: src/OpenGoldBox/game_menu_view.cpp:283
 msgid "On"
 msgstr "Sí"
 
@@ -8255,7 +8267,7 @@ msgstr "Con un impacto, el objetivo tiene desventaja en su siguiente tirada de a
 msgid "On a hit, the target makes a Constitution save (DC 8 + the attack's ability modifier + proficiency bonus) or falls Prone."
 msgstr "Con un impacto, el objetivo hace una salvación de Constitución (CD 8 + el modificador de característica del ataque + bonificador de competencia) o queda derribado."
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:376
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:454
 msgid "On from"
 msgstr "Activa desde"
 
@@ -8395,7 +8407,7 @@ msgstr "Abrir cerraduras"
 msgid "OpenGoldBox"
 msgstr "OpenGoldBox"
 
-#: src/OpenGoldBox/game_menu_view.cpp:286
+#: src/OpenGoldBox/game_menu_view.cpp:291
 msgid "OpenGoldBox's"
 msgstr "La de OpenGoldBox"
 
@@ -8431,7 +8443,7 @@ msgstr "Los orcos son gente fuerte e incansable que sigue adelante donde otros d
 msgid "Order"
 msgstr "Orden"
 
-#: src/OpenGoldBox/game_menu_view.cpp:341
+#: src/OpenGoldBox/game_menu_view.cpp:346
 msgid "Original"
 msgstr "Original"
 
@@ -8909,7 +8921,7 @@ msgstr "Género del retrato"
 msgid "Portrait race"
 msgstr "Raza del retrato"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:519
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:597
 msgid "Portraits"
 msgstr "Retratos"
 
@@ -10034,7 +10046,7 @@ msgstr "Reinicia con --reset-game-path para elegir la carpeta de datos de Pool o
 msgid "Restoration"
 msgstr "Restablecimiento"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:409
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:487
 msgid "Restore defaults"
 msgstr "Restablecer valores"
 
@@ -10397,7 +10409,7 @@ msgstr "Guardar partida, Cargar partida, Opciones y Salir (Escape)."
 msgid "Save name"
 msgstr "Nombre de la partida"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:398
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:476
 msgid "Saved at once; they take effect from the next fight."
 msgstr "Se guardan al instante; se aplican desde el siguiente combate."
 
@@ -10691,6 +10703,18 @@ msgstr "Resplandeciente (Castigo resplandeciente)"
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Shining Smite"
 msgstr "Castigo resplandeciente"
+
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:397
+msgid "Ship combat. On: a boarded ship's fuel is transferred to yours, as the Rule Book says. Off: none, as in the original."
+msgstr "Combate espacial. Sí: el combustible de una nave abordada pasa a la vuestra, como dice el libro de reglas. No: ninguno, como en el original."
+
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:345
+msgid "Ship combat. On: any crew member may take COMMAND once a round, even with the pilot well, as in the original. Off: only while the pilot is dead or incapacitated, as the Rule Book says."
+msgstr "Combate espacial. Sí: cualquier tripulante puede tomar COMMAND una vez por ronda, aunque el piloto esté bien, como en el original. No: solo mientras el piloto esté muerto o incapacitado, como dice el libro de reglas."
+
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:371
+msgid "Ship combat. On: with no one at the helm, the ship dodges a ram by its own pilot value (the Maelstrom Rider's is 100), as in the original. Off: it dodges with 0."
+msgstr "Combate espacial. Sí: sin nadie al timón, la nave esquiva una embestida con su propio valor de piloto (el del Maelstrom Rider es 100), como en el original. No: esquiva con 0."
 
 #: src/OpenGold.Rules.Original/src/spells.cpp:36 src/OpenGold.Rules.Srd5/src/effect_labels.h:34 src/OpenGoldBox/combat_view.cpp:3154 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Shocking Grasp"
@@ -11077,7 +11101,7 @@ msgstr "Hechicería encarnada: sin usos de Hechicería innata, 2 puntos de hechi
 msgid "Sorcery Points"
 msgstr "Puntos de hechicería"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:581
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:659
 msgid "Sound effects"
 msgstr "Efectos de sonido"
 
@@ -11698,7 +11722,7 @@ msgstr "Recibe 5d4 de daño de Ácido al final de su siguiente turno."
 msgid "Takes Fire damage at the start of each of its turns until a Constitution save puts the flames out."
 msgstr "Recibe daño de Fuego al comienzo de cada uno de sus turnos hasta que una salvación de Constitución apaga las llamas."
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:438
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:516
 msgid "Takes effect the next time the game starts."
 msgstr "Se aplica la próxima vez que se inicie el juego."
 
@@ -11869,7 +11893,7 @@ msgstr "Ese conjuro o rasgo no se puede usar ahora"
 msgid "Thaumaturge"
 msgstr "Taumaturgo"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:489
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:567
 msgid "The 3D view's walls and close-ups: the new art, or the original game's."
 msgstr "Las paredes y los primeros planos de la vista 3D: el arte nuevo o el del juego original."
 
@@ -11954,7 +11978,7 @@ msgstr "El ácido se escurre."
 msgid "The air clears a little."
 msgstr "El aire se despeja un poco."
 
-#: src/OpenGoldBox/game_menu_view.cpp:460
+#: src/OpenGoldBox/game_menu_view.cpp:465
 msgid "The art settings above choose the new art or the original game's."
 msgstr "Los ajustes de arte de arriba eligen el arte nuevo o el del juego original."
 
@@ -11970,7 +11994,7 @@ msgstr "El ataque atraviesa un doble ilusorio."
 msgid "The background also gives two skills and an Origin feat."
 msgstr "El trasfondo también da dos habilidades y una dote de origen."
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:466
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:544
 msgid "The battlefield's size when a fight opens."
 msgstr "El tamaño del campo de batalla al empezar un combate."
 
@@ -11995,7 +12019,7 @@ msgstr "Los lanzadores curan y sanan al grupo mientras descansa"
 msgid "The character has no levels in a class it trained in"
 msgstr "El personaje no tiene niveles en una clase en la que se entrenó"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:535
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:613
 msgid "The characters' portraits: the new pictures, or the original game's head and body portraits."
 msgstr "Los retratos de los personajes: las imágenes nuevas, o los retratos de cabeza y cuerpo del juego original."
 
@@ -12056,7 +12080,7 @@ msgstr "Los muertos se alzan cuando termina el minuto de lanzamiento."
 msgid "The default party could not be made: {problem}"
 msgstr "No se pudo crear el grupo predeterminado: {problem}"
 
-#: src/OpenGoldBox/game_menu_view.cpp:286
+#: src/OpenGoldBox/game_menu_view.cpp:291
 msgid "The design's"
 msgstr "La del diseño"
 
@@ -12130,7 +12154,7 @@ msgstr "El proyectil no puede tocar a {name}."
 msgid "The monsters go on their way."
 msgstr "Los monstruos siguen su camino."
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:512
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:590
 msgid "The monsters' figures in a fight: the new art, or the original game's. Party members keep theirs."
 msgstr "Las figuras de los monstruos en combate: el arte nuevo o el del juego original. Los miembros del grupo conservan las suyas."
 
@@ -12155,7 +12179,7 @@ msgstr "La siguiente tirada de ataque que otra criatura haga contra él gana +5.
 msgid "The oil on {name} burns for 5 more damage."
 msgstr "El aceite sobre {name} arde y causa 5 de daño más."
 
-#: src/OpenGoldBox/game_menu_view.cpp:457
+#: src/OpenGoldBox/game_menu_view.cpp:462
 msgid "The original game's art shows until you choose the folder of the OpenGoldBox new art download."
 msgstr "Se muestra el arte del juego original hasta que elijas la carpeta de la descarga del arte nuevo de OpenGoldBox."
 
@@ -12960,7 +12984,7 @@ msgstr "Muertos vivientes"
 msgid "Undead Fortitude"
 msgstr "Fortaleza de no muerto"
 
-#: src/OpenGoldBox/game_menu_view.cpp:387
+#: src/OpenGoldBox/game_menu_view.cpp:392
 msgid "Under the original rules, Normal plays as the original game did; the other levels change only the monsters' to-hit, Hit Points and Armor Class."
 msgstr "Con las reglas originales, Normal se juega como en el juego original; los demás niveles solo cambian el ataque, los puntos de golpe y la clase de armadura de los monstruos."
 
@@ -12992,7 +13016,7 @@ msgstr "Unlimited Adventures"
 msgid "Unlimited Adventures design"
 msgstr "Diseño de Unlimited Adventures"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:342
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:420
 msgid "Unlimited Adventures. The design's: the kit's five levels change the party's to-hit and the monsters' Hit Points. OpenGoldBox's: the difficulty table changes the monsters' to-hit, Hit Points and Armor Class. Both: the kit's levels, with the table's to-hit and Armor Class for the monsters."
 msgstr "Unlimited Adventures. La del diseño: los cinco niveles del kit cambian la probabilidad de impactar del grupo y los Puntos de Golpe de los monstruos. La de OpenGoldBox: la tabla de dificultad cambia la probabilidad de impactar, los Puntos de Golpe y la Clase de Armadura de los monstruos. Ambas: los niveles del kit, con la probabilidad de impactar y la Clase de Armadura de la tabla para los monstruos."
 

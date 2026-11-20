@@ -2,15 +2,14 @@
 #define OPENGOLD_BUCK_ROGERS_SHIP_COMBAT_H
 
 #include "opengold/buck_rogers_records.h"
+#include "opengold/buck_rogers_upkeep.h"
 #include "opengold/gold_box_game.h"
 
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <optional>
 #include <span>
-#include <string>
 #include <string_view>
 #include <vector>
 
@@ -23,8 +22,9 @@
 namespace opengold::original
 {
 
-// One die of `sides` faces, 1 to `sides`: the fight's random numbers.
-using ShipDice = std::function<int(int sides)>;
+// One die of `sides` faces, 1 to `sides`: the fight's random numbers, which
+// AID rolls with too.
+using ShipDice = DieRoll;
 
 // Dexterity's adjustment to a ranged attack, -6 at 1 to +4 at 21 and 22
 // (gdconsts.pas dexMissileAdjustments); a gunner adds it to its combat value.
@@ -68,45 +68,23 @@ inline constexpr std::uint8_t ship_crew_mount = 0x80;
 // move, else at least 1 (charhlp.pas ShipSpeed).
 [[nodiscard]] int ship_speed(const buck_rogers::Ship &ship, int boosts);
 
-enum class CrewStatus : std::uint8_t
+// How the fight plays where the user chose between the original and the
+// Rule Book (docs/CONFIGURATION.md, the ship-combat options). The defaults are
+// the Rule Book's, or OpenGoldBox's where the original has no good answer;
+// each option set plays the original's way.
+struct ShipCombatOptions
 {
-    okay,
-    unconscious,
-    dying,
-    comatose,
-    dead
-};
-
-// A team member aboard the team's ship: what ship combat reads of it.
-struct ShipCrewMember
-{
-    std::string name;
-    // Skill values, the skill's level plus its ability (charhlp.pas
-    // SkillValue); 0 for a skill the member lacks.
-    int pilot_rocket{}, jury_rig{}, repair_nuclear_engine{}, sensor_operation{};
-    int repair_hull{}, repair_electrical{}, repair_mechanical{}, repair_life_support{},
-        repair_weapon{};
-    int first_aid{}, treat_light_wounds{}, treat_stun{};
-    // Gunnery: the member's combat value and Dexterity; a Rocketjock adds its
-    // level.
-    int combat_value{}, dexterity{}, level{};
-    bool rocketjock{};
-    int hit_points{}, hit_point_maximum{};
-    // The saving throw a burst of enemy fire tests (types.pas saves[2]): a
-    // d20 at or above it, never a 1, leaps clear.
-    int blast_save{};
-    CrewStatus status{CrewStatus::okay};
-    // Able to use skills (types.pas isEnabled); a member brought to 0 Hit
-    // Points is not.
-    bool enabled{true};
-    // At the helm. The first enabled member marked so is the pilot.
-    bool pilot{};
-    // Stunned or dizzy from an earlier fight: a member with Treat Stun may
-    // AID it.
-    bool stunned{};
-    // Rounds spent dying in this fight; at the tenth the member falls into a
-    // coma (charhlp.pas ProcessDyingCharacters).
-    int dying_rounds{};
+    // COMMAND is offered once a round even while the pilot is well, as in the
+    // original; by default only while the pilot is dead or incapacitated, as
+    // the Rule Book says.
+    bool command_every_round{};
+    // With no one at the helm the ship dodges a ram by its own pilot value
+    // (100 for the Maelstrom Rider), as in the original; by default an empty
+    // helm dodges with 0.
+    bool empty_helm_dodges{};
+    // After a boarding the repairs take no fuel from the captured ship, as in
+    // the original; by default its fuel is transferred, as the Rule Book says.
+    bool no_boarding_fuel{};
 };
 
 struct ShipCombatStart
@@ -119,8 +97,12 @@ struct ShipCombatStart
     // SHIP COMBAT's operands: the enemy ship, 1 to 5; the enemy pilot's
     // skill; the enemy's to-hit number, 0 to 60, lower being better.
     int enemy_ship_number{}, enemy_pilot_skill{}, enemy_to_hit{};
-    // The team in party order, at most eight.
-    std::vector<ShipCrewMember> crew;
+    // The team in party order, at most eight: what the fight reads of each
+    // is its record (skills, Hit Points, status, combat value, Dexterity,
+    // saving throws, career, level and the pilot mark) and its stun. The
+    // first enabled member marked as pilot is at the helm.
+    std::vector<TeamMember> crew;
+    ShipCombatOptions options;
 };
 
 enum class ShipSide : std::uint8_t
@@ -196,7 +178,10 @@ enum class ShipEventKind : std::uint8_t
     treat_stun,
     sensors,
     // The range passed 8: the enemy ship is lost from the scanners.
-    lost_from_scanners
+    lost_from_scanners,
+    // No team member could act and the enemy could neither finish the ship
+    // nor get away: it breaks off, and the fight ends as if it were lost.
+    breaks_off
 };
 
 struct ShipEvent
@@ -208,27 +193,27 @@ struct ShipEvent
     int weapon_kind{}, mount{-1}, amount{};
     ShipSystem system{ShipSystem::hull};
     bool success{};
-    CrewStatus status{};
+    BuckRogersStatus status{};
 };
 
 // How a ship combat ended, for the script and the steps after it.
 struct ShipCombatEnd
 {
     // 4BBAh: 0 the enemy ship destroyed or boarded, 1 the team's ship
-    // destroyed or the enemy lost from the scanners.
+    // destroyed or the enemy lost from the scanners or broken off.
     int outcome{};
     // The team boarded the enemy: post-combat mode 1 at 4D7Ch. The script
     // runs the fight on the enemy's decks; nothing after the fight runs here.
     bool boarded{};
     // The ship-combat experience still to share (repair_ship shares it); 0
-    // once the enemy is lost from the scanners.
+    // once the enemy is lost from the scanners or broken off.
     int experience{};
     // Treatment and repair_ship follow every fight but a boarding.
     bool repair_pending{}, treatment_pending{};
     // The team's ship with the fight's jury-rigging taken away, and the
     // enemy's as the fight left it.
     buck_rogers::Ship party_ship, enemy_ship;
-    std::vector<ShipCrewMember> crew;
+    std::vector<TeamMember> crew;
 };
 
 // One byte the end of a ship combat writes into script memory.
@@ -249,7 +234,8 @@ struct ShipMemoryWrite
 // one by one in party order, and the enemy plays its whole turn, the team
 // first unless it won the pilot roll. The fight waits for a team member's
 // order, for the answer to whether to dodge an enemy ram, or, when no member
-// can act, for play_round.
+// can act, for play_round. A helpless round in which the enemy did nothing
+// that could change the fight ends it: the enemy breaks off.
 class ShipCombat
 {
   public:
@@ -279,7 +265,7 @@ class ShipCombat
     [[nodiscard]] int range() const noexcept;
     [[nodiscard]] const buck_rogers::Ship &ship(ShipSide side) const noexcept;
     [[nodiscard]] int boosts(ShipSide side) const noexcept;
-    [[nodiscard]] std::span<const ShipCrewMember> crew() const noexcept;
+    [[nodiscard]] std::span<const TeamMember> crew() const noexcept;
     [[nodiscard]] std::optional<std::size_t> pilot() const noexcept;
     // The enemy moves first each round (the team won the pilot roll).
     [[nodiscard]] bool enemy_moves_first() const noexcept;
@@ -341,7 +327,9 @@ class ShipCombat
     [[nodiscard]] int die(int sides);
     [[nodiscard]] int dice(int count, int sides);
     [[nodiscard]] bool percent(int chance);
-    [[nodiscard]] int member_skill(std::size_t member, int value) const;
+    [[nodiscard]] int member_skill(std::size_t member, Skill skill) const;
+    [[nodiscard]] bool pilot_down() const;
+    [[nodiscard]] int party_dodge_skill() const;
 
     [[nodiscard]] ShipState &state(ShipSide side) noexcept;
     [[nodiscard]] const ShipState &state(ShipSide side) const noexcept;
@@ -354,7 +342,6 @@ class ShipCombat
     [[nodiscard]] int combat_value(ShipSide side) const;
     [[nodiscard]] bool can_reload(ShipSide side, std::size_t mount) const;
     [[nodiscard]] std::vector<ShipOrder> jury_rig_choices(std::size_t member) const;
-    [[nodiscard]] std::vector<std::size_t> patients(std::size_t aider) const;
     [[nodiscard]] bool enemy_fire_worthwhile() const;
 
     void fire(ShipSide side, std::size_t mount, std::optional<std::size_t> gunner,
@@ -374,6 +361,8 @@ class ShipCombat
     void reload(ShipSide side, std::size_t mount, std::optional<std::size_t> loader);
     void aid(std::size_t aider);
     void take_command(std::size_t member);
+    void note_enemy_progress() noexcept;
+    void break_off();
     void remove_jury_rigs();
     void emit(ShipEvent event);
 
@@ -381,7 +370,11 @@ class ShipCombat
     int enemy_ship_number_;
     ShipDice dice_;
     std::array<ShipState, 2> ships_;
-    std::vector<ShipCrewMember> crew_;
+    ShipCombatOptions options_;
+    std::vector<TeamMember> crew_;
+    // Rounds each member has spent dying in this fight; at the tenth it falls
+    // into a coma (charhlp.pas ProcessDyingCharacters).
+    std::vector<int> dying_rounds_;
     std::optional<std::size_t> pilot_;
 
     int range_{}, next_range_{};
@@ -403,6 +396,11 @@ class ShipCombat
     // crew (shipcbt.pas ReportEnemyDamage).
     bool burst_pending_{};
     int burst_damage_{};
+
+    // The round play_round plays, with no member able to act, and whether
+    // the enemy did anything in it that could change the fight.
+    bool helpless_round_{};
+    bool enemy_progress_{};
 
     int outcome_{};
     bool boarded_{};
@@ -433,10 +431,14 @@ struct ShipRepairReport
 // enabled members, lets the okay members' repair skills mend each damaged
 // system but fuel and each weapon, and, when experience was shared, takes
 // fuel from the enemy ship and empties its tanks (postcbt.pas RepairShip).
-// `enemy_ship` is null when there is none, as after a boarding.
+// After a boarding `enemy_ship` is the captured ship as the fight's end saved
+// it (ShipCombatEnd::enemy_ship, at 4D6Ch); its fuel is transferred unless
+// `options` keep the original's none. `enemy_ship` is null when there is
+// none.
 [[nodiscard]] ShipRepairReport repair_ship(GoldBoxGame game, buck_rogers::Ship &party_ship,
-                                           std::span<const ShipCrewMember> crew, int experience,
-                                           buck_rogers::Ship *enemy_ship, const ShipDice &dice);
+                                           std::span<const TeamMember> crew, int experience,
+                                           buck_rogers::Ship *enemy_ship, bool after_boarding,
+                                           const ShipCombatOptions &options, const ShipDice &dice);
 
 } // namespace opengold::original
 

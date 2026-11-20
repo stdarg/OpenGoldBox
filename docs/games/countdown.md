@@ -568,9 +568,11 @@ it, from `shipcbt.pas` (`ShipCombat`) and `postcbt.pas` (`RepairShip`), as
 `ShipCombat`, `repair_ship` and `ship_combat_memory`
 (`src/OpenGold.Rules.Original/include/opengold/buck_rogers_ship_combat.h`),
 checked by `tests/buck_rogers_ship_combat_tests.cpp`. The session takes the
-crew as a list of what the fight reads of each member, and its dice from
-outside. Step B3 joins it to the party and gives it a screen. *Matrix Cubed*
-plays it the same way ([matrix-cubed.md](matrix-cubed.md), "Ship combat").
+crew as the team's members, their records and stuns as the upkeep rules keep
+them (`TeamMember`, `buck_rogers_upkeep.h`), its dice from outside, and the
+three ship-combat options below (`ShipCombatOptions`). Step B3 joins it to
+the party and gives it a screen. *Matrix Cubed* plays it the same way
+([matrix-cubed.md](matrix-cubed.md), "Ship combat").
 
 - **The start:** SHIP COMBAT's operands are the enemy ship (1 to 5, `SHIPS`
   record 39 plus the number), an unused value, the enemy pilot's skill and
@@ -586,14 +588,18 @@ plays it the same way ([matrix-cubed.md](matrix-cubed.md), "Ship combat").
   the light and heavy acceleration guns.
 - **The opening:** the range is 8. Each side rolls a d10, and the team adds
   its ship's reaction less the enemy's. When the team comes out ahead, the
-  enemy moves first in every round; otherwise the team does (open question 1
+  enemy moves first in every round; otherwise the team does (decision 1
   below).
 - **A round:** the team's members act one by one in party order, those who
   are okay; the enemy plays its whole turn before or after them. Moves change
   the range at the round's end, so every shot and order of a round uses the
   range it began with. A range below 0 becomes 0, and once it falls below 4
   a losing enemy starts to flee. Past 8 the enemy is lost from the scanners:
-  the fight ends with outcome 1 and no experience.
+  the fight ends with outcome 1 and no experience. When no member can act
+  and a round passes in which the enemy did nothing that could change the
+  fight (no shot, no ram that might land, no reload, no boost or jury-rig
+  that might work, no move), the enemy breaks off, and the fight ends the
+  same way (Bugs).
 - **The pilot** fires every pilot's weapon it can, each mount as many times
   as it has working weapons (FIRE), or the same at one system (TARGET). It
   may CLOSE or WITHDRAW by its ship's speed once a round, and still act after.
@@ -601,9 +607,10 @@ plays it the same way ([matrix-cubed.md](matrix-cubed.md), "Ship combat").
 - **The rest of the crew** fire one shot of the crew's best weapon, LOAD an
   empty mount that has reloads left, or JURY RIG with the skill: a mount gets
   one weapon back, a system 2d10 points; a system is rigged once a fight, and
-  fuel never. COMMAND takes the helm once a round, and the member acts on as
-  the pilot (open question 2). AID bandages the dying, with First Aid or Treat
-  Light Wounds, and treats the stunned with Treat Stun. BOOST ENGINES checks
+  fuel never. COMMAND, offered while the pilot is dead or incapacitated,
+  takes the helm, once a round, and the member acts on as the pilot
+  (decision 2). AID is the ground fight's ("AID: medics in a fight and
+  aboard" above), with every member of the crew a patient. BOOST ENGINES checks
   Repair Nuclear Engine at half: a success adds a point of speed, at most two
   a fight; a failure costs the engines 1d100. SENSORS checks Sensor Operation
   at double and shows the enemy ship.
@@ -634,10 +641,9 @@ plays it the same way ([matrix-cubed.md](matrix-cubed.md), "Ship combat").
   least 1; 0 without controls, fuel or engines.
 - **Ramming:** each hull takes the other ship's tonnage, unless the rammed
   ship, moving, dodges: the enemy tries when its hull is the weaker, the team
-  when the player says so. The dodge is the pilot's Pilot Rocket, or the
-  ship's own pilot value (100 for the Maelstrom Rider) with no one at the
-  helm (open question 4), plus ten for each point of speed the rammed ship
-  has over the rammer.
+  when the player says so. The dodge is the pilot's Pilot Rocket, or 0 with
+  no one at the helm (decision 4), plus ten for each point of speed the
+  rammed ship has over the rammer.
 - **The enemy** weighs both ships (hull, a third of controls, fuel and
   engines when it can move, and its weapons' damage): it flees when it is
   worth less than half the team's ship, attacks when it is worth more, and
@@ -648,10 +654,10 @@ plays it the same way ([matrix-cubed.md](matrix-cubed.md), "Ship combat").
   range 5 or more, closes. Its pilot fires every pilot's weapon. Then all
   but a tenth of its crew (rounded up) reload or fire one shot of the crew's
   weapons each, and that tenth boost or jury-rig with the ship's own skill. A
-  fleeing, slower enemy may boost once a round, with no limit (open
-  question 3).
+  fleeing, slower enemy may boost once a round, with no limit (decision 3).
 - **The end:** the outcome goes to 4BBAh: 0 when the enemy was destroyed or
-  boarded, 1 when the team's ship was destroyed or the enemy lost. 4D7Ch gets
+  boarded, 1 when the team's ship was destroyed or the enemy lost or broke
+  off. 4D7Ch gets
   post-combat mode 1 after boarding, else 0, and 4B80h 0. The team's ship
   goes back to 4D00h with its jury-rigging taken off. The enemy's systems,
   type, crew, gunnery and working weapons go to 4D6Ch to 4D82h, cleared when
@@ -668,7 +674,9 @@ plays it the same way ([matrix-cubed.md](matrix-cubed.md), "Ship combat").
   Engine): 20, 4, 4, 8 and 12 d10. Each broken weapon is fixed by the first
   whose Repair Weapon succeeds. When experience was shared, 9 to 15
   sixteenths of the enemy's fuel and 1d16 more fill the tanks as far as they
-  go, and the enemy's tanks are emptied.
+  go, and the enemy's tanks are emptied. After a boarding the repairs follow
+  the fight on the enemy's decks, and the fuel comes the same way from the
+  captured ship as the fight's end saved it (decision 5).
 
 ### Bugs
 
@@ -678,30 +686,41 @@ plays it the same way ([matrix-cubed.md](matrix-cubed.md), "Ship combat").
 | A skill check's chance is kept in a byte: a slow pilot's dodge below 0 wraps round to a certain dodge, and one above 255 to a small chance (`SkillCheck`) | Below 1 never succeeds, 100 or more always does |
 | A hit's chance to kill a crew member, half its damage, is passed in a byte, so a ram of more than 511 wraps round to a small chance (`DamageShip`) | It stops at certain |
 | The enemy adds up its pilot's weapons in a byte read as signed, so weapons worth more than 127 (the Adder's lasers and K-cannon, 150) count as less than nothing, and it rams whenever it may (`EnemyFireWorthwhile`) | The weapons count in full |
-| With no one at the helm, the enemy weighs the dodge of a pilot who is not there (`EnemyFireWorthwhile`) | A Pilot Rocket of 0 |
+| With no one at the helm, the enemy weighs the dodge of a pilot who is not there (`EnemyFireWorthwhile`) | The dodge the ship would try: 0, or its own pilot value with Empty helm dodges on |
 | The end of the fight takes a system's jury-rigged points off only when they are fewer than its points, so a system rigged back from 0 stays mended for good (`RemoveJuryRigs`) | Every system loses them, down to 0, as the mounts do |
 | A ship destroyed by its own ram still fires a shot (`EnemyTurnBody`) | It fires no more |
 | COMMAND leaves the pilot it replaces marked as pilot, and the first marked member in party order takes the helm in the next fight | The replaced pilot stands down |
-| AID looks its patients up in the ground fight's table of combatants, which a ship combat does not fill (`TreatPatients`) | It treats the crew |
+| AID looks its patients up in the ground fight's table of combatants, which a ship combat does not fill (`TreatPatients`) | It treats the crew, by the ground fight's AID |
+| A fight in which no member can act and the enemy can neither destroy the team's ship nor get away never ends (the user, 2026-11-20) | After a helpless round in which the enemy did nothing that could change the fight, it breaks off: outcome 1, no experience |
 | LOAD and JURY RIG pick a mount by the first letter of its weapon's short name: the acceleration guns ("acl-Cann", "hv-Accel") can never be picked, and with two mounts of a kind the last is taken, needed or not | The player picks the mount |
 
-### Open questions
+### Decisions
+
+Decided by the user on 2026-11-20, for both games. Three are options on the
+Options screen while a Buck Rogers game plays, one key per game
+([CONFIGURATION.md](../CONFIGURATION.md); [DEVIATIONS.md](../DEVIATIONS.md)).
 
 1. The team that wins the pilot roll lets the enemy move first in every
-   round. OpenGoldBox does the same.
-2. COMMAND is open to any crew member once a round, even with the pilot well
-   (the Rule Book offers it only when the pilot is down), so a second member
-   may ram again in the same round. OpenGoldBox does the same.
-3. The enemy may boost its engines without limit; the team twice. OpenGoldBox
-   does the same.
-4. With no one at the helm the ship dodges by its own pilot value, 100 for
-   the Maelstrom Rider, better than most pilots. OpenGoldBox does the same.
-5. After boarding, the repairs take no fuel, though the Rule Book says the
-   captured ship's fuel is transferred; *Matrix Cubed* reads it from a ship
-   that is gone. OpenGoldBox takes none.
+   round. Kept, as in the original.
+2. **COMMAND every round** (`[command_every_round]`). The original offers
+   COMMAND to any crew member once a round, even with the pilot well, so a
+   second member may ram again in the same round; the Rule Book offers it
+   only when the pilot is dead or incapacitated. Off, the default, plays the
+   Rule Book's way; on, the original's.
+3. The enemy may boost its engines without limit; the team twice. Kept, as
+   in the original.
+4. **Empty helm dodges** (`[empty_helm_dodges]`). With no one at the helm the
+   original's ship dodges a ram by its own pilot value, 100 for the Maelstrom
+   Rider, better than most pilots. Off, the default, dodges with 0, and the
+   enemy weighs that dodge; on, by the ship's own value.
+5. **Fuel from a boarded ship** (`[boarding_fuel]`). After a boarding the
+   original's repairs take no fuel (*Matrix Cubed* reads it from a ship that
+   is gone), though the Rule Book says the captured ship's fuel is
+   transferred. On, the default, transfers it, as after a kill; off takes
+   none.
 6. A fight in which no member can act and the enemy can neither destroy the
-   team's ship nor get away never ends. OpenGoldBox waits for the player to
-   play each round.
+   team's ship nor get away never ends. Fixed as a bug: the enemy breaks off
+   (Bugs).
 
 ## Next
 

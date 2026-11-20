@@ -318,6 +318,84 @@ autowrap_mode = 3
 theme_type_variation = &"LabelMuted"
 text = "Pools of Darkness. On: the gaze spider's paralyzing gaze and the vampires' charming gaze work. Off: they do nothing, as in the original."
 
+[node name="CommandEveryRoundLabel" type="Label" parent="Options/Gameplay"]
+visible = false
+offset_left = 20
+offset_top = 436
+offset_right = 280
+offset_bottom = 472
+text = "COMMAND every round"
+
+[node name="CommandEveryRound" type="OptionButton" parent="Options/Gameplay"]
+visible = false
+offset_left = 290
+offset_top = 432
+offset_right = 510
+offset_bottom = 472
+
+[node name="CommandEveryRoundNote" type="Label" parent="Options/Gameplay"]
+visible = false
+anchor_right = 1
+offset_left = 540
+offset_right = -20
+offset_top = 428
+offset_bottom = 484
+autowrap_mode = 3
+theme_type_variation = &"LabelMuted"
+text = "Ship combat. On: any crew member may take COMMAND once a round, even with the pilot well, as in the original. Off: only while the pilot is dead or incapacitated, as the Rule Book says."
+
+[node name="EmptyHelmDodgesLabel" type="Label" parent="Options/Gameplay"]
+visible = false
+offset_left = 20
+offset_top = 496
+offset_right = 280
+offset_bottom = 532
+text = "Empty helm dodges"
+
+[node name="EmptyHelmDodges" type="OptionButton" parent="Options/Gameplay"]
+visible = false
+offset_left = 290
+offset_top = 492
+offset_right = 510
+offset_bottom = 532
+
+[node name="EmptyHelmDodgesNote" type="Label" parent="Options/Gameplay"]
+visible = false
+anchor_right = 1
+offset_left = 540
+offset_right = -20
+offset_top = 488
+offset_bottom = 544
+autowrap_mode = 3
+theme_type_variation = &"LabelMuted"
+text = "Ship combat. On: with no one at the helm, the ship dodges a ram by its own pilot value (the Maelstrom Rider's is 100), as in the original. Off: it dodges with 0."
+
+[node name="BoardingFuelLabel" type="Label" parent="Options/Gameplay"]
+visible = false
+offset_left = 20
+offset_top = 560
+offset_right = 280
+offset_bottom = 596
+text = "Fuel from a boarded ship"
+
+[node name="BoardingFuel" type="OptionButton" parent="Options/Gameplay"]
+visible = false
+offset_left = 290
+offset_top = 556
+offset_right = 510
+offset_bottom = 596
+
+[node name="BoardingFuelNote" type="Label" parent="Options/Gameplay"]
+visible = false
+anchor_right = 1
+offset_left = 540
+offset_right = -20
+offset_top = 552
+offset_bottom = 608
+autowrap_mode = 3
+theme_type_variation = &"LabelMuted"
+text = "Ship combat. On: a boarded ship's fuel is transferred to yours, as the Rule Book says. Off: none, as in the original."
+
 [node name="DesignDifficultyLabel" type="Label" parent="Options/Gameplay"]
 offset_left = 20
 offset_top = 624
