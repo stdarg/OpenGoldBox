@@ -1,6 +1,7 @@
 #include "earlier_game_dialog.h"
 #include "application_settings.h"
 #include "game_encounters.h"
+#include "game_folder_questions.h"
 #include "game_monsters.h"
 #include "game_resources.h"
 #include "game_rules.h"
@@ -149,7 +150,8 @@ void EarlierGameDialog::connect_controls()
     connect("close_requested", presentation::guarded(this, &EarlierGameDialog::close));
 }
 
-void EarlierGameDialog::connect_host(CampaignAccess campaign, std::function<void()> member_added)
+void EarlierGameDialog::connect_host(CampaignAccess campaign, std::function<void()> member_added,
+                                     GameFolderQuestions &folder_questions)
 {
     if (!campaign || !member_added)
     {
@@ -157,6 +159,7 @@ void EarlierGameDialog::connect_host(CampaignAccess campaign, std::function<void
     }
     campaign_ = std::move(campaign);
     member_added_ = std::move(member_added);
+    folder_questions_ = &folder_questions;
 }
 
 void EarlierGameDialog::report_failure(const std::exception &failure)
@@ -231,6 +234,56 @@ void EarlierGameDialog::select_save(std::int64_t index)
     {
         return;
     }
+    if (const auto game = folder_to_ask())
+    {
+        ask_folder(*game, index);
+        return;
+    }
+    list_members(index);
+}
+
+// The earlier game's folder, whose save is read, then the campaign's own,
+// whose item lists the characters' items are matched against.
+std::optional<GoldBoxGame> EarlierGameDialog::folder_to_ask() const
+{
+    for (const auto game : {earlier_game(), original::game_of(campaign_().identity())})
+    {
+        if (!GameFolderQuestions::folder_chosen(game))
+        {
+            return game;
+        }
+    }
+    return std::nullopt;
+}
+
+// A folder the search found, or none, is asked about before the import reads
+// from it, as at startup (the user's decision, 2026-11-20). The dialog steps
+// aside while the questions show, both being exclusive, and comes back when
+// they close: with the save's characters once the folders are known, without
+// them when the player goes back.
+void EarlierGameDialog::ask_folder(GoldBoxGame game, std::int64_t save_index)
+{
+    hide();
+    folder_questions_->ask(
+        {game},
+        [this, save_index]
+        {
+            popup_centered();
+            presentation::run_guarded(*this,
+                                      [&]
+                                      {
+                                          select_save(save_index);
+                                      });
+        },
+        [this]
+        {
+            required_node<ItemList>(*this, "Margin/Rows/Lists/SaveColumn/Saves").deselect_all();
+            popup_centered();
+        });
+}
+
+void EarlierGameDialog::list_members(std::int64_t index)
+{
     auto &members = required_node<ItemList>(*this, "Margin/Rows/Lists/MemberColumn/Members");
     members.clear();
     members_.clear();

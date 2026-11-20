@@ -10,6 +10,8 @@
 #include <optional>
 #include <vector>
 
+class GameFolderQuestions;
+
 // The party screen's choice of the game before's saves: Curse's Add Character
 // to Party, From Where: Pool ("Pool adds a character whose last adventure was
 // in Pool of Radiance"), Treasures' characters from Gateway to the Savage
@@ -25,11 +27,14 @@ class EarlierGameDialog : public godot::Window
 
     void _ready() override;
     // The host's campaign, read at each use because loading a save replaces
-    // it, and what follows a member brought in.
-    void connect_host(CampaignAccess campaign, std::function<void()> member_added);
+    // it, what follows a member brought in, and the host's questions for a
+    // game's folder, which outlive this dialog's use of them.
+    void connect_host(CampaignAccess campaign, std::function<void()> member_added,
+                      GameFolderQuestions &folder_questions);
     // Lists the earlier game's saves and shows the dialog.
     void open();
-    // Reads the chosen save and lists its player characters.
+    // Reads the chosen save and lists its player characters, once the
+    // folders it reads from are the player's choice.
     void select_save(std::int64_t index);
     void select_member(std::int64_t index);
     // Brings the chosen character into the party.
@@ -46,6 +51,10 @@ class EarlierGameDialog : public godot::Window
 
   private:
     void connect_controls();
+    // The first folder the import reads that the player has not chosen, if any.
+    [[nodiscard]] std::optional<opengold::GoldBoxGame> folder_to_ask() const;
+    void ask_folder(opengold::GoldBoxGame game, std::int64_t save_index);
+    void list_members(std::int64_t save_index);
     // Turns Add on or off for the chosen character and says why.
     void show_member_state();
     // The game whose characters come into the campaign's: Pool of Radiance
@@ -53,6 +62,7 @@ class EarlierGameDialog : public godot::Window
     [[nodiscard]] opengold::GoldBoxGame earlier_game() const;
     CampaignAccess campaign_;
     std::function<void()> member_added_;
+    GameFolderQuestions *folder_questions_{};
     std::vector<std::filesystem::path> saves_;
     // The chosen save's player characters, and which of them have been
     // brought in since the save was chosen.

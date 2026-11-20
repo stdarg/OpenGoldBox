@@ -6,14 +6,20 @@ extends SceneTree
 # the battle axe Treasures knows, and, the Gateway's-money option being on, the
 # save's platinum, gems and jewelry. Run by tests/treasure_from_gateway.cmake
 # with --gateway-save=<a Gateway save under the original rules>.
+#
+# --found-import=confirm or --found-import=decline: the player never chose
+# Gateway's folder, which the search finds; choosing the save asks about it
+# first, as startup does.
 
 const SAVE_NAME := "Gateway veterans"
 
 var gateway_save := ""
+var found_import := ""
 
 func _initialize() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--gateway-save="): gateway_save = arg.trim_prefix("--gateway-save=")
+		if arg.begins_with("--found-import="): found_import = arg.trim_prefix("--found-import=")
 	call_deferred("run_checks")
 
 func require(condition: bool, message: String) -> void:
@@ -89,6 +95,60 @@ func place_gateway_save() -> void:
 	var file := saves.path_join(SAVE_NAME.to_utf8_buffer().hex_encode() + ".ogs")
 	require(DirAccess.copy_absolute(gateway_save, file) == OK, "Cannot place the Gateway save " + gateway_save)
 
+func settings_file() -> String:
+	return OS.get_environment("OPENGOLD_SETTINGS_FILE")
+
+func read_config() -> ConfigFile:
+	var config := ConfigFile.new()
+	config.load(settings_file())
+	return config
+
+# Choosing the Gateway save when the player never chose Gateway's folder, which
+# the search finds: the import shows the folder found for the player to
+# confirm before it reads the save (the user's decision, 2026-11-20). Use this
+# folder saves it and lists the save's characters; Choose another folder opens
+# the folder dialog, empty, whose Cancel goes back to the import without its
+# characters and whose folder is saved before they are listed.
+func choose_save_from_found_folder(screen: Node, dialog: Window, saves: ItemList) -> void:
+	var expected := StartupView.game_folder("GATEWAY")
+	var config := read_config()
+	config.erase_section_key("games", "GATEWAY")
+	require(config.save(settings_file()) == OK, "Cannot forget Gateway's folder")
+	OS.set_environment("OPENGOLD_GOLDBOX_DIR", expected)
+	require(StartupView.game_folder("GATEWAY") == expected, "The search must find Gateway's folder")
+	var saved_before := FileAccess.get_file_as_string(settings_file())
+	var members: ItemList = dialog.get_node("Margin/Rows/Lists/MemberColumn/Members")
+	var found: Window = screen.get_node("FolderQuestions/FoundFolder")
+	var path_dialog: Window = screen.get_node("FolderQuestions/PathDialog")
+	await pick(saves, 0)
+	require(not dialog.visible and found.visible and not path_dialog.visible, "Choosing the save must show the folder found for the player to confirm")
+	require(found.title == "Gateway to the Savage Frontier game files" and found.get_node("Title").text == found.title, "The question names Gateway: " + found.title)
+	require(found.get_node("Folder").text == expected, "The question shows the folder found: " + found.get_node("Folder").text)
+	require(found.get_node("Use").has_focus(), "Use this folder takes the focus")
+	if found_import == "decline":
+		found.get_node("Choose").pressed.emit()
+		await settle()
+		require(not found.visible and path_dialog.visible, "Choose another folder must open the folder dialog")
+		require(path_dialog.get_node("Path").text.is_empty(), "The folder dialog starts empty after declining")
+		require(path_dialog.get_node("Title").text == "Gateway to the Savage Frontier game files", "The folder dialog names Gateway")
+		require(FileAccess.get_file_as_string(settings_file()) == saved_before, "Declining saved a folder")
+		path_dialog.get_node("Cancel").pressed.emit()
+		await settle()
+		require(not path_dialog.visible and dialog.visible, "Cancel goes back to the import")
+		require(members.item_count == 0 and not saves.is_anything_selected(), "Nothing was read: the save's characters are not listed")
+		await pick(saves, 0)
+		require(found.visible and not dialog.visible, "Choosing the save again asks again")
+		found.get_node("Choose").pressed.emit()
+		await settle()
+		path_dialog.get_node("Path").text = expected
+		path_dialog.get_node("Continue").pressed.emit()
+		await settle()
+	else:
+		found.get_node("Use").pressed.emit()
+		await settle()
+	require(not found.visible and not path_dialog.visible and dialog.visible, "The questions close once Gateway's folder is known, back to the import")
+	require(read_config().get_value("games", "GATEWAY", "") == expected, "Gateway's confirmed folder was not saved")
+
 func run_checks() -> void:
 	place_gateway_save()
 	change_scene_to_file("res://scenes/startup.tscn")
@@ -107,7 +167,10 @@ func run_checks() -> void:
 	require(title.text == "Add character from Gateway to the Savage Frontier", "The dialog names Gateway: " + title.text)
 	var saves: ItemList = dialog.get_node("Margin/Rows/Lists/SaveColumn/Saves")
 	require(rows(saves) == [SAVE_NAME], "The dialog lists the Gateway save: " + str(rows(saves)))
-	await pick(saves, 0)
+	if found_import.is_empty():
+		await pick(saves, 0)
+	else:
+		await choose_save_from_found_folder(screen, dialog, saves)
 	var members: ItemList = dialog.get_node("Margin/Rows/Lists/MemberColumn/Members")
 	var shown := rows(members)
 	require(shown.size() == 1 and shown[0].begins_with("Veteran / Fighter / Level "),
@@ -132,5 +195,7 @@ func run_checks() -> void:
 	require(sheet.contains("Party gold 6170"), "The save's 1,234 platinum comes along:\n" + sheet)
 	await press(dialog, "Margin/Rows/Buttons/Close")
 	require(not dialog.visible, "Close puts the dialog away")
+	if not found_import.is_empty():
+		print("Treasures from Gateway passed: found folder ", found_import)
 	print("Treasures from Gateway passed: the save's character, brought in with its axe and its money.")
 	quit(0)

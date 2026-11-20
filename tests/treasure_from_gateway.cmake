@@ -4,7 +4,7 @@
 #
 # FIXTURE_WRITER (opengold_treasure_tests) writes the Gateway save the check
 # brings a character from; the check runs with the Gateway's-money option on
-# and its own settings.cfg and user data under WORK.
+# and its own settings.cfg and user data under WORK, passing ARGS on.
 include("${CMAKE_CURRENT_LIST_DIR}/find_games.cmake")
 if(NOT DEFINED game_folder_POOLRAD OR NOT DEFINED game_folder_TREASURE
    OR NOT DEFINED game_folder_GATEWAY)
@@ -35,7 +35,7 @@ endif()
 execute_process(
     COMMAND "${CMAKE_COMMAND}" "-DGODOT=${GODOT}" "-DPROJECT=${PROJECT}"
     "-DSCRIPT=${CMAKE_CURRENT_LIST_DIR}/treasure_from_gateway_tests.gd" "-DEXPECTED=${EXPECTED}"
-    "-DARGS=--gateway-save=${fixture}" -DTEST_TIMEOUT=200
+    "-DARGS=--gateway-save=${fixture};${ARGS}" -DTEST_TIMEOUT=200
     -P "${CMAKE_CURRENT_LIST_DIR}/run_godot_test.cmake"
     RESULT_VARIABLE result)
 if(NOT result STREQUAL "0")

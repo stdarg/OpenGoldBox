@@ -700,7 +700,11 @@ checks play from it. Loading another game's save in play asks the same
 questions, from the same windows (`GameFolderQuestions`,
 `src/OpenGoldBox/game_folder_questions.h`, which startup and the game scene
 both hold), before that game plays from a folder the player has not chosen;
-going back returns to the load screen. `--reset-game-path` opens Pool of Radiance's folder
+going back returns to the load screen. Bringing characters in from an
+earlier game's save (`EarlierGameDialog`) asks them too, once a save is
+chosen and before it is read, for the earlier game's folder and then the
+campaign's own, whose item lists the characters' items are matched against;
+going back returns to the import with no characters listed. `--reset-game-path` opens Pool of Radiance's folder
 dialog straight away, filled in with the folder it has.
 
 Native checks get a game's folder from `tests/installed_games.h`. A Godot

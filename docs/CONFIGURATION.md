@@ -78,7 +78,9 @@ shows the folder and asks whether to use it: **Use this folder** saves it, so
 the question comes once; **Choose another folder** opens the folder dialog for
 the player to pick one, which is saved. When it is not found, the folder
 dialog opens. Loading another game's save in play asks the same way before
-that game plays; going back returns to the load screen. A party still takes its portraits and combat
+that game plays; going back returns to the load screen. Bringing characters
+in from an earlier game's save asks the same way before the save is read;
+going back returns to the import. A party still takes its portraits and combat
 art from *Pool of Radiance*'s files, so choosing another game asks for that
 folder too when it is not set ([GAMES.md](GAMES.md)). `--game=POOLRAD`, `--game=CURSE`, `--game=SECRET`, `--game=GATEWAY`, `--game=DARKNESS` or `--game=TREASURE`
 on the command line picks the game without the menu, as the packaged game's own checks

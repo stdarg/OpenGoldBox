@@ -752,16 +752,27 @@ if(OPENGOLD_BUILD_TESTS)
     # Treasures' party screen brings a character from a Gateway save, with
     # its money when the Gateway's-money option is on. Skipped without
     # Treasures' and Gateway's files.
-    add_test(NAME opengold_godot_treasure_from_gateway COMMAND "${CMAKE_COMMAND}"
-        "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
-        "-DFIXTURE_WRITER=$<TARGET_FILE:opengold_treasure_tests>"
-        "-DWORK=${CMAKE_BINARY_DIR}/settings-checks/treasure_from_gateway"
-        "-DEXPECTED=Treasures from Gateway passed"
-        "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
-        -P "${PROJECT_SOURCE_DIR}/tests/treasure_from_gateway.cmake")
-    set_tests_properties(opengold_godot_treasure_from_gateway PROPERTIES
-        FIXTURES_REQUIRED godot_project TIMEOUT 320 LABELS godot
-        SKIP_REGULAR_EXPRESSION "Skipped: ")
+    # The found cases forget Gateway's folder, which the search finds: the
+    # import asks about it first, as startup does.
+    foreach(case "" _found_confirm _found_decline)
+        if(case STREQUAL "")
+            set(case_arguments "-DEXPECTED=Treasures from Gateway passed")
+        else()
+            string(REPLACE "_found_" "" found_import "${case}")
+            set(case_arguments "-DARGS=--found-import=${found_import}"
+                "-DEXPECTED=Treasures from Gateway passed: found folder ${found_import}")
+        endif()
+        add_test(NAME "opengold_godot_treasure_from_gateway${case}" COMMAND "${CMAKE_COMMAND}"
+            "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
+            "-DFIXTURE_WRITER=$<TARGET_FILE:opengold_treasure_tests>"
+            "-DWORK=${CMAKE_BINARY_DIR}/settings-checks/treasure_from_gateway${case}"
+            ${case_arguments}
+            "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
+            -P "${PROJECT_SOURCE_DIR}/tests/treasure_from_gateway.cmake")
+        set_tests_properties("opengold_godot_treasure_from_gateway${case}" PROPERTIES
+            FIXTURES_REQUIRED godot_project TIMEOUT 320 LABELS godot
+            SKIP_REGULAR_EXPRESSION "Skipped: ")
+    endforeach()
     # Pools of Darkness's party screen brings a character from a Secret save,
     # with its money, as its LoadChar does. Skipped without Pools of
     # Darkness's and Secret's files.

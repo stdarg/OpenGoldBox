@@ -164,7 +164,8 @@ void CharacterCreationView::setup_party()
             {
                 roster_index_ = campaign_->state().roster.size() - 1;
                 refresh_party();
-            });
+            },
+            required_node<GameFolderQuestions>(*this, "FolderQuestions"));
     required_node<Button>(*this, "PartyPanel/ActionRow1/Modify")
         .connect("pressed", presentation::guarded(this, &CharacterCreationView::show_modify));
     required_node<Button>(*this, "PartyPanel/ActionRow2/Modifiers")
