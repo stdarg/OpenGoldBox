@@ -454,11 +454,17 @@ B2; B4 needs B3's winning party.
 ### Who does which step
 
 Two kinds of session share the work, as the user decided on 2026-11-20.
+Later that day the user handed the macOS Claude session's share to the
+Codex sessions on the Linux PC as well. The solar map is on main; character
+creation and the ship combat screen wait on the branches
+`handoff/buck-rogers-creation` and `handoff/buck-rogers-ship-combat`, each
+needing a rebase and a whole green game suite before it lands. The list
+below says what that share holds.
 Each builds on the other's work on main and never builds a second copy of
 it (one code path).
 
-- **The macOS Claude session** builds what the player sees and does, for
-  both games:
+- **The macOS Claude session's share, now Codex's,** is what the player
+  sees and does, for both games:
   - the creation and skill screens;
   - the solar map, its rules (`buck_rogers_solar_map.h`) and its screen;
   - the ship combat screen and the code that drives a ship fight
