@@ -28,6 +28,7 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -534,11 +535,14 @@ std::optional<std::filesystem::path> kit_folder()
 // their class and place (FIGHTER 1).
 std::shared_ptr<opengold::CampaignParty>
 new_party(const opengold::original::Content &content,
-          const std::vector<std::string> &classes = std::vector<std::string>(6, "fighter"))
+          const std::vector<std::string> &classes = std::vector<std::string>(6, "fighter"),
+          std::shared_ptr<const opengold::rules::CharacterRules> creation = {})
 {
-    std::shared_ptr<const opengold::rules::CharacterRules> creation =
-        opengold::original::character_rules(opengold::original::default_aging,
-                                            GoldBoxGame::unlimited_adventures);
+    if (!creation)
+    {
+        creation = opengold::original::character_rules(opengold::original::default_aging,
+                                                       GoldBoxGame::unlimited_adventures);
+    }
     auto party = std::make_shared<opengold::CampaignParty>(
         opengold::original::rules_module(content), creation);
     for (unsigned n = 0; n < classes.size(); ++n)
@@ -1838,6 +1842,30 @@ void the_kits_fights_end_as_the_kit_ends_them(const std::filesystem::path &kit)
     check(party->member(first).vitals.hit_points == 1 &&
               session.snapshot().phase != TourPhase::defeated,
           "The fallen get up with 1 Hit Point and the adventure goes on");
+
+    auto defeated = ua::UaSession::start(files);
+    auto others = new_party(content);
+    defeated.campaign_party(others);
+    Player losing{defeated, others, content};
+    losing.play();
+    defeated.place(5, 8, 2, MapDirection::east);
+    defeated.look();
+    while (defeated.snapshot().phase == TourPhase::awaiting_continue)
+    {
+        check(defeated.choose(defeated.snapshot().continue_ticket, 0), "The words are read");
+    }
+    check(defeated.resolve_combat(lost) && defeated.snapshot().phase == TourPhase::defeated,
+          "A lost fight ends an adventure where the party can die");
+    bool refused = false;
+    try
+    {
+        (void)defeated.saved_state();
+    }
+    catch (const std::logic_error &)
+    {
+        refused = true;
+    }
+    check(refused, "A defeated adventure cannot be saved as a victory");
 }
 
 // Drains a fighter's level, as a fight's level drain leaves it: the lasting
@@ -2578,6 +2606,36 @@ void a_game_saves_and_loads(const std::filesystem::path &kit)
     first.place(5, 4, 9, MapDirection::north);
     check(first.explore(ExplorationCommand::turn_right), "The party turns");
     const opengold::DesignSave saved_design{design.string(), first.saved_state()};
+    // Earlier layouts had no victory field; before layout 3 there were no
+    // vault items, and layout 1 kept the map as two bitsets.
+    std::istringstream saved_lines(saved_design.state);
+    std::vector<std::string> lines;
+    for (std::string line; std::getline(saved_lines, line);)
+    {
+        lines.push_back(std::move(line));
+    }
+    for (const unsigned version : {1U, 2U, 3U})
+    {
+        std::ostringstream legacy;
+        legacy << "UA-STATE " << version << '\n';
+        const auto end = lines.size() - (version == 3 ? 1 : 2);
+        for (std::size_t n = 1; n < end; ++n)
+        {
+            if (n == 7 && version == 1)
+            {
+                legacy << first.snapshot().visited.to_string() << '\n'
+                       << first.snapshot().seen.to_string() << '\n';
+            }
+            else
+            {
+                legacy << lines[n] << '\n';
+            }
+        }
+        const auto resumed = ua::UaSession::resume(files, legacy.str());
+        check(!resumed.snapshot().game_won && resumed.snapshot().pose == first.snapshot().pose &&
+                  resumed.saved_state() == first.saved_state(),
+              "Supported design state " + std::to_string(version) + " keeps the game in progress");
+    }
     // A save names the kit's items it was made with, as a DAX save its archives.
     const auto assets = opengold::campaign_asset_identity(kit);
     check(assets.starts_with("UA:ITEMS.DAT:"), "The kit's items identify its saves: " + assets);
@@ -2665,6 +2723,70 @@ void a_game_saves_and_loads(const std::filesystem::path &kit)
     check(unreadable, "A saved state of an area the design lacks is refused");
 }
 
+// A genuine designer end preserves the complete at-win party, including an
+// NPC when one is present. The campaign codec already owns character history.
+Bytes a_winning_save_round_trips(const ua::DesignFiles &files,
+                                 const opengold::original::Content &content,
+                                 const ua::UaSession &session,
+                                 const std::shared_ptr<opengold::CampaignParty> &party)
+{
+    check(session.snapshot().game_won, "Only an actual won adventure supplies a winning save");
+    const opengold::DesignSave design{files.design().string(), session.saved_state()};
+    const auto assets = opengold::campaign_asset_identity(files.kit());
+    const auto bytes = opengold::encode_campaign(*party, nullptr, assets,
+                                                 GoldBoxGame::unlimited_adventures, &design);
+    auto loaded = opengold::decode_campaign(bytes, *party->character_rules(), party->rule_module(),
+                                            assets, nullptr);
+    check(loaded.design.has_value(), "A winning save keeps its design");
+    auto restored = std::make_shared<opengold::CampaignParty>(
+        opengold::original::rules_module(content), party->character_rules());
+    restored->restore(std::move(loaded.party));
+    auto resumed = ua::UaSession::resume(files, loaded.design->state);
+    resumed.campaign_party(restored);
+    check(resumed.snapshot().game_won && resumed.snapshot().phase == TourPhase::completed &&
+              resumed.snapshot().dialogue.find("You have won.") != std::string::npos &&
+              !resumed.explore(ExplorationCommand::forward),
+          "A loaded winning adventure stays won and cannot be explored");
+    check(restored->state().slots == party->state().slots &&
+              restored->state().roster.size() == party->state().roster.size(),
+          "A winning save retains every active and reserve member");
+    for (const auto &member : party->state().roster)
+    {
+        const auto &again = restored->member(member.id);
+        check(again.npc_source == member.npc_source && again.vitals == member.vitals &&
+                  again.experience == member.experience && again.equipped == member.equipped &&
+                  std::ranges::equal(again.character.inventory().items(),
+                                     member.character.inventory().items()),
+              "A winning member keeps its identity, health, experience and equipment");
+    }
+    const opengold::DesignSave saved_again{files.design().string(), resumed.saved_state()};
+    check(opengold::encode_campaign(*restored, nullptr, assets, GoldBoxGame::unlimited_adventures,
+                                    &saved_again) == bytes,
+          "A complete winning campaign resaves byte-identically");
+    return {bytes.begin(), bytes.end()};
+}
+
+void a_won_game_keeps_its_npc(const std::filesystem::path &kit)
+{
+    const ua::DesignFiles files(
+        kit, build_test_design(kit, temporary_design("opengold_ua_winners.dsn")));
+    const auto content = ua::load_design_content(files);
+    auto session = ua::UaSession::start(files);
+    auto party = new_party(content);
+    session.campaign_party(party);
+    Player player{session, party, content};
+    player.play();
+    session.place(7, 9, 1, MapDirection::east);
+    session.look();
+    player.play();
+    check(party->state().slots[6] && !party->member(party->state().slots[6]).npc_source.empty(),
+          "The design's real NPC joins before the ending");
+    session.place(6, 8, 8, MapDirection::east);
+    session.look();
+    player.play();
+    (void)a_winning_save_round_trips(files, content, session, party);
+}
+
 // The steps from the party's square to (x, y) in its area, through open
 // steps, shortest first; empty when it stands there or none leads there.
 std::vector<MapDirection> route_to(const ua::UaSession &session, unsigned x, unsigned y)
@@ -2724,7 +2846,11 @@ bool the_design_plays_to_its_end(const std::filesystem::path &kit)
                                 build_test_design(kit, temporary_design("opengold_ua_route.dsn")));
     const auto content = ua::load_design_content(files);
     auto session = ua::UaSession::start(files);
-    auto party = new_party(content);
+    const auto game = ua::decode_game_settings(*files.data("GAME", 1));
+    check(game.has_value(), "The winning route's design specifies its starting resources");
+    auto party = new_party(content, std::vector<std::string>(6, "fighter"),
+                           opengold::original::design_character_rules(
+                               opengold::original::default_aging, ua::starting_stock(*game)));
     // Its player raises each member to its highest on Modify, as the Forgotten
     // Realms routes' players do.
     for (const auto id : party->state().slots)
@@ -2732,6 +2858,10 @@ bool the_design_plays_to_its_end(const std::filesystem::path &kit)
         if (id)
         {
             opengold::test::modify_to_the_highest(*party, id);
+            ua::outfit_new_character(*party, id, files);
+            check(party->member(id).experience == 20000 &&
+                      party->member(id).character.inventory().items().size() == 2,
+                  "The route starts with the design's earned-rule resources and equipment");
         }
     }
     session.campaign_party(party);
@@ -2805,6 +2935,11 @@ bool the_design_plays_to_its_end(const std::filesystem::path &kit)
               session.snapshot().dialogue.find("You have won.") != std::string::npos,
           "The design's end wins the game: " + session.snapshot().dialogue);
     check(!session.explore(ExplorationCommand::forward), "The adventure is over");
+    const auto winners = a_winning_save_round_trips(files, content, session, party);
+    if (const char *save = std::getenv("OPENGOLD_ROUTE_SAVE"))
+    {
+        write(save, winners);
+    }
     std::cout << "The route played the design to its end: " << player.fights << " fights ("
               << player.victories << " won).\n";
     return true;
@@ -2918,6 +3053,7 @@ int main(int argc, char **argv)
         the_town_serves_the_party(*kit);
         the_view_plays_it_through_the_seam(*kit);
         a_game_saves_and_loads(*kit);
+        a_won_game_keeps_its_npc(*kit);
         the_kits_items_work_when_readied(*kit);
         the_party_camps(*kit);
         a_cleric_fixes_the_party(*kit);

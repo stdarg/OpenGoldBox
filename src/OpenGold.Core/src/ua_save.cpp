@@ -14,12 +14,13 @@ namespace opengold::ua
 namespace
 {
 
-// The first line of a saved state, naming its layout: 3 keeps the items
+// The first line of a saved state, naming its layout: 4 keeps an adventure's
+// victory; 3 keeps the items
 // left in the vault; 2, saved before the vault kept items, every square the
 // party has stood on in its area; 1, saved before areas larger than 16 by 16
 // had a map, kept the first 16 by 16.
-constexpr std::string_view state_tag = "UA-STATE 3", second_state_tag = "UA-STATE 2",
-                           first_state_tag = "UA-STATE 1";
+constexpr std::string_view state_tag = "UA-STATE 4", third_state_tag = "UA-STATE 3",
+                           second_state_tag = "UA-STATE 2", first_state_tag = "UA-STATE 1";
 
 void require(bool ok, const char *message)
 {
@@ -126,7 +127,7 @@ por::MapDirection facing_from(unsigned number)
 
 std::string UaSession::saved_state() const
 {
-    if (!can_leave() || encounter_ || party_lost_ || running_)
+    if (!can_leave() || encounter_ || (party_lost_ && !adventure_won_) || running_)
     {
         throw std::logic_error("A design is saved only while nothing waits for the player");
     }
@@ -162,6 +163,7 @@ std::string UaSession::saved_state() const
     {
         write_item(out, item);
     }
+    out << adventure_won_ << '\n';
     return out.str();
 }
 
@@ -171,7 +173,8 @@ UaSession UaSession::resume(DesignFiles files, std::string_view state)
     in.imbue(std::locale::classic());
     std::string tag;
     std::getline(in, tag);
-    require(tag == state_tag || tag == second_state_tag || tag == first_state_tag,
+    require(tag == state_tag || tag == third_state_tag || tag == second_state_tag ||
+                tag == first_state_tag,
             "The saved design's state is not one this build reads");
     auto session = start(std::move(files));
     const auto area = next<unsigned>(in);
@@ -244,7 +247,7 @@ UaSession UaSession::resume(DesignFiles files, std::string_view state)
         require(static_cast<bool>(in), "The saved design's state is cut short");
         session.tavern_tales_.push_back(std::move(tale));
     }
-    if (tag == state_tag)
+    if (tag == state_tag || tag == third_state_tag)
     {
         const auto kept = next<std::size_t>(in);
         require(kept <= 50, "The saved vault holds too many items");
@@ -254,6 +257,11 @@ UaSession UaSession::resume(DesignFiles files, std::string_view state)
             require(item.type < session.items_.types.size(), "A saved vault item has no type");
             session.vault_items_.push_back(item);
         }
+    }
+    if (tag == state_tag && next<bool>(in))
+    {
+        session.adventure_won_ = session.party_lost_ = true;
+        session.end_events();
     }
     in >> std::ws;
     require(in.eof(), "The saved design's state has more than it should");
