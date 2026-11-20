@@ -112,6 +112,8 @@ struct Ship
 
     struct WeaponMount
     {
+        // The weapon kind in the low seven bits (0 for an empty mount); the
+        // top bit marks a mount the crew fires, not the pilot.
         std::uint8_t kind{}, maximum{}, status{}, ammunition{}, reloads{};
     };
 
@@ -121,13 +123,23 @@ struct Ship
     int cargo{}, crew{}, armor_class{};
     std::uint8_t pilot_skill{}, system_skill{}, gunnery{};
     int speed{}, reaction{};
-    std::uint8_t maneuver{}, type{}, race{};
+    // Added to the total of a gunner aiming at this ship: -2 for the small
+    // Hubble, +2 for the 500-ton Mohave.
+    int maneuver{};
+    std::uint8_t type{}, race{};
     std::array<WeaponMount, 8> weapons{};
+    // The record as read, so a ship written back keeps the bytes no field
+    // holds.
+    std::vector<std::uint8_t> raw;
 };
 
 [[nodiscard]] std::optional<Creature> decode_creature(std::span<const std::uint8_t> bytes);
 [[nodiscard]] std::optional<std::vector<Item>> decode_items(std::span<const std::uint8_t> bytes);
 [[nodiscard]] std::optional<Ship> decode_ship(std::span<const std::uint8_t> bytes);
+// The 108 bytes of a ship, as the party's ship is kept at 4D00h: its raw
+// record with every field written over it. nullopt for a name that does not
+// fit in 15 characters or a value its byte or word cannot hold.
+[[nodiscard]] std::optional<std::vector<std::uint8_t>> encode_ship(const Ship &ship);
 
 // The 259-byte record of a creature, its raw bytes (zeros for a new one) with
 // every field written over them. Throws std::invalid_argument for a name

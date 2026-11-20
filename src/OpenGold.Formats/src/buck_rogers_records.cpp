@@ -347,7 +347,7 @@ std::optional<Ship> decode_ship(std::span<const std::uint8_t> b)
     ship.gunnery = b[53];
     ship.speed = signed_byte(b[54]);
     ship.reaction = signed_byte(b[55]);
-    ship.maneuver = b[56];
+    ship.maneuver = signed_byte(b[56]);
     ship.type = b[57];
     ship.race = b[58];
     for (std::size_t mount = 0; mount < ship.weapons.size(); ++mount)
@@ -355,7 +355,68 @@ std::optional<Ship> decode_ship(std::span<const std::uint8_t> b)
         const auto w = b.subspan(60 + 6 * mount, 6);
         ship.weapons[mount] = {w[0], w[1], w[2], w[4], w[5]};
     }
+    ship.raw.assign(b.begin(), b.end());
     return ship;
+}
+
+std::optional<std::vector<std::uint8_t>> encode_ship(const Ship &ship)
+{
+    const auto fits_signed_byte = [](int value)
+    {
+        return value >= -128 && value <= 127;
+    };
+    const auto fits_signed_word = [](int value)
+    {
+        return value >= -0x8000 && value <= 0x7FFF;
+    };
+    std::vector<int> words{ship.tonnage, ship.length, ship.width, ship.cargo, ship.crew};
+    words.insert(words.end(), ship.system_status.begin(), ship.system_status.end());
+    words.insert(words.end(), ship.system_maximum.begin(), ship.system_maximum.end());
+    if (ship.name.size() > 15 || !std::all_of(words.begin(), words.end(), fits_signed_word) ||
+        !fits_signed_byte(ship.armor_class) || !fits_signed_byte(ship.speed) ||
+        !fits_signed_byte(ship.reaction) || !fits_signed_byte(ship.maneuver))
+    {
+        return std::nullopt;
+    }
+
+    Bytes b = ship.raw;
+    b.resize(Ship::size);
+    const auto put_word = [&b](std::size_t offset, int value)
+    {
+        write_u16(b, offset, static_cast<std::uint16_t>(value));
+    };
+    b[0] = static_cast<std::uint8_t>(ship.name.size());
+    std::copy(ship.name.begin(), ship.name.end(), b.begin() + 1);
+    put_word(16, ship.tonnage);
+    put_word(18, ship.length);
+    put_word(20, ship.width);
+    for (std::size_t system = 0; system < Ship::systems; ++system)
+    {
+        put_word(22 + 2 * system, ship.system_status[system]);
+        put_word(34 + 2 * system, ship.system_maximum[system]);
+    }
+    put_word(46, ship.cargo);
+    put_word(48, ship.crew);
+    b[50] = byte_of(ship.armor_class);
+    b[51] = ship.pilot_skill;
+    b[52] = ship.system_skill;
+    b[53] = ship.gunnery;
+    b[54] = byte_of(ship.speed);
+    b[55] = byte_of(ship.reaction);
+    b[56] = byte_of(ship.maneuver);
+    b[57] = ship.type;
+    b[58] = ship.race;
+    for (std::size_t mount = 0; mount < ship.weapons.size(); ++mount)
+    {
+        const auto &w = ship.weapons[mount];
+        const auto at = 60 + 6 * mount;
+        b[at] = w.kind;
+        b[at + 1] = w.maximum;
+        b[at + 2] = w.status;
+        b[at + 4] = w.ammunition;
+        b[at + 5] = w.reloads;
+    }
+    return b;
 }
 
 } // namespace opengold::buck_rogers

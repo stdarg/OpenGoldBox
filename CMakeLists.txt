@@ -125,6 +125,7 @@ add_library(opengold_rules_original STATIC
     src/OpenGold.Rules.Original/src/champions_rules.cpp
     src/OpenGold.Rules.Original/src/buck_rogers_rules.cpp
     src/OpenGold.Rules.Original/src/death_knights_rules.cpp
+    src/OpenGold.Rules.Original/src/buck_rogers_ship_combat.cpp
     src/OpenGold.Rules.Original/src/character_rules.cpp
     src/OpenGold.Rules.Original/src/modify.cpp
     src/OpenGold.Rules.Original/src/combatant.cpp
@@ -334,6 +335,10 @@ if(OPENGOLD_BUILD_TESTS)
     add_executable(opengold_matrix_cubed_tests tests/matrix_cubed_tests.cpp)
     target_link_libraries(opengold_matrix_cubed_tests PRIVATE opengold_core)
     add_test(NAME opengold_matrix_cubed_tests COMMAND opengold_matrix_cubed_tests)
+    add_executable(opengold_buck_rogers_ship_combat_tests tests/buck_rogers_ship_combat_tests.cpp)
+    target_link_libraries(opengold_buck_rogers_ship_combat_tests PRIVATE opengold_rules_original
+        opengold_core)
+    add_test(NAME opengold_buck_rogers_ship_combat_tests COMMAND opengold_buck_rogers_ship_combat_tests)
     # Every map of Curse walked with an original-rules party: each event runs.
     add_test(NAME opengold_curse_walk COMMAND opengold_gold_box_games_tests --curse-walk)
     # Every map of Secret of the Silver Blades walked the same way.

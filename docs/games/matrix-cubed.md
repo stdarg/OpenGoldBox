@@ -175,7 +175,31 @@ refund) are in [countdown.md](countdown.md), "Bugs".
    (`script_check_skill`; the user, 2026-11-20). The game's files are
    unchanged.
 
+## Ship combat
+
+The fight and the repairs after it are *Countdown*'s: the same tables, the
+same experience by enemy ship and the same rules, which
+[countdown.md](countdown.md) ("Ship combat") describes with its bugs and
+open questions. OpenGoldBox plays both games with one session, keyed by game
+(`buck_rogers_ship_combat.h`). After a boarding the solar-map script 19 loads
+script 21, where *Countdown*'s loads 52. The program differs in two places:
+
+- The ship's explosion deals each okay member its maximum Hit Points and 30,
+  so it always kills them; *Countdown* deals 5d20 and the maximum, which
+  can leave one alive in a coma. OpenGoldBox kills every member aboard in
+  both games (countdown.md, Bugs).
+- A ship's Armor Class is read as signed in the to-hit number; *Countdown*
+  reads it as unsigned. Every ship in `SHIPS.DAX` has a positive Armor
+  Class, so the two agree.
+
+### Bugs
+
+| Bug in the original | In OpenGoldBox |
+|---|---|
+| After a boarding, the repairs take fuel from the enemy ship, which no longer exists, so the amount is whatever the memory holds (`RepairShip`; *Countdown* checks and takes none) | None, as *Countdown* (countdown.md, open question 5) |
+| The ship-combat bugs of *Countdown* but the explosion's coma | Fixed as there |
+
 ## Next
 
-The rest of step B2: ship combat, ground combat, injuries and healing, and
+The rest of step B2: ground combat, injuries and healing, and
 money ([BUCK-ROGERS.md](../BUCK-ROGERS.md), B2).
