@@ -214,7 +214,9 @@ decode_item_templates(std::span<const std::uint8_t> bytes, GoldBoxGame game);
 // indexed by spell number: 0 is empty, 1 is "Bless".
 [[nodiscard]] std::optional<std::vector<std::string>>
 decode_item_words(std::span<const std::uint8_t> image);
-// The game's own table: Secret of the Silver Blades has 123 words.
+// The game's own table: Secret of the Silver Blades has 123 words; the Buck
+// Rogers games' tables start with "Knife" and hold 44 (Countdown to Doomsday)
+// and 45 (Matrix Cubed).
 [[nodiscard]] std::optional<std::vector<std::string>>
 decode_item_words(std::span<const std::uint8_t> image, GoldBoxGame game);
 [[nodiscard]] std::optional<std::vector<std::string>>

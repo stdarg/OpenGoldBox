@@ -3,6 +3,8 @@
 #include "archive_io.h"
 #include "census_rows.h"
 #include "ua_census.h"
+#include "opengold/ail_files.h"
+#include "opengold/buck_rogers_records.h"
 #include "opengold/character_art.h"
 #include "opengold/curse_records.h"
 #include "opengold/death_knights_records.h"
@@ -15,12 +17,14 @@
 #include "opengold/pool_radiance.h"
 #include "opengold/por_sound.h"
 #include "opengold/treasures_texts.h"
+#include "opengold/ua_media.h"
 #include "opengold/vga_picture.h"
 #include "opengold/vace_film.h"
 #include "opengold/wall_art.h"
 
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <functional>
 #include <map>
 #include <set>
@@ -134,6 +138,11 @@ void check_creature(GoldBoxGame game, const Bytes &bytes)
     {
         throw std::runtime_error("this game's creature records are not decoded yet");
     }
+    if (is_buck_rogers(game))
+    {
+        require(buck_rogers::decode_creature(bytes).has_value(), "not a creature record");
+        return;
+    }
     require(por::decode_character(bytes, game).has_value(), "not a creature record");
 }
 
@@ -142,12 +151,23 @@ void check_script(GoldBoxGame game, const GameFile &file, const DaxRecord &recor
     const auto program = por::EclProgram::decode(record.bytes, record_name(file, record), game);
     // A path reached only by falling through an ON GOTO is the walker's guess:
     // scripts keep the choice in range, and data may follow the ON GOTO.
-    for (const auto &error : por::walk_reachable(program).errors)
+    const auto walk = por::walk_reachable(program);
+    for (const auto &error : walk.errors)
     {
         if (!error.fallthrough_from)
         {
             throw std::runtime_error("instruction at " + std::to_string(error.address) + ": " +
                                      error.message);
+        }
+    }
+    // The Buck Rogers games' 3Bh and 3Ch never move on: a script that reached
+    // one would hang the original.
+    if (is_buck_rogers(game))
+    {
+        for (const auto &instruction : walk.instructions)
+        {
+            require(instruction.opcode != 0x3B && instruction.opcode != 0x3C,
+                    "a script reaches a command that never ends");
         }
     }
 }
@@ -338,12 +358,15 @@ void check_vga_tiles(const Bytes &bytes)
             "not 8x8 tiles");
 }
 
-// A wall definition record is drawn with the 8X8D1.DAX record of its own id
-// (the original's LoadWallSet and Load8x8Set).
-void check_vga_wall_art(const std::map<std::string, GameFile> &by_name, const DaxRecord &record)
+// A wall definition record is drawn with the record of its own id in its own
+// disk's 8X8D file (the original's LoadWallSet and Load8x8Set). Pools of
+// Darkness and Treasures have one disk; Countdown to Doomsday has six.
+void check_vga_wall_art(const std::map<std::string, GameFile> &by_name, const GameFile &file,
+                        const DaxRecord &record)
 {
-    const auto tile_file = by_name.find("8X8D1.DAX");
-    require(tile_file != by_name.end(), "8X8D1.DAX is missing");
+    const auto disk = file.name.substr(std::string_view("WALLDEF").size());
+    const auto tile_file = by_name.find("8X8D" + disk);
+    require(tile_file != by_name.end(), "the disk's 8X8D file is missing");
     const auto tile_records = archive_records(tile_file->second);
     const auto *tile_record = find_record(tile_records, record.id);
     require(tile_record != nullptr, "its tiles are missing");
@@ -383,11 +406,16 @@ void check_names_and_sounds(RowBuilder &row, GoldBoxGame game, const GameFile &s
               {
                   require(por::decode_item_words(image, game).has_value(), "no item name table");
               });
-    row.check(start.name + " spell names",
-              [&]
-              {
-                  require(por::decode_spell_names(image, game).has_value(), "no spell name table");
-              });
+    // The Buck Rogers games have no spells.
+    if (!is_buck_rogers(game))
+    {
+        row.check(start.name + " spell names",
+                  [&]
+                  {
+                      require(por::decode_spell_names(image, game).has_value(),
+                              "no spell name table");
+                  });
+    }
     row.check(start.name + " sound effects",
               [&]
               {
@@ -408,8 +436,8 @@ bool is_film_file(const GameFile &file)
 }
 
 // Pools of Darkness' opening and ending films: each a control file (.ACF) and
-// its frames (.BMA), played by VACE.EXE (docs/games/darkness.md, "The opening and ending films"). One
-// piece a film.
+// its frames (.BMA), played by VACE.EXE (docs/games/darkness.md, "The opening and ending films").
+// One piece a film.
 void add_film_row(GameCensus &census, const std::map<std::string, GameFile> &by_name,
                   const std::vector<GameFile> &film_files)
 {
@@ -440,6 +468,198 @@ void add_film_row(GameCensus &census, const std::map<std::string, GameFile> &by_
                   });
     }
     census.rows.push_back(std::move(row).take());
+}
+
+// Matrix Cubed's music through the Audio Interface Library (docs/games/matrix-cubed.md,
+// "Files"): the XMI songs, the drivers, the global timbre library, and the
+// bank and catalog the library was made from.
+bool is_ail_file(const GameFile &file)
+{
+    static const std::set<std::string, std::less<>> kinds{"XMI", "ADV", "AD", "BNK", "CAT"};
+    return kinds.contains(extension(file.name));
+}
+
+std::vector<ail::GlobalTimbre> timbre_library(const std::map<std::string, GameFile> &by_name)
+{
+    const auto library = by_name.find("FATV9.AD");
+    require(library != by_name.end(), "FATV9.AD is missing");
+    auto timbres = ail::decode_global_timbre_library(read_bytes(library->second.path));
+    require(timbres.has_value(), "FATV9.AD is not a timbre library");
+    return std::move(*timbres);
+}
+
+// Each song is a piece; it decodes when every timbre it asks for is in the
+// library, as the game needs to play it (xmidi.pas StartSequence).
+void add_song_row(GameCensus &census, const std::map<std::string, GameFile> &by_name,
+                  const std::vector<GameFile> &songs)
+{
+    RowBuilder row("XMI: songs");
+    for (const auto &file : songs)
+    {
+        row.add_file(file.name);
+        std::optional<std::vector<ua::XmiSequence>> sequences;
+        try
+        {
+            sequences = ua::decode_xmi(read_bytes(file.path));
+        }
+        catch (const std::exception &)
+        {
+            sequences.reset();
+        }
+        if (!sequences)
+        {
+            row.check(file.name,
+                      []
+                      {
+                          require(false, "not XMI music");
+                      });
+            continue;
+        }
+        for (std::size_t sequence = 0; sequence < sequences->size(); ++sequence)
+        {
+            row.check(file.name + " sequence " + std::to_string(sequence),
+                      [&]
+                      {
+                          const auto &song = (*sequences)[sequence];
+                          require(!song.events.empty(), "no events");
+                          const auto timbres = timbre_library(by_name);
+                          for (const auto &[patch, bank] : song.timbres)
+                          {
+                              require(std::any_of(timbres.begin(), timbres.end(),
+                                                  [&](const ail::GlobalTimbre &timbre)
+                                                  {
+                                                      return timbre.patch == patch &&
+                                                             timbre.bank == bank;
+                                                  }),
+                                      "a timbre it asks for is not in FATV9.AD");
+                          }
+                      });
+        }
+    }
+    census.rows.push_back(std::move(row).take());
+}
+
+// The library was built from the catalog's assignments of the bank's
+// instruments: every instrument the catalog names is in the bank, and every
+// timbre of the library is in the catalog.
+void check_timbre_sources(const std::map<std::string, GameFile> &by_name, const GameFile &catalog)
+{
+    const auto bank_file = by_name.find("FATV9.BNK");
+    require(bank_file != by_name.end(), "FATV9.BNK is missing");
+    const auto bank = ail::decode_instrument_bank(read_bytes(bank_file->second.path));
+    require(bank.has_value(), "FATV9.BNK is not an instrument bank");
+    const auto assignments = ail::decode_timbre_catalog(read_bytes(catalog.path));
+    require(assignments.has_value(), "not a timbre catalog");
+    const auto lower = [](std::string text)
+    {
+        std::transform(text.begin(), text.end(), text.begin(),
+                       [](unsigned char c)
+                       {
+                           return static_cast<char>(std::tolower(c));
+                       });
+        return text;
+    };
+    std::set<std::string, std::less<>> instruments;
+    for (const auto &instrument : *bank)
+    {
+        instruments.insert(lower(instrument.name));
+    }
+    std::set<std::pair<int, int>> catalogued;
+    for (const auto &timbre : *assignments)
+    {
+        require(instruments.contains(lower(timbre.instrument)),
+                "the catalog names an instrument the bank lacks");
+        catalogued.emplace(timbre.bank, timbre.patch);
+    }
+    for (const auto &timbre : timbre_library(by_name))
+    {
+        require(catalogued.contains({timbre.bank, timbre.patch}),
+                "the library holds a timbre the catalog lacks");
+    }
+}
+
+void add_ail_rows(GameCensus &census, const std::map<std::string, GameFile> &by_name,
+                  const std::vector<GameFile> &files)
+{
+    if (files.empty())
+    {
+        return;
+    }
+    std::vector<GameFile> songs;
+    RowBuilder drivers("ADV: music drivers (recognized, never run)");
+    RowBuilder library("AD: the global timbre library");
+    RowBuilder sources("BNK, CAT: the timbre library's sources (the game never opens them)");
+    for (const auto &file : files)
+    {
+        const auto kind = extension(file.name);
+        if (kind == "XMI")
+        {
+            songs.push_back(file);
+        }
+        else if (kind == "ADV")
+        {
+            drivers.add_file(file.name);
+            drivers.check(file.name,
+                          [&file]
+                          {
+                              require(ail::decode_driver(read_bytes(file.path)).has_value(),
+                                      "not an AIL driver");
+                          });
+        }
+        else if (kind == "AD")
+        {
+            library.add_file(file.name);
+            library.check(file.name,
+                          [&by_name]
+                          {
+                              require(!timbre_library(by_name).empty(), "no timbres");
+                          });
+        }
+        else if (kind == "BNK")
+        {
+            sources.add_file(file.name);
+            sources.check(file.name,
+                          [&file]
+                          {
+                              require(
+                                  ail::decode_instrument_bank(read_bytes(file.path)).has_value(),
+                                  "not an instrument bank");
+                          });
+        }
+        else
+        {
+            sources.add_file(file.name);
+            sources.check(file.name,
+                          [&]
+                          {
+                              check_timbre_sources(by_name, file);
+                          });
+        }
+    }
+    add_song_row(census, by_name, songs);
+    for (auto *row : {&drivers, &library, &sources})
+    {
+        if (auto taken = std::move(*row).take(); taken.pieces > 0)
+        {
+            census.rows.push_back(std::move(taken));
+        }
+    }
+}
+
+// Files in a game's folder that are not the game's: the original never opens
+// them. Matrix Cubed's copy holds two scrambled text fragments and an empty
+// folder (docs/games/matrix-cubed.md, "Files").
+bool is_foreign_file(GoldBoxGame game, std::string_view name)
+{
+    return game == GoldBoxGame::matrix_cubed &&
+           (name == "SEG00036.001" || name == "SEG00036.002" || name == "JOURNAL/");
+}
+
+// A saved game the original wrote into its own folder (saveload.pas SaveGame:
+// SAVGAM, the slot's letter, .DAT).
+bool is_saved_game(const GameFile &file)
+{
+    return file.name.starts_with("SAVGAM") && extension(file.name) == "DAT";
 }
 
 using RecordDecoder = std::function<void(const GameFile &, const DaxRecord &)>;
@@ -477,9 +697,9 @@ void add_vga_decoders(std::map<std::string, FamilyDecoder, std::less<>> &decoder
         }
         check_vga_tiles(record.bytes);
     };
-    const auto wall_art = [&by_name](const GameFile &, const DaxRecord &record)
+    const auto wall_art = [&by_name](const GameFile &file, const DaxRecord &record)
     {
-        check_vga_wall_art(by_name, record);
+        check_vga_wall_art(by_name, file, record);
     };
     const auto border = [](const GameFile &, const DaxRecord &record)
     {
@@ -516,6 +736,69 @@ void add_vga_decoders(std::map<std::string, FamilyDecoder, std::less<>> &decoder
     for (const auto &[name, decoder] : vga_families)
     {
         decoders.insert_or_assign(std::string(name), decoder);
+    }
+}
+
+// A Buck Rogers combat tile set: a picture of 24 by 24 tiles. The game
+// copies a fixed count of tiles from it (combatst.pas, Load24x24Set), more
+// than LOTEK, MARSCOM and VENUSCOM hold (docs/games/countdown.md).
+void check_combat_tiles(const Bytes &bytes)
+{
+    const auto picture = decode_vga_picture(bytes);
+    require(picture && picture->frames.front().width == 24 && picture->frames.front().height == 24,
+            "not a set of 24x24 tiles");
+}
+
+// The Buck Rogers games draw in 256 colors as Pools of Darkness does, with
+// their font in 8X8D1 and their own records, icons and ships
+// (docs/games/countdown.md).
+void add_buck_rogers_decoders(std::map<std::string, FamilyDecoder, std::less<>> &decoders)
+{
+    const auto tiles_and_font = [](const GameFile &file, const DaxRecord &record)
+    {
+        if (record.id == 201 && file.name == "8X8D1.DAX")
+        {
+            require(decode_game_font(record.bytes).has_value(), "not the font");
+            return;
+        }
+        check_vga_tiles(record.bytes);
+    };
+    const auto items = [](const GameFile &, const DaxRecord &record)
+    {
+        require(buck_rogers::decode_items(record.bytes).has_value(), "not an item list");
+    };
+    const auto templates = [](const GameFile &, const DaxRecord &record)
+    {
+        require(buck_rogers::decode_item_templates(record.bytes).has_value(), "not item templates");
+    };
+    const auto icon = [](const GameFile &, const DaxRecord &record)
+    {
+        check_vga_picture(record.bytes);
+    };
+    // SHIPS.DAX: the enemy ships' pictures (0 to 4), the ship screen's and
+    // ship combat's pictures (10 to 38), the solar map's backdrop (128) and
+    // the ships themselves (40 to 44 the enemies' types, 50 the party's).
+    const auto ships = [](const GameFile &, const DaxRecord &record)
+    {
+        if ((record.id >= 40 && record.id <= 44) || record.id == 50)
+        {
+            require(buck_rogers::decode_ship(record.bytes).has_value(), "not a ship");
+            return;
+        }
+        check_vga_picture(record.bytes);
+    };
+    decoders.insert_or_assign("8X8D", FamilyDecoder{"wall tiles and the font", tiles_and_font});
+    decoders.insert_or_assign("MONITM", FamilyDecoder{"creatures' items", items});
+    decoders.insert_or_assign("ITEM", FamilyDecoder{"item templates", templates});
+    decoders.insert_or_assign("CHARS", FamilyDecoder{"character icons", icon});
+    decoders.insert_or_assign("SHIPS", FamilyDecoder{"ships and their pictures", ships});
+    for (const auto *name : {"HITEK", "LOTEK", "MARSCOM", "VENUSCOM"})
+    {
+        decoders.insert_or_assign(name, FamilyDecoder{"combat tile sets",
+                                                      [](const GameFile &, const DaxRecord &record)
+                                                      {
+                                                          check_combat_tiles(record.bytes);
+                                                      }});
     }
 }
 
@@ -649,9 +932,13 @@ family_decoders(GoldBoxGame game, const std::map<std::string, GameFile> &by_name
 
     // Curse's copy protection draws its symbols from TILES.DAX, in the combat icons' format.
     decoders.emplace("TILES", FamilyDecoder{"copy-protection symbols", check_combat_icon});
-    if (uses_vga_pictures(game))
+    if (uses_vga_pictures(game) || is_buck_rogers(game))
     {
         add_vga_decoders(decoders, by_name);
+    }
+    if (is_buck_rogers(game))
+    {
+        add_buck_rogers_decoders(decoders);
     }
     return decoders;
 }
@@ -783,14 +1070,19 @@ GameCensus take_census(const std::filesystem::path &folder, GoldBoxGame game)
 
     // The files of each family, in the order the decoders list them.
     std::map<std::string, std::vector<GameFile>> families;
-    std::vector<GameFile> film_files;
+    std::vector<GameFile> film_files, ail_files;
     // Pools of Darkness' introduction and finale play songs of their own.
     RowBuilder song_files("SMS: the introduction's and finale's songs");
     for (const auto &file : files)
     {
-        if (is_program_file(file))
+        if (is_program_file(file) || is_saved_game(file))
         {
             census.program_files.push_back(file.name);
+            continue;
+        }
+        if (is_foreign_file(game, file.name))
+        {
+            census.foreign_files.push_back(file.name);
             continue;
         }
         const auto name = decoder_family(file.name);
@@ -810,15 +1102,18 @@ GameCensus take_census(const std::filesystem::path &folder, GoldBoxGame game)
             row.check(file.name,
                       [&file, game]
                       {
-                          require(
-                              por::decode_item_templates(read_bytes(file.path), game).has_value(),
-                              "not item types");
+                          const auto bytes = read_bytes(file.path);
+                          require(is_buck_rogers(game)
+                                      ? buck_rogers::decode_item_types(bytes).has_value()
+                                      : por::decode_item_templates(bytes, game).has_value(),
+                                  "not item types");
                       });
             census.rows.push_back(std::move(row).take());
         }
         else if (file.name == "START.EXE")
         {
-            RowBuilder row("START.EXE: item names, spell names and sounds");
+            RowBuilder row(is_buck_rogers(game) ? "START.EXE: item names and sounds"
+                                                : "START.EXE: item names, spell names and sounds");
             try
             {
                 check_names_and_sounds(row, game, file, folder);
@@ -843,12 +1138,17 @@ GameCensus take_census(const std::filesystem::path &folder, GoldBoxGame game)
                                          "not the music driver's songs");
                              });
         }
+        else if (is_buck_rogers(game) && is_ail_file(file))
+        {
+            ail_files.push_back(file);
+        }
         else
         {
             census.unread_files.push_back(file.name);
         }
     }
     add_film_row(census, by_name, film_files);
+    add_ail_rows(census, by_name, ail_files);
     if (auto row = std::move(song_files).take(); row.pieces > 0)
     {
         census.rows.push_back(std::move(row));
@@ -866,6 +1166,10 @@ GameCensus take_census(const std::filesystem::path &folder, GoldBoxGame game)
         if (directory == "SAVE/")
         {
             census.program_files.push_back(std::move(directory));
+        }
+        else if (is_foreign_file(game, directory))
+        {
+            census.foreign_files.push_back(std::move(directory));
         }
         else
         {

@@ -3,7 +3,8 @@
 # holds the games' folders (POOLRAD, CURSE, ...); OPENGOLD_GAME_DIR's Pool of
 # Radiance is checked too. Skipped when neither is set.
 # A game joins this list when its census decodes every file.
-set(complete_games POOLRAD CURSE SECRET GATEWAY DARKNESS TREASURE UA)
+set(complete_games POOLRAD CURSE SECRET GATEWAY DARKNESS TREASURE UA
+    buck-rogers-countdown-to-doomsday buck-rogers-matrix-cubed)
 set(folders)
 if(NOT "$ENV{OPENGOLD_GOLDBOX_DIR}" STREQUAL "")
     foreach(game IN LISTS complete_games)

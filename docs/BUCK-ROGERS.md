@@ -5,7 +5,7 @@ from start to finish under their original rules: *Countdown to Doomsday*
 (1990) and *Matrix Cubed* (1992). It follows the method of the *Forgotten
 Realms* games ([GAMES.md](GAMES.md)) and of the *Krynn* games
 ([KRYNN.md](KRYNN.md)). Written 2026-11-19. B0 (groundwork) done
-2026-11-19; B1 not started.
+2026-11-19; B1 (the reading census) done 2026-11-19; B2 not started.
 
 Each game must meet the standard in [PLAYABILITY.md](PLAYABILITY.md)
 ("Acceptance and scope"). The route reaches the game's actual winning event
@@ -260,8 +260,9 @@ gets a Buck Rogers layout in a new `buck_rogers_records.cpp`, as
   Silently check, multiplies damage by (level + 7) / 4; others double it.
 - **New combat commands** (Rule Book, `cbtacts.pas`): INTIMIDATE, AID,
   SPRINT, DODGE and JETPACK (outdoors, with a jet pack and the skill).
-- **Item tables:** `ITEMS` is 129 rows of 9 bytes; `ITEM0.DAX` holds 16-byte
-  item templates (`gameinit.pas`, `eclmenu.pas` `LoadItemTemplates`).
+- **Item tables:** `ITEMS` holds 39 rows of 9 bytes, of the 129 the game
+  asks for; `ITEM0.DAX` holds 91 16-byte item templates (`gameinit.pas`,
+  `eclmenu.pas` `LoadItemTemplates`).
 - **Injury states:** bleeding, unconscious at 0, comatose and gone. A
   poisoned character goes comatose unless a Medic or an antidote treats it
   after the fight (`postcbt.pas` `TreatInjuries`). Comatose characters need a
@@ -515,6 +516,28 @@ Risks: picture formats that differ from the Realms VGA ones; the script
 decoder walking into data after a jump table; the AIL timbre library being
 a new format (UA's `INSTR.AD` is the nearest reader).
 
+**Status:** done 2026-11-19. Both games' censuses are complete and both
+games are in `tests/game_census.cmake`'s list. Every picture, sprite, icon,
+tile set, wall and backdrop is the 256-color layout of *Pools of Darkness*;
+walls draw from their own disk's `8X8D` file. The records have their own
+readers (`buck_rogers_records.h`: creatures, items and templates, item types,
+ships), the scripts their own table and the four-byte operand tags 4 and 5
+(`game_opcodes`, `ecl_memory` 8000h to A400h), *Matrix Cubed*'s music files
+theirs (`ail_files.h`: drivers recognized, the timbre library, the bank and
+catalog it was made from). `opengold_census --scripts` lists what the
+scripts ask of the engine (`buck_rogers_scripts.h`), and
+[countdown.md](games/countdown.md) and
+[matrix-cubed.md](games/matrix-cubed.md) record it: the skill checks with
+their difficulties, the ship combats, the solar map, the shops, the fuel
+(only the solar-map script spends it), the PROGRAM commands, *Countdown*'s
+winning event (script 98's escape pod, which sends the team home to script
+17) and *Matrix Cubed*'s (script 114's PROGRAM 2). No reachable command is
+3Bh or 3Ch, and no IF precedes a command the original skips unevenly.
+Findings for later steps: `LOTEK`, `MARSCOM` and `VENUSCOM` hold fewer tiles
+than the game copies (B3); the hail of a ship checks unlikely skills (open
+question 2); *Matrix Cubed* keeps two developer scripts and two files that
+are not the game's.
+
 ### B2. The Buck Rogers rules (original rules)
 
 Scope, in `src/OpenGold.Rules.Original`, keyed by game:
@@ -686,3 +709,10 @@ steps go to the user, numbered, one topic each.
    harder and resist better at the higher levels. Away from Normal (Trooper),
    should the party's to-hit change as the original's does, on top of the
    table, or stay as at Trooper?
+2. **The skills a hail checks** (found in B1): when the team hails a ship on
+   the solar map, both games check skill 74 (Befriend Animal) to bluff, 70
+   (Hypnosis) to intimidate and 69 (Paint/Draw) to ask for help. Every other
+   check in the scripts names the skill its text asks for, and Fast
+   Talk/Convince (76) and Intimidate (72) are two numbers higher, so the
+   numbers look shifted by two. Should OpenGoldBox check the skills the
+   original checks, or the ones the choices name (listed under Bugs if so)?

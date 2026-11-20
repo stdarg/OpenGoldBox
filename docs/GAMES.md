@@ -886,6 +886,6 @@ game, as *Pool of Radiance* has.
 *Buck Rogers: Countdown to Doomsday* and *Buck Rogers: Matrix Cubed*, with the
 same method. The *Krynn* games' plan is [KRYNN.md](KRYNN.md) (written
 2026-11-16, not started). The *Buck Rogers* games' plan is
-[BUCK-ROGERS.md](BUCK-ROGERS.md) (written 2026-11-19); its groundwork (B0) is
-done, and each game has its page, [countdown.md](games/countdown.md) and
-[matrix-cubed.md](games/matrix-cubed.md).
+[BUCK-ROGERS.md](BUCK-ROGERS.md) (written 2026-11-19); its groundwork (B0) and
+both games' reading censuses (B1) are done, and each game has its page,
+[countdown.md](games/countdown.md) and [matrix-cubed.md](games/matrix-cubed.md).

@@ -146,6 +146,8 @@ add_library(opengold_formats STATIC
     src/OpenGold.Formats/src/curse_records.cpp
     src/OpenGold.Formats/src/champions_records.cpp
     src/OpenGold.Formats/src/death_knights_records.cpp
+    src/OpenGold.Formats/src/buck_rogers_records.cpp
+    src/OpenGold.Formats/src/ail_files.cpp
     src/OpenGold.Formats/src/secret_records.cpp
     src/OpenGold.Formats/src/treasures_texts.cpp
     src/OpenGold.Formats/src/vga_picture.cpp
@@ -192,6 +194,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/creature_factory.cpp
     src/OpenGold.Core/src/map_catalog.cpp
     src/OpenGold.Core/src/game_census.cpp
+    src/OpenGold.Core/src/buck_rogers_scripts.cpp
     src/OpenGold.Core/src/ua_census.cpp
     src/OpenGold.Core/src/ua_design.cpp
     src/OpenGold.Core/src/ua_view.cpp
@@ -322,6 +325,13 @@ if(OPENGOLD_BUILD_TESTS)
     target_link_libraries(opengold_death_knights_tests PRIVATE opengold_core opengold_rules_original)
     target_include_directories(opengold_death_knights_tests PRIVATE src/OpenGold.Rules.Original/src)
     add_test(NAME opengold_death_knights_tests COMMAND opengold_death_knights_tests)
+    # The Buck Rogers games' records, scripts and music files (docs/BUCK-ROGERS.md, B1).
+    add_executable(opengold_countdown_tests tests/countdown_tests.cpp)
+    target_link_libraries(opengold_countdown_tests PRIVATE opengold_core)
+    add_test(NAME opengold_countdown_tests COMMAND opengold_countdown_tests)
+    add_executable(opengold_matrix_cubed_tests tests/matrix_cubed_tests.cpp)
+    target_link_libraries(opengold_matrix_cubed_tests PRIVATE opengold_core)
+    add_test(NAME opengold_matrix_cubed_tests COMMAND opengold_matrix_cubed_tests)
     # Every map of Curse walked with an original-rules party: each event runs.
     add_test(NAME opengold_curse_walk COMMAND opengold_gold_box_games_tests --curse-walk)
     # Every map of Secret of the Silver Blades walked the same way.

@@ -159,6 +159,43 @@ std::vector<EclOpcode> gateway_opcodes()
     return opcodes;
 }
 
+// The Buck Rogers games keep Secret's numbering to 41h, replace twelve
+// commands, change the operands of two and add 42h to 4Ch (eclvm.pas
+// DispatchEclCommand; docs/games/countdown.md, "Scripts"). Matrix Cubed's table
+// is the same. 3Bh and 3Ch do nothing and stay where they are, so a script that
+// reached either would never end: neither runs.
+std::vector<EclOpcode> buck_rogers_opcodes()
+{
+    auto opcodes = secret_opcodes();
+    opcodes.at(0x0C).operands = 4; // SETUP MONSTER gains the fight's directions.
+    opcodes.at(0x1D) = {"SET SPEAKER", 2, false, true, true};
+    opcodes.at(0x1F) = {"SHIP COMBAT", 4, false, true, true};
+    // Skill, member (and where its place goes), difficulty (and where the result goes).
+    opcodes.at(0x22) = {"SKILL CHECK", 3, false, true, true};
+    opcodes.at(0x23) = {"SKILL CHECK WITH TEXT", 3, false, true, true};
+    opcodes.at(0x27) = {"TREASURE", 2, true, true, true}; // Credits, then item templates.
+    opcodes.at(0x29) = {"CONTINUE PROMPT", 0, false, true, true};
+    opcodes.at(0x2C) = {"YES NO", 0, false, true};
+    opcodes.at(0x31) = {"ACTION MENU", 2, true, true};
+    opcodes.at(0x37) = {"LOAD FILES", 3, false, true, true};
+    opcodes.at(0x3B) = {"EMPTY 3B", 0};
+    opcodes.at(0x3C) = {"EMPTY 3C", 0};
+    opcodes.at(0x3F) = {"LOGBOOK ENTRY", 2, false, true, true};
+    opcodes.at(0x40).operands = 2; // DESTROY ITEMS: the whole party or one, and the type.
+    opcodes.push_back({"CLEAR AND STOP", 0, false, true});
+    opcodes.push_back({"PLAY SOUND", 1, false, true, true});
+    opcodes.push_back({"SKIP", 0, false, true});
+    opcodes.push_back({"DISTANCE AHEAD", 2, false, true, true});
+    opcodes.push_back({"LOOP START", 2, false, true});
+    opcodes.push_back({"LOOP NEXT", 0, false, true});
+    opcodes.push_back({"SWAP ITEM LISTS", 1, false, true, true});
+    opcodes.push_back({"SKILL CHECK WITH DAMAGE", 6, false, true, true});
+    opcodes.push_back({"SOLO COMBAT", 0, false, true, true});
+    opcodes.push_back({"SHOP", 1, false, true, true});
+    opcodes.push_back({"PICTURE MODE", 2, false, true, true});
+    return opcodes;
+}
+
 std::span<const EclOpcode> game_opcodes(GoldBoxGame game)
 {
     static const std::vector<EclOpcode> curse = curse_opcodes();
@@ -167,6 +204,7 @@ std::span<const EclOpcode> game_opcodes(GoldBoxGame game)
     static const std::vector<EclOpcode> treasures = treasures_opcodes();
     static const std::vector<EclOpcode> gateway = gateway_opcodes();
     static const std::vector<EclOpcode> death_knights = death_knights_opcodes();
+    static const std::vector<EclOpcode> buck_rogers = buck_rogers_opcodes();
     switch (game)
     {
     case GoldBoxGame::pool_of_radiance:
@@ -184,6 +222,9 @@ std::span<const EclOpcode> game_opcodes(GoldBoxGame game)
         return treasures;
     case GoldBoxGame::gateway_to_the_savage_frontier:
         return gateway;
+    case GoldBoxGame::countdown_to_doomsday:
+    case GoldBoxGame::matrix_cubed:
+        return buck_rogers;
     default:
         throw EclError("The scripts of " + std::string(game_title(game)) + " are not decoded yet");
     }
@@ -191,14 +232,18 @@ std::span<const EclOpcode> game_opcodes(GoldBoxGame game)
 
 // Whether a script goes on to the command after this one: EXIT, GOTO, RETURN
 // and NEW ECL leave, and so does Pools of Darkness' and Treasures' CLEAR AND
-// EXIT, which data may follow.
+// EXIT, which data may follow. The Buck Rogers games' CLEAR AND STOP leaves,
+// and their 3Bh and 3Ch never move on.
 bool falls_through(std::uint8_t opcode, GoldBoxGame game)
 {
     const bool clears_and_exits =
         opcode == 0x23 &&
         (game == GoldBoxGame::death_knights_of_krynn || game == GoldBoxGame::pools_of_darkness ||
          game == GoldBoxGame::treasures_of_the_savage_frontier);
-    return opcode != 0 && opcode != 1 && opcode != 19 && opcode != 32 && !clears_and_exits;
+    const bool buck_rogers_stop =
+        is_buck_rogers(game) && (opcode == 0x42 || opcode == 0x3B || opcode == 0x3C);
+    return opcode != 0 && opcode != 1 && opcode != 19 && opcode != 32 && !clears_and_exits &&
+           !buck_rogers_stop;
 }
 
 } // namespace
@@ -244,6 +289,10 @@ EclEngineRoutines ecl_engine_routines(GoldBoxGame game)
         // redraws the view, 2 steps forward, 3 shows the portrait's next
         // frame (its EclCall).
         return {1, 0, 2, 0, 0, 0, 3};
+    case GoldBoxGame::countdown_to_doomsday:
+    case GoldBoxGame::matrix_cubed:
+        // Secret's numbers, matched less 7FFFh (EclCall); no duels.
+        return {0x2DCB, 0xC018, 0xC01E, 0, 0, 0xB203, 0x6803};
     default:
         throw EclError("The scripts of " + std::string(game_title(game)) + " are not decoded yet");
     }
@@ -265,6 +314,10 @@ EclMemory ecl_memory(GoldBoxGame game)
         return {0x8000, 0x9E00};
     case GoldBoxGame::treasures_of_the_savage_frontier:
         return {0x8000, 0xB6B1};
+    case GoldBoxGame::countdown_to_doomsday:
+    case GoldBoxGame::matrix_cubed:
+        // Zone 3 runs from 8000h to A400h, that address included (types.pas TZone3).
+        return {0x8000, 0xA401};
     default:
         throw EclError("The scripts of " + std::string(game_title(game)) + " are not decoded yet");
     }
@@ -339,6 +392,16 @@ EclInstruction EclProgram::instruction(std::uint32_t address,
             }
             arg.text = unpack_ecl_text(image.subspan(cursor, arg.value));
             cursor += arg.value;
+        }
+        else if (is_buck_rogers(game_) && (arg.tag == 4 || arg.tag == 5))
+        {
+            // A four-byte literal, or the address of a four-byte cell (LoadEclVars).
+            arg.value |= static_cast<std::uint16_t>(byte()) << 8;
+            if (arg.tag == 4)
+            {
+                arg.high_word = byte();
+                arg.high_word |= static_cast<std::uint16_t>(byte()) << 8;
+            }
         }
         else if (arg.tag != 0)
         {

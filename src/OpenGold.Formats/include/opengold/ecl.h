@@ -24,6 +24,8 @@ struct EclOperand
     std::uint8_t tag{};
     std::uint16_t value{}; // Encoded value/address; dereferencing depends on opcode role.
     std::string text;
+    // The Buck Rogers games' four-byte literal (tag 4) keeps its upper half here.
+    std::uint16_t high_word{};
 };
 
 struct EclInstruction

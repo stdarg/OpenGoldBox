@@ -124,6 +124,13 @@ inline constexpr std::array<GoldBoxGame, 11> gold_box_games{
            game == GoldBoxGame::treasures_of_the_savage_frontier;
 }
 
+// Whether the game is one of the two Buck Rogers games, which run the same
+// program with different data (docs/BUCK-ROGERS.md).
+[[nodiscard]] constexpr bool is_buck_rogers(GoldBoxGame game) noexcept
+{
+    return game == GoldBoxGame::countdown_to_doomsday || game == GoldBoxGame::matrix_cubed;
+}
+
 // Death Knights introduced these script commands while retaining EGA art and
 // the earlier memory zones. The VGA games inherit the command variants.
 [[nodiscard]] constexpr bool later_ecl_commands(GoldBoxGame game) noexcept

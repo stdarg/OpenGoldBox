@@ -333,8 +333,12 @@ std::optional<std::vector<std::string>> decode_item_words(std::span<const std::u
         : game == GoldBoxGame::pools_of_darkness || game == GoldBoxGame::death_knights_of_krynn
             ? 125
         : game == GoldBoxGame::treasures_of_the_savage_frontier ? 181
+        : game == GoldBoxGame::countdown_to_doomsday            ? 44
+        : game == GoldBoxGame::matrix_cubed                     ? 45
                                                                 : 255;
-    const auto table = find_string_table(image, "Battle Axe", "Hand Axe");
+    // The Buck Rogers games' words are their weapons' and armor's (gdconsts.pas itemNameParts).
+    const auto table = is_buck_rogers(game) ? find_string_table(image, "Knife", "Mono")
+                                            : find_string_table(image, "Battle Axe", "Hand Axe");
 
     if (!table)
     {

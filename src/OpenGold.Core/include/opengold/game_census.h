@@ -37,6 +37,8 @@ struct GameCensus
     std::vector<std::string> unread_files;
     // The original's programs and settings, which OpenGoldBox never reads.
     std::vector<std::string> program_files;
+    // Files in the folder that are not the game's: the original never opens them.
+    std::vector<std::string> foreign_files;
 
     [[nodiscard]] bool complete() const noexcept;
 };

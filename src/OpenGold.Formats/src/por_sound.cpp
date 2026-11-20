@@ -481,10 +481,37 @@ std::vector<SoundEffect> load_sound_effects(const std::filesystem::path &directo
 namespace
 {
 
+// Sound command n plays song n - 1 (GDConsts in the original); commands 2
+// to 13 are the Realms games' sounds.
+constexpr std::array<std::string_view, 21> realms_sound_names{
+    "Silence",          "Spell bolt",       "Attack missed",
+    "Attack hit",       "Creature down",    "Missile flight",
+    "Melee hit",        "Lightning bolt",   "Melee miss",
+    "Footstep",         "Fireball",         "Missile launch",
+    "Title picture",    "Unused effect 14", "Unused effect 15",
+    "Unused effect 16", "Unused effect 17", "Unused effect 18",
+    "Unused effect 19", "Unused effect 20", "Instrument setup (silent)"};
+constexpr std::uint32_t realms_unused_songs = ~((1U << 13) - 1);
+
+// The Buck Rogers games' sounds by the same numbering (gdconsts.pas, the
+// sound constants and eclSoundCommands): no command plays song 14, and none
+// starts song 20.
+constexpr std::array<std::string_view, 21> buck_rogers_sound_names{
+    "Silence",         "Damage",     "Launch",         "Grenade cloud", "Creature down",
+    "Sonic stunner",   "Hit",        "Dazzle grenade", "Miss",          "Footstep",
+    "Explosion",       "Bolt shot",  "Heat gun",       "Laser",         "Unused effect 15",
+    "Rocket",          "Needle gun", "Microwave gun",  "Ship laser",    "Ship weapon",
+    "Unused effect 21"};
+constexpr std::uint32_t buck_rogers_unused_songs = (1U << 14) | (1U << 20);
+
 // The sound effects of the driver Curse of the Azure Bonds and Secret of the
-// Silver Blades link into START.EXE; their song tables hold songs songs.
+// Silver Blades link into START.EXE; their song tables hold songs songs. The
+// Krynn and Buck Rogers games link the same driver. Song i is unused when bit
+// i of unused_songs is set.
 std::vector<SoundEffect> decode_driver_sound_effects(std::span<const std::uint8_t> image,
-                                                     std::size_t songs)
+                                                     std::size_t songs,
+                                                     std::span<const std::string_view> names,
+                                                     std::uint32_t unused_songs)
 {
     // The driver opens with its tick divider (chain the BIOS handler every 13
     // ticks), the exit countdown and the coded error message.
@@ -538,16 +565,6 @@ std::vector<SoundEffect> decode_driver_sound_effects(std::span<const std::uint8_
     }
     const auto timer =
         word(segment, static_cast<std::size_t>(timer_code - segment.begin()) + set_timer.size());
-    // Sound command n plays song n - 1 (GDConsts in the original); commands 2
-    // to 13 are the game's sounds.
-    constexpr std::array<std::string_view, 21> names{
-        "Silence",          "Spell bolt",       "Attack missed",
-        "Attack hit",       "Creature down",    "Missile flight",
-        "Melee hit",        "Lightning bolt",   "Melee miss",
-        "Footstep",         "Fireball",         "Missile launch",
-        "Title picture",    "Unused effect 14", "Unused effect 15",
-        "Unused effect 16", "Unused effect 17", "Unused effect 18",
-        "Unused effect 19", "Unused effect 20", "Instrument setup (silent)"};
     const auto note_dividers =
         static_cast<std::uint16_t>(voice_blocks + note_dividers_after_blocks);
     std::vector<SoundEffect> effects;
@@ -558,7 +575,8 @@ std::vector<SoundEffect> decode_driver_sound_effects(std::span<const std::uint8_
         {
             entries[voice] = word(segment, song_table + i * 8 + voice * 2);
         }
-        effects.push_back({static_cast<unsigned>(i + 1), std::string(names[i]), i >= 13, timer,
+        effects.push_back({static_cast<unsigned>(i + 1), std::string(names[i]),
+                           ((unused_songs >> i) & 1U) != 0, timer,
                            decode_speaker_sequence(segment, entries, note_dividers)});
     }
     return effects;
@@ -568,7 +586,7 @@ std::vector<SoundEffect> decode_driver_sound_effects(std::span<const std::uint8_
 
 std::vector<SoundEffect> decode_curse_sound_effects(std::span<const std::uint8_t> image)
 {
-    return decode_driver_sound_effects(image, 21);
+    return decode_driver_sound_effects(image, 21, realms_sound_names, realms_unused_songs);
 }
 
 std::vector<SoundEffect> load_sound_effects(const std::filesystem::path &game_directory,
@@ -584,6 +602,8 @@ std::vector<SoundEffect> load_sound_effects(const std::filesystem::path &game_di
     case GoldBoxGame::secret_of_the_silver_blades:
     case GoldBoxGame::champions_of_krynn:
     case GoldBoxGame::death_knights_of_krynn:
+    case GoldBoxGame::countdown_to_doomsday:
+    case GoldBoxGame::matrix_cubed:
     {
         auto path = game_directory / "START.EXE";
         if (!std::filesystem::exists(path))
@@ -600,9 +620,15 @@ std::vector<SoundEffect> load_sound_effects(const std::filesystem::path &game_di
         {
             invalid("invalid START.EXE size");
         }
+        if (is_buck_rogers(game))
+        {
+            return decode_driver_sound_effects(unpack_sound_executable(file), 21,
+                                               buck_rogers_sound_names, buck_rogers_unused_songs);
+        }
         return decode_driver_sound_effects(unpack_sound_executable(file),
                                            game == GoldBoxGame::secret_of_the_silver_blades ? 13
-                                                                                            : 21);
+                                                                                            : 21,
+                                           realms_sound_names, realms_unused_songs);
     }
     default:
         invalid("the sounds of " + std::string(game_title(game)) + " are not decoded yet");
