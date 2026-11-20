@@ -374,27 +374,32 @@ void RolfTourView::show_solar_map(const TourSnapshot &s)
             at_once
                 ? N_("Arrows and numpad: fly   •   R: rocket   •   C: change   •   Escape: menu")
                 : N_("M: move   •   arrows and numpad: fly   •   R: rocket   •   C: change   •   Escape: menu")));
+    // At a body its name heads the dialogue; between bodies the ship's.
+    required_node<Label>(*this, "%Speaker")
+        .set_text(body ? place : String::utf8(ship.name.c_str()));
     if (!completed)
     {
         rocket_shown_ = false;
         return;
     }
-    // Between bodies the script says nothing more; the ship's name speaks.
+    // Between bodies the script says nothing more.
     auto &dialogue = required_node<RichTextLabel>(*this, "%Dialogue");
-    required_node<Label>(*this, "%Speaker")
-        .set_text(body ? place : String::utf8(ship.name.c_str()));
     if (rocket_shown_)
     {
         constexpr std::array<const char *, 6> system_names{N_("Hull"),     N_("Sensors"),
                                                            N_("Controls"), N_("Life support"),
                                                            N_("Fuel"),     N_("Engines")};
-        String text = String::utf8(ship.name.c_str());
+        // Three systems a line, under the ship's name, which heads the box.
+        String text;
         for (std::size_t n = 0; n < ship.systems.size(); ++n)
         {
-            text += "\n" + i18n::format(N_("{system}: {now} of {whole}"),
-                                        {{"system", i18n::text(system_names[n])},
-                                         {"now", ship.systems[n].now},
-                                         {"whole", ship.systems[n].whole}});
+            text += (n == 0       ? ""
+                     : n % 3 == 0 ? "\n"
+                                  : "      ") +
+                    i18n::format(N_("{system}: {now} of {whole}"),
+                                 {{"system", i18n::text(system_names[n])},
+                                  {"now", ship.systems[n].now},
+                                  {"whole", ship.systems[n].whole}});
         }
         dialogue.set_text(text);
     }
@@ -458,6 +463,16 @@ void RolfTourView::solar_visuals(Dictionary &data)
     if (data.has("picture"))
     {
         solar["picture"] = data["picture"];
+    }
+    else if (const auto &picture = session.picture())
+    {
+        if (solar_picture_revision_ != session.snapshot().picture_revision ||
+            solar_picture_.is_null())
+        {
+            solar_picture_ = presentation::image_texture(*picture);
+            solar_picture_revision_ = session.snapshot().picture_revision;
+        }
+        solar["picture"] = solar_picture_;
     }
     else if (wall_image_.is_valid())
     {

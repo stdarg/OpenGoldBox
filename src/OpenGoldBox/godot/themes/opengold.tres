@@ -560,6 +560,7 @@ OpenGoldMetrics/constants/tour_map_arrow_notch_percent = 16
 OpenGoldMetrics/constants/tour_map_arrow_side_percent = 32
 OpenGoldMetrics/constants/tour_map_arrow_disc_percent = 45
 OpenGoldMetrics/constants/tour_solar_dot_percent = 9
+OpenGoldMetrics/constants/tour_solar_dot_alpha_percent = 45
 OpenGoldMetrics/constants/tour_solar_name_size = 16
 OpenGoldMetrics/constants/tour_solar_frame_width = 3
 OpenGoldPalette/colors/swatch_selected = Color(0.9450980392156862, 0.8235294117647058, 0.611764705882353, 1)

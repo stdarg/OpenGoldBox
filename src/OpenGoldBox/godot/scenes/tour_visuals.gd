@@ -47,8 +47,10 @@ func _draw_solar_map(view: Control, data: Dictionary) -> void:
     var solar: Dictionary = data["solar"]
     var cell := side / float(solar["cells"])
     var dot := cell * _metric("tour_solar_dot_percent") / 100.0
+    var faint := _color("map_wall")
+    faint.a = _metric("tour_solar_dot_alpha_percent") / 100.0
     for point: Vector2 in solar["orbits"]:
-        draw_circle(rect.position + (point + Vector2.ONE * 0.5) * cell, dot, _color("line"))
+        draw_circle(rect.position + (point + Vector2.ONE * 0.5) * cell, dot, faint)
     for point: Vector2 in solar["course"]:
         draw_circle(rect.position + (point + Vector2.ONE * 0.5) * cell, dot * 1.5, _color("gold"))
     if solar.has("hover_name"):
@@ -70,6 +72,9 @@ func _draw_solar_map(view: Control, data: Dictionary) -> void:
 # it, its name under it.
 func _draw_solar_picture(view: Control, solar: Dictionary) -> void:
     var bounds := _bounds(view, "MapBounds")
+    # Before the layout has placed the column there is nothing to frame.
+    if bounds.size.x <= 0.0 or bounds.size.y <= 0.0:
+        return
     var frame := _color("character_palette_%d" % solar["frame_color"])
     var border := _metric("tour_solar_frame_width")
     draw_rect(bounds, _color("map_black"))
@@ -80,6 +85,8 @@ func _draw_solar_picture(view: Control, solar: Dictionary) -> void:
     var name_height := font.get_height(font_size) if not name.is_empty() else 0.0
     var inner := bounds.grow(-border * 2.0)
     inner.size.y -= name_height
+    if inner.size.x <= 0.0 or inner.size.y <= 0.0:
+        return
     if solar.has("picture"):
         var picture: Texture2D = solar["picture"]
         var scale := minf(inner.size.x / picture.get_width(), inner.size.y / picture.get_height())

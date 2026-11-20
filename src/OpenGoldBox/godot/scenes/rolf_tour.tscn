@@ -417,6 +417,11 @@ layout_mode = 2
 size_flags_horizontal = 3
 text = "Inventory"
 
+[node name="Movement" type="Label" parent="Layout/Page/Body/Side"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"LabelMuted"
+
 [node name="SolarFlight" type="HBoxContainer" parent="Layout/Page/Body/Side"]
 unique_name_in_owner = true
 visible = false
@@ -529,11 +534,6 @@ layout_mode = 2
 size_flags_horizontal = 3
 tooltip_text = "Fly south-east (Page Down, keypad 3)."
 text = "↘"
-
-[node name="Movement" type="Label" parent="Layout/Page/Body/Side"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_type_variation = &"LabelMuted"
 
 [node name="Turns" type="HBoxContainer" parent="Layout/Page/Body/Side"]
 layout_mode = 2

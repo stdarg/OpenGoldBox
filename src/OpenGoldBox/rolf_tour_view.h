@@ -325,6 +325,9 @@ class RolfTourView : public godot::Control
     std::optional<std::size_t> hovered_body_;
     std::vector<opengold::original::OrbitCell> solar_course_;
     std::optional<opengold::original::SolarMapState> rendered_solar_;
+    // The script's picture beside the map, and the revision it was made from.
+    godot::Ref<godot::ImageTexture> solar_picture_;
+    std::uint64_t solar_picture_revision_{};
     void look();
     // The original's Search mode: each step searches, and takes longer.
     void toggle_search();

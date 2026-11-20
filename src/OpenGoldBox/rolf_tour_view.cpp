@@ -965,6 +965,11 @@ void RolfTourView::apply_settings()
         campaign->set_auto_equip(auto_equip_setting());
     }
     apply_design_difficulty();
+    // The solar map's options show at once (rolf_tour_solar_map.cpp).
+    if (on_solar_map())
+    {
+        refresh();
+    }
 }
 
 void RolfTourView::apply_sound_volume()

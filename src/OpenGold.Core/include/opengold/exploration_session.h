@@ -206,7 +206,9 @@ class DaxExplorationSession final : public ExplorationSession
 
     [[nodiscard]] std::optional<Image> view_picture() override
     {
-        return session_.picture() ? *session_.picture() : session_.observe_view();
+        // The solar map stays in view; the script's picture shows beside it.
+        return session_.picture() && !session_.snapshot().solar_map ? *session_.picture()
+                                                                    : session_.observe_view();
     }
 
     [[nodiscard]] std::string area_name() const override
