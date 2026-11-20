@@ -1108,7 +1108,8 @@ void RolfTourSession::buck_rogers_combat(const EclRequest &request, bool solo)
     if (solo)
     {
         // SOLO COMBAT: the current character alone (EclSoloCombat).
-        encounter_->champion = campaign_->state().slots.at(selected_character_.index);
+        encounter_->champion =
+            campaign_->state().slots.at(acting_slot(*campaign_, selected_character_));
         if (!encounter_->champion)
         {
             throw EclError("SOLO COMBAT needs a current character");
