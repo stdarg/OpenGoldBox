@@ -151,11 +151,32 @@ checked by `tests/matrix_cubed_tests.cpp`:
   Wounds with Treat Serious Wounds. *Countdown* left Critical's points
   stranded; OpenGoldBox does as *Matrix Cubed* in both games.
 
+## Upkeep and money (step B2)
+
+The engine routines are *Countdown*'s, unchanged: the wounded after a fight,
+poison and antidotes, AID, rest, the credit pool, shops, ammunition, HALVE
+and JOIN are as [countdown.md](countdown.md), "Upkeep and money", describes,
+in the same code (`buck_rogers_upkeep.cpp`). The scripts differ:
+
+- **Where:** Salvation is script 17, and its port, like *Countdown*'s, is
+  free. Script 20 of `ECL1` is the outpost with the bank and the hospital,
+  as script 99 is in *Countdown*, and script 95 has a port that charges.
+  The ship's clinic is in script 19, the solar map. The game starts with
+  10 medical supplies and 20,000 credits in the NEO account.
+- **The bank** works as *Countdown*'s, its TRANSFER to the NEO account
+  included: both games have it.
+- **Prices:** the shops set the multiplier at 16 or 32 by the shop. It
+  stays until the next shop sets it, so the hospital's fee is 2,560 or
+  5,120 credits by the shop visited last.
+- **Fines:** a port the team has damaged asks 10,000 credits before it lets
+  the ship dock, from the NEO account, or else from the bank.
+
 ## Bugs
 
 Fixed in OpenGoldBox; the ones *Matrix Cubed* shares with *Countdown* (the
 check's grade, high skill values, the general-skill count, Animal Training's
-refund) are in [countdown.md](countdown.md), "Bugs".
+refund, the DIVVY share, credits handed over, buying into a full bundle) are
+in [countdown.md](countdown.md), "Bugs".
 
 1. **Training to level 20 cut the experience** (`chargen.pas`
    `TrainingMenu`): after training, the original cuts the experience to one
@@ -174,6 +195,12 @@ refund) are in [countdown.md](countdown.md), "Bugs".
    and 71 Act there, only where the shipped operand is the one expected
    (`script_check_skill`; the user, 2026-11-20). The game's files are
    unchanged.
+4. **The hospital's fee check** (script 20 of `ECL1`, the checks at 853Bh
+   and 8555h): as in *Countdown*, the check reads one byte of the two-byte
+   fee, which is 0 at the multipliers of 16 and 32, so the hospital never
+   refused and charged the bank account, then the patient, into debt.
+   OpenGoldBox reads the word there (`script_operand_tag`). The game's files
+   are unchanged.
 
 ## Ship combat
 

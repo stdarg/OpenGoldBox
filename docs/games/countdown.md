@@ -180,8 +180,8 @@ the script saved there on every path, through subroutines.
   the radio fills a tank below 40 to 200, and a hailed ship that helps one
   below 100; Salvation refuels the ship to 450 (script 17); the port of
   script 99 sells fuel up to 450, a unit for 20 from the four-byte cell
-  4CE6h, which Salvation's welcome sets to 20,000 (the NEO account the Rule
-  Book describes; step B2 checks).
+  4CE6h, which Salvation's welcome sets to 20,000: the NEO salvage account
+  ("Upkeep and money").
 - **Shops**: SHOP 1 at Salvation (script 17) and lists 2 to 15 in the port of
   script 99.
 - **PROGRAM**: 0 (the team menu, with training) at Salvation and at the port;
@@ -352,6 +352,154 @@ last 16 are the template. `encode_creature` and `encode_items` write them
 back; every creature in `MON0CHA` and every list in `MON0ITM` of both games
 comes back byte for byte.
 
+## Upkeep and money (step B2)
+
+How the team is looked after and how it pays, as the original's engine and
+scripts do it. The engine's part is in
+`src/OpenGold.Rules.Original/src/buck_rogers_upkeep.cpp`
+(`opengold/buck_rogers_upkeep.h`); `tests/buck_rogers_upkeep_tests.cpp`
+checks each rule and names the routine it follows. The bank, the hospital,
+the port and the ship's clinic are the game's scripts, which the script host
+runs as they are (step B3). *Matrix Cubed* runs the same engine routines,
+and its scripts differ a little ([matrix-cubed.md](matrix-cubed.md)).
+
+### The injury states
+
+The record's status byte: 1 okay, 2 gone, 3 dead, 4 dying (bleeding), 5
+unconscious, 6 fled, 7 poisoned, 8 comatose, then the fight's own states
+(dodging, sprinting, failed in zero gravity, the jet pack). Only an okay
+character can act. The fight sets them; upkeep reads them:
+
+- **Bleeding:** each round of a fight takes a bleeding character closer to
+  a coma, which comes after ten. A medic's bandage stops it.
+- **Unconscious:** 0 Hit Points; time brings the character round.
+- **Poisoned:** after the fight a Medic or an antidote cures it, or the
+  character slips into a coma.
+- **Comatose:** only a hospital, Salvation's doctor or the ship's clinic
+  brings the character back. Time does nothing.
+
+### After a fight
+
+The order (`postcbt.pas` `PostCombat`): the fight's result, then, unless the
+team was destroyed, the medics' treatment, the ship's repairs after a ship
+fight, the experience summary and the booty. There is no treatment after
+the team boards a ship, nor once after a script sets cell 4B80h.
+
+- **The wounded** (`DetermineCombatResults`), after a fight the team did not
+  flee: a bleeding member falls unconscious, and an unconscious one with Hit
+  Points comes round. A script can set cell 7EE6h to put the bleeding and
+  the unconscious back on their feet instead, with at least 1 Hit Point.
+- **Poison** (`TreatInjuries`): each okay Medic in turn tries Treat
+  Poisoning on each poisoned member until one succeeds. Failing that, the
+  game offers the antidote of the first member carrying one, and one of the
+  bundle is used. Failing that, the patient slips into a coma. A cured
+  patient is left unconscious with 0 Hit Points.
+- **Wounds:** every team member who is okay, bleeding or unconscious and
+  short of Hit Points is seen to. First each okay member in turn may give
+  First Aid: 1d6, never above 6 Hit Points. Then the first success of Treat
+  Critical Wounds (twice 3d8 + 3), Treat Serious Wounds (twice 2d8 + 1) or
+  Treat Light Wounds (twice 1d8), tried by each okay member in turn. Every
+  check is at difficulty 2, except a medic's Treat Critical Wounds on
+  itself, at 4. Anyone with the skill treats, and only Medics learn the
+  Treat skills. A treated patient is okay.
+- **Unkillable:** a member with the Unkillable effect and fewer than 45 Hit
+  Points stands up with 45.
+- **The report** lists each cure, antidote, coma and healing, and ends with
+  one of four lines: no injuries, no medics, nothing treated, or healing
+  completed.
+
+### AID: medics in a fight and aboard
+
+AID (`viewchar.pas` `FindPatients`, `TreatPatients`) is a command of the
+ground fight and of the ship fight's crew. A medic with First Aid or Treat
+Light Wounds bandages every bleeding member, without a roll: the patient is
+unconscious and bleeds no more. One with Treat Stun tries it on every dizzy
+or stunned member who can act, and a success ends both. In a ground fight
+only the members next to the medic are patients; aboard, anyone is. While
+exploring there is no medic command: treatment comes after a fight, with
+rest, or at a hospital or the clinic.
+
+### Time and rest
+
+- **Rest** (`gametime.pas` `RestAndHeal`): each day every unconscious
+  member comes round and every okay member gains a Hit Point, up to the
+  maximum. The bleeding, poisoned and comatose gain nothing.
+- **The rest menu** (PROGRAM 9; `explore.pas` `RestMenu`): Rest, Save,
+  Change and Exit. Each Rest is one day.
+- **The solar map:** each step of the rocket is three days of rest
+  (`MoveRocket`).
+
+### Credits
+
+- Each character carries its own credits; a new one brings 1,000.
+- **The pool** (`money.pas`): POOL puts the credits of every player
+  character and party-member NPC into the pool; DIVVY shares it evenly among
+  them, the remainder a credit each to the first; TAKE gives the current
+  character what it asks for, at most the pool. The booty menu and the shops
+  have these commands, and fallen enemies' credits go into the pool. A shop
+  empties the pool as it opens. Leaving the booty menu or a shop with
+  credits still pooled loses them, after a warning.
+- **Trading:** on the character sheet a character hands credits to another,
+  at most what it has.
+
+### Shops
+
+- **The stock** (`eclvm.pas` `EclShop`): SHOP 4Bh names one of 16 lists of
+  item templates (`gdconsts.pas` `itemListStarts`). SHOP 1 is Salvation's,
+  2 to 15 the port's. The shop shows the list's last item first. List 9
+  names templates 92 and 93, which `ITEM0.DAX` does not hold, so it offers
+  eight items.
+- **Prices** (`shop.pas` `ItemPrice`): the item's value (1 when it has none)
+  times the multiplier in cell 7F6Dh, over 16. The scripts set 16 before
+  each shop; a multiplier of 0 means the value.
+- **BUY:** the current character's credits pay; when they fall short, all
+  of them and the rest from the pool. A bought grenade or antidote joins a
+  like bundle. A character carries at most 16 items.
+- **SELL:** half the item's value, for each item of a bundle. An item worth
+  nothing is taken away for nothing.
+- **AMMO** (`ShopAmmoMenu`): every missile weapon the character carries,
+  readied or not, with the price of a clip and of a fill. A clip is 10
+  rounds and a weapon holds 250; a rocket launcher or a plasma thrower holds
+  10 and is sold a round at a time. Each 10 rounds, or part of them, costs
+  the weapon type's price, 5 to 100 credits (`gdconsts.pas` `ammoPrices`).
+  The shop's multiplier does not apply.
+- **HALVE and JOIN** (the gear menu): HALVE splits a bundle of grenades or
+  antidotes in two, the larger half staying; the menu offers it below 16
+  items. JOIN gathers every like item into the chosen one, up to 100 a
+  bundle, and the rest makes the next bundle. Weapons and armor never join.
+
+### The outposts (the scripts)
+
+The outpost's menu is the script's: script 99 of `ECL6` offers some of
+BANK, DOWNTOWN, HOSPITAL, PORT and TRAINING, by the outpost (cell 4C31h).
+
+- **The bank** keeps one account for the team, the four-byte cell 4CE2h,
+  which every branch shows. DEPOSIT and WITHDRAW move credits between a
+  member and the account; TRANSFER moves them from the account into the NEO
+  salvage account, from which they never come back.
+- **The NEO salvage account** (cell 4CE6h, 20,000 credits at the start)
+  receives the salvage of every ship the team takes, and pays for
+  everything at the port.
+- **The hospital** heals a member who is not dead or gone, in any state,
+  comatose included, to full Hit Points and okay. The fee is 160 times the
+  multiplier (2,560 credits at 16), from the bank account when it holds
+  enough, else from the member's own credits; else the hospital refuses.
+  The shipped script checks only one byte of the fee (Bugs).
+- **The port:** LAUNCH; REPAIR, system by system, at a price for each
+  point of damage of 4 for the hull, 16 for the sensors, 12 the controls,
+  14 life support and 28 the engines, times the multiplier over 16, and
+  10,000 a K-cannon, 3,000 a missile mount and 1,000 a laser; FUEL, 20
+  credits a unit up to 450; AMMO, a K-cannon reload for 1,500 (5 at most)
+  and a missile reload for 300 (7 at most); MED SUP, a unit of medical
+  supplies for 2,000 (10 at most, cell 4C63h).
+- **Salvation** (script 17) charges nothing: its port refuels, repairs,
+  rearms and restocks 10 medical supplies, and its doctor heals every member
+  who is not dead.
+- **The ship's clinic** (script 34, when the team takes to space hurt):
+  one unit of medical supplies heals a member who is not dead or gone to
+  full Hit Points and okay.
+- **Training** (PROGRAM 0, at Salvation and the outposts) is free.
+
 ## Bugs
 
 Fixed in OpenGoldBox, in both games unless named:
@@ -388,6 +536,30 @@ Fixed in OpenGoldBox, in both games unless named:
    script host reads each SKILL CHECK through once it runs these games in
    step B3; the user, 2026-11-20). The
    game's files are unchanged.
+7. **DIVVY lost a share** (`money.pas` `ShareMoney`): the pool was divided
+   among the player characters and party-member NPCs but paid only to the
+   player characters (and to any member whose npc byte is 1 to 7Fh, who
+   was not counted), so a party-member NPC's share vanished. OpenGoldBox
+   shares the pool among the members POOL takes from.
+8. **Handing over credits kept 16 bits** (`viewchar.pas`
+   `TradeTreasureMenu`, `money.pas` `TradeMoney`): an amount above 65,535
+   was cut to its last 16 bits, so giving 70,000 credits gave 4,464. The
+   whole amount moves now.
+9. **Buying or taking into a full bundle** (`shop.pas`
+   `GiveItemCopyToCreature`): a character with 16 items, one of them a
+   bundle of 100, who bought or took one more of it lost 99: the new item
+   took the bundle's 100 as it joined, and was then taken back for the
+   overload. OpenGoldBox leaves the gear as it was.
+10. **The hospital's fee check** (script 99 of `ECL6`, the checks at 84F1h
+    and 850Bh): the script writes the fee, 160 times the price multiplier,
+    to cell 7F79h as a word and charges it as a word, but compares one byte
+    of it with the bank account and then with the patient's credits. At the
+    multipliers the game sets that byte is 0, so the hospital never
+    refused: it charged the bank account into debt, and after it the
+    patient's credits. OpenGoldBox reads the word there
+    (`script_operand_tag`, which the script host reads each operand's width
+    through once it runs these games in step B3). The game's files are
+    unchanged.
 
 ## Ship combat
 

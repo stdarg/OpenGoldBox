@@ -328,8 +328,8 @@ screen first.
 ### The outpost, the port and money
 
 - **One currency:** credits, with the shared pool (`money.pas`).
-- **The bank** keeps the team's credits; *Matrix Cubed*'s can move them to the
-  NEO account (Rule Book).
+- **The bank** keeps the team's credits; in both games it can move them to
+  the NEO account, never back (the outposts' scripts).
 - **The NEO salvage account** pays for repairs, fuel, ship ammunition and
   medical supplies at the port. It is free at Salvation Station.
 - **The hospital** heals for a fee; the ship's Medical Center uses medical
