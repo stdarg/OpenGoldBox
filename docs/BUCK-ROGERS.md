@@ -448,6 +448,33 @@ The steps follow release order. *Matrix Cubed* runs the same program, so
 most of its work is its route. B1 can run for both games at once. B3 needs
 B2; B4 needs B3's winning party.
 
+### Who does which step
+
+Two kinds of session share the work, as the user decided on 2026-11-20.
+Each builds on the other's work on main and never builds a second copy of
+it (one code path).
+
+- **The macOS Claude session** builds what the player sees and does, for
+  both games:
+  - the creation and skill screens;
+  - the solar map, its rules (`buck_rogers_solar_map.h`) and its screen;
+  - the ship combat screen and the code that drives a ship fight
+    (`buck_rogers_ship_fight.h`);
+  - quick save and quick load, for every game;
+  - Novice reaching the game, the antidote asked about after a fight, and
+    ground that blocks movement but not shots;
+  - B5: the Options rows, the difficulty names and the rest of the menus.
+- **A Codex session** plays *Countdown* to its end: B3's route test. It
+  flies the solar map and fights the ship fights through the code above,
+  and fixes what its route finds missing in the script host.
+- **A Codex session** puts *Matrix Cubed* in the engine: B4's campaign,
+  its scripts, its save (campaign format 55), its ending, its walk and its
+  route. It uses the shared script host and the screens above.
+
+Every session changes `buck_rogers_host.cpp`, so each rebases on main before
+it pushes and keeps its changes there small. The session board shows who
+holds what: `tools/session_board.py list`.
+
 ### B0. Groundwork
 
 Scope:
@@ -766,6 +793,9 @@ shows these names while a Buck Rogers game plays:
   games whose original already scales Hit Points. Novice takes Easy's.
 - **Novice** is a new value of the `difficulty` setting, `novice`, offered
   only while a Buck Rogers game plays. Any other game plays it as Easy.
+- **The scripts' difficulty** (cell 4BB6h, which some scripts multiply by)
+  holds the original's 0 for Novice to 4 for Ace. Admiral holds 5, one step
+  past Ace (the user, 2026-11-20).
 
 ## Open questions
 
