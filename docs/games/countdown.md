@@ -1129,16 +1129,18 @@ checks fly to every body from Earth and land at Ceres, and
 at every square and plays its event: the first choice of a menu, then each
 in turn until each has come twice; every fight played by the game's own
 computer on both sides; treasure left; a ship fight handed off. Then it
-enters every script without a map of its own (script 99 at each of its
-thirteen outposts) and steps about the wildernesses. On 2026-11-20 it walked
-all 17 maps and 20 scripts without a map, played 422 fights (zero gravity in
-272 of them, and on `HITEK`, `LOTEK` and `MARSCOM`), and met nothing the
-engine lacks; it reached the solar map from 18 places. Map 99 is the
-Mariposa's top, which script 95 enters on the escape; the walk notes it.
-The outposts of script 99 are each reached by flying the solar map from
-Earth to the body and taking its place in the body's menu, and map 99, which
-takes script 99 by its number, after docking at Hielo; the ship fight's
-enemy (4C61h) is still set by the walk, as an aid.
+enters every script without a map of its own and steps about the
+wildernesses; script 99's thirteen outposts it reaches as a player does, by
+flying the solar map from Earth to each body and taking the outpost from the
+body's menu. On 2026-11-20, with the solar map, it walked 16 maps and 20
+scripts without a map, docked at all 13 outposts after 98 steps of flight,
+played 422 fights (zero gravity in 271 of them, and on `HITEK`, `LOTEK` and
+`MARSCOM`), reached the solar map in 69 events, and met nothing the engine
+lacks. Map 99, the Mariposa's top, takes the outposts' script of its number,
+which runs the outpost last docked at (Hielo, after a docking there) and
+leaves the team at its menus, so the walk notes the map; script 95, which
+plays it on the escape, is entered with the scripts. The ship fight's enemy
+(4C61h) is still set by the walk, as an aid.
 
 ## Next
 
