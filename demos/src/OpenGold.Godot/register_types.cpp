@@ -1,6 +1,7 @@
 #include "combat_sprite_demo.h"
 #include "equipment_sprite_demo.h"
 #include "sound_board_view.h"
+#include "../../../src/OpenGoldBox/tool_game_finder.h"
 #include <godot_cpp/godot.hpp>
 
 namespace
@@ -12,6 +13,7 @@ void initialize(godot::ModuleInitializationLevel level)
         godot::ClassDB::register_class<CombatSpriteDemo>();
         godot::ClassDB::register_class<EquipmentSpriteDemo>();
         godot::ClassDB::register_class<SoundBoardView>();
+        godot::ClassDB::register_class<GameFinder>();
     }
 }
 

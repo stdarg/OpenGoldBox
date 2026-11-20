@@ -72,8 +72,7 @@ func _ready() -> void:
     if "--metadata-check" in OS.get_cmdline_user_args():
         metadata_root = ProjectSettings.globalize_path("user://metadata-check-%d" % Time.get_ticks_usec())
     _build_ui()
-    var game_dir := OS.get_environment("OPENGOLD_GAME_DIR")
-    if game_dir.is_empty(): game_dir = ProjectSettings.get_setting("opengold/game_directory", "")
+    var game_dir := GameFinder.game_folder("POOLRAD")
     var art_dir := ProjectSettings.globalize_path("res://../../../data/art")
     var error := catalog.load_data(game_dir, art_dir)
     if not error.is_empty():

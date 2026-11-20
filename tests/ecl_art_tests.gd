@@ -57,9 +57,8 @@ func verify() -> void:
     decoded = Decoder.new().decode(table_fixture)
     tables.setup(decoded,table_fixture)
     check(tables.pairs(decoded.nodes[46]).is_empty(),"Unbounded user-input table index must remain unresolved")
-    var folder := OS.get_environment("OPENGOLD_GAME_DIR")
-    if folder.is_empty(): folder = ProjectSettings.get_setting("opengold/game_directory", "")
-    if DirAccess.dir_exists_absolute(folder):
+    var folder := GameFinder.game_folder("POOLRAD")
+    if not folder.is_empty():
         var evidence = Evidence.new()
         evidence.build(folder)
         check(evidence.summary.scripts > 0,"Local ECL inventory")

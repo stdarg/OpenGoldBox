@@ -2540,7 +2540,7 @@ msgstr "Elige un personaje para traer al grupo."
 msgid "Choose a class. Classes in gray are not open to your race."
 msgstr "Elige una clase. Las clases en gris no están abiertas a tu raza."
 
-#: src/OpenGoldBox/application_settings.cpp:733
+#: src/OpenGoldBox/application_settings.cpp:724
 msgid "Choose a design's folder: its name ends in .DSN."
 msgstr "Elige la carpeta de un diseño: su nombre termina en .DSN."
 
@@ -2598,7 +2598,7 @@ msgstr "Elige un Estilo de combate válido"
 msgid "Choose an existing folder containing the Pool of Radiance game files."
 msgstr "Elige una carpeta existente con los archivos de Pool of Radiance."
 
-#: src/OpenGoldBox/application_settings.cpp:317
+#: src/OpenGoldBox/application_settings.cpp:308
 msgid "Choose an existing folder holding the OpenGoldBox new art."
 msgstr "Elige una carpeta existente con el arte nuevo de OpenGoldBox."
 
@@ -2638,7 +2638,7 @@ msgstr "Elige la carpeta que contiene START.EXE y los archivos DAX originales de
 msgid "Choose the folder of the design to play, which the construction kit names NAME.DSN."
 msgstr "Elige la carpeta del diseño que quieres jugar, que el kit de construcción llama NOMBRE.DSN."
 
-#: src/OpenGoldBox/application_settings.cpp:705
+#: src/OpenGoldBox/application_settings.cpp:696
 msgid "Choose the folder that holds this game's files."
 msgstr "Elige la carpeta con los archivos de este juego."
 
@@ -12459,7 +12459,7 @@ msgstr "Este personaje no está listo para entrenar"
 msgid "This character was not made under the original rules"
 msgstr "Este personaje no se creó con las reglas originales"
 
-#: src/OpenGoldBox/application_settings.cpp:327
+#: src/OpenGoldBox/application_settings.cpp:318
 msgid "This folder is not the OpenGoldBox new art: it has no new-art-pack.json."
 msgstr "Esta carpeta no es el arte nuevo de OpenGoldBox: no tiene new-art-pack.json."
 

@@ -137,8 +137,8 @@ From PowerShell:
 .\demos\review-sounds.cmd
 ```
 
-The demo uses `OPENGOLD_GAME_DIR`, falling back to `opengold/game_directory`
-in `demos/godot/project.godot`. Set the variable to the folder containing `START.EXE`.
+The demo finds the folder containing `START.EXE` as the game finds Pool of
+Radiance; `OPENGOLD_GAME_DIR` names a folder to look in first.
 Click a sound to play/restart it; a new selection stops the previous sound.
 Stop, mute and volume are available below the buttons.
 

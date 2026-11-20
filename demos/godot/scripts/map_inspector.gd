@@ -80,9 +80,7 @@ func _layout() -> void:
 	queue_redraw()
 
 func _load_maps() -> void:
-	var game_directory := OS.get_environment("OPENGOLD_GAME_DIR")
-	if game_directory.is_empty():
-		game_directory = ProjectSettings.get_setting("opengold/game_directory", "")
+	var game_directory := GameFinder.game_folder("POOLRAD")
 	var executable := ProjectSettings.globalize_path("res://../../build/opengold_maps.exe" if OS.get_name() == "Windows" else "res://../../build/opengold_maps")
 	if not FileAccess.file_exists(executable):
 		info.text = "Map loader is missing. Run build.cmd from the repository root, then reopen this demo."
@@ -90,7 +88,7 @@ func _load_maps() -> void:
 	var output: Array = []
 	var result := OS.execute(executable, [game_directory], output, true)
 	if result != 0:
-		info.text = "Could not load maps. Set OPENGOLD_GAME_DIR to the directory containing GEO archives.\n\n" + "\n".join(output)
+		info.text = "Could not load maps. Pool of Radiance's files were not found; set OPENGOLD_GAME_DIR to their folder.\n\n" + "\n".join(output)
 		return
 	var parsed = JSON.parse_string("".join(output))
 	if not parsed is Dictionary or parsed.get("version") != 1 or not parsed.get("maps") is Array:

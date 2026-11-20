@@ -1,6 +1,8 @@
 #include "../../../src/OpenGoldBox/godot_text.h"
 #include "sound_board_view.h"
 #include "../../../src/OpenGoldBox/godot_sound_output.h"
+#include "../../../src/OpenGoldBox/tool_game_finder.h"
+#include "opengold/path_text.h"
 #include <godot_cpp/classes/audio_stream_player.hpp>
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/engine.hpp>
@@ -15,7 +17,6 @@
 #include <godot_cpp/variant/callable_method_pointer.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <cmath>
-#include <filesystem>
 #include <stdexcept>
 
 using namespace godot;
@@ -60,19 +61,16 @@ void SoundBoardView::_ready()
     capture_ = args.has("--capture");
     try
     {
-        auto directory = OS::get_singleton()->get_environment("OPENGOLD_GAME_DIR");
-        if (directory.is_empty())
-        {
-            directory =
-                ProjectSettings::get_singleton()->get_setting("opengold/game_directory", "");
-        }
-        if (directory.is_empty())
+        const auto directory =
+            presentation::tool_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+        if (directory.empty())
         {
             throw std::runtime_error(
-                "Set OPENGOLD_GAME_DIR to your Pool of Radiance folder, then restart.");
+                "Pool of Radiance's files were not found: set OPENGOLD_GAME_DIR to their "
+                "folder, then restart.");
         }
         audio_ = std::make_unique<SoundPlayer>(
-            SoundBank::load(std::filesystem::path(directory.utf16().get_data())),
+            SoundBank::load(directory),
             std::make_unique<GodotSoundOutput>(*get_node<AudioStreamPlayer>("Player")));
         for (std::size_t i = 0; i < audio_->bank().clips().size(); ++i)
         {
@@ -88,7 +86,8 @@ void SoundBoardView::_ready()
         loaded_ = true;
         refresh_buttons();
         get_node<Label>("Status")->set_text("Ready. Choose a sound to play.");
-        get_node<Label>("Source")->set_tooltip_text(directory.path_join("START.EXE"));
+        get_node<Label>("Source")->set_tooltip_text(
+            String::utf8(opengold::path_text(directory / "START.EXE").c_str()));
     }
     catch (const std::exception &error)
     {

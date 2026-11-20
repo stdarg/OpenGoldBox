@@ -31,10 +31,9 @@ var previews: Array[TextureRect] = []
 func _ready() -> void:
     _build_ui()
     if not _load_catalog(): return
-    var folder := OS.get_environment("OPENGOLD_GAME_DIR")
-    if folder.is_empty(): folder = str(ProjectSettings.get_setting("opengold/game_directory", ""))
+    var folder := GameFinder.game_folder("POOLRAD")
     if folder.is_empty():
-        _fail("Set OPENGOLD_GAME_DIR to the original game folder.")
+        _fail("Pool of Radiance's files were not found; set OPENGOLD_GAME_DIR to their folder.")
         return
     body_data = FileAccess.get_file_as_bytes(folder.path_join("CBODY.DAX"))
     head_data = FileAccess.get_file_as_bytes(folder.path_join("CHEAD.DAX"))

@@ -1,4 +1,5 @@
 #include "party_test_bridge.h"
+#include "application_settings.h"
 #include "campaign_combat.h"
 #include "character_sheet_text.h"
 #include "class_text.h"
@@ -17,7 +18,6 @@
 #include "opengold/combat_body_catalog.h"
 #include "opengold/encounter_budget.h"
 #include "opengold/srd5.h"
-#include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <algorithm>
 #include <map>
@@ -41,12 +41,14 @@ String gs(const std::string &text)
     return String::utf8(text.c_str());
 }
 
+// Pool of Radiance's folder, where the game itself finds it.
 std::filesystem::path game_dir()
 {
-    const auto value = OS::get_singleton()->get_environment("OPENGOLD_GAME_DIR");
+    const auto value = settings::game_path();
     if (value.is_empty())
     {
-        throw std::runtime_error("Set OPENGOLD_GAME_DIR to the game files");
+        throw std::runtime_error(
+            "Pool of Radiance's files were not found: set OPENGOLD_GAME_DIR to their folder");
     }
     return presentation::path_from_godot(value);
 }
@@ -524,7 +526,8 @@ String PartyTestBridge::start_fight(const Dictionary &configuration)
                 auto staged = por::stage_area_creature(
                     home, choice.record, choice.icon, exported, id,
                     ally ? name : name + " " + std::to_string(encounter.enemies.size() + 1),
-                    ally ? rules::Side::party : rules::Side::opposition, *difficulty);
+                    ally ? rules::Side::party : rules::Side::opposition, *difficulty,
+                    party().rule_module().plays_original_records());
                 if (!ally)
                 {
                     footprints.push_back(staged.fighter.footprint);

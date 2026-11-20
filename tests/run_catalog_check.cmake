@@ -1,8 +1,10 @@
 # Runs one of the Combat Sprite Catalog's own checks, which its scene starts from
-# a command-line flag. They read the original game's files. A failed assert leaves
-# Godot running, so the timeout ends the check and the output decides it.
-if("$ENV{OPENGOLD_GAME_DIR}" STREQUAL "")
-    message("Skipped: OPENGOLD_GAME_DIR is not set")
+# a command-line flag. They read the original game's files, found as the game
+# finds them (GAME_FINDER) before HOME moves. A failed assert leaves Godot
+# running, so the timeout ends the check and the output decides it.
+include("${CMAKE_CURRENT_LIST_DIR}/find_games.cmake")
+if(NOT DEFINED game_folder_POOLRAD)
+    message("Skipped: Pool of Radiance's files were not found")
     return()
 endif()
 file(REMOVE_RECURSE "${USER_HOME}")

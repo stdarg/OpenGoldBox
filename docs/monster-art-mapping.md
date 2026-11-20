@@ -12,7 +12,8 @@ Run from the repository root:
 godot_console --headless --path demos/godot --script ../../tools/research_monster_art.gd
 ```
 
-The tool honors `OPENGOLD_GAME_DIR`, falling back to the Godot project setting.
+The tool finds Pool of Radiance's files as the game does; `OPENGOLD_GAME_DIR`
+names a folder to look in first.
 It writes `user-data/monster-art-candidates.csv` and
 `user-data/monster-art-unresolved.csv` into the ignored local-data directory.
 The candidate CSV uses one row per monster/art/pose association and explicitly

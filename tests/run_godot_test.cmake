@@ -10,6 +10,11 @@ endif()
 if(NOT DEFINED TEST_TIMEOUT)
     set(TEST_TIMEOUT 30)
 endif()
+# GAME_FINDER (opengold_census) finds the games before HOME moves, as the game
+# would, and names Pool of Radiance's folder in OPENGOLD_GAME_DIR.
+if(DEFINED GAME_FINDER)
+    include("${CMAKE_CURRENT_LIST_DIR}/find_games.cmake")
+endif()
 # USER_HOME gives the check its own, empty Godot user data and settings.cfg,
 # so checks run at the same time never share saves or settings.
 if(DEFINED USER_HOME)

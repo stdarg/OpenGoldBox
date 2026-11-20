@@ -1,15 +1,17 @@
 """Capture the game's screens and compare them before and after a change.
 
-    python3 tools/ui_snapshots.py capture before [--game-dir /path/to/POOLRAD]
+    python3 tools/ui_snapshots.py capture before [--game-dir /path/to/folder]
     ... change the game and rebuild ...
-    python3 tools/ui_snapshots.py capture after [--game-dir /path/to/POOLRAD]
+    python3 tools/ui_snapshots.py capture after [--game-dir /path/to/folder]
     python3 tools/ui_snapshots.py compare before after
 
 capture runs the UI audit (tests/ui_audit.gd) in a window with fresh saves and
 keeps a screenshot of every screen it audits, at three window sizes and in
 English and Spanish. compare lists the screens that changed, appeared or went,
 and writes for each changed one an image of the new screen with the changed
-pixels in red. Screenshots hold the original game's art, so they stay in
+pixels in red. Pool of Radiance's files are found as the game finds them
+(the build's opengold_census --find, in --game-dir's folder first); without
+them the town and campaign screens are left out. Screenshots hold the original game's art, so they stay in
 user-data/ui-snapshots and never go in the repository. Build the game first.
 """
 import argparse
@@ -21,13 +23,14 @@ import sys
 import tempfile
 
 sys.dont_write_bytecode = True  # importing playtest.py leaves nothing behind
-from playtest import ROOT, default_godot, run  # noqa: E402
+from playtest import ROOT, default_godot, found_pool_of_radiance, run  # noqa: E402
 
 SNAPSHOTS = ROOT / "user-data/ui-snapshots"
 
 
 def capture(args):
     build = Path(args.build)
+    game_dir = found_pool_of_radiance(build, args.game_dir)
     folder = SNAPSHOTS / args.name
     shutil.rmtree(folder, ignore_errors=True)
     folder.mkdir(parents=True)
@@ -37,14 +40,14 @@ def capture(args):
     # The same rolls in character creation each time, so its pages compare.
     script_args = [f"--playtest-fixtures={build / 'playtest-fixtures'}", f"--capture={folder}",
                    "--fixed-seed"]
-    if args.game_dir:
+    if game_dir:
         fixtures = work / "slums-fixtures"
         run([build / "opengold_expedition_tests"],
-            dict(os.environ, OPENGOLD_GAME_DIR=args.game_dir, OPENGOLD_SLUMS_FIXTURES=str(fixtures)))
+            dict(os.environ, OPENGOLD_GAME_DIR=game_dir, OPENGOLD_SLUMS_FIXTURES=str(fixtures)))
         script_args.append(f"--slums-fixtures={fixtures}")
     home = str(work / "home")
     env = dict(os.environ, HOME=home, APPDATA=home, XDG_DATA_HOME=home,
-               OPENGOLD_GAME_DIR=args.game_dir, OPENGOLD_LANG="en")
+               OPENGOLD_GAME_DIR=game_dir, OPENGOLD_LANG="en")
     result = subprocess.run([args.godot, "--path", str(ROOT / "src/OpenGoldBox/godot"),
                              "--script", str(ROOT / "tests/ui_audit.gd"), "--", *script_args],
                             env=env, capture_output=True, text=True)
@@ -81,8 +84,9 @@ def main():
     take = commands.add_parser("capture", help="screenshot every audited screen")
     take.add_argument("name", help="what to call this set, such as before or after")
     take.add_argument("--build", default=str(ROOT / "build/macos-universal"))
-    take.add_argument("--game-dir", default=os.environ.get("OPENGOLD_GAME_DIR", ""),
-                      help="the original files, for character creation, the town and campaign fights")
+    take.add_argument("--game-dir", default="",
+                      help="a folder to look for Pool of Radiance's files in first, for "
+                           "character creation, the town and campaign fights")
     take.set_defaults(action=capture)
     diff = commands.add_parser("compare", help="list what changed between two sets")
     diff.add_argument("before")

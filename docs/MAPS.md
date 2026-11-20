@@ -24,8 +24,8 @@ From the repository root, run `build.cmd` followed by `demos\review-maps.cmd`, o
 godot --path demos/godot res://scenes/map_inspector.tscn
 ```
 
-The demo uses `OPENGOLD_GAME_DIR`, falling back to `opengold/game_directory` in
-`demos/godot/project.godot`. Point it at the directory containing the GEO DAX files.
+The demo finds the GEO DAX files as the game finds Pool of Radiance
+([TECH.md](TECH.md#finding-the-games-folders)); `OPENGOLD_GAME_DIR` names a folder to look in first.
 The inspected DOS installation loads **29 maps**, each with 1026 decoded bytes.
 
 - Select a location in the dropdown, or use Previous / Next. Location names

@@ -10,12 +10,12 @@ set. Original game pixels are not image-generation inputs.
 From the repository root, launch it with:
 
 ```bash
-./dev_tools/replacement_art_creator/run.sh [POOLRAD_DIRECTORY]
+./dev_tools/replacement_art_creator/run.sh [FOLDER_HOLDING_POOL_OF_RADIANCE]
 ```
 
-The game-data directory is optional for the Create tab; the Reference tab
-needs it. The launcher uses `OPENGOLD_GAME_DIR` or `~/POOLRAD` when available
-and accepts `GODOT_BIN` for a different Godot executable.
+The Create tab works without the original game files; the Reference tab
+needs them. The tool finds them as the game does; the optional folder, like
+`OPENGOLD_GAME_DIR`, is looked in first. The launcher accepts `GODOT_BIN` for a different Godot executable.
 On Windows, run it from Git Bash.
 
 ## Files and workflow

@@ -4,12 +4,12 @@
 #include "../../../src/OpenGoldBox/godot_images.h"
 #include "opengold/srd5.h"
 #include "../../../src/OpenGoldBox/godot_path.h"
+#include "../../../src/OpenGoldBox/tool_game_finder.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/input_event_key.hpp>
 #include <godot_cpp/classes/item_list.hpp>
 #include <godot_cpp/classes/label.hpp>
-#include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/classes/texture_rect.hpp>
@@ -50,13 +50,8 @@ void EquipmentSpriteDemo::_ready()
     }
     try
     {
-        auto directory = OS::get_singleton()->get_environment("OPENGOLD_GAME_DIR");
-        if (directory.is_empty())
-        {
-            directory =
-                ProjectSettings::get_singleton()->get_setting("opengold/game_directory", "");
-        }
-        art_ = por::CharacterArt::load(path(directory));
+        art_ = por::CharacterArt::load(
+            presentation::tool_game_folder(opengold::GoldBoxGame::pool_of_radiance));
         const auto root = ProjectSettings::get_singleton()->globalize_path("res://../../data/art/");
         catalog_ = por::CombatBodyCatalog::load(path(root.path_join("combat-body-looks.tsv")),
                                                 path(root.path_join("combat-weapon-options.tsv")));

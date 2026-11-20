@@ -19,9 +19,11 @@ FetchContent_MakeAvailable(godot_cpp)
 get_target_property(godot_cpp_includes godot-cpp INTERFACE_INCLUDE_DIRECTORIES)
 set_target_properties(godot-cpp PROPERTIES INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${godot_cpp_includes}")
 # The character, combat and Rolf views are the game's own (src/OpenGoldBox);
-# this extension keeps only the research tools, sharing the game's sound output.
+# this extension keeps only the research tools, sharing the game's sound output
+# and the tools' game finder.
 add_library(opengold_godot SHARED combat_sprite_demo.cpp equipment_sprite_demo.cpp sound_board_view.cpp
-    "${PROJECT_SOURCE_DIR}/src/OpenGoldBox/godot_sound_output.cpp" register_types.cpp)
+    "${PROJECT_SOURCE_DIR}/src/OpenGoldBox/godot_sound_output.cpp"
+    "${PROJECT_SOURCE_DIR}/src/OpenGoldBox/tool_game_finder.cpp" register_types.cpp)
 target_link_libraries(opengold_godot PRIVATE opengold_core opengold_rules_srd5 godot-cpp)
 target_compile_features(opengold_godot PRIVATE cxx_std_20)
 target_compile_definitions(opengold_godot PRIVATE $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
@@ -80,14 +82,16 @@ if(OPENGOLD_BUILD_TESTS)
             "-DEXPECTED=Equipment sprite demo checks passed" -P "${PROJECT_SOURCE_DIR}/tests/run_godot_test.cmake")
         set_tests_properties(opengold_godot_equipment_demo PROPERTIES FIXTURES_REQUIRED demo_project TIMEOUT 40 LABELS demo
             RESOURCE_LOCK demo_project)
-        # Synthetic checks, plus the installed ECL scripts and maps when
-        # OPENGOLD_GAME_DIR names the original files. The map inspector reads
-        # maps through build/opengold_maps, which ./build.sh default builds.
+        # Synthetic checks, plus the installed ECL scripts and maps when Pool
+        # of Radiance's files are found as the game finds them. The map
+        # inspector reads maps through build/opengold_maps, which ./build.sh
+        # default builds.
         add_test(NAME opengold_godot_ecl_art COMMAND "${CMAKE_COMMAND}"
             "-DGODOT=${OPENGOLD_DEMO_CHECK_GODOT}" "-DPROJECT=${demo_project}"
             "-DSCRIPT=${PROJECT_SOURCE_DIR}/tests/ecl_art_tests.gd"
             "-DEXPECTED=PASS: ECL decoder, script evidence, and review integration"
             "-DUSER_HOME=${CMAKE_BINARY_DIR}/godot-home/ecl_art"
+            "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
             -P "${PROJECT_SOURCE_DIR}/tests/run_godot_test.cmake")
         set_tests_properties(opengold_godot_ecl_art PROPERTIES FIXTURES_REQUIRED demo_project
             TIMEOUT 120 LABELS demo RESOURCE_LOCK demo_project)
@@ -96,6 +100,7 @@ if(OPENGOLD_BUILD_TESTS)
             "-DSCRIPT=${PROJECT_SOURCE_DIR}/tests/map_inspector_tests.gd"
             "-DEXPECTED=Map inspector tests passed"
             "-DUSER_HOME=${CMAKE_BINARY_DIR}/godot-home/map_inspector"
+            "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
             -P "${PROJECT_SOURCE_DIR}/tests/run_godot_test.cmake")
         set_tests_properties(opengold_godot_map_inspector PROPERTIES FIXTURES_REQUIRED demo_project
             TIMEOUT 120 LABELS demo RESOURCE_LOCK demo_project)

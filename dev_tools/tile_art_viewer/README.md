@@ -100,8 +100,9 @@ From the repository root, run:
 ```
 
 The script builds the native extension, registers it with Godot on first run,
-and opens the viewer. It uses `OPENGOLD_GAME_DIR` or `~/POOLRAD` for your local
-game files. To use another directory, pass it as an argument:
+and opens the viewer. It finds your local game files as the game does. To have
+it look in a folder first, as `OPENGOLD_GAME_DIR` does, pass the folder as an
+argument:
 
 ```bash
 ./dev_tools/tile_art_viewer/run.sh /path/to/POOLRAD
@@ -124,8 +125,8 @@ The import step is needed once per checkout: Godot loads the native extension
 only after an import lists it in `.godot/extension_list.cfg`. Without it the
 viewer stops with "Could not find base class WallArtCatalog". (The headless
 import may crash on exit after writing the list; that is harmless.)
-`OPENGOLD_GAME_DIR` must point to the folder containing the `WALLDEF*.DAX` and
-`8X8D*.DAX` files. Archive names are matched without case sensitivity.
+The viewer reads the `WALLDEF*.DAX` and `8X8D*.DAX` files of the Pool of
+Radiance folder it finds. Archive names are matched without case sensitivity.
 
 In Art Catalog, use the Archive, View, and Hide unused tiles filters or the
 Find field to narrow the contact grid.

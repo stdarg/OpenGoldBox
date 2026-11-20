@@ -5,10 +5,9 @@ tool_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 repo_dir="$(cd -- "$tool_dir/../.." && pwd)"
 source "$tool_dir/../rsync_fallback.sh"
 build_dir="$repo_dir/build/combat-tester"
-game_dir="${1:-${OPENGOLD_GAME_DIR:-$HOME/POOLRAD}}"
 godot_bin="${GODOT_BIN:-/Applications/Godot_mono.app/Contents/MacOS/Godot}"
-if [[ ! -d "$game_dir" || ! -x "$godot_bin" ]]; then
-    printf 'Set OPENGOLD_GAME_DIR to the Pool of Radiance files and GODOT_BIN to Godot 4.\n' >&2
+if [[ ! -x "$godot_bin" ]]; then
+    printf 'Set GODOT_BIN to Godot 4.\n' >&2
     exit 1
 fi
 
@@ -43,6 +42,11 @@ fi
 
 # The new art, as a player who downloaded it and chose its folder.
 export OPENGOLD_NEW_ART_DIR="${OPENGOLD_NEW_ART_DIR:-$repo_dir/new-art-pack}"
-export OPENGOLD_GAME_DIR="$game_dir"
+# A folder named here is looked in first, as OPENGOLD_GAME_DIR names one; the
+# tool finds Pool of Radiance's files there or as the game does (docs/TECH.md,
+# "Finding the games' folders").
+if [[ -n ${1:-} ]]; then
+    export OPENGOLD_GAME_DIR="$1"
+fi
 export OPENGOLD_COMBAT_TEST_CONFIG="$tool_dir/config/parties.json"
 exec "$godot_bin" --path "$project_dir" res://combat_tester/setup.tscn

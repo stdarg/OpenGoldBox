@@ -1,4 +1,5 @@
 #include "combat_test_bridge.h"
+#include "application_settings.h"
 #include "combat_view.h"
 #include "campaign_combat.h"
 #include "seeded_battlefield.h"
@@ -15,7 +16,6 @@
 #include "opengold/encounter_formation.h"
 #include "opengold/map_catalog.h"
 #include "opengold/srd5.h"
-#include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <algorithm>
@@ -78,12 +78,14 @@ std::filesystem::path resource(const char *relative)
         ProjectSettings::get_singleton()->globalize_path(String("res://") + relative));
 }
 
+// Pool of Radiance's folder, where the game itself finds it.
 std::filesystem::path game_dir()
 {
-    const auto value = OS::get_singleton()->get_environment("OPENGOLD_GAME_DIR");
+    const auto value = settings::game_path();
     if (value.is_empty())
     {
-        throw std::runtime_error("Set OPENGOLD_GAME_DIR to the game files");
+        throw std::runtime_error(
+            "Pool of Radiance's files were not found: set OPENGOLD_GAME_DIR to their folder");
     }
     return presentation::path_from_godot(value);
 }

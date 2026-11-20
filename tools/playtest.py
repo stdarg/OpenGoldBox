@@ -7,14 +7,16 @@ scratch home folder (the player's own saves and settings are untouched) and
 prints its report.
 
     python3 tools/playtest.py morale
-    python3 tools/playtest.py slums --game-dir /path/to/POOLRAD
+    python3 tools/playtest.py slums --game-dir /path/to/folder
     python3 tools/playtest.py gear -- --campaign --combat-demo ...
 
 Play-tests: actions, gear, morale (the play-test fights), quick (Quick combat on
 the campaign screen), slums (the Slums' set encounters) and campaign (the whole
 campaign, on a route recorded from the expedition test; --from=STAGE and
 --to=STAGE after -- choose a part); quick, slums and campaign need the original
-files. Arguments after -- go to the play-test script. Build the game first (cmake --build --preset macos-universal).
+files, which the build's opengold_census --find finds as the game does (in
+--game-dir's folder first). Arguments after -- go to the play-test script.
+Build the game first (cmake --build --preset macos-universal).
 """
 import argparse
 import os
@@ -40,6 +42,19 @@ def default_godot():
     return os.environ.get("GODOT") or (str(app) if app.exists() else "godot")
 
 
+def found_pool_of_radiance(build, named_folder):
+    """Pool of Radiance's folder as the game finds it, looking in named_folder
+    first as OPENGOLD_GAME_DIR names one; "" when it is not found."""
+    env = dict(os.environ, OPENGOLD_GAME_DIR=named_folder) if named_folder else None
+    found = subprocess.run([Path(build) / "opengold_census", "--find", str(ROOT)], env=env,
+                           capture_output=True, text=True, check=True).stdout
+    for line in found.splitlines():
+        name, _, folder = line.partition("\t")
+        if name == "POOLRAD":
+            return folder
+    return ""
+
+
 def run(command, env=None):
     result = subprocess.run(command, env=env)
     if result.returncode:
@@ -51,8 +66,8 @@ def main():
     parser.add_argument("playtest", choices=sorted(PLAYTESTS))
     parser.add_argument("--build", default=str(ROOT / "build/macos-universal"),
                         help="the game build whose fixture writers and library are used")
-    parser.add_argument("--game-dir", default=os.environ.get("OPENGOLD_GAME_DIR", ""),
-                        help="the original Pool of Radiance folder")
+    parser.add_argument("--game-dir", default="",
+                        help="a folder to look for Pool of Radiance's files in first")
     parser.add_argument("--out", help="where the report and screenshots go (default: a new temporary folder)")
     parser.add_argument("--godot", default=default_godot())
     parser.add_argument("--reuse-route", action="store_true",
@@ -61,6 +76,7 @@ def main():
     args = parser.parse_args()
 
     build = Path(args.build)
+    args.game_dir = found_pool_of_radiance(build, args.game_dir)
     out = Path(args.out) if args.out else Path(tempfile.mkdtemp(prefix=f"playtest-{args.playtest}-"))
     home = out / "home"
     shutil.rmtree(home, ignore_errors=True)
@@ -69,7 +85,7 @@ def main():
 
     if args.playtest == "campaign":
         if not args.game_dir:
-            sys.exit("The campaign play-test needs the original files: --game-dir or OPENGOLD_GAME_DIR")
+            sys.exit("The campaign play-test needs Pool of Radiance's files, which were not found: --game-dir or OPENGOLD_GAME_DIR")
         route = out / "route"
         if not args.reuse_route:
             shutil.rmtree(route, ignore_errors=True)
@@ -78,7 +94,7 @@ def main():
         script_args.append(f"--route={route}")
     elif args.playtest == "quick":
         if not args.game_dir:
-            sys.exit("The Quick play-test needs the original files: --game-dir or OPENGOLD_GAME_DIR")
+            sys.exit("The Quick play-test needs Pool of Radiance's files, which were not found: --game-dir or OPENGOLD_GAME_DIR")
         # A fighter, cleric, wizard and rogue at level four, unless the script
         # arguments name another party.
         if not any(arg.startswith("--combat-demo") for arg in script_args):
@@ -86,7 +102,7 @@ def main():
                             "--combat-demo-level=4"]
     elif args.playtest == "slums":
         if not args.game_dir:
-            sys.exit("The Slums play-test needs the original files: --game-dir or OPENGOLD_GAME_DIR")
+            sys.exit("The Slums play-test needs Pool of Radiance's files, which were not found: --game-dir or OPENGOLD_GAME_DIR")
         fixtures = out / "slums-fixtures"
         shutil.rmtree(fixtures, ignore_errors=True)
         run([build / "opengold_expedition_tests"],

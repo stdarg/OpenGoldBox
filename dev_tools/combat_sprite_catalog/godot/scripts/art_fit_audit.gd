@@ -1,7 +1,8 @@
 extends SceneTree
 
 # Read-only audit of installed replacement art at the catalog's fixed preview
-# scales. Run with OPENGOLD_GAME_DIR set, from the catalog Godot project.
+# scales. Run from the catalog Godot project; it finds Pool of Radiance's files
+# as the game does.
 func _initialize() -> void:
     call_deferred("_audit")
 

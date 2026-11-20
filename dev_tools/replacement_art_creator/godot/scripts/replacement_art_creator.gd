@@ -180,11 +180,9 @@ func _load_reference_catalog() -> void:
     if not error.is_empty():
         reference_status.text = error
         return
-    var game_directory := OS.get_environment("OPENGOLD_GAME_DIR")
+    var game_directory := GameFinder.game_folder("POOLRAD")
     if game_directory.is_empty():
-        game_directory = str(ProjectSettings.get_setting("opengold/game_directory", ""))
-    if game_directory.is_empty():
-        reference_status.text = "Set OPENGOLD_GAME_DIR to your original game files to view and edit source descriptions."
+        reference_status.text = "Pool of Radiance's files were not found; set OPENGOLD_GAME_DIR to their folder to view and edit source descriptions."
         return
     error = load_directory(game_directory)
     if not error.is_empty():

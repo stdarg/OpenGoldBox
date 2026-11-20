@@ -8,10 +8,12 @@ battlefield, on the game's combat screen.
 Run from the repository root:
 
 ```bash
-OPENGOLD_GAME_DIR="$HOME/POOLRAD" dev_tools/party_tester/run.sh
+dev_tools/party_tester/run.sh
 ```
 
-`OPENGOLD_GAME_DIR` points to the original game files. Set `GODOT_BIN` if Godot
+It finds the original game files as the game does, the folder chosen in the
+game included; a folder passed to `run.sh`, or `OPENGOLD_GAME_DIR`, is looked in
+first. Set `GODOT_BIN` if Godot
 4.5 or newer is not at `/Applications/Godot_mono.app/Contents/MacOS/Godot`. The
 launcher builds a separate GDExtension from the game's sources and stages the
 game's Godot project, data and the tester's screen in `build/party-tester/project`.
@@ -60,7 +62,7 @@ them when it opens.
 ## Check
 
 ```bash
-OPENGOLD_GAME_DIR="$HOME/POOLRAD" dev_tools/party_tester/check.sh
+dev_tools/party_tester/check.sh
 ```
 
 The headless check uses the screen's own controls. It builds a party of eight,
@@ -71,7 +73,7 @@ unchanged afterwards, and that every listed creature can be put in a fight.
 ## Level sweep
 
 ```bash
-OPENGOLD_GAME_DIR="$HOME/POOLRAD" dev_tools/party_tester/sweep.sh
+dev_tools/party_tester/sweep.sh
 ```
 
 The sweep (`godot/level_sweep.gd`) takes 444 characters from level 1 to 15

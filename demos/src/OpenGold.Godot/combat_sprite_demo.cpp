@@ -3,7 +3,7 @@
 #include "character_colors.h"
 #include "../../../src/OpenGoldBox/godot_images.h"
 #include "../../../src/OpenGoldBox/godot_nodes.h"
-#include "../../../src/OpenGoldBox/godot_path.h"
+#include "../../../src/OpenGoldBox/tool_game_finder.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/image.hpp>
@@ -173,12 +173,7 @@ void CombatSpriteDemo::create_controls()
 
 void CombatSpriteDemo::load_art()
 {
-    auto configured = OS::get_singleton()->get_environment("OPENGOLD_GAME_DIR");
-    if (configured.is_empty())
-    {
-        configured = ProjectSettings::get_singleton()->get_setting("opengold/game_directory", "");
-    }
-    const auto directory = presentation::path_from_godot(configured);
+    const auto directory = presentation::tool_game_folder(opengold::GoldBoxGame::pool_of_radiance);
     art_ = opengold::por::CharacterArt::load(directory);
     appearance_.combat_body = 4; // A weapon and shield expose all customization regions.
     const auto tiles = archive(directory, "DUNGCOM.DAX");

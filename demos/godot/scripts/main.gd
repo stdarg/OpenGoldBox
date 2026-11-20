@@ -24,12 +24,10 @@ func _ready() -> void:
 	category_select.add_item("Encounter sprites")
 	category_select.select(0)
 	category_select.item_selected.connect(_select_category)
-	var game_directory := OS.get_environment("OPENGOLD_GAME_DIR")
-	if game_directory.is_empty():
-		game_directory = ProjectSettings.get_setting("opengold/game_directory", "")
+	var game_directory := GameFinder.game_folder("POOLRAD")
 	var directory := DirAccess.open(game_directory)
 	if directory == null:
-		status.text = "Could not open game directory.\nSet OPENGOLD_GAME_DIR to your game installation."
+		status.text = "Pool of Radiance's files were not found; set OPENGOLD_GAME_DIR to their folder."
 		return
 	var archives: Array[String] = []
 	for filename in directory.get_files():

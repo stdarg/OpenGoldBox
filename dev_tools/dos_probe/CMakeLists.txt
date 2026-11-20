@@ -14,6 +14,7 @@ if(OPENGOLD_BUILD_TESTS)
             COMMAND "${CMAKE_COMMAND}" "-DPYTHON=${Python3_EXECUTABLE}"
             "-DPROBE=$<TARGET_FILE:opengold_dos_probe>" "-DMAPS=$<TARGET_FILE:opengold_maps>"
             "-DWORK=${CMAKE_CURRENT_BINARY_DIR}/experiments"
+            "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
             -P "${CMAKE_CURRENT_SOURCE_DIR}/experiments/run_experiments.cmake")
         set_tests_properties(opengold_dos_probe_experiments PROPERTIES SKIP_RETURN_CODE 77)
     endif()

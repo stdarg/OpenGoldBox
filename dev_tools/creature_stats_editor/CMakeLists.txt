@@ -17,7 +17,8 @@ add_subdirectory("${repo_root}" "${CMAKE_BINARY_DIR}/opengold")
 
 add_library(opengold_creature_stats_editor SHARED
     native/register_types.cpp
-    native/creature_editor.cpp)
+    native/creature_editor.cpp
+    "${repo_root}/src/OpenGoldBox/tool_game_finder.cpp")
 target_include_directories(opengold_creature_stats_editor PRIVATE
     "${repo_root}/tools" "${repo_root}/src/OpenGoldBox")
 target_link_libraries(opengold_creature_stats_editor PRIVATE opengold_creature_data godot-cpp)

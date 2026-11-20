@@ -7,6 +7,6 @@ set -euo pipefail
 tool_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 log="$(mktemp)"
 trap 'rm -f "$log"' EXIT
-"$tool_dir/run.sh" "${1:-${OPENGOLD_GAME_DIR:-$HOME/POOLRAD}}" --headless \
+"$tool_dir/run.sh" "${1:-}" --headless \
     --script res://party_tester/level_sweep.gd 2>&1 | tee "$log"
 grep -q '^Level sweep passed$' "$log"

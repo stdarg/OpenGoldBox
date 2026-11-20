@@ -7,13 +7,13 @@ character customization without launching or extending the game application.
 ## Launch
 
 Build the demo extension, then launch the demo. From macOS bash at the repository
-root (replace the asset path with your original game installation):
+root:
 
 ```bash
 cmake -S . -B build/sprite-demo -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DOPENGOLD_BUILD_GODOT=ON -DOPENGOLD_BUILD_GAME=OFF
 cmake --build build/sprite-demo --target opengold_godot -j 8
-OPENGOLD_GAME_DIR=/path/to/POOLRAD bash demos/review-sprites.sh
+bash demos/review-sprites.sh
 ```
 
 The launcher locates Godot on PATH or in its standard macOS application folder;
@@ -21,8 +21,9 @@ The launcher locates Godot on PATH or in its standard macOS application folder;
 `demos\review-sprites.cmd`; it builds and checks the demo extension before
 opening the scene so an older DLL cannot hide `CombatSpriteDemo`.
 
-The demo reads `OPENGOLD_GAME_DIR`, falling back to the demo project's
-`opengold/game_directory` setting. It has no game startup or settings flow.
+The demo finds the original game files as the game does
+([TECH.md](TECH.md#finding-the-games-folders)); `OPENGOLD_GAME_DIR` names a
+folder to look in first. It has no game startup or settings flow.
 You can also launch the scene directly:
 
 ```bash

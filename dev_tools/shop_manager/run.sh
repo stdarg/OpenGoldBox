@@ -3,12 +3,11 @@ set -euo pipefail
 
 tool_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 repo_dir="$(cd -- "$tool_dir/../.." && pwd)"
-game_dir="${1:-${OPENGOLD_GAME_DIR:-$HOME/POOLRAD}}"
 build_dir="$repo_dir/build/tile-art-viewer"
 project_dir="$tool_dir/godot"
 
-if (( $# > 1 )) || [[ ! -d "$game_dir" ]]; then
-    printf 'Usage: %s [POOLRAD_DIRECTORY]\n' "$0" >&2
+if (( $# > 1 )); then
+    printf 'Usage: %s [FOLDER_HOLDING_POOL_OF_RADIANCE]\n' "$0" >&2
     exit 2
 fi
 
@@ -44,5 +43,10 @@ if [[ ! -s "$project_dir/.godot/extension_list.cfg" ]]; then
     }
 fi
 
-export OPENGOLD_GAME_DIR="$game_dir"
+# A folder named here is looked in first, as OPENGOLD_GAME_DIR names one; the
+# tool finds Pool of Radiance's files there or as the game does (docs/TECH.md,
+# "Finding the games' folders").
+if [[ -n ${1:-} ]]; then
+    export OPENGOLD_GAME_DIR="$1"
+fi
 exec "$godot_bin" --path "$project_dir"

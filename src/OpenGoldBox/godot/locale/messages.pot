@@ -2540,7 +2540,7 @@ msgstr ""
 msgid "Choose a class. Classes in gray are not open to your race."
 msgstr ""
 
-#: src/OpenGoldBox/application_settings.cpp:733
+#: src/OpenGoldBox/application_settings.cpp:724
 msgid "Choose a design's folder: its name ends in .DSN."
 msgstr ""
 
@@ -2598,7 +2598,7 @@ msgstr ""
 msgid "Choose an existing folder containing the Pool of Radiance game files."
 msgstr ""
 
-#: src/OpenGoldBox/application_settings.cpp:317
+#: src/OpenGoldBox/application_settings.cpp:308
 msgid "Choose an existing folder holding the OpenGoldBox new art."
 msgstr ""
 
@@ -2638,7 +2638,7 @@ msgstr ""
 msgid "Choose the folder of the design to play, which the construction kit names NAME.DSN."
 msgstr ""
 
-#: src/OpenGoldBox/application_settings.cpp:705
+#: src/OpenGoldBox/application_settings.cpp:696
 msgid "Choose the folder that holds this game's files."
 msgstr ""
 
@@ -12459,7 +12459,7 @@ msgstr ""
 msgid "This character was not made under the original rules"
 msgstr ""
 
-#: src/OpenGoldBox/application_settings.cpp:327
+#: src/OpenGoldBox/application_settings.cpp:318
 msgid "This folder is not the OpenGoldBox new art: it has no new-art-pack.json."
 msgstr ""
 

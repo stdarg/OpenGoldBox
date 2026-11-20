@@ -36,8 +36,8 @@ cmake --build build-probe --target opengold_dos_probe opengold_dos_probe_tests
 saved games or characters whatever the player has.
 `opengold_dos_probe_tests` checks the CPU against documented 8086 and 80186
 results; it needs no game files. `opengold_dos_probe_experiments` runs the
-[experiments](#experiments) against the installed game, and is skipped without
-`OPENGOLD_GAME_DIR`.
+[experiments](#experiments) against the installed game, found as the game finds
+it (`opengold_census --find`), and is skipped when Pool of Radiance is not found.
 
 A scenario is a text file of commands, one per line (`#` starts a comment):
 

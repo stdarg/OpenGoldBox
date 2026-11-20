@@ -1,8 +1,8 @@
 # Combat Sprite Catalog
 
 Launch the standalone Godot tool with `./dev_tools/combat_sprite_catalog/run.sh`.
-Pass the Pool of Radiance directory as its only argument, or set
-`OPENGOLD_GAME_DIR`. Set `GODOT_BIN` if Godot is outside `PATH` and the standard
+It finds Pool of Radiance's files as the game does; a folder passed as its only
+argument, or `OPENGOLD_GAME_DIR`, is looked in first. Set `GODOT_BIN` if Godot is outside `PATH` and the standard
 macOS app location. On Windows, run it from Git Bash. The launcher builds its native extension and imports the
 Godot project on first run. Original game art is loaded locally and never copied
 into the repository.

@@ -50,11 +50,10 @@ func _ready() -> void:
     category_names = _read(CATEGORY_NAMES_PATH)
     if not writable: return
     _refresh_category_names()
-    var folder := OS.get_environment("OPENGOLD_GAME_DIR")
-    if folder.is_empty(): folder = ProjectSettings.get_setting("opengold/game_directory", "")
+    var folder := GameFinder.game_folder("POOLRAD")
     var directory := DirAccess.open(folder)
     if directory == null:
-        message.text = "Game directory unavailable; set OPENGOLD_GAME_DIR."
+        message.text = "Pool of Radiance's files were not found; set OPENGOLD_GAME_DIR to their folder."
         return
     var files := Array(directory.get_files())
     files.sort_custom(func(a, b): return str(a).naturalnocasecmp_to(str(b)) < 0)

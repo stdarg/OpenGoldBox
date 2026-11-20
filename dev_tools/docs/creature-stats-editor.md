@@ -15,10 +15,11 @@ each data file's rules.
 From the repository root:
 
 ```sh
-OPENGOLD_GAME_DIR="$HOME/POOLRAD" dev_tools/creature_stats_editor/run.sh
+dev_tools/creature_stats_editor/run.sh
 ```
 
-`OPENGOLD_GAME_DIR` is the original game's files. Set `GODOT_BIN` if Godot 4.5
+It finds the original game's files as the game does; a folder passed as its
+argument, or `OPENGOLD_GAME_DIR`, is looked in first. Set `GODOT_BIN` if Godot 4.5
 or newer is not at `/Applications/Godot_mono.app/Contents/MacOS/Godot`.
 
 The script builds the editor's extension in `build/creature-stats-editor`

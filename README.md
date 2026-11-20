@@ -501,10 +501,11 @@ The helpers currently expect Visual Studio Build Tools under the hard-coded
 CMake commands in a configured developer terminal and the
 [extension build options](docs/ROLF.md#build-boundary).
 
-Set the game directory before launching a demo or running tests against original
-data; without it, about 80 of the checks report Skipped. The environment
-variable overrides the game's saved folder and `opengold/game_directory` in
-`demos/godot/project.godot`; point it at the directory containing the DAX files:
+The game, the demos and the tests find the original game files as described in
+[TECH.md](docs/TECH.md#finding-the-games-folders); when they are not found,
+about 80 of the checks report Skipped. The environment variable names a folder
+to look in first, after the game's saved folder. Point it at the directory
+containing the DAX files:
 
 ```powershell
 $env:OPENGOLD_GAME_DIR = 'C:\Games\POOLRAD'

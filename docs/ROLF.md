@@ -20,8 +20,10 @@ The first command builds the game and its C++ GDExtension and runs the CTest sui
 The second imports the extension and opens the Godot scene. Once built, use only
 `demos\review-rolf.cmd` to run it again. Close the scene before rebuilding its DLL.
 
-Game data uses `OPENGOLD_GAME_DIR`, falling back to the game folder saved in the
-game's `settings.cfg` ([CONFIGURATION.md](CONFIGURATION.md)). To override it in CMD:
+Game data is found as the game finds it: the folder saved in the game's
+`settings.cfg`, then the folder `OPENGOLD_GAME_DIR` names, then a search upward
+from the checkout ([TECH.md](TECH.md#finding-the-games-folders)). To name a
+folder in CMD:
 
 ```cmd
 set "OPENGOLD_GAME_DIR=C:\Games\POOLRAD"

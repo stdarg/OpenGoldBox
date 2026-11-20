@@ -1,4 +1,5 @@
-add_library(opengold_combat_sprite_catalog SHARED sprite_catalog.cpp register_types.cpp)
+add_library(opengold_combat_sprite_catalog SHARED sprite_catalog.cpp register_types.cpp
+    "${PROJECT_SOURCE_DIR}/src/OpenGoldBox/tool_game_finder.cpp")
 target_link_libraries(opengold_combat_sprite_catalog PRIVATE opengold_core godot-cpp)
 target_compile_features(opengold_combat_sprite_catalog PRIVATE cxx_std_20)
 set_target_properties(opengold_combat_sprite_catalog PROPERTIES
@@ -26,6 +27,7 @@ if(OPENGOLD_BUILD_TESTS AND OPENGOLD_DEMO_GODOT)
         add_test(NAME opengold_catalog_${check}_check COMMAND "${CMAKE_COMMAND}"
             "-DGODOT=${OPENGOLD_DEMO_CHECK_GODOT}" "-DPROJECT=${catalog_project}" "-DCHECK=--${check}-check"
             "-DEXPECTED=checks passed" "-DUSER_HOME=${CMAKE_BINARY_DIR}/godot-home/catalog_${check}"
+            "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
             -P "${PROJECT_SOURCE_DIR}/tests/run_catalog_check.cmake")
         set_tests_properties(opengold_catalog_${check}_check PROPERTIES
             FIXTURES_REQUIRED catalog_project TIMEOUT 150 LABELS demo RESOURCE_LOCK catalog_project)

@@ -108,9 +108,10 @@ func _ready() -> void:
     if int(manifest.get("version", 0)) != 1 or manifest.get("locations", []).size() != LOCATION_COUNT:
         _fatal("Unexpected fixed shop location manifest")
         return
-    var game_dir := OS.get_environment("OPENGOLD_GAME_DIR")
+    var game_dir := GameFinder.game_folder("POOLRAD")
     if game_dir.is_empty():
-        game_dir = OS.get_environment("HOME").path_join("POOLRAD")
+        _fatal("Pool of Radiance's files were not found; set OPENGOLD_GAME_DIR to their folder.")
+        return
     var load_error: String = load_directory(game_dir)
     if not load_error.is_empty():
         _fatal(load_error)

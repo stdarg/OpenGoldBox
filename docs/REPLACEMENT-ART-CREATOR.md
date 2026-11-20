@@ -27,10 +27,11 @@ If the tool has not been built and imported in this checkout, complete the
 creator after updating the tool. Save any pending brief or description edits
 before closing it.
 
-`OPENGOLD_GAME_DIR` must point to the directory containing your original
-`WALLDEF*.DAX` files. The Create tab can still work if the directory is not
-available, but the Reference tab cannot display original art or edit its
-descriptions.
+The creator finds your original `WALLDEF*.DAX` files as the game finds Pool of
+Radiance ([TECH.md](TECH.md#finding-the-games-folders)); `OPENGOLD_GAME_DIR`
+names a folder to look in first, and is not needed when the files are where the
+game looks. The Create tab can still work if the files are not found, but the
+Reference tab cannot display original art or edit its descriptions.
 
 ## One-time setup
 
@@ -188,15 +189,16 @@ Art Catalog, map controls, and source-piece export features.
 | Export to game | `new-art-pack/walls/<appearance>/`, replacing that appearance's set |
 | Export selected set… | A new child folder inside the parent folder you choose |
 
-The source game files are read from `OPENGOLD_GAME_DIR`; these operations do
-not write to that directory. The imported images and brief file are in your
+The source game files are read from the Pool of Radiance folder the tool finds;
+these operations do not write to that directory. The imported images and brief file are in your
 checkout, so check your Git changes if you want to keep or share them. The
 game's `new-art-pack/walls` contains only new art and each set's manifest.
 
 ## Common problems
 
-- **Reference art is unavailable:** Check that `OPENGOLD_GAME_DIR` points to
-  the folder containing the original `WALLDEF*.DAX` files, then relaunch.
+- **Reference art is unavailable:** Check that the original `WALLDEF*.DAX`
+  files are where the game looks, or set `OPENGOLD_GAME_DIR` to their folder,
+  then relaunch.
 - **`WallArtCatalog` cannot be found:** Run the one-time native build and Godot
   import commands above for this checkout.
 - **Usage information is unavailable:** Check that the Art Catalog CSV exists

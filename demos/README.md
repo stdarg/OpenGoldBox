@@ -26,8 +26,9 @@ The demos reuse the engine and rules in the root `src/`, authored assets in
 `art/` and `data/`, and tests in `tests/`. Native inspection utilities remain in
 `tools/`. Build output remains in `build/godot/`; the demo DLL and imported
 portrait copies go to `demos/godot/bin/`. Captures and isolated test profiles
-remain under the root `user-data/`. Original game files are still supplied by
-the user through `OPENGOLD_GAME_DIR` or the demo project's existing setting.
+remain under the root `user-data/`. The demos find the original game files as
+the game does ([TECH.md](../docs/TECH.md#finding-the-games-folders));
+`OPENGOLD_GAME_DIR` names a folder to look in first.
 
 The demos share the game's code in [src/OpenGoldBox](../src/OpenGoldBox/README.md) rather than keeping a copy.
 See the root [README](../README.md) and
@@ -64,8 +65,7 @@ and size. The catalog supplies weapon-appropriate arms and equipment, not a
 replacement character body. The game party preview, campaign/training combat,
 combat showcase and this demo all call `ResolvedCombatAppearance::icon`.
 
-The original game path uses `OPENGOLD_GAME_DIR` or the existing demo project
-setting. Missing/deleted artwork mappings visibly report an unarmed fallback on the
+The demo finds the original game files as the game does. Missing/deleted artwork mappings visibly report an unarmed fallback on the
 saved body. Different weapons may share equipment artwork. Close with Windows X or Ctrl+X.
 
 `opengold_godot_equipment_demo` tests all weapons and shield combinations with

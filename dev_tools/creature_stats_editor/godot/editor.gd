@@ -9,7 +9,7 @@ const ABILITIES := ["Str", "Dex", "Con", "Int", "Wis", "Cha"]
 
 var editor := CreatureEditor.new()
 var repository := OS.get_environment("OPENGOLD_REPOSITORY")
-var game_directory := OS.get_environment("OPENGOLD_GAME_DIR")
+var game_directory := GameFinder.game_folder("POOLRAD")
 var edits_path := repository.path_join("dev_tools/creature_stats_editor/edits/edits.json")
 
 var edits: Array = [] # pending, in the edits file's format
@@ -83,8 +83,11 @@ func _ready() -> void:
 # --- Loading -------------------------------------------------------------------
 
 func _open() -> void:
-	if repository.is_empty() or game_directory.is_empty():
-		_say("Start the editor with run.sh: it sets OPENGOLD_REPOSITORY and OPENGOLD_GAME_DIR.")
+	if repository.is_empty():
+		_say("Start the editor with run.sh: it sets OPENGOLD_REPOSITORY.")
+		return
+	if game_directory.is_empty():
+		_say("Pool of Radiance's files were not found; set OPENGOLD_GAME_DIR to their folder.")
 		return
 	var error := editor.open(repository, game_directory)
 	if not error.is_empty():

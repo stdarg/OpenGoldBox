@@ -3,8 +3,7 @@ const Decoder = preload("res://scripts/por_ecl_decoder.gd")
 const Evidence = preload("res://scripts/art_script_evidence.gd")
 
 func _initialize() -> void:
-    var folder := OS.get_environment("OPENGOLD_GAME_DIR")
-    if folder.is_empty(): folder = ProjectSettings.get_setting("opengold/game_directory", "")
+    var folder := GameFinder.game_folder("POOLRAD")
     var loader := DaxSpriteLoader.new()
     var scripts: Array = []
     var directory := DirAccess.open(folder)

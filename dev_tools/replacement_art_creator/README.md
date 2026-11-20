@@ -29,9 +29,10 @@ From the repository root, run:
 ```
 
 This builds the native extension, registers it with Godot on first run, and
-opens the creator. It uses `OPENGOLD_GAME_DIR` or `~/POOLRAD` when available
-for the Reference tab. Pass another game-data directory as an argument, or set
-`GODOT_BIN` if Godot is outside `PATH` and the standard macOS app location:
+opens the creator. For the Reference tab it finds Pool of Radiance's files as
+the game does. A folder passed as an argument, like `OPENGOLD_GAME_DIR`, is
+looked in first. Set `GODOT_BIN` if Godot is outside `PATH` and the standard
+macOS app location:
 
 ```bash
 ./dev_tools/replacement_art_creator/run.sh /path/to/POOLRAD
@@ -47,13 +48,13 @@ cmake --build build/tile-art-viewer --target opengold_replacement_art_creator -j
 OPENGOLD_GAME_DIR=/path/to/POOLRAD /Applications/Godot_mono.app/Contents/MacOS/Godot --path dev_tools/replacement_art_creator/godot
 ```
 
-Without an argument the game files default to `~/POOLRAD`. On Windows, run
+On Windows, run
 `run.sh` from Git Bash. On Linux,
 substitute the installed `godot` executable. The creator needs Godot 4.5 or
 newer. A first headless editor import may crash on exit after registering the
-extension; the viewer's README describes the same behavior. If
-`OPENGOLD_GAME_DIR` is unset or unavailable, the Create tab still works and
-the Reference tab explains why original art is unavailable.
+extension; the viewer's README describes the same behavior. If Pool of
+Radiance's files are not found, the Create tab still works and the Reference
+tab explains why original art is unavailable.
 
 ## Review and correct a description
 

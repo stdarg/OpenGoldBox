@@ -10,10 +10,11 @@ you jump from a visible piece to its catalog entry.
 From the repository root, launch it with:
 
 ```bash
-./dev_tools/tile_art_viewer/run.sh [POOLRAD_DIRECTORY]
+./dev_tools/tile_art_viewer/run.sh [FOLDER_HOLDING_POOL_OF_RADIANCE]
 ```
 
-The optional directory overrides `OPENGOLD_GAME_DIR` and `~/POOLRAD`. Set
+The viewer finds Pool of Radiance's files as the game does; the optional
+folder, like `OPENGOLD_GAME_DIR`, is looked in first. Set
 `GODOT_BIN` if Godot is outside `PATH` and the standard macOS location. On
 Windows, run it from Git Bash. The launcher builds the native extension and
 imports its Godot project when needed.

@@ -27,8 +27,9 @@ See [native build prerequisites](ROLF.md#build-boundary).
 
 Training uses one martial fixture against an SRD Bandit and needs no original
 game files. Select **Slums event** for a fixed four-person party against the
-original event's four orcs. Original files come from `OPENGOLD_GAME_DIR`, falling
-back to the game folder saved in the game's `settings.cfg`:
+original event's four orcs. Original files are found as the game finds them
+([TECH.md](TECH.md#finding-the-games-folders)); `OPENGOLD_GAME_DIR` names a
+folder to look in:
 
 ```cmd
 set "OPENGOLD_GAME_DIR=C:\Games\POOLRAD"

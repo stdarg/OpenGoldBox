@@ -5,9 +5,10 @@ usage() {
     cat <<'EOF'
 Build and run the Tile Art Viewer.
 
-Usage: dev_tools/tile_art_viewer/run.sh [POOLRAD_DIRECTORY]
+Usage: dev_tools/tile_art_viewer/run.sh [FOLDER_HOLDING_POOL_OF_RADIANCE]
 
-Defaults to OPENGOLD_GAME_DIR, then ~/POOLRAD. Set GODOT_BIN to use a
+Finds Pool of Radiance's files as the game does: in the folder given, else
+OPENGOLD_GAME_DIR's, else upward from the checkout. Set GODOT_BIN to use a
 particular Godot 4.5+ executable.
 EOF
 }
@@ -25,12 +26,6 @@ tool_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 repo_dir="$(cd -- "$tool_dir/../.." && pwd)"
 project_dir="$tool_dir/godot"
 build_dir="$repo_dir/build/tile-art-viewer"
-game_dir="${1:-${OPENGOLD_GAME_DIR:-$HOME/POOLRAD}}"
-
-if [[ ! -d "$game_dir" ]]; then
-    printf 'Game-data directory does not exist: %s\nPass your POOLRAD directory as the first argument.\n' "$game_dir" >&2
-    exit 1
-fi
 if ! command -v cmake >/dev/null 2>&1 || ! command -v ninja >/dev/null 2>&1; then
     printf 'CMake and Ninja are required.\n' >&2
     exit 1
@@ -67,5 +62,10 @@ if [[ ! -s "$project_dir/.godot/extension_list.cfg" ]]; then
     fi
 fi
 
-export OPENGOLD_GAME_DIR="$game_dir"
+# A folder named here is looked in first, as OPENGOLD_GAME_DIR names one; the
+# tool finds Pool of Radiance's files there or as the game does (docs/TECH.md,
+# "Finding the games' folders").
+if [[ -n ${1:-} ]]; then
+    export OPENGOLD_GAME_DIR="$1"
+fi
 exec "$godot_bin" --path "$project_dir"

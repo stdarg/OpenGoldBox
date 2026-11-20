@@ -3,9 +3,7 @@ extends SceneTree
 # It does not claim that matching IDs prove the game's runtime resource selection.
 # Run: godot_console --headless --path demos/godot --script ../../tools/research_monster_art.gd
 func _initialize() -> void:
-    var folder := OS.get_environment("OPENGOLD_GAME_DIR")
-    if folder.is_empty():
-        folder = ProjectSettings.get_setting("opengold/game_directory", "")
+    var folder := GameFinder.game_folder("POOLRAD")
     var output_dir := ProjectSettings.globalize_path("res://../../user-data")
     DirAccess.make_dir_recursive_absolute(output_dir)
     var loader := DaxSpriteLoader.new()

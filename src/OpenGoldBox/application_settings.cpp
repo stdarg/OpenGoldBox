@@ -7,6 +7,7 @@
 #include "opengold/game_finder.h"
 #include "opengold/path_text.h"
 #include "opengold/ua_design.h"
+#include "godot_game_search.h"
 #include "godot_path.h"
 #include <godot_cpp/classes/config_file.hpp>
 #include <godot_cpp/classes/dir_access.hpp>
@@ -148,31 +149,21 @@ std::filesystem::path own_folder()
 // each game and environment: the search lists folders.
 String found_game_folder(opengold::GoldBoxGame game)
 {
-    auto *os = OS::get_singleton(); // borrowed engine singleton
-    opengold::GameSearch search;
+    // The start is looked up only when the search runs: finding the checkout
+    // reads the disk.
+    auto search = presentation::godot_game_search({});
     String key = String::num_int64(static_cast<int>(game));
-    for (const char *variable : {"OPENGOLD_GAME_DIR", "OPENGOLD_GOLDBOX_DIR"})
+    for (const auto &folder : search.named)
     {
-        const auto folder = os->get_environment(variable).strip_edges();
-        key += "\n" + folder;
-        if (!folder.is_empty())
-        {
-            search.named.push_back(presentation::path_from_godot(folder));
-        }
+        key += "\n" + String::utf8(opengold::path_text(folder).c_str());
     }
-    auto home = os->get_environment("HOME").strip_edges();
-    if (home.is_empty())
-    {
-        home = os->get_environment("USERPROFILE").strip_edges();
-    }
-    key += "\n" + home;
+    key += "\t" + String::utf8(opengold::path_text(search.home).c_str());
 
     static std::map<String, String> found_folders;
     if (const auto known = found_folders.find(key); known != found_folders.end())
     {
         return known->second;
     }
-    search.home = presentation::path_from_godot(home);
     search.start = own_folder();
     const auto folder = opengold::find_game_folder(game, search);
     return found_folders[key] =

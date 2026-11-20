@@ -53,13 +53,15 @@ godot --headless --path src/OpenGoldBox/godot --script $PWD/tests/ui_audit.gd --
 compares two sets, to catch visual changes nobody asked for:
 
 ```sh
-python3 tools/ui_snapshots.py capture before --game-dir /path/to/POOLRAD
+python3 tools/ui_snapshots.py capture before
 # change the game and rebuild
-python3 tools/ui_snapshots.py capture after --game-dir /path/to/POOLRAD
+python3 tools/ui_snapshots.py capture after
 python3 tools/ui_snapshots.py compare before after
 ```
 
-`capture` runs the audit in a window with fresh saves (character creation with
+`capture` finds Pool of Radiance's files as the game does, through the build's
+`opengold_census --find`; `--game-dir` names a folder to look in first. It
+runs the audit in a window with fresh saves (character creation with
 `--fixed-seed`, so its rolls repeat). `compare` (`tests/ui_compare.gd`) lists
 each screen that changed and by how much, and any that appeared or went, and
 writes for each changed screen the new screenshot dimmed with the changed

@@ -75,10 +75,11 @@ limits yet: Stock `0` hides an item and any other value sells it without limit.
 From the repository root:
 
 ```bash
-./dev_tools/shop_manager/run.sh /path/to/POOLRAD
+./dev_tools/shop_manager/run.sh
 ```
 
-The path defaults to `OPENGOLD_GAME_DIR`, then `~/POOLRAD`. Set `GODOT_BIN` if
+It finds Pool of Radiance's files as the game does; a folder passed as its
+argument, or `OPENGOLD_GAME_DIR`, is looked in first. Set `GODOT_BIN` if
 Godot is not on `PATH` or at `/Applications/Godot_mono.app/Contents/MacOS/Godot`.
 On Windows, run the launcher from Git Bash.
 The launcher builds the existing native tile/map decoder, copies its extension

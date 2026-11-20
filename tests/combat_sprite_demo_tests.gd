@@ -81,6 +81,8 @@ func create_fixtures() -> void:
         for pose in [0, 128]:
             monsters[id + pose] = picture(48 if id == 26 else 24, 48 if id == 31 else 24, 1, id + pose, 2)
     write_archive("CPIC2.DAX", monsters)
+    # The file only Pool of Radiance has, so the game finder takes this folder for its.
+    write_archive("SQRPACI.DAX", {})
     OS.set_environment("OPENGOLD_GAME_DIR", fixture_dir)
 
 func cleanup() -> void:

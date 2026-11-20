@@ -18,7 +18,8 @@ dev_tools/ai_lab/run.sh --party-of 0026 --min-foes 4 --seeds 16
 
 The expedition test plays the campaign's route and can keep every fight it meets:
 the party as it stood, and the enemies as the game built them, gear included. The
-script's first run does this, from `OPENGOLD_GAME_DIR` or `~/POOLRAD`. It takes about
+script's first run does this, from Pool of Radiance's files found as the game finds
+them (`OPENGOLD_GAME_DIR` names a folder to look in first). It takes about
 a minute and a half.
 
 A pack comes from your original game files, so it is never committed. Replaying one

@@ -3,10 +3,10 @@
 Run from the repository root:
 
 ```bash
-OPENGOLD_GAME_DIR="$HOME/POOLRAD" dev_tools/combat_tester/run.sh
+dev_tools/combat_tester/run.sh
 ```
 
-`OPENGOLD_GAME_DIR` points to the original game files. Set `GODOT_BIN` if Godot 4.5 or newer is not at `/Applications/Godot_mono.app/Contents/MacOS/Godot`. The launcher builds a separate GDExtension from the game's own C++ combat view and Core sources, stages the game's Godot scene and rules, then opens the setup screen. It does not change the main game project.
+It finds the original game files as the game does, the folder chosen in the game included; `OPENGOLD_GAME_DIR` names a folder to look in first. Set `GODOT_BIN` if Godot 4.5 or newer is not at `/Applications/Godot_mono.app/Contents/MacOS/Godot`. The launcher builds a separate GDExtension from the game's own C++ combat view and Core sources, stages the game's Godot scene and rules, then opens the setup screen. It does not change the main game project.
 
 Choose one of the 29 game maps, a monster type and count, optional leaders where available, and a seed. The seed repeats map placement; as in the game, the party faces open squares, not a wall (the search is shared with the Party tester, `dev_tools/shared/seeded_battlefield.cpp`). Each fight starts with full HP and resources. The party uses the game's six member formation, with the strongest AC/HP members closest to the enemies. Set Quick on a member or the whole party; Quick magic is a separate switch. Combat uses the game's combat screen. The result button returns to setup with the session edits intact.
 

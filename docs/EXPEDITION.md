@@ -136,8 +136,8 @@ that does not load (one older than the rules) stops the play-test with a
 FAILED line:
 
 ```sh
-python3 tools/playtest.py slums --game-dir /path/to/POOLRAD
-python3 tools/playtest.py slums --game-dir /path/to/POOLRAD -- --strong
+python3 tools/playtest.py slums
+python3 tools/playtest.py slums -- --strong
 ```
 
 In CTest, `opengold_expedition_fixtures` plays the route once with the shop,

@@ -1,4 +1,5 @@
 #include "creature_editor.h"
+#include "tool_game_finder.h"
 #include <godot_cpp/godot.hpp>
 
 namespace
@@ -8,6 +9,7 @@ void initialize(godot::ModuleInitializationLevel level)
     if (level == godot::MODULE_INITIALIZATION_LEVEL_SCENE)
     {
         godot::ClassDB::register_class<CreatureEditor>();
+        godot::ClassDB::register_class<GameFinder>();
     }
 }
 

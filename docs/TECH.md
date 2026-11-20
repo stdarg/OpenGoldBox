@@ -693,7 +693,15 @@ a home folder of its own: it runs `opengold_census --find`, passes Pool of
 Radiance's folder on as `OPENGOLD_GAME_DIR` and writes the other games' into
 the check's `settings.cfg`. GDScript checks ask the game,
 `StartupView.game_folder("CURSE")`. `opengold_census --find` prints what the game
-would find, one `NAME<TAB>FOLDER` line per game.
+would find, one `NAME<TAB>FOLDER` line per game; `tools/playtest.py` and
+`tools/ui_snapshots.py` ask it. The demos and the dev tools whose Godot
+extensions do not hold the game (the Combat Sprite Catalog, Tile Art Viewer,
+Replacement Art Creator, Shop Manager, Creature Stats Editor) look the same
+way from their project's checkout, `presentation::tool_game_folder` in C++ and
+`GameFinder.game_folder("POOLRAD")` in GDScript
+(`src/OpenGoldBox/tool_game_finder.h`); the Party and Combat testers, which run
+the game's code, ask `settings::game_path`. Their launchers' optional folder
+argument is passed on as `OPENGOLD_GAME_DIR`.
 
 ### Screen structure
 

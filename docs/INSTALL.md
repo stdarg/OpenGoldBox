@@ -275,9 +275,9 @@ everything the hook does.
 
 ## Original game files
 
-Nothing in the repository holds the original Pool of Radiance files. Anything
-that reads them uses `OPENGOLD_GAME_DIR`, pointed at the folder with the
-`.DAX` files. Set it in the shell profile (`~/.zprofile`, `~/.bashrc`):
+Nothing in the repository holds the original Pool of Radiance files. To name
+the folder with the `.DAX` files, or one above it, set `OPENGOLD_GAME_DIR` in
+the shell profile (`~/.zprofile`, `~/.bashrc`):
 
 ```bash
 export OPENGOLD_GAME_DIR="$HOME/POOLRAD"
@@ -289,8 +289,11 @@ or for Windows, persistently:
 setx OPENGOLD_GAME_DIR "C:\Games\POOLRAD"
 ```
 
-Most dev tools fall back to `~/POOLRAD` when it is unset. Tests that need the
-files skip without it, so set it before a full test run.
+The game, the dev tools and the tests find the files without it when they are
+near the checkout or in your home folder, by their files, whatever the folder
+is called ([TECH.md](TECH.md#finding-the-games-folders)); the variable names a
+folder to look in first. Tests that need the files skip only when they are not
+found.
 
 Do not commit original SSI game files or derived assets. Keep local copies in
 ignored directories such as `testdata/local/` or `user-data/`.
@@ -311,9 +314,9 @@ art publish it there.
 Each tool builds what it needs on first launch; none needs the game build
 first, except the creature edits importer, which is part of it. Run the
 commands from the repository root. Every launcher is a bash script: on Windows,
-run them from Git Bash. Each tool reads the game folder from its first
-argument, then `OPENGOLD_GAME_DIR`, then `~/POOLRAD`, and Godot from
-`GODOT_BIN`. The [dev tools index](../dev_tools/docs/README.md) says what each
+run them from Git Bash. Each tool finds Pool of Radiance's files as the game
+does; a folder given as its first argument, or `OPENGOLD_GAME_DIR`, is looked
+in first. Godot comes from `GODOT_BIN`. The [dev tools index](../dev_tools/docs/README.md) says what each
 one does.
 
 On Windows, start Git Bash inside the Visual Studio build environment, so that
@@ -343,7 +346,7 @@ set GODOT_BIN=C:/bin/godot.exe
 Needs CMake, Ninja, Python, Git and Godot. Builds into `build/tile-art-viewer`.
 
 ```bash
-./dev_tools/tile_art_viewer/run.sh [POOLRAD_DIRECTORY]
+./dev_tools/tile_art_viewer/run.sh [FOLDER_HOLDING_POOL_OF_RADIANCE]
 ```
 
 The first run imports the Godot project headless; Godot may crash as that
@@ -358,7 +361,7 @@ Same needs as the Tile Art Viewer, and shares its build
 reads them.
 
 ```bash
-./dev_tools/replacement_art_creator/run.sh [POOLRAD_DIRECTORY]
+./dev_tools/replacement_art_creator/run.sh [FOLDER_HOLDING_POOL_OF_RADIANCE]
 ```
 
 Checks, including `python3 dev_tools/replacement_art_creator/assign_used_art.py --check-pack`,
@@ -369,11 +372,11 @@ are in its [README](../dev_tools/replacement_art_creator/README.md).
 Builds into `build/combat-sprite-catalog` and needs the game files.
 
 ```bash
-./dev_tools/combat_sprite_catalog/run.sh [POOLRAD_DIRECTORY]
+./dev_tools/combat_sprite_catalog/run.sh [FOLDER_HOLDING_POOL_OF_RADIANCE]
 ```
 
-Check: `godot --headless --path dev_tools/combat_sprite_catalog/godot -- --catalog-check`
-with `OPENGOLD_GAME_DIR` set; more in its
+Check: `godot --headless --path dev_tools/combat_sprite_catalog/godot -- --catalog-check`;
+more in its
 [README](../dev_tools/combat_sprite_catalog/README.md).
 
 ### Shop & Temple Manager
@@ -382,12 +385,11 @@ Needs CMake, Ninja and Godot, shares `build/tile-art-viewer`, and needs the
 game files.
 
 ```bash
-./dev_tools/shop_manager/run.sh [POOLRAD_DIRECTORY]
+./dev_tools/shop_manager/run.sh [FOLDER_HOLDING_POOL_OF_RADIANCE]
 ```
 
 Check, after launching it once:
-`godot --headless --path dev_tools/shop_manager/godot -- --shop-check` with
-`OPENGOLD_GAME_DIR` set. See its [README](../dev_tools/shop_manager/README.md).
+`godot --headless --path dev_tools/shop_manager/godot -- --shop-check`. See its [README](../dev_tools/shop_manager/README.md).
 
 ### Party tester
 

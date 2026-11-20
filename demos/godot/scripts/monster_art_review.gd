@@ -32,12 +32,10 @@ func _ready() -> void:
             name_field.editable = false
             return
         decisions = parsed
-    folder = OS.get_environment("OPENGOLD_GAME_DIR")
-    if folder.is_empty():
-        folder = ProjectSettings.get_setting("opengold/game_directory", "")
+    folder = GameFinder.game_folder("POOLRAD")
     var directory := DirAccess.open(folder)
     if directory == null:
-        status.text = "Game directory unavailable. Set OPENGOLD_GAME_DIR."
+        status.text = "Pool of Radiance's files were not found; set OPENGOLD_GAME_DIR to their folder."
         return
     var files: Array[String] = []
     for filename in directory.get_files(): files.append(filename)

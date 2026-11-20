@@ -12,7 +12,8 @@ demos\review-character.cmd
 
 The game build uses the existing [build prerequisites](ROLF.md). The
 launcher opens the game's `src/OpenGoldBox/godot/scenes/character_creation.tscn`.
-Art loads from the `OPENGOLD_GAME_DIR` environment variable.
+Art loads from the Pool of Radiance folder the game finds
+([TECH.md](TECH.md#finding-the-games-folders)).
 
 ## Creation flow
 

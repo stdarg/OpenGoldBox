@@ -116,11 +116,9 @@ func _ready() -> void:
     for view_name in VIEW_NAMES:
         view_filter.add_item(view_name)
 
-    var game_directory := OS.get_environment("OPENGOLD_GAME_DIR")
+    var game_directory := GameFinder.game_folder("POOLRAD")
     if game_directory.is_empty():
-        game_directory = str(ProjectSettings.get_setting("opengold/game_directory", ""))
-    if game_directory.is_empty():
-        _load_failure("Set OPENGOLD_GAME_DIR to the folder containing the original DAX files.")
+        _load_failure("Pool of Radiance's files were not found; set OPENGOLD_GAME_DIR to their folder.")
         return
     var error_message := load_directory(game_directory)
     if not error_message.is_empty():
