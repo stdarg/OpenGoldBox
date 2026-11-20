@@ -167,5 +167,12 @@ void apply_difficulty(CampaignEncounter &encounter, Difficulty difficulty, unsig
 // Those on the party's side, the party and the encounter stay the original's.
 void apply_original_difficulty(CampaignEncounter &encounter, Difficulty difficulty,
                                GoldBoxGame game);
+// The same for the setting, Novice included. The Buck Rogers games play it
+// as their own levels (docs/BUCK-ROGERS.md, Difficulty): the monsters' Hit
+// Points by their LOAD MONSTER, Admiral's twice them, and the party's side's
+// to-hit, Novice +2 to Admiral -3; the monsters' to-hit and Armor Class are
+// the table's, Novice's Easy's. Any other game plays Novice as Easy.
+void apply_original_difficulty(CampaignEncounter &encounter, DifficultySetting setting,
+                               GoldBoxGame game);
 } // namespace opengold
 #endif

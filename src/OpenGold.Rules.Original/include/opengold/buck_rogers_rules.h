@@ -93,6 +93,16 @@ using BuckRogersScores = std::array<int, buck_rogers_ability_count>;
 [[nodiscard]] std::array<int, 8> buck_rogers_saving_throws(Race race, int level);
 // Movement: 12, a Tinker's 9 and a Desert Runner's 15.
 [[nodiscard]] int buck_rogers_movement(Race race);
+// What the scores of 1 to 22 give in a fight (gdconsts.pas): Dexterity's
+// Armor Class (-5 to +5, raising it), Strength's to hit and damage in melee
+// and unarmed (-5 to +4, -4 to +10), and the weight Strength allows, past
+// half of which a character moves half as far (charhlp.pas RecalcMovement).
+// A score past the table reads its last row. Dexterity's missile adjustment
+// is ship combat's (buck_rogers_missile_adjustment, buck_rogers_ship_combat.h).
+[[nodiscard]] int buck_rogers_armor_adjustment(int dexterity);
+[[nodiscard]] int buck_rogers_strength_to_hit(int strength);
+[[nodiscard]] int buck_rogers_strength_damage(int strength);
+[[nodiscard]] int buck_rogers_weight_allowance(int strength);
 
 // The 84 skills, by their numbers in the record and the scripts.
 enum class Skill : std::uint8_t

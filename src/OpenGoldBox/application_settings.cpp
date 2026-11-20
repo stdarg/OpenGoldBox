@@ -271,6 +271,13 @@ opengold::Difficulty difficulty()
         .value_or(opengold::default_difficulty);
 }
 
+opengold::DifficultySetting difficulty_setting()
+{
+    const auto name = read("game", "difficulty").to_lower();
+    return opengold::parse_difficulty_setting(name.utf8().get_data())
+        .value_or(opengold::difficulty_setting(opengold::default_difficulty));
+}
+
 std::vector<std::string> monster_abilities_off()
 {
     std::vector<std::pair<std::string, std::string>> options;
@@ -309,6 +316,12 @@ bool save_difficulty(opengold::Difficulty difficulty)
 {
     return save("game", "difficulty",
                 String(opengold::difficulty_names[static_cast<std::size_t>(difficulty)].data()));
+}
+
+bool save_difficulty_setting(opengold::DifficultySetting setting)
+{
+    return save("game", "difficulty",
+                String(std::string(opengold::difficulty_setting_name(setting)).c_str()));
 }
 
 bool original_wall_art()

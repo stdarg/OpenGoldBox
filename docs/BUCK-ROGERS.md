@@ -5,8 +5,8 @@ from start to finish under their original rules: *Countdown to Doomsday*
 (1990) and *Matrix Cubed* (1992). It follows the method of the *Forgotten
 Realms* games ([GAMES.md](GAMES.md)) and of the *Krynn* games
 ([KRYNN.md](KRYNN.md)). Written 2026-11-19. B0 (groundwork) done
-2026-11-19; B1 (the reading census) done 2026-11-19; B2 under way (its
-characters done 2026-11-20).
+2026-11-19; B1 (the reading census) done 2026-11-19; B2 (the Buck Rogers
+rules) done 2026-11-20.
 
 Each game must meet the standard in [PLAYABILITY.md](PLAYABILITY.md)
 ("Acceptance and scope"). The route reaches the game's actual winning event
@@ -127,8 +127,9 @@ These engine parts serve the games as they are, or with a new per-game entry.
   (level + 2) / 4 of its Hit Points as it is added (`eclvm.pas`), as
   *Secret*'s levels do. OpenGoldBox already maps such levels
   (ORIGINAL-RULES.md, Difficulty): Cadet, Trooper, Veteran and Ace are Easy,
-  Normal, Hard and Nightmare, Infernal goes two levels past Ace, and Novice
-  has no level. The table then adds only its to-hit and Armor Class.
+  Normal, Hard and Nightmare, Admiral (Infernal) goes past Ace, and Novice
+  is a new level below Easy (see Difficulty, below). The table then adds only
+  its to-hit and Armor Class.
 - **Saves:** `savgam?.dat` holds the data set, the three memory zones, the
   party's place and view state. OpenGoldBox's campaign save
   (`src/OpenGold.Core/src/campaign_save.cpp`, format 53) records the game and
@@ -602,8 +603,19 @@ items, decoded and encoded byte for byte (`buck_rogers_rules.h`,
 [matrix-cubed.md](games/matrix-cubed.md), "Rules" and "Bugs"). The seventh
 ability lives in the game's own record, so the character model of the
 other games is unchanged. The hail's corrected skills are a rules function
-the script host will read SKILL CHECK through in B3. Still to do: ship
-combat, ground combat, injury and healing, money and the difficulty levels.
+the script host will read SKILL CHECK through in B3. Ground combat and the
+difficulty levels are done too (2026-11-20): the ascending attack roll,
+range, cover and zero gravity, the weapon classes, ammunition and
+reloading, area weapons and clouds, what stops a hit, stuns, backstabs,
+INTIMIDATE, AID, SPRINT, DODGE and JETPACK, Battle Tactics, Leadership,
+saving throws in a fight, the injury states, and the six levels with the
+setting's `novice` (`buck_rogers_combat.h`; [countdown.md](games/countdown.md),
+"Ground combat"). The original-rules combat session runs these fights by
+them, one code path: a creature fights as its own record, and no spell,
+class or AD&D effect runs. Five more original bugs are fixed and listed.
+So are ship combat, as a session of its own, and upkeep and money:
+the wounded after a fight, healing, rest, credits, shops and the outposts
+([countdown.md](games/countdown.md), "Ship combat" and "Upkeep and money").
 *Matrix Cubed*'s import (and its deleting of files) comes with B4.
 
 ### B3. *Countdown to Doomsday*
@@ -749,6 +761,22 @@ shows these names while a Buck Rogers game plays:
 
 The sources settle everything else in this plan. Questions found in later
 steps go to the user, numbered, one topic each.
+
+Open (found in B2's ground combat; the original's rule is played until
+the user decides):
+
+4. **A Rogue from behind** (`cbtacts.pas` `RollAttacks`): when a Rogue
+   strikes from behind, the number it must reach is 2 higher, so a Rogue hits
+   from behind less often than anyone else. The earlier games give a thief 4
+   better from behind (Curse's `RollAttacks`), and these games count Armor
+   Class upward, so the 2 may be that bonus left unturned. OpenGoldBox plays
+   the 2 higher, as the original does.
+5. **How far a stray shot may land** (`CombatLaunchProjectile`): of the four
+   tries at a stray landing, the first must lie within about four squares of
+   the shooter, and each later try may reach twice as far as the last try
+   walked, so a stray long throw usually comes down on its target. The
+   original reuses the walked distance as the next try's reach; OpenGoldBox
+   does the same.
 
 Decided:
 

@@ -22,8 +22,11 @@ godot::String language();
 int combat_zoom_percent();
 // [combat] encounter_challenge: a percentage of the SRD's Moderate XP budget, 0-200.
 unsigned encounter_challenge();
-// [game] difficulty: easy, normal, hard, nightmare or infernal (DIFF-1).
+// [game] difficulty: easy, normal, hard, nightmare or infernal (DIFF-1), or
+// novice, which only the Buck Rogers games offer and the others play as easy.
 opengold::Difficulty difficulty();
+// The setting as the Buck Rogers games read it, Novice included.
+opengold::DifficultySetting difficulty_setting();
 // [monsters]: each monster ability's lowest difficulty, or "never"; the
 // abilities off at the set difficulty (MONSTER-2).
 std::vector<std::string> monster_abilities_off();
@@ -32,6 +35,7 @@ std::vector<std::string> monster_abilities_off();
 godot::String monster_ability_option(const std::string &ability);
 // The Options screen's writes; each keeps the other settings.
 bool save_difficulty(opengold::Difficulty difficulty);
+bool save_difficulty_setting(opengold::DifficultySetting setting);
 bool save_encounter_challenge(unsigned challenge);
 bool save_combat_zoom(int percent);
 bool save_monster_ability(const std::string &ability, const godot::String &from);

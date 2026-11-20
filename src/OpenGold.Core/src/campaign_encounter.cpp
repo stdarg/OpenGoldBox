@@ -1,4 +1,5 @@
 #include "opengold/campaign_encounter.h"
+#include "opengold/buck_rogers_combat.h"
 #include "opengold/original_rules.h"
 #include <algorithm>
 
@@ -35,6 +36,11 @@ void apply_difficulty(CampaignEncounter &encounter, Difficulty difficulty, unsig
 void apply_original_difficulty(CampaignEncounter &encounter, Difficulty difficulty,
                                GoldBoxGame game)
 {
+    if (is_buck_rogers(game))
+    {
+        apply_original_difficulty(encounter, difficulty_setting(difficulty), game);
+        return;
+    }
     const auto level = static_cast<original::DifficultyLevel>(difficulty);
     const auto strength = original_monster_strength(difficulty);
     // Secret's and the later games' Hit Points by their own levels.
@@ -45,5 +51,25 @@ void apply_original_difficulty(CampaignEncounter &encounter, Difficulty difficul
     {
         enemy.original_strength = {hit_points_percent, strength.to_hit, strength.armor_class_bonus};
     }
+}
+
+void apply_original_difficulty(CampaignEncounter &encounter, DifficultySetting setting,
+                               GoldBoxGame game)
+{
+    const auto played = played_difficulty(setting);
+    if (!is_buck_rogers(game))
+    {
+        apply_original_difficulty(encounter, played, game);
+        return;
+    }
+    // The settings' order is the levels' order, Novice to Admiral.
+    const auto level = static_cast<original::BuckRogersDifficulty>(setting);
+    const auto strength = original_monster_strength(played);
+    for (auto &enemy : encounter.enemies)
+    {
+        enemy.original_strength = {original::monster_hit_points_percent(level), strength.to_hit,
+                                   strength.armor_class_bonus};
+    }
+    encounter.party_to_hit = original::party_to_hit(level);
 }
 } // namespace opengold

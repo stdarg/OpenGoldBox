@@ -6,11 +6,16 @@
 // script commands and records both games share; the whole census of the real
 // files also runs in tests/game_census.cmake.
 #include "opengold/ail_files.h"
+#include "opengold/buck_rogers_combat.h"
 #include "opengold/buck_rogers_records.h"
 #include "opengold/buck_rogers_rules.h"
 #include "opengold/buck_rogers_scripts.h"
+#include "opengold/campaign_encounter.h"
+#include "opengold/difficulty.h"
 #include "opengold/formats.h"
 #include "opengold/game_census.h"
+#include "opengold/original.h"
+#include "opengold/original_combat.h"
 #include "opengold/pool_radiance.h"
 #include "opengold/por_sound.h"
 #include "opengold/ua_media.h"
@@ -27,6 +32,7 @@
 #include <set>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -288,6 +294,73 @@ void the_hail_checks_the_skills_it_names()
           "Bluff, intimidate and ask for help check Fast Talk, Intimidate and Act");
 }
 
+void ground_combat_is_countdowns()
+{
+    // Matrix Cubed's cbtacts.pas, fxengine.pas and eclvm.pas play ground
+    // combat as Countdown's; what its levels change is a Rogue's backstab
+    // past level 8, (level + 7) / 4 (CalcWeaponDamage).
+    br::Creature rogue;
+    rogue.career = og::record_career(Profession::rogue);
+    rogue.level = 20;
+    check(og::backstab_damage(3, rogue) == 18, "A level 20 Rogue backstabs for six times");
+    check(og::game_of(og::identity(matrix)) == matrix,
+          "Its fights keep Matrix Cubed's identity, which keys its rules");
+    opengold::CampaignEncounter encounter;
+    encounter.enemies.emplace_back();
+    opengold::apply_original_difficulty(encounter, opengold::DifficultySetting::infernal, matrix);
+    check(encounter.enemies.front().original_strength.hit_points_percent == 200 &&
+              encounter.party_to_hit == -3,
+          "Admiral doubles the monsters' Hit Points and takes 3 from the party's to-hit");
+    // A fight under its key runs by the Buck Rogers rules.
+    br::Creature fighter = rogue;
+    fighter.level = 7;
+    fighter.enabled = 1;
+    fighter.status = 1;
+    fighter.base_combat = 44;
+    fighter.base_armor_class = 50;
+    fighter.base_movement = 12;
+    fighter.hit_points = fighter.hit_point_maximum = 30;
+    fighter.abilities = {12, 14, 12, 13, 11, 13, 10};
+    fighter.unarmed_attacks_doubled = 2;
+    fighter.unarmed_dice_count = {1, 0};
+    fighter.unarmed_dice_sides = {2, 0};
+    fighter.saves = {15, 14, 14, 13, 13, 16, 13, 13};
+    opengold::rules::Encounter fight;
+    fight.battlefield.width = 8;
+    fight.battlefield.height = 8;
+    fight.battlefield.terrain.assign(64, opengold::rules::Terrain::open);
+    for (const auto &[id, side, cell] :
+         {std::tuple{1U, opengold::rules::Side::party, opengold::rules::Cell{2, 2}},
+          std::tuple{2U, opengold::rules::Side::opposition, opengold::rules::Cell{3, 2}}})
+    {
+        opengold::rules::Participant p;
+        p.id = id;
+        p.name = p.definition = id == 1 ? "TEAM ROGUE" : "SPACE PIRATE";
+        p.side = side;
+        p.cell = cell;
+        p.character_profile = og::encode_ground_record({fighter, {}, {}});
+        fight.participants.push_back(p);
+    }
+    og::Content content;
+    content.game = matrix;
+    const auto module = og::rules_module(std::move(content));
+    const auto session = module->create(std::move(fight), 12);
+    const auto commands = session->legal_commands();
+    check(std::ranges::any_of(commands,
+                              [](const opengold::rules::Command &command)
+                              {
+                                  return command.verb == "dodge";
+                              }) &&
+              std::ranges::none_of(commands,
+                                   [](const opengold::rules::Command &command)
+                                   {
+                                       return command.verb == "cast" || command.verb == "turn";
+                                   }),
+          "Its combat menu is the Buck Rogers one");
+    check(session->snapshot().combatants.front().armor_class == 50,
+          "Its Armor Class climbs from 50");
+}
+
 std::optional<std::filesystem::path> files_of(GoldBoxGame game)
 {
     const auto folder = opengold::test::installed_game_folder(game);
@@ -466,6 +539,7 @@ int main()
         new_characters_start_with_preset_skills();
         treat_light_wounds_takes_critical_back_too();
         the_hail_checks_the_skills_it_names();
+        ground_combat_is_countdowns();
         the_files_decode();
         std::cout << "Matrix Cubed passed.\n";
     }

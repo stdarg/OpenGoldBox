@@ -1,5 +1,7 @@
 #ifndef OPENGOLD_DIFFICULTY_H
 #define OPENGOLD_DIFFICULTY_H
+#include "opengold/gold_box_game.h"
+
 #include <algorithm>
 #include <array>
 #include <optional>
@@ -27,8 +29,16 @@ inline constexpr Difficulty default_difficulty = Difficulty::normal;
 inline constexpr std::array<std::string_view, 5> difficulty_names{"easy", "normal", "hard",
                                                                   "nightmare", "infernal"};
 
+// The Buck Rogers games' Novice, a level below Easy that only they offer
+// (docs/BUCK-ROGERS.md, Difficulty). Every other game plays it as Easy.
+inline constexpr std::string_view novice_name = "novice";
+
 [[nodiscard]] constexpr std::optional<Difficulty> parse_difficulty(std::string_view name) noexcept
 {
+    if (name == novice_name)
+    {
+        return Difficulty::easy;
+    }
     for (std::size_t n = 0; n < difficulty_names.size(); ++n)
     {
         if (difficulty_names[n] == name)
@@ -37,6 +47,57 @@ inline constexpr std::array<std::string_view, 5> difficulty_names{"easy", "norma
         }
     }
     return std::nullopt;
+}
+
+// The difficulty setting's values, easiest first: Novice, then Difficulty's
+// five. The Buck Rogers games play the six as their Novice to Admiral; the
+// other games play Novice as Easy.
+enum class DifficultySetting
+{
+    novice,
+    easy,
+    normal,
+    hard,
+    nightmare,
+    infernal
+};
+
+[[nodiscard]] constexpr std::optional<DifficultySetting>
+parse_difficulty_setting(std::string_view name) noexcept
+{
+    if (name == novice_name)
+    {
+        return DifficultySetting::novice;
+    }
+    const auto level = parse_difficulty(name);
+    return level ? std::optional{static_cast<DifficultySetting>(static_cast<int>(*level) + 1)}
+                 : std::nullopt;
+}
+
+[[nodiscard]] constexpr std::string_view difficulty_setting_name(DifficultySetting setting) noexcept
+{
+    return setting == DifficultySetting::novice
+               ? novice_name
+               : difficulty_names[static_cast<std::size_t>(setting) - 1];
+}
+
+// The level a game plays a setting at: Novice as Easy.
+[[nodiscard]] constexpr Difficulty played_difficulty(DifficultySetting setting) noexcept
+{
+    return setting == DifficultySetting::novice
+               ? Difficulty::easy
+               : static_cast<Difficulty>(static_cast<int>(setting) - 1);
+}
+
+[[nodiscard]] constexpr DifficultySetting difficulty_setting(Difficulty difficulty) noexcept
+{
+    return static_cast<DifficultySetting>(static_cast<int>(difficulty) + 1);
+}
+
+// Whether a game's Options screen offers Novice: only the Buck Rogers games'.
+[[nodiscard]] constexpr bool offers_novice(GoldBoxGame game) noexcept
+{
+    return is_buck_rogers(game);
 }
 
 // Monsters drink their potions, read their scrolls and use their wands on Hard

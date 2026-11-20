@@ -599,6 +599,43 @@ int buck_rogers_movement(Race race)
     }
 }
 
+namespace
+{
+// A score's row of a table for scores 1 to 22.
+template <typename T> [[nodiscard]] int by_score(const std::array<T, 22> &table, int score)
+{
+    return static_cast<int>(table[static_cast<std::size_t>(std::clamp(score, 1, 22) - 1)]);
+}
+} // namespace
+
+int buck_rogers_armor_adjustment(int dexterity)
+{
+    constexpr std::array<int, 22> table{-5, -5, -4, -3, -2, -1, 0, 0, 0, 0, 0,
+                                        0,  0,  0,  1,  2,  3,  4, 4, 4, 5, 5};
+    return by_score(table, dexterity);
+}
+
+int buck_rogers_strength_to_hit(int strength)
+{
+    constexpr std::array<int, 22> table{-5, -4, -3, -2, -2, -1, -1, 0, 0, 0, 0,
+                                        0,  0,  0,  0,  0,  1,  2,  3, 3, 4, 4};
+    return by_score(table, strength);
+}
+
+int buck_rogers_strength_damage(int strength)
+{
+    constexpr std::array<int, 22> table{-4, -3, -2, -1, -1, 0, 0, 0, 0, 0, 0,
+                                        0,  0,  0,  0,  1,  1, 2, 4, 6, 8, 10};
+    return by_score(table, strength);
+}
+
+int buck_rogers_weight_allowance(int strength)
+{
+    constexpr std::array<int, 22> table{2,   4,   10,  20,  30,  40,  50,  60,  70,  80,  90,
+                                        100, 110, 120, 130, 140, 170, 220, 400, 600, 900, 1200};
+    return by_score(table, strength);
+}
+
 const SkillDefinition &skill_definition(Skill skill)
 {
     return skills.at(static_cast<std::size_t>(skill) - 1);

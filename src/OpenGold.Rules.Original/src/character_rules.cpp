@@ -1509,6 +1509,8 @@ constexpr std::string_view death_knights_edition = "death-knights-of-krynn";
 constexpr std::string_view ua_edition = "unlimited-adventures";
 constexpr std::string_view darkness_edition = "pools-of-darkness";
 constexpr std::string_view treasures_edition = "treasures-of-the-savage-frontier";
+constexpr std::string_view countdown_edition = "countdown-to-doomsday";
+constexpr std::string_view matrix_edition = "matrix-cubed";
 } // namespace
 
 rules::Identity identity(GoldBoxGame game)
@@ -1521,6 +1523,8 @@ rules::Identity identity(GoldBoxGame game)
                          : game == GoldBoxGame::unlimited_adventures             ? ua_edition
                          : game == GoldBoxGame::pools_of_darkness                ? darkness_edition
                          : game == GoldBoxGame::treasures_of_the_savage_frontier ? treasures_edition
+                         : game == GoldBoxGame::countdown_to_doomsday            ? countdown_edition
+                         : game == GoldBoxGame::matrix_cubed                     ? matrix_edition
                                                                                  : pool_edition;
     return {"opengold.original", "0.1.0", std::string(edition)};
 }
@@ -1554,6 +1558,14 @@ GoldBoxGame game_of(const rules::Identity &identity)
     if (identity.content == treasures_edition)
     {
         return GoldBoxGame::treasures_of_the_savage_frontier;
+    }
+    if (identity.content == countdown_edition)
+    {
+        return GoldBoxGame::countdown_to_doomsday;
+    }
+    if (identity.content == matrix_edition)
+    {
+        return GoldBoxGame::matrix_cubed;
     }
     return identity.content == secret_edition ? GoldBoxGame::secret_of_the_silver_blades
                                               : GoldBoxGame::pool_of_radiance;

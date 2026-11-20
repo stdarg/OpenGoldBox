@@ -3,7 +3,7 @@
 The first *Buck Rogers XXVc* Gold Box game (1990). The plan to play it to its
 win under its original rules is [BUCK-ROGERS.md](../BUCK-ROGERS.md). Step B0
 (groundwork) and step B1 (the reading census) are done (2026-11-19), and the
-characters' rules of step B2 (2026-11-20); the game does not play yet, and its button in the startup menu stays disabled until it
+characters' and ground combat's rules of step B2 (2026-11-20); the game does not play yet, and its button in the startup menu stays disabled until it
 does.
 
 ## Files and references
@@ -500,6 +500,202 @@ BANK, DOWNTOWN, HOSPITAL, PORT and TRAINING, by the outpost (cell 4C31h).
   full Hit Points and okay.
 - **Training** (PROGRAM 0, at Salvation and the outposts) is free.
 
+## Rules: ground combat (step B2)
+
+Ground combat is done (2026-11-20). The rules are game-keyed functions in
+`src/OpenGold.Rules.Original/src/buck_rogers_combat.cpp`
+(`opengold/buck_rogers_combat.h`); the original-rules combat session
+(`combat_session.cpp`) keeps its grid, turns and computer play, and runs a
+fight of these games through them. A creature enters a fight as its own
+record, its items and the `ITEMS` rows they name (`encode_ground_record`, its
+character profile), and the fight leaves the record as it ends: Hit Points,
+status, rounds and readied gear (`rules::VitalState::resources`), which the
+after-fight treatment reads. No spell, class or AD&D effect runs in these
+fights. `tests/countdown_tests.cpp` checks each rule and names the routine it
+follows.
+
+### The numbers a creature fights with
+
+Worked out at every turn and attack (`charhlp.pas` `RecalcStats`,
+`WeaponAdjust`):
+
+- **Combat value:** the career's value, with Strength's adjustment unarmed or
+  with a melee weapon (-5 at 1 to +4 at 21), Dexterity's missile adjustment
+  with any other weapon (-6 to +4), and the weapon's plus and the Warrior's
+  specializations in its type. A failed Zero-G roll takes 2; the side's
+  tactics roll adds 1.
+- **Damage:** unarmed, the record's own dice (a Warrior's two 1d3 punches a
+  round, a Desert Runner's claws 1d3 + 1) with Strength's damage bonus (-4 to
+  +10); with a weapon its `ITEMS` dice, its plus and the specializations, and
+  Strength's bonus for a melee one. A Sonic Stunner's plus and
+  specializations add to hit only.
+- **Armor Class** climbs from 50: armor adds its row's value less 50 and its
+  plus (Battle Armor with fields 12); dodging adds 2, or half the level from
+  level 4; Dexterity adds -5 to +5 in front. The rear Armor Class is 2 below
+  the front one before Dexterity.
+- **Armor bits:** any body armor protects the body and the breathing; Battle
+  Armor with fields adds its field; goggles, a breathing mask and an ECM
+  package their own.
+- **Movement:** 12, a Tinker's 9 and a Desert Runner's 15, halved past half
+  the weight Strength allows; doubled in half-moves, as the frame counts it.
+
+### The attack roll
+
+- **To hit** (`fxengine.pas` `AttackRoll`): a d20, the combat value and the
+  side's modifier must reach the target number. A natural 1 misses; a natural
+  20 counts as 100. A helpless defender is always hit.
+- **The target number** (`cbtacts.pas` `RollAttacks`, `ApplyRangePenalty`):
+  the defender's Armor Class, or its rear one from behind, 2 higher for a
+  Rogue from behind, as the original has it (open question 4 in
+  [BUCK-ROGERS.md](../BUCK-ROGERS.md)).
+  A guard's shot with a ranged weapon is 5 harder; otherwise cover on the
+  line past the shooter's first two squares adds 2, and range adds 2 past half
+  the weapon's range and 5 past three quarters. Cover is difficult ground on
+  the battlefield until step B3 maps the arenas' tiles.
+- **From behind** (`IsRearAttack`): a one-square defender that has drawn two
+  attacks this turn, struck along its facing or one direction to either side.
+  A defender turns to face its first attacker of a turn.
+- **Backstab** (`IsBackstab`, `CalcWeaponDamage`): from behind, with a
+  weapon of range below 2, straight along the defender's facing, and on a
+  Move Silently or Distract check (a Rogue's skill doubled). A Rogue's damage
+  is multiplied by (level + 7) / 4, anyone else's doubled.
+
+### What stops a hit
+
+In the original's order (`CalcWeaponDamage`; `effhndlr.pas` at
+`WEAPON_DAMAGE_DEFENDER`): the defender's immunities to rockets, microwaves,
+heat and plasma, or lasers; half the time a slug from beyond the next square
+dodged, a ranged shot from there or a melee blow resisted; an unkillable
+creature never taken below 0; then a rocket stopped by chaff on the line, by
+an ECM package half the time and by fielded battle armor three times in four;
+a laser by aerosol mist on the line; a microwave beam by any body armor. A
+Sonic Stunner stuns for 1d4 + 4 rounds unless the save of category 0 is made,
+and does no damage. A creature poisonous in its second attack slot poisons
+with each damaging hit from it: dizziness, or death as poisoned, unless the
+save of category 1 is made.
+
+### Area weapons and clouds
+
+- **Projectiles** (`gdconsts.pas` `projectileKinds`): the dazzle grenade
+  (blinds 1d6 + 1 rounds, does 1d3; save 3 cancels; goggles spare), the mini
+  and explosive grenades (2d10, 4d10; radius 1; save 2 halves), gas (helpless
+  2 to 7 rounds; save 1 cancels; a mask or body armor spares), chaff, aerosol
+  mist, the plasma thrower (4d10, radius 3) and the rocket launcher (5d10,
+  radius 2), both saved for half, and the stun grenade (stunned for its 1d4 +
+  2 rounds; save 0 cancels). Item templates 17, 18 and 32 to 38 fire them.
+- **A launch** (`CombatLaunchProjectile`) aims at a square. The damage is
+  rolled once. A shot whose combat value and d20, less the range's penalty,
+  come to 50 or less goes astray: up to four tries at a square farther out
+  (`ScatterOffset`), the first within about four squares of the shooter
+  (open question 5 in [BUCK-ROGERS.md](../BUCK-ROGERS.md)).
+  Chaff on its way sets it off there. Everyone a clear line from where it
+  lands reaches within its radius (2 a straight step, 3 a diagonal, at most
+  twice the radius and 1) saves or takes it. The launch ends the shooter's
+  turn and spends a round; a grenade bundle's last grenade goes.
+- **Reloading:** the rocket launcher and plasma thrower, and a grenade
+  launcher that fired, must be readied again, and readying a heavy item ends
+  the turn (`viewchar.pas` `ToggleReadyItem`). A grenade goes 3 squares
+  thrown, 12 from a readied grenade launcher (`ReadiedWeaponRange`).
+- **Clouds** (`types.pas` `TAreaEffect`): gas, chaff and mist cover the
+  square a grenade lands on and the eight around it, where the ground can be
+  walked, for four rounds, or one in zero gravity
+  (`fxengine.pas` `CountDownAreaEffects`). Gas leaves one who steps into it
+  helpless for 1d6 + 1 rounds unless it saves (`ConsiderTerrainEffects`);
+  chaff and mist stop rockets and lasers whose line crosses them.
+
+### Ammunition
+
+A ranged weapon's rounds are its quantity. It attacks no more often than it
+has rounds, and spends one for each attack of its first slot (`cbtacts.pas`
+`RecalcAttacksLeft`, `MakeAttack`). Attacks are a weapon's or the record's
+rate a round doubled, a half rounded up in odd rounds, counted from round 0.
+The shop's clips and fills are the after-fight rules' (`buck_rogers_upkeep`).
+
+### The new commands
+
+The combat menu (`combat.pas` `CombatMenu`, `ManualControl`) offers Move,
+Target (a blow or a shot at an enemy, or a launch at a square), the readying
+of items, Wait (`delay`), Quick, End and fleeing off the field, and:
+
+- **INTIMIDATE** with the skill and an enemy next to it, unless dodging or
+  after a failed Zero-G roll: on an Intimidate check each enemy next to it not
+  helpless is scared unless it makes a save 0, and loses its next turn
+  (`IntimidateTarget`, `effhndlr.pas` `EffScared`). It ends the turn.
+- **AID** with a teammate next to it to treat (`viewchar.pas`
+  `FindPatients`, `TreatPatients`, which the fight plays through the
+  after-fight rules' `find_patients` and `treat_patients`, among the
+  creatures on the medic's square and next to it): First Aid or Treat Light Wounds bandages
+  the bleeding without a roll (unconscious, no longer bleeding); Treat
+  Stun/Paralysis cures the stunned and dizzy on a check. It ends the turn.
+  Treat Wounds and Treat Poisoning work only after the fight.
+- **SPRINT** doubles the movement left; a sprinter may not strike or guard.
+- **DODGE** ends the turn with the dodge's Armor Class until its next turn.
+- **JETPACK** with a readied jetpack, out of doors, not again in a round: on
+  a Use Jetpack check it lands on any free square it chooses and may still
+  attack; on a failure it lurches through eleven random squares near it and
+  lands on the last it may stand on, which ends its turn. Guards strike as it
+  leaves and as it lands (`CombatUseJetpack`). The Rule Book says that ranged
+  attacks on a flier count as long range; the program does not, and the
+  source decides.
+- **GUARD**, unless sprinting, dodging or holding an area weapon: a guard
+  strikes once at an enemy that steps where its weapon reaches
+  (`GuardersAttack`). No one strikes a creature for leaving.
+
+### Skills in a fight
+
+- **Initiative** (`cbtacts.pas` `BeginRound`): d10, Dexterity's missile
+  adjustment and 1, at least 2, 6 less when surprised in the first round, 0
+  outside 0 to 20, with a d127 to break ties; the round's order is set as it
+  begins (`combat.pas` `OrderCreatures`).
+- **Battle Tactics** (`RollTactics`): as each round begins, each side's able
+  creatures, in order, roll until one succeeds, which gives its side 1 to hit
+  for the round.
+- **Leadership** (`UseLeadership`): as the fight begins, a member who is no
+  companion, with the skill, may take a companion of Intelligence above 3 off
+  the computer's control on a check. The others the computer plays.
+- **Maneuver in Zero-G** (`RollZeroG`): in zero gravity each creature rolls
+  it as its turn starts (not after waiting); a failure leaves it 2 worse to
+  hit with a quarter of its movement until its next turn.
+
+### Saving throws
+
+A d20 against the record's save of the category; 1 fails, 20 saves;
+blindness takes 4 (`fxengine.pas` `RollSavingThrow`). The fight uses
+category 0 against stuns and intimidation, 1 against gas and poison, 2
+against blasts, 3 against the dazzle and 6 against an acid strike.
+
+### Injuries
+
+Damage (`charhlp.pas` `InflictDamage`) leaves a creature at exactly 0
+unconscious; below 0 it bleeds (dying), past 9 below it is comatose and past
+29 dead. A bleeding creature's count starts at how far below 0 it went and
+rises each round; past 9 it slips into a coma (`ProcessDyingCharacters`),
+never death. A lethal poison leaves its victim poisoned. As the fight ends
+the new commands' statuses go back to okay and blindness, helplessness and
+stuns end (`combat.pas` `CombatDoneCleanup`); everything else, treatment
+included, is the after-fight rules'.
+
+### Difficulty levels
+
+As [BUCK-ROGERS.md](../BUCK-ROGERS.md), Difficulty, sets them
+(`apply_original_difficulty`): Novice, Cadet, Trooper, Veteran, Ace and
+Admiral give the party's side +2 to -3 to hit (`AttackRoll`), the hostile
+monsters (level + 2) quarters of their Hit Points as LOAD MONSTER loads them,
+which become their maximum (`eclvm.pas` `EclLoadMonster`; Admiral twice), and
+the table's to-hit and Armor Class (`original_monster_strength`, Novice
+Easy's). `novice` is a value of the difficulty setting (`DifficultySetting`,
+`difficulty.h`); only these games offer it (`offers_novice`), and the
+others play it as Easy. The six names for the Options screen are
+`buck_rogers_difficulty_names`.
+
+### Not yet played
+
+For step B3, when these games' fights load: the monsters' own powers at
+their turn's start (acid spitting and an adjacent strike), an unkillable
+companion's leap for cover from a blast, explosions breaking the arena's
+tiles, and the computer's own Buck Rogers choices (grenades and readying
+weapons again); the frame's computer plays these fights for now.
+
 ## Bugs
 
 Fixed in OpenGoldBox, in both games unless named:
@@ -560,6 +756,28 @@ Fixed in OpenGoldBox, in both games unless named:
     (`script_operand_tag`, which the script host reads each operand's width
     through once it runs these games in step B3). The game's files are
     unchanged.
+11. **One rear attack missed** (`cbtacts.pas` `IsRearAttack`): the test of
+    one direction either side of the defender's facing did not wrap, so a
+    defender facing north was never struck from behind by a blow heading
+    north-west. Every such pair counts now.
+12. **Gas left its victims helpless for good** (`CombatLaunchProjectile`):
+    the gas grenade's helplessness lasts as many rounds as its damage dice
+    roll, and its dice are 0d0, so the effect never ran out. The Log Book
+    gives two to seven rounds, as the cloud's own gas gives; a blast's gas now
+    lasts 1d6 + 1 rounds.
+13. **A failed jetpack flight drifted south** (`CombatUseJetpack`): each lurch
+    picks one of the 24 squares round the last, but the rows ran from one
+    above to three below. They run two either way now.
+14. **Launches rolled as if unarmed** (`CombatLaunchProjectile`): the rocket
+    launcher, the plasma thrower and a grenade launcher were put away before
+    the launch's roll, so the shot used the unarmed combat value (Strength in
+    place of Dexterity, no plus or specialization), no range penalty for the
+    rocket launcher and plasma thrower and a thrown grenade's range of 3 for a
+    launched one; and an immunity to plasma never met the plasma thrower. The
+    roll now uses the weapon fired.
+15. **A stray shot's fourth landing was lost** (`CombatLaunchProjectile`):
+    of four tries at a stray landing, a fourth that succeeded was taken as no
+    landing at all, and the shot came down on its target. It lands there now.
 
 ## Ship combat
 
@@ -724,5 +942,4 @@ Options screen while a Buck Rogers game plays, one key per game
 
 ## Next
 
-The rest of step B2: ground combat, injuries and healing, and
-money ([BUCK-ROGERS.md](../BUCK-ROGERS.md), B2).
+Step B3, *Countdown* played through its route ([BUCK-ROGERS.md](../BUCK-ROGERS.md)).

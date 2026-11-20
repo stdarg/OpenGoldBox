@@ -4,7 +4,7 @@ The second *Buck Rogers XXVc* Gold Box game (1992), the same program as
 *Countdown to Doomsday* with new data. The plan to play it to its win under
 its original rules is [BUCK-ROGERS.md](../BUCK-ROGERS.md). Step B0
 (groundwork) and step B1 (the reading census) are done (2026-11-19), and the
-characters' rules of step B2 (2026-11-20); the game does not play yet, and its button in the startup menu stays disabled until it
+characters' and ground combat's rules of step B2 (2026-11-20); the game does not play yet, and its button in the startup menu stays disabled until it
 does.
 
 ## Files and references
@@ -171,6 +171,16 @@ in the same code (`buck_rogers_upkeep.cpp`). The scripts differ:
 - **Fines:** a port the team has damaged asks 10,000 credits before it lets
   the ship dock, from the NEO account, or else from the bank.
 
+## Rules: ground combat (step B2)
+
+The same program's ground combat as *Countdown*'s ([countdown.md](countdown.md),
+"Ground combat"), in the same code (`buck_rogers_combat.cpp`, keyed by game):
+the fights keep *Matrix Cubed*'s identity, and its difficulty levels are
+*Countdown*'s six. What its levels to 20 change is a Rogue's backstab, by
+(level + 7) / 4: six times the damage at level 20. `tests/matrix_cubed_tests.cpp`
+checks a fight under its key. *Countdown*'s ground-combat bugs are fixed in
+both games.
+
 ## Bugs
 
 Fixed in OpenGoldBox; the ones *Matrix Cubed* shares with *Countdown* (the
@@ -231,5 +241,4 @@ script 21, where *Countdown*'s loads 52. The program differs in two places:
 
 ## Next
 
-The rest of step B2: ground combat, injuries and healing, and
-money ([BUCK-ROGERS.md](../BUCK-ROGERS.md), B2).
+Step B4, *Matrix Cubed* played through its route ([BUCK-ROGERS.md](../BUCK-ROGERS.md)).

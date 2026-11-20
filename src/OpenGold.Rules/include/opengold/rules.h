@@ -791,6 +791,10 @@ struct Encounter
     // Campaign clock at the encounter's start. Rules decide how combat time
     // affects calendar-dependent mechanics; Core supplies only the context.
     std::uint64_t time_minutes{};
+    // The Buck Rogers games' zero gravity (the area kind's bit 10h): each
+    // creature must keep its feet with Maneuver in Zero-G, and clouds clear
+    // in a round.
+    bool zero_gravity{};
 };
 
 // A weapon attack as the rules resolve it: the attack roll's bonus and the

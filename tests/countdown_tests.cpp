@@ -4,13 +4,18 @@
 // on made-up bytes, then on the game's own files when its folder is found
 // (installed_games.h, docs/games/countdown.md). The whole census
 // of the real files also runs in tests/game_census.cmake.
+#include "opengold/buck_rogers_combat.h"
 #include "opengold/buck_rogers_records.h"
 #include "opengold/buck_rogers_rules.h"
 #include "opengold/buck_rogers_scripts.h"
+#include "opengold/campaign_encounter.h"
+#include "opengold/difficulty.h"
 #include "opengold/dice.h"
 #include "opengold/ecl.h"
 #include "opengold/formats.h"
 #include "opengold/game_census.h"
+#include "opengold/original.h"
+#include "opengold/original_combat.h"
 #include "opengold/pool_radiance.h"
 #include "opengold/por_sound.h"
 #include "installed_games.h"
@@ -787,6 +792,801 @@ void records_round_trip()
     check(decoded && br::encode_items(*decoded) == items, "Items encode back to their bytes");
 }
 
+// Ground combat (step B2; docs/games/countdown.md, "Ground combat"): each
+// check names the routine of the original it follows.
+
+// ITEMS' rows the checks use, as the game's file has them (checked against
+// it in the_area_weapons_are_the_games).
+std::vector<br::ItemType> ground_types()
+{
+    std::vector<br::ItemType> types(39);
+    const auto row = [&types](std::size_t type, br::ItemType values)
+    {
+        types[type] = values;
+    };
+    // slot, attacks doubled, class or armor, heavy, dice, sides, bonus, range, consumable
+    row(2, {0, 4, 0, 0, 1, 6, 0, 0, 0});
+    row(7, {0, 8, 1, 0, 1, 4, 0, 16, 0});
+    row(9, {0, 6, 3, 0, 1, 8, 0, 32, 0});
+    row(10, {0, 8, 2, 0, 1, 10, 0, 16, 0});
+    row(12, {0, 8, 4, 0, 1, 10, 0, 16, 0});
+    row(15, {0, 4, 6, 0, 0, 0, 0, 4, 0});
+    row(16, {6, 0, 0, 1, 0, 0, 0, 0, 0});
+    row(17, {0, 2, 9, 1, 4, 10, 0, 20, 0});
+    row(18, {0, 2, 7, 1, 5, 10, 0, 40, 0});
+    row(22, {1, 0, 58, 0, 0, 0, 0, 0, 0});
+    row(24, {1, 0, 62, 0, 0, 0, 0, 0, 0});
+    row(26, {7, 0, 0, 0, 0, 0, 0, 0, 0});
+    row(27, {3, 0, 0, 0, 0, 0, 0, 0, 0});
+    row(28, {4, 0, 0, 0, 0, 0, 0, 0, 0});
+    row(30, {2, 0, 0, 0, 0, 0, 0, 0, 0});
+    row(33, {0, 2, 8, 0, 4, 10, 0, 3, 1});
+    row(34, {0, 2, 8, 0, 0, 0, 0, 3, 1});
+    row(35, {0, 2, 8, 0, 1, 4, 2, 3, 1});
+    row(36, {0, 2, 8, 0, 1, 3, 0, 3, 1});
+    row(37, {0, 2, 8, 0, 0, 0, 0, 3, 1});
+    return types;
+}
+
+// An item of a type, readied or not, with its rounds and the projectile it
+// fires (its special bytes).
+br::Item ground_item(std::uint8_t type, int quantity = 0, bool readied = true, int kind = 0)
+{
+    br::Item item;
+    item.type = type;
+    item.quantity = static_cast<std::uint8_t>(quantity);
+    // Grenades come in bundles; the rest are not joined (C_Item.NOT_JOINABLE).
+    const bool grenade = type >= 32 && type <= 38;
+    item.flags =
+        static_cast<std::uint8_t>((readied ? br::Item::readied : 0) | (grenade ? 0 : 0x20));
+    if (kind != 0)
+    {
+        item.special = {0, static_cast<std::uint8_t>(kind), 128};
+    }
+    return item;
+}
+
+// A made fighter of a career at a level: combat value 40, Armor Class 50,
+// 20 Hit Points, its unarmed attack as creation gives it.
+br::Creature made_fighter(Profession career, int level = 2)
+{
+    auto fighter = made_character(career, level);
+    fighter.base_combat = 40;
+    fighter.base_armor_class = 50;
+    fighter.base_movement = 12;
+    fighter.hit_points = fighter.hit_point_maximum = 20;
+    fighter.unarmed_attacks_doubled = career == Profession::warrior ? 4 : 2;
+    fighter.unarmed_dice_count = {1, 0};
+    fighter.unarmed_dice_sides = {static_cast<std::uint8_t>(career == Profession::warrior ? 3 : 2),
+                                  0};
+    fighter.saves = {15, 14, 14, 13, 13, 16, 13, 13};
+    return fighter;
+}
+
+void the_attack_roll_climbs()
+{
+    // fxengine.pas AttackRoll: d20 + combat value + the side's modifier must
+    // reach the target; a 1 misses, a 20 counts as 100.
+    check(og::ground_attack_hits(10, 40, 0, 50) && !og::ground_attack_hits(9, 40, 0, 50),
+          "A combat value of 40 hits Armor Class 50 on a 10");
+    check(!og::ground_attack_hits(1, 99, 0, 50), "A natural 1 always misses");
+    check(og::ground_attack_hits(20, 0, 0, 99), "A natural 20 counts as 100");
+    check(og::ground_attack_hits(8, 40, 2, 50) && !og::ground_attack_hits(11, 40, -2, 50),
+          "The side's modifier adds to the roll");
+}
+
+void range_and_cover_raise_the_target()
+{
+    // cbtacts.pas ProjectileRangePenalty and ApplyRangePenalty.
+    check(og::range_penalty(16, 32) == 0 && og::range_penalty(17, 32) == 2 &&
+              og::range_penalty(24, 32) == 2 && og::range_penalty(25, 32) == 5 &&
+              og::range_penalty(30, 1) == 0,
+          "Past half the range 2, past three quarters 5; a melee weapon never");
+    og::GroundNumbers defender;
+    defender.armor_class = {55, 51};
+    og::AttackSetting front;
+    front.weapon_range = 32;
+    front.ranged_weapon = true;
+    front.line.distance = 20;
+    check(og::target_number(defender, front) == 57, "A long-ish laser shot needs 2 more");
+    front.line.blocked = true;
+    check(og::target_number(defender, front) == 59, "Cover adds 2 more");
+    front.guarding = true;
+    check(og::target_number(defender, front) == 60,
+          "A guard's shot is 5 harder, and neither cover nor range counts then");
+    // cbtacts.pas RollAttacks: the rear Armor Class from behind, 2 higher
+    // for a Rogue.
+    og::AttackSetting behind;
+    behind.from_behind = true;
+    check(og::target_number(defender, behind) == 51, "From behind the rear Armor Class counts");
+    behind.rogue = true;
+    check(og::target_number(defender, behind) == 53, "A Rogue from behind needs 2 more");
+}
+
+void rear_attacks_and_backstabs()
+{
+    // cbtacts.pas IsRearAttack: along the defender's facing or one either side,
+    // once it has drawn two attacks; IsBackstab: straight along it.
+    check(og::rear_attack(0, 0, 2, true) && og::rear_attack(0, 1, 2, true) &&
+              og::rear_attack(7, 0, 2, true) && og::rear_attack(2, 1, 2, true),
+          "The blow along the facing or one direction to a side is from behind");
+    check(og::rear_attack(0, 7, 2, true),
+          "Facing north, a blow heading north-west is from behind too (the original missed it)");
+    check(!og::rear_attack(0, 0, 1, true) && !og::rear_attack(0, 0, 2, false) &&
+              !og::rear_attack(0, 2, 2, true) && !og::rear_attack(0, 4, 2, true),
+          "Not before two attacks, nor on a large defender, nor from its side or front");
+    check(og::backstab_position(3, 3, 1) && !og::backstab_position(3, 2, 1) &&
+              !og::backstab_position(3, 3, 32),
+          "A backstab needs a melee weapon straight along the facing");
+    // CalcWeaponDamage: a Rogue's (level + 7) / 4 times, anyone else's twice.
+    auto rogue = made_fighter(Profession::rogue, 4);
+    check(og::backstab_damage(5, rogue) == 10, "A level 4 Rogue backstabs for twice");
+    rogue.level = 9;
+    check(og::backstab_damage(5, rogue) == 20, "A level 9 Rogue backstabs for four times");
+    check(og::backstab_damage(5, made_fighter(Profession::warrior, 9)) == 10,
+          "Anyone else backstabs for twice");
+    opengold::RandomState random{5};
+    auto quiet = made_fighter(Profession::rogue);
+    og::level_of(quiet.skills, Skill::move_silently) = 80;
+    check(og::backstab_check(quiet, random), "Move Silently at 80, doubled for a Rogue, succeeds");
+    check(!og::backstab_check(made_fighter(Profession::warrior), random),
+          "Without Move Silently or Distract no backstab");
+}
+
+void the_gear_sets_the_numbers()
+{
+    // charhlp.pas RecalcStats, WeaponAdjust and AdjustEquippedItem.
+    const auto types = ground_types();
+    auto warrior = made_fighter(Profession::warrior);
+    warrior.abilities[0] = 18;
+    warrior.abilities[1] = 17;
+    auto numbers = og::ground_numbers(warrior, {}, types, false);
+    check(numbers.attack_bonus == 42 && numbers.damage[0] == og::DamageDice{1, 3, 2},
+          "Unarmed, Strength 18 adds 2 to hit and 2 to a Warrior's 1d3 punch");
+    check(numbers.armor_class[0] == 53 && numbers.armor_class[1] == 48,
+          "Dexterity 17 raises the front Armor Class by 3; the rear is 2 below 50");
+    const std::vector<br::Item> laser{ground_item(9, 10)};
+    warrior.specializations[0] = 9;
+    numbers = og::ground_numbers(warrior, laser, types, false);
+    check(numbers.attack_bonus == 43 && numbers.damage[0] == og::DamageDice{1, 8, 1},
+          "A laser pistol takes Dexterity's +2 and the specialization's +1 to hit and damage");
+    warrior.specializations[0] = 15;
+    numbers = og::ground_numbers(warrior, std::vector{ground_item(15, 10)}, types, false);
+    check(numbers.attack_bonus == 43 && numbers.damage[0].bonus == 0,
+          "A Sonic Stunner's specialization adds to hit only");
+    const std::vector<br::Item> armored{ground_item(24), ground_item(26), ground_item(27),
+                                        ground_item(28)};
+    numbers = og::ground_numbers(warrior, armored, types, false);
+    check(numbers.armor_class[0] == 65 && numbers.armor_class[1] == 60,
+          "Battle armor with fields adds 12");
+    check(numbers.armor_flags ==
+              (og::armor_bit::body | og::armor_bit::breathing | og::armor_bit::fields |
+               og::armor_bit::ecm | og::armor_bit::goggles),
+          "Armor, ECM, goggles and a mask set their bits");
+    og::set_command_status(warrior, og::BuckRogersStatus::dodging);
+    numbers = og::ground_numbers(warrior, {}, types, false);
+    check(numbers.armor_class[0] == 55 && numbers.armor_class[1] == 50,
+          "Dodging adds 2 below level 4");
+    warrior.level = 8;
+    check(og::ground_numbers(warrior, {}, types, false).armor_class[0] == 57,
+          "Dodging adds half the level from level 4");
+    og::set_command_status(warrior, og::BuckRogersStatus::failed_zero_g);
+    check(og::ground_numbers(warrior, {}, types, true).attack_bonus == 41,
+          "A failed Zero-G roll takes 2 and the side's tactics add 1");
+    auto loaded = warrior;
+    loaded.abilities[0] = 10;
+    std::vector<br::Item> load{ground_item(22, 0, false)};
+    load[0].weight = 46;
+    check(og::ground_numbers(loaded, load, types, false).movement == 6,
+          "Past half the weight Strength allows, movement halves");
+}
+
+void what_stops_a_hit()
+{
+    // cbtacts.pas CalcWeaponDamage and effhndlr.pas's handlers at
+    // WEAPON_DAMAGE_DEFENDER.
+    using og::WeaponClass;
+    opengold::RandomState random{11};
+    const auto damage = [&](WeaponClass weapon, og::GroundLine line, std::uint8_t armor,
+                            std::vector<og::GroundEffect> effects = {})
+    {
+        return og::damage_after_defenses(10, {weapon, line.distance, line, armor, 30}, effects,
+                                         random);
+    };
+    og::GroundLine clear{4, false, false, false};
+    og::GroundLine chaff = clear, mist = clear;
+    chaff.chaff = true;
+    mist.mist = true;
+    check(damage(WeaponClass::rocket, chaff, 0) == 0 && damage(WeaponClass::rocket, clear, 0) == 10,
+          "Chaff on the line stops a rocket");
+    check(damage(WeaponClass::laser, mist, 0) == 0 && damage(WeaponClass::laser, chaff, 0) == 10,
+          "Aerosol mist stops a laser, chaff does not");
+    check(damage(WeaponClass::microwave, clear, og::armor_bit::body) == 0 &&
+              damage(WeaponClass::microwave, clear, og::armor_bit::fields) == 10,
+          "Body armor stops a microwave beam");
+    int ecm = 0, fields = 0;
+    for (int shot = 0; shot < 400; ++shot)
+    {
+        ecm += damage(WeaponClass::rocket, clear, og::armor_bit::ecm) == 0 ? 1 : 0;
+        fields += damage(WeaponClass::rocket, clear, og::armor_bit::fields) == 0 ? 1 : 0;
+    }
+    check(ecm > 160 && ecm < 240 && fields > 260 && fields < 340,
+          "ECM stops rockets half the time, fielded battle armor three times in four");
+    check(damage(WeaponClass::laser, clear, 0, {{og::ground_effect::immune_to_laser, 0, 0}}) == 0 &&
+              damage(WeaponClass::plasma, clear, 0,
+                     {{og::ground_effect::immune_to_heat_and_plasma, 0, 0}}) == 0,
+          "A creature's immunities stop their weapons");
+    check(og::damage_after_defenses(50, {std::nullopt, 1, clear, og::armor_bit::body, 12},
+                                    std::vector{og::GroundEffect{og::ground_effect::unkillable}},
+                                    random) == 12,
+          "An unkillable one is never taken below 0, even unarmed");
+    // RollAttacks: a Sonic Stunner's hit stuns for 1d4 + 4 rounds.
+    for (int roll = 0; roll < 20; ++roll)
+    {
+        const int rounds = og::stun_rounds(random);
+        check(rounds >= 5 && rounds <= 8, "A stun lasts 5 to 8 rounds");
+    }
+    std::vector<og::GroundEffect> effects{{og::ground_effect::block_stun, 0, 0}};
+    check(!og::give_ground_effect(effects, {og::ground_effect::stunned, 6, 0}, false, false, true),
+          "A creature proof against stun weapons is unaffected");
+    effects.clear();
+    check(!og::give_ground_effect(effects, {og::ground_effect::stunned, 6, 0}, true, false, true) &&
+              og::give_ground_effect(effects, {og::ground_effect::stunned, 6, 0}, false, false,
+                                     true) &&
+              og::give_ground_effect(effects, {og::ground_effect::stunned, 8, 0}, false, false,
+                                     true) &&
+              effects.size() == 1 && effects[0].minutes == 8,
+          "A save cancels the stun; a second one lengthens the first");
+}
+
+void area_weapons_blast()
+{
+    // gdconsts.pas projectileKinds; cbtacts.pas CombatLaunchProjectile.
+    check(og::projectile(5).effect == og::ground_effect::blind && og::projectile(6).radius == 1 &&
+              og::projectile(10).radius == 3 && og::projectile(11).radius == 2 &&
+              og::projectile(12).effect == og::ground_effect::stunned &&
+              og::projectile(7).lingers && og::projectile(8).lingers && og::projectile(9).lingers &&
+              !og::projectile(6).lingers,
+          "The projectiles' blasts, effects and clouds are the game's");
+    check(og::projectile(6).saved == og::SaveEffect::halves && og::projectile(6).save == 2 &&
+              og::projectile(7).save == 1 && og::projectile(5).save == 3,
+          "Blasts save 2 for half, gas 1 and the dazzle 3 to cancel");
+    const auto types = ground_types();
+    opengold::RandomState random{3};
+    for (int launch = 0; launch < 30; ++launch)
+    {
+        const auto explosive = og::roll_blast(6, types[33], 0, random);
+        check(explosive.damage >= 4 && explosive.damage <= 40, "An explosive grenade does 4d10");
+        const auto stun = og::roll_blast(12, types[35], 0, random);
+        check(stun.damage == 0 && stun.minutes >= 3 && stun.minutes <= 6,
+              "A stun grenade stuns for its 1d4 + 2 and does no damage");
+        const auto gas = og::roll_blast(7, types[34], 0, random);
+        check(gas.damage == 0 && gas.minutes >= 2 && gas.minutes <= 7,
+              "Gas leaves its victims helpless 2 to 7 rounds (the original's 0d0 for good)");
+        const auto dazzle = og::roll_blast(5, types[36], 0, random);
+        check(dazzle.damage >= 1 && dazzle.damage <= 3 && dazzle.minutes >= 2 &&
+                  dazzle.minutes <= 7,
+              "A dazzle grenade blinds for 1d6 + 1 and does 1d3");
+    }
+    check(og::projectile_strays(40, 10, 2, 3) && !og::projectile_strays(40, 13, 2, 3) &&
+              og::projectile_strays(40, 15, 3, 3),
+          "A throw strays at 50 or less, the range's penalty taken off");
+    for (int roll = 0; roll < 30; ++roll)
+    {
+        const int out = og::scatter_offset(3, random), back = og::scatter_offset(-3, random);
+        const int still = og::scatter_offset(0, random);
+        check(out >= 3 && out <= 5 && back <= -3 && back >= -5 && (still == 1 || still == -1),
+              "A stray shot lands up to 2 farther out, or a step aside on its own line");
+    }
+    check(og::spared_by_gear(5, og::armor_bit::goggles) &&
+              og::spared_by_gear(7, og::armor_bit::breathing) &&
+              !og::spared_by_gear(6, og::armor_bit::breathing),
+          "Goggles spare a dazzle, a mask or body armor gas");
+    check(og::blast_damage(21, og::SaveEffect::halves, true) == 10 &&
+              og::blast_damage(21, og::SaveEffect::halves, false) == 21 &&
+              og::blast_damage(3, og::SaveEffect::cancels, true) == 0,
+          "A made save halves a blast's damage or cancels a dazzle's");
+    check(og::within_blast(3, 1) && !og::within_blast(4, 1) && og::within_blast(5, 2) &&
+              !og::within_blast(6, 2) && og::within_blast(7, 3),
+          "A blast of radius r reaches 2r + 1 doubled steps");
+    auto items = std::vector{ground_item(16), ground_item(33, 2, true, 6)};
+    check(og::readied_weapon_range(items, types) == 12, "A grenade launcher sends a grenade 12");
+    check(og::put_away_launcher(items, types, 1) && !og::readied(items[0]) &&
+              og::readied_weapon_range(items, types) == 3,
+          "Launching puts the launcher away; a grenade is then thrown 3");
+    auto launcher = std::vector{ground_item(18, 3, true, 11)};
+    check(!og::put_away_launcher(launcher, types, 0) && !og::readied(launcher[0]) &&
+              og::readying_ends_turn(types[18]),
+          "A rocket launcher must be readied again, which ends a turn");
+}
+
+void clouds_linger()
+{
+    // types.pas TAreaEffect; cbtacts.pas CombatLaunchProjectile;
+    // fxengine.pas CountDownAreaEffects and ConsiderTerrainEffects.
+    check(og::cloud_of(7) == og::CloudMatter::gas && og::cloud_of(8) == og::CloudMatter::chaff &&
+              og::cloud_of(9) == og::CloudMatter::mist && !og::cloud_of(6),
+          "Gas, chaff and mist grenades leave clouds");
+    auto cloud = og::lay_ground_cloud({5, 5}, og::CloudMatter::chaff, false,
+                                      [](opengold::rules::Cell cell)
+                                      {
+                                          return cell.x != 6;
+                                      });
+    check(cloud.squares().size() == 6 && cloud.covers_square({5, 5}) &&
+              !cloud.covers_square({6, 5}) && cloud.covers_square({4, 6}),
+          "A cloud covers the walkable squares of its block");
+    int rounds = 1;
+    while (og::cloud_lingers(cloud))
+    {
+        ++rounds;
+    }
+    check(rounds == 4, "A cloud lasts four rounds");
+    auto weightless = og::lay_ground_cloud({5, 5}, og::CloudMatter::mist, true,
+                                           [](opengold::rules::Cell)
+                                           {
+                                               return true;
+                                           });
+    check(!og::cloud_lingers(weightless), "In zero gravity a cloud lasts one");
+    opengold::RandomState random{19};
+    auto breather = made_fighter(Profession::rogue);
+    breather.saves[1] = 21;
+    int helpless = 0;
+    for (int breath = 0; breath < 20; ++breath)
+    {
+        if (const auto gassed = og::gassed(breather, 0, false, false, random))
+        {
+            check(*gassed >= 2 && *gassed <= 7, "Gas leaves one helpless 1d6 + 1 rounds");
+            ++helpless;
+        }
+    }
+    check(helpless >= 15, "Gas leaves one who fails its save helpless");
+    check(!og::gassed(breather, og::armor_bit::breathing, false, false, random) &&
+              !og::gassed(breather, 0, true, false, random),
+          "A mask spares it, and the helpless are not gassed again");
+}
+
+void ammunition_runs_out()
+{
+    // cbtacts.pas RecalcAttacksLeft, BeginRound and MakeAttack.
+    const auto types = ground_types();
+    auto fighter = made_fighter(Profession::rocket_jock);
+    fighter.attacks_doubled = 3;
+    auto items = std::vector{ground_item(9, 10)};
+    check(og::ground_attacks(fighter, items, types, 0, false) == std::array{3, 1} &&
+              og::ground_attacks(fighter, items, types, 1, false) == std::array{3, 2},
+          "A laser pistol shoots 3 a round; a rate of 3 in two rounds gives 1, then 2 (the first "
+          "round is 0)");
+    items[0].quantity = 1;
+    check(og::ground_attacks(fighter, items, types, 1, false)[0] == 1,
+          "No more attacks than rounds");
+    check(og::ground_attacks(fighter, {}, types, 1, true)[0] == 1 &&
+              og::ground_attacks(made_fighter(Profession::warrior), {}, types, 0, false)[0] == 2,
+          "Dizziness halves the rate; a Warrior punches twice");
+    check(!og::spend_rounds(items[0], types[9], 1) && items[0].quantity == 0,
+          "Each shot spends a round");
+    auto grenades = ground_item(33, 1, true, 6);
+    check(og::spend_rounds(grenades, types[33], 1), "The last grenade of a bundle goes");
+}
+
+void injuries_follow_the_damage()
+{
+    // charhlp.pas InflictDamage and ProcessDyingCharacters.
+    using og::BuckRogersStatus;
+    check(og::injury_from(10, 4).status == BuckRogersStatus::okay &&
+              og::injury_from(10, 10).status == BuckRogersStatus::unconscious &&
+              og::injury_from(10, 11).status == BuckRogersStatus::dying &&
+              og::injury_from(10, 19).status == BuckRogersStatus::dying &&
+              og::injury_from(10, 20).status == BuckRogersStatus::comatose &&
+              og::injury_from(10, 39).status == BuckRogersStatus::comatose &&
+              og::injury_from(10, 40).status == BuckRogersStatus::dead,
+          "0 is unconscious, below 0 bleeding, past 9 below comatose, past 29 dead");
+    auto victim = made_fighter(Profession::medic);
+    victim.hit_points = 6;
+    int count = 0;
+    og::inflict_ground_damage(victim, 9, count);
+    check(og::status_of(victim) == BuckRogersStatus::dying && count == 3 && victim.enabled == 0 &&
+              victim.hit_points == 0,
+          "Three below 0, it bleeds from 3");
+    int rounds = 0;
+    while (!og::bleed(victim, count))
+    {
+        ++rounds;
+    }
+    check(rounds == 6 && og::status_of(victim) == BuckRogersStatus::comatose,
+          "Past 9 it slips into a coma, not death");
+    auto poisoned = made_fighter(Profession::medic);
+    og::poison_kills(poisoned);
+    check(og::status_of(poisoned) == BuckRogersStatus::poisoned && poisoned.hit_points == 0,
+          "A lethal poison leaves it poisoned at 0");
+    // fxengine.pas RollSavingThrow.
+    check(!og::ground_save_made(1, 30, 2) && og::ground_save_made(20, -30, 19) &&
+              og::ground_save_made(13, 0, 13) && !og::ground_save_made(16, -4, 13),
+          "1 fails, 20 saves, otherwise the roll must reach the save; blindness takes 4");
+}
+
+void the_new_commands_are_offered()
+{
+    // combat.pas CombatMenu and CombatOptionAllowed.
+    const auto types = ground_types();
+    auto fighter = made_fighter(Profession::warrior);
+    const og::MenuSituation open{true, false, false, false};
+    auto menu = og::ground_menu(fighter, {}, types, open);
+    check(menu.move && menu.sprint && menu.dodge && menu.guard && !menu.intimidate && !menu.aid &&
+              !menu.jetpack,
+          "With movement left: Move, Sprint, Dodge and Guard");
+    og::level_of(fighter.skills, Skill::intimidate) = 20;
+    check(og::ground_menu(fighter, {}, types, {true, true, false, false}).intimidate &&
+              !og::ground_menu(fighter, {}, types, open).intimidate,
+          "Intimidate needs the skill and an enemy next to it");
+    const std::vector<br::Item> pack{ground_item(30)};
+    check(og::ground_menu(fighter, pack, types, {true, false, false, true}).jetpack &&
+              !og::ground_menu(fighter, pack, types, open).jetpack,
+          "Jetpack needs a readied jetpack, out of doors");
+    og::set_command_status(fighter, og::BuckRogersStatus::sprinting);
+    menu = og::ground_menu(fighter, pack, types, {true, false, true, true});
+    check(!menu.sprint && !menu.dodge && !menu.guard && menu.aid && menu.jetpack &&
+              !og::may_strike(fighter, {}, types),
+          "A sprinter may not sprint again, dodge, guard or strike");
+    og::set_command_status(fighter, og::BuckRogersStatus::failed_zero_g);
+    menu = og::ground_menu(fighter, {}, types, {true, true, false, false});
+    check(!menu.sprint && menu.dodge && !menu.intimidate,
+          "After a failed Zero-G roll no Sprint and no Intimidate");
+    og::set_status(fighter, og::BuckRogersStatus::okay);
+    check(fighter.enabled == 1 && !og::may_strike(fighter, std::vector{ground_item(7, 0)}, types) &&
+              og::may_strike(fighter, std::vector{ground_item(9, 0)}, types),
+          "An empty slug weapon may not strike");
+    check(!og::may_guard_with(std::vector{ground_item(17, 2, true, 10)}, types) &&
+              og::may_guard_with(std::vector{ground_item(9, 2)}, types),
+          "An area weapon does not guard");
+    // cbtacts.pas RollTactics, UseLeadership, IntimidateTarget, RollZeroG;
+    // viewchar.pas FindPatients.
+    check(og::rolls_tactics(fighter, false) && !og::rolls_tactics(fighter, true),
+          "The stunned make no tactics roll");
+    auto leader = made_fighter(Profession::rogue);
+    og::level_of(leader.skills, Skill::leadership) = 30;
+    auto companion = made_fighter(Profession::warrior);
+    companion.companion = 1;
+    check(og::may_lead(leader) && !og::may_lead(companion) && og::may_follow(companion, false) &&
+              !og::may_follow(companion, true),
+          "A member with Leadership may lead a companion, never an unkillable one");
+    companion.abilities[3] = 3;
+    check(!og::may_follow(companion, false), "Not one of Intelligence 3");
+    check(og::scared_effect() == og::GroundEffect{og::ground_effect::scared, 10, 12},
+          "Intimidation scares for 10 minutes");
+    check(og::sprint_movement(24) == 48 && og::zero_g_movement(24) == 6 &&
+              og::rolls_zero_g(true, true, 2) && !og::rolls_zero_g(true, true, 1) &&
+              !og::rolls_zero_g(false, true, 9) && og::dodge_armor_bonus(3) == 2 &&
+              og::dodge_armor_bonus(9) == 4,
+          "Sprint doubles, Zero-G quarters; one that waited rolls no Zero-G");
+    opengold::RandomState random{23};
+    std::set<int> rows, columns;
+    for (int step = 0; step < 400; ++step)
+    {
+        const auto at = og::lurch_step({10, 10}, random);
+        check(at != opengold::rules::Cell{10, 10}, "A lurch always moves");
+        rows.insert(at.y - 10);
+        columns.insert(at.x - 10);
+    }
+    check(rows == std::set{-2, -1, 0, 1, 2} && columns == std::set{-2, -1, 0, 1, 2},
+          "A lurch goes two squares either way (the original's rows ran -1 to 3)");
+}
+
+void every_difficulty_level()
+{
+    // fxengine.pas AttackRoll and eclvm.pas EclLoadMonster;
+    // docs/BUCK-ROGERS.md, Difficulty.
+    using og::BuckRogersDifficulty;
+    using opengold::DifficultySetting;
+    const std::array<int, 6> to_hit{2, 1, 0, -1, -2, -3};
+    const std::array<unsigned, 6> percent{50, 75, 100, 125, 150, 200};
+    for (std::size_t level = 0; level < 6; ++level)
+    {
+        const auto at = static_cast<BuckRogersDifficulty>(level);
+        check(og::party_to_hit(at) == to_hit[level] &&
+                  og::monster_hit_points_percent(at) == percent[level],
+              std::string(og::buck_rogers_difficulty_names[level]) +
+                  ": the party's to-hit and the monsters' Hit Points");
+    }
+    check(og::loaded_hit_points(1, BuckRogersDifficulty::novice) == 1 &&
+              og::loaded_hit_points(15, BuckRogersDifficulty::cadet) == 11 &&
+              og::loaded_hit_points(15, BuckRogersDifficulty::ace) == 22,
+          "LOAD MONSTER gives (level + 2) quarters, at least 1");
+    check(opengold::parse_difficulty_setting("novice") == DifficultySetting::novice &&
+              opengold::parse_difficulty_setting("infernal") == DifficultySetting::infernal &&
+              opengold::parse_difficulty("novice") == opengold::Difficulty::easy &&
+              opengold::played_difficulty(DifficultySetting::novice) ==
+                  opengold::Difficulty::easy &&
+              opengold::difficulty_setting_name(DifficultySetting::novice) == "novice" &&
+              opengold::difficulty_setting_name(DifficultySetting::hard) == "hard",
+          "Novice is a value of the setting, which any other game plays as Easy");
+    check(opengold::offers_novice(countdown) &&
+              opengold::offers_novice(GoldBoxGame::matrix_cubed) &&
+              !opengold::offers_novice(GoldBoxGame::pool_of_radiance),
+          "Only the Buck Rogers games offer Novice");
+    const std::array<std::pair<int, int>, 6> table{
+        {{-2, -2}, {-2, -2}, {0, 0}, {1, 1}, {2, 2}, {3, 3}}};
+    for (std::size_t level = 0; level < 6; ++level)
+    {
+        opengold::CampaignEncounter encounter;
+        encounter.enemies.emplace_back();
+        opengold::apply_original_difficulty(encounter, static_cast<DifficultySetting>(level),
+                                            countdown);
+        const auto &strength = encounter.enemies.front().original_strength;
+        check(strength.hit_points_percent == percent[level] &&
+                  strength.to_hit == table[level].first &&
+                  strength.armor_class_bonus == table[level].second &&
+                  encounter.party_to_hit == to_hit[level],
+              std::string(og::buck_rogers_difficulty_names[level]) +
+                  " plays the monsters' Hit Points, the table's to-hit and AC, and the party's "
+                  "to-hit");
+    }
+    opengold::CampaignEncounter pool;
+    pool.enemies.emplace_back();
+    opengold::apply_original_difficulty(pool, DifficultySetting::novice,
+                                        GoldBoxGame::pool_of_radiance);
+    check(pool.enemies.front().original_strength.hit_points_percent == 75 && pool.party_to_hit == 0,
+          "Pool of Radiance plays Novice as Easy");
+}
+
+// A Buck Rogers fight through the rules module, as the game will run one.
+struct GroundFight
+{
+    std::unique_ptr<opengold::rules::RulesModule> module;
+    std::unique_ptr<opengold::rules::CombatSession> session;
+};
+
+opengold::rules::Participant ground_participant(opengold::rules::EntityId id,
+                                                opengold::rules::Side side,
+                                                opengold::rules::Cell cell,
+                                                const br::Creature &creature,
+                                                std::vector<br::Item> items)
+{
+    opengold::rules::Participant p;
+    p.id = id;
+    p.name = id == 1 ? "BUCK" : "RAM TROOPER " + std::to_string(id);
+    p.definition = p.name;
+    p.side = side;
+    p.cell = cell;
+    p.character_profile = og::encode_ground_record({creature, std::move(items), ground_types()});
+    return p;
+}
+
+GroundFight ground_fight(std::vector<opengold::rules::Participant> participants, std::uint64_t seed,
+                         bool outdoors = false, bool zero_gravity = false,
+                         GoldBoxGame game = countdown)
+{
+    opengold::rules::Encounter encounter;
+    encounter.battlefield.width = 12;
+    encounter.battlefield.height = 8;
+    encounter.battlefield.terrain.assign(96, opengold::rules::Terrain::open);
+    encounter.participants = std::move(participants);
+    encounter.outdoors = outdoors;
+    encounter.zero_gravity = zero_gravity;
+    og::Content content;
+    content.game = game;
+    GroundFight fight{og::rules_module(std::move(content)), nullptr};
+    fight.session = fight.module->create(std::move(encounter), seed);
+    return fight;
+}
+
+const opengold::rules::CombatantView &view_of(const opengold::rules::Snapshot &snapshot,
+                                              opengold::rules::EntityId id)
+{
+    return *std::ranges::find(snapshot.combatants, id, &opengold::rules::CombatantView::id);
+}
+
+std::optional<opengold::rules::Command> offered(const opengold::rules::CombatSession &session,
+                                                std::string_view verb,
+                                                opengold::rules::EntityId target = 0)
+{
+    for (const auto &command : session.legal_commands())
+    {
+        if (command.verb == verb && (target == 0 || command.target == target))
+        {
+            return command;
+        }
+    }
+    return std::nullopt;
+}
+
+// Ends every turn that is not the member's, until it is, or the fight ends.
+bool to_turn_of(opengold::rules::CombatSession &session, opengold::rules::EntityId id)
+{
+    for (int turns = 0; turns < 40; ++turns)
+    {
+        const auto snapshot = session.snapshot();
+        if (snapshot.outcome != opengold::rules::Outcome::ongoing)
+        {
+            return false;
+        }
+        if (snapshot.actor == id)
+        {
+            return true;
+        }
+        if (!session.submit(*offered(session, "end")))
+        {
+            return false;
+        }
+    }
+    return false;
+}
+
+void a_fight_runs_by_the_buck_rogers_rules()
+{
+    using opengold::rules::Cell;
+    using opengold::rules::Side;
+    auto buck = made_fighter(Profession::warrior);
+    og::level_of(buck.skills, Skill::intimidate) = 50;
+    auto trooper = made_fighter(Profession::warrior);
+    trooper.hit_points = trooper.hit_point_maximum = 8;
+    auto fight = ground_fight({ground_participant(1, Side::party, {2, 2}, buck, {ground_item(2)}),
+                               ground_participant(2, Side::opposition, {3, 2}, trooper, {})},
+                              41);
+    auto &session = *fight.session;
+    check(to_turn_of(session, 1), "Buck gets a turn");
+    std::set<std::string> verbs;
+    for (const auto &command : session.legal_commands())
+    {
+        verbs.insert(command.verb);
+    }
+    check(verbs.contains("melee") && verbs.contains("intimidate") && verbs.contains("sprint") &&
+              verbs.contains("dodge") && verbs.contains("guard") && verbs.contains("delay") &&
+              verbs.contains("end") && !verbs.contains("cast") && !verbs.contains("turn") &&
+              !verbs.contains("bandage") && !verbs.contains("jetpack"),
+          "The combat menu is Buck Rogers': no spells, turning or AD&D bandaging");
+    check(view_of(session.snapshot(), 1).armor_class == 50,
+          "The fight shows the ascending Armor Class");
+    for (int attack = 0;
+         attack < 40 && session.snapshot().outcome == opengold::rules::Outcome::ongoing; ++attack)
+    {
+        if (!to_turn_of(session, 1))
+        {
+            break;
+        }
+        // Once the trooper is down, Buck ends the turn with his attacks left.
+        const auto blow = offered(session, "melee", 2);
+        session.submit(blow ? *blow : *offered(session, "end"));
+    }
+    const auto after = session.snapshot();
+    check(after.outcome == opengold::rules::Outcome::victory, "Buck beats the trooper");
+    const auto left = og::decode_ground_record(view_of(after, 2).persistent.resources);
+    check(left && og::status_of(left->creature) != og::BuckRogersStatus::okay &&
+              left->creature.hit_points == 0,
+          "The fight leaves the trooper's record down, with its status as the original sets it");
+    const auto restored = fight.module->restore(session.save());
+    check(restored->save() == session.save(), "A Buck Rogers fight saves and restores");
+}
+
+void area_weapons_and_clouds_in_a_fight()
+{
+    using opengold::rules::Side;
+    auto gunner = made_fighter(Profession::rocket_jock);
+    gunner.base_combat = 60;
+    auto trooper = made_fighter(Profession::warrior);
+    trooper.hit_points = trooper.hit_point_maximum = 60;
+    auto fight = ground_fight(
+        {ground_participant(1, Side::party, {1, 4}, gunner, {ground_item(17, 2, true, 10)}),
+         ground_participant(2, Side::opposition, {8, 4}, trooper, {})},
+        77);
+    auto &session = *fight.session;
+    check(to_turn_of(session, 1), "The gunner gets a turn");
+    check(!offered(session, "ranged", 2) && offered(session, "launch"),
+          "A plasma thrower aims at a square, not a creature");
+    auto launch = *offered(session, "launch");
+    launch.destination = {8, 4};
+    bool launched = false;
+    for (const auto &command : session.legal_commands())
+    {
+        if (command.verb == "launch" && command.destination == launch.destination)
+        {
+            launched = session.submit(command);
+            break;
+        }
+    }
+    check(launched, "It launches at the trooper's square");
+    const auto after = session.snapshot();
+    const auto thrower = og::decode_ground_record(view_of(after, 1).persistent.resources);
+    check(thrower && thrower->items.size() == 1 && thrower->items[0].quantity == 1 &&
+              !og::readied(thrower->items[0]),
+          "It spent a round and must be readied again");
+    const auto struck = og::decode_ground_record(view_of(after, 2).persistent.resources);
+    check(struck && struck->creature.hit_points < 60, "The blast burns the trooper");
+    // viewchar.pas ToggleReadyItem: readying the heavy weapon again ends a turn.
+    check(to_turn_of(session, 1) && offered(session, "ready") && !offered(session, "launch"),
+          "Next turn the plasma thrower must be readied before it fires again");
+    session.submit(*offered(session, "ready"));
+    const auto reloaded =
+        og::decode_ground_record(view_of(session.snapshot(), 1).persistent.resources);
+    check(reloaded && og::readied(reloaded->items[0]) && session.snapshot().actor != 1,
+          "Readying it ends the gunner's turn");
+    // A chaff grenade's cloud stays in the checkpoint as the fight goes on.
+    auto thrower_jock = made_fighter(Profession::rocket_jock);
+    thrower_jock.base_combat = 60;
+    auto chaffed = ground_fight(
+        {ground_participant(1, Side::party, {1, 4}, thrower_jock, {ground_item(37, 2, true, 8)}),
+         ground_participant(2, Side::opposition, {8, 4}, trooper, {})},
+        78);
+    check(to_turn_of(*chaffed.session, 1), "The thrower gets a turn");
+    const auto before = chaffed.session->save();
+    chaffed.session->submit(*offered(*chaffed.session, "launch"));
+    const auto restored = chaffed.module->restore(chaffed.session->save());
+    check(restored->save() == chaffed.session->save() && restored->save() != before,
+          "The cloud saves and restores with the fight");
+}
+
+void medics_and_jetpacks_in_a_fight()
+{
+    using opengold::rules::Side;
+    auto medic = made_fighter(Profession::medic);
+    og::level_of(medic.skills, Skill::first_aid) = 20;
+    og::level_of(medic.skills, Skill::use_jetpack) = 100;
+    auto wounded = made_fighter(Profession::warrior);
+    og::set_status(wounded, og::BuckRogersStatus::dying);
+    wounded.enabled = 0;
+    wounded.hit_points = 0;
+    auto trooper = made_fighter(Profession::warrior);
+    auto fight = ground_fight({ground_participant(1, Side::party, {2, 2}, medic, {ground_item(30)}),
+                               ground_participant(3, Side::party, {2, 3}, wounded, {}),
+                               ground_participant(2, Side::opposition, {10, 6}, trooper, {})},
+                              5, true);
+    auto &session = *fight.session;
+    check(to_turn_of(session, 1), "The medic gets a turn");
+    check(offered(session, "aid") && offered(session, "jetpack"),
+          "Aid for the bleeding teammate next to it, and a jetpack out of doors");
+    session.submit(*offered(session, "aid"));
+    const auto bandaged =
+        og::decode_ground_record(view_of(session.snapshot(), 3).persistent.resources);
+    check(bandaged && og::status_of(bandaged->creature) == og::BuckRogersStatus::unconscious,
+          "First Aid bandages it without a roll: unconscious, no longer bleeding");
+    check(to_turn_of(session, 1), "The medic's next turn");
+    session.submit(*offered(session, "jetpack"));
+    std::set<std::string> verbs;
+    for (const auto &command : session.legal_commands())
+    {
+        verbs.insert(command.verb);
+    }
+    check(verbs == std::set<std::string>{"land"}, "In flight it can only land");
+    auto land = *offered(session, "land");
+    for (const auto &command : session.legal_commands())
+    {
+        if (command.destination == opengold::rules::Cell{9, 6})
+        {
+            land = command;
+        }
+    }
+    session.submit(land);
+    check(view_of(session.snapshot(), 1).cell == opengold::rules::Cell{9, 6},
+          "It lands where it chose");
+}
+
+void zero_gravity_and_difficulty_in_a_fight()
+{
+    using opengold::rules::Side;
+    auto floater = made_fighter(Profession::engineer);
+    auto trooper = made_fighter(Profession::warrior);
+    trooper.hit_points = trooper.hit_point_maximum = 30;
+    auto monster = ground_participant(2, Side::opposition, {9, 5}, trooper, {});
+    monster.original_strength.hit_points_percent = 50;
+    auto fight = ground_fight({ground_participant(1, Side::party, {1, 1}, floater, {}), monster}, 9,
+                              false, true);
+    auto &session = *fight.session;
+    check(view_of(session.snapshot(), 2).hit_points == 15 &&
+              view_of(session.snapshot(), 2).max_hit_points == 15,
+          "Novice's LOAD MONSTER halves a monster's Hit Points, its maximum with them");
+    check(to_turn_of(session, 1), "The engineer gets a turn");
+    const auto record =
+        og::decode_ground_record(view_of(session.snapshot(), 1).persistent.resources);
+    check(record && og::status_of(record->creature) == og::BuckRogersStatus::failed_zero_g,
+          "Without Maneuver in Zero-G it fails its roll in zero gravity");
+    const auto &log = session.snapshot().log_entries;
+    check(std::ranges::any_of(log,
+                              [](const opengold::rules::LogEntry &entry)
+                              {
+                                  return entry.message.source == "{name} fails the Zero-G roll.";
+                              }),
+          "The log says so");
+}
+
 std::optional<std::filesystem::path> files_of(GoldBoxGame game)
 {
     const auto folder = opengold::test::installed_game_folder(game);
@@ -984,6 +1784,45 @@ void the_hail_is_corrected_where_it_is(const std::filesystem::path &folder)
     }
 }
 
+void the_area_weapons_are_the_games(const std::filesystem::path &folder)
+{
+    // gdconsts.pas projectileKinds against ITEM0.DAX and ITEMS: the plasma
+    // thrower, the rocket launcher and the seven grenades fire the
+    // projectiles the fight plays, and the ITEMS rows the ground combat
+    // checks use are the game's.
+    const auto templates = br::decode_item_templates(record_of(folder / "ITEM0.DAX", 1));
+    const auto types = br::decode_item_types(file_bytes(folder / "ITEMS"));
+    check(templates && types, "ITEM0 and ITEMS decode");
+    const std::array<std::pair<std::size_t, int>, 9> fired{
+        {{17, 10}, {18, 11}, {32, 6}, {33, 6}, {34, 7}, {35, 12}, {36, 5}, {37, 8}, {38, 9}}};
+    for (const auto &[number, kind] : fired)
+    {
+        const auto &item = templates->at(number - 1);
+        check(og::projectile_kind(item) == kind &&
+                  og::hits_an_area(static_cast<og::WeaponClass>(types->at(item.type).weapon_class)),
+              "Template " + std::to_string(number) + " fires projectile " + std::to_string(kind));
+    }
+    check(og::projectile_kind(templates->at(14)) == 0 &&
+              templates->at(14).type == og::ground_item::sonic_stunner,
+          "The Sonic Stunner (template 15) fires no projectile");
+    const auto made = ground_types();
+    for (std::size_t type = 0; type < made.size(); ++type)
+    {
+        const auto &row = made[type];
+        const auto &game = types->at(type);
+        if (row.slot == 0 && row.attacks_doubled == 0 && row.weapon_class == 0)
+        {
+            continue;
+        }
+        check(row.slot == game.slot && row.attacks_doubled == game.attacks_doubled &&
+                  row.weapon_class == game.weapon_class && row.heavy == game.heavy &&
+                  row.dice_count == game.dice_count && row.dice_sides == game.dice_sides &&
+                  row.damage_bonus == game.damage_bonus && row.range == game.range &&
+                  row.consumable == game.consumable,
+              "ITEMS row " + std::to_string(type) + " is as the checks have it");
+    }
+}
+
 void the_files_decode()
 {
     const auto folder = files_of(countdown);
@@ -997,6 +1836,7 @@ void the_files_decode()
     the_records_save_as_they_were(*folder);
     a_new_character_uses_the_games_items(*folder);
     the_hail_is_corrected_where_it_is(*folder);
+    the_area_weapons_are_the_games(*folder);
 }
 
 } // namespace
@@ -1028,6 +1868,21 @@ int main()
         modify_keeps_the_limits();
         a_new_character_carries_two_items();
         records_round_trip();
+        the_attack_roll_climbs();
+        range_and_cover_raise_the_target();
+        rear_attacks_and_backstabs();
+        the_gear_sets_the_numbers();
+        what_stops_a_hit();
+        area_weapons_blast();
+        clouds_linger();
+        ammunition_runs_out();
+        injuries_follow_the_damage();
+        the_new_commands_are_offered();
+        every_difficulty_level();
+        a_fight_runs_by_the_buck_rogers_rules();
+        area_weapons_and_clouds_in_a_fight();
+        medics_and_jetpacks_in_a_fight();
+        zero_gravity_and_difficulty_in_a_fight();
         the_files_decode();
         std::cout << "Countdown to Doomsday passed.\n";
     }
