@@ -1915,5 +1915,21 @@
   "Neutral; grants Charm Person.",
   "The clerics will cast {spell} on {name} for {fee} steel.",
   "{spell} ({fee} steel)",
-  "The party's steel cannot pay {fee} steel."
+  "The party's steel cannot pay {fee} steel.",
+  "{name} has {credits} credits; the pool holds {pool}.",
+  "The booty:",
+  "Take {item}",
+  "Take the credits",
+  "Divvy",
+  "Pool",
+  "Ammo",
+  "{item}: {price} credits",
+  "{item}: {rounds} rounds for {price} credits",
+  "Train {name}",
+  "Rest a day",
+  "{name} cannot carry any more.",
+  "Not enough credits.",
+  "The weapon is full.",
+  "{name} trains to level {level}.",
+  "The team rests a day."
 ]

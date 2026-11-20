@@ -653,6 +653,16 @@ Risks: random skill checks gate the story and can fail; ship fights can be
 lost outright with the crew; fuel, salvage money and medical supplies can run
 short; a comatose character needs a hospital that may be far away.
 
+**Status:** the first part of 1 and the walk are done (2026-11-20): a team
+made by the creation rules starts the campaign and saves; the views, walls,
+backdrops, pictures and text; the script machine with the Buck Rogers
+commands and the host; ground fights on the four tile sets, in normal and
+zero gravity; the outposts as their scripts run them; the title's music; and
+`opengold_countdown_walk` over every map and every script without one
+([countdown.md](games/countdown.md), "The game in the engine"). The solar
+map, ship combat and the creation and skill screens are designed from
+mockups; the session stops at a hand-off for each.
+
 ### B4. *Matrix Cubed*
 
 The same four parts, and:

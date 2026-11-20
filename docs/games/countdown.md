@@ -3,8 +3,10 @@
 The first *Buck Rogers XXVc* Gold Box game (1990). The plan to play it to its
 win under its original rules is [BUCK-ROGERS.md](../BUCK-ROGERS.md). Step B0
 (groundwork) and step B1 (the reading census) are done (2026-11-19), and the
-characters' and ground combat's rules of step B2 (2026-11-20); the game does not play yet, and its button in the startup menu stays disabled until it
-does.
+characters' and ground combat's rules of step B2 (2026-11-20). The first part
+of step B3.1 (2026-11-20) has the engine play its scripts, views, ground fights
+and outposts ("The game in the engine"); its button in the startup menu stays
+disabled until the new screens and the route are done.
 
 ## Files and references
 
@@ -778,6 +780,13 @@ Fixed in OpenGoldBox, in both games unless named:
 15. **A stray shot's fourth landing was lost** (`CombatLaunchProjectile`):
     of four tries at a stray landing, a fourth that succeeded was taken as no
     landing at all, and the shot came down on its target. It lands there now.
+16. **LOTEK's missing wall tile** (`combatst.pas` `LoadCombatTileSet`,
+    `BuildDungeonArena`): the arenas of area kinds 82h and 88h copy 53 tiles
+    from `LOTEK`, which holds 52, and a doorway in a north wall lays combat
+    terrain 44, whose tile is the 53rd: the original drew it from past the
+    picture's pixels. It shows `LOTEK`'s last tile, a piece of the same walls.
+    No other arena asks for a tile its file lacks (`MARSCOM` and `VENUSCOM`
+    included, checked on every ground with many dice).
 
 ## Ship combat
 
@@ -940,6 +949,134 @@ Options screen while a Buck Rogers game plays, one key per game
    team's ship nor get away never ends. Fixed as a bug: the enemy breaks off
    (Bugs).
 
+## The game in the engine (step B3.1)
+
+The first part of B3.1 is done (2026-11-20): the engine runs *Countdown*'s
+own scripts, maps, pictures and fights with a team its creation rules made.
+The three new screens (creation and skills, the solar map and ship combat)
+are being designed from mockups; the session stops at a hand-off for each
+(below). `tests/countdown_campaign_tests.cpp` checks it on the game's files,
+and with `--walk` it is `opengold_countdown_walk`.
+
+### The team in the campaign
+
+A member is its game's record, whole (`buck_rogers_characters.h`): its
+creation draft holds the `GroundRecord` (the 259-byte record, its items, its
+second item list and the `ITEMS` rows they name) as made, and the member's
+vitals keep it as it is now (`CampaignParty::game_record`,
+`keep_game_record`), as the combat session gives it back after a fight. The
+sheet the party's screens read is drawn from it (`buck_rogers_sheet`). The
+campaign save keeps both without a new format: format 53 already saves a
+draft's rules data and the vitals' resources, and a saved team loads and
+saves again byte for byte. The walk's team is made in code by the creation
+rules (the creation screen comes later).
+
+### Views, pictures and the text
+
+The maps are the shared `GEO` reader's; the walls are each disk's
+`WALLDEF` with the same disk's `8X8D` tiles, and the backdrops its `BACK`
+pictures: the set's own indoors (an event byte with bit 80h) and the set's
+number plus 80h out of doors (`view3d.pas` `LoadBackdrop`). Pictures from
+112 are `BIGPIC`s, below `PIC` animations, all in the 256-color layout. A new
+game starts as `GameInit` sets it: Trooper (or the setting's level), area
+kind 1, message speed 4 and the Maelstrom Rider in zone 0 from 4D00h. The
+current character is served from 7C00h as `SpecialReadZ1` does: the name,
+the record's bytes 10h to B9h (its credits and experience four bytes, its Hit
+Point maximum a word), the specializations at C4h, then the status, side,
+attack bonus, Armor Class, Hit Points and movement at their own places; what
+a script writes there goes back into the record.
+
+### The script machine and its host
+
+Numbers are the original's LongInts: each operand is read and written in
+the width its tag names (a byte, a word or four bytes; a four-byte cell is
+kept as its low word and the word two cells on), signed where the original
+reads four bytes. The machine runs COMPARE, the arithmetic, SAVE and PRINT
+that way, and CONTINUE PROMPT, YES NO, the horizontal ACTION MENU, LOGBOOK
+ENTRY (the entry's number and what it holds; never the Log Book's text),
+CLEAR AND STOP (which ends the script), SKIP, LOOP START and LOOP NEXT, and a
+RETURN with nothing to return to, which ends the script. Every operand's
+width goes through `script_operand_tag` (the hospital's fee, Bugs). Past a
+script's end its zone reads 0, as the original clears it before loading.
+
+The host (`buck_rogers_host.cpp`) answers SET SPEAKER, the SKILL CHECKs
+(22h, 23h, the skill through `script_check_skill`, the roller's place and
+grade written where the operands name cells), SKILL CHECK WITH DAMAGE, DAMAGE
+with its saves and attack rolls, AWARD EXPERIENCE, FIND ITEM, DESTROY ITEMS,
+SWAP ITEM LISTS, PLAY SOUND (the driver's sound commands; nothing above 127),
+DISTANCE AHEAD, PICTURE MODE, LOAD MONSTER, COMBAT, SOLO COMBAT, TREASURE,
+SHOP, ADD NPC and PROGRAM 0 and 9. LOAD FILES' map 127 is no map (an outpost
+or the solar map, shown as pictures), and none loads in a wilderness. CALL's
+sound routine plays nothing, as its selector is never set. The other
+commands are the Curse engine's, as for the earlier games.
+
+### Ground fights
+
+A fight a script loads is played by the combat screen on the arena the
+area's kind names (`buck_rogers_battlefield.h`): `HITEK` indoors, `LOTEK` for
+kinds 82h and 88h, laid from the walls round the team's square
+(`BuildDungeonArena`, its decoration seeded by the script's number as the
+original seeds it), and `MARSCOM` or `VENUSCOM` scattered by the wilderness
+ground cell 4BB7h (`BuildWildernessArena`). Each cell is one of the 154 kinds
+of combat terrain: an impassable one or one that blocks a line of fire is an
+obstacle, one that gives cover difficult ground (the line's cover past its
+first two squares). Bit 10h of the area's kind is zero gravity. Creatures are
+`MON0CHA` records with `MON0ITM`'s items, drawn with the disk's `CPIC` icon;
+the team fights with its `CHARS` icons. The fight's end (`PostCombat`): the
+fallen enemies' experience, shared by the members who can act; their
+credits to the pool and their gear to the booty unless cell 7EE3h says not;
+the wounded (`recover_after_fight`) and the medics (`treat_injuries`) unless
+cell 4B80h says not; a team that fled leaves behind those still on the
+field; the result in 7EC7h and the creatures defeated in 7EC8h, and the
+script's fight cells cleared. The booty and a shop are menus the session
+offers in the original's place (Take, Divvy, Pool, Exit; Buy, Sell, Ammo,
+Pool, Exit), with their words in Spanish too.
+
+### Outposts, the wildernesses and music
+
+The outposts are script 99's menus as they are: the bank, the hospital, the
+bars, libraries and shops downtown, the port's launch, repairs, fuel, ammunition
+and medical supplies, and training, which is PROGRAM 0's team menu (one level
+a member, free; the skill points it gives are the skill screen's). PROGRAM 9
+is the rest menu (a day a Rest). On Venus and Mars (area kinds A2h and A8h)
+the team steps about the big picture as on Pools of Darkness's area map, 38
+by 15 squares, a step half a day. *Countdown*'s music is the title's alone:
+`MUSIC.DAX` record 2 from its first song, at the later games' tempo; no
+script starts music.
+
+### Hand-offs to the new screens
+
+- **The solar map**: `TourSnapshot::solar_map` is set while PICTURE MODE 2 or
+  the area kind 70h is on (script 34). The session runs the script's entries;
+  the screen will move the rocket (`explore.pas` `MoveRocket`), set the
+  bodies' squares from 4B85h and the rocket's from the orbit's cells, and
+  pass the days. A new game's rocket and orbit (`InitShipAndOrbit`) are the
+  screen's to set.
+- **Ship combat**: SHIP COMBAT leaves the phase `ship_combat` with
+  `TourSnapshot::ship_combat` (the enemy's type, the unused operand, the
+  pilot's skill and the to-hit number). The screen plays the fight
+  (`buck_rogers_ship_combat.h`) and calls `finish_ship_combat` with the
+  outcome, which goes to 4BBAh; boarding is the script's next fight (script
+  52 fights on the decks of the ship 4C61h names).
+- **Creation and skills**: a team is made in code; training's skill points and
+  a Warrior's specialization wait for the skill screen.
+
+### The walk
+
+`opengold_countdown_walk` starts a new game for each map, enters it, looks
+at every square and plays its event: the first choice of a menu, then each
+in turn until each has come twice; every fight played by the game's own
+computer on both sides; treasure left; a ship fight handed off. Then it
+enters every script without a map of its own (script 99 at each of its
+thirteen outposts) and steps about the wildernesses. On 2026-11-20 it walked
+all 17 maps and 20 scripts without a map, played 422 fights (zero gravity in
+272 of them, and on `HITEK`, `LOTEK` and `MARSCOM`), and met nothing the
+engine lacks; it reached the solar map from 18 places. Map 99 is the
+Mariposa's top, which script 95 enters on the escape; the walk notes it.
+Places the solar map's script names first (the outpost, 4C31h and 4C2Fh) and
+the ship fight's enemy (4C61h) are set by the walk, as aids.
+
 ## Next
 
-Step B3, *Countdown* played through its route ([BUCK-ROGERS.md](../BUCK-ROGERS.md)).
+Step B3.1's second part: the three new screens on these hand-offs, then the
+route ([BUCK-ROGERS.md](../BUCK-ROGERS.md)).
