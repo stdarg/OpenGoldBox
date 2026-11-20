@@ -21,6 +21,7 @@
 #include "campaign_combat.h"
 #include "rolf_tour_view.h"
 #include "save_slots.h"
+#include "game_folder_questions.h"
 #include "vital_fixtures.h"
 #include "opengold/campaign_save.h"
 #include "opengold/combat_body_catalog.h"
@@ -2096,7 +2097,8 @@ void CharacterCreationView::save_dialog_visibility_changed()
 
 void CharacterCreationView::restore_defeat_dialog()
 {
-    if (campaign_defeated_ && !required_node<SaveSlots>(*this, "SaveSlots").is_visible())
+    if (campaign_defeated_ && !required_node<SaveSlots>(*this, "SaveSlots").is_visible() &&
+        !required_node<GameFolderQuestions>(*this, "FolderQuestions").asking())
     {
         show_defeat();
     }

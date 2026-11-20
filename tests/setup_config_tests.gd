@@ -91,7 +91,7 @@ func run_checks() -> void:
 	change_scene_to_file("res://scenes/startup.tscn")
 	await settle()
 	require(current_scene.name == "Startup", "Startup scene missing")
-	var path_dialog: Window = current_scene.get_node("PathDialog")
+	var path_dialog: Window = current_scene.get_node("FolderQuestions/PathDialog")
 	var language: Window = current_scene.get_node("LanguageDialog")
 	if scenario == "save-error":
 		require(language.visible and not path_dialog.visible, "Language must precede path even with a malformed config")
@@ -103,7 +103,7 @@ func run_checks() -> void:
 		quit(0)
 		return
 	if scenario in ["first", "first-warning", "reset"]:
-		require(language.visible and not path_dialog.visible and not current_scene.get_node("ChecksumWarning").visible, "Language must precede folder setup and checksum warnings")
+		require(language.visible and not path_dialog.visible and not current_scene.get_node("FolderQuestions/ChecksumWarning").visible, "Language must precede folder setup and checksum warnings")
 		require(current_scene.get_node("ImageFit/Image/Text").texture == null, "The title began before language selection")
 		if scenario == "reset":
 			require(FileAccess.get_file_as_string(CONFIG) == original, "Reset erased saved choices before confirmation")
@@ -191,7 +191,7 @@ func run_checks() -> void:
 			require(FileAccess.get_file_as_string(CONFIG) == original, "Invalid path was saved")
 		else:
 			if scenario in ["mismatch", "warning-quit", "first-warning"]:
-				var warning: Window = current_scene.get_node("ChecksumWarning")
+				var warning: Window = current_scene.get_node("FolderQuestions/ChecksumWarning")
 				require(warning.visible and warning.get_node("Files").text.contains("START.EXE"), "MD5 mismatch warning missing")
 				require(FileAccess.get_file_as_string(CONFIG) == original, "Unaccepted mismatch path was saved")
 				if scenario == "first-warning":
@@ -266,8 +266,8 @@ func check_found_folder(games_folder: String) -> void:
 	change_scene_to_file("res://scenes/startup.tscn")
 	await settle()
 	require(current_scene.name == "Startup", "Startup scene missing")
-	var path_dialog: Window = current_scene.get_node("PathDialog")
-	var found: Window = current_scene.get_node("FoundFolder")
+	var path_dialog: Window = current_scene.get_node("FolderQuestions/PathDialog")
+	var found: Window = current_scene.get_node("FolderQuestions/FoundFolder")
 	await pick_game(game)
 	if scenario == "found-again":
 		require(not found.visible and not path_dialog.visible, "A confirmed folder must not be asked about again")

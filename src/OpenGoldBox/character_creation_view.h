@@ -236,6 +236,9 @@ class CharacterCreationView : public godot::Control
     void open_saves(bool saving);
     void save_campaign(const std::filesystem::path &path);
     void load_campaign(const std::filesystem::path &path);
+    void ask_save_folders();
+    // Another game's save, loaded once its game's folders are known.
+    std::filesystem::path save_awaiting_folders_;
     // Loads a campaign from a save's bytes: a file's, or the game in progress
     // saved in memory.
     void load_campaign_bytes(const std::string &bytes);

@@ -13,6 +13,7 @@
 #include "level_up_lab_view.h"
 #include "save_slots.h"
 #include "game_menu_view.h"
+#include "game_folder_questions.h"
 #include "startup_view.h"
 #include "game_lifecycle.h"
 #include "screenshot_service.h"
@@ -34,6 +35,7 @@ void register_game_classes()
     godot::ClassDB::register_class<SaveSlots>();
     godot::ClassDB::register_class<EngineErrors>();
     godot::ClassDB::register_class<GameMenuView>();
+    godot::ClassDB::register_class<GameFolderQuestions>();
     godot::ClassDB::register_class<StartupView>();
     godot::ClassDB::register_class<GameLifecycle>();
     godot::ClassDB::register_class<ScreenshotService>();

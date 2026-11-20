@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="AnimationLibrary" path="res://scenes/creation_layout.tres" id="1_creation_layout"]
 
@@ -24,6 +24,7 @@
 
 [ext_resource type="Script" path="res://scenes/portrait_preview.gd" id="93_portrait_preview"]
 [ext_resource type="PackedScene" path="res://scenes/original_portrait_parts.tscn" id="95_original_parts"]
+[ext_resource type="PackedScene" path="res://scenes/game_folder_questions.tscn" id="92_folder_questions"]
 
 [node name="CharacterCreation" type="CharacterCreationView"]
 texture_filter = 1
@@ -2379,3 +2380,5 @@ root_node = NodePath("..")
 libraries = {
 "": ExtResource("1_creation_layout")
 }
+
+[node name="FolderQuestions" parent="." instance=ExtResource("92_folder_questions")]

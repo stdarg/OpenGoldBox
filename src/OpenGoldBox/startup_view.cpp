@@ -3,6 +3,7 @@
 #include "application_settings.h"
 #include "guarded_handlers.h"
 #include "godot_nodes.h"
+#include "game_folder_questions.h"
 #include "game_menu_view.h"
 #include "save_slots.h"
 #include "godot_images.h"
@@ -12,9 +13,6 @@
 #include "opengold/diagnostic_log.h"
 #include <godot_cpp/classes/audio_stream_player.hpp>
 #include <godot_cpp/classes/input_event_mouse_button.hpp>
-#include <godot_cpp/classes/line_edit.hpp>
-#include <godot_cpp/classes/file_dialog.hpp>
-#include <godot_cpp/classes/rich_text_label.hpp>
 #include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/v_box_container.hpp>
@@ -202,15 +200,6 @@ std::optional<opengold::GoldBoxGame> game_from_command_line()
     return std::nullopt;
 }
 
-// Whether the player chose game's folder and it still holds the game's files:
-// a folder the search found is asked about first.
-bool folder_chosen(opengold::GoldBoxGame game)
-{
-    const auto located = settings::locate_game_folder(game);
-    return located && located->source == opengold::GameFolderSource::chosen &&
-           settings::validate_game_folder(settings::game_folder(game), game).usable;
-}
-
 // The first of a menu's buttons that can be pressed, to take the focus.
 void focus_first_enabled(Node &buttons)
 {
@@ -229,7 +218,6 @@ void focus_first_enabled(Node &buttons)
 
 void StartupView::language_chosen()
 {
-    connect_path_dialogs();
     if (const auto game = game_from_command_line())
     {
         game_from_flag_ = true;
@@ -394,16 +382,20 @@ void StartupView::game_chosen(std::int64_t chosen)
 void StartupView::choose_folders(opengold::GoldBoxGame game, AfterFolders after)
 {
     after_folders_ = after;
-    folders_needed_ = {game};
     // A design's save names its design, so only a new game asks for one.
-    design_needed_ =
+    const bool design =
         game == opengold::GoldBoxGame::unlimited_adventures && after != AfterFolders::saved_game;
-    if (game != opengold::GoldBoxGame::pool_of_radiance &&
-        !folder_chosen(opengold::GoldBoxGame::pool_of_radiance))
-    {
-        folders_needed_.push_back(opengold::GoldBoxGame::pool_of_radiance);
-    }
-    next_folder();
+    required_node<GameFolderQuestions>(*this, "FolderQuestions")
+        .ask(
+            {game, design, game_from_flag_},
+            [this]
+            {
+                folders_ready();
+            },
+            [this]
+            {
+                cancel_folders();
+            });
 }
 
 void StartupView::folders_ready()
@@ -426,12 +418,6 @@ void StartupView::folders_ready()
 // Closing a folder's question goes back to where it was asked from.
 void StartupView::cancel_folders()
 {
-    required_node<Window>(*this, "PathDialog").hide();
-    required_node<Window>(*this, "FoundFolder").hide();
-    required_node<Window>(*this, "ChecksumWarning").hide();
-    save_pending_path_ = false;
-    folders_needed_.clear();
-    design_needed_ = false;
     if (game_from_flag_)
     {
         exit_to_desktop();
@@ -588,134 +574,6 @@ void StartupView::exit_to_desktop()
     get_tree()->get_root()->emit_signal("close_requested");
 }
 
-// Asks for the next game's folder unless the player's choice still holds the
-// game: a folder the search found to confirm, else the folder dialog; startup
-// goes on once every folder is known.
-void StartupView::next_folder()
-{
-    if (asking_design())
-    {
-        ask_design();
-        return;
-    }
-    if (folders_needed_.empty())
-    {
-        folders_ready();
-        return;
-    }
-    const auto game = folders_needed_.front();
-    auto *dialog = &required_node<Window>(*this, "PathDialog");
-    const auto heading =
-        game == opengold::GoldBoxGame::pool_of_radiance
-            ? i18n::text("Pool of Radiance game files")
-            : i18n::format(N_("{game} game files"), {{"game", i18n::text(menu_title(game))}});
-    dialog->set_title(heading);
-    required_node<Label>(*dialog, "Title").set_text(heading);
-    required_node<Label>(*dialog, "Instructions")
-        .set_text(i18n::text(
-            N_("Choose the folder containing START.EXE and the original DAX game files.")));
-    auto *found = &required_node<Window>(*this, "FoundFolder");
-    found->set_title(heading);
-    required_node<Label>(*found, "Title").set_text(heading);
-    // A chosen folder that no longer holds the game's files is looked for
-    // again, as when none was chosen (the user's decision, 2026-11-20).
-    const auto located = settings::locate_game_folder(game);
-    pending_path_ = settings::game_folder(game);
-    if (!located ||
-        (game == opengold::GoldBoxGame::pool_of_radiance && settings::flag("--reset-game-path")))
-    {
-        show_path();
-        return;
-    }
-    if (located->source == opengold::GameFolderSource::found)
-    {
-        confirm_found_folder();
-        return;
-    }
-    check_path();
-}
-
-// A folder the search found is shown for the player to confirm; it is saved
-// only once confirmed, so the player is asked once (the user's decision,
-// 2026-11-20).
-void StartupView::confirm_found_folder()
-{
-    auto *found = &required_node<Window>(*this, "FoundFolder");
-    required_node<Label>(*found, "Folder").set_text(pending_path_);
-    found->popup_centered();
-    required_node<Button>(*found, "Use").grab_focus();
-}
-
-void StartupView::use_found_folder()
-{
-    required_node<Window>(*this, "FoundFolder").hide();
-    save_pending_path_ = true;
-    check_path();
-}
-
-// Declining the found folder opens the folder dialog for the player to choose one.
-void StartupView::choose_another_folder()
-{
-    required_node<Window>(*this, "FoundFolder").hide();
-    pending_path_ = String();
-    show_path();
-}
-
-// The design is asked each time Unlimited Adventures is chosen, the last one
-// offered, as the player may have several; a check's --game=UA plays the
-// saved one.
-void StartupView::ask_design()
-{
-    auto *dialog = &required_node<Window>(*this, "PathDialog");
-    const auto heading = i18n::text(N_("Unlimited Adventures design"));
-    dialog->set_title(heading);
-    required_node<Label>(*dialog, "Title").set_text(heading);
-    required_node<Label>(*dialog, "Instructions")
-        .set_text(i18n::text(N_(
-            "Choose the folder of the design to play, which the construction kit names NAME.DSN.")));
-    pending_path_ = settings::design_folder();
-    if (game_from_flag_ && settings::validate_design_folder(pending_path_).usable)
-    {
-        check_path();
-        return;
-    }
-    show_path();
-}
-
-void StartupView::connect_path_dialogs()
-{
-    // Translate these dialogs only after language selection has been confirmed.
-    i18n::prepare_ui(required_node<Window>(*this, "PathDialog"));
-    i18n::prepare_ui(required_node<Window>(*this, "ChecksumWarning"));
-    i18n::prepare_ui(required_node<Window>(*this, "FoundFolder"));
-    auto *found = &required_node<Window>(*this, "FoundFolder"); // scene-owned
-    connect_escape(*found, &StartupView::cancel_folders);
-    required_node<Button>(*found, "Use")
-        .connect("pressed", presentation::guarded(this, &StartupView::use_found_folder));
-    required_node<Button>(*found, "Choose")
-        .connect("pressed", presentation::guarded(this, &StartupView::choose_another_folder));
-    auto *dialog = &required_node<Window>(*this, "PathDialog"); // scene-owned
-    connect_escape(*dialog, &StartupView::cancel_folders);
-    required_node<Button>(*dialog, "Cancel")
-        .connect("pressed", presentation::guarded(this, &StartupView::cancel_folders));
-    required_node<Button>(*dialog, "Continue")
-        .connect("pressed", presentation::guarded(this, &StartupView::accept_path));
-    required_node<Button>(*dialog, "Browse")
-        .connect("pressed", presentation::guarded(this, &StartupView::browse_path));
-    required_node<LineEdit>(*dialog, "Path")
-        .connect("text_submitted", presentation::guarded(this, &StartupView::submitted_path));
-    required_node<LineEdit>(*dialog, "Path")
-        .connect("text_changed", presentation::guarded(this, &StartupView::path_edited));
-    required_node<FileDialog>(*dialog, "BrowseDialog")
-        .connect("dir_selected", presentation::guarded(this, &StartupView::picked_path));
-    auto *warning = &required_node<Window>(*this, "ChecksumWarning");
-    connect_escape(*warning, &StartupView::cancel_folders);
-    required_node<Button>(*warning, "Quit")
-        .connect("pressed", presentation::guarded(this, &StartupView::close_language));
-    required_node<Button>(*warning, "Continue")
-        .connect("pressed", presentation::guarded(this, &StartupView::continue_path));
-}
-
 void StartupView::choose_language()
 {
     if (settings::flag("--reset-lang") || !settings::valid_language(settings::saved_language()))
@@ -746,105 +604,6 @@ void StartupView::choose_language()
         return;
     }
     language_chosen();
-}
-
-void StartupView::show_path(const String &message)
-{
-    auto *dialog = &required_node<Window>(*this, "PathDialog");
-    required_node<LineEdit>(*dialog, "Path").set_text(pending_path_);
-    required_node<Label>(*dialog, "Status").set_text(message);
-    dialog->popup_centered();
-    required_node<LineEdit>(*dialog, "Path").grab_focus();
-}
-
-void StartupView::browse_path()
-{
-    auto *browser = &required_node<FileDialog>(*this, "PathDialog/BrowseDialog");
-    browser->set_current_dir(required_node<LineEdit>(*this, "PathDialog/Path").get_text());
-    browser->popup_centered_ratio(.7f);
-}
-
-void StartupView::picked_path(const String &directory)
-{
-    required_node<LineEdit>(*this, "PathDialog/Path").set_text(directory);
-    // Programmatic text changes do not emit LineEdit's text_changed signal.
-    path_edited(directory);
-    required_node<Button>(*this, "PathDialog/Continue").grab_focus();
-}
-
-void StartupView::path_edited(const String &)
-{
-    required_node<Label>(*this, "PathDialog/Status").set_text(String());
-}
-
-void StartupView::submitted_path(const String &)
-{
-    accept_path();
-}
-
-void StartupView::accept_path()
-{
-    pending_path_ = required_node<LineEdit>(*this, "PathDialog/Path").get_text().strip_edges();
-    save_pending_path_ = true;
-    check_path();
-}
-
-void StartupView::check_path()
-{
-    const auto result =
-        asking_design() ? settings::validate_design_folder(pending_path_)
-                        : settings::validate_game_folder(pending_path_, folders_needed_.front());
-    if (!result.usable)
-    {
-        String message = result.error.is_empty() ? i18n::text("Missing or unreadable game files:")
-                                                 : i18n::text(result.error.utf8().get_data());
-        for (int i = 0; i < std::min(static_cast<int>(result.missing.size()), 5); ++i)
-        {
-            message += " " + result.missing[i];
-        }
-        if (result.missing.size() > 5)
-        {
-            message += " ...";
-        }
-        show_path(message);
-        return;
-    }
-    required_node<Window>(*this, "PathDialog").hide();
-    if (!result.different.is_empty())
-    {
-        auto *warning = &required_node<Window>(*this, "ChecksumWarning");
-        required_node<RichTextLabel>(*warning, "Files")
-            .set_text(pending_path_ + "\n\n" + String("\n").join(result.different));
-        warning->popup_centered();
-        required_node<Button>(*warning, "Quit").grab_focus();
-        return;
-    }
-    continue_path();
-}
-
-void StartupView::continue_path()
-{
-    required_node<Window>(*this, "ChecksumWarning").hide();
-    const bool design = asking_design();
-    if (save_pending_path_ &&
-        !(design ? settings::save_design_folder(pending_path_)
-                 : settings::save_game_folder(folders_needed_.front(), pending_path_)))
-    {
-        show_path(i18n::text(
-            "Cannot save settings. Check that settings.cfg in the game's user data folder can be written and is valid."));
-        return;
-    }
-    save_pending_path_ = false;
-    get_viewport()->set_input_as_handled();
-    if (design)
-    {
-        design_needed_ = false;
-    }
-    else
-    {
-        folders_needed_.erase(folders_needed_.begin());
-    }
-    next_folder();
 }
 
 void StartupView::accept_language()

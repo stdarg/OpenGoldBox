@@ -8,7 +8,6 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
-#include <vector>
 
 #include "application_settings.h"
 #include "opengold/gold_box_game.h"
@@ -66,10 +65,8 @@ class StartupView : public godot::Control
     double title_seconds_left_{};
     bool choosing_language_{};
     bool language_save_failed_{};
-    bool save_pending_path_{};
     // The scene is changing to the game; nothing in startup reopens.
     bool starting_{};
-    godot::String pending_path_;
     // OpenGoldBox's own title: its lettering over the shared picture.
     void show_opening_title();
     void show_lettering(const char *name);
@@ -105,7 +102,6 @@ class StartupView : public godot::Control
     void close_language();
     void choose_language();
     void language_chosen();
-    void connect_path_dialogs();
     void show_backdrop();
     // Escape in a dialog window goes back, as the dialog's back does.
     void connect_escape(godot::Window &dialog, void (StartupView::*back)());
@@ -130,8 +126,9 @@ class StartupView : public godot::Control
     void options_closed();
     bool options_from_game_{};
     void exit_to_desktop();
+    // The game's folders, and an Unlimited Adventures game's design
+    // (docs/games/ua.md, From the startup menu), asked by the FolderQuestions.
     void choose_folders(opengold::GoldBoxGame game, AfterFolders after);
-    void next_folder();
     void folders_ready();
     void cancel_folders();
     AfterFolders after_folders_{AfterFolders::game_title};
@@ -140,29 +137,6 @@ class StartupView : public godot::Control
     // The game came from --game=, for a check: like the original's STING,
     // it skips the titles and the menus.
     bool game_from_flag_{};
-    // The games whose folders startup still needs, the first being asked now.
-    std::vector<opengold::GoldBoxGame> folders_needed_;
-    // An Unlimited Adventures game asks for the design it plays after the
-    // folders (docs/games/ua.md, From the startup menu).
-    bool design_needed_{};
-    void ask_design();
-
-    [[nodiscard]] bool asking_design() const
-    {
-        return folders_needed_.empty() && design_needed_;
-    }
-
-    void confirm_found_folder();
-    void use_found_folder();
-    void choose_another_folder();
-    void show_path(const godot::String &message = {});
-    void browse_path();
-    void picked_path(const godot::String &directory);
-    void path_edited(const godot::String &directory);
-    void submitted_path(const godot::String &directory);
-    void accept_path();
-    void check_path();
-    void continue_path();
 };
 
 #endif

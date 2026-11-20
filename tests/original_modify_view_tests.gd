@@ -90,7 +90,7 @@ func reach_creation() -> void:
 		var scene := current_scene
 		if scene == null: continue
 		if scene.name == "CharacterCreation": break
-		var dialog: Window = scene.get_node_or_null("PathDialog")
+		var dialog: Window = scene.get_node_or_null("FolderQuestions/PathDialog")
 		if dialog and dialog.visible and not ua_design.is_empty():
 			dialog.get_node("Path").text = ua_design
 			dialog.get_node("Continue").pressed.emit()

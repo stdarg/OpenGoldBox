@@ -71,7 +71,7 @@ configure_file("${export_config}" "${game_project}/export_presets.cfg" @ONLY)
 
 add_library(opengoldbox_game SHARED rolf_tour_view.cpp combat_view.cpp character_creation_view.cpp
     portrait_picker.cpp portrait_catalog.cpp party_preview.cpp equipment_choice_dialog.cpp level_up_view.cpp level_up_dialog.cpp level_up_lab_view.cpp campaign_save_view.cpp save_slots.cpp
-    character_pool_dialog.cpp earlier_game_dialog.cpp modify_character_dialog.cpp town_sheet_dialog.cpp portrait_dialog.cpp original_portrait_parts.cpp character_sheet_view.cpp character_sheet_text.cpp godot_sound_output.cpp register_types.cpp game_classes.cpp campaign_combat.cpp startup_view.cpp game_lifecycle.cpp crash_reports.cpp game_log.cpp game_menu_view.cpp game_menu_host.cpp screenshot_service.cpp localization.cpp application_settings.cpp game_rules.cpp)
+    character_pool_dialog.cpp earlier_game_dialog.cpp modify_character_dialog.cpp town_sheet_dialog.cpp portrait_dialog.cpp original_portrait_parts.cpp character_sheet_view.cpp character_sheet_text.cpp godot_sound_output.cpp register_types.cpp game_classes.cpp campaign_combat.cpp startup_view.cpp game_folder_questions.cpp game_lifecycle.cpp crash_reports.cpp game_log.cpp game_menu_view.cpp game_menu_host.cpp screenshot_service.cpp localization.cpp application_settings.cpp game_rules.cpp)
 target_link_libraries(opengoldbox_game PRIVATE opengold_core opengold_rules_srd5 opengold_rules_original godot-cpp)
 # The commit being built, for the head of the game's log; checked on every build.
 add_custom_target(opengoldbox_commit
@@ -691,6 +691,13 @@ if(OPENGOLD_BUILD_TESTS)
     # Each game's save and load screens list its own saves, and a save of
     # another game starts that game. Skipped without Curse's files.
     opengold_settings_check(saves_by_game saves_by_game_tests "Saves by game passed")
+    # Another game's save loaded in play, from a folder the search found: the
+    # game asks about it as startup does.
+    foreach(found_load confirm decline)
+        opengold_settings_check(saves_by_game_found_${found_load} saves_by_game_tests
+            "Saves by game passed: found folder ${found_load}"
+            "-DARGS=--found-load=${found_load}")
+    endforeach()
     # Play with Default Party: each game begun with its default party, under
     # the original rules and under the SRD, explores with its six members and
     # plays its opening; Curse's game under the original rules is then saved

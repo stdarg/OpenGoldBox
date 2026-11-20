@@ -13,6 +13,7 @@
 #include "rolf_tour_view.h"
 #include "combat_view.h"
 #include "save_slots.h"
+#include "game_folder_questions.h"
 #include "opengold/campaign_save.h"
 #include "opengold/campaign_session.h"
 #include "opengold/ua_session.h"
@@ -179,7 +180,42 @@ void CharacterCreationView::reload_in_memory()
 
 void CharacterCreationView::load_campaign(const std::filesystem::path &path)
 {
-    load_campaign_bytes(read_campaign_file(path));
+    const auto bytes = read_campaign_file(path);
+    // Another game's save plays from that game's folder: one the search found,
+    // or none, is asked about first, as at startup (the user's decision,
+    // 2026-11-20).
+    const auto game = saved_campaign_rules(bytes).game;
+    if (game != settings::chosen_game() && !GameFolderQuestions::folder_chosen(game))
+    {
+        save_awaiting_folders_ = path;
+        // Once the load screen has closed: both windows are exclusive.
+        presentation::guarded(this, &CharacterCreationView::ask_save_folders).call_deferred();
+        return;
+    }
+    load_campaign_bytes(bytes);
+}
+
+// The save's game's folders, from the questions startup asks; closing them
+// goes back to the load screen.
+void CharacterCreationView::ask_save_folders()
+{
+    const auto game = saved_campaign_rules(read_campaign_file(save_awaiting_folders_)).game;
+    required_node<GameFolderQuestions>(*this, "FolderQuestions")
+        .ask(
+            {game},
+            [this]
+            {
+                presentation::run_guarded(*this,
+                                          [this]
+                                          {
+                                              load_campaign(save_awaiting_folders_);
+                                          });
+                restore_defeat_dialog();
+            },
+            [this]
+            {
+                open_saves(false);
+            });
 }
 
 void CharacterCreationView::load_campaign_bytes(const std::string &bytes)
@@ -197,14 +233,6 @@ void CharacterCreationView::load_campaign_bytes(const std::string &bytes)
     const auto rules = saved_campaign_rules(bytes);
     const auto game = rules.game;
     const bool other_game = game != settings::chosen_game();
-    if (other_game && !settings::validate_game_folder(settings::game_folder(game), game).usable)
-    {
-        throw std::runtime_error(
-            i18n::format(N_("This save belongs to {game}, whose game files are not set."),
-                         {{"game", i18n::text(game_title(game).data())}})
-                .utf8()
-                .get_data());
-    }
     // A design's save needs its design's folder, which may be gone.
     const auto design_folder = String::utf8(rules.design_folder.c_str());
     if (game == GoldBoxGame::unlimited_adventures &&

@@ -5,8 +5,15 @@ extends SceneTree
 # load screens list only that game's. A save of another game, put among them
 # by hand, starts its own game when loaded. Run by tests/settings_check.cmake;
 # skipped when the game finds no Curse's files.
+#
+# --found-load=confirm or --found-load=decline: a Curse save loaded in Pool of
+# Radiance when the player never chose Curse's folder, which the search finds.
+
+var found_load := ""
 
 func _initialize() -> void:
+	for arg in OS.get_cmdline_args() + OS.get_cmdline_user_args():
+		if arg.begins_with("--found-load="): found_load = arg.trim_prefix("--found-load=")
 	call_deferred("run_checks")
 
 func require(condition: bool, message: String) -> void:
@@ -87,7 +94,8 @@ func save_as(name: String) -> void:
 	await settle()
 	require(not dialog.visible, "Saving " + name + " must close the save screen: " + dialog.get_node("Status").text)
 
-func load_save(name: String) -> void:
+# Presses the load screen's Load for a save, confirming it.
+func press_load(name: String) -> void:
 	var dialog := await open_saves(false)
 	var slots: ItemList = dialog.get_node("Slots")
 	var index := listed(dialog).find(name)
@@ -97,6 +105,10 @@ func load_save(name: String) -> void:
 	for confirm in range(2):
 		dialog.get_node("Action").pressed.emit()
 		await settle()
+
+func load_save(name: String) -> void:
+	await press_load(name)
+	var dialog: Window = current_scene.get_node("SaveSlots")
 	require(not dialog.visible, "Loading " + name + " must close the save screen: " + dialog.get_node("Status").text)
 
 func file_of(folder: String, name: String) -> String:
@@ -107,6 +119,9 @@ func run_checks() -> void:
 	if curse.is_empty() or not FileAccess.file_exists(curse.path_join("TILES.DAX")):
 		print("Skipped: Curse's files are not here.")
 		quit(0)
+		return
+	if not found_load.is_empty():
+		await check_found_load(curse)
 		return
 	# Pool of Radiance keeps its saves where they always were.
 	await start("POOLRAD")
@@ -182,3 +197,65 @@ func check_startup_saves() -> void:
 	require(loaded, "Continue loads the save")
 	var dialog := await open_saves(false)
 	require(listed(dialog) == ["Tilverton party"], "Continue plays the save's game, Curse: " + str(listed(dialog)))
+
+func read_config() -> ConfigFile:
+	var config := ConfigFile.new()
+	config.load(OS.get_environment("OPENGOLD_SETTINGS_FILE"))
+	return config
+
+# Another game's save, loaded in play, whose game's folder the player never
+# chose and the search finds: the game shows the folder found for the player to
+# confirm, as startup does, before it plays from it (the user's decision,
+# 2026-11-20). Use this folder saves it and loads the save; Choose another
+# folder opens the folder dialog, empty, whose Cancel goes back to the load
+# screen and whose folder is saved before the save loads.
+func check_found_load(curse: String) -> void:
+	await start("CURSE")
+	await save_as("Tilverton party")
+	require(DirAccess.copy_absolute(file_of("user://saves/CURSE", "Tilverton party"), file_of("user://saves", "Moved party")) == OK, "Cannot move the Curse save")
+	# The player never chose Curse's folder: only the search finds it.
+	var config := read_config()
+	config.erase_section_key("games", "CURSE")
+	require(config.save(OS.get_environment("OPENGOLD_SETTINGS_FILE")) == OK, "Cannot forget Curse's folder")
+	OS.set_environment("OPENGOLD_GOLDBOX_DIR", curse)
+	var expected := StartupView.game_folder("CURSE")
+	require(not expected.is_empty(), "The search must find Curse's folder")
+	await start("POOLRAD")
+	await press_load("Moved party")
+	var slots: Window = current_scene.get_node("SaveSlots")
+	var found: Window = current_scene.get_node("FolderQuestions/FoundFolder")
+	var path_dialog: Window = current_scene.get_node("FolderQuestions/PathDialog")
+	require(not slots.visible and found.visible and not path_dialog.visible, "Loading Curse's save must show the folder found for the player to confirm")
+	require(found.title == "Curse of the Azure Bonds game files" and found.get_node("Title").text == found.title, "The question names Curse: " + found.title)
+	require(found.get_node("Folder").text == expected, "The question shows the folder found: " + found.get_node("Folder").text)
+	require(found.get_node("Use").has_focus(), "Use this folder takes the focus")
+	var saved_before := FileAccess.get_file_as_string(OS.get_environment("OPENGOLD_SETTINGS_FILE"))
+	if found_load == "decline":
+		found.get_node("Choose").pressed.emit()
+		await settle()
+		require(not found.visible and path_dialog.visible, "Choose another folder must open the folder dialog")
+		require(path_dialog.get_node("Path").text.is_empty(), "The folder dialog starts empty after declining")
+		require(path_dialog.get_node("Title").text == "Curse of the Azure Bonds game files", "The folder dialog names Curse")
+		require(FileAccess.get_file_as_string(OS.get_environment("OPENGOLD_SETTINGS_FILE")) == saved_before, "Declining saved a folder")
+		path_dialog.get_node("Cancel").pressed.emit()
+		await settle()
+		require(not path_dialog.visible and slots.visible, "Cancel goes back to the load screen")
+		require(listed(slots) == ["Moved party"], "Nothing loaded: Pool of Radiance's saves are still listed: " + str(listed(slots)))
+		slots.get_node("Cancel").pressed.emit()
+		await settle()
+		await press_load("Moved party")
+		require(found.visible, "Loading Curse's save again asks again")
+		found.get_node("Choose").pressed.emit()
+		await settle()
+		path_dialog.get_node("Path").text = expected
+		path_dialog.get_node("Continue").pressed.emit()
+		await settle()
+	else:
+		found.get_node("Use").pressed.emit()
+		await settle()
+	require(not found.visible and not path_dialog.visible, "The questions close once Curse's folder is known")
+	require(read_config().get_value("games", "CURSE", "") == expected, "Curse's confirmed folder was not saved")
+	var dialog := await open_saves(false)
+	require(listed(dialog) == ["Tilverton party"], "The save loaded and plays Curse: " + str(listed(dialog)))
+	print("Saves by game passed: found folder ", found_load)
+	quit(0)

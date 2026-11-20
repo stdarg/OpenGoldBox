@@ -77,7 +77,8 @@ grandchildren, then upward from the game's own folder to the home folder
 shows the folder and asks whether to use it: **Use this folder** saves it, so
 the question comes once; **Choose another folder** opens the folder dialog for
 the player to pick one, which is saved. When it is not found, the folder
-dialog opens. A party still takes its portraits and combat
+dialog opens. Loading another game's save in play asks the same way before
+that game plays; going back returns to the load screen. A party still takes its portraits and combat
 art from *Pool of Radiance*'s files, so choosing another game asks for that
 folder too when it is not set ([GAMES.md](GAMES.md)). `--game=POOLRAD`, `--game=CURSE`, `--game=SECRET`, `--game=GATEWAY`, `--game=DARKNESS` or `--game=TREASURE`
 on the command line picks the game without the menu, as the packaged game's own checks
@@ -374,7 +375,9 @@ malformed-config save failure, and a folder found: confirmed and not asked
 again in a second process, declined for the folder dialog, found after a
 saved folder lost its files, and *Curse of the Azure Bonds*' confirmed the
 same way (`opengold_godot_setup_found_*`). Its other cases clear
-`OPENGOLD_GOLDBOX_DIR`, so the game finds nothing. It creates synthetic files rather than
+`OPENGOLD_GOLDBOX_DIR`, so the game finds nothing. (`tests/saves_by_game_tests.gd`
+loads a *Curse* save in *Pool of Radiance* from a folder found, confirmed and
+declined, `opengold_godot_saves_by_game_found_*`.) It creates synthetic files rather than
 copying original game assets. It requires the local reference installation of
 *Pool of Radiance*, found by its files (`tests/find_games.cmake`) or named by
 `OPENGOLD_GAME_DIR` when run by hand. Run by hand, it writes the ignored development

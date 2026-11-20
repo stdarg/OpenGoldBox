@@ -602,7 +602,7 @@ func check_ua() -> void:
 		quit(0)
 		return
 	await pick("UA")
-	var dialog: Window = current_scene.get_node("PathDialog")
+	var dialog: Window = current_scene.get_node("FolderQuestions/PathDialog")
 	require(dialog.visible and dialog.get_node("Title").text == "Unlimited Adventures design",
 		"Unlimited Adventures asks for its design once the kit's folder is found")
 	var path: LineEdit = dialog.get_node("Path")
