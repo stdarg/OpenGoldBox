@@ -139,7 +139,10 @@ checked by `tests/matrix_cubed_tests.cpp`:
   skill screen lets it take points out of a preset skill, down to that
   skill's starting level, and put them into another skill of the same kind
   (career or general), at most 105 above its start. A character at level 7
-  may know twelve general skills.
+  may know twelve general skills. So may a *Countdown* character brought in
+  below level 7 once it trains to 7: it can then learn several general
+  skills in that one level and catch up with a new character. OpenGoldBox
+  keeps this as the original has it (the user, 2026-11-20).
 - **Three specializations** for a new Warrior, then one at every even level
   from 8 to 20: ten in all, the number of slots.
 - **Modify** takes a character with its career's level-7 experience.

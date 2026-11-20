@@ -763,3 +763,9 @@ Decided:
    higher are the skills the choices name: 76 (Fast Talk/Convince), 72
    (Intimidate) and 71 (Act). OpenGoldBox checks those, and lists the change
    under Bugs.
+3. **General skills for a character brought in from *Countdown*** (found in
+   B2; the user, 2026-11-20: keep the original). In *Matrix Cubed* a
+   character at level 7 may know twelve general skills, so one brought in
+   below level 7 learns several in the one level it trains to 7, and so
+   matches a new character. Above level 7 it learns one a level, as every
+   character does.
