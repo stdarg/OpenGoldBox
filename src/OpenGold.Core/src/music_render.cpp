@@ -388,6 +388,10 @@ std::optional<unsigned> title_music_piece(GoldBoxGame game) noexcept
     case GoldBoxGame::champions_of_krynn:
     case GoldBoxGame::death_knights_of_krynn:
         return 1;
+    // Countdown plays its bank, MUSIC.DAX record 2, over its introduction
+    // alone: no script starts music (intro.pas FinishIntroduction).
+    case GoldBoxGame::countdown_to_doomsday:
+        return 2;
     default:
         return std::nullopt;
     }

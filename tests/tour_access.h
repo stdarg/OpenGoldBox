@@ -115,6 +115,18 @@ struct TourAccess
         town.bind_pose(pose);
     }
 
+    // A Buck Rogers ground-combat tile set's tiles, by its file.
+    static std::size_t buck_rogers_tiles(const por::RolfTourSession &town, std::string_view file)
+    {
+        return town.town_->buck_rogers_tile_sets.at(std::string(file)).size();
+    }
+
+    // A district's map as the campaign loaded it.
+    static const por::GeoMap &district_map(const por::RolfTourSession &town, unsigned map)
+    {
+        return *town.town_->districts.at(map)->map;
+    }
+
     // Every script of the campaign, by its number.
     static const std::map<unsigned, std::shared_ptr<const por::EclProgram>> &
     programs(const por::RolfTourSession &town)

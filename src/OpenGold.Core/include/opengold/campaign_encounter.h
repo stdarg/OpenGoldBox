@@ -155,6 +155,8 @@ struct CampaignEncounter
     // penalty (rules::Encounter::turning_tries, turning_penalty).
     int turning_tries{1};
     int turning_penalty{};
+    // The Buck Rogers games' zero gravity (rules::Encounter::zero_gravity).
+    bool zero_gravity{};
 };
 
 // What the difficulty does to a fight's monsters and morale, those on the party's

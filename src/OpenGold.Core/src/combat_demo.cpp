@@ -695,7 +695,8 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
          encounter.escape_ends_fight, encounter.no_magic,
          static_cast<int>(index(encounter.facing)) * 2, encounter.party_move_modifier,
          encounter.crystals, encounter.frightening_surprise, encounter.romance,
-         encounter.turning_tries, encounter.turning_penalty, campaign_->state().time_minutes},
+         encounter.turning_tries, encounter.turning_penalty, campaign_->state().time_minutes,
+         encounter.zero_gravity},
         seed);
     install_combat(std::move(next), {});
     seed_ = seed;

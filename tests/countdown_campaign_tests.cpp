@@ -6,6 +6,7 @@
 // script entry run (opengold_countdown_walk). The checks read the game's own
 // files and pass with nothing to check when its folder is not found
 // (installed_games.h).
+#include "opengold/buck_rogers_battlefield.h"
 #include "opengold/buck_rogers_characters.h"
 #include "opengold/buck_rogers_records.h"
 #include "opengold/buck_rogers_rules.h"
@@ -14,12 +15,15 @@
 #include "opengold/character.h"
 #include "opengold/combat_demo.h"
 #include "opengold/formats.h"
+#include "opengold/music_render.h"
 #include "opengold/original.h"
 #include "opengold/original_content.h"
 #include "installed_games.h"
 #include "tour_access.h"
 #include "test_support.h"
 
+#include <array>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -194,6 +198,199 @@ void the_campaign_opens(const std::filesystem::path &folder)
     }
 }
 
+// Every arena the game can lay (combatst.pas LoadCombatTileSet): each map's
+// every square under every area kind the scripts give, and the wildernesses'
+// every ground on many dice, asks only for tiles its set's file holds, but
+// LOTEK's indoor walls, whose last tile (53rd) the file lacks
+// (docs/games/countdown.md, Bugs).
+void arenas_use_the_tiles_the_files_hold(const std::filesystem::path &folder)
+{
+    auto campaign = start_campaign(folder);
+    const auto &session = campaign.session;
+    const auto tiles = [&](unsigned kind)
+    {
+        return static_cast<unsigned>(opengold::test::TourAccess::buck_rogers_tiles(
+            session, opengold::por::buck_rogers_tile_set(kind).file));
+    };
+    // The kinds the scripts write to cell 4BE6h, indoors.
+    constexpr std::array<unsigned, 12> kinds{0x84, 0x10, 0x40, 0x50, 0x88, 0x08,
+                                             0x82, 0x22, 0x01, 0x11, 0x00, 0x70};
+    std::set<unsigned> lacking;
+    for (const auto &[map, script] : opengold::test::TourAccess::area_scripts(session))
+    {
+        const auto geo = opengold::test::TourAccess::district_map(session, map);
+        for (const auto kind : kinds)
+        {
+            for (unsigned y = 0; y < 16; ++y)
+            {
+                for (unsigned x = 0; x < 16; ++x)
+                {
+                    if (opengold::por::buck_rogers_battlefield(geo, x, y, kind, script, 0, 1,
+                                                               tiles(kind))
+                            .missing_tiles > 0)
+                    {
+                        lacking.insert(kind);
+                    }
+                }
+            }
+        }
+    }
+    check(lacking == std::set<unsigned>{0x82, 0x88},
+          "Indoor arenas ask for a tile their file lacks only in LOTEK's areas");
+    const opengold::por::GeoMap open{};
+    for (const auto kind : {opengold::por::mars_wilderness, opengold::por::venus_wilderness})
+    {
+        for (unsigned ground = 0; ground <= 11; ++ground)
+        {
+            for (std::uint32_t seed = 1; seed <= 40; ++seed)
+            {
+                const auto arena = opengold::por::buck_rogers_battlefield(
+                    open, 8, 8, kind, 64, ground, seed, tiles(kind));
+                check(arena.missing_tiles == 0,
+                      "A wilderness arena asks only for tiles MARSCOM and VENUSCOM hold: kind " +
+                          std::to_string(kind) + " ground " + std::to_string(ground));
+            }
+        }
+    }
+}
+
+// Countdown's music: MUSIC.DAX record 2, its bank, played over the
+// introduction from its first song, at the later games' tempo (the song's
+// tempo over 84 a tick); no script plays music (music.pas, musdrv.pas).
+void the_title_music_plays(const std::filesystem::path &folder)
+{
+    const auto piece = opengold::title_music_piece(countdown);
+    check(piece == 2u, "Countdown's title plays MUSIC.DAX record 2");
+    const auto bank = opengold::load_music_bank(folder, countdown, *piece);
+    check(!bank.songs.empty() && bank.songs.front().tick_divisor == bank.songs.front().tempo / 84,
+          "The bank's songs keep the later games' tempo");
+    const auto samples = opengold::render_music(bank, 0, 22050);
+    check(samples.size() > 22050 * 10 && std::ranges::any_of(samples,
+                                                             [](std::int16_t sample)
+                                                             {
+                                                                 return sample != 0;
+                                                             }),
+          "The first song plays for more than ten seconds: " + std::to_string(samples.size()));
+}
+
+// Runs the session to its next menu or input, answering continue prompts.
+void run_to_menu(opengold::por::RolfTourSession &session)
+{
+    for (int step = 0; step < 200; ++step)
+    {
+        const auto &s = session.snapshot();
+        check(s.phase != opengold::por::TourPhase::faulted, "The outpost runs: " + s.diagnostic);
+        if (s.phase == opengold::por::TourPhase::running)
+        {
+            session.advance(1);
+            continue;
+        }
+        if (s.phase == opengold::por::TourPhase::awaiting_continue && s.choices.size() == 1 &&
+            s.choices.front().starts_with("PRESS ENTER"))
+        {
+            check(session.choose(s.continue_ticket, 0), "Go on");
+            continue;
+        }
+        return;
+    }
+}
+
+// Takes the menu's choice holding `label`, then runs to the next menu.
+void answer(opengold::por::RolfTourSession &session, std::string_view label)
+{
+    run_to_menu(session);
+    const auto &s = session.snapshot();
+    const auto found = std::ranges::find_if(s.choices,
+                                            [&](const std::string &choice)
+                                            {
+                                                return choice.find(label) != std::string::npos;
+                                            });
+    std::string offered;
+    for (const auto &choice : s.choices)
+    {
+        offered += choice + "|";
+    }
+    check(s.phase == opengold::por::TourPhase::awaiting_continue && found != s.choices.end(),
+          "The outpost offers " + std::string(label) + ": " + s.dialogue + " [" + offered + "]");
+    check(session.choose(s.continue_ticket, static_cast<std::size_t>(found - s.choices.begin())),
+          "Choose " + std::string(label));
+    run_to_menu(session);
+}
+
+// The hospital of an outpost of script 99 as its script runs it
+// (docs/games/countdown.md, "The outposts"): the wounded member is healed to
+// full Hit Points for 160 times the multiplier of 16, from the bank's
+// account when it holds the fee, else from the patient's credits, else not
+// at all; the shipped script compared one byte of the fee and never refused
+// (Bugs). The bank's account and the wound are the test's.
+struct HospitalVisit
+{
+    bool healed{};
+    unsigned bank{};
+};
+
+HospitalVisit visit_hospital(const std::filesystem::path &folder, std::uint16_t bank)
+{
+    auto campaign = start_campaign(folder);
+    auto &session = campaign.session;
+    auto &party = *campaign.party;
+    for (int step = 0;
+         step < 100 && session.snapshot().phase != opengold::por::TourPhase::completed; ++step)
+    {
+        run_to_menu(session);
+    }
+    const auto member = party.state().slots[0];
+    auto record = *og::buck_rogers_record_of(party.game_record(member));
+    record.creature.hit_points = static_cast<std::uint16_t>(record.creature.hit_points - 3);
+    party.keep_game_record(member, og::encode_ground_record(record));
+    // The bank's account (4CE2h), four bytes.
+    opengold::test::TourAccess::set_variable(session, opengold::por::EclAddress{0x4CE2}, bank);
+    opengold::test::TourAccess::set_variable(session, opengold::por::EclAddress{0x4CE4}, 0);
+    // Mercury's Hielo station, outpost 0 with its picture, as script 34 lands there.
+    opengold::test::TourAccess::set_variable(session, opengold::por::EclAddress{0x4C31}, 0);
+    opengold::test::TourAccess::set_variable(session, opengold::por::EclAddress{0x4C2F}, 0x59);
+    opengold::test::TourAccess::enter_script(session, 99, 0,
+                                             {8, 8, opengold::por::MapDirection::north});
+    answer(session, "HOSPITAL");
+    const auto healed = [&]
+    {
+        const auto now = og::buck_rogers_record_of(party.game_record(member));
+        return now->creature.hit_points == now->creature.hit_point_maximum;
+    };
+    // The hospital asks whom to heal; it may ask what to do first.
+    for (int pick = 0; pick < 4 && !healed(); ++pick)
+    {
+        run_to_menu(session);
+        const auto &s = session.snapshot();
+        const auto name = std::ranges::find_if(s.choices,
+                                               [](const std::string &choice)
+                                               {
+                                                   return choice == "Jock" ||
+                                                          choice.find("HEAL") != std::string::npos;
+                                               });
+        if (name == s.choices.end())
+        {
+            break;
+        }
+        check(session.choose(s.continue_ticket, static_cast<std::size_t>(name - s.choices.begin())),
+              "Choose the patient");
+    }
+    return {healed(), opengold::test::TourAccess::machine(session).variable(
+                          opengold::por::EclAddress{0x4CE2})};
+}
+
+void the_hospital_heals_for_its_fee(const std::filesystem::path &folder)
+{
+    const auto paid = visit_hospital(folder, 10000);
+    check(paid.healed && paid.bank == 10000 - 2560,
+          "The hospital heals for 2,560 credits from the bank's account: " +
+              std::to_string(paid.bank));
+    // Neither the bank's 100 credits nor the patient's 1,000 pay the fee.
+    const auto refused = visit_hospital(folder, 100);
+    check(!refused.healed && refused.bank == 100,
+          "The hospital refuses a patient no one can pay for: " + std::to_string(refused.bank));
+}
+
 // What the walk met: each failure with where it happened, each hand-off to a
 // screen the engine does not have yet with where it was reached, and counts.
 struct WalkLog
@@ -208,6 +405,33 @@ struct WalkLog
 bool fight(Campaign &campaign, const std::filesystem::path &folder, WalkLog &log,
            const std::string &where)
 {
+    // Which tile set the arena is drawn with, in zero gravity or not, and
+    // whether it asks for a tile the set's file lacks (docs/games/countdown.md).
+    {
+        const auto &session = campaign.session;
+        const auto machine = opengold::test::TourAccess::machine(session);
+        const unsigned kind = machine.variable(opengold::por::EclAddress{0x4BE6}) & 0xFF;
+        const unsigned ground = machine.variable(opengold::por::EclAddress{0x4BB7}) & 0xFF;
+        const auto set = opengold::por::buck_rogers_tile_set(kind);
+        const auto tiles = opengold::test::TourAccess::buck_rogers_tiles(session, set.file);
+        const auto pose = session.snapshot().pose;
+        const bool zero_g = (kind & 0x10) != 0;
+        ++log.counts[std::string("fights on ") + std::string(set.file) +
+                     (zero_g ? " in zero gravity" : "")];
+        check(session.pending_encounter()->zero_gravity == zero_g,
+              "A fight is in zero gravity where its area's kind says");
+        for (std::uint32_t seed = 1; seed <= 20; ++seed)
+        {
+            const auto arena = opengold::por::buck_rogers_battlefield(
+                session.map(), pose.x, pose.y, kind, session.snapshot().script_id, ground, seed,
+                static_cast<unsigned>(tiles));
+            if (arena.missing_tiles > 0)
+            {
+                ++log.counts[std::string("arenas asking for a tile ") + std::string(set.file) +
+                             " lacks (kind " + std::to_string(kind) + ")"];
+            }
+        }
+    }
     opengold::CombatDemo combat(
         og::rules_module(opengold::load_original_content(folder, countdown)));
     combat.campaign_party(campaign.party);
@@ -271,12 +495,41 @@ void play(Campaign &campaign, const std::filesystem::path &folder, WalkLog &log,
             session.advance(1.0);
             continue;
         case TourPhase::awaiting_continue:
+            // OPENGOLD_WALK_TRACE prints what each menu says, to see a loop by.
+            if (std::getenv("OPENGOLD_WALK_TRACE"))
+            {
+                std::cout << where << ": " << s.dialogue.substr(0, 120) << " [";
+                for (const auto &choice : s.choices)
+                {
+                    std::cout << choice << "|";
+                }
+                std::cout << "]\n";
+            }
         {
-            const auto times = ++shown[s.dialogue];
-            const auto pick = times > 2 && !s.choices.empty() ? s.choices.size() - 1 : 0;
+            // A menu that comes back (an outpost's) is answered with each
+            // choice in turn; once each has been taken twice the walk has
+            // seen what it offers and goes on elsewhere.
+            std::string menu;
+            for (const auto &choice : s.choices)
+            {
+                menu += choice + "|";
+            }
+            const auto times = ++shown[menu];
+            if (s.choices.empty())
+            {
+                log.needs["A menu without choices"].push_back(where);
+                return;
+            }
+            if (s.choices.size() > 1 && times > 2 * s.choices.size() + 2)
+            {
+                ++log.counts["menus explored to the end"];
+                attribute();
+                return;
+            }
+            const auto pick = (times - 1) % s.choices.size();
             if (!session.choose(s.continue_ticket, pick))
             {
-                log.needs["A choice was refused"].push_back(where);
+                log.needs["A choice was refused: " + s.choices[pick]].push_back(where);
                 return;
             }
             continue;
@@ -334,6 +587,16 @@ Campaign opened(const std::filesystem::path &folder, WalkLog &log)
 {
     auto campaign = start_campaign(folder);
     play(campaign, folder, log, "opening");
+    // An outpost the walk may come to without the solar map's script, which
+    // names it first: the first of script 34's (outpost 0, picture 59h).
+    opengold::test::TourAccess::set_variable(campaign.session, opengold::por::EclAddress{0x4C31},
+                                             0);
+    opengold::test::TourAccess::set_variable(campaign.session, opengold::por::EclAddress{0x4C2F},
+                                             0x59);
+    // The enemy ship whose decks the boarding script (52) fights over, which
+    // the ship fight names: the first type, the Hubble.
+    opengold::test::TourAccess::set_variable(campaign.session, opengold::por::EclAddress{0x4C61},
+                                             1);
     return campaign;
 }
 
@@ -351,6 +614,12 @@ bool walk(const std::filesystem::path &folder)
     for (const auto &[map, script] : maps)
     {
         mapped.insert(script);
+        // OPENGOLD_WALK_MAP walks that map alone (a planning aid).
+        if (const char *only = std::getenv("OPENGOLD_WALK_MAP");
+            only && std::to_string(map) != only)
+        {
+            continue;
+        }
         const auto enter = [&]
         {
             campaign = opened(folder, log);
@@ -370,7 +639,8 @@ bool walk(const std::filesystem::path &folder)
         };
         if (!enter())
         {
-            ++log.counts["maps not entered"];
+            log.handoffs["a map its entry does not stand the team on"].push_back(
+                "map " + std::to_string(map));
             continue;
         }
         ++log.counts["maps walked"];
@@ -416,18 +686,52 @@ bool walk(const std::filesystem::path &folder)
         {
             continue;
         }
-        const auto where = "script " + std::to_string(script);
-        campaign = opened(folder, log);
-        try
+        // The outposts' script (99) runs the outpost the solar map's script
+        // landed at: its number in cell 4C31h and its picture in 4C2Fh, as
+        // script 34 saves them (ECL2:34 88BEh to 8BC8h).
+        constexpr unsigned outposts_script = 99;
+        constexpr std::array<std::uint16_t, 13> outpost_pictures{
+            0x59, 0x58, 0x5A, 0x57, 0x4A, 0x4A, 0x4A, 0x4A, 0x4A, 0x4A, 0x4A, 0x4A, 0x4A};
+        const unsigned visits = script == outposts_script ? outpost_pictures.size() : 1;
+        for (unsigned visit = 0; visit < visits; ++visit)
         {
-            opengold::test::TourAccess::enter_script(campaign.session, script, 0,
-                                                     {8, 8, opengold::por::MapDirection::north});
-            play(campaign, folder, log, where);
-            ++log.counts["scripts without a map entered"];
-        }
-        catch (const std::exception &error)
-        {
-            log.needs[error.what()].push_back(where);
+            const auto where = "script " + std::to_string(script) +
+                               (visits > 1 ? " outpost " + std::to_string(visit) : std::string{});
+            campaign = opened(folder, log);
+            try
+            {
+                if (script == outposts_script)
+                {
+                    opengold::test::TourAccess::set_variable(campaign.session,
+                                                             opengold::por::EclAddress{0x4C31},
+                                                             static_cast<std::uint16_t>(visit));
+                    opengold::test::TourAccess::set_variable(campaign.session,
+                                                             opengold::por::EclAddress{0x4C2F},
+                                                             outpost_pictures[visit]);
+                }
+                opengold::test::TourAccess::enter_script(
+                    campaign.session, script, 0, {8, 8, opengold::por::MapDirection::north});
+                play(campaign, folder, log, where);
+                ++log.counts["scripts without a map entered"];
+                // On the wildernesses of Venus and Mars the team steps about
+                // the big picture, as its random fights come on it.
+                using Command = opengold::por::ExplorationCommand;
+                constexpr std::array steps{Command::east,  Command::south,     Command::west,
+                                           Command::north, Command::southeast, Command::northwest};
+                for (unsigned step = 0; step < 60 && campaign.session.can_leave(); ++step)
+                {
+                    if (!campaign.session.explore(steps[(step / 5) % steps.size()]))
+                    {
+                        break;
+                    }
+                    ++log.counts["wilderness steps"];
+                    play(campaign, folder, log, where + " step " + std::to_string(step));
+                }
+            }
+            catch (const std::exception &error)
+            {
+                log.needs[error.what()].push_back(where);
+            }
         }
     }
     for (const auto &[what, count] : log.counts)
@@ -468,6 +772,9 @@ int main(int argc, char **argv)
         }
         the_team_is_its_records(folder);
         the_campaign_opens(folder);
+        arenas_use_the_tiles_the_files_hold(folder);
+        the_hospital_heals_for_its_fee(folder);
+        the_title_music_plays(folder);
         std::cout << "Countdown to Doomsday's campaign passed.\n";
     }
     catch (const std::exception &error)

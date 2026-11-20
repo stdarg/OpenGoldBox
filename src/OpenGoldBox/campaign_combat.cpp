@@ -1,5 +1,6 @@
 #include "campaign_combat.h"
 #include "combat_view.h"
+#include <algorithm>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -11,6 +12,16 @@ presentation::NodeOwner<> campaign_combat_scene(
     std::vector<opengold::CombatArt> images;
     for (const auto &participant : party->participants())
     {
+        // A member the encounter brings art for (the Buck Rogers games' CHARS
+        // icons) is drawn with it.
+        const auto brought =
+            std::ranges::find(encounter.art, participant.id, &opengold::CombatArt::entity);
+        if (brought != encounter.art.end())
+        {
+            images.push_back(*brought);
+            encounter.art.erase(brought);
+            continue;
+        }
         auto icons = opengold::por::party_combat_icons(party->member(participant.id), art, looks);
         images.push_back({participant.id, std::move(icons.ready), std::move(icons.action),
                           std::move(icons.missing_combination)});

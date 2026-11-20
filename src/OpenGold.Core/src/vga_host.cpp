@@ -151,6 +151,13 @@ void RolfTourSession::open_vga_store(const EclRequest &request)
 
 bool RolfTourSession::vga_area_map() const
 {
+    // The Buck Rogers games' wildernesses of Venus and Mars (area kinds A2h
+    // and A8h) are such a map, shown as a big picture (mapview.pas).
+    if (is_buck_rogers(game()))
+    {
+        const auto kind = machine_.variable(EclAddress{0x4BE6}) & 0xFF;
+        return kind == 0xA2 || kind == 0xA8;
+    }
     return (vga_engine(game()) || original::krynn_game(game())) &&
            machine_.variable(game_cell(ecl_in_3d_area)) == 0;
 }
@@ -159,7 +166,8 @@ void RolfTourSession::vga_area_step()
 {
     // The party's square on the area map, 38 columns by 15 rows (its
     // MovePartyWilderness), and the square it left.
-    const bool champions = original::krynn_game(game());
+    // Champions' and the Buck Rogers games' keep it in their zone 0 (4BC3h).
+    const bool champions = original::krynn_game(game()) || is_buck_rogers(game());
     const auto column = champions ? game_cell(ecl_overland_x) : EclAddress{0x0025};
     const auto row = champions ? game_cell(ecl_overland_y) : EclAddress{0x0026};
     const auto previous_column = champions ? game_cell(EclAddress{0x49F0}) : EclAddress{0x0017};

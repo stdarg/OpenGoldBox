@@ -518,6 +518,40 @@ void add_buck_rogers_tables(const por::detail::AreaFiles &files, por::PhlanResou
     }
     root.buck_rogers_item_types = *types;
     root.buck_rogers_templates = *templates;
+    // The Maelstrom Rider (saveload.pas LoadShipData, its record 40 + 10).
+    root.buck_rogers_party_ship = files.record("SHIPS.DAX", 50);
+    if (!buck_rogers::decode_ship(root.buck_rogers_party_ship))
+    {
+        throw EclError("Invalid party ship in SHIPS.DAX");
+    }
+    root.buck_rogers_team_icons =
+        por::detail::read_archive(por::detail::resolve_archive(files.directory(), "CHARS.DAX"));
+    for (unsigned disk = 1; disk <= 6; ++disk)
+    {
+        const auto name = files.disk_archive("CPIC", disk);
+        if (files.has_archive(name))
+        {
+            root.buck_rogers_icons.emplace(
+                disk,
+                por::detail::read_archive(por::detail::resolve_archive(files.directory(), name)));
+        }
+    }
+    // Each tile set is a picture of 24 by 24 tiles, record 1 (combatst.pas
+    // LoadCombatTileSet).
+    for (const auto *name : {"HITEK.DAX", "LOTEK.DAX", "MARSCOM.DAX", "VENUSCOM.DAX"})
+    {
+        const auto picture = decode_vga_picture(files.record(name, 1));
+        if (!picture)
+        {
+            throw EclError(std::string("Invalid combat tile set ") + name);
+        }
+        const auto colors = vga_color_table(picture->palette);
+        auto &tiles = root.buck_rogers_tile_sets[name];
+        for (const auto &frame : picture->frames)
+        {
+            tiles.push_back(vga_rgba(frame, colors));
+        }
+    }
     const auto &item_lists = files.archive("MON0ITM.DAX").records;
     for (const auto &record : files.archive("MON0CHA.DAX").records)
     {
@@ -576,6 +610,7 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
     {
         throw EclError(std::string(program) + " has no item name table");
     }
+    const auto item_words = *words;
     const por::detail::AreaFiles files(folder, *templates, std::move(*words), game);
     const auto maps = por::MapCatalog::load(folder);
     const auto creatures = buck_rogers ? std::shared_ptr<const por::CreatureCatalog>{}
@@ -637,6 +672,7 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
     else if (buck_rogers)
     {
         add_buck_rogers_tables(files, *root);
+        root->buck_rogers_item_words = item_words;
     }
     else
     {

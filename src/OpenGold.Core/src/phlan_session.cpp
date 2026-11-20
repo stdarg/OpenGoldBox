@@ -641,6 +641,10 @@ void RolfTourSession::configure_town()
     {
         enable_party_commands();
     }
+    if (is_buck_rogers(game()))
+    {
+        configure_buck_rogers();
+    }
     synchronize_clock();
 }
 
@@ -1176,6 +1180,11 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
         machine_.variable(game_cell(ecl_party_y)) < 16)
     {
         bind_pose(snapshot_.pose);
+    }
+    // The Buck Rogers scripts read the difficulty level from zone 0.
+    if (is_buck_rogers(game()))
+    {
+        machine_.bind_variable(EclAddress{0x4BB6}, buck_rogers_difficulty_level());
     }
     if (const auto won = game_won_cell(game()))
     {
@@ -1828,6 +1837,10 @@ bool darkness_recovery_uses_monster_count(const EclProgram &program)
 
 bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
 {
+    if (is_buck_rogers(game()))
+    {
+        return resolve_buck_rogers_combat(result);
+    }
     if (diagnostic_log_enabled())
     {
         log_diagnostic(LogPriority::info, "fight",
@@ -3372,6 +3385,10 @@ bool RolfTourSession::choose(std::uint64_t ticket, std::size_t choice)
         return false;
     }
     log_player("chooses \"" + snapshot_.choices[choice] + "\"");
+    if (buck_rogers_menu_)
+    {
+        return choose_in_buck_rogers_menu(choice);
+    }
     if (romance_scene_)
     {
         return choose_in_romance(choice);
@@ -3949,6 +3966,18 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             monster_picture_id_.reset();
             picture_animation_id_.reset();
             picture_ = close_up_portrait(area_resources(), head_id, arg(2));
+            ++snapshot_.picture_revision;
+            break;
+        }
+        // A Buck Rogers sprite its disk's SPRIT file lacks loads nothing, and
+        // nothing shows (portrait.pas LoadAnimation of an empty record).
+        if (is_buck_rogers(game()) && !sprite(arg(0), 0))
+        {
+            sprites_ = {};
+            snapshot_.sprite_frame = -1;
+            snapshot_.sprite_id = arg(0);
+            monster_picture_id_ = arg(2);
+            picture_.reset();
             ++snapshot_.picture_revision;
             break;
         }

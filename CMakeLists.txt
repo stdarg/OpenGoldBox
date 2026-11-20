@@ -222,6 +222,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/phlan_session.cpp
     src/OpenGold.Core/src/vga_host.cpp
     src/OpenGold.Core/src/buck_rogers_host.cpp
+    src/OpenGold.Core/src/buck_rogers_battlefield.cpp
     src/OpenGold.Core/src/darkness_area_map.cpp
     src/OpenGold.Core/src/treasures_import.cpp
     src/OpenGold.Core/src/darkness_import.cpp

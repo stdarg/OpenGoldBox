@@ -2,6 +2,7 @@
 #include "opengold/diagnostic_log.h"
 #include "opengold/path_text.h"
 #include "opengold/ecl_machine.h"
+#include "opengold/buck_rogers_upkeep.h"
 #include "opengold/formats.h"
 #include <algorithm>
 #include <charconv>
@@ -453,6 +454,26 @@ EclInstruction EclMachine::decode(std::uint32_t address)
         throw EclError("Target points into the entry table");
     }
     auto result = program_->instruction(address, image_);
+    // A Buck Rogers operand whose width the shipped script names wrongly is
+    // read with the width it means (original::script_operand_tag; the
+    // hospital's fee check, docs/games/countdown.md, Bugs). The program's
+    // source names its archive and record, "ECL6.DAX:99".
+    if (is_buck_rogers(program_->game()))
+    {
+        const auto &source = program_->source();
+        const auto colon = source.find(':');
+        if (colon != std::string::npos)
+        {
+            const std::string_view archive(source.data(), colon);
+            unsigned script = 0;
+            (void)std::from_chars(source.data() + colon + 1, source.data() + source.size(), script);
+            for (std::size_t n = 0; n < result.operands.size(); ++n)
+            {
+                result.operands[n].tag = original::script_operand_tag(
+                    program_->game(), archive, script, result.address, n, result.operands[n].tag);
+            }
+        }
+    }
     for (const auto &[start, end] : instruction_spans_)
     {
         if (start != address && address < end && result.next > start)
@@ -1351,8 +1372,13 @@ bool EclMachine::resume(std::uint64_t id, std::optional<std::size_t> choice)
     {
         return false;
     }
-    const bool ends_script = later_ecl_commands(program_->game()) && pending_->instruction &&
-                             pending_->instruction->opcode == vga_clear_and_exit;
+    // The Buck Rogers games' CLEAR AND STOP (42h) ends the script the same way.
+    constexpr std::uint8_t buck_rogers_clear_and_stop = 0x42;
+    const bool ends_script =
+        pending_->instruction && ((later_ecl_commands(program_->game()) &&
+                                   pending_->instruction->opcode == vga_clear_and_exit) ||
+                                  (is_buck_rogers(program_->game()) &&
+                                   pending_->instruction->opcode == buck_rogers_clear_and_stop));
     finish_request();
     if (ends_script)
     {

@@ -236,6 +236,18 @@ struct PhlanResources
     std::map<unsigned, BuckRogersCreature> buck_rogers_creatures;
     std::vector<buck_rogers::Item> buck_rogers_templates;
     std::vector<buck_rogers::ItemType> buck_rogers_item_types;
+    // Their ground-combat tile sets (HITEK, LOTEK, MARSCOM, VENUSCOM), by file,
+    // each tile in the colors its picture sets.
+    std::map<std::string, std::vector<Image>, std::less<>> buck_rogers_tile_sets;
+    // Each disk's combat icons (CPICn), which LOAD MONSTER draws from by
+    // the disk its script is on (maptiles.pas LoadIconAnim).
+    std::map<unsigned, std::vector<std::uint8_t>> buck_rogers_icons;
+    // The team's combat icons (CHARS), by the record's icon byte.
+    std::vector<std::uint8_t> buck_rogers_team_icons;
+    // The team's ship as a new game starts with it (SHIPS record 50).
+    std::vector<std::uint8_t> buck_rogers_party_ship;
+    // The words their items are named with (START.EXE).
+    std::vector<std::string> buck_rogers_item_words;
 };
 
 // A script took coins the payer lacked and the purse made change.
@@ -1345,6 +1357,80 @@ class RolfTourSession
     void enable_buck_rogers_party_commands();
     [[nodiscard]] bool handle_buck_rogers_host(const EclRequest &request);
     void buck_rogers_damage(const EclRequest &request);
+    // A new game's state (gameinit.pas InitializeGame, InitShipAndOrbit):
+    // the difficulty, the area kind, the message speed and the team's ship,
+    // the Maelstrom Rider, in zone 0 from 4D00h.
+    void configure_buck_rogers();
+    // The level the scripts read (C_Diff: Novice 0 to Ace 4, Admiral 5).
+    [[nodiscard]] std::uint16_t buck_rogers_difficulty_level() const noexcept;
+    // LOAD MONSTER: copies of a MON0CHA creature with its items, drawn with a
+    // CPIC icon (eclvm.pas EclLoadMonster).
+    void stage_buck_rogers_creatures(const EclRequest &request);
+    // COMBAT and SOLO COMBAT: the fight on the arena the area's kind names,
+    // or with no one hostile, the fight's end at once (eclvm.pas EclCombat).
+    void buck_rogers_combat(const EclRequest &request, bool solo);
+    // The fight's end (postcbt.pas PostCombat): the results, the wounded
+    // and their treatment, experience, then the booty; the script goes on
+    // once the booty is left.
+    [[nodiscard]] bool resolve_buck_rogers_combat(const rules::Snapshot &result);
+    void finish_buck_rogers_fight(std::uint64_t request, std::uint16_t combat_result,
+                                  unsigned defeated);
+
+    // The Buck Rogers menus the session offers in the original's place: the
+    // booty after a fight, a shop, the team menu with its training, and the
+    // rest menu (buck_rogers_host.cpp).
+    struct BuckRogersMenu
+    {
+        enum class Kind : std::uint8_t
+        {
+            booty,
+            shop,
+            shop_buy,
+            shop_sell,
+            shop_ammunition,
+            team,
+            rest
+        };
+        enum class Action : std::uint8_t
+        {
+            take_item,
+            take_credits,
+            share_credits,
+            pool_credits,
+            buy,
+            sell,
+            ammunition_clip,
+            ammunition_fill,
+            open_buy,
+            open_sell,
+            open_ammunition,
+            back,
+            train,
+            rest_a_day,
+            leave
+        };
+
+        struct Choice
+        {
+            Action action{};
+            std::size_t index{};
+        };
+
+        Kind kind{};
+        std::uint64_t request{};
+        std::vector<Choice> choices;
+        std::vector<buck_rogers::Item> stock;
+    };
+
+    void show_buck_rogers_menu(BuckRogersMenu::Kind kind, std::vector<rules::Message> notice = {});
+    bool choose_in_buck_rogers_menu(std::size_t choice);
+    void close_buck_rogers_menu();
+    [[nodiscard]] std::string buck_rogers_item_name(const buck_rogers::Item &item) const;
+    std::optional<BuckRogersMenu> buck_rogers_menu_;
+    // The fight's or the script's booty (gdvars.pas availableItems) and the
+    // team's pool of credits (poolCredits), kept while a script runs.
+    std::vector<buck_rogers::Item> buck_rogers_booty_;
+    std::uint32_t buck_rogers_pool_{};
     // Whether the solar map is on screen, from the picture mode and the area
     // kind the scripts set (TourSnapshot::solar_map).
     void update_solar_map();
