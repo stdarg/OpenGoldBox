@@ -2,6 +2,7 @@
 #define OPENGOLD_ROLF_TOUR_H
 
 #include "opengold/ecl_machine.h"
+#include "opengold/exploration_view.h"
 #include "opengold/map_catalog.h"
 #include "opengold/overland.h"
 #include "opengold/formats.h"
@@ -35,7 +36,7 @@ namespace test
 {
 struct TourAccess;
 }
-}
+} // namespace opengold
 
 namespace opengold::por
 {
@@ -117,8 +118,11 @@ struct SpentGear
 // arrows on the overland, by facing, and the automap's walls.
 inline constexpr unsigned gateway_marks = 202;
 
+struct DarkQueenResources;
+
 struct PhlanResources
 {
+    std::shared_ptr<const DarkQueenResources> dark_queen;
     // A campaign that starts by running a script's load entry (Curse's script
     // 1 of disk 2) rather than Rolf's tour of New Phlan.
     std::optional<unsigned> opening_script;
@@ -185,11 +189,13 @@ struct PhlanResources
     unsigned script{}, bank{};
     // Other scripts that load this map: Valjevo Castle's share its quarters.
     std::vector<unsigned> shared_with;
+
     [[nodiscard]] bool loaded_by(unsigned id) const
     {
-        return id == script || std::find(shared_with.begin(), shared_with.end(), id) !=
-                                   shared_with.end();
+        return id == script ||
+               std::find(shared_with.begin(), shared_with.end(), id) != shared_with.end();
     }
+
     std::array<unsigned, 3> pieces{};
     // On the town only: Gateway's sets of eight-by-eight symbols, by record,
     // that its LOAD PIECES loads alone on the overland, outside a dungeon
@@ -329,12 +335,12 @@ struct StagedCreature
 // (`original_record`) it fights as its record; otherwise as the area's
 // conversion of it. The area's icons are in the format of `game`. Throws when
 // the area converts no such record or lacks the icon.
-[[nodiscard]] StagedCreature stage_area_creature(const PhlanResources &area, unsigned record,
-                                                 unsigned icon, const ExportedMonster *exported,
-                                                 rules::EntityId id, std::string name,
-                                                 rules::Side side, Difficulty difficulty,
-                                                 bool original_record,
-                                                 GoldBoxGame game = GoldBoxGame::pool_of_radiance);
+[[nodiscard]] StagedCreature
+stage_area_creature(const PhlanResources &area, unsigned record, unsigned icon,
+                    const ExportedMonster *exported, rules::EntityId id, std::string name,
+                    rules::Side side, Difficulty difficulty, bool original_record,
+                    GoldBoxGame game = GoldBoxGame::pool_of_radiance,
+                    std::optional<std::array<VgaColor, 256>> native_palette = {});
 
 struct TourSnapshot
 {
@@ -382,8 +388,8 @@ struct TourSnapshot
     std::vector<opengold::rules::Message> host_dialogue, host_choices;
     bool number_input{};
     std::uint64_t picture_revision{};
-    std::bitset<256> visited;
-    std::bitset<256> seen; // Persistent map knowledge: visited or visible in a shown 3D view.
+    MapKnowledge visited;
+    MapKnowledge seen; // Persistent map knowledge: visited or visible in a shown 3D view.
     std::vector<CoinPayment> payments; // This event's payments; cleared when the next begins.
     std::vector<LootTaken> loot_taken; // This event's loot; cleared when the next begins.
     // What auto-equip (EQUIP-1) put on from this event's loot, or from the
@@ -550,7 +556,9 @@ class RolfTourSession
     [[nodiscard]] bool can_select_member() const
     {
         return can_leave() || snapshot_.phase == TourPhase::shopping ||
-               snapshot_.phase == TourPhase::treasure;
+               snapshot_.phase == TourPhase::treasure ||
+               (buck_rogers_menu_ && (buck_rogers_menu_->kind == BuckRogersMenu::Kind::shop ||
+                                      buck_rogers_menu_->kind == BuckRogersMenu::Kind::booty));
     }
 
     void advance(double seconds);
@@ -623,12 +631,14 @@ class RolfTourSession
 
     [[nodiscard]] GameClock game_clock() const;
     bool explore(ExplorationCommand command);
+
     // The original's Search mode: each step searches as Look does, and takes
     // ten minutes more.
     void set_searching(bool searching) noexcept
     {
         snapshot_.searching = searching;
     }
+
     // Both kinds run the original pre-camp and interruption services.
     bool camp(RestKind kind);
     // A long rest of `length`, under rules that rest any length
@@ -798,6 +808,7 @@ class RolfTourSession
     {
         return campaign_ && turncoat(id);
     }
+
     [[nodiscard]] const std::optional<opengold::CampaignEncounter> &pending_encounter() const
     {
         static const std::optional<opengold::CampaignEncounter> not_ready;
@@ -867,6 +878,7 @@ class RolfTourSession
     {
         return campaign_ && campaign_->rule_module().plays_original_records();
     }
+
     std::uint64_t who_request_{};
     // A DAMAGE volley waits here until its results are acknowledged.
     std::uint64_t damage_request_{};
@@ -974,6 +986,49 @@ class RolfTourSession
     [[nodiscard]] bool on_wand_trap() const;
     [[nodiscard]] bool standing_at(const std::string &archive, unsigned record,
                                    const std::vector<std::pair<unsigned, unsigned>> &markers) const;
+    // Native vault contents belong to this campaign save, shared by its
+    // vault entrances, never to the user's original VAULT*.DAT files.
+    std::array<unsigned, 3> dark_queen_vault_money_{};
+    std::vector<Equipment> dark_queen_vault_items_;
+    enum class VaultMenu
+    {
+        home,
+        deposit,
+        withdraw,
+        recipient
+    };
+    enum class VaultAction
+    {
+        money,
+        deposit,
+        withdraw,
+        leave,
+        deposit_item,
+        withdraw_money,
+        withdraw_item,
+        recipient,
+        back
+    };
+
+    struct VaultChoice
+    {
+        VaultAction action{};
+        opengold::MemberId member{};
+        std::uint64_t item{};
+    };
+
+    struct VaultVisit
+    {
+        std::uint64_t request{};
+        std::size_t item{};
+        std::vector<VaultChoice> choices;
+    };
+
+    std::optional<VaultVisit> dark_queen_vault_visit_;
+    void open_dark_queen_vault(std::uint64_t request);
+    void show_dark_queen_vault(VaultMenu menu, std::vector<opengold::rules::Message> notice = {});
+    bool choose_dark_queen_vault(std::size_t choice);
+
     std::optional<TempleVisit> temple_visit_;
     void open_temple(std::uint64_t request);
     void show_temple(std::vector<opengold::rules::Message> notice);
@@ -1017,11 +1072,14 @@ class RolfTourSession
         TownParty party;
         std::optional<opengold::PartyState> campaign;
         unsigned script{}, area{};
-        std::map<unsigned, std::bitset<256>> visited_areas, seen_areas;
+        std::map<unsigned, MapKnowledge> visited_areas, seen_areas;
         std::map<std::string, EntranceState> entrances;
         std::set<unsigned> wand_traps;
         unsigned rest_checks{};
         unsigned travel_mode{};
+        unsigned dark_queen_combat_set{};
+        std::array<unsigned, 3> dark_queen_vault_money{};
+        std::vector<Equipment> dark_queen_vault_items;
         GeoMap map;
         std::vector<PendingLoot> pending_loot;
         TourSnapshot snapshot;
@@ -1039,10 +1097,12 @@ class RolfTourSession
     // east window of the wilderness map, where the party's square is the
     // script's 0x49C3/0x49C4 and it steps in eight directions.
     unsigned travel_mode_{1};
+
     [[nodiscard]] bool overland() const noexcept
     {
         return travel_mode_ > 1;
     }
+
     void update_travel_mode();
     // Steps the party one wilderness square in its direction, unless the
     // terrain stops it; false when it stays.
@@ -1059,13 +1119,16 @@ class RolfTourSession
     // The 256-color engine's wall sets in the view's three slots, and
     // Treasures' overland picture its script loaded last.
     std::array<unsigned, 3> wall_slots_{};
+    // Native LOAD FILES' second operand selects DUNGCOM/WILDCOM, independently
+    // of the exploration map's three wall sets.
+    unsigned dark_queen_combat_set_{};
     unsigned treasures_overland_picture_{};
     // How far Treasures' overland colors have turned, and the time since
     // their last turn (turn_colors).
     unsigned overland_color_steps_{};
     double overland_color_seconds_{};
-    std::map<unsigned, std::bitset<256>> visited_areas_;
-    std::map<unsigned, std::bitset<256>> seen_areas_;
+    std::map<unsigned, MapKnowledge> visited_areas_;
+    std::map<unsigned, MapKnowledge> seen_areas_;
     std::vector<rules::Participant> staged_enemies_;
     std::vector<opengold::BandMember> staged_band_;
     std::vector<opengold::CombatArt> staged_art_;
@@ -1418,6 +1481,9 @@ class RolfTourSession
     // character's record as their scripts read it from 7C00h (eclmenu.pas
     // SpecialReadZ1), and as they change it (SpecialWriteZ1).
     void enable_buck_rogers_party_commands();
+    // Matrix's PROGRAM 2 quits after its closing scene. Format 55 preserves
+    // its validated terminal instruction position as a victory receipt.
+    [[nodiscard]] bool matrix_ending_completed() const;
     [[nodiscard]] bool handle_buck_rogers_host(const EclRequest &request);
     void buck_rogers_damage(const EclRequest &request);
     // A new game's state (gameinit.pas InitializeGame, InitShipAndOrbit):
@@ -1564,6 +1630,7 @@ class RolfTourSession
     // Whether the script blanked the selected companion's record to send it away.
     [[nodiscard]] bool dismissed_companion() const;
     [[nodiscard]] EclHostReply character_reply(PartySlot slot) const;
+    [[nodiscard]] std::uint16_t native_cell_flags(unsigned x, unsigned y) const;
     void bind_pose(PartyPose pose);
     bool move_party(ExplorationCommand command);
     void notice(std::string message);

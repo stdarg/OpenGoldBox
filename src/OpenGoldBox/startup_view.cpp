@@ -113,7 +113,7 @@ struct MenuGame
 
 // The games the startup menu offers, in release order (docs/GAMES.md); the
 // picker lists them under their worlds, in this order within each.
-constexpr std::array<MenuGame, 11> playable_games{
+constexpr std::array<MenuGame, 12> playable_games{
     {{opengold::GoldBoxGame::pool_of_radiance, N_("Pool of Radiance"), World::forgotten_realms},
      {opengold::GoldBoxGame::curse_of_the_azure_bonds, N_("Curse of the Azure Bonds"),
       World::forgotten_realms},
@@ -130,6 +130,7 @@ constexpr std::array<MenuGame, 11> playable_games{
       false},
      {opengold::GoldBoxGame::treasures_of_the_savage_frontier,
       N_("Treasures of the Savage Frontier"), World::forgotten_realms},
+     {opengold::GoldBoxGame::dark_queen_of_krynn, N_("The Dark Queen of Krynn"), World::krynn},
      {opengold::GoldBoxGame::unlimited_adventures, N_("Unlimited Adventures"),
       World::forgotten_realms}}};
 

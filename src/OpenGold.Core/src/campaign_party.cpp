@@ -247,12 +247,26 @@ void keep_item_plus(PartyMember &member, std::uint64_t id, int plus)
     member.character.replace_inventory(std::move(inventory));
 }
 
+// Experience belongs to the campaign. Give a rules query its live value
+// without changing the character's replayable creation and level history.
+rules::CharacterSheet sheet_with_current_experience(const PartyMember &member)
+{
+    auto sheet = member.character.sheet();
+    if (sheet.original)
+    {
+        sheet.original->experience = static_cast<int>(std::min<unsigned>(
+            member.experience, static_cast<unsigned>(std::numeric_limits<int>::max())));
+    }
+    return sheet;
+}
+
 // What a spell or service changed on a member for good goes into its level
 // history (the original rules' Restoration: the drained level it gives back),
 // with the experience the change sets.
 void keep_lasting_changes(const rules::RulesModule &rules, PartyMember &patient)
 {
-    for (const auto &change : rules.lasting_changes(patient.character.sheet(), patient.vitals))
+    for (const auto &change :
+         rules.lasting_changes(sheet_with_current_experience(patient), patient.vitals))
     {
         if (!patient.character.advance(rules, patient.vitals, change))
         {
@@ -2601,7 +2615,7 @@ void CampaignParty::award_experience(unsigned amount, std::string reward_id, Mem
         if (id && (!only || id == only))
         {
             auto &member = member_in(next, id);
-            if (member.vitals.dead)
+            if (!rules_->receives_experience(member.character.sheet(), member.vitals))
             {
                 continue;
             }
@@ -2635,7 +2649,7 @@ void CampaignParty::grant_script_experience(unsigned amount, MemberId only)
             continue;
         }
         auto &member = member_in(next, id);
-        if (member.vitals.dead)
+        if (!rules_->receives_experience(member.character.sheet(), member.vitals))
         {
             continue;
         }
@@ -2661,7 +2675,7 @@ void CampaignParty::grant_experience_share(unsigned amount, MemberId id)
     editable();
     auto next = state_;
     auto &member = member_in(next, id);
-    if (member.vitals.dead)
+    if (!rules_->receives_experience(member.character.sheet(), member.vitals))
     {
         return;
     }
@@ -3032,6 +3046,25 @@ void CampaignParty::keep_lasting_change(MemberId id, const rules::AdvancementCho
     changed.experience = rules_->experience_after_lasting_change(changed.character.sheet(), change,
                                                                  changed.experience);
     edit(id) = std::move(changed);
+}
+
+bool CampaignParty::drain_level(MemberId id)
+{
+    editable();
+    const auto &before = member(id);
+    if (before.vitals.dead)
+    {
+        return true;
+    }
+    auto random = state_.random_state;
+    const auto change = rules_->scripted_level_drain(sheet_with_current_experience(before), random);
+    if (!change)
+    {
+        return false;
+    }
+    keep_lasting_change(id, *change);
+    state_.random_state = random;
+    return true;
 }
 
 rules::SpellChoiceOptions CampaignParty::spell_choice_options(MemberId id) const
@@ -4167,7 +4200,8 @@ std::optional<CoinExchange> CampaignParty::read_character(PartySlot slot, const 
     // status to okay (0) with its Hit Points: Pools of Darkness's finale
     // heals so (ECL1:75 0x95BF, "A FOG OF PAIN LIFTS").
     constexpr std::uint16_t okay = 0;
-    const bool stood_up = vga_engine(game) && current.vitals.dead && hp > 0 &&
+    const bool stood_up = (vga_engine(game) || game == GoldBoxGame::dark_queen_of_krynn) &&
+                          current.vitals.dead && hp > 0 &&
                           vm.variable(por::game_address(por::ecl_character_status, game)) == okay;
     if (hp > hit_point_maximum(id) || (current.vitals.dead && hp && !stood_up))
     {
@@ -4177,7 +4211,11 @@ std::optional<CoinExchange> CampaignParty::read_character(PartySlot slot, const 
     // knightly orders. Its SpecialRead/WriteZ1 exposes only steel, gems and
     // jewelry here; the other four denominations remain in the shared purse.
     auto after_script = script_coins(state_.wealth, coin_rates());
-    for (unsigned n = game == GoldBoxGame::death_knights_of_krynn ? 4U : 0U; n < 7; ++n)
+    for (unsigned n = game == GoldBoxGame::death_knights_of_krynn ||
+                              game == GoldBoxGame::dark_queen_of_krynn
+                          ? 4U
+                          : 0U;
+         n < 7; ++n)
     {
         after_script[n] = vm.variable(por::game_address(por::ecl_coin_addresses[n], game));
     }
@@ -4475,7 +4513,8 @@ std::vector<rules::Participant> CampaignParty::participants() const
             {
                 continue;
             }
-            auto p = rules_->character_profile(m.character.sheet(), equipped_definitions(m));
+            auto p = rules_->character_profile(sheet_with_current_experience(m),
+                                               equipped_definitions(m));
             // A Buck Rogers member fights as its record is now.
             if (auto record = game_record(id); !record.empty())
             {
@@ -4596,11 +4635,15 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
             std::optional<PartyMember> changed;
             const auto checked = std::find(combat_checked_.begin(), combat_checked_.end(),
                                            std::pair{actor.id, actor.max_hit_points});
-            if (checked == combat_checked_.end())
+            const auto changes =
+                checked == combat_checked_.end() || lasting != it->vitals
+                    ? rules_->lasting_changes(sheet_with_current_experience(*it), lasting)
+                    : std::vector<rules::AdvancementChoice>{};
+            if (checked == combat_checked_.end() || !changes.empty())
             {
-                // What the fight left on the member for good (the original
-                // rules' level drain) is its own from now on.
-                const auto changes = rules_->lasting_changes(it->character.sheet(), lasting);
+                // A lasting change need not alter the maximum HP (a final
+                // native drain can leave the public dead-character minimum).
+                // Keep its progression and XP in the same staged transaction.
                 if (!changes.empty())
                 {
                     changed = *it;
@@ -4610,6 +4653,8 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
                         {
                             throw std::runtime_error("A fight's lasting change cannot be kept");
                         }
+                        changed->experience = rules_->experience_after_lasting_change(
+                            changed->character.sheet(), change, changed->experience);
                     }
                 }
                 const auto &member = changed ? *changed : *it;

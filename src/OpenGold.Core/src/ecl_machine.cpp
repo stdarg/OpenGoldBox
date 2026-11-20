@@ -179,6 +179,11 @@ bool cleared_by_new_script(std::uint16_t address, GoldBoxGame game)
     {
         return within(0x4A00, 0x4A1F) || within(0x6E79, 0x6E82);
     }
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        // Native EclInit clears fifty map locals and both rest counters.
+        return within(0x97, 0xC8) || address == 0x2B || address == 0x2C;
+    }
     // Pools of Darkness's and Treasures' cells sit at 1h to 400h: their area's
     // state (Darkness's TAreaState, the last map loaded among it).
     if (game == GoldBoxGame::pools_of_darkness ||
@@ -297,7 +302,8 @@ std::uint16_t EclMachine::variable(EclAddress cell) const
     const auto address = named(cell);
     if (program_address(*program_, address))
     {
-        const auto offset = address.location - program_->memory().origin + 2;
+        const auto offset =
+            address.location - program_->memory().origin + program_->memory().record_header_size;
         // The Buck Rogers games clear their whole script zone before a script
         // loads (eclmenu.pas LoadEclScript), so past its end it reads 0.
         if (offset >= image_.size() && is_buck_rogers(program_->game()))
@@ -353,6 +359,13 @@ bool EclMachine::consume_script_write(EclAddress address)
 void EclMachine::write(EclAddress cell, std::uint16_t v)
 {
     const auto address = named(cell);
+    // Native gb_write normalizes the four-way dungeon heading immediately.
+    // Teleporters deliberately add/subtract two past the byte's bounds, and
+    // following instructions read the wrapped direction back.
+    if (program_->game() == GoldBoxGame::dark_queen_of_krynn && address == EclAddress{0x11})
+    {
+        v &= 3;
+    }
     if (std::any_of(ignored_cells_.begin(), ignored_cells_.end(),
                     [&](const auto &range)
                     {
@@ -368,11 +381,13 @@ void EclMachine::write(EclAddress cell, std::uint16_t v)
     }
     if (program_address(*program_, address))
     {
-        if (address.location - program_->memory().origin + 2 >= image_.size())
+        const auto offset =
+            address.location - program_->memory().origin + program_->memory().record_header_size;
+        if (offset >= image_.size())
         {
             throw EclError("Write beyond loaded script image");
         }
-        image_[address.location - program_->memory().origin + 2] = static_cast<std::uint8_t>(v);
+        image_[offset] = static_cast<std::uint8_t>(v);
         // A table may share the script image with code. Invalidate affected decoded
         // spans after a write so subsequent fetches see this machine's new bytes.
         for (auto it = instruction_spans_.begin(); it != instruction_spans_.end();)
@@ -603,8 +618,9 @@ void EclMachine::execute(const EclInstruction &i)
         // its closing film: its win (exitdos.pas).
         constexpr unsigned darkness_win = 1;
         const auto id = value(a[0]) & 255;
-        const bool darkness_won =
-            program_->game() == GoldBoxGame::pools_of_darkness && id == darkness_win;
+        const bool darkness_won = (program_->game() == GoldBoxGame::pools_of_darkness ||
+                                   program_->game() == GoldBoxGame::dark_queen_of_krynn) &&
+                                  id == darkness_win;
         // Gateway's PROGRAM 12h heals the party.
         const bool gateway_heal =
             id == 0x12 && program_->game() == GoldBoxGame::gateway_to_the_savage_frontier;
@@ -612,7 +628,10 @@ void EclMachine::execute(const EclInstruction &i)
         // the party whole.
         const bool treasures_program =
             id >= 3 && id <= 5 && program_->game() == GoldBoxGame::treasures_of_the_savage_frontier;
-        if (id != 0 && id != 8 && id != 9 && !darkness_won && !gateway_heal && !treasures_program)
+        const bool native_drain = id == 3 && program_->game() == GoldBoxGame::dark_queen_of_krynn;
+        const bool matrix_win = id == 2 && program_->game() == GoldBoxGame::matrix_cubed;
+        if (id != 0 && id != 8 && id != 9 && !darkness_won && !gateway_heal && !treasures_program &&
+            !native_drain && !matrix_win)
         {
             pc_ = i.next;
             return;
@@ -707,7 +726,14 @@ void EclMachine::execute(const EclInstruction &i)
             {
                 throw EclError("Division by zero");
             }
-            v = lhs / rhs; // PoR does not save the remainder.
+            v = lhs / rhs;
+            // Native quest routines divide a flag number by eight and read
+            // the remainder from world cell 29h to select its bit. Pool of
+            // Radiance keeps its original quotient-only behavior.
+            if (program_->game() == GoldBoxGame::dark_queen_of_krynn)
+            {
+                write(EclAddress{0x29}, static_cast<std::uint16_t>(lhs % rhs));
+            }
         }
         if (i.opcode == 7)
         {
@@ -1261,16 +1287,18 @@ void EclMachine::request_host(const EclInstruction &i)
     {
         const auto &operand = i.operands[n];
         const auto op = i.opcode;
-        const bool vga = vga_engine(program_->game());
+        const bool named_npc =
+            op == vga_find_npc &&
+            (vga_engine(program_->game()) || program_->game() == GoldBoxGame::dark_queen_of_krynn);
         const bool later = later_ecl_commands(program_->game());
-        const bool output = later ? (op == 30 && n >= 2) || (vga && op == vga_find_npc && n == 1) ||
-                                        (op == 59 && n >= 1)
-                                  : (op == 29 && n == 0) || (op == 30 && n >= 2) || op == 34 ||
-                                        (op == 41 && n == 3) || (op == 59 && n >= 1);
+        const bool output =
+            later ? (op == 30 && n >= 2) || (named_npc && n == 1) || (op == 59 && n >= 1)
+                  : (op == 29 && n == 0) || (op == 30 && n >= 2) || op == 34 ||
+                        (op == 41 && n == 3) || (op == 59 && n >= 1);
         const bool address = output || (op == 30 && n == 0) || op == 45 ||
                              (!later && ((op == 35 && n < 2) || op == 60));
-        const bool is_text = op == 57 || (!later && op == 41 && n >= 9 && n <= 11) ||
-                             (vga && op == vga_find_npc && n == 0);
+        const bool is_text =
+            op == 57 || (!later && op == 41 && n >= 9 && n <= 11) || (named_npc && n == 0);
         if (address)
         {
             request.arguments.emplace_back(output ? destination(operand)
@@ -1330,8 +1358,8 @@ EclRunResult EclMachine::run(std::size_t budget)
             executing_ = false;
             std::ostringstream message;
             message << program_->source() << " @ 0x" << std::hex << pc_ << " (record offset 0x"
-                    << (pc_ - program_->memory().origin + 2) << ", stack depth " << std::dec
-                    << stack_.size() << "): " << error.what();
+                    << (pc_ - program_->memory().origin + program_->memory().record_header_size)
+                    << ", stack depth " << std::dec << stack_.size() << "): " << error.what();
             diagnostic_ = message.str();
             state_ = EclState::faulted;
         }
@@ -1364,6 +1392,13 @@ bool EclMachine::resume(std::uint64_t id, std::optional<std::size_t> choice)
         // The 256-color engine's YES NO: yes sets the equal flag, no the not-equal.
         if (pending_->instruction && later_ecl_commands(program_->game()) &&
             pending_->instruction->opcode == vga_yes_no)
+        {
+            conditions_ = equality(*choice == 0);
+        }
+        // Buck Rogers' YES NO (EclYesNoCompare, 2Ch) also sets only
+        // the comparison, replacing whichever result preceded the menu.
+        if (pending_->instruction && is_buck_rogers(program_->game()) &&
+            pending_->instruction->opcode == 0x2C)
         {
             conditions_ = equality(*choice == 0);
         }
@@ -1517,15 +1552,19 @@ bool EclMachine::resume_host(std::uint64_t id, const EclHostReply &reply)
         return false;
     }
     const auto opcode = pending_->instruction->opcode;
-    // FIND ITEM answers with the flags, as Treasures' FIND NAMED ITEM does;
+    // FIND ITEM answers with the flags, as Treasures' FIND NAMED ITEM and
+    // Dark Queen's FIND SPECIAL do;
     // Gateway's PROGRAM 12h may (whether it healed), and so may the
     // 256-color engine's COMBAT (the fight's result, its PostCombat).
     constexpr std::uint8_t find_named_item = 0x43, combat = 36;
-    const bool finds =
-        opcode == 50 || (program_->game() == GoldBoxGame::treasures_of_the_savage_frontier &&
-                         opcode == find_named_item);
+    const bool finds = opcode == 50 ||
+                       (program_->game() == GoldBoxGame::treasures_of_the_savage_frontier &&
+                        opcode == find_named_item) ||
+                       (program_->game() == GoldBoxGame::dark_queen_of_krynn && opcode == 63);
     const bool may_answer =
-        finds || opcode == 56 || (opcode == combat && vga_engine(program_->game()));
+        finds || opcode == 56 ||
+        (opcode == combat &&
+         (vga_engine(program_->game()) || program_->game() == GoldBoxGame::dark_queen_of_krynn));
     if ((opcode == 32) != static_cast<bool>(reply.next_program) || (finds && !reply.conditions) ||
         (reply.conditions && !may_answer))
     {

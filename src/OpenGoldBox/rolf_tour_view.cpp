@@ -3667,12 +3667,12 @@ Dictionary RolfTourView::tour_visuals()
         return data;
     }
     Array cells;
-    cells.resize(256);
-    for (unsigned y = 0; y < 16; ++y)
+    cells.resize(map->cells.size());
+    for (unsigned y = 0; y < map->height; ++y)
     {
-        for (unsigned x = 0; x < 16; ++x)
+        for (unsigned x = 0; x < map->width; ++x)
         {
-            const unsigned index = y * 16 + x;
+            const unsigned index = y * map->width + x;
             if (!no_fog_ && !state.seen.test(index))
             {
                 cells[index] = -1;
@@ -3695,6 +3695,8 @@ Dictionary RolfTourView::tour_visuals()
         }
     }
     data["cells"] = cells;
+    data["columns"] = map->width;
+    data["rows"] = map->height;
     const auto origin = session_->map_origin();
     data["pose"] = Vector2i(static_cast<int>(state.pose.x - origin.x),
                             static_cast<int>(state.pose.y - origin.y));
@@ -3722,10 +3724,13 @@ void RolfTourView::capture_frame(const String &name)
         // into the temporary NodePath.
         const NodePath map_path{"%MapBounds"};
         const auto &map = required_node<Control>(*this, map_path);
-        const double cell = map.get_size().x / 16;
-        for (unsigned y = 0; y < 16; ++y)
+        const auto *area = session_->area_map();
+        const unsigned columns = area ? area->width : opengold::por::GeoMap::default_width,
+                       rows = area ? area->height : opengold::por::GeoMap::default_height;
+        const double cell = std::min(map.get_size().x / columns, map.get_size().y / rows);
+        for (unsigned y = 0; y < rows; ++y)
         {
-            for (unsigned x = 0; x < 16; ++x)
+            for (unsigned x = 0; x < columns; ++x)
             {
                 if (x == state.pose.x && y == state.pose.y)
                 {
@@ -3735,9 +3740,9 @@ void RolfTourView::capture_frame(const String &name)
                     Vector2(static_cast<godot::real_t>((x + .5) * cell),
                             static_cast<godot::real_t>((y + .5) * cell)));
                 const auto expected =
-                    get_theme_color(!no_fog_ && !state.seen.test(y * 16 + x) ? "map_black"
-                                    : state.visited.test(y * 16 + x)         ? "map_visited"
-                                                                             : "map_seen",
+                    get_theme_color(!no_fog_ && !state.seen.test(y * columns + x) ? "map_black"
+                                    : state.visited.test(y * columns + x)         ? "map_visited"
+                                                                                  : "map_seen",
                                     "OpenGoldPalette");
                 if (!image->get_pixel(static_cast<int32_t>(center.x),
                                       static_cast<int32_t>(center.y))

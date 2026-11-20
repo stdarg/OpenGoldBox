@@ -11,8 +11,7 @@ namespace opengold
 {
 
 // Stable campaign-save IDs. Append new games without renumbering old ones.
-// The numbers need not be contiguous: 9 is kept for The Dark Queen of Krynn,
-// which another session adds after Death Knights (docs/BUCK-ROGERS.md, B0).
+// Native is 9, followed by the Buck Rogers games at 10 and 11.
 enum class GoldBoxGame : std::uint8_t
 {
     pool_of_radiance,
@@ -24,11 +23,12 @@ enum class GoldBoxGame : std::uint8_t
     unlimited_adventures,
     champions_of_krynn,
     death_knights_of_krynn,
+    dark_queen_of_krynn = 9,
     countdown_to_doomsday = 10,
     matrix_cubed = 11
 };
 
-inline constexpr std::array<GoldBoxGame, 11> gold_box_games{
+inline constexpr std::array<GoldBoxGame, 12> gold_box_games{
     GoldBoxGame::pool_of_radiance,
     GoldBoxGame::curse_of_the_azure_bonds,
     GoldBoxGame::secret_of_the_silver_blades,
@@ -38,6 +38,7 @@ inline constexpr std::array<GoldBoxGame, 11> gold_box_games{
     GoldBoxGame::unlimited_adventures,
     GoldBoxGame::champions_of_krynn,
     GoldBoxGame::death_knights_of_krynn,
+    GoldBoxGame::dark_queen_of_krynn,
     GoldBoxGame::countdown_to_doomsday,
     GoldBoxGame::matrix_cubed};
 
@@ -76,6 +77,8 @@ inline constexpr std::array<GoldBoxGame, 11> gold_box_games{
         return "Champions of Krynn";
     case GoldBoxGame::death_knights_of_krynn:
         return "Death Knights of Krynn";
+    case GoldBoxGame::dark_queen_of_krynn:
+        return "The Dark Queen of Krynn";
     case GoldBoxGame::countdown_to_doomsday:
         return "Buck Rogers: Countdown to Doomsday";
     case GoldBoxGame::matrix_cubed:
@@ -107,6 +110,8 @@ inline constexpr std::array<GoldBoxGame, 11> gold_box_games{
         return "COK";
     case GoldBoxGame::death_knights_of_krynn:
         return "DKK";
+    case GoldBoxGame::dark_queen_of_krynn:
+        return "DQK";
     case GoldBoxGame::countdown_to_doomsday:
         return "buck-rogers-countdown-to-doomsday";
     case GoldBoxGame::matrix_cubed:
@@ -121,7 +126,8 @@ inline constexpr std::array<GoldBoxGame, 11> gold_box_games{
 [[nodiscard]] constexpr bool vga_engine(GoldBoxGame game) noexcept
 {
     return game == GoldBoxGame::pools_of_darkness ||
-           game == GoldBoxGame::treasures_of_the_savage_frontier;
+           game == GoldBoxGame::treasures_of_the_savage_frontier ||
+           game == GoldBoxGame::dark_queen_of_krynn;
 }
 
 // Whether the game is one of the two Buck Rogers games, which run the same
@@ -151,6 +157,10 @@ inline constexpr std::array<GoldBoxGame, 11> gold_box_games{
 // ITEMS.1.
 [[nodiscard]] constexpr std::string_view item_types_file(GoldBoxGame game) noexcept
 {
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        return "ITEMS.DAT";
+    }
     return game == GoldBoxGame::gateway_to_the_savage_frontier ? "ITEMS.1" : "ITEMS";
 }
 
@@ -159,6 +169,10 @@ inline constexpr std::array<GoldBoxGame, 11> gold_box_games{
 // games in START.EXE.
 [[nodiscard]] constexpr std::string_view item_words_program(GoldBoxGame game) noexcept
 {
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        return "DQK.EXE";
+    }
     return game == GoldBoxGame::gateway_to_the_savage_frontier || vga_engine(game) ? "GAME.EXE"
                                                                                    : "START.EXE";
 }

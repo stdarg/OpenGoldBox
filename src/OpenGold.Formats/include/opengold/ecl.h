@@ -53,6 +53,8 @@ struct EclOpcode
 struct EclMemory
 {
     std::uint32_t origin{}, limit{};
+    // DAX records have a two-byte prefix; Dark Queen's GLB items do not.
+    std::uint32_t record_header_size{2};
 };
 
 // Throws EclError for a game whose scripts are not decoded yet.

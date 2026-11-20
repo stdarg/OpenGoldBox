@@ -10,7 +10,8 @@ namespace opengold
 
 // Unlimited Adventures' census: the files of its folder and of DISK1 to DISK3
 // and ART, named with their folder ("DISK2/PICA.TLB").
-[[nodiscard]] GameCensus take_ua_census(const std::filesystem::path &folder);
+[[nodiscard]] GameCensus take_ua_census(const std::filesystem::path &folder,
+                                        GoldBoxGame game = GoldBoxGame::unlimited_adventures);
 
 } // namespace opengold
 

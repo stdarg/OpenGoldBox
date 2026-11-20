@@ -100,9 +100,9 @@ std::vector<std::string_view> original_hall_classes(TrainingHall hall)
 
 std::vector<std::string_view> original_mask_classes(unsigned class_mask, GoldBoxGame game)
 {
-    if (game == GoldBoxGame::death_knights_of_krynn)
+    if (game == GoldBoxGame::death_knights_of_krynn || game == GoldBoxGame::dark_queen_of_krynn)
     {
-        static constexpr std::array<std::pair<std::string_view, unsigned>, 7> krynn_bits{
+        static constexpr std::array<std::pair<std::string_view, unsigned>, 7> death_knights_bits{
             {{"magic_user", 1},
              {"cleric", 2},
              {"thief", 4},
@@ -110,6 +110,18 @@ std::vector<std::string_view> original_mask_classes(unsigned class_mask, GoldBox
              {"knight", 16},
              {"paladin", 64},
              {"ranger", 128}}};
+        // Native training uses class_bit, not its separate class_mask_bits:
+        // knights are 40h and rangers 20h here.
+        static constexpr std::array<std::pair<std::string_view, unsigned>, 7> dark_queen_bits{
+            {{"magic_user", 1},
+             {"cleric", 2},
+             {"thief", 4},
+             {"fighter", 8},
+             {"knight", 64},
+             {"paladin", 16},
+             {"ranger", 32}}};
+        const auto &krynn_bits =
+            game == GoldBoxGame::dark_queen_of_krynn ? dark_queen_bits : death_knights_bits;
         std::vector<std::string_view> classes;
         for (const auto &[klass, bit] : krynn_bits)
         {

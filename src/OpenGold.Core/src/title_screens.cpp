@@ -4,6 +4,7 @@
 #include "opengold/gateway_formats.h"
 #include "opengold/vace_film.h"
 #include "opengold/vga_picture.h"
+#include "opengold/ua_view.h"
 
 #include <algorithm>
 #include <map>
@@ -267,8 +268,99 @@ TitleScreens load_title_screens(const std::filesystem::path &folder, GoldBoxGame
     return title;
 }
 
+namespace
+{
+// Native ending-show facts: three FINAL.TLB records, in order 1, 3, 2.
+// Only draws followed by a pause become visible; every overlay redraws
+// glyph 1 first. The original's pause unit is approximately two seconds.
+TitleScreens dark_queen_closing_film(const std::filesystem::path &folder)
+{
+    const ua::DesignFiles files(folder, {});
+    const auto library = files.library("FINAL.TLB");
+    if (!library)
+    {
+        throw std::runtime_error("Dark Queen needs FINAL.TLB for its ending");
+    }
+    TitleScreens film;
+    const auto scene = [&](unsigned record, const std::vector<std::pair<unsigned, unsigned>> &steps)
+    {
+        const auto tiles = ua::nested_tiles(*library, record, "Dark Queen closing scene");
+        auto palette = vga_color_table({});
+        ua::apply_palette_glyph(palette, tiles);
+        const auto draw_glyph = [&](Image &screen, unsigned number)
+        {
+            if (number >= tiles.glyphs.size() || !tiles.glyphs[number] ||
+                tiles.glyphs[number]->kind == ua::GlyphKind::palette)
+            {
+                throw std::runtime_error("Dark Queen ending has no required glyph");
+            }
+            const auto &glyph = *tiles.glyphs[number];
+            const auto picture = ua::glyph_image(glyph, palette);
+            const int left = cell - glyph.origin_column, top = cell - glyph.origin_row;
+            for (int y = 0; y < picture.height; ++y)
+            {
+                for (int x = 0; x < picture.width; ++x)
+                {
+                    const int dx = left + x, dy = top + y;
+                    const auto source = (static_cast<std::size_t>(y) * picture.width + x) * 4;
+                    if (dx >= 0 && dx < screen_width && dy >= 0 && dy < screen_height &&
+                        picture.rgba[source + 3])
+                    {
+                        const auto destination =
+                            (static_cast<std::size_t>(dy) * screen_width + dx) * 4;
+                        std::copy_n(picture.rgba.begin() + source, 4,
+                                    screen.rgba.begin() + destination);
+                    }
+                }
+            }
+        };
+        for (const auto [overlay, units] : steps)
+        {
+            auto screen = black_screen();
+            draw_glyph(screen, 1);
+            if (overlay > 1)
+            {
+                draw_glyph(screen, overlay);
+            }
+            film.screens.push_back({std::move(screen), units * 2.0, {}, film.screens.size() + 1});
+        }
+    };
+    std::vector<std::pair<unsigned, unsigned>> first{{1, 1}};
+    for (unsigned frame = 2; frame <= 16; ++frame)
+    {
+        first.emplace_back(frame, frame == 16 ? 2 : 1);
+    }
+    scene(1, first);
+    std::vector<std::pair<unsigned, unsigned>> second{{1, 2},  {2, 2},  {3, 2},  {4, 2},  {5, 2},
+                                                      {6, 2},  {5, 1},  {7, 2},  {16, 1}, {17, 1},
+                                                      {16, 1}, {17, 1}, {16, 1}, {17, 1}, {16, 3}};
+    scene(3, second);
+    std::vector<std::pair<unsigned, unsigned>> third;
+    for (unsigned cycle = 0; cycle < 6; ++cycle)
+    {
+        for (unsigned frame = 1; frame <= 3; ++frame)
+        {
+            third.emplace_back(frame, 1);
+        }
+    }
+    for (const unsigned frame :
+         {4U, 3U, 1U, 5U, 5U, 6U, 6U, 7U, 7U, 8U, 8U, 9U, 9U, 10U, 10U, 11U, 12U})
+    {
+        third.emplace_back(frame, 1);
+    }
+    third.insert(third.end(), {{13, 2}, {14, 2}, {13, 1}, {14, 2}});
+    scene(2, third);
+    film.screens.front().sound = 39;
+    return film;
+}
+} // namespace
+
 TitleScreens load_closing_film(const std::filesystem::path &folder, GoldBoxGame game)
 {
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        return dark_queen_closing_film(folder);
+    }
     TitleScreens film;
     if (game == GoldBoxGame::pools_of_darkness)
     {

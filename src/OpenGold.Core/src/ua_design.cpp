@@ -109,6 +109,12 @@ std::optional<Bytes> DesignFiles::data(std::string_view name, unsigned entry) co
     return std::nullopt;
 }
 
+std::optional<std::vector<std::uint8_t>> DesignFiles::file_bytes(std::string_view file) const
+{
+    const auto path = find(file);
+    return path ? std::optional{read_file(*path)} : std::nullopt;
+}
+
 std::optional<Library> DesignFiles::library(std::string_view file) const
 {
     const auto path = find(file);

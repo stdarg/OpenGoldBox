@@ -1153,6 +1153,46 @@ leaves the team at its menus, so the walk notes the map; script 95, which
 plays it on the escape, is entered with the scripts. The ship fight's enemy
 (4C61h) is still set by the walk, as an aid.
 
+### Earned campaign checks
+
+`opengold_countdown_earned_tests` is a separate player of one continuous
+campaign. It creates six characters through the native rules, spends their
+ordinary skill points and Warrior specializations, walks the map, answers
+the actual menus and plays legal ground-combat commands. It does not use
+the survey's placements, written quest cells or assumed ship outcomes.
+
+The installed-data checks reach Chicagorg's rescue, the derelict's upper
+decks, the surgeon and protective salve, Scot's connected console, the argon
+system and engineering override, and the final ECG. The team earns its ship,
+returns to Salvation, stocks medical supplies, launches and treats the crew
+through the ship's clinic. All six survive. Ammunition is consumed and bought
+through the actual Depot shop, with the selected member paying for its refill.
+Each checkpoint reloads against freshly loaded assets and saves byte for byte,
+including the solar-map handoff. `--ship-earned` stops there; this is partial
+campaign progress, not the authored ending.
+
+The route exposed three persistence/script prerequisites: script 33 shares
+map 32 after the lower deck's NEW ECL at 8E7Eh; Buck Rogers' YES NO opcode
+2Ch must replace the previous comparison; and its native character records
+must survive a campaign minute without being rewritten as AD&D conditions.
+The existing party selector also serves the main native shop and booty menu;
+Back returns from an item or ammunition list before selecting another buyer.
+
+The separate `--camp-service` check plays the opening and accepts its ordinary
+one-day camp, then verifies the complete healthy native records and an
+independently reloaded world save. Campaign recovery calls the native rest
+helper: the okay heal by days against their current native maximum, the
+unconscious wake, and the bleeding, poisoned, comatose and dead do not heal.
+Ending the rest preserves ammunition, gear, XP and skills instead of replacing
+the record with AD&D spell memory. Both Buck Rogers games have adapter checks
+for these statuses and for a trained maximum above the original draft's.
+
+`--ending-protocol` separately checks the installed final speech's winning
+prompt, ECL6:98 at 9F2Dh, following Wilma's final mission announcement. It starts
+at that speech in an isolated fixture and establishes recognition timing and
+party-save preservation. It is not an earned ending test. The complete earned
+route still needs ordinary solar travel and committed ship-combat results.
+
 ## Next
 
 Step B3.1's second part: the three new screens on these hand-offs, then the

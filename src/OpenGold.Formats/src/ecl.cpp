@@ -217,6 +217,7 @@ std::span<const EclOpcode> game_opcodes(GoldBoxGame game)
     case GoldBoxGame::death_knights_of_krynn:
         return death_knights;
     case GoldBoxGame::pools_of_darkness:
+    case GoldBoxGame::dark_queen_of_krynn:
         return darkness;
     case GoldBoxGame::treasures_of_the_savage_frontier:
         return treasures;
@@ -238,7 +239,8 @@ bool falls_through(std::uint8_t opcode, GoldBoxGame game)
 {
     const bool clears_and_exits =
         opcode == 0x23 &&
-        (game == GoldBoxGame::death_knights_of_krynn || game == GoldBoxGame::pools_of_darkness ||
+        (game == GoldBoxGame::death_knights_of_krynn || game == GoldBoxGame::dark_queen_of_krynn ||
+         game == GoldBoxGame::pools_of_darkness ||
          game == GoldBoxGame::treasures_of_the_savage_frontier);
     const bool buck_rogers_stop =
         is_buck_rogers(game) && (opcode == 0x42 || opcode == 0x3B || opcode == 0x3C);
@@ -283,6 +285,7 @@ EclEngineRoutines ecl_engine_routines(GoldBoxGame game)
         // E804h, 880Ah, 880Dh, 8810h); 401Bh rereads the party's cell. Its
         // new routines are in docs/games/gateway.md.
         return {0x2E10, 0xC01A, 0xC01E, 0x8001, 0x8000, 0xB200, 0x6803, 0x0809, 0x080C, 0x080F};
+    case GoldBoxGame::dark_queen_of_krynn:
     case GoldBoxGame::pools_of_darkness:
     case GoldBoxGame::treasures_of_the_savage_frontier:
         // The 256-color engine's CALL names three routines by number: 1
@@ -312,6 +315,8 @@ EclMemory ecl_memory(GoldBoxGame game)
         return {0x8000, 0x9E00};
     case GoldBoxGame::death_knights_of_krynn:
         return {0x8000, 0x9E00};
+    case GoldBoxGame::dark_queen_of_krynn:
+        return {0x8000, 0xAEE3, 0};
     case GoldBoxGame::treasures_of_the_savage_frontier:
         return {0x8000, 0xB6B1};
     case GoldBoxGame::countdown_to_doomsday:
@@ -358,11 +363,11 @@ EclInstruction EclProgram::instruction(std::uint32_t address,
         throw EclError("Invalid execution image size");
     }
     const auto bank_start = memory_.origin;
-    if (address < bank_start || address >= bank_start + image.size() - 2)
+    if (address < bank_start || address >= bank_start + image.size() - memory_.record_header_size)
     {
         throw EclError("Instruction address outside program");
     }
-    std::size_t cursor = address - bank_start + 2;
+    std::size_t cursor = address - bank_start + memory_.record_header_size;
     const auto byte = [&]()
     {
         if (cursor >= image.size())
@@ -426,7 +431,7 @@ EclInstruction EclProgram::instruction(std::uint32_t address,
             result.operands.push_back(operand());
         }
     }
-    result.next = bank_start + static_cast<std::uint32_t>(cursor) - 2;
+    result.next = bank_start + static_cast<std::uint32_t>(cursor) - memory_.record_header_size;
     for (const auto &change : overrides_)
     {
         if (change.address == result.address && change.operand < result.operands.size())
@@ -450,7 +455,8 @@ EclProgram EclProgram::decode(std::span<const std::uint8_t> bytes, std::string_v
     try
     {
         const auto memory = ecl_memory(game);
-        if (bytes.size() < 2 || bytes.size() - 2 > memory.limit - memory.origin)
+        if (bytes.size() < memory.record_header_size ||
+            bytes.size() - memory.record_header_size > memory.limit - memory.origin)
         {
             throw EclError("Invalid ECL record size");
         }
@@ -473,7 +479,8 @@ EclProgram EclProgram::decode(std::span<const std::uint8_t> bytes, std::string_v
         program.body_start_ = cursor;
         for (auto target : program.entries_)
         {
-            if (target < cursor || target >= memory.origin + bytes.size() - 2)
+            if (target < cursor ||
+                target >= memory.origin + bytes.size() - memory.record_header_size)
             {
                 throw EclError("Entry target outside program body");
             }

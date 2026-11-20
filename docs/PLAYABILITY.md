@@ -2199,3 +2199,72 @@ logs, observed timings, the interrupted legacy diagnostic batch and fidelity
 limitations. The main checkout's existing `docs/GAMES.md` edit remains untouched.
 Dark Queen, both Buck Rogers games and the installed UA design remain, followed
 by the victory-time library of every winning PC and permanent NPC.
+
+### Active batch: The Dark Queen of Krynn
+
+- Authorization: continuation of the same all-twelve-game request, after
+  Death Knights `baf0bc01`; no new task, delegation or model/runtime change.
+- Start observed: **2026-11-19 18:28:11 UTC**; checkpoint due **19:28:11**,
+  no later than **19:58:11**.
+- Player outcome: the installed Dark Queen campaign plays under its Original
+  Rules, imports the actual Death Knights winning party and reaches its native
+  ending with a compatible ordinary winning save.
+- Acceptance: complete installed-data census; native creation/progression,
+  gods/robes/knights/moons/spells; combat, camps, services and vault; faithful
+  earned-party conversion; every-map walk; fresh earned ending and byte-equal
+  ordinary save; relevant native/Godot/Linux package verification.
+- Architecture: reuse existing library readers and Godot/C++20/GDExtension;
+  Core orchestrates, rules decide mechanics. Append game ID 9, preserve released
+  save histories and use RAII. No SRD implementation, original-data edits,
+  forced wins, artificial grants/heals, quest writes or arbitrary placements
+  in earned-campaign proof.
+- Exclusions: both Buck Rogers games and the installed UA adventure follow;
+  universal availability of every winning PC/permanent NPC follows all twelve
+  wins, captured at victory before Continue or scripted departures.
+- Delivery: one owner, no new issues beyond the session claim; final checks,
+  commit/push, artifacts, board release and merged-branch/worktree cleanup.
+  Leave the main checkout's existing dirty `docs/GAMES.md` untouched.
+
+Baseline and primary references are in [Dark Queen](games/dark-queen.md).
+**Zero complete player outcomes of one planned** are accepted yet.
+
+The Dark Queen reading checkpoint passes: complete installed-data census and
+**3/3 new-reader/UA/ECL checks in 0.10 seconds**. All 47 scripts, 20 maps,
+98 creatures and installed media decode. Details and logs are in
+[the reading record](games/dark-queen.md#reading-checkpoint). Native rules,
+campaign geometry/runtime, actual imported earned ending and final application
+checks remain; this is not an accepted complete player outcome.
+
+### Current parallel checkpoint (2026-11-20)
+
+The user explicitly authorized parallel agents and approximately 80 percent
+CPU utilization. Native combat/ending work, Countdown's earned route and
+Matrix's loader/ending support now have separate implementation owners;
+shared changes integrate in one checkout before final checks. This supersedes
+the earlier serial execution policy, without changing acceptance criteria.
+
+Eight commercial campaigns retain the earned-ending evidence above. UA's
+generated-design victory and ordinary winning-save preservation are delivered
+in `ed0be5e8`; no installed `.DSN` adventure was available. See
+[UA's verification](games/ua.md). Native's complete earned ending remains
+unverified. Countdown has eleven real ground victories and an earned ship,
+with all six crew surviving, but its full ending still requires the solar and
+ship transactions. See [Countdown's earned checks](games/countdown.md#earned-campaign-checks).
+The integrated Matrix loader verifies a corrected legal opening and the
+authored ending/save protocol; that diagnostic does not establish a complete
+earned campaign.
+
+The universal victory-time character library remains the next phase after all
+twelve games have verified wins. Capture must preserve every actual winning
+PC and permanent NPC before Continue or scripted departures.
+
+The combined checkpoint passes 20 focused native/rules/save checks plus the
+separate real Countdown Camp check, and seven Godot checks. Logs are
+`/tmp/opengold-integrated-camp-ground-career-focused-checks-v1.log`,
+`/tmp/opengold-integrated-countdown-camp-check-v1.log` and
+`/tmp/opengold-integrated-camp-ground-career-godot-checks-v1.log`.
+The preceding Native/Countdown baseline's 170-check broad run passed 168
+initially; its finder fixture passed with an isolated temporary directory
+(an existing `/tmp/.git` affected the test's outside-checkout assumption),
+and its stale localization references passed after catalog regeneration.
+These baseline results do not replace the final focused checks above.

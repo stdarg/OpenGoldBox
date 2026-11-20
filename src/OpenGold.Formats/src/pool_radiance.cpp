@@ -1,3 +1,4 @@
+#include "opengold/ua_formats.h"
 #include "opengold/pool_radiance.h"
 #include "opengold/curse_records.h"
 #include "opengold/champions_records.h"
@@ -287,7 +288,8 @@ std::optional<std::vector<ItemTemplate>> decode_item_templates(std::span<const s
     // bytes with 8 the game never reads.
     const std::size_t header = game == GoldBoxGame::pools_of_darkness ||
                                        game == GoldBoxGame::treasures_of_the_savage_frontier ||
-                                       game == GoldBoxGame::unlimited_adventures
+                                       game == GoldBoxGame::unlimited_adventures ||
+                                       game == GoldBoxGame::dark_queen_of_krynn
                                    ? 0
                                    : 2;
     const std::size_t stride = game == GoldBoxGame::gateway_to_the_savage_frontier ? 24 : 16;
@@ -326,6 +328,10 @@ std::optional<std::vector<std::string>> decode_item_words(std::span<const std::u
 std::optional<std::vector<std::string>> decode_item_words(std::span<const std::uint8_t> image,
                                                           GoldBoxGame game)
 {
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        return ua::decode_item_words(image, 155);
+    }
     const std::size_t count =
         (game == GoldBoxGame::secret_of_the_silver_blades ||
          game == GoldBoxGame::champions_of_krynn)

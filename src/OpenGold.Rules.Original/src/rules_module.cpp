@@ -1,14 +1,19 @@
-#include "combat_session.h"
 #include "champions_rules.h"
-#include "death_knights_rules.h"
+#include "combat_session.h"
+#include "dark_queen_effects.h"
+#include "dark_queen_progression.h"
+#include "dark_queen_rules.h"
 #include "death_knights_effects.h"
 #include "opengold/buck_rogers_characters.h"
+#include "opengold/buck_rogers_upkeep.h"
+#include "death_knights_rules.h"
+#include "opengold/dice.h"
 #include "opengold/original.h"
 #include "opengold/original_combat.h"
 #include "opengold/original_spells.h"
-#include "opengold/dice.h"
 
 #include <algorithm>
+#include <array>
 #include <charconv>
 #include <functional>
 #include <limits>
@@ -77,6 +82,10 @@ std::optional<std::string_view> krynn_item_refusal(const CharacterSheet &sheet,
 std::optional<int> class_experience(const CharacterSheet &sheet, ClassSlot slot, int level)
 {
     const auto game = game_of(sheet.identity);
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        return dark_queen_experience_for_level(slot, level, krynn_orders(sheet));
+    }
     if (game == GoldBoxGame::death_knights_of_krynn)
     {
         return death_knights_experience_for_level(slot, level, krynn_orders(sheet));
@@ -106,7 +115,10 @@ std::vector<ClassSlot> ready_classes(const CharacterSheet &sheet, unsigned exper
             const auto level = numbers.class_levels[at];
             const auto needed = class_experience(sheet, slot, level + 1);
             const auto limit =
-                racial_level_limit(static_cast<Race>(numbers.race), slot, sheet.scores, game);
+                game == GoldBoxGame::dark_queen_of_krynn
+                    ? std::optional<int>{dark_queen_level_limit(static_cast<Race>(numbers.race),
+                                                                slot, krynn_orders(sheet))}
+                    : racial_level_limit(static_cast<Race>(numbers.race), slot, sheet.scores, game);
             if (level > 0 && needed && *needed <= static_cast<int>(capped) &&
                 (!limit || level < *limit))
             {
@@ -179,6 +191,54 @@ std::string encode_drain(const Drain &drain)
         data += ' ' + std::to_string(level);
     }
     return data + ' ' + std::to_string(drain.hit_points);
+}
+
+// Native PROGRAM 3 rolls the HP loss once and retains that result in the
+// character's ordinary history, including its separate raw HP and XP losses.
+using NativeDrain = NativeDrainReceipt;
+constexpr std::string_view native_drain_word = "native_drain ";
+constexpr std::string_view exact_native_drain_word = "native_drain2 ";
+
+std::string encode_native_drain(const NativeDrain &loss)
+{
+    auto data = std::string(loss.before_level > 0 ? exact_native_drain_word : native_drain_word) +
+                std::to_string(loss.slot) + ' ' + std::to_string(loss.hit_points) + ' ' +
+                std::to_string(loss.rolled_hit_points) + ' ' + std::to_string(loss.experience) +
+                ' ' + std::to_string(loss.dead);
+    if (loss.before_level > 0)
+    {
+        data += ' ' + std::to_string(loss.before_level) + ' ' +
+                std::to_string(loss.previous_experience) + ' ' +
+                std::to_string(loss.previous_max_hit_points);
+    }
+    return data;
+}
+
+std::optional<NativeDrain> decode_native_drain(std::string_view data)
+{
+    const bool exact = data.starts_with(exact_native_drain_word);
+    if (!exact && !data.starts_with(native_drain_word))
+    {
+        return std::nullopt;
+    }
+    std::istringstream input{std::string(
+        data.substr(exact ? exact_native_drain_word.size() : native_drain_word.size()))};
+    NativeDrain loss;
+    std::string rest;
+    if (!(input >> loss.slot >> loss.hit_points >> loss.rolled_hit_points >> loss.experience >>
+          loss.dead) ||
+        (exact && !(input >> loss.before_level >> loss.previous_experience >>
+                    loss.previous_max_hit_points)) ||
+        (input >> rest) || loss.slot >= class_slot_count ||
+        loss.slot == static_cast<unsigned>(ClassSlot::druid) || loss.hit_points < 0 ||
+        loss.rolled_hit_points < 0 ||
+        loss.experience > static_cast<unsigned>(std::numeric_limits<int>::max()) ||
+        loss.previous_experience > static_cast<unsigned>(std::numeric_limits<int>::max()) ||
+        (exact && (loss.before_level < 1 || loss.previous_max_hit_points < 0)))
+    {
+        throw std::invalid_argument("Unreadable native scripted drain");
+    }
+    return loss;
 }
 
 // What being raised cost (temple.pas, RaiseDead; Curse's spell, cast_raise),
@@ -314,34 +374,49 @@ struct Restoration
 {
     ClassSlot slot{};
     int hit_points{}, rolled_hit_points{};
+    std::optional<unsigned> native_experience;
 };
 
 constexpr std::string_view restore_word = "restore";
+constexpr std::string_view native_restore_word = "native_restore";
 
 std::string encode_restoration(const Restoration &restoration)
 {
-    return std::string(restore_word) + ' ' +
-           std::to_string(static_cast<unsigned>(restoration.slot)) + ' ' +
-           std::to_string(restoration.hit_points) + ' ' +
-           std::to_string(restoration.rolled_hit_points);
+    auto data = std::string(restoration.native_experience ? native_restore_word : restore_word) +
+                ' ' + std::to_string(static_cast<unsigned>(restoration.slot)) + ' ' +
+                std::to_string(restoration.hit_points) + ' ' +
+                std::to_string(restoration.rolled_hit_points);
+    if (restoration.native_experience)
+    {
+        data += ' ' + std::to_string(*restoration.native_experience);
+    }
+    return data;
 }
 
 std::optional<Restoration> decode_restoration(std::string_view data)
 {
-    if (!data.starts_with(restore_word))
+    const bool native = data.starts_with(native_restore_word);
+    if (!native && !data.starts_with(restore_word))
     {
         return std::nullopt;
     }
-    std::istringstream in{std::string(data.substr(restore_word.size()))};
-    unsigned slot{};
+    std::istringstream in{
+        std::string(data.substr(native ? native_restore_word.size() : restore_word.size()))};
+    unsigned slot{}, experience{};
     Restoration restoration;
     std::string rest;
-    if (!(in >> slot >> restoration.hit_points >> restoration.rolled_hit_points) || (in >> rest) ||
-        slot >= class_slot_count || restoration.hit_points < 0 || restoration.rolled_hit_points < 0)
+    if (!(in >> slot >> restoration.hit_points >> restoration.rolled_hit_points) ||
+        (native && !(in >> experience)) || (in >> rest) || slot >= class_slot_count ||
+        restoration.hit_points < 0 || restoration.rolled_hit_points < 0 ||
+        experience > static_cast<unsigned>(std::numeric_limits<int>::max()))
     {
         throw std::invalid_argument("Unreadable original-rules restoration");
     }
     restoration.slot = static_cast<ClassSlot>(slot);
+    if (native)
+    {
+        restoration.native_experience = experience;
+    }
     return restoration;
 }
 
@@ -356,8 +431,15 @@ std::optional<Restoration> restoration_of(const CharacterSheet &sheet)
     int levels_lost = 0, drained_classes = 0;
     int least_needed = std::numeric_limits<int>::max();
     std::optional<ClassSlot> chosen;
-    for (std::size_t at = 0; at < class_slot_count; ++at)
+    constexpr std::array canonical_order{
+        ClassSlot::cleric, ClassSlot::druid,      ClassSlot::fighter, ClassSlot::paladin,
+        ClassSlot::ranger, ClassSlot::magic_user, ClassSlot::thief,   ClassSlot::monk};
+    const auto order = game == GoldBoxGame::dark_queen_of_krynn
+                           ? std::span<const ClassSlot>{native_class_order}
+                           : std::span<const ClassSlot>{canonical_order};
+    for (const auto slot : order)
     {
+        const auto at = static_cast<std::size_t>(slot);
         const int level = numbers.class_levels[at], peak = numbers.peak_class_levels[at];
         drained_classes += peak > 0 ? 1 : 0;
         if (level >= peak)
@@ -365,9 +447,10 @@ std::optional<Restoration> restoration_of(const CharacterSheet &sheet)
             continue;
         }
         levels_lost += peak - level;
-        const auto slot = static_cast<ClassSlot>(at);
         const int needed =
-            experience_for_level(slot, level + 1, game).value_or(std::numeric_limits<int>::max());
+            (game == GoldBoxGame::dark_queen_of_krynn ? class_experience(sheet, slot, level + 1)
+                                                      : experience_for_level(slot, level + 1, game))
+                .value_or(std::numeric_limits<int>::max());
         if (needed <= least_needed)
         {
             least_needed = needed;
@@ -378,12 +461,25 @@ std::optional<Restoration> restoration_of(const CharacterSheet &sheet)
     {
         return std::nullopt;
     }
-    const int hit_points = numbers.drained_hit_points / levels_lost;
+    const int missing_hit_points =
+        game == GoldBoxGame::dark_queen_of_krynn && numbers.native_previous_max_hit_points > 0
+            ? std::max(0, numbers.native_previous_max_hit_points - sheet.hit_points)
+            : numbers.drained_hit_points;
+    const int hit_points = missing_hit_points / levels_lost;
     const int restored_level = level_in(numbers.class_levels, *chosen) + 1;
-    return Restoration{*chosen, hit_points,
+    Restoration result{*chosen, hit_points,
                        restored_rolled_hit_points(*chosen, restored_level, hit_points,
                                                   sheet.scores[Ability::constitution],
-                                                  drained_classes, game)};
+                                                  drained_classes, game),
+                       std::nullopt};
+    if (game == GoldBoxGame::dark_queen_of_krynn && numbers.native_previous_max_hit_points > 0)
+    {
+        const auto current = static_cast<unsigned>(std::max(0, numbers.experience));
+        result.native_experience = levels_lost == 1 && current < numbers.native_previous_experience
+                                       ? numbers.native_previous_experience
+                                       : static_cast<unsigned>(std::max(0, least_needed));
+    }
+    return result;
 }
 
 // The slots a character has for a spell's class and level.
@@ -426,7 +522,11 @@ void recount_levels(CharacterSheet &sheet)
         }
     }
     numbers.known_spells = known_spells(levels, sheet.scores[Ability::wisdom], learned, game);
-    if (game == GoldBoxGame::death_knights_of_krynn)
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        recalculate_dark_queen_numbers(numbers, sheet.scores);
+    }
+    else if (game == GoldBoxGame::death_knights_of_krynn)
     {
         recalculate_death_knights_numbers(numbers, sheet.scores);
     }
@@ -486,14 +586,17 @@ por::CharacterRecord character_record(const CharacterSheet &sheet)
         attacks = std::max({2, warrior > 6 ? 3 : 2, warrior > 12 ? 4 : 2, ranger > 7 ? 3 : 2,
                             ranger > 14 ? 4 : 2});
     }
-    if (game == GoldBoxGame::death_knights_of_krynn)
+    if (game == GoldBoxGame::death_knights_of_krynn || game == GoldBoxGame::dark_queen_of_krynn)
     {
         const auto warrior =
             std::max({fighter, level_in(l, ClassSlot::paladin), level_in(l, ClassSlot::monk)});
-        attacks = std::max(warrior > 12  ? 4
-                           : warrior > 6 ? 3
-                                         : 2,
-                           level_in(l, ClassSlot::ranger) > 7 ? 3 : 2);
+        attacks = std::max(
+            warrior > 12  ? 4
+            : warrior > 6 ? 3
+                          : 2,
+            game == GoldBoxGame::dark_queen_of_krynn && level_in(l, ClassSlot::ranger) > 14 ? 4
+            : level_in(l, ClassSlot::ranger) > 7                                            ? 3
+                                                                                            : 2);
     }
     record.base_attacks[0] = {static_cast<std::uint8_t>(attacks), {1, 2, 0}};
     record.base_thac0 = original.thac0;
@@ -552,10 +655,33 @@ por::CharacterRecord character_record(const CharacterSheet &sheet)
 // A character's numbers with its readied items, as the original works them
 // out at the start of every fight and turn (charhlp.pas, RecalcStats), and
 // the innate effects each race gets at creation (chargen.pas).
+NativeProgression native_progression_of(const CharacterSheet &sheet)
+{
+    const auto &n = original_numbers(sheet);
+    NativeProgression p;
+    p.profession = n.profession;
+    p.race = n.race;
+    p.knight_order = n.knight_order;
+    p.deity = n.deity;
+    p.robe_order = n.robe_order;
+    p.wisdom = sheet.scores[Ability::wisdom];
+    p.female = sheet.gender == "Female";
+    p.rolled_hit_points = n.rolled_hit_points;
+    p.previous_max_hit_points = n.native_previous_max_hit_points;
+    p.experience = static_cast<unsigned>(std::max(0, n.experience));
+    p.previous_experience = n.native_previous_experience;
+    p.peak_class_levels = n.peak_class_levels;
+    return p;
+}
+
 Combatant character_combatant(const CharacterSheet &sheet,
                               std::span<const CarriedItem> carried = {})
 {
     auto c = combatant_from_record(character_record(sheet), carried);
+    if (game_of(sheet.identity) == GoldBoxGame::dark_queen_of_krynn)
+    {
+        c.native_progression = native_progression_of(sheet);
+    }
     // The Constitution saves against poison (90) and against spells and wands
     // (97), and the elf's and half-elf's resistance to sleep and charm (107,
     // 124). A dwarf's and a gnome's bonus against their foes (26, 18), their
@@ -570,7 +696,8 @@ Combatant character_combatant(const CharacterSheet &sheet,
     {
         c.effects.push_back({code, 0, 255, false});
     };
-    if (game_of(sheet.identity) == GoldBoxGame::death_knights_of_krynn)
+    if (game_of(sheet.identity) == GoldBoxGame::death_knights_of_krynn ||
+        game_of(sheet.identity) == GoldBoxGame::dark_queen_of_krynn)
     {
         const auto &n = *sheet.original;
         const auto marker =
@@ -669,6 +796,8 @@ class OriginalModule final : public RulesModule
     restore(std::string_view checkpoint) const override;
     [[nodiscard]] CharacterProfile character_profile(const CharacterSheet &,
                                                      std::span<const std::string>) const override;
+    [[nodiscard]] std::optional<bool>
+    script_has_effect(const CharacterProfile &, const VitalState &, unsigned) const override;
     [[nodiscard]] EquipmentInfo equipment_info(std::string_view) const override;
     [[nodiscard]] unsigned carrying_capacity_pounds(const CharacterSheet &) const override;
     [[nodiscard]] bool can_use_item(const CharacterSheet &, std::string_view) const override;
@@ -728,6 +857,8 @@ class OriginalModule final : public RulesModule
     [[nodiscard]] AdvancementOptions advancement_options(const CharacterSheet &sheet,
                                                          const AdvancementChoice &) const override;
     [[nodiscard]] AdvancementChoice default_advancement(const CharacterSheet &) const override;
+    [[nodiscard]] std::optional<AdvancementChoice>
+    scripted_level_drain(const CharacterSheet &, RandomState &) const override;
     [[nodiscard]] CharacterSheet spell_choice_sheet(const CharacterSheet &,
                                                     const AdvancementChoice &) const override;
     bool advance_character(CharacterSheet &sheet, VitalState &state,
@@ -790,6 +921,8 @@ class OriginalModule final : public RulesModule
     void age_character(CharacterSheet &sheet, int years) const;
     static void lose_charisma(CharacterSheet &sheet, VitalState &state, int points);
     static void refuse_romance(CharacterSheet &sheet, VitalState &state);
+    [[nodiscard]] bool receives_experience(const CharacterSheet &sheet,
+                                           const VitalState &state) const override;
     [[nodiscard]] unsigned experience_share(const CharacterSheet &sheet,
                                             unsigned award) const override;
     void recover(VitalState &state, const CharacterSheet &sheet) const override;
@@ -943,7 +1076,8 @@ CharacterProfile OriginalModule::character_profile(const CharacterSheet &sheet,
     profile.record = encode_fight_record(character_record(sheet));
     profile.hit_points = combatant.max_hit_points;
     profile.armor_class = combatant.armor_class;
-    if (game_of(sheet.identity) == GoldBoxGame::death_knights_of_krynn)
+    if (game_of(sheet.identity) == GoldBoxGame::death_knights_of_krynn ||
+        game_of(sheet.identity) == GoldBoxGame::dark_queen_of_krynn)
     {
         profile.melee_attack_bonus = 20 - combatant.thac0;
     }
@@ -1032,11 +1166,6 @@ std::vector<StatusEffectView> OriginalModule::status_effects(const CharacterShee
                                                              const VitalState &) const
 {
     return {};
-}
-
-void OriginalModule::elapse(std::span<Participant>, std::chrono::milliseconds, RandomState &) const
-{
-    // No lasting effects run under the original rules yet.
 }
 
 CarriedItem OriginalModule::item_for(std::string_view key) const
@@ -1253,7 +1382,9 @@ SpellChoiceOptions OriginalModule::spell_choice_options(const CharacterSheet &sh
     const auto &numbers = *sheet.original;
     const auto game = game_of(sheet.identity);
     const int moon =
-        game == GoldBoxGame::death_knights_of_krynn ? death_knights_moon_allowance(numbers) : 0;
+        (game == GoldBoxGame::death_knights_of_krynn || game == GoldBoxGame::dark_queen_of_krynn)
+            ? death_knights_moon_allowance(numbers)
+            : 0;
     for (const int number : numbers.known_spells)
     {
         const auto *known = spell(number, game);
@@ -1294,9 +1425,10 @@ void OriginalModule::apply_spell_choices(CharacterSheet &sheet, const SpellChoic
     const auto offered = spell_choice_options(sheet, context).preparation;
     std::map<std::pair<SpellClass, int>, int> taken;
     const auto game = game_of(sheet.identity);
-    const int moon = game == GoldBoxGame::death_knights_of_krynn
-                         ? death_knights_moon_allowance(*sheet.original)
-                         : 0;
+    const int moon =
+        (game == GoldBoxGame::death_knights_of_krynn || game == GoldBoxGame::dark_queen_of_krynn)
+            ? death_knights_moon_allowance(*sheet.original)
+            : 0;
     int extra = 0;
     for (const auto &id : *choices.prepared)
     {
@@ -1587,17 +1719,21 @@ void OriginalModule::train_at_hall(CharacterSheet &sheet, std::string_view grant
             throw std::invalid_argument("This knight does not qualify for the next order");
         }
         auto &numbers = *next.original;
-        const int old_level = numbers.class_levels[7];
+        int old_level = numbers.class_levels[7];
         const auto game = game_of(next.identity);
         const KrynnOrders target_order{numbers.deity, numbers.robe_order, order};
-        const auto threshold =
-            game == GoldBoxGame::death_knights_of_krynn
+        auto threshold =
+            game == GoldBoxGame::dark_queen_of_krynn
+                ? dark_queen_experience_for_level(ClassSlot::monk, old_level, target_order)
+            : game == GoldBoxGame::death_knights_of_krynn
                 ? death_knights_experience_for_level(ClassSlot::monk, old_level, target_order)
                 : champions_experience_for_level(ClassSlot::monk, old_level, target_order);
-        if (threshold && experience < *threshold)
+        while (threshold && experience < *threshold)
         {
             --numbers.class_levels[7];
-            const bool fixed_loss = game == GoldBoxGame::death_knights_of_krynn && old_level > 9;
+            const bool fixed_loss = (game == GoldBoxGame::death_knights_of_krynn ||
+                                     game == GoldBoxGame::dark_queen_of_krynn) &&
+                                    old_level > 9;
             const int lost = fixed_loss ? 2 : numbers.rolled_hit_points / (old_level + 1);
             numbers.rolled_hit_points -= lost;
             next.hit_points =
@@ -1612,6 +1748,12 @@ void OriginalModule::train_at_hall(CharacterSheet &sheet, std::string_view grant
                 next.level_classes.erase(std::next(last).base());
             }
             --next.level;
+            if (game != GoldBoxGame::dark_queen_of_krynn)
+            {
+                break;
+            }
+            old_level = numbers.class_levels[7];
+            threshold = dark_queen_experience_for_level(ClassSlot::monk, old_level, target_order);
         }
         numbers.knight_order = order;
         recount_levels(next);
@@ -1676,7 +1818,15 @@ AdvancementOptions OriginalModule::advancement_options(const CharacterSheet &she
     {
         slots = champions_spell_slots(ClassSlot::magic_user, magic_user + 1,
                                       sheet.scores[Ability::wisdom], krynn_orders(sheet));
-        if (game == GoldBoxGame::death_knights_of_krynn)
+        if (game == GoldBoxGame::dark_queen_of_krynn)
+        {
+            auto next = numbers.class_levels;
+            level_in(next, ClassSlot::magic_user) = magic_user + 1;
+            slots =
+                dark_queen_base_slots(next, sheet.scores[Ability::wisdom],
+                                      sheet.scores[Ability::intelligence], krynn_orders(sheet))[3];
+        }
+        else if (game == GoldBoxGame::death_knights_of_krynn)
         {
             auto next = numbers.class_levels;
             level_in(next, ClassSlot::magic_user) = magic_user + 1;
@@ -1691,7 +1841,9 @@ AdvancementOptions OriginalModule::advancement_options(const CharacterSheet &she
                 highest = static_cast<int>(at + 1);
             }
         }
-        robe_spells = game == GoldBoxGame::death_knights_of_krynn
+        robe_spells = game == GoldBoxGame::dark_queen_of_krynn
+                          ? dark_queen_learning_spells(numbers.robe_order, highest)
+                      : game == GoldBoxGame::death_knights_of_krynn
                           ? death_knights_learning_spells(numbers.robe_order, highest)
                           : champions_learning_spells(numbers.robe_order, highest);
     }
@@ -1726,6 +1878,25 @@ AdvancementOptions OriginalModule::advancement_options(const CharacterSheet &she
 AdvancementChoice OriginalModule::default_advancement(const CharacterSheet &) const
 {
     return {};
+}
+
+std::optional<AdvancementChoice> OriginalModule::scripted_level_drain(const CharacterSheet &sheet,
+                                                                      RandomState &random) const
+{
+    if (game_of(sheet.identity) != GoldBoxGame::dark_queen_of_krynn || !sheet.original)
+    {
+        return std::nullopt;
+    }
+    const auto loss = roll_native_drain(native_progression_of(sheet), sheet.original->class_levels,
+                                        sheet.hit_points, sheet.scores[Ability::constitution],
+                                        sheet.original->race, random);
+    if (!loss)
+    {
+        return std::nullopt;
+    }
+    AdvancementChoice choice;
+    choice.rules_data = encode_native_drain(*loss);
+    return choice;
 }
 
 CharacterSheet OriginalModule::spell_choice_sheet(const CharacterSheet &sheet,
@@ -1878,6 +2049,11 @@ std::vector<int> disease_codes(GoldBoxGame game)
     {
         codes.insert(codes.end(), {50, kit_rotting});
     }
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        codes.insert(codes.end(), {dark_queen_effect::rot_recovery, kit_rotting,
+                                   dark_queen_effect::spore_infection});
+    }
     return codes;
 }
 
@@ -1923,6 +2099,21 @@ std::optional<VitalState> OriginalModule::imported_state(const CharacterSheet &f
                                                          const VitalState &state,
                                                          const CharacterSheet &to) const
 {
+    if (game_of(to.identity) == GoldBoxGame::dark_queen_of_krynn &&
+        game_of(from.identity) == GoldBoxGame::death_knights_of_krynn)
+    {
+        auto numbers = character_combatant(to);
+        numbers.hit_points = std::min(state.hit_points, to.hit_points);
+        numbers.spells = spells_left(from, state);
+        for (auto &number : numbers.spells)
+        {
+            number = dark_queen_import_spell(number);
+        }
+        std::erase(numbers.spells, 0);
+        const auto carried = carried_state(state.resources, game_of(from.identity)).conditions;
+        numbers.effects.insert(numbers.effects.end(), carried.begin(), carried.end());
+        return VitalState{numbers.hit_points, state.dead, numbers.encode(), state.description};
+    }
     if (game_of(to.identity) != GoldBoxGame::death_knights_of_krynn ||
         game_of(from.identity) != GoldBoxGame::champions_of_krynn)
     {
@@ -2023,6 +2214,10 @@ void change_conditions(const CharacterSheet &sheet, VitalState &state,
 bool cure(const CharacterSheet &sheet, VitalState &state, std::span<const int> codes)
 {
     bool cured = false;
+    const bool spore_removed =
+        game_of(sheet.identity) == GoldBoxGame::dark_queen_of_krynn &&
+        std::ranges::find(codes, dark_queen_effect::spore_infection) != codes.end() &&
+        condition(conditions_of(sheet, state), dark_queen_effect::spore_infection);
     change_conditions(sheet, state,
                       [&](std::vector<Effect> &effects)
                       {
@@ -2033,6 +2228,11 @@ bool cure(const CharacterSheet &sheet, VitalState &state, std::span<const int> c
                                                            codes.end();
                                                 }) > 0;
                       });
+    if (spore_removed)
+    {
+        state.dead = true;
+        state.hit_points = 0;
+    }
     return cured;
 }
 
@@ -2058,13 +2258,18 @@ int camp_caster_level(const CharacterSheet &caster, const Spell &known)
     {
         return 12;
     }
-    if (game_of(caster.identity) == GoldBoxGame::death_knights_of_krynn)
+    if (game_of(caster.identity) == GoldBoxGame::death_knights_of_krynn ||
+        game_of(caster.identity) == GoldBoxGame::dark_queen_of_krynn)
     {
         const auto &n = *caster.original;
         const int phase = n.robe_order >= 1 && n.robe_order <= 3
                               ? n.krynn_moon_phases[static_cast<std::size_t>(n.robe_order - 1)]
                               : 3;
-        return death_knights_caster_level(n.class_levels, known.caster_class, n.robe_order, phase);
+        return game_of(caster.identity) == GoldBoxGame::dark_queen_of_krynn
+                   ? dark_queen_caster_level(n.class_levels, known.caster_class, n.robe_order,
+                                             phase)
+                   : death_knights_caster_level(n.class_levels, known.caster_class, n.robe_order,
+                                                phase);
     }
     const auto &levels = original_numbers(caster).class_levels;
     if (known.caster_class == SpellClass::druid)
@@ -2152,6 +2357,8 @@ void strengthen_in_camp(const CharacterSheet &caster, const CharacterSheet &targ
 // The spells cast in camp for their effects, which carry into the next fight
 // (lasting_condition); the party is camp target 4.
 constexpr int protection_from_fire = 309, mind_blank = 322;
+constexpr std::string_view hot_fire_shield = "cast:magic_user:fire_shield:hot",
+                           cold_fire_shield = "cast:magic_user:fire_shield:cold";
 constexpr std::array<int, 29> camp_effect_spells{1,   6,   7,   8,   16,  17,  18,  19,  24, 29,
                                                  30,  32,  42,  45,  48,  50,  52,  53,  54, 169,
                                                  188, 309, 312, 316, 318, 319, 322, 501, 505};
@@ -2186,6 +2393,10 @@ void lay_camp_effect(const CharacterSheet &caster, const CharacterSheet &target,
                    : number == mirror_image               ? roll_die(random_state, 4)
                                                           : level;
     int code = known.effect;
+    if (number == mirror_image && game_of(caster.identity) == GoldBoxGame::dark_queen_of_krynn)
+    {
+        strength = (strength << 5) | level;
+    }
     // Mind Blank lasts a day (magic.pas, CalcSpellDuration). Protection from
     // Fire gives a ranger the druid's protection, which lasts until it has
     // taken 12 points of fire a caster level, and anyone else Resist Fire,
@@ -2249,12 +2460,40 @@ void spend_spell(const CharacterSheet &user, VitalState &state, int number)
     state.resources = numbers.encode();
 }
 
+// Native imports retain a live combat record even outside a fight. Keep
+// progression changes in that record so a later healing spell does not
+// interpret the previous class levels as a newly suffered drain.
+void synchronize_native_progression(const CharacterSheet &sheet, VitalState &state)
+{
+    if (game_of(sheet.identity) != GoldBoxGame::dark_queen_of_krynn)
+    {
+        return;
+    }
+    auto carried = carried_state(state.resources, GoldBoxGame::dark_queen_of_krynn);
+    if (carried.last_fight)
+    {
+        carried.last_fight->class_levels = sheet.original->class_levels;
+        carried.last_fight->max_hit_points = sheet.hit_points;
+        carried.last_fight->hit_points = state.hit_points;
+        if (carried.last_fight->native_progression)
+        {
+            carried.last_fight->native_progression = native_progression_of(sheet);
+        }
+        state.resources = carried.last_fight->encode();
+    }
+}
+
 // The class levels the member's last fight left follow its sheet's: the
 // fight's drain was kept as it ended, and lasting_changes counts the levels
 // those numbers lack against the sheet's as a drain, which a training or a
 // level given back since is not.
 void follow_class_levels(const CharacterSheet &sheet, VitalState &state)
 {
+    if (game_of(sheet.identity) == GoldBoxGame::dark_queen_of_krynn)
+    {
+        synchronize_native_progression(sheet, state);
+        return;
+    }
     auto carried = carried_state(state.resources, game_of(sheet.identity));
     if (!carried.last_fight)
     {
@@ -2288,12 +2527,14 @@ void OriginalModule::take_advancement(CharacterSheet &sheet, VitalState &state,
         train_at_hall(next, choice.rules_data);
         state.hit_points = std::min(state.hit_points, next.hit_points);
         sheet = std::move(next);
+        synchronize_native_progression(sheet, state);
         return;
     }
     const auto &numbers = original_numbers(sheet);
     if (const auto days = decode_krynn_calendar(choice.rules_data))
     {
-        if (game_of(sheet.identity) != GoldBoxGame::death_knights_of_krynn ||
+        if ((game_of(sheet.identity) != GoldBoxGame::death_knights_of_krynn &&
+             game_of(sheet.identity) != GoldBoxGame::dark_queen_of_krynn) ||
             *days < numbers.krynn_calendar_days)
         {
             throw std::invalid_argument("Invalid Krynn calendar change");
@@ -2320,6 +2561,90 @@ void OriginalModule::take_advancement(CharacterSheet &sheet, VitalState &state,
                 return known->caster_class != SpellClass::magic_user || base == 0 || ++extra > moon;
             });
         return;
+    }
+    if (const auto loss = decode_native_drain(choice.rules_data))
+    {
+        if (game_of(sheet.identity) != GoldBoxGame::dark_queen_of_krynn ||
+            loss->hit_points > sheet.hit_points || numbers.class_levels[loss->slot] < 1 ||
+            (loss->before_level > 0 && numbers.class_levels[loss->slot] != loss->before_level))
+        {
+            throw std::invalid_argument("Invalid native scripted drain");
+        }
+        const auto incoming = state;
+        const auto continued = carried_state(state.resources, GoldBoxGame::dark_queen_of_krynn);
+        const bool combat_receipt =
+            loss->before_level > 0 && continued.last_fight &&
+            continued.last_fight->native_progression &&
+            std::ranges::find(continued.last_fight->native_progression->drains, *loss) !=
+                continued.last_fight->native_progression->drains.end();
+        const int missing = std::max(0, sheet.hit_points - state.hit_points);
+        const int raw = numbers.rolled_hit_points;
+        Drain drain;
+        drain.levels[loss->slot] = 1;
+        drain.hit_points = loss->hit_points;
+        drain_character(sheet, state, drain);
+        sheet.original->rolled_hit_points = std::max(0, raw - loss->rolled_hit_points);
+        if (loss->before_level > 0)
+        {
+            sheet.original->experience = static_cast<int>(loss->experience);
+            sheet.original->native_previous_experience = loss->previous_experience;
+            sheet.original->native_previous_max_hit_points = loss->previous_max_hit_points;
+        }
+        state.hit_points = loss->dead ? 0 : std::max(0, sheet.hit_points - missing);
+        state.dead = state.dead || loss->dead;
+        const auto trim = [&](auto &spells, const auto &number_of)
+        {
+            std::map<std::pair<SpellClass, int>, int> taken;
+            int extra = 0;
+            const int moon = death_knights_moon_allowance(*sheet.original);
+            std::erase_if(spells,
+                          [&](const auto &entry)
+                          {
+                              const auto *known =
+                                  spell(number_of(entry), GoldBoxGame::dark_queen_of_krynn);
+                              if (!known)
+                              {
+                                  return true;
+                              }
+                              const int base = slots_for(*sheet.original, *known);
+                              if (++taken[{known->caster_class, known->level}] <= base)
+                              {
+                                  return false;
+                              }
+                              return known->caster_class != SpellClass::magic_user || base == 0 ||
+                                     ++extra > moon;
+                          });
+        };
+        trim(sheet.prepared_spells,
+             [](const std::string &id)
+             {
+                 return spell_number(id, GoldBoxGame::dark_queen_of_krynn).value_or(0);
+             });
+        auto carried = carried_state(state.resources, GoldBoxGame::dark_queen_of_krynn);
+        if (carried.last_fight)
+        {
+            trim(carried.last_fight->spells,
+                 [](int number)
+                 {
+                     return number;
+                 });
+            carried.last_fight->class_levels = sheet.original->class_levels;
+            carried.last_fight->max_hit_points = sheet.hit_points;
+            carried.last_fight->hit_points = state.hit_points;
+            if (loss->before_level > 0)
+            {
+                carried.last_fight->native_progression = native_progression_of(sheet);
+            }
+            state.resources = carried.last_fight->encode();
+        }
+        if (combat_receipt)
+        {
+            // Combat already changed current HP and owns this continuation.
+            // Recording history must not apply its damage a second time or
+            // rewrite the authoritative snapshot used by resolve_combat.
+            state = incoming;
+        }
+        return true;
     }
     if (const auto drain = decode_drain(choice.rules_data))
     {
@@ -2419,6 +2744,7 @@ void OriginalModule::take_advancement(CharacterSheet &sheet, VitalState &state,
     ++next.level;
     sheet = std::move(next);
     state.hit_points += gain;
+    synchronize_native_progression(sheet, state);
 }
 
 // The drain is the character's: its classes' levels, its sheet's highest level
@@ -2485,7 +2811,12 @@ void OriginalModule::restore_character(CharacterSheet &sheet, VitalState &state,
     {
         state.hit_points += given_back.hit_points;
     }
+    if (given_back.native_experience)
+    {
+        numbers.experience = static_cast<int>(*given_back.native_experience);
+    }
     sheet = std::move(next);
+    synchronize_native_progression(sheet, state);
 }
 
 // The Charisma the kit's rot took comes off the sheet, never below 3, and the
@@ -2530,10 +2861,18 @@ unsigned OriginalModule::experience_after_lasting_change(const CharacterSheet &a
                                                          const AdvancementChoice &change,
                                                          unsigned experience) const
 {
+    if (const auto loss = decode_native_drain(change.rules_data))
+    {
+        return loss->experience;
+    }
     const auto given_back = decode_restoration(change.rules_data);
     if (!given_back)
     {
         return experience;
+    }
+    if (given_back->native_experience)
+    {
+        return *given_back->native_experience;
     }
     const auto needed = original::experience_for_level(
         given_back->slot, level_in(original_numbers(after).class_levels, given_back->slot),
@@ -2642,8 +2981,29 @@ std::vector<AdvancementChoice> OriginalModule::lasting_changes(const CharacterSh
                 std::max(0, sheet.original->class_levels[at] - last->class_levels[at]);
             drained = drained || drain.levels[at] > 0;
         }
-        if (drained)
+        if (drained && game_of(sheet.identity) == GoldBoxGame::dark_queen_of_krynn &&
+            last->native_progression && !last->native_progression->drains.empty())
         {
+            auto levels = sheet.original->class_levels;
+            for (const auto &loss : last->native_progression->drains)
+            {
+                if (levels[loss.slot] == loss.before_level)
+                {
+                    AdvancementChoice change;
+                    change.rules_data = encode_native_drain(loss);
+                    changes.push_back(std::move(change));
+                    --levels[loss.slot];
+                }
+            }
+            if (levels != last->class_levels)
+            {
+                throw std::invalid_argument("Native combat drain receipts do not match its levels");
+            }
+        }
+        else if (drained)
+        {
+            // Old combatant14 continuations retain their original aggregate
+            // history. Exact native receipts never reinterpret old saves.
             drain.hit_points = std::max(0, sheet.hit_points - last->max_hit_points);
             AdvancementChoice change;
             change.rules_data = encode_drain(drain);
@@ -2694,6 +3054,14 @@ unsigned OriginalModule::experience_after_advance(const CharacterSheet &before,
                                                            game_of(before.identity)));
 }
 
+bool OriginalModule::receives_experience(const CharacterSheet &sheet, const VitalState &state) const
+{
+    // Native XP is awarded to enabled members before its post-combat
+    // recovery stands unconscious characters up.
+    return !state.dead && (game_of(sheet.identity) != GoldBoxGame::dark_queen_of_krynn ||
+                           (state.hit_points > 0 && state.description != stoned_description));
+}
+
 unsigned OriginalModule::experience_share(const CharacterSheet &sheet, unsigned award) const
 {
     const auto capped = std::min<unsigned>(award, std::numeric_limits<int>::max());
@@ -2722,9 +3090,34 @@ void OriginalModule::recover(VitalState &state, const CharacterSheet &sheet) con
 void OriginalModule::recover_days(VitalState &state, const CharacterSheet &sheet,
                                   unsigned days) const
 {
+    const auto game = game_of(sheet.identity);
+    if (game == GoldBoxGame::countdown_to_doomsday || game == GoldBoxGame::matrix_cubed)
+    {
+        if (days == 0 || state.description == stoned_description || state.dead)
+        {
+            return;
+        }
+        auto record = buck_rogers_record_of(state.resources);
+        if (!record)
+        {
+            return;
+        }
+        std::array team{TeamMember{record->creature, record->items, false, false}};
+        // Native Hit Points are a word; more days cannot heal beyond its
+        // range. The native helper decides which statuses rest can heal.
+        rest_and_heal(team, static_cast<int>(std::min<unsigned>(
+                                days, std::numeric_limits<std::uint16_t>::max())));
+        record->creature = team.front().character;
+        record->items = std::move(team.front().items);
+        state.hit_points = record->creature.hit_points;
+        state.resources = encode_ground_record(*record);
+        return;
+    }
     constexpr int wasting_hit_points = 44;
     if (days == 0 || state.description == stoned_description || state.dead ||
-        condition(conditions_of(sheet, state), wasting_hit_points))
+        condition(conditions_of(sheet, state), wasting_hit_points) ||
+        (game_of(sheet.identity) == GoldBoxGame::dark_queen_of_krynn &&
+         condition(conditions_of(sheet, state), dark_queen_effect::rot_recovery)))
     {
         return;
     }
@@ -2737,6 +3130,13 @@ void OriginalModule::recover_days(VitalState &state, const CharacterSheet &sheet
 // (pass_time).
 void OriginalModule::end_rest(VitalState &state, const CharacterSheet &sheet) const
 {
+    const auto game = game_of(sheet.identity);
+    if (game == GoldBoxGame::countdown_to_doomsday || game == GoldBoxGame::matrix_cubed)
+    {
+        // Buck Rogers has no spell-memory state to rebuild. Keep its
+        // current native record, including the rest's own recovery.
+        return;
+    }
     if (state.description == stoned_description)
     {
         return;
@@ -2913,11 +3313,30 @@ void OriginalModule::pass_time(VitalState &state, const CharacterSheet &sheet, s
             // had taken hold already.
             waste_away(sheet, state, effects, boundaries(60), boundaries(10));
             rot_away(sheet, state, effects, passed);
+            if (game == GoldBoxGame::dark_queen_of_krynn && !state.dead)
+            {
+                for (auto &effect : effects)
+                {
+                    if (effect.code != dark_queen_effect::rot_recovery)
+                    {
+                        continue;
+                    }
+                    effect.minutes -= passed;
+                    if (effect.minutes <= 0)
+                    {
+                        const int recovered = 1 - effect.minutes / 14400;
+                        effect.minutes += recovered * 14400;
+                        state.hit_points = std::min(state.hit_points + recovered, sheet.hit_points);
+                    }
+                }
+            }
             std::vector<Effect> taking_hold;
             std::erase_if(effects,
                           [&](Effect &e)
                           {
                               if (e.minutes == 0 || e.code == kit_rotting ||
+                                  e.code == dark_queen_effect::rot_recovery ||
+                                  e.code == dark_queen_effect::green_fire ||
                                   !lasting_condition(e, game))
                               {
                                   return false;
@@ -2931,6 +3350,11 @@ void OriginalModule::pass_time(VitalState &state, const CharacterSheet &sheet, s
                               {
                                   taking_hold.push_back({wasting_strength, 0, e.strength, false});
                                   taking_hold.push_back({wasting_hit_points, 0, e.strength, false});
+                              }
+                              if (e.code == dark_queen_effect::spore_infection)
+                              {
+                                  state.dead = true;
+                                  state.hit_points = 0;
                               }
                               slow_poison_ended = slow_poison_ended || e.code == slow_poison_end;
                               return true;
@@ -2954,6 +3378,146 @@ void OriginalModule::pass_time(VitalState &state, const CharacterSheet &sheet, s
 // Under AD&D aging a character grows a year older for each year the clock
 // passes (the Aging setting, docs/ORIGINAL-RULES.md); the original's clock
 // ages no one until its year count overflows (gametime.pas, ValidateClock).
+// Native green fire: one minute to its first flare, then ten minutes on
+// the road. The unused native strength retains subminute timer precision in
+// the existing profile codec (256 plus the remaining millisecond fraction).
+// Process the group's due events by time and member ID, preserving RNG and
+// results when a caller divides elapsed time into smaller steps.
+void OriginalModule::elapse(std::span<Participant> participants, std::chrono::milliseconds elapsed,
+                            RandomState &random) const
+{
+    if (content_.game != GoldBoxGame::dark_queen_of_krynn || elapsed.count() <= 0)
+    {
+        return;
+    }
+    constexpr std::int64_t minute = 60000, interval = 10 * minute;
+
+    struct Burn
+    {
+        std::size_t participant;
+        CarriedState carried;
+        Combatant defenses;
+        std::int64_t due;
+        bool active{true};
+    };
+
+    std::vector<Burn> burns;
+    const auto effects_of = [](Burn &burn) -> std::vector<Effect> &
+    {
+        return burn.carried.last_fight ? burn.carried.last_fight->effects : burn.carried.conditions;
+    };
+    for (std::size_t at = 0; at < participants.size(); ++at)
+    {
+        auto &participant = participants[at];
+        if (!participant.state || participant.state->dead)
+        {
+            continue;
+        }
+        auto profile = Combatant::decode(participant.character_profile);
+        if (!profile)
+        {
+            continue;
+        }
+        auto carried = carried_state(participant.state->resources, content_.game);
+        auto &effects = carried.last_fight ? carried.last_fight->effects : carried.conditions;
+        const auto fire = std::ranges::find(effects, dark_queen_effect::green_fire, &Effect::code);
+        if (fire == effects.end())
+        {
+            continue;
+        }
+        const int fraction = fire->strength >= 256 ? (fire->strength - 256) % minute : 0;
+        const std::int64_t due =
+            std::max(fire->minutes - 1, 0) * minute + (fraction ? fraction : minute);
+        burns.push_back({at, std::move(carried), std::move(*profile), due});
+    }
+    while (true)
+    {
+        std::optional<std::size_t> next;
+        for (std::size_t at = 0; at < burns.size(); ++at)
+        {
+            const auto &burn = burns[at];
+            if (!burn.active || burn.due > elapsed.count())
+            {
+                continue;
+            }
+            if (!next || burn.due < burns[*next].due ||
+                (burn.due == burns[*next].due &&
+                 participants[burn.participant].id < participants[burns[*next].participant].id))
+            {
+                next = at;
+            }
+        }
+        if (!next)
+        {
+            break;
+        }
+        auto &burn = burns[*next];
+        auto &state = *participants[burn.participant].state;
+        if (state.hit_points <= 0)
+        {
+            state.dead = true;
+            burn.active = false;
+        }
+        else if (state.hit_points >= burn.defenses.max_hit_points)
+        {
+            burn.active = false;
+        }
+        else
+        {
+            auto defenses = burn.defenses.effects;
+            for (const auto &effect : effects_of(burn))
+            {
+                if (effect.minutes == 0 ||
+                    static_cast<std::int64_t>(effect.minutes) * minute > burn.due)
+                {
+                    defenses.push_back(effect);
+                }
+            }
+            const int damage = dark_queen_green_fire_damage(roll_die(random, 8), defenses, random);
+            state.hit_points = std::max(state.hit_points - damage, 0);
+            if (state.hit_points == 0)
+            {
+                state.dead = true;
+                burn.active = false;
+            }
+            // Keep the druid protection's remaining absorption, if present.
+            auto &effects = effects_of(burn);
+            const auto before = std::ranges::find(effects, 519, &Effect::code);
+            if (before != effects.end())
+            {
+                const auto after = std::ranges::find(defenses, 519, &Effect::code);
+                if (after == defenses.end())
+                {
+                    effects.erase(before);
+                }
+                else
+                {
+                    before->strength = after->strength;
+                }
+            }
+            burn.due += interval;
+        }
+    }
+    for (auto &burn : burns)
+    {
+        auto &state = *participants[burn.participant].state;
+        auto &effects = effects_of(burn);
+        const auto fire = std::ranges::find(effects, dark_queen_effect::green_fire, &Effect::code);
+        if (!burn.active)
+        {
+            effects.erase(fire);
+        }
+        else
+        {
+            const auto remaining = burn.due - elapsed.count();
+            fire->minutes = static_cast<int>((remaining + minute - 1) / minute);
+            fire->strength = 256 + static_cast<int>(remaining % minute);
+        }
+        state.resources =
+            burn.carried.last_fight ? burn.carried.last_fight->encode() : rested_state(effects);
+    }
+}
+
 // The Charisma the kit's rot took as the clock passed (pass_time) comes off
 // the sheet for good.
 std::vector<AdvancementChoice> OriginalModule::clock_changes(const CharacterSheet &sheet,
@@ -2968,7 +3532,9 @@ std::vector<AdvancementChoice> OriginalModule::clock_changes(const CharacterShee
         change.rules_data = encode_age(years);
         changes.push_back(std::move(change));
     }
-    if (sheet.original && game_of(sheet.identity) == GoldBoxGame::death_knights_of_krynn &&
+    if (sheet.original &&
+        (game_of(sheet.identity) == GoldBoxGame::death_knights_of_krynn ||
+         game_of(sheet.identity) == GoldBoxGame::dark_queen_of_krynn) &&
         death_knights_calendar_day(to) != sheet.original->krynn_calendar_days)
     {
         AdvancementChoice change;
@@ -3239,6 +3805,19 @@ HazardAttackResult OriginalModule::hazard_attack(VitalState &state, const Charac
     {
         return result;
     }
+    const auto roll_damage = [&]
+    {
+        int damage = attack.damage_bonus;
+        for (unsigned die = 0; die < attack.dice; ++die)
+        {
+            const int rolled = roll_die(random_state, static_cast<int>(attack.sides));
+            result.damage_dice.push_back(rolled);
+            damage += rolled;
+        }
+        result.damage_rolled = damage;
+        return damage;
+    };
+    int damage = attack.original_roll_damage_first ? roll_damage() : 0;
     if (attack.original_save >= 0 && attack.original_save < 5)
     {
         const int roll = roll_die(random_state, 20);
@@ -3252,15 +3831,12 @@ HazardAttackResult OriginalModule::hazard_attack(VitalState &state, const Charac
             return result;
         }
     }
-    int damage = attack.damage_bonus;
-    for (unsigned die = 0; die < attack.dice; ++die)
+    if (!attack.original_roll_damage_first)
     {
-        const int rolled = roll_die(random_state, static_cast<int>(attack.sides));
-        result.damage_dice.push_back(rolled);
-        damage += rolled;
+        damage = roll_damage();
     }
-    result.damage_rolled = damage;
-    result.damage = std::max(result.saved ? damage / 2 : damage, 0);
+    const bool halve = attack.original_half_on_failure ? !result.saved : result.saved;
+    result.damage = std::max(halve ? damage / 2 : damage, 0);
     const int left = state.hit_points - result.damage;
     state.dead = state.dead || left <= -10;
     state.hit_points = std::max(left, 0);
@@ -3306,6 +3882,17 @@ std::vector<CampAction> OriginalModule::camp_actions(const CharacterSheet &sheet
     // The spells whose effects carry into the next fight, those the game's
     // table lets be cast out of one, on the party for a party's spell.
     const auto game = game_of(sheet.identity);
+    if (game == GoldBoxGame::dark_queen_of_krynn && std::ranges::find(left, 185) != left.end())
+    {
+        for (const auto &[id, flames] :
+             {std::pair{hot_fire_shield, "Hot flames"}, std::pair{cold_fire_shield, "Cold flames"}})
+        {
+            actions.push_back({std::string(id),
+                               {"Cast {spell} ({choice})",
+                                {{"spell", "Fire Shield", true}, {"choice", flames, true}}},
+                               false});
+        }
+    }
     for (const int number : camp_effect_spells)
     {
         const auto *known = spell(number, game);
@@ -3336,6 +3923,33 @@ void OriginalModule::use_camp_action(const CharacterSheet &user, VitalState &use
                                      std::string_view action, RandomState &random_state) const
 {
     const auto game = game_of(user.identity);
+    if (game == GoldBoxGame::dark_queen_of_krynn &&
+        (action == hot_fire_shield || action == cold_fire_shield))
+    {
+        const auto left = spells_left(user, user_state);
+        if (user_state.dead || std::ranges::find(left, 185) == left.end())
+        {
+            throw std::runtime_error("That spell cannot be cast now");
+        }
+        const auto &known = *spell(185, game);
+        const int level = camp_caster_level(user, known);
+        const int duration = known.minutes_fixed + known.minutes_per_level * level;
+        spend_spell(user, user_state, 185);
+        change_conditions(user, user_state,
+                          [&](std::vector<Effect> &effects)
+                          {
+                              std::erase_if(effects,
+                                            [](const Effect &effect)
+                                            {
+                                                return effect.code == 250 || effect.code == 254 ||
+                                                       effect.code == 343;
+                                            });
+                              effects.push_back(
+                                  {action == cold_fire_shield ? 254 : 250, duration, level, false});
+                              effects.push_back({343, duration, level, false});
+                          });
+        return;
+    }
     if (action == lay_on_hands || action == cure_disease_action)
     {
         const bool laying = action == lay_on_hands;
@@ -3560,12 +4174,7 @@ std::optional<int> item_power(std::string_view key, GoldBoxGame game)
     {
         return std::nullopt;
     }
-    const int code = record->effect_codes[1];
-    if (game != GoldBoxGame::pool_of_radiance)
-    {
-        return canonical_spell(code & 0x7F, game);
-    }
-    return code > 56 ? code - 23 : code;
+    return canonical_item_power(record->effect_codes[1], game);
 }
 } // namespace
 
@@ -3584,7 +4193,11 @@ bool OriginalModule::usable_outside_combat(std::string_view item) const
 {
     const auto power = item_power(item, content_.game);
     return power == potion_of_healing || power == keoghtums_ointment || power == youth ||
-           (vga_engine(content_.game) && power == 195);
+           (content_.game == GoldBoxGame::dark_queen_of_krynn &&
+            (power == native_elixir_youth || power == 199 || power == 57 || power == 59 ||
+             power == 197)) ||
+           ((vga_engine(content_.game) || content_.game == GoldBoxGame::dark_queen_of_krynn) &&
+            power == 195);
 }
 
 void OriginalModule::drink_potion(const CharacterSheet &sheet, VitalState &state,
@@ -3594,7 +4207,62 @@ void OriginalModule::drink_potion(const CharacterSheet &sheet, VitalState &state
     {
         throw std::runtime_error("That cannot be used now");
     }
-    if (item_power(item, content_.game) == youth)
+    const auto power = item_power(item, content_.game);
+    if (content_.game == GoldBoxGame::dark_queen_of_krynn &&
+        (power == 57 || power == 59 || power == 197))
+    {
+        // Native potions use the same effects and durations in camp as in
+        // combat. Speed cancels Slow instead of granting Haste. Its ageing
+        // happens immediately, and the shared combat marker prevents a
+        // second year being charged when combat begins.
+        constexpr int haste = 39, slow = 42, frost_strength = 113, invisible = 25;
+        if (power == 57 && cure(sheet, state, std::array{slow}))
+        {
+            return;
+        }
+        const int code = power == 57 ? haste : power == 59 ? frost_strength : invisible;
+        int minutes = 0;
+        if (power == 57)
+        {
+            for (unsigned die = 0; die < 5; ++die)
+            {
+                minutes += roll_die(random_state, 4);
+            }
+        }
+        else if (power == 59)
+        {
+            minutes = 40 + roll_die(random_state, 4) * 10;
+        }
+        const int strength = power == 57 ? 12 | 0x40 : power == 59 ? strength_code(21, 0) : 12;
+        change_conditions(sheet, state,
+                          [&](std::vector<Effect> &effects)
+                          {
+                              std::erase_if(effects,
+                                            [code](const Effect &effect)
+                                            {
+                                                return effect.code == code;
+                                            });
+                              effects.push_back({code, minutes, strength, false});
+                              if (power == 57)
+                              {
+                                  auto age =
+                                      std::ranges::find(effects, age_in_years, &Effect::code);
+                                  if (age == effects.end())
+                                  {
+                                      effects.push_back({age_in_years, 0,
+                                                         original_numbers(sheet).age + 1, false});
+                                  }
+                                  else
+                                  {
+                                      ++age->strength;
+                                  }
+                              }
+                          });
+        return;
+    }
+    if (item_power(item, content_.game) == youth ||
+        (content_.game == GoldBoxGame::dark_queen_of_krynn &&
+         item_power(item, content_.game) == native_elixir_youth))
     {
         make_younger(sheet, state, random_state);
         return;
@@ -3807,6 +4475,32 @@ std::optional<int> exploration_spell(std::string_view spell)
     return spell == "knock" ? std::optional<int>{knock} : spell_number(spell);
 }
 } // namespace
+
+std::optional<bool> OriginalModule::script_has_effect(const CharacterProfile &profile,
+                                                      const VitalState &state,
+                                                      unsigned native_effect) const
+{
+    if (content_.game != GoldBoxGame::dark_queen_of_krynn)
+    {
+        return std::nullopt;
+    }
+    const auto base = Combatant::decode(profile.data);
+    if (!base)
+    {
+        return std::nullopt;
+    }
+    const int code = canonical_effect(static_cast<int>(native_effect & 255), content_.game);
+    const auto carried = carried_state(state.resources, content_.game);
+    const auto has = [code](std::span<const Effect> effects)
+    {
+        return std::ranges::any_of(effects,
+                                   [code](const Effect &effect)
+                                   {
+                                       return effect.code == code;
+                                   });
+    };
+    return code != 0 && (has(base->effects) || has(carried.conditions));
+}
 
 // A spell cast out of a fight, as a script asks for one (SPELL): one the
 // member has memorized and not cast.

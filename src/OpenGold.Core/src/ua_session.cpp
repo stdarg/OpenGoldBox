@@ -41,15 +41,15 @@ constexpr rules::EntityId first_monster_id = 1000;
         return std::nullopt;
     }
     por::GeoMap map;
-    const unsigned columns = std::min<unsigned>(area.area.columns - left, por::GeoMap::width);
-    const unsigned rows = std::min<unsigned>(area.area.rows - top, por::GeoMap::height);
+    const unsigned columns = std::min<unsigned>(area.area.columns - left, map.width);
+    const unsigned rows = std::min<unsigned>(area.area.rows - top, map.height);
     for (unsigned y = 0; y < rows; ++y)
     {
         for (unsigned x = 0; x < columns; ++x)
         {
             const auto &square =
                 area.area.squares[std::size_t{top + y} * area.area.columns + left + x];
-            auto &cell = map.cells[std::size_t{y} * por::GeoMap::width + x];
+            auto &cell = map.cells[std::size_t{y} * map.width + x];
             for (std::size_t side = 0; side < 4; ++side)
             {
                 const auto wall = square.walls[side];

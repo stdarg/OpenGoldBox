@@ -1,3 +1,4 @@
+#include "dark_queen_campaign.h"
 #include "opengold/campaign_session.h"
 #include "opengold/buck_rogers_records.h"
 #include "opengold/death_knights_records.h"
@@ -59,6 +60,7 @@ LaterCampaign later_campaign(GoldBoxGame game)
     case GoldBoxGame::champions_of_krynn:
         return {36, 1, 1, false};
     case GoldBoxGame::countdown_to_doomsday:
+    case GoldBoxGame::matrix_cubed:
         // A new game runs script 16 of disk 1 (eclvm.pas START_ECL_SCRIPT).
         return {16, 1, 1, false};
     case GoldBoxGame::pools_of_darkness:
@@ -906,6 +908,12 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
             scripts.push_back(49);
             scripts.push_back(50);
         }
+        // The derelict's upper decks keep map 32: ECL2:32's ladder
+        // (8E7Eh) enters script 33, which has no LOAD FILES of its own.
+        if (game == GoldBoxGame::countdown_to_doomsday && map_disk == 2 && map_id.record == 32)
+        {
+            scripts.push_back(33);
+        }
         // Kernen's gate enters Myrtani's stronghold without LOAD FILES
         // (ECL3:97 81C0h); script 98 retains Kernen's map and wall banks.
         if (game == GoldBoxGame::champions_of_krynn && map_disk == 3 && map_id.record == 97)
@@ -954,7 +962,10 @@ por::RolfTourSession load_campaign(const std::filesystem::path &folder, GoldBoxG
     case GoldBoxGame::champions_of_krynn:
     case GoldBoxGame::death_knights_of_krynn:
     case GoldBoxGame::countdown_to_doomsday:
+    case GoldBoxGame::matrix_cubed:
         return load_later_campaign(folder, game);
+    case GoldBoxGame::dark_queen_of_krynn:
+        return por::load_dark_queen_campaign(folder);
     default:
         throw std::invalid_argument(std::string(game_title(game)) + " cannot be played yet");
     }

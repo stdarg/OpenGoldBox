@@ -61,7 +61,8 @@ template <bool Reading> struct SaveCodec;
 // 48, a game other than Pool of Radiance; before 49, a setting for its rules;
 // before 50, what a level rolled; before 51, a design. Before 52 the length
 // of the rest whose spells wait to be chosen is left out, and before 53 its
-// interruption.
+// interruption. Format 54 is reserved for Dark Queen's saved vault; other
+// games continue writing format 53 with their existing bytes.
 [[nodiscard]] std::string encode_campaign_in_format(
     const CampaignParty &, const por::RolfTourSession *, std::string_view assets, unsigned format,
     GoldBoxGame game = GoldBoxGame::pool_of_radiance, const DesignSave *design = nullptr);

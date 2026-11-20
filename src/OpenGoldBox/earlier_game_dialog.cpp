@@ -16,6 +16,7 @@
 #include "opengold/campaign_session.h"
 #include "opengold/darkness_import.h"
 #include "opengold/death_knights_import.h"
+#include "opengold/dark_queen_import.h"
 #include "opengold/diagnostic_log.h"
 #include "opengold/original.h"
 #include "opengold/treasures_import.h"
@@ -123,6 +124,8 @@ std::optional<GoldBoxGame> earlier_game_of(GoldBoxGame game)
         return GoldBoxGame::secret_of_the_silver_blades;
     case GoldBoxGame::death_knights_of_krynn:
         return GoldBoxGame::champions_of_krynn;
+    case GoldBoxGame::dark_queen_of_krynn:
+        return GoldBoxGame::death_knights_of_krynn;
     default:
         return std::nullopt;
     }
@@ -186,8 +189,11 @@ void EarlierGameDialog::open()
     const auto earlier = earlier_game();
     const bool from_gateway = earlier == GoldBoxGame::gateway_to_the_savage_frontier;
     const bool from_secret = earlier == GoldBoxGame::secret_of_the_silver_blades;
+    const bool from_death_knights = earlier == GoldBoxGame::death_knights_of_krynn;
     required_node<Label>(*this, "Margin/Rows/Title")
-        .set_text(i18n::text(from_gateway  ? N_("Add character from Gateway to the Savage Frontier")
+        .set_text(i18n::text(from_death_knights ? N_("Add character from Death Knights of Krynn")
+                             : from_gateway
+                                 ? N_("Add character from Gateway to the Savage Frontier")
                              : from_secret ? N_("Add character from Secret of the Silver Blades")
                                            : N_("Add character from Pool of Radiance")));
     const auto directory = campaign_save_directory(earlier);
@@ -214,11 +220,15 @@ void EarlierGameDialog::open()
     required_node<Button>(*this, "Margin/Rows/Buttons/Add").set_disabled(true);
     const auto status =
         !saves_.empty()
-            ? (from_gateway
+            ? (from_death_knights
+                   ? N_("Choose a Death Knights of Krynn save, then a character to bring into the party.")
+               : from_gateway
                    ? N_("Choose a Gateway to the Savage Frontier save, then a character to bring into the party.")
                : from_secret
                    ? N_("Choose a Secret of the Silver Blades save, then a character to bring into the party.")
                    : N_("Choose a Pool of Radiance save, then a character to bring into the party."))
+        : from_death_knights
+            ? N_("No Death Knights of Krynn game saved under the original rules was found.")
         : from_gateway
             ? N_("No Gateway to the Savage Frontier game saved under the original rules was found.")
         : from_secret
@@ -335,7 +345,7 @@ void EarlierGameDialog::show_member_state()
     // gems and jewelry, and its spells.
     const auto earlier = earlier_game();
     const auto arrival =
-        earlier == GoldBoxGame::champions_of_krynn
+        earlier == GoldBoxGame::champions_of_krynn || earlier == GoldBoxGame::death_knights_of_krynn
             ? N_("Brings its earned levels, experience, wounds, spells, surviving items and share of all party money.")
         : earlier == GoldBoxGame::pool_of_radiance
             ? N_("Brings its levels, experience and items, and 300 platinum; its money stays behind.")
@@ -363,6 +373,14 @@ void EarlierGameDialog::add()
         const auto folder = game_folder_of(GoldBoxGame::death_knights_of_krynn);
         (void)campaign_().bring_across(
             member, champions_items_for_death_knights(folder),
+            champions_money_for_death_knights(source_wealth_, member_index_, members_.size()),
+            CampaignParty::ConvertedItems::readied_as_they_were);
+    }
+    else if (earlier == GoldBoxGame::death_knights_of_krynn)
+    {
+        const auto folder = game_folder_of(GoldBoxGame::dark_queen_of_krynn);
+        (void)campaign_().bring_across(
+            member, death_knights_items_for_dark_queen(folder),
             champions_money_for_death_knights(source_wealth_, member_index_, members_.size()),
             CampaignParty::ConvertedItems::readied_as_they_were);
     }

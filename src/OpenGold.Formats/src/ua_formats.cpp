@@ -597,11 +597,16 @@ std::optional<std::vector<ItemRecord>> decode_items(std::span<const std::uint8_t
     return items;
 }
 
-std::optional<std::vector<std::string>> decode_item_words(std::span<const std::uint8_t> program)
+std::optional<std::vector<std::string>> decode_item_words(std::span<const std::uint8_t> program,
+                                                          std::size_t word_count)
 {
     // The table's 122 and the two after it, which a kept gem's and jewel's
     // names reach (hero.c, item_name, with appraise's words 7Ah and 7Bh).
-    constexpr std::size_t word_count = 124, pointer_size = 4;
+    constexpr std::size_t pointer_size = 4;
+    if (word_count < 3 || word_count > 256)
+    {
+        return std::nullopt;
+    }
     constexpr std::size_t longest_word = 24;
     constexpr std::string_view first = "Battle Axe", second = "Hand Axe";
     // The first word, NUL-ended after a NUL; the second's string follows it.

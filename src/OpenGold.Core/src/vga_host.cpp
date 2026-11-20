@@ -2,8 +2,10 @@
 // mean other commands in the other games (docs/games/darkness.md, Scripts).
 #include "opengold/rolf_tour.h"
 #include "area_loading.h"
+#include "dark_queen_campaign.h"
 #include "opengold/original.h"
 #include "opengold/original_spells.h"
+#include "opengold/original_rules.h"
 #include "opengold/vga_picture.h"
 
 #include <algorithm>
@@ -52,6 +54,12 @@ std::optional<Equipment> RolfTourSession::vga_item(unsigned number, std::uint64_
     if (number != random_scroll)
     {
         const auto found = town_->item_definitions.find(number);
+        if (game() == GoldBoxGame::dark_queen_of_krynn && found != town_->item_definitions.end() &&
+            (found->second.stored.type == 30 || found->second.stored.type == 12 ||
+             found->second.stored.type == 74))
+        {
+            return std::nullopt;
+        }
         return found == town_->item_definitions.end() ? std::nullopt : std::optional{found->second};
     }
     // A scroll of three magic-user spells drawn at random from its 126 (its
@@ -64,11 +72,27 @@ std::optional<Equipment> RolfTourSession::vga_item(unsigned number, std::uint64_
     scroll.magic_bonus = 1;
     scroll.weight = 1;
     scroll.value = 3000;
+    const unsigned native_robe =
+        game() == GoldBoxGame::dark_queen_of_krynn ? machine_.host_random(request, 2) + 1 : 0;
+    if (native_robe)
+    {
+        scroll.name_components = {102, 39, static_cast<std::uint8_t>(138 - native_robe)};
+        scroll.hidden_name_words = static_cast<std::uint8_t>(1U << (6 - native_robe));
+    }
     for (auto &held : scroll.effect_codes)
     {
         while (true)
         {
             const auto roll = static_cast<int>(machine_.host_random(request, spell_count)) + 1;
+            if (native_robe)
+            {
+                if (original::dark_queen_scroll_spell(roll, native_robe))
+                {
+                    held = static_cast<std::uint8_t>(roll);
+                    break;
+                }
+                continue;
+            }
             // Its spells past Secret's, 118 to 126, are all magic-user spells.
             const auto *known =
                 opengold::original::spell(opengold::original::canonical_spell(roll, game()));
@@ -81,6 +105,20 @@ std::optional<Equipment> RolfTourSession::vga_item(unsigned number, std::uint64_
         }
     }
     Equipment item;
+    if (native_robe)
+    {
+        scroll.raw[46] = scroll.type;
+        std::ranges::copy(scroll.name_components, scroll.raw.begin() + 47);
+        scroll.raw[50] = 1;
+        scroll.raw[53] = scroll.hidden_name_words;
+        scroll.raw[55] = 1;
+        scroll.raw[58] = static_cast<std::uint8_t>(scroll.value & 255);
+        scroll.raw[59] = static_cast<std::uint8_t>(scroll.value >> 8);
+        std::ranges::copy(scroll.effect_codes, scroll.raw.begin() + 60);
+        item.decoded_name = item_name(scroll, town_->dark_queen->item_words);
+        item.unidentified_name =
+            item_name(scroll, town_->dark_queen->item_words, scroll.hidden_name_words);
+    }
     if (scroll.type < town_->item_templates.size())
     {
         item.base = town_->item_templates[scroll.type];
@@ -158,12 +196,23 @@ bool RolfTourSession::vga_area_map() const
         const auto kind = machine_.variable(EclAddress{0x4BE6}) & 0xFF;
         return kind == 0xA2 || kind == 0xA8;
     }
+    if (game() == GoldBoxGame::dark_queen_of_krynn)
+    {
+        return machine_.variable(EclAddress{0x24}) == 1;
+    }
     return (vga_engine(game()) || original::krynn_game(game())) &&
            machine_.variable(game_cell(ecl_in_3d_area)) == 0;
 }
 
 void RolfTourSession::vga_area_step()
 {
+    // Native wilderness scripts move between their two views themselves,
+    // or refuse impassable terrain, and suppress the ordinary viewport step.
+    if (game() == GoldBoxGame::dark_queen_of_krynn &&
+        machine_.variable(game_cell(EclAddress{0x6DC9})) == 255)
+    {
+        return;
+    }
     // The party's square on the area map, 38 columns by 15 rows (its
     // MovePartyWilderness), and the square it left.
     // Champions' and the Buck Rogers games' keep it in their zone 0 (4BC3h).
@@ -236,6 +285,8 @@ void RolfTourSession::vga_damage(const EclRequest &request)
     const auto attack = number(0), value = number(4);
     rules::HazardAttack harm{0, number(1), number(2), static_cast<int>(number(3)), {}};
     harm.automatic = true;
+    const bool native = game() == GoldBoxGame::dark_queen_of_krynn;
+    harm.original_roll_damage_first = native;
     if (!(attack & special))
     {
         harm.automatic = false;
@@ -249,10 +300,16 @@ void RolfTourSession::vga_damage(const EclRequest &request)
         harm.original_save_modifier = static_cast<int>(attack & 0x0F);
         harm.save_dc = shown_save_dc - harm.original_save_modifier;
         harm.half_on_save = (attack & halves) != 0;
+        harm.original_half_on_failure = native && ((attack & whole_party) || !(value & chosen));
     };
     const auto hurt_member = [&](MemberId id)
     {
         const auto result = campaign_->hazard_attack(id, harm);
+        if (native && (attack & whole_party) && result)
+        {
+            harm.dice = 0;
+            harm.damage_bonus = result->damage_rolled;
+        }
         snapshot_.dialogue += hurt(result ? std::optional<HazardHit>{{id, *result}} : std::nullopt,
                                    harm.save_dc, harm.sides);
     };
@@ -359,23 +416,49 @@ void RolfTourSession::add_vga_record(PartySlot slot, EclHostReply &reply) const
             record[field::abilities + 2 * n] = record[field::abilities + 2 * n + 1] = score;
         }
         record[field::maximum_hit_points] = static_cast<std::uint16_t>(sheet.hit_points);
-        if (const auto &original = sheet.original)
+        if (const auto &numbers = sheet.original)
         {
             record[field::exceptional_strength] = record[field::exceptional_strength + 1] =
-                static_cast<std::uint16_t>(original->exceptional_strength);
-            record[field::race] = race_numbers.at(static_cast<std::size_t>(original->race));
+                static_cast<std::uint16_t>(numbers->exceptional_strength);
+            record[field::race] =
+                game() == GoldBoxGame::dark_queen_of_krynn
+                    ? original::record_race(static_cast<original::Race>(numbers->race), game())
+                    : race_numbers.at(static_cast<std::size_t>(numbers->race));
             // Its classes are numbered as the original rules' professions.
-            record[field::character_class] = static_cast<std::uint16_t>(original->profession);
-            record[field::age] = static_cast<std::uint16_t>(original->age);
+            record[field::character_class] = static_cast<std::uint16_t>(numbers->profession);
+            record[field::age] = static_cast<std::uint16_t>(numbers->age);
             for (std::size_t n = 0; n < 7; ++n)
             {
                 record[field::class_levels + n] =
-                    static_cast<std::uint16_t>(original->class_levels[n]);
+                    static_cast<std::uint16_t>(numbers->class_levels[n]);
                 record[field::thief_skills + n] =
-                    static_cast<std::uint16_t>(original->thief_skills[n]);
+                    static_cast<std::uint16_t>(numbers->thief_skills[n]);
             }
-            record[field::thief_skills + 7] = static_cast<std::uint16_t>(original->thief_skills[7]);
-            record[field::alignment] = static_cast<std::uint16_t>(original->alignment);
+            record[field::thief_skills + 7] = static_cast<std::uint16_t>(numbers->thief_skills[7]);
+            record[field::alignment] = static_cast<std::uint16_t>(numbers->alignment);
+            if (game() == GoldBoxGame::dark_queen_of_krynn)
+            {
+                record[field::character_class] =
+                    numbers->profession == static_cast<int>(original::Profession::knight)
+                        ? 1
+                        : static_cast<std::uint16_t>(numbers->profession);
+                record[field::class_levels + 1] =
+                    static_cast<std::uint16_t>(numbers->class_levels[7]);
+                record[0xC8] = static_cast<std::uint16_t>(numbers->knight_order);
+                record[0xC9] = static_cast<std::uint16_t>(numbers->deity);
+                record[0xCA] = static_cast<std::uint16_t>(numbers->robe_order);
+                record[0x137] =
+                    static_cast<std::uint16_t>(campaign_->profile(id).movement_feet / 5);
+                const auto prepared = campaign_->memorized_spells(id);
+                for (std::size_t at = 0; at < prepared.size() && at < 137; ++at)
+                {
+                    if (const auto number = original::spell_number(prepared[at], game()))
+                    {
+                        record[0x1E + at] =
+                            static_cast<std::uint16_t>(original::native_spell(*number, game()));
+                    }
+                }
+            }
         }
         record[field::gender] = member.character.creation_data().gender == "female" ? 1 : 0;
         record[field::npc] = member.npc_source.empty() ? 0 : 0x80;
@@ -426,7 +509,7 @@ EclHostReply RolfTourSession::vga_load_map(unsigned map)
     const auto x = machine_.variable(game_cell(ecl_party_x)),
                y = machine_.variable(game_cell(ecl_party_y));
     const auto facing = machine_.variable(game_cell(ecl_party_facing)) % 4;
-    const bool on_map = x < GeoMap::width && y < GeoMap::height;
+    const bool on_map = x < map_.width && y < map_.height;
     reply.writes = {{game_cell(ecl_wall_ahead),
                      static_cast<std::uint16_t>(on_map ? map_.at(x, y).walls[facing] : 0)},
                     {game_cell(ecl_cell_event),
@@ -788,7 +871,8 @@ bool RolfTourSession::camp_fix()
 
 void RolfTourSession::add_script_to_hit()
 {
-    if (game() != GoldBoxGame::pools_of_darkness || !encounter_)
+    if ((game() != GoldBoxGame::pools_of_darkness && game() != GoldBoxGame::dark_queen_of_krynn) ||
+        !encounter_)
     {
         return;
     }
@@ -808,7 +892,9 @@ void RolfTourSession::add_script_to_hit()
 bool RolfTourSession::magic_barred() const
 {
     constexpr EclAddress darkness_anti_magic{0x02};
-    return game() == GoldBoxGame::pools_of_darkness && machine_.variable(darkness_anti_magic) != 0;
+    return (game() == GoldBoxGame::pools_of_darkness ||
+            game() == GoldBoxGame::dark_queen_of_krynn) &&
+           machine_.variable(darkness_anti_magic) != 0;
 }
 
 bool RolfTourSession::camp_offers_crown() const

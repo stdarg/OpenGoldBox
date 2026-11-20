@@ -19,7 +19,7 @@ ExplorationView render_exploration_view(const GeoMap &map, const WallArtSet &art
                                                     return piece.width != 0;
                                                 });
     };
-    if (x >= 16 || y >= 16)
+    if (!map.valid_geometry() || x >= map.width || y >= map.height)
     {
         throw std::out_of_range("Invalid exploration view pose");
     }
@@ -81,7 +81,14 @@ ExplorationView render_exploration_view(const GeoMap &map, const WallArtSet &art
     {
         const int cx = static_cast<int>(x) + step_x(facing) * depth - step_y(facing) * lateral;
         const int cy = static_cast<int>(y) + step_y(facing) * depth + step_x(facing) * lateral;
-        return cx < 0 || cy < 0 || cx >= 16 || cy >= 16 ? -1 : cy * 16 + cx;
+        if (map.wrap_view)
+        {
+            return static_cast<int>(map.wrapped_y(cy) * map.width + map.wrapped_x(cx));
+        }
+        return cx < 0 || cy < 0 || cx >= static_cast<int>(map.width) ||
+                       cy >= static_cast<int>(map.height)
+                   ? -1
+                   : cy * static_cast<int>(map.width) + cx;
     };
     // The authored perspective has three floor bands, below the far, middle,
     // and near wall bottoms (48, 56, 72). Interpolate their projected cell
@@ -140,6 +147,15 @@ ExplorationView render_exploration_view(const GeoMap &map, const WallArtSet &art
         if (!consistent(piece))
         {
             throw std::runtime_error("Invalid wall image");
+        }
+        if (!art.offsets.empty())
+        {
+            if (at >= art.offsets.size())
+            {
+                throw std::runtime_error("Missing wall anchor offset");
+            }
+            left += art.offsets[at][pose].x;
+            top += art.offsets[at][pose].y;
         }
         // Offsets are in original pixels; the piece is already at the art's scale.
         left *= scale;
@@ -216,7 +232,7 @@ ExplorationView render_exploration_view(const GeoMap &map, const WallArtSet &art
     }
     draw(wall(0, 0, left_side), left_side, WallView::near_left, 0, 0);
     draw(wall(0, 0, right_side), right_side, WallView::near_right, 72, 0);
-    view.visible.set(y * 16 + x);
+    view.visible.set(y * map.width + x);
     for (const int cell : owners)
     {
         if (cell >= 0)

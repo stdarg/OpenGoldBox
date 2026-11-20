@@ -88,10 +88,12 @@ void RolfTourSession::publish_darkness_area_square()
 Image RolfTourSession::render_darkness_area_map() const
 {
     const auto tile_set = original::krynn_game(game()) ? 0U : machine_.variable(tile_set_cell);
-    const auto picture_id = game() == GoldBoxGame::death_knights_of_krynn ? 112
-                            : game() == GoldBoxGame::champions_of_krynn   ? 121
-                            : tile_set < area_pictures.size()             ? area_pictures[tile_set]
-                                                                          : 0;
+    const auto picture_id = game() == GoldBoxGame::dark_queen_of_krynn
+                                ? machine_.variable(EclAddress{0x3E})
+                            : game() == GoldBoxGame::death_knights_of_krynn ? 112
+                            : game() == GoldBoxGame::champions_of_krynn     ? 121
+                            : tile_set < area_pictures.size() ? area_pictures[tile_set]
+                                                              : 0;
     const auto &pictures = area_resources().pictures;
     const auto found = pictures.find(picture_id);
     if (found == pictures.end())

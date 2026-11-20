@@ -642,8 +642,8 @@ void CharacterCreationView::refresh_party()
                            (slot == state.slots.end() ? i18n::text(" (Reserve)") : String());
         list->add_item(title,
                        portraits_->texture(m.character.appearance(), m.character.creation_data()));
-        members.push_back(PackedStringArray({title, i18n::class_summary(sheet),
-                                             i18n::text(sheet.race), i18n::text(sheet.gender)}));
+        members.push_back(PackedStringArray(
+            {title, i18n::class_summary(sheet), i18n::text(sheet.race), i18n::text(sheet.gender)}));
         if (leader)
         {
             list->call("mark_leader", list->get_item_count() - 1);
@@ -720,10 +720,11 @@ void CharacterCreationView::refresh_party()
     auto &from_earlier_game = required_node<Button>(*this, "PartyPanel/FromPool");
     from_earlier_game.set_visible(bringing_across());
     const auto game = original::game_of(campaign_->identity());
-    from_earlier_game.set_text(i18n::text(
-        game == GoldBoxGame::treasures_of_the_savage_frontier ? N_("Add from Gateway")
-        : game == GoldBoxGame::pools_of_darkness              ? N_("Add from Secret")
-        : game == GoldBoxGame::death_knights_of_krynn         ? N_("Add from Champions")
+    from_earlier_game.set_text(
+        i18n::text(game == GoldBoxGame::treasures_of_the_savage_frontier ? N_("Add from Gateway")
+                   : game == GoldBoxGame::pools_of_darkness              ? N_("Add from Secret")
+                   : game == GoldBoxGame::death_knights_of_krynn         ? N_("Add from Champions")
+                   : game == GoldBoxGame::dark_queen_of_krynn ? N_("Add from Death Knights")
                                                               : N_("Add from Pool of Radiance")));
     // Only an active member who is not already the leader can be made leader.
     const auto chosen = state.roster.empty() ? MemberId{} : state.roster[roster_index_].id;
@@ -1265,7 +1266,8 @@ void CharacterCreationView::party_action(PartyAction action)
                 throw std::runtime_error("Select an existing item");
             }
             const auto selected = items[selection[0]].id;
-            const std::string definition = rules_definition(campaign_->member(id), items[selection[0]]);
+            const std::string definition =
+                rules_definition(campaign_->member(id), items[selection[0]]);
             if (action == PartyAction::equip)
             {
                 if (open_equipment_choice(id, selected))

@@ -24,10 +24,17 @@ enum class WallView : unsigned
     far_extension
 };
 
+struct WallPieceOffset
+{
+    int x{}, y{};
+};
+
 struct WallArtSet
 {
     // GEO appearance ID n selects appearances[n-1]. ID 0 has no artwork.
     std::vector<std::array<Image, 10>> appearances;
+    // Library overlays can extend past a plain wall's anchor. Empty means zero.
+    std::vector<std::array<WallPieceOffset, 10>> offsets;
     // Pixels per original pixel: 1 for decoded art, more for new art.
     unsigned scale{1};
     // For each appearance new art replaced, its original pieces at the same

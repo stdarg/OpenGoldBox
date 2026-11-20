@@ -2,6 +2,8 @@
 
 #include "archive_io.h"
 #include "census_rows.h"
+#include "opengold/dark_queen_records.h"
+#include "opengold/ecl.h"
 #include "opengold/path_text.h"
 #include "opengold/pool_radiance.h"
 #include "opengold/ua_formats.h"
@@ -406,15 +408,57 @@ const std::map<std::string, Kind, std::less<>> &data_kinds()
 
 // The row a file belongs to and how its pieces decode; nullopt for a file no
 // decoder reads.
-std::optional<Kind> kind_of(const GameFile &file)
+std::optional<Kind> kind_of(const GameFile &file, GoldBoxGame game)
 {
     const auto name = base_name(file.name);
     const auto ext = extension(name);
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        if (name == "MONCHA.GLB")
+        {
+            return Kind{"MONCHA.GLB: creatures and index",
+                        records("DATA", decodes(&dark_queen::decode_creature))};
+        }
+        if (name == "GEO.GLB")
+        {
+            return Kind{"GEO.GLB: areas and index",
+                        records("DATA", decodes(&dark_queen::decode_area))};
+        }
+        if (name == "ECL.GLB")
+        {
+            return Kind{"ECL.GLB: scripts and index",
+                        records("DATA",
+                                [](auto bytes)
+                                {
+                                    const auto program =
+                                        por::EclProgram::decode(bytes, "Dark Queen census",
+                                                                GoldBoxGame::dark_queen_of_krynn);
+                                    for (const auto &error : por::walk_reachable(program).errors)
+                                    {
+                                        if (!error.fallthrough_from)
+                                        {
+                                            throw std::runtime_error("instruction at " +
+                                                                     std::to_string(error.address) +
+                                                                     ": " + error.message);
+                                        }
+                                    }
+                                    return true;
+                                })};
+        }
+        if (name == "ITEM.DAT")
+        {
+            return Kind{"ITEM.DAT: items", whole(decodes(&dark_queen::decode_items))};
+        }
+    }
     if (ext == "TLB")
     {
         const auto kind = tile_kinds().find(stem(name));
         if (kind == tile_kinds().end())
         {
+            if (game == GoldBoxGame::dark_queen_of_krynn)
+            {
+                return Kind{"TLB: " + stem(name), check_tiles};
+            }
             return std::nullopt;
         }
         return Kind{"TLB: " + kind->second, check_tiles};
@@ -444,10 +488,10 @@ std::optional<Kind> kind_of(const GameFile &file)
 
 } // namespace
 
-GameCensus take_ua_census(const std::filesystem::path &folder)
+GameCensus take_ua_census(const std::filesystem::path &folder, GoldBoxGame game)
 {
     GameCensus census;
-    census.game = GoldBoxGame::unlimited_adventures;
+    census.game = game;
     std::vector<GameFile> files;
     std::vector<std::string> directories;
     add_files(folder, "", files, directories);
@@ -459,12 +503,14 @@ GameCensus take_ua_census(const std::filesystem::path &folder)
     std::map<std::string, RowBuilder> rows;
     for (const auto &file : files)
     {
-        if (is_never_read(file.name))
+        const bool saved = game == GoldBoxGame::dark_queen_of_krynn &&
+                           (file.name.ends_with(".QSV") || file.name.starts_with("VAULT"));
+        if (is_never_read(file.name) || saved)
         {
             census.program_files.push_back(file.name);
             continue;
         }
-        auto kind = kind_of(file);
+        auto kind = kind_of(file, game);
         if (!kind)
         {
             census.unread_files.push_back(file.name);
@@ -478,7 +524,17 @@ GameCensus take_ua_census(const std::filesystem::path &folder)
         census.rows.push_back(std::move(row).take());
     }
     std::sort(directories.begin(), directories.end());
-    census.unread_files.insert(census.unread_files.end(), directories.begin(), directories.end());
+    for (const auto &directory : directories)
+    {
+        if (game == GoldBoxGame::dark_queen_of_krynn && directory == "SAVE/")
+        {
+            census.program_files.push_back(directory);
+        }
+        else
+        {
+            census.unread_files.push_back(directory);
+        }
+    }
     return census;
 }
 

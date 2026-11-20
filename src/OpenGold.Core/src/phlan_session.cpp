@@ -1,5 +1,6 @@
 #include "opengold/rolf_tour.h"
 #include "area_loading.h"
+#include "dark_queen_campaign.h"
 #include "opengold/original_spells.h"
 #include "opengold/original_rules.h"
 #include "opengold/diagnostic_log.h"
@@ -32,9 +33,15 @@ constexpr std::uint8_t treasures_load_wall_sets_command = 0x42,
 
 const PhlanResources &RolfTourSession::area_resources() const
 {
+    if (game() == GoldBoxGame::dark_queen_of_krynn)
+    {
+        return *town_;
+    }
     // Krynn's wilderness and outposts retain the previous dungeon map, but
     // their encounters, treasure and combat art come from disk 1.
-    if (original::krynn_game(game()) && (current_script_ == 16 || current_script_ == 17))
+    if ((game() == GoldBoxGame::champions_of_krynn ||
+         game() == GoldBoxGame::death_knights_of_krynn) &&
+        (current_script_ == 16 || current_script_ == 17))
     {
         return *town_;
     }
@@ -78,9 +85,10 @@ void RolfTourSession::change_area(unsigned id)
     // A gate's script writes the party's square in the new area before it
     // changes areas, so that square was marked in the old area's map memory.
     // It stays there only if the party had been there before this event.
-    if (event_checkpoint_ && event_checkpoint_->area == current_area_)
+    if (event_checkpoint_ && event_checkpoint_->area == current_area_ &&
+        snapshot_.pose.x < map_.width && snapshot_.pose.y < map_.height)
     {
-        const auto arrival = snapshot_.pose.y * 16 + snapshot_.pose.x;
+        const auto arrival = snapshot_.pose.y * map_.width + snapshot_.pose.x;
         snapshot_.visited[arrival] = event_checkpoint_->snapshot.visited[arrival];
         snapshot_.seen[arrival] = event_checkpoint_->snapshot.seen[arrival];
     }
@@ -91,7 +99,8 @@ void RolfTourSession::change_area(unsigned id)
     snapshot_.area_id = id;
     map_ = *resource.map;
     // Curse's walls are what its scripts loaded last (LOAD PIECES), whatever the map.
-    if (game() == GoldBoxGame::pool_of_radiance || wall_art_.appearances.empty())
+    if (game() == GoldBoxGame::pool_of_radiance || game() == GoldBoxGame::dark_queen_of_krynn ||
+        wall_art_.appearances.empty())
     {
         wall_art_ = resource.wall_art;
     }
@@ -135,6 +144,10 @@ void RolfTourSession::enable_party_commands()
     {
         machine_.enable_host(65);
     }
+    if (game() == GoldBoxGame::dark_queen_of_krynn)
+    {
+        machine_.enable_host(63);
+    }
 }
 
 void RolfTourSession::campaign_party(std::shared_ptr<opengold::CampaignParty> party)
@@ -161,7 +174,7 @@ namespace
 // The other games keep the flags and leave the result in a cell.
 [[nodiscard]] std::optional<EclConditions> vga_combat_conditions(GoldBoxGame game, bool party_stood)
 {
-    if (!vga_engine(game))
+    if (!vga_engine(game) && game != GoldBoxGame::dark_queen_of_krynn)
     {
         return std::nullopt;
     }
@@ -189,16 +202,11 @@ struct Edge
     MapDirection other{};
 };
 
-Edge edge_ahead(PartyPose pose)
+Edge edge_ahead(const GeoMap &map, PartyPose pose)
 {
     const int x = static_cast<int>(pose.x) + step_x(pose.facing),
               y = static_cast<int>(pose.y) + step_y(pose.facing);
-    return {pose.x,
-            pose.y,
-            pose.facing,
-            static_cast<unsigned>((x + 16) % 16),
-            static_cast<unsigned>((y + 16) % 16),
-            reversed(pose.facing)};
+    return {pose.x, pose.y, pose.facing, map.wrapped_x(x), map.wrapped_y(y), reversed(pose.facing)};
 }
 
 // The script's surprise bits (0x6DCB). SURPRISE writes only 0 to 3, but a
@@ -518,7 +526,7 @@ unsigned open_squares_ahead(const GeoMap &map, PartyPose pose)
     while (squares < 2 && !map.at(pose.x, pose.y).walls[index(pose.facing)])
     {
         ++squares;
-        const auto ahead = edge_ahead(pose);
+        const auto ahead = edge_ahead(map, pose);
         pose.x = ahead.next_x;
         pose.y = ahead.next_y;
     }
@@ -550,7 +558,7 @@ void RolfTourSession::configure_town()
     bind_range(0x9800, 0x98FF);
     // The 256-color engine's own memory: its game cells and the current
     // character's record (docs/games/darkness.md, Script memory).
-    if (vga_engine(game()))
+    if (vga_engine(game()) || game() == GoldBoxGame::dark_queen_of_krynn)
     {
         constexpr std::uint16_t first_cell = 0x0001, last_cell = 0x0800;
         for (auto a = first_cell; a <= last_cell; ++a)
@@ -562,6 +570,17 @@ void RolfTourSession::configure_town()
     machine_.bind_variable(game_cell(EclAddress{0xB9}), 0);
     machine_.bind_variable(game_cell(ecl_clock_hour), 12);
     machine_.bind_variable(game_cell(ecl_clock_day), 1);
+    if (game() == GoldBoxGame::dark_queen_of_krynn)
+    {
+        machine_.bind_variable(EclAddress{0x34}, 7);
+        machine_.bind_variable(EclAddress{0x35}, 13);
+        machine_.bind_variable(EclAddress{0x22}, 1);
+        machine_.bind_variable(EclAddress{0x27}, 3);
+        for (std::uint16_t moon = 0x1FA; moon <= 0x1FC; ++moon)
+        {
+            machine_.bind_variable(EclAddress{moon}, 2);
+        }
+    }
     if (game() == GoldBoxGame::champions_of_krynn)
     {
         // GameInit's original starting wilderness square.
@@ -613,7 +632,7 @@ void RolfTourSession::configure_town()
     {
         machine_.enable_host(vga_play_sound_command);
     }
-    if (vga_engine(game()))
+    if (vga_engine(game()) || game() == GoldBoxGame::dark_queen_of_krynn)
     {
         // Address 0 lies outside the 256-color engine's script memory: it
         // reads 0 and keeps nothing (its GbvmZone), as Kalistes' Temple's OR
@@ -924,7 +943,7 @@ EclHostReply RolfTourSession::character_reply(PartySlot slot) const
                               &EclMemoryWrite::address)
                 ->value = 0x81;
         }
-        if (vga_engine(game()))
+        if (vga_engine(game()) || game() == GoldBoxGame::dark_queen_of_krynn)
         {
             add_vga_record(slot, reply);
         }
@@ -990,15 +1009,27 @@ void RolfTourSession::read_character()
             const auto spells = id ? campaign_->memorized_spells(id) : std::vector<std::string>{};
             const bool death_knights = game() == GoldBoxGame::death_knights_of_krynn;
             const std::uint16_t start = death_knights ? 0x6B1B : 0x6B20;
-            const std::uint16_t count = death_knights ? 74 : 58;
+            const bool dark_queen = game() == GoldBoxGame::dark_queen_of_krynn;
+            const std::uint16_t count = dark_queen ? 137 : death_knights ? 74 : 58;
             for (std::uint16_t n = 0; n < count; ++n)
             {
-                const auto address = game_cell(EclAddress{static_cast<std::uint16_t>(start + n)});
+                const auto address =
+                    dark_queen ? EclAddress{static_cast<std::uint16_t>(0x41F + n)}
+                               : game_cell(EclAddress{static_cast<std::uint16_t>(start + n)});
                 if (!machine_.consume_script_write(address))
                 {
                     continue;
                 }
-                if (machine_.variable(address) != 0)
+                const auto written = machine_.variable(address);
+                // Native scripts mark a prepared entry used by setting
+                // its high bit (the New Aurim prisoner's cure, ECL31:94A2).
+                // ECL59's magic door can also overwrite a different entry
+                // with a spent Dispel Magic byte after reusing its index.
+                // Native hero_write accepts that replacement; consume the
+                // overwritten entry, without adding a new available spell.
+                const bool native_spent = dark_queen && (written & 0x80) &&
+                                          original::canonical_spell(written & 0x7F, game()) != 0;
+                if (written != 0 && (!dark_queen || written != 255) && !native_spent)
                 {
                     throw EclError("Unsupported prepared spell write");
                 }
@@ -1045,6 +1076,20 @@ void RolfTourSession::read_character()
     party_.hit_points = machine_.variable(game_cell(ecl_character_hit_points));
 }
 
+std::uint16_t RolfTourSession::native_cell_flags(unsigned x, unsigned y) const
+{
+    const auto squares = std::size_t{map_.width} * map_.height;
+    if (x >= map_.width || y >= map_.height || map_.raw.size() != 8 + 4 * squares)
+    {
+        return 0;
+    }
+    // Native GEO's last plane interleaves door bits with two floor bits.
+    // area_cell_flags exposes the latter as world byte 3Dh; the tower uses
+    // them to distinguish ordinary floors, shafts and flaming areas.
+    const auto flags = map_.raw[8 + 3 * squares + y * map_.width + x];
+    return static_cast<std::uint16_t>(((flags & 8) >> 2) | ((flags & 2) >> 1));
+}
+
 void RolfTourSession::bind_pose(PartyPose pose)
 {
     machine_.bind_variable(game_cell(ecl_party_x), static_cast<std::uint16_t>(pose.x));
@@ -1054,6 +1099,10 @@ void RolfTourSession::bind_pose(PartyPose pose)
     const auto &cell = map_.at(pose.x, pose.y);
     machine_.bind_variable(game_cell(ecl_wall_ahead), cell.walls[index(pose.facing)]);
     machine_.bind_variable(game_cell(ecl_cell_event), cell.event_raw);
+    if (game() == GoldBoxGame::dark_queen_of_krynn)
+    {
+        machine_.bind_variable(EclAddress{0x3D}, native_cell_flags(pose.x, pose.y));
+    }
     // Gateway's scripts read the barrier ahead (its RefreshCurrentMapCell): the
     // side's barrier where there is a wall or on the overland, else open (1).
     if (game() == GoldBoxGame::gateway_to_the_savage_frontier)
@@ -1123,7 +1172,7 @@ bool RolfTourSession::move_party(ExplorationCommand command)
         }
         const int x = static_cast<int>(pose.x) + step_x(pose.facing),
                   y = static_cast<int>(pose.y) + step_y(pose.facing);
-        const auto wrapped_x = (x + 16) % 16, wrapped_y = (y + 16) % 16;
+        const auto wrapped_x = map_.wrapped_x(x), wrapped_y = map_.wrapped_y(y);
         const auto &a = map_.at(pose.x, pose.y);
         const auto side = pose.facing;
         // Ordinary doors are traversable. Locks retain their distinct codes.
@@ -1163,7 +1212,8 @@ bool RolfTourSession::move_party(ExplorationCommand command)
     if (campaign_ && command == ExplorationCommand::forward)
     {
         // A step in Search mode takes ten minutes more (coab MovePartyForward).
-        if (game() == GoldBoxGame::death_knights_of_krynn)
+        if (game() == GoldBoxGame::death_knights_of_krynn ||
+            game() == GoldBoxGame::dark_queen_of_krynn)
         {
             pass_time(std::chrono::minutes{snapshot_.searching ? 10 : 1});
         }
@@ -1189,8 +1239,8 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
     // without updating the event/wall cells (Leilon's farmhouse stairs).
     // Preserve the overland scripts' intentional off-map coordinates.
     if (game() == GoldBoxGame::treasures_of_the_savage_frontier &&
-        machine_.variable(game_cell(ecl_party_x)) < 16 &&
-        machine_.variable(game_cell(ecl_party_y)) < 16)
+        machine_.variable(game_cell(ecl_party_x)) < map_.width &&
+        machine_.variable(game_cell(ecl_party_y)) < map_.height)
     {
         bind_pose(snapshot_.pose);
     }
@@ -1244,6 +1294,9 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
                                         .wand_traps = wand_traps_,
                                         .rest_checks = rest_checks_,
                                         .travel_mode = travel_mode_,
+                                        .dark_queen_combat_set = dark_queen_combat_set_,
+                                        .dark_queen_vault_money = dark_queen_vault_money_,
+                                        .dark_queen_vault_items = dark_queen_vault_items_,
                                         .map = map_,
                                         .pending_loot = pending_loot_,
                                         .snapshot = snapshot_,
@@ -1268,7 +1321,9 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
         const int x = static_cast<int>(p.x) + step_x(p.facing),
                   y = static_cast<int>(p.y) + step_y(p.facing);
         const auto &cell = map_.at(p.x, p.y);
-        off_map = (x < 0 || y < 0 || x >= 16 || y >= 16) && cell.doors[index(p.facing)] <= 1 &&
+        off_map = (x < 0 || y < 0 || x >= static_cast<int>(map_.width) ||
+                   y >= static_cast<int>(map_.height)) &&
+                  cell.doors[index(p.facing)] <= 1 &&
                   (!cell.walls[index(p.facing)] || cell.doors[index(p.facing)]);
     }
     machine_.bind_variable(game_cell(EclAddress{0x6DD5}), off_map ? 1 : 0);
@@ -1741,8 +1796,9 @@ unsigned RolfTourSession::treasure_experience(const PendingLoot &loot) const
     // The original's worth of the monsters' coins, gems and jewelry, and 400
     // for each plus of a magic item (postcbt.pas, DetermineLootExp).
     const auto &w = loot.wealth;
-    unsigned experience =
-        w[0] / 200 + w[1] / 20 + w[2] / 2 + w[3] + w[4] * 5 + w[5] * 250 + w[6] * 2200;
+    unsigned experience = w[0] / 200 + w[1] / 20 + w[2] / 2 + w[3] +
+                          w[4] * (game() == GoldBoxGame::dark_queen_of_krynn ? 2 : 5) + w[5] * 250 +
+                          w[6] * 2200;
     for (const auto &item : loot.items)
     {
         if (item.stored.magic_bonus > 0)
@@ -1762,11 +1818,22 @@ unsigned RolfTourSession::experience_share(unsigned total) const
     // The original divides a fight's experience among the party's members
     // (postcbt.pas, DetermineLootExp); the rules then share each member's
     // among its classes.
-    const auto members = std::ranges::count_if(campaign_->state().slots,
-                                               [](MemberId id)
-                                               {
-                                                   return id != MemberId{};
-                                               });
+    const auto members =
+        std::ranges::count_if(campaign_->state().slots,
+                              [this](MemberId id)
+                              {
+                                  if (!id)
+                                  {
+                                      return false;
+                                  }
+                                  if (game() != GoldBoxGame::dark_queen_of_krynn)
+                                  {
+                                      return true;
+                                  }
+                                  const auto &member = campaign_->member(id);
+                                  return campaign_->rule_module().receives_experience(
+                                      member.character.sheet(), member.vitals);
+                              });
     return members ? total / static_cast<unsigned>(members) : total;
 }
 
@@ -1932,8 +1999,10 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
             // (postcbt.pas, DetermineLootExp); under the original rules one
             // down may be below 0 Hit Points, or unconscious with Hit Points
             // healed into it, which leave it out of the fight (fxengine.pas,
-            // RestoreHitPoints).
-            if (unit.hit_points <= 0 || unit.surrendered || unit.status == "unconscious")
+            // RestoreHitPoints). The rules' death state remains authoritative
+            // when a lasting effect leaves positive Hit Points on a dead foe.
+            if (unit.dead || unit.hit_points <= 0 || unit.surrendered ||
+                unit.status == "unconscious")
             {
                 ++defeated;
             }
@@ -1998,7 +2067,10 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
                                                 {
                                                     return id && !campaign_->member(id).vitals.dead;
                                                 });
-    if ((result.outcome == rules::Outcome::defeat && !duel_lost) || (!champion && none_left))
+    const bool native_recovery = game() == GoldBoxGame::dark_queen_of_krynn &&
+                                 machine_.variable(EclAddress{0x1D}) != 0 && !none_left;
+    if ((result.outcome == rules::Outcome::defeat && !duel_lost && !native_recovery) ||
+        (!champion && none_left))
     {
         snapshot_.phase = TourPhase::defeated;
         ++snapshot_.revision;
@@ -2012,6 +2084,9 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
                                     std::to_string(current_script_) +
                                     ":roaming:" + std::to_string(++next_ticket_);
     const bool fled = result.outcome == rules::Outcome::fled;
+    const bool native_lost = native_recovery && result.outcome == rules::Outcome::defeat;
+    const bool pays_experience =
+        game() != GoldBoxGame::dark_queen_of_krynn || machine_.variable(EclAddress{0x1F}) == 0;
     // Members are lost and rewards claimed before the original script hears the
     // result; any failure from here rolls the whole event back rather than
     // leaving those half applied (Effective C++ Item 29).
@@ -2044,24 +2119,31 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
                     experience += record_experience(staged_records_.at(unit.id - 1000));
                 }
             }
-            if (experience)
+            if (experience && pays_experience)
             {
                 campaign_->award_experience(experience_share(experience), reward);
             }
         }
-        else if (duel_lost)
+        else if (duel_lost || native_lost)
         {
             // No experience, and the opponent keeps its gear.
-            campaign_->recover_duelist(champion);
+            if (duel_lost)
+            {
+                campaign_->recover_duelist(champion);
+            }
             snapshot_.dialogue = "You have lost the fight.";
         }
         else if (mirror)
         {
             // Beating its own copy earns the duelist 100 experience a level
             // and nothing else (postcbt.pas DetermineLootExp).
-            campaign_->award_experience(
-                100 * static_cast<unsigned>(campaign_->member(champion).character.sheet().level),
-                reward, champion);
+            if (pays_experience)
+            {
+                campaign_->award_experience(
+                    100 *
+                        static_cast<unsigned>(campaign_->member(champion).character.sheet().level),
+                    reward, champion);
+            }
         }
         else
         {
@@ -2118,7 +2200,7 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
                 pending_loot_.push_back(std::move(loot));
                 pile_loot();
             }
-            if (has_monster_loot || experience)
+            if (pays_experience && (has_monster_loot || experience))
             {
                 campaign_->award_experience(champion ? experience : experience_share(experience),
                                             reward, champion);
@@ -2130,13 +2212,23 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
             }
             // A beaten turncoat's gear is the party's, and its record's
             // experience too.
-            if (turncoat_loot.experience)
+            if (pays_experience && turncoat_loot.experience)
             {
                 campaign_->award_experience(turncoat_loot.experience, reward + ":turncoats");
             }
             for (const auto &item : turncoat_loot.items)
             {
                 treasure_pile_.push_back(item);
+            }
+        }
+        if (native_recovery && !fled)
+        {
+            for (const auto id : campaign_->state().slots)
+            {
+                if (id)
+                {
+                    campaign_->recover_duelist(id);
+                }
             }
         }
         // The original's combat results (coab ovr006): 0 won, 128 (0x80) a
@@ -2160,7 +2252,16 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
         {
             results.push_back(write);
         }
-        const auto conditions = vga_combat_conditions(game(), !fled && !duel_lost);
+        const auto conditions = vga_combat_conditions(game(), !fled && !duel_lost && !native_lost);
+        if (game() == GoldBoxGame::dark_queen_of_krynn)
+        {
+            // Native PostCombat clears its transient battle modifiers and
+            // award/recovery flags, retaining anti-magic and underwater state.
+            for (const std::uint16_t cell : {0x01, 0x2F, 0x1C, 0x1D, 0x1F})
+            {
+                results.push_back({EclAddress{cell}, 0});
+            }
+        }
         // The party leaves a maze fight facing the side it ran off, which
         // the script reads to find the next part of the maze (postcbt.pas).
         if (result.escape_side)
@@ -2302,11 +2403,13 @@ PendingLoot RolfTourSession::encounter_loot(unsigned area, std::vector<unsigned>
                                             std::string reward, bool items,
                                             std::vector<SpentGear> spent) const
 {
-    // New Phlan's own fights (area 0) are the town's; the rest a district's.
+    // Dark Queen shares one creature table across every map. The earlier
+    // games keep New Phlan's fights on the town and the rest on districts.
     const auto district = town_->districts.find(area);
     const PhlanResources *resources =
-        area == 0 ? town_.get()
-                  : (district == town_->districts.end() ? nullptr : district->second.get());
+        area == 0 || game() == GoldBoxGame::dark_queen_of_krynn
+            ? town_.get()
+            : (district == town_->districts.end() ? nullptr : district->second.get());
     if (!resources || records.empty() || records.size() > 56 || reward.empty() ||
         reward.size() > 160 ||
         std::any_of(records.begin(), records.end(),
@@ -2386,7 +2489,9 @@ void RolfTourSession::decline_camp()
 bool RolfTourSession::in_curse_wilderness() const
 {
     return (game() != GoldBoxGame::pool_of_radiance && current_area_ == 0) ||
-           (original::krynn_game(game()) && (current_script_ == 16 || current_script_ == 17));
+           ((game() == GoldBoxGame::champions_of_krynn ||
+             game() == GoldBoxGame::death_knights_of_krynn) &&
+            (current_script_ == 16 || current_script_ == 17));
 }
 
 bool RolfTourSession::in_champions_story_rest() const
@@ -2407,6 +2512,24 @@ void RolfTourSession::finish_event()
         machine_.bind_variable(w.address, w.value);
     }
     publish_pose();
+    if (matrix_ending_completed())
+    {
+        // Matrix quits here; settle its event so the complete at-win team
+        // can be saved without running a new search or area-entry script.
+        snapshot_.game_won = true;
+        snapshot_.tour_finished = true;
+        snapshot_.phase = TourPhase::completed;
+        snapshot_.choices.clear();
+        snapshot_.continue_ticket = 0;
+        snapshot_.dialogue +=
+            (snapshot_.dialogue.empty() ? "" : "\n\n") + std::string("You have won.");
+        event_stage_ = EventStage::none;
+        event_checkpoint_.reset();
+        pending_movement_.reset();
+        transition_ = false;
+        ++snapshot_.revision;
+        return;
+    }
     // Death Knights sets 4CD0 before the final battle. Only the authored
     // council's closing address completes it. Preserve the win while the
     // area-entry search starts its own invocation and clears the trace.
@@ -2441,12 +2564,25 @@ void RolfTourSession::finish_event()
     }
     if (event_stage_ == EventStage::step && vga_area_map())
     {
-        vga_area_step();
+        if (pending_movement_)
+        {
+            vga_area_step();
+        }
         search_destination();
         return;
     }
     if (event_stage_ == EventStage::step)
     {
+        if (game() == GoldBoxGame::dark_queen_of_krynn && pending_movement_)
+        {
+            // Native game_loop records the square after the pre-move
+            // script, even when that script transferred the party or
+            // blocks MoveResolve. Its post-move entry compares these cells.
+            machine_.bind_variable(game_cell(EclAddress{0x49F0}),
+                                   static_cast<std::uint16_t>(snapshot_.pose.x));
+            machine_.bind_variable(game_cell(EclAddress{0x49F1}),
+                                   static_cast<std::uint16_t>(snapshot_.pose.y));
+        }
         // A step entry run with no move (Treasures' after a cast) searches
         // where the party stands.
         if (pending_movement_ && !move_party(*pending_movement_))
@@ -2481,7 +2617,17 @@ void RolfTourSession::finish_event()
                                    map_.at(machine_.variable(game_cell(ecl_party_x)),
                                            machine_.variable(game_cell(ecl_party_y)))
                                        .event_raw);
-            if (!machine_.start(1))
+            // Native RunNewScript invokes the pre-move entry once before
+            // its arrival search, without moving the party. In particular,
+            // wilderness entry consumes its departure lock here; deferring
+            // that call until the player's first step traps Luminari's exits.
+            const bool native = game() == GoldBoxGame::dark_queen_of_krynn;
+            if (native)
+            {
+                event_stage_ = EventStage::step;
+                pending_movement_.reset();
+            }
+            if (!machine_.start(native ? 0 : 1))
             {
                 throw EclError("Cannot search building entrance");
             }
@@ -2516,7 +2662,11 @@ void RolfTourSession::finish_event()
             // Opened, the camp menu waits for the player (open_camp).
             camp_menu_open_ = snapshot_.camp_menu_open = true;
         }
-        else if (chance == 255)
+        // Native camp.c disables Rest only for a certain encounter at the
+        // first check. Its quiet citadel rooms use interval 0, chance 255:
+        // no checks run there, so the chance byte cannot forbid resting.
+        else if (game() == GoldBoxGame::dark_queen_of_krynn ? interval == 1 && chance >= 100
+                                                            : chance == 255)
         {
             camp_fixing_ = false;
             add_camp_line("Rest is not allowed here.");
@@ -2726,7 +2876,8 @@ void RolfTourSession::finish_event()
 // cell clear; otherwise it is in a 3D area.
 void RolfTourSession::update_travel_mode()
 {
-    const bool wilderness = current_script_ >= 25 && current_script_ <= 27;
+    const bool wilderness = game() != GoldBoxGame::dark_queen_of_krynn && current_script_ >= 25 &&
+                            current_script_ <= 27;
     if (wilderness && machine_.variable(game_cell(ecl_in_3d_area)) == 0)
     {
         if (!town_->overland)
@@ -2887,7 +3038,7 @@ bool RolfTourSession::locked_door_ahead() const
     {
         return false;
     }
-    const auto edge = edge_ahead(snapshot_.pose);
+    const auto edge = edge_ahead(map_, snapshot_.pose);
     const auto &from = map_.at(edge.x, edge.y);
     const auto &to = map_.at(edge.next_x, edge.next_y);
     const auto passable_or_locked = [](unsigned wall, std::uint8_t door)
@@ -2901,7 +3052,7 @@ bool RolfTourSession::locked_door_ahead() const
 
 bool RolfTourSession::wizard_locked_ahead() const
 {
-    const auto edge = edge_ahead(snapshot_.pose);
+    const auto edge = edge_ahead(map_, snapshot_.pose);
     return map_.at(edge.x, edge.y).doors[index(edge.side)] == wizard_locked_door ||
            map_.at(edge.next_x, edge.next_y).doors[index(edge.other)] == wizard_locked_door;
 }
@@ -2961,7 +3112,7 @@ void RolfTourSession::try_locked_door(DoorMethod method)
         entrances_[shop->id] = EntranceState::open;
     }
     // The original unlocks both faces in its loaded map; reloading the district relocks them.
-    const auto edge = edge_ahead(snapshot_.pose);
+    const auto edge = edge_ahead(map_, snapshot_.pose);
     const auto unlock = [](std::uint8_t &door)
     {
         if (lock(door))
@@ -2969,8 +3120,8 @@ void RolfTourSession::try_locked_door(DoorMethod method)
             door = 1;
         }
     };
-    unlock(map_.cells[edge.y * 16 + edge.x].doors[index(edge.side)]);
-    unlock(map_.cells[edge.next_y * 16 + edge.next_x].doors[index(edge.other)]);
+    unlock(map_.cells[edge.y * map_.width + edge.x].doors[index(edge.side)]);
+    unlock(map_.cells[edge.next_y * map_.width + edge.next_x].doors[index(edge.other)]);
     if (!move_party(*pending_movement_))
     {
         throw EclError("The opened door is still blocked");
@@ -3416,6 +3567,10 @@ bool RolfTourSession::choose(std::uint64_t ticket, std::size_t choice)
     {
         return choose_at_hall(choice);
     }
+    if (dark_queen_vault_visit_)
+    {
+        return choose_dark_queen_vault(choice);
+    }
     if (temple_visit_)
     {
         return choose_at_temple(choice);
@@ -3494,6 +3649,12 @@ bool RolfTourSession::choose(std::uint64_t ticket, std::size_t choice)
         if (!machine_.resume(menu_request_, choice))
         {
             return false;
+        }
+        if (game() == GoldBoxGame::countdown_to_doomsday)
+        {
+            // Countdown's authored closing continue prompt announces its win;
+            // continuing resumes the original return to Salvation unchanged.
+            snapshot_.game_won = false;
         }
         if (engine_prompt)
         {
@@ -3669,8 +3830,8 @@ void RolfTourSession::step_out_of_shop()
     for (const auto side :
          {MapDirection::north, MapDirection::east, MapDirection::south, MapDirection::west})
     {
-        const auto x = (static_cast<int>(shop.x) + step_x(side) + 16) % 16;
-        const auto y = (static_cast<int>(shop.y) + step_y(side) + 16) % 16;
+        const auto x = map_.wrapped_x(static_cast<int>(shop.x) + step_x(side));
+        const auto y = map_.wrapped_y(static_cast<int>(shop.y) + step_y(side));
         if (static_cast<unsigned>(x) == from.x && static_cast<unsigned>(y) == from.y)
         {
             bind_pose({from.x, from.y, side});
@@ -3678,9 +3839,8 @@ void RolfTourSession::step_out_of_shop()
         }
     }
     const auto behind = reversed(shop.facing);
-    bind_pose({static_cast<unsigned>((static_cast<int>(shop.x) + step_x(behind) + 16) % 16),
-               static_cast<unsigned>((static_cast<int>(shop.y) + step_y(behind) + 16) % 16),
-               behind});
+    bind_pose({map_.wrapped_x(static_cast<int>(shop.x) + step_x(behind)),
+               map_.wrapped_y(static_cast<int>(shop.y) + step_y(behind)), behind});
 }
 
 std::string RolfTourSession::shoot_arrows(unsigned arrows, std::string_view missile,
@@ -3845,7 +4005,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         // Darkness's and Treasures' reconstructions): FIND NPC's high bit
         // left on selects the member, as Myth Drannor's way out does with
         // Nacacia (ECL1:66 0x8658).
-        if (arg(0) >= 128 && vga_engine(game()))
+        if (arg(0) >= 128 && (vga_engine(game()) || game() == GoldBoxGame::dark_queen_of_krynn))
         {
             read_character();
             selected_character_ = PartySlot{static_cast<unsigned>(arg(0) & 127)};
@@ -3920,11 +4080,15 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     {
         // Encounter distance images use the already verified SPRIT3 format.
         std::array<Image, 3> decoded;
-        if (arg(1) > 2)
+        const bool native = game() == GoldBoxGame::dark_queen_of_krynn;
+        if (arg(1) > 2 && !native)
         {
             throw EclError("Unsupported encounter distance");
         }
-        encounter_distance_ = std::min<unsigned>(arg(1), room_ahead());
+        // Native limit 10h explicitly forces the farthest distance even
+        // when the current corridor ends sooner (CMD_SetupMonster).
+        encounter_distance_ =
+            native && arg(1) == 0x10 ? 2U : std::min<unsigned>(arg(1), room_ahead());
         // Pools of Darkness's and Treasures' SETUP MONSTER names the sides
         // the monsters come from too (eclvm.pas, EclSetupMonster).
         if (request.arguments.size() > 3)
@@ -4100,6 +4264,12 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         }
         const auto &area = area_resources();
         const bool ally = fights_for_party(area, record);
+        std::optional<std::array<VgaColor, 256>> native_palette;
+        if (area.dark_queen)
+        {
+            native_palette = ua::combat_palette(area.dark_queen->files, dark_queen_combat_set_,
+                                                machine_.variable(EclAddress{0x22}) != 0);
+        }
         // Treasures' LOAD MONSTER holds its creatures back while cell 44h is
         // set: they join the fight as that round ends, the ninth at the
         // latest (its EclLoadMonster and JoinDelayedCombatants).
@@ -4127,7 +4297,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 static_cast<rules::EntityId>(opengold::first_ally_id + staged_allies_.size());
             auto staged =
                 stage_area_creature(area, record, icon, exported, id, name, rules::Side::party,
-                                    difficulty_, plays_original_records(), game());
+                                    difficulty_, plays_original_records(), game(), native_palette);
             staged.fighter.arrival_round = arrival;
             staged_allies_.push_back(std::move(staged.fighter));
             staged_ally_art_.push_back(std::move(staged.art));
@@ -4138,7 +4308,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             auto staged = stage_area_creature(
                 area, record, icon, exported, id,
                 name + " " + std::to_string(staged_enemies_.size() + 1), rules::Side::opposition,
-                difficulty_, plays_original_records(), game());
+                difficulty_, plays_original_records(), game(), native_palette);
             staged.fighter.arrival_round = arrival;
             staged_enemies_.push_back(std::move(staged.fighter));
             staged_art_.push_back(std::move(staged.art));
@@ -4211,7 +4381,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         reply = character_reply(selected_character_);
         // Treasures' CHECK PARTY reads its operands and does nothing: its
         // four cells keep what they hold.
-        if (game() == GoldBoxGame::treasures_of_the_savage_frontier)
+        if (game() == GoldBoxGame::treasures_of_the_savage_frontier ||
+            game() == GoldBoxGame::dark_queen_of_krynn)
         {
             for (std::size_t n = 2; n < request.arguments.size(); ++n)
             {
@@ -4248,7 +4419,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         // ECL CLOCK: time passes as for arg(0) steps, while a script walks the
         // party (the nomad camp's escort, ECL7:17 0x9D37).
         read_character();
-        if (game() == GoldBoxGame::death_knights_of_krynn)
+        if (game() == GoldBoxGame::death_knights_of_krynn ||
+            game() == GoldBoxGame::dark_queen_of_krynn)
         {
             static constexpr std::array<std::int64_t, 7> seconds{6,     60,      600,     3600,
                                                                  86400, 2592000, 31104000};
@@ -4359,10 +4531,17 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         // MON3CHA, whose record 24 has no conversion. Secret keeps one
         // creature file for every disk.
         read_character();
-        const auto creature_disks = game_disks(game()).monsters;
-        const unsigned bank = creature_disks.size() == 1 ? creature_disks.front()
-                              : current_area_            ? area_resources().bank
-                                                         : 3;
+        const unsigned bank = [&]
+        {
+            if (game() == GoldBoxGame::dark_queen_of_krynn)
+            {
+                return 1U; // The shared MONCHA.GLB creature table.
+            }
+            const auto creature_disks = game_disks(game()).monsters;
+            return creature_disks.size() == 1 ? creature_disks.front()
+                   : current_area_            ? area_resources().bank
+                                              : 3;
+        }();
         const auto &profiles = current_area_ ? area_resources().npc_profiles : town_->npc_profiles;
         std::optional<Character> companion;
         const Creature *original = nullptr;
@@ -4587,20 +4766,42 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 const std::size_t ground = machine_.variable(gateway_ground) & 0xFFu;
                 return ground < classes.size() ? classes[ground] : 0U;
             };
-            auto field =
-                overland()
-                    ? wilderness_battlefield(
-                          *town_->overland,
-                          town_->overland->at(town_->overland->window_start[travel_mode_ - 2] +
-                                                  machine_.variable(game_cell(ecl_overland_x)),
-                                              machine_.variable(game_cell(ecl_overland_y))),
-                          roll)
-                : curse_outdoors ? wilderness_battlefield(town_->curse_wilderness->combat_tiles,
-                                                          curse_place_flags(), roll)
-                : gateway_outdoors
-                    ? gateway_wilderness_battlefield(town_->gateway_wilderness->combat_tiles,
-                                                     gateway_ground_class(), roll)
-                    : dungeon_battlefield(map_, p.x, p.y);
+            std::vector<Image> native_terrain;
+            auto field = [&]
+            {
+                if (town_->dark_queen)
+                {
+                    const bool dungeon = machine_.variable(EclAddress{0x22}) != 0;
+                    auto native = dungeon
+                                      ? dark_queen_dungeon_field(*town_->dark_queen, map_, p,
+                                                                 dark_queen_combat_set_)
+                                      : ua::wilderness_field(
+                                            town_->dark_queen->files, dark_queen_combat_set_,
+                                            [&](unsigned sides)
+                                            {
+                                                return machine_.host_random(request.id, sides) + 1;
+                                            },
+                                            dark_queen_wilderness_style(
+                                                machine_.variable(EclAddress{0x1A2}),
+                                                machine_.variable(EclAddress{0x33}) != 0));
+                    native_terrain = std::move(native.terrain_art);
+                    return std::move(native.field);
+                }
+                return overland() ? wilderness_battlefield(
+                                        *town_->overland,
+                                        town_->overland->at(
+                                            town_->overland->window_start[travel_mode_ - 2] +
+                                                machine_.variable(game_cell(ecl_overland_x)),
+                                            machine_.variable(game_cell(ecl_overland_y))),
+                                        roll)
+                       : curse_outdoors
+                           ? wilderness_battlefield(town_->curse_wilderness->combat_tiles,
+                                                    curse_place_flags(), roll)
+                       : gateway_outdoors
+                           ? gateway_wilderness_battlefield(town_->gateway_wilderness->combat_tiles,
+                                                            gateway_ground_class(), roll)
+                           : dungeon_battlefield(map_, p.x, p.y);
+            }();
             encounter_ = opengold::CampaignEncounter{
                 std::move(field),
                 std::move(staged_enemies_),
@@ -4609,6 +4810,10 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                                                                  : area_resources().terrain_art,
                 overland() ? wilderness_facing : p.facing,
                 script_surprise(machine_.variable(game_cell(ecl_encounter_surprise)))};
+            if (town_->dark_queen)
+            {
+                encounter_->terrain_art = std::move(native_terrain);
+            }
             encounter_->band = std::move(staged_band_);
             staged_band_.clear();
             encounter_->allies = std::move(staged_allies_);
@@ -4622,6 +4827,10 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             const auto hour = clock_minute_of_day(campaign_->state().time_minutes) / 60;
             encounter_->daylight = hour >= 6 && hour < 18;
             encounter_->outdoors = overland() || curse_outdoors || gateway_outdoors;
+            if (town_->dark_queen)
+            {
+                encounter_->outdoors = machine_.variable(EclAddress{0x22}) == 0;
+            }
             // Gateway's combat mode 1 (cell 4D01h), which its maze through
             // Ascore sets (ECL6:27 0x843A).
             constexpr EclAddress gateway_combat_mode{0x4D01};
@@ -4661,6 +4870,18 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 // Moander's heart sets (ECL1:53 0x9C8C).
                 encounter_->party_move_modifier =
                     static_cast<int>(machine_.variable(darkness_party_move_mod) & 0xFF);
+            }
+            if (game() == GoldBoxGame::dark_queen_of_krynn)
+            {
+                // Native LOAD MONSTER counts undead loads, not copies, for
+                // each member's turning attempts. Cell Fh reduces its column.
+                encounter_->turning_tries = static_cast<int>(staged_undead_loads_);
+                encounter_->turning_penalty =
+                    static_cast<int>(machine_.variable(EclAddress{0x0F}) & 0xFF);
+                encounter_->underwater = machine_.variable(EclAddress{0x003C}) != 0;
+                encounter_->no_magic = magic_barred();
+                encounter_->party_move_modifier =
+                    static_cast<int>(machine_.variable(EclAddress{0x001C}) & 0xFF);
             }
             if (std::exchange(duel_, false))
             {
@@ -4728,6 +4949,16 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 monster_picture_id_ && area_resources().animations.contains(*monster_picture_id_);
             snapshot_.phase = TourPhase::combat;
             ++snapshot_.revision;
+            return true;
+        }
+        if (game() == GoldBoxGame::dark_queen_of_krynn && machine_.variable(EclAddress{0x31}) == 1)
+        {
+            if (!campaign_)
+            {
+                throw EclError("Vault service requires a campaign party");
+            }
+            read_character();
+            open_dark_queen_vault(request.id);
             return true;
         }
         if (machine_.variable(game_cell(ecl_temple_service)) == 1)
@@ -4868,6 +5099,28 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         break;
     case 33:
     {
+        if (game() == GoldBoxGame::dark_queen_of_krynn)
+        {
+            // Native LOAD FILES names a GEO record and the combat tile set;
+            // the map itself names all three wall sets.
+            const auto map = arg(0);
+            if (!town_->districts.contains(map))
+            {
+                throw EclError("Missing Dark Queen GEO " + std::to_string(map));
+            }
+            change_area(map);
+            if (arg(1) != 255)
+            {
+                dark_queen_combat_set_ = arg(1);
+            }
+            reply.writes = {{game_cell(ecl_current_map), static_cast<std::uint16_t>(map)},
+                            {EclAddress{0xC6}, static_cast<std::uint16_t>(map)},
+                            {EclAddress{3}, 0}};
+            reply.writes.push_back(
+                {EclAddress{0x3D}, native_cell_flags(machine_.variable(game_cell(ecl_party_x)),
+                                                     machine_.variable(game_cell(ecl_party_y)))});
+            break;
+        }
         if (vga_engine(game()))
         {
             reply = vga_load_files(arg(0), arg(1));
@@ -5024,6 +5277,30 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         }
         break;
     }
+    case 63:
+    {
+        if (game() != GoldBoxGame::dark_queen_of_krynn || !campaign_)
+        {
+            throw EclError("Native effect lookup requires a campaign rules module");
+        }
+        read_character();
+        const auto id = selected_character_.index < 8
+                            ? campaign_->state().slots[selected_character_.index]
+                            : MemberId{};
+        std::optional<bool> found = false;
+        if (id)
+        {
+            found = campaign_->rule_module().script_has_effect(
+                campaign_->profile(id), campaign_->member(id).vitals, arg(0));
+        }
+        if (!found)
+        {
+            throw EclError("The selected rules do not support native effect lookups");
+        }
+        reply = character_reply(selected_character_);
+        reply.conditions = EclConditions{*found, !*found, false, false, false, false};
+        break;
+    }
     case 64:
         // DESTROY ITEMS (Curse): every item of the type in the party is gone.
         campaign_->destroy_items(static_cast<std::uint8_t>(arg(0)));
@@ -5042,10 +5319,12 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             read_character();
             only = campaign_->state().slots.at(selected_character_.index);
         }
-        const unsigned award_unit = game() == GoldBoxGame::pools_of_darkness ||
-                                            game() == GoldBoxGame::treasures_of_the_savage_frontier
-                                        ? 100
-                                        : 1;
+        const unsigned award_unit =
+            game() == GoldBoxGame::pools_of_darkness ||
+                    game() == GoldBoxGame::treasures_of_the_savage_frontier ||
+                    game() == GoldBoxGame::dark_queen_of_krynn
+                ? 100
+                : 1;
         campaign_->grant_script_experience(arg(1) * award_unit, only);
         const auto line = whole_party || !only ? std::string("The party gains experience.")
                                                : campaign_->member(only).character.sheet().name +
@@ -5069,7 +5348,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     }
     case 55:
     {
-        if (vga_engine(game()))
+        if (vga_engine(game()) || game() == GoldBoxGame::dark_queen_of_krynn)
         {
             reply = vga_find_npc(request.arguments.at(0).text(), address_arg(1));
             break;
@@ -5132,7 +5411,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     }
     case 46:
     {
-        if (vga_engine(game()))
+        if (vga_engine(game()) || game() == GoldBoxGame::dark_queen_of_krynn)
         {
             read_character();
             vga_damage(request);
@@ -5324,6 +5603,16 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             open_hall(request.id);
             return true;
         }
+        if (arg(0) == 3 && game() == GoldBoxGame::dark_queen_of_krynn && campaign_)
+        {
+            read_character();
+            if (!campaign_->drain_level(campaign_->state().slots.at(selected_character_.index)))
+            {
+                throw EclError("The selected rules do not support the native level drain");
+            }
+            reply = character_reply(selected_character_);
+            break;
+        }
         // Gateway's PROGRAM 12h brings every member to full Hit Points (the
         // wish Krevish saved for Ascore) and compares equal when it healed
         // anyone, else not equal, which its script tests (ECL6:28 0x8907).
@@ -5341,7 +5630,10 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         // of Darkness's is PROGRAM 1, after Gothmenes falls and Bane's crystal
         // is dust (ECL1:75 0x966C), where its original leaves for the closing
         // film; here the win is told and the game goes on.
-        if ((arg(0) == 8 || (game() == GoldBoxGame::pools_of_darkness && arg(0) == 1)) && campaign_)
+        if ((arg(0) == 8 || ((game() == GoldBoxGame::pools_of_darkness ||
+                              game() == GoldBoxGame::dark_queen_of_krynn) &&
+                             arg(0) == 1)) &&
+            campaign_)
         {
             const bool darkness_won = game() == GoldBoxGame::pools_of_darkness;
             read_character();
@@ -5381,9 +5673,13 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         read_character();
         // Pools of Darkness's PROGRAM 9 camps and then goes on with the
         // script, ending it only on the area map (eclvm.pas, EclProgram):
-        // Elminster's rest in Limbo. Here the party rests a night, as at
+        // Elminster's rest in Limbo. Native PROGRAM 9 likewise resumes
+        // unless its separate wilderness-view flag (24h) is exactly one.
+        // Here the party rests a night, as at
         // Pool of Radiance's inn, and chooses its spells after it.
         if ((game() == GoldBoxGame::pools_of_darkness && !vga_area_map()) ||
+            (game() == GoldBoxGame::dark_queen_of_krynn &&
+             machine_.variable(EclAddress{0x24}) != 1) ||
             (game() == GoldBoxGame::death_knights_of_krynn &&
              machine_.variable(EclAddress{0x4CF7}) == 0))
         {
@@ -5444,7 +5740,10 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     {
         throw EclError("Town host reply rejected");
     }
-    if (op == 33)
+    // Native LOAD FILES may load a smaller map before its script writes
+    // the arrival square. CALL 1 (redraw), or event completion, publishes
+    // that settled pose; validating the previous square here breaks exits.
+    if (op == 33 && game() != GoldBoxGame::dark_queen_of_krynn)
     {
         publish_pose();
     }
@@ -5901,13 +6200,15 @@ void RolfTourSession::apply_entrances()
     const auto set_edge =
         [this](unsigned x, unsigned y, MapDirection side, std::uint8_t wall, std::uint8_t door)
     {
-        auto &cell = map_.cells[y * 16 + x];
+        auto &cell = map_.cells[y * map_.width + x];
         cell.walls[index(side)] = wall;
         cell.doors[index(side)] = door;
         const int nx = static_cast<int>(x) + step_x(side), ny = static_cast<int>(y) + step_y(side);
-        if (nx >= 0 && ny >= 0 && nx < 16 && ny < 16)
+        if (nx >= 0 && ny >= 0 && nx < static_cast<int>(map_.width) &&
+            ny < static_cast<int>(map_.height))
         {
-            auto &other = map_.cells[static_cast<unsigned>(ny) * 16 + static_cast<unsigned>(nx)];
+            auto &other =
+                map_.cells[static_cast<unsigned>(ny) * map_.width + static_cast<unsigned>(nx)];
             other.walls[index(reversed(side))] = wall;
             other.doors[index(reversed(side))] = door;
         }
@@ -5922,7 +6223,7 @@ void RolfTourSession::apply_entrances()
         const auto state = entrances_[shop.id];
         for (const auto &[x, y] : shop.markers)
         {
-            map_.cells[y * 16 + x].event_raw = 0;
+            map_.cells[y * map_.width + x].event_raw = 0;
             for (const auto &[side, wall] : entrance.walls)
             {
                 set_edge(x, y, side, wall, 0);
@@ -5938,7 +6239,7 @@ void RolfTourSession::apply_entrances()
 
 const opengold::ShopSite *RolfTourSession::entrance_ahead() const
 {
-    const auto edge = edge_ahead(snapshot_.pose);
+    const auto edge = edge_ahead(map_, snapshot_.pose);
     for (const auto &shop : shops_)
     {
         if (!shop.entrance || !on_map(shop.archive, shop.record))
@@ -6157,7 +6458,8 @@ void RolfTourSession::open_temple(std::uint64_t request)
     auto offerings = opengold::original_temple_offerings(
         game() != GoldBoxGame::pool_of_radiance,
         game() == GoldBoxGame::pools_of_darkness ||
-            game() == GoldBoxGame::treasures_of_the_savage_frontier);
+            game() == GoldBoxGame::treasures_of_the_savage_frontier ||
+            game() == GoldBoxGame::dark_queen_of_krynn);
     for (const auto &site : temples_)
     {
         if (standing_at(site.archive, site.record, site.markers))
@@ -6180,7 +6482,8 @@ void RolfTourSession::open_temple(std::uint64_t request)
     const bool freed_eldath = game() == GoldBoxGame::treasures_of_the_savage_frontier &&
                               snapshot_.area_id == 39 && machine_.variable(EclAddress{0x265}) != 0;
     if (game() == GoldBoxGame::secret_of_the_silver_blades ||
-        game() == GoldBoxGame::death_knights_of_krynn || freed_eldath)
+        game() == GoldBoxGame::death_knights_of_krynn ||
+        game() == GoldBoxGame::dark_queen_of_krynn || freed_eldath)
     {
         for (auto &offering : offerings)
         {
@@ -6377,7 +6680,8 @@ std::string creature_name(const PhlanResources &area, unsigned record,
 StagedCreature stage_area_creature(const PhlanResources &area, unsigned record, unsigned icon,
                                    const ExportedMonster *exported, rules::EntityId id,
                                    std::string name, rules::Side side, Difficulty difficulty,
-                                   bool original_record, GoldBoxGame game)
+                                   bool original_record, GoldBoxGame game,
+                                   std::optional<std::array<VgaColor, 256>> native_palette)
 {
     const auto conversion = area.conversions.find(record);
     const auto creature = area.encounter_creatures.find(record);
@@ -6395,16 +6699,30 @@ StagedCreature stage_area_creature(const PhlanResources &area, unsigned record, 
     {
         definition = "slums-orc-leader-archer";
     }
-    auto art =
-        creature_art(area.combat_archive, icon, exported, definition.ends_with("-archer"), game);
+    auto fighter = staged_fighter(id, std::move(definition), std::move(name), side,
+                                  creature->second, exported, difficulty);
+    if (area.dark_queen)
+    {
+        if (!native_palette)
+        {
+            throw EclError("Native combat icon needs the battlefield palette");
+        }
+        const auto art = area.dark_queen->icons.icon(icon, *native_palette);
+        if (!art)
+        {
+            throw EclError("Missing Dark Queen combat icon " + std::to_string(icon));
+        }
+        fighter.footprint = art->footprint;
+        return {std::move(fighter), {id, art->ready, art->action}};
+    }
+    auto art = creature_art(area.combat_archive, icon, exported,
+                            fighter.definition.ends_with("-archer"), game);
     if (!art)
     {
         throw EclError("Invalid original combat icon");
     }
     art->entity = id;
-    return {staged_fighter(id, std::move(definition), std::move(name), side, creature->second,
-                           exported, difficulty),
-            std::move(*art)};
+    return {std::move(fighter), std::move(*art)};
 }
 
 } // namespace opengold::por

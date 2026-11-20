@@ -1,9 +1,11 @@
 #include "opengold/original_rules.h"
 #include "opengold/buck_rogers_rules.h"
+#include "opengold/original.h"
 #include "opengold/original_spells.h"
 #include "opengold/dice.h"
 #include "champions_rules.h"
 #include "death_knights_rules.h"
+#include "dark_queen_rules.h"
 #include <algorithm>
 #include <stdexcept>
 #include <string_view>
@@ -657,8 +659,8 @@ constexpr std::array<std::array<int, 5>, 11> thief_dexterity_adjustments{{{-15, 
     const int aged = rolled.rolls[ability] + age_changes(aging, race, rolled.starting_age)[ability];
     int score = std::clamp(aged, limits.minimum[ability], limits.maximum[ability]);
     score = std::max(score, class_minimums(profession, game)[ability]);
-    if (game != GoldBoxGame::death_knights_of_krynn && ability == Ability::wisdom &&
-        is_cleric_multi_class(profession))
+    if (game != GoldBoxGame::death_knights_of_krynn && game != GoldBoxGame::dark_queen_of_krynn &&
+        ability == Ability::wisdom && is_cleric_multi_class(profession))
     {
         score = std::max(score, 13);
     }
@@ -675,14 +677,24 @@ constexpr std::array<std::array<int, 5>, 11> thief_dexterity_adjustments{{{-15, 
 
 [[nodiscard]] int fixed_hp_level(C slot, GoldBoxGame game)
 {
-    return game == GoldBoxGame::death_knights_of_krynn && slot == C::monk
+    return (game == GoldBoxGame::death_knights_of_krynn ||
+            game == GoldBoxGame::dark_queen_of_krynn) &&
+                   slot == C::monk
                ? 10
                : curse_hit_dice_levels[index(slot)];
 }
 
 [[nodiscard]] int fixed_hp_amount(C slot, GoldBoxGame game)
 {
-    return game == GoldBoxGame::death_knights_of_krynn && slot == C::monk
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        return slot == C::fighter || slot == C::paladin     ? 3
+               : slot == C::cleric || slot == C::magic_user ? 1
+                                                            : 2;
+    }
+    return (game == GoldBoxGame::death_knights_of_krynn ||
+            game == GoldBoxGame::dark_queen_of_krynn) &&
+                   slot == C::monk
                ? 3
                : curse_fixed_hit_points[index(slot)];
 }
@@ -692,7 +704,9 @@ constexpr std::array<std::array<int, 5>, 11> thief_dexterity_adjustments{{{-15, 
     int level = 1;
     for (;;)
     {
-        const auto needed = game == GoldBoxGame::death_knights_of_krynn
+        const auto needed = game == GoldBoxGame::dark_queen_of_krynn
+                                ? dark_queen_experience_for_level(slot, level + 1, orders)
+                            : game == GoldBoxGame::death_knights_of_krynn
                                 ? death_knights_experience_for_level(slot, level + 1, orders)
                                 : experience_for_level(slot, level + 1, game);
         if (!needed || *needed > experience)
@@ -753,6 +767,10 @@ ClassLevels first_levels(Profession profession)
 
 std::span<const Profession> professions_for(Race race, GoldBoxGame game)
 {
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        return dark_queen_professions(race);
+    }
     if (game == GoldBoxGame::death_knights_of_krynn)
     {
         return death_knights_professions(race);
@@ -879,12 +897,20 @@ AbilityArray<int> racial_adjustments(Race race)
 
 AbilityLimits ability_limits(Race race, Gender gender, GoldBoxGame game)
 {
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        return dark_queen_ability_limits(race, gender);
+    }
     return game == GoldBoxGame::death_knights_of_krynn ? death_knights_ability_limits(race, gender)
                                                        : ability_limits(race, gender);
 }
 
 AbilityArray<int> class_minimums(Profession profession, GoldBoxGame game)
 {
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        return dark_queen_class_minimums(profession);
+    }
     if (game == GoldBoxGame::death_knights_of_krynn)
     {
         return death_knights_class_minimums(profession);
@@ -977,7 +1003,7 @@ RolledCharacter roll_character(Race race, Profession profession, GoldBoxGame gam
     const auto classes = classes_of(profession);
     // Curse's characters start with platinum (starting_platinum) instead; in
     // Secret only a thief brings gold, 2d6, and in Pools of Darkness no one.
-    if (game == GoldBoxGame::death_knights_of_krynn)
+    if (game == GoldBoxGame::death_knights_of_krynn || game == GoldBoxGame::dark_queen_of_krynn)
     {
         rolled.gold = 0;
     }
@@ -1014,7 +1040,8 @@ RolledCharacter roll_character(Race race, Profession profession, GoldBoxGame gam
                 ? Dice{2, 8}
                 : hit_dice[index(classes[n])];
         rolled.first_level_hit_dice[n] =
-            (curse || game == GoldBoxGame::death_knights_of_krynn)
+            (curse || game == GoldBoxGame::death_knights_of_krynn ||
+             game == GoldBoxGame::dark_queen_of_krynn)
                 ? better_of_two(dice, random)
                 : std::max(roll_dice(random, dice), dice.sides * 2 / 3);
     }
@@ -1035,6 +1062,8 @@ int starting_experience(Profession profession, GoldBoxGame game)
     const auto classes = static_cast<int>(classes_of(profession).size());
     switch (game)
     {
+    case GoldBoxGame::dark_queen_of_krynn:
+        return classes == 1 ? 1000001 : classes == 2 ? 500000 : 333333;
     case GoldBoxGame::death_knights_of_krynn:
         return classes == 1 ? 210003 : classes == 2 ? 105002 : 70001;
     case GoldBoxGame::champions_of_krynn:
@@ -1106,6 +1135,7 @@ int starting_platinum(GoldBoxGame game)
         return 300;
     case GoldBoxGame::gateway_to_the_savage_frontier:
         return 35;
+    case GoldBoxGame::dark_queen_of_krynn:
     case GoldBoxGame::unlimited_adventures:
     case GoldBoxGame::pools_of_darkness:
     case GoldBoxGame::treasures_of_the_savage_frontier:
@@ -1113,6 +1143,20 @@ int starting_platinum(GoldBoxGame game)
     default:
         return 0;
     }
+}
+
+std::vector<StartingItem> starting_items(const rules::CharacterSheet &sheet)
+{
+    if (!sheet.original)
+    {
+        return {};
+    }
+    const auto game = game_of(sheet.identity);
+    const auto &numbers = *sheet.original;
+    return game == GoldBoxGame::dark_queen_of_krynn
+               ? dark_queen_starting_items(static_cast<Race>(numbers.race),
+                                           static_cast<Profession>(numbers.profession))
+               : starting_items(numbers.class_levels, game);
 }
 
 std::vector<StartingItem> starting_items(const ClassLevels &levels, GoldBoxGame game)
@@ -1311,15 +1355,20 @@ StartingTraining starting_training(Race race, Profession profession,
     while (true)
     {
         auto ready = classes_ready_to_train(race, trained.levels, scores, experience, game);
-        if (game == GoldBoxGame::death_knights_of_krynn)
+        if (game == GoldBoxGame::death_knights_of_krynn || game == GoldBoxGame::dark_queen_of_krynn)
         {
             ready.clear();
             for (const auto slot : classes)
             {
                 const int level = level_in(trained.levels, slot);
-                const auto needed = death_knights_experience_for_level(slot, level + 1, orders);
-                if (needed && *needed <= experience &&
-                    level < death_knights_level_limit(race, slot))
+                const auto needed =
+                    game == GoldBoxGame::dark_queen_of_krynn
+                        ? dark_queen_experience_for_level(slot, level + 1, orders)
+                        : death_knights_experience_for_level(slot, level + 1, orders);
+                const int limit = game == GoldBoxGame::dark_queen_of_krynn
+                                      ? dark_queen_level_limit(race, slot, orders)
+                                      : death_knights_level_limit(race, slot);
+                if (needed && *needed <= experience && level < limit)
                 {
                     ready.push_back(slot);
                 }
@@ -1348,7 +1397,8 @@ StartingTraining starting_training(Race race, Profession profession,
                                : rolled.training_hit_dice.at(first_die[n] +
                                                              static_cast<std::size_t>(level - 2));
             if (slot == C::magic_user && !vga_engine(game) &&
-                game != GoldBoxGame::death_knights_of_krynn)
+                game != GoldBoxGame::death_knights_of_krynn &&
+                game != GoldBoxGame::dark_queen_of_krynn)
             {
                 const auto learned = game == GoldBoxGame::secret_of_the_silver_blades
                                          ? secret_starting_spells(level)
@@ -1395,9 +1445,10 @@ int exceptional_strength(Race race, Gender gender, Profession profession,
 {
     const bool warrior =
         has_class(profession, C::fighter) ||
-        (krynn_game(game) &&
-         (profession == P::knight || has_class(profession, C::ranger) ||
-          (game == GoldBoxGame::death_knights_of_krynn && has_class(profession, C::paladin)))) ||
+        (krynn_game(game) && (profession == P::knight || has_class(profession, C::ranger) ||
+                              ((game == GoldBoxGame::death_knights_of_krynn ||
+                                game == GoldBoxGame::dark_queen_of_krynn) &&
+                               has_class(profession, C::paladin)))) ||
         (game == GoldBoxGame::pools_of_darkness &&
          (has_class(profession, C::paladin) || has_class(profession, C::ranger)));
     if (strength != 18 || !warrior)
@@ -1455,6 +1506,10 @@ int first_level_rolled_hit_points(Profession profession, const RolledCharacter &
 
 int starting_age(Race race, Profession profession, RandomState &random, GoldBoxGame game)
 {
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        return dark_queen_starting_age(race, profession, random);
+    }
     if (champions_race(race))
     {
         return champions_starting_age(race, profession, random);
@@ -1630,6 +1685,10 @@ std::array<int, 8> thief_skills(Race race, int thief_level, int dexterity, GoldB
 
 int thac0(const ClassLevels &levels, GoldBoxGame game)
 {
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        return dark_queen_thac0(levels);
+    }
     if (game == GoldBoxGame::death_knights_of_krynn)
     {
         return death_knights_thac0(levels);
@@ -1672,6 +1731,10 @@ int thac0(const ClassLevels &levels, GoldBoxGame game)
 
 std::array<int, 5> saving_throws(const ClassLevels &levels, GoldBoxGame game)
 {
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        return dark_queen_saving_throws(levels);
+    }
     if (game == GoldBoxGame::death_knights_of_krynn)
     {
         return death_knights_saving_throws(levels);
@@ -1723,6 +1786,10 @@ std::array<int, 5> saving_throws(const ClassLevels &levels, GoldBoxGame game)
 
 std::optional<int> experience_for_level(ClassSlot slot, int level, GoldBoxGame game)
 {
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        return dark_queen_experience_for_level(slot, level);
+    }
     if (game == GoldBoxGame::death_knights_of_krynn)
     {
         return death_knights_experience_for_level(slot, level);
@@ -1772,6 +1839,16 @@ std::optional<int> experience_for_level(ClassSlot slot, int level, GoldBoxGame g
 std::vector<int> known_spells(const ClassLevels &levels, int wisdom, std::span<const int> learned,
                               GoldBoxGame game)
 {
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        rules::CharacterSheet::Original numbers;
+        numbers.class_levels = levels;
+        numbers.known_spells.assign(learned.begin(), learned.end());
+        rules::AbilityArray<int> scores{};
+        scores[Ability::wisdom] = wisdom;
+        recalculate_dark_queen_numbers(numbers, scores);
+        return numbers.known_spells;
+    }
     if (game == GoldBoxGame::death_knights_of_krynn)
     {
         rules::CharacterSheet::Original numbers;
@@ -2020,6 +2097,10 @@ int experience_share(Profession profession, const AbilityArray<int> &scores, int
 std::optional<int> racial_level_limit(Race race, ClassSlot slot, const AbilityArray<int> &scores,
                                       GoldBoxGame game)
 {
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        return dark_queen_level_limit(race, slot);
+    }
     if (game == GoldBoxGame::death_knights_of_krynn)
     {
         return death_knights_level_limit(race, slot);
@@ -2100,6 +2181,13 @@ std::optional<int> racial_level_limit(Race race, ClassSlot slot, const AbilityAr
 
 SpellSlots spell_slots(ClassSlot slot, int level, int wisdom, int intelligence, GoldBoxGame game)
 {
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        ClassLevels levels{};
+        level_in(levels, slot) = level;
+        const auto slots = dark_queen_base_slots(levels, wisdom, intelligence, {});
+        return slot == C::magic_user ? slots[3] : slot == C::druid ? slots[1] : slots[0];
+    }
     if (game == GoldBoxGame::death_knights_of_krynn)
     {
         ClassLevels levels{};
@@ -2198,6 +2286,11 @@ constexpr int ranger_last_gain = 8 + static_cast<int>(ranger_slot_gains.size()) 
 
 CasterSlots caster_slots(const ClassLevels &levels, int wisdom, int intelligence, GoldBoxGame game)
 {
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        const auto slots = dark_queen_base_slots(levels, wisdom, intelligence, {});
+        return {slots[0], slots[1], slots[3]};
+    }
     if (game == GoldBoxGame::death_knights_of_krynn)
     {
         const auto slots = death_knights_base_slots(levels, wisdom, {});

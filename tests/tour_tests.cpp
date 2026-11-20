@@ -277,7 +277,7 @@ void fog_visibility_tests()
     for (unsigned facing = 0; facing < 4; ++facing)
     {
         const auto rotated = render_exploration_view({}, {}, 8, 8, MapDirection{facing});
-        std::bitset<256> expected;
+        MapKnowledge expected;
         for (unsigned y = 0; y < 16; ++y)
         {
             for (unsigned x = 0; x < 16; ++x)

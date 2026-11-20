@@ -1,7 +1,10 @@
 #include "combat_session.h"
 #include "champions_rules.h"
-#include "death_knights_rules.h"
+#include "dark_queen_effects.h"
+#include "dark_queen_progression.h"
+#include "dark_queen_rules.h"
 #include "death_knights_effects.h"
+#include "death_knights_rules.h"
 
 #include "opengold/buck_rogers_combat.h"
 #include "opengold/buck_rogers_ship_combat.h"
@@ -34,6 +37,7 @@ namespace
 {
 
 namespace dkk_effect = ::opengold::original::death_knights_effect;
+namespace dq_effect = ::opengold::original::dark_queen_effect;
 
 using original::ClassSlot;
 using rules::Cell;
@@ -43,12 +47,13 @@ using rules::Side;
 
 // The original counts movement in half-moves: 2 a straight step, 3 a diagonal one.
 constexpr rules::StepCosts half_moves{2, 3, 2, 4, 0};
-// A checkpoint keeps each square's movement cost after its heights, and
-// Death Knights' its starting time for the native calendar. The reader still
-// takes those written before the costs: 27, and Death Knights' 28.
+// Format 31 adds Native's underwater state to the movement-cost layout.
+// All earlier 27/28/29/30 layouts remain readable.
 constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 30";
+constexpr std::string_view dark_queen_checkpoint_format = "OGORIGINALCOMBAT 31";
 constexpr std::string_view costless_checkpoint_format = "OGORIGINALCOMBAT 27";
 constexpr std::string_view costless_death_knights_checkpoint_format = "OGORIGINALCOMBAT 28";
+constexpr std::string_view costless_dark_queen_checkpoint_format = "OGORIGINALCOMBAT 29";
 // The rounds a fight lasts with no one attacking (has_round_limit).
 constexpr unsigned rounds_without_attacks = 15;
 // Champions' removed creatures wait for a gating power, never a timed arrival.
@@ -280,7 +285,9 @@ constexpr std::array<int, 10> hindering_effects{effect::curse, effect::silence, 
 // What a hit carries, by the attacker's effects, in the original's order: a
 // primary attack's hit and a secondary one's (effhndlr.pas, HIT_PHASE_1 and
 // HIT_PHASE_2).
-constexpr std::array<int, 40> primary_hit_effects{
+constexpr std::array<int, 46> primary_hit_effects{
+    dq_effect::spore_touch, dq_effect::poison_bite, dq_effect::constricting_touch,
+    dq_effect::mummy_touch, dq_effect::enchanted_paralysis, dq_effect::venom_touch,
     dkk_effect::stunning_hit, dkk_effect::fire_touch, 85, 86, 87, 68, 79, 80, 76, 73, 77,
     // Curse's (canonical_effect).
     257, 296, 322, 323, 345,
@@ -295,7 +302,9 @@ constexpr std::array<int, 40> primary_hit_effects{
     effect::crushes, effect::rat_disease, effect::grabs_2d8, effect::grabs_4d5, effect::grabs_6d4,
     effect::swallows_on_twenty, effect::kapak_paralysis, effect::paralyzing_strike,
     effect::slight_poison, effect::champions_ghoul_touch};
-constexpr std::array<int, 27> secondary_hit_effects{
+constexpr std::array<int, 33> secondary_hit_effects{
+    dq_effect::spore_touch, dq_effect::poison_bite, dq_effect::constricting_touch,
+    dq_effect::mummy_touch, dq_effect::enchanted_paralysis, dq_effect::venom_touch,
     dkk_effect::stunning_hit, dkk_effect::fire_touch, 64, 65, 66, 67, 68, 69, 70, 79, 85, 86, 87,
     // Secret's.
     effect::poison_touch, effect::stone_touch, effect::strong_poison_touch, effect::ghoul_touch,
@@ -850,7 +859,8 @@ bool giant_bane_strikes(const Fighter &attacker, const Fighter &defender, GoldBo
 // them; together they cancel (effhndlr.pas, EffHasted, EffSlowed).
 int paced(const Fighter &f, int rate)
 {
-    const bool hasted = f.has(effect::hasted), slowed = f.has(effect::slowed);
+    const bool hasted = f.has(effect::hasted),
+               slowed = f.has(effect::slowed) && !f.has(dq_effect::free_action);
     if (hasted && !slowed)
     {
         return rate * 2;
@@ -880,12 +890,15 @@ int caster_level(const Fighter &caster, const Spell &spell, GoldBoxGame game)
     {
         return 12;
     }
-    if (game == GoldBoxGame::death_knights_of_krynn)
+    if (game == GoldBoxGame::death_knights_of_krynn || game == GoldBoxGame::dark_queen_of_krynn)
     {
         const auto *moon = caster.find_effect(dkk_effect::casting_moon);
         const int encoded = moon ? moon->strength : 3;
-        return death_knights_caster_level(caster.numbers.class_levels, spell.caster_class,
-                                          encoded / 4, encoded % 4);
+        return game == GoldBoxGame::dark_queen_of_krynn
+                   ? dark_queen_caster_level(caster.numbers.class_levels, spell.caster_class,
+                                             encoded / 4, encoded % 4)
+                   : death_knights_caster_level(caster.numbers.class_levels, spell.caster_class,
+                                                encoded / 4, encoded % 4);
     }
     if (game == GoldBoxGame::pool_of_radiance)
     {
@@ -940,6 +953,12 @@ enum class Flames : unsigned
 };
 
 // The spells built so far; the rest are not offered yet.
+bool underwater_spell(int number)
+{
+    constexpr std::array blocked{9, 47, 174, 315, 318, 324};
+    return std::ranges::find(blocked, number) == blocked.end();
+}
+
 bool spell_built(int number)
 {
     static constexpr std::array built{
@@ -949,6 +968,7 @@ bool spell_built(int number)
         // Curse's (spells.cpp, curse_spells).
         158, 166, 168, 169, 170, 171, 172, 173, 174, 176, 177, 178, 179, 180, 181, 182, 183, 184,
         185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200,
+        native_elixir_youth,
         // Secret's (spells.cpp, secret_spells).
         236, 256, 290, 296, 298, 310, 311, 312, 313, 314, 315, 316, 317,
         // Pools of Darkness's that are cast in fights (spells.cpp, darkness_spells).
@@ -1133,14 +1153,15 @@ class Session final : public rules::CombatSession
     Session(rules::Identity identity, rules::Battlefield board, std::vector<Fighter> fighters,
             std::uint64_t seed, unsigned morale, bool outdoors, bool escape_ends_fight,
             int party_facing, int party_move_modifier, bool crystals, bool frightening_surprise,
-            int turning_tries, int turning_penalty, std::uint64_t time_minutes, bool zero_gravity)
+            int turning_tries, int turning_penalty, std::uint64_t time_minutes, bool zero_gravity,
+            bool underwater)
         : identity_(std::move(identity)), board_(std::move(board)), fighters_(std::move(fighters)),
           random_{seed}, morale_threshold_(std::min(morale, 100U)), outdoors_(outdoors),
-          escape_ends_fight_(escape_ends_fight), party_facing_(party_facing),
-          party_move_modifier_(party_move_modifier), crystals_(crystals),
-          frightening_surprise_(frightening_surprise), turning_tries_(turning_tries),
-          turning_penalty_(turning_penalty), starting_time_minutes_(time_minutes),
-          zero_gravity_(zero_gravity)
+          underwater_(underwater), escape_ends_fight_(escape_ends_fight),
+          party_facing_(party_facing), party_move_modifier_(party_move_modifier),
+          crystals_(crystals), frightening_surprise_(frightening_surprise),
+          turning_tries_(turning_tries), turning_penalty_(turning_penalty),
+          starting_time_minutes_(time_minutes), zero_gravity_(zero_gravity)
     {
         rules::validate_battlefield(board_);
         // Each creature starts turned along the party's facing, the party's
@@ -1148,6 +1169,11 @@ class Session final : public rules::CombatSession
         // toward the party from the side it was dealt to (PlaceAllCreatures).
         for (auto &f : fighters_)
         {
+            if (underwater_ && f.side == Side::party)
+            {
+                f.numbers.effects.push_back({dq_effect::underwater_weapons, 0, 0, false});
+            }
+
             f.direction = f.starting_facing
                               ? field_direction(*f.starting_facing)
                               : (along_party_facing() + (f.side == Side::party ? 0 : 4)) % 8;
@@ -1200,6 +1226,7 @@ class Session final : public rules::CombatSession
     unsigned morale_threshold_{100};
     // Out of doors (rules::Encounter::outdoors).
     bool outdoors_{};
+    bool underwater_{};
     // Gateway's maze fights: a member's escape ends them (rules::Encounter).
     bool escape_ends_fight_{};
     // Pools of Darkness's gazes are played (play_gazes).
@@ -1522,9 +1549,12 @@ class Session final : public rules::CombatSession
     // Whether one of a creature's mirror images takes a harm: on 1d(images +
     // 1) above 1 (effhndlr.pas, EffMirrorImage).
     template <typename Dice>
-    [[nodiscard]] static bool image_takes_it(const Effect &images, Dice &&dice)
+    [[nodiscard]] bool image_takes_it(const Effect &images, Dice &&dice) const
     {
-        return dice(images.strength + 1) > 1;
+        const int count = game_of(identity_) == GoldBoxGame::dark_queen_of_krynn
+                              ? images.strength >> 5
+                              : images.strength;
+        return dice(count + 1) > 1;
     }
 
     [[nodiscard]] bool aura_protects(const Fighter &attacker, const Fighter &defender) const;
@@ -1568,7 +1598,7 @@ class Session final : public rules::CombatSession
     haste_slow_takes(const Fighter &caster, int number, int level,
                      const std::vector<EntityId> &targets) const;
     [[nodiscard]] bool dispellable(const Effect &e) const;
-    [[nodiscard]] static int dispel_chance(const Effect &e, int caster_level);
+    [[nodiscard]] int dispel_chance(const Effect &e, int caster_level) const;
     [[nodiscard]] static SpellDice shared_dice(int number, int level, int necklace_missile = 1);
 
     // Lightning Bolt's length in squares past its aim: 8 in Pool of
@@ -1591,7 +1621,7 @@ class Session final : public rules::CombatSession
     // and the kit (resolve_spell).
     [[nodiscard]] int ice_storm_element() const
     {
-        return darkness() || kit() ? 8 : 10;
+        return darkness() || kit() || game_of(identity_) == GoldBoxGame::dark_queen_of_krynn ? 8 : 10;
     }
 
     void remove_with_handler(Fighter &f, std::size_t node);
@@ -1621,6 +1651,7 @@ class Session final : public rules::CombatSession
     void curse_specials(Fighter &f);
     void secret_specials(Fighter &f);
     void kit_specials(Fighter &f);
+    void dark_queen_specials(Fighter &f);
     void darkness_specials(Fighter &f);
     bool lightning_breath(Fighter &dragon);
     [[nodiscard]] const Fighter *lightning_bolt_aim(Fighter &caster);
@@ -1876,7 +1907,8 @@ int Session::half_moves_of(const Fighter &f) const
         const int modifier = static_cast<std::int8_t>(party_move_modifier_ & 0xFF);
         return 2 * std::max(paced(f, f.numbers.movement) + modifier, 1);
     }
-    return paced(f, 2 * squares_of_movement(f));
+    const int moves = paced(f, 2 * squares_of_movement(f));
+    return underwater_ && !f.has(2150) ? moves / 3 : moves;
 }
 
 // Its movement in squares this round, as the original weighs flight and
@@ -2455,6 +2487,15 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
                 const int fire = roll(6) + roll(6) + roll(6) + roll(6);
                 nonweapon_damage(defender, fire, 2, saved, 9, attacker.numbers.level, 0, false);
             }
+
+            // Native MakeAttack stops the remaining blows of a disabled
+            // attacker. The triggering hit still lands after retaliation;
+            // neither this form nor a later one can attack from death.
+            if (game_of(identity_) == GoldBoxGame::dark_queen_of_krynn && !attacker.able())
+            {
+                attacker.attacks_left = {};
+                break;
+            }
         }
     }
     attacker.sweep_budget = 0;
@@ -2486,6 +2527,7 @@ int attack_modifier(const Fighter &attacker, const Fighter &defender, GoldBoxGam
     // The kit's 148, which a ghast's stench gives, takes 2 (effects.c); so
     // does Pools of Darkness's dragon fear (effhndlr.pas, EffDragonFeared).
     modifier -= attacker.has(effect::sickened) ? 2 : 0;
+    modifier -= attacker.has(dq_effect::venomed) ? 1 : 0;
     modifier -= attacker.has(effect::dragon_feared) ? 2 : 0;
     modifier -= attacker.has(effect::champions_sickened) ? 2 : 0;
     modifier -= attacker.has(effect::champions_afraid) ? 1 : 0;
@@ -2548,7 +2590,8 @@ std::optional<std::string> Session::attack_verb(const Fighter &attacker,
     {
         return "melee";
     }
-    if (distance(attacker, target) > missile->range || !sees(board_, attacker, target))
+    if (underwater_ || distance(attacker, target) > missile->range ||
+        !sees(board_, attacker, target))
     {
         return std::nullopt;
     }
@@ -3123,7 +3166,8 @@ void Session::on_hit(Fighter &attacker, Fighter &defender, int phase, int primar
             break;
         case effect::kapak_paralysis:
         case effect::paralyzing_strike:
-            paralyze(defender, 100, 0);
+            paralyze(defender, game_of(identity_) == GoldBoxGame::dark_queen_of_krynn ? 10 : 100,
+                     0);
             break;
         case effect::champions_ghoul_touch:
             if (defender.numbers.race != elf_race)
@@ -3136,6 +3180,52 @@ void Session::on_hit(Fighter &attacker, Fighter &defender, int phase, int primar
             break;
         case 64:
             poison(defender, 0);
+            break;
+        case dq_effect::spore_touch:
+            if (!defender.has(effect::disease_proof))
+            {
+                defender.numbers.effects.push_back({dq_effect::spore_infection, 1440, 255, true});
+                log({"{name} is diseased.", {{"name", defender.name}}});
+            }
+            attacker.numbers.effects.push_back({2194, 0, 255, false});
+            kill(attacker);
+            break;
+        case dq_effect::poison_bite:
+            if (!saving_throw(defender, 0, 0, &attacker))
+            {
+                // This shipped post-hit handler rolls the extra d6 after
+                // damage has already been applied; it does not strike again.
+                (void)roll(6);
+                (void)add_with_message(defender,
+                                       {effect::paralysis, roll(6) + roll(6) + roll(6), 12, false},
+                                       false, false, 0, 0, nullptr);
+            }
+            break;
+        case dq_effect::mummy_touch:
+            if (!defender.has(250) && !defender.has(dq_effect::rot_recovery))
+            {
+                defender.numbers.effects.push_back({dq_effect::rot_recovery, 14400, 255, true});
+                defender.numbers.effects.push_back(
+                    {effect::kit_rotting, 43200, roll(6) * 32 + 31, true});
+                log({"{name} is diseased.", {{"name", defender.name}}});
+            }
+            break;
+        case dq_effect::enchanted_paralysis:
+            if (!saving_throw(defender, 4, -4, &attacker))
+            {
+                (void)roll(6);
+                (void)roll(6);
+                (void)roll(6);
+                paralyze(defender, 10, 0);
+            }
+            break;
+        case dq_effect::venom_touch:
+            if (!saving_throw(defender, 0, 0, &attacker))
+            {
+                defender.remove(dq_effect::venomed);
+                defender.numbers.effects.push_back({dq_effect::venomed, roll(4), 255, false});
+                log({"{name} is crippled by venom.", {{"name", defender.name}}});
+            }
             break;
         case effect::drinks_blood:
             // A Gateway stirge takes hold on 1 to 4 of a d10 (cbtacts.pas,
@@ -3401,13 +3491,20 @@ void Session::on_hit(Fighter &attacker, Fighter &defender, int phase, int primar
                      {{"attacker", attacker.name}, {"name", defender.name}}});
             }
             break;
+        case dq_effect::constricting_touch:
+            if (roll(10) > 4)
+            {
+                break;
+            }
+            [[fallthrough]];
         case 257:
             // A shambling mound whose two blows both hit engulfs its victim,
             // which suffocates in 2d4 of its turns (Curse, engulfs).
             // Gateway's on 1 to 4 of a d10 at each hit (its AttackEngulf).
             if ((gateway() ? roll(10) <= 4 : primary_hits == 2) &&
                 !defender.has(effect::immobile) && !defender.has(effect::suffocating) &&
-                !attacker.has(effect::engulfing))
+                !attacker.has(effect::engulfing) &&
+                !(game_of(identity_) == GoldBoxGame::dark_queen_of_krynn && defender.has(2150)))
             {
                 attacker.numbers.effects.push_back(
                     {effect::engulfing, 0, static_cast<int>(defender.id), true});
@@ -3415,7 +3512,8 @@ void Session::on_hit(Fighter &attacker, Fighter &defender, int phase, int primar
                 defender.numbers.effects.push_back(
                     {effect::suffocating, 0, roll(4) + roll(4), false});
                 defender.half_moves = 0;
-                log({"{attacker} engulfs {name}.",
+                log({code == dq_effect::constricting_touch ? "{attacker} constricts {name}."
+                                                           : "{attacker} engulfs {name}.",
                      {{"attacker", attacker.name}, {"name", defender.name}}});
             }
             break;
@@ -3467,6 +3565,15 @@ void Session::poison(Fighter &victim, int modifier)
 void Session::paralyze(Fighter &victim, int minutes, int modifier)
 {
     if (saving_throw(victim, 0, modifier))
+    {
+        return;
+    }
+    // Native natural touches dispatch the resulting paralysis through
+    // effect immunity too, after the save. Paralysis-proof creatures remain
+    // immune to an enchanted draconian's touch as well as magical holds.
+    if (game_of(identity_) == GoldBoxGame::dark_queen_of_krynn &&
+        (victim.has(109) || victim.has(111) || victim.has(125) ||
+         victim.has(effect::aurak_invulnerable)))
     {
         return;
     }
@@ -3525,6 +3632,83 @@ void Session::drain_levels(Fighter &victim, int levels)
     log({levels == 1 ? "{name} is drained a level." : "{name} is drained 2 levels.",
          {{"name", victim.name}}});
     auto &numbers = victim.numbers;
+    if (game_of(identity_) == GoldBoxGame::dark_queen_of_krynn && numbers.native_progression)
+    {
+        for (int n = 0; n < levels && victim.condition != Condition::gone; ++n)
+        {
+            auto &progression = *numbers.native_progression;
+            const auto loss =
+                roll_native_drain(progression, numbers.class_levels, numbers.max_hit_points,
+                                  numbers.constitution, progression.race, random_);
+            if (!loss)
+            {
+                break;
+            }
+            const auto before = numbers.class_levels;
+            const int missing = std::max(0, numbers.max_hit_points - victim.hit_points);
+            progression.peak_class_levels[loss->slot] =
+                std::max(progression.peak_class_levels[loss->slot], loss->before_level);
+            --numbers.class_levels[loss->slot];
+            progression.rolled_hit_points =
+                std::max(0, progression.rolled_hit_points - loss->rolled_hit_points);
+            progression.experience = loss->experience;
+            progression.previous_experience = loss->previous_experience;
+            progression.previous_max_hit_points = loss->previous_max_hit_points;
+            progression.drains.push_back(*loss);
+            // The campaign's public dead-character maximum remains at least
+            // one; the exact receipt still retains the source's full HP loss.
+            numbers.max_hit_points = std::max(1, numbers.max_hit_points - loss->hit_points);
+            victim.hit_points = loss->dead ? 0 : std::max(0, numbers.max_hit_points - missing);
+            numbers.thac0 +=
+                thac0(numbers.class_levels, game_of(identity_)) - thac0(before, game_of(identity_));
+            const auto old_saves = saving_throws(before, game_of(identity_));
+            const auto new_saves = saving_throws(numbers.class_levels, game_of(identity_));
+            for (std::size_t save = 0; save < numbers.saving_throws.size(); ++save)
+            {
+                numbers.saving_throws[save] += new_saves[save] - old_saves[save];
+            }
+            numbers.level =
+                *std::max_element(numbers.class_levels.begin(), numbers.class_levels.end());
+            const auto attack_rate = [](const ClassLevels &classes)
+            {
+                const int warrior = std::max({level_in(classes, ClassSlot::fighter),
+                                              level_in(classes, ClassSlot::paladin),
+                                              level_in(classes, ClassSlot::monk)});
+                const int ranger = level_in(classes, ClassSlot::ranger);
+                return std::max(warrior > 12  ? 4
+                                : warrior > 6 ? 3
+                                              : 2,
+                                ranger > 14  ? 4
+                                : ranger > 7 ? 3
+                                             : 2);
+            };
+            const int attack_change = attack_rate(numbers.class_levels) - attack_rate(before);
+            numbers.attacks[0].rate_per_two_rounds =
+                std::max(0, numbers.attacks[0].rate_per_two_rounds + attack_change);
+            victim.attacks_left[0] =
+                std::min(victim.attacks_left[0],
+                         attacks_this_round(paced(victim, numbers.attacks[0].rate_per_two_rounds),
+                                            static_cast<int>(round_)));
+            trim_native_spells(numbers);
+            if (loss->dead || victim.has(effect::animated))
+            {
+                victim.condition = Condition::gone;
+                victim.hit_points = 0;
+                victim.initiative = 0;
+                log({"{name} is dead forever.", {{"name", victim.name}}});
+                end_effects_at_zero(victim);
+                return;
+            }
+            if (victim.hit_points == 0)
+            {
+                victim.condition = Condition::unconscious;
+                victim.initiative = 0;
+                end_effects_at_zero(victim);
+                log({"{name} falls unconscious.", {{"name", victim.name}}});
+            }
+        }
+        return;
+    }
     for (int n = 0; n < levels && victim.condition != Condition::gone; ++n)
     {
         auto &classes = numbers.class_levels;
@@ -3690,6 +3874,10 @@ std::vector<rules::Command> Session::aiming_commands(const Fighter &caster) cons
         // The flames, hot or cold (SpellFireShield's menu).
         for (const auto flames : {Flames::hot, Flames::cold})
         {
+            if (underwater_ && flames == Flames::hot)
+            {
+                continue;
+            }
             auto choice = command("flames");
             choice.label = flames == Flames::hot ? "Hot flames" : "Cold flames";
             choice.item = static_cast<unsigned>(flames);
@@ -3719,6 +3907,28 @@ std::vector<rules::Command> Session::aiming_commands(const Fighter &caster) cons
     }
     else
     {
+        if (game_of(identity_) == GoldBoxGame::dark_queen_of_krynn && area == 15)
+        {
+            // Native case15 singles out a creature, or uses the high nibble
+            // as a radius around empty ground (cbaction.c, combat_spell_targets).
+            const int range = spell_range(known, caster_level(caster, known, game_of(identity_)));
+            for (int y = 0; y < board_.height; ++y)
+            {
+                for (int x = 0; x < board_.width; ++x)
+                {
+                    const Cell cell{x, y};
+                    if (standing_at(cell) || board_.at(cell) == rules::Terrain::obstacle ||
+                        doubled_distance(caster.cell, cell) / 2 > range ||
+                        !clear_line(board_, caster.cell, cell))
+                    {
+                        continue;
+                    }
+                    auto aim = command("aim");
+                    aim.destination = cell;
+                    commands.push_back(aim);
+                }
+            }
+        }
         for (const auto &f : fighters_)
         {
             if (reachable_by_spell(caster, f, caster.aiming))
@@ -3864,6 +4074,12 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
     }
     log({"{name} casts {spell}.",
          {{"name", caster.name}, {"spell", std::string(known.name), true}}});
+    if (underwater_ && !underwater_spell(number))
+    {
+        log({"That has no effect underwater!", {}});
+        end_actions(caster);
+        return;
+    }
     const auto roll_dice = [this](int count, int sides)
     {
         damage_dice_ = count;
@@ -4030,9 +4246,12 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
     }
     case 32:
     {
-        // Mirror Image: 1d4 images.
+        // Native packs 1d4 images above its five-bit caster level.
         const int minutes = known.minutes_fixed + known.minutes_per_level * level;
-        add_with_message(caster, {effect::mirror_image, minutes, roll(4), false}, false, false, 0,
+        const int images = roll(4);
+        const int strength =
+            game_of(identity_) == GoldBoxGame::dark_queen_of_krynn ? (images << 5) | level : images;
+        add_with_message(caster, {effect::mirror_image, minutes, strength, false}, false, false, 0,
                          level, &known);
         break;
     }
@@ -4202,6 +4421,11 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         // Radiance's bolt in every game (Bugs).
         const auto dice = shared_dice(number, level);
         const int damage = roll_dice(dice.count, dice.sides) + dice.bonus;
+        if (underwater_)
+        {
+            cast_generic(caster, number, level, within(aim, 2), damage, 9);
+            break;
+        }
         lightning_at(aim, damage, level);
         lightning_path(caster.cell, aim, bolt_length(), damage, level, true);
         break;
@@ -4240,6 +4464,11 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         for (const auto id : haste_slow_takes(caster, number, level, targets))
         {
             auto &f = *find(id);
+            if (!haste && game_of(identity_) == GoldBoxGame::dark_queen_of_krynn &&
+                f.has(dq_effect::free_action))
+            {
+                continue;
+            }
             const int opposite = haste ? effect::slowed : effect::hasted;
             if (f.has(opposite))
             {
@@ -4288,10 +4517,19 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         for (const auto id : targets)
         {
             auto &f = *find(id);
+            if (game_of(identity_) == GoldBoxGame::dark_queen_of_krynn &&
+                f.has(dq_effect::free_action))
+            {
+                continue;
+            }
             const int minutes = known.minutes_per_level * level;
             const bool saved = saving_throw(f, 4, 0, &caster);
-            (void)add_with_message(f, {saved ? effect::slowed : 31, minutes, level, false}, false,
-                                   false, 0, level, &known);
+            // Native Fumble uses its own end-actions effect rather than
+            // the earlier game's inherited Fumble effect.
+            const int fumbled =
+                game_of(identity_) == GoldBoxGame::dark_queen_of_krynn ? effect::stunned : 31;
+            (void)add_with_message(f, {saved ? effect::slowed : fumbled, minutes, level, false},
+                                   false, false, 0, level, &known);
         }
         break;
     case 193:
@@ -4338,11 +4576,15 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         // random, hot on a d10 above 5). Darkness pairs them with its
         // retaliating shield (magic.pas, SpellFireShield).
         const int minutes = known.minutes_fixed + known.minutes_per_level * level;
-        const bool hot = flames == Flames::random ? roll(10) > 5 : flames == Flames::hot;
+        const bool hot =
+            !underwater_ && (flames == Flames::random ? roll(10) > 5 : flames == Flames::hot);
         (void)add_with_message(caster, {hot ? 250 : 254, minutes, level, false}, false, false, 0,
                                level, &known);
         caster.numbers.effects.push_back(
-            {darkness() ? effect::retaliating_shield : 335, minutes, level, false});
+            {darkness() || game_of(identity_) == GoldBoxGame::dark_queen_of_krynn
+                 ? effect::retaliating_shield
+                 : 335,
+             minutes, level, false});
         break;
     }
     case 183:
@@ -4410,8 +4652,12 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         // SpellIceStorm), of magic alone in Pools of Darkness and the kit
         // (its spellfx.c, spell_ice_storm).
         {
-            const auto dice = shared_dice(number, level);
-            cast_generic(caster, number, level, targets,
+            auto dice = shared_dice(number, level);
+            if (underwater_)
+            {
+                dice.count = 1;
+            }
+            cast_generic(caster, number, level, underwater_ ? within(aim, 3) : targets,
                          roll_dice(dice.count, dice.sides) + dice.bonus, ice_storm_element());
             break;
         }
@@ -4505,6 +4751,7 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
     case 317:
         cast_secret_spell(caster, number, level, targets, aim);
         break;
+    case native_elixir_youth:
     case 263:
         make_younger(caster);
         break;
@@ -5296,6 +5543,11 @@ void Session::cast_generic(Fighter &caster, int number, int level,
         {
             saved = saving_throw(target, known.save_type, save_modifier, &caster, element);
         }
+        if (game_of(identity_) == GoldBoxGame::dark_queen_of_krynn &&
+            target.has(dq_effect::free_action) && (number == 23 || number == 49 || number == 194))
+        {
+            saved = true;
+        }
         if (known.range_fixed == 255)
         {
             const int natural = roll(20);
@@ -5610,10 +5862,16 @@ void Session::cast_strength_spell(Fighter &caster, int number, int level,
                 ? std::pair{21, 0}
                 : strengthened(n.strength, n.exceptional_strength, n.class_levels, game,
                                roll(strength_spell_die(n.class_levels, game)));
-        const int code = number == enlarge ? effect::enlarged : effect::strengthened;
+        const bool native_frost =
+            number == giant_strength && game == GoldBoxGame::dark_queen_of_krynn;
+        const int code = number == enlarge ? effect::enlarged
+                         : native_frost    ? 113
+                                           : effect::strengthened;
         const bool stronger = stronger_than(base, exceptional, n.strength, n.exceptional_strength);
         // A Potion of Giant Strength lasts the fight (its table's no time).
-        const int lasting = number == giant_strength ? 0 : minutes;
+        const int lasting = native_frost               ? 40 + roll(4) * 10
+                            : number == giant_strength ? 0
+                                                       : minutes;
         if (add_with_message(target, {code, lasting, strength_code(base, exceptional), false},
                              false, false, 0, level, &known))
         {
@@ -5640,7 +5898,8 @@ void Session::recount_strength(Fighter &f)
     }
     for (const auto &e : n.effects)
     {
-        if (e.code != effect::enlarged && e.code != effect::strengthened)
+        if (e.code != effect::enlarged && e.code != effect::strengthened &&
+            !(game_of(identity_) == GoldBoxGame::dark_queen_of_krynn && e.code == 113))
         {
             continue;
         }
@@ -5687,6 +5946,10 @@ void Session::cast_delayed_blast(Fighter &caster, int level, const std::vector<E
     caster.blast_delay = -1;
     if (delay == 0)
     {
+        if (game_of(identity_) == GoldBoxGame::dark_queen_of_krynn)
+        {
+            damage_dice_ = level;
+        }
         const auto dice = shared_dice(delayed_blast_fireball, level);
         int total = dice.bonus;
         for (int die = 0; die < dice.count; ++die)
@@ -5719,6 +5982,11 @@ void Session::delayed_blast_goes_off(Fighter &caster, int index)
     }
     const auto set = *blast;
     blasts_.erase(blast);
+    const int previous_dice = damage_dice_;
+    if (game_of(identity_) == GoldBoxGame::dark_queen_of_krynn)
+    {
+        damage_dice_ = set.level;
+    }
     log({"Delayed Blast Fireball goes off.", {}});
     const auto dice = shared_dice(delayed_blast_fireball, set.level);
     int total = dice.bonus;
@@ -5731,6 +5999,10 @@ void Session::delayed_blast_goes_off(Fighter &caster, int index)
         auto &target = *find(id);
         const bool saved = saving_throw(target, 4, 0, &caster);
         nonweapon_damage(target, total, 2, saved, fire, set.level, delayed_blast_fireball, false);
+    }
+    if (game_of(identity_) == GoldBoxGame::dark_queen_of_krynn)
+    {
+        damage_dice_ = previous_dice;
     }
 }
 
@@ -5892,6 +6164,11 @@ void Session::cast_darkness_spell(Fighter &caster, int number, int level,
         for (const auto id : targets)
         {
             auto &target = *find(id);
+            if (game_of(identity_) == GoldBoxGame::dark_queen_of_krynn &&
+                target.has(dq_effect::free_action))
+            {
+                continue;
+            }
             if (!attack_hits(roll(20), caster.numbers.thac0, target.numbers.armor_class,
                              attack_modifier(caster, target, game_of(identity_)) +
                                  love_modifier(caster, target)))
@@ -6038,6 +6315,11 @@ std::vector<EntityId> Session::blinded_by_word(const std::vector<EntityId> &targ
 // save (SpellMeteorSwarm).
 void Session::cast_meteor_swarm(Fighter &caster, int level, Cell aim)
 {
+    const int previous_dice = damage_dice_;
+    if (game_of(identity_) == GoldBoxGame::dark_queen_of_krynn)
+    {
+        damage_dice_ = 10;
+    }
     constexpr int fire_and_magic = 9;
     const auto ten_d4 = [this]
     {
@@ -6068,6 +6350,10 @@ void Session::cast_meteor_swarm(Fighter &caster, int level, Cell aim)
                 nonweapon_damage(target, ten_d4(), 2, saved, fire_and_magic, level, 324, false);
             }
         }
+    }
+    if (game_of(identity_) == GoldBoxGame::dark_queen_of_krynn)
+    {
+        damage_dice_ = previous_dice;
     }
 }
 
@@ -6342,6 +6628,14 @@ Session::Defended Session::defended_harm(const Fighter &target, int damage, int 
     {
         damage *= 2;
     }
+    if (target.has(dq_effect::cold_harms_more) && (element & 2))
+    {
+        damage += damage / 5;
+    }
+    if (target.has(dq_effect::resists_fire) && (element & 1))
+    {
+        damage = damage / 5 * 4;
+    }
     if (target.has(dkk_effect::cold_electricity_resistance) && (element & 6))
     {
         damage /= 2;
@@ -6400,7 +6694,8 @@ Session::Defended Session::defended_harm(const Fighter &target, int damage, int 
     // an effect too, so a Fireball's goes through (fxengine.pas,
     // CheckSpellResistance, in its reconstruction).
     const auto *cast = game_spell(spell_number);
-    const bool resistible = target.numbers.magic_resistance == 0 || (cast && cast->effect != 0);
+    const bool resistible = game_of(identity_) == GoldBoxGame::dark_queen_of_krynn ||
+                            target.numbers.magic_resistance == 0 || (cast && cast->effect != 0);
     if ((element & 8) && resistible && resists_magic_at_all(target) &&
         magic_resists(target, caster_level, dice(100)))
     {
@@ -6426,7 +6721,8 @@ Session::Defended Session::defended_harm(const Fighter &target, int damage, int 
     if ((element & 4) && target.has(284) && damage > 0)
     {
         damage = 0;
-        defended.grown = dice(8);
+        const int growth = dice(8);
+        defended.grown = game_of(identity_) == GoldBoxGame::dark_queen_of_krynn ? 8 : growth;
     }
     // Resisting fire and cold (282): a save takes none of a spell that allows
     // one, else half.
@@ -6482,6 +6778,11 @@ Session::Defended Session::defended_harm(const Fighter &target, int damage, int 
     if (saved && save_result == 2)
     {
         damage /= 2;
+    }
+    if (game_of(identity_) == GoldBoxGame::dark_queen_of_krynn &&
+        (((element & 1) && target.has(254)) || ((element & 2) && target.has(250))))
+    {
+        damage = saved ? 0 : damage / 2;
     }
     // A fire shield doubles what it is made of, unless saved against.
     if (!saved && (((element & 1) && target.has(250)) || ((element & 2) && target.has(254))))
@@ -6646,9 +6947,15 @@ void Session::lose_image(Fighter &target)
 {
     log({"{name} loses an image.", {{"name", target.name}}});
     auto *images = target.find_effect(effect::mirror_image);
-    if (--images->strength <= 0)
+    const bool packed = game_of(identity_) == GoldBoxGame::dark_queen_of_krynn;
+    const int count = packed ? images->strength >> 5 : images->strength;
+    if (count <= 1)
     {
         target.remove(effect::mirror_image);
+    }
+    else
+    {
+        images->strength = packed ? ((count - 1) << 5) | (images->strength & 0x1F) : count - 1;
     }
 }
 
@@ -7092,12 +7399,18 @@ void Session::breathe_stinking_cloud(Fighter &f)
         return;
     }
     const auto &known = *game_spell(34);
+    const bool native = game_of(identity_) == GoldBoxGame::dark_queen_of_krynn;
+    // Native terrain dispatch uses the current actor's casting level:
+    // the caster on initial placement, the creature on its later turn.
+    const auto *acting = find(actor_);
+    const int level = native ? caster_level(acting ? *acting : f, known, game_of(identity_)) : 0;
     if (saving_throw(f, 0, 0))
     {
-        add_with_message(f, {effect::coughing, 1, 255, false}, false, true, 0, 0, &known);
+        add_with_message(f, {effect::coughing, native ? roll(4) + 1 : 1, 255, false}, false, true,
+                         0, level, &known);
         return;
     }
-    add_with_message(f, {effect::nausea, roll(4) + 1, 255, false}, false, false, 0, 0, &known);
+    add_with_message(f, {effect::nausea, roll(4) + 1, 255, false}, false, false, 0, level, &known);
 }
 
 // An effect ends before its time, its handler running as it goes: a charm
@@ -7180,10 +7493,11 @@ bool Session::dispellable(const Effect &e) const
 
 // The percent chance Dispel Magic of a caster's level takes an effect: 50,
 // 5 more for each level the caster has above the effect's (its strength's
-// low 4 bits) or 2 less for each below.
-int Session::dispel_chance(const Effect &e, int caster_level)
+// low 4 bits, or Native's low 5) or 2 less for each below.
+int Session::dispel_chance(const Effect &e, int caster_level) const
 {
-    const int effect_level = e.strength & 0x0F;
+    const int effect_level =
+        e.strength & (game_of(identity_) == GoldBoxGame::dark_queen_of_krynn ? 0x1F : 0x0F);
     return caster_level >= effect_level ? 50 + 5 * (caster_level - effect_level)
                                         : 50 - 2 * (effect_level - caster_level);
 }
@@ -7290,7 +7604,8 @@ void Session::ai_turn(Fighter &f, bool magic)
                                              });
     // Pools of Darkness's AI turns undead only while it does not flee
     // (combatai.pas, TurnUndeadAi).
-    if (may_turn(f) && undead_in_sight && !(darkness() && f.fleeing))
+    if (may_turn(f) && undead_in_sight &&
+        !((darkness() || game_of(identity_) == GoldBoxGame::dark_queen_of_krynn) && f.fleeing))
     {
         turn_undead(f);
         return;
@@ -7721,6 +8036,7 @@ void Session::monster_specials(Fighter &f)
         f.remove(121);
         f.remove(80);
     }
+    dark_queen_specials(f);
     curse_specials(f);
     secret_specials(f);
     kit_specials(f);
@@ -7845,7 +8161,12 @@ void Session::kit_specials(Fighter &f)
     {
         beholder_rays(f);
     }
-    if (auto *breath = f.find_effect(effect::poison_breath); breath && f.able() && f.initiative > 0)
+    auto *poison_or_steam = f.find_effect(effect::poison_breath);
+    if (!poison_or_steam)
+    {
+        poison_or_steam = f.find_effect(dq_effect::steam_breath);
+    }
+    if (auto *breath = poison_or_steam; breath && f.able() && f.initiative > 0)
     {
         breath->strength = std::min(breath->strength, 3);
         const auto targets = breath->strength > 0 && acquire_target(f, 3, false, true)
@@ -7854,7 +8175,9 @@ void Session::kit_specials(Fighter &f)
         if (!targets.empty())
         {
             --breath->strength;
-            log({"{name} breathes poison.", {{"name", f.name}}});
+            log({breath->code == dq_effect::steam_breath ? "{name} breathes steam."
+                                                         : "{name} breathes poison.",
+                 {{"name", f.name}}});
             for (const auto id : targets)
             {
                 auto &victim = *find(id);
@@ -7891,6 +8214,106 @@ void Session::kit_specials(Fighter &f)
             end_actions(f);
         }
     }
+}
+
+// Native ray facts: a fireshadow uses a narrow 13-square ray at most once
+// per six rounds; the Eye of the Deep stuns along a three-square, two-wide path.
+void Session::dark_queen_specials(Fighter &f)
+{
+    if (!f.able() || f.initiative <= 0)
+    {
+        return;
+    }
+    if (auto *breath = f.find_effect(dq_effect::baldric_breath))
+    {
+        if (round_ == 1 || breath->strength > 3)
+        {
+            breath->strength = 3;
+        }
+        if (breath->strength > 0)
+        {
+            const bool paralysis = roll(2) == 2;
+            const auto *target = secret_target(f, 6, true);
+            if (target)
+            {
+                const auto targets =
+                    path_area(f, target->cell, paralysis ? 5 : 7, paralysis ? 4 : 3);
+                if (!targets.empty() && std::ranges::none_of(targets,
+                                                             [&](EntityId id)
+                                                             {
+                                                                 return find(id)->side == f.side;
+                                                             }))
+                {
+                    log({paralysis ? "{name} breathes paralysis." : "{name} breathes cold.",
+                         {{"name", f.name}}});
+                    for (const auto id : targets)
+                    {
+                        auto &victim = *find(id);
+                        const bool saved = saving_throw(victim, 3, 0, &f);
+                        (void)add_with_message(victim, {effect::paralysis, 10, 12, false}, true,
+                                               saved, paralysis ? 0 : 0x22, 12, nullptr);
+                    }
+                    --breath->strength;
+                    end_actions(f);
+                    return;
+                }
+            }
+        }
+    }
+    const bool death_ray = f.has(dq_effect::disintegrating_ray);
+    auto *ray = f.find_effect(death_ray ? dq_effect::disintegrating_ray : dq_effect::blinding_ray);
+    if (!ray)
+    {
+        return;
+    }
+    if (death_ray && (round_ % 6 == 0 || ray->strength > 1))
+    {
+        ray->strength = 1;
+    }
+    if (death_ray && ray->strength <= 0)
+    {
+        return;
+    }
+    const auto *aim = secret_target(f, 6, true);
+    if (!aim)
+    {
+        return;
+    }
+    const auto targets = path_area(f, aim->cell, death_ray ? 13 : 3, death_ray ? 1 : 2);
+    if (targets.empty() || std::ranges::any_of(targets,
+                                               [&](EntityId id)
+                                               {
+                                                   return find(id)->side == f.side;
+                                               }))
+    {
+        return;
+    }
+    log({death_ray ? "{name} flashes a ray." : "{name} gazes.", {{"name", f.name}}});
+    for (const auto id : targets)
+    {
+        auto &target = *find(id);
+        const bool saved = saving_throw(target, death_ray ? 3 : 0, 0, &f);
+        if (death_ray)
+        {
+            nonweapon_damage(target, roll(4) + roll(4) + roll(4) + roll(4), 1, saved, 0, 0, 0,
+                             false);
+            if (target.hit_points == 0)
+            {
+                put_out_of_play(target, Condition::gone);
+                log({"{name} is disintegrated.", {{"name", target.name}}});
+            }
+        }
+        else
+        {
+            (void)add_with_message(target, {effect::paralysis, roll(4) + roll(4), 255, false}, true,
+                                   saved, 0, 0, nullptr);
+        }
+    }
+    if (death_ray)
+    {
+        --ray->strength;
+    }
+    end_actions(f);
 }
 
 // The kit's effects as a creature's turn starts (combat.c, its turn;
@@ -8048,7 +8471,7 @@ void Session::petrifying_gaze(Fighter &gazer)
     // The kit spares an iron golem too (its 79; effects.c, fx_stone_gaze).
     const bool spared =
         victim->has(effect::gaze_proof) || (kit() && victim->has(effect::iron_golem));
-    if (!saving_throw(*victim, 1, 0, &gazer) && !spared)
+    if (!saving_throw(*victim, 1, 0, &gazer, 16) && !spared)
     {
         turn_to_stone(*victim);
     }
@@ -8818,6 +9241,7 @@ bool Session::ai_cast(Fighter &f, bool magic)
             const int number =
                 spells[static_cast<std::size_t>(roll(static_cast<int>(spells.size())) - 1)];
             if (game_spell(number) && game_spell(number)->when != 0 && spell_built(number) &&
+                (!underwater_ || underwater_spell(number)) &&
                 ai_decides(f, number, 8 - pass, area_aims))
             {
                 begin_cast(f, number);
@@ -10563,7 +10987,7 @@ void Session::turn_undead(Fighter &cleric)
         treasures_turn_undead(cleric);
         return;
     }
-    if (darkness())
+    if (darkness() || game_of(identity_) == GoldBoxGame::dark_queen_of_krynn)
     {
         darkness_turn_undead(cleric);
         return;
@@ -10649,7 +11073,10 @@ void Session::darkness_turn_undead(Fighter &cleric)
     {
         return cleric.numbers.class_levels[static_cast<std::size_t>(slot)];
     };
-    const int best = std::max(level(ClassSlot::cleric), level(ClassSlot::paladin) - 2);
+    const bool native = game_of(identity_) == GoldBoxGame::dark_queen_of_krynn;
+    const int deity_bonus = native && cleric.record && cleric.record->deity == 2 ? 2 : 0;
+    const int best =
+        std::max(level(ClassSlot::cleric), level(ClassSlot::paladin) - 2) + deity_bonus;
     const int full_column = best <= 8 ? best : best <= 13 ? 9 : 10;
     const int column = turning_penalty_ > full_column ? 0 : full_column - turning_penalty_;
     const int natural = roll(20);
@@ -10731,7 +11158,7 @@ void Session::darkness_turn_undead(Fighter &cleric)
 bool Session::may_turn(const Fighter &f) const
 {
     const auto &levels = f.numbers.class_levels;
-    if (darkness())
+    if (darkness() || game_of(identity_) == GoldBoxGame::dark_queen_of_krynn)
     {
         return (levels[static_cast<std::size_t>(ClassSlot::cleric)] > 0 ||
                 levels[static_cast<std::size_t>(ClassSlot::paladin)] > 2) &&
@@ -11165,6 +11592,36 @@ void Session::expire(Fighter &f, const Effect &ended)
 {
     switch (ended.code)
     {
+    case dq_effect::green_fire:
+        if (f.downed())
+        {
+            kill(f, "{name} is engulfed by green fire!");
+        }
+        else if (f.able() && f.hit_points < f.numbers.max_hit_points)
+        {
+            const int damage = dark_queen_green_fire_damage(roll(8), f.numbers.effects, random_);
+            inflict(f, damage);
+            if (f.hit_points <= 0)
+            {
+                kill(f, "{name} is engulfed by green fire!");
+            }
+            else
+            {
+                f.numbers.effects.push_back({dq_effect::green_fire, 1, 255, true});
+            }
+        }
+        break;
+    case dq_effect::spore_infection:
+        kill(f, "{name} dies from disease.");
+        break;
+    case dq_effect::rot_recovery:
+        if (!f.able() && !f.downed())
+        {
+            break;
+        }
+        f.numbers.effects.push_back({dq_effect::rot_recovery, 14400, ended.strength, true});
+        f.hit_points = std::min(f.hit_points + 1, f.numbers.max_hit_points);
+        break;
     case effect::acid_pool_timer:
         std::erase_if(clouds_,
                       [&f](const Cloud &cloud)
@@ -11185,6 +11642,12 @@ void Session::expire(Fighter &f, const Effect &ended)
     case effect::enlarged:
     case effect::strengthened:
         recount_strength(f);
+        break;
+    case 113:
+        if (game_of(identity_) == GoldBoxGame::dark_queen_of_krynn)
+        {
+            recount_strength(f);
+        }
         break;
     case 342:
         // Fear ends: it stops fleeing and is the player's again (Curse, AffectFear).
@@ -11429,7 +11892,15 @@ void Session::round_end_effects()
             f.hit_points = std::min(f.hit_points + 3, f.numbers.max_hit_points);
         }
         // Gateway's Vaalgamon regenerates 1 (EffRegenerateOne).
-        if (f.has(effect::regenerates_one) && f.hit_points < f.numbers.max_hit_points)
+        const bool native_regeneration =
+            game_of(identity_) != GoldBoxGame::dark_queen_of_krynn ||
+            std::ranges::any_of(fighters_,
+                                [](const Fighter &other)
+                                {
+                                    return other.side == rules::Side::opposition && other.able();
+                                });
+        if (f.has(effect::regenerates_one) && native_regeneration &&
+            f.hit_points < f.numbers.max_hit_points)
         {
             f.hit_points = std::min(f.hit_points + 1, f.numbers.max_hit_points);
         }
@@ -11454,6 +11925,50 @@ void Session::round_end_effects()
 // acid (any weapon) comes back in 3d6 rounds.
 void Session::went_down(Fighter &f)
 {
+    if (f.has(dq_effect::spore_burst))
+    {
+        f.remove(dq_effect::spore_burst);
+        if (!f.has(2194))
+        {
+            log({"{name} explodes.", {{"name", f.name}}});
+            for (const auto id : within(f.cell, 2))
+            {
+                auto &other = *find(id);
+                if (other.id == f.id || !other.able() || other.has(2183))
+                {
+                    continue;
+                }
+                const bool saved = saving_throw(other, 2, 0, &f);
+                int damage = 0;
+                for (int die = 0; die < 6; ++die)
+                {
+                    damage += roll(6);
+                }
+                nonweapon_damage(other, damage, 2, saved, 0, 0, 0, false);
+            }
+        }
+    }
+    if (f.has(dq_effect::ice_explosion))
+    {
+        f.remove(dq_effect::ice_explosion);
+        log({"{name} explodes.", {{"name", f.name}}});
+        const int damage = roll(10) + roll(10) + roll(10);
+        for (const auto id : within(f.cell, 2))
+        {
+            auto &other = *find(id);
+            if (other.id != f.id && other.able())
+            {
+                nonweapon_damage(other, damage, 0, false, 8, 12, 187, false);
+            }
+        }
+    }
+    if (f.has(dq_effect::meteor_explosion))
+    {
+        f.remove(dq_effect::meteor_explosion);
+        log({"{name} explodes.", {{"name", f.name}}});
+        cast_meteor_swarm(f, 12, f.cell);
+    }
+
     if (champions())
     {
         if (f.has(effect::baaz_disarm))
@@ -11538,6 +12053,10 @@ void Session::went_down(Fighter &f)
 
 void Session::aurak_final_form(Fighter &f, bool revived)
 {
+    if (game_of(identity_) == GoldBoxGame::dark_queen_of_krynn)
+    {
+        f.remove(effect::aurak_energy);
+    }
     for (const auto code :
          {effect::aurak_madness, effect::aurak_transformation, effect::aurak_immolation,
           effect::aurak_combat_bonus, effect::aurak_transformation_timer})
@@ -11554,11 +12073,21 @@ void Session::aurak_final_form(Fighter &f, bool revived)
     }
     f.numbers.effects.push_back({effect::aurak_invulnerable, 0, 255, false});
     f.numbers.effects.push_back({effect::aurak_explosion, 3, 255, true});
-    f.numbers.effects.push_back({effect::aurak_zap, 0, 255, false});
+    if (revived || game_of(identity_) != GoldBoxGame::dark_queen_of_krynn)
+    {
+        f.numbers.effects.push_back({effect::aurak_zap, 0, 255, false});
+    }
 }
 
 void Session::draconian_explosion(Fighter &f, int dice, bool stuns)
 {
+    const bool native_enchanted = game_of(identity_) == GoldBoxGame::dark_queen_of_krynn &&
+                                  f.has(dq_effect::enchanted_draconian) && stuns;
+    const int die_faces = native_enchanted ? 8 : 6;
+    if (native_enchanted)
+    {
+        dice = 16;
+    }
     for (const auto code : {effect::bozak_explosion, effect::aurak_invulnerable,
                             effect::aurak_explosion, effect::aurak_zap})
     {
@@ -11575,10 +12104,13 @@ void Session::draconian_explosion(Fighter &f, int dice, bool stuns)
         int damage = 0;
         for (int count = 0; count < dice; ++count)
         {
-            damage += roll(6);
+            damage += roll(die_faces);
         }
         nonweapon_damage(other, damage, 0, false, 0, 0, 0, false);
-        if (stuns && other.able() && !saving_throw(other, 4, 0))
+        if (stuns && other.able() && !saving_throw(other, 4, 0) &&
+            !(game_of(identity_) == GoldBoxGame::dark_queen_of_krynn &&
+              (other.has(effect::aurak_madness) || other.has(effect::aurak_explosion) ||
+               other.has(effect::aurak_zap))))
         {
             other.numbers.effects.push_back({effect::stunned, 0, 255, false});
             log({"{name} is stunned.", {{"name", other.name}}});
@@ -11764,7 +12296,15 @@ void Session::champions_turn_start(Fighter &f)
             if (other.side != f.side && other.able() && distance(f, other) <= 1)
             {
                 log({"{name} is struck by an energy bolt.", {{"name", other.name}}});
-                nonweapon_damage(other, roll(6) + roll(6), 0, false, 0, 0, 0, false);
+                const bool native_enchanted =
+                    game_of(identity_) == GoldBoxGame::dark_queen_of_krynn &&
+                    f.has(dq_effect::enchanted_draconian);
+                int damage = 0;
+                for (int die = 0; die < (native_enchanted ? 8 : 2); ++die)
+                {
+                    damage += roll(native_enchanted ? 8 : 6);
+                }
+                nonweapon_damage(other, damage, 0, false, 0, 0, 0, false);
                 end_actions(f);
                 break;
             }
@@ -11801,10 +12341,11 @@ void Session::champions_turn_start(Fighter &f)
         if (auto *target = secret_target(f, 6, true))
         {
             log({"{name} fires an energy bolt.", {{"name", f.name}}});
-            nonweapon_damage(*target, roll(8) + 2, 0, false, 0, 0, 0, false);
+            const bool targeted = game_of(identity_) == GoldBoxGame::dark_queen_of_krynn;
+            nonweapon_damage(*target, roll(8) + 2, 0, false, 0, 0, 0, targeted);
             if (target->able())
             {
-                nonweapon_damage(*target, roll(8) + 2, 0, false, 0, 0, 0, false);
+                nonweapon_damage(*target, roll(8) + 2, 0, false, 0, 0, 0, targeted);
             }
             end_actions(f);
         }
@@ -11943,6 +12484,17 @@ int Session::six_weapons_blow(const Fighter &attacker, int primary_attacks, int 
 int Session::weapon_damage_defenses(Fighter &attacker, Fighter &defender, int damage, int phase,
                                     int primary_attacks, int &primary_hits)
 {
+    if (attacker.has(dq_effect::green_fire_touch) && !saving_throw(defender, 4, 0, &attacker) &&
+        !defender.has(dq_effect::green_fire))
+    {
+        defender.numbers.effects.push_back({dq_effect::green_fire, 1, 255, true});
+        log({"{name} is turning to green fire!", {{"name", defender.name}}});
+    }
+    if (defender.has(dq_effect::anemone_acid) && distance(attacker, defender) <= 1 && damage <= 15)
+    {
+        log({"{name} is squirted by anemone's acid!", {{"name", attacker.name}}});
+        nonweapon_damage(attacker, roll(4) + roll(4) + roll(4), 0, false, 256, 0, 0, false);
+    }
     const auto &striker = attacker.numbers.striker;
     const int plus = striker ? striker->plus : 0;
     const bool silver = striker && striker->silver;
@@ -11963,6 +12515,12 @@ int Session::weapon_damage_defenses(Fighter &attacker, Fighter &defender, int da
         }
         return true;
     };
+    if (attacker.has(dq_effect::underwater_weapons) && !attacker.has(2150) && striker)
+    {
+        damage = attacker.numbers.missile ? 0
+                 : weapon_class != 0 ? std::min(damage, attacker.numbers.attacks[0].modifier + 1)
+                                     : damage;
+    }
     // A black pudding's acid spends the blow on the armor it eats (the kit's
     // 186), as the attacker's effects come before the defender's.
     if (attacker.has(effect::eats_armor) && eat_armor(attacker, defender))
@@ -11990,6 +12548,29 @@ int Session::weapon_damage_defenses(Fighter &attacker, Fighter &defender, int da
     if (attacker.has(effect::enfeebled))
     {
         damage -= damage / 4;
+    }
+    if (attacker.has(dq_effect::disruption))
+    {
+        if (defender.numbers.traits & dq_effect::disruption_double_trait)
+        {
+            damage *= 2;
+        }
+        else if ((defender.has(dq_effect::disintegrating_ray) && roll(2) == 1) ||
+                 defender.numbers.undead_level > 0)
+        {
+            log({"{name} is disrupted.", {{"name", defender.name}}});
+            put_out_of_play(defender, Condition::gone);
+            return 0;
+        }
+    }
+    if (attacker.has(dq_effect::dragon_slayer) &&
+        (defender.numbers.traits & champions_dragon_trait))
+    {
+        damage = defender.has(504)
+                     ? damage + 6
+                     : roll(12) + roll(12) + roll(12) + 6 +
+                           strength_damage_bonus(attacker.numbers.strength,
+                                                 attacker.numbers.exceptional_strength);
     }
     if (champions())
     {
@@ -12113,8 +12694,8 @@ int Session::weapon_damage_defenses(Fighter &attacker, Fighter &defender, int da
     // as magic, before the blow lands (effhndlr.pas, EffZapAttacker).
     // A returned magical hit is not another weapon attack, so shields
     // cannot recursively return one another's retaliation.
-    if (darkness() && defender.has(effect::retaliating_shield) && damage > 0 &&
-        distance(attacker, defender) < 2)
+    if ((darkness() || game_of(identity_) == GoldBoxGame::dark_queen_of_krynn) &&
+        defender.has(effect::retaliating_shield) && damage > 0 && distance(attacker, defender) < 2)
     {
         const int returned = damage > std::numeric_limits<int>::max() / 2
                                  ? std::numeric_limits<int>::max()
@@ -12139,6 +12720,11 @@ int Session::weapon_damage_defenses(Fighter &attacker, Fighter &defender, int da
         damage = 0;
     }
     if (defender.has(effect::blow_proof))
+    {
+        damage = 0;
+    }
+    if (defender.has(dq_effect::mundane_blows_fail) && distance(attacker, defender) <= 1 &&
+        (!striker || plus == 0))
     {
         damage = 0;
     }
@@ -12216,7 +12802,7 @@ int Session::weapon_damage_defenses(Fighter &attacker, Fighter &defender, int da
     // in the kit those its monster types do, from next to them
     // (EffRangerDamageBonus; the kit's effects.c, 105).
     const bool ranger_foe =
-        secret_engine() || kit()
+        secret_engine() || kit() || game_of(identity_) == GoldBoxGame::dark_queen_of_krynn
             ? (defender.numbers.traits & trait::ranger_foe) && adjacent(attacker, defender)
             : (defender.numbers.kin & kin::giant) != 0;
     if (attacker.has(334) && ranger_foe && damage > 0)
@@ -12240,6 +12826,29 @@ int Session::weapon_damage_defenses(Fighter &attacker, Fighter &defender, int da
     if (defender.has(117) && attacker.numbers.weapon_type == holy_water)
     {
         damage = roll(6) + 1;
+    }
+    if (defender.has(dq_effect::disarming_body) && attacker.record &&
+        distance(attacker, defender) <= 1 && damage > 0 && damage % 3 == 0 &&
+        roll(20) >= attacker.record->current_abilities.dexterity - 3)
+    {
+        const auto held = held_now(attacker);
+        const auto weapon = std::ranges::find_if(held,
+                                                 [](const Held &item)
+                                                 {
+                                                     return !item.gone && !item.conjured &&
+                                                            item.carried.item.readied() &&
+                                                            item.carried.item.cursed_raw == 0 &&
+                                                            item.carried.type.worn_location == 0;
+                                                 });
+        if (weapon != held.end() &&
+            !(weapon->carried.item.type == 6 && weapon->carried.item.name_components[2] == 121))
+        {
+            const auto at = static_cast<std::size_t>(weapon - held.begin());
+            toggle_readied(attacker, at);
+            attacker.numbers.effects.push_back(
+                {effect::baaz_banked_weapon, 0, static_cast<int>(at + 1), false});
+            log({"{name} loses a weapon.", {{"name", attacker.name}}});
+        }
     }
     return damage;
 }
@@ -12377,6 +12986,11 @@ bool Session::saves_with(const Fighter &f, int natural, int save, int modifier,
         modifier += 3;
     }
     modifier += (element & 1) && f.has(effect::fire_resistance_ring) ? 4 : 0;
+    modifier += (element & 1) && f.has(dq_effect::resists_fire) ? 4 : 0;
+    if ((element & 16) && f.has(dq_effect::mask_16_save_bonus))
+    {
+        modifier = 20;
+    }
     // Curse's fire shields: the hot one saves 2 better against cold, the
     // cold one against fire (HotFireShield, ColdFireShield).
     if (((element & 2) && f.has(250)) || ((element & 1) && f.has(254)))
@@ -12962,6 +13576,7 @@ std::vector<rules::Command> Session::legal_commands() const
         {
             const auto *known = game_spell(number);
             if (known && known->when != 0 && spell_built(number) &&
+                (!underwater_ || underwater_spell(number)) &&
                 std::find(offered_spells.begin(), offered_spells.end(), number) ==
                     offered_spells.end())
             {
@@ -12980,7 +13595,8 @@ std::vector<rules::Command> Session::legal_commands() const
     // spells once it is known, or by Read Magic, or a cleric's scroll for a
     // cleric (viewchar.pas, UseItemMenu; magic.pas, the scroll).
     if (actor->item_use_allowed && !silenced(*actor) &&
-        !(darkness() && actor->has(effect::no_magic)))
+        !((darkness() || game_of(identity_) == GoldBoxGame::dark_queen_of_krynn) &&
+          actor->has(effect::no_magic)))
     {
         const bool cleric =
             actor->numbers.class_levels[static_cast<std::size_t>(ClassSlot::cleric)] > 0;
@@ -13212,9 +13828,12 @@ bool Session::submit(const rules::Command &command)
     {
         const auto &known = *game_spell(actor.aiming);
         const int area = known.area & 0x0F;
-        if (area >= 8 && area <= 14)
+        const bool native_ground = game_of(identity_) == GoldBoxGame::dark_queen_of_krynn &&
+                                   area == 15 && command.target == 0;
+        if ((area >= 8 && area <= 14) || native_ground)
         {
-            resolve_spell(actor, within(command.destination, area & 7), command.destination);
+            const int radius = native_ground ? known.area >> 4 : area & 7;
+            resolve_spell(actor, within(command.destination, radius), command.destination);
         }
         else
         {
@@ -14578,11 +15197,18 @@ void Session::read_ground(Reader &in)
 std::string Session::save() const
 {
     Writer out;
-    const bool native_calendar = game_of(identity_) == GoldBoxGame::death_knights_of_krynn;
-    out(std::string(checkpoint_format), board_.width, board_.height);
+    const bool dark_queen = game_of(identity_) == GoldBoxGame::dark_queen_of_krynn;
+    const bool native_calendar =
+        dark_queen || game_of(identity_) == GoldBoxGame::death_knights_of_krynn;
+    out(std::string(dark_queen ? dark_queen_checkpoint_format : checkpoint_format),
+        board_.width, board_.height);
     if (native_calendar)
     {
         out(starting_time_minutes_);
+    }
+    if (dark_queen)
+    {
+        out(underwater_);
     }
     for (const auto tile : board_.terrain)
     {
@@ -14749,15 +15375,17 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
 {
     Reader in(checkpoint);
     const auto format = in.text();
-    const bool has_costs = format == checkpoint_format;
+    const bool has_costs = format == checkpoint_format || format == dark_queen_checkpoint_format;
+    const bool dark_queen = format == dark_queen_checkpoint_format ||
+                            format == costless_dark_queen_checkpoint_format;
     if (!has_costs && format != costless_checkpoint_format &&
-        format != costless_death_knights_checkpoint_format)
+        format != costless_death_knights_checkpoint_format && !dark_queen)
     {
         throw std::runtime_error(rules::older_save_message);
     }
-    const bool native_calendar = has_costs
-                                     ? game_of(identity) == GoldBoxGame::death_knights_of_krynn
-                                     : format == costless_death_knights_checkpoint_format;
+    const bool native_calendar = dark_queen || format == costless_death_knights_checkpoint_format ||
+                                 (format == checkpoint_format &&
+                                  game_of(identity) == GoldBoxGame::death_knights_of_krynn);
     std::unique_ptr<Session> session(new Session);
     session->identity_ = std::move(identity);
     session->item_types_ = content.item_types;
@@ -14767,6 +15395,10 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
     if (native_calendar)
     {
         session->starting_time_minutes_ = in.as<std::uint64_t>();
+    }
+    if (dark_queen)
+    {
+        session->underwater_ = in.as<bool>();
     }
     if (board.width < 2 || board.height < 2 || board.width > 64 || board.height > 64)
     {
@@ -15235,6 +15867,19 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
         {
             throw std::runtime_error("No original-rules record for " + p.definition);
         }
+        if (content.game == GoldBoxGame::dark_queen_of_krynn)
+        {
+            for (const auto &effect : f.numbers.effects)
+            {
+                if (dark_queen_effect::unimplemented(effect.code))
+                {
+                    throw std::runtime_error(
+                        "Dark Queen effect " +
+                        std::to_string(effect.code - dark_queen_effect::offset) +
+                        " is not implemented yet");
+                }
+            }
+        }
         strengthen(f.numbers, p.original_strength);
         f.hit_points = p.state ? p.state->hit_points : f.numbers.hit_points;
         if (p.state && p.state->dead)
@@ -15294,7 +15939,8 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
         encounter.outdoors, encounter.escape_ends_fight, encounter.party_facing,
         encounter.party_move_modifier, encounter.crystals, encounter.frightening_surprise,
         encounter.turning_tries, encounter.turning_penalty, encounter.time_minutes,
-        encounter.zero_gravity);
+        encounter.zero_gravity,
+        content.game == GoldBoxGame::dark_queen_of_krynn && encounter.underwater);
     session->know_item_types(content.item_types);
     session->play_gazes(gazes_played);
     session->move_as_the_original(content.original_movement);

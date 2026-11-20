@@ -49,6 +49,43 @@ struct TourAccess
         return town.machine_;
     }
 
+    // Isolated protocol checks only: executes an actual instruction of the
+    // installed script without claiming that its prerequisites were earned.
+    static void inspect_instruction(por::RolfTourSession &town, unsigned script,
+                                    std::uint32_t address)
+    {
+        for (const auto &[map, district] : town.town_->districts)
+        {
+            if (district->loaded_by(script))
+            {
+                town.change_area(map);
+                break;
+            }
+        }
+        town.machine_ = por::EclMachine(town.town_->programs.at(script));
+        town.current_script_ = script;
+        town.configure_town();
+        town.bind_pose(town.snapshot_.pose);
+        for (const auto &write : town.character_reply(town.selected_character_).writes)
+        {
+            town.machine_.bind_variable(write.address, write.value);
+        }
+        town.snapshot_.script_id = script;
+        town.snapshot_.tour_finished = true;
+        town.snapshot_.phase = por::TourPhase::running;
+        town.event_stage_ = por::RolfTourSession::EventStage::none;
+        town.delayed_request_ = 0;
+        town.remaining_delay_ = 0;
+        town.transition_ = false;
+        town.pending_movement_.reset();
+        town.event_checkpoint_.reset();
+        if (!town.machine_.start_at_for_inspection(address))
+        {
+            throw por::EclError("Cannot inspect the requested script instruction");
+        }
+        town.advance(0);
+    }
+
     // An original item list of the area that loads `map`, as its TREASURE gives it.
     static const std::vector<por::Equipment> &item_list(const por::RolfTourSession &town,
                                                         unsigned map, unsigned list)
@@ -154,8 +191,12 @@ struct TourAccess
     // The party is taken into `script` on `map` at `pose`, as a NEW ECL that
     // no map of its own names would take it (Gateway's ending, script 28).
     static void enter_script(por::RolfTourSession &town, unsigned script, unsigned map,
-                             por::PartyPose pose)
+                             por::PartyPose pose, unsigned previous_script = 0)
     {
+        if (previous_script)
+        {
+            town.current_script_ = previous_script;
+        }
         town.enter_script(script, {map, pose});
     }
 

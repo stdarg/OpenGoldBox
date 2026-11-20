@@ -1,9 +1,11 @@
 #include "opengold/original_content.h"
 
 #include "area_loading.h"
+#include "dark_queen_campaign.h"
 #include "opengold/creature_catalog.h"
 #include "opengold/original.h"
 #include "opengold/por_sound.h"
+#include "opengold/ua_design.h"
 
 #include <fstream>
 #include <iterator>
@@ -40,8 +42,18 @@ original::Content load_original_content(const std::filesystem::path &folder, Gol
             id.key(), original::combatant_from_record(creature.stored, carried, effects));
         content.gear.emplace(id.key(), original::MonsterGear{creature.stored, std::move(carried)});
     }
-    std::ifstream items(folder / item_types_file(game), std::ios::binary);
-    const std::vector<std::uint8_t> bytes{std::istreambuf_iterator<char>(items), {}};
+    std::vector<std::uint8_t> bytes;
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        bytes = ua::DesignFiles(folder, folder)
+                    .file_bytes(item_types_file(game))
+                    .value_or(std::vector<std::uint8_t>{});
+    }
+    else
+    {
+        std::ifstream items(folder / item_types_file(game), std::ios::binary);
+        bytes.assign(std::istreambuf_iterator<char>(items), {});
+    }
     auto types = por::decode_item_templates(bytes, game);
     if (!types)
     {
@@ -54,6 +66,10 @@ original::Content load_original_content(const std::filesystem::path &folder, Gol
 std::map<unsigned, por::Equipment> load_item_definitions(const std::filesystem::path &folder,
                                                          GoldBoxGame game)
 {
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        return por::load_dark_queen_campaign(folder).resources()->item_definitions;
+    }
     const auto types = por::decode_item_templates(
         por::detail::read_archive(por::detail::resolve_archive(folder, item_types_file(game))),
         game);
@@ -109,8 +125,7 @@ void outfit_original_character(CampaignParty &party, MemberId id,
     {
         return;
     }
-    const auto starting =
-        original::starting_items(sheet.original->class_levels, original::game_of(sheet.identity));
+    const auto starting = original::starting_items(sheet);
     for (const auto &wanted : starting)
     {
         const auto found = definitions.find(wanted.definition);
@@ -125,6 +140,11 @@ void outfit_original_character(CampaignParty &party, MemberId id,
         if (wanted.count)
         {
             item.stored.stack_size = static_cast<std::uint8_t>(*wanted.count);
+        }
+        if (original::game_of(sheet.identity) == GoldBoxGame::dark_queen_of_krynn)
+        {
+            item.stored.raw[53] = item.stored.hidden_name_words;
+            item.stored.raw[57] = item.stored.stack_size;
         }
         party.take_item(id, item);
         if (!wanted.readied)

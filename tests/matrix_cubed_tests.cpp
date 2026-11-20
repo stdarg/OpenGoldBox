@@ -486,6 +486,32 @@ void the_records_save_as_they_were(const std::filesystem::path &folder)
     }
 }
 
+void authored_creatures_without_careers_use_their_skills(const std::filesystem::path &folder)
+{
+    bool purge_checked = false;
+    const auto records = opengold::decode_dax_archive(file_bytes(folder / "MON0CHA.DAX"));
+    for (const auto &record : records.records)
+    {
+        const auto creature = br::decode_creature(record.bytes);
+        check(creature.has_value(), "Matrix's authored creature decodes");
+        if (creature->name != "PURGE WARRIOR")
+        {
+            continue;
+        }
+        check(creature->career == 0, "The actual PURGE WARRIOR has no character career");
+        const auto level = og::level_of(creature->skills, og::Skill::battle_tactics);
+        const auto intelligence =
+            creature->abilities[static_cast<std::size_t>(og::BuckRogersAbility::intelligence)];
+        check(level > 0 && creature->enabled != 0 &&
+                  og::skill_value(*creature, og::Skill::battle_tactics) == level + intelligence,
+              "The first mission's actual opponent can make its round-start tactics roll");
+        check(br::encode_creature(*creature) == record.bytes,
+              "Reading an authored creature's skill does not assign a career or change its record");
+        purge_checked = true;
+    }
+    check(purge_checked, "Matrix includes the actual PURGE WARRIOR from its opening fight");
+}
+
 void the_hail_is_corrected_where_it_is(const std::filesystem::path &folder)
 {
     const auto listing = opengold::list_buck_rogers_scripts(folder, matrix);
@@ -525,6 +551,7 @@ void the_files_decode()
     the_music_needs_only_its_library(*folder);
     the_scripts_are_listed(*folder);
     the_records_save_as_they_were(*folder);
+    authored_creatures_without_careers_use_their_skills(*folder);
     the_hail_is_corrected_where_it_is(*folder);
 }
 

@@ -6,6 +6,7 @@
 // of the real files also runs in tests/game_census.cmake.
 #include "opengold/buck_rogers_battlefield.h"
 #include "opengold/buck_rogers_combat.h"
+#include "opengold/buck_rogers_characters.h"
 #include "opengold/buck_rogers_records.h"
 #include "opengold/buck_rogers_rules.h"
 #include "opengold/buck_rogers_scripts.h"
@@ -13,6 +14,7 @@
 #include "opengold/difficulty.h"
 #include "opengold/dice.h"
 #include "opengold/ecl.h"
+#include "opengold/ecl_machine.h"
 #include "opengold/formats.h"
 #include "opengold/game_census.h"
 #include "opengold/original.h"
@@ -27,6 +29,7 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <memory>
 #include <optional>
 #include <ranges>
 #include <set>
@@ -116,6 +119,38 @@ void the_empty_commands_never_go_on()
     check(walk.errors.empty() && walk.instructions.size() == 1 &&
               walk.instructions.back().opcode == 0x3B,
           "3Bh stays where it is: the walk stops on it");
+}
+
+void yes_and_no_replace_the_previous_comparison()
+{
+    using namespace opengold::por;
+    const EclAddress result{0x4C60};
+    for (const auto game : {countdown, GoldBoxGame::matrix_cubed})
+    {
+        for (const std::uint8_t previous : {0U, 1U})
+        {
+            // COMPARE 0 with previous; YES NO; IF =; SAVE 7 to4C60h; EXIT.
+            // Both menu answers must replace either old comparison.
+            const auto bytes = script_with_body(
+                {0x03, 0, 0, 0, previous, 0x2C, 0x16, 0x09, 0, 7, 1, 0x60, 0x4C, 0});
+            for (const std::size_t choice : {0U, 1U})
+            {
+                EclMachine machine(std::make_shared<const EclProgram>(
+                    EclProgram::decode(bytes, "yes-no-comparison", game)));
+                machine.bind_variable(result, 0);
+                check(machine.start(4), "The Buck Rogers menu test starts");
+                const auto asked = machine.run();
+                check(asked.state == EclState::waiting && asked.request &&
+                          asked.request->choices == std::vector<std::string>{"YES", "NO"},
+                      "The actual Buck Rogers opcode asks Yes or No");
+                check(machine.resume(asked.request->id, choice), "The player answers the menu");
+                check(machine.run().state == EclState::completed,
+                      "The authored branch finishes after the answer");
+                check(machine.variable(result) == (choice == 0 ? 7 : 0),
+                      "Yes sets equal and No sets not equal, replacing the old comparison");
+            }
+        }
+    }
 }
 
 Bytes made_creature()
@@ -1381,6 +1416,92 @@ GroundFight ground_fight(std::vector<opengold::rules::Participant> participants,
     return fight;
 }
 
+void the_campaign_clock_preserves_the_current_native_record()
+{
+    // An isolated persistence regression, not an earned-campaign fixture.
+    // The draft is deliberately older than the mutable record: the latter
+    // must keep its ammunition, XP, skills and gear when a minute passes.
+    for (const auto game : {countdown, GoldBoxGame::matrix_cubed})
+    {
+        og::Content content;
+        content.game = game;
+        auto module = og::rules_module(std::move(content));
+        const og::GroundRecord original{
+            made_fighter(Profession::warrior), {ground_item(7, 100)}, ground_types()};
+        const auto draft = og::buck_rogers_draft(original);
+        const auto sheet = og::buck_rogers_sheet(draft, original, module->identity());
+        auto current = original;
+        current.items.front().quantity = 37;
+        current.items.push_back(ground_item(9, 42));
+        current.creature.experience += 1234;
+        ++og::level_of(current.creature.skills, Skill::first_aid);
+        current.alternate_items = {ground_item(11, 12)};
+        opengold::rules::VitalState state{current.creature.hit_points, false,
+                                          og::encode_ground_record(current)};
+        const auto before = state.resources;
+        module->pass_time(state, sheet, 10, 11);
+        check(state.resources == before && og::buck_rogers_record_of(state.resources).has_value(),
+              "The campaign minute preserves the complete mutable Buck Rogers record");
+    }
+}
+
+void campaign_rest_uses_the_native_record_and_status()
+{
+    // Separate adapter regression; these changed records are not an
+    // earned-campaign party or a substitute for playing an adventure.
+    using Status = og::BuckRogersStatus;
+    for (const auto game : {countdown, GoldBoxGame::matrix_cubed})
+    {
+        og::Content content;
+        content.game = game;
+        auto module = og::rules_module(std::move(content));
+        const og::GroundRecord original{
+            made_fighter(Profession::warrior), {ground_item(7, 100)}, ground_types()};
+        const auto sheet =
+            og::buck_rogers_sheet(og::buck_rogers_draft(original), original, module->identity());
+        for (const auto status : {Status::okay, Status::unconscious, Status::comatose,
+                                  Status::poisoned, Status::dying, Status::dead, Status::gone})
+        {
+            auto current = original;
+            current.items.front().quantity = 37;
+            current.items.push_back(ground_item(20));
+            current.alternate_items = {ground_item(11, 12, false)};
+            current.creature.experience += 1234;
+            ++og::level_of(current.creature.skills, Skill::first_aid);
+            current.creature.hit_point_maximum = 30;
+            current.creature.hit_points = status == Status::okay ? 25 : 0;
+            og::set_status(current.creature, status);
+            opengold::rules::VitalState state{current.creature.hit_points,
+                                              status == Status::dead || status == Status::gone,
+                                              og::encode_ground_record(current)};
+            module->recover_days(state, sheet, 3);
+            const auto healed = og::buck_rogers_record_of(state.resources);
+            check(healed.has_value(), "Campaign recovery keeps a native Buck Rogers record");
+            const int expected = status == Status::okay          ? 28
+                                 : status == Status::unconscious ? 3
+                                                                 : 0;
+            check(
+                state.hit_points == expected && healed->creature.hit_points == expected,
+                "Native recovery heals the okay, wakes the unconscious, and leaves other statuses");
+            check(og::status_of(healed->creature) ==
+                      (status == Status::unconscious ? Status::okay : status),
+                  "Recovery preserves every status except waking the unconscious");
+            check(healed->creature.hit_point_maximum == 30 &&
+                      healed->items.front().quantity == 37 &&
+                      healed->creature.experience == current.creature.experience &&
+                      healed->creature.skills == current.creature.skills &&
+                      br::encode_items(healed->items) == br::encode_items(current.items) &&
+                      br::encode_items(healed->alternate_items) ==
+                          br::encode_items(current.alternate_items),
+                  "Recovery uses the current native maximum and preserves rounds, XP and skills");
+            const auto recovered = state.resources;
+            module->end_rest(state, sheet);
+            check(state.resources == recovered,
+                  "Ending a Buck Rogers rest never replaces the native record with spell memory");
+        }
+    }
+}
+
 const opengold::rules::CombatantView &view_of(const opengold::rules::Snapshot &snapshot,
                                               opengold::rules::EntityId id)
 {
@@ -2082,6 +2203,7 @@ int main()
         the_commands_follow_the_buck_rogers_table();
         four_byte_operands_decode();
         the_empty_commands_never_go_on();
+        yes_and_no_replace_the_previous_comparison();
         creatures_are_read_from_their_layout();
         items_ships_and_types_are_read();
         the_menus_pair_races_and_careers();
@@ -2113,6 +2235,8 @@ int main()
         injuries_follow_the_damage();
         the_new_commands_are_offered();
         every_difficulty_level();
+        the_campaign_clock_preserves_the_current_native_record();
+        campaign_rest_uses_the_native_record_and_status();
         a_fight_runs_by_the_buck_rogers_rules();
         area_weapons_and_clouds_in_a_fight();
         medics_and_jetpacks_in_a_fight();

@@ -1018,7 +1018,8 @@ bool GameCensus::complete() const noexcept
 std::optional<GoldBoxGame> identify_game(const std::filesystem::path &folder)
 {
     // Each file below exists in only one of the games' folders.
-    static constexpr std::array<std::pair<std::string_view, GoldBoxGame>, 9> markers{{
+    static constexpr std::array<std::pair<std::string_view, GoldBoxGame>, 10> markers{{
+        {"DQK.EXE", GoldBoxGame::dark_queen_of_krynn},
         {"CKIT.EXE", GoldBoxGame::unlimited_adventures},
         {"DKK.CFG", GoldBoxGame::death_knights_of_krynn},
         // Champions also has TILES.DAX and SOUND.DAX; prefer its own marker.
@@ -1053,9 +1054,9 @@ std::optional<GoldBoxGame> identify_game(const std::filesystem::path &folder)
 GameCensus take_census(const std::filesystem::path &folder, GoldBoxGame game)
 {
     // Unlimited Adventures keeps its data in folders and files unlike the DAX games'.
-    if (game == GoldBoxGame::unlimited_adventures)
+    if (game == GoldBoxGame::unlimited_adventures || game == GoldBoxGame::dark_queen_of_krynn)
     {
-        return take_ua_census(folder);
+        return take_ua_census(folder, game);
     }
     GameCensus census;
     census.game = game;

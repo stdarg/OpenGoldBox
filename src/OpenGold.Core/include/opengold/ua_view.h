@@ -3,6 +3,7 @@
 
 #include "opengold/formats.h"
 #include "opengold/geo_map.h"
+#include "opengold/wall_art.h"
 #include "opengold/ua_design.h"
 
 #include <array>
@@ -49,6 +50,10 @@ struct ViewArt
 void apply_palette_glyph(std::array<VgaColor, 256> &palette, const TileLibrary &tiles);
 // An image glyph in `palette`'s colors, its see-through pixels clear.
 [[nodiscard]] Image glyph_image(const Glyph &glyph, const std::array<VgaColor, 256> &palette);
+
+// Compose library glyphs into the shared ten-piece wall renderer's images.
+// Both engines use the same two plain walls and three overlays per set.
+[[nodiscard]] por::WallArtSet wall_art(const ViewArt &art);
 
 // The wall sets and backdrops the area names, from the design's files. Throws
 // when a set or backdrop it names is missing or does not decode.

@@ -462,6 +462,10 @@ struct HazardAttack
     // avoiding it (Pools of Darkness's scripts, its EclDamage; an
     // Unlimited Adventures trap's defence 1).
     bool half_on_save{};
+    // Dark Queen's whole-party/random DAMAGE halves a failed save, while
+    // bit 10h allows a successful save to take the full amount. Its dice
+    // are rolled before saving and shared by the whole-party form.
+    bool original_half_on_failure{}, original_roll_damage_first{};
 };
 
 struct HazardAttackResult
@@ -815,6 +819,8 @@ struct Encounter
     // creature must keep its feet with Maneuver in Zero-G, and clouds clear
     // in a round.
     bool zero_gravity{};
+    // Native environmental context; the selected rules decide its effects.
+    bool underwater{};
 };
 
 // A weapon attack as the rules resolve it: the attack roll's bonus and the
@@ -1376,6 +1382,16 @@ class RulesModule
 
     [[nodiscard]] virtual CharacterProfile
     character_profile(const CharacterSheet &, std::span<const std::string>) const = 0;
+
+    // An original script's effect lookup against the module's current
+    // profile and lasting state. Empty when this rules module has no such
+    // effect bank; interpreting its IDs remains the module's responsibility.
+    [[nodiscard]] virtual std::optional<bool> script_has_effect(const CharacterProfile &,
+                                                                const VitalState &, unsigned) const
+    {
+        return std::nullopt;
+    }
+
     [[nodiscard]] virtual EquipmentInfo equipment_info(std::string_view) const = 0;
     // The most weight, in pounds, the character can carry.
     [[nodiscard]] virtual unsigned carrying_capacity_pounds(const CharacterSheet &) const = 0;
@@ -1522,6 +1538,16 @@ class RulesModule
         return std::nullopt;
     }
 
+    // A scripted permanent loss, recorded as a replayable history entry.
+    // Modules without a scripted drain keep the default unsupported result.
+    [[nodiscard]] virtual std::optional<AdvancementChoice>
+    scripted_level_drain(const CharacterSheet &sheet, RandomState &random) const
+    {
+        (void)sheet;
+        (void)random;
+        return std::nullopt;
+    }
+
     // What a fight, or an item used outside one, left on a character for
     // good beyond its vital state (the original rules' level drain and the
     // years its age changed by), as level history entries the character takes
@@ -1573,6 +1599,15 @@ class RulesModule
         (void)sheet;
         (void)by;
         return {};
+    }
+
+    // Whether this character can receive a campaign or script XP award.
+    // The default retains the campaign's ordinary living-member policy.
+    [[nodiscard]] virtual bool receives_experience(const CharacterSheet &sheet,
+                                                   const VitalState &state) const
+    {
+        (void)sheet;
+        return !state.dead;
     }
 
     // A member's share of an award of experience; all of it by default.

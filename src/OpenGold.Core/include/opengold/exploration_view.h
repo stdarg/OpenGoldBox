@@ -8,6 +8,8 @@
 
 namespace opengold::por
 {
+using MapKnowledge = std::bitset<GeoMap::max_cells>;
+
 struct ExplorationWallHit
 {
     int cell{-1}; // -1 means this pixel contains no wall artwork.
@@ -18,7 +20,7 @@ struct ExplorationWallHit
 struct ExplorationView
 {
     Image image;
-    std::bitset<GeoMap::width * GeoMap::height> visible;
+    MapKnowledge visible;
     // The art's scale: the image is 88 * scale pixels square.
     unsigned scale{1};
     // The last opaque source piece painted at each image pixel, row by row.

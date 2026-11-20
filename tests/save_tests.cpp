@@ -233,7 +233,9 @@ void fog_saves(const std::filesystem::path &directory)
     auto body = current.substr(current.find('\n', current.find('\n') + 1) + 1);
     // Split the body around the active area's knowledge record so malformed
     // records can be spliced in while every other field stays current.
-    const auto knowledge = "1 0 \"" + single.snapshot().seen.to_string() + "\" ";
+    const auto seen = single.snapshot().seen.to_string();
+    // Released games retain their exact 256-character format-53 field.
+    const auto knowledge = "1 0 \"" + seen.substr(seen.size() - 256) + "\" ";
     const auto knowledge_at = body.rfind(knowledge);
     check(knowledge_at != body.npos, "The town fixture records its sight knowledge");
     const auto after_knowledge = body.substr(knowledge_at + knowledge.size());

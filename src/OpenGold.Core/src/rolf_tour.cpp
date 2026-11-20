@@ -1,3 +1,4 @@
+#include "dark_queen_campaign.h"
 #include "archive_io.h"
 #include "area_loading.h"
 #include "opengold/path_text.h"
@@ -69,7 +70,11 @@ std::vector<std::string> read_closing_story(std::span<const std::uint8_t> overla
             return {};
         }
         const std::string line(overlay.begin() + at + 1, overlay.begin() + at + 1 + length);
-        if (!std::all_of(line.begin(), line.end(), [](char c) { return c >= ' ' && c <= '~'; }))
+        if (!std::all_of(line.begin(), line.end(),
+                         [](char c)
+                         {
+                             return c >= ' ' && c <= '~';
+                         }))
         {
             return {};
         }
@@ -368,7 +373,8 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
                 town->overland_tiles.push_back(std::move(tile.image));
             }
         }
-        auto icon = decode_ega_combat_icon(read_archive(resolve_archive(directory, "ICON.DAX")), 0, 0);
+        auto icon =
+            decode_ega_combat_icon(read_archive(resolve_archive(directory, "ICON.DAX")), 0, 0);
         if (!icon)
         {
             throw EclError("Invalid overland party icon");
@@ -566,8 +572,8 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
     {
         for (const auto &[id, conversion] : entry->creatures)
         {
-            const auto creature =
-                creatures.find({static_cast<std::uint8_t>(town_bank), static_cast<std::uint8_t>(id)});
+            const auto creature = creatures.find(
+                {static_cast<std::uint8_t>(town_bank), static_cast<std::uint8_t>(id)});
             if (!creature)
             {
                 throw EclError("Missing original creature MON3CHA:" + std::to_string(id));
@@ -690,8 +696,8 @@ void RolfTourSession::shops(std::vector<opengold::ShopSite> sites, opengold::Sho
         for (const auto &offering : site.offerings)
         {
             // A record may still list arrows or quarrels; there is no ammunition.
-            if (offering.item_type < 128 &&
-                opengold::original_item::is_ammunition(static_cast<std::uint8_t>(offering.item_type)))
+            if (offering.item_type < 128 && opengold::original_item::is_ammunition(
+                                                static_cast<std::uint8_t>(offering.item_type)))
             {
                 continue;
             }
@@ -785,10 +791,13 @@ void RolfTourSession::reset_run()
     duel_ = mirror_duel_ = false;
     turncoats_.clear();
     who_slots_.clear();
+    dark_queen_vault_visit_.reset();
     temple_visit_.reset();
     hall_visit_.reset();
     pending_movement_.reset();
     teleport_arrival_.reset();
+    dark_queen_vault_money_ = {};
+    dark_queen_vault_items_.clear();
     entrances_.clear();
     wand_traps_.clear();
     transition_ = message_only_ = false;
@@ -853,6 +862,7 @@ void RolfTourSession::start_opening()
 {
     snapshot_.tour_finished = true;
     current_script_ = *town_->opening_script;
+    snapshot_.script_id = current_script_;
     // The original's script setup (EclInit): a 3D map is shown and no
     // portrait is up.
     machine_.bind_variable(game_cell(ecl_in_3d_area), 1);
@@ -926,6 +936,9 @@ void RolfTourSession::roll_back_event()
     rest_checks_ = saved.rest_checks;
     camp_memorizing_.reset();
     travel_mode_ = saved.travel_mode;
+    dark_queen_combat_set_ = saved.dark_queen_combat_set;
+    dark_queen_vault_money_ = saved.dark_queen_vault_money;
+    dark_queen_vault_items_ = std::move(saved.dark_queen_vault_items);
     const auto revision = snapshot_.revision + 1;
     snapshot_ = std::move(saved.snapshot);
     snapshot_.revision = revision;
@@ -936,6 +949,7 @@ void RolfTourSession::roll_back_event()
     duel_ = mirror_duel_ = false;
     turncoats_.clear();
     who_slots_.clear();
+    dark_queen_vault_visit_.reset();
     temple_visit_.reset();
     hall_visit_.reset();
     selected_character_ = saved.selected_character;
@@ -967,16 +981,21 @@ void RolfTourSession::publish_pose()
                          facing.value_or(MapDirection::north)};
     // Treasures' overland scripts may put the party off the map, which its
     // original lets stand; the view keeps the square it showed last.
-    if ((next.x >= 16 || next.y >= 16) && facing &&
+    if ((next.x >= map_.width || next.y >= map_.height) && facing &&
         (game() == GoldBoxGame::treasures_of_the_savage_frontier || is_buck_rogers(game())))
     {
         return;
     }
-    if (next.x >= 16 || next.y >= 16 || !facing)
+    if (next.x >= map_.width || next.y >= map_.height || !facing)
     {
         throw EclError("Tour wrote an invalid party pose");
     }
     snapshot_.pose = next;
+    if (game() == GoldBoxGame::dark_queen_of_krynn &&
+        (machine_.state() == EclState::idle || machine_.state() == EclState::completed))
+    {
+        machine_.bind_variable(EclAddress{0x3D}, native_cell_flags(next.x, next.y));
+    }
     snapshot_.overland = overland();
     if (is_buck_rogers(game()))
     {
@@ -994,8 +1013,8 @@ void RolfTourSession::publish_pose()
     }
     else
     {
-        snapshot_.visited.set(next.y * 16 + next.x);
-        snapshot_.seen.set(next.y * 16 + next.x);
+        snapshot_.visited.set(next.y * map_.width + next.x);
+        snapshot_.seen.set(next.y * map_.width + next.x);
     }
     ++snapshot_.revision;
 }
@@ -1012,8 +1031,7 @@ Image RolfTourSession::observe_view()
         };
         const OverlandView view{
             town_->overland->window_start[travel_mode_ - 2] + snapshot_.overland_x,
-            snapshot_.overland_y, snapshot_.overland_direction,
-            [&](unsigned landmark)
+            snapshot_.overland_y, snapshot_.overland_direction, [&](unsigned landmark)
             {
                 switch (landmark)
                 {
@@ -1060,6 +1078,31 @@ Image RolfTourSession::observe_view()
     if (treasures_overland())
     {
         return treasures_overland_view();
+    }
+    if (game() == GoldBoxGame::dark_queen_of_krynn && town_->dark_queen && !map_.raw.empty())
+    {
+        const auto square = std::size_t{pose.y} * map_.width + pose.x;
+        const auto flags = map_.raw.at(8 + 3 * map_.cells.size() + square);
+        const unsigned selector = ((flags & 8) >> 2) | ((flags & 2) >> 1);
+        unsigned backdrop = 34;
+        if (map_.cells[square].event_high_bit() || selector)
+        {
+            backdrop = !map_.cells[square].event_high_bit() ? map_.raw[7]
+                       : selector < 3                       ? map_.raw[5 + selector]
+                                                            : 255;
+        }
+        const auto hour = machine_.variable(EclAddress{8});
+        if (backdrop >= 32 && backdrop != 255 && (hour < 6 || hour >= 20))
+        {
+            ++backdrop;
+        }
+        const auto found = town_->dark_queen->backdrops.find(backdrop);
+        if (backdrop != 255 && found == town_->dark_queen->backdrops.end())
+        {
+            throw EclError("Missing Dark Queen backdrop " + std::to_string(backdrop));
+        }
+        wall_art_.indoor_backdrop = wall_art_.sky_backdrop =
+            backdrop == 255 ? std::nullopt : std::optional{found->second};
     }
     auto view =
         render_exploration_view(map_, wall_art_, pose.x, pose.y, pose.facing, original_walls_);
@@ -1142,18 +1185,22 @@ void RolfTourSession::handle_host(const EclRequest &request)
             PartyPose pose{machine_.variable(game_cell(ecl_party_x)),
                            machine_.variable(game_cell(ecl_party_y)),
                            facing.value_or(MapDirection::north)};
-            if (pose.x >= 16 || pose.y >= 16 || !facing)
+            if (pose.x >= map_.width || pose.y >= map_.height || !facing)
             {
                 throw EclError("Invalid scripted movement pose");
             }
-            pose.x = (static_cast<int>(pose.x) + step_x(pose.facing) + 16) % 16;
-            pose.y = (static_cast<int>(pose.y) + step_y(pose.facing) + 16) % 16;
+            pose.x = map_.wrapped_x(static_cast<int>(pose.x) + step_x(pose.facing));
+            pose.y = map_.wrapped_y(static_cast<int>(pose.y) + step_y(pose.facing));
             const auto &cell = map_.at(pose.x, pose.y);
             reply.writes = {{game_cell(ecl_party_x), static_cast<std::uint16_t>(pose.x)},
                             {game_cell(ecl_party_y), static_cast<std::uint16_t>(pose.y)},
                             {game_cell(ecl_wall_ahead), cell.walls[index(pose.facing)]},
                             {game_cell(ecl_cell_event), cell.event_raw}};
             refresh_gateway_barrier(cell, index(pose.facing));
+            if (game() == GoldBoxGame::dark_queen_of_krynn)
+            {
+                reply.writes.push_back({EclAddress{0x3D}, native_cell_flags(pose.x, pose.y)});
+            }
         }
         else if (service == EclAddress{routines.redraw_view} ||
                  service == EclAddress{routines.refresh_wall_ahead})
@@ -1176,7 +1223,7 @@ void RolfTourSession::handle_host(const EclRequest &request)
             }
             // Treasures' overland scripts may put the party off the map for
             // a moment, where its original finds no wall and no event.
-            const bool off_map = x >= 16 || y >= 16;
+            const bool off_map = x >= map_.width || y >= map_.height;
             if ((off_map && game() != GoldBoxGame::treasures_of_the_savage_frontier &&
                  !is_buck_rogers(game())) ||
                 f >= 4)
@@ -1191,6 +1238,10 @@ void RolfTourSession::handle_host(const EclRequest &request)
             if (!off_map)
             {
                 refresh_gateway_barrier(map_.at(x, y), f);
+            }
+            if (game() == GoldBoxGame::dark_queen_of_krynn)
+            {
+                reply.writes.push_back({EclAddress{0x3D}, native_cell_flags(x, y)});
             }
             ++snapshot_.redraws;
             // Curse's redraw draws the view over the picture a script showed.
@@ -1366,6 +1417,16 @@ void RolfTourSession::advance(double seconds)
             }
             else if (request.kind == EclRequestKind::menu)
             {
+                // Countdown has no engine WinGame call. Its final authored
+                // continue prompt follows Wilma's "your mission is over"
+                // (ECL6:98 9F2Dh), before the script returns to Salvation.
+                if (game() == GoldBoxGame::countdown_to_doomsday && current_script_ == 98 &&
+                    request.instruction && request.instruction->opcode == 0x29 &&
+                    request.instruction->address == 0x9F2D)
+                {
+                    read_character();
+                    snapshot_.game_won = true;
+                }
                 if (request.vertical && !request.text.empty())
                 {
                     snapshot_.dialogue += "\n" + request.text;
@@ -1431,8 +1492,8 @@ void RolfTourSession::log_player(const std::string &action) const
     log_diagnostic(LogPriority::info, "player",
                    action + " (area " + std::to_string(snapshot_.area_id) + " at " +
                        std::to_string(snapshot_.pose.x) + "," + std::to_string(snapshot_.pose.y) +
-                       " facing " +
-                       std::string(facing < facings.size() ? facings[facing] : "?") + ")");
+                       " facing " + std::string(facing < facings.size() ? facings[facing] : "?") +
+                       ")");
 }
 
 bool RolfTourSession::continue_dialogue(std::uint64_t ticket)
@@ -1478,8 +1539,9 @@ bool RolfTourSession::open_camp()
 bool RolfTourSession::can_camp() const
 {
     return town_ && campaign_ && snapshot_.phase == TourPhase::completed &&
-           !campaign_->in_combat() && !campaign_->state().short_rest &&
-           !campaign_->state().spell_rest && !campaign_->state().training_rest;
+           !matrix_ending_completed() && !campaign_->in_combat() &&
+           !campaign_->state().short_rest && !campaign_->state().spell_rest &&
+           !campaign_->state().training_rest;
 }
 
 bool RolfTourSession::start_camp(RestKind kind, std::optional<std::chrono::minutes> length)
@@ -1504,6 +1566,10 @@ bool RolfTourSession::start_camp(RestKind kind, std::optional<std::chrono::minut
 
 bool RolfTourSession::explore(ExplorationCommand command)
 {
+    if (matrix_ending_completed())
+    {
+        return false;
+    }
     if (command == ExplorationCommand::camp)
     {
         return camp(RestKind::long_rest);
@@ -1582,7 +1648,8 @@ bool RolfTourSession::explore(ExplorationCommand command)
         const auto &edge = map_.at(pose.x, pose.y);
         const int x = static_cast<int>(pose.x) + step_x(pose.facing),
                   y = static_cast<int>(pose.y) + step_y(pose.facing);
-        if (x < 0 || y < 0 || x >= 16 || y >= 16 || edge.walls[index(pose.facing)] ||
+        if (x < 0 || y < 0 || x >= static_cast<int>(map_.width) ||
+            y >= static_cast<int>(map_.height) || edge.walls[index(pose.facing)] ||
             edge.doors[index(pose.facing)])
         {
             return false;

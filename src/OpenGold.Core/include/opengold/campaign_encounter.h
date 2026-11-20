@@ -123,6 +123,7 @@ struct CampaignEncounter
     // No one casts a spell (an Unlimited Adventures design's "no magic"
     // fight, rules::Encounter::no_magic).
     bool no_magic{};
+    bool underwater{};
     // Monsters on the party's side, standing beside it.
     std::vector<rules::Participant> allies;
     // Party members who fight for the monsters, standing with them (the

@@ -5,6 +5,8 @@
 #include "opengold/formats.h"
 #include "opengold/por_sound.h"
 #include "opengold/death_knights_records.h"
+#include "opengold/dark_queen_records.h"
+#include "opengold/ua_design.h"
 
 #include <algorithm>
 #include <fstream>
@@ -439,6 +441,72 @@ CreatureCatalog CreatureCatalog::load(const std::filesystem::path &directory, Go
 {
     try
     {
+        if (game == GoldBoxGame::dark_queen_of_krynn)
+        {
+            const ua::DesignFiles files(directory, directory);
+            const auto raw_types = files.file_bytes(item_types_file(game));
+            const auto program = files.file_bytes(item_words_program(game));
+            const auto library = files.library("MONCHA.GLB");
+            if (!raw_types || !program || !library)
+            {
+                throw CatalogError("Dark Queen needs ITEMS.DAT, DQK.EXE and MONCHA.GLB");
+            }
+            const auto types = decode_item_templates(*raw_types, game);
+            const auto words = decode_item_words(*program, game);
+            const auto index = ua::decode_index(*library);
+            if (!types || !words || !index)
+            {
+                throw CatalogError(
+                    "Dark Queen's item types, words or creature index cannot be read");
+            }
+            CreatureCatalog catalog;
+            for (const auto &entry : *index)
+            {
+                auto decoded = dark_queen::decode_creature(library->items[entry.item]);
+                if (!decoded || entry.number > 255)
+                {
+                    throw CatalogError("Invalid Dark Queen creature " +
+                                       std::to_string(entry.number));
+                }
+                Creature creature;
+                creature.id = {1, static_cast<std::uint8_t>(entry.number)};
+                creature.stored = std::move(decoded->character);
+                creature.abilities = ability_modifiers(creature.stored);
+                for (auto &stored : decoded->items)
+                {
+                    if (stored.type == 30 || stored.type == 12 || stored.type == 74)
+                    {
+                        continue;
+                    }
+                    if (stored.type >= types->size())
+                    {
+                        throw CatalogError("Invalid item type in Dark Queen creature " +
+                                           std::to_string(entry.number));
+                    }
+                    Equipment item;
+                    item.base = types->at(stored.type);
+                    item.bonuses = equipment_bonuses(stored, item.base);
+                    item.decoded_name = item_name(stored, *words);
+                    item.unidentified_name = item_name(stored, *words, stored.hidden_name_words);
+                    item.stored = std::move(stored);
+                    creature.equipment.push_back(std::move(item));
+                }
+                for (auto &stored : decoded->effects)
+                {
+                    // Native IDs are interpreted by the selected rules module.
+                    EffectDefinition definition;
+                    definition.code = stored.code;
+                    definition.name = "Native Dark Queen effect";
+                    creature.effects.push_back({std::move(stored), definition});
+                }
+                catalog.creatures_.emplace(creature.id, std::move(creature));
+            }
+            if (catalog.creatures_.empty())
+            {
+                throw CatalogError("Dark Queen has no monster/NPC records");
+            }
+            return catalog;
+        }
         // DOS names are case-insensitive; support copied installations on case-sensitive hosts too.
         std::map<std::string, std::filesystem::path> files;
         for (const auto &entry : std::filesystem::directory_iterator(directory))

@@ -107,8 +107,9 @@ constexpr std::uint16_t low_last = 0x0800, low_spare = 0xF000, script_first = 0x
 
 [[nodiscard]] constexpr VgaMemory vga_memory(GoldBoxGame game) noexcept
 {
-    return game == GoldBoxGame::treasures_of_the_savage_frontier ? VgaMemory{0xB6B0, 0x4000}
-                                                                 : VgaMemory{0x9DFF, 0x2000};
+    return game == GoldBoxGame::dark_queen_of_krynn                ? VgaMemory{0xAEE2, 0x4000}
+           : game == GoldBoxGame::treasures_of_the_savage_frontier ? VgaMemory{0xB6B0, 0x4000}
+                                                                   : VgaMemory{0x9DFF, 0x2000};
 }
 
 [[nodiscard]] constexpr std::uint16_t vga_spare(std::uint16_t cell, VgaMemory memory) noexcept
@@ -124,8 +125,19 @@ constexpr std::uint16_t low_last = 0x0800, low_spare = 0xF000, script_first = 0x
     return cell;
 }
 
+constexpr std::array<CellPair, 5> dark_queen_cells{
+    {{0x49C3, 0x25}, {0x49C4, 0x26}, {0x033D, 0x23}, {0x6DE3, 0x1E}, {0x6DC6, 0x1B}}};
+
 EclAddress vga_address(EclAddress cell, GoldBoxGame game)
 {
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        const auto found = std::ranges::find(dark_queen_cells, cell.location, &CellPair::first);
+        if (found != dark_queen_cells.end())
+        {
+            return EclAddress{found->second};
+        }
+    }
     const auto named = std::ranges::find(vga_cells, cell.location, &CellPair::first);
     return EclAddress(named != vga_cells.end() ? named->second
                                                : vga_spare(cell.location, vga_memory(game)));
@@ -133,6 +145,14 @@ EclAddress vga_address(EclAddress cell, GoldBoxGame game)
 
 EclAddress vga_pool_of_radiance_address(EclAddress cell, GoldBoxGame game)
 {
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        const auto found = std::ranges::find(dark_queen_cells, cell.location, &CellPair::second);
+        if (found != dark_queen_cells.end())
+        {
+            return EclAddress{found->first};
+        }
+    }
     const auto named = std::ranges::find(vga_cells, cell.location, &CellPair::second);
     if (named != vga_cells.end())
     {
@@ -158,7 +178,7 @@ EclAddress vga_pool_of_radiance_address(EclAddress cell, GoldBoxGame game)
 
 EclAddress game_address(EclAddress cell, GoldBoxGame game)
 {
-    if (vga_engine(game))
+    if (vga_engine(game) || game == GoldBoxGame::dark_queen_of_krynn)
     {
         return vga_address(cell, game);
     }
@@ -176,7 +196,7 @@ EclAddress game_address(EclAddress cell, GoldBoxGame game)
 
 EclAddress pool_of_radiance_address(EclAddress cell, GoldBoxGame game)
 {
-    if (vga_engine(game))
+    if (vga_engine(game) || game == GoldBoxGame::dark_queen_of_krynn)
     {
         return vga_pool_of_radiance_address(cell, game);
     }

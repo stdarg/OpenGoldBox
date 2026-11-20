@@ -1,8 +1,10 @@
 #include "opengold/original_spells.h"
 #include "death_knights_spell_table.h"
+#include "dark_queen_spell_table.h"
 #include <cctype>
 
 #include <array>
+#include <algorithm>
 
 namespace opengold::original
 {
@@ -330,6 +332,12 @@ constexpr std::array<int, 30> curse_castable{158, 166, 167, 168, 169, 170, 171, 
 
 int canonical_spell(int number, GoldBoxGame game) noexcept
 {
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        return number >= 1 && number <= static_cast<int>(dark_queen_data::spells.size())
+                   ? dark_queen_data::spells[static_cast<std::size_t>(number - 1)].canonical
+                   : 0;
+    }
     if (game == GoldBoxGame::death_knights_of_krynn)
     {
         return number >= 1 && number <= 114
@@ -356,8 +364,46 @@ int canonical_spell(int number, GoldBoxGame game) noexcept
                                                                : number;
 }
 
+int canonical_item_power(int number, GoldBoxGame game) noexcept
+{
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        // charview.c, use_item: these item powers share stored numbers
+        // with unrelated ordinary spells and are remapped only on use.
+        constexpr std::array<std::pair<int, int>, 11> moved{{{57, 127},
+                                                             {59, 128},
+                                                             {60, 129},
+                                                             {61, 130},
+                                                             {62, 131},
+                                                             {63, 132},
+                                                             {64, 133},
+                                                             {65, 134},
+                                                             {95, 135},
+                                                             {97, 136},
+                                                             {99, 137}}};
+        const auto found = std::ranges::find(moved, number, &std::pair<int, int>::first);
+        return canonical_spell(found == moved.end() ? number : found->second, game);
+    }
+    return game == GoldBoxGame::pool_of_radiance ? (number > 56 ? number - 23 : number)
+                                                 : canonical_spell(number & 127, game);
+}
+
 int native_spell(int number, GoldBoxGame game) noexcept
 {
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        if (number > 0)
+        {
+            for (std::size_t at = 0; at < dark_queen_data::spells.size(); ++at)
+            {
+                if (dark_queen_data::spells[at].canonical == number)
+                {
+                    return static_cast<int>(at + 1);
+                }
+            }
+        }
+        return 0;
+    }
     if (game == GoldBoxGame::death_knights_of_krynn)
     {
         if (number <= 0)
@@ -382,6 +428,18 @@ int native_spell(int number, GoldBoxGame game) noexcept
 std::vector<int> castable_spells(GoldBoxGame game)
 {
     std::vector<int> numbers;
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        for (const auto &row : dark_queen_data::spells)
+        {
+            if (row.canonical && row.cast_class != 255 && row.cast_class <= 3 &&
+                std::ranges::find(numbers, row.canonical) == numbers.end())
+            {
+                numbers.push_back(row.canonical);
+            }
+        }
+        return numbers;
+    }
     if (game == GoldBoxGame::death_knights_of_krynn)
     {
         for (const auto &row : death_knights_data::spells)
@@ -530,6 +588,12 @@ std::optional<int> spell_number(std::string_view id, GoldBoxGame game)
 
 const Spell *spell(int number) noexcept
 {
+    static constexpr Spell native_youth{
+        "Elixir of Youth", SpellClass::item, 6, 0, 0, 0, 0, 0, 1, 0, 4, 0, 2, 0, 0, false, 0};
+    if (number == native_elixir_youth)
+    {
+        return &native_youth;
+    }
     // Champions' deity gifts share a separate level-zero preparation allowance.
     // Their caster level is the cleric's; IDs stay distinct from ordinary spells.
     static constexpr std::array<Spell, 7> gifts{
@@ -576,6 +640,57 @@ const Spell *spell(int number) noexcept
 
 const Spell *spell(int number, GoldBoxGame game) noexcept
 {
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        static const auto changed = []
+        {
+            std::array<NumberedSpell, dark_queen_data::spells.size()> rows{};
+            for (std::size_t at = 0; at < rows.size(); ++at)
+            {
+                const auto &native = dark_queen_data::spells[at];
+                const auto *base = spell(native.canonical);
+                if (!base)
+                {
+                    continue;
+                }
+                auto value = *base;
+                value.level = native.cast_class == 3 ? 0 : native.level;
+                value.range_fixed = native.range;
+                value.range_per_level = native.range_per_level;
+                value.minutes_fixed = native.duration;
+                value.minutes_per_level = native.duration_per_level;
+                value.area =
+                    (native.targeting & 15) == 15 ? native.targeting : native.targeting & 15;
+                value.camp_target = native.camp_target == 3 ? 4 : native.camp_target;
+                value.save_result = native.save_effect;
+                value.save_type = native.save_type;
+                value.when = native.combat_ok;
+                value.casting_time = native.casting_time;
+                value.ai_priority = native.ai_priority;
+                value.offensive = native.hostile != 0;
+                if (native.canonical == native_elixir_youth)
+                {
+                    // The native handler always changes its user, as Youth
+                    // does in the earlier games, regardless of the target bits.
+                    value.area = 0;
+                    value.camp_target = 1;
+                }
+                rows[at] = {native.canonical, value};
+            }
+            return rows;
+        }();
+        if (number > 0)
+        {
+            for (const auto &row : changed)
+            {
+                if (row.number == number)
+                {
+                    return &row.spell;
+                }
+            }
+        }
+        return nullptr;
+    }
     if (game == GoldBoxGame::death_knights_of_krynn)
     {
         static const auto changed = []

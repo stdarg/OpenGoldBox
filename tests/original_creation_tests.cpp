@@ -689,6 +689,16 @@ void a_magic_user_scribes_a_scroll()
     check(!party.member(mage).character.inventory().find(hidden) && knows(12),
           "A scroll whose last spell is scribed is gone");
 
+    check(party.rest(), "The magic-user rests to prepare the spell learned from the scroll");
+    party.choose_spells(mage, {{}, std::vector<std::string>{"magic_user:magic_missile"}});
+    const auto scribed_save = encode_campaign(party, nullptr, "scribe-check");
+    const auto scribed_loaded =
+        decode_campaign(scribed_save, *creation, *module, "scribe-check", nullptr);
+    CampaignParty scribed_party(original::rules_module(content), creation);
+    scribed_party.restore(scribed_loaded.party);
+    check(encode_campaign(scribed_party, nullptr, "scribe-check") == scribed_save,
+          "A spell scribed and then memorized at the same level replays byte for byte");
+
     // A fight reads Sleep from the scroll; Fireball stays on it.
     party.equip(mage, known_scroll, rules::EquipmentOperation::equip);
     por::CharacterRecord kobold;

@@ -19,7 +19,8 @@ namespace opengold::original
 {
 [[nodiscard]] constexpr bool krynn_game(GoldBoxGame game) noexcept
 {
-    return game == GoldBoxGame::champions_of_krynn || game == GoldBoxGame::death_knights_of_krynn;
+    return game == GoldBoxGame::champions_of_krynn || game == GoldBoxGame::death_knights_of_krynn ||
+           game == GoldBoxGame::dark_queen_of_krynn;
 }
 
 // In the original's order, which its scripts read as race codes 1 to 7.
@@ -276,6 +277,10 @@ struct StartingItem
 // paladins and rangers first, then thieves, then clerics, then the rest.
 // None in the games that give none at creation.
 [[nodiscard]] std::vector<StartingItem> starting_items(const ClassLevels &levels, GoldBoxGame game);
+// Native Dark Queen equipment also depends on race and profession.
+[[nodiscard]] std::vector<StartingItem> starting_items(const rules::CharacterSheet &sheet);
+// A native Dark Queen spell byte that fits a white/red magic-user scroll.
+[[nodiscard]] bool dark_queen_scroll_spell(int native, unsigned robe) noexcept;
 
 // A new character trained to its starting experience at creation (Curse's
 // SilentTrainPlayer): every class that can rises, training after training,

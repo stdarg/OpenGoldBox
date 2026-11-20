@@ -4,8 +4,53 @@ The second *Buck Rogers XXVc* Gold Box game (1992), the same program as
 *Countdown to Doomsday* with new data. The plan to play it to its win under
 its original rules is [BUCK-ROGERS.md](../BUCK-ROGERS.md). Step B0
 (groundwork) and step B1 (the reading census) are done (2026-11-19), and the
-characters' and ground combat's rules of step B2 (2026-11-20); the game does not play yet, and its button in the startup menu stays disabled until it
-does.
+characters' and ground combat's rules of step B2 (2026-11-20). The isolated
+Linux campaign checkpoint below loads and plays the opening; the complete
+campaign has no earned-win certificate yet, and its startup button remains
+disabled.
+
+## Linux campaign checkpoint (2026-11-20)
+
+Tested in the integration checkout based on `ed0be5e8` with the reviewed Native,
+Countdown and Matrix changes. The engine now loads the
+installed single-disk campaign from `/home/edmond/GoldBox/buck-rogers-matrix-cubed`.
+Six characters created through the original level-7 rules, required skill
+presets, free equipment and offered weapon specializations read the opening,
+divide its actual credits and reach ordinary exploration on Caloris,
+map 17/script 17. Their normal campaign save
+restores every complete character record and resaves byte-identically.
+
+The installed ending is ECL bank 1/script 114, PROGRAM 2 at `9E08`, immediately
+followed by EXIT at `9E0B`; the closing dialogue precedes it. Core recognizes
+that exact completed instruction, permits saving, and prevents further turns
+or camping. The diagnostic ending test invokes the authored instruction in
+isolation: it verifies terminal behavior and the complete party save, **not**
+an earned campaign victory.
+
+Matrix alone now writes campaign format 55, whose town payload carries a
+validated terminal receipt. Released Matrix format-53 party-only and ordinary
+town saves remain readable without inventing victory. Native still writes 54;
+Countdown and the other released games still write 53. A malformed terminal PC
+and format 55 for another game are rejected. No quest cell or reward history
+is repurposed for the receipt.
+
+`opengold_matrix_campaign_tests` checks the endpoint and save contract;
+`opengold_matrix_cubed_earned_opening` independently replays the fresh opening.
+Those checks, the existing Matrix/Countdown rules and campaign checks, and the
+Original creation/combat and released-save regressions pass in the combined
+20-check run `/tmp/opengold-integrated-camp-ground-career-focused-checks-v1.log`.
+The separate real Camp check also passes. The earlier fixture selected armor
+for specialization and omitted Matrix's skill presets; its fresh-party
+legality claims are superseded by this corrected run. This checkpoint
+also consumes the separately verified shared Buck time/Yes-No/map-loading and
+inventory-buyer fixes. A complete route, its real ground/ship fights and solar
+travel, and any required UI transactions still need verification. The explicit
+`--earned-ending` mode fails closed at the current opening boundary.
+
+Authored creatures can have no career: the opening's actual PURGE WARRIOR
+record has career zero. Its ordinary skill checks now use their governing
+ability without throwing or assigning a career; medical prerequisites remain
+in force. The installed-record regression preserves its bytes unchanged.
 
 ## Files and references
 

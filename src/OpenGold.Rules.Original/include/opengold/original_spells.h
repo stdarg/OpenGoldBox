@@ -63,6 +63,9 @@ inline constexpr int curse_spell_offset = 100;
 // Barkskin, Charm Person or Mammal, the druid's Cure Light Wounds and its
 // numbers 101 to 117) are this much higher than in Secret's table.
 inline constexpr int secret_spell_offset = 200;
+// Native Youth keeps an item-power ID below 256, as use commands encode
+// the power and inventory ordinal in separate bytes.
+inline constexpr int native_elixir_youth = 201;
 
 // The spell or item power of this number (1 to 67, Curse's 158 and 166 to
 // 200, Secret's 236, 256, 290, 296, 298 and 310 to 317, and Pools of
@@ -77,6 +80,9 @@ inline constexpr int secret_spell_offset = 200;
 // scripts'): Curse's spells beyond Pool of Radiance's, 58 and 66 up, are
 // curse_spell_offset higher.
 [[nodiscard]] int canonical_spell(int number, GoldBoxGame game) noexcept;
+// A non-scroll item's use-time power; Native remaps several stored codes
+// before dispatching its spell table. Scrolls use canonical_spell directly.
+[[nodiscard]] int canonical_item_power(int number, GoldBoxGame game) noexcept;
 // The record/item number for a canonical spell; zero when this game lacks it.
 [[nodiscard]] int native_spell(int number, GoldBoxGame game) noexcept;
 // The spells a game's characters may know, in its table's order.

@@ -691,9 +691,13 @@ std::vector<Skill> general_skills(Profession career)
     return listed;
 }
 
-bool meets_skill_prerequisite(const SkillLevels &levels, Profession career, Skill skill)
+namespace
 {
-    if (is_medical_skill(skill) && career != P::medic)
+// Authored creatures may have no character career. Their ordinary skills
+// still use their governing ability; medical skills require a Medic.
+bool skill_prerequisites(const SkillLevels &levels, bool medic, Skill skill)
+{
+    if (is_medical_skill(skill) && !medic)
     {
         return false;
     }
@@ -732,6 +736,13 @@ bool meets_skill_prerequisite(const SkillLevels &levels, Profession career, Skil
     default:
         return true;
     }
+}
+
+} // namespace
+
+bool meets_skill_prerequisite(const SkillLevels &levels, Profession career, Skill skill)
+{
+    return skill_prerequisites(levels, career == P::medic, skill);
 }
 
 int starting_skill_level(const SkillLevels &levels, Profession career, Skill skill)
@@ -779,7 +790,8 @@ std::span<const PresetSkill> preset_skills(Profession career, GoldBoxGame game)
 
 int skill_ability_score(const Creature &character, Skill skill)
 {
-    if (!meets_skill_prerequisite(character.skills, career_of(character), skill))
+    if (!skill_prerequisites(character.skills, career_from_record(character.career) == P::medic,
+                             skill))
     {
         return 0;
     }

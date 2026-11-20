@@ -31,6 +31,9 @@ class DesignFiles
     [[nodiscard]] std::optional<std::vector<std::uint8_t>> data(std::string_view name,
                                                                 unsigned entry) const;
 
+    // A loose file in the same search order, retained as bytes.
+    [[nodiscard]] std::optional<std::vector<std::uint8_t>> file_bytes(std::string_view file) const;
+
     // The library `file` ("8X8DB.TLB"); nullopt when there is none. Throws
     // when it exists but does not decode.
     [[nodiscard]] std::optional<Library> library(std::string_view file) const;

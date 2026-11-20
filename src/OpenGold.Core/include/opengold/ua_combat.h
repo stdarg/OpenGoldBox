@@ -24,18 +24,37 @@ struct FightField
     std::array<VgaColor, 256> palette{};
 };
 
+[[nodiscard]] std::array<VgaColor, 256> combat_palette(const DesignFiles &files, unsigned set,
+                                                       bool dungeon);
+
 // A dungeon fight's field (cmbsetup.c, dungeon_map): the walls around the
 // party's square (x, y) as DUNGCOM tiles of the area's dungeon combat set
 // (header +0Ch; 0 is the first). Throws when the set is missing or does not
 // decode.
 [[nodiscard]] FightField dungeon_field(const DesignFiles &files, const Area &area, unsigned x,
                                        unsigned y);
+// The shared library field layout with an engine's own map-edge decoder.
+[[nodiscard]] FightField dungeon_field(const DesignFiles &files, unsigned set,
+                                       const por::FieldEdges &edges);
 
 // An outdoor fight's field (wild_map) of WILDCOM set `set` (0 is the first):
 // open ground with trees, brush and stones scattered by `roll`, which gives 1
 // to its argument. Throws when the set is missing or does not decode.
 [[nodiscard]] FightField wilderness_field(const DesignFiles &files, unsigned set,
                                           const std::function<unsigned(unsigned)> &roll);
+
+struct WildernessStyle
+{
+    unsigned tree_chance{5};
+    bool trees{true}, river{};
+    // Scree, brush, the unused tall-stone threshold, grass and small stones.
+    std::array<unsigned, 5> scatter{0, 2, 5, 10, 5};
+    unsigned art_tiles{38};
+};
+
+[[nodiscard]] FightField wilderness_field(const DesignFiles &files, unsigned set,
+                                          const std::function<unsigned(unsigned)> &roll,
+                                          const WildernessStyle &style);
 
 // A monster's combat icon (CPIC, by its MONST number) in the fight's colors:
 // its two poses and the squares it fills, from the icon's shape as the kit

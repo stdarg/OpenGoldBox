@@ -137,7 +137,7 @@ decode_items(std::span<const std::uint8_t> bytes);
 // theirs: the program's table of far pointers to its strings, found by its
 // first two words, "Battle Axe" and "Hand Axe". nullopt when there is none.
 [[nodiscard]] std::optional<std::vector<std::string>>
-decode_item_words(std::span<const std::uint8_t> program);
+decode_item_words(std::span<const std::uint8_t> program, std::size_t word_count = 124);
 
 // A MONST.GLB item: a 450-byte creature record, PackBits-packed behind its
 // big-endian unpacked size. The fields the kit's records share with a party

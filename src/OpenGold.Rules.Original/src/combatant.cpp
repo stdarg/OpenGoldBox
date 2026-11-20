@@ -1,6 +1,7 @@
 #include "opengold/original_combat.h"
 #include "champions_rules.h"
 #include "death_knights_effects.h"
+#include "dark_queen_effects.h"
 #include "opengold/original_rules.h"
 #include "opengold/original_spells.h"
 #include "opengold/secret_records.h"
@@ -20,6 +21,7 @@ namespace
 {
 
 constexpr std::string_view profile_format = "combatant14";
+constexpr std::string_view native_profile_format = "combatant15";
 
 std::vector<int> numbers_of(const Combatant &c)
 {
@@ -85,6 +87,23 @@ std::vector<int> numbers_of(const Combatant &c)
                         item.identified ? 1 : 0, item.spells[0], item.spells[1], item.spells[2],
                         item.charges, item.quantity});
     }
+    if (c.native_progression)
+    {
+        const auto &p = *c.native_progression;
+        numbers.insert(numbers.end(),
+                       {p.profession, p.race, p.knight_order, p.female ? 1 : 0, p.rolled_hit_points,
+                        p.previous_max_hit_points, static_cast<int>(p.experience),
+                        static_cast<int>(p.previous_experience), p.deity, p.robe_order, p.wisdom});
+        numbers.insert(numbers.end(), p.peak_class_levels.begin(), p.peak_class_levels.end());
+        numbers.push_back(static_cast<int>(p.drains.size()));
+        for (const auto &d : p.drains)
+        {
+            numbers.insert(numbers.end(),
+                           {static_cast<int>(d.slot), d.hit_points, d.rolled_hit_points,
+                            static_cast<int>(d.experience), d.dead ? 1 : 0, d.before_level,
+                            static_cast<int>(d.previous_experience), d.previous_max_hit_points});
+        }
+    }
     return numbers;
 }
 
@@ -92,7 +111,7 @@ std::vector<int> numbers_of(const Combatant &c)
 
 std::string Combatant::encode() const
 {
-    std::string text(profile_format);
+    std::string text(native_progression ? native_profile_format : profile_format);
     for (const auto number : numbers_of(*this))
     {
         text += ' ' + std::to_string(number);
@@ -102,7 +121,8 @@ std::string Combatant::encode() const
 
 std::optional<Combatant> Combatant::decode(std::string_view data)
 {
-    if (!data.starts_with(profile_format))
+    const bool native = data.starts_with(native_profile_format);
+    if (!native && !data.starts_with(profile_format))
     {
         return std::nullopt;
     }
@@ -137,7 +157,12 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
         }
         at += static_cast<std::size_t>(numbers[at - 1]) * width + 1;
     }
-    if (numbers.size() != at - 1)
+    const auto base_end = at - 1;
+    if ((!native && numbers.size() != base_end) ||
+        (native &&
+         (numbers.size() < base_end + 20 || numbers[base_end + 19] < 0 ||
+          numbers[base_end + 19] > 512 ||
+          numbers.size() != base_end + 20 + 8 * static_cast<std::size_t>(numbers[base_end + 19]))))
     {
         return std::nullopt;
     }
@@ -225,8 +250,7 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
     for (int n = 0; n < effect_count; ++n, next += 4)
     {
         // Canonical effects include the later games' distinct numeric banks.
-        if (next[0] < 1 || next[0] > 255 + death_knights_effect::offset || next[1] < 0 ||
-            next[2] < 0)
+        if (next[0] < 1 || next[0] > 255 + dark_queen_effect::offset || next[1] < 0 || next[2] < 0)
         {
             return std::nullopt;
         }
@@ -248,6 +272,55 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
                            {next[5], next[6], next[7]},
                            next[8],
                            next[9]});
+    }
+    if (native)
+    {
+        NativeProgression p;
+        p.profession = *next++;
+        p.race = *next++;
+        p.knight_order = *next++;
+        const int female = *next++;
+        p.female = female != 0;
+        p.rolled_hit_points = *next++;
+        p.previous_max_hit_points = *next++;
+        const int experience = *next++, previous_experience = *next++;
+        p.deity = *next++;
+        p.robe_order = *next++;
+        p.wisdom = *next++;
+        if (p.profession < 0 || p.profession > 255 || p.race < 0 || p.race > 13 ||
+            p.knight_order < 0 || p.knight_order > 3 || female < 0 || female > 1 ||
+            p.rolled_hit_points < 0 || p.previous_max_hit_points < 0 || experience < 0 ||
+            previous_experience < 0 || p.deity < 0 || p.deity > 7 || p.robe_order < 0 ||
+            p.robe_order > 3 || p.wisdom < 0 || p.wisdom > 255)
+        {
+            return std::nullopt;
+        }
+        p.experience = static_cast<unsigned>(experience);
+        p.previous_experience = static_cast<unsigned>(previous_experience);
+        for (auto &level : p.peak_class_levels)
+        {
+            level = *next++;
+            if (level < 0)
+            {
+                return std::nullopt;
+            }
+        }
+        const int receipts = *next++;
+        for (int n = 0; n < receipts; ++n)
+        {
+            const int slot = *next++, hp = *next++, raw = *next++, xp = *next++;
+            const int dead = *next++, before = *next++, previous_xp = *next++,
+                      previous_hp = *next++;
+            if (slot < 0 || slot >= 8 || slot == 1 || hp < 0 || raw < 0 || xp < 0 || dead < 0 ||
+                dead > 1 || before < 1 || previous_xp < 0 || previous_hp < 0)
+            {
+                return std::nullopt;
+            }
+            p.drains.push_back({static_cast<unsigned>(slot), hp, raw, static_cast<unsigned>(xp),
+                                dead != 0, before, static_cast<unsigned>(previous_xp),
+                                previous_hp});
+        }
+        c.native_progression = std::move(p);
     }
     if (c.max_hit_points < 1 || c.movement < 0 ||
         std::any_of(
@@ -368,6 +441,12 @@ Missile missile_of(const por::CharacterRecord &record, std::span<const CarriedIt
     m.rate_per_two_rounds = std::max<int>(type.rate_of_fire, 2);
     m.thrown = type.has(bit::thrown);
     m.throwable = m.thrown && type.has(bit::strength_bonus);
+    // Native hoopaks fire without consuming the staff (cbaction.c's wields_43).
+    // Other thrown weapons retain their physical inventory.
+    if (record.game == GoldBoxGame::dark_queen_of_krynn && weapon.item.type == 67)
+    {
+        m.thrown = m.throwable = false;
+    }
     const CarriedItem *shot = m.thrown ? &weapon : nullptr;
     const auto ammunition = ammunition_types(record.game);
     if (type.has(bit::fires_ammunition))
@@ -382,7 +461,8 @@ Missile missile_of(const por::CharacterRecord &record, std::span<const CarriedIt
         }
     }
     m.needs_no_ammunition =
-        !shot && type.properties == (bit::dexterity_missile | bit::fires_ammunition);
+        (record.game == GoldBoxGame::dark_queen_of_krynn && !m.thrown) ||
+        (!shot && type.properties == (bit::dexterity_missile | bit::fires_ammunition));
     m.loaded = shot || m.needs_no_ammunition;
     m.quantity = shot ? shot->item.stack_size : 0;
     if (m.thrown)
@@ -564,6 +644,23 @@ int kit_traits(const por::CharacterRecord &record)
     return traits;
 }
 
+// Native C7 type flags and C8 immunities differ from the EGA Krynn
+// records. In particular a native dragon is immunity bit 80h, not bit 1.
+int dark_queen_traits(const por::CharacterRecord &record)
+{
+    const auto flags = record.creature_type_flags, targets = record.target_flags;
+    int traits = kit_traits(record);
+    traits |= flags & 0x01 ? trait::dispel_evil : 0;
+    traits |= flags & 0x02 ? trait::person | trait::mammal : 0;
+    traits |= flags & 0x10 ? trait::snake : 0;
+    traits |= flags & 0x20 ? dark_queen_effect::disruption_double_trait : 0;
+    traits |= targets & 0x08 ? trait::unliving : 0;
+    traits |= targets & 0x10 ? trait::poison_proof : 0;
+    traits |= targets & 0x80 ? champions_dragon_trait : 0;
+    traits |= targets & 0x04 ? champions_reptile_trait : 0;
+    return traits;
+}
+
 // An Unlimited Adventures item's special effect when readied: its third
 // effect byte from 80h, its low bits saying what (the kit's charview.c,
 // item_effect). 80h gives its wielder the effect its second byte names
@@ -674,7 +771,6 @@ bool secret_backstab_weapon(const CarriedItem *weapon, GoldBoxGame game)
 // UseMagicItem).
 std::vector<UsableItem> usable_items(std::span<const CarriedItem> carried, GoldBoxGame game)
 {
-    const bool names_spells = game != GoldBoxGame::pool_of_radiance;
     std::vector<UsableItem> items;
     for (std::size_t n = 0; n < carried.size(); ++n)
     {
@@ -702,9 +798,7 @@ std::vector<UsableItem> usable_items(std::span<const CarriedItem> carried, GoldB
         }
         else if (bytes[1] > 0 && bytes[2] < 0x80)
         {
-            usable.spells[0] = names_spells    ? canonical_spell(bytes[1] & 0x7F, game)
-                               : bytes[1] > 56 ? bytes[1] - 23
-                                               : bytes[1];
+            usable.spells[0] = canonical_item_power(bytes[1], game);
             usable.charges = bytes[0];
         }
         else
@@ -898,6 +992,40 @@ int canonical_effect(int code, GoldBoxGame game) noexcept
     if (code == 0)
     {
         return 0;
+    }
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        // Matched by native handler behavior and trigger group. Unmatched
+        // native IDs occupy their own bank, never an unrelated old effect.
+        constexpr std::pair<int, int> shared[]{
+            {1, 1},      {2, 2},      {3, 203},    {4, 1704},   {6, 335},    {8, 8},
+            {9, 9},      {10, 10},    {11, 11},    {12, 12},    {13, 413},   {14, 14},
+            {15, 15},    {16, 16},    {17, 17},    {18, 124},   {20, 20},    {21, 21},
+            {22, 22},    {23, 23},    {24, 24},    {25, 25},    {26, 26},    {27, 506},
+            {28, 28},    {29, 29},    {30, 30},    {31, 31},    {32, 345},   {33, 33},
+            {34, 34},    {35, 235},   {36, 36},    {37, 237},   {38, 38},    {39, 39},
+            {40, 640},   {41, 41},    {42, 42},    {43, 43},    {44, 44},    {45, 45},
+            {46, 46},    {47, 47},    {49, 49},    {50, 250},   {51, 51},    {52, 52},
+            {53, 53},    {54, 254},   {55, 55},    {56, 56},    {57, 457},   {58, 458},
+            {60, 660},   {61, 661},   {63, 263},   {64, 64},    {65, 465},   {66, 115},
+            {67, 537},   {68, 268},   {73, 273},   {74, 674},   {76, 676},   {79, 479},
+            {80, 680},   {81, 681},   {82, 552},   {83, 553},   {84, 504},   {85, 483},
+            {86, 486},   {88, 688},   {89, 89},    {90, 690},   {91, 561},   {92, 492},
+            {93, 112},   {94, 494},   {95, 107},   {97, 97},    {98, 310},   {99, 699},
+            {100, 482},  {101, 85},   {102, 86},   {103, 703},  {105, 334},  {106, 506},
+            {107, 337},  {108, 708},  {111, 342},  {112, 343},  {113, 113},  {115, 715},
+            {117, 717},  {121, 1774}, {122, 522},  {123, 523},  {124, 84},   {125, 725},
+            {129, 1702}, {130, 336},  {131, 1707}, {132, 488},  {134, 1775}, {135, 1776},
+            {137, 737},  {138, 1780}, {141, 108},  {142, 109},  {143, 111},  {148, 748},
+            {151, 1404}, {152, 1413}, {154, 1468}, {155, 1469}, {156, 1470}, {158, 109},
+            {159, 109},  {160, 1432}, {161, 1448}, {162, 1457}, {163, 1458}, {165, 1459},
+            {166, 1460}, {167, 1466}, {168, 768},  {169, 116},  {175, 281},  {176, 257},
+            {177, 213},  {178, 337},  {180, 1800}, {186, 786},  {193, 793},  {195, 795},
+            {203, 795},  {70, 470},   {96, 290},   {171, 82},   {173, 284},  {174, 282},
+            {181, 1161}, {172, 772},  {69, 269},   {71, 207},   {118, 518},  {119, 519},
+            {200, 1514}, {145, 1515}, {75, 675},   {78, 478}};
+        const auto found = std::ranges::find(shared, code, &std::pair<int, int>::first);
+        return found == std::end(shared) ? dark_queen_effect::offset + code : found->second;
     }
     if (game == GoldBoxGame::death_knights_of_krynn)
     {
@@ -1156,15 +1284,20 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
     c.constitution = record.current_abilities.constitution;
     c.alignment = record.alignment;
     c.creature_type = record.type;
-    c.kin = secret ? secret_kin(record) : kit ? kit_kin(record) : kin_of(record);
-    c.traits = krynn_game(record.game) ? champions_traits(record)
-               : secret                ? secret_traits(record)
-               : kit                   ? kit_traits(record)
+    c.kin = record.game == GoldBoxGame::dark_queen_of_krynn ? kit_kin(record)
+            : secret                                        ? secret_kin(record)
+            : kit                                           ? kit_kin(record)
+                                                            : kin_of(record);
+    c.traits = record.game == GoldBoxGame::dark_queen_of_krynn ? dark_queen_traits(record)
+               : krynn_game(record.game)                       ? champions_traits(record)
+               : secret                                        ? secret_traits(record)
+               : kit                                           ? kit_traits(record)
                : record.game == GoldBoxGame::treasures_of_the_savage_frontier
                    ? treasures_traits(record)
                    : 0;
-    if (record.game == GoldBoxGame::death_knights_of_krynn && l.mage > 0 &&
-        record.robe_order >= 1 && record.robe_order <= 3)
+    if ((record.game == GoldBoxGame::death_knights_of_krynn ||
+         record.game == GoldBoxGame::dark_queen_of_krynn) &&
+        l.mage > 0 && record.robe_order >= 1 && record.robe_order <= 3)
     {
         c.effects.push_back(
             {death_knights_effect::casting_moon, 0, 4 * record.robe_order + 2, false});
@@ -1236,7 +1369,7 @@ AmmunitionTypes ammunition_types(GoldBoxGame game) noexcept
     }
     // Unlimited Adventures' are Secret's, and its quarrels of slaying (its
     // charview.c, ready_check; hero.c, recalc_stats).
-    if (game == GoldBoxGame::unlimited_adventures)
+    if (game == GoldBoxGame::unlimited_adventures || game == GoldBoxGame::dark_queen_of_krynn)
     {
         return AmmunitionTypes{30, 12, 0x4A};
     }
@@ -1246,6 +1379,10 @@ AmmunitionTypes ammunition_types(GoldBoxGame game) noexcept
 
 bool elf_weapon(std::uint8_t type, GoldBoxGame game) noexcept
 {
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        return type == 18 || type == 19 || (type >= 21 && type <= 27);
+    }
     if (game == GoldBoxGame::secret_of_the_silver_blades)
     {
         return type == 18 || type == 19 || (type >= 22 && type <= 26);
@@ -1273,8 +1410,15 @@ bool lasting_condition(const Effect &effect, GoldBoxGame game) noexcept
                          (code == rot || code == kit_rotting || code == charisma_rotted);
     const bool helpless_for_good = code == helpless && effect.minutes == 0;
     // The 256-color games let a protection scroll be read before combat.
-    const bool breath_scroll = vga_engine(game) && code == 273;
-    return pool_rot || kit_rot || helpless_for_good || breath_scroll ||
+    const bool breath_scroll =
+        (vga_engine(game) || game == GoldBoxGame::dark_queen_of_krynn) && code == 273;
+    const bool native_venom =
+        game == GoldBoxGame::dark_queen_of_krynn &&
+        (code == dark_queen_effect::venomed || code == dark_queen_effect::rot_recovery ||
+         code == kit_rotting || code == charisma_rotted ||
+         code == dark_queen_effect::spore_infection || code == dark_queen_effect::green_fire ||
+         code == 269 || code == 113 || code == 250 || code == 254 || code == 343);
+    return pool_rot || kit_rot || helpless_for_good || breath_scroll || native_venom ||
            std::ranges::find(lasting, code) != lasting.end();
 }
 
@@ -1409,6 +1553,7 @@ std::optional<ReadyRefusal> readying_refusal(const CarriedItem &chosen,
 namespace
 {
 constexpr std::string_view fight_record_format = "FIGHTRECORD1";
+constexpr std::string_view native_fight_record_format = "FIGHTRECORD2";
 } // namespace
 
 std::string encode_fight_record(const por::CharacterRecord &r)
@@ -1439,12 +1584,17 @@ std::string encode_fight_record(const por::CharacterRecord &r)
     {
         add(coins);
     }
+    const bool native = r.game == GoldBoxGame::dark_queen_of_krynn;
+    if (native)
+    {
+        add(r.deity, r.knight_order, r.robe_order);
+    }
     add(r.name.size());
     for (const char c : r.name)
     {
         add(static_cast<unsigned char>(c));
     }
-    std::string text(fight_record_format);
+    std::string text(native ? native_fight_record_format : fight_record_format);
     for (const int number : numbers)
     {
         text += ' ' + std::to_string(number);
@@ -1454,7 +1604,8 @@ std::string encode_fight_record(const por::CharacterRecord &r)
 
 std::optional<por::CharacterRecord> decode_fight_record(std::string_view data)
 {
-    if (!data.starts_with(fight_record_format))
+    const bool native = data.starts_with(native_fight_record_format);
+    if (!native && !data.starts_with(fight_record_format))
     {
         return std::nullopt;
     }
@@ -1464,7 +1615,7 @@ std::optional<por::CharacterRecord> decode_fight_record(std::string_view data)
     {
         numbers.push_back(number);
     }
-    constexpr std::size_t fixed = 12 + 8 + 5 + 8 + 13 + 7 + 1;
+    const std::size_t fixed = 12 + 8 + 5 + 8 + 13 + 7 + 1 + (native ? 3 : 0);
     if (!in.eof() || numbers.size() < fixed ||
         numbers.size() != fixed + static_cast<std::size_t>(std::max(numbers[fixed - 1], 0)))
     {
@@ -1517,6 +1668,18 @@ std::optional<por::CharacterRecord> decode_fight_record(std::string_view data)
     for (auto &coins : r.wealth)
     {
         take(coins);
+    }
+    if (native)
+    {
+        for (auto *order : {&r.deity, &r.knight_order, &r.robe_order})
+        {
+            take(*order);
+        }
+        if (r.game != GoldBoxGame::dark_queen_of_krynn || r.deity > 7 || r.knight_order > 3 ||
+            r.robe_order > 3)
+        {
+            return std::nullopt;
+        }
     }
     ++next;
     while (next != numbers.end())

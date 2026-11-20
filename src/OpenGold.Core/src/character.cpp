@@ -56,6 +56,24 @@ void Character::replay(const rules::RulesModule &rules,
     const auto at_level = [&]
     {
         const auto level = static_cast<unsigned>(sheet_.level);
+
+        // Original scroll grants only add to the spellbook. A later rest
+        // at this same level may already prepare that spell, while these
+        // older journals keep spell choices and hall grants in separate
+        // lists. Make the spells available before validating the choices;
+        // record the grants in their original order in the hall loop below.
+        if (rules.plays_original_records())
+        {
+            for (auto at = next_hall; at < hall_training.size() && hall_training[at].level == level;
+                 ++at)
+            {
+                if (hall_training[at].grant.starts_with("boon:scroll:"))
+                {
+                    rules.train_at_hall(sheet_, hall_training[at].grant);
+                }
+            }
+        }
+
         for (; next_spells < spell_edits.size() && spell_edits[next_spells].level == level;
              ++next_spells)
         {

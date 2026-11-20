@@ -22,7 +22,22 @@ constexpr std::size_t limit = 16 * 1024 * 1024;
 // format 45, the same fields saved before characters chose original portraits:
 // it still loads, and its members on head 1 and body 1 (the default, never
 // chosen) are listed for a random original portrait.
-constexpr unsigned campaign_format = 53;
+constexpr unsigned campaign_format = 55;
+constexpr unsigned released_campaign_format = 53;
+// Only appended game 9 writes this extension; released games retain their
+// format-53 bytes, and all their supported older versions remain readable.
+constexpr unsigned native_vault_format = 54;
+// Matrix's first supported campaign payload retains its actual terminal
+// PROGRAM 2 receipt. Earlier Matrix party-only saves remain readable.
+constexpr unsigned matrix_terminal_format = 55;
+
+constexpr bool supported_game_format(unsigned format, GoldBoxGame game)
+{
+    return format < native_vault_format ||
+           (format == native_vault_format && game == GoldBoxGame::dark_queen_of_krynn) ||
+           (format == matrix_terminal_format && game == GoldBoxGame::matrix_cubed);
+}
+
 constexpr unsigned unchosen_portraits_format = 45;
 // The first format with a creation draft's rules data (the original rules'
 // rolls); earlier saves are all SRD, whose drafts have none.
@@ -299,8 +314,7 @@ template <bool Reading> struct SaveCodec
     void field(Visited<rules::AdvancementChoice> v)
     {
         fields(v.character_class, v.feat, v.abilities, v.spells, v.training, v.spell_learning,
-               v.fighting_style,
-               v.cantrip_swap, v.spell_swap, v.option_swap, v.discovery_swap);
+               v.fighting_style, v.cantrip_swap, v.spell_swap, v.option_swap, v.discovery_swap);
         if (format >= advancement_rules_data_format)
         {
             field(v.rules_data);
@@ -463,8 +477,8 @@ template <bool Reading> struct SaveCodec
     void field(Visited<PartyState> v)
     {
         fields(v.slots, v.next_id, v.selected_slot, v.leader, v.quick_magic, v.wealth,
-               v.time_minutes, v.detect_magic_until, v.friends_member, v.friends_bonus, v.friends_until,
-               v.find_traps_until, v.random_state.value, v.claimed_rewards);
+               v.time_minutes, v.detect_magic_until, v.friends_member, v.friends_bonus,
+               v.friends_until, v.find_traps_until, v.random_state.value, v.claimed_rewards);
         std::map<MemberId, unsigned> rest_offsets;
         if constexpr (!reading)
         {
@@ -499,10 +513,11 @@ template <bool Reading> struct SaveCodec
                 std::vector<TrainingChoiceEdit> training;
                 std::vector<HallTraining> hall;
                 fields(history, edits, training, hall);
-                // A history entry may not be a level (the original rules'
-                // drain and raising), and a character may start above level 1
-                // (Curse's): the replayed level is checked below instead.
-                require(history.size() <= 1000, "Too long a saved advancement history");
+                // History includes original-rule calendar changes as well
+                // as levels, drains and raising. Long Krynn campaigns can
+                // legitimately exceed a thousand entries. The collection
+                // codec already bounds this to 65,536, and replay below
+                // checks the resulting character level.
                 // Entries keep the order they were made in, not of their levels:
                 // a level drain (the original rules') may bring a character back
                 // to a level it has left (Character::replay).
@@ -651,21 +666,57 @@ template <bool Reading> struct SaveCodec
                 "Save only during idle town exploration");
         fields(v.current_script_, v.selected_character_, v.next_ticket_, v.rest_checks_,
                v.travel_mode_, v.snapshot_.searching);
+        if (v.game() == GoldBoxGame::dark_queen_of_krynn)
+        {
+            field(v.dark_queen_combat_set_);
+            require(v.dark_queen_combat_set_ <= 255, "Invalid native combat tile set");
+            if (format >= native_vault_format)
+            {
+                fields(v.dark_queen_vault_money_, v.dark_queen_vault_items_);
+                require(v.dark_queen_vault_items_.size() <= 50, "Native vault is over capacity");
+            }
+            else
+            {
+                require(reading || (v.dark_queen_vault_items_.empty() &&
+                                    std::ranges::all_of(v.dark_queen_vault_money_,
+                                                        [](unsigned amount)
+                                                        {
+                                                            return amount == 0;
+                                                        })),
+                        "An older native save cannot record a vault");
+                if constexpr (reading)
+                {
+                    v.dark_queen_vault_money_ = {};
+                    v.dark_queen_vault_items_.clear();
+                }
+            }
+        }
         // On the wilderness map only in a wilderness script, with its data.
         require(v.travel_mode_ >= 1 && v.travel_mode_ <= 4 &&
-                    (v.travel_mode_ == 1 || (v.current_script_ == v.travel_mode_ + 23 &&
-                                             v.town_ && v.town_->overland)),
+                    (v.travel_mode_ == 1 ||
+                     (v.current_script_ == v.travel_mode_ + 23 && v.town_ && v.town_->overland)),
                 "Unsupported saved travel mode");
         unsigned area = v.current_area_;
         field(area);
+        // Only the new game has larger maps. Keep every released game's
+        // original 256-character encoding byte for byte in format 53.
+        const std::size_t knowledge_size =
+            v.game() == GoldBoxGame::dark_queen_of_krynn
+                ? por::GeoMap::max_cells
+                : por::GeoMap::default_width * por::GeoMap::default_height;
+        const auto stored_knowledge = [knowledge_size](const por::MapKnowledge &cells)
+        {
+            const auto bits = cells.to_string();
+            return bits.substr(bits.size() - knowledge_size);
+        };
         std::map<unsigned, std::string> explored;
         if constexpr (!reading)
         {
             for (const auto &[id, cells] : v.visited_areas_)
             {
-                explored[id] = cells.to_string();
+                explored[id] = stored_knowledge(cells);
             }
-            explored[v.current_area_] = v.snapshot_.visited.to_string();
+            explored[v.current_area_] = stored_knowledge(v.snapshot_.visited);
         }
         field(explored);
         if constexpr (reading)
@@ -699,10 +750,11 @@ template <bool Reading> struct SaveCodec
             v.visited_areas_.clear();
             for (const auto &[id, cells] : explored)
             {
-                require((id == 0 || v.town_->districts.contains(id)) && cells.size() == 256 &&
+                require((id == 0 || v.town_->districts.contains(id)) &&
+                            cells.size() == knowledge_size &&
                             cells.find_first_not_of("01") == std::string::npos,
                         "Invalid saved district exploration");
-                v.visited_areas_[id] = std::bitset<256>(cells);
+                v.visited_areas_[id] = por::MapKnowledge(cells);
             }
         }
         // Word of Recall's sanctuary: a town script and a square (LEVELS-3).
@@ -715,8 +767,23 @@ template <bool Reading> struct SaveCodec
         fields(sanctuary, sanctuary_script, sanctuary_x, sanctuary_y, sanctuary_facing);
         if constexpr (reading)
         {
+            unsigned sanctuary_width = por::GeoMap::default_width,
+                     sanctuary_height = por::GeoMap::default_height;
+            if (v.game() == GoldBoxGame::dark_queen_of_krynn)
+            {
+                for (const auto &[id, district] : v.town_->districts)
+                {
+                    if (district->loaded_by(sanctuary_script) && district->map)
+                    {
+                        sanctuary_width = district->map->width;
+                        sanctuary_height = district->map->height;
+                        break;
+                    }
+                }
+            }
             require(!sanctuary || (v.town_->programs.contains(sanctuary_script) &&
-                                   sanctuary_x < 16 && sanctuary_y < 16 && sanctuary_facing < 4),
+                                   sanctuary_x < sanctuary_width &&
+                                   sanctuary_y < sanctuary_height && sanctuary_facing < 4),
                     "Invalid saved sanctuary");
             v.sanctuary_.reset();
             if (sanctuary)
@@ -822,6 +889,31 @@ template <bool Reading> struct SaveCodec
             v.configure_town();
         }
         machine(v.machine_);
+        bool matrix_won = false;
+        if (v.game() == GoldBoxGame::matrix_cubed)
+        {
+            if constexpr (!reading)
+            {
+                matrix_won = v.matrix_ending_completed();
+            }
+            require(format >= matrix_terminal_format || !matrix_won,
+                    "An older campaign format cannot record a Matrix victory");
+            if (format >= matrix_terminal_format)
+            {
+                field(matrix_won);
+                if (matrix_won)
+                {
+                    auto terminal_pc = v.machine_.address();
+                    field(terminal_pc);
+                    if constexpr (reading)
+                    {
+                        v.machine_.pc_ = terminal_pc;
+                        require(v.matrix_ending_completed(),
+                                "Invalid Matrix terminal victory receipt");
+                    }
+                }
+            }
+        }
         if constexpr (reading)
         {
             v.combat_request_ = 0;
@@ -841,22 +933,23 @@ template <bool Reading> struct SaveCodec
         }
         auto &s = v.snapshot_;
         fields(s.dialogue, s.prompts, s.redraws, s.footsteps, s.event_runs);
-        std::string visited = s.visited.to_string();
+        std::string visited = stored_knowledge(s.visited);
         field(visited);
         if constexpr (reading)
         {
-            require(visited.size() == 256 && visited.find_first_not_of("01") == std::string::npos,
+            require(visited.size() == knowledge_size &&
+                        visited.find_first_not_of("01") == std::string::npos,
                     "Invalid visited map");
-            s.visited = std::bitset<256>(visited);
+            s.visited = por::MapKnowledge(visited);
         }
         std::map<unsigned, std::string> known;
         if constexpr (!reading)
         {
             for (const auto &[id, cells] : v.seen_areas_)
             {
-                known[id] = cells.to_string();
+                known[id] = stored_knowledge(cells);
             }
-            known[v.current_area_] = s.seen.to_string();
+            known[v.current_area_] = stored_knowledge(s.seen);
         }
         field(known);
         if constexpr (reading)
@@ -864,10 +957,11 @@ template <bool Reading> struct SaveCodec
             v.seen_areas_.clear();
             for (const auto &[id, cells] : known)
             {
-                require((id == 0 || v.town_->districts.contains(id)) && cells.size() == 256 &&
+                require((id == 0 || v.town_->districts.contains(id)) &&
+                            cells.size() == knowledge_size &&
                             cells.find_first_not_of("01") == std::string::npos,
                         "Invalid saved map knowledge");
-                v.seen_areas_[id] = std::bitset<256>(cells);
+                v.seen_areas_[id] = por::MapKnowledge(cells);
             }
             require(v.seen_areas_.contains(v.current_area_), "Missing current map knowledge");
             s.seen = v.seen_areas_.at(v.current_area_);
@@ -897,6 +991,7 @@ template <bool Reading> struct SaveCodec
             v.member_chosen_ = false;
             v.meeting_pose_.reset();
             v.robbed_ = false;
+            v.dark_queen_vault_visit_.reset();
             v.temple_visit_.reset();
             v.hall_visit_.reset();
             v.menu_request_ = v.delayed_request_ = v.who_request_ = v.shop_request_ =
@@ -907,6 +1002,10 @@ template <bool Reading> struct SaveCodec
             v.transition_ = v.message_only_ = false;
             v.event_stage_ = por::RolfTourSession::EventStage::none;
             v.publish_pose();
+            if (v.game() == GoldBoxGame::matrix_cubed)
+            {
+                s.game_won = matrix_won;
+            }
             v.campaign_.reset();
         }
     }
@@ -933,13 +1032,17 @@ static_assert(!encodes_const_campaign<SaveReader>, "Only the writer may visit co
 std::string encode_campaign(const CampaignParty &party, const por::RolfTourSession *town,
                             std::string_view assets, GoldBoxGame game, const DesignSave *design)
 {
-    return encode_campaign_in_format(party, town, assets, campaign_format, game, design);
+    const auto format = game == GoldBoxGame::matrix_cubed          ? matrix_terminal_format
+                        : game == GoldBoxGame::dark_queen_of_krynn ? native_vault_format
+                                                                   : released_campaign_format;
+    return encode_campaign_in_format(party, town, assets, format, game, design);
 }
 
 std::string encode_campaign_in_format(const CampaignParty &party, const por::RolfTourSession *town,
                                       std::string_view assets, unsigned format, GoldBoxGame game,
                                       const DesignSave *design)
 {
+    require(supported_game_format(format, game), "Unsupported campaign save version");
     const bool design_game = game == GoldBoxGame::unlimited_adventures;
     require(format >= design_format || !design_game,
             "An older campaign format cannot record a design");
@@ -1122,6 +1225,7 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
         const auto game = game_numbered(game_number);
         require(game.has_value(), "Unknown campaign game");
         result.game = *game;
+        require(supported_game_format(version, result.game), "Unsupported campaign save version");
     }
     std::string setting;
     if (version >= rules_setting_format)
@@ -1184,6 +1288,7 @@ CampaignRules saved_campaign_rules(std::string_view bytes)
         const auto game = game_numbered(game_number);
         require(game.has_value(), "Unknown campaign game");
         saved.game = *game;
+        require(supported_game_format(version, saved.game), "Unsupported campaign save version");
     }
     if (version >= rules_setting_format)
     {
@@ -1220,6 +1325,27 @@ std::string read_campaign_file(const std::filesystem::path &path)
 
 std::string campaign_asset_identity(const std::filesystem::path &directory)
 {
+    const ua::DesignFiles native(directory, directory);
+    if (native.file_bytes("DQK.EXE"))
+    {
+        std::ostringstream out;
+        for (const char *name :
+             {"DQK.EXE",    "ITEMS.DAT", "ITEM.DAT", "ECL.GLB",     "GEO.GLB",     "MONCHA.GLB",
+              "PICA.TLB",   "PICB.TLB",  "PICC.TLB", "BIGPIC.TLB",  "BACK.TLB",    "SPRIT.TLB",
+              "8X8DB.TLB",  "8X8DC.TLB", "CPIC.TLB", "DUNGCOM.TLB", "WILDCOM.TLB", "COMSPR.TLB",
+              "ALWAYS.TLB", "FINAL.TLB", "GEN.TLB",  "CBODY.TLB",   "GAME.FON"})
+        {
+            const auto bytes = native.file_bytes(name);
+            if (!bytes)
+            {
+                throw std::runtime_error(std::string{"Missing Dark Queen asset "} + name);
+            }
+            const std::string_view content{reinterpret_cast<const char *>(bytes->data()),
+                                           bytes->size()};
+            out << "DQK:" << name << ':' << fingerprint(content) << ';';
+        }
+        return out.str();
+    }
     // Unlimited Adventures' kit has no DAX archives: its saves hold the
     // kit's item types and items (docs/games/ua.md, Saving and loading a game).
     if (ua::is_kit_folder(directory))

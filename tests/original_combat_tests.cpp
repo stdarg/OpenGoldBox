@@ -183,6 +183,18 @@ void a_combatant_survives_its_encoding()
     check(original::Combatant::decode(kobold.encode()) == kobold,
           "A combatant's profile round-trips");
     check(!original::Combatant::decode("combatant1 1 2"), "A short profile is refused");
+    auto native = kobold;
+    native.native_progression = original::NativeProgression{};
+    native.native_progression->race = static_cast<int>(original::Race::krynn_human);
+    native.native_progression->wisdom = 12;
+    native.native_progression->experience = 12345;
+    native.native_progression->drains.push_back({2, 8, 6, 5000, false, 5, 12345, 40});
+    check(native.encode().starts_with("combatant15 ") &&
+              original::Combatant::decode(native.encode()) == native &&
+              kobold.encode().starts_with("combatant14 ") &&
+              !original::Combatant::decode(native.encode().substr(0, native.encode().size() - 3)),
+          "Native receipts round-trip without changing legacy profile14 "
+          "encoding");
     const auto module = original::rules_module();
     const auto strong =
         original::Combatant::decode(module->character_profile(fighter(18, 9), {}).data);
@@ -1480,6 +1492,67 @@ original::Combatant left_by_fight(const rules::CombatSession &session, std::stri
 // A wight's touch drains a level, no save: the Hit Points of a level, and the
 // class whose level took the most experience, its THAC0 and saves following;
 // below level 2 the victim is dead forever (effhndlr.pas, EffDrainOne).
+void native_drains_keep_ordered_exact_receipts()
+{
+    using original::ClassSlot;
+    constexpr auto native = GoldBoxGame::dark_queen_of_krynn;
+    auto person = victim(50);
+    person.class_levels = {0, 0, 8, 0, 0, 8, 8, 0};
+    person.level = 8;
+    person.constitution = 16;
+    person.intelligence = 18;
+    person.native_progression = original::NativeProgression{};
+    auto &progression = *person.native_progression;
+    progression.profession = static_cast<int>(original::Profession::fighter_magic_user_thief);
+    progression.race = static_cast<int>(original::Race::silvanesti_elf);
+    progression.robe_order = 1;
+    progression.wisdom = 12;
+    progression.rolled_hit_points = 40;
+    progression.experience = 300000;
+    const auto drain = [&](bool two)
+    {
+        return attack_until(
+            monster({2, 1, 1, 0}, {0, 0, 0, 0}, {{two ? 86 : 85, 0, 0, false}}), person,
+            [two](const rules::CombatSession &fight)
+            {
+                return logged(fight, two ? "{name} is drained 2 levels."
+                                         : "{name} is drained a level.") > 0;
+            },
+            47, native);
+    };
+    auto one = drain(false);
+    const auto after = left_by_fight(*one.session, "Victim");
+    check(after.native_progression && after.native_progression->drains.size() == 1,
+          "A real native drain retains one exact receipt");
+    const auto &receipt = after.native_progression->drains.front();
+    const unsigned lower =
+        static_cast<unsigned>(original::experience_for_level(ClassSlot::thief, 7, native).value());
+    const unsigned upper =
+        static_cast<unsigned>(original::experience_for_level(ClassSlot::thief, 8, native).value());
+    check(receipt.slot == static_cast<unsigned>(ClassSlot::thief) && receipt.before_level == 8 &&
+              after.class_levels[6] == 7 && after.class_levels[2] == 8 &&
+              after.class_levels[5] == 8 && receipt.experience == lower + (upper - lower) / 2 &&
+              receipt.previous_experience == 300000 &&
+              after.native_progression->rolled_hit_points == 40 - receipt.rolled_hit_points &&
+              after.max_hit_points == 50 - receipt.hit_points &&
+              view_of(one.session->snapshot(), "Victim").hit_points == after.max_hit_points - 1,
+          "Native equal-level drain chooses the smaller threshold, preserves "
+          "damage and exact raw HP");
+    const auto saved = one.session->save();
+    check(one.module->restore(saved)->save() == saved,
+          "A native combat checkpoint retains its exact drain receipt byte for "
+          "byte");
+    auto two = drain(true);
+    const auto twice = left_by_fight(*two.session, "Victim");
+    check(twice.native_progression && twice.native_progression->drains.size() == 2 &&
+              twice.native_progression->drains[0].slot == static_cast<unsigned>(ClassSlot::thief) &&
+              twice.native_progression->drains[1].slot ==
+                  static_cast<unsigned>(ClassSlot::fighter) &&
+              twice.native_progression->previous_experience == 300000,
+          "A two-level native drain rolls and retains each class loss in its "
+          "actual order");
+}
+
 void a_wight_drains_levels()
 {
     const auto wight = monster({2, 1, 1, 0}, {0, 0, 0, 0}, {{85, 0, 0, false}});
@@ -2457,6 +2530,50 @@ void haste_doubles_attacks()
 // Mirror images take blows (effhndlr.pas, EffMirrorImage).
 void mirror_images_take_blows()
 {
+    por::CharacterRecord native;
+    native.game = GoldBoxGame::dark_queen_of_krynn;
+    por::EffectRecord packed;
+    packed.code = 28;
+    packed.duration_raw = 10;
+    packed.data = 4 * 32 + 7;
+    const auto decoded = original::combatant_from_record(native, {}, std::span{&packed, 1});
+    const auto images = std::ranges::find(decoded.effects, 28, &original::Effect::code);
+    check(images != decoded.effects.end() && images->strength == 4 * 32 + 7,
+          "Dark Queen's Mirror Image retains its four images and level-seven caster");
+    auto native_mage = victim(200);
+    native_mage.effects = {{28, 100, 4 * 32 + 7, false}};
+    auto native_fight = attack_until(
+        monster({2, 1, 1, 0}, {0, 0, 0, 0}, {}), native_mage,
+        [](const rules::CombatSession &session)
+        {
+            return logged(session, "{name} loses an image.") > 0;
+        },
+        47, GoldBoxGame::dark_queen_of_krynn);
+    const auto remaining = left_by_fight(*native_fight.session, "Victim").effects;
+    const auto native_images = std::ranges::find(remaining, 28, &original::Effect::code);
+    check(native_images != remaining.end() && native_images->strength == 3 * 32 + 7,
+          "Losing one native image leaves three images and the same caster level");
+    const auto saved_native = native_fight.session->save();
+    check(native_fight.module->restore(saved_native)->save() == saved_native,
+          "A combat save preserves both native mirror-image fields");
+    auto native_cast = arrange(
+        {{"Mage", rules::Side::party, {0, 3}, caster(original::ClassSlot::magic_user, 17, {32})},
+         {"Foe", rules::Side::opposition, {7, 7}, creature(100)}},
+        47, {}, 100, GoldBoxGame::dark_queen_of_krynn);
+    until_turn_of(*native_cast.session, "Mage");
+    check(native_cast.session->submit(*cast_command(*native_cast.session, 32)),
+          "The native mage casts Mirror Image");
+    all_quick(*native_cast.session,
+              [&]
+              {
+                  const auto effects = left_by_fight(*native_cast.session, "Mage").effects;
+                  return std::ranges::find(effects, 28, &original::Effect::code) != effects.end();
+              });
+    const auto cast_effects = left_by_fight(*native_cast.session, "Mage").effects;
+    const auto cast_images = std::ranges::find(cast_effects, 28, &original::Effect::code);
+    check(cast_images != cast_effects.end() && (cast_images->strength & 31) == 17 &&
+              (cast_images->strength >> 5) >= 1 && (cast_images->strength >> 5) <= 4,
+          "Casting native Mirror Image packs its one to four images above caster level seventeen");
     auto mage = victim(50);
     mage.effects = {{28, 10, 4, false}};
     auto fight = attack_until(monster({4, 1, 1, 0}, {0, 0, 0, 0}, {}), mage,
@@ -2480,6 +2597,86 @@ void silence_stops_casting()
                 109);
     until_turn_of(*fight.session, "Mage");
     check(!cast_command(*fight.session, 15), "Beside the silenced, the mage cannot cast");
+}
+
+// Native case15 targets one creature or the occupants around empty ground
+// (cbaction.c, combat_spell_targets); each occupant still saves and resists.
+void native_silence_can_be_aimed_at_empty_ground()
+{
+    using original::ClassSlot;
+    auto priest = caster(ClassSlot::cleric, 6, {25});
+    priest.initiative_bonus = 100;
+    auto carrier = caster(ClassSlot::magic_user, 1, {15});
+    carrier.saving_throws.fill(100);
+    auto saved = carrier;
+    saved.saving_throws.fill(-20);
+    auto resistant = carrier;
+    resistant.magic_resistance = 200;
+    const std::vector<Placed> placed{{"Priest", rules::Side::party, {1, 1}, priest},
+                                     {"Carrier A", rules::Side::party, {3, 3}, carrier},
+                                     {"Carrier B", rules::Side::party, {4, 4}, carrier},
+                                     {"Saved", rules::Side::party, {4, 2}, saved},
+                                     {"Resistant", rules::Side::opposition, {5, 3}, resistant},
+                                     {"Outside", rules::Side::party, {6, 6}, carrier}};
+    auto fight = arrange(placed, 123, {}, 100, GoldBoxGame::dark_queen_of_krynn);
+    auto &session = *fight.session;
+    until_turn_of(session, "Priest");
+    check(session.submit(*cast_command(session, 25)), "The Native cleric starts actual Silence");
+    until_turn_of(session, "Priest");
+    const auto ground = aim_at_cell(session, {4, 3});
+    check(ground && ground->target == 0,
+          "Native Silence offers empty ground separately from a creature target");
+    check(aim_at(session, "Carrier A").has_value(),
+          "Native Silence keeps its ordinary single-creature target");
+    const auto checkpoint = session.save();
+    auto occupied_ground = *ground;
+    occupied_ground.destination = {3, 3};
+    check(
+        !session.submit(occupied_ground) && session.save() == checkpoint,
+        "A forged empty-ground target on an occupied square is refused without changing the checkpoint");
+    bool malformed_refused = false;
+    try
+    {
+        (void)fight.module->restore(checkpoint + " malformed");
+    }
+    catch (const std::runtime_error &)
+    {
+        malformed_refused = true;
+    }
+    check(malformed_refused, "A malformed pending-ground checkpoint remains refused");
+    auto restored = fight.module->restore(checkpoint);
+    check(restored->save() == checkpoint && aim_at_cell(*restored, {4, 3}).has_value(),
+          "An ordinary checkpoint preserves Native ground aiming without new save fields");
+    check(session.submit(*ground), "The cleric aims actual Silence at empty ground");
+    check(restored->submit(*aim_at_cell(*restored, {4, 3})) && restored->save() == session.save(),
+          "A restored Native ground spell continues with identical dice and effects");
+    const auto has_silence = [&](std::string_view name)
+    {
+        const auto state = session.snapshot();
+        const auto numbers = original::Combatant::decode(view_of(state, name).persistent.resources);
+        return numbers && std::ranges::any_of(numbers->effects,
+                                              [](const auto &effect)
+                                              {
+                                                  return effect.code == 21;
+                                              });
+    };
+    check(has_silence("Carrier A") && has_silence("Carrier B") && !has_silence("Saved") &&
+              !has_silence("Resistant") && !has_silence("Outside"),
+          "Native ground Silence preserves saves/MR/radius: A=" +
+              std::to_string(has_silence("Carrier A")) +
+              " B=" + std::to_string(has_silence("Carrier B")) +
+              " saved=" + std::to_string(has_silence("Saved")) +
+              " resistant=" + std::to_string(has_silence("Resistant")) +
+              " outside=" + std::to_string(has_silence("Outside")));
+    until_turn_of(session, "Carrier A");
+    check(!cast_command(session, 15), "A real recipient's Silence aura blocks its casting");
+
+    auto other = arrange(placed, 123, {}, 100, GoldBoxGame::pool_of_radiance);
+    until_turn_of(*other.session, "Priest");
+    other.session->submit(*cast_command(*other.session, 25));
+    until_turn_of(*other.session, "Priest");
+    check(!aim_at_cell(*other.session, {4, 3}) && aim_at(*other.session, "Carrier A"),
+          "Other released games retain their established creature-only targeting");
 }
 
 // Protection from Normal Missiles turns away a mundane arrow from afar
@@ -2906,6 +3103,303 @@ void each_game_storms_by_its_own_element()
     }
 }
 
+void native_stinking_cloud_uses_its_actual_dispatch_context()
+{
+    bool affected = false, coughed = false;
+    for (unsigned seed = 31; seed < 39; ++seed)
+    {
+        auto target = victim(500);
+        target.magic_resistance = 60;
+        target.saving_throws.fill(-20);
+        auto mage = caster(original::ClassSlot::magic_user, 20, {34});
+        // Observe initial placement before the next round decrements the
+        // cloud's new effects; their subsequent clock is tested separately.
+        mage.initiative_bonus = 30;
+        auto fight = arrange({{"Mage", rules::Side::party, {2, 3}, mage},
+                              {"Target", rules::Side::opposition, {5, 3}, target}},
+                             seed, {}, 100, GoldBoxGame::dark_queen_of_krynn);
+        cast_now(*fight.session, "Mage", 34,
+                 [&]
+                 {
+                     return aim_at_cell(*fight.session, {5, 3});
+                 });
+        const auto left = left_by_fight(*fight.session, "Target");
+        for (const auto &effect : left.effects)
+        {
+            if (effect.code == 30 || effect.code == 31)
+            {
+                affected = true;
+                check(effect.minutes >= 2 && effect.minutes <= 5,
+                      "Native cloud coughing and nausea both last one d4 plus one rounds");
+                coughed = coughed || effect.code == 30;
+            }
+        }
+    }
+    check(
+        affected && coughed,
+        "An actual level-twenty native cloud can overcome resistance and makes saved targets cough");
+}
+
+void native_free_action_counters_its_shipped_spells()
+{
+    constexpr auto game = GoldBoxGame::dark_queen_of_krynn;
+    for (const int number : {23, 49, 194, 55, 186})
+    {
+        for (const bool ring : {false, true})
+        {
+            auto target = victim(500);
+            target.saving_throws.fill(100);
+            if (ring)
+            {
+                target.effects.push_back({2150, 0, 255, false});
+            }
+            const auto slot =
+                number == 23 ? original::ClassSlot::cleric : original::ClassSlot::magic_user;
+            auto fight =
+                arrange({{"Caster", rules::Side::party, {3, 3}, caster(slot, 20, {number})},
+                         {"Target", rules::Side::opposition, {4, 3}, target}},
+                        53, {}, 100, game);
+            try
+            {
+                cast_now(*fight.session, "Caster", number,
+                         [&]
+                         {
+                             return number == 55 ? aim_at_cell(*fight.session, {4, 3})
+                                                 : aim_at(*fight.session, "Target");
+                         });
+            }
+            catch (const std::exception &error)
+            {
+                throw std::runtime_error("Native spell " + std::to_string(number) +
+                                         (ring ? " with ring: " : " without ring: ") +
+                                         error.what());
+            }
+            if (const auto done = offered(*fight.session, "aim_done"))
+            {
+                check(fight.session->submit(*done), "Confirm the native spell's selected targets");
+            }
+            const auto left = left_by_fight(*fight.session, "Target");
+            const int effect = number == 55 ? 42 : number == 186 ? 506 : 52;
+            check(std::ranges::any_of(left.effects,
+                                      [effect](const auto &entry)
+                                      {
+                                          return entry.code == effect;
+                                      }) != ring,
+                  "Native Free Action counters Hold, Slow and Fumble: " + std::to_string(number) +
+                      (ring ? " with ring" : " without ring"));
+        }
+    }
+    auto slowed = victim(500);
+    slowed.effects.push_back({42, 100, 12, false});
+    auto freed = slowed;
+    freed.effects.push_back({2150, 0, 255, false});
+    auto fight = arrange({{"Slowed", rules::Side::party, {1, 3}, slowed},
+                          {"Freed", rules::Side::opposition, {6, 3}, freed}},
+                         53, {}, 100, game);
+    const auto state = fight.session->snapshot();
+    check(view_of(state, "Freed").movement_feet == 2 * view_of(state, "Slowed").movement_feet,
+          "The native ring suppresses an existing Slow effect's movement penalty");
+}
+
+void native_enchanted_auraks_keep_their_native_damage()
+{
+    const auto damage = [](bool enchanted, bool bolt)
+    {
+        auto aurak = victim(500);
+        aurak.effects.push_back({1459, 0, 255, false});
+        aurak.effects.push_back({bolt ? 1466 : 1460, bolt ? 0 : 1, 255, !bolt});
+        if (enchanted)
+        {
+            aurak.effects.push_back({2191, 0, 255, false});
+        }
+        auto fight = arrange({{"Hero", rules::Side::party, {3, 3}, victim(500)},
+                              {"Aurak", rules::Side::opposition, {4, 3}, aurak}},
+                             37, {}, 100, GoldBoxGame::dark_queen_of_krynn);
+        play_until(
+            *fight.session,
+            [&](const std::string &)
+            {
+                return order(*fight.session, "end");
+            },
+            [&]
+            {
+                return view_of(fight.session->snapshot(), "Hero").hit_points < 500;
+            });
+        for (const auto &entry : fight.session->snapshot().log_entries)
+        {
+            if (entry.message.source == "{name} takes {damage}." &&
+                entry.message.arguments.front().value == "Hero")
+            {
+                return std::stoi(entry.message.arguments[1].value);
+            }
+        }
+        return 0;
+    };
+    const int ordinary_bolt = damage(false, true), enchanted_bolt = damage(true, true);
+    check(ordinary_bolt >= 2 && ordinary_bolt <= 12 && enchanted_bolt > 12 && enchanted_bolt <= 64,
+          "Native ordinary and enchanted Aurak bolt damage: " + std::to_string(ordinary_bolt) +
+              ", " + std::to_string(enchanted_bolt));
+    const int ordinary_blast = damage(false, false), enchanted_blast = damage(true, false);
+    check(ordinary_blast >= 3 && ordinary_blast <= 18 && enchanted_blast > 18 &&
+              enchanted_blast <= 128,
+          "Native ordinary and enchanted Aurak explosion damage: " +
+              std::to_string(ordinary_blast) + ", " + std::to_string(enchanted_blast));
+
+    auto aurak = victim(500);
+    aurak.effects.push_back({1458, 1, 255, true});
+    aurak.effects.push_back({1404, 0, 0, false});
+    auto fight = arrange({{"Hero", rules::Side::party, {3, 3}, victim(500)},
+                          {"Aurak", rules::Side::opposition, {4, 3}, aurak}},
+                         37, {}, 100, GoldBoxGame::dark_queen_of_krynn);
+    play_until(
+        *fight.session,
+        [&](const std::string &)
+        {
+            return order(*fight.session, "end");
+        },
+        [&]
+        {
+            const auto numbers = original::Combatant::decode(
+                view_of(fight.session->snapshot(), "Aurak").persistent.resources);
+            return numbers && std::ranges::any_of(numbers->effects,
+                                                  [](const auto &effect)
+                                                  {
+                                                      return effect.code == 1459;
+                                                  });
+        });
+    const auto numbers = original::Combatant::decode(
+        view_of(fight.session->snapshot(), "Aurak").persistent.resources);
+    check(
+        numbers &&
+            std::ranges::any_of(numbers->effects,
+                                [](const auto &effect)
+                                {
+                                    return effect.code == 1459;
+                                }) &&
+            std::ranges::none_of(numbers->effects,
+                                 [](const auto &effect)
+                                 {
+                                     return effect.code == 1466;
+                                 }),
+        "A native Aurak whose frenzy expires reaches its final form without the slain form's zap");
+    check(numbers && std::ranges::none_of(numbers->effects,
+                                          [](const auto &effect)
+                                          {
+                                              return effect.code == 1404;
+                                          }),
+          "A native Aurak's final form loses its earlier energy-bolt power");
+
+    bool image_absorbed_bolt = false;
+    for (unsigned seed = 31; seed <= 38; ++seed)
+    {
+        auto hero = victim(500);
+        hero.effects.push_back({28, 100, (3 << 5) | 12, false});
+        auto bolt_aurak = victim(500);
+        bolt_aurak.movement = 0;
+        bolt_aurak.effects.push_back({1404, 0, 0, false});
+        auto bolts = arrange({{"Hero", rules::Side::party, {1, 3}, hero},
+                              {"Aurak", rules::Side::opposition, {5, 3}, bolt_aurak}},
+                             seed, {}, 100, GoldBoxGame::dark_queen_of_krynn);
+        play_until(
+            *bolts.session,
+            [&](const std::string &)
+            {
+                return order(*bolts.session, "end");
+            },
+            [&]
+            {
+                return logged(*bolts.session, "{name} fires an energy bolt.") > 0;
+            });
+        image_absorbed_bolt =
+            image_absorbed_bolt || logged(*bolts.session, "{name} loses an image.") > 0;
+    }
+    check(image_absorbed_bolt,
+          "Native energy bolts strike mirror images as individual targeted hits");
+
+    // Native effects.c excludes all three later Aurak forms from the
+    // explosion's stun, independently of whether its damage gets through.
+    // Native raw 152 maps to the shared madness marker 1413; raw 160 and
+    // 166 map to the shared explosion and zap markers 1460 and 1466.
+    for (const int phase : {1413, 1460, 1466})
+    {
+        auto other = victim(500);
+        other.saving_throws.fill(30);
+        other.effects.push_back({phase, 999, 255, false});
+        auto exploding = victim(500);
+        exploding.effects.push_back({1459, 0, 255, false});
+        exploding.effects.push_back({1460, 1, 255, true});
+        auto blast = arrange({{"Other Aurak", rules::Side::party, {3, 3}, other},
+                              {"Exploding Aurak", rules::Side::opposition, {4, 3}, exploding}},
+                             37, {}, 100, GoldBoxGame::dark_queen_of_krynn);
+        play_until(
+            *blast.session,
+            [&](const std::string &)
+            {
+                return order(*blast.session, "end");
+            },
+            [&]
+            {
+                return logged(*blast.session, "{name} explodes.") > 0;
+            });
+        const auto survivor = original::Combatant::decode(
+            view_of(blast.session->snapshot(), "Other Aurak").persistent.resources);
+        check(survivor && std::ranges::none_of(survivor->effects,
+                                               [](const auto &effect)
+                                               {
+                                                   return effect.code == 506;
+                                               }),
+              "A native Aurak form is not stunned by another Aurak's explosion: " +
+                  std::to_string(phase));
+    }
+}
+
+void native_blasts_respect_defenses()
+{
+    const auto damage = [](int number, int resistance, bool ring, int shield = 0)
+    {
+        auto target = victim(500);
+        target.magic_resistance = resistance;
+        target.saving_throws.fill(-20);
+        if (shield)
+        {
+            target.effects.push_back({shield, 100, 15, false});
+        }
+        if (ring)
+        {
+            target.effects.push_back({661, 0, 255, false});
+        }
+        auto fight = arrange({{"Mage",
+                               rules::Side::party,
+                               {0, 3},
+                               caster(original::ClassSlot::magic_user, 11, {number})},
+                              {"Warded", rules::Side::opposition, {5, 3}, target}},
+                             287, {}, 100, GoldBoxGame::dark_queen_of_krynn);
+        cast_now(*fight.session, "Mage", number,
+                 [&]
+                 {
+                     if (number == 315)
+                     {
+                         check(fight.session->submit(order(*fight.session, "blast_delay")),
+                               "Cast the native delayed blast without a delay");
+                     }
+                     return aim_at_cell(*fight.session, {5, 3});
+                 });
+        return 500 - view_of(fight.session->snapshot(), "Warded").hit_points;
+    };
+    for (const int number : {47, 315, 324})
+    {
+        check(damage(number, 100, false) == 0,
+              "Native magic resistance also turns magical damage without an added effect");
+    }
+    for (const int number : {315, 324})
+    {
+        check(damage(number, 0, true) < damage(number, 0, false),
+              "Native fire resistance counts each delayed-blast and meteor damage die");
+        check(damage(number, 0, false, 254) == 0 && damage(number, 0, false, 250) > 0,
+              "A successful native save under cold Fire Shield negates the fire blast");
+    }
+}
+
 // Curse's effects by the fight's numbers: those that work as Pool of
 // Radiance's of the same number keep it, fumbling is helplessness, and the
 // rest move 200 up, so a dracolich's paralyzing touch (122) is not Pool of
@@ -3166,6 +3660,18 @@ void darkness_fire_shield_retaliates()
               view_of(lethal.session->snapshot(), "Victim").hit_points < 200,
           "A lethal retaliation still lets the triggering blow land");
 
+    // Native MakeAttack clears an attacker's remaining blows when its own
+    // Fire Shield retaliation kills it, including the later attack form.
+    auto native_fragile = fragile;
+    native_fragile.attacks[0] = {8, 1, 1, 4};
+    native_fragile.attacks[1] = {4, 1, 1, 10};
+    auto native_lethal =
+        attack_until(native_fragile, guarded, hit, 47, GoldBoxGame::dark_queen_of_krynn);
+    check(view_of(native_lethal.session->snapshot(), "Monster").hit_points == 0 &&
+              logged(*native_lethal.session, "{attacker} hits {name} for {damage}.", "Monster") ==
+                  1,
+          "Native lethal retaliation ends the attacker's remaining blows after its triggering hit");
+
     guarded.effects.push_back({460, 0, 0, false});
     auto turned = attack_until(blade, guarded, hit, 47, game);
     check(view_of(turned.session->snapshot(), "Victim").hit_points == 200 &&
@@ -3293,6 +3799,28 @@ void dispel_magic_strips()
     const auto left = left_by_fight(session, "Foe").effects;
     check(left == std::vector<original::Effect>{{90, 0, 255, false}},
           "Haste is dispelled, the race's own save bonus is not");
+    bool native_effect_survived = false;
+    for (std::uint64_t seed = 137; seed < 145; ++seed)
+    {
+        auto protected_foe = creature(30, 0);
+        protected_foe.effects = {{39, 100, 31, false}};
+        auto native =
+            arrange({{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 31, {46})},
+                     {"Foe", rules::Side::opposition, {5, 3}, protected_foe}},
+                    seed, {}, 100, GoldBoxGame::dark_queen_of_krynn);
+        cast_now(*native.session, "Mage", 46,
+                 [&]
+                 {
+                     return aim_at_cell(*native.session, {5, 3});
+                 });
+        const auto effects = left_by_fight(*native.session, "Foe").effects;
+        native_effect_survived =
+            native_effect_survived ||
+            std::ranges::find(effects, 39, &original::Effect::code) != effects.end();
+    }
+    check(
+        native_effect_survived,
+        "Native Dispel Magic contests a level-31 effect at equal caster level; bit four is not lost");
 }
 
 // Treasures' Dispel Magic leaves the romance's love, a kampfult's crushing, a
@@ -3444,6 +3972,29 @@ void snakes_are_charmed()
 // charges, and a scroll's spells; an item without either is not one.
 void usable_items_come_from_the_gear()
 {
+    por::ItemTemplate potion_type;
+    potion_type.worn_location = 0;
+    for (const auto [stored, canonical] : {std::pair{57, 57},
+                                           {59, 59},
+                                           {60, 60},
+                                           {61, 61},
+                                           {62, 62},
+                                           {63, original::native_elixir_youth},
+                                           {64, 64},
+                                           {65, 65},
+                                           {95, 195},
+                                           {97, 197},
+                                           {99, 199}})
+    {
+        por::ItemRecord potion;
+        potion.type = 47;
+        potion.effect_codes = {1, static_cast<std::uint8_t>(stored), 0};
+        const std::array carried{original::CarriedItem{potion, potion_type}};
+        const auto native = original::usable_items(carried, GoldBoxGame::dark_queen_of_krynn);
+        check(native.size() == 1 && native.front().spells[0] == canonical,
+              "Native item use remaps the item's power before looking up a spell: " +
+                  std::to_string(stored));
+    }
     por::ItemTemplate wand_type;
     wand_type.worn_location = 14;
     por::ItemRecord wand;
@@ -3481,6 +4032,64 @@ std::optional<rules::Command> use_command(const rules::CombatSession &session, i
 // does not stop a wand's missiles; giving up the aim keeps the charge.
 void wands_and_potions()
 {
+    // Native items dispatch their use-time power, rather than the ordinary
+    // spell that happens to share its stored byte. Exercise actual commands
+    // and consumed charges, including Youth's byte-sized command identity.
+    for (const int stored : {57, 59, 62, 63, 97, 99})
+    {
+        por::ItemTemplate type;
+        type.worn_location = 14;
+        por::ItemRecord potion;
+        potion.type = 47;
+        potion.readied_raw = 1;
+        potion.effect_codes = {1, static_cast<std::uint8_t>(stored), 0};
+        const std::array carried{original::CarriedItem{potion, type}};
+        auto drinker = creature(80);
+        drinker.hit_points = 10;
+        drinker.strength = drinker.natural_strength = 18;
+        drinker.effects.push_back({original::age_in_years, 0, 50, false});
+        drinker.items = original::usable_items(carried, GoldBoxGame::dark_queen_of_krynn);
+        auto native = arrange({{"Drinker", rules::Side::party, {0, 0}, drinker},
+                               {"Distant foe", rules::Side::opposition, {7, 7}, creature(500)}},
+                              159, {}, 100, GoldBoxGame::dark_queen_of_krynn);
+        auto &combat = *native.session;
+        until_turn_of(combat, "Drinker");
+        const auto power = original::canonical_item_power(stored, GoldBoxGame::dark_queen_of_krynn);
+        const auto use = use_command(combat, 0, power);
+        check(use && combat.submit(*use), "Use the native consumable: " + std::to_string(stored));
+        const auto after = left_by_fight(combat, "Drinker");
+        check(after.items.empty(), "The actual native use spends its only charge");
+        const auto effect = [&](int code)
+        {
+            return std::ranges::find(after.effects, code, &original::Effect::code);
+        };
+        if (stored == 57 || stored == 97)
+        {
+            check(effect(stored == 57 ? 39 : 25) != after.effects.end(),
+                  "The native potion grants Haste or Invisibility");
+        }
+        else if (stored == 59)
+        {
+            const auto frost = effect(113);
+            check(after.strength == 21 && frost != after.effects.end() && frost->minutes >= 50 &&
+                      frost->minutes <= 80 &&
+                      original::lasting_condition(*frost, GoldBoxGame::dark_queen_of_krynn),
+                  "Frost strength lasts its native 1d4 times ten plus forty minutes");
+        }
+        else if (stored == 63)
+        {
+            const auto age = effect(original::age_in_years);
+            check(age != after.effects.end() && age->strength >= 45 && age->strength <= 48,
+                  "The native elixir makes its actual user younger");
+        }
+        else
+        {
+            const int healed = view_of(combat.snapshot(), "Drinker").hit_points;
+            check(healed >= 14 && healed <= 20,
+                  "Both native healing potions heal their actual user for 2d4 plus two: " +
+                      std::to_string(stored) + " HP " + std::to_string(healed));
+        }
+    }
     auto mage = creature(30);
     mage.items = {{0, true, false, 14, true, {65, 0, 0}, 30, 0},
                   {1, true, false, 14, true, {62, 0, 0}, 1, 0}};
@@ -5570,7 +6179,7 @@ void darkness_blades_and_the_bulette_strike()
 // highest undead in sight comes first and a failure goes on to the levels
 // below; one turned leaves the field at once; the area's penalty takes off
 // the turning column (rules::Encounter::turning_tries, turning_penalty).
-void darkness_turns_undead_its_own_way()
+void later_games_turn_undead_their_own_way(GoldBoxGame game)
 {
     using original::ClassSlot;
     const auto paladin = [](int level)
@@ -5580,9 +6189,9 @@ void darkness_turns_undead_its_own_way()
         return c;
     };
     const auto turning =
-        [](const std::vector<Placed> &placed, std::uint64_t seed, int tries, int penalty = 0)
+        [game](const std::vector<Placed> &placed, std::uint64_t seed, int tries, int penalty = 0)
     {
-        return arrange(placed, seed, {}, 100, darkness_game, false, false,
+        return arrange(placed, seed, {}, 100, game, false, false,
                        [tries, penalty](rules::Encounter &encounter)
                        {
                            encounter.turning_tries = tries;
@@ -5673,6 +6282,41 @@ void darkness_turns_undead_its_own_way()
     quick.session->submit(order(*quick.session, "quick"));
     check(logged(*quick.session, "{name} turns undead.") == 1,
           "A paladin on Quick turns undead in sight");
+}
+
+void dark_queen_turning_honors_the_native_deity()
+{
+    constexpr auto game = GoldBoxGame::dark_queen_of_krynn;
+    bool turned_strongest = false;
+    for (std::uint64_t seed = 1; seed <= 40; ++seed)
+    {
+        for (const int deity : {0, 2})
+        {
+            auto fight = arrange({{"Cleric", rules::Side::party, {1, 3}, cleric(7)},
+                                  {"Greater undead", rules::Side::opposition, {5, 3}, undead(12)}},
+                                 seed, {}, 100, game, false, false,
+                                 [deity](rules::Encounter &encounter)
+                                 {
+                                     encounter.turning_tries = 1;
+                                     auto record = kobold_record();
+                                     record.game = game;
+                                     record.deity = static_cast<std::uint8_t>(deity);
+                                     encounter.participants.front().character_record =
+                                         original::encode_fight_record(record);
+                                 });
+            until_turn_of(*fight.session, "Cleric");
+            fight.session->submit(order(*fight.session, "turn"));
+            const bool turned = view_of(fight.session->snapshot(), "Greater undead").fled;
+            check(deity == 2 || !turned,
+                  "A native level-seven cleric cannot turn rank-twelve undead without the gift");
+            turned_strongest = turned_strongest || turned;
+            const auto saved = fight.session->save();
+            check(fight.module->restore(saved)->save() == saved,
+                  "Native turning attempts and deity survive an ordinary combat checkpoint");
+        }
+    }
+    check(turned_strongest,
+          "The native deity's two levels reach the higher turning band and strong undead");
 }
 
 // Pools of Darkness's AI never steps into a cloud that would harm it, with no
@@ -7257,6 +7901,469 @@ void the_kits_items_strike_as_the_kit_has_them()
 // second blow's beside it (88); 2d6 of fire with a second blow (108); and
 // its terror, for those below 6 Hit Dice that fail a
 // save against spells (100).
+void dark_queen_elemental_and_weapon_defenses()
+{
+    constexpr auto game = GoldBoxGame::dark_queen_of_krynn;
+    const auto native = [](int code)
+    {
+        return original::Effect{original::canonical_effect(code, game), 0, 255, false};
+    };
+    auto plain_blow = monster({2, 1, 1, 9}, {0, 0, 0, 0}, {});
+    plain_blow.race = 7;
+    plain_blow.striker = original::StrikingItem{0, false, 0};
+    auto shadow = victim(1000);
+    shadow.effects.push_back(native(197));
+    auto magic_blow = plain_blow;
+    magic_blow.striker->plus = 1;
+    check(first_hit(plain_blow, shadow, game) == 0 && first_hit(magic_blow, shadow, game) == 10,
+          "A native fireshadow rejects an adjacent ordinary weapon and takes a magical blow");
+
+    auto native_dragon = kobold_record();
+    native_dragon.game = game;
+    native_dragon.race = 7;
+    native_dragon.target_flags = 0x80;
+    native_dragon.creature_type_flags = 0x08;
+    const auto dragon_numbers = original::combatant_from_record(native_dragon);
+    auto dragon_target = victim(1000);
+    dragon_target.traits = dragon_numbers.traits;
+    auto lance = plain_blow;
+    lance.effects.push_back(native(200));
+    check(first_hit(lance, dragon_target, game) == 1000 &&
+              first_hit(lance, victim(1000), game) == 10,
+          "The native dragonlance uses current wielder HP only against immunity-bit-80 dragons");
+    auto wrong_dragon_bit = native_dragon;
+    wrong_dragon_bit.target_flags = 1;
+    auto giant_target = victim(1000);
+    giant_target.traits = original::combatant_from_record(wrong_dragon_bit).traits;
+    check(first_hit(lance, giant_target, game) == 10 &&
+              (dragon_numbers.traits & original::trait::ranger_foe) != 0,
+          "A native giant-quarry bit is not an earlier Krynn dragon bit");
+    auto mace = plain_blow;
+    mace.effects.push_back(native(147));
+    auto corporeal = native_dragon;
+    corporeal.creature_type_flags = 0x20;
+    auto disruption_target = victim(1000);
+    disruption_target.traits = original::combatant_from_record(corporeal).traits;
+    check(first_hit(mace, disruption_target, game) == 20,
+          "Native disruption doubles its authored type-20 quarry's weapon damage");
+    const auto blast = [&](int spell, int code, std::uint64_t seed)
+    {
+        auto defended = victim(1000);
+        defended.saving_throws.fill(100);
+        defended.effects.push_back(native(code));
+        auto plain = victim(1000);
+        plain.saving_throws.fill(100);
+        auto fight = arrange({{"Mage",
+                               rules::Side::party,
+                               {0, 3},
+                               caster(original::ClassSlot::magic_user, 12, {spell})},
+                              {"Plain", rules::Side::opposition, {4, 3}, plain},
+                              {"Defended", rules::Side::opposition, {3, 3}, defended}},
+                             seed, {}, 100, game);
+        cast_now(*fight.session, "Mage", spell,
+                 [&]
+                 {
+                     return aim_at_cell(*fight.session, {3, 3});
+                 });
+        const auto state = fight.session->snapshot();
+        return std::pair{1000 - view_of(state, "Plain").hit_points,
+                         1000 - view_of(state, "Defended").hit_points};
+    };
+    const auto [cold, hurt_more] = blast(192, 192, 105);
+    check(cold > 0 && hurt_more == cold + cold / 5,
+          "A native bakali takes one fifth more cold damage: " + std::to_string(cold) + ", " +
+              std::to_string(hurt_more));
+    const auto [fire, resisted] = blast(47, 205, 105);
+    check(fire > 0 && resisted == fire / 5 * 4,
+          "A native disir applies its shipped fire-damage rounding: " + std::to_string(fire) +
+              ", " + std::to_string(resisted));
+    const auto [lightning, growth] = blast(51, 173, 105);
+    check(lightning > 0 && growth == -8,
+          "Native shambling-mound lightning growth is exactly eight HP: " +
+              std::to_string(lightning) + ", " + std::to_string(growth));
+}
+
+// Native abilities use their own effect IDs, saving throws and durations.
+void dark_queen_rays_and_touches()
+{
+    constexpr auto game = GoldBoxGame::dark_queen_of_krynn;
+    const auto native = [](int code, int strength = 255)
+    {
+        return original::Effect{original::canonical_effect(code, game), 0, strength, false};
+    };
+    auto never_saves = victim(1000);
+    never_saves.saving_throws.fill(100);
+    check(native(159).code == 109 &&
+              original::canonical_effect(159, GoldBoxGame::unlimited_adventures) == 117,
+          "Native paralysis immunity does not borrow the kit's holy-water effect");
+    for (const int code : {155, 199, 211})
+    {
+        auto touch = monster({2, 1, 1, 0}, {0, 0, 0, 0}, {native(code)});
+        auto fight = strike_until(
+            touch, never_saves,
+            [](const rules::CombatSession &session)
+            {
+                return view_of(session.snapshot(), "Target").status == "helpless";
+            },
+            53, game);
+        const auto target = left_by_fight(*fight.session, "Target");
+        const auto held = std::ranges::find(target.effects, 52, &original::Effect::code);
+        check(held != target.effects.end(),
+              "The native touch paralyzes its target: " + std::to_string(code));
+        check(code == 211 ? held->minutes >= 3 && held->minutes <= 18 : held->minutes == 10,
+              "The native paralysis duration is retained: " + std::to_string(code));
+        auto protected_target = never_saves;
+        protected_target.effects.push_back(native(159));
+        auto protected_fight = strike_until(
+            touch, protected_target,
+            [](const rules::CombatSession &session)
+            {
+                return logged(session, "{attacker} hits {name} for {damage}.", "Attacker") >= 2;
+            },
+            53, game);
+        const auto protected_left = left_by_fight(*protected_fight.session, "Target");
+        check(logged(*protected_fight.session, "{attacker} hits {name} for {damage}.",
+                     "Attacker") >= 2 &&
+                  std::ranges::none_of(protected_left.effects,
+                                       [](const auto &effect)
+                                       {
+                                           return effect.code == 52;
+                                       }),
+              "Native paralysis immunity protects even after failed saves against touch " +
+                  std::to_string(code));
+        auto ring_wearer = never_saves;
+        ring_wearer.effects.push_back(native(150));
+        auto natural_touch = strike_until(
+            touch, ring_wearer,
+            [](const rules::CombatSession &session)
+            {
+                return view_of(session.snapshot(), "Target").status == "helpless";
+            },
+            53, game);
+        const auto ring_left = left_by_fight(*natural_touch.session, "Target");
+        check(std::ranges::any_of(ring_left.effects,
+                                  [](const auto &effect)
+                                  {
+                                      return effect.code == 52;
+                                  }),
+              "The native Free Action ring retains its shipped limit against natural touch " +
+                  std::to_string(code));
+    }
+    auto venom = strike_until(
+        monster({2, 1, 1, 0}, {0, 0, 0, 0}, {native(206)}), never_saves,
+        [](const rules::CombatSession &session)
+        {
+            return logged(session, "{name} is crippled by venom.") > 0;
+        },
+        53, game);
+    const auto envenomed = left_by_fight(*venom.session, "Target");
+    const auto venom_left =
+        std::ranges::find(envenomed.effects, native(207).code, &original::Effect::code);
+    check(venom_left != envenomed.effects.end() && venom_left->minutes >= 1 &&
+              venom_left->minutes <= 4,
+          "Native venom lasts 1d4 minutes and survives combat handoff");
+    auto squid = strike_until(
+        monster({4, 1, 1, 0}, {0, 0, 0, 0}, {native(208)}), never_saves,
+        [](const rules::CombatSession &session)
+        {
+            return logged(session, "{attacker} constricts {name}.") > 0;
+        },
+        53, game);
+    const auto squeezed = left_by_fight(*squid.session, "Target");
+    check(logged(*squid.session, "{attacker} constricts {name}.") == 1 &&
+              view_of(squid.session->snapshot(), "Target").movement_feet == 0 &&
+              std::ranges::find(squeezed.effects, 213, &original::Effect::code) !=
+                  squeezed.effects.end(),
+          "A native squid constricts and immobilizes after two hits");
+    auto fighter_record = kobold_record();
+    fighter_record.game = game;
+    fighter_record.race = 6;
+    fighter_record.base_thac0 = 0;
+    fighter_record.base_armor_class = 10;
+    fighter_record.max_hit_points = fighter_record.current.hit_points_raw = 100;
+    fighter_record.item_limit = 255;
+    fighter_record.base_attacks[0] = {2, {1, 1, 0}};
+    fighter_record.current_abilities = fighter_record.abilities = {10, 10, 10, 3, 10, 10, 0};
+    std::vector<std::uint8_t> raw_weapon(63);
+    raw_weapon[46] = 18;
+    raw_weapon[52] = raw_weapon[57] = 1;
+    const auto weapon = opengold::por::decode_items(raw_weapon)->front();
+    opengold::por::ItemTemplate weapon_type;
+    weapon_type.worn_location = 0;
+    weapon_type.hands = 1;
+    weapon_type.class_restrictions = 255;
+    weapon_type.small_medium_damage = weapon_type.large_damage = {1, 1, 2};
+    const std::array<original::CarriedItem, 1> gear{{{weapon, weapon_type}}};
+    auto baaz = never_saves;
+    baaz.effects.push_back(native(187));
+    std::vector<opengold::por::ItemTemplate> weapon_types(19);
+    weapon_types[18] = weapon_type;
+    auto disarm = arrange(
+        {{"Attacker",
+          rules::Side::party,
+          {3, 3},
+          original::combatant_from_record(fighter_record, gear)},
+         {"Target", rules::Side::opposition, {4, 3}, baaz}},
+        53, {}, 100, game, false, false,
+        [&](rules::Encounter &encounter)
+        {
+            auto &hero = encounter.participants.front();
+            hero.character_record = original::encode_fight_record(fighter_record);
+            hero.inventory.push_back({7, opengold::por::original_item_key(weapon), 1, 0, "Weapon"});
+        },
+        weapon_types);
+    play_until(
+        *disarm.session,
+        [&](const std::string &actor)
+        {
+            return actor == "Attacker" ? order(*disarm.session, "melee", "Target")
+                                       : order(*disarm.session, "end");
+        },
+        [&]
+        {
+            return logged(*disarm.session, "{name} loses a weapon.") > 0;
+        });
+    check(logged(*disarm.session, "{name} loses a weapon.") == 1 &&
+              view_of(disarm.session->snapshot(), "Target").hit_points > 0,
+          "A living enchanted Baaz disarms an actual equipped weapon on a divisible-by-three blow");
+    until_turn_of(*disarm.session, "Attacker");
+    check(std::ranges::none_of(disarm.session->legal_commands(),
+                               [](const rules::Command &command)
+                               {
+                                   return command.verb == "ready";
+                               }),
+          "The dropped weapon cannot be readied again during the fight");
+    check(
+        first_hit(monster({2, 1, 1, 9}, {0, 0, 0, 0}, {native(211)}), never_saves, game) == 10,
+        "The anemone's shipped post-hit poison roll does not retroactively add another damage die");
+    auto burning = strike_until(
+        monster({2, 1, 1, 0}, {0, 0, 0, 0}, {native(201)}), never_saves,
+        [](const rules::CombatSession &session)
+        {
+            return logged(session, "{name} is turning to green fire!") > 0;
+        },
+        53, game);
+    const int burning_round = static_cast<int>(burning.session->snapshot().round);
+    const int before_burning = view_of(burning.session->snapshot(), "Target").hit_points;
+    play_until(
+        *burning.session,
+        [&](const std::string &)
+        {
+            return order(*burning.session, "end");
+        },
+        [&]
+        {
+            return static_cast<int>(burning.session->snapshot().round) > burning_round;
+        });
+    const int burned = before_burning - view_of(burning.session->snapshot(), "Target").hit_points;
+    const auto lingering_fire = left_by_fight(*burning.session, "Target");
+    check(burned >= 1 && burned <= 8 &&
+              std::ranges::find(lingering_fire.effects, native(196).code,
+                                &original::Effect::code) != lingering_fire.effects.end(),
+          "A fireshadow touch burns for 1d8 at the next round and keeps burning");
+    for (const int code : {182, 188, 189})
+    {
+        auto explosive = victim(1);
+        explosive.effects.push_back(native(code));
+        auto burst = strike_until(
+            monster({2, 1, 1, 19}, {0, 0, 0, 0}, {}), explosive,
+            [](const rules::CombatSession &session)
+            {
+                return logged(session, "{name} explodes.") > 0;
+            },
+            53, game);
+        check(logged(*burst.session, "{name} explodes.") >= 1 &&
+                  view_of(burst.session->snapshot(), "Attacker").hit_points < 1000,
+              "The native death burst damages its nearby attacker: " + std::to_string(code));
+    }
+    auto spores = strike_until(
+        monster({2, 1, 1, 0}, {0, 0, 0, 0}, {native(182), native(184)}), never_saves,
+        [](const rules::CombatSession &session)
+        {
+            return logged(session, "{name} is diseased.") > 0;
+        },
+        53, game);
+    const auto infected = left_by_fight(*spores.session, "Target");
+    check(view_of(spores.session->snapshot(), "Attacker").dead &&
+              logged(*spores.session, "{name} explodes.") == 0 &&
+              std::ranges::find(infected.effects, native(185).code, &original::Effect::code) !=
+                  infected.effects.end(),
+          "A gas spore's touch infects, dies, and suppresses its ordinary burst");
+    auto mummy = strike_until(
+        monster({2, 1, 1, 0}, {0, 0, 0, 0}, {native(170)}), never_saves,
+        [](const rules::CombatSession &session)
+        {
+            return logged(session, "{name} is diseased.") > 0;
+        },
+        53, game);
+    const auto rotting = left_by_fight(*mummy.session, "Target");
+    check(std::ranges::find(rotting.effects, native(215).code, &original::Effect::code) !=
+                  rotting.effects.end() &&
+              std::ranges::find(rotting.effects, original::kit_rotting, &original::Effect::code) !=
+                  rotting.effects.end(),
+          "A native mummy's touch carries its recovery timer and monthly rot");
+    auto acid_target = never_saves;
+    acid_target.effects.push_back(native(212));
+    auto acid = strike_until(
+        monster({2, 1, 1, 0}, {0, 0, 0, 0}, {}), acid_target,
+        [](const rules::CombatSession &session)
+        {
+            return logged(session, "{name} is squirted by anemone's acid!") > 0;
+        },
+        53, game);
+    check(logged(*acid.session, "{name} is squirted by anemone's acid!") == 1 &&
+              view_of(acid.session->snapshot(), "Attacker").hit_points >= 988 &&
+              view_of(acid.session->snapshot(), "Attacker").hit_points <= 997,
+          "A struck anemone splashes acid on the adjacent attacker");
+
+    auto steam = arrange({{"Fighter", rules::Side::party, {3, 3}, victim(1000)},
+                          {"Dragon", rules::Side::opposition, {5, 3}, special({native(204)}, 40)}},
+                         257, {}, 100, game);
+    ai_plays(
+        *steam.session, "Dragon",
+        []
+        {
+            return false;
+        },
+        8);
+    check(logged(*steam.session, "{name} breathes steam.") == 3,
+          "A native sea dragon uses exactly three steam breaths");
+
+    for (const int code : {198, 209, 202})
+    {
+        auto ray = arrange({{"Fighter", rules::Side::party, {1, 3}, never_saves},
+                            {"Eye", rules::Side::opposition, {4, 3}, special({native(code)}, 100)}},
+                           259, {}, 100, game);
+        until_turn_of(*ray.session, "Eye");
+        const auto before_ray_round = ray.session->snapshot().round;
+        ray.session->submit(order(*ray.session, "quick"));
+        const auto state = ray.session->snapshot();
+        if (code == 198)
+        {
+            const int lost = 1000 - view_of(state, "Fighter").hit_points;
+            check(logged(*ray.session, "{name} flashes a ray.") == 1 && lost >= 4 && lost <= 16,
+                  "A native fireshadow ray inflicts 4d4 damage");
+        }
+        else
+        {
+            const auto target = left_by_fight(*ray.session, "Fighter");
+            const auto held = std::ranges::find(target.effects, 52, &original::Effect::code);
+            check(held != target.effects.end() &&
+                      (code == 202
+                           ? held->minutes == 10 - static_cast<int>(state.round - before_ray_round)
+                           : held->minutes >= 2 && held->minutes <= 8),
+                  "Native breath/ray paralysis retains its exact duration: " +
+                      std::to_string(code));
+        }
+    }
+
+    int protected_statues = 0, plain_statues = 0;
+    for (std::uint64_t seed = 1; seed <= 40; ++seed)
+    {
+        for (const bool protected_target : {false, true})
+        {
+            auto target = victim(100);
+            target.saving_throws.fill(20);
+            if (protected_target)
+            {
+                target.effects.push_back(native(126));
+            }
+            auto gaze =
+                arrange({{"Fighter", rules::Side::party, {0, 3}, target},
+                         {"Basilisk", rules::Side::opposition, {6, 3}, special({native(58)})}},
+                        seed, {}, 100, game);
+            until_turn_of(*gaze.session, "Basilisk");
+            gaze.session->submit(order(*gaze.session, "quick"));
+            const bool statue = view_of(gaze.session->snapshot(), "Fighter").status == "stoned";
+            (protected_target ? protected_statues : plain_statues) += statue;
+        }
+    }
+    check(protected_statues > 0 && protected_statues < 10 && plain_statues > 25,
+          "The native gaze defense grants a save bonus while natural ones still fail: " +
+              std::to_string(protected_statues) + ", " + std::to_string(plain_statues));
+}
+
+void dark_queen_underwater_context_changes_combat()
+{
+    constexpr auto game = GoldBoxGame::dark_queen_of_krynn;
+    auto native = [](int code)
+    {
+        return original::Effect{original::canonical_effect(code, game), 0, 255, false};
+    };
+    auto swimmer = victim(1000);
+    swimmer.movement = 12;
+    const auto movement = [&](bool wet, bool unrestricted)
+    {
+        auto numbers = swimmer;
+        if (unrestricted)
+        {
+            numbers.effects.push_back(native(150));
+        }
+        auto fight = arrange({{"Swimmer", rules::Side::party, {0, 3}, numbers},
+                              {"Guard", rules::Side::opposition, {7, 3}, victim(1000)}},
+                             263, {}, 100, game, false, false,
+                             [wet](rules::Encounter &encounter)
+                             {
+                                 encounter.underwater = wet;
+                             });
+        return view_of(fight.session->snapshot(), "Swimmer").movement_feet;
+    };
+    check(movement(false, false) == 60 && movement(true, false) == 20 && movement(true, true) == 60,
+          "Native underwater movement is a third, with its authored unrestricted marker exempt");
+
+    auto fireproof = victim(1000);
+    fireproof.effects.push_back(native(93));
+    auto fight = arrange({{"Mage",
+                           rules::Side::party,
+                           {0, 3},
+                           caster(original::ClassSlot::magic_user, 12, {47, 51, 187})},
+                          {"Plain", rules::Side::opposition, {4, 3}, victim(1000)},
+                          {"Fireproof", rules::Side::opposition, {5, 3}, fireproof},
+                          {"Aside", rules::Side::opposition, {4, 6}, victim(1000)},
+                          {"Far", rules::Side::opposition, {7, 7}, victim(1000)}},
+                         263, {}, 100, game, false, false,
+                         [](rules::Encounter &encounter)
+                         {
+                             encounter.underwater = true;
+                             encounter.time_minutes = 34567;
+                         });
+    auto &session = *fight.session;
+    until_turn_of(session, "Mage");
+    check(
+        !cast_command(session, 47) && cast_command(session, 51) && cast_command(session, 187),
+        "Native underwater casting keeps Lightning Bolt and Ice Storm while suppressing Fireball");
+    const auto checkpoint = session.save();
+    auto restored = fight.module->restore(checkpoint);
+    check(
+        checkpoint.find("OGORIGINALCOMBAT 29") != std::string::npos &&
+            restored->save() == checkpoint && !cast_command(*restored, 47),
+        "Native underwater combat and starting calendar roundtrip without changing released checkpoints");
+    cast_now(session, "Mage", 51,
+             [&]
+             {
+                 return aim_at_cell(session, {4, 3});
+             });
+    const auto lightning = session.snapshot();
+    check(view_of(lightning, "Plain").hit_points < 1000 &&
+              view_of(lightning, "Fireproof").hit_points == 1000 &&
+              view_of(lightning, "Aside").hit_points == 1000 &&
+              view_of(lightning, "Far").hit_points == 1000,
+          "The shipped underwater bolt becomes a two-radius blast with the native fire element");
+    const int plain_before = view_of(lightning, "Plain").hit_points;
+    cast_now(session, "Mage", 187,
+             [&]
+             {
+                 return aim_at_cell(session, {4, 3});
+             });
+    const auto ice = session.snapshot();
+    const int ice_damage = 1000 - view_of(ice, "Fireproof").hit_points;
+    check(ice_damage >= 1 && ice_damage <= 10 &&
+              plain_before - view_of(ice, "Plain").hit_points == ice_damage &&
+              1000 - view_of(ice, "Aside").hit_points == ice_damage &&
+              view_of(ice, "Far").hit_points == 1000,
+          "Native underwater Ice Storm inflicts one shared d10 across its three-square radius");
+}
+
 void the_kits_monsters_differ_as_the_kit_has_them()
 {
     const auto hitter = [](std::optional<original::StrikingItem> striker, int level)
@@ -7407,6 +8514,7 @@ int main()
         both_claws_rake();
         a_mummy_rots();
         a_wight_drains_levels();
+        native_drains_keep_ordered_exact_receipts();
         strikers_come_from_the_gear();
         defenses_weigh_the_weapon();
         a_troll_rises_again();
@@ -7434,6 +8542,10 @@ int main()
         each_game_bolts_its_own_length();
         a_fight_without_attacks_ends_after_15_rounds();
         each_game_storms_by_its_own_element();
+        native_blasts_respect_defenses();
+        native_enchanted_auraks_keep_their_native_damage();
+        native_free_action_counters_its_shipped_spells();
+        native_stinking_cloud_uses_its_actual_dispatch_context();
         treasures_effects_play_their_own();
         treasures_crystal_battle_yields_one_crystal();
         a_stone_guardian_turns_thrown_weapons();
@@ -7459,6 +8571,7 @@ int main()
         haste_doubles_attacks();
         mirror_images_take_blows();
         silence_stops_casting();
+        native_silence_can_be_aimed_at_empty_ground();
         missiles_turned_away();
         lightning_runs_on();
         treasures_bolt_counts_each_step_once();
@@ -7528,6 +8641,9 @@ int main()
         the_kits_rangers_know_their_foes();
         the_kits_items_strike_as_the_kit_has_them();
         the_kits_monsters_differ_as_the_kit_has_them();
+        dark_queen_elemental_and_weapon_defenses();
+        dark_queen_rays_and_touches();
+        dark_queen_underwater_context_changes_combat();
         darkness_spells_fight();
         darkness_effects_take_their_own_numbers();
         darkness_records_fight_by_their_effects();
@@ -7537,7 +8653,9 @@ int main()
         darkness_gazes_work_with_the_option_on();
         darkness_holds_no_monster();
         darkness_blades_and_the_bulette_strike();
-        darkness_turns_undead_its_own_way();
+        later_games_turn_undead_their_own_way(darkness_game);
+        later_games_turn_undead_their_own_way(GoldBoxGame::dark_queen_of_krynn);
+        dark_queen_turning_honors_the_native_deity();
         darkness_ai_shuns_clouds();
         darkness_clouds_spare_the_poison_proof();
         darkness_beholder_fires_its_rays();

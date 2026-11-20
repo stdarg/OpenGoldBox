@@ -80,10 +80,16 @@ struct MapCell
 
 struct GeoMap
 {
-    static constexpr unsigned width = 16, height = 16;
-    std::array<MapCell, width * height> cells{};
+    static constexpr unsigned default_width = 16, default_height = 16, max_cells = 784;
+    unsigned width{default_width}, height{default_height};
+    std::vector<MapCell> cells = std::vector<MapCell>(default_width * default_height);
     std::vector<std::uint8_t> raw; // Includes the uninterpreted header and trailing data.
+    // Native library maps wrap the first-person view across rectangular edges.
+    bool wrap_view{};
+    [[nodiscard]] bool valid_geometry() const noexcept;
     [[nodiscard]] const MapCell &at(unsigned x, unsigned y) const;
+    [[nodiscard]] unsigned wrapped_x(int x) const;
+    [[nodiscard]] unsigned wrapped_y(int y) const;
 };
 
 // Reference PoR layout requires at least 1026 bytes; extra bytes are retained.

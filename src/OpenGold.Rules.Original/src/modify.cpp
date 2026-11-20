@@ -1,3 +1,4 @@
+#include "dark_queen_rules.h"
 #include "opengold/original_rules.h"
 #include "opengold/buck_rogers_rules.h"
 #include <algorithm>
@@ -450,12 +451,18 @@ bool modify_allowed(int experience, GoldBoxGame game, int design_start)
                 return career_experience_for_level(career, buck_rogers_starting_level(game),
                                                    game) == static_cast<std::uint32_t>(experience);
             });
+    case GoldBoxGame::dark_queen_of_krynn:
+        return one_of(experience, {1000001, 500000, 333333});
     }
     return false;
 }
 
 int modify_hit_point_minimum(const ModifiedCharacter &character, int constitution, GoldBoxGame game)
 {
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        return dark_queen_hit_point_minimum(character, constitution);
+    }
     if (krynn_game(game))
     {
         int dice = 0, bonus = 0;
@@ -478,6 +485,10 @@ int modify_hit_point_minimum(const ModifiedCharacter &character, int constitutio
 
 int modify_hit_point_maximum(const ModifiedCharacter &character, int constitution, GoldBoxGame game)
 {
+    if (game == GoldBoxGame::dark_queen_of_krynn)
+    {
+        return dark_queen_hit_point_maximum(character, constitution);
+    }
     if (krynn_game(game))
     {
         return champions_maximum(character, constitution);

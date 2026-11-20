@@ -131,6 +131,7 @@ add_library(opengold_rules_original STATIC
     src/OpenGold.Rules.Original/src/buck_rogers_solar_map.cpp
     src/OpenGold.Rules.Original/src/death_knights_rules.cpp
     src/OpenGold.Rules.Original/src/buck_rogers_ship_combat.cpp
+    src/OpenGold.Rules.Original/src/dark_queen_rules.cpp
     src/OpenGold.Rules.Original/src/character_rules.cpp
     src/OpenGold.Rules.Original/src/modify.cpp
     src/OpenGold.Rules.Original/src/combatant.cpp
@@ -155,6 +156,7 @@ add_library(opengold_formats STATIC
     src/OpenGold.Formats/src/death_knights_records.cpp
     src/OpenGold.Formats/src/buck_rogers_records.cpp
     src/OpenGold.Formats/src/ail_files.cpp
+    src/OpenGold.Formats/src/dark_queen_records.cpp
     src/OpenGold.Formats/src/secret_records.cpp
     src/OpenGold.Formats/src/treasures_texts.cpp
     src/OpenGold.Formats/src/vga_picture.cpp
@@ -217,6 +219,9 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/ecl_address.cpp
     src/OpenGold.Core/src/area_loading.cpp
     src/OpenGold.Core/src/campaign_session.cpp
+    src/OpenGold.Core/src/dark_queen_campaign.cpp
+    src/OpenGold.Core/src/dark_queen_vault.cpp
+    src/OpenGold.Core/src/dark_queen_import.cpp
     src/OpenGold.Core/src/original_content.cpp
     src/OpenGold.Core/src/ecl_machine.cpp
     src/OpenGold.Core/src/por_effects.cpp
@@ -304,7 +309,9 @@ if(OPENGOLD_BUILD_TESTS)
     # It writes the fight the original rules' combat view check loads.
     set_tests_properties(opengold_original_combat_tests PROPERTIES FIXTURES_SETUP original_combat_fixtures)
 
-    add_executable(opengold_gold_box_games_tests tests/gold_box_games_tests.cpp)
+    add_executable(opengold_gold_box_games_tests
+        tests/gold_box_games_tests.cpp
+        tests/dark_queen_route.cpp)
     target_link_libraries(opengold_gold_box_games_tests PRIVATE opengold_core opengold_rules_srd5
         opengold_rules_original)
     target_compile_definitions(opengold_gold_box_games_tests PRIVATE
@@ -355,9 +362,40 @@ if(OPENGOLD_BUILD_TESTS)
     set_tests_properties(opengold_countdown_solar_map_fixture PROPERTIES
         FIXTURES_SETUP countdown_solar_map SKIP_REGULAR_EXPRESSION "files are not here")
     set_tests_properties(opengold_countdown_walk PROPERTIES TIMEOUT 1800)
+    # A separate earned player: no map placements or assumed combat results.
+    add_executable(opengold_countdown_earned_tests tests/countdown_earned_tests.cpp)
+    target_link_libraries(opengold_countdown_earned_tests PRIVATE opengold_core
+        opengold_rules_original)
+    add_test(NAME opengold_countdown_earned_opening COMMAND opengold_countdown_earned_tests)
+    add_test(NAME opengold_countdown_camp_service COMMAND opengold_countdown_earned_tests
+        --camp-service)
+    add_test(NAME opengold_countdown_earned_chicagorg COMMAND opengold_countdown_earned_tests
+        --chicagorg)
+    add_test(NAME opengold_countdown_earned_upper_ship COMMAND opengold_countdown_earned_tests
+        --derelict)
+    add_test(NAME opengold_countdown_earned_surgery COMMAND opengold_countdown_earned_tests
+        --scot)
+    add_test(NAME opengold_countdown_earned_argon COMMAND opengold_countdown_earned_tests
+        --argon)
+    add_test(NAME opengold_countdown_earned_ship COMMAND opengold_countdown_earned_tests
+        --ship-earned)
+    add_test(NAME opengold_countdown_ending_protocol COMMAND opengold_countdown_earned_tests
+        --ending-protocol)
+    set_tests_properties(opengold_countdown_earned_opening opengold_countdown_camp_service
+        opengold_countdown_earned_chicagorg
+        opengold_countdown_earned_upper_ship opengold_countdown_earned_surgery
+        opengold_countdown_earned_argon opengold_countdown_earned_ship
+        opengold_countdown_ending_protocol
+        PROPERTIES SKIP_RETURN_CODE 77)
     add_executable(opengold_matrix_cubed_tests tests/matrix_cubed_tests.cpp)
     target_link_libraries(opengold_matrix_cubed_tests PRIVATE opengold_core)
     add_test(NAME opengold_matrix_cubed_tests COMMAND opengold_matrix_cubed_tests)
+    add_executable(opengold_matrix_campaign_tests tests/matrix_campaign_tests.cpp)
+    target_link_libraries(opengold_matrix_campaign_tests PRIVATE opengold_core
+        opengold_rules_original)
+    add_test(NAME opengold_matrix_campaign_tests COMMAND opengold_matrix_campaign_tests)
+    add_test(NAME opengold_matrix_cubed_earned_opening
+        COMMAND opengold_matrix_campaign_tests --earned-opening)
     add_executable(opengold_buck_rogers_ship_combat_tests tests/buck_rogers_ship_combat_tests.cpp)
     target_link_libraries(opengold_buck_rogers_ship_combat_tests PRIVATE opengold_rules_original
         opengold_core)
@@ -370,6 +408,10 @@ if(OPENGOLD_BUILD_TESTS)
     add_executable(opengold_buck_rogers_solar_map_tests tests/buck_rogers_solar_map_tests.cpp)
     target_link_libraries(opengold_buck_rogers_solar_map_tests PRIVATE opengold_rules_original)
     add_test(NAME opengold_buck_rogers_solar_map_tests COMMAND opengold_buck_rogers_solar_map_tests)
+    add_executable(opengold_dark_queen_tests tests/dark_queen_tests.cpp)
+    target_link_libraries(opengold_dark_queen_tests PRIVATE opengold_core opengold_rules_original)
+    target_include_directories(opengold_dark_queen_tests PRIVATE src/OpenGold.Rules.Original/src)
+    add_test(NAME opengold_dark_queen_tests COMMAND opengold_dark_queen_tests)
     # Every map of Curse walked with an original-rules party: each event runs.
     add_test(NAME opengold_curse_walk COMMAND opengold_gold_box_games_tests --curse-walk)
     # Every map of Secret of the Silver Blades walked the same way.

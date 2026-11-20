@@ -119,9 +119,9 @@ constexpr std::uint8_t open_ground = 37, first_crown = 0, first_trunk = 5, first
 
 // Trees stand where two squares of open ground are one above the other,
 // one time in 20 (the kit's terrain 0 has no river, wild_woods).
-void plant_trees(std::vector<std::uint8_t> &tiles, const std::function<unsigned(unsigned)> &roll)
+void plant_trees(std::vector<std::uint8_t> &tiles, const std::function<unsigned(unsigned)> &roll,
+                 unsigned chance)
 {
-    constexpr unsigned chance = 5;
     for (std::size_t column = 0; column < field_width; ++column)
     {
         for (std::size_t row = 1; row < field_height; ++row)
@@ -147,7 +147,8 @@ void plant_trees(std::vector<std::uint8_t> &tiles, const std::function<unsigned(
 
 // The rest of the open ground: brush on 3 in 100, grass on 14, stones on 5
 // (wild_scatter at the kit's terrain 0).
-void scatter(std::vector<std::uint8_t> &tiles, const std::function<unsigned(unsigned)> &roll)
+void scatter(std::vector<std::uint8_t> &tiles, const std::function<unsigned(unsigned)> &roll,
+             const std::array<unsigned, 5> &weights)
 {
     for (std::size_t column = 0; column < field_width; ++column)
     {
@@ -159,19 +160,78 @@ void scatter(std::vector<std::uint8_t> &tiles, const std::function<unsigned(unsi
                 continue;
             }
             const unsigned dice = roll(100);
-            if (dice <= 3)
+            if (dice <= weights[0])
+            {
+                tile = static_cast<std::uint8_t>(18 + roll(2) - 1);
+            }
+            else if (dice <= weights[0] + weights[1] + 1)
             {
                 tile = brush;
             }
-            else if (dice <= 17)
+            // The shipped scatter routine repeats its preceding threshold;
+            // its tall-stone branch cannot run.
+            else if (dice <= weights[0] + weights[1] + weights[2] + weights[3])
             {
                 tile = grass;
             }
-            else if (dice <= 22)
+            else if (dice <= weights[0] + weights[1] + weights[2] + weights[3] + weights[4])
             {
                 tile = static_cast<std::uint8_t>(first_stone + roll(6) - 1);
             }
         }
+    }
+}
+
+void river(std::vector<std::uint8_t> &tiles, const std::function<unsigned(unsigned)> &roll)
+{
+    int column = 34;
+    for (unsigned die = 0; die < 5; ++die)
+    {
+        column -= static_cast<int>(roll(4));
+    }
+    column -= (column + 2) % 7;
+    unsigned run = 1;
+    const auto put = [&](int x, std::size_t row, unsigned tile)
+    {
+        if (x >= 0 && x < static_cast<int>(field_width))
+        {
+            tiles[row * field_width + static_cast<std::size_t>(x)] =
+                static_cast<std::uint8_t>(tile);
+        }
+    };
+    for (std::size_t row = 0; row < field_height; ++row, ++column)
+    {
+        if (column >= static_cast<int>(field_width))
+        {
+            break;
+        }
+        put(column, row, 20);
+        if (column + 1 < static_cast<int>(field_width))
+        {
+            if (roll(20) <= run)
+            {
+                put(column + 1, row, 26);
+                for (int offset = 2; offset <= 3 && column + offset < static_cast<int>(field_width);
+                     ++offset)
+                {
+                    put(column + offset, row, 26 + roll(2));
+                }
+                put(column + 4, row, 29);
+                run = 1;
+            }
+            else
+            {
+                ++run;
+                put(column + 1, row, 20 + roll(2));
+                put(column + 2, row, 23);
+                put(column + 3, row, 23);
+                if (column + 4 < static_cast<int>(field_width))
+                {
+                    put(column + 4, row, 23 + roll(2));
+                }
+            }
+        }
+        put(column + 5, row, 20);
     }
 }
 
@@ -212,6 +272,12 @@ void scatter(std::vector<std::uint8_t> &tiles, const std::function<unsigned(unsi
 
 } // namespace
 
+std::array<VgaColor, 256> combat_palette(const DesignFiles &files, unsigned set, bool dungeon)
+{
+    return fight_palette(files, set_tiles(files, dungeon ? "DUNGCOM.TLB" : "WILDCOM.TLB",
+                                          dungeon ? "DUNG" : "WILD", set));
+}
+
 FightField dungeon_field(const DesignFiles &files, const Area &area, unsigned x, unsigned y)
 {
     const auto set = std::max<unsigned>(area.header[header_dungeon_set], 1);
@@ -225,6 +291,11 @@ FightField dungeon_field(const DesignFiles &files, const Area &area, unsigned x,
             square_side(area, sx + dx[direction], sy + dy[direction], (direction + 2) % 4, party_y);
         return FieldEdge{static_cast<unsigned>(here) | static_cast<unsigned>(there)};
     };
+    return dungeon_field(files, set, edges);
+}
+
+FightField dungeon_field(const DesignFiles &files, unsigned set, const por::FieldEdges &edges)
+{
     constexpr std::size_t dungeon_tiles = 25;
     return field_with_art(files, set_tiles(files, "DUNGCOM.TLB", "DUNG", set),
                           por::kit_dungeon_battlefield(edges), dungeon_tiles);
@@ -233,13 +304,27 @@ FightField dungeon_field(const DesignFiles &files, const Area &area, unsigned x,
 FightField wilderness_field(const DesignFiles &files, unsigned set,
                             const std::function<unsigned(unsigned)> &roll)
 {
+    return wilderness_field(files, set, roll, WildernessStyle{});
+}
+
+FightField wilderness_field(const DesignFiles &files, unsigned set,
+                            const std::function<unsigned(unsigned)> &roll,
+                            const WildernessStyle &style)
+{
     por::DungeonBattlefield field;
     auto &board = field.geometry;
     board.width = field_width;
     board.height = field_height;
     field.tiles.assign(field_width * field_height, open_ground);
-    plant_trees(field.tiles, roll);
-    scatter(field.tiles, roll);
+    if (style.river)
+    {
+        river(field.tiles, roll);
+    }
+    if (style.trees)
+    {
+        plant_trees(field.tiles, roll, style.tree_chance);
+    }
+    scatter(field.tiles, roll, style.scatter);
     for (const auto tile : field.tiles)
     {
         board.terrain.push_back(wild_terrain(tile));
@@ -247,7 +332,7 @@ FightField wilderness_field(const DesignFiles &files, unsigned set,
     // Out of doors every square is under the sky.
     board.plants.assign(field.tiles.size(), true);
     return field_with_art(files, set_tiles(files, "WILDCOM.TLB", "WILD", std::max(set, 1U)),
-                          std::move(field), wild_tiles);
+                          std::move(field), style.art_tiles);
 }
 
 CombatIcons::CombatIcons(DesignFiles files) : files_(std::move(files))

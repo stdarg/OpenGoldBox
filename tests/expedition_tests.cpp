@@ -2425,7 +2425,7 @@ struct AreaContext
     std::uint16_t bank{};
     std::vector<std::uint8_t> map;
     std::vector<std::vector<std::uint8_t>> art;
-    std::bitset<256> visited;
+    por::MapKnowledge visited;
     bool operator==(const AreaContext &) const = default;
 };
 

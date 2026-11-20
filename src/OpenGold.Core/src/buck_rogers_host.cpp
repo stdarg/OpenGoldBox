@@ -684,10 +684,19 @@ bool RolfTourSession::handle_buck_rogers_host(const EclRequest &request)
     }
     case program:
     {
-        // 0 the team menu, with training; 9 the rest menu; the others
-        // nothing (eclvm.pas EclProgram).
+        // 0 the team menu, with training; 9 the rest menu; Matrix's 2
+        // leaves the game after its closing scene (ECL1:114 9E08h).
         read_character();
         const auto number = value(0) & 0xFF;
+        if (game() == GoldBoxGame::matrix_cubed && number == 2)
+        {
+            if (current_script_ != 114 || instruction.address != 0x9E08)
+            {
+                throw EclError("Unsupported Matrix Cubed ending invocation");
+            }
+            reply.exit = true;
+            break;
+        }
         if (number == 0 || number == 9)
         {
             BuckRogersMenu menu;
@@ -766,6 +775,28 @@ void RolfTourSession::update_solar_map(std::optional<std::uint16_t> picture_mode
     {
         snapshot_.solar_map = *picture_mode_given == orbit_picture_mode;
     }
+}
+
+bool RolfTourSession::matrix_ending_completed() const
+{
+    if (game() != GoldBoxGame::matrix_cubed || current_script_ != 114 ||
+        machine_.state() != EclState::completed)
+    {
+        return false;
+    }
+    const auto bank = town_->script_banks.find(114);
+    const auto script = town_->programs.find(114);
+    if (bank == town_->script_banks.end() || bank->second != 1 || script == town_->programs.end())
+    {
+        return false;
+    }
+    // The shipped PROGRAM 2 is immediately followed by EXIT, not another
+    // closing page. Later bytes belong to separate handlers in this script.
+    const auto ending = script->second->instruction(0x9E08);
+    return ending.opcode == 0x38 && ending.operands.size() == 1 &&
+           ending.operands.front().tag == 0 && ending.operands.front().value == 2 &&
+           script->second->instruction(ending.next).opcode == 0 &&
+           machine_.address() == ending.next;
 }
 
 bool RolfTourSession::finish_ship_combat(std::uint64_t ticket, ShipCombatOutcome outcome)
@@ -1321,6 +1352,12 @@ void RolfTourSession::finish_buck_rogers_fight(std::uint64_t request, std::uint1
 void RolfTourSession::show_buck_rogers_menu(BuckRogersMenu::Kind kind,
                                             std::vector<rules::Message> notice)
 {
+    if (kind != BuckRogersMenu::Kind::team && kind != BuckRogersMenu::Kind::rest)
+    {
+        // Shop and booty use the member selected in the party list. A
+        // script's last LOAD CHARACTER must not lock every purchase to it.
+        selected_character_ = campaign_->state().selected_slot;
+    }
     auto &menu = *buck_rogers_menu_;
     menu.kind = kind;
     menu.choices.clear();
@@ -1455,6 +1492,10 @@ bool RolfTourSession::choose_in_buck_rogers_menu(std::size_t choice)
     }
     using Action = BuckRogersMenu::Action;
     using Kind = BuckRogersMenu::Kind;
+    if (menu.kind != Kind::team && menu.kind != Kind::rest)
+    {
+        selected_character_ = campaign_->state().selected_slot;
+    }
     const auto picked = menu.choices[choice];
     const auto id = campaign_->state().slots.at(acting_slot(*campaign_, selected_character_));
     auto team = team_of(*campaign_);

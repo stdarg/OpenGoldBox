@@ -82,7 +82,8 @@ original_mask_classes(unsigned class_mask, GoldBoxGame game = GoldBoxGame::pool_
     return game == GoldBoxGame::secret_of_the_silver_blades ||
                    game == GoldBoxGame::pools_of_darkness ||
                    game == GoldBoxGame::champions_of_krynn ||
-                   game == GoldBoxGame::death_knights_of_krynn
+                   game == GoldBoxGame::death_knights_of_krynn ||
+                   game == GoldBoxGame::dark_queen_of_krynn
                ? 0
                : 1000;
 }

@@ -155,6 +155,11 @@ struct CharacterSheet
         // Levels and Hit Points drained and not yet given back by training or
         // Restoration (the original's drainedLevels and drainedHps).
         int drained_levels{}, drained_hit_points{};
+        // Native exact drain receipts rebuild these retained pre-drain values.
+        // Zero preserves the behavior of histories written before those
+        // receipts.
+        unsigned native_previous_experience{};
+        int native_previous_max_hit_points{};
         // The level each class had before a drain first lowered it, which
         // Restoration gives back up to (the original's peakClassLevels); 0
         // for a class never drained. Rebuilt with the drains it replays.

@@ -121,15 +121,17 @@ func _draw_map(view: Control, data: Dictionary) -> void:
     if not data.has("cells"):
         return
     var bounds := _bounds(view, "MapBounds")
-    var cell := bounds.size.x / 16.0
+    var columns: int = data.get("columns", 16)
+    var rows: int = data.get("rows", 16)
+    var cell := minf(bounds.size.x / columns, bounds.size.y / rows)
     var flags: Array = data["cells"]
     var inset := _metric("tour_map_grid_inset_tenths") / 10.0
     for i in flags.size():
         var entry: int = flags[i]
         if entry < 0:
             continue
-        var x := i % 16
-        var y := i / 16
+        var x := i % columns
+        var y := i / columns
         var origin := bounds.position + Vector2(x, y) * cell
         var rect := Rect2(origin, Vector2.ONE * cell)
         draw_rect(rect, _color("map_visited" if entry & 1 else "map_seen"))

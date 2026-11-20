@@ -688,16 +688,27 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
                            party_hit_points(*campaign_));
     }
     const RollPurpose initiative("initiative");
-    auto next = module_->create(
-        {encounter.field.geometry, std::move(participants), campaign_->state().next_combat_scope,
-         encounter.morale, spendable_gold(campaign_->state().wealth, campaign_->coin_rates()),
-         encounter.daylight, encounter.spares_the_party, encounter.outdoors,
-         encounter.escape_ends_fight, encounter.no_magic,
-         static_cast<int>(index(encounter.facing)) * 2, encounter.party_move_modifier,
-         encounter.crystals, encounter.frightening_surprise, encounter.romance,
-         encounter.turning_tries, encounter.turning_penalty, campaign_->state().time_minutes,
-         encounter.zero_gravity},
-        seed);
+    auto next = module_->create({encounter.field.geometry,
+                                 std::move(participants),
+                                 campaign_->state().next_combat_scope,
+                                 encounter.morale,
+                                 spendable_gold(campaign_->state().wealth, campaign_->coin_rates()),
+                                 encounter.daylight,
+                                 encounter.spares_the_party,
+                                 encounter.outdoors,
+                                 encounter.escape_ends_fight,
+                                 encounter.no_magic,
+                                 static_cast<int>(index(encounter.facing)) * 2,
+                                 encounter.party_move_modifier,
+                                 encounter.crystals,
+                                 encounter.frightening_surprise,
+                                 encounter.romance,
+                                 encounter.turning_tries,
+                                 encounter.turning_penalty,
+                                 campaign_->state().time_minutes,
+                                 encounter.zero_gravity,
+                                 encounter.underwater},
+                                seed);
     install_combat(std::move(next), {});
     seed_ = seed;
     battlefield_tiles_ = std::move(encounter.field.tiles);
@@ -1448,29 +1459,30 @@ bool area_risks_side(const rules::Snapshot &state, const CombatantView &caster,
                      const SpellFacts &spell, Cell center)
 {
     const int reach = (spell.area_feet + 4) / 5 + (spell.from_caster ? 2 : 1);
-    return std::any_of(
-        state.combatants.begin(), state.combatants.end(),
-        [&](const auto &a)
-        {
-            if (a.side != caster.side || a.dead)
-            {
-                return false;
-            }
-            if (!spell.from_caster)
-            {
-                return squares_from(center, a) <= reach;
-            }
-            if (a.id == caster.id)
-            {
-                return false;
-            }
-            const double dx = center.x - caster.cell.x, dy = center.y - caster.cell.y;
-            const double length = std::max(1.0, std::sqrt(dx * dx + dy * dy));
-            const double cx = a.cell.x - caster.cell.x, cy = a.cell.y - caster.cell.y;
-            const double along = (cx * dx + cy * dy) / length;
-            const double off = std::abs(cx * dy - cy * dx) / length;
-            return along > 0 && along <= reach && off <= along / 2 + 1.5;
-        });
+    return std::any_of(state.combatants.begin(), state.combatants.end(),
+                       [&](const auto &a)
+                       {
+                           if (a.side != caster.side || a.dead)
+                           {
+                               return false;
+                           }
+                           if (!spell.from_caster)
+                           {
+                               return squares_from(center, a) <= reach;
+                           }
+                           if (a.id == caster.id)
+                           {
+                               return false;
+                           }
+                           const double dx = center.x - caster.cell.x,
+                                        dy = center.y - caster.cell.y;
+                           const double length = std::max(1.0, std::sqrt(dx * dx + dy * dy));
+                           const double cx = a.cell.x - caster.cell.x,
+                                        cy = a.cell.y - caster.cell.y;
+                           const double along = (cx * dx + cy * dy) / length;
+                           const double off = std::abs(cx * dy - cy * dx) / length;
+                           return along > 0 && along <= reach && off <= along / 2 + 1.5;
+                       });
 }
 
 // Whether an area spell can be aimed at `target` safely: within its range
@@ -2214,9 +2226,8 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
             return command;
         }
     }
-    if (const auto *command =
-            heal_most_wounded({"cure_wounds", "cure_wounds_2", "healing_word", "healing_word_2",
-                               "healing_word_innate_bonus"}))
+    if (const auto *command = heal_most_wounded({"cure_wounds", "cure_wounds_2", "healing_word",
+                                                 "healing_word_2", "healing_word_innate_bonus"}))
     {
         return *command;
     }
@@ -2398,6 +2409,7 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
             return *command;
         }
     }
+
     // Bonus Action buffs come before the Action: Innate Sorcery before a spell
     // attack, a Druid's flame or staff, Hex and Bardic Inspiration on an ally.
     struct Buff
@@ -2777,8 +2789,9 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
             return *command;
         }
     }
-    std::vector<std::string_view> attacks{"rampage", "eldritch_blast", "sorcerous_burst_fire",
-                                          "flame_blade_strike", "hurl_flame", "heat_metal_again"};
+    std::vector<std::string_view> attacks{
+        "rampage",    "eldritch_blast",  "sorcerous_burst_fire", "flame_blade_strike",
+        "hurl_flame", "heat_metal_again"};
     if (shoots)
     {
         attacks.insert(attacks.end(), {"ranged", "shoot"});
@@ -3375,29 +3388,30 @@ bool area_risks_ally(const rules::Snapshot &state, const CombatantView &active,
                      std::string_view verb, Cell center)
 {
     const auto lightning = verb.starts_with("lightning_bolt");
-    return std::any_of(
-        state.combatants.begin(), state.combatants.end(),
-        [&](const auto &a)
-        {
-            if (a.side != active.side || a.dead)
-            {
-                return false;
-            }
-            if (!lightning)
-            {
-                return squares_from(center, a) <= 5;
-            }
-            if (a.id == active.id)
-            {
-                return false;
-            }
-            const double dx = center.x - active.cell.x, dy = center.y - active.cell.y;
-            const double length = std::max(1.0, dx * dx + dy * dy);
-            const double cx = a.cell.x - active.cell.x, cy = a.cell.y - active.cell.y;
-            const double along = (cx * dx + cy * dy) / length;
-            const double off_x = cx - along * dx, off_y = cy - along * dy;
-            return along > 0 && off_x * off_x + off_y * off_y <= 2.0;
-        });
+    return std::any_of(state.combatants.begin(), state.combatants.end(),
+                       [&](const auto &a)
+                       {
+                           if (a.side != active.side || a.dead)
+                           {
+                               return false;
+                           }
+                           if (!lightning)
+                           {
+                               return squares_from(center, a) <= 5;
+                           }
+                           if (a.id == active.id)
+                           {
+                               return false;
+                           }
+                           const double dx = center.x - active.cell.x,
+                                        dy = center.y - active.cell.y;
+                           const double length = std::max(1.0, dx * dx + dy * dy);
+                           const double cx = a.cell.x - active.cell.x,
+                                        cy = a.cell.y - active.cell.y;
+                           const double along = (cx * dx + cy * dy) / length;
+                           const double off_x = cx - along * dx, off_y = cy - along * dy;
+                           return along > 0 && off_x * off_x + off_y * off_y <= 2.0;
+                       });
 }
 
 // A magic item a Quick character uses now (MAGIC-3), as the original's did:

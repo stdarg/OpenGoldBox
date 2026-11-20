@@ -158,6 +158,31 @@ struct UsableItem
 // says so in its description.
 inline constexpr std::string_view stoned_description = "Turned to stone.";
 
+// Native level drain keeps its exact rolls and XP transition in the fight's
+// continuation. These values are progression receipts, never timed effects.
+struct NativeDrainReceipt
+{
+    unsigned slot{};
+    int hit_points{}, rolled_hit_points{};
+    unsigned experience{};
+    bool dead{};
+    int before_level{};
+    unsigned previous_experience{};
+    int previous_max_hit_points{};
+    bool operator==(const NativeDrainReceipt &) const = default;
+};
+
+struct NativeProgression
+{
+    int profession{}, race{}, knight_order{}, deity{}, robe_order{}, wisdom{};
+    bool female{};
+    int rolled_hit_points{}, previous_max_hit_points{};
+    unsigned experience{}, previous_experience{};
+    std::array<int, 8> peak_class_levels{};
+    std::vector<NativeDrainReceipt> drains;
+    bool operator==(const NativeProgression &) const = default;
+};
+
 // A creature's numbers in a fight under the original rules.
 struct Combatant
 {
@@ -174,6 +199,7 @@ struct Combatant
     // Its levels by the original's class slots (ClassSlot), which a level
     // drain takes from.
     std::array<int, 8> class_levels{};
+    std::optional<NativeProgression> native_progression;
     // How many level-0 enemies a fighter sweeps through in a round.
     int attack_level{1};
     // Dexterity's missile adjustment, which initiative adds.

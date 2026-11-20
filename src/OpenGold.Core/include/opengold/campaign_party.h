@@ -508,6 +508,8 @@ class CampaignParty
     // (the original rules' refused proposal in Treasures' romance), as a
     // spell's lasting change is kept. Atomic.
     void keep_lasting_change(MemberId id, const rules::AdvancementChoice &change);
+    // Roll and commit a module-defined scripted drain atomically.
+    bool drain_level(MemberId id);
     // Long Rest spell choices for a member offered them by the completed rest.
     [[nodiscard]] rules::SpellChoiceOptions spell_choice_options(MemberId id) const;
     // The rest the pending spell choices follow: a Long Rest, or a Short Rest

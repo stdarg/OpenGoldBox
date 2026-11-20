@@ -95,6 +95,93 @@ Image glyph_image(const Glyph &glyph, const std::array<VgaColor, 256> &palette)
     return image;
 }
 
+por::WallArtSet wall_art(const ViewArt &art)
+{
+    por::WallArtSet result;
+    result.appearances.resize(art.sets.size() * 5);
+    result.offsets.resize(result.appearances.size());
+    for (std::size_t slot = 0; slot < art.sets.size(); ++slot)
+    {
+        for (unsigned variant = 1; variant <= 5; ++variant)
+        {
+            for (unsigned view = 0; view < 10; ++view)
+            {
+                const auto appearance = slot * 5 + variant - 1;
+                auto &image = result.appearances[appearance][view];
+                auto &offset = result.offsets[appearance][view];
+                const auto size = por::wall_view_size(static_cast<por::WallView>(view));
+                int left = 0, top = 0;
+                int right = static_cast<int>(size.width), bottom = static_cast<int>(size.height);
+                const unsigned use_variant = view == 9 && variant > 2 ? 1 : variant;
+                const unsigned first = view == 9 ? 1 : view + 2;
+                const std::array<unsigned, 2> layers =
+                    use_variant <= 2
+                        ? std::array<unsigned, 2>{first + (use_variant - 1) * 10, 0}
+                        : std::array<unsigned, 2>{first, (use_variant - 1) * 9 + view + 3};
+                if (art.sets[slot])
+                {
+                    const auto &set = *art.sets[slot];
+                    for (const auto number : layers)
+                    {
+                        if (!number)
+                        {
+                            continue;
+                        }
+                        if (number >= set.glyphs.size() || !set.glyphs[number])
+                        {
+                            throw std::runtime_error("Missing wall glyph " +
+                                                     std::to_string(number));
+                        }
+                        const auto &glyph = *set.glyphs[number];
+                        left = std::min(left, -glyph.origin_column);
+                        top = std::min(top, -glyph.origin_row);
+                        right = std::max(right,
+                                         static_cast<int>(glyph.image.width) - glyph.origin_column);
+                        bottom = std::max(bottom,
+                                          static_cast<int>(glyph.image.height) - glyph.origin_row);
+                    }
+                }
+                offset = {left, top};
+                image.width = static_cast<unsigned>(right - left);
+                image.height = static_cast<unsigned>(bottom - top);
+                image.rgba.resize(std::size_t{image.width} * image.height * 4);
+                if (!art.sets[slot])
+                {
+                    continue;
+                }
+                const auto &set = *art.sets[slot];
+                for (const auto number : layers)
+                {
+                    if (!number)
+                    {
+                        continue;
+                    }
+                    const auto &glyph = *set.glyphs[number];
+                    const auto source = glyph_image(glyph, set.palette);
+                    for (unsigned row = 0; row < source.height; ++row)
+                    {
+                        for (unsigned column = 0; column < source.width; ++column)
+                        {
+                            const auto at = (std::size_t{row} * source.width + column) * 4;
+                            if (source.rgba[at + 3] == 0)
+                            {
+                                continue;
+                            }
+                            const auto x = static_cast<unsigned>(static_cast<int>(column) -
+                                                                 glyph.origin_column - left);
+                            const auto y = static_cast<unsigned>(static_cast<int>(row) -
+                                                                 glyph.origin_row - top);
+                            const auto target = (std::size_t{y} * image.width + x) * 4;
+                            std::copy_n(source.rgba.begin() + at, 4, image.rgba.begin() + target);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return result;
+}
+
 namespace
 {
 
