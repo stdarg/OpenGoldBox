@@ -972,8 +972,10 @@ the kit's `SavGamA..J.csv`:
   flags, every area's events done, the squares stood on, the step
   events' counts, Search mode, the clock
   while no party plays, the session's dice, the tithe given, the vault and
-  the items left in it (`UA-STATE 3`; an older state's vault has none), the
-  tavern's next tale and drink, and the tavern tales heard on this square.
+  the items left in it (added in `UA-STATE 3`), the tavern's next tale and
+  drink, the tavern tales heard on this square, and whether the adventure
+  was won (`UA-STATE 4`). States 1, 2 and 3 still load; states before 3
+  have no vault items and states before 4 have no saved victory.
   Campaign format 51 (`DesignSave`); older saves load as before.
 - **When:** only while nothing waits for the player (`can_leave`), as in the
   DAX games, so no event and no fight is ever saved half-run; a party made
@@ -989,3 +991,28 @@ session that plays on identically (its flags, done events, pose, clock and
 the same steps meeting the same events), and refuses an older format and an
 unreadable state. `opengold_godot_startup_menu_ua` saves from the in-game
 menu, goes back to the startup menu, continues and plays on to the kobolds.
+
+### Winning-save verification (2026-11-20)
+
+Verified on the working tree based on `3f622a37` with the winning-save fix. The fresh
+`--ua-route` run starts six fighters with the design's own 20,000 experience,
+75 platinum and equipment, using the existing creation/Modify controls. It
+wins its one fight, reaches the actual designer ending and saves the winning
+party. Reload preserves the victory, prevents further exploration and
+resaves byte-identically. A separate session regression recruits the kit's
+actual NPC before the ending and verifies every PC and NPC's identity,
+health, experience and equipment through the same campaign roundtrip.
+Defeated games remain unsaveable, and state layouts 1–3 have load regressions.
+
+The installed-data session check passed (1/1, 0.98 seconds), followed by one
+fresh route run (exit 0; one fight, one win). Local evidence:
+
+- `/tmp/opengold-ua-won-save-session-v1.log`
+- `/tmp/opengold-ua-earned-winning-route-v1.log`
+- `/tmp/opengold-deliveries/ua-proof/opengold-ua-earned-winners.ogs`, with its
+  generated design alongside in `opengold_ua_route.dsn`.
+
+This certifies the accepted generated design made from the installed kit's
+templates. No sample adventure is installed; other designs still require
+their own verification. These focused checks do not certify a new UI or
+packaged build.
