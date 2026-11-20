@@ -121,6 +121,10 @@ struct GroundRecord
     buck_rogers::Creature creature;
     std::vector<buck_rogers::Item> items;
     std::vector<buck_rogers::ItemType> types;
+    // The second item list (types.pas TCharacter alternateItems, saved in
+    // the .hid file), where SWAP ITEM LISTS puts the gear a script takes
+    // away; a fight never reads it.
+    std::vector<buck_rogers::Item> alternate_items{};
 };
 
 [[nodiscard]] std::string encode_ground_record(const GroundRecord &record);

@@ -228,7 +228,7 @@ void AreaFiles::pictures(const std::string &name, std::map<unsigned, Image> &des
 {
     for (const auto &record : archive(name).records)
     {
-        if (vga_engine(game_))
+        if (vga_art(game_))
         {
             // A big picture is drawn whole, in the colors it sets.
             if (const auto picture = decode_vga_picture(record.bytes);
@@ -262,7 +262,7 @@ void AreaFiles::animations(const std::string &name,
 {
     for (const auto &record : archive(name).records)
     {
-        if (vga_engine(game_))
+        if (vga_art(game_))
         {
             if (const auto animation = decode_vga_animation(record.bytes))
             {
@@ -512,13 +512,15 @@ namespace
 
 // One wall set of the 256-color engine: WALLDEF1 record `set` drawn from the
 // tiles of 8X8D1 record `set` in the colors they set, with its backdrops.
-WallArtSet vga_wall_set(const AreaFiles &files, unsigned set)
+WallArtSet vga_wall_set(const AreaFiles &files, unsigned set, unsigned disk)
 {
     // The original draws its tiles through color 13 (its Load8x8Set).
     constexpr std::uint8_t see_through = 13;
-    const auto tiles = decode_vga_picture(files.record("8X8D1.DAX", set));
+    const auto number = std::to_string(disk);
+    const auto tiles = decode_vga_picture(files.record("8X8D" + number + ".DAX", set));
     const auto views =
-        tiles ? decode_vga_wall_art(files.record("WALLDEF1.DAX", set), *tiles) : std::nullopt;
+        tiles ? decode_vga_wall_art(files.record("WALLDEF" + number + ".DAX", set), *tiles)
+              : std::nullopt;
     if (!views)
     {
         throw EclError("Invalid wall set " + std::to_string(set));
@@ -555,14 +557,20 @@ WallArtSet vga_wall_set(const AreaFiles &files, unsigned set)
         return vga_rgba(picture->frames.front(), vga_color_table(picture->palette), clear);
     };
     constexpr unsigned daytime_sky = 1;
-    walls.indoor_backdrop = backdrop("BACK1.DAX", set, std::nullopt);
-    walls.sky_backdrop = backdrop("SKYGRND.DAX", daytime_sky, see_through);
+    walls.indoor_backdrop = backdrop("BACK" + number + ".DAX", set, std::nullopt);
+    // The Buck Rogers games' backdrop out of doors is their disk's BACK
+    // picture 80h past the set's (view3d.pas LoadBackdrop), drawn over the
+    // sky's color as the original blits it (BlitTileClipped).
+    walls.sky_backdrop = is_buck_rogers(files.game())
+                             ? backdrop("BACK" + number + ".DAX", set + 0x80, see_through)
+                             : backdrop("SKYGRND.DAX", daytime_sky, see_through);
     return walls;
 }
 
 } // namespace
 
-WallArtSet load_vga_wall_art(const AreaFiles &files, const std::array<unsigned, 3> &slots)
+WallArtSet load_vga_wall_art(const AreaFiles &files, const std::array<unsigned, 3> &slots,
+                             unsigned disk)
 {
     // A slot's set copies its appearances into that slot and the ones after
     // it (the original's LoadWallSet), so a later slot's set covers what an
@@ -577,7 +585,7 @@ WallArtSet load_vga_wall_art(const AreaFiles &files, const std::array<unsigned, 
         {
             continue;
         }
-        auto set = vga_wall_set(files, slots[slot]);
+        auto set = vga_wall_set(files, slots[slot], disk);
         const auto first = slot * slot_appearances;
         if (walls.appearances.size() < first + set.appearances.size())
         {
@@ -613,12 +621,15 @@ std::shared_ptr<PhlanResources> load_district(const AreaFiles &files, const MapC
     district->bank = area.bank;
     district->pieces = geo.pieces;
     // Pools of Darkness's TREASURE names its items itself: it has no lists.
-    const bool vga = vga_engine(files.game());
+    // The Buck Rogers games' TREASURE names ITEM0's templates too, and their
+    // walls are the 256-color engine's, each disk's own (docs/games/countdown.md).
+    const bool buck_rogers = is_buck_rogers(files.game());
+    const bool vga = vga_art(files.game());
     if (!vga && files.game() != GoldBoxGame::death_knights_of_krynn)
     {
         district->treasure = files.item_lists("ITEM" + bank + ".DAX");
     }
-    district->wall_art = vga ? load_vga_wall_art(files, geo.pieces)
+    district->wall_art = vga ? load_vga_wall_art(files, geo.pieces, buck_rogers ? area.bank : 1)
                              : load_wall_art(files, area.bank, geo.pieces, new_wall_art);
     // Gateway to the Savage Frontier has no sprite files.
     if (files.game() != GoldBoxGame::gateway_to_the_savage_frontier)

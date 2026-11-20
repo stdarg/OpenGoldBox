@@ -1,4 +1,5 @@
 #include "opengold/original.h"
+#include "opengold/buck_rogers_characters.h"
 #include "opengold/curse_records.h"
 #include "opengold/secret_records.h"
 #include "opengold/late_records.h"
@@ -646,6 +647,16 @@ class OriginalCharacterRules final : public rules::CharacterRules
     // character is the record's scores, levels and Hit Points.
     std::optional<CharacterDraft> record_draft(std::span<const std::uint8_t> bytes) const override
     {
+        // A Buck Rogers creature joins as its record (buck_rogers_characters.h).
+        if (is_buck_rogers(game_))
+        {
+            auto creature = buck_rogers::decode_creature(bytes);
+            if (!creature)
+            {
+                throw std::invalid_argument("Unreadable original record");
+            }
+            return buck_rogers_draft({std::move(*creature), {}, {}});
+        }
         const auto record = decode_record(bytes, game_);
         if (!record)
         {
@@ -770,7 +781,10 @@ class OriginalCharacterRules final : public rules::CharacterRules
     // gives (modify_allowed); an NPC's record never.
     bool modifiable(const CharacterDraft &draft, unsigned experience) const override
     {
-        if (!draft.rolled || draft.rules_data.starts_with(record_prefix))
+        // A Buck Rogers character's Modify is its creation screen's
+        // (buck_rogers_rules.h), not this one's.
+        if (!draft.rolled || draft.rules_data.starts_with(record_prefix) ||
+            holds_buck_rogers_record(draft.rules_data))
         {
             return false;
         }
@@ -1036,6 +1050,10 @@ class OriginalCharacterRules final : public rules::CharacterRules
         if (name == rules::NameRequirement::required && draft.name.empty())
         {
             throw std::invalid_argument("A character needs a name");
+        }
+        if (const auto record = buck_rogers_record_of(draft.rules_data))
+        {
+            return buck_rogers_sheet(draft, *record, identity());
         }
         if (const auto record = record_of(draft, game_))
         {

@@ -33,6 +33,9 @@ ZoneStarts zone_starts(GoldBoxGame game)
     case GoldBoxGame::gateway_to_the_savage_frontier:
     case GoldBoxGame::champions_of_krynn:
     case GoldBoxGame::death_knights_of_krynn:
+    // The Buck Rogers games keep Curse's zones (docs/games/countdown.md).
+    case GoldBoxGame::countdown_to_doomsday:
+    case GoldBoxGame::matrix_cubed:
         return {0x4B00, 0x7C00, 0x7A00};
     default:
         throw EclError("The script memory of " + std::string(game_title(game)) +

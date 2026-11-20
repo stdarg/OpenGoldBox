@@ -17,6 +17,12 @@ original::Content load_original_content(const std::filesystem::path &folder, Gol
 {
     original::Content content;
     content.game = game;
+    // A Buck Rogers creature fights as its own record, which each fight brings
+    // with it (buck_rogers_combat.h): the game has no bestiary of AD&D numbers.
+    if (is_buck_rogers(game))
+    {
+        return content;
+    }
     const auto catalog = por::CreatureCatalog::load(folder, game);
     for (const auto &[id, creature] : catalog.all())
     {

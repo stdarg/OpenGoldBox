@@ -136,9 +136,10 @@ class AreaFiles
 // WALLDEF1 record drawn from the tiles of the 8X8D1 record of its number in the
 // colors they set; the maps name their appearances from 1, five a slot
 // (docs/games/darkness.md, Walls). Pools of Darkness loads one set, in the
-// first slot; Treasures of the Savage Frontier up to three.
+// first slot; Treasures of the Savage Frontier up to three. The Buck Rogers
+// games draw each disk's WALLDEF with its own disk's 8X8D and BACK.
 [[nodiscard]] WallArtSet load_vga_wall_art(const AreaFiles &files,
-                                           const std::array<unsigned, 3> &slots);
+                                           const std::array<unsigned, 3> &slots, unsigned disk = 1);
 
 // Pools of Darkness's marker of the party's square on its area map: CURSOR
 // record 1 in the colors it sets, color 13 see-through; nothing without the

@@ -178,6 +178,10 @@ struct CharacterSheet
         std::array<int, 9> cleric_slots{}, druid_slots{}, magic_user_slots{};
         // The spells it knows, by the original's numbers (original::spell).
         std::vector<int> known_spells;
+        // The game's own record of the character, whole, where a game keeps
+        // its characters as their records (the Buck Rogers games'); empty
+        // for the others.
+        std::string game_record;
     };
 
     std::optional<Original> original;

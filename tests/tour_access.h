@@ -115,6 +115,13 @@ struct TourAccess
         town.bind_pose(pose);
     }
 
+    // Every script of the campaign, by its number.
+    static const std::map<unsigned, std::shared_ptr<const por::EclProgram>> &
+    programs(const por::RolfTourSession &town)
+    {
+        return town.town_->programs;
+    }
+
     // The maps of the session's areas, by the script that loads each first.
     static std::map<unsigned, unsigned> area_scripts(const por::RolfTourSession &town)
     {

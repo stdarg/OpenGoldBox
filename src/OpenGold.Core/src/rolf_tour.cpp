@@ -828,8 +828,9 @@ void RolfTourSession::enable_encounter_commands()
 {
     for (const std::uint8_t opcode : std::initializer_list<std::uint8_t>{12, 13, 14, 45, 49, 58})
     {
-        // Pools of Darkness's 31h is ACTION MENU, which the machine runs.
-        if (opcode == 49 && later_ecl_commands(game()))
+        // Pools of Darkness's and the Buck Rogers games' 31h is ACTION MENU,
+        // which the machine runs.
+        if (opcode == 49 && (later_ecl_commands(game()) || is_buck_rogers(game())))
         {
             continue;
         }
@@ -959,7 +960,7 @@ void RolfTourSession::publish_pose()
     // Treasures' overland scripts may put the party off the map, which its
     // original lets stand; the view keeps the square it showed last.
     if ((next.x >= 16 || next.y >= 16) && facing &&
-        game() == GoldBoxGame::treasures_of_the_savage_frontier)
+        (game() == GoldBoxGame::treasures_of_the_savage_frontier || is_buck_rogers(game())))
     {
         return;
     }
@@ -969,6 +970,10 @@ void RolfTourSession::publish_pose()
     }
     snapshot_.pose = next;
     snapshot_.overland = overland();
+    if (is_buck_rogers(game()))
+    {
+        update_solar_map();
+    }
     if (darkness_area_map())
     {
         publish_darkness_area_square();
@@ -1141,13 +1146,28 @@ void RolfTourSession::handle_host(const EclRequest &request)
         else if (service == EclAddress{routines.redraw_view} ||
                  service == EclAddress{routines.refresh_wall_ahead})
         {
-            const auto x = machine_.variable(game_cell(ecl_party_x)),
-                       y = machine_.variable(game_cell(ecl_party_y)),
-                       f = machine_.variable(game_cell(ecl_party_facing));
+            auto x = machine_.variable(game_cell(ecl_party_x)),
+                 y = machine_.variable(game_cell(ecl_party_y));
+            const auto f = machine_.variable(game_cell(ecl_party_facing));
+            // The Buck Rogers games' map wraps round a square off it, a
+            // number past 15 to 0 and one below 0 to 15, but in script 80's
+            // (view3d.pas GetWallType).
+            constexpr unsigned unwrapped_map_script = 80;
+            if (is_buck_rogers(game()) && current_script_ != unwrapped_map_script)
+            {
+                const auto wrap = [](std::uint16_t cell) -> std::uint16_t
+                {
+                    return cell < 16 ? cell : static_cast<std::int8_t>(cell & 0xFF) < 0 ? 15 : 0;
+                };
+                x = wrap(x);
+                y = wrap(y);
+            }
             // Treasures' overland scripts may put the party off the map for
             // a moment, where its original finds no wall and no event.
             const bool off_map = x >= 16 || y >= 16;
-            if ((off_map && game() != GoldBoxGame::treasures_of_the_savage_frontier) || f >= 4)
+            if ((off_map && game() != GoldBoxGame::treasures_of_the_savage_frontier &&
+                 !is_buck_rogers(game())) ||
+                f >= 4)
             {
                 throw EclError("Invalid redraw pose " + std::to_string(x) + "," +
                                std::to_string(y) + " facing " + std::to_string(f));
@@ -1225,7 +1245,8 @@ void RolfTourSession::handle_host(const EclRequest &request)
         break;
     }
     default:
-        throw EclError("Unsupported tour host request");
+        throw EclError("Unsupported tour host request: " +
+                       std::string(ecl_opcode(opcode, game()).name));
     }
     if (!machine_.resume_host(request.id, reply))
     {

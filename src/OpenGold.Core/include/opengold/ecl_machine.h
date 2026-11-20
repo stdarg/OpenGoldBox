@@ -155,6 +155,16 @@ class EclMachine
     // C04Dh).
     void alias_cell(EclAddress alias, EclAddress cell);
     [[nodiscard]] std::uint16_t variable(EclAddress address) const;
+    // An operand as the Buck Rogers games read it (eclmenu.pas GetEclVar): a
+    // byte, word or four-byte literal, or the byte, word or four-byte cell it
+    // names, a four-byte cell kept as its low word and the word two cells
+    // on, and read signed as the original's LongInt does.
+    [[nodiscard]] std::int64_t operand_value(const EclOperand &operand) const;
+    // The cells a Buck Rogers write to a destination operand of this tag
+    // makes (WriteGbvm): a byte (tag 0 or 1), a word (2 or 3) or a four-byte
+    // number (4 or 5) as two words.
+    [[nodiscard]] static std::vector<EclMemoryWrite>
+    sized_writes(EclAddress address, std::int64_t value, std::uint8_t tag);
     // Whether a script instruction (not a host reply or binding) wrote the
     // cell since the last call for it, such as a script setting the clock.
     [[nodiscard]] bool consume_script_write(EclAddress address);
@@ -254,6 +264,13 @@ class EclMachine
     void request_engine_prompt(const EclInstruction &instruction, bool yes_or_no);
     // The 256-color engine's commands that need no host: true when it ran one.
     [[nodiscard]] bool execute_later_command(const EclInstruction &instruction);
+    // The Buck Rogers games' commands the machine runs itself, and their
+    // arithmetic on four-byte numbers: true when it ran one.
+    [[nodiscard]] bool execute_buck_rogers_command(const EclInstruction &instruction);
+    void write_sized(EclAddress address, std::int64_t value, std::uint8_t tag);
+    // Where a Buck Rogers LOOP START left its loop's first command, while the
+    // script runs (eclvm.pas eclLoopStart); a script is never saved mid-run.
+    std::uint32_t loop_start_{};
     void jump(std::uint32_t address);
     void execute(const EclInstruction &instruction);
 };

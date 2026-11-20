@@ -586,6 +586,13 @@ class CampaignParty
     [[nodiscard]] unsigned thieves_tools_chance(MemberId id) const;
     // The member's current Hit Point maximum, raised by Aid.
     [[nodiscard]] int hit_point_maximum(MemberId id) const;
+    // A Buck Rogers member's record as it is now (buck_rogers_characters.h):
+    // what its last fight, shop or training left in its vitals, else its
+    // creation's; empty for a member of another game.
+    [[nodiscard]] std::string game_record(MemberId id) const;
+    // Keeps a Buck Rogers member's record as the game changed it; its Hit
+    // Points and death follow the record's.
+    void keep_game_record(MemberId id, std::string record);
     // Every living member's Hit Points to its maximum (Gateway's PROGRAM 12h);
     // true when any member was below it.
     [[nodiscard]] bool heal_living_members();

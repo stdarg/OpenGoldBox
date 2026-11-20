@@ -297,6 +297,12 @@ std::uint16_t EclMachine::variable(EclAddress cell) const
     if (program_address(*program_, address))
     {
         const auto offset = address.location - program_->memory().origin + 2;
+        // The Buck Rogers games clear their whole script zone before a script
+        // loads (eclmenu.pas LoadEclScript), so past its end it reads 0.
+        if (offset >= image_.size() && is_buck_rogers(program_->game()))
+        {
+            return 0;
+        }
         if (offset >= image_.size())
         {
             throw EclError("Read beyond loaded script image");
@@ -361,6 +367,10 @@ void EclMachine::write(EclAddress cell, std::uint16_t v)
     }
     if (program_address(*program_, address))
     {
+        if (address.location - program_->memory().origin + 2 >= image_.size())
+        {
+            throw EclError("Write beyond loaded script image");
+        }
         image_[address.location - program_->memory().origin + 2] = static_cast<std::uint8_t>(v);
         // A table may share the script image with code. Invalidate affected decoded
         // spans after a write so subsequent fetches see this machine's new bytes.
@@ -533,6 +543,10 @@ void EclMachine::execute(const EclInstruction &i)
     if (!spec.executable)
     {
         throw EclError("Unsupported execution: " + std::string(spec.name));
+    }
+    if (is_buck_rogers(program_->game()) && execute_buck_rogers_command(i))
+    {
+        return;
     }
     if (later_ecl_commands(program_->game()) && execute_later_command(i))
     {
@@ -976,6 +990,222 @@ bool EclMachine::execute_later_command(const EclInstruction &i)
     return true;
 }
 
+std::int64_t EclMachine::operand_value(const EclOperand &a) const
+{
+    switch (a.tag)
+    {
+    case 0:
+        return a.value & 255;
+    case 2:
+    case 128:
+    case 129:
+        return a.value;
+    case 1:
+        return variable(EclAddress{a.value}) & 255;
+    case 3:
+        return variable(EclAddress{a.value});
+    case 4:
+        return static_cast<std::int32_t>(a.value | static_cast<std::uint32_t>(a.high_word) << 16);
+    case 5:
+        return static_cast<std::int32_t>(
+            variable(EclAddress{a.value}) |
+            static_cast<std::uint32_t>(variable(indexed_address(EclAddress{a.value}, 2))) << 16);
+    default:
+        throw EclError("Numeric operand required");
+    }
+}
+
+std::vector<EclMemoryWrite> EclMachine::sized_writes(EclAddress address, std::int64_t value,
+                                                     std::uint8_t tag)
+{
+    const auto bits = static_cast<std::uint32_t>(value);
+    if (tag == 4 || tag == 5)
+    {
+        return {{address, static_cast<std::uint16_t>(bits & 0xFFFF)},
+                {indexed_address(address, 2), static_cast<std::uint16_t>(bits >> 16)}};
+    }
+    return {{address, static_cast<std::uint16_t>(bits & (tag < 2 ? 0xFF : 0xFFFF))}};
+}
+
+void EclMachine::write_sized(EclAddress address, std::int64_t value, std::uint8_t tag)
+{
+    for (const auto &cell : sized_writes(address, value, tag))
+    {
+        write(cell.address, cell.value);
+    }
+}
+
+// The Buck Rogers games' script machine (eclvm.pas DispatchEclCommand;
+// docs/games/countdown.md, "Scripts"): numbers are LongInts, read and written
+// in the width each operand names, and a few commands are new.
+bool EclMachine::execute_buck_rogers_command(const EclInstruction &i)
+{
+    constexpr std::uint8_t compare = 0x03, add = 0x04, subtract = 0x05, divide = 0x06,
+                           multiply = 0x07, save = 0x09, print = 0x11, print_clear = 0x12,
+                           return_command = 0x13, compare_and = 0x14, and_command = 0x2F,
+                           or_command = 0x30, continue_prompt = 0x29, yes_no = 0x2C,
+                           logbook_entry = 0x3F, clear_and_stop = 0x42, skip = 0x44,
+                           loop_start = 0x46, loop_next = 0x47;
+    // The loop's counter and limit (types.pas TZone0 eclLoopCounter, eclLoopLimit).
+    constexpr EclAddress loop_counter{0x4CF6}, loop_limit{0x4CF7};
+    const auto &a = i.operands;
+    const auto numbers = [&a](std::size_t count)
+    {
+        return std::all_of(a.begin(), a.begin() + static_cast<std::ptrdiff_t>(count),
+                           [](const EclOperand &operand)
+                           {
+                               return operand.tag < 128;
+                           });
+    };
+    switch (i.opcode)
+    {
+    case compare:
+    {
+        if (!numbers(2))
+        {
+            return false;
+        }
+        const auto lhs = operand_value(a[0]), rhs = operand_value(a[1]);
+        conditions_ = relation(lhs < rhs ? -1 : lhs > rhs ? 1 : 0);
+        break;
+    }
+    case compare_and:
+        if (!numbers(4))
+        {
+            return false;
+        }
+        conditions_ = equality(operand_value(a[0]) == operand_value(a[1]) &&
+                               operand_value(a[2]) == operand_value(a[3]));
+        break;
+    case add:
+    case subtract:
+    case divide:
+    case multiply:
+    case and_command:
+    case or_command:
+    {
+        const auto lhs = operand_value(a[0]), rhs = operand_value(a[1]);
+        const auto dest = destination(a[2]);
+        std::int64_t result = 0;
+        switch (i.opcode)
+        {
+        case add:
+            result = lhs + rhs;
+            break;
+        case subtract:
+            result = rhs - lhs; // EclArithmetic stores v2 - v1.
+            break;
+        case divide:
+            if (rhs == 0)
+            {
+                throw EclError("Division by zero");
+            }
+            result = lhs / rhs;
+            break;
+        case multiply:
+            result = lhs * rhs;
+            break;
+        default:
+            // AND and OR keep a byte and compare 0 with it (EclAndOr).
+            result = (i.opcode == and_command ? lhs & rhs : lhs | rhs) & 0xFF;
+            conditions_ = relation(result > 0 ? -1 : 0);
+            break;
+        }
+        write_sized(dest, result, a[2].tag);
+        break;
+    }
+    case save:
+        if (a[0].tag >= 128)
+        {
+            return false;
+        }
+        write_sized(destination(a[1]), operand_value(a[0]), a[1].tag);
+        break;
+    case print:
+    case print_clear:
+    {
+        if (a[0].tag >= 128)
+        {
+            return false;
+        }
+        EclRequest request;
+        request.kind = EclRequestKind::text;
+        request.text = std::to_string(operand_value(a[0]));
+        request.clear = i.opcode == print_clear;
+        request.instruction = i;
+        request.id = next_request_++;
+        pending_ = std::move(request);
+        state_ = EclState::waiting;
+        break;
+    }
+    case return_command:
+        // RETURN with nothing to return to ends the script (EclReturn).
+        if (!stack_.empty())
+        {
+            return false;
+        }
+        state_ = EclState::completed;
+        return true;
+    case continue_prompt:
+        request_engine_prompt(i, false);
+        break;
+    case yes_no:
+    {
+        // Yes sets the equal flag, No the not-equal one (EclYesNoCompare).
+        EclRequest request;
+        request.kind = EclRequestKind::menu;
+        request.instruction = i;
+        request.id = next_request_++;
+        request.choices = {"YES", "NO"};
+        menu_values_ = {0, 1};
+        pending_ = std::move(request);
+        state_ = EclState::waiting;
+        break;
+    }
+    case logbook_entry:
+        // The Log Book entry the team is to read, by its number, and what it
+        // holds (EclLogbookEntry); the player goes on with a key.
+        request_engine_prompt(i, false);
+        pending_->text = "LOG BOOK ENTRY " + std::to_string(operand_value(a.at(1))) + " HOLDS " +
+                         text(a.at(0)) + ".";
+        break;
+    case clear_and_stop:
+    {
+        // The text window is cleared and the script ends (EclClearAndStop).
+        EclRequest request;
+        request.kind = EclRequestKind::text;
+        request.clear = true;
+        request.instruction = i;
+        request.id = next_request_++;
+        pending_ = std::move(request);
+        state_ = EclState::waiting;
+        break;
+    }
+    case skip:
+        break;
+    case loop_start:
+        loop_start_ = i.next;
+        write(loop_counter, static_cast<std::uint16_t>(operand_value(a[0]) & 0xFF));
+        write(loop_limit, static_cast<std::uint16_t>(operand_value(a[1]) & 0xFF));
+        break;
+    case loop_next:
+    {
+        const auto counter = static_cast<std::uint16_t>((variable(loop_counter) + 1) & 0xFF);
+        write(loop_counter, counter);
+        if (counter <= variable(loop_limit))
+        {
+            jump(loop_start_);
+            return true;
+        }
+        break;
+    }
+    default:
+        return false;
+    }
+    pc_ = i.next;
+    return true;
+}
+
 void EclMachine::request_host(const EclInstruction &i)
 {
     if (!host_opcodes_.contains(i.opcode))
@@ -986,7 +1216,27 @@ void EclMachine::request_host(const EclInstruction &i)
     EclRequest request;
     request.kind = EclRequestKind::host;
     request.instruction = i;
-    for (std::size_t n = 0; n < i.operands.size(); ++n)
+    // The Buck Rogers host reads each operand's value as the original does
+    // (operand_value) and the cells it writes from the instruction itself:
+    // its commands' numbers name other operands than the earlier games'.
+    for (std::size_t n = 0; is_buck_rogers(program_->game()) && n < i.operands.size(); ++n)
+    {
+        const auto &operand = i.operands[n];
+        constexpr std::uint8_t call = 0x2D;
+        if (operand.tag == 128 || operand.tag == 129)
+        {
+            request.arguments.emplace_back(text(operand));
+        }
+        else if (i.opcode == call)
+        {
+            request.arguments.emplace_back(EclAddress{encoded_address(operand)});
+        }
+        else
+        {
+            request.arguments.emplace_back(static_cast<std::uint16_t>(operand_value(operand)));
+        }
+    }
+    for (std::size_t n = 0; !is_buck_rogers(program_->game()) && n < i.operands.size(); ++n)
     {
         const auto &operand = i.operands[n];
         const auto op = i.opcode;
@@ -1280,7 +1530,8 @@ bool EclMachine::resume_host(std::uint64_t id, const EclHostReply &reply)
         {
             validate_string(address, text);
         }
-        for (std::size_t n = 0; n < pending_->arguments.size(); ++n)
+        for (std::size_t n = 0; !is_buck_rogers(program_->game()) && n < pending_->arguments.size();
+             ++n)
         {
             if (((opcode == 29 && n == 0) || (opcode == 30 && n >= 2) || opcode == 34 ||
                  (opcode == 41 && n == 3) || (opcode == 59 && n >= 1)) &&

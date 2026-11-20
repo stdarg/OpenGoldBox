@@ -131,6 +131,15 @@ inline constexpr std::array<GoldBoxGame, 11> gold_box_games{
     return game == GoldBoxGame::countdown_to_doomsday || game == GoldBoxGame::matrix_cubed;
 }
 
+// Whether the game's pictures, animations, sprites, icons, tiles and walls are
+// the 256-color layout Pools of Darkness began: its engine's, and the Buck
+// Rogers games', which keep the Curse engine's scripts and memory
+// (docs/games/countdown.md, "The census").
+[[nodiscard]] constexpr bool vga_art(GoldBoxGame game) noexcept
+{
+    return vga_engine(game) || is_buck_rogers(game);
+}
+
 // Death Knights introduced these script commands while retaining EGA art and
 // the earlier memory zones. The VGA games inherit the command variants.
 [[nodiscard]] constexpr bool later_ecl_commands(GoldBoxGame game) noexcept

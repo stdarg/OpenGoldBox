@@ -1,4 +1,5 @@
 #include "opengold/campaign_party.h"
+#include "opengold/buck_rogers_characters.h"
 #include "opengold/original.h"
 #include "opengold/diagnostic_log.h"
 #include "opengold/campaign_encounter.h"
@@ -1067,6 +1068,33 @@ PartyMember &CampaignParty::member_in(PartyState &state, MemberId id)
     return const_cast<PartyMember &>(member_in(std::as_const(state), id));
 }
 
+std::string CampaignParty::game_record(MemberId id) const
+{
+    const auto &m = member(id);
+    if (original::holds_buck_rogers_record(m.vitals.resources))
+    {
+        return m.vitals.resources;
+    }
+    const auto &original = m.character.sheet().original;
+    return original ? original->game_record : std::string{};
+}
+
+void CampaignParty::keep_game_record(MemberId id, std::string record)
+{
+    const auto kept = original::buck_rogers_record_of(record);
+    if (!kept)
+    {
+        throw std::invalid_argument("Not a Buck Rogers record");
+    }
+    auto &m = edit(id);
+    const auto status = static_cast<original::BuckRogersStatus>(kept->creature.status);
+    m.vitals.hit_points = kept->creature.hit_points;
+    m.vitals.dead =
+        status == original::BuckRogersStatus::dead || status == original::BuckRogersStatus::gone;
+    m.vitals.resources = std::move(record);
+    m.experience = kept->creature.experience;
+}
+
 PartyMember &CampaignParty::edit(MemberId id)
 {
     return const_cast<PartyMember &>(std::as_const(*this).member(id));
@@ -1204,11 +1232,18 @@ MemberId CampaignParty::add_pc(Character character)
         throw std::runtime_error("All six PC positions are occupied");
     }
     const auto id = state_.next_id;
-    const auto hp = character.sheet().hit_points;
+    auto hp = character.sheet().hit_points;
     // Curse's characters start with experience (the original rules' sheet says).
     const auto &original = character.sheet().original;
     const auto experience = original ? static_cast<unsigned>(original->experience) : 0U;
-    state_.roster.push_back({id, std::move(character), {}, {hp, false, {}}});
+    // A Buck Rogers character keeps its record in its vitals from the start,
+    // with the Hit Points its record has.
+    std::string record = original ? original->game_record : std::string{};
+    if (const auto kept = opengold::original::buck_rogers_record_of(record))
+    {
+        hp = kept->creature.hit_points;
+    }
+    state_.roster.push_back({id, std::move(character), {}, {hp, false, std::move(record)}});
     state_.roster.back().experience = experience;
     ++state_.next_id;
     join(id, false);
@@ -4441,6 +4476,11 @@ std::vector<rules::Participant> CampaignParty::participants() const
                 continue;
             }
             auto p = rules_->character_profile(m.character.sheet(), equipped_definitions(m));
+            // A Buck Rogers member fights as its record is now.
+            if (auto record = game_record(id); !record.empty())
+            {
+                p.data = std::move(record);
+            }
             result.push_back({id,
                               "campaign-character",
                               m.character.sheet().name,

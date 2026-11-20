@@ -11,6 +11,7 @@
 #include "opengold/creature_catalog.h"
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_encounter.h"
+#include "opengold/buck_rogers_records.h"
 #include "opengold/difficulty.h"
 #include "opengold/teleport.h"
 #include "opengold/monster_bundle.h"
@@ -59,7 +60,28 @@ enum class TourPhase
     defeated,
     // After a won fight or a script's treasure: the items left lie in a pile
     // for the party to take; the script waits.
-    treasure
+    treasure,
+    // A Buck Rogers SHIP COMBAT waits for the ship fight (TourSnapshot's
+    // ship_combat): the ship-combat screen plays it and gives the session
+    // its outcome (finish_ship_combat).
+    ship_combat
+};
+
+// A Buck Rogers script's SHIP COMBAT (1Fh; shipcbt.pas ShipCombat): the
+// enemy ship's type, 1 to 5 (SHIPS.DAX record 39 + type), the operand the
+// original never reads, the enemy pilot's skill and its to-hit number.
+struct ShipCombatCall
+{
+    unsigned enemy_type{}, unused{}, pilot_skill{}, to_hit{};
+    bool operator==(const ShipCombatCall &) const = default;
+};
+
+// How a ship fight ended, as SHIP COMBAT leaves it in cell 4BBAh: the enemy
+// destroyed or boarded, or the team's ship destroyed or the enemy out of range.
+enum class ShipCombatOutcome : std::uint8_t
+{
+    enemy_taken = 0,
+    team_lost_or_enemy_gone = 1
 };
 
 struct TownParty
@@ -200,6 +222,20 @@ struct PhlanResources
     // On the town only: what scripts' LOAD MONSTER instructions load instead
     // of the original's (data/encounters/overrides.json), checked against them.
     std::map<EncounterSite, EncounterOverride> encounter_overrides;
+
+    // On the town only: the Buck Rogers games' creatures as LOAD MONSTER and
+    // ADD NPC take them (MON0CHA's records with MON0ITM's items of the same
+    // number), the item templates TREASURE and SHOP copy (ITEM0, template n
+    // at [n - 1]) and ITEMS' rows (docs/games/countdown.md, "The census").
+    struct BuckRogersCreature
+    {
+        buck_rogers::Creature creature;
+        std::vector<buck_rogers::Item> items;
+    };
+
+    std::map<unsigned, BuckRogersCreature> buck_rogers_creatures;
+    std::vector<buck_rogers::Item> buck_rogers_templates;
+    std::vector<buck_rogers::ItemType> buck_rogers_item_types;
 };
 
 // A script took coins the payer lacked and the purse made change.
@@ -344,6 +380,11 @@ struct TourSnapshot
     // and the direction it last moved, 0 north and on clockwise to 7.
     bool overland{};
     unsigned overland_x{}, overland_y{}, overland_direction{};
+    // The Buck Rogers games' solar map is on screen (PICTURE MODE 2, or the
+    // area kind 70h): the screen that shows it drives the session from here.
+    bool solar_map{};
+    // The SHIP COMBAT the script waits on, while the phase is ship_combat.
+    std::optional<ShipCombatCall> ship_combat;
 };
 enum class ExplorationCommand
 {
@@ -509,6 +550,9 @@ class RolfTourSession
     bool take_treasure(std::uint64_t ticket, std::size_t item);
     // Leaves what is still in the pile behind for good; the script goes on.
     bool leave_treasure(std::uint64_t ticket);
+    // The ship fight the script waits on ended so (the ship-combat screen
+    // plays it); the script goes on. False when no ship fight waits.
+    bool finish_ship_combat(std::uint64_t ticket, ShipCombatOutcome outcome);
     bool explore(ExplorationCommand command);
     // The original's Search mode: each step searches as Look does, and takes
     // ten minutes more.
@@ -998,6 +1042,8 @@ class RolfTourSession
     void roll_plaza_group(const EclRequest &request, EclHostReply &reply);
     bool showing_monster_picture_{};
     std::uint64_t combat_request_{};
+    // The Buck Rogers SHIP COMBAT request the ship fight answers.
+    std::uint64_t ship_combat_request_{};
     unsigned encounter_challenge_{opengold::default_encounter_challenge};
     opengold::Difficulty difficulty_{opengold::default_difficulty};
     // The original encounter before fitting: its experience and loot are awarded.
@@ -1291,6 +1337,19 @@ class RolfTourSession
     // 401h (docs/games/darkness.md, Script memory): the record's fields, last
     // in the reply so that they stand.
     void add_vga_record(PartySlot slot, EclHostReply &reply) const;
+    // The Buck Rogers games' script host (buck_rogers_host.cpp;
+    // docs/games/countdown.md, "Scripts"): the commands the party answers,
+    // the commands their table changed or added, and the current
+    // character's record as their scripts read it from 7C00h (eclmenu.pas
+    // SpecialReadZ1), and as they change it (SpecialWriteZ1).
+    void enable_buck_rogers_party_commands();
+    [[nodiscard]] bool handle_buck_rogers_host(const EclRequest &request);
+    void buck_rogers_damage(const EclRequest &request);
+    // Whether the solar map is on screen, from the picture mode and the area
+    // kind the scripts set (TourSnapshot::solar_map).
+    void update_solar_map();
+    void add_buck_rogers_record(PartySlot slot, EclHostReply &reply) const;
+    void read_buck_rogers_character();
     // Pools of Darkness's to-hit cells, which its scripts set before a fight
     // and its end clears: cell 1 (monsterHitMod) is added to the monsters'
     // attack rolls, cell 2Fh (partyHitMod) to the party's side's

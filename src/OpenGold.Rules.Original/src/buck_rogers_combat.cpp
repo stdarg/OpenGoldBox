@@ -128,7 +128,10 @@ void age_ground_effects(std::vector<GroundEffect> &effects)
 
 namespace
 {
-constexpr std::string_view ground_record_format = "OGBUCKROGERS 1";
+// Version 2 keeps the second item list (TCharacter alternateItems), which
+// version 1 did not; version 1 reads with none.
+constexpr std::string_view ground_record_prefix = "OGBUCKROGERS ",
+                           ground_record_format = "OGBUCKROGERS 2";
 
 void put_hex(std::string &text, std::span<const std::uint8_t> bytes)
 {
@@ -213,13 +216,17 @@ std::string encode_ground_record(const GroundRecord &record)
     std::string text(ground_record_format);
     put_hex(text, buck_rogers::encode_creature(record.creature));
     put_hex(text, buck_rogers::encode_items(record.items));
+    put_hex(text, buck_rogers::encode_items(record.alternate_items));
     std::vector<std::uint8_t> named;
-    for (const auto &item : record.items)
+    for (const auto *list : {&record.items, &record.alternate_items})
     {
-        if (item.type < record.types.size() &&
-            std::find(named.begin(), named.end(), item.type) == named.end())
+        for (const auto &item : *list)
         {
-            named.push_back(item.type);
+            if (item.type < record.types.size() &&
+                std::find(named.begin(), named.end(), item.type) == named.end())
+            {
+                named.push_back(item.type);
+            }
         }
     }
     text += ' ' + std::to_string(named.size());
@@ -244,34 +251,50 @@ std::string encode_ground_record(const GroundRecord &record)
 
 std::optional<GroundRecord> decode_ground_record(std::string_view text)
 {
-    if (!text.starts_with(ground_record_format))
+    if (!text.starts_with(ground_record_prefix) || text.size() <= ground_record_prefix.size())
     {
         return std::nullopt;
     }
-    const auto words = words_of(text.substr(ground_record_format.size()));
-    if (words.size() < 3)
+    const char version = text[ground_record_prefix.size()];
+    if (version != '1' && version != '2')
+    {
+        return std::nullopt;
+    }
+    const auto words = words_of(text.substr(ground_record_prefix.size() + 1));
+    const std::size_t lists = version == '2' ? 2 : 1;
+    if (words.size() < 2 + lists)
     {
         return std::nullopt;
     }
     const auto creature_bytes = hex_bytes(words[0]);
     const auto item_bytes = hex_bytes(words[1]);
-    const auto rows = count_of(words[2]);
-    if (!creature_bytes || !item_bytes || !rows || words.size() != 3 + 2 * *rows)
+    const auto alternate_bytes =
+        lists == 2 ? hex_bytes(words[2])
+                   : std::optional<std::vector<std::uint8_t>>{std::vector<std::uint8_t>{}};
+    const auto rows = count_of(words[1 + lists]);
+    if (!creature_bytes || !item_bytes || !alternate_bytes || !rows ||
+        words.size() != 2 + lists + 2 * *rows)
     {
         return std::nullopt;
     }
+    const auto list_of = [](const std::vector<std::uint8_t> &bytes)
+    {
+        return bytes.empty() ? std::optional<std::vector<Item>>{std::vector<Item>{}}
+                             : buck_rogers::decode_items(bytes);
+    };
     auto creature = buck_rogers::decode_creature(*creature_bytes);
-    auto items = item_bytes->empty() ? std::optional<std::vector<Item>>{std::vector<Item>{}}
-                                     : buck_rogers::decode_items(*item_bytes);
-    if (!creature || !items)
+    auto items = list_of(*item_bytes);
+    auto alternates = list_of(*alternate_bytes);
+    if (!creature || !items || !alternates)
     {
         return std::nullopt;
     }
-    GroundRecord record{std::move(*creature), std::move(*items), {}};
+    GroundRecord record{std::move(*creature), std::move(*items), {}, std::move(*alternates)};
+    const std::size_t first_row = 2 + lists;
     for (std::size_t row = 0; row < *rows; ++row)
     {
-        const auto type = count_of(words[3 + 2 * row]);
-        const auto bytes = hex_bytes(words[4 + 2 * row]);
+        const auto type = count_of(words[first_row + 2 * row]);
+        const auto bytes = hex_bytes(words[first_row + 1 + 2 * row]);
         if (!type || *type > 128 || !bytes || bytes->size() != ItemType::size)
         {
             return std::nullopt;

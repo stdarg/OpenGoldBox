@@ -2,6 +2,7 @@
 #include "champions_rules.h"
 #include "death_knights_rules.h"
 #include "death_knights_effects.h"
+#include "opengold/buck_rogers_characters.h"
 #include "opengold/original.h"
 #include "opengold/original_combat.h"
 #include "opengold/original_spells.h"
@@ -911,6 +912,18 @@ std::unique_ptr<CombatSession> OriginalModule::restore(std::string_view checkpoi
 CharacterProfile OriginalModule::character_profile(const CharacterSheet &sheet,
                                                    std::span<const std::string> gear) const
 {
+    // A Buck Rogers character fights as its record (buck_rogers_characters.h).
+    if (sheet.original && !sheet.original->game_record.empty())
+    {
+        CharacterProfile profile;
+        profile.data = sheet.original->game_record;
+        profile.hit_points = sheet.hit_points;
+        if (const auto record = buck_rogers_record_of(profile.data))
+        {
+            profile.movement_feet = record->creature.base_movement * 5;
+        }
+        return profile;
+    }
     const auto carried = readied(gear);
     const auto combatant = character_combatant(sheet, carried);
     CharacterProfile profile;

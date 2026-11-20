@@ -1,4 +1,5 @@
 #include "opengold/campaign_session.h"
+#include "opengold/buck_rogers_records.h"
 #include "opengold/death_knights_records.h"
 
 #include "area_loading.h"
@@ -57,6 +58,9 @@ LaterCampaign later_campaign(GoldBoxGame game)
         return {16, 1, 1, false};
     case GoldBoxGame::champions_of_krynn:
         return {36, 1, 1, false};
+    case GoldBoxGame::countdown_to_doomsday:
+        // A new game runs script 16 of disk 1 (eclvm.pas START_ECL_SCRIPT).
+        return {16, 1, 1, false};
     case GoldBoxGame::pools_of_darkness:
     case GoldBoxGame::treasures_of_the_savage_frontier:
         // One disk: a new game runs script 16 (its GameLoop), New Phlan's
@@ -499,6 +503,44 @@ void add_symbol_sets(const por::detail::AreaFiles &files, unsigned disk, por::Ph
     root.symbol_sets.emplace(por::gateway_marks, std::move(*marks));
 }
 
+// The Buck Rogers games' creatures, item templates and item types
+// (docs/games/countdown.md, "The census"): each MON0CHA record with the items
+// of MON0ITM's record of its number, as LOAD MONSTER copies them
+// (eclmenu.pas InitCreature), and the ITEMS rows its items name.
+void add_buck_rogers_tables(const por::detail::AreaFiles &files, por::PhlanResources &root)
+{
+    const auto types = buck_rogers::decode_item_types(
+        por::detail::read_archive(por::detail::resolve_archive(files.directory(), "ITEMS")));
+    const auto templates = buck_rogers::decode_item_templates(files.record("ITEM0.DAX", 1));
+    if (!types || !templates)
+    {
+        throw EclError("Invalid Buck Rogers ITEMS or ITEM0.DAX");
+    }
+    root.buck_rogers_item_types = *types;
+    root.buck_rogers_templates = *templates;
+    const auto &item_lists = files.archive("MON0ITM.DAX").records;
+    for (const auto &record : files.archive("MON0CHA.DAX").records)
+    {
+        auto creature = buck_rogers::decode_creature(record.bytes);
+        if (!creature)
+        {
+            throw EclError("Invalid creature " + std::to_string(record.id) + " in MON0CHA.DAX");
+        }
+        por::PhlanResources::BuckRogersCreature ground{std::move(*creature), {}};
+        const auto items = std::ranges::find(item_lists, record.id, &DaxRecord::id);
+        if (items != item_lists.end() && !items->bytes.empty())
+        {
+            auto decoded = buck_rogers::decode_items(items->bytes);
+            if (!decoded)
+            {
+                throw EclError("Invalid items " + std::to_string(record.id) + " in MON0ITM.DAX");
+            }
+            ground.items = std::move(*decoded);
+        }
+        root.buck_rogers_creatures.emplace(record.id, std::move(ground));
+    }
+}
+
 por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, GoldBoxGame game)
 {
     const auto campaign = later_campaign(game);
@@ -511,9 +553,14 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
         throw EclError(std::string(game_title(game)) + " needs ECL" + disk + ".DAX record " +
                        std::to_string(campaign.opening_script));
     }
-    const auto templates = por::decode_item_templates(
-        por::detail::read_archive(por::detail::resolve_archive(folder, item_types_file(game))),
-        game);
+    // The Buck Rogers games' ITEMS is their own (add_buck_rogers_tables).
+    const bool buck_rogers = is_buck_rogers(game);
+    const auto templates =
+        buck_rogers
+            ? std::optional<std::vector<por::ItemTemplate>>{std::vector<por::ItemTemplate>{}}
+            : por::decode_item_templates(por::detail::read_archive(por::detail::resolve_archive(
+                                             folder, item_types_file(game))),
+                                         game);
     if (!templates)
     {
         throw EclError("Invalid item templates");
@@ -531,8 +578,9 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
     }
     const por::detail::AreaFiles files(folder, *templates, std::move(*words), game);
     const auto maps = por::MapCatalog::load(folder);
-    const auto creatures =
-        std::make_shared<const por::CreatureCatalog>(por::CreatureCatalog::load(folder, game));
+    const auto creatures = buck_rogers ? std::shared_ptr<const por::CreatureCatalog>{}
+                                       : std::make_shared<const por::CreatureCatalog>(
+                                             por::CreatureCatalog::load(folder, game));
     // Every creature record of a disk, which its scripts' LOAD MONSTER and ADD
     // NPC name by number; these games fight them as their records (the
     // original rules), with no conversions. Secret's one file serves them all.
@@ -541,6 +589,10 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
     {
         const auto bank = creature_disks.size() == 1 ? creature_disks.front() : disk;
         std::map<unsigned, por::Creature> found;
+        if (!creatures)
+        {
+            return found;
+        }
         for (const auto &[id, creature] : creatures->all())
         {
             if (id.bank == bank)
@@ -581,6 +633,10 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
         {
             root->area_map_marker = por::detail::load_darkness_area_map_marker(files);
         }
+    }
+    else if (buck_rogers)
+    {
+        add_buck_rogers_tables(files, *root);
     }
     else
     {
@@ -694,9 +750,9 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
             if (!root->wall_sets.contains(key))
             {
                 root->wall_sets.emplace(
-                    key, vga_engine(game)
-                             ? por::detail::load_vga_wall_art(files, walls)
-                             : por::detail::load_wall_art(files, load.disk, walls, {}));
+                    key, vga_art(game) ? por::detail::load_vga_wall_art(files, walls,
+                                                                        buck_rogers ? load.disk : 1)
+                                       : por::detail::load_wall_art(files, load.disk, walls, {}));
             }
         }
     }
@@ -713,7 +769,10 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
         // PIC2 contains another record with that number.
         picture_files.emplace_back("PIC5.DAX");
     }
-    const unsigned last_picture_disk = game == GoldBoxGame::death_knights_of_krynn ? 7 : 6;
+    // Countdown's pictures run to PIC9.
+    const unsigned last_picture_disk = game == GoldBoxGame::death_knights_of_krynn ? 7
+                                       : buck_rogers                               ? 9
+                                                                                   : 6;
     for (unsigned picture_disk = 1; picture_disk <= last_picture_disk; ++picture_disk)
     {
         for (const auto *family : {"PIC", "BIGPIC"})
@@ -842,6 +901,7 @@ por::RolfTourSession load_campaign(const std::filesystem::path &folder, GoldBoxG
         return load_later_campaign(folder, game);
     case GoldBoxGame::champions_of_krynn:
     case GoldBoxGame::death_knights_of_krynn:
+    case GoldBoxGame::countdown_to_doomsday:
         return load_later_campaign(folder, game);
     default:
         throw std::invalid_argument(std::string(game_title(game)) + " cannot be played yet");

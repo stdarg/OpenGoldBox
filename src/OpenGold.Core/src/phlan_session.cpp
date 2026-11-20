@@ -108,6 +108,11 @@ void RolfTourSession::change_area(unsigned id)
 // ITEMS (64), Secret AWARD EXPERIENCE (65).
 void RolfTourSession::enable_party_commands()
 {
+    if (is_buck_rogers(game()))
+    {
+        enable_buck_rogers_party_commands();
+        return;
+    }
     const bool later = later_ecl_commands(game());
     for (const std::uint8_t op :
          std::initializer_list<std::uint8_t>{11, 29, 30, 34, 35, 41, 46, 52, 54, 59})
@@ -596,6 +601,12 @@ void RolfTourSession::configure_town()
     for (const std::uint8_t op :
          std::initializer_list<std::uint8_t>{10, 28, 32, 33, 36, 39, 40, 50, 55, 56, 57, 60})
     {
+        // The Buck Rogers games' 3Ch does nothing and never ends (no script
+        // reaches it); their own commands are enabled with the party's.
+        if (op == 60 && is_buck_rogers(game()))
+        {
+            continue;
+        }
         machine_.enable_host(op);
     }
     if (later_ecl_commands(game()))
@@ -745,6 +756,21 @@ bool RolfTourSession::turncoat(MemberId id) const
 
 EclHostReply RolfTourSession::character_reply(PartySlot slot) const
 {
+    // A Buck Rogers character is its record (buck_rogers_host.cpp).
+    if (campaign_ && is_buck_rogers(game()))
+    {
+        EclHostReply reply;
+        add_buck_rogers_record(slot, reply);
+        const auto &slots = campaign_->state().slots;
+        reply.writes.push_back(
+            {game_cell(ecl_party_size),
+             static_cast<std::uint16_t>(std::ranges::count_if(slots,
+                                                              [](MemberId id)
+                                                              {
+                                                                  return id != MemberId{};
+                                                              }))});
+        return reply;
+    }
     if (campaign_)
     {
         auto reply = party_character_reply(*campaign_, slot);
@@ -929,6 +955,11 @@ bool RolfTourSession::dismissed_companion() const
 
 void RolfTourSession::read_character()
 {
+    if (campaign_ && is_buck_rogers(game()))
+    {
+        read_buck_rogers_character();
+        return;
+    }
     if (campaign_)
     {
         if (original::krynn_game(game()))
@@ -3716,6 +3747,10 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     {
         throw EclError("This event needs the campaign party");
     }
+    if (is_buck_rogers(game()) && handle_buck_rogers_host(request))
+    {
+        return true;
+    }
     if (diagnostic_log_enabled())
     {
         log_diagnostic(
@@ -3899,10 +3934,10 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             {
                 return ImageDecodeResult{FormatResult::ok, shared->second[distance]};
             }
-            return vga_engine(game()) ? vga_sprite(id, distance)
-                                      : decode_ega_sprite(area_resources().sprite_archive,
-                                                          static_cast<std::uint8_t>(id),
-                                                          static_cast<std::uint8_t>(distance));
+            return vga_art(game()) ? vga_sprite(id, distance)
+                                   : decode_ega_sprite(area_resources().sprite_archive,
+                                                       static_cast<std::uint8_t>(id),
+                                                       static_cast<std::uint8_t>(distance));
         };
         // The Pitt's buccaneer names sprite 19, which SPRIT1 lacks: met face
         // to face, the original shows the head (0x6DE1) and body portrait.
@@ -4789,6 +4824,24 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         {
             reply = vga_load_files(arg(0), arg(1));
             break;
+        }
+        // The Buck Rogers games' map 127 is none: the outposts and the solar
+        // map are pictures (eclvm.pas EclLoadFiles); in a Venus or Mars
+        // wilderness no map loads.
+        if (is_buck_rogers(game()))
+        {
+            constexpr std::uint16_t no_map = 127, venus_wilderness = 0xA2, mars_wilderness = 0xA8;
+            const auto kind = machine_.variable(EclAddress{0x4BE6});
+            if (arg(0) == 255 || kind == venus_wilderness || kind == mars_wilderness)
+            {
+                break;
+            }
+            if (arg(0) == no_map)
+            {
+                change_area(0);
+                reply.writes = {{game_address(ecl_current_map, game()), no_map}};
+                break;
+            }
         }
         // Original gate transition refresh before NEW ECL selects its district.
         if (arg(0) == 255 && arg(1) == 255 && arg(2) == 127)
