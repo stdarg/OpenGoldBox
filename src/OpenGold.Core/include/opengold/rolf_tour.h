@@ -62,8 +62,8 @@ enum class TourPhase
     // for the party to take; the script waits.
     treasure,
     // A Buck Rogers SHIP COMBAT waits for the ship fight (TourSnapshot's
-    // ship_combat): the ship-combat screen plays it and gives the session
-    // its outcome (finish_ship_combat).
+    // ship_combat): the ship-combat screen plays it (ship_fight) and gives
+    // the session its end (finish_ship_combat).
     ship_combat
 };
 
@@ -76,13 +76,11 @@ struct ShipCombatCall
     bool operator==(const ShipCombatCall &) const = default;
 };
 
-// How a ship fight ended, as SHIP COMBAT leaves it in cell 4BBAh: the enemy
-// destroyed or boarded, or the team's ship destroyed or the enemy out of range.
-enum class ShipCombatOutcome : std::uint8_t
-{
-    enemy_taken = 0,
-    team_lost_or_enemy_gone = 1
-};
+// The ship fight's files and state (buck_rogers_ship_fight.h), which the
+// session holds without the rules' types.
+struct ShipFightFiles;
+struct ShipFightState;
+struct ShipFightAccess;
 
 struct TownParty
 {
@@ -246,6 +244,8 @@ struct PhlanResources
     std::vector<std::uint8_t> buck_rogers_team_icons;
     // The team's ship as a new game starts with it (SHIPS record 50).
     std::vector<std::uint8_t> buck_rogers_party_ship;
+    // The enemy ships and the pictures of the ship fight (SHIPS.DAX).
+    std::shared_ptr<const ShipFightFiles> buck_rogers_ship_fight_files;
     // The words their items are named with (START.EXE).
     std::vector<std::string> buck_rogers_item_words;
 };
@@ -562,9 +562,20 @@ class RolfTourSession
     bool take_treasure(std::uint64_t ticket, std::size_t item);
     // Leaves what is still in the pile behind for good; the script goes on.
     bool leave_treasure(std::uint64_t ticket);
-    // The ship fight the script waits on ended so (the ship-combat screen
-    // plays it); the script goes on. False when no ship fight waits.
-    bool finish_ship_combat(std::uint64_t ticket, ShipCombatOutcome outcome);
+    // The ship fight itself, its files and what followed it are opened and
+    // read through buck_rogers_ship_fight.h (ship_fight, ship_fight_files,
+    // ship_fight_aftermath).
+    // The Buck Rogers team's combat icons (CHARS), one for each member in
+    // party order (an empty image where the file lacks it), as its ground
+    // fights and the ship-combat screen draw it.
+    [[nodiscard]] std::vector<CombatArt> buck_rogers_team_art() const;
+    // The open ship fight is over: what follows it plays (follow_ship_fight),
+    // its end and the team's ship go into the script's memory
+    // (ship_combat_memory) and the team's records, and the script goes on;
+    // after a boarding, script 52's fight on the enemy's decks is next, and
+    // the repairs follow that fight. False when no fight waits or it is not
+    // over.
+    bool finish_ship_combat(std::uint64_t ticket);
     bool explore(ExplorationCommand command);
     // The original's Search mode: each step searches as Look does, and takes
     // ten minutes more.
@@ -1056,6 +1067,12 @@ class RolfTourSession
     std::uint64_t combat_request_{};
     // The Buck Rogers SHIP COMBAT request the ship fight answers.
     std::uint64_t ship_combat_request_{};
+
+    // The ship fight SHIP COMBAT opened, what followed it and a boarded
+    // ship (buck_rogers_ship_fight.h); shared, as a copied session (a
+    // campaign's template) holds none.
+    friend struct ShipFightAccess;
+    std::shared_ptr<ShipFightState> ship_fight_;
     unsigned encounter_challenge_{opengold::default_encounter_challenge};
     opengold::Difficulty difficulty_{opengold::default_difficulty};
     // The original encounter before fitting: its experience and loot are awarded.
@@ -1375,6 +1392,9 @@ class RolfTourSession
     [[nodiscard]] bool resolve_buck_rogers_combat(const rules::Snapshot &result);
     void finish_buck_rogers_fight(std::uint64_t request, std::uint16_t combat_result,
                                   unsigned defeated);
+    // After the fight on a boarded ship's decks (post-combat mode 2): the
+    // repairs, the captured ship's fuel and the ship fight's experience.
+    void repair_after_boarding(std::uint64_t request);
 
     // The Buck Rogers menus the session offers in the original's place: the
     // booty after a fight, a shop, the team menu with its training, and the

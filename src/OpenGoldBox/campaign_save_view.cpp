@@ -8,6 +8,7 @@
 #include "game_monsters.h"
 #include "game_wall_art.h"
 #include "character_creation_view.h"
+#include "ship_combat_view.h"
 #include "character_pool_dialog.h"
 #include "town_sheet_dialog.h"
 #include "rolf_tour_view.h"
@@ -408,6 +409,10 @@ void CharacterCreationView::load_campaign_bytes(const std::string &bytes)
     if (auto *fight = Object::cast_to<CombatView>(get_node_or_null("CampaignCombat")))
     {
         presentation::detach_child(*this, *fight).reset();
+    }
+    if (auto *ship_fight = Object::cast_to<ShipCombatView>(get_node_or_null("CampaignShipCombat")))
+    {
+        presentation::detach_child(*this, *ship_fight).reset();
     }
     if (saved.town)
     {

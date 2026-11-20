@@ -1,0 +1,295 @@
+[gd_scene format=3]
+
+[node name="ShipCombat" type="ShipCombatView"]
+texture_filter = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="Panel" parent="."]
+theme_type_variation = &"DialogSurface"
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Margin" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 12
+
+[node name="Columns" type="HBoxContainer" parent="Margin"]
+theme_override_constants/separation = 14
+
+[node name="Main" type="VBoxContainer" parent="Margin/Columns"]
+size_flags_horizontal = 3
+theme_override_constants/separation = 5
+
+[node name="Scene" type="PanelContainer" parent="Margin/Columns/Main"]
+custom_minimum_size = Vector2(0, 116)
+size_flags_vertical = 3
+size_flags_stretch_ratio = 1.4
+clip_contents = true
+theme_type_variation = &"BlackSurface"
+
+[node name="ShipFrame" type="MarginContainer" parent="Margin/Columns/Main/Scene"]
+mouse_filter = 2
+
+[node name="ShipPicture" type="TextureRect" parent="Margin/Columns/Main/Scene/ShipFrame"]
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 2
+
+[node name="SceneText" type="MarginContainer" parent="Margin/Columns/Main/Scene"]
+mouse_filter = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 6
+
+[node name="Lines" type="VBoxContainer" parent="Margin/Columns/Main/Scene/SceneText"]
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Maneuver" type="Label" parent="Margin/Columns/Main/Scene/SceneText/Lines"]
+theme_type_variation = &"LabelText16"
+theme_override_colors/font_color = Color(1, 0.333, 0.333, 1)
+text = "Closing"
+
+[node name="Range" type="Label" parent="Margin/Columns/Main/Scene/SceneText/Lines"]
+theme_type_variation = &"LabelText16"
+theme_override_colors/font_color = Color(1, 0.333, 0.333, 1)
+text = "Range: 8"
+
+[node name="Gap" type="Control" parent="Margin/Columns/Main/Scene/SceneText/Lines"]
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="ShipName" type="Label" parent="Margin/Columns/Main/Scene/SceneText/Lines"]
+theme_type_variation = &"LabelText16"
+theme_override_colors/font_color = Color(1, 1, 0.333, 1)
+
+[node name="ShipKind" type="Label" parent="Margin/Columns/Main/Scene/SceneText/Lines"]
+theme_type_variation = &"LabelMutedText14"
+
+[node name="RangeTrack" type="HBoxContainer" parent="Margin/Columns/Main"]
+theme_override_constants/separation = 8
+
+[node name="Caption" type="Label" parent="Margin/Columns/Main/RangeTrack"]
+custom_minimum_size = Vector2(52, 0)
+size_flags_vertical = 8
+theme_type_variation = &"LabelMutedText14"
+text = "Range"
+
+[node name="Cells" type="HBoxContainer" parent="Margin/Columns/Main/RangeTrack"]
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+
+[node name="Ships" type="HBoxContainer" parent="Margin/Columns/Main"]
+theme_override_constants/separation = 10
+
+[node name="Enemy" type="PanelContainer" parent="Margin/Columns/Main/Ships"]
+size_flags_horizontal = 3
+theme_type_variation = &"PanelInventory"
+
+[node name="Margin" type="MarginContainer" parent="Margin/Columns/Main/Ships/Enemy"]
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 4
+
+[node name="Rows" type="VBoxContainer" parent="Margin/Columns/Main/Ships/Enemy/Margin"]
+theme_override_constants/separation = 2
+
+[node name="Header" type="HBoxContainer" parent="Margin/Columns/Main/Ships/Enemy/Margin/Rows"]
+
+[node name="Name" type="Label" parent="Margin/Columns/Main/Ships/Enemy/Margin/Rows/Header"]
+size_flags_horizontal = 3
+theme_type_variation = &"LabelText16"
+theme_override_colors/font_color = Color(1, 1, 0.333, 1)
+clip_text = true
+
+[node name="Facts" type="Label" parent="Margin/Columns/Main/Ships/Enemy/Margin/Rows/Header"]
+theme_type_variation = &"LabelMutedText14"
+
+[node name="Systems" type="GridContainer" parent="Margin/Columns/Main/Ships/Enemy/Margin/Rows"]
+columns = 4
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 1
+
+[node name="SensorsOut" type="Label" parent="Margin/Columns/Main/Ships/Enemy/Margin/Rows"]
+visible = false
+theme_type_variation = &"LabelText14"
+theme_override_colors/font_color = Color(1, 0.333, 0.333, 1)
+text = "Sensors destroyed"
+
+[node name="Weapons" type="GridContainer" parent="Margin/Columns/Main/Ships/Enemy/Margin/Rows"]
+columns = 6
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 0
+
+[node name="Party" type="PanelContainer" parent="Margin/Columns/Main/Ships"]
+size_flags_horizontal = 3
+theme_type_variation = &"PanelInventory"
+
+[node name="Margin" type="MarginContainer" parent="Margin/Columns/Main/Ships/Party"]
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 4
+
+[node name="Rows" type="VBoxContainer" parent="Margin/Columns/Main/Ships/Party/Margin"]
+theme_override_constants/separation = 2
+
+[node name="Header" type="HBoxContainer" parent="Margin/Columns/Main/Ships/Party/Margin/Rows"]
+
+[node name="Name" type="Label" parent="Margin/Columns/Main/Ships/Party/Margin/Rows/Header"]
+size_flags_horizontal = 3
+theme_type_variation = &"LabelGoldText16"
+clip_text = true
+
+[node name="Facts" type="Label" parent="Margin/Columns/Main/Ships/Party/Margin/Rows/Header"]
+theme_type_variation = &"LabelMutedText14"
+
+[node name="Systems" type="GridContainer" parent="Margin/Columns/Main/Ships/Party/Margin/Rows"]
+columns = 4
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 1
+
+[node name="Weapons" type="GridContainer" parent="Margin/Columns/Main/Ships/Party/Margin/Rows"]
+columns = 6
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 0
+
+[node name="Prompt" type="Label" parent="Margin/Columns/Main"]
+theme_type_variation = &"LabelText16"
+clip_text = true
+
+[node name="Orders" type="VBoxContainer" parent="Margin/Columns/Main"]
+theme_override_constants/separation = 4
+
+[node name="First" type="HBoxContainer" parent="Margin/Columns/Main/Orders"]
+theme_override_constants/separation = 6
+
+[node name="Fire" type="Button" parent="Margin/Columns/Main/Orders/First"]
+custom_minimum_size = Vector2(104, 30)
+theme_type_variation = &"ButtonText14"
+text = "Fire"
+
+[node name="Target" type="Button" parent="Margin/Columns/Main/Orders/First"]
+custom_minimum_size = Vector2(104, 30)
+theme_type_variation = &"ButtonText14"
+text = "Target"
+
+[node name="Load" type="Button" parent="Margin/Columns/Main/Orders/First"]
+custom_minimum_size = Vector2(104, 30)
+theme_type_variation = &"ButtonText14"
+text = "Load"
+
+[node name="JuryRig" type="Button" parent="Margin/Columns/Main/Orders/First"]
+custom_minimum_size = Vector2(104, 30)
+theme_type_variation = &"ButtonText14"
+text = "Jury rig"
+
+[node name="Quit" type="Button" parent="Margin/Columns/Main/Orders/First"]
+custom_minimum_size = Vector2(104, 30)
+theme_type_variation = &"ButtonText14"
+text = "Quit"
+
+[node name="View" type="Button" parent="Margin/Columns/Main/Orders/First"]
+custom_minimum_size = Vector2(104, 30)
+theme_type_variation = &"ButtonText14"
+text = "View"
+
+[node name="Second" type="HBoxContainer" parent="Margin/Columns/Main/Orders"]
+theme_override_constants/separation = 6
+
+[node name="Close" type="Button" parent="Margin/Columns/Main/Orders/Second"]
+custom_minimum_size = Vector2(104, 30)
+theme_type_variation = &"ButtonText14"
+text = "Close"
+
+[node name="Withdraw" type="Button" parent="Margin/Columns/Main/Orders/Second"]
+custom_minimum_size = Vector2(104, 30)
+theme_type_variation = &"ButtonText14"
+text = "Withdraw"
+
+[node name="Ram" type="Button" parent="Margin/Columns/Main/Orders/Second"]
+custom_minimum_size = Vector2(104, 30)
+theme_type_variation = &"ButtonText14"
+text = "Ram"
+
+[node name="Board" type="Button" parent="Margin/Columns/Main/Orders/Second"]
+custom_minimum_size = Vector2(104, 30)
+theme_type_variation = &"ButtonText14"
+text = "Board"
+
+[node name="Command" type="Button" parent="Margin/Columns/Main/Orders/Second"]
+custom_minimum_size = Vector2(104, 30)
+theme_type_variation = &"ButtonText14"
+text = "Command"
+
+[node name="Aid" type="Button" parent="Margin/Columns/Main/Orders/Second"]
+custom_minimum_size = Vector2(104, 30)
+theme_type_variation = &"ButtonText14"
+text = "Aid"
+
+[node name="Boost" type="Button" parent="Margin/Columns/Main/Orders/Second"]
+custom_minimum_size = Vector2(124, 30)
+theme_type_variation = &"ButtonText14"
+text = "Boost engines"
+
+[node name="Sensors" type="Button" parent="Margin/Columns/Main/Orders/Second"]
+custom_minimum_size = Vector2(104, 30)
+theme_type_variation = &"ButtonText14"
+text = "Sensors"
+
+[node name="Choice" type="HBoxContainer" parent="Margin/Columns/Main"]
+custom_minimum_size = Vector2(0, 30)
+theme_override_constants/separation = 6
+
+[node name="Question" type="Label" parent="Margin/Columns/Main/Choice"]
+theme_type_variation = &"LabelText14"
+
+[node name="Answers" type="HBoxContainer" parent="Margin/Columns/Main/Choice"]
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="Status" type="Label" parent="Margin/Columns/Main"]
+theme_type_variation = &"LabelMutedText14"
+clip_text = true
+
+[node name="Log" type="RichTextLabel" parent="Margin/Columns/Main"]
+custom_minimum_size = Vector2(0, 86)
+size_flags_vertical = 3
+theme_type_variation = &"RichTextLabelText14"
+bbcode_enabled = true
+scroll_following = true
+selection_enabled = true
+
+[node name="Help" type="Label" parent="Margin/Columns/Main"]
+theme_type_variation = &"LabelMutedText14"
+clip_text = true
+
+[node name="Crew" type="PanelContainer" parent="Margin/Columns"]
+custom_minimum_size = Vector2(286, 0)
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.22
+theme_type_variation = &"PanelInventory"
+
+[node name="Scroll" type="ScrollContainer" parent="Margin/Columns/Crew"]
+horizontal_scroll_mode = 0
+
+[node name="Rows" type="VBoxContainer" parent="Margin/Columns/Crew/Scroll"]
+size_flags_horizontal = 3
+theme_override_constants/separation = 4

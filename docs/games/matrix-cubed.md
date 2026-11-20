@@ -229,7 +229,8 @@ the user's decisions. The three ship-combat options (COMMAND every round,
 Empty helm dodges, Fuel from a boarded ship) are set for *Matrix Cubed* apart
 from *Countdown*, under its own folder name
 ([CONFIGURATION.md](../CONFIGURATION.md)). OpenGoldBox plays both games with
-one session, keyed by game (`buck_rogers_ship_combat.h`). After a boarding the solar-map script 19 loads
+one session, keyed by game (`buck_rogers_ship_combat.h`), on the same screen
+([countdown.md](countdown.md), "The ship combat screen"). After a boarding the solar-map script 19 loads
 script 21, where *Countdown*'s loads 52. The program differs in two places:
 
 - The ship's explosion deals each okay member its maximum Hit Points and 30,

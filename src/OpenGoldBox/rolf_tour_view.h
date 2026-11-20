@@ -61,6 +61,17 @@ class RolfTourView : public godot::Control
     // a game); nullopt for a DAX campaign.
     [[nodiscard]] std::optional<opengold::DesignSave> saved_design() const;
 
+    // The campaign while its script waits on a Buck Rogers ship fight
+    // (TourPhase::ship_combat), for the ship-combat screen to play; null
+    // otherwise.
+    [[nodiscard]] opengold::por::RolfTourSession *waiting_ship_fight() const noexcept
+    {
+        auto *campaign = dax();
+        return campaign && campaign->snapshot().phase == opengold::por::TourPhase::ship_combat
+                   ? campaign
+                   : nullptr;
+    }
+
     [[nodiscard]] const std::optional<opengold::CampaignEncounter> &pending_encounter() const
     {
         static const std::optional<opengold::CampaignEncounter> none;

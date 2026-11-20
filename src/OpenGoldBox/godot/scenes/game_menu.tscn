@@ -418,6 +418,32 @@ autowrap_mode = 3
 theme_type_variation = &"LabelMuted"
 text = "Ship combat. On: a boarded ship's fuel is transferred to yours, as the Rule Book says. Off: none, as in the original."
 
+[node name="ShipPictureShrinksLabel" type="Label" parent="Options/Gameplay"]
+visible = false
+offset_left = 20
+offset_top = 624
+offset_right = 280
+offset_bottom = 660
+text = "Ship picture by range"
+
+[node name="ShipPictureShrinks" type="OptionButton" parent="Options/Gameplay"]
+visible = false
+offset_left = 290
+offset_top = 620
+offset_right = 510
+offset_bottom = 660
+
+[node name="ShipPictureShrinksNote" type="Label" parent="Options/Gameplay"]
+visible = false
+anchor_right = 1
+offset_left = 540
+offset_right = -20
+offset_top = 616
+offset_bottom = 672
+autowrap_mode = 3
+theme_type_variation = &"LabelMuted"
+text = "Ship combat. On: the enemy ship's picture grows smaller the farther away it is. Off: one size at every range, as in the original."
+
 [node name="DesignDifficultyLabel" type="Label" parent="Options/Gameplay"]
 offset_left = 20
 offset_top = 624

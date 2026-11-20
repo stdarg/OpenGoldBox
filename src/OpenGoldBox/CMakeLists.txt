@@ -71,7 +71,7 @@ configure_file("${export_config}" "${game_project}/export_presets.cfg" @ONLY)
 
 add_library(opengoldbox_game SHARED rolf_tour_view.cpp combat_view.cpp character_creation_view.cpp
     portrait_picker.cpp portrait_catalog.cpp party_preview.cpp equipment_choice_dialog.cpp level_up_view.cpp level_up_dialog.cpp level_up_lab_view.cpp campaign_save_view.cpp save_slots.cpp
-    character_pool_dialog.cpp earlier_game_dialog.cpp modify_character_dialog.cpp town_sheet_dialog.cpp portrait_dialog.cpp original_portrait_parts.cpp character_sheet_view.cpp character_sheet_text.cpp godot_sound_output.cpp register_types.cpp game_classes.cpp campaign_combat.cpp startup_view.cpp game_folder_questions.cpp game_lifecycle.cpp crash_reports.cpp game_log.cpp game_menu_view.cpp game_menu_host.cpp screenshot_service.cpp localization.cpp application_settings.cpp game_rules.cpp)
+    character_pool_dialog.cpp earlier_game_dialog.cpp modify_character_dialog.cpp town_sheet_dialog.cpp portrait_dialog.cpp original_portrait_parts.cpp character_sheet_view.cpp character_sheet_text.cpp godot_sound_output.cpp register_types.cpp game_classes.cpp campaign_combat.cpp ship_combat_view.cpp startup_view.cpp game_folder_questions.cpp game_lifecycle.cpp crash_reports.cpp game_log.cpp game_menu_view.cpp game_menu_host.cpp screenshot_service.cpp localization.cpp application_settings.cpp game_rules.cpp)
 target_link_libraries(opengoldbox_game PRIVATE opengold_core opengold_rules_srd5 opengold_rules_original godot-cpp)
 # The commit being built, for the head of the game's log; checked on every build.
 add_custom_target(opengoldbox_commit
@@ -292,6 +292,18 @@ if(OPENGOLD_BUILD_TESTS)
     set_tests_properties(opengold_godot_bless PROPERTIES FIXTURES_REQUIRED "godot_project;bless_fixtures")
     opengold_godot_test(original_combat original_combat_view_tests "Original combat view checks passed" "--original-fixtures=${PROJECT_BINARY_DIR}/original-combat-fixtures")
     set_tests_properties(opengold_godot_original_combat PROPERTIES FIXTURES_REQUIRED "godot_project;original_combat_fixtures")
+    # The Buck Rogers ship combat screen, clicked through seeded fights of the
+    # Countdown walk's team; skipped without Countdown's files.
+    add_test(NAME opengold_godot_ship_combat COMMAND "${CMAKE_COMMAND}"
+        "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
+        "-DSCRIPT=${PROJECT_SOURCE_DIR}/tests/ship_combat_view_tests.gd"
+        "-DEXPECTED=Ship combat view checks passed" -DTEST_TIMEOUT=150
+        "-DARGS=--fixtures=${PROJECT_BINARY_DIR}/countdown-ship-fixtures"
+        "-DUSER_HOME=${CMAKE_BINARY_DIR}/godot-home/ship_combat"
+        -P "${PROJECT_SOURCE_DIR}/tests/run_godot_test.cmake")
+    set_tests_properties(opengold_godot_ship_combat PROPERTIES
+        FIXTURES_REQUIRED "godot_project;countdown_ship_fixtures" TIMEOUT 160 LABELS godot
+        SKIP_REGULAR_EXPRESSION "Skipped: " ENVIRONMENT "OPENGOLD_LANG=en")
     opengold_godot_test(command command_view_tests "Command view checks passed" "--command-fixtures=${PROJECT_BINARY_DIR}/bless-fixtures")
     set_tests_properties(opengold_godot_command PROPERTIES FIXTURES_REQUIRED "godot_project;bless_fixtures")
     opengold_godot_test(sacred_weapon sacred_weapon_view_tests "Sacred Weapon view checks passed" "--sacred-fixtures=${PROJECT_BINARY_DIR}/bless-fixtures")

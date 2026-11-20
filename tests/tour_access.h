@@ -159,6 +159,37 @@ struct TourAccess
         town.enter_script(script, {map, pose});
     }
 
+    // The idle party runs `script` from `address`, an instruction boundary,
+    // as an event: a test reaches a command no walk of the maps reaches at
+    // the instruction where its setup begins (the ship fights of the solar
+    // map's script and of the escape from the Mariposa). The script's entry
+    // does not run; the party stays where it stands.
+    static void run_from(por::RolfTourSession &town, unsigned script, std::uint32_t address)
+    {
+        const auto program = town.town_->programs.find(script);
+        if (!town.can_leave() || program == town.town_->programs.end())
+        {
+            throw std::runtime_error("The party cannot run that script now");
+        }
+        town.machine_.switch_program(program->second);
+        town.current_script_ = script;
+        town.snapshot_.script_id = script;
+        const auto bank = town.town_->script_banks.find(script);
+        if (bank != town.town_->script_banks.end())
+        {
+            town.machine_.bind_variable(town.game_cell(por::ecl_script_bank),
+                                        static_cast<std::uint16_t>(bank->second));
+        }
+        if (!town.machine_.start_at_for_inspection(address))
+        {
+            throw std::runtime_error("The script has no instruction there");
+        }
+        town.event_stage_ = por::RolfTourSession::EventStage::search;
+        town.snapshot_.phase = por::TourPhase::running;
+        ++town.snapshot_.revision;
+        town.advance(0);
+    }
+
     // Reseeds the script's dice, so a test can try an event on several rolls.
     static void seed_dice(por::RolfTourSession &town, std::uint32_t seed)
     {

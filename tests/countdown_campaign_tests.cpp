@@ -10,6 +10,7 @@
 #include "opengold/buck_rogers_characters.h"
 #include "opengold/buck_rogers_records.h"
 #include "opengold/buck_rogers_rules.h"
+#include "opengold/buck_rogers_ship_fight.h"
 #include "opengold/campaign_save.h"
 #include "opengold/campaign_session.h"
 #include "opengold/character.h"
@@ -30,6 +31,7 @@
 #include <iterator>
 #include <map>
 #include <set>
+#include <span>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -44,6 +46,7 @@ namespace br = opengold::buck_rogers;
 using og::Profession;
 using og::Race;
 using og::Skill;
+using opengold::por::TourPhase;
 
 constexpr auto countdown = GoldBoxGame::countdown_to_doomsday;
 
@@ -70,8 +73,10 @@ std::vector<std::uint8_t> record_of(const std::filesystem::path &path, unsigned 
 // CreateCharacterMenu): rolled, trained free to level 2, its creation points
 // spent on its career's skills in their order and its general points on the
 // general skills the team's travels ask for, with its two free items readied.
+// `first` are the skills its career points go to before the rest.
 og::GroundRecord new_member(const std::filesystem::path &folder, Race race, Profession career,
-                            std::string name, opengold::RandomState &random)
+                            std::string name, opengold::RandomState &random,
+                            std::span<const Skill> first = {})
 {
     const auto templates = br::decode_item_templates(record_of(folder / "ITEM0.DAX", 1));
     const auto types = br::decode_item_types(file_bytes(folder / "ITEMS"));
@@ -80,6 +85,12 @@ og::GroundRecord new_member(const std::filesystem::path &folder, Race race, Prof
         og::new_buck_rogers_character(race, og::Gender::male, career, countdown, random);
     creature.name = std::move(name);
     auto spending = og::SkillSpending::at_creation(creature, countdown);
+    for (const auto skill : first)
+    {
+        while (spending.career_points() > 0 && spending.add(skill) == og::SkillRefusal::none)
+        {
+        }
+    }
     for (const auto skill : og::career_skills(career))
     {
         while (spending.career_points() > 0 && spending.add(skill) == og::SkillRefusal::none)
@@ -105,7 +116,10 @@ struct Campaign
 };
 
 // The team of six the walk plays: one of each career and a second Warrior.
-Campaign start_campaign(const std::filesystem::path &folder)
+// A ship's crew spends first on the skills ship combat asks: the Rocketjock
+// on Pilot Rocket and Sensor Operation, the Engineer on Repair Mechanical
+// and then Repair Nuclear Engine, which needs it.
+Campaign start_campaign(const std::filesystem::path &folder, bool ship_crew = false)
 {
     std::shared_ptr<const opengold::rules::CharacterRules> creation =
         og::character_rules(og::default_aging, countdown);
@@ -119,9 +133,20 @@ Campaign start_campaign(const std::filesystem::path &folder)
         {Race::tinker, Profession::engineer, "Gears"},
         {Race::venusian, Profession::medic, "Doc"},
         {Race::mercurian, Profession::warrior, "Merc"}};
+    constexpr std::array pilot_skills{Skill::pilot_rocket, Skill::sensor_operation};
+    constexpr std::array engine_skills{Skill::repair_mechanical, Skill::repair_nuclear_engine};
     for (const auto &[race, career, name] : team)
     {
-        const auto record = new_member(folder, race, career, name, random);
+        std::span<const Skill> first;
+        if (ship_crew && career == Profession::rocket_jock)
+        {
+            first = pilot_skills;
+        }
+        else if (ship_crew && career == Profession::engineer)
+        {
+            first = engine_skills;
+        }
+        const auto record = new_member(folder, race, career, name, random, first);
         party->add_pc(opengold::Character(*creation, og::buck_rogers_draft(record),
                                           opengold::por::CharacterAppearance{}));
     }
@@ -399,6 +424,79 @@ struct WalkLog
     std::map<std::string, unsigned> counts;
 };
 
+// The script of the fight on a boarded ship's decks (ECL3:52), which the
+// ship fights' scripts load after a boarding.
+constexpr unsigned boarding_script = 52;
+const std::string decks_fights = "fights on a boarded ship's decks (script 52)";
+const std::string boardings_counted = "ship fights won by boarding";
+
+// The orders a simple player gives in a ship fight, wanting the enemy's
+// decks: the pilot boards when it may and closes while it can; anyone takes
+// the helm when it is offered; the rest aim at the engines, which stop a
+// ship, or fire, load an empty mount, jury-rig or tend the wounded.
+og::ShipOrder walk_ship_order(const og::ShipCombat &fight)
+{
+    using Action = og::ShipAction;
+    const auto orders = fight.legal_orders();
+    const auto offered = [&orders](const og::ShipOrder &order)
+    {
+        return std::ranges::find(orders, order) != orders.end();
+    };
+    for (const og::ShipOrder order :
+         {og::ShipOrder{.action = Action::board}, og::ShipOrder{.action = Action::command},
+          og::ShipOrder{.action = Action::close},
+          og::ShipOrder{.action = Action::target, .system = og::ShipSystem::engines},
+          og::ShipOrder{.action = Action::fire}, og::ShipOrder{.action = Action::aid}})
+    {
+        if (offered(order))
+        {
+            return order;
+        }
+    }
+    for (const auto &order : orders)
+    {
+        if (order.action == Action::load || order.action == Action::jury_rig)
+        {
+            return order;
+        }
+    }
+    return {.action = Action::quit};
+}
+
+// The ship fight SHIP COMBAT waits on, played through the session as the
+// ship-combat screen plays it, by walk_ship_order; the team tries to dodge
+// every ram. Then its end goes to the session.
+bool play_ship_fight(opengold::por::RolfTourSession &session, WalkLog &log,
+                     const std::string &where)
+{
+    auto &fight = opengold::por::ship_fight(session, {});
+    for (int step = 0; step < 5000 && !fight.over(); ++step)
+    {
+        if (fight.awaits_dodge())
+        {
+            fight.answer_dodge(true);
+        }
+        else if (fight.awaits_round())
+        {
+            fight.play_round();
+        }
+        else
+        {
+            fight.submit(walk_ship_order(fight));
+        }
+    }
+    if (!fight.over())
+    {
+        log.needs["A ship fight did not end"].push_back(where);
+        return false;
+    }
+    const auto end = fight.end();
+    ++log.counts[end.boarded        ? boardings_counted
+                 : end.outcome == 0 ? std::string("ship fights won")
+                                    : std::string("ship fights lost or broken off")];
+    return session.finish_ship_combat(session.snapshot().continue_ticket);
+}
+
 // A ground fight, every side played by the game's own computer: the members
 // as Quick plays them (choose_quick_command), the enemies as the game's
 // monsters choose (choose_demo_command).
@@ -464,7 +562,7 @@ bool fight(Campaign &campaign, const std::filesystem::path &folder, WalkLog &log
 
 // Plays what the session asks until the event ends: the first choice of a
 // menu, then the last once it comes back twice; 1 or A typed; treasure left;
-// shops left; fights played; a ship fight handed off.
+// shops left; fights played; ship fights played (play_ship_fight).
 void play(Campaign &campaign, const std::filesystem::path &folder, WalkLog &log,
           const std::string &where)
 {
@@ -488,7 +586,7 @@ void play(Campaign &campaign, const std::filesystem::path &folder, WalkLog &log,
             solar_map_noted = true;
             log.handoffs["the solar map"].push_back(where);
         }
-        using opengold::por::TourPhase;
+
         switch (s.phase)
         {
         case TourPhase::running:
@@ -548,14 +646,20 @@ void play(Campaign &campaign, const std::filesystem::path &folder, WalkLog &log,
             (void)session.leave_shop(s.continue_ticket);
             continue;
         case TourPhase::ship_combat:
-            log.handoffs["ship combat with enemy type " + std::to_string(s.ship_combat->enemy_type)]
-                .push_back(where);
-            // The walk takes the enemy as gone: the ship-combat screen plays
-            // the fight itself.
-            (void)session.finish_ship_combat(
-                s.continue_ticket, opengold::por::ShipCombatOutcome::team_lost_or_enemy_gone);
+            ++log.counts["ship fights with enemy type " +
+                         std::to_string(s.ship_combat->enemy_type)];
+            if (!play_ship_fight(session, log, where))
+            {
+                log.needs["A ship fight's end was refused"].push_back(where);
+                attribute();
+                return;
+            }
             continue;
         case TourPhase::combat:
+            if (s.script_id == boarding_script && !session.monster_picture())
+            {
+                ++log.counts[decks_fights];
+            }
             if (session.monster_picture())
             {
                 (void)session.start_encounter();
@@ -593,11 +697,200 @@ Campaign opened(const std::filesystem::path &folder, WalkLog &log)
                                              0);
     opengold::test::TourAccess::set_variable(campaign.session, opengold::por::EclAddress{0x4C2F},
                                              0x59);
-    // The enemy ship whose decks the boarding script (52) fights over, which
-    // the ship fight names: the first type, the Hubble.
-    opengold::test::TourAccess::set_variable(campaign.session, opengold::por::EclAddress{0x4C61},
-                                             1);
     return campaign;
+}
+
+// The ship fights no walk of the maps reaches without flying the solar map,
+// each by the instruction where its setup begins (the type of ship into
+// 4C61h, the pilot and the to-hit): the hail a RAM cruiser does not believe
+// (ECL2:34 8A54h), a Hubble, and the escape from the Mariposa (ECL6:95
+// 8B63h), an Adder.
+struct ShipFightSetup
+{
+    unsigned script{};
+    std::uint32_t address{};
+};
+
+constexpr ShipFightSetup hail_ship_fight{34, 0x8A54}, escape_ship_fight{95, 0x8B63};
+
+// A ship fight run from its setup, from a new game's opening, on the
+// script's dice `seed`: the session waits in its ship-fight phase.
+Campaign at_ship_fight(const std::filesystem::path &folder, const ShipFightSetup &setup,
+                       std::uint32_t seed)
+{
+    WalkLog log;
+    auto campaign = opened(folder, log);
+    opengold::test::TourAccess::seed_dice(campaign.session, seed);
+    opengold::test::TourAccess::run_from(campaign.session, setup.script, setup.address);
+    auto &session = campaign.session;
+    for (int step = 0; step < 50 && session.snapshot().phase != TourPhase::ship_combat; ++step)
+    {
+        if (session.snapshot().phase == TourPhase::awaiting_continue)
+        {
+            (void)session.continue_dialogue(session.snapshot().continue_ticket);
+            continue;
+        }
+        session.advance(1.0);
+    }
+    return campaign;
+}
+
+// SHIP COMBAT opens the ship fight through the session (docs/games/countdown.md,
+// "Ship combat"): the enemy of the call's type named as the first of its
+// type, the team's ship from 4D00h and the team as the crew. Its end goes to
+// the script: a lost or broken-off fight leaves outcome 1 in 4BBAh and
+// post-combat mode 0; a boarding outcome 0 and mode 1, and script 95 loads
+// script 52, whose fight on the enemy's decks follows; the repairs follow
+// that fight, as it sets mode 2.
+void ship_fights_play_through_the_session(const std::filesystem::path &folder)
+{
+    const opengold::por::EclAddress outcome{0x4BBA}, post_combat_mode{0x4D7C};
+    const auto cell =
+        [](const opengold::por::RolfTourSession &session, opengold::por::EclAddress address)
+    {
+        return opengold::test::TourAccess::machine(session).variable(address);
+    };
+    {
+        auto campaign = at_ship_fight(folder, escape_ship_fight, 1);
+        auto &session = campaign.session;
+        check(session.snapshot().phase == TourPhase::ship_combat &&
+                  session.snapshot().ship_combat &&
+                  *session.snapshot().ship_combat == opengold::por::ShipCombatCall{2, 1, 80, 16},
+              "The escape's SHIP COMBAT waits for the Adder type, pilot 80, to-hit 16");
+        check(!session.finish_ship_combat(session.snapshot().continue_ticket),
+              "A ship fight not yet played has no end to give");
+        auto &fight = opengold::por::ship_fight(session, {});
+        check(fight.ship(og::ShipSide::enemy).name == "Adder" &&
+                  fight.ship(og::ShipSide::party).name == "Maelstrom Rider" && fight.range() == 8 &&
+                  fight.crew().size() == 6,
+              "The fight opens at range 8 against the first Adder, the team aboard the Maelstrom "
+              "Rider");
+        // The helm taken, the pilot withdraws until the enemy is lost.
+        for (int step = 0; step < 200 && !fight.over(); ++step)
+        {
+            const auto orders = fight.legal_orders();
+            if (fight.awaits_dodge())
+            {
+                fight.answer_dodge(true);
+                continue;
+            }
+            if (fight.awaits_round())
+            {
+                fight.play_round();
+                continue;
+            }
+            for (const auto action :
+                 {og::ShipAction::command, og::ShipAction::withdraw, og::ShipAction::quit})
+            {
+                if (std::ranges::find(orders, og::ShipOrder{.action = action}) != orders.end())
+                {
+                    fight.submit({.action = action});
+                    break;
+                }
+            }
+        }
+        check(fight.over() && fight.end().outcome == 1 && !fight.end().boarded,
+              "Withdrawing loses the enemy from the scanners");
+        const auto pilot = fight.pilot();
+        check(session.finish_ship_combat(session.snapshot().continue_ticket),
+              "The fight's end goes to the script");
+        check(opengold::por::ship_fight_aftermath(session) &&
+                  !opengold::por::ship_fight_aftermath(session)->team_destroyed &&
+                  opengold::por::ship_fight_aftermath(session)->repairs,
+              "The repairs follow a fight that did not board");
+        check(cell(session, outcome) == 1 && cell(session, post_combat_mode) == 0,
+              "Outcome 1 and post-combat mode 0 are in the script's memory");
+        check(cell(session, opengold::por::EclAddress{0x4D92}) == 1,
+              "The next Adder-type ship takes the next name");
+        check(pilot && og::buck_rogers_record_of(
+                           campaign.party->game_record(campaign.party->state().slots[*pilot]))
+                               ->creature.pilot != 0,
+              "The member who took the helm stays the team's pilot");
+    }
+    bool boarded = false;
+    for (std::uint32_t seed = 1; seed <= 20 && !boarded; ++seed)
+    {
+        auto campaign = at_ship_fight(folder, escape_ship_fight, seed);
+        auto &session = campaign.session;
+        WalkLog log;
+        if (!play_ship_fight(session, log, "escape") || !log.counts.contains(boardings_counted))
+        {
+            continue;
+        }
+        boarded = true;
+        for (int step = 0; step < 50 && session.snapshot().phase != TourPhase::combat; ++step)
+        {
+            if (session.snapshot().phase == TourPhase::awaiting_continue)
+            {
+                (void)session.continue_dialogue(session.snapshot().continue_ticket);
+                continue;
+            }
+            session.advance(1.0);
+        }
+        check(session.snapshot().script_id == boarding_script &&
+                  session.snapshot().phase == TourPhase::combat,
+              "After the boarding, script 52's fight on the enemy's decks follows");
+        check(cell(session, opengold::por::EclAddress{0x4C61}) == 2,
+              "Script 52 fights on the decks of the ship type the fight named (4C61h)");
+    }
+    check(boarded, "The walk's orders board the Adder on one of twenty sets of dice");
+}
+
+// A new game whose team boarded the Hubble whose hail went wrong and won the
+// fight through its airlock: the way onto map 52, the boarded ship's decks,
+// as a player reaches it. Tries the script's dice from 1 until the walk's
+// orders board and the team stands aboard, at most twenty; none when the
+// team falls every time.
+std::optional<Campaign> boarded(const std::filesystem::path &folder, WalkLog &log,
+                                const std::string &where)
+{
+    for (std::uint32_t seed = 1; seed <= 20; ++seed)
+    {
+        auto campaign = at_ship_fight(folder, hail_ship_fight, seed);
+        const auto boardings = log.counts[boardings_counted];
+        if (!play_ship_fight(campaign.session, log, where) ||
+            log.counts[boardings_counted] == boardings)
+        {
+            continue;
+        }
+        play(campaign, folder, log, where);
+        if (campaign.session.can_leave())
+        {
+            return campaign;
+        }
+    }
+    return std::nullopt;
+}
+
+// The ship-combat screen's check fights with the walk's team, from its
+// campaign save (tests/ship_combat_view_tests.gd).
+void write_ship_fixture(const std::filesystem::path &folder)
+{
+    const auto campaign = start_campaign(folder, true);
+    for (const auto id : campaign.party->state().slots)
+    {
+        if (!id)
+        {
+            continue;
+        }
+        const auto record = og::buck_rogers_record_of(campaign.party->game_record(id));
+        if (og::career_from_record(record->creature.career) == Profession::engineer)
+        {
+            check(og::skill_value(record->creature, Skill::repair_nuclear_engine) > 0,
+                  "The ship crew's Engineer can boost the engines");
+        }
+        if (og::career_from_record(record->creature.career) == Profession::rocket_jock)
+        {
+            check(og::skill_value(record->creature, Skill::sensor_operation) > 0,
+                  "The ship crew's Rocketjock can work the sensors");
+        }
+    }
+    const auto directory = std::filesystem::path(OPENGOLD_BINARY_DIR) / "countdown-ship-fixtures";
+    std::filesystem::create_directories(directory);
+    opengold::write_campaign_file(
+        directory / "countdown-team.save",
+        opengold::encode_campaign(*campaign.party, nullptr,
+                                  opengold::campaign_asset_identity(folder), countdown));
 }
 
 // Every map: entered as its script's entry has it, then every square looked
@@ -622,10 +915,26 @@ bool walk(const std::filesystem::path &folder)
         }
         const auto enter = [&]
         {
-            campaign = opened(folder, log);
             const auto where = "map " + std::to_string(map) + " entry";
             try
             {
+                // The boarded ship's decks are reached as a player reaches
+                // them: by boarding the enemy in a ship fight.
+                if (script == boarding_script)
+                {
+                    auto aboard = boarded(folder, log, where);
+                    if (!aboard)
+                    {
+                        // A team fresh from creation may lose the fight
+                        // through the airlock; that is the game, not a lack.
+                        ++log.counts["boardings whose airlock fight the walk's team lost"];
+                        return false;
+                    }
+                    campaign = std::move(*aboard);
+                    return campaign.session.snapshot().area_id == map &&
+                           campaign.session.can_leave();
+                }
+                campaign = opened(folder, log);
                 opengold::test::TourAccess::enter(campaign.session, map,
                                                   {8, 8, opengold::por::MapDirection::north});
                 play(campaign, folder, log, where);
@@ -734,6 +1043,32 @@ bool walk(const std::filesystem::path &folder)
             }
         }
     }
+    // The ship fights no walk of the maps reaches, each played on new dice
+    // until the team boards the enemy, or ten times.
+    for (const auto &setup : {hail_ship_fight, escape_ship_fight})
+    {
+        for (std::uint32_t seed = 1; seed <= 10; ++seed)
+        {
+            const auto where = "script " + std::to_string(setup.script) + "'s ship fight, dice " +
+                               std::to_string(seed);
+            const auto boardings = log.counts[boardings_counted];
+            campaign = opened(folder, log);
+            try
+            {
+                opengold::test::TourAccess::seed_dice(campaign.session, seed);
+                opengold::test::TourAccess::run_from(campaign.session, setup.script, setup.address);
+                play(campaign, folder, log, where);
+            }
+            catch (const std::exception &error)
+            {
+                log.needs[error.what()].push_back(where);
+            }
+            if (log.counts[boardings_counted] > boardings)
+            {
+                break;
+            }
+        }
+    }
     for (const auto &[what, count] : log.counts)
     {
         std::cout << what << ": " << count << "\n";
@@ -775,6 +1110,8 @@ int main(int argc, char **argv)
         arenas_use_the_tiles_the_files_hold(folder);
         the_hospital_heals_for_its_fee(folder);
         the_title_music_plays(folder);
+        ship_fights_play_through_the_session(folder);
+        write_ship_fixture(folder);
         std::cout << "Countdown to Doomsday's campaign passed.\n";
     }
     catch (const std::exception &error)

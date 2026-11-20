@@ -962,8 +962,8 @@ Options screen while a Buck Rogers game plays, one key per game
 The first part of B3.1 is done (2026-11-20): the engine runs *Countdown*'s
 own scripts, maps, pictures and fights with a team its creation rules made.
 The three new screens (creation and skills, the solar map and ship combat)
-are being designed from mockups; the session stops at a hand-off for each
-(below). `tests/countdown_campaign_tests.cpp` checks it on the game's files,
+are designed from mockups; ship combat plays on its screen ("The ship
+combat screen", below), and the session stops at a hand-off for the others. `tests/countdown_campaign_tests.cpp` checks it on the game's files,
 and with `--walk` it is `opengold_countdown_walk`.
 
 ### The team in the campaign
@@ -1060,29 +1060,106 @@ script starts music.
   bodies' squares from 4B85h and the rocket's from the orbit's cells, and
   pass the days. A new game's rocket and orbit (`InitShipAndOrbit`) are the
   screen's to set.
-- **Ship combat**: SHIP COMBAT leaves the phase `ship_combat` with
-  `TourSnapshot::ship_combat` (the enemy's type, the unused operand, the
-  pilot's skill and the to-hit number). The screen plays the fight
-  (`buck_rogers_ship_combat.h`) and calls `finish_ship_combat` with the
-  outcome, which goes to 4BBAh; boarding is the script's next fight (script
-  52 fights on the decks of the ship 4C61h names).
+- **Ship combat**: played on its own screen (below, "The ship combat
+  screen").
 - **Creation and skills**: a team is made in code; training's skill points and
   a Warrior's specialization wait for the skill screen.
+
+### The ship combat screen
+
+SHIP COMBAT leaves the phase `ship_combat` with `TourSnapshot::ship_combat`
+(the enemy's type, the unused operand, the pilot's skill and the to-hit
+number), and the game opens the ship combat screen
+(`src/OpenGoldBox/ship_combat_view.cpp`, `scenes/ship_combat.tscn`). The
+session opens the fight with the player's options (`ship_fight`): the team's
+ship as zone 0 keeps it at 4D00h, the enemy's `SHIPS` record named as the
+next ship of its type (`LoadShipData`: five names a type, Van Allen first of
+the Hubbles, counted in 4D91h on), the team in party order, and the
+script's dice (`buck_rogers_ship_fight.h`). The screen draws the fight and
+forwards the player's orders to the rules; nothing in it decides a rule.
+
+- **The scene** is the enemy's picture, ship n drawn with picture n - 1 of
+  `SHIPS.DAX` (`LoadShipData` loads picture `id mod 5`, its id the operand
+  less 1), with its maneuver (Closing, or Retreating after its last move
+  took it away) and the range at its top left, and its name and type. The
+  picture grows smaller with the range, an option (`[ship_picture_shrinks]`,
+  [DEVIATIONS.md](../DEVIATIONS.md)).
+- **A range track** marks the range and, over each step, the team's weapons
+  that reach no farther (an OpenGoldBox addition).
+- **Both ships' systems**, hull to engines, with the original's icons
+  (pictures 27 to 32 for the team's ship, 33 to 38 for the enemy's), a bar
+  and their values: the team's in light cyan, the enemy's in light green, a
+  damaged system in yellow and a destroyed one in red, as the original's
+  meters and weapon list colour them. With the team's sensors destroyed the
+  enemy's systems are not shown (`DrawSystemMeter`).
+- **The weapons**: who fires each mount, its working weapons, rounds,
+  reloads and reach. The enemy's rounds and reloads read "?" until a
+  Sensors check succeeds, while the team's sensors work (`VALUE_SENSED`).
+- **The orders** in the original's order (`BuildPlayerMenu`): the pilot's
+  Fire Target Quit View / Close Withdraw Ram Board, the crew's Fire Target
+  Load Jury rig Quit View / Command Aid Boost engines Sensors. An order the
+  rules do not offer stands greyed out (the user, 2026-11-20). Target asks
+  for the system, Load for the weapon and Jury rig for the system or weapon
+  (the player picks the mount: Bugs above); Ram asks to confirm, as the
+  original does, and an enemy's ram asks whether to try to dodge. The keys
+  are the original's letters. View writes the ship's figures, or the acting
+  member's ship skills, into the log.
+- **The log** tells the fight's events in OpenGoldBox's words, and after the
+  fight what followed it: the medics' work, the experience, the repairs and
+  the fuel taken.
+- **The crew column**: each member's CHARS icon, career, race and gender,
+  Hit Points and state; the pilot starred, the member whose order is awaited
+  lit.
+
+At the fight's end the screen gives it to the session (`finish_ship_combat`),
+which plays what follows (`follow_ship_fight`, `postcbt.pas` `PostCombat`):
+a team with no one left alive is destroyed; else the wounded recover, and
+unless the team boarded the medics treat them and the crew repairs the ship,
+sharing the experience. The end goes into the script's memory
+(`ship_combat_memory`: the outcome at 4BBAh, the team's ship at 4D00h, the
+saved enemy and the post-combat mode at 4D7Ch) and the team's records, and
+the script goes on. After a boarding script 34 or 95 loads script 52, the
+fight through the airlock on the decks of the ship type 4C61h names; when
+that fight's script sets post-combat mode 2, the repairs follow it, with the
+ship fight's experience and the captured ship's fuel (decision 5), and the
+mode returns to 0. *Matrix Cubed* plays its fights on the same screen.
+
+`tests/ship_combat_view_tests.gd` (`opengold_godot_ship_combat`) clicks the
+screen through seeded fights of the walk's team made a ship's crew (its
+Rocketjock trained in Sensor Operation, its Engineer in Repair Nuclear
+Engine), from the campaign save `opengold_countdown_campaign_tests` writes:
+the opening, Sensors, Target's choice, the Engineer's orders, a system hit's
+colours, boarding, withdrawing and the picture's size, at 1920 by 1080 and
+1120 by 800. `ship_fights_play_through_the_session` checks the session's
+part: the call, the opening, the end in the script's memory, the next name,
+the pilot kept, and a boarding leading to script 52's fight.
 
 ### The walk
 
 `opengold_countdown_walk` starts a new game for each map, enters it, looks
 at every square and plays its event: the first choice of a menu, then each
 in turn until each has come twice; every fight played by the game's own
-computer on both sides; treasure left; a ship fight handed off. Then it
+computer on both sides; treasure left; every ship fight played. Then it
 enters every script without a map of its own (script 99 at each of its
-thirteen outposts) and steps about the wildernesses. On 2026-11-20 it walked
-all 17 maps and 20 scripts without a map, played 422 fights (zero gravity in
-272 of them, and on `HITEK`, `LOTEK` and `MARSCOM`), and met nothing the
-engine lacks; it reached the solar map from 18 places. Map 99 is the
-Mariposa's top, which script 95 enters on the escape; the walk notes it.
-Places the solar map's script names first (the outpost, 4C31h and 4C2Fh) and
-the ship fight's enemy (4C61h) are set by the walk, as aids.
+thirteen outposts) and steps about the wildernesses. On 2026-11-20, with
+the ship fights played, it walked 15 maps and 20 scripts without a map,
+played 437 ground fights (zero gravity in 286 of them, and on `HITEK`,
+`LOTEK` and `MARSCOM`) and 23 ship fights (21 boarded, one won outright, one
+lost or broken off), and met nothing the engine lacks; it reached the solar
+map from 17 places. Map 99 is the Mariposa's top, which script 95 enters on
+the escape; the walk notes it.
+Places the solar map's script names first (the outpost, 4C31h and 4C2Fh) are
+set by the walk, as aids. Ship fights are played through the session as the
+screen plays them, by a simple player's orders (board when it may, close,
+aim at the engines, fire, load); no walk of the maps reaches one without
+flying the solar map, so the walk runs the two fixed ones from the
+instruction where their setup begins (ECL2:34 8A54h, the hail a RAM
+cruiser does not believe, a Hubble; ECL6:95 8B63h, the escape from the
+Mariposa, an Adder), each until the team boards. Map 52, the boarded ship's
+decks, is entered by boarding the Hubble, as a player enters it; on
+2026-11-20 the walk's team, fresh from creation, lost the fight through the
+airlock on every one of twenty sets of dice, so the walk notes the map as
+one it could not stand on and walks the other maps.
 
 ## Next
 

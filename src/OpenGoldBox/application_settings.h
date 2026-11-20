@@ -85,6 +85,11 @@ bool empty_helm_dodges(opengold::GoldBoxGame game);
 bool save_empty_helm_dodges(opengold::GoldBoxGame game, bool on);
 bool boarding_fuel(opengold::GoldBoxGame game);
 bool save_boarding_fuel(opengold::GoldBoxGame game, bool on);
+// [ship_picture_shrinks], by game folder: "off" draws the enemy ship at one
+// size, as the original does; otherwise its picture grows smaller with the
+// range (an OpenGoldBox touch, the user's choice of 2026-11-20).
+bool ship_picture_shrinks(opengold::GoldBoxGame game);
+bool save_ship_picture_shrinks(opengold::GoldBoxGame game, bool on);
 // [design_difficulty] UA: how the difficulty plays in an Unlimited Adventures
 // design, "design" (the kit's own levels), "table" (OpenGoldBox's table) or
 // "both", the default.

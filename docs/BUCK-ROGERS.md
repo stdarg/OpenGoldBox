@@ -686,9 +686,11 @@ backdrops, pictures and text; the script machine with the Buck Rogers
 commands and the host; ground fights on the four tile sets, in normal and
 zero gravity; the outposts as their scripts run them; the title's music; and
 `opengold_countdown_walk` over every map and every script without one
-([countdown.md](games/countdown.md), "The game in the engine"). The solar
-map, ship combat and the creation and skill screens are designed from
-mockups; the session stops at a hand-off for each.
+([countdown.md](games/countdown.md), "The game in the engine"). Ship combat
+plays on its own screen through the rules (2026-11-20;
+[countdown.md](games/countdown.md), "The ship combat screen"), and the walk
+plays real ship fights. The solar map and the creation and skill screens
+are designed from mockups; the session stops at a hand-off for each.
 
 ### B4. *Matrix Cubed*
 

@@ -19,6 +19,7 @@
 #include "equipment_choice_dialog.h"
 #include "combat_view.h"
 #include "campaign_combat.h"
+#include "ship_combat_view.h"
 #include "rolf_tour_view.h"
 #include "save_slots.h"
 #include "game_folder_questions.h"
@@ -1752,6 +1753,42 @@ void CharacterCreationView::update_party_navigation()
 {
     bool allowed = true;
     auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown"));
+    // A Buck Rogers ship fight plays on its own screen; its script goes on
+    // once the player closes it, and a boarding's fight follows.
+    auto *ship_fight = Object::cast_to<ShipCombatView>(get_node_or_null("CampaignShipCombat"));
+    if (!ship_fight && town && town->is_visible() && town->waiting_ship_fight())
+    {
+        auto owned =
+            presentation::instantiate_control<ShipCombatView>("res://scenes/ship_combat.tscn");
+        owned->set_name("CampaignShipCombat");
+        ship_fight = presentation::attach_child(*this, std::move(owned));
+        ship_fight->play(*town->waiting_ship_fight());
+        town->hide();
+        town->set_process(false);
+        town->set_process_input(false);
+    }
+    if (ship_fight && ship_fight->done() && !campaign_defeated_)
+    {
+        if (town && town->saved_session() &&
+            town->saved_session()->snapshot().phase == opengold::por::TourPhase::defeated)
+        {
+            show_defeat();
+        }
+        else
+        {
+            presentation::detach_child(*this, *ship_fight).reset();
+            ship_fight = nullptr;
+            town->show();
+            town->set_process(true);
+            town->set_process_input(true);
+            town->resume_party();
+        }
+    }
+    if (ship_fight)
+    {
+        required_node<Button>(*this, "ReturnParty").set_disabled(true);
+        return;
+    }
     auto *fight = Object::cast_to<CombatView>(get_node_or_null("CampaignCombat"));
     if (!fight && town && town->is_visible() && town->pending_encounter() &&
         !campaign_->state().short_rest)

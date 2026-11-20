@@ -82,6 +82,8 @@ class GameMenuView : public godot::Control
     void command_every_round_selected(std::int64_t index);
     void empty_helm_dodges_selected(std::int64_t index);
     void boarding_fuel_selected(std::int64_t index);
+    // Whether the enemy ship's picture grows smaller with the range.
+    void ship_picture_shrinks_selected(std::int64_t index);
     // A Buck Rogers game shows its ship-combat options where the other games'
     // own options stand.
     void show_game_options();

@@ -223,6 +223,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/vga_host.cpp
     src/OpenGold.Core/src/buck_rogers_host.cpp
     src/OpenGold.Core/src/buck_rogers_battlefield.cpp
+    src/OpenGold.Core/src/buck_rogers_ship_fight.cpp
     src/OpenGold.Core/src/darkness_area_map.cpp
     src/OpenGold.Core/src/treasures_import.cpp
     src/OpenGold.Core/src/darkness_import.cpp
@@ -341,7 +342,12 @@ if(OPENGOLD_BUILD_TESTS)
     add_executable(opengold_countdown_campaign_tests tests/countdown_campaign_tests.cpp)
     target_link_libraries(opengold_countdown_campaign_tests PRIVATE opengold_core
         opengold_rules_original)
+    target_compile_definitions(opengold_countdown_campaign_tests PRIVATE
+        OPENGOLD_BINARY_DIR="${PROJECT_BINARY_DIR}")
     add_test(NAME opengold_countdown_campaign_tests COMMAND opengold_countdown_campaign_tests)
+    # It writes the team the ship-combat screen's check fights with.
+    set_tests_properties(opengold_countdown_campaign_tests PROPERTIES
+        FIXTURES_SETUP countdown_ship_fixtures)
     add_test(NAME opengold_countdown_walk COMMAND opengold_countdown_campaign_tests --walk)
     set_tests_properties(opengold_countdown_walk PROPERTIES TIMEOUT 1800)
     add_executable(opengold_matrix_cubed_tests tests/matrix_cubed_tests.cpp)

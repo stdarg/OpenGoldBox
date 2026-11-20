@@ -291,7 +291,9 @@ void GameMenuView::build_options()
           std::pair{"Options/Gameplay/CommandEveryRound",
                     &GameMenuView::command_every_round_selected},
           std::pair{"Options/Gameplay/EmptyHelmDodges", &GameMenuView::empty_helm_dodges_selected},
-          std::pair{"Options/Gameplay/BoardingFuel", &GameMenuView::boarding_fuel_selected}})
+          std::pair{"Options/Gameplay/BoardingFuel", &GameMenuView::boarding_fuel_selected},
+          std::pair{"Options/Gameplay/ShipPictureShrinks",
+                    &GameMenuView::ship_picture_shrinks_selected}})
     {
         auto &choice = required_node<OptionButton>(*this, path);
         choice.add_item(i18n::text(N_("On")));
@@ -563,20 +565,28 @@ void GameMenuView::boarding_fuel_selected(std::int64_t index)
     settings::save_boarding_fuel(settings::chosen_game(), index == 0);
 }
 
+void GameMenuView::ship_picture_shrinks_selected(std::int64_t index)
+{
+    settings::save_ship_picture_shrinks(settings::chosen_game(), index == 0);
+}
+
 void GameMenuView::show_game_options()
 {
     const auto game = settings::chosen_game();
     const bool buck_rogers = opengold::is_buck_rogers(game);
     auto &gameplay = required_node<Control>(*this, "Options/Gameplay");
-    for (const char *name : {"OriginalShopsLabel", "OriginalShops", "OriginalShopsNote",
-                             "TreasuresMoneyLabel", "TreasuresMoney", "TreasuresMoneyNote",
-                             "DarknessGazesLabel", "DarknessGazes", "DarknessGazesNote"})
+    for (const char *name :
+         {"OriginalShopsLabel", "OriginalShops", "OriginalShopsNote", "TreasuresMoneyLabel",
+          "TreasuresMoney", "TreasuresMoneyNote", "DarknessGazesLabel", "DarknessGazes",
+          "DarknessGazesNote", "DesignDifficultyLabel", "DesignDifficulty", "DesignDifficultyNote"})
     {
         required_node<Control>(gameplay, name).set_visible(!buck_rogers);
     }
-    for (const char *name : {"CommandEveryRoundLabel", "CommandEveryRound", "CommandEveryRoundNote",
-                             "EmptyHelmDodgesLabel", "EmptyHelmDodges", "EmptyHelmDodgesNote",
-                             "BoardingFuelLabel", "BoardingFuel", "BoardingFuelNote"})
+    for (const char *name :
+         {"CommandEveryRoundLabel", "CommandEveryRound", "CommandEveryRoundNote",
+          "EmptyHelmDodgesLabel", "EmptyHelmDodges", "EmptyHelmDodgesNote", "BoardingFuelLabel",
+          "BoardingFuel", "BoardingFuelNote", "ShipPictureShrinksLabel", "ShipPictureShrinks",
+          "ShipPictureShrinksNote"})
     {
         required_node<Control>(gameplay, name).set_visible(buck_rogers);
     }
@@ -590,6 +600,8 @@ void GameMenuView::show_game_options()
         .select(settings::empty_helm_dodges(game) ? 0 : 1);
     required_node<OptionButton>(gameplay, "BoardingFuel")
         .select(settings::boarding_fuel(game) ? 0 : 1);
+    required_node<OptionButton>(gameplay, "ShipPictureShrinks")
+        .select(settings::ship_picture_shrinks(game) ? 0 : 1);
 }
 
 void GameMenuView::show_unidentified_magic(bool shown)
