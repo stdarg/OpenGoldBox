@@ -62,6 +62,16 @@ std::string_view buck_rogers_career_name(Profession career)
     return career_names[career_place(career)];
 }
 
+std::string_view buck_rogers_race_id(Race race)
+{
+    return race_ids[race_place(race)];
+}
+
+std::string_view buck_rogers_career_id(Profession career)
+{
+    return career_ids[career_place(career)];
+}
+
 bool holds_buck_rogers_record(std::string_view rules_data) noexcept
 {
     return buck_rogers_record_of(rules_data).has_value();
@@ -77,9 +87,9 @@ rules::CharacterDraft buck_rogers_draft(const GroundRecord &record)
     const auto &creature = record.creature;
     rules::CharacterDraft draft;
     draft.name = creature.name;
-    draft.race = std::string(race_ids[race_place(record_race_of(creature))]);
+    draft.race = std::string(buck_rogers_race_id(record_race_of(creature)));
     draft.gender = creature.gender ? "female" : "male";
-    draft.character_class = std::string(career_ids[career_place(record_career_of(creature))]);
+    draft.character_class = std::string(buck_rogers_career_id(record_career_of(creature)));
     draft.rules_data = encode_ground_record(record);
     draft.rolled = true;
     return draft;

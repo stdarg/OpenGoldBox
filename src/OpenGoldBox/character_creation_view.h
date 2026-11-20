@@ -1,5 +1,6 @@
 #ifndef OPENGOLD_CHARACTER_CREATION_VIEW_H
 #define OPENGOLD_CHARACTER_CREATION_VIEW_H
+#include "opengold/buck_rogers_rules.h"
 #include "opengold/character_creator.h"
 #include "opengold/campaign_party.h"
 #include "opengold/combat_body_catalog.h"
@@ -147,6 +148,37 @@ class CharacterCreationView : public godot::Control
     void palette_selected(int index);
     void check_run();
     void capture(const char *name);
+    // The Buck Rogers games' pages (buck_rogers_creation_pages.cpp): the
+    // character is its record, the roll shows its seven abilities, and the
+    // skill screen, a Warrior's specializations and the body icon change it.
+    [[nodiscard]] bool buck_rogers() const;
+    void setup_buck_rogers();
+    void refresh_buck_rogers(opengold::CreationStep step);
+    [[nodiscard]] godot::String buck_rogers_description(opengold::CreationStep step,
+                                                        const std::string &id) const;
+    void show_buck_rogers_roll();
+    void show_buck_rogers_specializations();
+    void show_buck_rogers_skills();
+    void show_buck_rogers_icons();
+    // The record with `change` made, and the skills the screen spent; the
+    // skill screen starts over when the character is rolled again.
+    template <class Change> void change_record(Change &&change);
+    void keep_spending_current();
+    void skill_tab_selected(std::int64_t tab);
+    void skill_selected(int number);
+    void skill_raised(int number);
+    void skill_lowered(int number);
+    void specialization_changed(int item_type, int direction);
+    void body_icon_chosen(int icon);
+    // Leaving the skill screen with points unspent asks first, as the
+    // original does (skills.pas EditSkills).
+    [[nodiscard]] bool skill_points_unspent() const;
+    void leave_skills();
+    std::optional<opengold::original::SkillSpending> spending_;
+    // The roll the spending began from, and the points it began with.
+    std::string spending_roll_;
+    int career_points_given_{}, general_points_given_{};
+    int skill_tab_{}, selected_skill_{};
     std::shared_ptr<opengold::CampaignParty> campaign_;
     std::size_t roster_index_{};
     bool party_open_{}, added_to_party_{}, party_check_{};

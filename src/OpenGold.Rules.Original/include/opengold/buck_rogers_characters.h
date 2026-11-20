@@ -33,6 +33,9 @@ namespace opengold::original
 // careers (gdconsts.pas raceNames, careerNames).
 [[nodiscard]] std::string_view buck_rogers_race_name(Race race);
 [[nodiscard]] std::string_view buck_rogers_career_name(Profession career);
+// The ids a creation draft names them by (buck_rogers_draft).
+[[nodiscard]] std::string_view buck_rogers_race_id(Race race);
+[[nodiscard]] std::string_view buck_rogers_career_id(Profession career);
 } // namespace opengold::original
 
 #endif

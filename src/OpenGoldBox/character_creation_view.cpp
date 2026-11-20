@@ -12,6 +12,8 @@
 #include "modify_character_dialog.h"
 #include "opengold/srd5.h"
 #include "opengold/original.h"
+#include "opengold/buck_rogers_creation.h"
+#include "buck_rogers_icons.h"
 #include "godot_path.h"
 #include "guarded_handlers.h"
 #include "scoped_flag.h"
@@ -53,15 +55,17 @@ namespace
 {
 using presentation::gs;
 
-constexpr std::array<const char *, 9> steps{N_("Name, Race & Gender"),
-                                            N_("Alignment"),
-                                            N_("Attributes"),
-                                            N_("Class"),
-                                            N_("Training"),
-                                            N_("Spell Choices"),
-                                            N_("Combat appearance"),
-                                            N_("Portrait"),
-                                            N_("Character sheet")};
+constexpr std::array<const char *, 11> steps{N_("Name, Race & Gender"),
+                                             N_("Alignment"),
+                                             N_("Attributes"),
+                                             N_("Class"),
+                                             N_("Training"),
+                                             N_("Spell Choices"),
+                                             N_("Combat appearance"),
+                                             N_("Portrait"),
+                                             N_("Character sheet"),
+                                             N_("Skills"),
+                                             N_("Weapon specialization")};
 
 // Label autowrap modes (TextServer::AutowrapMode).
 constexpr int autowrap_off = 0, autowrap_words = 2;
@@ -268,6 +272,7 @@ void CharacterCreationView::_ready()
         button->set_tooltip_text(i18n::text(colors[i]));
         button->call("configure_palette_index", i);
     }
+    setup_buck_rogers();
     layout();
     if (Engine::get_singleton()->is_editor_hint())
     {
@@ -433,6 +438,21 @@ void CharacterCreationView::show_race_portrait(bool again)
     {
         return;
     }
+    if (buck_rogers())
+    {
+        // These games have no portraits: the race's starting body icon
+        // (SetDefaultIcon), one of four at random for a Desert Runner.
+        const auto chosen =
+            original::buck_rogers_draft_choices(d, original::game_of(creator_->rules().identity()));
+        RandomState pick{static_cast<std::uint64_t>(UtilityFunctions::randi())};
+        race_portrait_ =
+            presentation::buck_rogers_body_icon(
+                original::default_icon(chosen.race, chosen.gender, chosen.career, pick))
+                .ready;
+        race_portrait_of_ = d.race;
+        race_portrait_gender_ = d.gender;
+        return;
+    }
     auto a = creator_->appearance();
     a.portrait =
         portraits_->of_race_and_gender(d, static_cast<std::uint32_t>(UtilityFunctions::randi()));
@@ -471,6 +491,10 @@ void CharacterCreationView::refresh()
         return;
     }
     const presentation::ScopedFlag refreshing(refreshing_);
+    if (buck_rogers())
+    {
+        keep_spending_current();
+    }
     const auto step = creator_->step();
     const auto &d = creator_->draft();
     const auto &a = creator_->appearance();
@@ -624,11 +648,12 @@ void CharacterCreationView::refresh()
     unsigned ordinal = 0;
     for (const auto page : creator_->pages())
     {
-        progress +=
-            (page == step ? "> " : "  ") + std::to_string(++ordinal) + ". " +
-            i18n::utf8(page == CreationStep::combat_icon ? N_("Combat icon")
-                                                         : steps[static_cast<unsigned>(page)]) +
-            "\n\n";
+        progress += (page == step ? "> " : "  ") + std::to_string(++ordinal) + ". " +
+                    i18n::utf8(page == CreationStep::combat_icon ? N_("Combat icon")
+                               : page == CreationStep::character_class && buck_rogers()
+                                   ? N_("Career")
+                                   : steps[static_cast<unsigned>(page)]) +
+                    "\n\n";
     }
     required_node<Label>(*this, "Steps").set_text(gs(progress));
     // A character in the party is no longer the one these pages edit.
@@ -1000,6 +1025,7 @@ void CharacterCreationView::refresh()
                                {{"race", chosen_label(CreationField::race)},
                                 {"gender", chosen_label(CreationField::gender)},
                                 {"class", chosen_label(CreationField::character_class)}}));
+    refresh_buck_rogers(step);
     refresh_art();
     layout();
     queue_redraw();
@@ -1085,7 +1111,7 @@ void CharacterCreationView::draw_view()
     required_node<Control>(*this, "CreationCanvas")
         .call("set_images", images_[1], images_[2],
               creator_ && step == CreationStep::attributes && !rolls_in_place(),
-              creator_ && step == CreationStep::combat_icon,
+              creator_ && step == CreationStep::combat_icon && !buck_rogers(),
               creator_ && step == CreationStep::race ? race_portrait_ : Ref<ImageTexture>(),
               creator_ && creator_->appearance().icon_size == por::IconSize::large);
 }
@@ -1193,6 +1219,18 @@ void CharacterCreationView::training_toggled(bool selected, String group, String
 
 void CharacterCreationView::next()
 {
+    if (skill_points_unspent())
+    {
+        // A ConfirmationDialog, reached as a Window: the game's Godot class
+        // list leaves that class out.
+        auto &question = required_node<Window>(*this, "UnspentSkills");
+        question.set(
+            "dialog_text",
+            i18n::text(N_(
+                "Some skill points are unspent. They are lost once the character is finished. Leave the skills?")));
+        question.popup_centered();
+        return;
+    }
     perform(
         [&]
         {

@@ -230,6 +230,18 @@ enum class ModifyStep
     raise
 };
 
+// The pages of a creation rolled in place besides the race, class, roll,
+// combat icon and sheet: an alignment and a portrait in every game but the
+// Buck Rogers ones, which have a skill screen and a Warrior's weapon
+// specializations instead.
+struct InPlacePages
+{
+    bool alignment{true}, portrait{true}, skills{};
+    // How many weapon specializations the new character chooses, and how
+    // many of them its record has.
+    int specializations{}, chosen_specializations{};
+};
+
 // Every operation is pure, so a module that omits one fails to compile
 // instead of failing in play (Effective C++ Item 34).
 class CharacterRules
@@ -292,6 +304,27 @@ class CharacterRules
     [[nodiscard]] virtual bool modify_while_made() const
     {
         return false;
+    }
+
+    // What a creation rolled in place asks besides its race, class and roll
+    // (the original's pages): the Buck Rogers games ask no alignment and have
+    // no portraits, but a skill screen, a Warrior's weapon specializations
+    // and a body icon, which change the character's record.
+    [[nodiscard]] virtual InPlacePages in_place_pages(const CharacterDraft &draft) const
+    {
+        (void)draft;
+        return {};
+    }
+
+    // The draft named `name`: the name, and where the draft holds its game's
+    // record (the Buck Rogers games') the record's name too. Throws for a
+    // name the record cannot hold.
+    [[nodiscard]] virtual CharacterDraft renamed(const CharacterDraft &draft,
+                                                 std::string name) const
+    {
+        auto named_draft = draft;
+        named_draft.name = std::move(name);
+        return named_draft;
     }
 
     [[nodiscard]] virtual std::vector<CreationChoice> choices(CreationField field) const = 0;

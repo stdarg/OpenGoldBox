@@ -226,8 +226,9 @@ void CharacterCreator::restart()
         const auto options = rules_->choices(field);
         if (options.empty())
         {
-            // The original rules have no backgrounds.
-            if (field == CreationField::background)
+            // The original rules have no backgrounds, the Buck Rogers games
+            // no alignments.
+            if (field == CreationField::background || field == CreationField::alignment)
             {
                 continue;
             }
@@ -991,6 +992,19 @@ void CharacterCreator::modify(const rules::CharacterDraft &modified)
     draft_.rules_data = modified.rules_data;
 }
 
+void CharacterCreator::change_record(std::string rules_data)
+{
+    require_editable();
+    if (!rolls_in_place() || !draft_.rolled || !rules_->in_place_pages(draft_).skills)
+    {
+        throw std::logic_error("These rules keep no record for creation's pages to change");
+    }
+    auto candidate = draft_;
+    candidate.rules_data = std::move(rules_data);
+    (void)rules_->evaluate(candidate, rules::NameRequirement::optional);
+    draft_ = std::move(candidate);
+}
+
 bool CharacterCreator::scores_assigned() const
 {
     return rolls_in_place() ? draft_.rolled : all_scores_assigned(draft_);
@@ -1035,7 +1049,8 @@ void CharacterCreator::name(std::string text)
         throw std::runtime_error("A new body keeps the character's name");
     }
     const auto first = text.find_first_not_of(" \t\r\n"), last = text.find_last_not_of(" \t\r\n");
-    draft_.name = first == std::string::npos ? "" : text.substr(first, last - first + 1);
+    draft_ = rules_->renamed(
+        draft_, first == std::string::npos ? "" : text.substr(first, last - first + 1));
 }
 
 void CharacterCreator::appearance(por::CharacterAppearance value)
@@ -1179,12 +1194,34 @@ void CharacterCreator::back()
 std::vector<CreationStep> CharacterCreator::in_place_pages() const
 {
     std::vector<CreationStep> pages(pages_in_place.begin(), pages_in_place.end());
+    const auto asked = rules_->in_place_pages(draft_);
+    if (!asked.alignment)
+    {
+        std::erase(pages, CreationStep::alignment);
+    }
+    if (!asked.portrait)
+    {
+        std::erase(pages, CreationStep::portrait);
+    }
+    // After the roll, as the Buck Rogers games ask them: a Warrior's
+    // specializations, then the skills.
+    const auto after_roll = [&]
+    {
+        return std::ranges::find(pages, CreationStep::attributes) + 1;
+    };
+    if (asked.skills)
+    {
+        pages.insert(after_roll(), CreationStep::skills);
+    }
+    if (asked.specializations > 0)
+    {
+        pages.insert(after_roll(), CreationStep::specialization);
+    }
     // A rolled character's choices (Treasures' magic-user's spells) follow
     // the roll.
     if (!training_options().empty())
     {
-        pages.insert(std::ranges::find(pages, CreationStep::attributes) + 1,
-                     CreationStep::training);
+        pages.insert(after_roll(), CreationStep::training);
     }
     return pages;
 }
@@ -1209,6 +1246,12 @@ void CharacterCreator::next_in_place()
     if (step_ == CreationStep::training && !training_complete())
     {
         throw std::runtime_error("Complete available spell choices.");
+    }
+    if (const auto asked = rules_->in_place_pages(draft_);
+        step_ == CreationStep::specialization &&
+        asked.chosen_specializations < asked.specializations)
+    {
+        throw std::runtime_error("Choose the weapon specializations.");
     }
     step_ = *std::next(page);
 }

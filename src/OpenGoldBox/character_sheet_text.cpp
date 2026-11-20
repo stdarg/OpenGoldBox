@@ -9,6 +9,9 @@
 #include "training_control.h"
 #include "opengold/srd5.h"
 #include "opengold/original.h"
+#include "opengold/buck_rogers_characters.h"
+#include "opengold/buck_rogers_rules.h"
+#include "game_resources.h"
 #include <algorithm>
 #include <array>
 #include <span>
@@ -136,12 +139,132 @@ std::string original_identity_and_attributes(const Character &character, const P
     return text;
 }
 
+// A Buck Rogers character's record as it is now: the party's, which fights,
+// shops and training change, else the one its creation made.
+std::optional<original::GroundRecord> buck_rogers_record(const Character &character,
+                                                         const PartyMember *member,
+                                                         const CampaignParty *party)
+{
+    return original::buck_rogers_record_of(member ? party->game_record(member->id)
+                                                  : character.creation_data().rules_data);
+}
+
+// A Buck Rogers sheet beside its body icon: the career's level, age, Hit
+// Points, experience and credits, the seven abilities, the eight saving
+// throws, the skills it has and a Warrior's specializations.
+std::string buck_rogers_identity_and_attributes(const Character &character,
+                                                const original::GroundRecord &record,
+                                                const PartyMember *member)
+{
+    const auto &s = character.sheet();
+    const auto &c = record.creature;
+    std::string text = i18n::formatted(
+        "[theme_font=sheet_title]{name}[/theme_font]\nLevel {level} / {race} / {gender} / {career}\nAge {age}\n\n",
+        {{"name", gs(rich_text_literal(s.name))},
+         {"level", c.level},
+         {"race", i18n::text(s.race)},
+         {"gender", i18n::text(s.gender)},
+         {"career", i18n::text(s.character_class)},
+         {"age", static_cast<int>(c.age)}});
+    text += "[theme_emphasis]" +
+            std::string(presentation::hp_text(c.hit_points, c.hit_point_maximum,
+                                              member && member->vitals.dead, {}, {})
+                            .utf8()
+                            .get_data()) +
+            "[/theme_emphasis]";
+    text += i18n::formatted("   Experience {xp}   Credits {credits}",
+                            {{"xp", static_cast<std::int64_t>(c.experience)},
+                             {"credits", static_cast<std::int64_t>(c.credits)}});
+    static constexpr std::array<const char *, 7> abilities{
+        N_("Strength"), N_("Dexterity"), N_("Constitution"), N_("Intelligence"),
+        N_("Wisdom"),   N_("Charisma"),  N_("Tech")};
+    std::array<int, 7> scores{};
+    std::ranges::copy(c.current_abilities, scores.begin());
+    text += "\n\n[theme_title]" + i18n::utf8("Attributes") + "[/theme_title]\n" +
+            number_table(abilities, scores);
+    static constexpr std::array<const char *, 8> saves{
+        N_("Saving throw 1"), N_("Saving throw 2"), N_("Saving throw 3"), N_("Saving throw 4"),
+        N_("Saving throw 5"), N_("Saving throw 6"), N_("Saving throw 7"), N_("Saving throw 8")};
+    std::array<int, 8> needs{};
+    std::ranges::copy(c.saves, needs.begin());
+    text += "\n\n[theme_title]" + i18n::utf8("Saving throws") + "[/theme_title]\n" +
+            number_table(saves, needs);
+    // Each skill it has, with its level and the value checks roll against.
+    std::string skills;
+    for (unsigned number = 1; number <= original::skill_count; ++number)
+    {
+        const auto skill = original::skill_numbered(number);
+        const int level = original::level_of(c.skills, skill);
+        if (level == 0)
+        {
+            continue;
+        }
+        skills += "[cell]" + i18n::utf8(original::skill_definition(skill).name) + "[/cell][cell]" +
+                  std::to_string(level) + "[/cell][cell]" +
+                  std::to_string(original::skill_value(c, skill)) + "[/cell]";
+    }
+    text += "\n\n[theme_title]" + i18n::utf8("Skills") + "[/theme_title]\n" +
+            (skills.empty() ? i18n::utf8("None")
+                            : "[theme_table=abilities]" + skills + "[/theme_table]");
+    return text;
+}
+
+// Below the body icon: Armor Class and movement, a Warrior's
+// specializations and the items it carries, named as the game names them.
+std::string buck_rogers_details(const original::GroundRecord &record)
+{
+    const auto &c = record.creature;
+    std::string text = "\n\n" + i18n::formatted("Armor Class {ac}   Movement {movement}",
+                                                {{"ac", c.base_armor_class},
+                                                 {"movement", static_cast<int>(c.base_movement)}});
+    const auto &stock = buck_rogers_stock(game_rules_files());
+    std::string specializations;
+    for (const auto type : original::specializable_weapon_types(stock.templates))
+    {
+        const int level = original::specialization_level(c, type);
+        const auto weapon = std::ranges::find(stock.templates, type, &buck_rogers::Item::type);
+        if (level > 0 && weapon != stock.templates.end())
+        {
+            specializations += "\n" +
+                               rich_text_literal(buck_rogers_item_name(*weapon, stock.item_words)) +
+                               " +" + std::to_string(level);
+        }
+    }
+    if (!specializations.empty())
+    {
+        text += "\n\n[theme_title]" + i18n::utf8("Weapon specializations") + "[/theme_title]" +
+                specializations;
+    }
+    text += "\n\n[theme_title]" + i18n::utf8("Inventory") + "[/theme_title]";
+    if (record.items.empty())
+    {
+        text += "\n" + i18n::utf8("Empty");
+    }
+    for (const auto &item : record.items)
+    {
+        text += "\n" + rich_text_literal(buck_rogers_item_name(item, stock.item_words));
+        if (item.quantity > 1)
+        {
+            text += " x" + std::to_string(item.quantity);
+        }
+        if ((item.flags & buck_rogers::Item::readied) != 0)
+        {
+            text += " / " + i18n::utf8("Readied");
+        }
+    }
+    return text;
+}
+
 // The name and identity, hit points and attributes: what the town's sheet
 // shows beside the portrait.
 std::string identity_and_attributes(const Character &character, const PartyMember *member,
                                     const CampaignParty *party)
 {
     const auto &s = character.sheet();
+    if (const auto record = buck_rogers_record(character, member, party))
+    {
+        return buck_rogers_identity_and_attributes(character, *record, member);
+    }
     if (s.original)
     {
         return original_identity_and_attributes(character, member, party);
@@ -277,6 +400,10 @@ std::string details(const Character &character, const PartyMember *member,
                     const CampaignParty *party)
 {
     const auto &s = character.sheet();
+    if (const auto record = buck_rogers_record(character, member, party))
+    {
+        return buck_rogers_details(*record);
+    }
     std::string text;
     if (member)
     {

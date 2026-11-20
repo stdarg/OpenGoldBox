@@ -1,5 +1,7 @@
 #include "godot_text.h"
 #include "portrait_catalog.h"
+#include "buck_rogers_icons.h"
+#include "opengold/buck_rogers_characters.h"
 #include "application_settings.h"
 #include "game_resources.h"
 #include "godot_images.h"
@@ -183,6 +185,11 @@ bool PortraitCatalog::shows_new(const opengold::por::CharacterAppearance &appear
 Ref<ImageTexture> PortraitCatalog::texture(const opengold::por::CharacterAppearance &appearance,
                                            const opengold::rules::CharacterDraft &draft)
 {
+    // A Buck Rogers character has no portrait: it shows its body icon.
+    if (const auto record = opengold::original::buck_rogers_record_of(draft.rules_data))
+    {
+        return presentation::buck_rogers_body_icon(record->creature.icon).ready;
+    }
     return shows_new(appearance, draft) ? new_texture(shown_file(appearance, draft))
                                         : original(appearance);
 }

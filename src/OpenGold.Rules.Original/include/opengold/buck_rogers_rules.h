@@ -232,6 +232,23 @@ struct SkillDefinition
 // The skills the general lists offer a career, in skill order: offered,
 // not its career skills, not medical.
 [[nodiscard]] std::vector<Skill> general_skills(Profession career);
+
+// The levels in other skills a skill needs (charhlp.pas
+// MeetsSkillPrerequisite), as the skill screen lists them: all of them, or
+// for Composition any one.
+struct SkillNeed
+{
+    Skill skill{};
+    int level{};
+};
+
+struct SkillPrerequisites
+{
+    std::vector<SkillNeed> needs;
+    bool any{};
+};
+
+[[nodiscard]] SkillPrerequisites skill_prerequisites(Skill skill);
 // Whether the character has the levels in other skills a skill needs
 // (charhlp.pas MeetsSkillPrerequisite); medical skills need a Medic.
 [[nodiscard]] bool meets_skill_prerequisite(const SkillLevels &levels, Profession career,
@@ -358,6 +375,12 @@ class SkillSpending
         return known_general_;
     }
 
+    // How many general skills the character may know on this screen.
+    [[nodiscard]] int general_skills_allowed() const noexcept
+    {
+        return max_general_;
+    }
+
     // The character with these skill levels.
     void apply_to(buck_rogers::Creature &character) const;
 
@@ -390,6 +413,10 @@ specializable_weapon_types(std::span<const buck_rogers::Item> templates);
 // One more specialization in the type, in the first empty slot; false when
 // the character has three in it or no slot is left.
 [[nodiscard]] bool specialize(buck_rogers::Creature &character, std::uint8_t item_type);
+// One specialization in the type taken back, from the last slot that holds
+// it, as creation's page lets a choice be taken back until it is left; false
+// when the character has none in it.
+bool unspecialize(buck_rogers::Creature &character, std::uint8_t item_type);
 // How many a new Warrior chooses: 1 in Countdown, 3 in Matrix Cubed; and
 // whether a Warrior trained to this level chooses one (every even level).
 [[nodiscard]] int creation_specializations(Profession career, GoldBoxGame game);

@@ -175,7 +175,9 @@ std::optional<std::pair<opengold::GoldBoxGame, std::filesystem::path>> newest_sa
 }
 
 // --game=POOLRAD (or CURSE, SECRET, GATEWAY, DARKNESS, TREASURE or UA): the game a check plays,
-// without the titles and the menus.
+// without the titles and the menus. A game the menu does not offer yet is
+// reached only so: the Buck Rogers games' creation screen is checked before
+// they play (tests/buck_rogers_creation_view_tests.gd).
 std::optional<opengold::GoldBoxGame> game_from_command_line()
 {
     auto *os = OS::get_singleton(); // borrowed engine singleton
@@ -190,7 +192,7 @@ std::optional<opengold::GoldBoxGame> game_from_command_line()
             const auto folder = arguments[i].trim_prefix("--game=");
             for (const auto &[game, title, world, plays] : playable_games)
             {
-                if (plays && folder == String(std::string(opengold::game_folder(game)).c_str()))
+                if (folder == String(std::string(opengold::game_folder(game)).c_str()))
                 {
                     return game;
                 }

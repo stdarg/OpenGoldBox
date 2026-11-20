@@ -67,7 +67,8 @@ class PortraitCatalog
     // the catalog lacks it.
     [[nodiscard]] std::string shown_file(const opengold::por::CharacterAppearance &appearance,
                                          const opengold::rules::CharacterDraft &draft) const;
-    // The portrait the character shows. The most recently used textures are
+    // The portrait the character shows, or a Buck Rogers character's body
+    // icon (buck_rogers_icons.h). The most recently used textures are
     // kept, so a picture shown again is not read again.
     [[nodiscard]] godot::Ref<godot::ImageTexture>
     texture(const opengold::por::CharacterAppearance &appearance,

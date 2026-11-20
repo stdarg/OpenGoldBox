@@ -148,6 +148,68 @@ on its name) before its first experience, and *Unlimited Adventures* offers
 it on the roll too ([ORIGINAL-RULES.md](ORIGINAL-RULES.md#modify-character)).
 The SRD rules' creation described here is unchanged and has no Modify.
 
+## The Buck Rogers games
+
+*Countdown to Doomsday* and *Matrix Cubed* use the same creation screen and
+creator, under their original rules ([countdown.md](games/countdown.md) and
+[matrix-cubed.md](games/matrix-cubed.md), "Rules"), with their own pages where
+those rules differ. The pages follow the original's order (`chargen.pas`
+`CreateCharacterMenu`), the name first as on every original-rules screen:
+
+1. **Name, Race & Gender**: a name of up to 15 letters (the record's), and
+   the six races the menu offers. The text beside the race gives its ability
+   adjustments, movement and careers, read from the rules. The picture is the
+   race's starting body icon (`SetDefaultIcon`): these games have no
+   portraits, so the body icon is a character's picture wherever a portrait
+   would show (the party's cards, the sheets, the fights; the user,
+   2026-11-20). There is no alignment or portrait page.
+2. **Career**: the five careers; those the race cannot take are gray. The
+   text gives the career's lowest scores, its eight career skills and the
+   level and experience it starts with.
+3. **Attributes**: the seven abilities, Tech the seventh, each where the roll
+   left it, with the race's adjustment and the career's minimum in two small
+   columns beside it (the user kept them, 2026-11-20), and the Hit Points,
+   age, level, experience and credits the roll made. **Roll again** keeps the
+   age and rolls the abilities and Hit Points again, as the original's
+   "Reroll stats?" does.
+4. **Weapon specialization**, a Warrior's only: one in *Countdown*, three in
+   *Matrix Cubed*, at most three in one weapon (`viewchar.pas`
+   `SpecializationMenu`). Next waits for them; − takes one back.
+5. **Skills** (`skills.pas` `EditSkills`): the points left, the most in one
+   skill and the general skills known, then the skills by group, one tab a
+   group (the career's skills, Technical, Intelligence, Dexterity, Charisma,
+   Wisdom and all the general skills; the original pages through them with
+   Prev and Next). Each row gives the skill's points, its group ability's
+   bonus and the total checks roll against, with − and +. A skill whose
+   prerequisites are unmet is red and marked locked; one at its cap says so;
+   choosing a skill's name says what it needs. In *Countdown* the player
+   spends 80 career and 40 general points, at most 30 a skill; in *Matrix
+   Cubed* the career's preset skills are set and points move from one skill
+   to another of the same kind, at most 105 above a skill's start. Leaving
+   with points unspent asks first, as the original does.
+6. **Combat icon**: the 36 body icons of `CHARS.DAX` in the original's 6 by 6
+   grid (`CustomizeIcon`), the chosen one shown ready and in action.
+7. **Character sheet**: level, race, gender, career, age, Hit Points,
+   experience, credits, the seven abilities, the eight saving throws, every
+   skill with its level and value, Armor Class and movement, a Warrior's
+   specializations and the items.
+
+The draft holds the character's record, whole (`buck_rogers_draft`,
+`opengold/buck_rogers_creation.h`): the roll makes it
+(`new_buck_rogers_character`), and the later pages change it through
+`CharacterCreator::change_record`. Joining the party gives the two free items,
+readied (`outfit_buck_rogers_character`), and the record saves and loads byte
+for byte. Every state fits the smallest window, 1120 x 800: the new pages are
+laid out in containers.
+
+Verified by `opengold_buck_rogers_creation_tests` (the pages, the roll, the
+skills, the specializations and the save) and the Godot checks
+`opengold_godot_buck_rogers_creation_countdown_to_doomsday` and
+`..._matrix_cubed`, which make a character on the real screen at 1120 x 800:
+a Desert Runner Warrior with its specialization, a career skill at its cap
+and Jury Rig unlocked by its prerequisites in *Countdown*, and an Engineer
+moving a preset point in *Matrix Cubed*.
+
 ## Native boundaries and rules
 
 - `OpenGold.Rules/character_rules.h` defines the optional `CharacterRules`

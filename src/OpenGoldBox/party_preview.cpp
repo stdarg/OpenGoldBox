@@ -11,6 +11,8 @@
 #include "game_combat_looks.h"
 #include "game_rules.h"
 #include "character_creation_view.h"
+#include "buck_rogers_icons.h"
+#include "opengold/buck_rogers_characters.h"
 #include "character_pool_dialog.h"
 #include "earlier_game_dialog.h"
 #include "modify_character_dialog.h"
@@ -677,11 +679,21 @@ void CharacterCreationView::refresh_party()
         required_node<TextureRect>(*this, "PartyPanel/Portrait")
             .set_texture(
                 portraits_->texture(m.character.appearance(), m.character.creation_data()));
-        const auto icons = por::party_combat_icons(m, *art_, looks_or_none(body_catalog_));
-        required_node<TextureRect>(*this, "PartyPanel/ReadySprite")
-            .set_texture(presentation::image_texture(icons.ready));
-        required_node<TextureRect>(*this, "PartyPanel/ActionSprite")
-            .set_texture(presentation::image_texture(icons.action));
+        // A Buck Rogers character fights as its body icon.
+        if (const auto record = original::buck_rogers_record_of(campaign_->game_record(m.id)))
+        {
+            const auto body = presentation::buck_rogers_body_icon(record->creature.icon);
+            required_node<TextureRect>(*this, "PartyPanel/ReadySprite").set_texture(body.ready);
+            required_node<TextureRect>(*this, "PartyPanel/ActionSprite").set_texture(body.action);
+        }
+        else
+        {
+            const auto icons = por::party_combat_icons(m, *art_, looks_or_none(body_catalog_));
+            required_node<TextureRect>(*this, "PartyPanel/ReadySprite")
+                .set_texture(presentation::image_texture(icons.ready));
+            required_node<TextureRect>(*this, "PartyPanel/ActionSprite")
+                .set_texture(presentation::image_texture(icons.action));
+        }
     }
     if (state.roster.empty())
     {
@@ -701,7 +713,9 @@ void CharacterCreationView::refresh_party()
         .set_text(
             error_.is_empty()
                 ? i18n::text(
-                      original::krynn_game(original::game_of(campaign_->identity()))
+                      is_buck_rogers(original::game_of(campaign_->identity()))
+                          ? N_("Each new character brings 1,000 credits and its two free items. Save game keeps this party to play on later.")
+                      : original::krynn_game(original::game_of(campaign_->identity()))
                           ? N_("Each new character brings starting steel and equipment for this campaign. Save game keeps this party to play on later.")
                           : N_("Each new character brings 3d6 × 10 gold pieces. Save game keeps this party to play on later."))
                 : error_);
