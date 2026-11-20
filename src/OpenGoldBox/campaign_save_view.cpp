@@ -388,6 +388,8 @@ void CharacterCreationView::load_campaign_bytes(const std::string &bytes)
                       presentation::guarded(this, &CharacterCreationView::open_saves));
         town->connect("menu_requested",
                       presentation::guarded(this, &CharacterCreationView::open_game_menu));
+        town->connect("options_requested",
+                      presentation::guarded(this, &CharacterCreationView::open_game_options));
         presentation::attach_child(*this, std::move(owned));
     }
     // All decoding, resource loading and character validation completed above.

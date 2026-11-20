@@ -69,7 +69,7 @@ else()
 endif()
 configure_file("${export_config}" "${game_project}/export_presets.cfg" @ONLY)
 
-add_library(opengoldbox_game SHARED rolf_tour_view.cpp combat_view.cpp character_creation_view.cpp
+add_library(opengoldbox_game SHARED rolf_tour_view.cpp rolf_tour_solar_map.cpp combat_view.cpp character_creation_view.cpp
     portrait_picker.cpp portrait_catalog.cpp party_preview.cpp equipment_choice_dialog.cpp level_up_view.cpp level_up_dialog.cpp level_up_lab_view.cpp campaign_save_view.cpp save_slots.cpp
     character_pool_dialog.cpp earlier_game_dialog.cpp modify_character_dialog.cpp town_sheet_dialog.cpp portrait_dialog.cpp original_portrait_parts.cpp character_sheet_view.cpp character_sheet_text.cpp godot_sound_output.cpp register_types.cpp game_classes.cpp campaign_combat.cpp startup_view.cpp game_folder_questions.cpp game_lifecycle.cpp crash_reports.cpp game_log.cpp game_menu_view.cpp game_menu_host.cpp screenshot_service.cpp localization.cpp application_settings.cpp game_rules.cpp)
 target_link_libraries(opengoldbox_game PRIVATE opengold_core opengold_rules_srd5 opengold_rules_original godot-cpp)
@@ -660,6 +660,14 @@ if(OPENGOLD_BUILD_TESTS)
         "Startup menu passed: Pools of Darkness" -DARGS=--darkness)
     opengold_settings_check(startup_menu_treasure startup_menu_tests
         "Startup menu passed: Treasures" -DARGS=--treasure)
+    # Countdown's solar map on the exploration screen, from the save
+    # opengold_countdown_solar_map_fixture writes: the pad and the keys fly,
+    # the Options' Fly at once and Course flown change it, the pointer names
+    # a body and a body's menu is its script's.
+    opengold_settings_check(solar_map solar_map_tests "Solar map passed"
+        "-DARGS=--game=buck-rogers-countdown-to-doomsday\;--rules=original\;--load-save=${CMAKE_BINARY_DIR}/countdown-solar-map.ogs")
+    set_tests_properties(opengold_godot_solar_map PROPERTIES
+        FIXTURES_REQUIRED "godot_project;countdown_solar_map")
     # The Buck Rogers games' ship-combat options on the Options screen.
     opengold_settings_check(startup_menu_buck_rogers startup_menu_tests
         "Startup menu passed: Buck Rogers" -DARGS=--buck-rogers)

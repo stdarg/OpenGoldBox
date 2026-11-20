@@ -524,6 +524,22 @@ void add_buck_rogers_tables(const por::detail::AreaFiles &files, por::PhlanResou
     {
         throw EclError("Invalid party ship in SHIPS.DAX");
     }
+    // The solar map's backdrop and tiles (orbitmap.pas EnterOrbitMap,
+    // LoadOrbitPictures), the tiles drawn through the key color.
+    constexpr std::uint8_t tile_key_color = 13;
+    const auto backdrop = decode_vga_picture(files.record("SHIPS.DAX", 128));
+    const auto solar_tiles = decode_vga_picture(files.record("8X8D0.DAX", 1));
+    if (!backdrop || backdrop->frames.size() != 1 || !solar_tiles)
+    {
+        throw EclError("Invalid solar map in SHIPS.DAX or 8X8D0.DAX");
+    }
+    root.solar_map_backdrop =
+        vga_rgba(backdrop->frames.front(), vga_color_table(backdrop->palette));
+    const auto tile_colors = vga_color_table(solar_tiles->palette);
+    for (const auto &tile : solar_tiles->frames)
+    {
+        root.solar_map_tiles.push_back(vga_rgba(tile, tile_colors, tile_key_color));
+    }
     root.buck_rogers_team_icons =
         por::detail::read_archive(por::detail::resolve_archive(files.directory(), "CHARS.DAX"));
     for (unsigned disk = 1; disk <= 6; ++disk)

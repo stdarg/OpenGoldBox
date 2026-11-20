@@ -795,6 +795,12 @@ Fixed in OpenGoldBox, in both games unless named:
     often than anyone. These games count Armor Class upward, and the earlier
     games' thief bonus kept its sign unturned. The number is 2 lower now (the
     user, 2026-11-20).
+18. **Done spent a step's fuel** (`eclvm.pas` `GameLoop`,
+    `explore.pas` `MoveRocket`): on the solar map the script's step entry
+    runs before the rocket's key is read, so every key read in Move mode
+    paid a step's fuel (10 to 30) and rolled Astrogation, Done and Escape
+    included, and leaving Move mode cost a step that was never flown.
+    OpenGoldBox runs the step entry only for a step the player flies.
 
 ## Ship combat
 
@@ -961,9 +967,9 @@ Options screen while a Buck Rogers game plays, one key per game
 
 The first part of B3.1 is done (2026-11-20): the engine runs *Countdown*'s
 own scripts, maps, pictures and fights with a team its creation rules made.
-The three new screens (creation and skills, the solar map and ship combat)
-are being designed from mockups; the session stops at a hand-off for each
-(below). `tests/countdown_campaign_tests.cpp` checks it on the game's files,
+The solar map plays on its own screen ("The solar map", below); the other
+two new screens (creation and skills, and ship combat) are being built from
+mockups, and the session stops at a hand-off for each (below). `tests/countdown_campaign_tests.cpp` checks it on the game's files,
 and with `--walk` it is `opengold_countdown_walk`.
 
 ### The team in the campaign
@@ -1052,14 +1058,62 @@ by 15 squares, a step half a day. *Countdown*'s music is the title's alone:
 `MUSIC.DAX` record 2 from its first song, at the later games' tempo; no
 script starts music.
 
+### The solar map
+
+Script 34 is the solar map, and the engine plays it as the original does
+(`buck_rogers_solar_map.h` for the rules, `buck_rogers_solar_map.cpp` in the
+session, `rolf_tour_solar_map.cpp` for the screen):
+
+- **The map** (`orbitmap.pas` `PaintOrbitMap`): 22 by 22 cells of 8 pixels,
+  `SHIPS` picture 128 behind, the Sun on cell (11, 10) and thirteen bodies on
+  five orbits of 2, 4, 8, 16 and 28 places (`gdconsts.pas`
+  `orbitPositions`). Each orbit's body stands at its starting place plus the
+  phase; eight more asteroids stand 3, 6, 9, 12, 17, 19, 22 and 26 places
+  round the outer orbit from Ceres. A body's tile is its place's in
+  `8X8D0` record 1, so its lit side turns as it goes round; the eight other
+  asteroids take the tiles 28 before Ceres's. The rocket's tile is 87 plus
+  its heading, counted from north counterclockwise.
+- **The bodies' names**, in the scripts' order, body n the planet number
+  n + 1 the scripts write to 4BA5h: Mercury, Venus, Earth and Mars, as the
+  original names them under their pictures (`portrait.pas`), then Ceres,
+  Vesta, Fortuna, Pallas, Psyche, Juno, Hygeia, Aurora and Thule, each by its
+  arrival menu (ECL2:34 8499h to 88B2h; the original calls them all
+  "Asteroids" under the picture). The arrival menus offer the planets'
+  outposts (Hielo and Mariposa Three, New Elysium and the Venus lowlands,
+  Salvation and Tycho, Pavonis and the Mars high desert), Ceres's asteroid
+  base, Hygeia's comm center, and places the story opens later: Psyche's
+  asteroid, Juno's rendezvous, Aurora's Talon's base and Thule's prison.
+- **A step** (`explore.pas` `MoveRocket`): the rocket turns to its heading
+  and moves a cell, staying on the map; a step onto the Sun's cell stays
+  where it was. Every step is three days of rest, three Hit Points for each
+  okay member (`gametime.pas` `RestAndHeal`); every 32 days the bodies move
+  a place back round their orbits (the phase counts down, 224 a cycle). A
+  new game starts at phase 0 with the rocket heading north on Earth's cell,
+  (9, 8) (`gameinit.pas` `InitShipAndOrbit`).
+- **Its order** (`eclvm.pas` `GameLoop`): the script's step entry (8185h)
+  spends the fuel and may hold the rocket ("YOU CAN'T MOVE...", a drift a
+  cell, a radio call until a cruiser helps); then the rocket steps, unless
+  moveBlocked (7EC9h) is FFh; then the search entry (8308h) writes each
+  body's cell from 4B85h, finds the one under the rocket and offers its
+  menu, or rolls for a ship met en route. The engine writes the bodies'
+  cells after each step, as the map is drawn.
+- **The screen** is the solar map's own: area kind 70h makes it, and PICTURE
+  MODE 2 or another mode changes it, whichever came last, as the original's
+  interface state (Salvation keeps the area kind but shows its picture).
+- **The menu** (`explore.pas` `MapMainMenu`): Move, Rocket and Change; Save
+  is under the Menu button. Rocket shows the ship's systems; Change opens
+  the Options. Arrows, Home, Page Up, End and Page Down or the keypad fly,
+  and a click on the map flies a step toward it, as the original's
+  (`CbtMap.DirectionBetween`). Fly at once and Course flown are the user's
+  options ([CONFIGURATION.md](../CONFIGURATION.md)); the orbits' dots and the
+  names on hover are OpenGoldBox's ([DEVIATIONS.md](../DEVIATIONS.md)).
+
+`tests/buck_rogers_solar_map_tests.cpp` checks the rules; the campaign's
+checks fly to every body from Earth and land at Ceres, and
+`opengold_godot_solar_map` flies the real screen.
+
 ### Hand-offs to the new screens
 
-- **The solar map**: `TourSnapshot::solar_map` is set while PICTURE MODE 2 or
-  the area kind 70h is on (script 34). The session runs the script's entries;
-  the screen will move the rocket (`explore.pas` `MoveRocket`), set the
-  bodies' squares from 4B85h and the rocket's from the orbit's cells, and
-  pass the days. A new game's rocket and orbit (`InitShipAndOrbit`) are the
-  screen's to set.
 - **Ship combat**: SHIP COMBAT leaves the phase `ship_combat` with
   `TourSnapshot::ship_combat` (the enemy's type, the unused operand, the
   pilot's skill and the to-hit number). The screen plays the fight
@@ -1081,8 +1135,10 @@ all 17 maps and 20 scripts without a map, played 422 fights (zero gravity in
 272 of them, and on `HITEK`, `LOTEK` and `MARSCOM`), and met nothing the
 engine lacks; it reached the solar map from 18 places. Map 99 is the
 Mariposa's top, which script 95 enters on the escape; the walk notes it.
-Places the solar map's script names first (the outpost, 4C31h and 4C2Fh) and
-the ship fight's enemy (4C61h) are set by the walk, as aids.
+The outposts of script 99 are each reached by flying the solar map from
+Earth to the body and taking its place in the body's menu, and map 99, which
+takes script 99 by its number, after docking at Hielo; the ship fight's
+enemy (4C61h) is still set by the walk, as an aid.
 
 ## Next
 

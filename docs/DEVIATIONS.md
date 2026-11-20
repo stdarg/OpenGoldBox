@@ -528,6 +528,24 @@ in the game: answering YES at a hall lists its services in the dialogue
 
 ## Interface and saves
 
+- **The Buck Rogers games' solar map** (the user, 2026-11-20;
+  [games/countdown.md](games/countdown.md), "The solar map"). It sits in the
+  exploration screen: the map in the 3D view's place, the team's cards
+  beside it (the original hides the team there), and in the side column the
+  body's picture, the rocket's cell and heading, the fuel, always shown (the
+  original shows it only while moving), and the game clock's date and time
+  (the original shows no clock there). The map's menu is the original's
+  Move, Rocket and Change; Save stays under the Menu button, as on every
+  other screen; Rocket shows the ship's systems as text, and Change opens the
+  Options, whose settings take the place of the original's Change menu.
+  Additions to the original's map, which has only stars:
+  - The five orbits show as faint dots, and the name of the body under the
+    pointer shows beside it.
+  - Fly at once (`[direct_flight]`, on by default): the pad and the arrow
+    keys fly the rocket a cell at once. Off plays the original's Move mode:
+    Move first, then fly, and Done to stop.
+  - Course flown (`[course_flown]`, off by default): on, dots mark the
+    cells the rocket has flown since the solar map opened.
 - **Modify Character's window** (2026-11-16). The originals edit the scores,
   Hit Points and name in place on the character's sheet, from a menu that
   differs from game to game (*Pool of Radiance*'s Keep Exit, where Enter

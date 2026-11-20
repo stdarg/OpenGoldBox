@@ -145,6 +145,9 @@ class AreaFiles
 // record 1 in the colors it sets, color 13 see-through; nothing without the
 // file (darkness_area_map.cpp).
 [[nodiscard]] std::optional<Image> load_darkness_area_map_marker(const AreaFiles &files);
+// Draws `marker` over `picture` with its top-left corner at (x, y), leaving
+// the picture's pixels under the marker's clear ones (darkness_area_map.cpp).
+void draw_over(Image &picture, const Image &marker, unsigned x, unsigned y);
 
 // One map of an area, without its creatures: the campaign adds those.
 [[nodiscard]] std::shared_ptr<PhlanResources>

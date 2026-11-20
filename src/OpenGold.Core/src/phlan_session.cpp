@@ -704,6 +704,20 @@ bool RolfTourSession::adopt_script_clock()
     return true;
 }
 
+RolfTourSession::GameClock RolfTourSession::game_clock() const
+{
+    if (!campaign_)
+    {
+        return {};
+    }
+    const auto minutes = campaign_->state().time_minutes;
+    const auto minute_of_day = clock_minute_of_day(minutes);
+    const auto days = minutes / 1440 + (minutes % 1440 + 720) / 1440;
+    return {static_cast<unsigned>((days / 360) % 256), static_cast<unsigned>((days / 30) % 12 + 1),
+            static_cast<unsigned>(days % 30 + 1), static_cast<unsigned>(minute_of_day / 60),
+            static_cast<unsigned>(minute_of_day % 60)};
+}
+
 EclHostReply RolfTourSession::clock_reply() const
 {
     EclHostReply reply;
@@ -711,16 +725,14 @@ EclHostReply RolfTourSession::clock_reply() const
     {
         return reply;
     }
-    const auto minutes = campaign_->state().time_minutes;
-    const auto minute_of_day = clock_minute_of_day(minutes);
-    const auto days = minutes / 1440 + (minutes % 1440 + 720) / 1440;
+    const auto clock = game_clock();
     reply.writes = {
-        {game_cell(ecl_clock_minute_ones), static_cast<std::uint16_t>(minute_of_day % 10)},
-        {game_cell(ecl_clock_minute_tens), static_cast<std::uint16_t>((minute_of_day % 60) / 10)},
-        {game_cell(ecl_clock_hour), static_cast<std::uint16_t>(minute_of_day / 60)},
-        {game_cell(ecl_clock_day), static_cast<std::uint16_t>(days % 30 + 1)},
-        {game_cell(ecl_clock_month), static_cast<std::uint16_t>((days / 30) % 12 + 1)},
-        {game_cell(ecl_clock_year), static_cast<std::uint16_t>((days / 360) % 256)}};
+        {game_cell(ecl_clock_minute_ones), static_cast<std::uint16_t>(clock.minute % 10)},
+        {game_cell(ecl_clock_minute_tens), static_cast<std::uint16_t>(clock.minute / 10)},
+        {game_cell(ecl_clock_hour), static_cast<std::uint16_t>(clock.hour)},
+        {game_cell(ecl_clock_day), static_cast<std::uint16_t>(clock.day)},
+        {game_cell(ecl_clock_month), static_cast<std::uint16_t>(clock.month)},
+        {game_cell(ecl_clock_year), static_cast<std::uint16_t>(clock.year)}};
     if (game() == GoldBoxGame::death_knights_of_krynn)
     {
         for (const auto id : campaign_->state().slots)
@@ -2417,6 +2429,12 @@ void RolfTourSession::finish_event()
     if (event_stage_ == EventStage::step && overland())
     {
         overland_step();
+        search_destination();
+        return;
+    }
+    if (event_stage_ == EventStage::step && snapshot_.solar_map && pending_movement_)
+    {
+        solar_map_step();
         search_destination();
         return;
     }

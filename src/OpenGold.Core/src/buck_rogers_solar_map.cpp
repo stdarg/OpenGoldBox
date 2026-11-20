@@ -1,0 +1,156 @@
+// The Buck Rogers games' solar map in the session (docs/games/countdown.md,
+// "The solar map"): the rocket's state in zone 0, its steps between the
+// script's step and search entries, and the map drawn as the original draws
+// it. The rules are original::step_rocket and place_bodies
+// (buck_rogers_solar_map.h); the fuel, the arrival and what a body offers
+// are the solar map's script's.
+#include "opengold/rolf_tour.h"
+#include "area_loading.h"
+
+#include <algorithm>
+#include <chrono>
+
+namespace opengold::por
+{
+namespace
+{
+// Zone 0's solar map (types.pas TOrbitView): each body's cell, two bytes a
+// body from 4B85h; the body the script found the rocket on; the days into
+// the phase, the phase, the rocket's tile and its cell.
+constexpr std::uint16_t first_body_cell = 0x4B85;
+constexpr EclAddress planet_cell{0x4BA5}, days_cell{0x4BB9}, phase_cell{0x4BBB},
+    rocket_tile_cell{0x4BBD}, rocket_x_cell{0x4BBE}, rocket_y_cell{0x4BBF};
+// Zone 1's moveBlocked: FFh holds the rocket where it is for a step
+// (explore.pas ResolveMovement).
+constexpr EclAddress move_blocked_cell{0x7EC9};
+constexpr std::uint16_t move_blocked = 0xFF;
+// The team's ship in zone 0 (types.pas TShip): its name, a length byte and
+// fifteen characters, then words: each system as it is now from 16h, and
+// whole from 22h.
+constexpr std::uint16_t ship_cell = 0x4D00, ship_name_length = 15, systems_now = 0x16,
+                        systems_whole = 0x22;
+// A cell of the map is 8 pixels of its backdrop.
+constexpr unsigned cell_pixels = 8;
+
+// The rocket's heading for a step the explore() command names, which run
+// from north clockwise.
+[[nodiscard]] original::RocketHeading heading_of(ExplorationCommand command)
+{
+    using original::RocketHeading;
+    constexpr std::array clockwise{RocketHeading::north, RocketHeading::northeast,
+                                   RocketHeading::east,  RocketHeading::southeast,
+                                   RocketHeading::south, RocketHeading::southwest,
+                                   RocketHeading::west,  RocketHeading::northwest};
+    return clockwise.at(static_cast<std::size_t>(command) -
+                        static_cast<std::size_t>(ExplorationCommand::north));
+}
+} // namespace
+
+original::SolarMapState RolfTourSession::solar_map_state() const
+{
+    const auto tile = machine_.variable(rocket_tile_cell);
+    const auto first = original::rocket_tile(original::RocketHeading::north);
+    const auto heading = tile >= first && tile < first + 8
+                             ? static_cast<original::RocketHeading>(tile - first)
+                             : original::RocketHeading::north;
+    return {machine_.variable(phase_cell),
+            machine_.variable(days_cell),
+            heading,
+            {machine_.variable(rocket_x_cell), machine_.variable(rocket_y_cell)}};
+}
+
+std::optional<std::size_t> RolfTourSession::orbited_body() const
+{
+    const auto planet = machine_.variable(planet_cell);
+    if (planet == 0 || planet > original::solar_bodies)
+    {
+        return std::nullopt;
+    }
+    return planet - 1U;
+}
+
+RolfTourSession::TeamShip RolfTourSession::team_ship() const
+{
+    const auto at = [this](std::uint16_t offset)
+    {
+        return machine_.variable(EclAddress{static_cast<std::uint16_t>(ship_cell + offset)});
+    };
+    TeamShip ship;
+    const auto length = std::min<unsigned>(at(0) & 0xFF, ship_name_length);
+    for (std::uint16_t n = 1; n <= length; ++n)
+    {
+        ship.name += static_cast<char>(at(n) & 0xFF);
+    }
+    for (std::uint16_t n = 0; n < ship.systems.size(); ++n)
+    {
+        ship.systems[n] = {at(static_cast<std::uint16_t>(systems_now + 2 * n)),
+                           at(static_cast<std::uint16_t>(systems_whole + 2 * n))};
+    }
+    return ship;
+}
+
+void RolfTourSession::keep_solar_map(const original::SolarMapState &state)
+{
+    machine_.bind_variable(phase_cell, static_cast<std::uint16_t>(state.phase));
+    machine_.bind_variable(days_cell, static_cast<std::uint16_t>(state.days));
+    machine_.bind_variable(rocket_tile_cell,
+                           static_cast<std::uint16_t>(original::rocket_tile(state.heading)));
+    machine_.bind_variable(rocket_x_cell, static_cast<std::uint16_t>(state.rocket.x));
+    machine_.bind_variable(rocket_y_cell, static_cast<std::uint16_t>(state.rocket.y));
+    const auto bodies = original::place_bodies(state.phase);
+    for (std::size_t body = 0; body < bodies.size(); ++body)
+    {
+        const auto at = static_cast<std::uint16_t>(first_body_cell + 2 * body);
+        machine_.bind_variable(EclAddress{at}, static_cast<std::uint16_t>(bodies[body].cell.x));
+        machine_.bind_variable(EclAddress{static_cast<std::uint16_t>(at + 1)},
+                               static_cast<std::uint16_t>(bodies[body].cell.y));
+    }
+}
+
+void RolfTourSession::solar_map_step()
+{
+    read_character();
+    if (machine_.variable(move_blocked_cell) == move_blocked)
+    {
+        machine_.bind_variable(move_blocked_cell, 0);
+        ++snapshot_.revision;
+        return;
+    }
+    keep_solar_map(original::step_rocket(solar_map_state(), heading_of(*pending_movement_)));
+    if (campaign_)
+    {
+        rest_buck_rogers_team(original::rocket_step_days);
+        for (const auto &w : character_reply(selected_character_).writes)
+        {
+            machine_.bind_variable(w.address, w.value);
+        }
+    }
+    synchronize_clock();
+    ++snapshot_.revision;
+}
+
+Image RolfTourSession::render_solar_map() const
+{
+    if (!town_ || town_->solar_map_tiles.empty() || !consistent(town_->solar_map_backdrop))
+    {
+        return {};
+    }
+    auto map = town_->solar_map_backdrop;
+    const auto &tiles = town_->solar_map_tiles;
+    const auto draw = [&](unsigned tile, original::OrbitCell cell)
+    {
+        if (tile < tiles.size())
+        {
+            detail::draw_over(map, tiles[tile], cell.x * cell_pixels, cell.y * cell_pixels);
+        }
+    };
+    draw(original::sun_tile, original::sun_cell);
+    const auto state = solar_map_state();
+    for (const auto &body : original::place_bodies(state.phase))
+    {
+        draw(body.tile, body.cell);
+    }
+    draw(original::rocket_tile(state.heading), state.rocket);
+    return map;
+}
+} // namespace opengold::por

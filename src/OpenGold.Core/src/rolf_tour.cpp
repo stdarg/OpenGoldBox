@@ -1039,6 +1039,10 @@ Image RolfTourSession::observe_view()
     {
         return render_darkness_area_map();
     }
+    if (snapshot_.solar_map)
+    {
+        return render_solar_map();
+    }
     const auto pose = snapshot_.pose;
     if (gateway_overland())
     {
@@ -1512,19 +1516,23 @@ bool RolfTourSession::explore(ExplorationCommand command)
         // On the wilderness map the party steps in eight directions; in a 3D
         // area it walks forward and turns.
         const bool step = command >= ExplorationCommand::north;
-        // So does Pools of Darkness's party on its area map.
-        const bool stepping_map = overland() || vga_area_map();
-        if (step != stepping_map && command != ExplorationCommand::look)
+        // So does Pools of Darkness's party on its area map, and the Buck
+        // Rogers games' rocket on the solar map, which has no Look.
+        const bool stepping_map = overland() || vga_area_map() || snapshot_.solar_map;
+        if (step != stepping_map && (command != ExplorationCommand::look || snapshot_.solar_map))
         {
             return false;
         }
         if (step)
         {
-            const auto direction = static_cast<unsigned>(command) -
-                                   static_cast<unsigned>(ExplorationCommand::north);
-            machine_.bind_variable(game_cell(ecl_overland_direction),
-                                   static_cast<std::uint16_t>(direction));
-            snapshot_.overland_direction = direction;
+            if (!snapshot_.solar_map)
+            {
+                const auto direction = static_cast<unsigned>(command) -
+                                       static_cast<unsigned>(ExplorationCommand::north);
+                machine_.bind_variable(game_cell(ecl_overland_direction),
+                                       static_cast<std::uint16_t>(direction));
+                snapshot_.overland_direction = direction;
+            }
             pending_movement_ = command;
             begin_event(EventTrigger::step);
         }

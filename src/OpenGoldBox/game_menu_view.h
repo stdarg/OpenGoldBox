@@ -27,6 +27,8 @@ class GameMenuView : public godot::Control
     void _ready() override;
     void _input(const godot::Ref<godot::InputEvent> &event) override;
     void open(Allowed allowed);
+    // The open menu turns to its Options; closing them returns to the menu.
+    void show_options();
     // Only the Options screen, as the startup menu opens it; closing it closes the view.
     void open_options_alone();
     void close();
@@ -82,6 +84,9 @@ class GameMenuView : public godot::Control
     void command_every_round_selected(std::int64_t index);
     void empty_helm_dodges_selected(std::int64_t index);
     void boarding_fuel_selected(std::int64_t index);
+    // The Buck Rogers games' solar-map options, for the game being played.
+    void direct_flight_selected(std::int64_t index);
+    void course_flown_selected(std::int64_t index);
     // A Buck Rogers game shows its ship-combat options where the other games'
     // own options stand.
     void show_game_options();

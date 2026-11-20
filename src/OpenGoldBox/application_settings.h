@@ -85,6 +85,15 @@ bool empty_helm_dodges(opengold::GoldBoxGame game);
 bool save_empty_helm_dodges(opengold::GoldBoxGame game, bool on);
 bool boarding_fuel(opengold::GoldBoxGame game);
 bool save_boarding_fuel(opengold::GoldBoxGame game, bool on);
+// The Buck Rogers games' solar-map options, by game folder.
+// [direct_flight]: "off" flies the rocket only in the original's Move mode
+// (Move first, Done to stop); otherwise the pad and keys fly it at once.
+// [course_flown]: "on" marks the cells the rocket has flown with dots;
+// otherwise the map shows none, as the original.
+bool direct_flight(opengold::GoldBoxGame game);
+bool save_direct_flight(opengold::GoldBoxGame game, bool on);
+bool course_flown(opengold::GoldBoxGame game);
+bool save_course_flown(opengold::GoldBoxGame game, bool on);
 // [design_difficulty] UA: how the difficulty plays in an Unlimited Adventures
 // design, "design" (the kit's own levels), "table" (OpenGoldBox's table) or
 // "both", the default.

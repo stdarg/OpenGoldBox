@@ -41,6 +41,12 @@ buck-rogers-countdown-to-doomsday="off"
 [boarding_fuel]
 buck-rogers-countdown-to-doomsday="on"
 
+[direct_flight]
+buck-rogers-countdown-to-doomsday="on"
+
+[course_flown]
+buck-rogers-countdown-to-doomsday="off"
+
 [design_difficulty]
 UA="both"
 
@@ -107,7 +113,7 @@ files receive the default. See
 The in-game menu's **Options** screen (Escape) sets these settings and writes
 them at once: under Gameplay `difficulty`, `encounter_challenge`, the
 `[gear]` section, `keep_quick`, `[original_shops]`, `[darkness_gazes]`, the ship-combat
-options, `[design_difficulty]` and the `[monsters]` section below; under Interface `language`, which takes effect the
+and solar-map options, `[design_difficulty]` and the `[monsters]` section below; under Interface `language`, which takes effect the
 next time the game starts, `combat_zoom`, read when a fight opens, the
 `[art]` section below, which takes effect at once, and `[sound]`.
 
@@ -198,6 +204,20 @@ Book's or OpenGoldBox's, and the other value plays the original's way
 A ship fight takes them as it starts (`ShipCombatOptions`,
 `buck_rogers_ship_combat.h`); the game plays ship fights from step B3 of
 [BUCK-ROGERS.md](BUCK-ROGERS.md).
+
+The solar-map options are the Buck Rogers games' too (the user, 2026-11-20;
+[games/countdown.md](games/countdown.md), "The solar map"), keyed and shown
+the same way, below the ship-combat options; Unlimited Adventures' Design
+difficulty steps aside for them while a Buck Rogers game is the game. The
+solar map reads them as it draws and as the rocket flies:
+
+- `[direct_flight]`, Fly at once: `on`, the default, also used for any value
+  but `off`, flies the rocket a cell at each press of the pad or an arrow
+  key. `off` plays the original's Move mode: Move first, then the pad and the
+  keys fly, and Done stops.
+- `[course_flown]`, Course flown: `off`, the default, also used for any
+  value but `on`, draws no course, as the original. `on` marks the cells the
+  rocket has flown since the solar map opened with dots.
 
 `[design_difficulty] UA` is the Options screen's Design difficulty: how
 `difficulty` plays in an *Unlimited Adventures* design (the user, 2026-11-15;

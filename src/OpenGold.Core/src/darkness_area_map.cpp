@@ -26,8 +26,11 @@ constexpr unsigned square_size = 8;
 // The marker's see-through color, as the original loads it.
 constexpr std::uint8_t marker_see_through = 13;
 
-// Draws `marker` over `picture` with its top-left corner at (x, y), leaving
-// the picture's pixels under the marker's clear ones.
+} // namespace
+
+namespace detail
+{
+
 void draw_over(Image &picture, const Image &marker, unsigned x, unsigned y)
 {
     for (unsigned row = 0; row < marker.height && y + row < picture.height; ++row)
@@ -45,11 +48,6 @@ void draw_over(Image &picture, const Image &marker, unsigned x, unsigned y)
         }
     }
 }
-
-} // namespace
-
-namespace detail
-{
 
 std::optional<Image> load_darkness_area_map_marker(const AreaFiles &files)
 {
@@ -107,7 +105,7 @@ Image RolfTourSession::render_darkness_area_map() const
                                                                       : column_cell);
         const auto y =
             machine_.variable(original::krynn_game(game()) ? game_cell(ecl_overland_y) : row_cell);
-        draw_over(map, *town_->area_map_marker, x * square_size, y * square_size);
+        detail::draw_over(map, *town_->area_map_marker, x * square_size, y * square_size);
     }
     return map;
 }

@@ -1312,6 +1312,9 @@ void CharacterCreationView::party_action(PartyAction action)
                 town->connect(
                     "menu_requested",
                     presentation::guarded(this, &CharacterCreationView::open_game_menu));
+                town->connect(
+                    "options_requested",
+                    presentation::guarded(this, &CharacterCreationView::open_game_options));
                 auto *sheet = &required_node<TownSheetDialog>(*this, "TownSheet");
                 town->connect("party_member_selected",
                               presentation::guarded(sheet, &TownSheetDialog::show_member));

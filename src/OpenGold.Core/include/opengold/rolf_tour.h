@@ -12,6 +12,7 @@
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_encounter.h"
 #include "opengold/buck_rogers_records.h"
+#include "opengold/buck_rogers_solar_map.h"
 #include "opengold/difficulty.h"
 #include "opengold/teleport.h"
 #include "opengold/monster_bundle.h"
@@ -248,6 +249,12 @@ struct PhlanResources
     std::vector<std::uint8_t> buck_rogers_party_ship;
     // The words their items are named with (START.EXE).
     std::vector<std::string> buck_rogers_item_words;
+    // Their solar map's art: its backdrop (SHIPS picture 128, 176 pixels
+    // square, 8 to a cell) and its tiles (8X8D0 record 1: the Sun, the bodies
+    // at each place on their orbits and the rocket at each heading), each in
+    // the colors its picture sets, the tiles' key color clear.
+    Image solar_map_backdrop;
+    std::vector<Image> solar_map_tiles;
 };
 
 // A script took coins the payer lacked and the purse made change.
@@ -565,6 +572,56 @@ class RolfTourSession
     // The ship fight the script waits on ended so (the ship-combat screen
     // plays it); the script goes on. False when no ship fight waits.
     bool finish_ship_combat(std::uint64_t ticket, ShipCombatOutcome outcome);
+    // The Buck Rogers games' solar map while snapshot().solar_map
+    // (docs/games/countdown.md, "The solar map"): the bodies' phase and the
+    // rocket as zone 0 keeps them. The rocket flies by explore() with a step
+    // in one of the eight directions: the script's step entry spends the
+    // fuel, the rocket steps (original::step_rocket), the team rests three
+    // days, and the script's search entry finds the body it reached.
+    [[nodiscard]] original::SolarMapState solar_map_state() const;
+    // The body the scripts found the rocket on (the planet cell, 4BA5h):
+    // its number in the scripts' order, or none en route.
+    [[nodiscard]] std::optional<std::size_t> orbited_body() const;
+
+    // The team's ship as zone 0 keeps it from 4D00h (types.pas TShip): its
+    // name and its six systems, each as it is now and whole, in the order
+    // of ship_systems.
+    struct ShipSystem
+    {
+        unsigned now{}, whole{};
+    };
+
+    enum class ShipSystemKind : std::uint8_t
+    {
+        hull,
+        sensors,
+        controls,
+        life_support,
+        fuel,
+        engines
+    };
+
+    struct TeamShip
+    {
+        std::string name;
+        std::array<ShipSystem, 6> systems;
+
+        [[nodiscard]] const ShipSystem &system(ShipSystemKind kind) const
+        {
+            return systems.at(static_cast<std::size_t>(kind));
+        }
+    };
+
+    [[nodiscard]] TeamShip team_ship() const;
+
+    // The game clock as the scripts read it: the year, the month of twelve
+    // and the day of thirty, from 1, and the hour and minute of the day.
+    struct GameClock
+    {
+        unsigned year{}, month{1}, day{1}, hour{}, minute{};
+    };
+
+    [[nodiscard]] GameClock game_clock() const;
     bool explore(ExplorationCommand command);
     // The original's Search mode: each step searches as Look does, and takes
     // ten minutes more.
@@ -1431,9 +1488,24 @@ class RolfTourSession
     // team's pool of credits (poolCredits), kept while a script runs.
     std::vector<buck_rogers::Item> buck_rogers_booty_;
     std::uint32_t buck_rogers_pool_{};
-    // Whether the solar map is on screen, from the picture mode and the area
-    // kind the scripts set (TourSnapshot::solar_map).
-    void update_solar_map();
+    // Whether the solar map is on screen, from the area kind the scripts set
+    // and the PICTURE MODE they give, `picture_mode_given` when one is given
+    // (TourSnapshot::solar_map).
+    void update_solar_map(std::optional<std::uint16_t> picture_mode_given = std::nullopt);
+    // The area kind update_solar_map last saw; none in a new game or a
+    // loaded save.
+    std::optional<std::uint16_t> solar_area_kind_seen_;
+    // Writes the solar map's state into zone 0, and each body's cell from
+    // 4B85h as the original's PaintOrbitMap does, for the scripts to compare.
+    void keep_solar_map(const original::SolarMapState &state);
+    // The rocket's step the explore() command asked for, unless a script
+    // holds it (moveBlocked, 7EC9h, at FFh), and the team's three days.
+    void solar_map_step();
+    // Days of rest for the team (gametime.pas RestAndHeal), the clock moved on.
+    void rest_buck_rogers_team(int days);
+    // The solar map as the original draws it: the backdrop, the Sun, each
+    // body at its place and the rocket.
+    [[nodiscard]] Image render_solar_map() const;
     void add_buck_rogers_record(PartySlot slot, EclHostReply &reply) const;
     void read_buck_rogers_character();
     // Pools of Darkness's to-hit cells, which its scripts set before a fight

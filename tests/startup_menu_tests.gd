@@ -8,7 +8,7 @@ extends SceneTree
 # to the Savage Frontier's, with --darkness Pools of Darkness', with
 # --treasure Treasures of the Savage Frontier's, with --ua and --ua-design=FOLDER Unlimited
 # Adventures' with the test design in FOLDER, with --buck-rogers the Buck
-# Rogers games' ship-combat options. A game other than Pool
+# Rogers games' ship-combat and solar-map options. A game other than Pool
 # of Radiance first shows its own title pictures (TITLE.DAX), as its original
 # does when it starts, then its menu.
 
@@ -544,13 +544,14 @@ func check_secret(menu: Window) -> void:
 # (a folder that is not a design refused), no title, its default party offered, the
 # original rules only, then a fighter made under the kit's rules plays the
 # design's start: its welcome, the 3D view drawn, and a step.
-# The ship-combat options (docs/CONFIGURATION.md) show while a Buck Rogers
+# The ship-combat and solar-map options (docs/CONFIGURATION.md) show while a Buck Rogers
 # game is the game, each at its default, and each choice is saved under that
 # game's folder. The games' buttons wait until they play, so the check
 # presses them as the startup menu will.
 func check_buck_rogers() -> void:
 	var options := {"CommandEveryRound": ["command_every_round", 1],
-		"EmptyHelmDodges": ["empty_helm_dodges", 1], "BoardingFuel": ["boarding_fuel", 0]}
+		"EmptyHelmDodges": ["empty_helm_dodges", 1], "BoardingFuel": ["boarding_fuel", 0],
+		"DirectFlight": ["direct_flight", 0], "CourseFlown": ["course_flown", 1]}
 	for folder in ["buck-rogers-countdown-to-doomsday", "buck-rogers-matrix-cubed"]:
 		if StartupView.game_folder(folder).is_empty():
 			print("Skipped: the Buck Rogers games' files are not here.")
@@ -565,8 +566,9 @@ func check_buck_rogers() -> void:
 		game_menu.get_node("Buttons/Options").pressed.emit()
 		await settle()
 		var gameplay: Control = current_scene.get_node("Options/Options/Gameplay")
-		require(not gameplay.get_node("OriginalShops").visible and not gameplay.get_node("DarknessGazes").visible,
-			"The other games' options step aside for the ship combat's")
+		require(not gameplay.get_node("OriginalShops").visible and not gameplay.get_node("DarknessGazes").visible
+			and not gameplay.get_node("DesignDifficulty").visible,
+			"The other games' options step aside for the ship combat's and the solar map's")
 		for name in options:
 			var choice: OptionButton = gameplay.get_node(name)
 			require(choice.visible and gameplay.get_node(name + "Label").visible and choice.item_count == 2
@@ -591,7 +593,7 @@ func check_buck_rogers() -> void:
 		await press("Options/Options/Close")
 		game_menu.get_node("Buttons/MainMenu").pressed.emit()
 		await settle()
-	print("Startup menu passed: Buck Rogers' ship-combat options, each game's own, at their defaults and saved.")
+	print("Startup menu passed: Buck Rogers' ship-combat and solar-map options, each game's own, at their defaults and saved.")
 	quit(0)
 
 func check_ua() -> void:

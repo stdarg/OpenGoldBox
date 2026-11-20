@@ -10,6 +10,7 @@
 #include "opengold/buck_rogers_characters.h"
 #include "opengold/buck_rogers_records.h"
 #include "opengold/buck_rogers_rules.h"
+#include "opengold/buck_rogers_solar_map.h"
 #include "opengold/campaign_save.h"
 #include "opengold/campaign_session.h"
 #include "opengold/character.h"
@@ -317,6 +318,329 @@ void answer(opengold::por::RolfTourSession &session, std::string_view label)
     run_to_menu(session);
 }
 
+// A new game, its opening played to Chicagorg's spaceport.
+Campaign opened_game(const std::filesystem::path &folder)
+{
+    auto campaign = start_campaign(folder);
+    for (int step = 0;
+         step < 100 && campaign.session.snapshot().phase != opengold::por::TourPhase::completed;
+         ++step)
+    {
+        run_to_menu(campaign.session);
+        const auto &s = campaign.session.snapshot();
+        if (s.phase == opengold::por::TourPhase::awaiting_continue)
+        {
+            check(campaign.session.choose(s.continue_ticket, 0), "Continue the opening");
+        }
+    }
+    return campaign;
+}
+
+// The menu's choices, as one text to compare and print.
+std::string choices_of(const opengold::por::TourSnapshot &s)
+{
+    std::string offered;
+    for (const auto &choice : s.choices)
+    {
+        offered += choice + "|";
+    }
+    return offered;
+}
+
+// Plays on until the team can fly again or a body's menu waits: prompts go
+// on, a ship met en route is fled from and a ship fight is handed off as
+// the enemy gone (the ship-combat screen plays it).
+void fly_on(opengold::por::RolfTourSession &session)
+{
+    using opengold::por::TourPhase;
+    for (int stop = 0; stop < 40; ++stop)
+    {
+        run_to_menu(session);
+        const auto &s = session.snapshot();
+        if (s.phase == TourPhase::ship_combat)
+        {
+            check(session.finish_ship_combat(
+                      s.continue_ticket, opengold::por::ShipCombatOutcome::team_lost_or_enemy_gone),
+                  "The ship fight is handed off");
+            continue;
+        }
+        if (s.phase == TourPhase::awaiting_continue && choices_of(s) == "HAIL|ATTACK|FLEE|")
+        {
+            check(session.choose(s.continue_ticket, 2), "Flee the ship met en route");
+            continue;
+        }
+        return;
+    }
+    check(false, "The flight goes on");
+}
+
+// The step commands, north and on clockwise, with the rocket's heading for each.
+constexpr std::array<std::pair<opengold::por::ExplorationCommand, og::RocketHeading>, 8> flights{{
+    {opengold::por::ExplorationCommand::north, og::RocketHeading::north},
+    {opengold::por::ExplorationCommand::northeast, og::RocketHeading::northeast},
+    {opengold::por::ExplorationCommand::east, og::RocketHeading::east},
+    {opengold::por::ExplorationCommand::southeast, og::RocketHeading::southeast},
+    {opengold::por::ExplorationCommand::south, og::RocketHeading::south},
+    {opengold::por::ExplorationCommand::southwest, og::RocketHeading::southwest},
+    {opengold::por::ExplorationCommand::west, og::RocketHeading::west},
+    {opengold::por::ExplorationCommand::northwest, og::RocketHeading::northwest},
+}};
+
+// Flies the rocket on the solar map, a cell a step, toward the cell where
+// `body` stands now, as a player steers for it, until the body's menu
+// offers its places; a body flown past on the way is left by its Exit.
+// Returns the steps flown.
+unsigned fly_to(opengold::por::RolfTourSession &session, std::size_t body)
+{
+    using opengold::por::TourPhase;
+    for (unsigned steps = 0; steps < 80; ++steps)
+    {
+        const auto &s = session.snapshot();
+        if (s.phase == TourPhase::awaiting_continue && session.orbited_body())
+        {
+            if (session.orbited_body() == body)
+            {
+                return steps;
+            }
+            check(!s.choices.empty() && s.choices.back() == "EXIT",
+                  "A body flown past offers Exit: " + choices_of(s));
+            check(session.choose(s.continue_ticket, s.choices.size() - 1), "Fly on past");
+            fly_on(session);
+            continue;
+        }
+        check(s.solar_map && s.phase == TourPhase::completed,
+              "The rocket can fly: " + s.dialogue + " [" + choices_of(s) + "]");
+        const auto state = session.solar_map_state();
+        const auto target = og::place_bodies(state.phase)[body].cell;
+        const auto distance = [&](og::OrbitCell cell)
+        {
+            const auto apart = [](unsigned a, unsigned b)
+            {
+                return a > b ? a - b : b - a;
+            };
+            return std::max(apart(cell.x, target.x), apart(cell.y, target.y));
+        };
+        auto best = flights.front();
+        auto nearest = ~0U;
+        for (const auto &flight : flights)
+        {
+            const auto reached = og::step_rocket(state, flight.second).rocket;
+            if (reached != state.rocket && distance(reached) < nearest)
+            {
+                nearest = distance(reached);
+                best = flight;
+            }
+        }
+        check(session.explore(best.first), "The rocket flies a step");
+        fly_on(session);
+    }
+    check(false, "The rocket reaches body " + std::to_string(body));
+    return 0;
+}
+
+// Takes the team into the solar map's script (34), as the port's launch
+// does, and leaves Earth's menu: the rocket is free to fly.
+void launch(opengold::por::RolfTourSession &session)
+{
+    opengold::test::TourAccess::enter_script(session, 34, 0,
+                                             {8, 8, opengold::por::MapDirection::north});
+    fly_on(session);
+    const auto &s = session.snapshot();
+    check(s.solar_map && session.orbited_body() == 2 && choices_of(s) == "SALVATION|TYCHO|EXIT|",
+          "The rocket starts in Earth's orbit, its menu offering Salvation and Tycho: " +
+              s.dialogue + " " + choices_of(s));
+    check(session.choose(s.continue_ticket, 2), "Exit Earth's orbit");
+    fly_on(session);
+}
+
+// Each body's place that is an outpost of script 99, the outpost's number,
+// and its picture, as script 34's arrival menus land there (ECL2:34 84AAh
+// to 88B2h, 88BEh to 8BC8h): HIELO, NEW ELYSIUM, TYCHO, PAVONIS, then each
+// asteroid's own.
+struct Outpost
+{
+    std::size_t body{}, choice{};
+    std::uint16_t picture{};
+};
+
+constexpr std::array<Outpost, og::solar_bodies> outposts{{{0, 0, 0x59},
+                                                          {1, 0, 0x58},
+                                                          {2, 1, 0x5A},
+                                                          {3, 0, 0x57},
+                                                          {4, 0, 0x4A},
+                                                          {5, 0, 0x4A},
+                                                          {6, 0, 0x4A},
+                                                          {7, 0, 0x4A},
+                                                          {8, 0, 0x4A},
+                                                          {9, 0, 0x4A},
+                                                          {10, 0, 0x4A},
+                                                          {11, 0, 0x4A},
+                                                          {12, 0, 0x4A}}};
+
+// Flies from Earth to outpost `number` and takes its place in the body's
+// menu: the team docks at the spaceport, script 99 with the outpost's number
+// in cell 4C31h and its picture in 4C2Fh.
+void dock_at_outpost(opengold::por::RolfTourSession &session, unsigned number)
+{
+    const auto &outpost = outposts.at(number);
+    launch(session);
+    (void)fly_to(session, outpost.body);
+    const auto &s = session.snapshot();
+    check(session.choose(s.continue_ticket, outpost.choice), "Take the outpost's place");
+    run_to_menu(session);
+    const auto machine = opengold::test::TourAccess::machine(session);
+    check(session.snapshot().script_id == 99 &&
+              machine.variable(opengold::por::EclAddress{0x4C31}) == number &&
+              machine.variable(opengold::por::EclAddress{0x4C2F}) == outpost.picture,
+          "The team docks at outpost " + std::to_string(number) + ": script " +
+              std::to_string(session.snapshot().script_id));
+}
+
+// Docks at outpost `number` and launches again from its port, as a team that
+// has been there: the rocket is back in its body's orbit, the menu left, and
+// the outpost is the one the outposts' script runs next (cells 4C31h and
+// 4C2Fh).
+void dock_and_launch(opengold::por::RolfTourSession &session, unsigned number)
+{
+    dock_at_outpost(session, number);
+    answer(session, "PORT");
+    answer(session, "LAUNCH");
+    fly_on(session);
+    const auto &s = session.snapshot();
+    check(s.solar_map && session.orbited_body() == outposts.at(number).body && !s.choices.empty(),
+          "The launch is back in the body's orbit: " + choices_of(s));
+    check(session.choose(s.continue_ticket, s.choices.size() - 1), "Exit the orbit");
+    fly_on(session);
+}
+
+// The solar map (docs/games/countdown.md, "The solar map"): a new game's
+// rocket starts in Earth's orbit at phase 0 and its menu is script 34's; a
+// step east spends the script's fuel, takes three days and heals; the bodies'
+// menus are the script's own, Ceres's lands at its outpost; and the map
+// saves and loads with the game.
+void the_solar_map_flies(const std::filesystem::path &folder)
+{
+    auto campaign = opened_game(folder);
+    auto &session = campaign.session;
+    auto &party = *campaign.party;
+    launch(session);
+    check(session.solar_map_state() == og::new_voyage(), "A new voyage starts at phase 0");
+    const auto view = session.observe_view();
+    check(view.width == 176 && view.height == 176, "The map draws 22 cells of 8 pixels a side");
+    const auto member = party.state().slots[0];
+    auto record = *og::buck_rogers_record_of(party.game_record(member));
+    record.creature.hit_points = static_cast<std::uint16_t>(record.creature.hit_points - 5);
+    party.keep_game_record(member, og::encode_ground_record(record));
+    const auto wounded = record.creature.hit_points;
+    using Ship = opengold::por::RolfTourSession;
+    const auto ship = session.team_ship();
+    const auto fuel = ship.system(Ship::ShipSystemKind::fuel);
+    check(ship.name == "Maelstrom Rider" && fuel.whole == 450 && fuel.now > 0 && fuel.now <= 450 &&
+              ship.system(Ship::ShipSystemKind::hull).whole == 600,
+          "The Maelstrom Rider holds 450 fuel and a hull of 600: " + ship.name + " " +
+              std::to_string(fuel.now));
+    const auto time = party.state().time_minutes;
+    check(session.explore(opengold::por::ExplorationCommand::east), "The rocket flies east");
+    fly_on(session);
+    const auto flown = session.solar_map_state();
+    check(flown.rocket == og::OrbitCell{10, 8} && flown.heading == og::RocketHeading::east &&
+              flown.days == 3 && flown.phase == 0,
+          "A step east turns the rocket and moves it a cell");
+    const auto spent = fuel.now - session.team_ship().system(Ship::ShipSystemKind::fuel).now;
+    check(spent == 10 || spent == 20,
+          "The script spends 10 fuel a step, 10 more when Astrogation fails: " +
+              std::to_string(spent));
+    check(party.state().time_minutes == time + 3 * 24 * 60, "A step takes three days");
+    const auto healed = og::buck_rogers_record_of(party.game_record(member))->creature.hit_points;
+    check(healed == wounded + 3, "Three days heal three Hit Points: " + std::to_string(wounded) +
+                                     " to " + std::to_string(healed));
+    // The days change only the Hit Points: the record keeps its items,
+    // credits and experience (the clock once put back the record as made).
+    auto rested = *og::buck_rogers_record_of(party.game_record(member));
+    rested.creature.hit_points = record.creature.hit_points;
+    check(og::encode_ground_record(rested) == og::encode_ground_record(record),
+          "The days keep the rest of the record");
+    check(!session.explore(opengold::por::ExplorationCommand::look), "The solar map has no Look");
+    const auto assets = opengold::campaign_asset_identity(folder);
+    const auto saved = opengold::encode_campaign(party, &session, assets, countdown);
+    const auto restored =
+        opengold::decode_campaign(saved, *campaign.creation, party.rule_module(), assets, &session);
+    check(restored.town && restored.town->solar_map_state() == session.solar_map_state() &&
+              restored.town->snapshot().solar_map,
+          "The solar map saves and loads with the game");
+    (void)fly_to(session, 4);
+    const auto &ceres = session.snapshot();
+    check(choices_of(ceres) == "CERES|ASTEROID BASE|EXIT|" &&
+              ceres.dialogue.find("ORBITING") != std::string::npos,
+          "At Ceres the script offers its places: " + ceres.dialogue + " [" + choices_of(ceres) +
+              "]");
+    check(session.choose(ceres.continue_ticket, 0), "Land at Ceres");
+    run_to_menu(session);
+    check(session.snapshot().script_id == 99 &&
+              opengold::test::TourAccess::machine(session).variable(
+                  opengold::por::EclAddress{0x4C31}) == 4,
+          "Ceres's place is outpost 4 of script 99");
+    check(!session.snapshot().solar_map, "The outpost's picture takes the solar map's place");
+    // Salvation's script keeps the solar map's area kind but shows its own
+    // picture (PICTURE MODE 3), as the original's last change of screen says.
+    auto salvation = opened_game(folder);
+    opengold::test::TourAccess::enter_script(salvation.session, 34, 0,
+                                             {8, 8, opengold::por::MapDirection::north});
+    fly_on(salvation.session);
+    check(salvation.session.choose(salvation.session.snapshot().continue_ticket, 0),
+          "Dock at Salvation");
+    run_to_menu(salvation.session);
+    check(salvation.session.snapshot().script_id == 17 && !salvation.session.snapshot().solar_map,
+          "At Salvation the station's picture shows, not the solar map");
+}
+
+// The thirteen bodies, each flown to from Earth in a new game, and the
+// places script 34 offers there (ECL2:34 8499h to 88B2h): the four planets'
+// outposts, then each asteroid by its own name, which is how the screen's
+// names of the bodies are known. Places a story opens later (Thule's prison,
+// Juno's rendezvous) are not offered yet.
+void each_body_offers_its_places(const std::filesystem::path &folder)
+{
+    constexpr std::array<std::string_view, og::solar_bodies> places{
+        "HIELO|MARIPOSA THREE|EXIT|",
+        "NEW ELYSIUM|VENUS LOWLANDS|EXIT|",
+        "SALVATION|TYCHO|EXIT|",
+        "PAVONIS|MARS HIGH DESERT|EXIT|",
+        "CERES|ASTEROID BASE|EXIT|",
+        "VESTA|EXIT|",
+        "FORTUNA|EXIT|",
+        "PALLAS|EXIT|",
+        "PSYCHE|EXIT|",
+        "JUNO|EXIT|",
+        "HYGEIA|COMM CENTER|EXIT|",
+        "AURORA|EXIT|",
+        "THULE|EXIT|"};
+    for (std::size_t body = 0; body < places.size(); ++body)
+    {
+        if (body == 2)
+        {
+            continue; // Earth's, where the rocket starts (launch).
+        }
+        auto campaign = opened_game(folder);
+        launch(campaign.session);
+        (void)fly_to(campaign.session, body);
+        const auto &s = campaign.session.snapshot();
+        check(choices_of(s) == places[body], "Body " + std::to_string(body) + " offers " +
+                                                 std::string(places[body]) + ": " + choices_of(s));
+    }
+}
+
+void write_solar_map_fixture(const std::filesystem::path &folder, std::string_view path)
+{
+    auto campaign = opened_game(folder);
+    launch(campaign.session);
+    check(campaign.session.can_leave(), "The team is free to fly");
+    opengold::write_campaign_file(
+        std::filesystem::path(path),
+        opengold::encode_campaign(*campaign.party, &campaign.session,
+                                  opengold::campaign_asset_identity(folder), countdown));
+}
+
 // The hospital of an outpost of script 99 as its script runs it
 // (docs/games/countdown.md, "The outposts"): the wounded member is healed to
 // full Hit Points for 160 times the multiplier of 16, from the bank's
@@ -331,26 +655,19 @@ struct HospitalVisit
 
 HospitalVisit visit_hospital(const std::filesystem::path &folder, std::uint16_t bank)
 {
-    auto campaign = start_campaign(folder);
+    auto campaign = opened_game(folder);
     auto &session = campaign.session;
     auto &party = *campaign.party;
-    for (int step = 0;
-         step < 100 && session.snapshot().phase != opengold::por::TourPhase::completed; ++step)
-    {
-        run_to_menu(session);
-    }
+    // The bank's account (4CE2h), four bytes.
+    opengold::test::TourAccess::set_variable(session, opengold::por::EclAddress{0x4CE2}, bank);
+    opengold::test::TourAccess::set_variable(session, opengold::por::EclAddress{0x4CE4}, 0);
+    // The rocket flies to Mercury and docks at its Hielo station, outpost 0;
+    // the flight's days have healed the team, and then one is hurt.
+    dock_at_outpost(session, 0);
     const auto member = party.state().slots[0];
     auto record = *og::buck_rogers_record_of(party.game_record(member));
     record.creature.hit_points = static_cast<std::uint16_t>(record.creature.hit_points - 3);
     party.keep_game_record(member, og::encode_ground_record(record));
-    // The bank's account (4CE2h), four bytes.
-    opengold::test::TourAccess::set_variable(session, opengold::por::EclAddress{0x4CE2}, bank);
-    opengold::test::TourAccess::set_variable(session, opengold::por::EclAddress{0x4CE4}, 0);
-    // Mercury's Hielo station, outpost 0 with its picture, as script 34 lands there.
-    opengold::test::TourAccess::set_variable(session, opengold::por::EclAddress{0x4C31}, 0);
-    opengold::test::TourAccess::set_variable(session, opengold::por::EclAddress{0x4C2F}, 0x59);
-    opengold::test::TourAccess::enter_script(session, 99, 0,
-                                             {8, 8, opengold::por::MapDirection::north});
     answer(session, "HOSPITAL");
     const auto healed = [&]
     {
@@ -486,7 +803,7 @@ void play(Campaign &campaign, const std::filesystem::path &folder, WalkLog &log,
         if (s.solar_map && !solar_map_noted)
         {
             solar_map_noted = true;
-            log.handoffs["the solar map"].push_back(where);
+            ++log.counts["events reaching the solar map"];
         }
         using opengold::por::TourPhase;
         switch (s.phase)
@@ -587,12 +904,6 @@ Campaign opened(const std::filesystem::path &folder, WalkLog &log)
 {
     auto campaign = start_campaign(folder);
     play(campaign, folder, log, "opening");
-    // An outpost the walk may come to without the solar map's script, which
-    // names it first: the first of script 34's (outpost 0, picture 59h).
-    opengold::test::TourAccess::set_variable(campaign.session, opengold::por::EclAddress{0x4C31},
-                                             0);
-    opengold::test::TourAccess::set_variable(campaign.session, opengold::por::EclAddress{0x4C2F},
-                                             0x59);
     // The enemy ship whose decks the boarding script (52) fights over, which
     // the ship fight names: the first type, the Hubble.
     opengold::test::TourAccess::set_variable(campaign.session, opengold::por::EclAddress{0x4C61},
@@ -607,6 +918,7 @@ Campaign opened(const std::filesystem::path &folder, WalkLog &log)
 // fights hand off to their screens.
 bool walk(const std::filesystem::path &folder)
 {
+    constexpr unsigned outposts_map = 99;
     WalkLog log;
     auto campaign = opened(folder, log);
     const auto maps = opengold::test::TourAccess::area_scripts(campaign.session);
@@ -626,6 +938,15 @@ bool walk(const std::filesystem::path &folder)
             const auto where = "map " + std::to_string(map) + " entry";
             try
             {
+                // Map 99, the Mariposa's top, takes the outposts' script
+                // (99) of its number, which runs the outpost the team last
+                // docked at (Mercury's Hielo here) and leaves the team at its
+                // menus, not on the map; script 95 plays the map, entered
+                // below.
+                if (map == outposts_map)
+                {
+                    dock_and_launch(campaign.session, 0);
+                }
                 opengold::test::TourAccess::enter(campaign.session, map,
                                                   {8, 8, opengold::por::MapDirection::north});
                 play(campaign, folder, log, where);
@@ -687,12 +1008,10 @@ bool walk(const std::filesystem::path &folder)
             continue;
         }
         // The outposts' script (99) runs the outpost the solar map's script
-        // landed at: its number in cell 4C31h and its picture in 4C2Fh, as
-        // script 34 saves them (ECL2:34 88BEh to 8BC8h).
+        // landed at: the walk flies the rocket from Earth to each body and
+        // takes its outpost from the body's menu.
         constexpr unsigned outposts_script = 99;
-        constexpr std::array<std::uint16_t, 13> outpost_pictures{
-            0x59, 0x58, 0x5A, 0x57, 0x4A, 0x4A, 0x4A, 0x4A, 0x4A, 0x4A, 0x4A, 0x4A, 0x4A};
-        const unsigned visits = script == outposts_script ? outpost_pictures.size() : 1;
+        const unsigned visits = script == outposts_script ? outposts.size() : 1;
         for (unsigned visit = 0; visit < visits; ++visit)
         {
             const auto where = "script " + std::to_string(script) +
@@ -702,15 +1021,18 @@ bool walk(const std::filesystem::path &folder)
             {
                 if (script == outposts_script)
                 {
-                    opengold::test::TourAccess::set_variable(campaign.session,
-                                                             opengold::por::EclAddress{0x4C31},
-                                                             static_cast<std::uint16_t>(visit));
-                    opengold::test::TourAccess::set_variable(campaign.session,
-                                                             opengold::por::EclAddress{0x4C2F},
-                                                             outpost_pictures[visit]);
+                    const auto flown = campaign.party->state().time_minutes;
+                    dock_at_outpost(campaign.session, visit);
+                    log.counts["solar map steps flown"] +=
+                        static_cast<unsigned>((campaign.party->state().time_minutes - flown) /
+                                              (og::rocket_step_days * 24 * 60));
+                    ++log.counts["outposts docked at from the solar map"];
                 }
-                opengold::test::TourAccess::enter_script(
-                    campaign.session, script, 0, {8, 8, opengold::por::MapDirection::north});
+                else
+                {
+                    opengold::test::TourAccess::enter_script(
+                        campaign.session, script, 0, {8, 8, opengold::por::MapDirection::north});
+                }
                 play(campaign, folder, log, where);
                 ++log.counts["scripts without a map entered"];
                 // On the wildernesses of Venus and Mars the team steps about
@@ -770,9 +1092,21 @@ int main(int argc, char **argv)
         {
             return walk(folder) ? 0 : 1;
         }
+        // --solar-map-fixture=PATH writes the save the solar map's screen
+        // check loads (solar_map_tests.gd): a new team on the solar map, out
+        // of Earth's orbit, free to fly.
+        if (constexpr std::string_view flag = "--solar-map-fixture=";
+            argc > 1 && std::string_view(argv[1]).starts_with(flag))
+        {
+            write_solar_map_fixture(folder, std::string_view(argv[1]).substr(flag.size()));
+            std::cout << "Countdown's solar map fixture written.\n";
+            return 0;
+        }
         the_team_is_its_records(folder);
         the_campaign_opens(folder);
         arenas_use_the_tiles_the_files_hold(folder);
+        the_solar_map_flies(folder);
+        each_body_offers_its_places(folder);
         the_hospital_heals_for_its_fee(folder);
         the_title_music_plays(folder);
         std::cout << "Countdown to Doomsday's campaign passed.\n";

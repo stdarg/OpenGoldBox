@@ -300,6 +300,8 @@ class CharacterCreationView : public godot::Control
     void attach_game_menu();
     void respond_to_unhandled_key(const godot::Ref<godot::InputEvent> &event);
     void open_game_menu();
+    // The in-game menu opened on its Options, as the solar map's Change asks.
+    void open_game_options();
 
     // What the game is doing now, which decides what the in-game menu, quick
     // save and quick load allow.

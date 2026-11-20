@@ -28,8 +28,66 @@ func _draw() -> void:
     var data: Dictionary = view.tour_visuals()
     if data.is_empty():
         return
+    if data.has("solar"):
+        _draw_solar_map(view, data)
+        _draw_solar_picture(view, data["solar"])
+        return
     _draw_scene(view, data)
     _draw_map(view, data)
+
+
+# The Buck Rogers games' solar map, square and centered in the 3D view's
+# frame, with the orbits' faint dots, the course flown and the name of the
+# body under the pointer drawn over the original's map.
+func _draw_solar_map(view: Control, data: Dictionary) -> void:
+    var bounds := _bounds(view, "SceneBounds")
+    var side := minf(bounds.size.x, bounds.size.y)
+    var rect := Rect2(bounds.position + (bounds.size - Vector2(side, side)) * 0.5, Vector2(side, side))
+    draw_texture_rect(data["wall"], rect, false)
+    var solar: Dictionary = data["solar"]
+    var cell := side / float(solar["cells"])
+    var dot := cell * _metric("tour_solar_dot_percent") / 100.0
+    for point: Vector2 in solar["orbits"]:
+        draw_circle(rect.position + (point + Vector2.ONE * 0.5) * cell, dot, _color("line"))
+    for point: Vector2 in solar["course"]:
+        draw_circle(rect.position + (point + Vector2.ONE * 0.5) * cell, dot * 1.5, _color("gold"))
+    if solar.has("hover_name"):
+        var font := get_theme_default_font()
+        var font_size := int(_metric("tour_solar_name_size"))
+        var name: String = solar["hover_name"]
+        var at: Vector2 = rect.position + (solar["hover_cell"] + Vector2(1.25, 0.5)) * cell
+        var text_size := font.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+        # Kept inside the map: a body at its right edge is named to its left.
+        if at.x + text_size.x > rect.end.x:
+            at.x -= text_size.x + cell * 1.5
+        var plate := Rect2(at - Vector2(4, text_size.y * 0.5 + 2), text_size + Vector2(8, 4))
+        draw_rect(plate, _color("background"))
+        draw_string(font, at + Vector2(0, font.get_ascent(font_size) - text_size.y * 0.5), name,
+            HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, _color("gold"))
+
+
+# The body's picture in the side column, framed in the original's color for
+# it, its name under it.
+func _draw_solar_picture(view: Control, solar: Dictionary) -> void:
+    var bounds := _bounds(view, "MapBounds")
+    var frame := _color("character_palette_%d" % solar["frame_color"])
+    var border := _metric("tour_solar_frame_width")
+    draw_rect(bounds, _color("map_black"))
+    draw_rect(bounds.grow(-border * 0.5), frame, false, border)
+    var font := get_theme_default_font()
+    var font_size := int(_metric("tour_solar_name_size"))
+    var name: String = solar["picture_name"]
+    var name_height := font.get_height(font_size) if not name.is_empty() else 0.0
+    var inner := bounds.grow(-border * 2.0)
+    inner.size.y -= name_height
+    if solar.has("picture"):
+        var picture: Texture2D = solar["picture"]
+        var scale := minf(inner.size.x / picture.get_width(), inner.size.y / picture.get_height())
+        var shown := picture.get_size() * scale
+        draw_texture_rect(picture, Rect2(inner.position + (inner.size - shown) * 0.5, shown), false)
+    if not name.is_empty():
+        draw_string(font, Vector2(inner.position.x, inner.end.y + font.get_ascent(font_size)), name,
+            HORIZONTAL_ALIGNMENT_CENTER, inner.size.x, font_size, _color("map_wall"))
 
 
 func _draw_scene(view: Control, data: Dictionary) -> void:

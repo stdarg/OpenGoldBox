@@ -10,6 +10,7 @@
 [ext_resource type="PackedScene" path="res://scenes/tour_inventory_panel.tscn" id="8_inventory_panel"]
 [ext_resource type="PackedScene" path="res://scenes/tour_cast_panel.tscn" id="9_cast_panel"]
 [ext_resource type="PackedScene" path="res://scenes/tour_member_sheet.tscn" id="10_member_sheet"]
+[ext_resource type="Script" path="res://scenes/fuel_gauge.gd" id="11_fuel_gauge"]
 
 [node name="RolfTour" type="RolfTourView"]
 texture_filter = 1
@@ -317,6 +318,39 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_type_variation = &"LabelTealText18"
 
+[node name="SolarFuel" type="HBoxContainer" parent="Layout/Page/Body/Side"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"HBoxContainerGap6"
+
+[node name="FuelLabel" type="Label" parent="Layout/Page/Body/Side/SolarFuel"]
+layout_mode = 2
+theme_type_variation = &"LabelGoldText16"
+text = "Fuel"
+
+[node name="FuelGauge" type="Control" parent="Layout/Page/Body/Side/SolarFuel"]
+unique_name_in_owner = true
+editor_description = "The ship's fuel, drawn by fuel_gauge.gd."
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+mouse_filter = 2
+script = ExtResource("11_fuel_gauge")
+
+[node name="FuelText" type="Label" parent="Layout/Page/Body/Side/SolarFuel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"LabelGoldText16"
+
+[node name="SolarTime" type="Label" parent="Layout/Page/Body/Side"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_type_variation = &"LabelGoldText16"
+
 [node name="Party" type="Label" parent="Layout/Page/Body/Side"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -382,6 +416,119 @@ custom_minimum_size = Vector2(0, 34)
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Inventory"
+
+[node name="SolarFlight" type="HBoxContainer" parent="Layout/Page/Body/Side"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"HBoxContainerGap6"
+
+[node name="Menu" type="VBoxContainer" parent="Layout/Page/Body/Side/SolarFlight"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_type_variation = &"VBoxContainerGap8"
+
+[node name="RocketMove" type="Button" parent="Layout/Page/Body/Side/SolarFlight/Menu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+tooltip_text = "Move: the pad and the arrow keys fly the rocket until Done."
+text = "Move [M]"
+
+[node name="RocketView" type="Button" parent="Layout/Page/Body/Side/SolarFlight/Menu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+tooltip_text = "The team's ship: its systems as they are now and whole."
+text = "Rocket [R]"
+
+[node name="RocketChange" type="Button" parent="Layout/Page/Body/Side/SolarFlight/Menu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+tooltip_text = "Change the game's settings: the difficulty and the other Options."
+text = "Change [C]"
+
+[node name="Pad" type="GridContainer" parent="Layout/Page/Body/Side/SolarFlight"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"GridContainerGap6x4"
+columns = 3
+
+[node name="PadNorthwest" type="Button" parent="Layout/Page/Body/Side/SolarFlight/Pad"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(44, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Fly north-west (Home, keypad 7)."
+text = "↖"
+
+[node name="PadNorth" type="Button" parent="Layout/Page/Body/Side/SolarFlight/Pad"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(44, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Fly north (Up, keypad 8)."
+text = "↑"
+
+[node name="PadNortheast" type="Button" parent="Layout/Page/Body/Side/SolarFlight/Pad"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(44, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Fly north-east (Page Up, keypad 9)."
+text = "↗"
+
+[node name="PadWest" type="Button" parent="Layout/Page/Body/Side/SolarFlight/Pad"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(44, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Fly west (Left, keypad 4)."
+text = "←"
+
+[node name="PadCenter" type="Button" parent="Layout/Page/Body/Side/SolarFlight/Pad"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(44, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+disabled = true
+focus_mode = 0
+text = "○"
+
+[node name="PadEast" type="Button" parent="Layout/Page/Body/Side/SolarFlight/Pad"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(44, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Fly east (Right, keypad 6)."
+text = "→"
+
+[node name="PadSouthwest" type="Button" parent="Layout/Page/Body/Side/SolarFlight/Pad"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(44, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Fly south-west (End, keypad 1)."
+text = "↙"
+
+[node name="PadSouth" type="Button" parent="Layout/Page/Body/Side/SolarFlight/Pad"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(44, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Fly south (Down, keypad 2)."
+text = "↓"
+
+[node name="PadSoutheast" type="Button" parent="Layout/Page/Body/Side/SolarFlight/Pad"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(44, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Fly south-east (Page Down, keypad 3)."
+text = "↘"
 
 [node name="Movement" type="Label" parent="Layout/Page/Body/Side"]
 unique_name_in_owner = true

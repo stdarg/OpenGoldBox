@@ -127,6 +127,7 @@ add_library(opengold_rules_original STATIC
     src/OpenGold.Rules.Original/src/buck_rogers_combat.cpp
     src/OpenGold.Rules.Original/src/buck_rogers_rules.cpp
     src/OpenGold.Rules.Original/src/buck_rogers_upkeep.cpp
+    src/OpenGold.Rules.Original/src/buck_rogers_solar_map.cpp
     src/OpenGold.Rules.Original/src/death_knights_rules.cpp
     src/OpenGold.Rules.Original/src/buck_rogers_ship_combat.cpp
     src/OpenGold.Rules.Original/src/character_rules.cpp
@@ -222,6 +223,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/phlan_session.cpp
     src/OpenGold.Core/src/vga_host.cpp
     src/OpenGold.Core/src/buck_rogers_host.cpp
+    src/OpenGold.Core/src/buck_rogers_solar_map.cpp
     src/OpenGold.Core/src/buck_rogers_battlefield.cpp
     src/OpenGold.Core/src/darkness_area_map.cpp
     src/OpenGold.Core/src/treasures_import.cpp
@@ -343,6 +345,11 @@ if(OPENGOLD_BUILD_TESTS)
         opengold_rules_original)
     add_test(NAME opengold_countdown_campaign_tests COMMAND opengold_countdown_campaign_tests)
     add_test(NAME opengold_countdown_walk COMMAND opengold_countdown_campaign_tests --walk)
+    # The save the solar map's screen check loads (src/OpenGoldBox, solar_map).
+    add_test(NAME opengold_countdown_solar_map_fixture COMMAND opengold_countdown_campaign_tests
+        "--solar-map-fixture=${CMAKE_CURRENT_BINARY_DIR}/countdown-solar-map.ogs")
+    set_tests_properties(opengold_countdown_solar_map_fixture PROPERTIES
+        FIXTURES_SETUP countdown_solar_map SKIP_REGULAR_EXPRESSION "files are not here")
     set_tests_properties(opengold_countdown_walk PROPERTIES TIMEOUT 1800)
     add_executable(opengold_matrix_cubed_tests tests/matrix_cubed_tests.cpp)
     target_link_libraries(opengold_matrix_cubed_tests PRIVATE opengold_core)
@@ -355,6 +362,10 @@ if(OPENGOLD_BUILD_TESTS)
     add_executable(opengold_buck_rogers_upkeep_tests tests/buck_rogers_upkeep_tests.cpp)
     target_link_libraries(opengold_buck_rogers_upkeep_tests PRIVATE opengold_core)
     add_test(NAME opengold_buck_rogers_upkeep_tests COMMAND opengold_buck_rogers_upkeep_tests)
+    # Their solar map: the bodies by phase, the rocket's steps and their days.
+    add_executable(opengold_buck_rogers_solar_map_tests tests/buck_rogers_solar_map_tests.cpp)
+    target_link_libraries(opengold_buck_rogers_solar_map_tests PRIVATE opengold_rules_original)
+    add_test(NAME opengold_buck_rogers_solar_map_tests COMMAND opengold_buck_rogers_solar_map_tests)
     # Every map of Curse walked with an original-rules party: each event runs.
     add_test(NAME opengold_curse_walk COMMAND opengold_gold_box_games_tests --curse-walk)
     # Every map of Secret of the Silver Blades walked the same way.

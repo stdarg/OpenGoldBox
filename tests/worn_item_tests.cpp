@@ -329,7 +329,6 @@ void fire_resistance()
     }
     check(false, "A Torch's ordinary fire deals no damage");
 }
-} // namespace
 
 // The Rogue's Shop's gear (SECRET-1): Boots and a Cloak of Elvenkind give
 // Stealth checks Advantage, a Stone of Good Luck carried in the pack adds 1 to
@@ -378,6 +377,7 @@ void rogue_shop_gear()
         },
         "Only one cloak is worn");
 }
+} // namespace
 
 int main()
 {

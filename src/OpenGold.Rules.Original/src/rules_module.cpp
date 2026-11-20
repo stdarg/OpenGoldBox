@@ -2849,6 +2849,13 @@ void OriginalModule::pass_time(VitalState &state, const CharacterSheet &sheet, s
     {
         return;
     }
+    // A Buck Rogers member's resources are its game's whole record, which
+    // time changes only through its own upkeep (buck_rogers_upkeep.h); read
+    // as the AD&D games' conditions it would be lost.
+    if (holds_buck_rogers_record(state.resources))
+    {
+        return;
+    }
     constexpr int diseased = 34, wasting_strength = 43, wasting_hit_points = 44;
     const auto passed = static_cast<int>(std::min<std::uint64_t>(to - from, 1U << 30));
     const auto boundaries = [from, to](std::uint64_t every)

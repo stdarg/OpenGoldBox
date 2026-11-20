@@ -724,7 +724,7 @@ bool RolfTourSession::handle_buck_rogers_host(const EclRequest &request)
         {
             throw EclError("PICTURE MODE's cell is not the script's");
         }
-        update_solar_map();
+        update_solar_map(mode);
         auto shown = request;
         shown.instruction->opcode = picture_command;
         shown.instruction->operands = {operands.at(1)};
@@ -742,10 +742,30 @@ bool RolfTourSession::handle_buck_rogers_host(const EclRequest &request)
     return true;
 }
 
-void RolfTourSession::update_solar_map()
+void RolfTourSession::update_solar_map(std::optional<std::uint16_t> picture_mode_given)
 {
-    snapshot_.solar_map = machine_.variable(picture_mode_cell) == orbit_picture_mode ||
-                          machine_.variable(area_kind) == orbit_area;
+    // The screen is the one the last change named, as the original's
+    // interface state is (eclmenu.pas WriteGbvm, eclvm.pas
+    // EclSetPictureMode): a script's new area kind, 70h the solar map and any
+    // other not, then PICTURE MODE, 2 the solar map, 0, 3 and 4 another
+    // screen and 1 the same. A new game or a loaded save, whose last change
+    // is not known, shows the solar map while both name it.
+    const auto area = static_cast<std::uint16_t>(machine_.variable(area_kind) & 0xFF);
+    if (!solar_area_kind_seen_)
+    {
+        snapshot_.solar_map =
+            area == orbit_area && machine_.variable(picture_mode_cell) == orbit_picture_mode;
+    }
+    else if (area != *solar_area_kind_seen_)
+    {
+        snapshot_.solar_map = area == orbit_area;
+    }
+    solar_area_kind_seen_ = area;
+    constexpr std::uint16_t unchanged_mode = 1;
+    if (picture_mode_given && *picture_mode_given != unchanged_mode)
+    {
+        snapshot_.solar_map = *picture_mode_given == orbit_picture_mode;
+    }
 }
 
 bool RolfTourSession::finish_ship_combat(std::uint64_t ticket, ShipCombatOutcome outcome)
@@ -974,6 +994,9 @@ void RolfTourSession::configure_buck_rogers()
             machine_.bind_variable(cell, bytes[at]);
         }
     }
+    // The rocket on Earth's cell, the bodies at phase 0 (InitShipAndOrbit).
+    keep_solar_map(original::new_voyage());
+    solar_area_kind_seen_.reset();
 }
 
 std::string RolfTourSession::buck_rogers_item_name(const buck_rogers::Item &item) const
@@ -1003,6 +1026,12 @@ void RolfTourSession::stage_buck_rogers_creatures(const EclRequest &request)
                                      0xFF);
     };
     const auto number = value(0), count = value(1), icon = value(2);
+    // None to load reads neither the creature nor its icon: a team member
+    // who wakes screaming fights the team alone (ECL2:32 866Ch).
+    if (count == 0)
+    {
+        return;
+    }
     const auto found = town_->buck_rogers_creatures.find(number);
     if (found == town_->buck_rogers_creatures.end())
     {
@@ -1581,15 +1610,9 @@ bool RolfTourSession::choose_in_buck_rogers_menu(std::size_t choice)
         break;
     }
     case Action::rest_a_day:
-    {
-        // A day's rest (gametime.pas RestAndHeal).
-        auto members = team_members(team);
-        original::rest_and_heal(members, original::rest_days);
-        keep_team(members);
-        campaign_->advance_time(std::chrono::hours{24});
+        rest_buck_rogers_team(original::rest_days);
         notice.push_back({"The team rests a day.", {}});
         break;
-    }
     case Action::leave:
         buck_rogers_pool_ = pool.credits;
         close_buck_rogers_menu();
@@ -1599,6 +1622,19 @@ bool RolfTourSession::choose_in_buck_rogers_menu(std::size_t choice)
     buck_rogers_pool_ = pool.credits;
     show_buck_rogers_menu(next, std::move(notice));
     return true;
+}
+
+void RolfTourSession::rest_buck_rogers_team(int days)
+{
+    auto team = team_of(*campaign_);
+    auto members = team_members(team);
+    original::rest_and_heal(members, days);
+    for (std::size_t n = 0; n < team.size(); ++n)
+    {
+        team[n].record.creature = members[n].character;
+        campaign_->keep_game_record(team[n].id, original::encode_ground_record(team[n].record));
+    }
+    campaign_->advance_time(std::chrono::hours{24} * days);
 }
 
 void RolfTourSession::close_buck_rogers_menu()

@@ -144,6 +144,12 @@ void CharacterCreationView::open_game_menu()
     move_child(&menu, get_child_count() - 1);
 }
 
+void CharacterCreationView::open_game_options()
+{
+    open_game_menu();
+    required_node<GameMenuView>(*this, "GameMenu").show_options();
+}
+
 void CharacterCreationView::art_changed()
 {
     if (auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown")))

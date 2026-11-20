@@ -422,6 +422,8 @@ void RolfTourView::_bind_methods()
     ADD_SIGNAL(MethodInfo("save_requested", PropertyInfo(Variant::BOOL, "saving")));
     // The Menu button: the host opens the in-game menu.
     ADD_SIGNAL(MethodInfo("menu_requested"));
+    // The solar map's Change: the host opens the Options.
+    ADD_SIGNAL(MethodInfo("options_requested"));
     ADD_SIGNAL(MethodInfo("party_member_selected", PropertyInfo(Variant::INT, "slot")));
     ADD_SIGNAL(MethodInfo("level_up_requested", PropertyInfo(Variant::INT, "id")));
     // Reincarnate from camp: the new body's pages belong to the creation view.
@@ -552,6 +554,7 @@ void RolfTourView::prepare_view()
         .connect("close_requested", presentation::guarded(this, &RolfTourView::close_sheet));
     required_node<Button>(*this, "%LeaveShop")
         .connect("pressed", presentation::guarded(this, &RolfTourView::leave_shop));
+    connect_solar_map();
     auto &menu = required_node<Button>(*this, "%Menu");
     menu.connect("pressed", presentation::guarded(this, &RolfTourView::request_menu));
     menu.set_visible(embedded_party_);
@@ -2082,6 +2085,10 @@ void RolfTourView::respond_to_input(const Ref<InputEvent> &event)
     {
         return;
     }
+    if (on_solar_map())
+    {
+        solar_map_pointer(event);
+    }
     const Ref<InputEventKey> key = event;
     if (key.is_null() || !key->is_pressed() || key->is_echo())
     {
@@ -2133,6 +2140,11 @@ void RolfTourView::respond_to_input(const Ref<InputEvent> &event)
     if (session_ && (session_->snapshot().choices.size() > 1 || listing) &&
         key->get_keycode() != Key::KEY_ENTER)
     {
+        return;
+    }
+    if (on_solar_map() && solar_map_key(key->get_keycode()))
+    {
+        get_viewport()->set_input_as_handled();
         return;
     }
     switch (key->get_keycode())
@@ -3020,13 +3032,18 @@ void RolfTourView::refresh()
     }
     // A design's view shows from its start; a DAX campaign's once the party
     // has stood somewhere.
+    const auto solar_state =
+        on_solar_map()
+            ? std::optional<opengold::original::SolarMapState>(dax_session().solar_map_state())
+            : std::nullopt;
     if (session_ &&
         (!dax() || session_->snapshot().visited.any() || session_->snapshot().overland) &&
         (!rendered_pose_ || *rendered_pose_ != session_->snapshot().pose ||
          rendered_overland_ != std::array{session_->snapshot().overland_x,
                                           session_->snapshot().overland_y,
                                           session_->snapshot().overland_direction} ||
-         rendered_picture_revision_ != session_->snapshot().picture_revision))
+         rendered_picture_revision_ != session_->snapshot().picture_revision ||
+         rendered_solar_ != solar_state))
     {
         try
         {
@@ -3055,6 +3072,7 @@ void RolfTourView::refresh()
             rendered_overland_ = {session_->snapshot().overland_x, session_->snapshot().overland_y,
                                   session_->snapshot().overland_direction};
             rendered_picture_revision_ = session_->snapshot().picture_revision;
+            rendered_solar_ = solar_state;
         }
         catch (const std::exception &error)
         {
@@ -3429,6 +3447,7 @@ void RolfTourView::refresh()
                   i18n::plural("{count} item", "{count} items",
                                static_cast<int>(m.character.inventory().items().size()))}}));
     }
+    show_solar_map(s);
     show_party_rows();
     required_node<Control>(*this, "TourVisuals").queue_redraw();
     // Marked shown only once everything above succeeded, so a failed refresh
@@ -3631,6 +3650,11 @@ Dictionary RolfTourView::tour_visuals()
             data["sprite"] = sprites_[state.sprite_frame];
             data["sprite_size"] = Vector2(source.width, source.height);
         }
+    }
+    if (on_solar_map())
+    {
+        solar_visuals(data);
+        return data;
     }
     const auto *map = session_->area_map();
     if (!map)

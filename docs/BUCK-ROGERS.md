@@ -283,21 +283,24 @@ path runs for these games.
   the solar map.
 - **The map** (`orbitmap.pas` `PaintOrbitMap`; `gdconsts.pas` `orbitPositions`,
   `orbitLengths`, `orbitStartPhases`): a 22 by 22 grid around the Sun, five
-  orbits of 2, 4, 8, 16 and 28 positions, and eight asteroid bodies. The
-  rocket moves one of eight directions a step and cannot enter the Sun's
-  square (`explore.pas` `MoveRocket`).
+  orbits of 2, 4, 8, 16 and 28 positions, a body on each and eight more
+  asteroids on the outer one, thirteen in all. The rocket moves one of eight
+  directions a step and cannot enter the Sun's square (`explore.pas`
+  `MoveRocket`).
 - **Time:** a step is three days, and heals three Hit Points (`gametime.pas`
   `RestAndHeal`). Every 32 ticks the planets move one phase of 224.
 - **Arrival** is the script's work. It runs after each step and compares
   the rocket's square with the bodies' squares, which the map writes into
   memory from 4B85h (`types.pas` `TOrbitView`).
-- **Fuel** is shown but not spent by the engine; the census shows whether
-  the scripts spend it.
+- **Fuel** is shown but not spent by the engine; the solar map's script
+  spends it before each step.
 - **The menu** (`explore.pas` `MapMainMenu`): Move, Rocket (view the ship),
   Change and Save.
 
-Home: a new solar-map session view in Core beside `overland.cpp`, and its
-Godot screen beside `rolf_tour_view.cpp`'s overland map.
+Home: the rules in `buck_rogers_solar_map.h` (Rules.Original), the session's
+steps in Core's `buck_rogers_solar_map.cpp`, and the screen in
+`rolf_tour_solar_map.cpp` beside `rolf_tour_view.cpp`
+([countdown.md](games/countdown.md), "The solar map").
 
 ### Ship combat
 
@@ -687,8 +690,12 @@ commands and the host; ground fights on the four tile sets, in normal and
 zero gravity; the outposts as their scripts run them; the title's music; and
 `opengold_countdown_walk` over every map and every script without one
 ([countdown.md](games/countdown.md), "The game in the engine"). The solar
-map, ship combat and the creation and skill screens are designed from
-mockups; the session stops at a hand-off for each.
+map is done too (2026-11-20): its screen in the exploration screen, the
+rocket flown a cell a step by the original's rules, the scripts' fuel and
+arrival menus, the user's Fly at once and Course flown options, and the
+walk flying to every outpost ([countdown.md](games/countdown.md), "The
+solar map"). Ship combat and the creation and skill screens are designed
+from mockups; the session stops at a hand-off for each.
 
 ### B4. *Matrix Cubed*
 

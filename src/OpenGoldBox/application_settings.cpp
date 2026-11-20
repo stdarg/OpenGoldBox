@@ -458,6 +458,30 @@ bool save_boarding_fuel(opengold::GoldBoxGame game, bool on)
     return save("boarding_fuel", folder.c_str(), on ? "on" : "off");
 }
 
+bool direct_flight(opengold::GoldBoxGame game)
+{
+    const std::string folder(opengold::game_folder(game));
+    return read("direct_flight", folder.c_str()).to_lower() != "off";
+}
+
+bool save_direct_flight(opengold::GoldBoxGame game, bool on)
+{
+    const std::string folder(opengold::game_folder(game));
+    return save("direct_flight", folder.c_str(), on ? "on" : "off");
+}
+
+bool course_flown(opengold::GoldBoxGame game)
+{
+    const std::string folder(opengold::game_folder(game));
+    return read("course_flown", folder.c_str()).to_lower() == "on";
+}
+
+bool save_course_flown(opengold::GoldBoxGame game, bool on)
+{
+    const std::string folder(opengold::game_folder(game));
+    return save("course_flown", folder.c_str(), on ? "on" : "off");
+}
+
 namespace
 {
 // The names settings.cfg spells design_difficulty's choices with, in order.

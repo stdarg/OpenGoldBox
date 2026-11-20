@@ -292,6 +292,39 @@ class RolfTourView : public godot::Control
     void right();
     void forward();
     [[nodiscard]] bool on_overland() const;
+    // The Buck Rogers games' solar map (rolf_tour_solar_map.cpp): the map in
+    // the 3D view's place; the body's picture, the rocket, the fuel and the
+    // clock in the side column; the map's menu and an eight-way pad.
+    [[nodiscard]] bool on_solar_map() const;
+    void connect_solar_map();
+    // The game's Fly at once option ([direct_flight]); off plays the
+    // original's Move mode.
+    [[nodiscard]] bool flies_at_once() const;
+    void fly_rocket(opengold::por::ExplorationCommand command);
+    // A pad button's step, its ExplorationCommand as a number.
+    void fly_pad(std::int64_t command);
+    void toggle_rocket_move();
+    void view_rocket();
+    void change_settings();
+    // A key the solar map answers; false for one it leaves to the screen.
+    [[nodiscard]] bool solar_map_key(godot::Key key);
+    // The pointer over the map names the body under it; a click flies a
+    // step toward where it points.
+    void solar_map_pointer(const godot::Ref<godot::InputEvent> &event);
+    [[nodiscard]] std::optional<opengold::original::OrbitCell>
+    solar_cell_at(godot::Vector2 point) const;
+    // The side column, labels and buttons while the solar map shows, and
+    // the normal screen's back once it does not.
+    void show_solar_map(const opengold::por::TourSnapshot &s);
+    // What TourVisuals draws for the solar map, added to `data`.
+    void solar_visuals(godot::Dictionary &data);
+    // Move mode is on (the original's, while Fly at once is off); the ship's
+    // systems are shown; the body the pointer is over; the cells flown since
+    // the solar map opened; and the map's state last drawn.
+    bool rocket_move_mode_{}, rocket_shown_{};
+    std::optional<std::size_t> hovered_body_;
+    std::vector<opengold::original::OrbitCell> solar_course_;
+    std::optional<opengold::original::SolarMapState> rendered_solar_;
     void look();
     // The original's Search mode: each step searches, and takes longer.
     void toggle_search();

@@ -99,6 +99,17 @@ the commands' meanings are *Countdown*'s. What the scripts ask of the engine
   the script picks), and one in developer script 1.
 - **The solar map**: script 19 writes area kind 70h and sets picture mode 2
   as it draws the map.
+  Its engine draws and moves the map as *Countdown*'s, from the same
+  tables and the same zone 0 cells (the bodies from 4B85h, the planet at
+  4BA5h, the rocket at 4BBEh and 4BBFh), and script 19 finds the same
+  thirteen bodies, so *Countdown*'s solar map serves it unchanged
+  ([countdown.md](countdown.md), "The solar map"). Its arrival menus differ
+  (Earth offers Salvation, Losangelorg or Duke's Hill, and Tycho or
+  Copernicus as the story goes; Ceres a RAM base; Fortuna a NEO base; Juno
+  the fungus asteroid), and its pictures are its own: 101 to 104 for the
+  planets and 97 for every asteroid, Pallas's included, which *Countdown*'s
+  script leaves without one. The game plays it once its campaign loads
+  (step B4).
 - **Fuel**: as in *Countdown*, only the solar-map script spends it before
   each step. Salvation (script 18) refuels to 450, a NEO cruiser or a helpful
   ship fills a low tank to 200, one event of script 19 takes 10 (or empties
