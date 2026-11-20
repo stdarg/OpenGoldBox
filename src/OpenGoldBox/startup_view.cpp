@@ -202,6 +202,15 @@ std::optional<opengold::GoldBoxGame> game_from_command_line()
     return std::nullopt;
 }
 
+// Whether the player chose game's folder and it still holds the game's files:
+// a folder the search found is asked about first.
+bool folder_chosen(opengold::GoldBoxGame game)
+{
+    const auto located = settings::locate_game_folder(game);
+    return located && located->source == opengold::GameFolderSource::chosen &&
+           settings::validate_game_folder(settings::game_folder(game), game).usable;
+}
+
 // The first of a menu's buttons that can be pressed, to take the focus.
 void focus_first_enabled(Node &buttons)
 {
@@ -390,7 +399,7 @@ void StartupView::choose_folders(opengold::GoldBoxGame game, AfterFolders after)
     design_needed_ =
         game == opengold::GoldBoxGame::unlimited_adventures && after != AfterFolders::saved_game;
     if (game != opengold::GoldBoxGame::pool_of_radiance &&
-        !settings::validate_game_path(settings::game_path()).usable)
+        !folder_chosen(opengold::GoldBoxGame::pool_of_radiance))
     {
         folders_needed_.push_back(opengold::GoldBoxGame::pool_of_radiance);
     }
@@ -418,6 +427,7 @@ void StartupView::folders_ready()
 void StartupView::cancel_folders()
 {
     required_node<Window>(*this, "PathDialog").hide();
+    required_node<Window>(*this, "FoundFolder").hide();
     required_node<Window>(*this, "ChecksumWarning").hide();
     save_pending_path_ = false;
     folders_needed_.clear();
@@ -578,8 +588,9 @@ void StartupView::exit_to_desktop()
     get_tree()->get_root()->emit_signal("close_requested");
 }
 
-// Asks for the next game's folder when it is not set or no longer holds the
-// game; startup goes on once every folder is known.
+// Asks for the next game's folder unless the player's choice still holds the
+// game: a folder the search found to confirm, else the folder dialog; startup
+// goes on once every folder is known.
 void StartupView::next_folder()
 {
     if (asking_design())
@@ -603,23 +614,51 @@ void StartupView::next_folder()
     required_node<Label>(*dialog, "Instructions")
         .set_text(i18n::text(
             N_("Choose the folder containing START.EXE and the original DAX game files.")));
+    auto *found = &required_node<Window>(*this, "FoundFolder");
+    found->set_title(heading);
+    required_node<Label>(*found, "Title").set_text(heading);
+    // A chosen folder that no longer holds the game's files is looked for
+    // again, as when none was chosen (the user's decision, 2026-11-20).
+    const auto located = settings::locate_game_folder(game);
     pending_path_ = settings::game_folder(game);
-    if (game == opengold::GoldBoxGame::pool_of_radiance)
-    {
-        const auto saved = settings::saved_game_path();
-        if (settings::flag("--reset-game-path") || saved.is_empty() ||
-            !settings::validate_game_path(saved).usable)
-        {
-            show_path();
-            return;
-        }
-    }
-    else if (!settings::validate_game_folder(pending_path_, game).usable)
+    if (!located ||
+        (game == opengold::GoldBoxGame::pool_of_radiance && settings::flag("--reset-game-path")))
     {
         show_path();
         return;
     }
+    if (located->source == opengold::GameFolderSource::found)
+    {
+        confirm_found_folder();
+        return;
+    }
     check_path();
+}
+
+// A folder the search found is shown for the player to confirm; it is saved
+// only once confirmed, so the player is asked once (the user's decision,
+// 2026-11-20).
+void StartupView::confirm_found_folder()
+{
+    auto *found = &required_node<Window>(*this, "FoundFolder");
+    required_node<Label>(*found, "Folder").set_text(pending_path_);
+    found->popup_centered();
+    required_node<Button>(*found, "Use").grab_focus();
+}
+
+void StartupView::use_found_folder()
+{
+    required_node<Window>(*this, "FoundFolder").hide();
+    save_pending_path_ = true;
+    check_path();
+}
+
+// Declining the found folder opens the folder dialog for the player to choose one.
+void StartupView::choose_another_folder()
+{
+    required_node<Window>(*this, "FoundFolder").hide();
+    pending_path_ = String();
+    show_path();
 }
 
 // The design is asked each time Unlimited Adventures is chosen, the last one
@@ -648,6 +687,13 @@ void StartupView::connect_path_dialogs()
     // Translate these dialogs only after language selection has been confirmed.
     i18n::prepare_ui(required_node<Window>(*this, "PathDialog"));
     i18n::prepare_ui(required_node<Window>(*this, "ChecksumWarning"));
+    i18n::prepare_ui(required_node<Window>(*this, "FoundFolder"));
+    auto *found = &required_node<Window>(*this, "FoundFolder"); // scene-owned
+    connect_escape(*found, &StartupView::cancel_folders);
+    required_node<Button>(*found, "Use")
+        .connect("pressed", presentation::guarded(this, &StartupView::use_found_folder));
+    required_node<Button>(*found, "Choose")
+        .connect("pressed", presentation::guarded(this, &StartupView::choose_another_folder));
     auto *dialog = &required_node<Window>(*this, "PathDialog"); // scene-owned
     connect_escape(*dialog, &StartupView::cancel_folders);
     required_node<Button>(*dialog, "Cancel")

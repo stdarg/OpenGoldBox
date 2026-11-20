@@ -220,23 +220,33 @@ fs::path environment_folder(const char *variable)
 
 } // namespace
 
-std::optional<fs::path> find_game_folder(GoldBoxGame game, const GameSearch &search)
+std::optional<GameFolder> locate_game_folder(GoldBoxGame game, const GameSearch &search)
 {
-    if (!search.chosen.empty())
+    // A chosen folder whose files are gone (or another game's) is looked for again.
+    if (!search.chosen.empty() && identify_game(search.chosen) == game)
     {
-        return search.chosen;
+        return GameFolder{search.chosen, GameFolderSource::chosen};
     }
-    std::optional<fs::path> folder;
+    std::optional<GameFolder> folder;
     visit_found_games(search,
                       [&](const FoundGame &found)
                       {
                           if (found.second == game)
                           {
-                              folder = found.first;
+                              folder = GameFolder{found.first, GameFolderSource::found};
                           }
                           return folder.has_value();
                       });
     return folder;
+}
+
+std::optional<fs::path> find_game_folder(GoldBoxGame game, const GameSearch &search)
+{
+    if (auto located = locate_game_folder(game, search))
+    {
+        return std::move(located->folder);
+    }
+    return std::nullopt;
 }
 
 std::map<GoldBoxGame, fs::path> find_game_folders(const GameSearch &search)

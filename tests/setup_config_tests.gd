@@ -6,6 +6,10 @@ var scenario := "first"
 var real_path := ""
 var captures := ""
 var args: PackedStringArray
+# A game whose folder is not saved, or whose saved folder no longer holds its
+# files, and which the search finds: the game shows the folder found and asks
+# the player to confirm it (the user's decision, 2026-11-20).
+const FOUND_CASES := ["found-confirm", "found-again", "found-decline", "found-stale", "found-curse"]
 
 func _initialize() -> void:
 	args = OS.get_cmdline_args() + OS.get_cmdline_user_args()
@@ -59,6 +63,13 @@ func run_checks() -> void:
 	require(not real_path.is_empty(), "Set OPENGOLD_GAME_DIR to the local reference installation for this test")
 	OS.unset_environment("OPENGOLD_LANG")
 	OS.unset_environment("OPENGOLD_GAME_DIR")
+	# Unless a case names a folder to find a game in, the game finds none: its
+	# home is the check's own.
+	var games_folder := OS.get_environment("OPENGOLD_GOLDBOX_DIR")
+	OS.unset_environment("OPENGOLD_GOLDBOX_DIR")
+	if scenario in FOUND_CASES:
+		await check_found_folder(games_folder)
+		return
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(CONFIG))
 	var config := ConfigFile.new()
 	if scenario not in ["first", "first-warning", "save-error"]:
@@ -217,3 +228,81 @@ func choose_spanish(dialog: Window) -> void:
 	await settle()
 	require(read_config().get_value("interface", "language") == "es", "Spanish was not saved")
 	require(current_scene.get_node("ImageFit/Image/Text").texture.resource_path.ends_with("OpenGoldBoxEngineLettering.es.png"), "OpenGoldBox's title did not follow the language in Spanish")
+
+# found-confirm: Pool of Radiance's folder, not saved, is found in the folder
+# OPENGOLD_GAME_DIR names; Use this folder saves it and the title starts.
+# found-again, run after it in a new process, finds it saved and asks nothing.
+# found-decline: Choose another folder opens the folder dialog, empty, and
+# saves the folder chosen there. found-stale: a saved folder without the
+# game's files is looked for again and the found one confirmed. found-curse:
+# Curse of the Azure Bonds' folder, found in OPENGOLD_GOLDBOX_DIR, is confirmed
+# the same way.
+func check_found_folder(games_folder: String) -> void:
+	var config := ConfigFile.new()
+	if scenario != "found-again":
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(CONFIG))
+		config.set_value("interface", "language", "en")
+		if scenario == "found-stale":
+			var emptied := ProjectSettings.globalize_path("user://moved-game")
+			DirAccess.make_dir_recursive_absolute(emptied)
+			config.set_value("game", "path", emptied)
+		if scenario == "found-curse":
+			config.set_value("game", "path", real_path)
+		require(config.save(CONFIG) == OK, "Cannot prepare config")
+	var game := "POOLRAD"
+	var heading := "Pool of Radiance game files"
+	var expected := real_path
+	if scenario == "found-curse":
+		OS.set_environment("OPENGOLD_GOLDBOX_DIR", games_folder)
+		game = "CURSE"
+		heading = "Curse of the Azure Bonds game files"
+		expected = StartupView.game_folder("CURSE")
+		if expected.is_empty():
+			print("Skipped: Curse's files are not here.")
+			quit(0)
+			return
+	else:
+		OS.set_environment("OPENGOLD_GAME_DIR", real_path)
+	change_scene_to_file("res://scenes/startup.tscn")
+	await settle()
+	require(current_scene.name == "Startup", "Startup scene missing")
+	var path_dialog: Window = current_scene.get_node("PathDialog")
+	var found: Window = current_scene.get_node("FoundFolder")
+	await pick_game(game)
+	if scenario == "found-again":
+		require(not found.visible and not path_dialog.visible, "A confirmed folder must not be asked about again")
+		require(shows_pool_title("en"), "Pool of Radiance's title did not start from the saved folder")
+		print("Setup config passed: ", scenario)
+		quit(0)
+		return
+	require(found.visible and not path_dialog.visible, "The folder found must be shown for the player to confirm")
+	require(found.get_node("Title").text == heading and found.title == heading, "The question names its game: " + found.title)
+	require(found.get_node("Folder").text == expected, "The question shows the folder found: " + found.get_node("Folder").text)
+	require(found.get_node("Use").has_focus(), "Use this folder takes the focus")
+	var saved_before := FileAccess.get_file_as_string(CONFIG)
+	await capture(found, "found-folder-" + scenario)
+	if scenario == "found-decline":
+		found.get_node("Choose").pressed.emit()
+		await settle()
+		require(not found.visible and path_dialog.visible, "Choose another folder must open the folder dialog")
+		require(path_dialog.get_node("Path").text.is_empty(), "The folder dialog starts empty after declining")
+		require(path_dialog.get_node("Title").text == heading, "The folder dialog names its game")
+		require(FileAccess.get_file_as_string(CONFIG) == saved_before, "Declining saved a folder")
+		await capture(path_dialog, "found-folder-declined")
+		path_dialog.get_node("Path").text = real_path
+		path_dialog.get_node("Continue").pressed.emit()
+		await settle()
+	else:
+		found.get_node("Use").pressed.emit()
+		await settle()
+	require(not found.visible and not path_dialog.visible, "Startup must go on once the folder is confirmed")
+	var section := "games" if game == "CURSE" else "game"
+	var key := "CURSE" if game == "CURSE" else "path"
+	require(read_config().get_value(section, key, "") == expected, "The confirmed folder was not saved")
+	if game == "POOLRAD":
+		require(shows_pool_title("en"), "Pool of Radiance's title did not start")
+	else:
+		var title: Control = current_scene.get_node("GameTitle")
+		require(title.visible, "Curse's title did not start")
+	print("Setup config passed: ", scenario)
+	quit(0)

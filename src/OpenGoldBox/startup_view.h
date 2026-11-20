@@ -152,6 +152,9 @@ class StartupView : public godot::Control
         return folders_needed_.empty() && design_needed_;
     }
 
+    void confirm_found_folder();
+    void use_found_folder();
+    void choose_another_folder();
     void show_path(const godot::String &message = {});
     void browse_path();
     void picked_path(const godot::String &directory);

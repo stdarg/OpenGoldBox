@@ -175,15 +175,55 @@ void named_folders_are_matched_by_their_files()
           "A named folder holding another game leaves the search to find this one");
 }
 
-void the_chosen_folder_wins()
+// What startup does with a game's folder (docs/TECH.md, "Finding the games'
+// folders"): a chosen folder still holding the game is played from; a found
+// one is shown for the player to confirm; with neither the player picks one.
+void the_chosen_folder_wins_while_it_holds_the_game()
 {
     const Scratch scratch("chosen");
     const auto found = scratch.game("home/POOLRAD", pool);
     auto search = scratch.from("home/src/OpenGold");
     search.named = {found};
-    search.chosen = scratch.root() / "chosen by the player";
-    check(find_game_folder(pool, search) == search.chosen,
-          "The folder the player chose is taken as it is");
+    search.chosen = scratch.game("chosen by the player", pool);
+    const auto chosen = opengold::locate_game_folder(pool, search);
+    check(chosen && chosen->folder == search.chosen &&
+              chosen->source == opengold::GameFolderSource::chosen,
+          "The folder the player chose wins while it holds the game's files");
+    check(find_game_folder(pool, search) == search.chosen, "find_game_folder finds it too");
+}
+
+void a_stale_chosen_folder_falls_through_to_the_search()
+{
+    const Scratch scratch("stale");
+    const auto found = scratch.game("home/POOLRAD", pool);
+    auto search = scratch.from("home/src/OpenGold");
+    search.chosen = scratch.root() / "moved away";
+    const auto gone = opengold::locate_game_folder(pool, search);
+    check(gone && gone->folder == found && gone->source == opengold::GameFolderSource::found,
+          "A chosen folder that is gone leaves the search to find the game");
+    search.chosen = scratch.game("other game", curse);
+    const auto other = opengold::locate_game_folder(pool, search);
+    check(other && other->folder == found && other->source == opengold::GameFolderSource::found,
+          "So does a chosen folder holding another game");
+}
+
+void a_found_folder_is_marked_found()
+{
+    const Scratch scratch("found");
+    const auto found = scratch.game("home/games/Pool", pool);
+    const auto located = opengold::locate_game_folder(pool, scratch.from("home/src/OpenGold"));
+    check(located && located->folder == found &&
+              located->source == opengold::GameFolderSource::found,
+          "Without a chosen folder, the search's folder is found, for the player to confirm");
+}
+
+void nothing_chosen_or_found_is_nothing()
+{
+    const Scratch scratch("nothing");
+    auto search = scratch.from("home/src/OpenGold");
+    search.chosen = scratch.root() / "moved away";
+    check(!opengold::locate_game_folder(pool, search),
+          "With a stale choice and nothing found, there is no folder: the player picks one");
 }
 
 void loops_and_locked_folders_are_passed_over()
@@ -227,7 +267,10 @@ int main()
         the_nearest_folder_wins();
         a_start_outside_home_searches_home_only();
         named_folders_are_matched_by_their_files();
-        the_chosen_folder_wins();
+        the_chosen_folder_wins_while_it_holds_the_game();
+        a_stale_chosen_folder_falls_through_to_the_search();
+        a_found_folder_is_marked_found();
+        nothing_chosen_or_found_is_nothing();
         loops_and_locked_folders_are_passed_over();
         the_checkout_is_the_folder_with_git();
         std::cout << "Game finder passed.\n";

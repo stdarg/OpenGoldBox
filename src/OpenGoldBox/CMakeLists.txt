@@ -798,6 +798,17 @@ if(OPENGOLD_BUILD_TESTS)
             "Setup config passed: ${setup_case}"
             "-DARGS=--setup-case=${setup_case}\;--reset-game-path")
     endforeach()
+    # A folder the search finds is shown for the player to confirm, and saved
+    # once confirmed: a second process finds it saved and asks nothing.
+    opengold_settings_check(setup_found_confirm setup_config_tests
+        "Setup config passed: found-confirm" "-DARGS=--setup-case=found-confirm"
+        -DRESTART_ARGS=--setup-case=found-again
+        "-DRESTART_EXPECTED=Setup config passed: found-again")
+    foreach(setup_case found-decline found-stale found-curse)
+        string(REPLACE "-" "_" test_name "setup_${setup_case}")
+        opengold_settings_check(${test_name} setup_config_tests
+            "Setup config passed: ${setup_case}" "-DARGS=--setup-case=${setup_case}")
+    endforeach()
     opengold_settings_check(setup_reset setup_config_tests "Setup config passed: reset"
         "-DARGS=--setup-case=reset\;--reset-lang\;--reset-game-path")
     opengold_settings_check(setup_cancel_path setup_config_tests "Setup cancel-path passed"

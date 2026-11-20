@@ -186,6 +186,61 @@ exclusive = true
 file_mode = 2
 access = 2
 
+[node name="FoundFolder" type="Window" parent="."]
+title = "Pool of Radiance game files"
+initial_position = 1
+size = Vector2i(760, 330)
+min_size = Vector2i(760, 330)
+visible = false
+unresizable = true
+transient = true
+exclusive = true
+auto_translate_mode = 2
+
+[node name="Background" type="Panel" parent="FoundFolder"]
+theme_type_variation = &"StartupDialogSurface"
+offset_right = 760.0
+offset_bottom = 330.0
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="FoundFolder"]
+theme_type_variation = &"LabelText24"
+offset_left = 24.0
+offset_top = 16.0
+offset_right = 736.0
+offset_bottom = 58.0
+text = "Pool of Radiance game files"
+
+[node name="Instructions" type="Label" parent="FoundFolder"]
+offset_left = 24.0
+offset_top = 66.0
+offset_right = 736.0
+offset_bottom = 116.0
+text = "The game's files were found in this folder. Play the game from it?"
+autowrap_mode = 3
+
+[node name="Folder" type="Label" parent="FoundFolder"]
+theme_type_variation = &"LabelText16"
+offset_left = 24.0
+offset_top = 130.0
+offset_right = 736.0
+offset_bottom = 248.0
+autowrap_mode = 1
+
+[node name="Choose" type="Button" parent="FoundFolder"]
+offset_left = 24.0
+offset_top = 262.0
+offset_right = 320.0
+offset_bottom = 306.0
+text = "Choose another folder"
+
+[node name="Use" type="Button" parent="FoundFolder"]
+offset_left = 440.0
+offset_top = 262.0
+offset_right = 736.0
+offset_bottom = 306.0
+text = "Use this folder"
+
 [node name="ChecksumWarning" type="Window" parent="."]
 title = "Game file warning"
 initial_position = 1

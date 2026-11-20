@@ -665,7 +665,9 @@ this order; the game, the tools and the tests all use it (user's decision,
 
 1. The folder the player chose in the game, saved in `settings.cfg` (`[game]
    path` for Pool of Radiance, `[games] <NAME>` for the others, NAME as
-   `game_folder` gives it), taken as it is.
+   `game_folder` gives it), while `identify_game` still says it holds that
+   game. A saved folder that has gone, or now holds other files, is passed
+   over as if none were saved (user's decision, 2026-11-20).
 2. The folders `OPENGOLD_GAME_DIR` and `OPENGOLD_GOLDBOX_DIR` name, in that
    order: each folder itself, then its children and grandchildren, whichever
    holds the game's files.
@@ -684,8 +686,18 @@ hidden folder or home's `Desktop`, `Documents`, `Downloads` or `Library`
 (iCloud's folders are under `Library`): macOS asks the player before a program
 reads them. It passes over folders it cannot read and links back up the tree.
 It only lists folders, two levels at each place, and the game looks once per
-run. What it finds is used, never saved; only a folder the player picks in the
-folder dialog is.
+run.
+
+`opengold::locate_game_folder` also says where the folder came from, chosen
+or found, and startup acts on that the same way for every game (user's
+decision, 2026-11-20): a chosen folder is played from; a found one is shown in
+a question naming the game and the folder, **Use this folder** saving it, so
+the player is asked once, and **Choose another folder** opening the folder
+dialog, empty, whose choice is saved; with neither, the folder dialog opens.
+Escape or the window's X goes back, as in the folder dialog. Until the player
+confirms it, a found folder is not saved, though the game's screens and its
+checks play from it. `--reset-game-path` opens Pool of Radiance's folder
+dialog straight away, filled in with the folder it has.
 
 Native checks get a game's folder from `tests/installed_games.h`. A Godot
 check's CMake script includes `tests/find_games.cmake` before it gives its game

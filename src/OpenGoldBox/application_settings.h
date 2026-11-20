@@ -6,7 +6,9 @@
 #include <godot_cpp/variant/string.hpp>
 #include <godot_cpp/variant/packed_string_array.hpp>
 #include <filesystem>
+#include <optional>
 
+#include "opengold/game_finder.h"
 #include "opengold/gold_box_game.h"
 
 namespace settings
@@ -136,10 +138,14 @@ struct GameStart
 
 [[nodiscard]] GameStart chosen_game_start();
 void choose_game_start(GameStart start);
-// A game's folder: the one the player chose (Pool of Radiance's under [game],
-// game_path(); another's under [games] by its game_folder name), else the one
-// OPENGOLD_GAME_DIR, OPENGOLD_GOLDBOX_DIR or the search upward from the game's
-// own folder finds by its files (opengold/game_finder.h, docs/TECH.md).
+// A game's folder and where it came from: the one the player chose (Pool of
+// Radiance's under [game]; another's under [games] by its game_folder name)
+// while it still holds the game's files, else the one OPENGOLD_GAME_DIR,
+// OPENGOLD_GOLDBOX_DIR or the search upward from the game's own folder finds
+// by its files (opengold/game_finder.h, docs/TECH.md); nothing when neither.
+// Startup asks the player to confirm a found folder before saving it.
+[[nodiscard]] std::optional<opengold::GameFolder> locate_game_folder(opengold::GoldBoxGame game);
+// locate_game_folder's folder, or empty; Pool of Radiance's is game_path().
 [[nodiscard]] godot::String game_folder(opengold::GoldBoxGame game);
 bool save_game_folder(opengold::GoldBoxGame game, const godot::String &directory);
 // Pool of Radiance's folder is checked file by file (validate_game_path);

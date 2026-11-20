@@ -60,12 +60,15 @@ and Exit to desktop. Choosing a game asks for its folder the first time:
 folder name (`CURSE` for *Curse of the Azure Bonds*, `SECRET` for *Secret of the
 Silver Blades*, `GATEWAY` for *Gateway to the Savage Frontier*, `DARKNESS` for
 *Pools of Darkness*, `TREASURE` for *Treasures of the Savage Frontier*). A game
-whose folder is not saved is looked for by its files, whatever its folder's
-name: in the folders `OPENGOLD_GAME_DIR` and `OPENGOLD_GOLDBOX_DIR` name and
-their children and grandchildren, then upward from the game's own folder to
-the home folder ([TECH.md](TECH.md#finding-the-games-folders)). A folder found
-so is used, never saved; *Pool of Radiance*'s folder dialog still shows the
-first time, filled in with it. A party still takes its portraits and combat
+whose folder is not saved, or whose saved folder no longer holds its files, is
+looked for by its files, whatever its folder's name: in the folders
+`OPENGOLD_GAME_DIR` and `OPENGOLD_GOLDBOX_DIR` name and their children and
+grandchildren, then upward from the game's own folder to the home folder
+([TECH.md](TECH.md#finding-the-games-folders)). When it is found, the game
+shows the folder and asks whether to use it: **Use this folder** saves it, so
+the question comes once; **Choose another folder** opens the folder dialog for
+the player to pick one, which is saved. When it is not found, the folder
+dialog opens. A party still takes its portraits and combat
 art from *Pool of Radiance*'s files, so choosing another game asks for that
 folder too when it is not set ([GAMES.md](GAMES.md)). `--game=POOLRAD`, `--game=CURSE`, `--game=SECRET`, `--game=GATEWAY`, `--game=DARKNESS` or `--game=TREASURE`
 on the command line picks the game without the menu, as the packaged game's own checks
@@ -204,7 +207,10 @@ starts or a save is loaded, and new settings files receive the default. See
 
 If the config is absent, the game asks for the language first, then the game folder.
 If only one value is missing or invalid, it asks only for that value. A saved
-folder that disappears or lacks required files must be selected again.
+folder that disappears or no longer holds the game's files is looked for again
+as if none were saved: a folder found is offered to confirm, else the folder
+dialog opens. One that still holds the game but lacks a file *Pool of
+Radiance* needs opens the folder dialog, naming the missing files.
 Setup completes before the chosen game's title.
 
 From **cmd.exe**:
@@ -216,10 +222,11 @@ win-package\opengoldbox.exe --reset-game-path --reset-lang
 ```
 
 `--lang` has been removed. `--reset-lang` forces language selection;
-`--reset-game-path` forces folder selection. Neither deletes the previous value
+`--reset-game-path` forces folder selection, skipping the question about a
+folder found. Neither deletes the previous value
 on launch. In the language dialog Cancel, the dialog X and Ctrl+X exit through
 normal shutdown; in a game's folder dialog Cancel, the X and Escape go back to
-the games.
+the games, as the X and Escape do from the question about a folder found.
 Only a confirmed replacement is saved. If the language is confirmed and the user
 then cancels folder selection, the confirmed language remains saved.
 
@@ -247,9 +254,9 @@ and `es` (case-insensitive), and unsupported values are ignored.
 `OPENGOLD_GAME_DIR` and `OPENGOLD_GOLDBOX_DIR` name folders where a game whose
 folder is not saved is looked for first, by its files: each folder, its
 children and its grandchildren ([TECH.md](TECH.md#finding-the-games-folders)).
-A saved folder comes before them. Environment values are not automatically
-persisted. Missing config values still prompt; a folder found supplies the
-initial path when applicable.
+A saved folder that still holds its game comes before them. Environment values
+are not saved until the player confirms the folder found in them. Missing
+config values still prompt.
 
 A reset flag supersedes its corresponding environment override for that run.
 An explicit confirmed dialog selection also takes precedence for the remainder
@@ -327,7 +334,11 @@ and its temporary file are ignored by Git and explicitly excluded from exports.
 `tests/setup_config_tests.gd` exercises first run, partial settings, complete
 settings, resets, environment precedence, invalid folders, synthetic checksum
 mismatches, warning Continue/Quit, cancellation, preservation of unrelated keys,
-and malformed-config save failure. It creates synthetic files rather than
+malformed-config save failure, and a folder found: confirmed and not asked
+again in a second process, declined for the folder dialog, found after a
+saved folder lost its files, and *Curse of the Azure Bonds*' confirmed the
+same way (`opengold_godot_setup_found_*`). Its other cases clear
+`OPENGOLD_GOLDBOX_DIR`, so the game finds nothing. It creates synthetic files rather than
 copying original game assets. It requires the local reference installation of
 *Pool of Radiance*, found by its files (`tests/find_games.cmake`) or named by
 `OPENGOLD_GAME_DIR` when run by hand. Run by hand, it writes the ignored development

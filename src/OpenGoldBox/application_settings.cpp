@@ -144,35 +144,55 @@ std::filesystem::path own_folder()
     return folder;
 }
 
-// The game's folder as the environment's folders and the upward search find
-// it by its files (opengold/game_finder.h), never saved. A run looks once for
-// each game and environment: the search lists folders.
-String found_game_folder(opengold::GoldBoxGame game)
+// The folder the player chose for game, this run or in settings.cfg (Pool of
+// Radiance's under [game], another's under [games] by its game_folder name), or
+// empty.
+String chosen_game_folder(opengold::GoldBoxGame game)
+{
+    if (game == opengold::GoldBoxGame::pool_of_radiance)
+    {
+        return confirmed_path ? *confirmed_path : settings::saved_game_path();
+    }
+    if (const auto found = confirmed_folders.find(game); found != confirmed_folders.end())
+    {
+        return found->second;
+    }
+    return read("games", std::string(opengold::game_folder(game)).c_str());
+}
+} // namespace
+
+namespace settings
+{
+// The chosen folder while it holds the game's files, else the one the
+// environment's folders and the upward search find (opengold/game_finder.h).
+// A run looks once for each game, chosen folder and environment: the search
+// lists folders.
+std::optional<opengold::GameFolder> locate_game_folder(opengold::GoldBoxGame game)
 {
     // The start is looked up only when the search runs: finding the checkout
     // reads the disk.
     auto search = presentation::godot_game_search({});
-    String key = String::num_int64(static_cast<int>(game));
+    const auto chosen = chosen_game_folder(game).strip_edges();
+    String key = String::num_int64(static_cast<int>(game)) + "\n" + chosen;
+    if (!chosen.is_empty())
+    {
+        search.chosen = presentation::path_from_godot(chosen);
+    }
     for (const auto &folder : search.named)
     {
         key += "\n" + String::utf8(opengold::path_text(folder).c_str());
     }
     key += "\t" + String::utf8(opengold::path_text(search.home).c_str());
 
-    static std::map<String, String> found_folders;
-    if (const auto known = found_folders.find(key); known != found_folders.end())
+    static std::map<String, std::optional<opengold::GameFolder>> located_folders;
+    if (const auto known = located_folders.find(key); known != located_folders.end())
     {
         return known->second;
     }
     search.start = own_folder();
-    const auto folder = opengold::find_game_folder(game, search);
-    return found_folders[key] =
-               folder ? String::utf8(opengold::path_text(*folder).c_str()) : String();
+    return located_folders[key] = opengold::locate_game_folder(game, search);
 }
-} // namespace
 
-namespace settings
-{
 bool flag(const char *name)
 {
     auto *os = OS::get_singleton();
@@ -522,12 +542,7 @@ bool valid_language(const String &locale)
 
 String game_path()
 {
-    if (confirmed_path)
-    {
-        return *confirmed_path;
-    }
-    const auto saved = saved_game_path();
-    return saved.is_empty() ? found_game_folder(opengold::GoldBoxGame::pool_of_radiance) : saved;
+    return settings::game_folder(opengold::GoldBoxGame::pool_of_radiance);
 }
 
 String language()
@@ -652,17 +667,8 @@ void choose_game_start(GameStart start)
 
 String game_folder(opengold::GoldBoxGame game)
 {
-    if (game == opengold::GoldBoxGame::pool_of_radiance)
-    {
-        return game_path();
-    }
-    if (const auto found = confirmed_folders.find(game); found != confirmed_folders.end())
-    {
-        return found->second;
-    }
-    const std::string folder(opengold::game_folder(game));
-    const auto saved = read("games", folder.c_str());
-    return saved.is_empty() ? found_game_folder(game) : saved;
+    const auto located = locate_game_folder(game);
+    return located ? String::utf8(opengold::path_text(located->folder).c_str()) : String();
 }
 
 bool save_game_folder(opengold::GoldBoxGame game, const String &directory)

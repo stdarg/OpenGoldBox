@@ -16,7 +16,8 @@ namespace opengold
 
 struct GameSearch
 {
-    // The folder the player chose for the game, taken as it is.
+    // The folder the player chose for the game, taken while it still holds the
+    // game's files.
     std::filesystem::path chosen;
     // The folders OPENGOLD_GAME_DIR and OPENGOLD_GOLDBOX_DIR name, in that
     // order: each is looked in itself, then its children and grandchildren.
@@ -26,13 +27,32 @@ struct GameSearch
     std::filesystem::path start, home;
 };
 
-// The game's folder: the chosen one, else the first named folder (or child or
-// grandchild of one) whose files are that game's, else the upward search's.
+// Where a game's folder came from: the player's choice, or the search, whose
+// folder the game asks the player to confirm before it saves it.
+enum class GameFolderSource
+{
+    chosen,
+    found
+};
+
+struct GameFolder
+{
+    std::filesystem::path folder;
+    GameFolderSource source{GameFolderSource::chosen};
+};
+
+// The game's folder: the chosen one while identify_game still says it holds
+// the game, else the first named folder (or child or grandchild of one) whose
+// files are that game's, else the upward search's; nothing when none is.
 // The upward search looks in start's parent, then its parent's parent and so
 // on up to and including home (home only when start is not under it); at each
 // it looks at the children and grandchildren, the first in sorted order
 // winning. It never lists a hidden folder or home's Desktop, Documents,
 // Downloads or Library: macOS asks the player before a program reads those.
+[[nodiscard]] std::optional<GameFolder> locate_game_folder(GoldBoxGame game,
+                                                           const GameSearch &search);
+
+// locate_game_folder's folder, wherever it came from.
 [[nodiscard]] std::optional<std::filesystem::path> find_game_folder(GoldBoxGame game,
                                                                     const GameSearch &search);
 
