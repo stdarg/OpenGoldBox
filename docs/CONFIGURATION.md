@@ -73,7 +73,11 @@ one, which `[games] UA_DESIGN` keeps; `--game=UA` plays that one without
 asking ([games/ua.md](games/ua.md), From the startup menu).
 
 `difficulty` is one of `easy`, `normal`, `hard`, `nightmare` and `infernal`,
-easiest first; the default, also used for an unknown value, is `normal`. On
+easiest first; the default, also used for an unknown value, is `normal`. The
+Buck Rogers games add `novice`, below `easy`, and show the levels under
+their own names: Novice, Cadet, Trooper, Veteran, Ace and Admiral
+([BUCK-ROGERS.md](BUCK-ROGERS.md), Difficulty). Any other game plays `novice`
+as `easy`. On
 `hard` and above monsters use the potions, wands and scrolls they carry. Each level
 also sets how many monsters a fight has and how strong they are ([DIFF-2](SRD-DECISIONS.md#diff-2-2026-11-02-each-level-changes-the-fights-not-only-the-tactics)). The
 game reads it when exploration starts or a save is loaded, and new settings

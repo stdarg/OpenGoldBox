@@ -2045,6 +2045,13 @@ SRD's `hit_points_percent` and `attack_bonus` stay the SRD's).
   level here.
 - *Pool of Radiance* and *Curse* had no levels: the camp's Alter menu offers
   only Order, Drop, Speed, Icon and Pics. The table's Hit Points are theirs.
+- **The Buck Rogers games** (the user, 2026-11-20) play their own five levels
+  under their own names, Novice, Cadet, Trooper, Veteran and Ace, and a
+  sixth past Ace, Admiral, at Infernal's place. Unlike the other
+  games, they change the party's to-hit too, as the original's do: +2 at
+  Novice down to -3 at Admiral. The monsters' Hit Points are the original's,
+  and their to-hit and Armor Class come from the table
+  ([BUCK-ROGERS.md](BUCK-ROGERS.md), Difficulty).
 
 The originals also have the levers their designers used to tune fights:
 

@@ -344,12 +344,15 @@ screen first.
   engine has no separate computer-ally system.
 - **Leadership** takes a companion off computer control for a fight when its
   check succeeds, and only for companions with Intelligence above 3.
-- **The difficulty level's to-hit:** besides the monsters' Hit Points, the
-  original's level gives the party +2 (Novice) down to -2 (Ace) to hit
-  (`fxengine.pas` `AttackRoll`). The Realms games' levels have no such part.
-  See open question 1. The Rule Book also says harder levels give more
-  experience; the engine has no such scaling, so B2 checks whether it comes
-  only from the monsters' larger Hit Points.
+- **The difficulty levels** (`includes/c_diff.pas`): Novice, Cadet,
+  Trooper (where a new game starts), Veteran and Ace. Each gives the party a
+  bonus to hit, from +2 at Novice down to -2 at Ace (`fxengine.pas`
+  `AttackRoll`), and scales a hostile creature's Hit Points as the script
+  loads it, by (level + 2) / 4 (`eclvm.pas`). The Realms games' levels have no
+  part for the party. The Rule Book also says harder levels give more
+  experience. The engine has no such scaling, so B2 checks whether it comes
+  only from the monsters' larger Hit Points. OpenGoldBox plays these levels
+  under their own names, with a sixth, Admiral (see Difficulty, below).
 - **New script commands** (`eclvm.pas` `DispatchEclCommand`, 00h to 4Ch,
   77 commands):
   - changed: 1Dh sets the speaker; 1Fh ship combat; 22h and 23h skill
@@ -560,8 +563,8 @@ Scope, in `src/OpenGold.Rules.Original`, keyed by game:
 - ship combat as a session of its own, with salvage, repair, fuel and the
   boarding fight;
 - credits, the bank, the NEO salvage account, shops, ammunition and the port;
-- the difficulty level: the monsters' Hit Points by the level, and the
-  party's to-hit as open question 1 settles.
+- the difficulty levels as Difficulty (below) sets them: the party's to-hit,
+  the monsters' Hit Points, and the table's monster to-hit and Armor Class.
 
 Each rule gets a test that names the source routine it follows, as in
 [ORIGINAL-RULES.md](ORIGINAL-RULES.md). Obvious bugs in the original are
@@ -648,8 +651,8 @@ choose; the route waits on B3's winners.
 These carry over from the other games, per game:
 
 - the startup menu buttons, enabled once each game wins;
-- the difficulty levels, mapped as *Secret*'s are (Normal is Trooper, the
-  original's own play);
+- the difficulty levels under the original's names, with Admiral (see
+  Difficulty, below), on the Options screen while a Buck Rogers game plays;
 - a default party for the original rules only (no SRD rules for these
   games), made by the game's own creation rules
   (`data/default_parties/<folder>.json`,
@@ -698,21 +701,49 @@ The two games together come to roughly three Champions.
   doubtful cases in the original under DOSBox-X.
 - ***Matrix Cubed*'s route** depends on *Countdown*'s winners.
 
+## Difficulty
+
+Decided by the user on 2026-11-20. The Buck Rogers games play the original's
+five difficulty levels under their own names, and a sixth, Admiral, past
+Ace. Each stands where one of OpenGoldBox's levels stands. The Options screen
+shows these names while a Buck Rogers game plays:
+
+| Level | OpenGoldBox's level | Party's to-hit | Monsters' Hit Points | Monsters' to-hit | Monsters' Armor Class |
+|---|---|---|---|---|---|
+| Novice | below Easy | +2 | 50% | -2 | 2 worse |
+| Cadet | Easy | +1 | 75% | -2 | 2 worse |
+| **Trooper** | **Normal** | — | — | — | — |
+| Veteran | Hard | -1 | 125% | +1 | 1 better |
+| Ace | Nightmare | -2 | 150% | +2 | 2 better |
+| Admiral | Infernal | -3 | 200% | +3 | 3 better |
+
+- **Trooper is the original exactly,** as Normal is in every game.
+- **The party's to-hit and the monsters' Hit Points** are the original's
+  (`fxengine.pas` `AttackRoll`; `eclvm.pas`, (level + 2) / 4, at least 1).
+  Admiral goes one step past Ace for the party's to-hit. For Hit Points it
+  takes OpenGoldBox's Infernal, twice them, as *Secret*'s levels do.
+- **The monsters' to-hit and Armor Class** come from OpenGoldBox's difficulty
+  table ([ORIGINAL-RULES.md](ORIGINAL-RULES.md), Difficulty), as in the other
+  games whose original already scales Hit Points. Novice takes Easy's.
+- **Novice** is a new value of the `difficulty` setting, `novice`, offered
+  only while a Buck Rogers game plays. Any other game plays it as Easy.
+
 ## Open questions
 
 The sources settle everything else in this plan. Questions found in later
 steps go to the user, numbered, one topic each.
 
-1. **The party's to-hit at other difficulty levels:** the original's levels
-   give the party +2 (Novice) down to -2 (Ace) to hit, besides scaling the
-   monsters' Hit Points. OpenGoldBox's table already makes monsters hit
-   harder and resist better at the higher levels. Away from Normal (Trooper),
-   should the party's to-hit change as the original's does, on top of the
-   table, or stay as at Trooper?
-2. **The skills a hail checks** (found in B1): when the team hails a ship on
-   the solar map, both games check skill 74 (Befriend Animal) to bluff, 70
-   (Hypnosis) to intimidate and 69 (Paint/Draw) to ask for help. Every other
-   check in the scripts names the skill its text asks for, and Fast
-   Talk/Convince (76) and Intimidate (72) are two numbers higher, so the
-   numbers look shifted by two. Should OpenGoldBox check the skills the
-   original checks, or the ones the choices name (listed under Bugs if so)?
+Decided:
+
+1. **The party's to-hit at other difficulty levels** (the user, 2026-11-20):
+   it changes as the original's does; see Difficulty.
+2. **The skills a hail checks** (found in B1; the user, 2026-11-20: fix it
+   as a bug). When the team hails a ship, the menu offers BLUFF, INTIMIDATE
+   and ASK FOR HELP, and both games check skills 74 (Befriend Animal), 70
+   (Hypnosis) and 69 (Paint/Draw) (*Countdown* `ECL2` script 34, *Matrix
+   Cubed* `ECL1` script 19). No team member can learn Hypnosis or Paint/Draw
+   (`gdconsts.pas` `skillDefinitions`), so two of the three choices can never
+   succeed. Every other check names the skill its text asks for. Two numbers
+   higher are the skills the choices name: 76 (Fast Talk/Convince), 72
+   (Intimidate) and 71 (Act). OpenGoldBox checks those, and lists the change
+   under Bugs.
