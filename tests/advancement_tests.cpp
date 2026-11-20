@@ -10,6 +10,7 @@
 #include <cctype>
 #include "opengold/character_creator.h"
 #include "split_aim.h"
+#include "installed_games.h"
 #include "test_support.h"
 using namespace opengold;
 using namespace opengold::rules;
@@ -644,7 +645,9 @@ void asi_conformance()
             const auto initial = saved(baseline);
             if (!npc)
             {
-                if (const auto *dir = std::getenv("OPENGOLD_GAME_DIR"); dir && *dir)
+                if (const auto dir = opengold::test::installed_game_folder(
+                        opengold::GoldBoxGame::pool_of_radiance);
+                    !dir.empty())
                 {
                     write_campaign_file(
                         std::filesystem::path(OPENGOLD_BINARY_DIR) /
@@ -798,8 +801,8 @@ void asi_conformance()
 
 void verify_asi_ui(const char *klass, const char *file)
 {
-    const auto *dir = std::getenv("OPENGOLD_GAME_DIR");
-    check(dir && *dir, "ASI UI comparison needs game assets");
+    const auto dir = opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+    check(!dir.empty(), "ASI UI comparison needs game assets");
     const auto rules = module();
     const auto assets = campaign_asset_identity(dir);
     CampaignParty expected(module());

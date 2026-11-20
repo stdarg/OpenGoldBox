@@ -45,7 +45,9 @@ CampaignParty party()
 
 void write_hands_ui_fixture()
 {
-    if (const auto *dir = std::getenv("OPENGOLD_GAME_DIR"); dir && *dir)
+    if (const auto dir =
+            opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+        !dir.empty())
     {
         auto baseline = party();
         CampaignParty p(module());
@@ -57,8 +59,8 @@ void write_hands_ui_fixture()
 
 void verify_hands_ui(const std::filesystem::path &path)
 {
-    const auto *dir = std::getenv("OPENGOLD_GAME_DIR");
-    check(dir && *dir, "Hand UI comparison requires game assets");
+    const auto dir = opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+    check(!dir.empty(), "Hand UI comparison requires game assets");
     auto baseline = party();
     CampaignParty p(module());
     p.restore(baseline.checkpoint());

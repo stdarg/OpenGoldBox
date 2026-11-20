@@ -219,8 +219,9 @@ void medicine_combat()
 
 void write_ui_fixture()
 {
-    const auto *directory = std::getenv("OPENGOLD_GAME_DIR");
-    if (!directory || !*directory)
+    const auto directory =
+        opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+    if (directory.empty())
     {
         return;
     }
@@ -233,8 +234,9 @@ void write_ui_fixture()
 
 void verify_ui(const char *path)
 {
-    const auto *directory = std::getenv("OPENGOLD_GAME_DIR");
-    check(directory && *directory, "UI verification needs game directory");
+    const auto directory =
+        opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+    check(!directory.empty(), "UI verification needs game directory");
     const auto assets = campaign_asset_identity(directory);
     auto rules = module();
     auto creation = srd5::character_rules();

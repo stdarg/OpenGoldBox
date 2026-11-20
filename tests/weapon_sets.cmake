@@ -1,8 +1,9 @@
 # The Slums' four orcs with original files: opengold_expedition_tests writes the
 # party beside them, and a fresh Godot game loads it through Load game and
 # fights them until one shoots. Godot's user data goes to WORK.
-if("$ENV{OPENGOLD_GAME_DIR}" STREQUAL "")
-    message("Skipped: OPENGOLD_GAME_DIR is not set")
+include("${CMAKE_CURRENT_LIST_DIR}/find_games.cmake")
+if(NOT DEFINED game_folder_POOLRAD)
+    message("Skipped: Pool of Radiance's files are not here")
     return()
 endif()
 file(REMOVE_RECURSE "${WORK}")

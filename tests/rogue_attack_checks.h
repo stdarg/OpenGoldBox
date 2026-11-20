@@ -542,7 +542,9 @@ void run()
     check(bool(copy.rest(RestKind::short_rest)), "Rogue Short Rest completes");
     copy.finish_short_rest(copy.state().short_rest->ticket);
     check(bool(copy.rest(RestKind::long_rest)), "Rogue Long Rest completes");
-    if (const auto *directory = std::getenv("OPENGOLD_GAME_DIR"); directory && *directory)
+    if (const auto directory =
+            opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+        !directory.empty())
     {
         CampaignParty ui(module());
         (void)ui.add_pc(hero(d));
@@ -557,8 +559,9 @@ void run()
 
 void verify_ui(const char *file)
 {
-    const auto *directory = std::getenv("OPENGOLD_GAME_DIR");
-    check(directory && *directory, "Rogue UI comparison requires game assets");
+    const auto directory =
+        opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+    check(!directory.empty(), "Rogue UI comparison requires game assets");
     auto rules = module();
     auto creation = srd5::character_rules();
     const auto assets = campaign_asset_identity(directory);

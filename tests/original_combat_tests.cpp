@@ -5,6 +5,7 @@
 #include "opengold/original_content.h"
 #include "opengold/original_rules.h"
 #include "opengold/original_spells.h"
+#include "installed_games.h"
 #include "test_support.h"
 
 #include <algorithm>
@@ -295,13 +296,14 @@ void readied_gear_counts()
           "Mail carried but not worn protects nothing and still weighs");
 }
 
-// Pool of Radiance's own records, when its files are here (OPENGOLD_GAME_DIR):
+// Pool of Radiance's own records, when its files are here (installed_games.h):
 // every creature fights with sensible numbers, and kobolds of the Slums fight
 // a party to the end.
 void real_records_fight()
 {
-    const char *game = std::getenv("OPENGOLD_GAME_DIR");
-    if (!game)
+    const auto game =
+        opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+    if (game.empty())
     {
         std::cout << "Pool of Radiance's files are not here; its records are not checked.\n";
         return;
@@ -3923,19 +3925,19 @@ void secret_effects_take_their_own_numbers()
           "Secret's own move 400 up");
 }
 
-// Secret's creatures as its files make them (OPENGOLD_GOLDBOX_DIR): their
+// Secret's creatures as its files make them (installed_games.h): their
 // type and target flags, magic resistance and races, and a fight with them
 // that ends.
 void secret_records_fight()
 {
-    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    if (!games)
+    const auto secret = opengold::test::installed_game_folder(secret_game);
+    if (secret.empty())
     {
         std::cout << "Secret of the Silver Blades' files are not here; its records are not "
                      "checked.\n";
         return;
     }
-    auto content = load_original_content(std::filesystem::path(games) / "SECRET", secret_game);
+    auto content = load_original_content(secret, secret_game);
     for (const auto &[key, numbers] : content.bestiary)
     {
         check(original::Combatant::decode(numbers.encode()) == numbers,
@@ -4764,18 +4766,17 @@ void darkness_effects_take_their_own_numbers()
           "Its own are 400 up, or 470 where one of Secret's has that number");
 }
 
-// Pools of Darkness's creatures as its files make them (OPENGOLD_GOLDBOX_DIR):
+// Pools of Darkness's creatures as its files make them (installed_games.h):
 // their effects by the fight's numbers, their flags and magic resistance.
 void darkness_records_fight_by_their_effects()
 {
-    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    if (!games)
+    const auto darkness = opengold::test::installed_game_folder(darkness_game);
+    if (darkness.empty())
     {
         std::cout << "Pools of Darkness's files are not here; its records are not checked.\n";
         return;
     }
-    const auto content =
-        load_original_content(std::filesystem::path(games) / "DARKNESS", darkness_game);
+    const auto content = load_original_content(darkness, darkness_game);
     const auto creature_at = [&content](int record) -> const original::Combatant &
     {
         return content.bestiary.at("MON1CHA.DAX:" + std::to_string(record));
@@ -5082,13 +5083,12 @@ void darkness_blades_and_the_bulette_strike()
 
     // Its records' "immunities" (byte 421): the bulette rakes, a red dragon
     // (bit 20h) keeps its head, a spectre (bit 10h) is proof against poison.
-    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    if (!games)
+    const auto darkness = opengold::test::installed_game_folder(darkness_game);
+    if (darkness.empty())
     {
         return;
     }
-    const auto content =
-        load_original_content(std::filesystem::path(games) / "DARKNESS", darkness_game);
+    const auto content = load_original_content(darkness, darkness_game);
     const auto creature_at = [&content](int record) -> const original::Combatant &
     {
         return content.bestiary.at("MON1CHA.DAX:" + std::to_string(record));

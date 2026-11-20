@@ -3,8 +3,8 @@
 #include "opengold/npc_portraits.h"
 #include "opengold/shop_data.h"
 #include "repository_data.h"
+#include "installed_games.h"
 #include <algorithm>
-#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -771,7 +771,7 @@ void synthetic()
           "Undefined instructions stop with diagnostics");
 }
 
-void installed_monster_picture(const char *directory)
+void installed_monster_picture(const std::filesystem::path &directory)
 {
     // The Slums orcs' close-up alternates a ready pose and a striking pose; the
     // zero-tick frames between them are never held on screen.
@@ -827,7 +827,7 @@ void missing_area_map(const std::filesystem::path &installed)
           "A missing Slums map stops the load and names its file");
 }
 
-void installed(const char *directory)
+void installed(const std::filesystem::path &directory)
 {
     missing_area_map(directory);
     installed_monster_picture(directory);
@@ -882,7 +882,9 @@ int main()
         fog_visibility_tests();
         shopping_tests();
         synthetic();
-        if (const auto directory = std::getenv("OPENGOLD_GAME_DIR"))
+        if (const auto directory =
+                opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+            !directory.empty())
         {
             installed(directory);
         }

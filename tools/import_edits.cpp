@@ -1,11 +1,12 @@
 // Imports the Creature Stats Editor's edits into the game's data
 // (dev_tools/docs/creature-stats-editor-interface.md).
 #include "creature_edits.h"
+#include "opengold/game_finder.h"
 #include <chrono>
-#include <cstdlib>
 #include <ctime>
 #include <iostream>
 #include <string_view>
+#include <utility>
 
 namespace
 {
@@ -28,8 +29,9 @@ void usage()
     std::cerr
         << "Usage: opengold_import_edits [--check] [--repo DIR] [--edits FILE] [--game GAME_DIR]\n"
            "Applies dev_tools/creature_stats_editor/edits/edits.json to the repository's\n"
-           "data. --check reports without writing. GAME_DIR (default $OPENGOLD_GAME_DIR)\n"
-           "checks fight overrides and records against the original's files.\n";
+           "data. --check reports without writing. GAME_DIR (by default the Pool of\n"
+           "Radiance folder the game finds, docs/TECH.md) checks fight overrides and\n"
+           "records against the original's files.\n";
 }
 } // namespace
 
@@ -39,9 +41,11 @@ int main(int argc, char **argv)
     options.repository = OPENGOLD_SOURCE_DIR;
     options.date = today();
     std::optional<std::filesystem::path> edits;
-    if (const auto *game = std::getenv("OPENGOLD_GAME_DIR"); game && *game)
+    if (auto game = opengold::find_game_folder(
+            opengold::GoldBoxGame::pool_of_radiance,
+            opengold::environment_game_search(opengold::checkout_folder(OPENGOLD_SOURCE_DIR))))
     {
-        options.game_directory = game;
+        options.game_directory = std::move(*game);
     }
     for (int n = 1; n < argc; ++n)
     {

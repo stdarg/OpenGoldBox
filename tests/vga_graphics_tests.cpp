@@ -1,14 +1,13 @@
 // The 256-color pictures of Pools of Darkness and Treasures of the Savage
 // Frontier, read from the games' own files (docs/games/darkness.md). Skipped
-// when OPENGOLD_GOLDBOX_DIR does not name the folder holding DARKNESS and
-// TREASURE.
+// unless both games' folders are found (installed_games.h).
 #include "opengold/formats.h"
 #include "opengold/treasures_texts.h"
 #include "opengold/vga_picture.h"
 #include "opengold/wall_art.h"
+#include "installed_games.h"
 #include "test_support.h"
 
-#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -165,12 +164,11 @@ int main()
 {
     try
     {
-        const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
         const auto darkness =
-            games ? std::filesystem::path(games) / "DARKNESS" : std::filesystem::path();
-        const auto treasure =
-            games ? std::filesystem::path(games) / "TREASURE" : std::filesystem::path();
-        if (!games || !std::filesystem::exists(darkness / "TITLE.DAX") ||
+            opengold::test::installed_game_folder(opengold::GoldBoxGame::pools_of_darkness);
+        const auto treasure = opengold::test::installed_game_folder(
+            opengold::GoldBoxGame::treasures_of_the_savage_frontier);
+        if (!std::filesystem::exists(darkness / "TITLE.DAX") ||
             !std::filesystem::exists(treasure / "LUCK.DAX"))
         {
             std::cout << "Skipped: Pools of Darkness and Treasures are not here.\n";

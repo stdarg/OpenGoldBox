@@ -18,6 +18,7 @@
 #include "opengold/creature_catalog.h"
 #include "opengold/original_combat.h"
 #include "opengold/wall_art.h"
+#include "installed_games.h"
 #include "test_support.h"
 #include "tour_access.h"
 #include "death_knights_rules.h"
@@ -198,8 +199,7 @@ void later_commands_keep_the_earlier_memory_and_host_protocol()
 
 void installed_records()
 {
-    const auto *root = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    const auto folder = std::filesystem::path(root ? root : "/home/edmond/GoldBox") / "DKK";
+    const auto folder = opengold::test::installed_game_folder(game);
     if (!std::filesystem::exists(folder / "DKK.CFG"))
     {
         std::cout << "Death Knights installed-data checks skipped: " << folder << '\n';
@@ -841,20 +841,20 @@ void actual_champions_winners_keep_their_earned_state()
         std::cout << "Actual Champions-winner import skipped: set OPENGOLD_CHAMPIONS_WINNERS.\n";
         return;
     }
-    const auto *root = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    const auto folder = std::filesystem::path(root ? root : "/home/edmond/GoldBox");
     constexpr auto champions = GoldBoxGame::champions_of_krynn;
+    const auto champions_folder = opengold::test::installed_game_folder(champions);
+    const auto death_knights_folder = opengold::test::installed_game_folder(game);
     const auto source_creation = character_rules(default_aging, champions);
-    const auto source_rules = rules_module(load_original_content(folder / "COK", champions));
-    const auto source_world = load_campaign(folder / "COK", champions);
+    const auto source_rules = rules_module(load_original_content(champions_folder, champions));
+    const auto source_world = load_campaign(champions_folder, champions);
     const auto saved = decode_campaign(read_campaign_file(source), *source_creation, *source_rules,
-                                       campaign_asset_identity(folder / "COK"), &source_world);
+                                       campaign_asset_identity(champions_folder), &source_world);
     check(saved.game == champions,
           "Read the real Champions winning campaign under its original rules");
     std::shared_ptr<const rules::CharacterRules> creation = character_rules(default_aging, game);
-    const auto content = load_original_content(folder / "DKK", game);
+    const auto content = load_original_content(death_knights_folder, game);
     auto party = std::make_shared<CampaignParty>(rules_module(content), creation);
-    const auto convert = champions_items_for_death_knights(folder / "DKK");
+    const auto convert = champions_items_for_death_knights(death_knights_folder);
     std::vector<const PartyMember *> winners;
     for (const auto slot : saved.party.slots)
     {
@@ -913,7 +913,7 @@ void actual_champions_winners_keep_their_earned_state()
           "The real winning party includes a wound, so this check detects an import heal");
     check(party->state().wealth == saved.party.wealth,
           "All seven money denominations survive exactly once, including remainder coins");
-    const auto assets = campaign_asset_identity(folder / "DKK");
+    const auto assets = campaign_asset_identity(death_knights_folder);
     // The ordinary party-screen save before the opening battle. Campaign
     // exploration saves additionally require finishing that real battle.
     const auto bytes = encode_campaign(*party, nullptr, assets, game);
@@ -927,7 +927,7 @@ void actual_champions_winners_keep_their_earned_state()
     for (const bool rest : {false, true})
     {
         party->restore(before_opening);
-        auto opening = load_campaign(folder / "DKK", game);
+        auto opening = load_campaign(death_knights_folder, game);
         opening.campaign_party(party);
         bool battle = false;
         for (unsigned screen = 0; screen < 200; ++screen)
@@ -991,7 +991,7 @@ void actual_champions_winners_keep_their_earned_state()
     for (const unsigned previous_script : {17u, 98u})
     {
         party->restore(before_opening);
-        const auto native = load_campaign(folder / "DKK", game);
+        const auto native = load_campaign(death_knights_folder, game);
         auto resources = std::make_shared<por::PhlanResources>(*native.resources());
         resources->opening_script = previous_script;
         // An empty fixture entry supplies an idle predecessor. The council

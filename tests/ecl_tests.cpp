@@ -1,9 +1,9 @@
 #include "opengold/ecl_machine.h"
 #include "opengold/gold_box_game.h"
+#include "installed_games.h"
 #include "test_support.h"
 #include <chrono>
 #include <algorithm>
-#include <cstdlib>
 #include <fstream>
 #include <iostream>
 
@@ -788,7 +788,9 @@ void catalogs()
             (void)EclCatalog::load(f.path);
         });
     check(held->source() == "ECL1.DAX:7", "Failed reload leaves existing program valid");
-    if (const auto directory = std::getenv("OPENGOLD_GAME_DIR"))
+    if (const auto directory =
+            opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+        !directory.empty())
     {
         const auto c = EclCatalog::load(directory);
         std::cout << "Installed ECL entry tables validated: " << c.all().size() << '\n';

@@ -228,7 +228,7 @@ if(OPENGOLD_BUILD_TESTS)
             -P "${PROJECT_SOURCE_DIR}/tests/run_godot_test.cmake")
         set_tests_properties("opengold_godot_${name}" PROPERTIES FIXTURES_REQUIRED godot_project
             TIMEOUT 40 LABELS godot
-            ENVIRONMENT "OPENGOLD_GAME_DIR=;OPENGOLD_LANG=en;OPENGOLD_SCREENSHOT_DIR=${CMAKE_BINARY_DIR}/screenshots-test/${name}")
+            ENVIRONMENT "OPENGOLD_GAME_DIR=;OPENGOLD_GOLDBOX_DIR=;OPENGOLD_LANG=en;OPENGOLD_SCREENSHOT_DIR=${CMAKE_BINARY_DIR}/screenshots-test/${name}")
     endfunction()
     opengold_godot_test(rest rest_view_tests "Godot rest controls passed" "--rest-check")
     opengold_godot_test(combat_view combat_view_tests "Game combat view checks passed")
@@ -246,7 +246,7 @@ if(OPENGOLD_BUILD_TESTS)
         -P "${PROJECT_SOURCE_DIR}/tests/run_godot_test.cmake")
     set_tests_properties(opengold_godot_spell_effects PROPERTIES
         FIXTURES_REQUIRED "godot_project;component_fixtures" TIMEOUT 120 LABELS godot
-        ENVIRONMENT "OPENGOLD_GAME_DIR=;OPENGOLD_LANG=en")
+        ENVIRONMENT "OPENGOLD_GAME_DIR=;OPENGOLD_GOLDBOX_DIR=;OPENGOLD_LANG=en")
     opengold_godot_test(posture posture_view_tests "Posture controls passed" "--posture-fixtures=${PROJECT_BINARY_DIR}/posture-fixtures")
     set_tests_properties(opengold_godot_posture PROPERTIES FIXTURES_REQUIRED "godot_project;posture_fixtures")
     opengold_godot_test(rogue_attack rogue_attack_view_tests "Rogue attack UI checks passed" "--rogue-fixtures=${PROJECT_BINARY_DIR}/rogue-fixtures")
@@ -356,11 +356,12 @@ if(OPENGOLD_BUILD_TESTS)
     opengold_godot_test(shutdown_close shutdown_tests "Shutdown check passed" --reset-game-path --shutdown-close)
     opengold_godot_test(shutdown_dialog_paused shutdown_tests "Shutdown check passed"
         --reset-game-path --shutdown-dialog --shutdown-paused)
-    # Needs original files; skipped when OPENGOLD_GAME_DIR is not set. The
+    # Needs original files; skipped without Pool of Radiance's files. The
     # saves the checks below load, written once rather than once per check.
     add_test(NAME opengold_expedition_fixtures COMMAND "${CMAKE_COMMAND}"
         "-DEXPEDITION=$<TARGET_FILE:opengold_expedition_tests>"
         "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
+        "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
         -P "${PROJECT_SOURCE_DIR}/tests/expedition_fixtures.cmake")
     # It took 493 s beside the rest of the suite on Windows (#279).
     set_tests_properties(opengold_expedition_fixtures PROPERTIES FIXTURES_SETUP expedition_fixtures
@@ -370,6 +371,7 @@ if(OPENGOLD_BUILD_TESTS)
         "-DEXPEDITION=$<TARGET_FILE:opengold_expedition_tests>"
         "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
         "-DWORK=${CMAKE_BINARY_DIR}/ohlo-save-route"
+        "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
         -P "${PROJECT_SOURCE_DIR}/tests/ohlo_save_route.cmake")
     set_tests_properties(opengold_godot_ohlo_save_route PROPERTIES FIXTURES_REQUIRED "godot_project;expedition_fixtures"
         TIMEOUT 240 LABELS godot SKIP_REGULAR_EXPRESSION "Skipped: ")
@@ -378,6 +380,7 @@ if(OPENGOLD_BUILD_TESTS)
         "-DEXPEDITION=$<TARGET_FILE:opengold_expedition_tests>"
         "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
         "-DWORK=${CMAKE_BINARY_DIR}/area-crossing"
+        "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
         -P "${PROJECT_SOURCE_DIR}/tests/area_crossing.cmake")
     set_tests_properties(opengold_godot_area_crossing PROPERTIES FIXTURES_REQUIRED "godot_project;expedition_fixtures"
         TIMEOUT 240 LABELS godot SKIP_REGULAR_EXPRESSION "Skipped: ")
@@ -385,6 +388,7 @@ if(OPENGOLD_BUILD_TESTS)
         "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
         "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
         "-DWORK=${CMAKE_BINARY_DIR}/shop-disclosure"
+        "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
         -P "${PROJECT_SOURCE_DIR}/tests/shop_disclosure.cmake")
     set_tests_properties(opengold_godot_shop_disclosure PROPERTIES FIXTURES_REQUIRED "godot_project;expedition_fixtures"
         TIMEOUT 240 LABELS godot SKIP_REGULAR_EXPRESSION "Skipped: ")
@@ -393,6 +397,7 @@ if(OPENGOLD_BUILD_TESTS)
         "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
         "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
         "-DWORK=${CMAKE_BINARY_DIR}/town-services"
+        "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
         -P "${PROJECT_SOURCE_DIR}/tests/town_services.cmake")
     set_tests_properties(opengold_godot_town_services PROPERTIES FIXTURES_REQUIRED "godot_project;expedition_fixtures"
         TIMEOUT 400 LABELS godot SKIP_REGULAR_EXPRESSION "Skipped: ")
@@ -402,6 +407,7 @@ if(OPENGOLD_BUILD_TESTS)
         "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
         "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
         "-DWORK=${CMAKE_BINARY_DIR}/slums-events"
+        "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
         -P "${PROJECT_SOURCE_DIR}/tests/slums_events.cmake")
     set_tests_properties(opengold_godot_slums_events PROPERTIES FIXTURES_REQUIRED "godot_project;expedition_fixtures"
         TIMEOUT 1300 LABELS godot SKIP_REGULAR_EXPRESSION "Skipped: ")
@@ -410,6 +416,7 @@ if(OPENGOLD_BUILD_TESTS)
         "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
         "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
         "-DWORK=${CMAKE_BINARY_DIR}/area-events"
+        "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
         -P "${PROJECT_SOURCE_DIR}/tests/area_events.cmake")
     set_tests_properties(opengold_godot_area_events PROPERTIES FIXTURES_REQUIRED "godot_project;expedition_fixtures"
         TIMEOUT 1300 LABELS godot SKIP_REGULAR_EXPRESSION "Skipped: ")
@@ -417,6 +424,7 @@ if(OPENGOLD_BUILD_TESTS)
         "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
         "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
         "-DWORK=${CMAKE_BINARY_DIR}/training-hall"
+        "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
         -P "${PROJECT_SOURCE_DIR}/tests/training_hall_view.cmake")
     set_tests_properties(opengold_godot_training_hall PROPERTIES FIXTURES_REQUIRED "godot_project;expedition_fixtures"
         TIMEOUT 240 LABELS godot SKIP_REGULAR_EXPRESSION "Skipped: ")
@@ -424,6 +432,7 @@ if(OPENGOLD_BUILD_TESTS)
         "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
         "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
         "-DWORK=${CMAKE_BINARY_DIR}/slums-encounter"
+        "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
         -P "${PROJECT_SOURCE_DIR}/tests/slums_encounter.cmake")
     set_tests_properties(opengold_godot_slums_encounter PROPERTIES FIXTURES_REQUIRED "godot_project;expedition_fixtures"
         TIMEOUT 450 LABELS godot SKIP_REGULAR_EXPRESSION "Skipped: "
@@ -433,6 +442,7 @@ if(OPENGOLD_BUILD_TESTS)
         "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
         "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
         "-DWORK=${CMAKE_BINARY_DIR}/weapon-sets"
+        "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
         -P "${PROJECT_SOURCE_DIR}/tests/weapon_sets.cmake")
     set_tests_properties(opengold_godot_weapon_sets PROPERTIES FIXTURES_REQUIRED "godot_project;expedition_fixtures"
         TIMEOUT 300 LABELS godot SKIP_REGULAR_EXPRESSION "Skipped: ")
@@ -441,17 +451,19 @@ if(OPENGOLD_BUILD_TESTS)
         "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
         "-DPLAYTEST_FIXTURES=${PROJECT_BINARY_DIR}/playtest-fixtures"
         "-DWORK=${CMAKE_BINARY_DIR}/slums-ui-audit"
+        "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
         -P "${PROJECT_SOURCE_DIR}/tests/ui_audit.cmake")
     # About three and a half minutes alone on a debug build, more beside other checks.
     set_tests_properties(opengold_godot_slums_ui_audit PROPERTIES
         FIXTURES_REQUIRED "godot_project;playtest_fixtures;expedition_fixtures"
         TIMEOUT 450 LABELS godot SKIP_REGULAR_EXPRESSION "Skipped: ")
-    # Godot checks with original files; skipped without OPENGOLD_GAME_DIR. Each
+    # Godot checks with original files; skipped without Pool of Radiance's files. Each
     # keeps its Godot user data under WORK (see original_view_check.cmake).
     function(opengold_original_check name expected)
         add_test(NAME "opengold_godot_${name}" COMMAND "${CMAKE_COMMAND}"
             "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}" "-DEXPECTED=${expected}"
             "-DWORK=${CMAKE_BINARY_DIR}/original-checks/${name}" ${ARGN}
+            "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
             -P "${PROJECT_SOURCE_DIR}/tests/original_view_check.cmake")
         set_tests_properties("opengold_godot_${name}" PROPERTIES
             FIXTURES_REQUIRED godot_project TIMEOUT 320 LABELS godot
@@ -621,12 +633,13 @@ if(OPENGOLD_BUILD_TESTS)
             opengold_godot_combat_unconscious_scene PROPERTIES RESOURCE_LOCK godot_window)
     endif()
     # Startup and setup checks, each with its own settings.cfg. Skipped without
-    # OPENGOLD_GAME_DIR.
+    # Pool of Radiance's files.
     function(opengold_settings_check name script expected)
         add_test(NAME "opengold_godot_${name}" COMMAND "${CMAKE_COMMAND}"
             "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
             "-DSCRIPT=${PROJECT_SOURCE_DIR}/tests/${script}.gd" "-DEXPECTED=${expected}"
             "-DWORK=${CMAKE_BINARY_DIR}/settings-checks/${name}" ${ARGN}
+            "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
             -P "${PROJECT_SOURCE_DIR}/tests/settings_check.cmake")
         set_tests_properties("opengold_godot_${name}" PROPERTIES
             FIXTURES_REQUIRED godot_project TIMEOUT 320 LABELS godot
@@ -720,6 +733,7 @@ if(OPENGOLD_BUILD_TESTS)
             "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
             "-DFIXTURE_WRITER=$<TARGET_FILE:opengold_original_creation_tests>"
             "-DWORK=${CMAKE_BINARY_DIR}/settings-checks/curse_from_pool_${case}" ${case_arguments}
+            "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
             -P "${PROJECT_SOURCE_DIR}/tests/curse_from_pool.cmake")
         set_tests_properties("opengold_godot_curse_from_pool_${case}" PROPERTIES
             FIXTURES_REQUIRED godot_project TIMEOUT 320 LABELS godot
@@ -733,6 +747,7 @@ if(OPENGOLD_BUILD_TESTS)
         "-DFIXTURE_WRITER=$<TARGET_FILE:opengold_treasure_tests>"
         "-DWORK=${CMAKE_BINARY_DIR}/settings-checks/treasure_from_gateway"
         "-DEXPECTED=Treasures from Gateway passed"
+        "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
         -P "${PROJECT_SOURCE_DIR}/tests/treasure_from_gateway.cmake")
     set_tests_properties(opengold_godot_treasure_from_gateway PROPERTIES
         FIXTURES_REQUIRED godot_project TIMEOUT 320 LABELS godot
@@ -745,6 +760,7 @@ if(OPENGOLD_BUILD_TESTS)
         "-DFIXTURE_WRITER=$<TARGET_FILE:opengold_darkness_tests>"
         "-DWORK=${CMAKE_BINARY_DIR}/settings-checks/darkness_from_secret"
         "-DEXPECTED=Pools of Darkness from Secret passed"
+        "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
         -P "${PROJECT_SOURCE_DIR}/tests/darkness_from_secret.cmake")
     set_tests_properties(opengold_godot_darkness_from_secret PROPERTIES
         FIXTURES_REQUIRED godot_project TIMEOUT 320 LABELS godot
@@ -756,6 +772,7 @@ if(OPENGOLD_BUILD_TESTS)
         "-DFIXTURE_WRITER=$<TARGET_FILE:opengold_treasure_tests>"
         "-DWORK=${CMAKE_BINARY_DIR}/settings-checks/treasure_camp"
         "-DEXPECTED=Treasures camp passed"
+        "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
         -P "${PROJECT_SOURCE_DIR}/tests/treasure_camp.cmake")
     set_tests_properties(opengold_godot_treasure_camp PROPERTIES
         FIXTURES_REQUIRED godot_project TIMEOUT 320 LABELS godot
@@ -877,6 +894,7 @@ endif()
 if(WIN32 AND OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_windows_package_smoke COMMAND "${CMAKE_COMMAND}"
         "-DPACKAGE=${CMAKE_BINARY_DIR}/package/OpenGoldBox" "-DWORK=${CMAKE_BINARY_DIR}/package-smoke"
+        "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
         -P "${PROJECT_SOURCE_DIR}/tests/windows_package_smoke.cmake")
     set_tests_properties(opengold_windows_package_smoke PROPERTIES
         TIMEOUT 900 LABELS godot SKIP_REGULAR_EXPRESSION "Skipped: ")
@@ -884,6 +902,7 @@ endif()
 if(APPLE AND OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_macos_package_smoke COMMAND "${CMAKE_COMMAND}"
         "-DAPP_BUNDLE=${export_path}" "-DWORK=${CMAKE_BINARY_DIR}/package-smoke"
+        "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
         -P "${PROJECT_SOURCE_DIR}/tests/macos_package_smoke.cmake")
     set_tests_properties(opengold_macos_package_smoke PROPERTIES
         TIMEOUT 900 LABELS godot SKIP_REGULAR_EXPRESSION "Skipped: ")
@@ -891,6 +910,7 @@ endif()
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_linux_package_smoke COMMAND "${CMAKE_COMMAND}"
         "-DPACKAGE=${CMAKE_BINARY_DIR}/package/OpenGoldBox" "-DWORK=${CMAKE_BINARY_DIR}/package-smoke"
+        "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
         -P "${PROJECT_SOURCE_DIR}/tests/linux_package_smoke.cmake")
     set_tests_properties(opengold_linux_package_smoke PROPERTIES
         TIMEOUT 900 LABELS godot SKIP_REGULAR_EXPRESSION "Skipped: ")

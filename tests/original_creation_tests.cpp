@@ -9,6 +9,7 @@
 #include "opengold/original.h"
 #include "opengold/original_content.h"
 #include "opengold/original_spells.h"
+#include "installed_games.h"
 #include "test_support.h"
 #include <cstdlib>
 #include <fstream>
@@ -233,8 +234,9 @@ std::uint64_t carried(CampaignParty &party, MemberId id, const por::Equipment &i
 // them: their dice, armor and the class that may use them.
 void characters_ready_original_gear()
 {
-    const char *game = std::getenv("OPENGOLD_GAME_DIR");
-    if (!game)
+    const auto game =
+        opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+    if (game.empty())
     {
         std::cout << "Pool of Radiance's files are not here; its items are not checked.\n";
         return;
@@ -312,8 +314,9 @@ void characters_ready_original_gear()
 // race and alignment the class allows, rolled the same each time.
 void the_pool_offers_original_characters()
 {
-    const char *game = std::getenv("OPENGOLD_GAME_DIR");
-    if (!game)
+    const auto game =
+        opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+    if (game.empty())
     {
         return;
     }
@@ -341,8 +344,9 @@ void the_pool_offers_original_characters()
 // keeps what is left.
 void arrows_spent_leave_the_inventory()
 {
-    const char *game = std::getenv("OPENGOLD_GAME_DIR");
-    if (!game)
+    const auto game =
+        opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+    if (game.empty())
     {
         return;
     }
@@ -1151,8 +1155,9 @@ void darkness_spells_in_camp()
 // platinum; its money stays behind.
 void a_pool_character_comes_to_curse()
 {
-    const char *game = std::getenv("OPENGOLD_GAME_DIR");
-    if (!game)
+    const auto game =
+        opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+    if (game.empty())
     {
         std::cout
             << "Pool of Radiance's files are not here; bringing a character across is not checked.\n";
@@ -1468,10 +1473,8 @@ void darkness_characters_start_equipped()
     check(original::starting_items(cleric_thief, darkness).front().definition == 211,
           "A cleric/thief takes a thief's kit, the family named first");
 
-    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    const auto folder =
-        games ? std::filesystem::path(games) / game_folder(darkness) : std::filesystem::path();
-    if (!games || !std::filesystem::exists(folder / "ITEM0.DAX"))
+    const auto folder = opengold::test::installed_game_folder(darkness);
+    if (!std::filesystem::exists(folder / "ITEM0.DAX"))
     {
         std::cout << "Pools of Darkness's files are not here; its starting equipment is not "
                      "checked.\n";
@@ -1553,10 +1556,8 @@ void treasures_characters_start_equipped()
                   {64, std::nullopt, false}, {11, std::nullopt, false}, {210, std::nullopt, false}},
           "The rest's kit: ITEM0's 64, 11 and 210");
 
-    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    const auto folder =
-        games ? std::filesystem::path(games) / game_folder(treasures) : std::filesystem::path();
-    if (!games || !std::filesystem::exists(folder / "ITEM0.DAX"))
+    const auto folder = opengold::test::installed_game_folder(treasures);
+    if (!std::filesystem::exists(folder / "ITEM0.DAX"))
     {
         std::cout << "Treasures' files are not here; its starting equipment is not checked.\n";
         return;
@@ -2465,8 +2466,9 @@ void a_dragon_breath_scroll_protects_before_combat()
 // class levels and Hit Points.
 void an_npc_joins_as_its_record()
 {
-    const char *game = std::getenv("OPENGOLD_GAME_DIR");
-    if (!game)
+    const auto game =
+        opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+    if (game.empty())
     {
         return;
     }

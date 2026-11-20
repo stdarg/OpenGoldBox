@@ -1,6 +1,6 @@
 // Treasures of the Savage Frontier's campaign (docs/games/treasure.md): its
-// opening plays on the real files when OPENGOLD_GOLDBOX_DIR names the folder
-// holding TREASURE.
+// opening plays on the real files when Treasures' folder is found
+// (installed_games.h).
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_save.h"
 #include "opengold/campaign_session.h"
@@ -15,6 +15,7 @@
 #include "opengold/por_sound.h"
 #include "opengold/treasures_import.h"
 #include "original_creation_support.h"
+#include "installed_games.h"
 #include "test_support.h"
 #include "tour_access.h"
 
@@ -38,10 +39,8 @@ constexpr auto treasures_game = GoldBoxGame::treasures_of_the_savage_frontier;
 
 std::filesystem::path treasures_folder()
 {
-    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    const auto folder = games ? std::filesystem::path(games) / "TREASURE" : std::filesystem::path();
-    return games && opengold::identify_game(folder) == treasures_game ? folder
-                                                                      : std::filesystem::path();
+    const auto folder = opengold::test::installed_game_folder(treasures_game);
+    return !folder.empty() ? folder : std::filesystem::path();
 }
 
 // A party made under Treasures' original rules: a fighter, a paladin, a
@@ -466,10 +465,9 @@ void daggerfords_freed_temple_heals_without_gold()
 void a_gateway_character_comes_across()
 {
     const auto treasures = treasures_folder();
-    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    const auto gateway = games ? std::filesystem::path(games) / "GATEWAY" : std::filesystem::path();
     constexpr auto gateway_game = GoldBoxGame::gateway_to_the_savage_frontier;
-    if (treasures.empty() || opengold::identify_game(gateway) != gateway_game)
+    const auto gateway = opengold::test::installed_game_folder(gateway_game);
+    if (treasures.empty() || gateway.empty())
     {
         std::cout << "Gateway's or Treasures' files are not here; no one comes across.\n";
         return;

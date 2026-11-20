@@ -1,8 +1,8 @@
 // Buck Rogers: Matrix Cubed, plan steps B1 and B2 (docs/BUCK-ROGERS.md): its
 // music files through the Audio Interface Library and the rules where its
 // characters differ from Countdown's, first on made-up bytes, then the
-// game's own files when OPENGOLD_GOLDBOX_DIR names the folder holding them
-// (docs/games/matrix-cubed.md). Countdown to Doomsday's tests cover the
+// game's own files when its folder is found (installed_games.h,
+// docs/games/matrix-cubed.md). Countdown to Doomsday's tests cover the
 // script commands and records both games share; the whole census of the real
 // files also runs in tests/game_census.cmake.
 #include "opengold/ail_files.h"
@@ -14,10 +14,10 @@
 #include "opengold/pool_radiance.h"
 #include "opengold/por_sound.h"
 #include "opengold/ua_media.h"
+#include "installed_games.h"
 #include "test_support.h"
 
 #include <algorithm>
-#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -290,10 +290,8 @@ void the_hail_checks_the_skills_it_names()
 
 std::optional<std::filesystem::path> files_of(GoldBoxGame game)
 {
-    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    const auto folder = games ? std::filesystem::path(games) / opengold::game_folder(game)
-                              : std::filesystem::path();
-    if (!games || !std::filesystem::exists(folder / "SHIPS.DAX"))
+    const auto folder = opengold::test::installed_game_folder(game);
+    if (!std::filesystem::exists(folder / "SHIPS.DAX"))
     {
         std::cout << opengold::game_title(game) << "'s files are not here; they are not read.\n";
         return std::nullopt;

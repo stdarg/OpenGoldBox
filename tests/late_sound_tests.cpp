@@ -1,14 +1,15 @@
 // The later games' music and digitized sounds (docs/games/later-sound.md):
 // the music driver's banks of instruments and songs, the driver program beside
 // them, and Pools of Darkness' and Treasures of the Savage Frontier's sound
-// effects. The real files are read when OPENGOLD_GOLDBOX_DIR names the folder
-// holding SECRET, GATEWAY, DARKNESS and TREASURE.
+// effects. The real files are read of each of those games whose folder is
+// found (installed_games.h).
 #include <string_view>
 #include "opengold/formats.h"
 #include "opengold/game_census.h"
 #include "opengold/gateway_formats.h"
 #include "opengold/music_bank.h"
 #include "opengold/sound_bank.h"
+#include "installed_games.h"
 #include "test_support.h"
 
 #include <cmath>
@@ -307,26 +308,25 @@ void darkness_music_reads(const std::filesystem::path &folder)
 
 void real_files_decode()
 {
-    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    if (!games)
+    using opengold::test::installed_game_folder;
+    const auto secret_folder = installed_game_folder(GoldBoxGame::secret_of_the_silver_blades);
+    const auto gateway_folder = installed_game_folder(GoldBoxGame::gateway_to_the_savage_frontier);
+    const auto darkness_folder = installed_game_folder(GoldBoxGame::pools_of_darkness);
+    const auto treasure_folder =
+        installed_game_folder(GoldBoxGame::treasures_of_the_savage_frontier);
+    if (!darkness_folder.empty())
     {
-        std::cout << "OPENGOLD_GOLDBOX_DIR is not set; the real files are not checked.\n";
-        return;
+        darkness_music_reads(darkness_folder);
     }
-    const std::filesystem::path root(games);
-    if (opengold::identify_game(root / "DARKNESS") == darkness)
+    if (!treasure_folder.empty())
     {
-        darkness_music_reads(root / "DARKNESS");
-    }
-    if (opengold::identify_game(root / "TREASURE") == GoldBoxGame::treasures_of_the_savage_frontier)
-    {
-        const auto music = archive(root / "TREASURE" / "MUSIC.DAX");
+        const auto music = archive(treasure_folder / "MUSIC.DAX");
         const auto bank = opengold::decode_music_bank(
             record(music, 1), GoldBoxGame::treasures_of_the_savage_frontier);
         check(bank && bank->songs.at(0).tick_divisor == 182 &&
                   bank->songs[0].tracks.at(3).length_ticks == 3544,
               "Treasures' song: 182 units a tick, its tracks 3544 ticks long");
-        const auto sounds = archive(root / "TREASURE" / "ZOUNDS.DAX");
+        const auto sounds = archive(treasure_folder / "ZOUNDS.DAX");
         const auto click = opengold::gateway::decode_later_sound_sample(9, record(sounds, 9));
         check(click && click->samples.size() == 132, "Treasures' effect 9 is 132 samples");
         // Most effects are Amiga sound files with every byte's top bit flipped;
@@ -337,7 +337,7 @@ void real_files_decode()
         // The game's sound n plays record n - 1: its fights' blows (7 a hit,
         // 9 a miss), Fireball (11) and Lightning Bolt (8).
         const auto effects = opengold::por::SoundBank::load(
-            root / "TREASURE", GoldBoxGame::treasures_of_the_savage_frontier);
+            treasure_folder, GoldBoxGame::treasures_of_the_savage_frontier);
         bool all_sound = effects.clips().size() == 11;
         for (unsigned id = 2; id <= 12; ++id)
         {
@@ -354,9 +354,9 @@ void real_files_decode()
                        static_cast<double>(click->samples.size()) / click->rate) < 0.005,
               "Treasures' footstep is sound 10, record 9's click");
     }
-    if (opengold::identify_game(root / "SECRET") == GoldBoxGame::secret_of_the_silver_blades)
+    if (!secret_folder.empty())
     {
-        const auto sound = archive(root / "SECRET" / "SOUND.DAX");
+        const auto sound = archive(secret_folder / "SOUND.DAX");
         check(opengold::is_music_driver(record(sound, 1)), "Secret's record 1 is the driver");
         const auto bank =
             opengold::decode_music_bank(record(sound, 2), GoldBoxGame::secret_of_the_silver_blades);
@@ -367,13 +367,13 @@ void real_files_decode()
         {
             check(track.length_ticks == 6150, "Each of its tracks lasts 6150 ticks");
         }
-        check(opengold::take_census(root / "SECRET", GoldBoxGame::secret_of_the_silver_blades)
+        check(opengold::take_census(secret_folder, GoldBoxGame::secret_of_the_silver_blades)
                   .complete(),
               "Secret's census is complete");
     }
-    if (opengold::identify_game(root / "GATEWAY") == GoldBoxGame::gateway_to_the_savage_frontier)
+    if (!gateway_folder.empty())
     {
-        const auto music = archive(root / "GATEWAY" / "MUSIC.DAX");
+        const auto music = archive(gateway_folder / "MUSIC.DAX");
         const auto bank = opengold::decode_music_bank(record(music, 1),
                                                       GoldBoxGame::gateway_to_the_savage_frontier);
         check(bank && bank->songs.at(0).tick_divisor == 137 &&

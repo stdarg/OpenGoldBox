@@ -1,12 +1,13 @@
-# One Godot check with original files; skipped when
-# OPENGOLD_GAME_DIR is not set. Godot's user data goes to WORK, so checks do
+# One Godot check with original files; skipped when Pool of Radiance's are
+# not found (find_games.cmake). Godot's user data goes to WORK, so checks do
 # not share saves with each other or with the player's own game.
 #
 # CHECK_FLAG runs a check built into SCENE (the character-creation scene by
 # default); otherwise SCRIPT names a tests/*.gd check. KEEP_WORK reuses the user data another check
 # left in WORK, for a check that reads back what that one saved.
-if("$ENV{OPENGOLD_GAME_DIR}" STREQUAL "")
-    message("Skipped: OPENGOLD_GAME_DIR is not set")
+include("${CMAKE_CURRENT_LIST_DIR}/find_games.cmake")
+if(NOT DEFINED game_folder_POOLRAD)
+    message("Skipped: Pool of Radiance's files are not here")
     return()
 endif()
 if(NOT KEEP_WORK)

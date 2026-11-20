@@ -1,23 +1,20 @@
 # The reading census (docs/GAMES.md, phase 1): every file of each game whose
-# census is finished must decode. OPENGOLD_GOLDBOX_DIR names the folder that
-# holds the games' folders (POOLRAD, CURSE, ...); OPENGOLD_GAME_DIR's Pool of
-# Radiance is checked too. Skipped when neither is set.
+# census is finished must decode. Each game's folder is the one the game finds
+# by its files (find_games.cmake, with CENSUS as the finder). Skipped when
+# none is found.
 # A game joins this list when its census decodes every file.
 set(complete_games POOLRAD CURSE SECRET GATEWAY DARKNESS TREASURE UA
     buck-rogers-countdown-to-doomsday buck-rogers-matrix-cubed)
+set(GAME_FINDER "${CENSUS}")
+include("${CMAKE_CURRENT_LIST_DIR}/find_games.cmake")
 set(folders)
-if(NOT "$ENV{OPENGOLD_GOLDBOX_DIR}" STREQUAL "")
-    foreach(game IN LISTS complete_games)
-        if(EXISTS "$ENV{OPENGOLD_GOLDBOX_DIR}/${game}")
-            list(APPEND folders "$ENV{OPENGOLD_GOLDBOX_DIR}/${game}")
-        endif()
-    endforeach()
-endif()
-if(NOT "$ENV{OPENGOLD_GAME_DIR}" STREQUAL "")
-    list(APPEND folders "$ENV{OPENGOLD_GAME_DIR}")
-endif()
+foreach(game IN LISTS complete_games)
+    if(DEFINED game_folder_${game})
+        list(APPEND folders "${game_folder_${game}}")
+    endif()
+endforeach()
 if(NOT folders)
-    message("Skipped: neither OPENGOLD_GOLDBOX_DIR nor OPENGOLD_GAME_DIR is set")
+    message("Skipped: no game's files are here")
     return()
 endif()
 execute_process(COMMAND "${CENSUS}" --require-complete ${folders} RESULT_VARIABLE result

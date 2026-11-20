@@ -3,8 +3,9 @@
 # fresh Godot game loads it, walks into the Slums and back and saves, and the
 # native suite checks the save the game wrote.
 # Godot's user data goes to WORK so a player's saves and settings are untouched.
-if("$ENV{OPENGOLD_GAME_DIR}" STREQUAL "")
-    message("Skipped: OPENGOLD_GAME_DIR is not set")
+include("${CMAKE_CURRENT_LIST_DIR}/find_games.cmake")
+if(NOT DEFINED game_folder_POOLRAD)
+    message("Skipped: Pool of Radiance's files are not here")
     return()
 endif()
 file(REMOVE_RECURSE "${WORK}")

@@ -1,12 +1,13 @@
 # Curse's Add Character from Pool of Radiance on the party screen
-# (curse_from_pool_tests.gd). Skipped unless OPENGOLD_GAME_DIR holds Pool of
-# Radiance and OPENGOLD_GOLDBOX_DIR holds the CURSE folder.
+# (curse_from_pool_tests.gd). Skipped unless Pool of Radiance's and Curse's
+# files are found (find_games.cmake).
 #
 # FIXTURE_WRITER (opengold_original_creation_tests) writes the Pool of
 # Radiance save the check brings characters from; the check runs with ARGS and
 # its own settings.cfg and user data under WORK.
-if("$ENV{OPENGOLD_GAME_DIR}" STREQUAL "" OR NOT EXISTS "$ENV{OPENGOLD_GOLDBOX_DIR}/CURSE")
-    message("Skipped: OPENGOLD_GAME_DIR or OPENGOLD_GOLDBOX_DIR's CURSE folder is not set")
+include("${CMAKE_CURRENT_LIST_DIR}/find_games.cmake")
+if(NOT DEFINED game_folder_POOLRAD OR NOT DEFINED game_folder_CURSE)
+    message("Skipped: Pool of Radiance's or Curse's files are not here")
     return()
 endif()
 file(REMOVE_RECURSE "${WORK}")
@@ -18,11 +19,12 @@ set(settings "${WORK}/home/settings.cfg")
 set(ENV{OPENGOLD_SETTINGS_FILE} "${settings}")
 set(ENV{OPENGOLD_LANG} en)
 file(TO_CMAKE_PATH "$ENV{OPENGOLD_GAME_DIR}" game_folder)
-file(WRITE "${settings}" "[game]\npath=\"${game_folder}\"\n\n[interface]\nlanguage=\"en\"\n")
+file(WRITE "${settings}" "[game]\npath=\"${game_folder}\"\n\n${found_games_settings}\n[interface]\nlanguage=\"en\"\n")
 
 set(fixture "${WORK}/pool-veterans.ogs")
 set(ENV{OPENGOLD_POOL_SAVE_FIXTURE} "${fixture}")
-execute_process(COMMAND "${FIXTURE_WRITER}" RESULT_VARIABLE result)
+execute_process(COMMAND "${CMAKE_COMMAND}" -E env "HOME=${found_games_home}" "${FIXTURE_WRITER}"
+    RESULT_VARIABLE result)
 unset(ENV{OPENGOLD_POOL_SAVE_FIXTURE})
 if(NOT result STREQUAL "0" OR NOT EXISTS "${fixture}")
     message(FATAL_ERROR "The Pool of Radiance save was not written (${result})")

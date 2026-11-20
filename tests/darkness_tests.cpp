@@ -1,6 +1,6 @@
 // Pools of Darkness's campaign (docs/games/darkness.md): its script commands,
-// and its opening played on the real files when OPENGOLD_GOLDBOX_DIR names the
-// folder holding DARKNESS.
+// and its opening played on the real files when Pools of Darkness' folder is
+// found (installed_games.h).
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_save.h"
 #include "opengold/campaign_session.h"
@@ -17,6 +17,7 @@
 #include "opengold/por_sound.h"
 #include "opengold/map_catalog.h"
 #include "original_creation_support.h"
+#include "installed_games.h"
 #include "test_support.h"
 #include "tour_access.h"
 
@@ -46,10 +47,7 @@ constexpr auto darkness_game = GoldBoxGame::pools_of_darkness;
 
 std::filesystem::path darkness_folder()
 {
-    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    const auto folder = games ? std::filesystem::path(games) / "DARKNESS" : std::filesystem::path();
-    return games && opengold::identify_game(folder) == darkness_game ? folder
-                                                                     : std::filesystem::path();
+    return opengold::test::installed_game_folder(darkness_game);
 }
 
 // A script of Pools of Darkness whose five entries run body, which is
@@ -438,10 +436,9 @@ void every_map_has_its_script()
 void a_secret_character_comes_across()
 {
     const auto darkness = darkness_folder();
-    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    const auto secret = games ? std::filesystem::path(games) / "SECRET" : std::filesystem::path();
     constexpr auto secret_game = GoldBoxGame::secret_of_the_silver_blades;
-    if (darkness.empty() || opengold::identify_game(secret) != secret_game)
+    const auto secret = opengold::test::installed_game_folder(secret_game);
+    if (darkness.empty() || secret.empty())
     {
         std::cout << "Secret's or Pools of Darkness's files are not here; no one comes across.\n";
         return;

@@ -213,8 +213,9 @@ The code: `ua_design` (the files), `ua_view` (the 3D view), `ua_session`
 ### From the startup menu
 
 *Unlimited Adventures* is the fifth game on the startup menu's Pick game.
-Its folder is the kit's (`[games] UA`, or `OPENGOLD_GOLDBOX_DIR/UA`, checked
-for `CKIT.EXE` and `DISK1` to `DISK3`), asked once as the other games'
+Its folder is the kit's (`[games] UA`, or found by its files as TECH.md's
+"Finding the games' folders" says; checked for `CKIT.EXE` and `DISK1` to
+`DISK3`), asked once as the other games'
 folders are. Then the design is asked each time the game is chosen, the last
 one offered (`[games] UA_DESIGN`), since a player may have several: a folder
 whose name ends in `.DSN` ([CONFIGURATION.md](../CONFIGURATION.md)). The kit

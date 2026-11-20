@@ -647,11 +647,53 @@ See [LOCALIZATION.md](LOCALIZATION.md) for catalog maintenance, artwork and cove
 save identity checks. `settings.cfg` in the user data folder, beside the saves, stores the
 path and language; missing/invalid values prompt before splashes, language first.
 The development editor uses an ignored project-local config. `--reset-game-path`
-and `--reset-lang` force selection without deleting prior values. Environment
-overrides are `OPENGOLD_GAME_DIR` and `OPENGOLD_LANG`; explicit selections and
-reset flags take precedence for the current run. MD5 checks against a bundled
+and `--reset-lang` force selection without deleting prior values. `OPENGOLD_LANG`
+overrides the language; explicit selections and reset flags take precedence for
+the current run. A game's folder, when none is saved, is found by its files
+(below). MD5 checks against a bundled
 PC 1.3 manifest produce a Quit/Continue warning on mismatches. Missing files
 must be corrected. See [CONFIGURATION.md](CONFIGURATION.md) for full semantics.
+
+### Finding the games' folders
+
+A game is known by its files, never by its folder's name or place:
+`opengold::identify_game` (`src/OpenGold.Core/src/game_census.cpp`) tells each
+game by a file only it has. `opengold::find_game_folder`
+(`src/OpenGold.Core/include/opengold/game_finder.h`) looks for a game's folder in
+this order; the game, the tools and the tests all use it (user's decision,
+2026-11-19):
+
+1. The folder the player chose in the game, saved in `settings.cfg` (`[game]
+   path` for Pool of Radiance, `[games] <NAME>` for the others, NAME as
+   `game_folder` gives it), taken as it is.
+2. The folders `OPENGOLD_GAME_DIR` and `OPENGOLD_GOLDBOX_DIR` name, in that
+   order: each folder itself, then its children and grandchildren, whichever
+   holds the game's files.
+3. An upward search from the game's own folder: its parent, then the parent's
+   parent and so on, up to and including the home folder (`HOME`;
+   `USERPROFILE` on Windows). At each it looks at the children and
+   grandchildren, so `~/POOLRAD` and `~/GoldBox/CURSE` are both found. A nearer
+   folder wins; among folders as near, the first in sorted path order. When the
+   game's own folder is not under home (`/Applications`), only home is
+   searched.
+
+The game's own folder is the source checkout (the nearest folder holding
+`.git`) in a developer's or a check's run, else the folder holding the program
+(on macOS, the folder holding `OpenGoldBox.app`). The search never lists a
+hidden folder or home's `Desktop`, `Documents`, `Downloads` or `Library`
+(iCloud's folders are under `Library`): macOS asks the player before a program
+reads them. It passes over folders it cannot read and links back up the tree.
+It only lists folders, two levels at each place, and the game looks once per
+run. What it finds is used, never saved; only a folder the player picks in the
+folder dialog is.
+
+Native checks get a game's folder from `tests/installed_games.h`. A Godot
+check's CMake script includes `tests/find_games.cmake` before it gives its game
+a home folder of its own: it runs `opengold_census --find`, passes Pool of
+Radiance's folder on as `OPENGOLD_GAME_DIR` and writes the other games' into
+the check's `settings.cfg`. GDScript checks ask the game,
+`StartupView.game_folder("CURSE")`. `opengold_census --find` prints what the game
+would find, one `NAME<TAB>FOLDER` line per game.
 
 ### Screen structure
 

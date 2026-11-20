@@ -18,6 +18,7 @@
 #include "opengold/original_content.h"
 #include "original_creation_support.h"
 #include "support/synthetic_dax.h"
+#include "installed_games.h"
 #include "test_support.h"
 #include "tour_access.h"
 
@@ -121,13 +122,7 @@ void repeated_archive_ids_keep_their_payloads_and_first_lookup()
 
 void actual_champions_records_decode()
 {
-    const char *root = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    if (!root)
-    {
-        std::cout << "Champions' files are not here.\n";
-        return;
-    }
-    const auto folder = std::filesystem::path(root) / "COK";
+    const auto folder = opengold::test::installed_game_folder(game);
     if (!std::filesystem::exists(folder / "KRYNN.CFG"))
     {
         std::cout << "Champions' files are not here.\n";
@@ -510,12 +505,7 @@ void actual_champions_records_decode()
 void the_gold_dragons_camp_waits_for_the_players_departure()
 {
     using namespace opengold;
-    const char *root = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    if (!root)
-    {
-        return;
-    }
-    const auto folder = std::filesystem::path(root) / "COK";
+    const auto folder = opengold::test::installed_game_folder(game);
     if (!std::filesystem::exists(folder / "KRYNN.CFG"))
     {
         return;

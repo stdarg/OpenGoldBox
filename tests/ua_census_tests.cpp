@@ -1,14 +1,14 @@
 // Unlimited Adventures' files as the census reads them (docs/games/ua.md):
 // resource libraries, glyphs in the VGA's four planes, the kit's records and
 // the common formats of its art, sounds and music. The real files are read
-// when OPENGOLD_GOLDBOX_DIR names the folder holding UA.
+// when the kit's folder is found (installed_games.h).
 #include "opengold/game_census.h"
 #include "opengold/pool_radiance.h"
 #include "opengold/ua_formats.h"
 #include "opengold/ua_media.h"
+#include "installed_games.h"
 #include "test_support.h"
 
-#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -320,12 +320,11 @@ ua::Library open(const std::filesystem::path &path)
     return std::move(*library);
 }
 
-// The developer's copy (OPENGOLD_GOLDBOX_DIR, docs/GAMES.md).
+// The developer's copy (installed_games.h).
 void the_real_files_decode()
 {
-    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    const auto folder = games ? std::filesystem::path(games) / "UA" : std::filesystem::path();
-    if (!games || opengold::identify_game(folder) != GoldBoxGame::unlimited_adventures)
+    const auto folder = opengold::test::installed_game_folder(GoldBoxGame::unlimited_adventures);
+    if (folder.empty())
     {
         std::cout << "Unlimited Adventures' files are not here; they are not checked.\n";
         return;

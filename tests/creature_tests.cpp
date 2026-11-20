@@ -2,10 +2,10 @@
 #include "opengold/creature_factory.h"
 #include "opengold/map_catalog.h"
 #include "opengold/formats.h"
+#include "installed_games.h"
 
 #include <algorithm>
 #include <chrono>
-#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <limits>
@@ -728,10 +728,11 @@ void maps()
 
 void installed()
 {
-    const char *directory = std::getenv("OPENGOLD_GAME_DIR");
-    if (!directory)
+    const auto directory =
+        opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+    if (directory.empty())
     {
-        std::cout << "Installed-game checks skipped (set OPENGOLD_GAME_DIR).\n";
+        std::cout << "Installed-game checks skipped (Pool of Radiance's files are not here).\n";
         return;
     }
     const auto c = CreatureCatalog::load(directory);

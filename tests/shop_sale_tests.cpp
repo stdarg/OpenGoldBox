@@ -1,17 +1,17 @@
 // What New Phlan's shops pay for the original's items (SELL-1): half the
 // town's price, bargained by Charisma, 25% less at a shop that sells nothing
 // of the item's base type, and half the unenchanted price for an item not yet
-// identified. Needs the installed game (OPENGOLD_GAME_DIR); without it the
+// identified. Needs the installed game (installed_games.h); without it the
 // test passes.
 #include "opengold/random_treasure.h"
 #include "opengold/rolf_tour.h"
 #include "opengold/shop_data.h"
 #include "opengold/shop_sale.h"
 #include "repository_data.h"
+#include "installed_games.h"
 #include "test_support.h"
 #include "tour_access.h"
 #include <algorithm>
-#include <cstdlib>
 #include <filesystem>
 #include <iostream>
 #include <random>
@@ -131,10 +131,11 @@ void unidentified(const RolfTourSession &town)
 
 int main()
 {
-    const char *directory = std::getenv("OPENGOLD_GAME_DIR");
-    if (!directory || !std::filesystem::exists(directory))
+    const auto directory =
+        opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+    if (directory.empty() || !std::filesystem::exists(directory))
     {
-        std::cout << "Shop sale checks skipped: OPENGOLD_GAME_DIR is not set\n";
+        std::cout << "Shop sale checks skipped: Pool of Radiance's files are not here\n";
         return 0;
     }
 

@@ -5,6 +5,7 @@
 #include "opengold/rolf_tour.h"
 #include "opengold/srd5.h"
 #include "repository_data.h"
+#include "installed_games.h"
 #include <algorithm>
 #include <array>
 #include <cstdlib>
@@ -23,7 +24,7 @@ using namespace opengold::por;
 // Word of Recall in New Phlan (LEVELS-3): cast on the temple's square it
 // prepares the party's sanctuary; cast elsewhere it brings the party back.
 // Also the temple's Heal list there (TEMPLE-1). Needs the installed game
-// (OPENGOLD_GAME_DIR); without it the test passes.
+// (installed_games.h); without it the test passes.
 namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
@@ -217,7 +218,7 @@ bool walk_to(RolfTourSession &town, unsigned tx, unsigned ty, bool *temple = nul
     return false;
 }
 
-void recall_checks(const char *directory)
+void recall_checks(const std::filesystem::path &directory)
 {
     auto party = std::make_shared<CampaignParty>(module());
     // A level-13 Cleric prepares the sanctuary from its level-6 slot, then
@@ -295,7 +296,7 @@ bool offers(const RolfTourSession &town, std::string_view label)
 // The Temple of Tyr's Heal list (TEMPLE-1): its services at the prices
 // data/shops gives it, the members a service would help, a confirmed price,
 // and Resurrection only on Easy and Normal.
-void temple_list_checks(const char *directory)
+void temple_list_checks(const std::filesystem::path &directory)
 {
     auto party = std::make_shared<CampaignParty>(module());
     party->add_pc(cleric());
@@ -409,7 +410,7 @@ void temple_list_checks(const char *directory)
 // Every New Phlan temple data/shops names (TEMPLE-1): each of its squares opens
 // its own Heal list, with all ten services on Normal, and its own priest. Each temple here charges
 // its own Cure Light Wounds price so the list shows whose it is.
-void every_temple_checks(const char *directory)
+void every_temple_checks(const std::filesystem::path &directory)
 {
     struct Site
     {
@@ -478,7 +479,9 @@ int main()
 {
     try
     {
-        if (const auto directory = std::getenv("OPENGOLD_GAME_DIR"))
+        if (const auto directory =
+                opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+            !directory.empty())
         {
             recall_checks(directory);
             temple_list_checks(directory);

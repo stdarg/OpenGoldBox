@@ -1,17 +1,17 @@
 // What Gateway to the Savage Frontier changed in its files, as the census reads
 // them (docs/games/gateway.md): pictures with a color header, Curse's creature
 // record, ITEMS.1, its scripts' commands and its digitized sound effects. The
-// real files are read when OPENGOLD_GOLDBOX_DIR names the folder holding GATEWAY.
+// real files are read when Gateway's folder is found (installed_games.h).
 #include "opengold/ecl.h"
 #include "opengold/formats.h"
 #include "opengold/game_census.h"
 #include "opengold/gateway_formats.h"
 #include "opengold/pool_radiance.h"
 #include "opengold/wall_art.h"
+#include "installed_games.h"
 #include "test_support.h"
 
 #include <algorithm>
-#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -304,12 +304,11 @@ const Bytes &record(const std::vector<opengold::DaxRecord> &records, unsigned id
     return found->bytes;
 }
 
-// The developer's copy (OPENGOLD_GOLDBOX_DIR, docs/GAMES.md).
+// The developer's copy (installed_games.h).
 void the_real_files_decode()
 {
-    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    const auto folder = games ? std::filesystem::path(games) / "GATEWAY" : std::filesystem::path();
-    if (!games || opengold::identify_game(folder) != gateway_game)
+    const auto folder = opengold::test::installed_game_folder(gateway_game);
+    if (folder.empty())
     {
         std::cout << "Gateway's files are not here; they are not checked.\n";
         return;

@@ -2,6 +2,7 @@
 #include "opengold/campaign_save.h"
 #include "opengold/character_creator.h"
 #include "opengold/srd5.h"
+#include "installed_games.h"
 #include "test_support.h"
 #include <algorithm>
 #include <cstdlib>

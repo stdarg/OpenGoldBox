@@ -1,8 +1,9 @@
 # The saves the Godot checks with original files load: one run of
 # opengold_expedition_tests writes them all into FIXTURES, so each check reads
 # them instead of playing the route again while it holds the Godot project.
-if("$ENV{OPENGOLD_GAME_DIR}" STREQUAL "")
-    message("Skipped: OPENGOLD_GAME_DIR is not set")
+include("${CMAKE_CURRENT_LIST_DIR}/find_games.cmake")
+if(NOT DEFINED game_folder_POOLRAD)
+    message("Skipped: Pool of Radiance's files are not here")
     return()
 endif()
 file(REMOVE_RECURSE "${FIXTURES}")

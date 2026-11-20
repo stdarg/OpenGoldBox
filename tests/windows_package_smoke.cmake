@@ -4,13 +4,14 @@
 # fresh Windows profile, no development tools on PATH and no OPENGOLD_*
 # overrides. It creates characters, plays, saves, then restarts the game and
 # restores the saves, then crashes on purpose and checks the next launch leaves
-# a report. Skipped when OPENGOLD_GAME_DIR (the original files to
-# copy) is not set.
+# a report. Skipped when Pool of Radiance's files (the original files
+# to copy) are not found (find_games.cmake).
 #
 #   PACKAGE  the staged package folder (build/.../package/OpenGoldBox)
 #   WORK     scratch folder for the install, game files and profile
-if("$ENV{OPENGOLD_GAME_DIR}" STREQUAL "")
-    message("Skipped: OPENGOLD_GAME_DIR is not set")
+include("${CMAKE_CURRENT_LIST_DIR}/find_games.cmake")
+if(NOT DEFINED game_folder_POOLRAD)
+    message("Skipped: Pool of Radiance's files are not here")
     return()
 endif()
 set(original "$ENV{OPENGOLD_GAME_DIR}")
@@ -63,6 +64,7 @@ foreach(variable APPDATA LOCALAPPDATA USERPROFILE HOME)
     set(ENV{${variable}} "${profile}")
 endforeach()
 unset(ENV{OPENGOLD_GAME_DIR})
+unset(ENV{OPENGOLD_GOLDBOX_DIR})
 unset(ENV{OPENGOLD_LANG})
 set(ENV{PATH} "$ENV{SystemRoot}\\System32;$ENV{SystemRoot}")
 

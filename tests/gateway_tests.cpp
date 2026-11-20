@@ -1,6 +1,6 @@
 // Gateway to the Savage Frontier's campaign (docs/games/gateway.md): its
-// opening plays on the real files when OPENGOLD_GOLDBOX_DIR names the folder
-// holding GATEWAY.
+// opening plays on the real files when Gateway's folder is found
+// (installed_games.h).
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_session.h"
 #include "opengold/character_creator.h"
@@ -13,10 +13,10 @@
 #include "opengold/pool_radiance.h"
 #include "opengold/overland.h"
 #include "opengold/por_sound.h"
+#include "installed_games.h"
 #include "test_support.h"
 #include "tour_access.h"
 
-#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -37,10 +37,7 @@ constexpr auto gateway_game = GoldBoxGame::gateway_to_the_savage_frontier;
 
 std::filesystem::path gateway_folder()
 {
-    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    const auto folder = games ? std::filesystem::path(games) / "GATEWAY" : std::filesystem::path();
-    return games && opengold::identify_game(folder) == gateway_game ? folder
-                                                                    : std::filesystem::path();
+    return opengold::test::installed_game_folder(gateway_game);
 }
 
 // A script of Gateway whose five entries run body, which is followed by EXIT.

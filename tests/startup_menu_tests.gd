@@ -3,7 +3,7 @@ extends SceneTree
 # The startup menus (the user's design, 2026-11-14): after OpenGoldBox's
 # title, the main menu's Options and Exit to desktop, and the games. Run by
 # tests/settings_check.cmake; --menu-capture=DIR saves pictures of them.
-# Curse's button is checked when OPENGOLD_GOLDBOX_DIR holds its files, and
+# Curse's button is checked when the game finds Curse's files, and
 # with --secret Secret of the Silver Blades' button, with --gateway Gateway
 # to the Savage Frontier's, with --darkness Pools of Darkness', with
 # --treasure Treasures of the Savage Frontier's, with --ua and --ua-design=FOLDER Unlimited
@@ -214,8 +214,8 @@ func run_checks() -> void:
 	require(game_menu.visible and not current_scene.get_node("GameTitle").visible, "Closing the question returns to the game's menu")
 	game_menu.get_node("Buttons/MainMenu").pressed.emit()
 	await settle()
-	var curse := OS.get_environment("OPENGOLD_GOLDBOX_DIR").path_join("CURSE")
-	if OS.get_environment("OPENGOLD_GOLDBOX_DIR").is_empty() or not FileAccess.file_exists(curse.path_join("TILES.DAX")):
+	var curse := StartupView.game_folder("CURSE")
+	if curse.is_empty() or not FileAccess.file_exists(curse.path_join("TILES.DAX")):
 		print("Startup menu passed: Options and back, Pool of Radiance's title and menu (Curse's files are not here).")
 		quit(0)
 		return
@@ -288,8 +288,8 @@ func explore_with_a_fighter() -> Control:
 # plays the opening, the night of celebration and the morning's loss, and
 # explores Yartar.
 func check_gateway() -> void:
-	var gateway := OS.get_environment("OPENGOLD_GOLDBOX_DIR").path_join("GATEWAY")
-	if OS.get_environment("OPENGOLD_GOLDBOX_DIR").is_empty() or not FileAccess.file_exists(gateway.path_join("GEO2.DAX")):
+	var gateway := StartupView.game_folder("GATEWAY")
+	if gateway.is_empty() or not FileAccess.file_exists(gateway.path_join("GEO2.DAX")):
 		print("Skipped: Gateway's files are not here.")
 		quit(0)
 		return
@@ -365,8 +365,8 @@ func pick_again(folder: String) -> void:
 # original rules meets Rolf on New Phlan's docks, declines his tour and is
 # walked out.
 func check_darkness() -> void:
-	var darkness := OS.get_environment("OPENGOLD_GOLDBOX_DIR").path_join("DARKNESS")
-	if OS.get_environment("OPENGOLD_GOLDBOX_DIR").is_empty() or not FileAccess.file_exists(darkness.path_join("INTRO.BMA")):
+	var darkness := StartupView.game_folder("DARKNESS")
+	if darkness.is_empty() or not FileAccess.file_exists(darkness.path_join("INTRO.BMA")):
 		print("Skipped: Pools of Darkness' files are not here.")
 		quit(0)
 		return
@@ -447,8 +447,8 @@ func check_darkness() -> void:
 # key passing one, its title music from the first; then a party made under
 # the original rules plays the opening, the valley and the dwarves' fortress.
 func check_treasure() -> void:
-	var treasure := OS.get_environment("OPENGOLD_GOLDBOX_DIR").path_join("TREASURE")
-	if OS.get_environment("OPENGOLD_GOLDBOX_DIR").is_empty() or not FileAccess.file_exists(treasure.path_join("TITLE.DAX")):
+	var treasure := StartupView.game_folder("TREASURE")
+	if treasure.is_empty() or not FileAccess.file_exists(treasure.path_join("TITLE.DAX")):
 		print("Skipped: Treasures' files are not here.")
 		quit(0)
 		return
@@ -490,8 +490,8 @@ func check_treasure() -> void:
 # under the original rules and taken exploring, and the opening vision played
 # on to New Verdigris, whose name the exploration screen shows.
 func check_secret(menu: Window) -> void:
-	var secret := OS.get_environment("OPENGOLD_GOLDBOX_DIR").path_join("SECRET")
-	if OS.get_environment("OPENGOLD_GOLDBOX_DIR").is_empty() or not FileAccess.file_exists(secret.path_join("GEO1.DAX")):
+	var secret := StartupView.game_folder("SECRET")
+	if secret.is_empty() or not FileAccess.file_exists(secret.path_join("GEO1.DAX")):
 		print("Skipped: Secret's files are not here.")
 		quit(0)
 		return
@@ -532,8 +532,8 @@ func check_secret(menu: Window) -> void:
 # original rules only, then a fighter made under the kit's rules plays the
 # design's start: its welcome, the 3D view drawn, and a step.
 func check_ua() -> void:
-	var kit := OS.get_environment("OPENGOLD_GOLDBOX_DIR").path_join("UA")
-	if OS.get_environment("OPENGOLD_GOLDBOX_DIR").is_empty() or not FileAccess.file_exists(kit.path_join("CKIT.EXE")) \
+	var kit := StartupView.game_folder("UA")
+	if kit.is_empty() or not FileAccess.file_exists(kit.path_join("CKIT.EXE")) \
 			or not DirAccess.dir_exists_absolute(ua_design):
 		print("Skipped: the kit's files or the test design are not here.")
 		quit(0)

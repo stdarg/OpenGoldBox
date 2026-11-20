@@ -1,7 +1,7 @@
 #include "game_rules.h"
 #include "opengold/original.h"
+#include "installed_games.h"
 #include "test_support.h"
-#include <cstdlib>
 #include <iostream>
 
 using opengold::test::check;
@@ -9,12 +9,12 @@ using opengold::test::throws;
 
 namespace
 {
-// The original rules read Pool of Radiance's folder (OPENGOLD_GAME_DIR).
+// The original rules read Pool of Radiance's folder (installed_games.h).
 RulesFiles rules_files()
 {
-    const char *game = std::getenv("OPENGOLD_GAME_DIR");
-    return {std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/rules/srd-5.2.1/combat.rules",
-            game ? std::filesystem::path(game) : std::filesystem::path{}};
+    const auto game =
+        opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+    return {std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/rules/srd-5.2.1/combat.rules", game};
 }
 
 const RulesFiles files = rules_files();
@@ -90,14 +90,12 @@ void a_save_loads_under_its_own_rules()
 
 // The creation screen outfits a new Pools of Darkness character under the
 // original rules with the game's starting equipment, and under the SRD's
-// with none (OPENGOLD_GOLDBOX_DIR, docs/GAMES.md).
+// with none (installed_games.h).
 void darkness_characters_are_outfitted_at_creation()
 {
-    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
     const auto darkness = opengold::GoldBoxGame::pools_of_darkness;
-    const auto folder = games ? std::filesystem::path(games) / opengold::game_folder(darkness)
-                              : std::filesystem::path{};
-    if (!games || !std::filesystem::exists(folder / "ITEM0.DAX"))
+    const auto folder = opengold::test::installed_game_folder(darkness);
+    if (!std::filesystem::exists(folder / "ITEM0.DAX"))
     {
         std::cout << "Pools of Darkness's files are not here; its outfitting is not checked.\n";
         return;

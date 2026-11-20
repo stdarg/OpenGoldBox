@@ -4,9 +4,9 @@
 #include "opengold/gateway_formats.h"
 #include "opengold/vace_film.h"
 #include "opengold/vga_picture.h"
+#include "installed_games.h"
 
 #include <algorithm>
-#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -281,18 +281,18 @@ void treasures_shows_five_pictures(const std::filesystem::path &folder)
     }
 }
 
-void unlimited_adventures_has_no_title(const std::filesystem::path &games)
+void unlimited_adventures_has_no_title(const std::filesystem::path &kit)
 {
-    check(opengold::load_title_screens(games / "UA", opengold::GoldBoxGame::unlimited_adventures)
+    check(opengold::load_title_screens(kit, opengold::GoldBoxGame::unlimited_adventures)
               .screens.empty(),
           "Unlimited Adventures shows no title pictures");
 }
 
-void a_folder_without_titles_is_refused(const std::filesystem::path &games)
+void a_folder_without_titles_is_refused(const std::filesystem::path &beside)
 {
     try
     {
-        static_cast<void>(opengold::load_title_screens(games / "NOWHERE",
+        static_cast<void>(opengold::load_title_screens(beside / "NOWHERE",
                                                        opengold::GoldBoxGame::pool_of_radiance));
     }
     catch (const std::exception &)
@@ -308,33 +308,40 @@ int main()
 {
     try
     {
-        const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-        const std::filesystem::path root = games ? games : "";
-        if (!games || !std::filesystem::exists(root / "POOLRAD" / "TITLE.DAX") ||
-            !std::filesystem::exists(root / "CURSE" / "TITLE.DAX") ||
-            !std::filesystem::exists(root / "SECRET" / "TITLE.DAX"))
+        using opengold::GoldBoxGame;
+        using opengold::test::installed_game_folder;
+        const auto pool = installed_game_folder(GoldBoxGame::pool_of_radiance);
+        const auto curse = installed_game_folder(GoldBoxGame::curse_of_the_azure_bonds);
+        const auto secret = installed_game_folder(GoldBoxGame::secret_of_the_silver_blades);
+        if (!std::filesystem::exists(pool / "TITLE.DAX") ||
+            !std::filesystem::exists(curse / "TITLE.DAX") ||
+            !std::filesystem::exists(secret / "TITLE.DAX"))
         {
             std::cout << "Skipped: the games' TITLE.DAX files are not here.\n";
             return 0;
         }
-        pool_of_radiance_shows_its_two_pictures(root / "POOLRAD");
-        curse_draws_its_name_and_hero_over_the_second(root / "CURSE");
-        secret_redraws_its_backdrop_for_the_last(root / "SECRET");
-        if (std::filesystem::exists(root / "GATEWAY" / "TITLE.DAX"))
+        pool_of_radiance_shows_its_two_pictures(pool);
+        curse_draws_its_name_and_hero_over_the_second(curse);
+        secret_redraws_its_backdrop_for_the_last(secret);
+        if (const auto gateway = installed_game_folder(GoldBoxGame::gateway_to_the_savage_frontier);
+            std::filesystem::exists(gateway / "TITLE.DAX"))
         {
-            gateway_shows_five_pictures_alone(root / "GATEWAY");
+            gateway_shows_five_pictures_alone(gateway);
         }
-        if (std::filesystem::exists(root / "DARKNESS" / "INTRO.ACF"))
+        if (const auto darkness = installed_game_folder(GoldBoxGame::pools_of_darkness);
+            std::filesystem::exists(darkness / "INTRO.ACF"))
         {
-            darkness_plays_its_film_then_three_pictures(root / "DARKNESS");
-            darkness_closes_with_its_film(root / "DARKNESS");
+            darkness_plays_its_film_then_three_pictures(darkness);
+            darkness_closes_with_its_film(darkness);
         }
-        if (std::filesystem::exists(root / "TREASURE" / "TITLE.DAX"))
+        if (const auto treasure =
+                installed_game_folder(GoldBoxGame::treasures_of_the_savage_frontier);
+            std::filesystem::exists(treasure / "TITLE.DAX"))
         {
-            treasures_shows_five_pictures(root / "TREASURE");
+            treasures_shows_five_pictures(treasure);
         }
-        unlimited_adventures_has_no_title(root);
-        a_folder_without_titles_is_refused(root);
+        unlimited_adventures_has_no_title(installed_game_folder(GoldBoxGame::unlimited_adventures));
+        a_folder_without_titles_is_refused(pool);
         std::cout << "Title screens passed.\n";
     }
     catch (const std::exception &error)

@@ -196,6 +196,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/map_catalog.cpp
     src/OpenGold.Core/src/game_census.cpp
     src/OpenGold.Core/src/buck_rogers_scripts.cpp
+    src/OpenGold.Core/src/game_finder.cpp
     src/OpenGold.Core/src/ua_census.cpp
     src/OpenGold.Core/src/ua_design.cpp
     src/OpenGold.Core/src/ua_view.cpp
@@ -438,18 +439,22 @@ if(OPENGOLD_BUILD_TESTS)
     set_tests_properties(opengold_title_screens_tests PROPERTIES SKIP_REGULAR_EXPRESSION "Skipped: ")
     # Pools of Darkness' and Treasures' 256-color pictures, read from the games' files.
     add_executable(opengold_vga_graphics_tests tests/vga_graphics_tests.cpp)
-    target_link_libraries(opengold_vga_graphics_tests PRIVATE opengold_formats)
+    target_link_libraries(opengold_vga_graphics_tests PRIVATE opengold_core)
     add_test(NAME opengold_vga_graphics_tests COMMAND opengold_vga_graphics_tests)
     set_tests_properties(opengold_vga_graphics_tests PROPERTIES SKIP_REGULAR_EXPRESSION "Skipped: ")
     # Their scripts, creatures and items.
     add_executable(opengold_late_records_tests tests/late_records_tests.cpp)
-    target_link_libraries(opengold_late_records_tests PRIVATE opengold_formats)
+    target_link_libraries(opengold_late_records_tests PRIVATE opengold_core)
     add_test(NAME opengold_late_records_tests COMMAND opengold_late_records_tests)
     # Pools of Darkness' opening and ending films, read from the game's files.
     add_executable(opengold_vace_film_tests tests/vace_film_tests.cpp)
-    target_link_libraries(opengold_vace_film_tests PRIVATE opengold_formats)
+    target_link_libraries(opengold_vace_film_tests PRIVATE opengold_core)
     add_test(NAME opengold_vace_film_tests COMMAND opengold_vace_film_tests)
     set_tests_properties(opengold_vace_film_tests PROPERTIES SKIP_REGULAR_EXPRESSION "Skipped: ")
+    # Finding each game's folder by its files, in a made-up home (docs/TECH.md).
+    add_executable(opengold_game_finder_tests tests/game_finder_tests.cpp)
+    target_link_libraries(opengold_game_finder_tests PRIVATE opengold_core)
+    add_test(NAME opengold_game_finder_tests COMMAND opengold_game_finder_tests)
     add_test(NAME opengold_game_census COMMAND "${CMAKE_COMMAND}"
         "-DCENSUS=$<TARGET_FILE:opengold_census>"
         -P "${PROJECT_SOURCE_DIR}/tests/game_census.cmake")
@@ -1070,6 +1075,7 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_balance_tools_smoke COMMAND "${CMAKE_COMMAND}"
         "-DSIM=$<TARGET_FILE:opengold_campaign_sim>" "-DBALANCE=$<TARGET_FILE:opengold_encounter_balance>"
         "-DWORK=${CMAKE_BINARY_DIR}/balance-tools-smoke"
+        "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
         -P "${PROJECT_SOURCE_DIR}/tests/balance_tools_smoke.cmake")
     # A debug build takes about six minutes; an optimised one under one.
     set_tests_properties(opengold_balance_tools_smoke PROPERTIES TIMEOUT 900

@@ -2,13 +2,19 @@
 // lists every kind of file, how many of its pieces the game's decoders read and
 // the first that failed.
 //   opengold_census [--require-complete] [--scripts] FOLDER...
-// A FOLDER is one game's folder, or a folder holding several (POOLRAD, CURSE, ...).
+//   opengold_census --find [START]
+// A FOLDER is one game's folder, or a folder whose children or grandchildren
+// are games' folders, each told by its files.
 // --require-complete exits with 1 unless every game found decodes completely.
 // --scripts also lists what the Buck Rogers games' scripts ask of the engine
 // (opengold/buck_rogers_scripts.h).
+// --find prints each game the game itself would find (opengold/game_finder.h),
+// one "NAME<TAB>FOLDER" line each (NAME as game_folder gives it), searching
+// upward from START's source checkout (the current folder's by default).
 
 #include "opengold/buck_rogers_scripts.h"
 #include "opengold/game_census.h"
+#include "opengold/game_finder.h"
 #include "opengold/path_text.h"
 
 #include <filesystem>
@@ -129,20 +135,25 @@ void print_scripts(const std::filesystem::path &folder, GoldBoxGame game)
 std::vector<std::pair<std::filesystem::path, GoldBoxGame>>
 games_in(const std::filesystem::path &folder)
 {
-    if (const auto game = opengold::identify_game(folder))
-    {
-        return {{folder, *game}};
-    }
+    opengold::GameSearch search;
+    search.named = {folder};
     std::vector<std::pair<std::filesystem::path, GoldBoxGame>> found;
-    for (const auto game : opengold::gold_box_games)
+    for (const auto &[game, path] : opengold::find_game_folders(search))
     {
-        const auto candidate = folder / std::string(opengold::game_folder(game));
-        if (opengold::identify_game(candidate) == game)
-        {
-            found.emplace_back(candidate, game);
-        }
+        found.emplace_back(path, game);
     }
     return found;
+}
+
+// Each game's folder as the game would find it, from start's checkout.
+int print_found_games(const std::filesystem::path &start)
+{
+    const auto search = opengold::environment_game_search(opengold::checkout_folder(start));
+    for (const auto &[game, folder] : opengold::find_game_folders(search))
+    {
+        std::cout << opengold::game_folder(game) << '\t' << opengold::path_text(folder) << '\n';
+    }
+    return 0;
 }
 
 } // namespace
@@ -152,6 +163,11 @@ int main(int argc, char **argv)
     bool require_complete = false;
     bool list_scripts = false;
     std::vector<std::filesystem::path> folders;
+    if (argc >= 2 && argc <= 3 && std::string(argv[1]) == "--find")
+    {
+        return print_found_games(argc == 3 ? std::filesystem::path(argv[2])
+                                           : std::filesystem::current_path());
+    }
     for (int i = 1; i < argc; ++i)
     {
         const std::string argument = argv[i];
@@ -170,7 +186,8 @@ int main(int argc, char **argv)
     }
     if (folders.empty())
     {
-        std::cerr << "Usage: opengold_census [--require-complete] [--scripts] FOLDER...\n";
+        std::cerr << "Usage: opengold_census [--require-complete] [--scripts] FOLDER... | "
+                     "--find [START]\n";
         return 2;
     }
     bool all_complete = true;

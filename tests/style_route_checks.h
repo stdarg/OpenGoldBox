@@ -477,7 +477,9 @@ void run()
                 (void)rules->character_profile(bad, {});
             });
     }
-    if (const auto *directory = std::getenv("OPENGOLD_GAME_DIR"); directory && *directory)
+    if (const auto directory =
+            opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+        !directory.empty())
     {
         for (const auto *klass : {"fighter", "paladin", "ranger"})
         {
@@ -496,8 +498,9 @@ void run()
 
 void verify_ui(const char *klass, const char *file, bool light = false)
 {
-    const auto *directory = std::getenv("OPENGOLD_GAME_DIR");
-    check(directory && *directory, "Style UI comparison requires game assets");
+    const auto directory =
+        opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+    check(!directory.empty(), "Style UI comparison requires game assets");
     auto rules = module();
     auto creation = srd5::character_rules();
     const auto assets = campaign_asset_identity(directory);

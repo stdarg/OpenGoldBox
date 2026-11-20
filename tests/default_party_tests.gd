@@ -48,10 +48,9 @@ func party_names() -> Array:
 
 func game_files_here() -> bool:
 	if folder == "POOLRAD": return true
-	var games := OS.get_environment("OPENGOLD_GOLDBOX_DIR")
 	# Gateway names its item types' file ITEMS.1.
-	var here := games.path_join(folder)
-	return not games.is_empty() and (FileAccess.file_exists(here.path_join("ITEMS")) or FileAccess.file_exists(here.path_join("ITEMS.1")))
+	var here := StartupView.game_folder(folder)
+	return not here.is_empty() and (FileAccess.file_exists(here.path_join("ITEMS")) or FileAccess.file_exists(here.path_join("ITEMS.1")))
 
 # The names the game's default party file gives its six.
 func file_names() -> Array:

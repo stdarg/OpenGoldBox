@@ -34,6 +34,11 @@ class StartupView : public godot::Control
     void _input(const godot::Ref<godot::InputEvent> &event) override;
     void _process(double delta) override;
 
+    // The folder the game plays the game named `name` (POOLRAD, CURSE, ... as
+    // game_folder names it) from, or empty: for the checks, which look for a
+    // game's files where the game itself does.
+    [[nodiscard]] static godot::String game_folder(const godot::String &name);
+
   protected:
     static void _bind_methods();
 

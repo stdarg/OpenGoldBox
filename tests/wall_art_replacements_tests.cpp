@@ -4,10 +4,10 @@
 #include "opengold/exploration_view.h"
 #include "opengold/rolf_tour.h"
 #include "opengold/wall_art_replacements.h"
+#include "installed_games.h"
 #include "test_support.h"
 #include "repository_data.h"
 #include <algorithm>
-#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -242,7 +242,9 @@ int main()
         broken_folders();
         replacement_and_fallback();
         scaled_view();
-        if (const auto directory = std::getenv("OPENGOLD_GAME_DIR"))
+        if (const auto directory =
+                opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+            !directory.empty())
         {
             game_uses_new_art(directory);
         }

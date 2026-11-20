@@ -34,9 +34,11 @@ The user decided these on 2026-11-12:
 | 7 | *Forgotten Realms: Unlimited Adventures* | 1993 | `UA` | Designs made with the kit play to their win: walls, events and fights ([ua.md](games/ua.md)) |
 
 The developer's copies live in `/Users/edmond/GoldBox/<folder>` on macOS
-and `/home/edmond/GoldBox/<folder>` on this Linux computer. For installed-data
-tests here, set `OPENGOLD_GOLDBOX_DIR=/home/edmond/GoldBox` and
-`OPENGOLD_GAME_DIR=/home/edmond/GoldBox/POOLRAD`.
+and `/home/edmond/GoldBox/<folder>` on this Linux computer. The game and its
+installed-data tests find each game's folder by its files, whatever its name,
+up to two levels below the home folder or any folder between it and the
+checkout ([TECH.md](TECH.md#finding-the-games-folders));
+`OPENGOLD_GOLDBOX_DIR` and `OPENGOLD_GAME_DIR` only add folders to look in first.
 
 The original let a party travel on: *Curse* imports a *Pool of Radiance*
 party, *Secret* a *Curse* party and *Pools of Darkness* a *Secret* party.
@@ -128,10 +130,10 @@ or `build` in a native build), where a folder is one game's or one holding
 several (`/Users/edmond/GoldBox`). It prints a row for each kind of file: how
 many pieces decoded and the first that did not. The test
 `opengold_game_census` requires every finished game to decode completely. It
-reads the games from `OPENGOLD_GOLDBOX_DIR` (the folder holding `POOLRAD`,
-`CURSE` and the rest) and from `OPENGOLD_GAME_DIR`, and skips when neither is
-set. A game joins its list in `tests/game_census.cmake` when its census
-completes.
+reads each game from the folder the game finds by its files
+(`opengold_census --find`, [TECH.md](TECH.md#finding-the-games-folders)), and
+skips when none is found. A game joins its list in `tests/game_census.cmake`
+when its census completes.
 
 Two notes on what "decodes" means:
 

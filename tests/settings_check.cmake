@@ -1,13 +1,15 @@
-# A startup or setup check with original files; skipped when OPENGOLD_GAME_DIR
-# is not set. Its settings.cfg is WORK's own (OPENGOLD_SETTINGS_FILE), so the
-# developer's file in the project folder is never touched.
+# A startup or setup check with original files; skipped when Pool of Radiance's
+# are not found (find_games.cmake). Its settings.cfg is WORK's own
+# (OPENGOLD_SETTINGS_FILE), so the developer's file in the project folder is
+# never touched.
 #
-# Each check starts from settings naming the original folder and English. It
+# Each check starts from settings naming the games' folders found and English. It
 # runs SCRIPT with ARGS, expecting EXPECTED; RESTART_ARGS then runs SCRIPT again
 # in a fresh process that reads what the first saved, expecting
 # RESTART_EXPECTED. Godot's user data goes to WORK.
-if("$ENV{OPENGOLD_GAME_DIR}" STREQUAL "")
-    message("Skipped: OPENGOLD_GAME_DIR is not set")
+include("${CMAKE_CURRENT_LIST_DIR}/find_games.cmake")
+if(NOT DEFINED game_folder_POOLRAD)
+    message("Skipped: Pool of Radiance's files are not here")
     return()
 endif()
 file(REMOVE_RECURSE "${WORK}")
@@ -20,7 +22,7 @@ set(ENV{OPENGOLD_SETTINGS_FILE} "${settings}")
 # A language override would take the place of the saved language these checks test.
 unset(ENV{OPENGOLD_LANG})
 file(TO_CMAKE_PATH "$ENV{OPENGOLD_GAME_DIR}" game_folder)
-file(WRITE "${settings}" "[game]\npath=\"${game_folder}\"\n\n[interface]\nlanguage=\"en\"\n")
+file(WRITE "${settings}" "[game]\npath=\"${game_folder}\"\n\n${found_games_settings}\n[interface]\nlanguage=\"en\"\n")
 
 function(run_check arguments expected)
     execute_process(

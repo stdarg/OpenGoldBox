@@ -1,11 +1,11 @@
 // Pools of Darkness' opening and ending films, INTRO and FINAL, read from the
 // game's own files (docs/games/darkness.md, "The opening and ending films"). Skipped when
-// OPENGOLD_GOLDBOX_DIR does not name the folder holding DARKNESS.
+// Pools of Darkness' folder is not found (installed_games.h).
 #include "opengold/vace_film.h"
+#include "installed_games.h"
 #include "test_support.h"
 
 #include <algorithm>
-#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -139,10 +139,9 @@ int main()
 {
     try
     {
-        const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
         const auto darkness =
-            games ? std::filesystem::path(games) / "DARKNESS" : std::filesystem::path();
-        if (!games || !std::filesystem::exists(darkness / "INTRO.ACF"))
+            opengold::test::installed_game_folder(opengold::GoldBoxGame::pools_of_darkness);
+        if (!std::filesystem::exists(darkness / "INTRO.ACF"))
         {
             std::cout << "Skipped: Pools of Darkness is not here.\n";
             return 0;

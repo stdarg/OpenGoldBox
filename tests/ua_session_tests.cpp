@@ -3,7 +3,7 @@
 // design ships with the kit, so the tests build one from the kit's own area
 // templates (GEO.GLB) and game record (GAME.GLB), as the kit's design menu
 // does: two dungeon areas with walls, doors and events of the kinds the
-// session plays. The kit is read from OPENGOLD_GOLDBOX_DIR/UA. Run with
+// session plays. The kit is read from its folder (installed_games.h). Run with
 // --ua-walk to walk every square of every area and play every event and fight.
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_save.h"
@@ -16,6 +16,7 @@
 #include "opengold/ua_design.h"
 #include "opengold/ua_session.h"
 #include "original_creation_support.h"
+#include "installed_games.h"
 #include "test_support.h"
 
 #include <array>
@@ -523,12 +524,8 @@ std::filesystem::path temporary_design(std::string_view name)
 
 std::optional<std::filesystem::path> kit_folder()
 {
-    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    if (!games)
-    {
-        return std::nullopt;
-    }
-    const auto folder = std::filesystem::path(games) / "UA";
+    const auto folder =
+        opengold::test::installed_game_folder(opengold::GoldBoxGame::unlimited_adventures);
     return ua::is_kit_folder(folder) ? std::optional(folder) : std::nullopt;
 }
 
@@ -2898,7 +2895,7 @@ int main(int argc, char **argv)
         const auto kit = kit_folder();
         if (!kit)
         {
-            std::cout << "Skipped: the kit's files are not in OPENGOLD_GOLDBOX_DIR/UA.\n";
+            std::cout << "Skipped: the kit's files are not here.\n";
             return 0;
         }
         if (argc == 2 && std::string_view(argv[1]) == "--ua-walk")

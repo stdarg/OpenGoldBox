@@ -41,8 +41,10 @@ what another one already compiled. Open a new terminal after installing so
 (`OPENGOLD_SOURCE_DIR`) still recompile in each worktree.
 
 Original game files are never built or copied into the repository. Anything that
-reads them uses the `OPENGOLD_GAME_DIR` environment variable, pointed at the
-directory containing the DAX files:
+reads them finds each game's folder by its files, upward from the checkout to
+the home folder ([TECH.md](TECH.md#finding-the-games-folders)); the
+`OPENGOLD_GAME_DIR` environment variable adds a folder to look in first, such as
+the directory containing the DAX files:
 
 ```powershell
 $env:OPENGOLD_GAME_DIR = 'C:\Games\POOLRAD'
@@ -501,5 +503,6 @@ comparison scene by default.
   like a clean run; confirm with `ctest -N` in the build tree.
 - **Localization:** `python tools/localization.py --check` is a separate gate
   that no build runs. See [LOCALIZATION.md](LOCALIZATION.md).
-- **Tests needing original data** use it only when `OPENGOLD_GAME_DIR` is set. See
+- **Tests needing original data** find each game's folder by its files
+  ([TECH.md](TECH.md#finding-the-games-folders)) and skip a game not found. See
   [TESTING.md](TESTING.md) and the game README.

@@ -59,8 +59,13 @@ and Exit to desktop. Choosing a game asks for its folder the first time:
 `[game] path` holds *Pool of Radiance*'s, and `[games]` the others' by their
 folder name (`CURSE` for *Curse of the Azure Bonds*, `SECRET` for *Secret of the
 Silver Blades*, `GATEWAY` for *Gateway to the Savage Frontier*, `DARKNESS` for
-*Pools of Darkness*, `TREASURE` for *Treasures of the Savage Frontier*), or `OPENGOLD_GOLDBOX_DIR`
-names a folder holding them all. A party still takes its portraits and combat
+*Pools of Darkness*, `TREASURE` for *Treasures of the Savage Frontier*). A game
+whose folder is not saved is looked for by its files, whatever its folder's
+name: in the folders `OPENGOLD_GAME_DIR` and `OPENGOLD_GOLDBOX_DIR` name and
+their children and grandchildren, then upward from the game's own folder to
+the home folder ([TECH.md](TECH.md#finding-the-games-folders)). A folder found
+so is used, never saved; *Pool of Radiance*'s folder dialog still shows the
+first time, filled in with it. A party still takes its portraits and combat
 art from *Pool of Radiance*'s files, so choosing another game asks for that
 folder too when it is not set ([GAMES.md](GAMES.md)). `--game=POOLRAD`, `--game=CURSE`, `--game=SECRET`, `--game=GATEWAY`, `--game=DARKNESS` or `--game=TREASURE`
 on the command line picks the game without the menu, as the packaged game's own checks
@@ -117,8 +122,7 @@ loading the game in progress again with it. It can change whenever the menu
 could load a game, not during a fight or an event. Without a folder, or with
 one that is not the new art, the game shows only the original art, whatever
 `walls`, `combat` and `portraits` say. The environment variable
-`OPENGOLD_NEW_ART_DIR` overrides `directory`, as `OPENGOLD_GAME_DIR` does the
-game's folder; the game's checks and developer tools set it to the
+`OPENGOLD_NEW_ART_DIR` overrides `directory`; the game's checks and developer tools set it to the
 repository's `new-art-pack`.
 
 `[gear]` is auto-equip ([EQUIP-1](SRD-DECISIONS.md#equip-1-2026-11-05-auto-equip-better-gear)):
@@ -238,10 +242,14 @@ set "OPENGOLD_LANG=es"
 win-package\opengoldbox.exe
 ```
 
-An environment value overrides the saved value for that launch. Language
-overrides accept `en` and `es` (case-insensitive); unsupported values are ignored.
-Environment overrides are not automatically persisted. Missing config values
-still prompt; overrides supply the initial path/language when applicable.
+`OPENGOLD_LANG` overrides the saved language for that launch; it accepts `en`
+and `es` (case-insensitive), and unsupported values are ignored.
+`OPENGOLD_GAME_DIR` and `OPENGOLD_GOLDBOX_DIR` name folders where a game whose
+folder is not saved is looked for first, by its files: each folder, its
+children and its grandchildren ([TECH.md](TECH.md#finding-the-games-folders)).
+A saved folder comes before them. Environment values are not automatically
+persisted. Missing config values still prompt; a folder found supplies the
+initial path when applicable.
 
 A reset flag supersedes its corresponding environment override for that run.
 An explicit confirmed dialog selection also takes precedence for the remainder
@@ -320,15 +328,16 @@ and its temporary file are ignored by Git and explicitly excluded from exports.
 settings, resets, environment precedence, invalid folders, synthetic checksum
 mismatches, warning Continue/Quit, cancellation, preservation of unrelated keys,
 and malformed-config save failure. It creates synthetic files rather than
-copying original game assets. It requires `OPENGOLD_GAME_DIR` pointing to the
-local reference installation. Run by hand, it writes the ignored development
+copying original game assets. It requires the local reference installation of
+*Pool of Radiance*, found by its files (`tests/find_games.cmake`) or named by
+`OPENGOLD_GAME_DIR` when run by hand. Run by hand, it writes the ignored development
 config, so back up that file first; under CTest it writes its own copy
 (`OPENGOLD_SETTINGS_FILE`). Tests should use a workspace-local APPDATA.
 `tests/language_dialog_tests.gd` checks keyboard progression, saved-language
 restoration and the shared splash background with the new reset flag.
 CTest runs both, and `tests/startup_tests.gd`, through `tests/settings_check.cmake`
 (`opengold_godot_setup_*`, `opengold_godot_language*`, `opengold_godot_startup*`;
-skipped without `OPENGOLD_GAME_DIR`), which gives each check a `settings.cfg` of
+skipped without *Pool of Radiance*'s files), which gives each check a `settings.cfg` of
 its own in its work folder, so the development config is never touched.
 
 See [LOCALIZATION.md](LOCALIZATION.md) for catalogs and translated splash assets.

@@ -4,6 +4,7 @@
 #include "opengold/character_creator.h"
 #include "opengold/combat_demo.h"
 #include "opengold/srd5.h"
+#include "installed_games.h"
 #include <algorithm>
 #include <cstdlib>
 #include <filesystem>
@@ -424,7 +425,9 @@ void discovery_swap_checks()
     }
     // With original files, the level-up screen's fixture: this level-6 Lore Bard
     // with the experience for level 7.
-    if (const auto *directory = std::getenv("OPENGOLD_GAME_DIR"); directory && *directory)
+    if (const auto directory =
+            opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+        !directory.empty())
     {
         write_campaign_file(std::filesystem::path(OPENGOLD_BINARY_DIR) / "discovery-swap-ui.ogs",
                             encode_campaign(party, nullptr, campaign_asset_identity(directory)));

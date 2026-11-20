@@ -31,6 +31,7 @@
 #include "opengold/sound_bank.h"
 #include "opengold/srd5.h"
 #include "original_creation_support.h"
+#include "installed_games.h"
 #include "test_support.h"
 
 #include <cstdio>
@@ -112,17 +113,16 @@ void each_game_is_told_apart_by_its_files()
     check(!opengold::identify_game(folder), "A folder without a game's files is no game");
     std::filesystem::remove_all(folder);
 
-    // Every real game's folder is its own game: no marker matches another's.
-    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    if (!games)
-    {
-        return;
-    }
+    // Every real game's folder the developer has is its own game: no two games
+    // are found in one folder.
+    std::set<std::filesystem::path> real_folders;
     for (const auto game : opengold::gold_box_games)
     {
-        const auto real = std::filesystem::path(games) / std::string(opengold::game_folder(game));
-        if (std::filesystem::is_directory(real))
+        const auto real = opengold::test::installed_game_folder(game);
+        if (!real.empty())
         {
+            check(real_folders.insert(real).second,
+                  opengold::path_text(real) + " holds only one game");
             check(opengold::identify_game(real) == game,
                   opengold::path_text(real) + " must identify " +
                       std::string(opengold::game_title(game)));
@@ -510,12 +510,12 @@ void the_font_has_eight_bytes_a_glyph()
 }
 
 // The game's own loaders read Curse's files, when the developer has them
-// (OPENGOLD_GOLDBOX_DIR, docs/GAMES.md).
+// (installed_games.h).
 void the_loaders_read_curse()
 {
-    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    const auto folder = games ? std::filesystem::path(games) / "CURSE" : std::filesystem::path();
-    if (!games || opengold::identify_game(folder) != GoldBoxGame::curse_of_the_azure_bonds)
+    const auto folder =
+        opengold::test::installed_game_folder(GoldBoxGame::curse_of_the_azure_bonds);
+    if (folder.empty())
     {
         std::cout << "Curse's files are not here; its loaders are not checked.\n";
         return;
@@ -581,9 +581,9 @@ void the_loaders_read_curse()
 void curse_opening_reaches_the_first_map()
 {
     using opengold::por::TourPhase;
-    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    const auto folder = games ? std::filesystem::path(games) / "CURSE" : std::filesystem::path();
-    if (!games || opengold::identify_game(folder) != GoldBoxGame::curse_of_the_azure_bonds)
+    const auto folder =
+        opengold::test::installed_game_folder(GoldBoxGame::curse_of_the_azure_bonds);
+    if (folder.empty())
     {
         std::cout << "Curse's files are not here; its opening is not played.\n";
         return;
@@ -643,14 +643,13 @@ void curse_opening_reaches_the_first_map()
 void shared_map_saves_reload(GoldBoxGame game)
 {
     using namespace opengold;
-    const auto *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    if (!games)
+    const auto folder = opengold::test::installed_game_folder(game);
+    if (folder.empty())
     {
         std::cout << game_title(game) << " files are not here; shared-map saves are not checked.\n";
         return;
     }
     const bool curse = game == GoldBoxGame::curse_of_the_azure_bonds;
-    const auto folder = std::filesystem::path(games) / (curse ? "CURSE" : "SECRET");
     const auto content = load_original_content(folder, game);
     const std::shared_ptr<const rules::CharacterRules> creation =
         original::character_rules(original::default_aging, game);
@@ -9387,9 +9386,9 @@ const std::vector<RouteBeat> &route_for(GoldBoxGame game)
 void secret_opening_reaches_the_first_map()
 {
     using opengold::por::TourPhase;
-    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    const auto folder = games ? std::filesystem::path(games) / "SECRET" : std::filesystem::path();
-    if (!games || opengold::identify_game(folder) != GoldBoxGame::secret_of_the_silver_blades)
+    const auto folder =
+        opengold::test::installed_game_folder(GoldBoxGame::secret_of_the_silver_blades);
+    if (folder.empty())
     {
         std::cout << "Secret's files are not here; its opening is not played.\n";
         return;
@@ -9515,9 +9514,9 @@ void secret_opening_reaches_the_first_map()
 void secret_camp_fixes_the_party()
 {
     using opengold::por::TourPhase;
-    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    const auto folder = games ? std::filesystem::path(games) / "SECRET" : std::filesystem::path();
-    if (!games || opengold::identify_game(folder) != GoldBoxGame::secret_of_the_silver_blades)
+    const auto folder =
+        opengold::test::installed_game_folder(GoldBoxGame::secret_of_the_silver_blades);
+    if (folder.empty())
     {
         std::cout << "Secret's files are not here; its Fix is not played.\n";
         return;
@@ -12350,10 +12349,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
     const bool fourth_bond = progress >= CurseProgress::fourth_bond;
     const bool earned_ending = progress >= CurseProgress::ending;
     using opengold::por::TourPhase;
-    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    const auto folder = games ? std::filesystem::path(games) / std::string(game_folder(game))
-                              : std::filesystem::path();
-    if (!games || opengold::identify_game(folder) != game)
+    const auto folder = opengold::test::installed_game_folder(game);
+    if (folder.empty())
     {
         std::cout << game_title(game) << "'s files are not here.\n";
         return true;
@@ -19431,11 +19428,12 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
 }
 
 // An item type's property bits, byte 14 of ITEMS, as Pool of Radiance's own
-// files hold them (OPENGOLD_GAME_DIR).
+// files hold them (installed_games.h).
 void item_types_carry_their_properties()
 {
-    const char *game = std::getenv("OPENGOLD_GAME_DIR");
-    if (!game)
+    const auto game =
+        opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+    if (game.empty())
     {
         return;
     }

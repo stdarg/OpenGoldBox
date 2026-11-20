@@ -10,7 +10,8 @@ does.
 ## Files and references
 
 - Game files: `/Users/edmond/GoldBox/buck-rogers-matrix-cubed` (the folder
-  `game_folder` names; tests read `OPENGOLD_GOLDBOX_DIR/<folder>`).
+  `game_folder` names; the game and its tests find it by its files, whatever
+  it is called: TECH.md, "Finding the games' folders").
 - Rule Book, Log Book, Cluebook and Data Card:
   `/Users/edmond/GoldBox/docs/buck-rogers-matrix-cubed`.
 - Reconstructed source (version 1.0, Turbo Pascal 6):

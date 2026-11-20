@@ -44,6 +44,20 @@ void StartupView::_bind_methods()
 {
     ClassDB::bind_method(D_METHOD("open_character_creation"),
                          &StartupView::open_character_creation);
+    ClassDB::bind_static_method("StartupView", D_METHOD("game_folder", "name"),
+                                &StartupView::game_folder);
+}
+
+String StartupView::game_folder(const String &name)
+{
+    for (const auto game : opengold::gold_box_games)
+    {
+        if (name == String(std::string(opengold::game_folder(game)).c_str()))
+        {
+            return settings::game_folder(game);
+        }
+    }
+    return {};
 }
 
 void StartupView::_ready()
@@ -593,10 +607,6 @@ void StartupView::next_folder()
     if (game == opengold::GoldBoxGame::pool_of_radiance)
     {
         const auto saved = settings::saved_game_path();
-        if (pending_path_.is_empty())
-        {
-            pending_path_ = OS::get_singleton()->get_environment("OPENGOLD_GAME_DIR");
-        }
         if (settings::flag("--reset-game-path") || saved.is_empty() ||
             !settings::validate_game_path(saved).usable)
         {

@@ -77,10 +77,10 @@ func choose(text: String) -> void:
 
 func game_files_here() -> bool:
 	if folder.is_empty() or folder == "POOLRAD": return true
-	var games := OS.get_environment("OPENGOLD_GOLDBOX_DIR")
+	var here := StartupView.game_folder(folder)
 	var game_file := "CKIT.EXE" if folder == "UA" else "CBODY.DAX"
 	if folder == "UA" and not DirAccess.dir_exists_absolute(ua_design): return false
-	return not games.is_empty() and FileAccess.file_exists(games.path_join(folder).path_join(game_file))
+	return not here.is_empty() and FileAccess.file_exists(here.path_join(game_file))
 
 # The startup scene with --game and --rules goes to the creation screen;
 # Unlimited Adventures asks for its design first.

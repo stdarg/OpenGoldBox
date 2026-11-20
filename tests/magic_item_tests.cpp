@@ -1,7 +1,7 @@
 #include "opengold/magic_item_catalog.h"
+#include "installed_games.h"
 #include "test_support.h"
 #include <algorithm>
-#include <cstdlib>
 #include <iostream>
 #include <string_view>
 
@@ -128,11 +128,12 @@ bool holds(const MagicItemList &list, std::string_view name)
 // The facts docs/MAGIC_ITEMS.md reports, against the user's original files.
 void installed()
 {
-    const char *directory = std::getenv("OPENGOLD_GAME_DIR");
+    const auto directory =
+        opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
 
-    if (!directory)
+    if (directory.empty())
     {
-        std::cout << "Installed-game checks skipped (set OPENGOLD_GAME_DIR).\n";
+        std::cout << "Installed-game checks skipped (Pool of Radiance's files are not here).\n";
         return;
     }
 

@@ -3,7 +3,7 @@
 #include "../src/OpenGold.Core/src/json_document.h"
 #include "../tools/creature_data.h"
 #include "png_size_only.h"
-#include <cstdlib>
+#include "installed_games.h"
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -148,10 +148,11 @@ void companions(const CreatureData &data)
 
 int main()
 {
-    const char *game = std::getenv("OPENGOLD_GAME_DIR");
-    if (!game)
+    const auto game =
+        opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+    if (game.empty())
     {
-        std::cout << "Skipped: set OPENGOLD_GAME_DIR to the Pool of Radiance files\n";
+        std::cout << "Skipped: Pool of Radiance's files are not here\n";
         return 0;
     }
     try

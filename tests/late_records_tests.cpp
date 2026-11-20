@@ -6,10 +6,10 @@
 #include "opengold/formats.h"
 #include "opengold/late_records.h"
 #include "opengold/pool_radiance.h"
+#include "installed_games.h"
 #include "test_support.h"
 
 #include <algorithm>
-#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -226,13 +226,11 @@ std::vector<opengold::DaxRecord> archive(const std::filesystem::path &path)
     return std::move(decoded.records);
 }
 
-// The real files, when the developer has them (OPENGOLD_GOLDBOX_DIR, docs/GAMES.md).
+// The real files, when the developer has them (installed_games.h, docs/TECH.md).
 std::optional<std::filesystem::path> files_of(GoldBoxGame game)
 {
-    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    const auto folder = games ? std::filesystem::path(games) / opengold::game_folder(game)
-                              : std::filesystem::path();
-    if (!games || !std::filesystem::exists(folder / "MON1CHA.DAX"))
+    const auto folder = opengold::test::installed_game_folder(game);
+    if (!std::filesystem::exists(folder / "MON1CHA.DAX"))
     {
         std::cout << opengold::game_title(game) << "'s files are not here; they are not read.\n";
         return std::nullopt;

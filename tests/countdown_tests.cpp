@@ -1,8 +1,8 @@
 // Buck Rogers: Countdown to Doomsday, plan steps B1 and B2 (docs/BUCK-ROGERS.md):
 // its script commands, its records, what its scripts ask of the engine and
 // the rules of its characters (careers, skills, creation, training), first
-// on made-up bytes, then on the game's own files when OPENGOLD_GOLDBOX_DIR
-// names the folder holding them (docs/games/countdown.md). The whole census
+// on made-up bytes, then on the game's own files when its folder is found
+// (installed_games.h, docs/games/countdown.md). The whole census
 // of the real files also runs in tests/game_census.cmake.
 #include "opengold/buck_rogers_records.h"
 #include "opengold/buck_rogers_rules.h"
@@ -13,10 +13,10 @@
 #include "opengold/game_census.h"
 #include "opengold/pool_radiance.h"
 #include "opengold/por_sound.h"
+#include "installed_games.h"
 #include "test_support.h"
 
 #include <algorithm>
-#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -789,10 +789,8 @@ void records_round_trip()
 
 std::optional<std::filesystem::path> files_of(GoldBoxGame game)
 {
-    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    const auto folder = games ? std::filesystem::path(games) / opengold::game_folder(game)
-                              : std::filesystem::path();
-    if (!games || !std::filesystem::exists(folder / "SHIPS.DAX"))
+    const auto folder = opengold::test::installed_game_folder(game);
+    if (!std::filesystem::exists(folder / "SHIPS.DAX"))
     {
         std::cout << opengold::game_title(game) << "'s files are not here; they are not read.\n";
         return std::nullopt;

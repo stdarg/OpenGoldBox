@@ -454,10 +454,11 @@ Scope:
 - `GoldBoxGame` gets `countdown_to_doomsday` and `matrix_cubed`, appended
   (`src/OpenGold.Formats/include/opengold/gold_box_game.h`), with
   `game_title`, `game_folder` and `game_disks`.
-- `game_folder` returns the developer's folder names,
-  `buck-rogers-countdown-to-doomsday` and `buck-rogers-matrix-cubed`. The
-  settings, the tests (`OPENGOLD_GOLDBOX_DIR/<folder>`) and the save folders
-  all use it. B0 checks that the Linux machine's copies use the same names.
+- `game_folder` returns the names `buck-rogers-countdown-to-doomsday` and
+  `buck-rogers-matrix-cubed`, which the settings' keys and the save folders
+  use. The games' folders themselves are found by their files wherever they
+  are and whatever they are called (TECH.md, "Finding the games' folders"),
+  so the copies on each machine need no particular names.
 - `identify_game` (`src/OpenGold.Core/src/game_census.cpp`) knows each game
   by its files: `SHIPS.DAX` marks Buck Rogers; `BUCKA.XMI` with it marks
   *Matrix Cubed*, and `ECL6.DAX` *Countdown*. Neither folder has a file that

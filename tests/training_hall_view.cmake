@@ -1,8 +1,9 @@
 # The training hall service with original files: opengold_expedition_tests writes
 # a party at the Fighters' hall, and a fresh Godot game loads it through Load
 # game, answers YES and buys from the list. Godot's user data goes to WORK.
-if("$ENV{OPENGOLD_GAME_DIR}" STREQUAL "")
-    message("Skipped: OPENGOLD_GAME_DIR is not set")
+include("${CMAKE_CURRENT_LIST_DIR}/find_games.cmake")
+if(NOT DEFINED game_folder_POOLRAD)
+    message("Skipped: Pool of Radiance's files are not here")
     return()
 endif()
 file(REMOVE_RECURSE "${WORK}")

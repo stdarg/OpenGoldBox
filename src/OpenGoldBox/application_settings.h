@@ -42,8 +42,7 @@ bool original_combat_art();
 bool original_portraits();
 // [art] directory: the folder of the optional new art download, or empty
 // while there is none or it is not the new art: then the game shows only the
-// original art. OPENGOLD_NEW_ART_DIR overrides it, as OPENGOLD_GAME_DIR does
-// the game's folder.
+// original art. OPENGOLD_NEW_ART_DIR overrides it.
 godot::String new_art_directory();
 // Why `directory` is not the new art's folder, or empty when it is.
 godot::String new_art_problem(const godot::String &directory);
@@ -137,8 +136,10 @@ struct GameStart
 
 [[nodiscard]] GameStart chosen_game_start();
 void choose_game_start(GameStart start);
-// A game's folder. Pool of Radiance's is game_path(); another's is kept under
-// [games] by its folder name, or found in OPENGOLD_GOLDBOX_DIR.
+// A game's folder: the one the player chose (Pool of Radiance's under [game],
+// game_path(); another's under [games] by its game_folder name), else the one
+// OPENGOLD_GAME_DIR, OPENGOLD_GOLDBOX_DIR or the search upward from the game's
+// own folder finds by its files (opengold/game_finder.h, docs/TECH.md).
 [[nodiscard]] godot::String game_folder(opengold::GoldBoxGame game);
 bool save_game_folder(opengold::GoldBoxGame game, const godot::String &directory);
 // Pool of Radiance's folder is checked file by file (validate_game_path);

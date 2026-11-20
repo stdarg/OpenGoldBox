@@ -284,14 +284,17 @@ Use the existing CMake/CTest workflow:
 ```bash
 cmake -S . -B build/native -DOPENGOLD_BUILD_TESTS=ON
 cmake --build build/native -j 6
-env -u OPENGOLD_GAME_DIR ctest --test-dir build/native --output-on-failure
+ctest --test-dir build/native --output-on-failure
 ```
 
 `opengold_fuzz_smoke_tests` is registered with a 60-second timeout and the
 `fuzz` and `native` labels. Assertions remain active in release builds.
-Installed-data tests remain optional through `OPENGOLD_GAME_DIR`. The reading
-census of the other Gold Box games (`opengold_game_census`, [GAMES.md](GAMES.md))
-also reads `OPENGOLD_GOLDBOX_DIR`, the folder holding each game's folder. Game builds
+Installed-data tests find each game's folder by its files, as the game does
+([TECH.md](TECH.md#finding-the-games-folders)): in `OPENGOLD_GAME_DIR` and
+`OPENGOLD_GOLDBOX_DIR` when set, else upward from the checkout to the home
+folder. A test whose game is not found skips. To run without the original
+files, unset both and give ctest an empty home:
+`env -u OPENGOLD_GAME_DIR -u OPENGOLD_GOLDBOX_DIR HOME="$(mktemp -d)" ctest ...`. Game builds
 also include the [Godot integration checks](../src/OpenGoldBox/README.md#tests).
 
 ## Sanitizer fuzzing

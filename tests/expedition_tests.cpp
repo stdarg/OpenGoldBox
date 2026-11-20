@@ -18,6 +18,7 @@
 #include "opengold/srd5.h"
 #include "png_size_only.h"
 #include "support/member_conditions.h"
+#include "installed_games.h"
 #include "test_support.h"
 #include "tour_access.h"
 #include "repository_data.h"
@@ -458,9 +459,9 @@ std::unique_ptr<rules::RulesModule> module()
 // What each set of rules plays with, as the game finds it.
 RulesFiles rules_files()
 {
-    const char *game = std::getenv("OPENGOLD_GAME_DIR");
-    return {std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/rules/srd-5.2.1/combat.rules",
-            game ? std::filesystem::path(game) : std::filesystem::path{}};
+    const auto game =
+        opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+    return {std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/rules/srd-5.2.1/combat.rules", game};
 }
 
 // The rules a fight of the party's game is fought under.
@@ -9687,11 +9688,12 @@ int main(int argc, char **argv)
 {
     try
     {
-        const auto *directory = std::getenv("OPENGOLD_GAME_DIR");
+        const auto directory =
+            opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
         replays_part_of_the_route = argc > 1;
         if (argc >= 2 && argc <= 4 && std::string_view(argv[1]) == "--original-campaign")
         {
-            if (!directory || !*directory)
+            if (directory.empty())
             {
                 std::cout << "Skipped: installed Pool of Radiance files are required.\n";
                 return 0;
@@ -9704,7 +9706,7 @@ int main(int argc, char **argv)
         }
         if (argc == 2 && std::string_view(argv[1]) == "--original-rules")
         {
-            if (!directory)
+            if (directory.empty())
             {
                 std::cout << "Pool of Radiance's files are not here; skipped.\n";
                 return 0;
@@ -9789,7 +9791,7 @@ int main(int argc, char **argv)
         }
         if (argc == 2 && std::string_view(argv[1]) == "--encounter-overrides")
         {
-            if (!directory || !*directory)
+            if (directory.empty())
             {
                 std::cout << "Skipped: no original game files\n";
                 return 0;
@@ -9911,7 +9913,7 @@ int main(int argc, char **argv)
         deferred_treasure_tests();
         scanned_slot_save_tests();
         locked_door_tests();
-        if (directory && *directory)
+        if (!directory.empty())
         {
             installed_first_expedition(std::filesystem::absolute(argv[0]), directory);
         }

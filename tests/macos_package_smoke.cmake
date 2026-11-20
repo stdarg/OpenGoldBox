@@ -3,13 +3,14 @@
 # original game files both read-only, a fresh home folder, only the system's
 # tools on PATH and no OPENGOLD_* overrides. It creates characters, plays, saves,
 # restarts and restores the saves, then crashes on purpose and checks the next
-# launch leaves a report. Skipped when OPENGOLD_GAME_DIR (the original files to
-# copy) is not set.
+# launch leaves a report. Skipped when Pool of Radiance's files (the original files
+# to copy) are not found (find_games.cmake).
 #
 #   APP_BUNDLE  mac-package/OpenGoldBox.app, the packaged game
 #   WORK        scratch folder for the install, game files and home folder
-if("$ENV{OPENGOLD_GAME_DIR}" STREQUAL "")
-    message("Skipped: OPENGOLD_GAME_DIR is not set")
+include("${CMAKE_CURRENT_LIST_DIR}/find_games.cmake")
+if(NOT DEFINED game_folder_POOLRAD)
+    message("Skipped: Pool of Radiance's files are not here")
     return()
 endif()
 set(original "$ENV{OPENGOLD_GAME_DIR}")
@@ -41,6 +42,7 @@ run_or_stop(chmod -R a-w "${game_files}")
 
 set(ENV{HOME} "${home}")
 unset(ENV{OPENGOLD_GAME_DIR})
+unset(ENV{OPENGOLD_GOLDBOX_DIR})
 unset(ENV{OPENGOLD_LANG})
 set(ENV{PATH} "/usr/bin:/bin")
 

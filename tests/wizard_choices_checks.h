@@ -149,8 +149,9 @@ void wizard_choices_checks()
 // real level-up controls. Requires the original assets for their identity.
 void write_wizard_ui_fixture()
 {
-    const auto *directory = std::getenv("OPENGOLD_GAME_DIR");
-    if (!directory || !*directory)
+    const auto directory =
+        opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+    if (directory.empty())
     {
         return;
     }

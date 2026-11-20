@@ -3,6 +3,7 @@
 #include "opengold/character_pool.h"
 #include "opengold/srd5.h"
 #include "combat_fixture.h"
+#include "installed_games.h"
 #include "test_support.h"
 #include <algorithm>
 #include <fstream>

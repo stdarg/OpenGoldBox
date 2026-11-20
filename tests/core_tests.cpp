@@ -1,8 +1,8 @@
 #include "opengold/formats.h"
+#include "installed_games.h"
 
 #include <algorithm>
 #include <array>
-#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -131,7 +131,9 @@ void decode_tests()
     cpic.pop_back();
     check(!opengold::decode_ega_combat_icon(cpic, 4), "Truncated combat icon rejects");
 
-    if (const char *game_dir = std::getenv("OPENGOLD_GAME_DIR"))
+    if (const auto game_dir =
+            opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+        !game_dir.empty())
     {
         std::ifstream input(std::filesystem::path(game_dir) / "SPRIT1.DAX", std::ios::binary);
         const std::vector<std::uint8_t> installed{std::istreambuf_iterator<char>(input),

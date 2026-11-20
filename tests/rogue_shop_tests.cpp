@@ -8,6 +8,7 @@
 #include "opengold/script_secrets.h"
 #include "opengold/shop_data.h"
 #include "opengold/srd5.h"
+#include "installed_games.h"
 #include "test_support.h"
 #include "tour_access.h"
 #include "repository_data.h"
@@ -31,7 +32,7 @@ using namespace opengold::por;
 // 50 gp, and magic gear: Leather Armor +1, a Stone of Good Luck that works
 // from the pack, and a Wand of Secrets that points out the shop's door and the
 // original's script-held secret doors and traps. Needs the installed game
-// (OPENGOLD_GAME_DIR); without it the test passes.
+// (installed_games.h); without it the test passes.
 namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
@@ -273,7 +274,7 @@ std::shared_ptr<CampaignParty> party_with(std::vector<Character> members)
     return party;
 }
 
-RolfTourSession town_with_shops(const char *directory)
+RolfTourSession town_with_shops(const std::filesystem::path &directory)
 {
     auto town = RolfTourSession::load(directory, repository_encounters());
     town.shops(load_shop_data(root / "data/shops").shops);
@@ -282,8 +283,8 @@ RolfTourSession town_with_shops(const char *directory)
 
 // With OPENGOLD_ROGUE_SHOP_FIXTURES set, saves the party in the alley as
 // `name`.ogs there, for screenshots of the secret door.
-void write_fixture(const CampaignParty &party, const RolfTourSession &town, const char *directory,
-                   const std::string &name)
+void write_fixture(const CampaignParty &party, const RolfTourSession &town,
+                   const std::filesystem::path &directory, const std::string &name)
 {
     if (const auto *fixtures = std::getenv("OPENGOLD_ROGUE_SHOP_FIXTURES"))
     {
@@ -360,7 +361,7 @@ void open_the_door(RolfTourSession &town, std::string_view method)
     throw std::runtime_error("The secret door never opened");
 }
 
-void rogue_checks(const char *directory)
+void rogue_checks(const std::filesystem::path &directory)
 {
     auto party = party_with({rogue(), elf_cleric()});
     auto town = town_with_shops(directory);
@@ -619,7 +620,7 @@ std::pair<MemberId, std::uint64_t> give_wand(CampaignParty &party, unsigned char
 // The Wand of Secrets (SECRET-1): pointed in the alley it finds the hidden
 // door of the Rogue's Shop; pointed again it finds nothing; spent it stays
 // in the pack, and a Long Rest gives back 1d3 charges.
-void wand_in_town_checks(const char *directory)
+void wand_in_town_checks(const std::filesystem::path &directory)
 {
     auto party = party_with({rogue()});
     const auto [user, wand] = give_wand(*party, 3);
@@ -673,7 +674,7 @@ void point_on_map(RolfTourSession &town, MemberId user, std::uint64_t wand,
 // catacombs': the wand sets the flag each script lets the party through by
 // (script_door_table_checks). And the traps of Kovel Mansion and the kobold
 // caves.
-void wand_on_script_doors(const char *directory)
+void wand_on_script_doors(const std::filesystem::path &directory)
 {
     auto party = party_with({rogue()});
     const auto [holder, wand] = give_wand(*party, 3);
@@ -754,7 +755,7 @@ void wand_on_script_doors(const char *directory)
 // The doors the wand knows are the ones the scripts search: each is on its
 // map's squares with the script's search events, facing the way the
 // script's table says. The traps are on their events' squares.
-void script_door_table_checks(const char *directory)
+void script_door_table_checks(const std::filesystem::path &directory)
 {
     const auto maps = MapCatalog::load(directory);
     const auto scripts = EclCatalog::load(directory);
@@ -821,7 +822,7 @@ void script_door_table_checks(const char *directory)
 // With Original shops on, New Phlan is as it was: no Rogue's Shop behind the
 // inn, which keeps its event on (4,13), and its shops sell only the original's
 // items, at their records' values.
-void original_shop_checks(const char *directory)
+void original_shop_checks(const std::filesystem::path &directory)
 {
     auto plain = RolfTourSession::load(directory, repository_encounters());
     plain.campaign_party(party_with({rogue()}));
@@ -879,7 +880,7 @@ void original_shop_checks(const char *directory)
           "With Original shops off, the Rogue's Shop is back");
 }
 
-void knock_checks(const char *directory)
+void knock_checks(const std::filesystem::path &directory)
 {
     auto party = std::make_shared<CampaignParty>(module());
     add_knock_wizard(*party);
@@ -894,10 +895,11 @@ void knock_checks(const char *directory)
 
 int main()
 {
-    const char *directory = std::getenv("OPENGOLD_GAME_DIR");
-    if (!directory || !std::filesystem::exists(directory))
+    const auto directory =
+        opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+    if (directory.empty() || !std::filesystem::exists(directory))
     {
-        std::cout << "Rogue's Shop checks skipped: OPENGOLD_GAME_DIR is not set\n";
+        std::cout << "Rogue's Shop checks skipped: Pool of Radiance's files are not here\n";
         return 0;
     }
     try

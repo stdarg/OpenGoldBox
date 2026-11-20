@@ -5,8 +5,9 @@ void ui_fixture()
     // The fixture saves the original town, so without original files there is
     // nothing to write; the screen check that reads it is skipped then too.
     const auto output = std::getenv("OPENGOLD_MASTERY_REST_FIXTURE");
-    const auto assets = std::getenv("OPENGOLD_GAME_DIR");
-    if (!output || !assets || !*assets)
+    const auto assets =
+        opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+    if (!output || assets.empty())
     {
         return;
     }

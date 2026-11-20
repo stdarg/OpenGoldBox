@@ -2,8 +2,9 @@
 # town screen, from the saves opengold_expedition_tests writes one step from
 # each event's squares (FIXTURES/area-events, a sample). Godot's user data
 # goes to WORK.
-if("$ENV{OPENGOLD_GAME_DIR}" STREQUAL "")
-    message("Skipped: OPENGOLD_GAME_DIR is not set")
+include("${CMAKE_CURRENT_LIST_DIR}/find_games.cmake")
+if(NOT DEFINED game_folder_POOLRAD)
+    message("Skipped: Pool of Radiance's files are not here")
     return()
 endif()
 file(REMOVE_RECURSE "${WORK}")

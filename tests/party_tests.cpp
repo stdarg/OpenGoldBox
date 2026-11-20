@@ -12,10 +12,10 @@
 #include "opengold/rolf_tour.h"
 #include "opengold/srd5.h"
 #include "png_size_only.h"
+#include "installed_games.h"
 #include "test_support.h"
 #include <algorithm>
 #include <array>
-#include <cstdlib>
 #include <fstream>
 #include <chrono>
 #include <iostream>
@@ -2058,8 +2058,9 @@ void unloadable_combat_looks()
     check(!unreadable.looks && unreadable.problem.find(broken.string()) != std::string::npos,
           "Combat looks that cannot be read are named");
     std::filesystem::remove(broken);
-    const auto *directory = std::getenv("OPENGOLD_GAME_DIR");
-    if (!directory || !*directory)
+    const auto directory =
+        opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+    if (directory.empty())
     {
         return;
     }
@@ -2082,8 +2083,9 @@ void unloadable_combat_looks()
 
 void combat_demo_fixture()
 {
-    const auto *directory = std::getenv("OPENGOLD_GAME_DIR");
-    if (!directory || !*directory)
+    const auto directory =
+        opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+    if (directory.empty())
     {
         return;
     }

@@ -1,8 +1,8 @@
 #include "opengold/speaker_audio.h"
+#include "installed_games.h"
 #include "test_support.h"
 #include <algorithm>
 #include <cmath>
-#include <cstdlib>
 #include <iostream>
 #include <stdexcept>
 
@@ -217,10 +217,11 @@ void rendering()
 
 void installed()
 {
-    const auto *directory = std::getenv("OPENGOLD_GAME_DIR"); // Borrowed environment view.
-    if (!directory || !*directory)
+    const auto directory = opengold::test::installed_game_folder(
+        opengold::GoldBoxGame::pool_of_radiance); // Borrowed environment view.
+    if (directory.empty())
     {
-        std::cout << "Installed sound check skipped (OPENGOLD_GAME_DIR unset)\n";
+        std::cout << "Installed sound check skipped (Pool of Radiance's files are not here)\n";
         return;
     }
     const auto effects = load_sound_effects(directory);

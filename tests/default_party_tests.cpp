@@ -1,10 +1,9 @@
 // Play with Default Party: each game's own default party
 // (data/default_parties, docs/DEFAULT-PARTIES.md), made by the game's creation
 // rules under the original rules and under the SRD. The original rules read
-// the game's files: Pool of Radiance's from OPENGOLD_GAME_DIR, the other
-// games' and Unlimited Adventures' kit from OPENGOLD_GOLDBOX_DIR; a game
-// whose files are not here is skipped. The SRD parties need no game files;
-// Gateway, Pools of Darkness and Treasures have none yet.
+// the game's files, each game's folder found by its files
+// (installed_games.h); a game whose files are not here is skipped. The SRD parties need no game
+// files; Gateway, Pools of Darkness and Treasures have none yet.
 #include "opengold/campaign_party.h"
 #include "opengold/character_art.h"
 #include "opengold/default_party.h"
@@ -16,9 +15,9 @@
 #include "opengold/srd5.h"
 #include "opengold/ua_design.h"
 #include "opengold/ua_session.h"
+#include "installed_games.h"
 #include "test_support.h"
 #include <algorithm>
-#include <cstdlib>
 #include <filesystem>
 #include <iostream>
 #include <memory>
@@ -43,19 +42,7 @@ const std::filesystem::path source_dir(OPENGOLD_SOURCE_DIR);
 // The folder of `game` the developer has, or empty.
 [[nodiscard]] std::filesystem::path developer_folder(GoldBoxGame game)
 {
-    const char *variable =
-        game == GoldBoxGame::pool_of_radiance ? "OPENGOLD_GAME_DIR" : "OPENGOLD_GOLDBOX_DIR";
-    const char *value = std::getenv(variable);
-    if (!value)
-    {
-        return {};
-    }
-    auto folder = std::filesystem::path(value);
-    if (game != GoldBoxGame::pool_of_radiance)
-    {
-        folder /= std::string(opengold::game_folder(game));
-    }
-    return opengold::identify_game(folder) == game ? folder : std::filesystem::path();
+    return opengold::test::installed_game_folder(game);
 }
 
 [[nodiscard]] std::vector<opengold::MemberId> members_of(const opengold::CampaignParty &party)

@@ -4,7 +4,7 @@ extends SceneTree
 # in its own folder, as each original had its SAVE folder, and its save and
 # load screens list only that game's. A save of another game, put among them
 # by hand, starts its own game when loaded. Run by tests/settings_check.cmake;
-# skipped without Curse's files in OPENGOLD_GOLDBOX_DIR.
+# skipped when the game finds no Curse's files.
 
 func _initialize() -> void:
 	call_deferred("run_checks")
@@ -103,8 +103,8 @@ func file_of(folder: String, name: String) -> String:
 	return ProjectSettings.globalize_path(folder).path_join(name.to_utf8_buffer().hex_encode() + ".ogs")
 
 func run_checks() -> void:
-	var curse := OS.get_environment("OPENGOLD_GOLDBOX_DIR").path_join("CURSE")
-	if OS.get_environment("OPENGOLD_GOLDBOX_DIR").is_empty() or not FileAccess.file_exists(curse.path_join("TILES.DAX")):
+	var curse := StartupView.game_folder("CURSE")
+	if curse.is_empty() or not FileAccess.file_exists(curse.path_join("TILES.DAX")):
 		print("Skipped: Curse's files are not here.")
 		quit(0)
 		return

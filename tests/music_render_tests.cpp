@@ -1,11 +1,12 @@
 // The later games' music played as the AdLib played it (docs/games/later-sound.md,
 // "Playing the music"): FmSynth's notes and envelopes, the driver's timing of a
-// song, and the real banks when OPENGOLD_GOLDBOX_DIR names the folder holding
-// SECRET, GATEWAY, DARKNESS and TREASURE. Everything renders to memory; nothing
+// song, and the real banks of each of Secret, Gateway, Pools of Darkness and
+// Treasures whose folder is found (installed_games.h). Everything renders to memory; nothing
 // is played.
 #include "opengold/fm_synth.h"
 #include "opengold/music_render.h"
 #include "opengold/sound_bank.h"
+#include "installed_games.h"
 #include "test_support.h"
 
 #include <algorithm>
@@ -221,38 +222,37 @@ void real_bank_renders(const std::filesystem::path &folder, GoldBoxGame game, un
 
 void real_banks_render()
 {
-    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    if (!games || !std::filesystem::is_directory(games))
+    using opengold::test::installed_game_folder;
+    const auto secret_folder = installed_game_folder(GoldBoxGame::secret_of_the_silver_blades);
+    const auto gateway_folder = installed_game_folder(GoldBoxGame::gateway_to_the_savage_frontier);
+    const auto darkness_folder = installed_game_folder(GoldBoxGame::pools_of_darkness);
+    const auto treasure_folder =
+        installed_game_folder(GoldBoxGame::treasures_of_the_savage_frontier);
+    if (!secret_folder.empty())
     {
-        std::cout << "OPENGOLD_GOLDBOX_DIR not set; the real banks are not checked\n";
-        return;
+        real_bank_renders(secret_folder, GoldBoxGame::secret_of_the_silver_blades, 2);
     }
-    const std::filesystem::path root(games);
-    if (std::filesystem::exists(root / "SECRET"))
+    if (!gateway_folder.empty())
     {
-        real_bank_renders(root / "SECRET", GoldBoxGame::secret_of_the_silver_blades, 2);
+        real_bank_renders(gateway_folder, GoldBoxGame::gateway_to_the_savage_frontier, 1);
     }
-    if (std::filesystem::exists(root / "GATEWAY"))
-    {
-        real_bank_renders(root / "GATEWAY", GoldBoxGame::gateway_to_the_savage_frontier, 1);
-    }
-    if (std::filesystem::exists(root / "DARKNESS"))
+    if (!darkness_folder.empty())
     {
         for (unsigned piece = 1; piece <= 8; ++piece)
         {
-            real_bank_renders(root / "DARKNESS", GoldBoxGame::pools_of_darkness, piece);
+            real_bank_renders(darkness_folder, GoldBoxGame::pools_of_darkness, piece);
         }
         // The opening film's song, from its own file.
         const auto film_song = opengold::por::SoundBank::load_song(
-            root / "DARKNESS" / "P1.SMS", GoldBoxGame::pools_of_darkness, 0);
+            darkness_folder / "P1.SMS", GoldBoxGame::pools_of_darkness, 0);
         check(film_song.clips().size() == 1 && film_song.at(1).audible &&
                   film_song.at(1).pcm.samples().size() >
                       10u * opengold::por::PcmBuffer::sample_rate(),
               "P1.SMS's song 0 plays for more than ten seconds");
     }
-    if (std::filesystem::exists(root / "TREASURE"))
+    if (!treasure_folder.empty())
     {
-        const auto treasure = root / "TREASURE";
+        const auto treasure = treasure_folder;
         real_bank_renders(treasure, GoldBoxGame::treasures_of_the_savage_frontier, 1);
         const auto music = opengold::por::SoundBank::load_music(
             treasure, GoldBoxGame::treasures_of_the_savage_frontier, 1);

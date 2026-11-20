@@ -1,10 +1,10 @@
 #include "opengold/character_art.h"
 #include "opengold/character_creator.h"
 #include "opengold/srd5.h"
+#include "installed_games.h"
 #include "test_support.h"
 #include <algorithm>
 #include <set>
-#include <cstdlib>
 #include <iostream>
 #include <stdexcept>
 
@@ -960,7 +960,9 @@ void art_tests()
             (void)compose_character_icon(head, body, a);
         },
         "Reject invalid colors");
-    if (const auto directory = std::getenv("OPENGOLD_GAME_DIR"))
+    if (const auto directory =
+            opengold::test::installed_game_folder(opengold::GoldBoxGame::pool_of_radiance);
+        !directory.empty())
     {
         const auto art = CharacterArt::load(directory);
         a = CharacterAppearance{};
