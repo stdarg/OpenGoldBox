@@ -403,7 +403,8 @@ the team boards a ship, nor once after a script sets cell 4B80h.
   Treat Light Wounds (twice 1d8), tried by each okay member in turn. Every
   check is at difficulty 2, except a medic's Treat Critical Wounds on
   itself, at 4. Anyone with the skill treats, and only Medics learn the
-  Treat skills. A treated patient is okay.
+  Treat skills. A treated patient is okay. Only Treat Critical Wounds is
+  harder on oneself, as in the original (the user, 2026-11-20).
 - **Unkillable:** a member with the Unkillable effect and fewer than 45 Hit
   Points stands up with 45.
 - **The report** lists each cure, antidote, coma and healing, and ends with
@@ -440,7 +441,8 @@ rest, or at a hospital or the clinic.
   character what it asks for, at most the pool. The booty menu and the shops
   have these commands, and fallen enemies' credits go into the pool. A shop
   empties the pool as it opens. Leaving the booty menu or a shop with
-  credits still pooled loses them, after a warning.
+  credits still pooled loses them, after one warning, as in the original
+  (the user, 2026-11-20).
 - **Trading:** on the character sheet a character hands credits to another,
   at most what it has.
 
@@ -464,7 +466,8 @@ rest, or at a hospital or the clinic.
   rounds and a weapon holds 250; a rocket launcher or a plasma thrower holds
   10 and is sold a round at a time. Each 10 rounds, or part of them, costs
   the weapon type's price, 5 to 100 credits (`gdconsts.pas` `ammoPrices`).
-  The shop's multiplier does not apply.
+  The shop's multiplier does not apply. Topping up a weapon charges a whole
+  clip for a part of one, as in the original (the user, 2026-11-20).
 - **HALVE and JOIN** (the gear menu): HALVE splits a bundle of grenades or
   antidotes in two, the larger half staying; the menu offers it below 16
   items. JOIN gathers every like item into the chosen one, up to 100 a
@@ -496,7 +499,7 @@ BANK, DOWNTOWN, HOSPITAL, PORT and TRAINING, by the outpost (cell 4C31h).
   supplies for 2,000 (10 at most, cell 4C63h).
 - **Salvation** (script 17) charges nothing: its port refuels, repairs,
   rearms and restocks 10 medical supplies, and its doctor heals every member
-  who is not dead.
+  who is not dead, gone ones too, as in the original (the user, 2026-11-20).
 - **The ship's clinic** (script 34, when the team takes to space hurt):
   one unit of medical supplies heals a member who is not dead or gone to
   full Hit Points and okay.
@@ -547,9 +550,8 @@ Worked out at every turn and attack (`charhlp.pas` `RecalcStats`,
   side's modifier must reach the target number. A natural 1 misses; a natural
   20 counts as 100. A helpless defender is always hit.
 - **The target number** (`cbtacts.pas` `RollAttacks`, `ApplyRangePenalty`):
-  the defender's Armor Class, or its rear one from behind, 2 higher for a
-  Rogue from behind, as the original has it (open question 4 in
-  [BUCK-ROGERS.md](../BUCK-ROGERS.md)).
+  the defender's Armor Class, or its rear one from behind, 2 lower for a
+  Rogue from behind (the original's 2 higher is a bug, fixed; Bugs).
   A guard's shot with a ranged weapon is 5 harder; otherwise cover on the
   line past the shooter's first two squares adds 2, and range adds 2 past half
   the weapon's range and 5 past three quarters. Cover is difficult ground on
@@ -588,8 +590,9 @@ save of category 1 is made.
 - **A launch** (`CombatLaunchProjectile`) aims at a square. The damage is
   rolled once. A shot whose combat value and d20, less the range's penalty,
   come to 50 or less goes astray: up to four tries at a square farther out
-  (`ScatterOffset`), the first within about four squares of the shooter
-  (open question 5 in [BUCK-ROGERS.md](../BUCK-ROGERS.md)).
+  (`ScatterOffset`), the first within about four squares of the shooter,
+  each later one up to twice as far as the last walked, as in the original
+  (the user, 2026-11-20).
   Chaff on its way sets it off there. Everyone a clear line from where it
   lands reaches within its radius (2 a straight step, 3 a diagonal, at most
   twice the radius and 1) saves or takes it. The launch ends the shooter's
@@ -787,6 +790,11 @@ Fixed in OpenGoldBox, in both games unless named:
     picture's pixels. It shows `LOTEK`'s last tile, a piece of the same walls.
     No other arena asks for a tile its file lacks (`MARSCOM` and `VENUSCOM`
     included, checked on every ground with many dice).
+17. **A Rogue was worse from behind** (`cbtacts.pas` `RollAttacks`): a Rogue
+    striking from behind needed a number 2 higher, so it hit from behind less
+    often than anyone. These games count Armor Class upward, and the earlier
+    games' thief bonus kept its sign unturned. The number is 2 lower now (the
+    user, 2026-11-20).
 
 ## Ship combat
 

@@ -520,7 +520,10 @@ int range_penalty(int distance, int weapon_range) noexcept
 int target_number(const GroundNumbers &defender, const AttackSetting &setting) noexcept
 {
     int target = defender.armor_class[setting.from_behind ? 1 : 0];
-    target += setting.from_behind && setting.rogue ? 2 : 0;
+    // The original adds 2 here, which makes a Rogue worse from behind than
+    // anyone; these games count Armor Class upward, so the earlier games'
+    // thief bonus kept its sign unturned. Fixed as a bug: 2 easier.
+    target -= setting.from_behind && setting.rogue ? 2 : 0;
     if (setting.ranged_weapon && setting.guarding)
     {
         return target + 5;

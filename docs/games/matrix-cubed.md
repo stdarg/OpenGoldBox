@@ -156,7 +156,11 @@ checked by `tests/matrix_cubed_tests.cpp`:
 The engine routines are *Countdown*'s, unchanged: the wounded after a fight,
 poison and antidotes, AID, rest, the credit pool, shops, ammunition, HALVE
 and JOIN are as [countdown.md](countdown.md), "Upkeep and money", describes,
-in the same code (`buck_rogers_upkeep.cpp`). The scripts differ:
+in the same code (`buck_rogers_upkeep.cpp`). The same choices to keep the
+original hold (the user, 2026-11-20): only Treat Critical Wounds is harder
+on oneself, Salvation's doctor heals gone members too, pooled credits left
+behind are lost after one warning, and topping up ammunition charges a
+whole clip. The scripts differ:
 
 - **Where:** Salvation is script 17, and its port, like *Countdown*'s, is
   free. Script 20 of `ECL1` is the outpost with the bank and the hospital,
@@ -211,6 +215,10 @@ in [countdown.md](countdown.md), "Bugs".
    refused and charged the bank account, then the patient, into debt.
    OpenGoldBox reads the word there (`script_operand_tag`). The game's files
    are unchanged.
+5. **A Rogue was worse from behind** (`cbtacts.pas` `RollAttacks`): as in
+   *Countdown*, a Rogue striking from behind needed a number 2 higher, so it
+   hit from behind less often than anyone. The number is 2 lower now (the
+   user, 2026-11-20; [countdown.md](countdown.md), Bugs).
 
 ## Ship combat
 

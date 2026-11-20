@@ -894,13 +894,20 @@ void range_and_cover_raise_the_target()
     front.guarding = true;
     check(og::target_number(defender, front) == 60,
           "A guard's shot is 5 harder, and neither cover nor range counts then");
-    // cbtacts.pas RollAttacks: the rear Armor Class from behind, 2 higher
-    // for a Rogue.
+    // cbtacts.pas RollAttacks: the rear Armor Class from behind, 2 lower for
+    // a Rogue (the original's 2 higher, fixed as a bug; countdown.md, Bugs).
     og::AttackSetting behind;
     behind.from_behind = true;
     check(og::target_number(defender, behind) == 51, "From behind the rear Armor Class counts");
     behind.rogue = true;
-    check(og::target_number(defender, behind) == 53, "A Rogue from behind needs 2 more");
+    check(og::target_number(defender, behind) == 49, "A Rogue from behind needs 2 less");
+    og::AttackSetting rogue_in_front;
+    rogue_in_front.rogue = true;
+    const int front_target = og::target_number(defender, rogue_in_front);
+    const int behind_target = og::target_number(defender, behind);
+    check(behind_target < front_target && !og::ground_attack_hits(9, 40, 0, front_target) &&
+              og::ground_attack_hits(9, 40, 0, behind_target),
+          "A Rogue hits from behind on a roll that misses from the front");
 }
 
 void rear_attacks_and_backstabs()

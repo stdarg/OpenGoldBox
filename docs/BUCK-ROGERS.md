@@ -772,21 +772,7 @@ shows these names while a Buck Rogers game plays:
 The sources settle everything else in this plan. Questions found in later
 steps go to the user, numbered, one topic each.
 
-Open (found in B2's ground combat; the original's rule is played until
-the user decides):
-
-4. **A Rogue from behind** (`cbtacts.pas` `RollAttacks`): when a Rogue
-   strikes from behind, the number it must reach is 2 higher, so a Rogue hits
-   from behind less often than anyone else. The earlier games give a thief 4
-   better from behind (Curse's `RollAttacks`), and these games count Armor
-   Class upward, so the 2 may be that bonus left unturned. OpenGoldBox plays
-   the 2 higher, as the original does.
-5. **How far a stray shot may land** (`CombatLaunchProjectile`): of the four
-   tries at a stray landing, the first must lie within about four squares of
-   the shooter, and each later try may reach twice as far as the last try
-   walked, so a stray long throw usually comes down on its target. The
-   original reuses the walked distance as the next try's reach; OpenGoldBox
-   does the same.
+None are open.
 
 Decided:
 
@@ -821,3 +807,23 @@ Decided:
    enemy unable to finish the ship or leave, ends as if the enemy broke off
    (a bug, fixed). The enemy moving first each round after the team wins the
    pilot roll, and its boosting without limit, stay as in the original.
+5. **A Rogue from behind** (`cbtacts.pas` `RollAttacks`; found in B2; the
+   user, 2026-11-20: fix it as a bug). When a Rogue strikes from behind, the
+   original makes the number it must reach 2 higher, so a Rogue hits from
+   behind less often than anyone else. The earlier games give a thief 4
+   better from behind (Curse's `RollAttacks`), and these games count Armor
+   Class upward, so the 2 is that bonus with its sign left unturned. The
+   manuals give no figure. OpenGoldBox makes the number 2 lower, and lists
+   the change under Bugs.
+6. **How far a stray shot may land** (`CombatLaunchProjectile`; found in B2;
+   the user, 2026-11-20: keep the original). Of the four tries at a stray
+   landing, the first must lie within about four squares of the shooter,
+   and each later try may reach twice as far as the last try walked, so a
+   stray long throw usually comes down on its target. The original reuses
+   the walked distance as the next try's reach; OpenGoldBox does the same.
+7. **Upkeep** (found in B2; the user, 2026-11-20: keep the original, both
+   games; [games/countdown.md](games/countdown.md), "Upkeep and money"). A
+   Medic treating its own wounds finds only Treat Critical Wounds harder.
+   Salvation's doctor heals even members who are gone. Credits left in the
+   pool are lost after one warning. Topping up ammunition charges a whole
+   clip.

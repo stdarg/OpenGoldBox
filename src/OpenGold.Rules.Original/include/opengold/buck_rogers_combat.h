@@ -233,7 +233,8 @@ struct GroundLine
 
 // The number an attack must reach (cbtacts.pas RollAttacks and
 // ApplyRangePenalty): the defender's Armor Class, the rear one from behind,
-// 2 higher for a Rogue from behind; 5 higher for a ranged weapon fired by a
+// 2 lower for a Rogue from behind (the original's 2 higher, a bug, fixed);
+// 5 higher for a ranged weapon fired by a
 // guard, or otherwise 2 for cover and the range's penalty.
 struct AttackSetting
 {
