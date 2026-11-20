@@ -2,8 +2,8 @@
 
 The first *Buck Rogers XXVc* Gold Box game (1990). The plan to play it to its
 win under its original rules is [BUCK-ROGERS.md](../BUCK-ROGERS.md). Step B0
-(groundwork) and step B1 (the reading census) are done (2026-11-19); the game
-does not play yet, and its button in the startup menu stays disabled until it
+(groundwork) and step B1 (the reading census) are done (2026-11-19), and the
+characters' rules of step B2 (2026-11-20); the game does not play yet, and its button in the startup menu stays disabled until it
 does.
 
 ## Files and references
@@ -162,8 +162,8 @@ the script saved there on every path, through subroutines.
   these: Befriend Animal, Hypnosis and Paint/Draw. Everywhere else the
   numbers name the skill the text asks for (Matrix Cubed's amateur night
   asks 77 Singing, 71 Act, 48 Mimic and 64 Acrobatics); Fast Talk/Convince
-  (76) and Intimidate (72) are two numbers higher. See open question 2 in
-  BUCK-ROGERS.md.
+  (76) and Intimidate (72) are two numbers higher. OpenGoldBox checks 76, 72
+  and 71 (Bugs).
 - **Ship combats**: three. Script 34 fights ship 1 (the Hubble type) with
   pilot skill 50 and to-hit 18, and random encounters with ships 1 to 5,
   whose pilot and to-hit values the script sets before the fight. Script 95
@@ -193,6 +193,202 @@ the script saved there on every path, through subroutines.
   loads script 17: the team is back at Salvation. The engine has no ending of
   its own.
 
+## Rules: the characters (step B2)
+
+The character half of step B2 is done (2026-11-20): careers, races,
+abilities, Hit Points, experience, saving throws, skills and their checks,
+creation, training, Modify and the character record. Ship combat is another
+part of B2; ground combat, injuries and healing, and money come after. The
+rules live in `src/OpenGold.Rules.Original/src/buck_rogers_rules.cpp`
+(`opengold/buck_rogers_rules.h`), keyed by game; *Matrix Cubed*'s
+differences are in [matrix-cubed.md](matrix-cubed.md). A character is the
+game's own record (`buck_rogers::Creature`), so what the rules make is what
+the original saves. `tests/countdown_tests.cpp` checks each rule and names
+the routine of the original it follows.
+
+### Careers and races
+
+- **Careers**, numbered 1 to 6 in the record: Rocketjock, Medic, Warrior,
+  Engineer, Rogue and Scout. They are `Profession::rocket_jock` to
+  `Profession::scout`, after the AD&D classes, whose numbers do not change.
+- **Races**, numbered 0 to 8: the monsters' race 0, then Terran, Martian,
+  Venusian, Mercurian, Tinker, Desert Runner, Lunarian and Lowlander
+  (`Race::monster` to `Race::lowlander`, after the Krynn races).
+- **The menus** offer the first six races. The four human races may take
+  the first five careers; a Tinker may be a Medic or an Engineer; a Desert
+  Runner a Rocketjock, a Warrior or an Engineer. No race is offered the
+  Scout: the source lists it sixth for the human races but counts only five.
+  `professions_for(race, game)` gives these lists in the two games.
+- **Movement** is 12; a Tinker's is 9 and a Desert Runner's 15.
+- **Unarmed:** one attack a round for 1d2; a Warrior punches twice for 1d3;
+  a Desert Runner's claws make it 1d3 + 1.
+
+### Abilities
+
+Seven: Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma and
+Tech. Each is the best of six 3d6 rolls, plus the race's adjustment; a
+result below 1 is 1, and a result below the career's minimum is raised to
+it. The player may reroll the whole set as often as wished.
+
+| Race | Str | Dex | Con | Int | Wis | Cha | Tech |
+|---|---|---|---|---|---|---|---|
+| Terran | | | +1 | | +1 | | |
+| Martian | -1 | +1 | -1 | | -1 | +1 | |
+| Venusian | | -1 | +1 | | +1 | -1 | |
+| Mercurian | -1 | +1 | +1 | | | | |
+| Tinker | -2 | +3 | -2 | | | | +3 |
+| Desert Runner | +2 | +2 | +1 | | | -1 | |
+
+| Career | Minimums |
+|---|---|
+| Rocketjock | Dex 13, Int 11, Cha 12 |
+| Medic | Dex 12, Int 12, Wis 12 |
+| Warrior | Str 10, Dex 8, Con 10, Int 8 |
+| Engineer | Str 10, Con 12, Int 8, Tech 13 |
+| Rogue | Dex 13, Int 8, Wis 9, Cha 13 |
+
+### Hit Points, experience and combat value
+
+- **Hit Points** each level: the better of two rolls of the career's die (a
+  Warrior's d10, an Engineer's d8, the rest d6), plus the Constitution bonus
+  (-3 at 1 up to +6 at 21; none from 7 to 14), which only a Warrior gets
+  above +2; at least 1. The source fixes the gain from level 9 (2, a
+  Warrior 3), which *Countdown* never reaches.
+- **Experience** has one table a career, to level 9: the Rocketjock's,
+  Engineer's and Rogue's from 1,250 at level 2 to 110,000 at 9; the Medic's
+  from 1,500 to 192,000; the Warrior's from 2,000 to 250,000. The level
+  limit is 8.
+- **Combat value** is 40 at levels 0 to 2 and rises to 44 at level 9 (48
+  for a Warrior).
+
+### Saving throws
+
+Eight categories, numbered 0 to 7. Each is a d20 to meet or beat; 1 always
+fails and 20 always saves. A new character's are 15, 14, 14, 13, 13, 16, 13
+and 13, less its race's adjustments: a Terran is one better in category 0, a
+Mercurian three better in 4 and four in 6 but three worse in 7, and so on.
+Each third level makes every save one better. The engine uses category 0
+against a stun and 2 for a crew member as its ship is hit; the weapons and
+effects that call the others name only their numbers, and the manual gives
+the categories no names.
+
+### Skills
+
+- **84 skills** in five groups: technical (1 to 23), Intelligence (24 to
+  50), Dexterity (51 to 69), Charisma (70 to 79) and Wisdom (80 to 84); the
+  Constitution group is empty. 54 are offered; the other 30 (Cook, History,
+  Hypnosis, Paint/Draw and the like) are on the list but can never be
+  learned.
+- **Career skills:** each career's eight, which only career points buy. The
+  rest offered are general skills, which general points buy; the medical
+  skills (Life Suspension Tech to Diagnose) are a Medic's career skills and
+  no one else's.
+- **Prerequisites:** Repair Nuclear Engine and Repair Rocket Hull need 10
+  in Repair Mechanical; Repair Life Support 30 Electrical and 25
+  Mechanical; Jury Rig 10 of each; Treat Serious Wounds 30 Treat Light;
+  Treat Critical 40 Treat Serious; Treat Poisoning 15 Diagnose and Treat
+  Disease 25; Programming 10 Mathematics; Astrogation 20 Astronomy and 25
+  Mathematics; Navigation 15 Astronomy and 25 Mathematics; Planetary
+  Survival 10 Planetology.
+- **Starting levels:** a Rocketjock's piloting and driving skills and a
+  Rogue's eight career skills start at 10; everything else at 0.
+- **Spending** (the skill screen): at creation 80 career and 40 general
+  points, at most 30 in one skill; at each training 40 and 20, at most 15. A
+  general skill stops at 80. A new character may learn seven general skills;
+  later, one new one a level. Points may be taken back until the screen is
+  left. When a skill drops below another's prerequisite, the other goes to 0
+  and its points come back.
+- **Value:** a skill's level plus the score of its group's ability, while
+  its prerequisites are met (otherwise the level alone), for a character
+  who can act; 0 without the skill.
+
+### Skill checks
+
+The check scales the value by its difficulty (0 four times, 1 twice, 2 as it
+is, 3 half, 4 a quarter, rounded down) and rolls a d100. A roll up to the
+value succeeds, and one at least half the value under it succeeds greatly; a
+miss by more than the value is a bad failure. When the whole party may try,
+every member rolls and the best margin acts. The hail's checks are corrected
+(Bugs).
+
+### Creation
+
+In order: race, gender, career; the age (1d6 + 18); the abilities; the free
+training from level 0 to level 2 (two levels of Hit Points, and no skill
+points or specialization in it); the reroll offer; the name; a Warrior's one
+weapon specialization; the skill screen; the body icon; and the save, with
+1,000 credits, Armor Class 50 and two readied items: template 7, a Bolt Gun
+with 100 rounds, and template 20, a Spacesuit.
+
+### Training and specializations
+
+Training is free and raises one level: the career's combat value, the
+level's Hit Points, the experience cut to one point short of the next level,
+the saves every third level, a Warrior's specialization at even levels, and
+the skill points. It needs a conscious character with the next level's
+experience, below level 8. A specialization adds one to hit and to damage
+with weapons of its type (the Sonic Stunner's only to hit), at most three in
+one type and ten in all; the weapons are item templates 1 to 15.
+
+### Modify Character
+
+Only a character with its career's starting experience. Each score stays
+between the race's adjustment + 3 and + 18, and at least the career's
+minimum. The Hit Points stay between (the Constitution bonus + 1, at least 1,
+and for a non-Warrior at most 3) times the level and (the bonus, at most 2
+for a non-Warrior, plus 10 for a Warrior, 8 for an Engineer and 6 for the
+rest) times the level; a Constitution change moves them inside the new
+limits.
+
+### The record
+
+A character is 259 bytes (`.who`): the name, the seven abilities and their
+current scores, the eight saves, gender, race, career, level, credits,
+experience, combat value, movement, Armor Class, age, the unarmed attacks,
+Hit Points, 84 skill levels, the ten specializations, the icon, status and
+the combat leftovers. Its items are 62-byte records (`.stf`), of which the
+last 16 are the template. `encode_creature` and `encode_items` write them
+back; every creature in `MON0CHA` and every list in `MON0ITM` of both games
+comes back byte for byte.
+
+## Bugs
+
+Fixed in OpenGoldBox, in both games unless named:
+
+1. **The skill check graded by the wrong member** (`charhlp.pas`
+   `SelectSkillCharacter`): the best roller acted, but its grade came from
+   the value of the last member examined. The grade is now the roller's.
+2. **A high skill value turned negative** (`SkillValue`): *Countdown* kept
+   the value in a signed byte, so a level and ability past 127 (a career
+   skill of 110 with a Dexterity of 18) went negative and failed every
+   check; *Matrix Cubed*'s byte wrapped past 255. The value is no longer
+   cut.
+3. **Lowering a career skill forgot a general skill** (`skills.pas`
+   `EditSkills`): taking a point back from a career skill at its start
+   counted one general skill fewer, so raising and lowering a career skill
+   let a character learn any number of general skills. Only general skills
+   count now.
+4. **Free points from Animal Training** (`EditSkills`,
+   `AdjustPrerequisites`): a Rogue's Animal Training starts at 10 for free
+   once Befriend Animal reaches 20, and lowering Befriend Animal to 19
+   refunded those 10 as if they were spent, every time. The refund is now
+   what was spent.
+5. **Treat Critical Wounds' points stranded** (*Countdown* only,
+   `AdjustPrerequisites`): lowering Treat Light Wounds below 30 took back
+   Treat Serious Wounds but left Treat Critical Wounds with its points and
+   an unmet prerequisite. It is taken back too, as *Matrix Cubed* does.
+6. **The hail's skills** (script 34 of `ECL2`, the checks at 8DE8h, 8E67h
+   and 8ED1h): the bluff, the threat and the call for help check 74 Befriend
+   Animal, 70 Hypnosis and 69 Paint/Draw. Hypnosis and Paint/Draw cannot be
+   learned, so two of the three choices could never succeed; the script was
+   written against a skill table two shorter below 69. OpenGoldBox checks 76
+   Fast Talk/Convince, 72 Intimidate and 71 Act there, and only where the
+   shipped operand is the one expected (`script_check_skill`, which the
+   script host reads each SKILL CHECK through once it runs these games in
+   step B3; the user, 2026-11-20). The
+   game's files are unchanged.
+
 ## Next
 
-Step B2: the Buck Rogers rules ([BUCK-ROGERS.md](../BUCK-ROGERS.md), B2).
+The rest of step B2: ship combat, ground combat, injuries and healing, and
+money ([BUCK-ROGERS.md](../BUCK-ROGERS.md), B2).

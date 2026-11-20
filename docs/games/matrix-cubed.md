@@ -3,8 +3,8 @@
 The second *Buck Rogers XXVc* Gold Box game (1992), the same program as
 *Countdown to Doomsday* with new data. The plan to play it to its win under
 its original rules is [BUCK-ROGERS.md](../BUCK-ROGERS.md). Step B0
-(groundwork) and step B1 (the reading census) are done (2026-11-19); the game
-does not play yet, and its button in the startup menu stays disabled until it
+(groundwork) and step B1 (the reading census) are done (2026-11-19), and the
+characters' rules of step B2 (2026-11-20); the game does not play yet, and its button in the startup menu stays disabled until it
 does.
 
 ## Files and references
@@ -92,7 +92,8 @@ the commands' meanings are *Countdown*'s. What the scripts ask of the engine
   and Programming (43) are the most frequent. The amateur night (script 20)
   asks Singing, Act, Mimic or Acrobatics as the performer chooses. The hail
   of a ship on the solar map repeats *Countdown*'s skills 74, 70 and 69 for a
-  bluff, a threat and a call for help (BUCK-ROGERS.md, open question 2).
+  bluff, a threat and a call for help; OpenGoldBox checks 76, 72 and 71
+  (Bugs).
 - **Ship combats**: three in script 19 (ship 3, the Mohave type, and ships
   the script picks), and one in developer script 1.
 - **The solar map**: script 19 writes area kind 70h and sets picture mode 2
@@ -112,6 +113,65 @@ the commands' meanings are *Countdown*'s. What the scripts ask of the engine
   works, Buck and Wilma praise the team, everyone cheers, and PROGRAM 2 ends
   the game (the original quits to DOS).
 
+## Rules: the characters (step B2)
+
+The same program as *Countdown*'s, so the rules are *Countdown*'s
+([countdown.md](countdown.md), "Rules") with its tables run on to level 20,
+in the same code (`buck_rogers_rules.cpp`, keyed by game). What differs,
+checked by `tests/matrix_cubed_tests.cpp`:
+
+- **Level 7 and the level limit 20.** A new character gets the career's
+  level-7 experience (40,000 for a Rocketjock, Engineer or Rogue, 48,000 for
+  a Medic, 64,000 for a Warrior) and is trained free from level 0 to 7, which
+  also makes its saves two better (levels 3 and 6). The Log Book says new
+  characters start at eighth level; the program makes them level 7, and
+  OpenGoldBox follows the program. Training goes on to level 20; a
+  *Countdown* character stopped at 8 trains on.
+- **The tables to level 20.** The Rocketjock's, Engineer's and Rogue's
+  experience runs to 112,640,000, the Medic's to 393,216,000 and the
+  Warrior's to 256,000,000; combat value to 49, 52 for a Medic or Engineer,
+  59 for a Warrior. Hit Points are rolled through level 9 and fixed from
+  level 10: 3 a level for a Warrior, 2 for the rest.
+- **Preset skills.** A new character starts with its career's skills set
+  (nine to twelve skills: a Rocketjock with 85 Pilot Rocket and 85 Maneuver
+  in Zero-G, a Medic with 75 Treat Critical Wounds, a Rogue with 60 Bypass
+  Security and Open Lock, and so on). It gets no points to spend, but the
+  skill screen lets it take points out of a preset skill, down to that
+  skill's starting level, and put them into another skill of the same kind
+  (career or general), at most 105 above its start. A character at level 7
+  may know twelve general skills.
+- **Three specializations** for a new Warrior, then one at every even level
+  from 8 to 20: ten in all, the number of slots.
+- **Modify** takes a character with its career's level-7 experience.
+- **Treat Light Wounds:** lowering it below 30 takes back Treat Critical
+  Wounds with Treat Serious Wounds. *Countdown* left Critical's points
+  stranded; OpenGoldBox does as *Matrix Cubed* in both games.
+
+## Bugs
+
+Fixed in OpenGoldBox; the ones *Matrix Cubed* shares with *Countdown* (the
+check's grade, high skill values, the general-skill count, Animal Training's
+refund) are in [countdown.md](countdown.md), "Bugs".
+
+1. **Training to level 20 cut the experience** (`chargen.pas`
+   `TrainingMenu`): after training, the original cuts the experience to one
+   short of the next level's, which it reads from the table's entry for
+   level 21. There is none, so it read the next career's first figure: a
+   Rocketjock trained to 20 was left with 1,499 experience, a Warrior with
+   1,249. OpenGoldBox leaves a character at the level limit its experience.
+2. **Each reroll improved the saves** (`CreateCharacterMenu`): the saves are
+   set before the reroll loop and lowered again by the free training at
+   levels 3 and 6 of each roll, so every reroll made all eight saves two
+   better, without end. The saves now start over with each roll.
+3. **The hail's skills** (script 19 of `ECL1`, the checks at 932Eh, 93B7h
+   and 9422h): as in *Countdown*, the bluff, the threat and the call for help
+   check 74 Befriend Animal, 70 Hypnosis and 69 Paint/Draw, two of which can
+   never be learned. OpenGoldBox checks 76 Fast Talk/Convince, 72 Intimidate
+   and 71 Act there, only where the shipped operand is the one expected
+   (`script_check_skill`; the user, 2026-11-20). The game's files are
+   unchanged.
+
 ## Next
 
-Step B2: the Buck Rogers rules ([BUCK-ROGERS.md](../BUCK-ROGERS.md), B2).
+The rest of step B2: ship combat, ground combat, injuries and healing, and
+money ([BUCK-ROGERS.md](../BUCK-ROGERS.md), B2).

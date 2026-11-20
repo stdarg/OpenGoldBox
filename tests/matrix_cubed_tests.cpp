@@ -1,11 +1,13 @@
-// Buck Rogers: Matrix Cubed, plan step B1 (docs/BUCK-ROGERS.md): its music
-// files through the Audio Interface Library, first on made-up bytes, then the
+// Buck Rogers: Matrix Cubed, plan steps B1 and B2 (docs/BUCK-ROGERS.md): its
+// music files through the Audio Interface Library and the rules where its
+// characters differ from Countdown's, first on made-up bytes, then the
 // game's own files when OPENGOLD_GOLDBOX_DIR names the folder holding them
 // (docs/games/matrix-cubed.md). Countdown to Doomsday's tests cover the
 // script commands and records both games share; the whole census of the real
 // files also runs in tests/game_census.cmake.
 #include "opengold/ail_files.h"
 #include "opengold/buck_rogers_records.h"
+#include "opengold/buck_rogers_rules.h"
 #include "opengold/buck_rogers_scripts.h"
 #include "opengold/formats.h"
 #include "opengold/game_census.h"
@@ -21,8 +23,11 @@
 #include <iostream>
 #include <iterator>
 #include <optional>
+#include <ranges>
+#include <set>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace
@@ -102,6 +107,185 @@ void the_bank_and_catalog_are_read()
     const std::string broken = "timbre(1 = BNK_inst(\"piano\",0)\n";
     check(!opengold::ail::decode_timbre_catalog(Bytes(broken.begin(), broken.end())),
           "A timbre line that cannot be read is refused");
+}
+
+// The rules of step B2 where Matrix Cubed's differ from Countdown's
+// (docs/games/matrix-cubed.md, "Rules"); Countdown's tests cover the rest.
+// Each test names the routine of the original it follows.
+
+namespace br = opengold::buck_rogers;
+namespace og = opengold::original;
+using og::Profession;
+using og::Race;
+using og::Skill;
+using og::SkillRefusal;
+
+std::array<int, 8> saves_of(const br::Creature &character)
+{
+    std::array<int, 8> saves{};
+    std::copy(character.saves.begin(), character.saves.end(), saves.begin());
+    return saves;
+}
+
+void the_tables_run_to_level_20()
+{
+    // chargen.pas MAX_LEVEL, AddLevelHitPoints; gdconsts.pas experienceNeeded, careerBaseCombat.
+    check(og::buck_rogers_starting_level(matrix) == 7 && og::buck_rogers_level_limit(matrix) == 20,
+          "Matrix Cubed starts at level 7 and stops at 20");
+    check(og::career_experience_for_level(Profession::warrior, 20, matrix) == 256000000U &&
+              og::career_experience_for_level(Profession::rocket_jock, 7, matrix) == 40000U &&
+              !og::career_experience_for_level(Profession::warrior, 21, matrix),
+          "The tables run to level 20 and no further");
+    check(
+        og::career_base_combat(Profession::warrior, 20, matrix) == 59 &&
+            og::career_base_combat(Profession::medic, 20, matrix) == 52 &&
+            og::career_base_combat(Profession::warrior, 9, matrix) ==
+                og::career_base_combat(Profession::warrior, 9, GoldBoxGame::countdown_to_doomsday),
+        "Combat value goes on rising, the same as Countdown's to level 9");
+    opengold::RandomState random{8};
+    bool rolled_past_three = false;
+    for (int roll = 0; roll < 100; ++roll)
+    {
+        rolled_past_three = rolled_past_three || og::roll_level_hit_points(Profession::warrior, 9,
+                                                                           10, matrix, random) > 3;
+    }
+    check(rolled_past_three &&
+              og::roll_level_hit_points(Profession::warrior, 10, 10, matrix, random) == 3 &&
+              og::roll_level_hit_points(Profession::medic, 10, 10, matrix, random) == 2,
+          "Level 9 is still rolled; from 10 the gain is fixed");
+}
+
+void creation_makes_every_pair()
+{
+    // chargen.pas CreateCharacterMenu with its level 7 free training.
+    opengold::RandomState random{1992};
+    for (const auto race : og::buck_rogers_creation_races())
+    {
+        for (const auto career : og::professions_for(race, matrix))
+        {
+            const auto made =
+                og::new_buck_rogers_character(race, og::Gender::male, career, matrix, random);
+            check(made.level == 7 &&
+                      made.experience == og::career_experience_for_level(career, 7, matrix) &&
+                      made.credits == 1000 &&
+                      made.base_combat == og::career_base_combat(career, 7, matrix),
+                  "A new character is trained free to level 7, with 1,000 credits");
+            check(made.hit_point_maximum >= og::buck_rogers_hit_point_minimum(made) &&
+                      made.hit_point_maximum <= og::buck_rogers_hit_point_maximum(made),
+                  "Seven levels of Hit Points, within what Modify allows");
+            check(saves_of(made) == og::buck_rogers_saving_throws(race, 7),
+                  "Levels 3 and 6 improve the saves");
+            check(og::buck_rogers_modifiable(made, matrix), "Modify takes a new character");
+        }
+    }
+    check(og::creation_specializations(Profession::warrior, matrix) == 3,
+          "A new Warrior chooses three specializations");
+}
+
+void a_reroll_starts_the_saves_over()
+{
+    // chargen.pas CreateCharacterMenu: the original lowered the saves again at
+    // every reroll, as InitializeSaves runs before the reroll loop.
+    opengold::RandomState random{4};
+    auto character = og::new_buck_rogers_character(Race::venusian, og::Gender::female,
+                                                   Profession::medic, matrix, random);
+    for (int reroll = 0; reroll < 5; ++reroll)
+    {
+        og::reroll_buck_rogers_character(character, matrix, random);
+    }
+    check(saves_of(character) == og::buck_rogers_saving_throws(Race::venusian, 7) &&
+              character.level == 7 && character.hit_points == character.hit_point_maximum,
+          "After five rerolls the saves are a level 7 character's, not better");
+}
+
+void training_at_the_limit_keeps_experience()
+{
+    // chargen.pas TrainingMenu, which read experienceNeeded past level 20.
+    opengold::RandomState random{12};
+    auto character = og::new_buck_rogers_character(Race::terran, og::Gender::male,
+                                                   Profession::rogue, matrix, random);
+    character.level = 19;
+    character.experience = 200000000;
+    og::train_buck_rogers_character(character, matrix, random);
+    check(character.level == 20 && character.experience == 200000000,
+          "Training to level 20 leaves the experience (the original cut it to 1,499)");
+    check(og::training_refusal(character, matrix) == og::TrainingRefusal::at_level_limit,
+          "Level 20 is the last");
+    character.level = 8;
+    character.experience = 110000;
+    check(og::training_refusal(character, matrix) == og::TrainingRefusal::none &&
+              og::training_refusal(character, GoldBoxGame::countdown_to_doomsday) ==
+                  og::TrainingRefusal::at_level_limit,
+          "A Countdown character at level 8 trains on in Matrix Cubed");
+}
+
+void new_characters_start_with_preset_skills()
+{
+    // skills.pas ApplyInitialSkills, EditSkills(0, 0, 105, 1); gdconsts.pas careerInitialSkills.
+    opengold::RandomState random{30};
+    const auto rogue = og::new_buck_rogers_character(Race::martian, og::Gender::female,
+                                                     Profession::rogue, matrix, random);
+    auto spending = og::SkillSpending::at_creation(rogue, matrix);
+    check(spending.career_points() == 0 && spending.general_points() == 0 &&
+              spending.max_per_skill() == 105,
+          "No points to spend; at most 105 above a skill's start");
+    for (const auto &preset : og::preset_skills(Profession::rogue, matrix))
+    {
+        check(og::level_of(spending.levels(), preset.skill) == preset.level,
+              "Each preset skill is at its level");
+    }
+    check(og::preset_skills(Profession::rogue, GoldBoxGame::countdown_to_doomsday).empty(),
+          "Countdown has no preset skills");
+    check(spending.add(Skill::notice) == SkillRefusal::no_points, "Points come only from presets");
+    for (int point = 0; point < 30; ++point)
+    {
+        check(spending.subtract(Skill::notice), "A preset skill gives its points back");
+    }
+    check(!spending.subtract(Skill::notice) && og::level_of(spending.levels(), Skill::notice) == 10,
+          "Down to the skill's start, a Rogue's 10 in Notice");
+    check(spending.career_points() == 30 && spending.add(Skill::climb) == SkillRefusal::none,
+          "Points taken from one career skill go to another");
+    check(spending.known_general_skills() == 4, "A Rogue's preset general skills are four");
+    for (int point = 0; point < 10; ++point)
+    {
+        static_cast<void>(spending.subtract(Skill::first_aid));
+    }
+    const std::array learned{Skill::astronomy, Skill::acrobatics, Skill::disguise,
+                             Skill::etiquette, Skill::singing,    Skill::tracking,
+                             Skill::shadowing, Skill::act,        Skill::distract};
+    for (const auto skill : learned)
+    {
+        check(spending.add(skill) == SkillRefusal::none, "Up to twelve general skills at level 7");
+    }
+    check(spending.add(Skill::intimidate) == SkillRefusal::no_new_skills,
+          "A thirteenth is refused");
+}
+
+void treat_light_wounds_takes_critical_back_too()
+{
+    // skills.pas AdjustPrerequisites (Matrix Cubed's Treat Light Wounds row).
+    opengold::RandomState random{6};
+    const auto medic = og::new_buck_rogers_character(Race::terran, og::Gender::female,
+                                                     Profession::medic, matrix, random);
+    auto spending = og::SkillSpending::at_creation(medic, matrix);
+    for (int point = 0; point < 21; ++point)
+    {
+        check(spending.subtract(Skill::treat_light_wounds), "Light Wounds may be lowered");
+    }
+    check(og::level_of(spending.levels(), Skill::treat_serious_wounds) == 0 &&
+              og::level_of(spending.levels(), Skill::treat_critical_wounds) == 0 &&
+              spending.career_points() == 21 + 40 + 75,
+          "Below 30 Light, Serious and Critical Wounds go and give their points back");
+}
+
+void the_hail_checks_the_skills_it_names()
+{
+    // The hail menu of ECL1 script 19 (the user, 2026-11-20: fix it as a bug).
+    check(og::script_check_skill(matrix, "ECL1.DAX", 19, 0x932E, 74) == 76 &&
+              og::script_check_skill(matrix, "ECL1.DAX", 19, 0x93B7, 70) == 72 &&
+              og::script_check_skill(matrix, "ECL1.DAX", 19, 0x9422, 69) == 71 &&
+              og::script_check_skill(matrix, "ECL1.DAX", 19, 0x9422, 70) == 70,
+          "Bluff, intimidate and ask for help check Fast Talk, Intimidate and Act");
 }
 
 std::optional<std::filesystem::path> files_of(GoldBoxGame game)
@@ -212,6 +396,47 @@ void the_scripts_are_listed(const std::filesystem::path &folder)
           "Only script 114 ends the game, with PROGRAM 2 after the heroes' welcome");
 }
 
+void the_records_save_as_they_were(const std::filesystem::path &folder)
+{
+    const auto characters = opengold::decode_dax_archive(file_bytes(folder / "MON0CHA.DAX"));
+    for (const auto &record : characters.records)
+    {
+        const auto creature = br::decode_creature(record.bytes);
+        check(creature && br::encode_creature(*creature) == record.bytes,
+              "Each of Matrix Cubed's creatures saves byte for byte");
+    }
+    check(characters.records.size() == 63, "All 63 creatures round trip");
+    const auto item_lists = opengold::decode_dax_archive(file_bytes(folder / "MON0ITM.DAX"));
+    for (const auto &record : item_lists.records)
+    {
+        const auto items = br::decode_items(record.bytes);
+        check(items && br::encode_items(*items) == record.bytes,
+              "Each item list saves byte for byte");
+    }
+}
+
+void the_hail_is_corrected_where_it_is(const std::filesystem::path &folder)
+{
+    const auto listing = opengold::list_buck_rogers_scripts(folder, matrix);
+    const std::array<std::pair<std::uint16_t, unsigned>, 3> hails{
+        {{0x932E, 74}, {0x93B7, 70}, {0x9422, 69}}};
+    for (const auto &[address, shipped] : hails)
+    {
+        const auto use = std::ranges::find_if(listing.skill_checks,
+                                              [address](const opengold::SkillCheckUse &check_use)
+                                              {
+                                                  return check_use.place.script == 19 &&
+                                                         check_use.place.address == address;
+                                              });
+        check(use != listing.skill_checks.end() && use->place.archive == "ECL1.DAX" &&
+                  use->skill.values == std::set{shipped},
+              "The hail checks the shipped skill there");
+        check(og::script_check_skill(matrix, use->place.archive, 19, address, shipped) ==
+                  shipped + 2,
+              "and the corrected one is two higher");
+    }
+}
+
 void the_files_decode()
 {
     const auto folder = files_of(matrix);
@@ -223,6 +448,8 @@ void the_files_decode()
     the_records_decode(*folder);
     the_music_needs_only_its_library(*folder);
     the_scripts_are_listed(*folder);
+    the_records_save_as_they_were(*folder);
+    the_hail_is_corrected_where_it_is(*folder);
 }
 
 } // namespace
@@ -234,6 +461,13 @@ int main()
         drivers_are_recognized();
         the_timbre_library_is_indexed();
         the_bank_and_catalog_are_read();
+        the_tables_run_to_level_20();
+        creation_makes_every_pair();
+        a_reroll_starts_the_saves_over();
+        training_at_the_limit_keeps_experience();
+        new_characters_start_with_preset_skills();
+        treat_light_wounds_takes_critical_back_too();
+        the_hail_checks_the_skills_it_names();
         the_files_decode();
         std::cout << "Matrix Cubed passed.\n";
     }

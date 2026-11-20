@@ -38,7 +38,18 @@ enum class Race : unsigned
     mountain_dwarf,
     hill_dwarf,
     kender,
-    krynn_human
+    krynn_human,
+    // The Buck Rogers games' races, in their record order 0 to 8: race 0 is
+    // the monsters', and the last two are NPCs' and monsters' only.
+    monster,
+    terran,
+    martian,
+    venusian,
+    mercurian,
+    tinker,
+    desert_runner,
+    lunarian,
+    lowlander
 };
 
 enum class Gender : unsigned
@@ -83,7 +94,15 @@ enum class Profession : unsigned
     fighter_thief,
     fighter_magic_user_thief,
     magic_user_thief,
-    knight
+    knight,
+    // The Buck Rogers games' careers, in their record order 1 to 6. No race
+    // is offered the Scout.
+    rocket_jock,
+    medic,
+    warrior,
+    engineer,
+    rogue,
+    scout
 };
 
 enum class Alignment : unsigned

@@ -5,7 +5,8 @@ from start to finish under their original rules: *Countdown to Doomsday*
 (1990) and *Matrix Cubed* (1992). It follows the method of the *Forgotten
 Realms* games ([GAMES.md](GAMES.md)) and of the *Krynn* games
 ([KRYNN.md](KRYNN.md)). Written 2026-11-19. B0 (groundwork) done
-2026-11-19; B1 (the reading census) done 2026-11-19; B2 not started.
+2026-11-19; B1 (the reading census) done 2026-11-19; B2 under way (its
+characters done 2026-11-20).
 
 Each game must meet the standard in [PLAYABILITY.md](PLAYABILITY.md)
 ("Acceptance and scope"). The route reaches the game's actual winning event
@@ -588,6 +589,21 @@ around the AD&D games, and its spell and class assumptions must stay out of
 the Buck Rogers path without a second combat engine (one code path). The
 seventh ability touches the character model shared by every game. Ship
 combat is a whole new mode with no counterpart in the engine.
+
+**Status:** the characters are done (2026-11-20): races and careers (the
+`Race` and `Profession` enums gain them after the existing values), the
+seven abilities, Hit Points, experience to levels 8 and 20, combat value,
+saving throws by race and level, the 84 skills with their prerequisites,
+points, refunds and *Matrix Cubed*'s presets, the skill check, creation,
+training, specializations, Modify, and the 259-byte record with its 62-byte
+items, decoded and encoded byte for byte (`buck_rogers_rules.h`,
+`buck_rogers_records.h`; [countdown.md](games/countdown.md) and
+[matrix-cubed.md](games/matrix-cubed.md), "Rules" and "Bugs"). The seventh
+ability lives in the game's own record, so the character model of the
+other games is unchanged. The hail's corrected skills are a rules function
+the script host will read SKILL CHECK through in B3. Still to do: ship
+combat, ground combat, injury and healing, money and the difficulty levels.
+*Matrix Cubed*'s import (and its deleting of files) comes with B4.
 
 ### B3. *Countdown to Doomsday*
 

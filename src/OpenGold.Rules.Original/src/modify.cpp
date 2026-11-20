@@ -1,4 +1,5 @@
 #include "opengold/original_rules.h"
+#include "opengold/buck_rogers_rules.h"
 #include <algorithm>
 #include <array>
 #include <initializer_list>
@@ -439,8 +440,16 @@ bool modify_allowed(int experience, GoldBoxGame game, int design_start)
         return one_of(experience, {210003, 105002, 70001});
     case GoldBoxGame::countdown_to_doomsday:
     case GoldBoxGame::matrix_cubed:
-        // The Buck Rogers rules come in step B2 (docs/BUCK-ROGERS.md).
-        return false;
+        // A career's starting experience; buck_rogers_modifiable checks the
+        // character's own career, as chargen.pas ModifyCharacterMenu does.
+        return std::ranges::any_of(
+            std::array{Profession::rocket_jock, Profession::medic, Profession::warrior,
+                       Profession::engineer, Profession::rogue},
+            [&](Profession career)
+            {
+                return career_experience_for_level(career, buck_rogers_starting_level(game),
+                                                   game) == static_cast<std::uint32_t>(experience);
+            });
     }
     return false;
 }

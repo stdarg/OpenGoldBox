@@ -1,4 +1,5 @@
 #include "opengold/original_rules.h"
+#include "opengold/buck_rogers_rules.h"
 #include "opengold/original_spells.h"
 #include "opengold/dice.h"
 #include "champions_rules.h"
@@ -760,7 +761,11 @@ std::span<const Profession> professions_for(Race race, GoldBoxGame game)
     {
         return champions_professions(race);
     }
-    if (champions_race(race))
+    if (is_buck_rogers(game))
+    {
+        return buck_rogers_careers(race);
+    }
+    if (champions_race(race) || buck_rogers_race(race))
     {
         return {};
     }

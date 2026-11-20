@@ -1,4 +1,5 @@
 #include "champions_rules.h"
+#include "opengold/buck_rogers_rules.h"
 #include "opengold/dice.h"
 #include "opengold/original_spells.h"
 #include <algorithm>
@@ -87,6 +88,10 @@ constexpr std::array<std::array<Row, 7>, 4> slot_increments{{{{{1, 0, 0, 0, 0},
 
 unsigned record_race(Race race, GoldBoxGame game) noexcept
 {
+    if (is_buck_rogers(game) && buck_rogers_race(race))
+    {
+        return static_cast<unsigned>(race) - static_cast<unsigned>(Race::monster);
+    }
     if (krynn_game(game) && champions_race(race))
     {
         return static_cast<unsigned>(race) - static_cast<unsigned>(Race::silvanesti_elf);
@@ -96,6 +101,12 @@ unsigned record_race(Race race, GoldBoxGame game) noexcept
 
 Race race_from_record(unsigned code, GoldBoxGame game) noexcept
 {
+    if (is_buck_rogers(game))
+    {
+        constexpr unsigned last_race = 8;
+        return code <= last_race ? static_cast<Race>(static_cast<unsigned>(Race::monster) + code)
+                                 : Race::monster;
+    }
     if (krynn_game(game))
     {
         return code <= 6 ? static_cast<Race>(static_cast<unsigned>(Race::silvanesti_elf) + code)

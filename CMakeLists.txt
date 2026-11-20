@@ -123,6 +123,7 @@ target_link_libraries(opengold_rules_srd5 PUBLIC opengold_rules)
 add_library(opengold_rules_original STATIC
     src/OpenGold.Rules.Original/src/original_rules.cpp
     src/OpenGold.Rules.Original/src/champions_rules.cpp
+    src/OpenGold.Rules.Original/src/buck_rogers_rules.cpp
     src/OpenGold.Rules.Original/src/death_knights_rules.cpp
     src/OpenGold.Rules.Original/src/character_rules.cpp
     src/OpenGold.Rules.Original/src/modify.cpp
