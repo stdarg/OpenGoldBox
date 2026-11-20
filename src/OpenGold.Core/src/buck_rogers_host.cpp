@@ -6,8 +6,10 @@
 #include "opengold/buck_rogers_characters.h"
 #include "opengold/buck_rogers_rules.h"
 #include "opengold/buck_rogers_battlefield.h"
+#include "opengold/buck_rogers_ship_fight.h"
 #include "opengold/buck_rogers_upkeep.h"
 #include "opengold/creature_art.h"
+#include "opengold/dice.h"
 #include "opengold/encounter_formation.h"
 
 #include <algorithm>
@@ -265,10 +267,10 @@ constexpr std::uint8_t set_speaker = 0x1D, ship_combat = 0x1F, skill_check = 0x2
                        load_monster = 0x0B, combat_command = 0x24, solo_combat = 0x4A,
                        treasure = 0x27, shop = 0x4B, add_npc = 0x36, program = 0x38;
 // Zone 0's cells these commands keep (types.pas TZone0): the speaker cells
-// SET SPEAKER clears, the picture mode, whether the items are stashed, the
-// area kind and the ship fight's outcome.
+// SET SPEAKER clears, the picture mode, whether the items are stashed and the
+// area kind. The ship fight's end writes its own (ship_combat_memory).
 constexpr EclAddress speaker_cells{0x4BB4}, picture_mode_cell{0x4BA6}, items_stashed{0x4BB8},
-    area_kind{0x4BE6}, ship_combat_outcome{0x4BBA};
+    area_kind{0x4BE6};
 // The area kind of the solar map (C_Area.ORBIT) and PICTURE MODE's mode for
 // it (C_Ifc.ORBIT_MAP).
 constexpr std::uint16_t orbit_area = 0x70, orbit_picture_mode = 2;
@@ -711,12 +713,13 @@ bool RolfTourSession::handle_buck_rogers_host(const EclRequest &request)
     case ship_combat:
     {
         // The ship fight is the ship-combat screen's: the script waits for
-        // its outcome (finish_ship_combat).
+        // its end (ship_fight, finish_ship_combat).
         read_character();
         snapshot_.ship_combat = ShipCombatCall{
             static_cast<unsigned>(value(0) & 0xFF), static_cast<unsigned>(value(1) & 0xFF),
             static_cast<unsigned>(value(2) & 0xFF), static_cast<unsigned>(value(3) & 0xFF)};
         ship_combat_request_ = request.id;
+        ship_fight_ = std::make_shared<ShipFightState>();
         snapshot_.continue_ticket = ++next_ticket_;
         snapshot_.phase = TourPhase::ship_combat;
         ++snapshot_.revision;
@@ -799,21 +802,196 @@ bool RolfTourSession::matrix_ending_completed() const
            machine_.address() == ending.next;
 }
 
-bool RolfTourSession::finish_ship_combat(std::uint64_t ticket, ShipCombatOutcome outcome)
+namespace
+{
+// The team's ship from 4D00h as zone 0 keeps it: its numbers of two bytes as
+// words, the rest as bytes (configure_buck_rogers).
+[[nodiscard]] buck_rogers::Ship party_ship_in(const EclMachine &machine, std::size_t size)
+{
+    constexpr std::uint16_t ship = 0x4D00;
+    constexpr std::size_t first_word = 16, last_word = 48;
+    std::vector<std::uint8_t> bytes(size);
+    for (std::size_t at = 0; at < size; ++at)
+    {
+        const auto cell = machine.variable(EclAddress(static_cast<std::uint16_t>(ship + at)));
+        bytes[at] = static_cast<std::uint8_t>(cell & 0xFF);
+        if (at >= first_word && at <= last_word && at % 2 == 0)
+        {
+            bytes[at + 1] = static_cast<std::uint8_t>(cell >> 8);
+            ++at;
+        }
+    }
+    auto decoded = buck_rogers::decode_ship(bytes);
+    if (!decoded)
+    {
+        throw EclError("The team's ship at 4D00h is not a ship");
+    }
+    return std::move(*decoded);
+}
+} // namespace
+
+// The session's side of the ship fight, for buck_rogers_ship_fight.h's
+// functions, which name the rules' types the session's header leaves out.
+struct ShipFightAccess
+{
+    static original::ShipCombat &open(RolfTourSession &session,
+                                      const original::ShipCombatOptions &options);
+
+    static const ShipFightState *state(const RolfTourSession &session)
+    {
+        return session.ship_fight_.get();
+    }
+};
+
+original::ShipCombat &ship_fight(RolfTourSession &session,
+                                 const original::ShipCombatOptions &options)
+{
+    return ShipFightAccess::open(session, options);
+}
+
+const ShipFightFiles &ship_fight_files(const RolfTourSession &session)
+{
+    const auto town = session.resources();
+    if (!town || !is_buck_rogers(session.game()) || !town->buck_rogers_ship_fight_files)
+    {
+        throw EclError("Only the Buck Rogers games fight in space");
+    }
+    return *town->buck_rogers_ship_fight_files;
+}
+
+const ShipFightAftermath *ship_fight_aftermath(const RolfTourSession &session)
+{
+    const auto *state = ShipFightAccess::state(session);
+    return state && state->aftermath ? &*state->aftermath : nullptr;
+}
+
+original::ShipCombat &ShipFightAccess::open(RolfTourSession &session,
+                                            const original::ShipCombatOptions &options)
+{
+    auto &snapshot = session.snapshot_;
+    auto &state = session.ship_fight_;
+    const auto &town = session.town_;
+    if (snapshot.phase != TourPhase::ship_combat || !snapshot.ship_combat || !session.campaign_ ||
+        !town || !state || !town->buck_rogers_ship_fight_files)
+    {
+        throw EclError("No ship fight waits");
+    }
+    if (state->open)
+    {
+        return state->open->combat;
+    }
+    const auto &call = *snapshot.ship_combat;
+    if (call.enemy_type < 1 || call.enemy_type > enemy_ship_types)
+    {
+        throw EclError("SHIP COMBAT names no enemy ship of type " +
+                       std::to_string(call.enemy_type));
+    }
+    // A new enemy ship of its type takes the next of its names
+    // (saveload.pas LoadShipData).
+    auto &machine = session.machine_;
+    const auto request = session.ship_combat_request_;
+    const EclAddress count_cell{enemy_ship_count_cell(call.enemy_type)};
+    const auto count = machine.variable(count_cell) & 0xFFu;
+    const std::array named{
+        EclMemoryWrite{count_cell, static_cast<std::uint16_t>((count + 1) & 0xFF)}};
+    if (!machine.refresh_host_variables(request, named))
+    {
+        throw EclError("The ship-name count is not the script's");
+    }
+    std::vector<original::TeamMember> crew;
+    for (const auto &member : team_of(*session.campaign_))
+    {
+        crew.push_back({member.record.creature, member.record.items, false, false});
+    }
+    // The script's dice, as each of its commands rolls them.
+    auto dice = std::make_shared<RandomState>(
+        RandomState{(static_cast<std::uint64_t>(machine.host_random(request, 65536)) << 16) |
+                    machine.host_random(request, 65536)});
+    auto start = ship_combat_start(
+        session.game(), party_ship_in(machine, town->buck_rogers_party_ship.size()),
+        *town->buck_rogers_ship_fight_files, call, enemy_ship_name(call.enemy_type, count),
+        std::move(crew), options);
+    state->open.emplace(ShipFightState::Open{options, dice,
+                                             original::ShipCombat(std::move(start),
+                                                                  [dice](int sides)
+                                                                  {
+                                                                      return roll_die(*dice, sides);
+                                                                  })});
+    ++snapshot.revision;
+    return state->open->combat;
+}
+
+std::vector<CombatArt> RolfTourSession::buck_rogers_team_art() const
+{
+    // The team's CHARS icons, the record's and 128 on (saveload.pas
+    // AddCharToParty, maptiles.pas LoadIconAnim).
+    std::vector<CombatArt> drawn;
+    if (!campaign_ || !town_)
+    {
+        return drawn;
+    }
+    for (const auto &member : team_of(*campaign_))
+    {
+        auto art = creature_art(town_->buck_rogers_team_icons, member.record.creature.icon, nullptr,
+                                false, game());
+        drawn.push_back(art ? std::move(*art) : CombatArt{});
+        drawn.back().entity = member.id;
+    }
+    return drawn;
+}
+
+bool RolfTourSession::finish_ship_combat(std::uint64_t ticket)
 {
     if (snapshot_.phase != TourPhase::ship_combat || ticket != snapshot_.continue_ticket ||
-        !ship_combat_request_)
+        !ship_combat_request_ || !ship_fight_ || !ship_fight_->open ||
+        !ship_fight_->open->combat.over() || !campaign_)
     {
         return false;
     }
+    auto &fight = *ship_fight_->open;
+    auto aftermath = follow_ship_fight(game(), fight.combat.end(), fight.options, *fight.dice);
+    // The team's records as the fight and what followed it left them.
+    const auto team = team_of(*campaign_);
+    for (std::size_t n = 0; n < team.size() && n < aftermath.end.crew.size(); ++n)
+    {
+        auto record = team[n].record;
+        record.creature = aftermath.end.crew[n].character;
+        record.items = aftermath.end.crew[n].items;
+        campaign_->keep_game_record(team[n].id, original::encode_ground_record(record));
+    }
+    if (aftermath.end.boarded)
+    {
+        ship_fight_->boarded = ShipFightState::Boarded{fight.options, aftermath.end.enemy_ship,
+                                                       aftermath.end.experience};
+    }
+    const bool destroyed = aftermath.team_destroyed;
+    ship_fight_->aftermath = std::move(aftermath);
+    snapshot_.ship_combat.reset();
+    if (destroyed)
+    {
+        // The team is destroyed (postcbt.pas PostCombat).
+        ship_combat_request_ = 0;
+        snapshot_.dialogue = "YOUR TEAM HAS BEEN DESTROYED.";
+        snapshot_.phase = TourPhase::defeated;
+        ++snapshot_.revision;
+        return true;
+    }
     EclHostReply reply = character_reply(selected_character_);
-    reply.writes.push_back(
-        {ship_combat_outcome, static_cast<std::uint16_t>(static_cast<unsigned>(outcome))});
+    for (const auto &cell :
+         ship_memory_cells(original::ship_combat_memory(ship_fight_->aftermath->end)))
+    {
+        const EclAddress address{cell.address};
+        std::erase_if(reply.writes,
+                      [&address](const EclMemoryWrite &write)
+                      {
+                          return write.address == address;
+                      });
+        reply.writes.push_back({address, cell.value});
+    }
     if (!machine_.resume_host(std::exchange(ship_combat_request_, 0), reply))
     {
         throw EclError("Ship fight reply rejected");
     }
-    snapshot_.ship_combat.reset();
     snapshot_.phase = TourPhase::running;
     ++snapshot_.revision;
     advance(0);
@@ -1151,15 +1329,11 @@ void RolfTourSession::buck_rogers_combat(const EclRequest &request, bool solo)
         encounter_->art.push_back(std::move(art));
     }
     staged_ally_art_.clear();
-    // The team fights as its CHARS icons, the record's and 128 on
-    // (saveload.pas AddCharToParty, maptiles.pas LoadIconAnim).
-    for (const auto &member : team_of(*campaign_))
+    for (auto &art : buck_rogers_team_art())
     {
-        if (auto art = creature_art(town_->buck_rogers_team_icons, member.record.creature.icon,
-                                    nullptr, false, game()))
+        if (art.image.width > 0)
         {
-            art->entity = member.id;
-            encounter_->art.push_back(std::move(*art));
+            encounter_->art.push_back(std::move(art));
         }
     }
     // Bit 10h of the area's kind is zero gravity (CbtActs, CombatAi).
@@ -1310,11 +1484,84 @@ bool RolfTourSession::resolve_buck_rogers_combat(const rules::Snapshot &result)
         buck_rogers_booty_.clear();
         buck_rogers_pool_ = 0;
     }
+    repair_after_boarding(combat_request_);
     const auto request = std::exchange(combat_request_, 0);
     encounter_.reset();
     snapshot_.phase = TourPhase::running;
     finish_buck_rogers_fight(request, combat_result, defeated);
     return true;
+}
+
+void RolfTourSession::repair_after_boarding(std::uint64_t request)
+{
+    // Script 52 sets post-combat mode 2 after the fight on a boarded ship's
+    // decks: the repairs follow it, with the captured ship's experience and
+    // fuel (postcbt.pas PostCombat, RepairShip; docs/games/countdown.md,
+    // "Ship combat", decision 5).
+    constexpr EclAddress post_combat_mode{0x4D7C};
+    constexpr std::uint16_t repairs_follow = 2, normal = 0;
+    if ((machine_.variable(post_combat_mode) & 0xFF) != repairs_follow)
+    {
+        return;
+    }
+    auto team = team_of(*campaign_);
+    const auto crew = team_members(team);
+    auto ship = party_ship_in(machine_, town_->buck_rogers_party_ship.size());
+    auto *boarded = ship_fight_ && ship_fight_->boarded ? &*ship_fight_->boarded : nullptr;
+    const auto options = boarded ? boarded->options : original::ShipCombatOptions{};
+    auto *captured = boarded ? &boarded->ship : nullptr;
+    const int experience = boarded ? boarded->experience : 0;
+    auto random =
+        RandomState{(static_cast<std::uint64_t>(machine_.host_random(request, 65536)) << 16) |
+                    machine_.host_random(request, 65536)};
+    const auto report =
+        original::repair_ship(game(), ship, crew, experience, captured, true, options,
+                              [&random](int sides)
+                              {
+                                  return roll_die(random, sides);
+                              });
+    if (ship_fight_)
+    {
+        ship_fight_->boarded.reset();
+    }
+    if (report.experience_share > 0)
+    {
+        for (auto &member : team)
+        {
+            if (member.record.creature.enabled != 0)
+            {
+                member.record.creature.experience +=
+                    static_cast<std::uint32_t>(report.experience_share);
+                campaign_->keep_game_record(member.id,
+                                            original::encode_ground_record(member.record));
+            }
+        }
+        snapshot_.dialogue =
+            join_script_text(std::move(snapshot_.dialogue),
+                             "EACH MEMBER RECEIVES " + std::to_string(report.experience_share) +
+                                 " EXPERIENCE POINTS.");
+    }
+    const auto bytes = buck_rogers::encode_ship(ship);
+    if (!bytes)
+    {
+        throw EclError("The team's ship no longer fits its record");
+    }
+    std::vector<original::ShipMemoryWrite> ship_bytes;
+    for (std::size_t at = 0; at < bytes->size(); ++at)
+    {
+        ship_bytes.push_back(
+            {static_cast<std::uint16_t>(0x4D00 + at), static_cast<std::uint8_t>((*bytes)[at])});
+    }
+    std::vector<EclMemoryWrite> writes;
+    for (const auto &cell : ship_memory_cells(ship_bytes))
+    {
+        writes.push_back({EclAddress{cell.address}, cell.value});
+    }
+    writes.push_back({post_combat_mode, normal});
+    if (!machine_.refresh_host_variables(request, writes))
+    {
+        throw EclError("The repaired ship's cells are not the script's");
+    }
 }
 
 void RolfTourSession::finish_buck_rogers_fight(std::uint64_t request, std::uint16_t combat_result,

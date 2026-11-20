@@ -17,12 +17,14 @@
 #include "startup_view.h"
 #include "game_lifecycle.h"
 #include "screenshot_service.h"
+#include "ship_combat_view.h"
 #include <godot_cpp/core/class_db.hpp>
 
 void register_game_classes()
 {
     godot::ClassDB::register_class<RolfTourView>();
     godot::ClassDB::register_class<CombatView>();
+    godot::ClassDB::register_class<ShipCombatView>();
     godot::ClassDB::register_class<CharacterCreationView>();
     godot::ClassDB::register_class<LevelUpDialog>();
     godot::ClassDB::register_class<LevelUpLabView>();

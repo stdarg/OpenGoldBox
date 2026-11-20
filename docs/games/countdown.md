@@ -971,9 +971,9 @@ Options screen while a Buck Rogers game plays, one key per game
 
 The first part of B3.1 is done (2026-11-20): the engine runs *Countdown*'s
 own scripts, maps, pictures and fights with a team its creation rules made.
-The solar map plays on its own screen ("The solar map", below); the other
-two new screens (creation and skills, and ship combat) are being built from
-mockups, and the session stops at a hand-off for each (below). `tests/countdown_campaign_tests.cpp` checks it on the game's files,
+The shared creation and skill pages, solar map and ship combat screen are
+integrated from their handoffs; integrated checks and complete earned routes
+remain in progress. `tests/countdown_campaign_tests.cpp` checks the game's files,
 and with `--walk` it is `opengold_countdown_walk`.
 
 ### The team in the campaign
@@ -1125,21 +1125,86 @@ checks fly to every body from Earth and land at Ceres, and
 
 ### Hand-offs to the new screens
 
-- **Ship combat**: SHIP COMBAT leaves the phase `ship_combat` with
-  `TourSnapshot::ship_combat` (the enemy's type, the unused operand, the
-  pilot's skill and the to-hit number). The screen plays the fight
-  (`buck_rogers_ship_combat.h`) and calls `finish_ship_combat` with the
-  outcome, which goes to 4BBAh; boarding is the script's next fight (script
-  52 fights on the decks of the ship 4C61h names).
+- **Ship combat**: played on its own screen (below, "The ship combat
+  screen").
 - **Creation and skills**: a team is made in code; training's skill points and
   a Warrior's specialization wait for the skill screen.
+
+### The ship combat screen
+
+SHIP COMBAT leaves the phase `ship_combat` with `TourSnapshot::ship_combat`
+(the enemy's type, the unused operand, the pilot's skill and the to-hit
+number), and the game opens the ship combat screen
+(`src/OpenGoldBox/ship_combat_view.cpp`, `scenes/ship_combat.tscn`). The
+session opens the fight with the player's options (`ship_fight`): the team's
+ship as zone 0 keeps it at 4D00h, the enemy's `SHIPS` record named as the
+next ship of its type (`LoadShipData`: five names a type, Van Allen first of
+the Hubbles, counted in 4D91h on), the team in party order, and the
+script's dice (`buck_rogers_ship_fight.h`). The screen draws the fight and
+forwards the player's orders to the rules; nothing in it decides a rule.
+
+- **The scene** is the enemy's picture, ship n drawn with picture n - 1 of
+  `SHIPS.DAX` (`LoadShipData` loads picture `id mod 5`, its id the operand
+  less 1), with its maneuver (Closing, or Retreating after its last move
+  took it away) and the range at its top left, and its name and type. The
+  picture grows smaller with the range, an option (`[ship_picture_shrinks]`,
+  [DEVIATIONS.md](../DEVIATIONS.md)).
+- **A range track** marks the range and, over each step, the team's weapons
+  that reach no farther (an OpenGoldBox addition).
+- **Both ships' systems**, hull to engines, with the original's icons
+  (pictures 27 to 32 for the team's ship, 33 to 38 for the enemy's), a bar
+  and their values: the team's in light cyan, the enemy's in light green, a
+  damaged system in yellow and a destroyed one in red, as the original's
+  meters and weapon list colour them. With the team's sensors destroyed the
+  enemy's systems are not shown (`DrawSystemMeter`).
+- **The weapons**: who fires each mount, its working weapons, rounds,
+  reloads and reach. The enemy's rounds and reloads read "?" until a
+  Sensors check succeeds, while the team's sensors work (`VALUE_SENSED`).
+- **The orders** in the original's order (`BuildPlayerMenu`): the pilot's
+  Fire Target Quit View / Close Withdraw Ram Board, the crew's Fire Target
+  Load Jury rig Quit View / Command Aid Boost engines Sensors. An order the
+  rules do not offer stands greyed out (the user, 2026-11-20). Target asks
+  for the system, Load for the weapon and Jury rig for the system or weapon
+  (the player picks the mount: Bugs above); Ram asks to confirm, as the
+  original does, and an enemy's ram asks whether to try to dodge. The keys
+  are the original's letters. View writes the ship's figures, or the acting
+  member's ship skills, into the log.
+- **The log** tells the fight's events in OpenGoldBox's words, and after the
+  fight what followed it: the medics' work, the experience, the repairs and
+  the fuel taken.
+- **The crew column**: each member's CHARS icon, career, race and gender,
+  Hit Points and state; the pilot starred, the member whose order is awaited
+  lit.
+
+At the fight's end the screen gives it to the session (`finish_ship_combat`),
+which plays what follows (`follow_ship_fight`, `postcbt.pas` `PostCombat`):
+a team with no one left alive is destroyed; else the wounded recover, and
+unless the team boarded the medics treat them and the crew repairs the ship,
+sharing the experience. The end goes into the script's memory
+(`ship_combat_memory`: the outcome at 4BBAh, the team's ship at 4D00h, the
+saved enemy and the post-combat mode at 4D7Ch) and the team's records, and
+the script goes on. After a boarding script 34 or 95 loads script 52, the
+fight through the airlock on the decks of the ship type 4C61h names; when
+that fight's script sets post-combat mode 2, the repairs follow it, with the
+ship fight's experience and the captured ship's fuel (decision 5), and the
+mode returns to 0. *Matrix Cubed* plays its fights on the same screen.
+
+`tests/ship_combat_view_tests.gd` (`opengold_godot_ship_combat`) clicks the
+screen through seeded fights of the walk's team made a ship's crew (its
+Rocketjock trained in Sensor Operation, its Engineer in Repair Nuclear
+Engine), from the campaign save `opengold_countdown_campaign_tests` writes:
+the opening, Sensors, Target's choice, the Engineer's orders, a system hit's
+colours, boarding, withdrawing and the picture's size, at 1920 by 1080 and
+1120 by 800. `ship_fights_play_through_the_session` checks the session's
+part: the call, the opening, the end in the script's memory, the next name,
+the pilot kept, and a boarding leading to script 52's fight.
 
 ### The walk
 
 `opengold_countdown_walk` starts a new game for each map, enters it, looks
 at every square and plays its event: the first choice of a menu, then each
 in turn until each has come twice; every fight played by the game's own
-computer on both sides; treasure left; a ship fight handed off. Then it
+computer on both sides; treasure left. The prior solar-only survey then
 enters every script without a map of its own and steps about the
 wildernesses; script 99's thirteen outposts it reaches as a player does, by
 flying the solar map from Earth to each body and taking the outpost from the
@@ -1150,8 +1215,9 @@ played 422 fights (zero gravity in 271 of them, and on `HITEK`, `LOTEK` and
 lacks. Map 99, the Mariposa's top, takes the outposts' script of its number,
 which runs the outpost last docked at (Hielo, after a docking there) and
 leaves the team at its menus, so the walk notes the map; script 95, which
-plays it on the escape, is entered with the scripts. The ship fight's enemy
-(4C61h) is still set by the walk, as an aid.
+plays it on the escape, is entered with the scripts. The integrated walk now uses actual ship fights and their resulting enemy
+records; it does not set the outpost or ship enemy cells. Its complete
+combined solar-and-ship survey is pending verification.
 
 ### Earned campaign checks
 
@@ -1168,7 +1234,7 @@ returns to Salvation, stocks medical supplies, launches and treats the crew
 through the ship's clinic. All six survive. Ammunition is consumed and bought
 through the actual Depot shop, with the selected member paying for its refill.
 Each checkpoint reloads against freshly loaded assets and saves byte for byte,
-including the solar-map handoff. `--ship-earned` stops there; this is partial
+including the solar-map state. `--ship-earned` stops there; this is partial
 campaign progress, not the authored ending.
 
 The route exposed three persistence/script prerequisites: script 33 shares
@@ -1191,7 +1257,8 @@ for these statuses and for a trained maximum above the original draft's.
 prompt, ECL6:98 at 9F2Dh, following Wilma's final mission announcement. It starts
 at that speech in an isolated fixture and establishes recognition timing and
 party-save preservation. It is not an earned ending test. The complete earned
-route still needs ordinary solar travel and committed ship-combat results.
+route still needs its remaining chapters through ordinary solar travel and
+actual ship-combat results.
 
 ## Next
 

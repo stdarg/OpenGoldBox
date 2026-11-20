@@ -57,6 +57,9 @@ hurt_chance=50
 fight_end_chance=75
 party_weight=2.0
 
+[ship_picture_shrinks]
+buck-rogers-countdown-to-doomsday="on"
+
 [design_difficulty]
 UA="both"
 
@@ -210,10 +213,15 @@ Book's or OpenGoldBox's, and the other value plays the original's way
 - `[boarding_fuel]`, Fuel from a boarded ship: `on`, the default, also used
   for any value but `off`, transfers the captured ship's fuel after a
   boarding, as the Rule Book says. `off` takes none, as the original does.
+- `[ship_picture_shrinks]`, Ship picture by range (the user, 2026-11-20): `on`,
+  the default, also used for any value but `off`, draws the enemy ship's
+  picture smaller the farther away it is, an OpenGoldBox touch. `off` draws
+  it at one size at every range, as the original does. The Options screen
+  shows it in the place of *Unlimited Adventures*' Design difficulty.
 
-A ship fight takes them as it starts (`ShipCombatOptions`,
-`buck_rogers_ship_combat.h`); the game plays ship fights from step B3 of
-[BUCK-ROGERS.md](BUCK-ROGERS.md).
+The ship-combat screen reads them as a fight opens (`ShipCombatOptions`,
+`buck_rogers_ship_combat.h`; [games/countdown.md](games/countdown.md), "The
+ship combat screen").
 
 The solar-map options are the Buck Rogers games' too (the user, 2026-11-20;
 [games/countdown.md](games/countdown.md), "The solar map"), keyed and shown

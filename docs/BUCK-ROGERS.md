@@ -697,13 +697,12 @@ backdrops, pictures and text; the script machine with the Buck Rogers
 commands and the host; ground fights on the four tile sets, in normal and
 zero gravity; the outposts as their scripts run them; the title's music; and
 `opengold_countdown_walk` over every map and every script without one
-([countdown.md](games/countdown.md), "The game in the engine"). The solar
-map is done too (2026-11-20): its screen in the exploration screen, the
-rocket flown a cell a step by the original's rules, the scripts' fuel and
-arrival menus, the user's Fly at once and Course flown options, and the
-walk flying to every outpost ([countdown.md](games/countdown.md), "The
-solar map"). Ship combat and the creation and skill screens are designed
-from mockups; the session stops at a hand-off for each.
+([countdown.md](games/countdown.md), "The game in the engine"). The shared
+creation and skill pages, solar map and ship combat screen are now integrated
+from the Mac session's handoffs (2026-11-20). The solar map flies through the
+script's fuel, clock and arrival transactions, and ship combat returns actual
+rules outcomes to the waiting script. Integrated verification and the complete
+earned routes remain in progress.
 
 ### B4. *Matrix Cubed*
 

@@ -1,6 +1,7 @@
 #include "dark_queen_campaign.h"
 #include "opengold/campaign_session.h"
 #include "opengold/buck_rogers_records.h"
+#include "opengold/buck_rogers_ship_fight.h"
 #include "opengold/death_knights_records.h"
 
 #include "area_loading.h"
@@ -542,6 +543,8 @@ void add_buck_rogers_tables(const por::detail::AreaFiles &files, por::PhlanResou
     {
         root.solar_map_tiles.push_back(vga_rgba(tile, tile_colors, tile_key_color));
     }
+    root.buck_rogers_ship_fight_files = std::make_shared<const por::ShipFightFiles>(
+        por::read_ship_fight_files(files.archive("SHIPS.DAX")));
     root.buck_rogers_team_icons =
         por::detail::read_archive(por::detail::resolve_archive(files.directory(), "CHARS.DAX"));
     for (unsigned disk = 1; disk <= 6; ++disk)

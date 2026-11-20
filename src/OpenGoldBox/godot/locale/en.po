@@ -35,7 +35,7 @@ msgstr "   Party steel {gold}   XP {xp}"
 msgid "   THAC0 {thac0}"
 msgstr "   THAC0 {thac0}"
 
-#: src/OpenGoldBox/party_preview.cpp:644
+#: src/OpenGoldBox/party_preview.cpp:645
 msgid " (Reserve)"
 msgstr " (Reserve)"
 
@@ -175,7 +175,7 @@ msgstr "2 Sorcery Points: cast an Action spell as a Bonus Action."
 msgid "2 Sorcery Points: one target has Disadvantage on its save against the spell."
 msgstr "2 Sorcery Points: one target has Disadvantage on its save against the spell."
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:797
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:824
 msgid "3D view art"
 msgstr "3D view art"
 
@@ -494,7 +494,7 @@ msgstr "A pack of spirit animals appears."
 msgid "A party member has no original-rules profile: "
 msgstr "A party member has no original-rules profile: "
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:586 src/OpenGoldBox/godot/scenes/game_menu.tscn:599
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:613 src/OpenGoldBox/godot/scenes/game_menu.tscn:626
 msgid "A party member is badly hurt when it may lose at least this share of its most Hit Points, or be put out of the fight (asleep, held, charmed). Unless changed: 50%."
 msgstr "A party member is badly hurt when it may lose at least this share of its most Hit Points, or be put out of the fight (asleep, held, charmed). Unless changed: 50%."
 
@@ -607,7 +607,7 @@ msgstr "AD&D: the scores change again as characters grow older."
 msgid "Aberrations, Celestials, Elementals, Fey, Fiends and Undead have Disadvantage on attack rolls against it."
 msgstr "Aberrations, Celestials, Elementals, Fey, Fiends and Undead have Disadvantage on attack rolls against it."
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:683
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:710
 msgid "Ability"
 msgstr "Ability"
 
@@ -788,23 +788,23 @@ msgstr "Add character from Pool of Radiance"
 msgid "Add character from Secret of the Silver Blades"
 msgstr "Add character from Secret of the Silver Blades"
 
-#: src/OpenGoldBox/party_preview.cpp:740
+#: src/OpenGoldBox/party_preview.cpp:741
 msgid "Add from Champions"
 msgstr "Add from Champions"
 
-#: src/OpenGoldBox/party_preview.cpp:741
+#: src/OpenGoldBox/party_preview.cpp:742
 msgid "Add from Death Knights"
 msgstr "Add from Death Knights"
 
-#: src/OpenGoldBox/party_preview.cpp:738
+#: src/OpenGoldBox/party_preview.cpp:739
 msgid "Add from Gateway"
 msgstr "Add from Gateway"
 
-#: src/OpenGoldBox/godot/scenes/party_panel.tscn:244 src/OpenGoldBox/party_preview.cpp:742
+#: src/OpenGoldBox/godot/scenes/party_panel.tscn:244 src/OpenGoldBox/party_preview.cpp:743
 msgid "Add from Pool of Radiance"
 msgstr "Add from Pool of Radiance"
 
-#: src/OpenGoldBox/party_preview.cpp:739
+#: src/OpenGoldBox/party_preview.cpp:740
 msgid "Add from Secret"
 msgstr "Add from Secret"
 
@@ -812,7 +812,7 @@ msgstr "Add from Secret"
 msgid "Add proficiency to Initiative; optionally swap Initiative with an eligible ally before the first turn."
 msgstr "Add proficiency to Initiative; optionally swap Initiative with an eligible ally before the first turn."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1183 src/OpenGoldBox/godot/scenes/character_creation.tscn:1510 src/OpenGoldBox/godot/scenes/character_creation.tscn:1630 src/OpenGoldBox/party_preview.cpp:1198
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1183 src/OpenGoldBox/godot/scenes/character_creation.tscn:1510 src/OpenGoldBox/godot/scenes/character_creation.tscn:1630 src/OpenGoldBox/party_preview.cpp:1199
 msgid "Add to party"
 msgstr "Add to party"
 
@@ -949,7 +949,7 @@ msgstr "Agonizing Blast (Starry Wisp)"
 msgid "Agonizing Blast (Vicious Mockery)"
 msgstr "Agonizing Blast (Vicious Mockery)"
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:67 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:67 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/ship_combat.tscn:245
 msgid "Aid"
 msgstr "Aid"
 
@@ -1289,6 +1289,10 @@ msgstr "Ashabenford Dungeon"
 msgid "Ask Amanitas, through his crown, for the luck"
 msgstr "Ask Amanitas, through his crown, for the luck"
 
+#: src/OpenGoldBox/ship_combat_view.cpp:73
+msgid "Asterover"
+msgstr "Asterover"
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Astrogation"
 msgstr "Astrogation"
@@ -1398,7 +1402,7 @@ msgstr "Auto-equip"
 msgid "Automatically equip items better than currently equipped items"
 msgstr "Automatically equip items better than currently equipped items"
 
-#: src/OpenGoldBox/character_creation_view.cpp:662 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:369 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:126 src/OpenGoldBox/godot/scenes/startup.tscn:204 src/OpenGoldBox/level_up_dialog.cpp:99
+#: src/OpenGoldBox/character_creation_view.cpp:662 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:369 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:126 src/OpenGoldBox/godot/scenes/startup.tscn:204 src/OpenGoldBox/level_up_dialog.cpp:99 src/OpenGoldBox/ship_combat_view.cpp:974
 msgid "Back"
 msgstr "Back"
 
@@ -1415,11 +1419,11 @@ msgstr "Background / {background}"
 msgid "Background bonuses cannot raise a score above 20"
 msgstr "Background bonuses cannot raise a score above 20"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:587
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:614
 msgid "Badly hurt"
 msgstr "Badly hurt"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:610
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:637
 msgid "Badly hurt chance"
 msgstr "Badly hurt chance"
 
@@ -1549,9 +1553,17 @@ msgstr "Battle Tactics"
 msgid "Battleaxe"
 msgstr "Battleaxe"
 
+#: src/OpenGoldBox/ship_combat_view.cpp:75
+msgid "Battler"
+msgstr "Battler"
+
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:194 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Beacon of Hope"
 msgstr "Beacon of Hope"
+
+#: src/OpenGoldBox/ship_combat_view.cpp:60
+msgid "Beam laser"
+msgstr "Beam laser"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Befriend Animal"
@@ -1782,6 +1794,10 @@ msgstr "Blur"
 msgid "Boar"
 msgstr "Boar"
 
+#: src/OpenGoldBox/godot/scenes/ship_combat.tscn:235
+msgid "Board"
+msgstr "Board"
+
 #: src/OpenGoldBox/character_creation_view.cpp:93 src/OpenGoldBox/godot/scenes/character_creation.tscn:651
 msgid "Body"
 msgstr "Body"
@@ -1863,6 +1879,10 @@ msgstr "Bonuses that hold only for some saves, such as a species' Advantage agai
 msgid "Boons"
 msgstr "Boons"
 
+#: src/OpenGoldBox/godot/scenes/ship_combat.tscn:250
+msgid "Boost engines"
+msgstr "Boost engines"
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Boots"
 msgstr "Boots"
@@ -1875,7 +1895,7 @@ msgstr "Boots of Elvenkind"
 msgid "Botany"
 msgstr "Botany"
 
-#: src/OpenGoldBox/game_menu_view.cpp:328
+#: src/OpenGoldBox/game_menu_view.cpp:330
 msgid "Both"
 msgstr "Both"
 
@@ -2068,6 +2088,10 @@ msgstr "Buy"
 msgid "Buy [Enter]"
 msgstr "Buy [Enter]"
 
+#: src/OpenGoldBox/ship_combat_view.cpp:716
+msgid "By"
+msgstr "By"
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Bypass Security"
 msgstr "Bypass Security"
@@ -2108,11 +2132,11 @@ msgstr "Camp [C]"
 msgid "Camp actions are for active members"
 msgstr "Camp actions are for active members"
 
-#: src/OpenGoldBox/campaign_save_view.cpp:450
+#: src/OpenGoldBox/campaign_save_view.cpp:455
 msgid "Campaign loaded."
 msgstr "Campaign loaded."
 
-#: src/OpenGoldBox/campaign_save_view.cpp:240
+#: src/OpenGoldBox/campaign_save_view.cpp:241
 msgid "Campaign saved."
 msgstr "Campaign saved."
 
@@ -2146,7 +2170,7 @@ msgstr "Can roll a d20 again once."
 msgid "Can target another creature as a Magic action."
 msgstr "Can target another creature as a Magic action."
 
-#: src/OpenGoldBox/ally_attack_controls.h:32 src/OpenGoldBox/campaign_save_view.cpp:144 src/OpenGoldBox/character_creation_view.cpp:982 src/OpenGoldBox/equipment_choice_dialog.cpp:76 src/OpenGoldBox/godot/scenes/game_folder_questions.tscn:66 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:318 src/OpenGoldBox/godot/scenes/startup.tscn:107 src/OpenGoldBox/level_up_dialog.cpp:146 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:349 src/OpenGoldBox/rest_dialog_impl.h:86 src/OpenGoldBox/save_slots.cpp:143 src/OpenGoldBox/spell_choice_controls.h:249 src/OpenGoldBox/startup_view.cpp:682
+#: src/OpenGoldBox/ally_attack_controls.h:32 src/OpenGoldBox/campaign_save_view.cpp:145 src/OpenGoldBox/character_creation_view.cpp:982 src/OpenGoldBox/equipment_choice_dialog.cpp:76 src/OpenGoldBox/godot/scenes/game_folder_questions.tscn:66 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:318 src/OpenGoldBox/godot/scenes/startup.tscn:107 src/OpenGoldBox/level_up_dialog.cpp:146 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:349 src/OpenGoldBox/rest_dialog_impl.h:86 src/OpenGoldBox/save_slots.cpp:143 src/OpenGoldBox/spell_choice_controls.h:249 src/OpenGoldBox/startup_view.cpp:682
 msgid "Cancel"
 msgstr "Cancel"
 
@@ -2235,7 +2259,7 @@ msgstr "Cannot save screenshot: {path}"
 msgid "Cannot save settings. Check that settings.cfg in the game's user data folder can be written and is valid."
 msgstr "Cannot save settings. Check that settings.cfg in the game's user data folder can be written and is valid."
 
-#: src/OpenGoldBox/game_menu_view.cpp:561
+#: src/OpenGoldBox/game_menu_view.cpp:563
 msgid "Cannot save the settings."
 msgstr "Cannot save the settings."
 
@@ -2447,7 +2471,7 @@ msgstr "Champions of Krynn"
 msgid "Change [C]"
 msgstr "Change [C]"
 
-#: src/OpenGoldBox/party_preview.cpp:750
+#: src/OpenGoldBox/party_preview.cpp:751
 msgid "Change a character's ability scores and Hit Points before it gains its first experience."
 msgstr "Change a character's ability scores and Hit Points before it gains its first experience."
 
@@ -2483,7 +2507,7 @@ msgstr "Chaotic Good"
 msgid "Chaotic Neutral"
 msgstr "Chaotic Neutral"
 
-#: src/OpenGoldBox/godot/scenes/level_up_lab.tscn:246
+#: src/OpenGoldBox/godot/scenes/level_up_lab.tscn:246 src/OpenGoldBox/ship_combat_view.cpp:969
 msgid "Character"
 msgstr "Character"
 
@@ -2681,7 +2705,7 @@ msgstr "Choose a character to bring into the party."
 msgid "Choose a class. Classes in gray are not open to your race."
 msgstr "Choose a class. Classes in gray are not open to your race."
 
-#: src/OpenGoldBox/application_settings.cpp:869
+#: src/OpenGoldBox/application_settings.cpp:881
 msgid "Choose a design's folder: its name ends in .DSN."
 msgstr "Choose a design's folder: its name ends in .DSN."
 
@@ -2789,11 +2813,11 @@ msgstr "Choose the folder containing START.EXE and the original DAX game files."
 msgid "Choose the folder of the design to play, which the construction kit names NAME.DSN."
 msgstr "Choose the folder of the design to play, which the construction kit names NAME.DSN."
 
-#: src/OpenGoldBox/application_settings.cpp:841
+#: src/OpenGoldBox/application_settings.cpp:853
 msgid "Choose the folder that holds this game's files."
 msgstr "Choose the folder that holds this game's files."
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:930
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:957
 msgid "Choose the new art folder"
 msgstr "Choose the new art folder"
 
@@ -2847,7 +2871,7 @@ msgstr "Choose who receives {spell}."
 msgid "Choose your available cantrips. Unfilled choices remain pending; Back preserves your selections."
 msgstr "Choose your available cantrips. Unfilled choices remain pending; Back preserves your selections."
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:883
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:910
 msgid "Choose…"
 msgstr "Choose…"
 
@@ -3073,13 +3097,17 @@ msgstr "Cloak of Displacement"
 msgid "Cloak of Elvenkind"
 msgstr "Cloak of Elvenkind"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1261 src/OpenGoldBox/godot/scenes/character_creation.tscn:1346 src/OpenGoldBox/godot/scenes/character_creation.tscn:1391 src/OpenGoldBox/godot/scenes/character_creation.tscn:1436 src/OpenGoldBox/godot/scenes/character_creation.tscn:1635 src/OpenGoldBox/godot/scenes/game_menu.tscn:947 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:301 src/OpenGoldBox/godot/scenes/portrait_dialog.tscn:80 src/OpenGoldBox/godot/scenes/tour_cast_panel.tscn:46 src/OpenGoldBox/godot/scenes/tour_member_sheet.tscn:39
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1261 src/OpenGoldBox/godot/scenes/character_creation.tscn:1346 src/OpenGoldBox/godot/scenes/character_creation.tscn:1391 src/OpenGoldBox/godot/scenes/character_creation.tscn:1436 src/OpenGoldBox/godot/scenes/character_creation.tscn:1635 src/OpenGoldBox/godot/scenes/game_menu.tscn:974 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:301 src/OpenGoldBox/godot/scenes/portrait_dialog.tscn:80 src/OpenGoldBox/godot/scenes/ship_combat.tscn:220 src/OpenGoldBox/godot/scenes/tour_cast_panel.tscn:46 src/OpenGoldBox/godot/scenes/tour_member_sheet.tscn:39
 msgid "Close"
 msgstr "Close"
 
 #: src/OpenGoldBox/godot/scenes/tour_inventory_panel.tscn:42
 msgid "Close inventory"
 msgstr "Close inventory"
+
+#: src/OpenGoldBox/godot/scenes/ship_combat.tscn:67 src/OpenGoldBox/ship_combat_view.cpp:553
+msgid "Closing"
+msgstr "Closing"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Cloud's Jaunt"
@@ -3134,11 +3162,15 @@ msgstr "Colossus Slayer"
 msgid "Colossus Slayer adds {damage} damage."
 msgstr "Colossus Slayer adds {damage} damage."
 
+#: src/OpenGoldBox/ship_combat_view.cpp:86
+msgid "Comatose"
+msgstr "Comatose"
+
 #: src/OpenGoldBox/character_creation_view.cpp:64
 msgid "Combat appearance"
 msgstr "Combat appearance"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:820
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:847
 msgid "Combat art"
 msgstr "Combat art"
 
@@ -3158,11 +3190,11 @@ msgstr "Combat calendar overflow"
 msgid "Combat icon"
 msgstr "Combat icon"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:769
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:796
 msgid "Combat zoom"
 msgstr "Combat zoom"
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/ship_combat.tscn:240
 msgid "Command"
 msgstr "Command"
 
@@ -3258,7 +3290,7 @@ msgstr "Cone of Cold"
 msgid "Confirm"
 msgstr "Confirm"
 
-#: src/OpenGoldBox/campaign_save_view.cpp:140 src/OpenGoldBox/save_slots.cpp:317
+#: src/OpenGoldBox/campaign_save_view.cpp:141 src/OpenGoldBox/save_slots.cpp:317
 msgid "Confirm load"
 msgstr "Confirm load"
 
@@ -3377,7 +3409,7 @@ msgstr "Contingency: {spell} ({trigger})"
 msgid "Contingency: {spell} takes effect on {name}."
 msgstr "Contingency: {spell} takes effect on {name}."
 
-#: src/OpenGoldBox/godot/scenes/combat_demo.tscn:334 src/OpenGoldBox/godot/scenes/game_folder_questions.tscn:194 src/OpenGoldBox/godot/scenes/game_folder_questions.tscn:74 src/OpenGoldBox/godot/scenes/startup.tscn:147 src/OpenGoldBox/godot/scenes/startup.tscn:242 src/OpenGoldBox/godot/scenes/startup.tscn:89 src/OpenGoldBox/startup_view.cpp:681
+#: src/OpenGoldBox/godot/scenes/combat_demo.tscn:334 src/OpenGoldBox/godot/scenes/game_folder_questions.tscn:194 src/OpenGoldBox/godot/scenes/game_folder_questions.tscn:74 src/OpenGoldBox/godot/scenes/startup.tscn:147 src/OpenGoldBox/godot/scenes/startup.tscn:242 src/OpenGoldBox/godot/scenes/startup.tscn:89 src/OpenGoldBox/ship_combat_view.cpp:915 src/OpenGoldBox/startup_view.cpp:681
 msgid "Continue"
 msgstr "Continue"
 
@@ -3389,7 +3421,7 @@ msgstr "Continue  [Enter]"
 msgid "Continue [Enter]"
 msgstr "Continue [Enter]"
 
-#: src/OpenGoldBox/rolf_tour_solar_map.cpp:390
+#: src/OpenGoldBox/rolf_tour_solar_map.cpp:390 src/OpenGoldBox/ship_combat_view.cpp:55
 msgid "Controls"
 msgstr "Controls"
 
@@ -3442,7 +3474,7 @@ msgstr "Create Undead"
 msgid "Create a character before saving"
 msgstr "Create a character before saving"
 
-#: src/OpenGoldBox/party_preview.cpp:657
+#: src/OpenGoldBox/party_preview.cpp:658
 msgid "Create a character, finish its sheet, then Add to party.\n\nA party holds six characters, and up to two others may join it on the way. Removed members remain in the roster."
 msgstr "Create a character, finish its sheet, then Add to party.\n\nA party holds six characters, and up to two others may join it on the way. Removed members remain in the roster."
 
@@ -3461,6 +3493,10 @@ msgstr "Creatures in its Aura of Protection have +2 to Armor Class and Dexterity
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:210
 msgid "Creatures of one kind cannot interrupt the party's rest."
 msgstr "Creatures of one kind cannot interrupt the party's rest."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:733
+msgid "Crew"
+msgstr "Crew"
 
 #: src/OpenGold.Rules.Srd5/src/character_rules.cpp:335
 msgid "Criminal"
@@ -3676,7 +3712,7 @@ msgstr "Days"
 msgid "Dazed"
 msgstr "Dazed"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:330 src/OpenGoldBox/character_sheet_text.cpp:89
+#: src/OpenGoldBox/character_sheet_text.cpp:330 src/OpenGoldBox/character_sheet_text.cpp:89 src/OpenGoldBox/ship_combat_view.cpp:81
 msgid "Dead"
 msgstr "Dead"
 
@@ -3696,7 +3732,7 @@ msgstr "Death Ward"
 msgid "Death Ward needs a living member without it"
 msgstr "Death Ward needs a living member without it"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:564
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:591
 msgid "Death limit"
 msgstr "Death limit"
 
@@ -3720,11 +3756,11 @@ msgstr "Decrease battlefield zoom by 10 percentage points"
 msgid "Decrease battlefield zoom by 100 percentage points"
 msgstr "Decrease battlefield zoom by 100 percentage points"
 
-#: src/OpenGoldBox/party_preview.cpp:2063
+#: src/OpenGoldBox/party_preview.cpp:2100
 msgid "Defeat"
 msgstr "Defeat"
 
-#: src/OpenGoldBox/party_preview.cpp:2148
+#: src/OpenGoldBox/party_preview.cpp:2185
 msgid "Defeat test"
 msgstr "Defeat test"
 
@@ -3792,7 +3828,7 @@ msgstr "Delayed Blast Fireball goes off."
 msgid "Demolitions"
 msgstr "Demolitions"
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/ship_combat_view.cpp:66
 msgid "Desert Runner"
 msgstr "Desert Runner"
 
@@ -3800,7 +3836,7 @@ msgstr "Desert Runner"
 msgid "Design Engineering"
 msgstr "Design Engineering"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:491
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:518
 msgid "Design difficulty"
 msgstr "Design difficulty"
 
@@ -4061,7 +4097,7 @@ msgstr "Do not equip unidentified magic items"
 msgid "Dodge"
 msgstr "Dodge"
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/ship_combat_view.cpp:88
 msgid "Dodging"
 msgstr "Dodging"
 
@@ -4125,7 +4161,7 @@ msgstr "Draconic Spells"
 msgid "Draconic Spirit"
 msgstr "Draconic Spirit"
 
-#: src/OpenGoldBox/party_preview.cpp:120
+#: src/OpenGoldBox/party_preview.cpp:121
 msgid "Drag a character up or down to change the party's order. A fight puts the first half of the party in the front rank."
 msgstr "Drag a character up or down to change the party's order. A fight puts the first half of the party in the front rank."
 
@@ -4327,15 +4363,24 @@ msgstr "Dwarven Toughness: +{hp} maximum HP."
 msgid "Dwarves are stout, hardy folk, as enduring as the stone they work.\n\nRacial traits:\n- Dwarven Toughness: 1 more Hit Point at every level.\n- Dwarven Resilience: Resistance to Poison damage, and Advantage on saves against being Poisoned."
 msgstr "Dwarves are stout, hardy folk, as enduring as the stone they work.\n\nRacial traits:\n- Dwarven Toughness: 1 more Hit Point at every level.\n- Dwarven Resilience: Resistance to Poison damage, and Advantage on saves against being Poisoned."
 
-#: src/OpenGoldBox/party_preview.cpp:717
+#: src/OpenGoldBox/ship_combat_view.cpp:82
+msgid "Dying"
+msgstr "Dying"
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1210
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "Each member gains {points} experience points."
+msgstr "Each member gains {points} experience points."
+
+#: src/OpenGoldBox/party_preview.cpp:718
 msgid "Each new character brings 1,000 credits and its two free items. Save game keeps this party to play on later."
 msgstr "Each new character brings 1,000 credits and its two free items. Save game keeps this party to play on later."
 
-#: src/OpenGoldBox/party_preview.cpp:720
+#: src/OpenGoldBox/party_preview.cpp:721
 msgid "Each new character brings 3d6 × 10 gold pieces. Save game keeps this party to play on later."
 msgstr "Each new character brings 3d6 × 10 gold pieces. Save game keeps this party to play on later."
 
-#: src/OpenGoldBox/party_preview.cpp:719
+#: src/OpenGoldBox/party_preview.cpp:720
 msgid "Each new character brings starting steel and equipment for this campaign. Save game keeps this party to play on later."
 msgstr "Each new character brings starting steel and equipment for this campaign. Save game keeps this party to play on later."
 
@@ -4544,6 +4589,11 @@ msgstr "End turn"
 msgid "Enemy turn"
 msgstr "Enemy turn"
 
+#: src/OpenGoldBox/ship_combat_view.cpp:649
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "Enemy: {ship}"
+msgstr "Enemy: {ship}"
+
 #: src/OpenGold.Rules.Original/src/spells.cpp:213
 msgid "Energy Drain"
 msgstr "Energy Drain"
@@ -4552,11 +4602,11 @@ msgstr "Energy Drain"
 msgid "Enfeebled (Ray of Enfeeblement)"
 msgstr "Enfeebled (Ray of Enfeeblement)"
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/ship_combat_view.cpp:68
 msgid "Engineer"
 msgstr "Engineer"
 
-#: src/OpenGoldBox/rolf_tour_solar_map.cpp:391
+#: src/OpenGoldBox/rolf_tour_solar_map.cpp:391 src/OpenGoldBox/ship_combat_view.cpp:56
 msgid "Engines"
 msgstr "Engines"
 
@@ -4658,7 +4708,7 @@ msgstr "Equipped"
 msgid "Equipped / "
 msgstr "Equipped / "
 
-#: src/OpenGoldBox/party_preview.cpp:1292 src/OpenGoldBox/rolf_tour_view.cpp:1217
+#: src/OpenGoldBox/party_preview.cpp:1293 src/OpenGoldBox/rolf_tour_view.cpp:1217
 msgid "Equipped."
 msgstr "Equipped."
 
@@ -4746,7 +4796,7 @@ msgstr "Exhale (Dragon's Breath)"
 msgid "Exit"
 msgstr "Exit"
 
-#: src/OpenGoldBox/party_preview.cpp:2071
+#: src/OpenGoldBox/party_preview.cpp:2108
 msgid "Exit to OS"
 msgstr "Exit to OS"
 
@@ -4854,6 +4904,14 @@ msgstr "Eyebite: panicked"
 msgid "Eyebite: sickened"
 msgstr "Eyebite: sickened"
 
+#: src/OpenGoldBox/ship_combat_view.cpp:885
+msgid "F: fire | T: target | L: load | J: jury rig | Q: quit | V: view | C: command | A: aid | B: boost | S: sensors"
+msgstr "F: fire | T: target | L: load | J: jury rig | Q: quit | V: view | C: command | A: aid | B: boost | S: sensors"
+
+#: src/OpenGoldBox/ship_combat_view.cpp:883
+msgid "F: fire | T: target | Q: quit | V: view | C: close | W: withdraw | R: ram | B: board"
+msgstr "F: fire | T: target | Q: quit | V: view | C: close | W: withdraw | R: ram | B: board"
+
 #: src/OpenGold.Rules.Original/src/spells.cpp:130 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Faerie Fire"
 msgstr "Faerie Fire"
@@ -4870,6 +4928,10 @@ msgstr "Faerie Fire (level 2 slot)"
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Failed Medicine check: d20 {roll} + {modifier} = {total} vs DC {dc}.\nSecond Wind uses: {uses}\n\nAdd 1d10. Spend one use only if the check succeeds.\nThe original Action is already spent."
 msgstr "Failed Medicine check: d20 {roll} + {modifier} = {total} vs DC {dc}.\nSecond Wind uses: {uses}\n\nAdd 1d10. Spend one use only if the check succeeds.\nThe original Action is already spent."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:90
+msgid "Failed in zero gravity"
+msgstr "Failed in zero gravity"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Failure"
@@ -4943,7 +5005,7 @@ msgstr "Features and choices"
 msgid "Feeblemind"
 msgstr "Feeblemind"
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:68 src/OpenGold.Rules.Srd5/src/character_rules.cpp:301
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:68 src/OpenGold.Rules.Srd5/src/character_rules.cpp:301 src/OpenGoldBox/ship_combat_view.cpp:69
 msgid "Female"
 msgstr "Female"
 
@@ -5003,11 +5065,11 @@ msgstr "Fifth level"
 msgid "Fight"
 msgstr "Fight"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:633
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:660
 msgid "Fight end chance"
 msgstr "Fight end chance"
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:74 src/OpenGold.Rules.Srd5/src/character_class.cpp:23 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:74 src/OpenGold.Rules.Srd5/src/character_class.cpp:23 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/ship_combat_view.cpp:73
 msgid "Fighter"
 msgstr "Fighter"
 
@@ -5093,7 +5155,7 @@ msgstr "Finish Long Rest spell choices before changing the party"
 msgid "Finish Long Rest spell choices before combat"
 msgstr "Finish Long Rest spell choices before combat"
 
-#: src/OpenGoldBox/party_preview.cpp:1846
+#: src/OpenGoldBox/party_preview.cpp:1883
 msgid "Finish combat, dialogue or shopping before returning to the party."
 msgstr "Finish combat, dialogue or shopping before returning to the party."
 
@@ -5109,7 +5171,7 @@ msgstr "Finish the dialogue or leave the shop first"
 msgid "Finish the fight before returning to the party"
 msgstr "Finish the fight before returning to the party"
 
-#: src/OpenGoldBox/game_menu_view.cpp:528
+#: src/OpenGoldBox/game_menu_view.cpp:530
 msgid "Finish the fight or event to choose another folder."
 msgstr "Finish the fight or event to choose another folder."
 
@@ -5117,7 +5179,7 @@ msgstr "Finish the fight or event to choose another folder."
 msgid "Finish the rest's choices before casting Simulacrum"
 msgstr "Finish the rest's choices before casting Simulacrum"
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/ship_combat.tscn:187
 msgid "Fire"
 msgstr "Fire"
 
@@ -5437,7 +5499,7 @@ msgstr "Font of Magic: create a level-4 slot (6 Sorcery Points)"
 msgid "Font of Magic: create a level-5 slot (7 Sorcery Points)"
 msgstr "Font of Magic: create a level-5 slot (7 Sorcery Points)"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:655 src/OpenGoldBox/godot/scenes/game_menu.tscn:667
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:682 src/OpenGoldBox/godot/scenes/game_menu.tscn:694
 msgid "For lighter harm: cast only if the enemies' likely loss outweighs the party's, the party's counting this many times as much. Unless changed: 2."
 msgstr "For lighter harm: cast only if the enemies' likely loss outweighs the party's, the party's counting this many times as much. Unless changed: 2."
 
@@ -5535,7 +5597,7 @@ msgstr "Frightened of the caster until the start of its next turn."
 msgid "Frightened of the mummy until the end of its next turn."
 msgstr "Frightened of the mummy until the end of its next turn."
 
-#: src/OpenGoldBox/game_menu_view.cpp:455 src/OpenGoldBox/godot/scenes/game_menu.tscn:209
+#: src/OpenGoldBox/game_menu_view.cpp:457 src/OpenGoldBox/godot/scenes/game_menu.tscn:209
 msgid "From Hard: monsters use their potions, wands and scrolls, and temples cast no Resurrection. Each monster ability below has its own lowest difficulty."
 msgstr "From Hard: monsters use their potions, wands and scrolls, and temples cast no Resurrection. Each monster ability below has its own lowest difficulty."
 
@@ -5551,7 +5613,7 @@ msgstr "Frost's Chill"
 msgid "Frost's Chill: Speed reduced by 10 feet."
 msgstr "Frost's Chill: Speed reduced by 10 feet."
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:331 src/OpenGoldBox/rolf_tour_solar_map.cpp:391
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:331 src/OpenGoldBox/rolf_tour_solar_map.cpp:391 src/OpenGoldBox/ship_combat_view.cpp:56
 msgid "Fuel"
 msgstr "Fuel"
 
@@ -5753,6 +5815,10 @@ msgstr "Goliath"
 msgid "Goliaths are towering folk descended from giants.\n\nRacial traits:\n- Speed of 35 feet.\n- Giant Ancestry: a boon from cloud, fire, frost, hill, stone or storm giants, used a few times between Long Rests."
 msgstr "Goliaths are towering folk descended from giants.\n\nRacial traits:\n- Speed of 35 feet.\n- Giant Ancestry: a boon from cloud, fire, frost, hill, stone or storm giants, used a few times between Long Rests."
 
+#: src/OpenGoldBox/ship_combat_view.cpp:80
+msgid "Gone"
+msgstr "Gone"
+
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:206
 msgid "Gone to another plane, Incapacitated, while the caster concentrates."
 msgstr "Gone to another plane, Incapacitated, while the caster concentrates."
@@ -5942,6 +6008,10 @@ msgstr "Gundarlun"
 msgid "Gust of Wind"
 msgstr "Gust of Wind"
 
+#: src/OpenGoldBox/ship_combat_view.cpp:60
+msgid "Gyrocannon"
+msgstr "Gyrocannon"
+
 #: src/OpenGoldBox/rest_dialog_impl.h:242
 msgid "HP"
 msgstr "HP"
@@ -5954,6 +6024,11 @@ msgstr "HP restored:"
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "HP {current} / {maximum}"
 msgstr "HP {current} / {maximum}"
+
+#: src/OpenGoldBox/ship_combat_view.cpp:817
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "HP {now} / {most}"
+msgstr "HP {now} / {most}"
 
 #: src/OpenGoldBox/character_creation_view.cpp:93 src/OpenGoldBox/godot/scenes/character_creation.tscn:680
 msgid "Hair / Face"
@@ -6097,6 +6172,10 @@ msgstr "Heated (Heat Metal)"
 msgid "Heavy Crossbow"
 msgstr "Heavy Crossbow"
 
+#: src/OpenGoldBox/ship_combat_view.cpp:61
+msgid "Heavy accel. gun"
+msgstr "Heavy accel. gun"
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Heavy armor"
 msgstr "Heavy armor"
@@ -6104,6 +6183,22 @@ msgstr "Heavy armor"
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Heavy armor ignores the Dexterity modifier when calculating AC."
 msgstr "Heavy armor ignores the Dexterity modifier when calculating AC."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:75
+msgid "Heavy cruiser"
+msgstr "Heavy cruiser"
+
+#: src/OpenGoldBox/ship_combat_view.cpp:74
+msgid "Heavy freighter"
+msgstr "Heavy freighter"
+
+#: src/OpenGoldBox/ship_combat_view.cpp:61
+msgid "Heavy missiles"
+msgstr "Heavy missiles"
+
+#: src/OpenGoldBox/ship_combat_view.cpp:74
+msgid "Heavy transport"
+msgstr "Heavy transport"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Heightened Focus"
@@ -6333,7 +6428,7 @@ msgstr "Hours"
 msgid "How large an original encounter may be: a share of the SRD's Moderate XP budget for the party. Bigger groups shrink; experience and treasure stay the original's."
 msgstr "How large an original encounter may be: a share of the SRD's Moderate XP budget for the party. Bigger groups shrink; experience and treasure stay the original's."
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:609 src/OpenGoldBox/godot/scenes/game_menu.tscn:622
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:636 src/OpenGoldBox/godot/scenes/game_menu.tscn:649
 msgid "How likely that loss must be for a party member to count as badly hurt. Unless changed: 50%."
 msgstr "How likely that loss must be for a party member to count as badly hurt. Unless changed: 50%."
 
@@ -6524,7 +6619,7 @@ msgstr "In combat, a Bonus Action coats your weapon: its next Piercing or Slashi
 msgid "In the form of a {value}."
 msgstr "In the form of a {value}."
 
-#: src/OpenGoldBox/game_menu_view.cpp:458
+#: src/OpenGoldBox/game_menu_view.cpp:460
 msgid "In this design, the difficulty plays as Design difficulty below sets it."
 msgstr "In this design, the difficulty plays as Design difficulty below sets it."
 
@@ -6628,7 +6723,7 @@ msgstr "Insect Plague"
 msgid "Insight"
 msgstr "Insight"
 
-#: src/OpenGoldBox/party_preview.cpp:1845
+#: src/OpenGoldBox/party_preview.cpp:1882
 msgid "Inspect your party and equipment."
 msgstr "Inspect your party and equipment."
 
@@ -6870,6 +6965,18 @@ msgstr "Juno"
 msgid "Jury Rig"
 msgstr "Jury Rig"
 
+#: src/OpenGoldBox/godot/scenes/ship_combat.tscn:202
+msgid "Jury rig"
+msgstr "Jury rig"
+
+#: src/OpenGoldBox/ship_combat_view.cpp:951
+msgid "Jury-rig what?"
+msgstr "Jury-rig what?"
+
+#: src/OpenGoldBox/ship_combat_view.cpp:61
+msgid "K-cannon"
+msgstr "K-cannon"
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Keen Senses"
 msgstr "Keen Senses"
@@ -6984,7 +7091,7 @@ msgstr "Lance"
 msgid "Land's Aid"
 msgstr "Land's Aid"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:746 src/OpenGoldBox/godot/scenes/startup.tscn:44 src/OpenGoldBox/startup_view.cpp:679
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:773 src/OpenGoldBox/godot/scenes/startup.tscn:44 src/OpenGoldBox/startup_view.cpp:679
 msgid "Language"
 msgstr "Language"
 
@@ -7276,6 +7383,10 @@ msgstr "Light Crossbow"
 msgid "Light Hammer"
 msgstr "Light Hammer"
 
+#: src/OpenGoldBox/ship_combat_view.cpp:61
+msgid "Light accel. gun"
+msgstr "Light accel. gun"
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Light armor"
 msgstr "Light armor"
@@ -7300,6 +7411,10 @@ msgstr "Light cyan"
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Light extra attack"
 msgstr "Light extra attack"
+
+#: src/OpenGoldBox/ship_combat_view.cpp:73
+msgid "Light freighter"
+msgstr "Light freighter"
 
 #: src/OpenGoldBox/character_creation_view.cpp:90
 msgid "Light gray"
@@ -7326,6 +7441,10 @@ msgstr "Light red"
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Light throw — {weapon} ({hand})"
 msgstr "Light throw — {weapon} ({hand})"
+
+#: src/OpenGoldBox/ship_combat_view.cpp:74
+msgid "Light transport"
+msgstr "Light transport"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Lightning"
@@ -7376,7 +7495,7 @@ msgstr "Lizardfolk"
 msgid "Llorkh"
 msgstr "Llorkh"
 
-#: src/OpenGoldBox/save_slots.cpp:249 src/OpenGoldBox/save_slots.cpp:265 src/OpenGoldBox/save_slots.cpp:339
+#: src/OpenGoldBox/godot/scenes/ship_combat.tscn:197 src/OpenGoldBox/save_slots.cpp:249 src/OpenGoldBox/save_slots.cpp:265 src/OpenGoldBox/save_slots.cpp:339
 msgid "Load"
 msgstr "Load"
 
@@ -7384,7 +7503,7 @@ msgstr "Load"
 msgid "Load Character"
 msgstr "Load Character"
 
-#: src/OpenGoldBox/party_preview.cpp:2067
+#: src/OpenGoldBox/party_preview.cpp:2104
 msgid "Load a saved game to continue."
 msgstr "Load a saved game to continue."
 
@@ -7396,11 +7515,11 @@ msgstr "Load character"
 msgid "Load combat"
 msgstr "Load combat"
 
-#: src/OpenGoldBox/campaign_save_view.cpp:152 src/OpenGoldBox/godot/scenes/game_menu.tscn:68 src/OpenGoldBox/godot/scenes/party_panel.tscn:264 src/OpenGoldBox/godot/scenes/startup.tscn:247 src/OpenGoldBox/save_slots.cpp:186
+#: src/OpenGoldBox/campaign_save_view.cpp:153 src/OpenGoldBox/godot/scenes/game_menu.tscn:68 src/OpenGoldBox/godot/scenes/party_panel.tscn:264 src/OpenGoldBox/godot/scenes/startup.tscn:247 src/OpenGoldBox/save_slots.cpp:186
 msgid "Load game"
 msgstr "Load game"
 
-#: src/OpenGoldBox/campaign_save_view.cpp:139
+#: src/OpenGoldBox/campaign_save_view.cpp:140
 msgid "Load the quick save? Any unsaved campaign progress will be discarded."
 msgstr "Load the quick save? Any unsaved campaign progress will be discarded."
 
@@ -7411,6 +7530,10 @@ msgstr "Load this character? Any unsaved demo progress will be discarded."
 #: src/OpenGoldBox/save_slots.cpp:315
 msgid "Load this save? Any unsaved campaign progress will be discarded."
 msgstr "Load this save? Any unsaved campaign progress will be discarded."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:942
+msgid "Load which weapon?"
+msgstr "Load which weapon?"
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:2333
 msgid "Locked."
@@ -7472,11 +7595,11 @@ msgstr "Loudwater"
 msgid "Lower"
 msgstr "Lower"
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/ship_combat_view.cpp:66
 msgid "Lowlander"
 msgstr "Lowlander"
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/ship_combat_view.cpp:66
 msgid "Lunarian"
 msgstr "Lunarian"
 
@@ -7711,7 +7834,7 @@ msgstr "Make leader"
 msgid "Make the species' choices."
 msgstr "Make the species' choices."
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:67 src/OpenGold.Rules.Srd5/src/character_rules.cpp:303
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:67 src/OpenGold.Rules.Srd5/src/character_rules.cpp:303 src/OpenGoldBox/ship_combat_view.cpp:69
 msgid "Male"
 msgstr "Male"
 
@@ -7727,7 +7850,7 @@ msgstr "Mars"
 msgid "Martial Arts and Unarmored Defense; Monk's Focus (Flurry of Blows, Patient Defense, Step of the Wind), Unarmored Movement and Uncanny Metabolism at level two; Deflect Attacks and the Warrior of the Open Hand at level three. Level four grants an available feat or ability points."
 msgstr "Martial Arts and Unarmored Defense; Monk's Focus (Flurry of Blows, Patient Defense, Step of the Wind), Unarmored Movement and Uncanny Metabolism at level two; Deflect Attacks and the Warrior of the Open Hand at level three. Level four grants an available feat or ability points."
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/ship_combat_view.cpp:65
 msgid "Martian"
 msgstr "Martian"
 
@@ -7785,7 +7908,7 @@ msgstr "May vanish to the Ethereal Plane at the end of each of its turns."
 msgid "Maze"
 msgstr "Maze"
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/ship_combat_view.cpp:67
 msgid "Medic"
 msgstr "Medic"
 
@@ -7804,6 +7927,10 @@ msgstr "Medium armor"
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Medium armor limits the Dexterity modifier added to AC to +2; negative modifiers still apply."
 msgstr "Medium armor limits the Dexterity modifier added to AC to +2; negative modifiers still apply."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:74
+msgid "Medium cruiser"
+msgstr "Medium cruiser"
 
 #: src/OpenGoldBox/godot/scenes/combat_demo.tscn:126
 msgid "Melee"
@@ -7985,7 +8112,7 @@ msgstr "Mendor's Library"
 msgid "Menu"
 msgstr "Menu"
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/ship_combat_view.cpp:65
 msgid "Mercurian"
 msgstr "Mercurian"
 
@@ -8122,6 +8249,10 @@ msgstr "Mishakal"
 msgid "Mislead"
 msgstr "Mislead"
 
+#: src/OpenGoldBox/ship_combat_view.cpp:60
+msgid "Missiles"
+msgstr "Missiles"
+
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:391
 msgid "Missiles without magic from more than 5 feet away miss it."
 msgstr "Missiles without magic from more than 5 feet away miss it."
@@ -8180,15 +8311,19 @@ msgstr "Monk skills"
 msgid "Monk's Focus"
 msgstr "Monk's Focus"
 
+#: src/OpenGoldBox/ship_combat_view.cpp:65
+msgid "Monster"
+msgstr "Monster"
+
 #: src/OpenGold.Rules.Original/src/spells.cpp:238
 msgid "Monster Summoning"
 msgstr "Monster Summoning"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:675
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:702
 msgid "Monster abilities"
 msgstr "Monster abilities"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:691
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:718
 msgid "Monsters that have it"
 msgstr "Monsters that have it"
 
@@ -8285,7 +8420,7 @@ msgstr "Multiattack Defense"
 msgid "Multiclass training"
 msgstr "Multiclass training"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:918
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:945
 msgid "Music"
 msgstr "Music"
 
@@ -8443,7 +8578,7 @@ msgstr "Neutralize Poison"
 msgid "Never"
 msgstr "Never"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:563 src/OpenGoldBox/godot/scenes/game_menu.tscn:576
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:590 src/OpenGoldBox/godot/scenes/game_menu.tscn:603
 msgid "Never cast while any party member could go down with this chance or more. Unless changed: 5%."
 msgstr "Never cast while any party member could go down with this chance or more. Unless changed: 5%."
 
@@ -8451,7 +8586,7 @@ msgstr "Never cast while any party member could go down with this chance or more
 msgid "Neverwinter"
 msgstr "Neverwinter"
 
-#: src/OpenGoldBox/game_menu_view.cpp:390
+#: src/OpenGoldBox/game_menu_view.cpp:392
 msgid "New"
 msgstr "New"
 
@@ -8463,7 +8598,7 @@ msgstr "New Phlan"
 msgid "New Verdigris"
 msgstr "New Verdigris"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:866
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:893
 msgid "New art folder"
 msgstr "New art folder"
 
@@ -8474,6 +8609,10 @@ msgstr "New game"
 #: src/OpenGoldBox/character_creation_view.cpp:670 src/OpenGoldBox/godot/scenes/character_creation.tscn:381 src/OpenGoldBox/godot/scenes/portrait_dialog.tscn:60 src/OpenGoldBox/level_up_dialog.cpp:453
 msgid "Next"
 msgstr "Next"
+
+#: src/OpenGoldBox/ship_combat_view.cpp:925
+msgid "Next round"
+msgstr "Next round"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Nick"
@@ -8522,7 +8661,7 @@ msgstr "Nimble, fearless folk whose taunts provoke enemies."
 msgid "Ninth level"
 msgstr "Ninth level"
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/ship_combat_view.cpp:921 src/OpenGoldBox/ship_combat_view.cpp:965
 msgid "No"
 msgstr "No"
 
@@ -8591,6 +8730,10 @@ msgstr "No member can be healed by it now"
 msgid "No numeric racial modifiers."
 msgstr "No numeric racial modifiers."
 
+#: src/OpenGoldBox/ship_combat_view.cpp:870
+msgid "No one aboard can act this round."
+msgstr "No one aboard can act this round."
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "No one can fix the party now."
 msgstr "No one can fix the party now."
@@ -8624,6 +8767,10 @@ msgstr "No sanctuary is prepared: cast Word of Recall in a temple of New Phlan f
 msgid "No spell choices for this class"
 msgstr "No spell choices for this class"
 
+#: src/OpenGoldBox/ship_combat_view.cpp:78
+msgid "No status"
+msgstr "No status"
+
 #: src/OpenGold.Rules.Original/src/rules_module.cpp:1106
 msgid "No such level under the original rules"
 msgstr "No such level under the original rules"
@@ -8648,7 +8795,7 @@ msgstr "Non-binary"
 msgid "Nonbinary"
 msgstr "Nonbinary"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:207 src/OpenGoldBox/character_sheet_text.cpp:431 src/OpenGoldBox/game_menu_view.cpp:521
+#: src/OpenGoldBox/character_sheet_text.cpp:207 src/OpenGoldBox/character_sheet_text.cpp:431 src/OpenGoldBox/game_menu_view.cpp:523
 msgid "None"
 msgstr "None"
 
@@ -8691,6 +8838,10 @@ msgstr "Not enough gold"
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Not enough money."
 msgstr "Not enough money."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:87
+msgid "Not here"
+msgstr "Not here"
 
 #: src/OpenGoldBox/character_creation_view.cpp:955
 msgid "Not present"
@@ -8745,7 +8896,7 @@ msgstr "Oath of Devotion: Aura of Devotion. You and allies in your Aura of Prote
 msgid "Oath of Devotion: Smite of Protection. When you cast Divine Smite, you and allies in your Aura of Protection gain +2 AC and +2 to Dexterity saves until your next turn.\nA second level 4 spell slot."
 msgstr "Oath of Devotion: Smite of Protection. When you cast Divine Smite, you and allies in your Aura of Protection gain +2 AC and +2 to Dexterity saves until your next turn.\nA second level 4 spell slot."
 
-#: src/OpenGoldBox/game_menu_view.cpp:321 src/OpenGoldBox/startup_view.cpp:978
+#: src/OpenGoldBox/game_menu_view.cpp:323 src/OpenGoldBox/startup_view.cpp:978
 msgid "Off"
 msgstr "Off"
 
@@ -8765,11 +8916,15 @@ msgstr "Ogre"
 msgid "Oil"
 msgstr "Oil"
 
+#: src/OpenGoldBox/ship_combat_view.cpp:79
+msgid "Okay"
+msgstr "Okay"
+
 #: src/OpenGoldBox/rolf_tour_view.cpp:330
 msgid "Old Town"
 msgstr "Old Town"
 
-#: src/OpenGoldBox/game_menu_view.cpp:320
+#: src/OpenGoldBox/game_menu_view.cpp:322
 msgid "On"
 msgstr "On"
 
@@ -8793,7 +8948,7 @@ msgstr "On a hit, the target has Disadvantage on its next attack roll before you
 msgid "On a hit, the target makes a Constitution save (DC 8 + the attack's ability modifier + proficiency bonus) or falls Prone."
 msgstr "On a hit, the target makes a Constitution save (DC 8 + the attack's ability modifier + proficiency bonus) or falls Prone."
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:701
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:728
 msgid "On from"
 msgstr "On from"
 
@@ -8937,7 +9092,7 @@ msgstr "Open locks"
 msgid "OpenGoldBox"
 msgstr "OpenGoldBox"
 
-#: src/OpenGoldBox/game_menu_view.cpp:328
+#: src/OpenGoldBox/game_menu_view.cpp:330
 msgid "OpenGoldBox's"
 msgstr "OpenGoldBox's"
 
@@ -8973,19 +9128,19 @@ msgstr "Orcs are strong, tireless folk who press on where others falter.\n\nRaci
 msgid "Order"
 msgstr "Order"
 
-#: src/OpenGoldBox/game_menu_view.cpp:391
+#: src/OpenGoldBox/game_menu_view.cpp:393
 msgid "Original"
 msgstr "Original"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:515
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:542
 msgid "Original movement"
 msgstr "Original movement"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:553
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:580
 msgid "Original rules. How a party member on Quick, or a companion the computer plays, weighs a spell or item that strikes an area before using it; monsters cast as in the original. Point at a row for what it means."
 msgstr "Original rules. How a party member on Quick, or a companion the computer plays, weighs a spell or item that strikes an area before using it; monsters cast as in the original. Point at a row for what it means."
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:533
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:560
 msgid "Original rules. On, as in the original: rough ground costs its terrain's price, a diagonal step may pass a wall's corner, a creature the computer plays needs more movement than a step costs, a large creature pays for its top-left square, and a move ends with less than 2 half-moves left. Off: every walkable square costs one step."
 msgstr "Original rules. On, as in the original: rough ground costs its terrain's price, a diagonal step may pass a wall's corner, a creature the computer plays needs more movement than a step costs, a large creature pays for its top-left square, and a move ends with less than 2 half-moves left. Off: every walkable square costs one step."
 
@@ -9205,7 +9360,7 @@ msgstr "Part"
 msgid "Party ({x}, {y})   {direction}"
 msgstr "Party ({x}, {y})   {direction}"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:542
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:569
 msgid "Party area spells"
 msgstr "Party area spells"
 
@@ -9217,7 +9372,7 @@ msgstr "Party incapacitated / defeat"
 msgid "Party roster"
 msgstr "Party roster"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:656
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:683
 msgid "Party weight"
 msgstr "Party weight"
 
@@ -9355,6 +9510,10 @@ msgstr "Piercing"
 msgid "Pike"
 msgstr "Pike"
 
+#: src/OpenGoldBox/ship_combat_view.cpp:733 src/OpenGoldBox/ship_combat_view.cpp:801
+msgid "Pilot"
+msgstr "Pilot"
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Pilot Fixed Wing"
 msgstr "Pilot Fixed Wing"
@@ -9423,7 +9582,7 @@ msgstr "Poison"
 msgid "Poison Spray"
 msgstr "Poison Spray"
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:91 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:91 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/ship_combat_view.cpp:85
 msgid "Poisoned"
 msgstr "Poisoned"
 
@@ -9523,7 +9682,7 @@ msgstr "Portrait gender"
 msgid "Portrait race"
 msgstr "Portrait race"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:843
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:870
 msgid "Portraits"
 msgstr "Portraits"
 
@@ -9801,6 +9960,10 @@ msgstr "Pub"
 msgid "Pull off"
 msgstr "Pull off"
 
+#: src/OpenGoldBox/ship_combat_view.cpp:60
+msgid "Pumped laser"
+msgstr "Pumped laser"
+
 #: src/OpenGoldBox/rolf_tour_view.cpp:221
 msgid "Purple Rocks"
 msgstr "Purple Rocks"
@@ -9858,7 +10021,7 @@ msgstr "Quarterstaff"
 msgid "Quick"
 msgstr "Quick"
 
-#: src/OpenGoldBox/campaign_save_view.cpp:136
+#: src/OpenGoldBox/campaign_save_view.cpp:137
 msgid "Quick load"
 msgstr "Quick load"
 
@@ -9882,13 +10045,17 @@ msgstr "Quick save"
 msgid "Quick save (F5)"
 msgstr "Quick save (F5)"
 
-#: src/OpenGoldBox/campaign_save_view.cpp:185
+#: src/OpenGoldBox/campaign_save_view.cpp:186
 msgid "Quick saved."
 msgstr "Quick saved."
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Quickened Spell"
 msgstr "Quickened Spell"
+
+#: src/OpenGoldBox/godot/scenes/ship_combat.tscn:207
+msgid "Quit"
+msgstr "Quit"
 
 #: src/OpenGoldBox/godot/scenes/game_folder_questions.tscn:186
 msgid "Quit to OS"
@@ -9966,6 +10133,15 @@ msgstr "Raise Dead cannot bring this member back"
 msgid "Raised (Zombie)"
 msgstr "Raised (Zombie)"
 
+#: src/OpenGoldBox/godot/scenes/ship_combat.tscn:230
+msgid "Ram"
+msgstr "Ram"
+
+#: src/OpenGoldBox/ship_combat_view.cpp:963
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "Ram the {ship}?"
+msgstr "Ram the {ship}?"
+
 #: src/OpenGoldBox/monster_ability_options.h:59
 msgid "Rampage"
 msgstr "Rampage"
@@ -9973,6 +10149,24 @@ msgstr "Rampage"
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:412
 msgid "Rampaging"
 msgstr "Rampaging"
+
+#: src/OpenGoldBox/godot/scenes/ship_combat.tscn:92 src/OpenGoldBox/ship_combat_view.cpp:716
+msgid "Range"
+msgstr "Range"
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1001
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "Range {range} · Your speed {speed}, boosts {boosts} of 2 · Enemy speed {enemy}"
+msgstr "Range {range} · Your speed {speed}, boosts {boosts} of 2 · Enemy speed {enemy}"
+
+#: src/OpenGoldBox/godot/scenes/ship_combat.tscn:72
+msgid "Range: 8"
+msgstr "Range: 8"
+
+#: src/OpenGoldBox/ship_combat_view.cpp:555
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "Range: {range}"
+msgstr "Range: {range}"
 
 #: src/OpenGoldBox/godot/scenes/combat_demo.tscn:135
 msgid "Ranged"
@@ -10352,9 +10546,13 @@ msgstr "Reliable Talent: {name}'s d20 of {roll} counts as 10."
 msgid "Religion"
 msgstr "Religion"
 
-#: src/OpenGoldBox/party_preview.cpp:2071
+#: src/OpenGoldBox/party_preview.cpp:2108
 msgid "Reload a Saved Game"
 msgstr "Reload a Saved Game"
+
+#: src/OpenGoldBox/ship_combat_view.cpp:716
+msgid "Reloads"
+msgstr "Reloads"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Remarkable Athlete"
@@ -10700,7 +10898,7 @@ msgstr "Rest type"
 msgid "Restart"
 msgstr "Restart"
 
-#: src/OpenGoldBox/campaign_save_view.cpp:546
+#: src/OpenGoldBox/campaign_save_view.cpp:551
 msgid "Restart test"
 msgstr "Restart test"
 
@@ -10712,7 +10910,7 @@ msgstr "Restart with --reset-game-path to choose your Pool of Radiance data fold
 msgid "Restoration"
 msgstr "Restoration"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:733
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:760
 msgid "Restore defaults"
 msgstr "Restore defaults"
 
@@ -10787,6 +10985,10 @@ msgstr "Retaliation attack"
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Retreat"
 msgstr "Retreat"
+
+#: src/OpenGoldBox/ship_combat_view.cpp:553
+msgid "Retreating"
+msgstr "Retreating"
 
 #: src/OpenGoldBox/godot/scenes/game_menu.tscn:46
 msgid "Return to game"
@@ -10869,7 +11071,7 @@ msgstr "Rising as a Zombie"
 msgid "Rocket ({x}, {y})   {heading}"
 msgstr "Rocket ({x}, {y})   {heading}"
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/ship_combat_view.cpp:67
 msgid "Rocket Jock"
 msgstr "Rocket Jock"
 
@@ -10881,7 +11083,7 @@ msgstr "Rocket [R]"
 msgid "Rod, staff or wand"
 msgstr "Rod, staff or wand"
 
-#: src/OpenGold.Rules.Srd5/src/character_class.cpp:27 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Srd5/src/character_class.cpp:27 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/ship_combat_view.cpp:68
 msgid "Rogue"
 msgstr "Rogue"
 
@@ -10974,6 +11176,10 @@ msgstr "Round {round} / {name} turn\nMove {feet} ft | {action}"
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Round {round}: {name} acts."
 msgstr "Round {round}: {name} acts."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:716
+msgid "Rounds"
+msgstr "Rounds"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Roving"
@@ -11076,7 +11282,7 @@ msgstr "Save character"
 msgid "Save combat"
 msgstr "Save combat"
 
-#: src/OpenGoldBox/campaign_save_view.cpp:152 src/OpenGoldBox/godot/scenes/game_menu.tscn:57 src/OpenGoldBox/godot/scenes/party_panel.tscn:254 src/OpenGoldBox/rest_dialog_impl.h:33 src/OpenGoldBox/rest_dialog_impl.h:85 src/OpenGoldBox/save_slots.cpp:186
+#: src/OpenGoldBox/campaign_save_view.cpp:153 src/OpenGoldBox/godot/scenes/game_menu.tscn:57 src/OpenGoldBox/godot/scenes/party_panel.tscn:254 src/OpenGoldBox/rest_dialog_impl.h:33 src/OpenGoldBox/rest_dialog_impl.h:85 src/OpenGoldBox/save_slots.cpp:186
 msgid "Save game"
 msgstr "Save game"
 
@@ -11088,7 +11294,7 @@ msgstr "Save game, Load game, Options and Exit (Escape)."
 msgid "Save name"
 msgstr "Save name"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:722
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:749
 msgid "Saved at once; they take effect from the next fight."
 msgstr "Saved at once; they take effect from the next fight."
 
@@ -11169,9 +11375,13 @@ msgstr "Scorching Ray"
 msgid "Score"
 msgstr "Score"
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/ship_combat_view.cpp:68
 msgid "Scout"
 msgstr "Scout"
+
+#: src/OpenGoldBox/ship_combat_view.cpp:73
+msgid "Scout cruiser"
+msgstr "Scout cruiser"
 
 #: src/OpenGoldBox/screenshot_service.cpp:262
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
@@ -11383,6 +11593,10 @@ msgstr "Sell"
 msgid "Sensors"
 msgstr "Sensors"
 
+#: src/OpenGoldBox/godot/scenes/ship_combat.tscn:134
+msgid "Sensors destroyed"
+msgstr "Sensors destroyed"
+
 #: src/OpenGoldBox/character_sheet_text.cpp:122
 msgid "Seventh level"
 msgstr "Seventh level"
@@ -11435,6 +11649,10 @@ msgstr "Shining (Shining Smite)"
 msgid "Shining Smite"
 msgstr "Shining Smite"
 
+#: src/OpenGoldBox/ship_combat_view.cpp:969
+msgid "Ship"
+msgstr "Ship"
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Ship Lore"
 msgstr "Ship Lore"
@@ -11447,9 +11665,17 @@ msgstr "Ship combat. On: a boarded ship's fuel is transferred to yours, as the R
 msgid "Ship combat. On: any crew member may take COMMAND once a round, even with the pilot well, as in the original. Off: only while the pilot is dead or incapacitated, as the Rule Book says."
 msgstr "Ship combat. On: any crew member may take COMMAND once a round, even with the pilot well, as in the original. Off: only while the pilot is dead or incapacitated, as the Rule Book says."
 
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:510
+msgid "Ship combat. On: the enemy ship's picture grows smaller the farther away it is. Off: one size at every range, as in the original."
+msgstr "Ship combat. On: the enemy ship's picture grows smaller the farther away it is. Off: one size at every range, as in the original."
+
 #: src/OpenGoldBox/godot/scenes/game_menu.tscn:406
 msgid "Ship combat. On: with no one at the helm, the ship dodges a ram by its own pilot value (the Maelstrom Rider's is 100), as in the original. Off: it dodges with 0."
 msgstr "Ship combat. On: with no one at the helm, the ship dodges a ram by its own pilot value (the Maelstrom Rider's is 100), as in the original. Off: it dodges with 0."
+
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:492
+msgid "Ship picture by range"
+msgstr "Ship picture by range"
 
 #: src/OpenGold.Rules.Original/src/spells.cpp:38 src/OpenGold.Rules.Srd5/src/effect_labels.h:34 src/OpenGoldBox/combat_view.cpp:3166 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Shocking Grasp"
@@ -11865,7 +12091,7 @@ msgstr "Sorcery Incarnate: with no Innate Sorcery use left, 2 Sorcery Points sta
 msgid "Sorcery Points"
 msgstr "Sorcery Points"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:905
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:932
 msgid "Sound effects"
 msgstr "Sound effects"
 
@@ -12011,6 +12237,10 @@ msgstr "Southeast"
 msgid "Southwest"
 msgstr "Southwest"
 
+#: src/OpenGoldBox/ship_combat_view.cpp:75
+msgid "Space liner"
+msgstr "Space liner"
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Spare the Dying"
 msgstr "Spare the Dying"
@@ -12155,6 +12385,10 @@ msgstr "Spiritual Weapon attack"
 msgid "Splint Armor"
 msgstr "Splint Armor"
 
+#: src/OpenGoldBox/ship_combat_view.cpp:89
+msgid "Sprinting"
+msgstr "Sprinting"
+
 #: src/OpenGoldBox/godot/scenes/combat_demo.tscn:913
 msgid "Stabilize"
 msgstr "Stabilize"
@@ -12187,7 +12421,7 @@ msgstr "Starry Wisp"
 msgid "Start"
 msgstr "Start"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:391 src/OpenGoldBox/party_preview.cpp:1197
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:391 src/OpenGoldBox/party_preview.cpp:1198
 msgid "Start over"
 msgstr "Start over"
 
@@ -12515,7 +12749,7 @@ msgstr "Takes 5d4 Acid damage at the end of its next turn."
 msgid "Takes Fire damage at the start of each of its turns until a Constitution save puts the flames out."
 msgstr "Takes Fire damage at the start of each of its turns until a Constitution save puts the flames out."
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:762
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:789
 msgid "Takes effect the next time the game starts."
 msgstr "Takes effect the next time the game starts."
 
@@ -12527,13 +12761,17 @@ msgstr "Taking damage calls for a Constitution save to keep its spell."
 msgid "Talk"
 msgstr "Talk"
 
-#: src/OpenGoldBox/nick_controls.h:45
+#: src/OpenGoldBox/godot/scenes/ship_combat.tscn:192 src/OpenGoldBox/nick_controls.h:45
 msgid "Target"
 msgstr "Target"
 
 #: src/OpenGoldBox/godot/scenes/character_creation.tscn:1312
 msgid "Target DC"
 msgstr "Target DC"
+
+#: src/OpenGoldBox/ship_combat_view.cpp:934
+msgid "Target which system?"
+msgstr "Target which system?"
 
 #: src/OpenGold.Rules.Srd5/src/mastery_resolution_impl.h:210 src/OpenGold.Rules.Srd5/src/mastery_resolution_impl.h:211
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
@@ -12626,7 +12864,7 @@ msgstr "Temporary HP from {source}. Absorbs damage before ordinary HP; does not 
 msgid "Temporary HP:"
 msgstr "Temporary HP:"
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/ship_combat_view.cpp:65
 msgid "Terran"
 msgstr "Terran"
 
@@ -12702,7 +12940,7 @@ msgstr "That spell or feature cannot be used now"
 msgid "Thaumaturge"
 msgstr "Thaumaturge"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:813
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:840
 msgid "The 3D view's walls and close-ups: the new art, or the original game's."
 msgstr "The 3D view's walls and close-ups: the new art, or the original game's."
 
@@ -12791,7 +13029,7 @@ msgstr "The acid drains away."
 msgid "The air clears a little."
 msgstr "The air clears a little."
 
-#: src/OpenGoldBox/game_menu_view.cpp:533
+#: src/OpenGoldBox/game_menu_view.cpp:535
 msgid "The art settings above choose the new art or the original game's."
 msgstr "The art settings above choose the new art or the original game's."
 
@@ -12807,7 +13045,7 @@ msgstr "The attack passes through an illusory double."
 msgid "The background also gives two skills and an Origin feat."
 msgstr "The background also gives two skills and an Origin feat."
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:790
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:817
 msgid "The battlefield's size when a fight opens."
 msgstr "The battlefield's size when a fight opens."
 
@@ -12836,7 +13074,7 @@ msgstr "The casters heal and cure the party as it rests"
 msgid "The character has no levels in a class it trained in"
 msgstr "The character has no levels in a class it trained in"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:859
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:886
 msgid "The characters' portraits: the new pictures, or the original game's head and body portraits."
 msgstr "The characters' portraits: the new pictures, or the original game's head and body portraits."
 
@@ -12892,12 +13130,12 @@ msgstr "The dead cannot read"
 msgid "The dead rise when the minute of casting ends."
 msgstr "The dead rise when the minute of casting ends."
 
-#: src/OpenGoldBox/party_preview.cpp:1902
+#: src/OpenGoldBox/party_preview.cpp:1939
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "The default party could not be made: {problem}"
 msgstr "The default party could not be made: {problem}"
 
-#: src/OpenGoldBox/game_menu_view.cpp:328
+#: src/OpenGoldBox/game_menu_view.cpp:330
 msgid "The design's"
 msgstr "The design's"
 
@@ -12921,11 +13159,11 @@ msgstr "The fifth edition's System Reference Document, with the original's adven
 msgid "The free Circle spell returns with a Long Rest."
 msgstr "The free Circle spell returns with a Long Rest."
 
-#: src/OpenGoldBox/campaign_save_view.cpp:192
+#: src/OpenGoldBox/campaign_save_view.cpp:193
 msgid "The game cannot be loaded now."
 msgstr "The game cannot be loaded now."
 
-#: src/OpenGoldBox/campaign_save_view.cpp:181
+#: src/OpenGoldBox/campaign_save_view.cpp:182
 msgid "The game cannot be saved now."
 msgstr "The game cannot be saved now."
 
@@ -12979,7 +13217,7 @@ msgstr "The missile cannot touch {name}."
 msgid "The monsters go on their way."
 msgstr "The monsters go on their way."
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:836
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:863
 msgid "The monsters' figures in a fight: the new art, or the original game's. Party members keep theirs."
 msgstr "The monsters' figures in a fight: the new art, or the original game's. Party members keep theirs."
 
@@ -13004,7 +13242,7 @@ msgstr "The next attack roll another creature makes against it gains +5."
 msgid "The oil on {name} burns for 5 more damage."
 msgstr "The oil on {name} burns for 5 more damage."
 
-#: src/OpenGoldBox/game_menu_view.cpp:530
+#: src/OpenGoldBox/game_menu_view.cpp:532
 msgid "The original game's art shows until you choose the folder of the OpenGoldBox new art download."
 msgstr "The original game's art shows until you choose the folder of the OpenGoldBox new art download."
 
@@ -13133,6 +13371,10 @@ msgstr "The rest was interrupted. Rest again to recover."
 msgid "The river's stench drives you back."
 msgstr "The river's stench drives you back."
 
+#: src/OpenGoldBox/ship_combat_view.cpp:861
+msgid "The ship fight is over."
+msgstr "The ship fight is over."
+
 #: src/OpenGoldBox/rolf_tour_view.cpp:1251
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "The shop identifies it: {item}."
@@ -13168,6 +13410,16 @@ msgstr "The sunlight ends the magical Darkness."
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "The sword will not stay in {name}'s hand and burns for {damage} Force damage."
 msgstr "The sword will not stay in {name}'s hand and burns for {damage} Force damage."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1237
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "The tanks take {fuel} fuel from the {ship}."
+msgstr "The tanks take {fuel} fuel from the {ship}."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1158
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "The team boards the {ship}."
+msgstr "The team boards the {ship}."
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "The team rests a day."
@@ -13272,7 +13524,7 @@ msgstr "The {spell} on the scroll is lost."
 msgid "There is already a {name} in the party."
 msgstr "There is already a {name} in the party."
 
-#: src/OpenGoldBox/campaign_save_view.cpp:197
+#: src/OpenGoldBox/campaign_save_view.cpp:198
 msgid "There is no quick save."
 msgstr "There is no quick save."
 
@@ -13372,7 +13624,7 @@ msgstr "This save holds no player characters."
 msgid "This save was made by an older pre-release version of OpenGoldBox and can't be loaded."
 msgstr "This save was made by an older pre-release version of OpenGoldBox and can't be loaded."
 
-#: src/OpenGoldBox/campaign_save_view.cpp:312
+#: src/OpenGoldBox/campaign_save_view.cpp:313
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "This save's design is no longer at {folder}."
 msgstr "This save's design is no longer at {folder}."
@@ -13461,7 +13713,7 @@ msgstr "Tilverton Sewers"
 msgid "Tilverton Thieves' Guild"
 msgstr "Tilverton Thieves' Guild"
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/ship_combat_view.cpp:66
 msgid "Tinker"
 msgstr "Tinker"
 
@@ -13652,6 +13904,10 @@ msgstr "True Strike (Radiant)"
 msgid "Truesight to 30 feet: see Invisible creatures and through magical Darkness there."
 msgstr "Truesight to 30 feet: see Invisible creatures and through magical Darkness there."
 
+#: src/OpenGoldBox/ship_combat_view.cpp:920
+msgid "Try to dodge the enemy ship?"
+msgstr "Try to dodge the enemy ship?"
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Try to stop dancing"
 msgstr "Try to stop dancing"
@@ -13817,7 +14073,7 @@ msgstr "Uncanny Dodge"
 msgid "Uncanny Metabolism"
 msgstr "Uncanny Metabolism"
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/ship_combat_view.cpp:83
 msgid "Unconscious"
 msgstr "Unconscious"
 
@@ -13837,7 +14093,7 @@ msgstr "Undead"
 msgid "Undead Fortitude"
 msgstr "Undead Fortitude"
 
-#: src/OpenGoldBox/game_menu_view.cpp:460
+#: src/OpenGoldBox/game_menu_view.cpp:462
 msgid "Under the original rules, Normal plays as the original game did; the other levels change only the monsters' to-hit, Hit Points and Armor Class."
 msgstr "Under the original rules, Normal plays as the original game did; the other levels change only the monsters' to-hit, Hit Points and Armor Class."
 
@@ -13869,7 +14125,7 @@ msgstr "Unlimited Adventures"
 msgid "Unlimited Adventures design"
 msgstr "Unlimited Adventures design"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:507
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:534
 msgid "Unlimited Adventures. The design's: the kit's five levels change the party's to-hit and the monsters' Hit Points. OpenGoldBox's: the difficulty table changes the monsters' to-hit, Hit Points and Armor Class. Both: the kit's levels, with the table's to-hit and Armor Class for the monsters."
 msgstr "Unlimited Adventures. The design's: the kit's five levels change the party's to-hit and the monsters' Hit Points. OpenGoldBox's: the difficulty table changes the monsters' to-hit, Hit Points and Armor Class. Both: the kit's levels, with the table's to-hit and Armor Class for the monsters."
 
@@ -13953,7 +14209,7 @@ msgstr "Untrained weapon: no proficiency bonus on attack rolls. Only an Evil wie
 msgid "Unused power"
 msgstr "Unused power"
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/ship_combat_view.cpp:716
 msgid "Up"
 msgstr "Up"
 
@@ -14009,10 +14265,18 @@ msgstr "Use or decline the opportunity attack."
 msgid "Use this folder"
 msgstr "Use this folder"
 
+#: src/OpenGoldBox/ship_combat_view.cpp:91
+msgid "Used a jetpack"
+msgstr "Used a jetpack"
+
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:348
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Used {value} times since the last Long Rest; using it again harms the Wizard."
 msgstr "Used {value} times since the last Long Rest; using it again harms the Wizard."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:92
+msgid "Using a jetpack"
+msgstr "Using a jetpack"
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:217
 msgid "Uttersea, Tuern"
@@ -14070,7 +14334,7 @@ msgstr "Vault is full!"
 msgid "Venus"
 msgstr "Venus"
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/ship_combat_view.cpp:65
 msgid "Venusian"
 msgstr "Venusian"
 
@@ -14103,6 +14367,10 @@ msgstr "Victory"
 msgid "Victory."
 msgstr "Victory."
 
+#: src/OpenGoldBox/godot/scenes/ship_combat.tscn:212
+msgid "View"
+msgstr "View"
+
 #: src/OpenGoldBox/godot/scenes/level_up_lab.tscn:234
 msgid "View Character"
 msgstr "View Character"
@@ -14110,6 +14378,10 @@ msgstr "View Character"
 #: src/OpenGoldBox/godot/scenes/character_creation.tscn:1170
 msgid "View party"
 msgstr "View party"
+
+#: src/OpenGoldBox/ship_combat_view.cpp:968
+msgid "View:"
+msgstr "View:"
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:127
 msgid "Village of Haptooth"
@@ -14331,7 +14603,7 @@ msgstr "Warlock features"
 msgid "Warlock skills"
 msgstr "Warlock skills"
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/ship_combat_view.cpp:67
 msgid "Warrior"
 msgstr "Warrior"
 
@@ -14380,7 +14652,7 @@ msgstr "Weapon specialization"
 msgid "Weapon specializations"
 msgstr "Weapon specializations"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:415
+#: src/OpenGoldBox/rolf_tour_view.cpp:415 src/OpenGoldBox/ship_combat_view.cpp:56 src/OpenGoldBox/ship_combat_view.cpp:716
 msgid "Weapons"
 msgstr "Weapons"
 
@@ -14557,9 +14829,13 @@ msgstr "Witch Sight"
 msgid "With"
 msgstr "With"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:632 src/OpenGoldBox/godot/scenes/game_menu.tscn:645
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:659 src/OpenGoldBox/godot/scenes/game_menu.tscn:672
 msgid "With a party member badly hurt, cast only if every enemy then likely goes down, with at least this chance. Unless changed: 75%."
 msgstr "With a party member badly hurt, cast only if every enemy then likely goes down, with at least this chance. Unless changed: 75%."
+
+#: src/OpenGoldBox/godot/scenes/ship_combat.tscn:225
+msgid "Withdraw"
+msgstr "Withdraw"
 
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:89
 msgid "Without armor, its base Armor Class is 13 + its Dexterity modifier."
@@ -14699,7 +14975,7 @@ msgstr "Yellow"
 msgid "Yellow: the party cannot afford it."
 msgstr "Yellow: the party cannot afford it."
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/ship_combat_view.cpp:921 src/OpenGoldBox/ship_combat_view.cpp:965
 msgid "Yes"
 msgstr "Yes"
 
@@ -14743,6 +15019,10 @@ msgstr "You are hurt. Strike the attacker with Storm's Thunder (1d8 Thunder dama
 #: src/OpenGoldBox/combat_view.cpp:1752
 msgid "You cannot run off the battlefield now: an enemy is faster, you have no movement left, or you must stay."
 msgstr "You cannot run off the battlefield now: an enemy is faster, you have no movement left, or you must stay."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1345
+msgid "You close with the crippled ship and attempt to board her."
+msgstr "You close with the crippled ship and attempt to board her."
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:2336
 msgid "You find a secret door in the east wall."
@@ -14809,7 +15089,7 @@ msgstr "Your melee weapon is your pact weapon: proficiency, Charisma for its att
 msgid "Your party flees the battle."
 msgstr "Your party flees the battle."
 
-#: src/OpenGoldBox/party_preview.cpp:2065
+#: src/OpenGoldBox/party_preview.cpp:2102
 msgid "Your party has been defeated."
 msgstr "Your party has been defeated."
 
@@ -14820,6 +15100,15 @@ msgstr "Your party is fleeing."
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Your repose is suddenly interrupted!"
 msgstr "Your repose is suddenly interrupted!"
+
+#: src/OpenGoldBox/ship_combat_view.cpp:650
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "Your ship: {ship}"
+msgstr "Your ship: {ship}"
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1167
+msgid "Your team has been destroyed."
+msgstr "Your team has been destroyed."
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
@@ -15532,6 +15821,16 @@ msgstr "{hand} — {weapon}"
 msgid "{heading}: {names}"
 msgstr "{heading}: {names}"
 
+#: src/OpenGoldBox/ship_combat_view.cpp:1193
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{helper} cures {patient}'s poison."
+msgstr "{helper} cures {patient}'s poison."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1184
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{helper} heals {patient} for {points}."
+msgstr "{helper} heals {patient} for {points}."
+
 #: src/OpenGoldBox/localization.cpp:263
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{high},{low}"
@@ -15645,6 +15944,16 @@ msgstr "{leader} leads {name}."
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{left} / {full}"
 msgstr "{left} / {full}"
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1223
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{member} repairs a {weapon}."
+msgstr "{member} repairs a {weapon}."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1228
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{member} repairs the {system}: {points} points."
+msgstr "{member} repairs the {system}: {points} points."
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
@@ -15996,7 +16305,7 @@ msgstr "{name} can see."
 msgid "{name} can take off the cursed item."
 msgstr "{name} can take off the cursed item."
 
-#: src/OpenGoldBox/party_preview.cpp:418
+#: src/OpenGoldBox/party_preview.cpp:419
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} can't be modified."
 msgstr "{name} can't be modified."
@@ -17345,6 +17654,11 @@ msgstr "{name} is wreathed in a chill shield."
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is wreathed in a warm shield."
 msgstr "{name} is wreathed in a warm shield."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:874
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{name} is your pilot: what does {name} do?"
+msgstr "{name} is your pilot: what does {name} do?"
 
 #: src/OpenGold.Rules.Original/src/combat_session.cpp:2214
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
@@ -18836,6 +19150,11 @@ msgstr "{name}: Initiative {total}"
 msgid "{name}: cast a spell or use a feature"
 msgstr "{name}: cast a spell or use a feature"
 
+#: src/OpenGoldBox/ship_combat_view.cpp:1091
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{name}: level {level} {career}, HP {now} of {most}; Pilot Rocket {pilot}, Sensor Operation {sensors}, Repair Nuclear Engine {engine}."
+msgstr "{name}: level {level} {career}, HP {now} of {most}; Pilot Rocket {pilot}, Sensor Operation {sensors}, Repair Nuclear Engine {engine}."
+
 #: src/OpenGoldBox/rolf_tour_view.cpp:1769
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name}: read a scroll"
@@ -18886,6 +19205,11 @@ msgstr "{number} / {count}"
 msgid "{part} / Color-{bank}: choose a color"
 msgstr "{part} / Color-{bank}: choose a color"
 
+#: src/OpenGoldBox/ship_combat_view.cpp:1198
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{patient} falls into a coma."
+msgstr "{patient} falls into a coma."
+
 #: src/OpenGoldBox/buck_rogers_creation_pages.cpp:643
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{points} in {skill} (it has {has})"
@@ -18910,6 +19234,56 @@ msgstr "{race}\n\nAbilities: {adjustments}.\nMovement {movement}.\n\nCareers ope
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{service} / {price} platinum"
 msgstr "{service} / {price} platinum"
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1330
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{ship} closes by {distance}."
+msgstr "{ship} closes by {distance}."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1339
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{ship} dodges the ram."
+msgstr "{ship} dodges the ram."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1297
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{ship} loses a crew member."
+msgstr "{ship} loses a crew member."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1342
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{ship} rams home!"
+msgstr "{ship} rams home!"
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1337
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{ship} tries to ram!"
+msgstr "{ship} tries to ram!"
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1333
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{ship} withdraws by {distance}."
+msgstr "{ship} withdraws by {distance}."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1288
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{ship}: {system} destroyed!"
+msgstr "{ship}: {system} destroyed!"
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1281
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{ship}: {system} takes {damage}."
+msgstr "{ship}: {system} takes {damage}."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1077
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{ship}: {tons} tons, Armor Class {armor}, crew {crew}, speed {speed}, reaction {reaction}."
+msgstr "{ship}: {tons} tons, Armor Class {armor}, crew {crew}, speed {speed}, reaction {reaction}."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1293
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{ship}: {weapon} hit, one destroyed!"
+msgstr "{ship}: {weapon} hit, one destroyed!"
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:3121
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
@@ -19026,6 +19400,11 @@ msgstr "{system}: {now} of {whole}"
 msgid "{text}"
 msgstr "{text}"
 
+#: src/OpenGoldBox/ship_combat_view.cpp:653
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{tons} tons · speed {speed}"
+msgstr "{tons} tons · speed {speed}"
+
 #: src/OpenGoldBox/combat_view.cpp:2999
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{type}\nAC {ac}  HP {hp}/{maximum}\nWeapon: {weapon}"
@@ -19045,6 +19424,91 @@ msgstr "{value} uses spent since the last Long Rest."
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{victim} is digested instantly."
 msgstr "{victim} is digested instantly."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1312
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{who} boosts the engines."
+msgstr "{who} boosts the engines."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1306
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{who} dies as the ship explodes!"
+msgstr "{who} dies as the ship explodes!"
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1356
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{who} fails at sensor operation."
+msgstr "{who} fails at sensor operation."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1313
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{who} fails to boost the engines."
+msgstr "{who} fails to boost the engines."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1323
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{who} fails to jury-rig the {what}."
+msgstr "{who} fails to jury-rig the {what}."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1309
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{who} falls into a coma."
+msgstr "{who} falls into a coma."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1277
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{who} fires the {weapon}: a hit for {damage}."
+msgstr "{who} fires the {weapon}: a hit for {damage}."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1273
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{who} fires the {weapon}: a miss."
+msgstr "{who} fires the {weapon}: a miss."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1349
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{who} is bandaged."
+msgstr "{who} is bandaged."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1351
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{who} is no longer stunned."
+msgstr "{who} is no longer stunned."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1352
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{who} is still stunned."
+msgstr "{who} is still stunned."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1321
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{who} jury-rigs the {what}."
+msgstr "{who} jury-rigs the {what}."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1303
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{who} leaps clear of an explosion."
+msgstr "{who} leaps clear of an explosion."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1355
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{who} reads the enemy on the sensors."
+msgstr "{who} reads the enemy on the sensors."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1327
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{who} reloads the {weapon}."
+msgstr "{who} reloads the {weapon}."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1347
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{who} takes the helm."
+msgstr "{who} takes the helm."
+
+#: src/OpenGoldBox/ship_combat_view.cpp:1300
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{who} takes {damage} damage."
+msgstr "{who} takes {damage} damage."
 
 #: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:548 src/OpenGoldBox/rolf_tour_view.cpp:3213
 msgid "← Turn"

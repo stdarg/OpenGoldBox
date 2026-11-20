@@ -548,6 +548,18 @@ bool save_course_flown(opengold::GoldBoxGame game, bool on)
     return save("course_flown", folder.c_str(), on ? "on" : "off");
 }
 
+bool ship_picture_shrinks(opengold::GoldBoxGame game)
+{
+    const std::string folder(opengold::game_folder(game));
+    return read("ship_picture_shrinks", folder.c_str()).to_lower() != "off";
+}
+
+bool save_ship_picture_shrinks(opengold::GoldBoxGame game, bool on)
+{
+    const std::string folder(opengold::game_folder(game));
+    return save("ship_picture_shrinks", folder.c_str(), on ? "on" : "off");
+}
+
 namespace
 {
 // The names settings.cfg spells design_difficulty's choices with, in order.

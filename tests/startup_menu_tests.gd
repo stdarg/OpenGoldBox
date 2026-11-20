@@ -182,7 +182,8 @@ func run_checks() -> void:
 	var gameplay: Control = options.get_node("Options/Gameplay/Scroll/Page")
 	require(gameplay.get_node("OriginalShops").visible and gameplay.get_node("DarknessGazes").visible
 		and not gameplay.get_node("CommandEveryRound").visible and not gameplay.get_node("EmptyHelmDodges").visible
-		and not gameplay.get_node("BoardingFuel").visible,
+		and not gameplay.get_node("BoardingFuel").visible and not gameplay.get_node("ShipPictureShrinks").visible
+		and gameplay.get_node("DesignDifficulty").visible,
 		"Another game's Options leave out the ship-combat options")
 	require(not menu.visible, "The menu steps aside for Options")
 	options.get_node("Options/Close").pressed.emit()
@@ -552,7 +553,7 @@ func check_buck_rogers() -> void:
 	var options := {"CommandEveryRound": ["command_every_round", 1],
 		"EmptyHelmDodges": ["empty_helm_dodges", 1], "BoardingFuel": ["boarding_fuel", 0],
 		"DirectFlight": ["direct_flight", 0], "CourseFlown": ["course_flown", 1],
-		"OriginalMovement": ["original_movement", 0]}
+		"OriginalMovement": ["original_movement", 0], "ShipPictureShrinks": ["ship_picture_shrinks", 0]}
 	for folder in ["buck-rogers-countdown-to-doomsday", "buck-rogers-matrix-cubed"]:
 		if StartupView.game_folder(folder).is_empty():
 			print("Skipped: the Buck Rogers games' files are not here.")

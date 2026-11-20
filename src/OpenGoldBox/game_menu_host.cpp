@@ -98,9 +98,12 @@ void CharacterCreationView::respond_to_unhandled_key(const Ref<InputEvent> &even
 CharacterCreationView::PlayState CharacterCreationView::play_state() const
 {
     const auto *combat = Object::cast_to<Control>(get_node_or_null("CampaignCombat"));
+    // A ship fight's screen is a fight too.
+    const auto *ship_fight = Object::cast_to<Control>(get_node_or_null("CampaignShipCombat"));
     const auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown"));
     const bool exploring = town && town->is_visible();
-    return {.fighting = (combat && combat->is_visible()) || (campaign_ && campaign_->in_combat()),
+    return {.fighting = (combat && combat->is_visible()) || ship_fight ||
+                        (campaign_ && campaign_->in_combat()),
             .exploring = exploring,
             .idle = !exploring || town->can_leave()};
 }
@@ -132,7 +135,7 @@ void CharacterCreationView::open_game_menu()
                .srd_rules = !campaign_ || game_rules_of(*campaign_).set == GameRules::Set::srd});
     // Nothing beneath moves or hears keys while the menu is open.
     paused_.clear();
-    for (const char *name : {"CampaignTown", "CampaignCombat"})
+    for (const char *name : {"CampaignTown", "CampaignCombat", "CampaignShipCombat"})
     {
         if (auto *node = get_node_or_null(name))
         {

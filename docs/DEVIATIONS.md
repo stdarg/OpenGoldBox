@@ -584,6 +584,23 @@ in the game: answering YES at a hall lists its services in the dialogue
   creation pages go back and forth, so the skill page keeps its points and
   lets them be taken back until the character is finished.
 
+- **The Buck Rogers games' ship combat screen** (the user, 2026-11-20;
+  [games/countdown.md](games/countdown.md), "The ship combat screen"). The
+  original draws its ship scene in a small window and menus a line long.
+  OpenGoldBox's screen shows the same things in the combat screen's style,
+  with these departures:
+  - The orders that cannot be given stand greyed out in their places, so
+    the menu keeps its layout; the original leaves them out.
+  - A range track under the scene marks the range and how far each of the
+    team's weapons reaches, an OpenGoldBox addition.
+  - The enemy ship's picture grows smaller the farther away it is, filling
+    the scene at range 1 or less and four tenths of it at range 8: Ship
+    picture by range (`[ship_picture_shrinks]`, per game,
+    [CONFIGURATION.md](CONFIGURATION.md)), on by default; off draws it at
+    one size, as the original does.
+  - View offers the ship's figures and the acting member's ship skills in
+    the fight's log; the original opens the ship's details screen and the
+    character screen.
 - **Modify Character's window** (2026-11-16). The originals edit the scores,
   Hit Points and name in place on the character's sheet, from a menu that
   differs from game to game (*Pool of Radiance*'s Keep Exit, where Enter

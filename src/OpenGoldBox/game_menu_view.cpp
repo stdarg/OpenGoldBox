@@ -314,7 +314,9 @@ void GameMenuView::build_options()
           std::pair{"Options/Gameplay/Scroll/Page/CourseFlown",
                     &GameMenuView::course_flown_selected},
           std::pair{"Options/Gameplay/Scroll/Page/OriginalMovement",
-                    &GameMenuView::original_movement_selected}})
+                    &GameMenuView::original_movement_selected},
+          std::pair{"Options/Gameplay/Scroll/Page/ShipPictureShrinks",
+                    &GameMenuView::ship_picture_shrinks_selected}})
     {
         auto &choice = required_node<OptionButton>(*this, path);
         choice.add_item(i18n::text(N_("On")));
@@ -632,6 +634,11 @@ void GameMenuView::original_movement_selected(std::int64_t index)
     settings::save_original_movement(settings::chosen_game(), index == 0);
 }
 
+void GameMenuView::ship_picture_shrinks_selected(std::int64_t index)
+{
+    settings::save_ship_picture_shrinks(settings::chosen_game(), index == 0);
+}
+
 void GameMenuView::show_game_options()
 {
     const auto game = settings::chosen_game();
@@ -652,7 +659,8 @@ void GameMenuView::show_game_options()
          {"CommandEveryRoundLabel", "CommandEveryRound", "CommandEveryRoundNote",
           "EmptyHelmDodgesLabel", "EmptyHelmDodges", "EmptyHelmDodgesNote", "BoardingFuelLabel",
           "BoardingFuel", "BoardingFuelNote", "DirectFlightLabel", "DirectFlight",
-          "DirectFlightNote", "CourseFlownLabel", "CourseFlown", "CourseFlownNote"})
+          "DirectFlightNote", "CourseFlownLabel", "CourseFlown", "CourseFlownNote",
+          "ShipPictureShrinksLabel", "ShipPictureShrinks", "ShipPictureShrinksNote"})
     {
         required_node<Control>(gameplay, name).set_visible(buck_rogers);
     }
@@ -670,6 +678,8 @@ void GameMenuView::show_game_options()
         .select(settings::direct_flight(game) ? 0 : 1);
     required_node<OptionButton>(gameplay, "CourseFlown")
         .select(settings::course_flown(game) ? 0 : 1);
+    required_node<OptionButton>(gameplay, "ShipPictureShrinks")
+        .select(settings::ship_picture_shrinks(game) ? 0 : 1);
 }
 
 // Each limit as a percentage, the party's weight as it is.

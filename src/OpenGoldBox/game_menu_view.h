@@ -103,6 +103,9 @@ class GameMenuView : public godot::Control
 
     void show_party_spell_limits();
     void party_spell_limit_changed(double value, std::int64_t row);
+
+    // Whether the enemy ship's picture grows smaller with the range.
+    void ship_picture_shrinks_selected(std::int64_t index);
     // A Buck Rogers game shows its ship-combat options where the other games'
     // own options stand.
     void show_game_options();
