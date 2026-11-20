@@ -3,6 +3,7 @@
 
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_save.h"
+#include "opengold/original_content.h"
 #include "opengold/original_rules.h"
 #include <filesystem>
 #include <functional>
@@ -53,9 +54,15 @@ make_rules_module(const GameRules &rules, const RulesFiles &files);
 // Unlimited Adventures design, its game record's gems, jewelry and equipment
 // (opengold::ua::outfit_new_character); under Pools of Darkness's and
 // Treasures' original rules, its equipment
-// (opengold::outfit_original_character); nothing in the other games.
+// (opengold::outfit_original_character); in the Buck Rogers games its two
+// free items (opengold::outfit_buck_rogers_character); nothing in the other
+// games.
 void outfit_for_game(opengold::CampaignParty &party, opengold::MemberId id,
                      const RulesFiles &files);
+
+// A Buck Rogers game's item templates, ITEMS rows and item words, read from
+// its folder once: they do not change while the game runs.
+[[nodiscard]] const opengold::BuckRogersStock &buck_rogers_stock(const RulesFiles &files);
 
 // The rules a save was made under (opengold::saved_campaign_rules), or a
 // game's party plays by. Throws for rules this build does not play.

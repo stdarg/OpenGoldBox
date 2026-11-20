@@ -691,6 +691,44 @@ std::vector<Skill> general_skills(Profession career)
     return listed;
 }
 
+SkillPrerequisites skill_prerequisites(Skill skill)
+{
+    switch (skill)
+    {
+    case S::repair_nuclear_engine:
+    case S::repair_rocket_hull:
+        return {{{S::repair_mechanical, 10}}};
+    case S::repair_life_support:
+        return {{{S::repair_electrical, 30}, {S::repair_mechanical, 25}}};
+    case S::jury_rig:
+        return {{{S::repair_electrical, 10}, {S::repair_mechanical, 10}}};
+    case S::repair_computer:
+        return {{{S::repair_electrical, 40}}};
+    case S::treat_serious_wounds:
+        return {{{S::treat_light_wounds, 30}}};
+    case S::treat_critical_wounds:
+        return {{{S::treat_serious_wounds, 40}}};
+    case S::treat_poisoning:
+        return {{{S::diagnose, 15}}};
+    case S::treat_disease:
+        return {{{S::diagnose, 25}}};
+    case S::composition:
+        return {{{S::singing, 20}, {S::play_instrument, 20}, {S::literature, 20}}, true};
+    case S::programming:
+        return {{{S::mathematics, 10}}};
+    case S::astrogation:
+        return {{{S::astronomy, 20}, {S::mathematics, 25}}};
+    case S::navigation:
+        return {{{S::astronomy, 15}, {S::mathematics, 25}}};
+    case S::animal_training:
+        return {{{S::befriend_animal, 20}}};
+    case S::planetary_survival:
+        return {{{S::planetology, 10}}};
+    default:
+        return {};
+    }
+}
+
 namespace
 {
 // Authored creatures may have no character career. Their ordinary skills
@@ -701,41 +739,13 @@ bool skill_prerequisites(const SkillLevels &levels, bool medic, Skill skill)
     {
         return false;
     }
-    switch (skill)
+    const auto prerequisites = skill_prerequisites(skill);
+    const auto met = [&](const SkillNeed &need)
     {
-    case S::repair_nuclear_engine:
-    case S::repair_rocket_hull:
-        return has(levels, S::repair_mechanical, 10);
-    case S::repair_life_support:
-        return has(levels, S::repair_electrical, 30) && has(levels, S::repair_mechanical, 25);
-    case S::jury_rig:
-        return has(levels, S::repair_electrical, 10) && has(levels, S::repair_mechanical, 10);
-    case S::repair_computer:
-        return has(levels, S::repair_electrical, 40);
-    case S::treat_serious_wounds:
-        return has(levels, S::treat_light_wounds, 30);
-    case S::treat_critical_wounds:
-        return has(levels, S::treat_serious_wounds, 40);
-    case S::treat_poisoning:
-        return has(levels, S::diagnose, 15);
-    case S::treat_disease:
-        return has(levels, S::diagnose, 25);
-    case S::composition:
-        return has(levels, S::singing, 20) || has(levels, S::play_instrument, 20) ||
-               has(levels, S::literature, 20);
-    case S::programming:
-        return has(levels, S::mathematics, 10);
-    case S::astrogation:
-        return has(levels, S::astronomy, 20) && has(levels, S::mathematics, 25);
-    case S::navigation:
-        return has(levels, S::astronomy, 15) && has(levels, S::mathematics, 25);
-    case S::animal_training:
-        return has(levels, S::befriend_animal, 20);
-    case S::planetary_survival:
-        return has(levels, S::planetology, 10);
-    default:
-        return true;
-    }
+        return has(levels, need.skill, need.level);
+    };
+    return prerequisites.any ? std::ranges::any_of(prerequisites.needs, met)
+                             : std::ranges::all_of(prerequisites.needs, met);
 }
 
 } // namespace
@@ -1101,6 +1111,22 @@ bool specialize(Creature &character, std::uint8_t item_type)
     }
     *slot = item_type;
     return true;
+}
+
+bool unspecialize(Creature &character, std::uint8_t item_type)
+{
+    auto &slots = character.specializations;
+    for (std::size_t at = slots.size(); item_type != 0 && at-- > 0;)
+    {
+        if (slots[at] == item_type)
+        {
+            // The slots stay filled from the first, as specialize fills them.
+            std::shift_left(slots.begin() + static_cast<std::ptrdiff_t>(at), slots.end(), 1);
+            slots.back() = 0;
+            return true;
+        }
+    }
+    return false;
 }
 
 int creation_specializations(Profession career, GoldBoxGame game)

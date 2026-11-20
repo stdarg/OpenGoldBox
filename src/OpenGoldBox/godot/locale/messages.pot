@@ -6,31 +6,36 @@ msgstr "Project-Id-Version: OpenGoldBox\nLanguage: \nMIME-Version: 1.0\nContent-
 msgid "\n\n[theme_emphasis]Items[/theme_emphasis]\nNo equipped item modifiers.\n\n[theme_emphasis]Spells[/theme_emphasis]\nNo active spell modifiers."
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:236
+#: src/OpenGoldBox/character_sheet_text.cpp:359
 msgid "\n[theme_table=abilities][theme_header]Attribute[/theme_header][theme_header]Score[/theme_header][theme_header_last]Saving throw[/theme_header_last]"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:199
+#: src/OpenGoldBox/character_sheet_text.cpp:175
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "   Experience {xp}   Credits {credits}"
+msgstr ""
+
+#: src/OpenGoldBox/character_sheet_text.cpp:322
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "   Hit Dice: {dice}"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:202 src/OpenGoldBox/character_sheet_text.cpp:81
+#: src/OpenGoldBox/character_sheet_text.cpp:325 src/OpenGoldBox/character_sheet_text.cpp:84
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "   Party gold {gold}   XP {xp}"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:80
+#: src/OpenGoldBox/character_sheet_text.cpp:83
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "   Party steel {gold}   XP {xp}"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:76
+#: src/OpenGoldBox/character_sheet_text.cpp:79
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "   THAC0 {thac0}"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:642
+#: src/OpenGoldBox/party_preview.cpp:644
 msgid " (Reserve)"
 msgstr ""
 
@@ -66,7 +71,7 @@ msgstr ""
 msgid " and "
 msgstr ""
 
-#: src/OpenGoldBox/character_text.h:36
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:641 src/OpenGoldBox/character_text.h:36
 msgid " or "
 msgstr ""
 
@@ -74,7 +79,7 @@ msgstr ""
 msgid "\"Welcome to our temple.\""
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:265
+#: src/OpenGoldBox/character_sheet_text.cpp:388
 msgid "* Proficient saving throw"
 msgstr ""
 
@@ -182,7 +187,7 @@ msgstr ""
 msgid "< Head"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:13962
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:13957
 msgid "A Buck Rogers creature has no record: "
 msgstr ""
 
@@ -243,23 +248,23 @@ msgstr ""
 msgid "A cage of force closes."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:86
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:87
 msgid "A cleric and a fighter at once, sharing experience between the two."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:94
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:95
 msgid "A cleric and a magic-user at once, sharing experience between the two."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:92
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:93
 msgid "A cleric and a ranger at once, sharing experience between the two."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:96
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:97
 msgid "A cleric and a thief at once, sharing experience between the two."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:88
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:89
 msgid "A cleric, fighter and magic-user at once, sharing experience among the three."
 msgstr ""
 
@@ -291,11 +296,11 @@ msgstr ""
 msgid "A drain takes more levels than the character has"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:60
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:61
 msgid "A dwarf of the hill clans."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:59
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:60
 msgid "A dwarf of the mountain clans."
 msgstr ""
 
@@ -315,7 +320,7 @@ msgstr ""
 msgid "A feat or ability points.\nWild Shape: the Tiger."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:66 src/OpenGold.Rules.Original/src/character_rules.cpp:67
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:67 src/OpenGold.Rules.Original/src/character_rules.cpp:68
 msgid "A female's Strength may be lower than a male's."
 msgstr ""
 
@@ -323,15 +328,15 @@ msgstr ""
 msgid "A fierce warrior. Primary ability: Strength. Hit Die: d12."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:98
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:99
 msgid "A fighter and a magic-user at once, sharing experience between the two."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:100
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:101
 msgid "A fighter and a thief at once, sharing experience between the two."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:102
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:103
 msgid "A fighter, magic-user and thief at once, sharing experience among the three."
 msgstr ""
 
@@ -348,7 +353,7 @@ msgstr ""
 msgid "A guardian of nature. Primary ability: Wisdom. Hit Die: d8."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:58
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:59
 msgid "A half-elf of Krynn."
 msgstr ""
 
@@ -365,7 +370,7 @@ msgstr ""
 msgid "A holy aura shines around {name}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:62
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:63
 msgid "A human of Krynn."
 msgstr ""
 
@@ -373,11 +378,11 @@ msgstr ""
 msgid "A hunter and wilderness explorer. Primary abilities: Dexterity and Wisdom. Hit Die: d10."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:106
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:107
 msgid "A lawful good warrior of the Crown, who may petition the Sword and Rose. First Hit Dice: 2d10."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:81
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:82
 msgid "A lawful good warrior who heals by touch, cures disease and is shielded from evil. Hit Die: d10."
 msgstr ""
 
@@ -461,7 +466,7 @@ msgstr ""
 msgid "A level 8 spell slot and Wizard spells: Antimagic Field, Befuddlement, Dominate Monster, Incendiary Cloud, Maze, Mind Blank, Power Word Stun and Sunburst."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:104
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:105
 msgid "A magic-user and a thief at once, sharing experience between the two."
 msgstr ""
 
@@ -473,6 +478,10 @@ msgstr ""
 msgid "A miss still deals damage equal to the ability modifier used for the attack."
 msgstr ""
 
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:681
+msgid "A new Matrix Cubed character starts with its career's skills set. You can move points from one skill to another of the same kind; there are no new points to spend."
+msgstr ""
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "A new class: its level-one features and part of its training."
 msgstr ""
@@ -481,7 +490,7 @@ msgstr ""
 msgid "A pack of spirit animals appears."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:15849
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:15833
 msgid "A party member has no original-rules profile: "
 msgstr ""
 
@@ -493,7 +502,7 @@ msgstr ""
 msgid "A phantom watchdog appears."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:71
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:72
 msgid "A priest who fights in armor and casts healing and protective spells. Hit Die: d8."
 msgstr ""
 
@@ -501,7 +510,7 @@ msgstr ""
 msgid "A rest lasts from 5 minutes to 99 days, 23 hours and 55 minutes"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:79
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:80
 msgid "A rogue who opens locks, finds traps and strikes from behind. Hit Die: d6."
 msgstr ""
 
@@ -550,11 +559,11 @@ msgstr ""
 msgid "A wall of water rises."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:84
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:85
 msgid "A warrior of the wilds who strikes giant kind hard. Hit Dice: 2d8 at first level, then d8."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:73
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:74
 msgid "A warrior who uses every weapon and armor and gains more attacks with experience. Hit Die: d10."
 msgstr ""
 
@@ -567,7 +576,7 @@ msgstr ""
 msgid "A wielder of divine magic. Primary ability: Wisdom. Hit Die: d8."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:76
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:77
 msgid "A wizard who learns powerful spells from a spellbook but fights poorly and wears no armor. Hit Die: d4."
 msgstr ""
 
@@ -576,7 +585,7 @@ msgstr ""
 msgid "AC {ac}"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:286
+#: src/OpenGoldBox/character_sheet_text.cpp:413
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "AC {ac}   Speed {speed} ft"
 msgstr ""
@@ -658,7 +667,11 @@ msgstr ""
 msgid "Acrobatics"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:419 src/OpenGoldBox/godot/scenes/party_panel.tscn:194
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Act"
+msgstr ""
+
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:2522 src/OpenGoldBox/godot/scenes/character_creation.tscn:419 src/OpenGoldBox/godot/scenes/party_panel.tscn:194
 msgid "Action"
 msgstr ""
 
@@ -731,7 +744,7 @@ msgstr ""
 msgid "Acts destructively with little regard for rules or others."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:141
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:142
 msgid "Acts destructively, with little regard for rules or others."
 msgstr ""
 
@@ -775,23 +788,23 @@ msgstr ""
 msgid "Add character from Secret of the Silver Blades"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:726
+#: src/OpenGoldBox/party_preview.cpp:740
 msgid "Add from Champions"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:727
+#: src/OpenGoldBox/party_preview.cpp:741
 msgid "Add from Death Knights"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:724
+#: src/OpenGoldBox/party_preview.cpp:738
 msgid "Add from Gateway"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/party_panel.tscn:244 src/OpenGoldBox/party_preview.cpp:728
+#: src/OpenGoldBox/godot/scenes/party_panel.tscn:244 src/OpenGoldBox/party_preview.cpp:742
 msgid "Add from Pool of Radiance"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:725
+#: src/OpenGoldBox/party_preview.cpp:739
 msgid "Add from Secret"
 msgstr ""
 
@@ -799,7 +812,7 @@ msgstr ""
 msgid "Add proficiency to Initiative; optionally swap Initiative with an eligible ally before the first turn."
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1183 src/OpenGoldBox/godot/scenes/character_creation.tscn:1510 src/OpenGoldBox/godot/scenes/character_creation.tscn:1630 src/OpenGoldBox/party_preview.cpp:1184
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1183 src/OpenGoldBox/godot/scenes/character_creation.tscn:1510 src/OpenGoldBox/godot/scenes/character_creation.tscn:1630 src/OpenGoldBox/party_preview.cpp:1198
 msgid "Add to party"
 msgstr ""
 
@@ -956,7 +969,7 @@ msgstr ""
 msgid "Alert: add proficiency to Initiative; optionally swap Initiative with an eligible ally before the first turn."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:57
+#: src/OpenGoldBox/character_creation_view.cpp:59
 msgid "Alignment"
 msgstr ""
 
@@ -970,6 +983,10 @@ msgstr ""
 
 #: src/OpenGoldBox/portrait_picker.cpp:45
 msgid "All genders"
+msgstr ""
+
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:67
+msgid "All general"
 msgstr ""
 
 #: src/OpenGoldBox/portrait_picker.cpp:45
@@ -994,6 +1011,11 @@ msgstr ""
 
 #: src/OpenGold.Rules.Original/src/rules_module.cpp:1311
 msgid "Already using another item there"
+msgstr ""
+
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:673
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "Also preset, in the general groups: {skills}."
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -1034,11 +1056,11 @@ msgstr ""
 msgid "An elemental spirit appears."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:57
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:58
 msgid "An elf of Qualinesti."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:56
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:57
 msgid "An elf of Silvanesti."
 msgstr ""
 
@@ -1067,6 +1089,10 @@ msgstr ""
 msgid "Animal Handling"
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Animal Riding"
+msgstr ""
+
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:377 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Animal Shapes"
 msgstr ""
@@ -1089,6 +1115,10 @@ msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Animal Shapes: Wolf"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Animal Training"
 msgstr ""
 
 #: src/OpenGold.Rules.Original/src/spells.cpp:149 src/OpenGold.Rules.Original/src/spells.cpp:56 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -1189,6 +1219,11 @@ msgstr ""
 msgid "Armor Class is at least 17."
 msgstr ""
 
+#: src/OpenGoldBox/character_sheet_text.cpp:217
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "Armor Class {ac}   Movement {movement}"
+msgstr ""
+
 #: src/OpenGoldBox/rolf_tour_view.cpp:2533
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Armor Class: {ac} for {name} (now {now})"
@@ -1202,7 +1237,7 @@ msgstr ""
 msgid "Armor of Shadows (Mage Armor)"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:90 src/OpenGoldBox/godot/scenes/character_creation.tscn:738
+#: src/OpenGoldBox/character_creation_view.cpp:94 src/OpenGoldBox/godot/scenes/character_creation.tscn:738
 msgid "Arms"
 msgstr ""
 
@@ -1255,6 +1290,14 @@ msgid "Ask Amanitas, through his crown, for the luck"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Astrogation"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Astronomy"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Athletics"
 msgstr ""
 
@@ -1295,7 +1338,7 @@ msgstr ""
 msgid "Attack {name}, an ally? Your allies will turn on you."
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:165
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:165 src/OpenGoldBox/godot/scenes/character_creation.tscn:2395
 msgid "Attribute"
 msgstr ""
 
@@ -1315,7 +1358,7 @@ msgstr ""
 msgid "Attribute bonuses: Strength, Dexterity, Constitution.\nSkills: Athletics, Intimidation.\nFeat: Savage Attacker."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:58 src/OpenGoldBox/character_sheet_text.cpp:235 src/OpenGoldBox/character_sheet_text.cpp:88
+#: src/OpenGoldBox/character_creation_view.cpp:60 src/OpenGoldBox/character_sheet_text.cpp:183 src/OpenGoldBox/character_sheet_text.cpp:358 src/OpenGoldBox/character_sheet_text.cpp:91
 msgid "Attributes"
 msgstr ""
 
@@ -1355,11 +1398,11 @@ msgstr ""
 msgid "Automatically equip items better than currently equipped items"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:637 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:369 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:126 src/OpenGoldBox/godot/scenes/startup.tscn:204 src/OpenGoldBox/level_up_dialog.cpp:99
+#: src/OpenGoldBox/character_creation_view.cpp:662 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:369 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:126 src/OpenGoldBox/godot/scenes/startup.tscn:204 src/OpenGoldBox/level_up_dialog.cpp:99
 msgid "Back"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:544 src/OpenGoldBox/godot/scenes/character_creation.tscn:132
+#: src/OpenGoldBox/character_creation_view.cpp:568 src/OpenGoldBox/godot/scenes/character_creation.tscn:132
 msgid "Background"
 msgstr ""
 
@@ -1384,7 +1427,7 @@ msgstr ""
 msgid "Balances competing principles or acts according to circumstances."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:133
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:134
 msgid "Balances competing principles, or acts as circumstances demand."
 msgstr ""
 
@@ -1494,8 +1537,12 @@ msgstr ""
 msgid "Basic Poison: coat weapon"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12464
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12459
 msgid "Bastard Sword +4"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Battle Tactics"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -1504,6 +1551,10 @@ msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:194 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Beacon of Hope"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Befriend Animal"
 msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:339 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -1582,7 +1633,7 @@ msgstr ""
 msgid "Bite"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:85 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/character_creation_view.cpp:89 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Black"
 msgstr ""
 
@@ -1715,7 +1766,7 @@ msgstr ""
 msgid "Bludgeoning"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:85 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/character_creation_view.cpp:89 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Blue"
 msgstr ""
 
@@ -1731,7 +1782,7 @@ msgstr ""
 msgid "Boar"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:89 src/OpenGoldBox/godot/scenes/character_creation.tscn:651
+#: src/OpenGoldBox/character_creation_view.cpp:93 src/OpenGoldBox/godot/scenes/character_creation.tscn:651
 msgid "Body"
 msgstr ""
 
@@ -1756,7 +1807,7 @@ msgstr ""
 msgid "Bone bow"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1015
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:578 src/OpenGoldBox/godot/scenes/character_creation.tscn:1015
 msgid "Bonus"
 msgstr ""
 
@@ -1818,6 +1869,10 @@ msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Boots of Elvenkind"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Botany"
 msgstr ""
 
 #: src/OpenGoldBox/game_menu_view.cpp:328
@@ -1884,7 +1939,7 @@ msgstr ""
 msgid "Breath Weapon (line)"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:100
+#: src/OpenGoldBox/character_sheet_text.cpp:103
 msgid "Breath weapon"
 msgstr ""
 
@@ -1920,7 +1975,7 @@ msgstr ""
 msgid "Brought into the party."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:86
+#: src/OpenGoldBox/character_creation_view.cpp:90
 msgid "Brown"
 msgstr ""
 
@@ -2013,6 +2068,10 @@ msgstr ""
 msgid "Buy [Enter]"
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Bypass Security"
+msgstr ""
+
 #: src/OpenGoldBox/character_text.h:13
 msgid "CHA"
 msgstr ""
@@ -2087,7 +2146,7 @@ msgstr ""
 msgid "Can target another creature as a Magic action."
 msgstr ""
 
-#: src/OpenGoldBox/ally_attack_controls.h:32 src/OpenGoldBox/campaign_save_view.cpp:144 src/OpenGoldBox/character_creation_view.cpp:957 src/OpenGoldBox/equipment_choice_dialog.cpp:76 src/OpenGoldBox/godot/scenes/game_folder_questions.tscn:66 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:318 src/OpenGoldBox/godot/scenes/startup.tscn:107 src/OpenGoldBox/level_up_dialog.cpp:146 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:349 src/OpenGoldBox/rest_dialog_impl.h:86 src/OpenGoldBox/save_slots.cpp:143 src/OpenGoldBox/spell_choice_controls.h:249 src/OpenGoldBox/startup_view.cpp:682
+#: src/OpenGoldBox/ally_attack_controls.h:32 src/OpenGoldBox/campaign_save_view.cpp:144 src/OpenGoldBox/character_creation_view.cpp:982 src/OpenGoldBox/equipment_choice_dialog.cpp:76 src/OpenGoldBox/godot/scenes/game_folder_questions.tscn:66 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:318 src/OpenGoldBox/godot/scenes/startup.tscn:107 src/OpenGoldBox/level_up_dialog.cpp:146 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:349 src/OpenGoldBox/rest_dialog_impl.h:86 src/OpenGoldBox/save_slots.cpp:143 src/OpenGoldBox/spell_choice_controls.h:249 src/OpenGoldBox/startup_view.cpp:682
 msgid "Cancel"
 msgstr ""
 
@@ -2198,6 +2257,19 @@ msgstr ""
 
 #: src/OpenGoldBox/monster_ability_options.h:27
 msgid "Captain's Charm"
+msgstr ""
+
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:337 src/OpenGoldBox/character_creation_view.cpp:654
+msgid "Career"
+msgstr ""
+
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:544
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "Career points left {career} of {career_given}   General points left {general} of {general_given}   Most in one skill {most}   General skills known {known} of {limit}"
+msgstr ""
+
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:61
+msgid "Career skills"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -2375,7 +2447,7 @@ msgstr ""
 msgid "Change [C]"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:736
+#: src/OpenGoldBox/party_preview.cpp:750
 msgid "Change a character's ability scores and Hit Points before it gains its first experience."
 msgstr ""
 
@@ -2399,15 +2471,15 @@ msgstr ""
 msgid "Channel Divinity: two uses, one back on a Short Rest, for Divine Spark (heal or harm 1d8 + Wisdom within 30 feet) or Turn Undead."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:141 src/OpenGold.Rules.Srd5/src/character_rules.cpp:329
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:142 src/OpenGold.Rules.Srd5/src/character_rules.cpp:329
 msgid "Chaotic Evil"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:137 src/OpenGold.Rules.Srd5/src/character_rules.cpp:321
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:138 src/OpenGold.Rules.Srd5/src/character_rules.cpp:321
 msgid "Chaotic Good"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:139 src/OpenGold.Rules.Srd5/src/character_rules.cpp:325
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:140 src/OpenGold.Rules.Srd5/src/character_rules.cpp:325
 msgid "Chaotic Neutral"
 msgstr ""
 
@@ -2427,7 +2499,7 @@ msgstr ""
 msgid "Character Sheet"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:304
+#: src/OpenGoldBox/character_creation_view.cpp:309
 msgid "Character art could not be loaded. Restart with --reset-game-path to choose your Pool of Radiance folder."
 msgstr ""
 
@@ -2451,7 +2523,7 @@ msgstr ""
 msgid "Character saved."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:64 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:271
+#: src/OpenGoldBox/character_creation_view.cpp:66 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:271
 msgid "Character sheet"
 msgstr ""
 
@@ -2479,7 +2551,7 @@ msgstr ""
 msgid "Charging in panic"
 msgstr ""
 
-#: src/OpenGoldBox/character_text.h:11 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:1831
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:65 src/OpenGoldBox/character_sheet_text.cpp:180 src/OpenGoldBox/character_text.h:11 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:1831
 msgid "Charisma"
 msgstr ""
 
@@ -2539,6 +2611,10 @@ msgstr ""
 msgid "Charmed until the fight ends; a hit slays it."
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Chemistry"
+msgstr ""
+
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:35 src/OpenGoldBox/combat_view.cpp:3165 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Chill Touch"
 msgstr ""
@@ -2589,6 +2665,10 @@ msgstr ""
 msgid "Choose a Secret of the Silver Blades save, then a character to bring into the party."
 msgstr ""
 
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:307
+msgid "Choose a career. Careers in gray are not open to your race."
+msgstr ""
+
 #: src/OpenGoldBox/level_up_lab_view.cpp:342
 msgid "Choose a character and press Create Character."
 msgstr ""
@@ -2597,7 +2677,7 @@ msgstr ""
 msgid "Choose a character to bring into the party."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:700
+#: src/OpenGoldBox/character_creation_view.cpp:725
 msgid "Choose a class. Classes in gray are not open to your race."
 msgstr ""
 
@@ -2627,19 +2707,25 @@ msgstr ""
 msgid "Choose a spell for {name} to learn."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:926
+#: src/OpenGoldBox/character_creation_view.cpp:951
 msgid "Choose a swatch to recolor this part in the combat preview."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:924
+#: src/OpenGoldBox/character_creation_view.cpp:949
 msgid "Choose a swatch to recolor this part when it is equipped in combat."
 msgstr ""
+
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:476
+msgid "Choose a weapon to specialize in."
+msgid_plural "Choose {count} weapon specializations; one weapon may take several."
+msgstr[0] ""
+msgstr[1] ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Choose an Additional Fighting Style other than the new Fighting Style"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:702
+#: src/OpenGoldBox/character_creation_view.cpp:727
 msgid "Choose an alignment. Alignments in gray are not open to your class."
 msgstr ""
 
@@ -2671,11 +2757,11 @@ msgstr ""
 msgid "Choose another folder"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:861
+#: src/OpenGoldBox/character_creation_view.cpp:886
 msgid "Choose cantrips and prepared spells. Unfilled choices remain pending; Back preserves your choices."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:863
+#: src/OpenGoldBox/character_creation_view.cpp:888
 msgid "Choose cantrips, spellbook entries and prepared spells. Back preserves your choices."
 msgstr ""
 
@@ -2687,11 +2773,11 @@ msgstr ""
 msgid "Choose language"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:704
+#: src/OpenGoldBox/character_creation_view.cpp:729
 msgid "Choose one starting class. The classes you checked on the last page are future goals, not extra levels."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:857
+#: src/OpenGoldBox/character_creation_view.cpp:882
 msgid "Choose prepared spells. Unfilled choices remain pending; Back preserves your choices."
 msgstr ""
 
@@ -2715,7 +2801,7 @@ msgstr ""
 msgid "Choose the new class's training"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:840
+#: src/OpenGoldBox/character_creation_view.cpp:865
 msgid "Choose the required training options. Back preserves your selections."
 msgstr ""
 
@@ -2723,11 +2809,11 @@ msgstr ""
 msgid "Choose the spell book's spells to keep the changes."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:977
+#: src/OpenGoldBox/character_creation_view.cpp:1002
 msgid "Choose the spells Magic Initiate teaches."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:865
+#: src/OpenGoldBox/character_creation_view.cpp:890
 msgid "Choose the spells Magic Initiate teaches. Unfilled choices remain pending; Back preserves your choices."
 msgstr ""
 
@@ -2757,12 +2843,17 @@ msgstr ""
 msgid "Choose who receives {spell}."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:866
+#: src/OpenGoldBox/character_creation_view.cpp:891
 msgid "Choose your available cantrips. Unfilled choices remain pending; Back preserves your selections."
 msgstr ""
 
 #: src/OpenGoldBox/godot/scenes/game_menu.tscn:883
 msgid "Choose…"
+msgstr ""
+
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:447
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "Chosen {chosen} of {count}. Each adds one to hit and to damage with its weapon, at most three in one."
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -2873,7 +2964,7 @@ msgstr ""
 msgid "Circle of the Land"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:59 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:141 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:97 src/OpenGoldBox/level_up_dialog.cpp:139
+#: src/OpenGoldBox/character_creation_view.cpp:61 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:141 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:97 src/OpenGoldBox/level_up_dialog.cpp:139
 msgid "Class"
 msgstr ""
 
@@ -2902,7 +2993,7 @@ msgstr ""
 msgid "Cleave"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:71 src/OpenGold.Rules.Srd5/src/character_class.cpp:21 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:72 src/OpenGold.Rules.Srd5/src/character_class.cpp:21 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Cleric"
 msgstr ""
 
@@ -2926,27 +3017,27 @@ msgstr ""
 msgid "Cleric skills"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:121
+#: src/OpenGoldBox/character_sheet_text.cpp:124
 msgid "Cleric spells a day"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:86
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:87
 msgid "Cleric/Fighter"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:88
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:89
 msgid "Cleric/Fighter/Magic-User"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:94
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:95
 msgid "Cleric/Magic-User"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:92
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:93
 msgid "Cleric/Ranger"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:96
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:97
 msgid "Cleric/Thief"
 msgstr ""
 
@@ -2958,7 +3049,11 @@ msgstr ""
 msgid "Click: choose or remove | Space or Cast spell: cast | Escape: cancel"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:112
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Climb"
+msgstr ""
+
+#: src/OpenGoldBox/character_sheet_text.cpp:115
 msgid "Climb walls"
 msgstr ""
 
@@ -3002,7 +3097,7 @@ msgstr ""
 msgid "Cold"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3887 src/OpenGold.Rules.Original/src/rules_module.cpp:3887
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3882 src/OpenGold.Rules.Original/src/rules_module.cpp:3887
 msgid "Cold flames"
 msgstr ""
 
@@ -3039,7 +3134,7 @@ msgstr ""
 msgid "Colossus Slayer adds {damage} damage."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:62
+#: src/OpenGoldBox/character_creation_view.cpp:64
 msgid "Combat appearance"
 msgstr ""
 
@@ -3047,7 +3142,7 @@ msgstr ""
 msgid "Combat art"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:1186
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:1181
 msgid "Combat begins."
 msgstr ""
 
@@ -3055,11 +3150,11 @@ msgstr ""
 msgid "Combat begins. Each square is 5 feet."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:1943
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:1938
 msgid "Combat calendar overflow"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:629
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:340 src/OpenGoldBox/character_creation_view.cpp:652
 msgid "Combat icon"
 msgstr ""
 
@@ -3124,6 +3219,10 @@ msgid "Commanded"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Commo Operation"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Complete available spell choices."
 msgstr ""
 
@@ -3137,6 +3236,10 @@ msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Complete the required training choices."
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Composition"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -3291,6 +3394,10 @@ msgid "Controls"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Cook"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Copper"
 msgstr ""
 
@@ -3335,7 +3442,7 @@ msgstr ""
 msgid "Create a character before saving"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:655
+#: src/OpenGoldBox/party_preview.cpp:657
 msgid "Create a character, finish its sheet, then Add to party.\n\nA party holds six characters, and up to two others may join it on the way. Removed members remain in the roster."
 msgstr ""
 
@@ -3365,6 +3472,10 @@ msgstr ""
 
 #: src/OpenGoldBox/rest_dialog_impl.h:82
 msgid "Crown"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Cryptography"
 msgstr ""
 
 #: src/OpenGoldBox/godot/scenes/combat_demo.tscn:740 src/OpenGoldBox/monster_ability_options.h:67
@@ -3455,7 +3566,7 @@ msgstr ""
 msgid "Cutting Words"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:85
+#: src/OpenGoldBox/character_creation_view.cpp:89
 msgid "Cyan"
 msgstr ""
 
@@ -3471,7 +3582,7 @@ msgstr ""
 msgid "Dagger +1"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12467
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12462
 msgid "Dagger +4"
 msgstr ""
 
@@ -3518,11 +3629,11 @@ msgstr ""
 msgid "Dark One's Own Luck: a failed save or ability check you could still pass gains 1d10, as many times as your Charisma modifier (at least once) per Long Rest."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:15893
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:15877
 msgid "Dark Queen effect "
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:87
+#: src/OpenGoldBox/character_creation_view.cpp:91
 msgid "Dark gray"
 msgstr ""
 
@@ -3565,7 +3676,7 @@ msgstr ""
 msgid "Dazed"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:207 src/OpenGoldBox/character_sheet_text.cpp:86
+#: src/OpenGoldBox/character_sheet_text.cpp:330 src/OpenGoldBox/character_sheet_text.cpp:89
 msgid "Dead"
 msgstr ""
 
@@ -3609,11 +3720,11 @@ msgstr ""
 msgid "Decrease battlefield zoom by 100 percentage points"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:2049
+#: src/OpenGoldBox/party_preview.cpp:2063
 msgid "Defeat"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:2134
+#: src/OpenGoldBox/party_preview.cpp:2148
 msgid "Defeat test"
 msgstr ""
 
@@ -3641,7 +3752,7 @@ msgstr ""
 msgid "Deflect Energy: Deflect Attacks works against any damage type.\nProficiency Bonus +5."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:526
+#: src/OpenGoldBox/character_creation_view.cpp:550
 msgid "Deity"
 msgstr ""
 
@@ -3649,23 +3760,23 @@ msgstr ""
 msgid "Delay"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3866
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3861
 msgid "Delay 1 round"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3867
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3862
 msgid "Delay 2 rounds"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3867
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3862
 msgid "Delay 3 rounds"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3868
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3863
 msgid "Delay 4 rounds"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3868
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3863
 msgid "Delay 5 rounds"
 msgstr ""
 
@@ -3673,8 +3784,20 @@ msgstr ""
 msgid "Delayed Blast Fireball"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:5995
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:5990
 msgid "Delayed Blast Fireball goes off."
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Demolitions"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Desert Runner"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Design Engineering"
 msgstr ""
 
 #: src/OpenGoldBox/godot/scenes/game_menu.tscn:491
@@ -3727,6 +3850,10 @@ msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Dexterity save: 1d8 Radiant damage, visible creature within 60 feet."
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Diagnose"
 msgstr ""
 
 #: src/OpenGoldBox/godot/scenes/character_creation.tscn:986
@@ -3817,6 +3944,10 @@ msgstr ""
 msgid "Disengage (Conjure Woodland Beings)"
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Disguise"
+msgstr ""
+
 #: src/OpenGold.Rules.Original/src/spells.cpp:187 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Disintegrate"
 msgstr ""
@@ -3860,6 +3991,10 @@ msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:316 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Distant Spell"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Distract"
 msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:47 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -3990,11 +4125,11 @@ msgstr ""
 msgid "Draconic Spirit"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:118
+#: src/OpenGoldBox/party_preview.cpp:120
 msgid "Drag a character up or down to change the party's order. A fight puts the first half of the party in the front rank."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:201
+#: src/OpenGoldBox/character_creation_view.cpp:205
 msgid "Drag this rolled result onto an attribute to assign it."
 msgstr ""
 
@@ -4090,11 +4225,27 @@ msgstr ""
 msgid "Drink it as a Bonus Action: your Strength becomes 21 for an hour."
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Drive Ground Car"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Drive Heavy Ground Vehicle"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Drive Jetcar"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Drive Motorcycle"
+msgstr ""
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/tour_inventory_panel.tscn:84
 msgid "Drop"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:217
+#: src/OpenGoldBox/character_creation_view.cpp:221
 msgid "Drop a roll here. Drag a filled box onto another ability to swap."
 msgstr ""
 
@@ -4127,7 +4278,7 @@ msgstr ""
 msgid "Druid skills"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:122
+#: src/OpenGoldBox/character_sheet_text.cpp:125
 msgid "Druid spells a day"
 msgstr ""
 
@@ -4155,7 +4306,7 @@ msgstr ""
 msgid "Dust of Disappearance"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:38 src/OpenGold.Rules.Srd5/src/character_rules.cpp:284
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:39 src/OpenGold.Rules.Srd5/src/character_rules.cpp:284
 msgid "Dwarf"
 msgstr ""
 
@@ -4176,11 +4327,15 @@ msgstr ""
 msgid "Dwarves are stout, hardy folk, as enduring as the stone they work.\n\nRacial traits:\n- Dwarven Toughness: 1 more Hit Point at every level.\n- Dwarven Resilience: Resistance to Poison damage, and Advantage on saves against being Poisoned."
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:706
+#: src/OpenGoldBox/party_preview.cpp:717
+msgid "Each new character brings 1,000 credits and its two free items. Save game keeps this party to play on later."
+msgstr ""
+
+#: src/OpenGoldBox/party_preview.cpp:720
 msgid "Each new character brings 3d6 × 10 gold pieces. Save game keeps this party to play on later."
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:705
+#: src/OpenGoldBox/party_preview.cpp:719
 msgid "Each new character brings starting steel and equipment for this campaign. Save game keeps this party to play on later."
 msgstr ""
 
@@ -4216,11 +4371,15 @@ msgstr ""
 msgid "Easy"
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Economics"
+msgstr ""
+
 #: src/OpenGoldBox/rolf_tour_view.cpp:2320
 msgid "Eight hours passed; no one can benefit from another Long Rest so soon."
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:119
+#: src/OpenGoldBox/character_sheet_text.cpp:122
 msgid "Eighth level"
 msgstr ""
 
@@ -4313,7 +4472,7 @@ msgstr ""
 msgid "Elementals"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:41 src/OpenGold.Rules.Srd5/src/character_rules.cpp:286
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:42 src/OpenGold.Rules.Srd5/src/character_rules.cpp:286
 msgid "Elf"
 msgstr ""
 
@@ -4357,7 +4516,7 @@ msgstr ""
 msgid "Empowered Strikes: Unarmed Strikes deal Force damage.\nOpen Hand: Wholeness of Body, a Bonus Action that heals the Martial Arts die + Wisdom, Wisdom modifier times per Long Rest.\nUnarmored Movement +15 feet."
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:338
+#: src/OpenGoldBox/character_sheet_text.cpp:241 src/OpenGoldBox/character_sheet_text.cpp:465
 msgid "Empty"
 msgstr ""
 
@@ -4391,6 +4550,10 @@ msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:110 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Enfeebled (Ray of Enfeeblement)"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Engineer"
 msgstr ""
 
 #: src/OpenGoldBox/rolf_tour_solar_map.cpp:391
@@ -4495,7 +4658,7 @@ msgstr ""
 msgid "Equipped / "
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1278 src/OpenGoldBox/rolf_tour_view.cpp:1217
+#: src/OpenGoldBox/party_preview.cpp:1292 src/OpenGoldBox/rolf_tour_view.cpp:1217
 msgid "Equipped."
 msgstr ""
 
@@ -4540,6 +4703,10 @@ msgid "Ethereal Jaunt"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Etiquette"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Evasion"
 msgstr ""
 
@@ -4579,7 +4746,7 @@ msgstr ""
 msgid "Exit"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:2057
+#: src/OpenGoldBox/party_preview.cpp:2071
 msgid "Exit to OS"
 msgstr ""
 
@@ -4745,6 +4912,10 @@ msgid "Fast Movement"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Fast Talk/Convince"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Favored Enemy"
 msgstr ""
 
@@ -4764,7 +4935,7 @@ msgstr ""
 msgid "Features"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:323
+#: src/OpenGoldBox/character_sheet_text.cpp:450
 msgid "Features and choices"
 msgstr ""
 
@@ -4772,7 +4943,7 @@ msgstr ""
 msgid "Feeblemind"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:67 src/OpenGold.Rules.Srd5/src/character_rules.cpp:301
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:68 src/OpenGold.Rules.Srd5/src/character_rules.cpp:301
 msgid "Female"
 msgstr ""
 
@@ -4824,7 +4995,7 @@ msgstr ""
 msgid "Fiends"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:118
+#: src/OpenGoldBox/character_sheet_text.cpp:121
 msgid "Fifth level"
 msgstr ""
 
@@ -4836,7 +5007,7 @@ msgstr ""
 msgid "Fight end chance"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:73 src/OpenGold.Rules.Srd5/src/character_class.cpp:23 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:74 src/OpenGold.Rules.Srd5/src/character_class.cpp:23 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Fighter"
 msgstr ""
 
@@ -4861,15 +5032,15 @@ msgstr ""
 msgid "Fighter skills"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:98
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:99
 msgid "Fighter/Magic-User"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:102
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:103
 msgid "Fighter/Magic-User/Thief"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:100
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:101
 msgid "Fighter/Thief"
 msgstr ""
 
@@ -4877,7 +5048,7 @@ msgstr ""
 msgid "Fighting Style"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:772
+#: src/OpenGoldBox/character_creation_view.cpp:797
 msgid "Fill all six boxes to continue.\nAssigned scores include bonuses."
 msgstr ""
 
@@ -4898,7 +5069,7 @@ msgstr ""
 msgid "Find Traps"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:110
+#: src/OpenGoldBox/character_sheet_text.cpp:113
 msgid "Find and remove traps"
 msgstr ""
 
@@ -4922,7 +5093,7 @@ msgstr ""
 msgid "Finish Long Rest spell choices before combat"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1832
+#: src/OpenGoldBox/party_preview.cpp:1846
 msgid "Finish combat, dialogue or shopping before returning to the party."
 msgstr ""
 
@@ -4990,7 +5161,11 @@ msgstr ""
 msgid "Fireball"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:117
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "First Aid"
+msgstr ""
+
+#: src/OpenGoldBox/character_sheet_text.cpp:120
 msgid "First level"
 msgstr ""
 
@@ -5146,7 +5321,7 @@ msgstr ""
 msgid "Fog Cloud (Magic Initiate)"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:47
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:48
 msgid "Folk of both human and elven blood, partly proof against sleep and charm magic, with the widest choice of classes."
 msgstr ""
 
@@ -5290,7 +5465,7 @@ msgstr ""
 msgid "Fortuna"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:118
+#: src/OpenGoldBox/character_sheet_text.cpp:121
 msgid "Fourth level"
 msgstr ""
 
@@ -5392,7 +5567,7 @@ msgstr ""
 msgid "Fumble"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:178
+#: src/OpenGoldBox/character_sheet_text.cpp:301
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Future class goals: {classes}\n\n"
 msgstr ""
@@ -5434,12 +5609,16 @@ msgstr ""
 msgid "Gains {value} Temporary Hit Points at the start of each of its turns."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:502 src/OpenGoldBox/godot/scenes/character_creation.tscn:440
+#: src/OpenGoldBox/character_creation_view.cpp:526 src/OpenGoldBox/godot/scenes/character_creation.tscn:440
 msgid "Game art from the original, portraits from OpenGoldBox, rules from SRD 5.2.1"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:501
+#: src/OpenGoldBox/character_creation_view.cpp:525
 msgid "Game art from the original, portraits from OpenGoldBox, rules from the original game"
+msgstr ""
+
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:297
+msgid "Game art from the original, rules from the original game"
 msgstr ""
 
 #: src/OpenGoldBox/godot/scenes/game_folder_questions.tscn:142 src/OpenGoldBox/godot/scenes/game_folder_questions.tscn:164
@@ -5480,6 +5659,14 @@ msgstr ""
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:2460
 msgid "General Items"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "General Knowledge"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Geology"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -5546,7 +5733,7 @@ msgstr ""
 msgid "Gnoll Warrior"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:44 src/OpenGold.Rules.Srd5/src/character_rules.cpp:288
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:45 src/OpenGold.Rules.Srd5/src/character_rules.cpp:288
 msgid "Gnome"
 msgstr ""
 
@@ -5602,7 +5789,7 @@ msgstr ""
 msgid "Grab"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:41
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:42
 msgid "Graceful, long-lived folk who shrug off sleep and charm magic and are deadly with bows and swords. An elf may combine fighter, magic-user and thief."
 msgstr ""
 
@@ -5679,7 +5866,7 @@ msgstr ""
 msgid "Greatsword"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:85 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/character_creation_view.cpp:89 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Green"
 msgstr ""
 
@@ -5711,7 +5898,7 @@ msgstr ""
 msgid "Guidance: Medicine"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:126
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:127
 msgid "Guided by compassion, duty and order."
 msgstr ""
 
@@ -5719,7 +5906,7 @@ msgstr ""
 msgid "Guided by compassion, duty, and order."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:127
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:128
 msgid "Guided by rules, tradition or a personal code."
 msgstr ""
 
@@ -5768,7 +5955,7 @@ msgstr ""
 msgid "HP {current} / {maximum}"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:89 src/OpenGoldBox/godot/scenes/character_creation.tscn:680
+#: src/OpenGoldBox/character_creation_view.cpp:93 src/OpenGoldBox/godot/scenes/character_creation.tscn:680
 msgid "Hair / Face"
 msgstr ""
 
@@ -5784,7 +5971,7 @@ msgstr ""
 msgid "Half Speed, -2 to Armor Class and Dexterity saves, no Reactions, and only an action or a Bonus Action and one attack each turn. A Wisdom save at the end of each of its turns ends it."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:47 src/OpenGold.Rules.Original/src/character_rules.cpp:58 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:48 src/OpenGold.Rules.Original/src/character_rules.cpp:59 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Half-Elf"
 msgstr ""
 
@@ -5792,7 +5979,7 @@ msgstr ""
 msgid "Half-Orc"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:50 src/OpenGold.Rules.Srd5/src/character_rules.cpp:292
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:51 src/OpenGold.Rules.Srd5/src/character_rules.cpp:292
 msgid "Halfling"
 msgstr ""
 
@@ -5890,7 +6077,7 @@ msgstr ""
 msgid "Healing requires a wounded living member"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:111
+#: src/OpenGoldBox/character_sheet_text.cpp:114
 msgid "Hear noise"
 msgstr ""
 
@@ -5982,7 +6169,11 @@ msgstr ""
 msgid "Hide Armor"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:111
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Hide in Shadows"
+msgstr ""
+
+#: src/OpenGoldBox/character_sheet_text.cpp:114
 msgid "Hide in shadows"
 msgstr ""
 
@@ -6006,7 +6197,7 @@ msgstr ""
 msgid "High Elf cantrip"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:60
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:61
 msgid "Hill Dwarf"
 msgstr ""
 
@@ -6066,17 +6257,22 @@ msgstr ""
 msgid "Hit Points outside the character's range"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:1061
+#: src/OpenGoldBox/character_creation_view.cpp:1087
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Hit Points {hp}   Age {age}   Gold {gold}"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:1057
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:426
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "Hit Points {hp}   Age {age}   Level {level}   Experience {xp}   Credits {credits}"
+msgstr ""
+
+#: src/OpenGoldBox/character_creation_view.cpp:1083
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Hit Points {hp}   Age {age}   Platinum {pp}"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:1056
+#: src/OpenGoldBox/character_creation_view.cpp:1082
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Hit Points {hp}   Age {age}   Steel {pp}"
 msgstr ""
@@ -6125,7 +6321,7 @@ msgstr ""
 msgid "Hosttower of the Arcane"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3887 src/OpenGold.Rules.Original/src/rules_module.cpp:3887
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3882 src/OpenGold.Rules.Original/src/rules_module.cpp:3887
 msgid "Hot flames"
 msgstr ""
 
@@ -6149,7 +6345,7 @@ msgstr ""
 msgid "Hull"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:53 src/OpenGold.Rules.Original/src/character_rules.cpp:62 src/OpenGold.Rules.Srd5/src/character_rules.cpp:294
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:54 src/OpenGold.Rules.Original/src/character_rules.cpp:63 src/OpenGold.Rules.Srd5/src/character_rules.cpp:294
 msgid "Human"
 msgstr ""
 
@@ -6229,6 +6425,10 @@ msgstr ""
 
 #: src/OpenGoldBox/rolf_tour_solar_map.cpp:40
 msgid "Hygeia"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Hypnosis"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -6428,7 +6628,7 @@ msgstr ""
 msgid "Insight"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1831
+#: src/OpenGoldBox/party_preview.cpp:1845
 msgid "Inspect your party and equipment."
 msgstr ""
 
@@ -6440,12 +6640,16 @@ msgstr ""
 msgid "Instinctive Pounce"
 msgstr ""
 
-#: src/OpenGoldBox/character_text.h:10 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:1777
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:63 src/OpenGoldBox/character_sheet_text.cpp:179 src/OpenGoldBox/character_text.h:10 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:1777
 msgid "Intelligence"
 msgstr ""
 
 #: src/OpenGoldBox/godot/scenes/game_menu.tscn:168
 msgid "Interface"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Intimidate"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -6484,7 +6688,7 @@ msgstr ""
 msgid "Invalid native scripted drain"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:15147 src/OpenGold.Rules.Original/src/combat_session.cpp:15334 src/OpenGold.Rules.Original/src/combat_session.cpp:15421 src/OpenGold.Rules.Original/src/combat_session.cpp:15431 src/OpenGold.Rules.Original/src/combat_session.cpp:15440 src/OpenGold.Rules.Original/src/combat_session.cpp:15450 src/OpenGold.Rules.Original/src/combat_session.cpp:15495 src/OpenGold.Rules.Original/src/combat_session.cpp:15506 src/OpenGold.Rules.Original/src/combat_session.cpp:15518 src/OpenGold.Rules.Original/src/combat_session.cpp:15532 src/OpenGold.Rules.Original/src/combat_session.cpp:15541 src/OpenGold.Rules.Original/src/combat_session.cpp:15546 src/OpenGold.Rules.Original/src/combat_session.cpp:15561 src/OpenGold.Rules.Original/src/combat_session.cpp:15597 src/OpenGold.Rules.Original/src/combat_session.cpp:15604 src/OpenGold.Rules.Original/src/combat_session.cpp:15614 src/OpenGold.Rules.Original/src/combat_session.cpp:15625 src/OpenGold.Rules.Original/src/combat_session.cpp:15656 src/OpenGold.Rules.Original/src/combat_session.cpp:790 src/OpenGold.Rules.Original/src/combat_session.cpp:810
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:15142 src/OpenGold.Rules.Original/src/combat_session.cpp:15322 src/OpenGold.Rules.Original/src/combat_session.cpp:15405 src/OpenGold.Rules.Original/src/combat_session.cpp:15415 src/OpenGold.Rules.Original/src/combat_session.cpp:15424 src/OpenGold.Rules.Original/src/combat_session.cpp:15434 src/OpenGold.Rules.Original/src/combat_session.cpp:15479 src/OpenGold.Rules.Original/src/combat_session.cpp:15490 src/OpenGold.Rules.Original/src/combat_session.cpp:15502 src/OpenGold.Rules.Original/src/combat_session.cpp:15516 src/OpenGold.Rules.Original/src/combat_session.cpp:15525 src/OpenGold.Rules.Original/src/combat_session.cpp:15530 src/OpenGold.Rules.Original/src/combat_session.cpp:15545 src/OpenGold.Rules.Original/src/combat_session.cpp:15581 src/OpenGold.Rules.Original/src/combat_session.cpp:15588 src/OpenGold.Rules.Original/src/combat_session.cpp:15598 src/OpenGold.Rules.Original/src/combat_session.cpp:15609 src/OpenGold.Rules.Original/src/combat_session.cpp:15640 src/OpenGold.Rules.Original/src/combat_session.cpp:785 src/OpenGold.Rules.Original/src/combat_session.cpp:805
 msgid "Invalid original-rules combat checkpoint"
 msgstr ""
 
@@ -6496,7 +6700,7 @@ msgstr ""
 msgid "Invalid recorded hall petition"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:335 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:418
+#: src/OpenGoldBox/character_sheet_text.cpp:238 src/OpenGoldBox/character_sheet_text.cpp:462 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:418
 msgid "Inventory"
 msgstr ""
 
@@ -6552,11 +6756,11 @@ msgstr ""
 msgid "It could not get away. It runs at its enemies and strikes wildly at whoever is in reach, friend or foe, with Disadvantage; attack rolls against it have Advantage, and it has no Bonus Actions or Reactions."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14509
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14504
 msgid "It goes astray."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14517
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14512
 msgid "It hits chaff."
 msgstr ""
 
@@ -6663,6 +6867,10 @@ msgid "Juno"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Jury Rig"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Keen Senses"
 msgstr ""
 
@@ -6686,7 +6894,7 @@ msgstr ""
 msgid "Keep initiative"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:61
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:62
 msgid "Kender"
 msgstr ""
 
@@ -6702,7 +6910,7 @@ msgstr ""
 msgid "Kiri-Jolith"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:106
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:107
 msgid "Knight of Solamnia"
 msgstr ""
 
@@ -6784,15 +6992,19 @@ msgstr ""
 msgid "Lasts while its summoner keeps Concentration."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:129 src/OpenGold.Rules.Srd5/src/character_rules.cpp:326
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Law"
+msgstr ""
+
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:130 src/OpenGold.Rules.Srd5/src/character_rules.cpp:326
 msgid "Lawful Evil"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:126 src/OpenGold.Rules.Srd5/src/character_rules.cpp:319
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:127 src/OpenGold.Rules.Srd5/src/character_rules.cpp:319
 msgid "Lawful Good"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:127 src/OpenGold.Rules.Srd5/src/character_rules.cpp:322
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:128 src/OpenGold.Rules.Srd5/src/character_rules.cpp:322
 msgid "Lawful Neutral"
 msgstr ""
 
@@ -6876,7 +7088,7 @@ msgstr ""
 msgid "Legendary Resistance"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:90 src/OpenGoldBox/godot/scenes/character_creation.tscn:767
+#: src/OpenGoldBox/character_creation_view.cpp:94 src/OpenGoldBox/godot/scenes/character_creation.tscn:767
 msgid "Legs"
 msgstr ""
 
@@ -7000,6 +7212,10 @@ msgstr ""
 msgid "Level-two spell slots"
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Library Search"
+msgstr ""
+
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:328
 msgid "Lies helpless while its soul possesses another creature."
 msgstr ""
@@ -7069,7 +7285,7 @@ msgstr ""
 msgid "Light attack — {weapon} ({hand})"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:87
+#: src/OpenGoldBox/character_creation_view.cpp:91
 msgid "Light blue"
 msgstr ""
 
@@ -7077,7 +7293,7 @@ msgstr ""
 msgid "Light crossbow"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:87
+#: src/OpenGoldBox/character_creation_view.cpp:91
 msgid "Light cyan"
 msgstr ""
 
@@ -7085,11 +7301,11 @@ msgstr ""
 msgid "Light extra attack"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:86
+#: src/OpenGoldBox/character_creation_view.cpp:90
 msgid "Light gray"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:87
+#: src/OpenGoldBox/character_creation_view.cpp:91
 msgid "Light green"
 msgstr ""
 
@@ -7102,7 +7318,7 @@ msgstr ""
 msgid "Light ranged attack — {weapon} ({hand})"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:88
+#: src/OpenGoldBox/character_creation_view.cpp:92
 msgid "Light red"
 msgstr ""
 
@@ -7136,6 +7352,10 @@ msgstr ""
 msgid "Lit (Starry Wisp)"
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Literature"
+msgstr ""
+
 #: src/OpenGoldBox/rolf_tour_view.cpp:318
 msgid "Lizard Men's Keep"
 msgstr ""
@@ -7164,7 +7384,7 @@ msgstr ""
 msgid "Load Character"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:2053
+#: src/OpenGoldBox/party_preview.cpp:2067
 msgid "Load a saved game to continue."
 msgstr ""
 
@@ -7204,7 +7424,7 @@ msgstr ""
 msgid "Long Rest cooldown remaining (minutes):"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12465
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12460
 msgid "Long Sword +4"
 msgstr ""
 
@@ -7252,6 +7472,14 @@ msgstr ""
 msgid "Lower"
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Lowlander"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Lunarian"
+msgstr ""
+
 #: src/OpenGoldBox/rolf_tour_view.cpp:213
 msgid "Luskan"
 msgstr ""
@@ -7281,7 +7509,7 @@ msgstr ""
 msgid "Mage Armor (level 2 slot)"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:86
+#: src/OpenGoldBox/character_creation_view.cpp:90
 msgid "Magenta"
 msgstr ""
 
@@ -7410,15 +7638,15 @@ msgstr ""
 msgid "Magic items are marked * for ten minutes."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:76 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:77 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Magic-User"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:104
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:105
 msgid "Magic-User/Thief"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:123
+#: src/OpenGoldBox/character_sheet_text.cpp:126
 msgid "Magic-user spells a day"
 msgstr ""
 
@@ -7483,7 +7711,7 @@ msgstr ""
 msgid "Make the species' choices."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:66 src/OpenGold.Rules.Srd5/src/character_rules.cpp:303
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:67 src/OpenGold.Rules.Srd5/src/character_rules.cpp:303
 msgid "Male"
 msgstr ""
 
@@ -7497,6 +7725,10 @@ msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Martial Arts and Unarmored Defense; Monk's Focus (Flurry of Blows, Patient Defense, Step of the Wind), Unarmored Movement and Uncanny Metabolism at level two; Deflect Attacks and the Warrior of the Open Hand at level three. Level four grants an available feat or ability points."
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Martian"
 msgstr ""
 
 #: src/OpenGold.Rules.Original/src/spells.cpp:226
@@ -7513,6 +7745,10 @@ msgstr ""
 
 #: src/OpenGold.Rules.Original/src/spells.cpp:199
 msgid "Mass Invisibility"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Mathematics"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -7547,6 +7783,10 @@ msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Maze"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Medic"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -7730,6 +7970,10 @@ msgid "Melee weapon attack using your spellcasting ability; Radiant or the weapo
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Memorize"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Memorize Spell"
 msgstr ""
 
@@ -7741,8 +7985,16 @@ msgstr ""
 msgid "Menu"
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Mercurian"
+msgstr ""
+
 #: src/OpenGoldBox/rolf_tour_solar_map.cpp:38
 msgid "Mercury"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Metallurgy"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -7823,6 +8075,10 @@ msgstr ""
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:183
 msgid "Middle Level of the Castle"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Mimic"
 msgstr ""
 
 #: src/OpenGold.Rules.Original/src/spells.cpp:231 src/OpenGold.Rules.Srd5/src/effect_labels.h:340 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -7944,7 +8200,7 @@ msgstr ""
 msgid "Morningstar"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:59
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:60
 msgid "Mountain Dwarf"
 msgstr ""
 
@@ -7972,11 +8228,15 @@ msgstr ""
 msgid "Move Nature's Sanctuary"
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Move Silently"
+msgstr ""
+
 #: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:443 src/OpenGoldBox/rolf_tour_solar_map.cpp:365
 msgid "Move [M]"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:111
+#: src/OpenGoldBox/character_sheet_text.cpp:114
 msgid "Move silently"
 msgstr ""
 
@@ -8065,11 +8325,15 @@ msgstr ""
 msgid "Name"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:706
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:303
+msgid "Name your character (up to 15 letters), then choose a race and gender."
+msgstr ""
+
+#: src/OpenGoldBox/character_creation_view.cpp:731
 msgid "Name your character (up to 40 characters), then choose a race and gender."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:56
+#: src/OpenGoldBox/character_creation_view.cpp:58
 msgid "Name, Race & Gender"
 msgstr ""
 
@@ -8128,6 +8392,10 @@ msgid "Nature's Ward: you cannot be Poisoned, and you resist your land's element
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Navigation"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Necklace"
 msgstr ""
 
@@ -8147,11 +8415,11 @@ msgstr ""
 msgid "Neutral"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:135 src/OpenGold.Rules.Srd5/src/character_rules.cpp:327
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:136 src/OpenGold.Rules.Srd5/src/character_rules.cpp:327
 msgid "Neutral Evil"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:131 src/OpenGold.Rules.Srd5/src/character_rules.cpp:320
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:132 src/OpenGold.Rules.Srd5/src/character_rules.cpp:320
 msgid "Neutral Good"
 msgstr ""
 
@@ -8203,7 +8471,7 @@ msgstr ""
 msgid "New game"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:645 src/OpenGoldBox/godot/scenes/character_creation.tscn:381 src/OpenGoldBox/godot/scenes/portrait_dialog.tscn:60 src/OpenGoldBox/level_up_dialog.cpp:453
+#: src/OpenGoldBox/character_creation_view.cpp:670 src/OpenGoldBox/godot/scenes/character_creation.tscn:381 src/OpenGoldBox/godot/scenes/portrait_dialog.tscn:60 src/OpenGoldBox/level_up_dialog.cpp:453
 msgid "Next"
 msgstr ""
 
@@ -8246,11 +8514,11 @@ msgstr ""
 msgid "Nimble Escape: Hide"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:61
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:62
 msgid "Nimble, fearless folk whose taunts provoke enemies."
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:119
+#: src/OpenGoldBox/character_sheet_text.cpp:122
 msgid "Ninth level"
 msgstr ""
 
@@ -8294,7 +8562,7 @@ msgstr ""
 msgid "No combat artwork assigned"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3866
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3861
 msgid "No delay"
 msgstr ""
 
@@ -8331,7 +8599,7 @@ msgstr ""
 msgid "No one else can get away. Your party fights on."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:13303
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:13298
 msgid "No one has attacked for 15 rounds, and the fight ends."
 msgstr ""
 
@@ -8340,7 +8608,7 @@ msgstr ""
 msgid "No one in the party needs {spell}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:15884 src/OpenGold.Rules.Original/src/rules_module.cpp:1130
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:15868 src/OpenGold.Rules.Original/src/rules_module.cpp:1130
 msgid "No original-rules record for "
 msgstr ""
 
@@ -8380,7 +8648,7 @@ msgstr ""
 msgid "Nonbinary"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:304 src/OpenGoldBox/game_menu_view.cpp:521
+#: src/OpenGoldBox/character_sheet_text.cpp:207 src/OpenGoldBox/character_sheet_text.cpp:431 src/OpenGoldBox/game_menu_view.cpp:521
 msgid "None"
 msgstr ""
 
@@ -8424,7 +8692,7 @@ msgstr ""
 msgid "Not enough money."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:930
+#: src/OpenGoldBox/character_creation_view.cpp:955
 msgid "Not present"
 msgstr ""
 
@@ -8432,7 +8700,7 @@ msgstr ""
 msgid "Not trained: no training bonus to hit"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:745
+#: src/OpenGoldBox/character_creation_view.cpp:770
 msgid "Not yet qualified. You may still plan for this class."
 msgstr ""
 
@@ -8440,12 +8708,16 @@ msgstr ""
 msgid "Nothing can interrupt the party's rest."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11058 src/OpenGold.Rules.Original/src/combat_session.cpp:11151 src/OpenGold.Rules.Original/src/combat_session.cpp:11293 src/OpenGold.Rules.Original/src/combat_session.cpp:4451
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11053 src/OpenGold.Rules.Original/src/combat_session.cpp:11146 src/OpenGold.Rules.Original/src/combat_session.cpp:11288 src/OpenGold.Rules.Original/src/combat_session.cpp:4446
 msgid "Nothing happens."
 msgstr ""
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:1834
 msgid "Nothing to cast or use outside combat."
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Notice"
 msgstr ""
 
 #: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:66 src/OpenGoldBox/rolf_tour_view.cpp:3133
@@ -8653,7 +8925,11 @@ msgstr ""
 msgid "Open Level-Up"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:110
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Open Lock"
+msgstr ""
+
+#: src/OpenGoldBox/character_sheet_text.cpp:113
 msgid "Open locks"
 msgstr ""
 
@@ -8851,7 +9127,11 @@ msgstr ""
 msgid "Padded Armor"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:81 src/OpenGold.Rules.Srd5/src/character_class.cpp:25 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Paint/Draw"
+msgstr ""
+
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:82 src/OpenGold.Rules.Srd5/src/character_class.cpp:25 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Paladin"
 msgstr ""
 
@@ -8884,7 +9164,7 @@ msgstr ""
 msgid "Pallas"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:99
+#: src/OpenGoldBox/character_sheet_text.cpp:102
 msgid "Paralysis, poison or death magic"
 msgstr ""
 
@@ -9019,7 +9299,7 @@ msgstr ""
 msgid "Petition for the Order of the Sword"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:99
+#: src/OpenGoldBox/character_sheet_text.cpp:102
 msgid "Petrification or polymorph"
 msgstr ""
 
@@ -9039,15 +9319,23 @@ msgstr ""
 msgid "Phlan Ruins"
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Physics"
+msgstr ""
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/rolf_tour_view.cpp:2396
 msgid "Pick"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Pick Pockets"
 msgstr ""
 
 #: src/OpenGoldBox/godot/scenes/startup.tscn:152 src/OpenGoldBox/godot/scenes/startup.tscn:165
 msgid "Pick game"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:110
+#: src/OpenGoldBox/character_sheet_text.cpp:113
 msgid "Pick pockets"
 msgstr ""
 
@@ -9067,7 +9355,23 @@ msgstr ""
 msgid "Pike"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:88
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Pilot Fixed Wing"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Pilot Rocket"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Pilot Rotor Wing"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Pilot Ship/Sub"
+msgstr ""
+
+#: src/OpenGoldBox/character_creation_view.cpp:92
 msgid "Pink"
 msgstr ""
 
@@ -9080,11 +9384,23 @@ msgid "Pit of Moander"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Planetary Survival"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Planetology"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Plant Growth"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Plate Armor"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Play Instrument"
 msgstr ""
 
 #: src/OpenGoldBox/godot/scenes/startup.tscn:257
@@ -9093,6 +9409,10 @@ msgstr ""
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:269
 msgid "Podol Plaza"
+msgstr ""
+
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:578
+msgid "Points"
 msgstr ""
 
 #: src/OpenGold.Rules.Original/src/spells.cpp:113 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -9187,7 +9507,7 @@ msgstr ""
 msgid "Port Llast and the Gallant Prince"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:63 src/OpenGoldBox/godot/scenes/portrait_dialog.tscn:11 src/OpenGoldBox/godot/scenes/portrait_dialog.tscn:54
+#: src/OpenGoldBox/character_creation_view.cpp:65 src/OpenGoldBox/godot/scenes/portrait_dialog.tscn:11 src/OpenGoldBox/godot/scenes/portrait_dialog.tscn:54
 msgid "Portrait"
 msgstr ""
 
@@ -9300,7 +9620,7 @@ msgstr ""
 msgid "Prepared spells: select at least one"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:231
+#: src/OpenGoldBox/character_sheet_text.cpp:354
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Prepared spells: {spells}"
 msgstr ""
@@ -9367,6 +9687,10 @@ msgstr ""
 
 #: src/OpenGoldBox/training_control.h:181
 msgid "Proficient"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Programming"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -9481,11 +9805,11 @@ msgstr ""
 msgid "Purple Rocks"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:129 src/OpenGold.Rules.Srd5/src/character_rules.cpp:326
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:130 src/OpenGold.Rules.Srd5/src/character_rules.cpp:326
 msgid "Pursues selfish ends through structure and rules."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:135 src/OpenGold.Rules.Srd5/src/character_rules.cpp:327
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:136 src/OpenGold.Rules.Srd5/src/character_rules.cpp:327
 msgid "Pursues selfish ends without loyalty to order or freedom."
 msgstr ""
 
@@ -9522,7 +9846,7 @@ msgstr ""
 msgid "QUICK"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:57
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:58
 msgid "Qualinesti Elf"
 msgstr ""
 
@@ -9570,7 +9894,7 @@ msgstr ""
 msgid "Quit to OS"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/level_up_lab.tscn:120
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:2404 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:120
 msgid "Race"
 msgstr ""
 
@@ -9806,7 +10130,7 @@ msgstr ""
 msgid "Ranged spell attack: 1d8 damage of a chosen type, 120 feet; an 8 rolls another d8."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:84 src/OpenGold.Rules.Srd5/src/character_class.cpp:26 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:85 src/OpenGold.Rules.Srd5/src/character_class.cpp:26 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Ranger"
 msgstr ""
 
@@ -9876,6 +10200,10 @@ msgstr ""
 msgid "Reaction when you take damage: reduce it by 1d12 + your Constitution modifier."
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Read Lips"
+msgstr ""
+
 #: src/OpenGold.Rules.Original/src/spells.cpp:36 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Read Magic"
 msgstr ""
@@ -9884,7 +10212,7 @@ msgstr ""
 msgid "Read it in camp: Constitution and its maximum rise by 2. Its magic is then spent."
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:112
+#: src/OpenGoldBox/character_sheet_text.cpp:115
 msgid "Read languages"
 msgstr ""
 
@@ -9892,15 +10220,15 @@ msgstr ""
 msgid "Read the encounter text, then Continue."
 msgstr ""
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/character_sheet_text.cpp:252 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Readied"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:406 src/OpenGoldBox/godot/scenes/party_panel.tscn:181
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:2513 src/OpenGoldBox/godot/scenes/character_creation.tscn:406 src/OpenGoldBox/godot/scenes/party_panel.tscn:181
 msgid "Ready"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:211
+#: src/OpenGoldBox/character_sheet_text.cpp:334
 msgid "Ready to level up"
 msgstr ""
 
@@ -9933,7 +10261,7 @@ msgstr ""
 msgid "Recover slots"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:86 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/character_creation_view.cpp:90 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Red"
 msgstr ""
 
@@ -9979,7 +10307,7 @@ msgstr ""
 msgid "Regeneration"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:958
+#: src/OpenGoldBox/character_creation_view.cpp:983
 msgid "Reincarnate"
 msgstr ""
 
@@ -10024,7 +10352,7 @@ msgstr ""
 msgid "Religion"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:2057
+#: src/OpenGoldBox/party_preview.cpp:2071
 msgid "Reload a Saved Game"
 msgstr ""
 
@@ -10046,6 +10374,34 @@ msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Reorx"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Repair Computer"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Repair Electrical"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Repair Life Support"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Repair Mechanical"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Repair Nuclear Engine"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Repair Rocket Hull"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Repair Weapon"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -10124,16 +10480,16 @@ msgstr ""
 msgid "Repulsion Breath"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:744
+#: src/OpenGoldBox/character_creation_view.cpp:769
 msgid "Requirements met."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:677
+#: src/OpenGoldBox/character_creation_view.cpp:702
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Requires {requirements}"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:768
+#: src/OpenGoldBox/character_creation_view.cpp:793
 msgid "Reroll all six"
 msgstr ""
 
@@ -10456,11 +10812,11 @@ msgstr ""
 msgid "Review character"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:982
+#: src/OpenGoldBox/character_creation_view.cpp:1007
 msgid "Review the new body, then cast Reincarnate."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:937
+#: src/OpenGoldBox/character_creation_view.cpp:962
 msgid "Review your character before adding it to the party."
 msgstr ""
 
@@ -10513,15 +10869,19 @@ msgstr ""
 msgid "Rocket ({x}, {y})   {heading}"
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Rocket Jock"
+msgstr ""
+
 #: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:450
 msgid "Rocket [R]"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:100
+#: src/OpenGoldBox/character_sheet_text.cpp:103
 msgid "Rod, staff or wand"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_class.cpp:27
+#: src/OpenGold.Rules.Srd5/src/character_class.cpp:27 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Rogue"
 msgstr ""
 
@@ -10549,7 +10909,7 @@ msgstr ""
 msgid "Rolf  /  Council guide"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:726
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:420 src/OpenGoldBox/character_creation_view.cpp:751 src/OpenGoldBox/godot/scenes/character_creation.tscn:2418
 msgid "Roll"
 msgstr ""
 
@@ -10562,15 +10922,15 @@ msgstr ""
 msgid "Roll a d20 and add the saving throw bonus. Meet or exceed DC {dc} to save.\n\n"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:726
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:420 src/OpenGoldBox/character_creation_view.cpp:751
 msgid "Roll again"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:768 src/OpenGoldBox/godot/scenes/character_creation.tscn:175
+#: src/OpenGoldBox/character_creation_view.cpp:793 src/OpenGoldBox/godot/scenes/character_creation.tscn:175
 msgid "Roll all six"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:728
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:435 src/OpenGoldBox/character_creation_view.cpp:753
 msgid "Roll the character. Roll again until you have one to keep, then continue."
 msgstr ""
 
@@ -10740,11 +11100,43 @@ msgstr ""
 msgid "Saving Throws"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:101
+#: src/OpenGoldBox/character_sheet_text.cpp:186
+msgid "Saving throw 1"
+msgstr ""
+
+#: src/OpenGoldBox/character_sheet_text.cpp:186
+msgid "Saving throw 2"
+msgstr ""
+
+#: src/OpenGoldBox/character_sheet_text.cpp:186
+msgid "Saving throw 3"
+msgstr ""
+
+#: src/OpenGoldBox/character_sheet_text.cpp:186
+msgid "Saving throw 4"
+msgstr ""
+
+#: src/OpenGoldBox/character_sheet_text.cpp:187
+msgid "Saving throw 5"
+msgstr ""
+
+#: src/OpenGoldBox/character_sheet_text.cpp:187
+msgid "Saving throw 6"
+msgstr ""
+
+#: src/OpenGoldBox/character_sheet_text.cpp:187
+msgid "Saving throw 7"
+msgstr ""
+
+#: src/OpenGoldBox/character_sheet_text.cpp:187
+msgid "Saving throw 8"
+msgstr ""
+
+#: src/OpenGoldBox/character_sheet_text.cpp:104 src/OpenGoldBox/character_sheet_text.cpp:190
 msgid "Saving throws"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:268
+#: src/OpenGoldBox/character_sheet_text.cpp:391
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Saving throws include {bonus} from worn items."
 msgstr ""
@@ -10761,7 +11153,7 @@ msgstr ""
 msgid "Scimitar"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12466
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12461
 msgid "Scimitar +4"
 msgstr ""
 
@@ -10771,6 +11163,14 @@ msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:31381 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/combat_demo.tscn:209
 msgid "Scorching Ray"
+msgstr ""
+
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:2399
+msgid "Score"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Scout"
 msgstr ""
 
 #: src/OpenGoldBox/screenshot_service.cpp:262
@@ -10848,7 +11248,7 @@ msgstr ""
 msgid "Second Wind: {count}"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:117
+#: src/OpenGoldBox/character_sheet_text.cpp:120
 msgid "Second level"
 msgstr ""
 
@@ -10872,7 +11272,7 @@ msgstr ""
 msgid "Seeking Spell rerolls the missed attack."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:131 src/OpenGold.Rules.Srd5/src/character_rules.cpp:320
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:132 src/OpenGold.Rules.Srd5/src/character_rules.cpp:320
 msgid "Seeks to help others, with flexibility about rules."
 msgstr ""
 
@@ -10884,6 +11284,10 @@ msgstr ""
 msgid "Sees Invisible creatures as if they were visible."
 msgstr ""
 
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:702
+msgid "Select a body icon. It is your character's picture in every screen."
+msgstr ""
+
 #: src/OpenGoldBox/save_slots.cpp:191
 msgid "Select a character save to overwrite, or enter a new name."
 msgstr ""
@@ -10892,7 +11296,7 @@ msgstr ""
 msgid "Select a character save. Previous versions are available for recovery."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:870
+#: src/OpenGoldBox/character_creation_view.cpp:895
 msgid "Select a part's Color-1 or Color-2, then a swatch. Watch both poses change. Absent parts are disabled."
 msgstr ""
 
@@ -10920,7 +11324,7 @@ msgstr ""
 msgid "Select an item first."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:707
+#: src/OpenGoldBox/character_creation_view.cpp:732
 msgid "Select an option, then continue."
 msgstr ""
 
@@ -10979,12 +11383,16 @@ msgstr ""
 msgid "Sensors"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:119
+#: src/OpenGoldBox/character_sheet_text.cpp:122
 msgid "Seventh level"
 msgstr ""
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:92
 msgid "Shadowdale Dungeon"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Shadowing"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -11025,6 +11433,10 @@ msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Shining Smite"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Ship Lore"
 msgstr ""
 
 #: src/OpenGoldBox/godot/scenes/game_menu.tscn:432
@@ -11097,7 +11509,7 @@ msgstr ""
 msgid "Shortsword"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:645
+#: src/OpenGoldBox/character_creation_view.cpp:670
 msgid "Show character sheet"
 msgstr ""
 
@@ -11125,7 +11537,7 @@ msgstr ""
 msgid "Silence, 15' Radius"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:56
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:57
 msgid "Silvanesti Elf"
 msgstr ""
 
@@ -11150,10 +11562,14 @@ msgid "Simulacrum copies a living member that is no simulacrum"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Singing"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Sirrion"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:118
+#: src/OpenGoldBox/character_sheet_text.cpp:121
 msgid "Sixth level"
 msgstr ""
 
@@ -11161,16 +11577,20 @@ msgstr ""
 msgid "Size"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:884
+#: src/OpenGoldBox/character_creation_view.cpp:909
 msgid "Size: Large"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:884
+#: src/OpenGoldBox/character_creation_view.cpp:909
 msgid "Size: Regular"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:884
+#: src/OpenGoldBox/character_creation_view.cpp:909
 msgid "Size: Short"
+msgstr ""
+
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:578
+msgid "Skill"
 msgstr ""
 
 #: src/OpenGoldBox/level_up_dialog.cpp:590
@@ -11192,6 +11612,10 @@ msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Skillful"
+msgstr ""
+
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:338 src/OpenGoldBox/character_creation_view.cpp:67 src/OpenGoldBox/character_sheet_text.cpp:206 src/OpenGoldBox/godot/scenes/character_creation.tscn:2486
+msgid "Skills"
 msgstr ""
 
 #: src/OpenGoldBox/optional_effect_controls.h:39
@@ -11288,11 +11712,11 @@ msgstr ""
 msgid "Small"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:44
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:45
 msgid "Small, clever folk who resist magic and fight kobolds and goblins well. A gnome may be a fighter, a thief or both."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:50
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:51
 msgid "Small, nimble folk who resist poison and magic. A halfling may be a fighter, a thief or both."
 msgstr ""
 
@@ -11348,6 +11772,10 @@ msgstr ""
 
 #: src/OpenGoldBox/training_control.h:103
 msgid "Soldier background"
+msgstr ""
+
+#: src/OpenGoldBox/character_creation_view.cpp:1229
+msgid "Some skill points are unspent. They are lost once the character is finished. Leave the skills?"
 msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/character_class.cpp:28
@@ -11588,10 +12016,14 @@ msgid "Spare the Dying"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Speak/Read Language"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Spear"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12468
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12463
 msgid "Spear +4"
 msgstr ""
 
@@ -11643,11 +12075,11 @@ msgstr ""
 msgid "Speed reduced by 15 feet."
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:100 src/OpenGoldBox/godot/scenes/combat_demo.tscn:145
+#: src/OpenGoldBox/character_sheet_text.cpp:103 src/OpenGoldBox/godot/scenes/combat_demo.tscn:145
 msgid "Spell"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:61
+#: src/OpenGoldBox/character_creation_view.cpp:63
 msgid "Spell Choices"
 msgstr ""
 
@@ -11690,6 +12122,10 @@ msgstr ""
 msgid "Spells known"
 msgstr ""
 
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:682
+msgid "Spend career points on career skills and general points on general skills. Points can be taken back until the character is finished."
+msgstr ""
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Spike Growth"
 msgstr ""
@@ -11703,7 +12139,7 @@ msgstr ""
 msgid "Spirit guardians flit around {name}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:5122 src/OpenGold.Rules.Original/src/spells.cpp:46
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:5117 src/OpenGold.Rules.Original/src/spells.cpp:46
 msgid "Spiritual Hammer"
 msgstr ""
 
@@ -11751,7 +12187,7 @@ msgstr ""
 msgid "Start"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:391 src/OpenGoldBox/party_preview.cpp:1183
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:391 src/OpenGoldBox/party_preview.cpp:1197
 msgid "Start over"
 msgstr ""
 
@@ -11763,7 +12199,7 @@ msgstr ""
 msgid "Starts with 3d6 x 10 gp to buy its gear. Preview portraits and both combat poses before adding."
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:300
+#: src/OpenGoldBox/character_sheet_text.cpp:427
 msgid "Status Effects"
 msgstr ""
 
@@ -11827,11 +12263,11 @@ msgstr ""
 msgid "Storm's Thunder"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:38
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:39
 msgid "Stout, hardy folk who resist poison and magic and fight giants and goblins well. A dwarf may be a fighter, a thief or both."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:246 src/OpenGold.Rules.Original/src/spells.cpp:55 src/OpenGoldBox/character_text.h:9 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:1696
+#: src/OpenGold.Rules.Original/src/spells.cpp:246 src/OpenGold.Rules.Original/src/spells.cpp:55 src/OpenGoldBox/character_sheet_text.cpp:179 src/OpenGoldBox/character_text.h:9 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:1696
 msgid "Strength"
 msgstr ""
 
@@ -11992,6 +12428,10 @@ msgstr ""
 msgid "Swap these Initiative totals, or keep your Initiative. No turn has started yet."
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Swimming"
+msgstr ""
+
 #: src/OpenGoldBox/godot/scenes/combat_demo.tscn:232
 msgid "Switch the slot level used by Magic Missile, Cure Wounds and Healing Word."
 msgstr ""
@@ -12128,6 +12568,14 @@ msgstr ""
 msgid "Teal: party | Orange: enemies\nWheel: scroll | Shift+wheel: sideways\nMiddle-drag: pan | Scrollbars: navigate"
 msgstr ""
 
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:43 src/OpenGoldBox/character_sheet_text.cpp:180
+msgid "Tech"
+msgstr ""
+
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:62
+msgid "Technical"
+msgstr ""
+
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:309 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Telekinesis"
 msgstr ""
@@ -12178,6 +12626,10 @@ msgstr ""
 msgid "Temporary HP:"
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Terran"
+msgstr ""
+
 #: src/OpenGoldBox/rolf_tour_view.cpp:139
 msgid "Teshwave Ruins"
 msgstr ""
@@ -12198,7 +12650,7 @@ msgstr ""
 msgid "That cannot be used now"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4084
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4079
 msgid "That has no effect underwater!"
 msgstr ""
 
@@ -12331,11 +12783,11 @@ msgstr ""
 msgid "The Wand of Secrets has no charges left."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11636
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11631
 msgid "The acid drains away."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11723 src/OpenGold.Rules.Original/src/combat_session.cpp:14671
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11718 src/OpenGold.Rules.Original/src/combat_session.cpp:14666
 msgid "The air clears a little."
 msgstr ""
 
@@ -12440,7 +12892,7 @@ msgstr ""
 msgid "The dead rise when the minute of casting ends."
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1888
+#: src/OpenGoldBox/party_preview.cpp:1902
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "The default party could not be made: {problem}"
 msgstr ""
@@ -12531,7 +12983,7 @@ msgstr ""
 msgid "The monsters' figures in a fight: the new art, or the original game's. Party members keep theirs."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:53
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:54
 msgid "The most common folk of the Realms, who may follow any one class with no limit on their levels."
 msgstr ""
 
@@ -12600,11 +13052,11 @@ msgstr ""
 msgid "The party has acquired the..."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:13273
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:13268
 msgid "The party has fled."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:13274
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:13269
 msgid "The party is defeated."
 msgstr ""
 
@@ -12646,7 +13098,7 @@ msgstr ""
 msgid "The party takes {loot}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:13272 src/OpenGold.Rules.Original/src/combat_session.cpp:13306
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:13267 src/OpenGold.Rules.Original/src/combat_session.cpp:13301
 msgid "The party wins the fight."
 msgstr ""
 
@@ -12836,11 +13288,11 @@ msgstr ""
 msgid "These files do not match the supported Pool of Radiance PC 1.3 checksums. You can continue, but some game features may not work."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:79 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:80 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Thief"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:113
+#: src/OpenGoldBox/character_sheet_text.cpp:116
 msgid "Thief skills"
 msgstr ""
 
@@ -12856,7 +13308,7 @@ msgstr ""
 msgid "Thieves' Tools"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:117
+#: src/OpenGoldBox/character_sheet_text.cpp:120
 msgid "Third level"
 msgstr ""
 
@@ -12904,7 +13356,7 @@ msgstr ""
 msgid "This member did not complete the rest."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:927
+#: src/OpenGoldBox/character_creation_view.cpp:952
 msgid "This part is not present in either pose. Choose another head or body to use it."
 msgstr ""
 
@@ -13009,6 +13461,10 @@ msgstr ""
 msgid "Tilverton Thieves' Guild"
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Tinker"
+msgstr ""
+
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:280 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Tiny Hut"
 msgstr ""
@@ -13031,7 +13487,7 @@ msgstr ""
 msgid "To hit AC {ac}: roll {roll} or more ({bonus}), with Disadvantage"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:695
+#: src/OpenGoldBox/character_creation_view.cpp:720
 msgid "To start in a class, your scores must reach its minimums. Classes in gray do not qualify; go Back to change your scores or bonuses."
 msgstr ""
 
@@ -13056,7 +13512,7 @@ msgstr ""
 msgid "Torch attack"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1024
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:578 src/OpenGoldBox/godot/scenes/character_creation.tscn:1024
 msgid "Total"
 msgstr ""
 
@@ -13069,6 +13525,10 @@ msgid "Touch: the creature adds 1d4 to Athletics or Medicine checks, as chosen; 
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Tracking"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Train"
 msgstr ""
 
@@ -13077,7 +13537,7 @@ msgstr ""
 msgid "Train {name}"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:60 src/OpenGoldBox/godot/scenes/combat_demo.tscn:55 src/OpenGoldBox/training_control.h:159
+#: src/OpenGoldBox/character_creation_view.cpp:62 src/OpenGoldBox/godot/scenes/combat_demo.tscn:55 src/OpenGoldBox/training_control.h:159
 msgid "Training"
 msgstr ""
 
@@ -13172,7 +13632,7 @@ msgstr ""
 msgid "Tropical Land"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:133
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:134
 msgid "True Neutral"
 msgstr ""
 
@@ -13297,7 +13757,7 @@ msgstr ""
 msgid "Two more Metamagic options.\nA sixth cantrip."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12463
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12458
 msgid "Two-Handed Sword +4"
 msgstr ""
 
@@ -13510,6 +13970,10 @@ msgid "Use Bonus Action"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Use Jetpack"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Use Magic Device"
 msgstr ""
 
@@ -13578,11 +14042,11 @@ msgstr ""
 msgid "Valjevo Castle, the tower's upper level"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:137 src/OpenGold.Rules.Srd5/src/character_rules.cpp:321
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:138 src/OpenGold.Rules.Srd5/src/character_rules.cpp:321
 msgid "Values kindness and individual freedom."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:139 src/OpenGold.Rules.Srd5/src/character_rules.cpp:325
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:140 src/OpenGold.Rules.Srd5/src/character_rules.cpp:325
 msgid "Values personal freedom and independence."
 msgstr ""
 
@@ -13604,6 +14068,10 @@ msgstr ""
 
 #: src/OpenGoldBox/rolf_tour_solar_map.cpp:38
 msgid "Venus"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Venusian"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -13864,6 +14332,10 @@ msgid "Warlock skills"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Warrior"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Warrior of the Open Hand"
 msgstr ""
 
@@ -13875,7 +14347,7 @@ msgstr ""
 msgid "We only train conscious people."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:89 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:622 src/OpenGoldBox/godot/scenes/combat_demo.tscn:931
+#: src/OpenGoldBox/character_creation_view.cpp:93 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:622 src/OpenGoldBox/godot/scenes/combat_demo.tscn:931
 msgid "Weapon"
 msgstr ""
 
@@ -13898,6 +14370,14 @@ msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:47
 msgid "Weapon hits deal an extra 1d4 Radiant damage."
+msgstr ""
+
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:339 src/OpenGoldBox/character_creation_view.cpp:68
+msgid "Weapon specialization"
+msgstr ""
+
+#: src/OpenGoldBox/character_sheet_text.cpp:235
+msgid "Weapon specializations"
 msgstr ""
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:415
@@ -13940,7 +14420,7 @@ msgstr ""
 msgid "Whip"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:88 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/character_creation_view.cpp:92 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "White"
 msgstr ""
 
@@ -14061,7 +14541,7 @@ msgstr ""
 msgid "Wind Wall (vertical)"
 msgstr ""
 
-#: src/OpenGoldBox/character_text.h:11 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:1804
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:66 src/OpenGoldBox/character_sheet_text.cpp:180 src/OpenGoldBox/character_text.h:11 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:1804
 msgid "Wisdom"
 msgstr ""
 
@@ -14211,7 +14691,7 @@ msgstr ""
 msgid "Yell"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:88
+#: src/OpenGoldBox/character_creation_view.cpp:92
 msgid "Yellow"
 msgstr ""
 
@@ -14312,7 +14792,7 @@ msgstr ""
 msgid "Your camp is attacked!"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:999
+#: src/OpenGoldBox/character_creation_view.cpp:1024
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Your character: {race} / {gender} / {class}"
 msgstr ""
@@ -14329,7 +14809,7 @@ msgstr ""
 msgid "Your party flees the battle."
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:2051
+#: src/OpenGoldBox/party_preview.cpp:2065
 msgid "Your party has been defeated."
 msgstr ""
 
@@ -14367,12 +14847,17 @@ msgstr ""
 msgid "[theme_emphasis]{ability} save: {bonus} | {target}[/theme_emphasis]\n{modifier} from {ability} score {score} (score minus 10, divided by 2, rounded down).\n"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:60
+#: src/OpenGoldBox/character_sheet_text.cpp:63
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "[theme_font=sheet_title]{name}[/theme_font]\nLevel {levels} / {race} / {gender} / {class}\n{alignment} / Age {age}\n\n"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:149
+#: src/OpenGoldBox/character_sheet_text.cpp:161
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "[theme_font=sheet_title]{name}[/theme_font]\nLevel {level} / {race} / {gender} / {career}\nAge {age}\n\n"
+msgstr ""
+
+#: src/OpenGoldBox/character_sheet_text.cpp:272
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "[theme_font=sheet_title]{name}[/theme_font]\nLevel {level} / {race} / {gender} / {class}\n{alignment} / {background}\n\n"
 msgstr ""
@@ -14398,6 +14883,10 @@ msgstr ""
 msgid "at half Hit Points"
 msgstr ""
 
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:188
+msgid "at the most a general skill takes, 80"
+msgstr ""
+
 #: src/OpenGoldBox/monster_ability_options.h:23
 msgid "basilisks, the medusa"
 msgstr ""
@@ -14412,6 +14901,11 @@ msgstr ""
 
 #: src/OpenGoldBox/monster_ability_options.h:30
 msgid "buccaneers"
+msgstr ""
+
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:186
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "capped at {points}"
 msgstr ""
 
 #: src/OpenGoldBox/monster_ability_options.h:60
@@ -14528,6 +15022,10 @@ msgstr ""
 msgid "leather"
 msgstr ""
 
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:184
+msgid "locked"
+msgstr ""
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "longsword"
 msgstr ""
@@ -14546,6 +15044,14 @@ msgstr ""
 
 #: src/OpenGoldBox/monster_ability_options.h:36 src/OpenGoldBox/monster_ability_options.h:37
 msgid "mummies"
+msgstr ""
+
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:190
+msgid "no more new general skills"
+msgstr ""
+
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:175
+msgid "none"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -14727,32 +15233,32 @@ msgstr ""
 msgid "{actor} stabilizes {target}: d20 {roll} + {modifier} + {boost} = {total} vs DC {dc}: {result}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3242
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3237
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} attaches to {name}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14364 src/OpenGold.Rules.Original/src/combat_session.cpp:2384
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14359 src/OpenGold.Rules.Original/src/combat_session.cpp:2379
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} backstabs {name}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3253 src/OpenGold.Rules.Original/src/combat_session.cpp:3520
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3248 src/OpenGold.Rules.Original/src/combat_session.cpp:3515
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} constricts {name}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11533
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11528
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} drinks {name}'s blood for {damage}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3521
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3516
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} engulfs {name}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3305
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3300
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} grabs {name}."
 msgstr ""
@@ -14762,47 +15268,47 @@ msgstr ""
 msgid "{attacker} hits one of {name}'s duplicates, which vanishes."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14411 src/OpenGold.Rules.Original/src/combat_session.cpp:2459
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14406 src/OpenGold.Rules.Original/src/combat_session.cpp:2454
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} hits {name} for {damage}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3495
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3490
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} hugs {name}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14446 src/OpenGold.Rules.Original/src/combat_session.cpp:2420 src/OpenGold.Rules.Original/src/combat_session.cpp:5563 src/OpenGold.Rules.Original/src/combat_session.cpp:6181
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14441 src/OpenGold.Rules.Original/src/combat_session.cpp:2415 src/OpenGold.Rules.Original/src/combat_session.cpp:5558 src/OpenGold.Rules.Original/src/combat_session.cpp:6176
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} misses {name}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11322
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11317
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} rakes {name}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11556
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11551
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} slays the helpless {name}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11491
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11486
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} squeezes {name} for {damage}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14707 src/OpenGold.Rules.Original/src/combat_session.cpp:2753
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14702 src/OpenGold.Rules.Original/src/combat_session.cpp:2748
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} strikes from guard."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12480
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12475
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} strikes with a {weapon}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:2730
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:2725
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} strikes {name} leaving."
 msgstr ""
@@ -14812,7 +15318,7 @@ msgstr ""
 msgid "{attacker} strikes {name}'s displaced image."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:2682
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:2677
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} sweeps."
 msgstr ""
@@ -14830,6 +15336,16 @@ msgstr ""
 #: src/OpenGoldBox/character_sheet_view.cpp:220
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{bonus} from {class} saving throw proficiency."
+msgstr ""
+
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:385
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{career}\n\nLowest scores: {minimums}. A lower roll is raised to them, never refused.\nCareer skills (career points only): {skills}.\nStarts at level {level} with {experience} experience."
+msgstr ""
+
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:405
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{career} needs"
 msgstr ""
 
 #: src/OpenGoldBox/level_up_dialog.cpp:545
@@ -15011,7 +15527,7 @@ msgstr ""
 msgid "{hand} — {weapon}"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:332
+#: src/OpenGoldBox/character_sheet_text.cpp:459
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{heading}: {names}"
 msgstr ""
@@ -15120,7 +15636,7 @@ msgstr ""
 msgid "{item}: {spells}"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14112
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14107
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{leader} leads {name}."
 msgstr ""
@@ -15285,7 +15801,7 @@ msgstr ""
 msgid "{name} Wisdom save: d20 {roll} + {bonus} vs DC {dc} ({result})."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:10936 src/OpenGold.Rules.Original/src/combat_session.cpp:13866 src/OpenGold.Rules.Original/src/combat_session.cpp:9554 src/OpenGold.Rules.Original/src/combat_session.cpp:9797
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:10931 src/OpenGold.Rules.Original/src/combat_session.cpp:13861 src/OpenGold.Rules.Original/src/combat_session.cpp:9549 src/OpenGold.Rules.Original/src/combat_session.cpp:9792
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} aborts the spell."
 msgstr ""
@@ -15320,7 +15836,7 @@ msgstr ""
 msgid "{name} adds {die} to the save (Dark One's Own Luck)."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4811
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4806
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} ages."
 msgstr ""
@@ -15360,22 +15876,22 @@ msgstr ""
 msgid "{name} automatically fails the {ability} save while asleep."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12514
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12509
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} avoids it."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12073 src/OpenGold.Rules.Original/src/combat_session.cpp:12077
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12068 src/OpenGold.Rules.Original/src/combat_session.cpp:12072
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} becomes a blazing shape."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:5783
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:5778
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} becomes flesh."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:5394
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:5389
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} becomes younger."
 msgstr ""
@@ -15395,7 +15911,7 @@ msgstr ""
 msgid "{name} begins to turn to stone."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3622
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3617
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} belches in satisfaction."
 msgstr ""
@@ -15420,32 +15936,32 @@ msgstr ""
 msgid "{name} breaks the enchantment on {target}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12334
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12329
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} breathes a blinding cloud."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8252
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8247
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} breathes cold."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8115 src/OpenGold.Rules.Original/src/combat_session.cpp:8386 src/OpenGold.Rules.Original/src/combat_session.cpp:8409 src/OpenGold.Rules.Original/src/combat_session.cpp:8724
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8110 src/OpenGold.Rules.Original/src/combat_session.cpp:8381 src/OpenGold.Rules.Original/src/combat_session.cpp:8404 src/OpenGold.Rules.Original/src/combat_session.cpp:8719
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} breathes fire."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8115
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8110
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} breathes ice."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8252
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8247
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} breathes paralysis."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8184
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8179
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} breathes poison."
 msgstr ""
@@ -15470,7 +15986,7 @@ msgstr ""
 msgid "{name} can put down the cursed weapon."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4270 src/OpenGold.Rules.Original/src/combat_session.cpp:6035
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4265 src/OpenGold.Rules.Original/src/combat_session.cpp:6030
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} can see."
 msgstr ""
@@ -15480,7 +15996,7 @@ msgstr ""
 msgid "{name} can take off the cursed item."
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:416
+#: src/OpenGoldBox/party_preview.cpp:418
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} can't be modified."
 msgstr ""
@@ -15625,7 +16141,7 @@ msgstr ""
 msgid "{name} coats a weapon with Basic Poison."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:7447
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:7442
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} collapses."
 msgstr ""
@@ -15645,12 +16161,12 @@ msgstr ""
 msgid "{name} creates a level-{level} spell slot."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:7194
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:7189
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} creates a noxious cloud."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:7194
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:7189
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} creates a poisonous cloud."
 msgstr ""
@@ -15680,17 +16196,17 @@ msgstr ""
 msgid "{name} deflects {damage} damage."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11620
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11615
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} dies from disease."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11698
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11693
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} dies from poison."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:2188
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:2183
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} dies of its wounds."
 msgstr ""
@@ -15710,17 +16226,17 @@ msgstr ""
 msgid "{name} disengages."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:5759
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:5754
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} disintegrates."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12017
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12012
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} dissolves into acid."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12894
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12889
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} dissolves {target}'s armor!"
 msgstr ""
@@ -15750,7 +16266,7 @@ msgstr ""
 msgid "{name} douses the blade."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:6066
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:6061
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} drops dead."
 msgstr ""
@@ -15775,7 +16291,7 @@ msgstr ""
 msgid "{name} drops {item}. It is gone."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8337
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8332
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} emits an evil stench."
 msgstr ""
@@ -15800,17 +16316,17 @@ msgstr ""
 msgid "{name} exhales Dragon's Breath."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11938 src/OpenGold.Rules.Original/src/combat_session.cpp:11959 src/OpenGold.Rules.Original/src/combat_session.cpp:11973 src/OpenGold.Rules.Original/src/combat_session.cpp:12101
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11933 src/OpenGold.Rules.Original/src/combat_session.cpp:11954 src/OpenGold.Rules.Original/src/combat_session.cpp:11968 src/OpenGold.Rules.Original/src/combat_session.cpp:12096
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} explodes."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14856
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14851
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} fails at use jetpack."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14214
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14209
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} fails the Zero-G roll."
 msgstr ""
@@ -15820,7 +16336,7 @@ msgstr ""
 msgid "{name} fails to hide."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14741
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14736
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} fails to intimidate."
 msgstr ""
@@ -15850,7 +16366,7 @@ msgstr ""
 msgid "{name} falls back down."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11681
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11676
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} falls dead."
 msgstr ""
@@ -15880,32 +16396,32 @@ msgstr ""
 msgid "{name} finds its way out of the maze."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8861
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8856
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} fires a death ray."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8840
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8835
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} fires a disintegrating ray."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8853
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8848
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} fires a petrifying ray."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8870
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8865
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} fires a wounding ray."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12348
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12343
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} fires an energy bolt."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8125
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8120
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} fires its spines."
 msgstr ""
@@ -15925,7 +16441,7 @@ msgstr ""
 msgid "{name} flees the battle."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11374
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11369
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} flees."
 msgstr ""
@@ -15955,7 +16471,7 @@ msgstr ""
 msgid "{name} gains Resistance to {type} damage."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:5146
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:5141
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} gains an item."
 msgstr ""
@@ -15980,12 +16496,12 @@ msgstr ""
 msgid "{name} gains {spell}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12199
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12194
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} gates in."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:7849 src/OpenGold.Rules.Original/src/combat_session.cpp:7865 src/OpenGold.Rules.Original/src/combat_session.cpp:7891 src/OpenGold.Rules.Original/src/combat_session.cpp:7938 src/OpenGold.Rules.Original/src/combat_session.cpp:7971 src/OpenGold.Rules.Original/src/combat_session.cpp:8100 src/OpenGold.Rules.Original/src/combat_session.cpp:8296 src/OpenGold.Rules.Original/src/combat_session.cpp:8395 src/OpenGold.Rules.Original/src/combat_session.cpp:8467 src/OpenGold.Rules.Original/src/combat_session.cpp:8779
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:7844 src/OpenGold.Rules.Original/src/combat_session.cpp:7860 src/OpenGold.Rules.Original/src/combat_session.cpp:7886 src/OpenGold.Rules.Original/src/combat_session.cpp:7933 src/OpenGold.Rules.Original/src/combat_session.cpp:7966 src/OpenGold.Rules.Original/src/combat_session.cpp:8095 src/OpenGold.Rules.Original/src/combat_session.cpp:8291 src/OpenGold.Rules.Original/src/combat_session.cpp:8390 src/OpenGold.Rules.Original/src/combat_session.cpp:8462 src/OpenGold.Rules.Original/src/combat_session.cpp:8774
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} gazes."
 msgstr ""
@@ -16000,32 +16516,32 @@ msgstr ""
 msgid "{name} gives vitality to {target}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11396
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11391
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} goes berserk."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14619
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14614
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} goes down, and is dying."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14620
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14615
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} goes down, comatose."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14618
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14613
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} goes down."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3000
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:2995
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} goes into a frenzy."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:13154
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:13149
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} got away."
 msgstr ""
@@ -16040,12 +16556,12 @@ msgstr ""
 msgid "{name} grows drowsy."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:6574
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:6569
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} grows."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:13897 src/OpenGold.Rules.Original/src/combat_session.cpp:15101 src/OpenGold.Rules.Original/src/combat_session.cpp:7723
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:13892 src/OpenGold.Rules.Original/src/combat_session.cpp:15096 src/OpenGold.Rules.Original/src/combat_session.cpp:7718
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} guards."
 msgstr ""
@@ -16080,7 +16596,7 @@ msgstr ""
 msgid "{name} has been raised from the dead"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:5860
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:5855
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} has been reduced."
 msgstr ""
@@ -16120,7 +16636,7 @@ msgstr ""
 msgid "{name} inspires {target}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12255
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12250
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} invokes Dispel Magic."
 msgstr ""
@@ -16205,27 +16721,27 @@ msgstr ""
 msgid "{name} is addled."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12274
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12269
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is affected by the evil stench."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:6467 src/OpenGold.Rules.Original/src/combat_session.cpp:7554
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:6462 src/OpenGold.Rules.Original/src/combat_session.cpp:7549
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is affected by {spell}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14590
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14585
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is affected."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11846
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11841
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is afraid."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:7539
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:7534
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is animated."
 msgstr ""
@@ -16240,7 +16756,7 @@ msgstr ""
 msgid "{name} is bandaged and stable."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:13916 src/OpenGold.Rules.Original/src/combat_session.cpp:14830
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:13911 src/OpenGold.Rules.Original/src/combat_session.cpp:14825
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is bandaged."
 msgstr ""
@@ -16255,22 +16771,22 @@ msgstr ""
 msgid "{name} is befuddled: no spells or Magic actions."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3336
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3331
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is beheaded."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3295
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3290
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is being crushed."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:7924
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:7919
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is blinded by smoke."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:7272
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:7267
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is burned by acid."
 msgstr ""
@@ -16285,17 +16801,17 @@ msgstr ""
 msgid "{name} is charmed by Snake Charm."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3270
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3265
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is charmed."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11379
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11374
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is confused."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:2146
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:2141
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is coughing."
 msgstr ""
@@ -16305,7 +16821,7 @@ msgstr ""
 msgid "{name} is covered in oil."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3232
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3227
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is crippled by venom."
 msgstr ""
@@ -16315,7 +16831,7 @@ msgstr ""
 msgid "{name} is cured of disease"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4346 src/OpenGold.Rules.Original/src/combat_session.cpp:4372 src/OpenGold.Rules.Original/src/combat_session.cpp:4481 src/OpenGold.Rules.Original/src/combat_session.cpp:6030 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4341 src/OpenGold.Rules.Original/src/combat_session.cpp:4367 src/OpenGold.Rules.Original/src/combat_session.cpp:4476 src/OpenGold.Rules.Original/src/combat_session.cpp:6025 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is cured."
 msgstr ""
@@ -16330,7 +16846,7 @@ msgstr ""
 msgid "{name} is cursed: {curse}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:7315
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:7310
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is cut by the blades."
 msgstr ""
@@ -16340,7 +16856,7 @@ msgstr ""
 msgid "{name} is dazed."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3703 src/OpenGold.Rules.Original/src/combat_session.cpp:3734
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3698 src/OpenGold.Rules.Original/src/combat_session.cpp:3729
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is dead forever."
 msgstr ""
@@ -16350,7 +16866,7 @@ msgstr ""
 msgid "{name} is defeated."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11046 src/OpenGold.Rules.Original/src/combat_session.cpp:11139 src/OpenGold.Rules.Original/src/combat_session.cpp:11281 src/OpenGold.Rules.Original/src/combat_session.cpp:6134
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11041 src/OpenGold.Rules.Original/src/combat_session.cpp:11134 src/OpenGold.Rules.Original/src/combat_session.cpp:11276 src/OpenGold.Rules.Original/src/combat_session.cpp:6129
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is destroyed."
 msgstr ""
@@ -16360,27 +16876,27 @@ msgstr ""
 msgid "{name} is detoxified"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3193 src/OpenGold.Rules.Original/src/combat_session.cpp:3215 src/OpenGold.Rules.Original/src/combat_session.cpp:3420 src/OpenGold.Rules.Original/src/combat_session.cpp:3436 src/OpenGold.Rules.Original/src/combat_session.cpp:3555
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3188 src/OpenGold.Rules.Original/src/combat_session.cpp:3210 src/OpenGold.Rules.Original/src/combat_session.cpp:3415 src/OpenGold.Rules.Original/src/combat_session.cpp:3431 src/OpenGold.Rules.Original/src/combat_session.cpp:3550
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is diseased."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8308 src/OpenGold.Rules.Original/src/combat_session.cpp:8846
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8303 src/OpenGold.Rules.Original/src/combat_session.cpp:8841
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is disintegrated."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3466 src/OpenGold.Rules.Original/src/combat_session.cpp:7484
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3461 src/OpenGold.Rules.Original/src/combat_session.cpp:7479
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is dispelled."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12566 src/OpenGold.Rules.Original/src/combat_session.cpp:12603
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12561 src/OpenGold.Rules.Original/src/combat_session.cpp:12598
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is disrupted."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12888
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12883
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is dissolving {target}'s armor!"
 msgstr ""
@@ -16390,17 +16906,17 @@ msgstr ""
 msgid "{name} is dominated by {caster}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3637
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3632
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is drained 2 levels."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3637
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3632
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is drained a level."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:2855
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:2850
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is dying."
 msgstr ""
@@ -16415,7 +16931,7 @@ msgstr ""
 msgid "{name} is enlarged."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11405
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11400
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is enraged."
 msgstr ""
@@ -16425,7 +16941,7 @@ msgstr ""
 msgid "{name} is entranced by the pattern."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11356
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11351
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is fighting with snakes."
 msgstr ""
@@ -16435,7 +16951,7 @@ msgstr ""
 msgid "{name} is flesh again."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:13074
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:13069
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is forced to flee."
 msgstr ""
@@ -16445,7 +16961,7 @@ msgstr ""
 msgid "{name} is forced to take the Dodge action."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11884
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11879
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is frightened."
 msgstr ""
@@ -16460,12 +16976,12 @@ msgstr ""
 msgid "{name} is healed"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4165 src/OpenGold.Rules.Original/src/combat_session.cpp:4377 src/OpenGold.Rules.Original/src/combat_session.cpp:4393 src/OpenGold.Rules.Original/src/combat_session.cpp:4640 src/OpenGold.Rules.Original/src/combat_session.cpp:6053 src/OpenGold.Rules.Original/src/combat_session.cpp:6604 src/OpenGold.Rules.Original/src/combat_session.cpp:6616 src/OpenGold.Rules.Original/src/combat_session.cpp:6809
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4160 src/OpenGold.Rules.Original/src/combat_session.cpp:4372 src/OpenGold.Rules.Original/src/combat_session.cpp:4388 src/OpenGold.Rules.Original/src/combat_session.cpp:4635 src/OpenGold.Rules.Original/src/combat_session.cpp:6048 src/OpenGold.Rules.Original/src/combat_session.cpp:6599 src/OpenGold.Rules.Original/src/combat_session.cpp:6611 src/OpenGold.Rules.Original/src/combat_session.cpp:6804
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is healed."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3532
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3527
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is held fast."
 msgstr ""
@@ -16475,7 +16991,7 @@ msgstr ""
 msgid "{name} is helpless and slain."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14186 src/OpenGold.Rules.Original/src/combat_session.cpp:14727
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14181 src/OpenGold.Rules.Original/src/combat_session.cpp:14722
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is helpless."
 msgstr ""
@@ -16515,12 +17031,12 @@ msgstr ""
 msgid "{name} is in no condition to try."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14187 src/OpenGold.Rules.Original/src/combat_session.cpp:14756
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14182 src/OpenGold.Rules.Original/src/combat_session.cpp:14751
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is intimidated."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14621 src/OpenGold.Rules.Original/src/combat_session.cpp:1517 src/OpenGold.Rules.Original/src/combat_session.cpp:2846 src/OpenGold.Rules.Original/src/combat_session.cpp:2855
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14616 src/OpenGold.Rules.Original/src/combat_session.cpp:1512 src/OpenGold.Rules.Original/src/combat_session.cpp:2841 src/OpenGold.Rules.Original/src/combat_session.cpp:2850
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is killed."
 msgstr ""
@@ -16585,7 +17101,7 @@ msgstr ""
 msgid "{name} is no longer Stunned."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:5792
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:5787
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is no longer a statue."
 msgstr ""
@@ -16615,7 +17131,7 @@ msgstr ""
 msgid "{name} is no longer {condition}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:5387
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:5382
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is now 18 years old."
 msgstr ""
@@ -16630,17 +17146,17 @@ msgstr ""
 msgid "{name} is overloaded."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11808
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11803
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is paralyzed with fear."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3585 src/OpenGold.Rules.Original/src/combat_session.cpp:7858 src/OpenGold.Rules.Original/src/combat_session.cpp:8103 src/OpenGold.Rules.Original/src/combat_session.cpp:8782
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3580 src/OpenGold.Rules.Original/src/combat_session.cpp:7853 src/OpenGold.Rules.Original/src/combat_session.cpp:8098 src/OpenGold.Rules.Original/src/combat_session.cpp:8777
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is paralyzed."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14428
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14423
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is poisoned and dizzy."
 msgstr ""
@@ -16705,12 +17221,12 @@ msgstr ""
 msgid "{name} is sickened."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:2139
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:2134
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is silenced."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12549 src/OpenGold.Rules.Original/src/combat_session.cpp:4729 src/OpenGold.Rules.Original/src/combat_session.cpp:6398 src/OpenGold.Rules.Original/src/combat_session.cpp:8864
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12544 src/OpenGold.Rules.Original/src/combat_session.cpp:4724 src/OpenGold.Rules.Original/src/combat_session.cpp:6393 src/OpenGold.Rules.Original/src/combat_session.cpp:8859
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is slain."
 msgstr ""
@@ -16735,22 +17251,22 @@ msgstr ""
 msgid "{name} is staggered: Speed halved, and the next attack against it has Advantage."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:5783
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:5778
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is still flesh."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3607 src/OpenGold.Rules.Original/src/combat_session.cpp:7950
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3602 src/OpenGold.Rules.Original/src/combat_session.cpp:7945
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is stoned."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:5886
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:5881
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is stronger."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12303
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12298
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is struck by an energy bolt."
 msgstr ""
@@ -16760,7 +17276,7 @@ msgstr ""
 msgid "{name} is struck by the {color} ray."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12121 src/OpenGold.Rules.Original/src/combat_session.cpp:14188 src/OpenGold.Rules.Original/src/combat_session.cpp:14393
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12116 src/OpenGold.Rules.Original/src/combat_session.cpp:14183 src/OpenGold.Rules.Original/src/combat_session.cpp:14388
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is stunned."
 msgstr ""
@@ -16770,17 +17286,17 @@ msgstr ""
 msgid "{name} is sundered (Sundering Blow)."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3616
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3611
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is swallowed whole."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8657
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8652
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is terrified."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14838
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14833
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is treated."
 msgstr ""
@@ -16795,22 +17311,22 @@ msgstr ""
 msgid "{name} is turned."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12496
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12491
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is turning to green fire!"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4298
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4293
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is un-cursed."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11804 src/OpenGold.Rules.Original/src/combat_session.cpp:14393 src/OpenGold.Rules.Original/src/combat_session.cpp:14590 src/OpenGold.Rules.Original/src/combat_session.cpp:14756 src/OpenGold.Rules.Original/src/combat_session.cpp:4119 src/OpenGold.Rules.Original/src/combat_session.cpp:4194 src/OpenGold.Rules.Original/src/combat_session.cpp:4245 src/OpenGold.Rules.Original/src/combat_session.cpp:4724 src/OpenGold.Rules.Original/src/combat_session.cpp:5789 src/OpenGold.Rules.Original/src/combat_session.cpp:5826 src/OpenGold.Rules.Original/src/combat_session.cpp:5856 src/OpenGold.Rules.Original/src/combat_session.cpp:6128 src/OpenGold.Rules.Original/src/combat_session.cpp:6220 src/OpenGold.Rules.Original/src/combat_session.cpp:6438 src/OpenGold.Rules.Original/src/combat_session.cpp:6454 src/OpenGold.Rules.Original/src/combat_session.cpp:6569 src/OpenGold.Rules.Original/src/combat_session.cpp:6818 src/OpenGold.Rules.Original/src/combat_session.cpp:7308
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11799 src/OpenGold.Rules.Original/src/combat_session.cpp:14388 src/OpenGold.Rules.Original/src/combat_session.cpp:14585 src/OpenGold.Rules.Original/src/combat_session.cpp:14751 src/OpenGold.Rules.Original/src/combat_session.cpp:4114 src/OpenGold.Rules.Original/src/combat_session.cpp:4189 src/OpenGold.Rules.Original/src/combat_session.cpp:4240 src/OpenGold.Rules.Original/src/combat_session.cpp:4719 src/OpenGold.Rules.Original/src/combat_session.cpp:5784 src/OpenGold.Rules.Original/src/combat_session.cpp:5821 src/OpenGold.Rules.Original/src/combat_session.cpp:5851 src/OpenGold.Rules.Original/src/combat_session.cpp:6123 src/OpenGold.Rules.Original/src/combat_session.cpp:6215 src/OpenGold.Rules.Original/src/combat_session.cpp:6433 src/OpenGold.Rules.Original/src/combat_session.cpp:6449 src/OpenGold.Rules.Original/src/combat_session.cpp:6564 src/OpenGold.Rules.Original/src/combat_session.cpp:6813 src/OpenGold.Rules.Original/src/combat_session.cpp:7303
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is unaffected."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4203
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4198
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is uncharmed."
 msgstr ""
@@ -16830,7 +17346,7 @@ msgstr ""
 msgid "{name} is wreathed in a warm shield."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:2219
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:2214
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} joins the battle."
 msgstr ""
@@ -16860,7 +17376,7 @@ msgstr ""
 msgid "{name} lashes out in panic."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14488
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14483
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} launches a missile."
 msgstr ""
@@ -16880,7 +17396,7 @@ msgstr ""
 msgid "{name} lets go."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14744
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14739
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} looks real menacing."
 msgstr ""
@@ -16905,22 +17421,22 @@ msgstr ""
 msgid "{name} loses a Shocking Grasp effect."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4041
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4036
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} loses a spell."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12001
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11996
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} loses a weapon in the Baaz's stone body."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12855
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12850
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} loses a weapon."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:6953
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:6948
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} loses an image."
 msgstr ""
@@ -16930,12 +17446,12 @@ msgstr ""
 msgid "{name} loses {mastery} from {source}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14210
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14205
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} makes the Zero-G roll."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14079
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14074
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} makes the tactics roll."
 msgstr ""
@@ -17070,7 +17586,7 @@ msgstr ""
 msgid "{name} raises Nature's Sanctuary."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:7181
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:7176
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} raises a barrier of whirling blades."
 msgstr ""
@@ -17120,12 +17636,12 @@ msgstr ""
 msgid "{name} redirects the attack at {target}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:7853 src/OpenGold.Rules.Original/src/combat_session.cpp:7942 src/OpenGold.Rules.Original/src/combat_session.cpp:8471
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:7848 src/OpenGold.Rules.Original/src/combat_session.cpp:7937 src/OpenGold.Rules.Original/src/combat_session.cpp:8466
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} reflects it."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4106
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4101
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} reflects the spell."
 msgstr ""
@@ -17135,7 +17651,7 @@ msgstr ""
 msgid "{name} regains every Rage use (Persistent Rage)."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:6040
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:6035
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} regains intellect."
 msgstr ""
@@ -17155,7 +17671,7 @@ msgstr ""
 msgid "{name} rerolls weapon damage (Savage Attacker): {first} and {second}, keeps {kept}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3463
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3458
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} resists dispel evil."
 msgstr ""
@@ -17190,7 +17706,7 @@ msgstr ""
 msgid "{name} returns from the maze."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:971
+#: src/OpenGoldBox/character_creation_view.cpp:996
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} returns in a new body: {species}. Make the species' choices, then continue."
 msgstr ""
@@ -17205,7 +17721,7 @@ msgstr ""
 msgid "{name} returns to its own shape."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8068
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8063
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} returns to stone."
 msgstr ""
@@ -17215,7 +17731,7 @@ msgstr ""
 msgid "{name} ripostes."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11734
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11729
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} rises again."
 msgstr ""
@@ -17235,7 +17751,7 @@ msgstr ""
 msgid "{name} rises as a Zombie."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12023
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12018
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} rises in a frenzy."
 msgstr ""
@@ -17285,7 +17801,7 @@ msgstr ""
 msgid "{name} sends the hound after {target}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:5971
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:5966
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} sets a delayed blast fireball."
 msgstr ""
@@ -17335,7 +17851,7 @@ msgstr ""
 msgid "{name} slips and falls Prone."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14678
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14673
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} slips into a coma."
 msgstr ""
@@ -17345,17 +17861,17 @@ msgstr ""
 msgid "{name} slips into the Ethereal Plane."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8081
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8076
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} slows {target}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:2926
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:2921
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} smashes a crystal."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4566
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4561
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} smashes them flat."
 msgstr ""
@@ -17370,12 +17886,12 @@ msgstr ""
 msgid "{name} spends 1 Focus Point and rolls the save again (Disciplined Survivor)."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8434 src/OpenGold.Rules.Original/src/combat_session.cpp:8771
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8429 src/OpenGold.Rules.Original/src/combat_session.cpp:8766
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} spits acid and misses."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8034 src/OpenGold.Rules.Original/src/combat_session.cpp:8423 src/OpenGold.Rules.Original/src/combat_session.cpp:8763
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8029 src/OpenGold.Rules.Original/src/combat_session.cpp:8418 src/OpenGold.Rules.Original/src/combat_session.cpp:8758
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} spits acid."
 msgstr ""
@@ -17385,7 +17901,7 @@ msgstr ""
 msgid "{name} spreads dragon wings."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:15059
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:15054
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} sprints."
 msgstr ""
@@ -17465,7 +17981,7 @@ msgstr ""
 msgid "{name} studies {target}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11422
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11417
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} suffocates."
 msgstr ""
@@ -17480,7 +17996,7 @@ msgstr ""
 msgid "{name} takes off a shield to use a bow."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14853
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14848
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} takes off."
 msgstr ""
@@ -17730,7 +18246,7 @@ msgstr ""
 msgid "{name} takes {damage} {type} damage."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14580 src/OpenGold.Rules.Original/src/combat_session.cpp:6584
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14575 src/OpenGold.Rules.Original/src/combat_session.cpp:6579
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} takes {damage}."
 msgstr ""
@@ -17740,22 +18256,22 @@ msgstr ""
 msgid "{name} takes {item}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4615
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4610
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} teleports."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12237
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12232
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} throws a fireball."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14488
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14483
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} throws a grenade."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8738
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8733
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} throws lightning."
 msgstr ""
@@ -17850,7 +18366,7 @@ msgstr ""
 msgid "{name} turns to stone."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11001 src/OpenGold.Rules.Original/src/combat_session.cpp:11076 src/OpenGold.Rules.Original/src/combat_session.cpp:11238
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:10996 src/OpenGold.Rules.Original/src/combat_session.cpp:11071 src/OpenGold.Rules.Original/src/combat_session.cpp:11233
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} turns undead."
 msgstr ""
@@ -18075,7 +18591,7 @@ msgstr ""
 msgid "{name} uses Wholeness of Body."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:13829 src/OpenGold.Rules.Original/src/combat_session.cpp:9202
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:13824 src/OpenGold.Rules.Original/src/combat_session.cpp:9197
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} uses an item."
 msgstr ""
@@ -18125,7 +18641,7 @@ msgstr ""
 msgid "{name} wanders in confusion."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12139
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12134
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} wants to kill {yeller}."
 msgstr ""
@@ -18145,7 +18661,7 @@ msgstr ""
 msgid "{name} writes a scroll of {spell}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12131
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12126
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} yells a taunt."
 msgstr ""
@@ -18160,7 +18676,7 @@ msgstr ""
 msgid "{name}'s Arcane Sword strikes."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12708
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12703
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name}'s Fire Shield strikes {attacker}."
 msgstr ""
@@ -18300,7 +18816,7 @@ msgstr ""
 msgid "{name}'s spell fails under Slow."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:6201
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:6196
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name}'s summons is not answered."
 msgstr ""
@@ -18360,14 +18876,19 @@ msgstr ""
 msgid "{name}: {type} damage {before} -> {after}."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:876 src/OpenGoldBox/character_creation_view.cpp:879
+#: src/OpenGoldBox/character_creation_view.cpp:901 src/OpenGoldBox/character_creation_view.cpp:904
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{number} / {count}"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:909
+#: src/OpenGoldBox/character_creation_view.cpp:934
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{part} / Color-{bank}: choose a color"
+msgstr ""
+
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:643
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{points} in {skill} (it has {has})"
 msgstr ""
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:2540
@@ -18378,6 +18899,11 @@ msgstr ""
 #: src/OpenGoldBox/rolf_tour_view.cpp:2539
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{price} steel, {weight} lb"
+msgstr ""
+
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:367
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{race}\n\nAbilities: {adjustments}.\nMovement {movement}.\n\nCareers open: {careers}."
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -18398,6 +18924,16 @@ msgstr ""
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{skill} Expertise ({fee} gp)"
+msgstr ""
+
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:650
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{skill} is a Medic's skill."
+msgstr ""
+
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:654
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{skill} needs {needs}."
 msgstr ""
 
 #: src/OpenGoldBox/training_control.h:275
@@ -18505,7 +19041,7 @@ msgstr ""
 msgid "{value} uses spent since the last Long Rest."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3622
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3617
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{victim} is digested instantly."
 msgstr ""

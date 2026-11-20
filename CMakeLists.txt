@@ -125,6 +125,7 @@ add_library(opengold_rules_original STATIC
     src/OpenGold.Rules.Original/src/original_rules.cpp
     src/OpenGold.Rules.Original/src/champions_rules.cpp
     src/OpenGold.Rules.Original/src/buck_rogers_characters.cpp
+    src/OpenGold.Rules.Original/src/buck_rogers_creation.cpp
     src/OpenGold.Rules.Original/src/buck_rogers_combat.cpp
     src/OpenGold.Rules.Original/src/buck_rogers_rules.cpp
     src/OpenGold.Rules.Original/src/buck_rogers_upkeep.cpp
@@ -387,6 +388,11 @@ if(OPENGOLD_BUILD_TESTS)
         opengold_countdown_earned_argon opengold_countdown_earned_ship
         opengold_countdown_ending_protocol
         PROPERTIES SKIP_RETURN_CODE 77)
+    # Creation in the Buck Rogers games through the shared creation pages.
+    add_executable(opengold_buck_rogers_creation_tests tests/buck_rogers_creation_tests.cpp)
+    target_link_libraries(opengold_buck_rogers_creation_tests PRIVATE opengold_core
+        opengold_rules_original)
+    add_test(NAME opengold_buck_rogers_creation_tests COMMAND opengold_buck_rogers_creation_tests)
     add_executable(opengold_matrix_cubed_tests tests/matrix_cubed_tests.cpp)
     target_link_libraries(opengold_matrix_cubed_tests PRIVATE opengold_core)
     add_test(NAME opengold_matrix_cubed_tests COMMAND opengold_matrix_cubed_tests)

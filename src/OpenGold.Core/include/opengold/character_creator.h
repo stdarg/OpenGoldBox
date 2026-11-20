@@ -16,7 +16,11 @@ enum class CreationStep
     spell_choices,
     combat_icon,
     portrait,
-    sheet
+    sheet,
+    // The Buck Rogers games' pages (rules::InPlacePages), after the sheet so
+    // the SRD's pages, which follow this order, never reach them.
+    skills,
+    specialization
 };
 
 // One option of a choice group switched on or off. Group and option are both
@@ -137,6 +141,11 @@ class CharacterCreator
     // character is rolled, the rules let it be modified and the draft keeps
     // its choices.
     void modify(const rules::CharacterDraft &modified);
+    // The later pages' change to a rolled character whose draft holds its
+    // game's record (the Buck Rogers games' skills, specializations and body
+    // icon): the draft with that record. Throws unless the character is
+    // rolled, its rules ask those pages and read the record.
+    void change_record(std::string rules_data);
     void assign_roll(unsigned roll, rules::Ability ability);
     [[nodiscard]] bool scores_assigned() const;
     void swap_scores(rules::Ability first, rules::Ability second);

@@ -2,7 +2,10 @@
 
 #include "area_loading.h"
 #include "dark_queen_campaign.h"
+#include "opengold/buck_rogers_characters.h"
+#include "opengold/buck_rogers_rules.h"
 #include "opengold/creature_catalog.h"
+#include "opengold/formats.h"
 #include "opengold/original.h"
 #include "opengold/por_sound.h"
 #include "opengold/ua_design.h"
@@ -162,6 +165,57 @@ void outfit_original_character(CampaignParty &party, MemberId id,
             // full: it stays in the pack.
         }
     }
+}
+
+BuckRogersStock load_buck_rogers_stock(const std::filesystem::path &folder, GoldBoxGame game)
+{
+    const auto read = [&](std::string_view name)
+    {
+        return por::detail::read_archive(por::detail::resolve_archive(folder, name));
+    };
+    const auto archive = decode_dax_archive(read("ITEM0.DAX"));
+    const auto first = archive ? std::ranges::find(archive.records, std::uint8_t{1}, &DaxRecord::id)
+                               : archive.records.end();
+    auto templates = first == archive.records.end()
+                         ? std::nullopt
+                         : buck_rogers::decode_item_templates(first->bytes);
+    auto types = buck_rogers::decode_item_types(read("ITEMS"));
+    auto words =
+        por::decode_item_words(por::unpack_sound_executable(read(item_words_program(game))), game);
+    if (!templates || !types || !words)
+    {
+        throw std::runtime_error("The game's ITEM0.DAX, ITEMS or item words cannot be read");
+    }
+    return {std::move(*templates), std::move(*types), std::move(*words)};
+}
+
+std::string buck_rogers_item_name(const buck_rogers::Item &item, std::span<const std::string> words)
+{
+    std::string name;
+    for (const auto part : item.name_parts)
+    {
+        if (part != 0 && part < words.size())
+        {
+            name = words[part] + (name.empty() ? "" : " ") + name;
+        }
+    }
+    if (item.plus != 0)
+    {
+        name += (item.plus > 0 ? " +" : " ") + std::to_string(item.plus);
+    }
+    return name.empty() ? std::string("?") : name;
+}
+
+void outfit_buck_rogers_character(CampaignParty &party, MemberId id, const BuckRogersStock &stock)
+{
+    auto record = original::buck_rogers_record_of(party.game_record(id));
+    if (!record)
+    {
+        return;
+    }
+    record->items = original::buck_rogers_starting_items(stock.templates);
+    record->types = stock.types;
+    party.keep_game_record(id, original::encode_ground_record(*record));
 }
 
 } // namespace opengold

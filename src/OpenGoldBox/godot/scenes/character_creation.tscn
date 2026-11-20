@@ -2375,6 +2375,158 @@ offset_top = 132
 offset_bottom = 164
 text = "Press Esc to return"
 
+[node name="BuckRogersRoll" type="VBoxContainer" parent="."]
+visible = false
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 288
+offset_top = 148
+offset_right = -44
+offset_bottom = -96
+theme_override_constants/separation = 16
+
+[node name="Table" type="GridContainer" parent="BuckRogersRoll"]
+columns = 4
+theme_override_constants/h_separation = 24
+theme_override_constants/v_separation = 6
+
+[node name="AttributeHeader" type="Label" parent="BuckRogersRoll/Table"]
+theme_type_variation = &"LabelText16"
+text = "Attribute"
+
+[node name="ScoreHeader" type="Label" parent="BuckRogersRoll/Table"]
+theme_type_variation = &"LabelText16"
+text = "Score"
+horizontal_alignment = 1
+
+[node name="RaceHeader" type="Label" parent="BuckRogersRoll/Table"]
+theme_type_variation = &"LabelText14"
+text = "Race"
+horizontal_alignment = 1
+auto_translate_mode = 2
+
+[node name="MinimumHeader" type="Label" parent="BuckRogersRoll/Table"]
+theme_type_variation = &"LabelText14"
+horizontal_alignment = 1
+auto_translate_mode = 2
+
+[node name="RollRow" type="HBoxContainer" parent="BuckRogersRoll"]
+theme_override_constants/separation = 24
+
+[node name="Roll" type="Button" parent="BuckRogersRoll/RollRow"]
+custom_minimum_size = Vector2(170, 36)
+text = "Roll"
+
+[node name="Rolled" type="Label" parent="BuckRogersRoll/RollRow"]
+size_flags_horizontal = 3
+theme_type_variation = &"LabelText16"
+autowrap_mode = 2
+auto_translate_mode = 2
+
+[node name="Specializations" type="VBoxContainer" parent="."]
+visible = false
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 288
+offset_top = 148
+offset_right = -44
+offset_bottom = -96
+theme_override_constants/separation = 12
+
+[node name="Count" type="Label" parent="Specializations"]
+theme_type_variation = &"LabelText16"
+autowrap_mode = 2
+auto_translate_mode = 2
+
+[node name="Scroll" type="ScrollContainer" parent="Specializations"]
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Rows" type="GridContainer" parent="Specializations/Scroll"]
+size_flags_horizontal = 3
+columns = 4
+theme_override_constants/h_separation = 16
+theme_override_constants/v_separation = 4
+
+[node name="Skills" type="VBoxContainer" parent="."]
+visible = false
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 288
+offset_top = 140
+offset_right = -44
+offset_bottom = -96
+theme_override_constants/separation = 8
+
+[node name="Points" type="Label" parent="Skills"]
+theme_type_variation = &"LabelText16"
+autowrap_mode = 2
+auto_translate_mode = 2
+
+[node name="Groups" type="HBoxContainer" parent="Skills"]
+theme_override_constants/separation = 6
+
+[node name="Scroll" type="ScrollContainer" parent="Skills"]
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+follow_focus = true
+
+[node name="Rows" type="GridContainer" parent="Skills/Scroll"]
+size_flags_horizontal = 3
+columns = 7
+theme_override_constants/h_separation = 16
+theme_override_constants/v_separation = 2
+
+[node name="Needs" type="Label" parent="Skills"]
+theme_type_variation = &"LabelText16"
+autowrap_mode = 2
+auto_translate_mode = 2
+
+[node name="UnspentSkills" type="ConfirmationDialog" parent="."]
+title = "Skills"
+initial_position = 2
+dialog_autowrap = true
+ok_button_text = "Leave"
+cancel_button_text = "Stay"
+
+[node name="BodyIcons" type="HBoxContainer" parent="."]
+visible = false
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 288
+offset_top = 148
+offset_right = -44
+offset_bottom = -96
+theme_override_constants/separation = 32
+
+[node name="Grid" type="GridContainer" parent="BodyIcons"]
+size_flags_vertical = 0
+columns = 6
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
+
+[node name="Preview" type="VBoxContainer" parent="BodyIcons"]
+size_flags_vertical = 0
+theme_override_constants/separation = 8
+
+[node name="ReadyTitle" type="Label" parent="BodyIcons/Preview"]
+text = "Ready"
+horizontal_alignment = 1
+
+[node name="Ready" type="TextureRect" parent="BodyIcons/Preview"]
+custom_minimum_size = Vector2(144, 144)
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ActionTitle" type="Label" parent="BodyIcons/Preview"]
+text = "Action"
+horizontal_alignment = 1
+
+[node name="Action" type="TextureRect" parent="BodyIcons/Preview"]
+custom_minimum_size = Vector2(144, 144)
+expand_mode = 1
+stretch_mode = 5
+
 [node name="CreationLayout" type="AnimationPlayer" parent="."]
 root_node = NodePath("..")
 libraries = {

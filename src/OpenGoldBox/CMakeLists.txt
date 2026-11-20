@@ -71,7 +71,7 @@ configure_file("${export_config}" "${game_project}/export_presets.cfg" @ONLY)
 
 add_library(opengoldbox_game SHARED rolf_tour_view.cpp rolf_tour_solar_map.cpp combat_view.cpp character_creation_view.cpp
     portrait_picker.cpp portrait_catalog.cpp party_preview.cpp equipment_choice_dialog.cpp level_up_view.cpp level_up_dialog.cpp level_up_lab_view.cpp campaign_save_view.cpp save_slots.cpp
-    character_pool_dialog.cpp earlier_game_dialog.cpp modify_character_dialog.cpp town_sheet_dialog.cpp portrait_dialog.cpp original_portrait_parts.cpp character_sheet_view.cpp character_sheet_text.cpp godot_sound_output.cpp register_types.cpp game_classes.cpp campaign_combat.cpp startup_view.cpp game_folder_questions.cpp game_lifecycle.cpp crash_reports.cpp game_log.cpp game_menu_view.cpp game_menu_host.cpp screenshot_service.cpp localization.cpp application_settings.cpp game_rules.cpp)
+    character_pool_dialog.cpp earlier_game_dialog.cpp modify_character_dialog.cpp town_sheet_dialog.cpp portrait_dialog.cpp original_portrait_parts.cpp character_sheet_view.cpp character_sheet_text.cpp godot_sound_output.cpp register_types.cpp game_classes.cpp campaign_combat.cpp startup_view.cpp game_folder_questions.cpp game_lifecycle.cpp crash_reports.cpp game_log.cpp game_menu_view.cpp game_menu_host.cpp screenshot_service.cpp localization.cpp application_settings.cpp game_rules.cpp buck_rogers_icons.cpp buck_rogers_creation_pages.cpp)
 target_link_libraries(opengoldbox_game PRIVATE opengold_core opengold_rules_srd5 opengold_rules_original godot-cpp)
 # The commit being built, for the head of the game's log; checked on every build.
 add_custom_target(opengoldbox_commit
@@ -696,6 +696,15 @@ if(OPENGOLD_BUILD_TESTS)
         "-DARGS=--game=UA\;--rules=original\;--ua-design=${OPENGOLD_UA_DESIGN_FIXTURE}")
     set_property(TEST opengold_godot_original_modify_ua APPEND PROPERTY
         FIXTURES_REQUIRED ua_design_fixture)
+    # Creation in the Buck Rogers games: a character made page by page in the
+    # smallest window (docs/CHARACTER-CREATION.md, "The Buck Rogers games").
+    # Skipped without a game's files.
+    foreach(folder buck-rogers-countdown-to-doomsday buck-rogers-matrix-cubed)
+        string(REPLACE "buck-rogers-" "" short "${folder}")
+        string(REPLACE "-" "_" short "${short}")
+        opengold_settings_check(buck_rogers_creation_${short} buck_rogers_creation_view_tests
+            "Buck Rogers creation passed" "-DARGS=--game=${folder}\;--rules=original")
+    endforeach()
     # Each game's save and load screens list its own saves, and a save of
     # another game starts that game. Skipped without Curse's files.
     opengold_settings_check(saves_by_game saves_by_game_tests "Saves by game passed")

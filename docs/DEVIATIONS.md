@@ -569,6 +569,21 @@ in the game: answering YES at a hall lists its services in the dialogue
     Move first, then fly, and Done to stop.
   - Course flown (`[course_flown]`, off by default): on, dots mark the
     cells the rocket has flown since the solar map opened.
+- **Buck Rogers skill groups as tabs** (the user, 2026-11-20). The original's
+  skill screen shows one group at a time and pages through them with Prev
+  and Next. OpenGoldBox shows a tab for each group, the career's first, then
+  Technical, Intelligence, Dexterity, Charisma, Wisdom and all the general
+  skills, so any group is one click away
+  ([CHARACTER-CREATION.md](CHARACTER-CREATION.md#the-buck-rogers-games)).
+- **Buck Rogers attributes with their race and career numbers** (the user,
+  2026-11-20). The original's roll shows the scores only, raising a low one
+  to the career's minimum without saying so. OpenGoldBox's attributes page
+  shows each score's race adjustment and career minimum beside it.
+- **Buck Rogers skill points taken back later** (2026-11-20). The original
+  keeps the points spent once the skill screen is left. OpenGoldBox's
+  creation pages go back and forth, so the skill page keeps its points and
+  lets them be taken back until the character is finished.
+
 - **Modify Character's window** (2026-11-16). The originals edit the scores,
   Hit Points and name in place on the character's sheet, from a menu that
   differs from game to game (*Pool of Radiance*'s Keep Exit, where Enter

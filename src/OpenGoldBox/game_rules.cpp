@@ -62,6 +62,11 @@ void outfit_for_game(opengold::CampaignParty &party, opengold::MemberId id, cons
         opengold::ua::outfit_new_character(
             party, id, opengold::ua::DesignFiles(files.original_game, files.design));
     }
+    if (opengold::is_buck_rogers(files.game))
+    {
+        opengold::outfit_buck_rogers_character(party, id, buck_rogers_stock(files));
+        return;
+    }
     // These games supply equipment during native character creation.
     if ((files.game == opengold::GoldBoxGame::pools_of_darkness ||
          files.game == opengold::GoldBoxGame::treasures_of_the_savage_frontier ||
@@ -72,6 +77,21 @@ void outfit_for_game(opengold::CampaignParty &party, opengold::MemberId id, cons
         opengold::outfit_original_character(
             party, id, opengold::load_item_definitions(files.original_game, files.game));
     }
+}
+
+const opengold::BuckRogersStock &buck_rogers_stock(const RulesFiles &files)
+{
+    static std::mutex guard;
+    static std::map<std::filesystem::path, opengold::BuckRogersStock> loaded;
+    const std::scoped_lock lock(guard);
+    if (const auto found = loaded.find(files.original_game); found != loaded.end())
+    {
+        return found->second;
+    }
+    return loaded
+        .emplace(files.original_game,
+                 opengold::load_buck_rogers_stock(files.original_game, files.game))
+        .first->second;
 }
 
 std::unique_ptr<opengold::rules::RulesModule> make_rules_module(const GameRules &rules,

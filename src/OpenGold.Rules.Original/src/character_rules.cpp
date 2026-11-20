@@ -1,5 +1,6 @@
 #include "opengold/original.h"
 #include "opengold/buck_rogers_characters.h"
+#include "opengold/buck_rogers_creation.h"
 #include "opengold/curse_records.h"
 #include "opengold/secret_records.h"
 #include "opengold/late_records.h"
@@ -870,8 +871,27 @@ class OriginalCharacterRules final : public rules::CharacterRules
         return game_ == GoldBoxGame::unlimited_adventures;
     }
 
+    rules::InPlacePages in_place_pages(const CharacterDraft &draft) const override
+    {
+        return is_buck_rogers(game_) ? buck_rogers_creation_pages(draft, game_)
+                                     : rules::InPlacePages{};
+    }
+
+    CharacterDraft renamed(const CharacterDraft &draft, std::string name) const override
+    {
+        if (is_buck_rogers(game_))
+        {
+            return named_buck_rogers_draft(draft, std::move(name));
+        }
+        return CharacterRules::renamed(draft, std::move(name));
+    }
+
     std::vector<CreationChoice> choices(CreationField field) const override
     {
+        if (is_buck_rogers(game_))
+        {
+            return buck_rogers_creation_choices(field);
+        }
         switch (field)
         {
         case CreationField::race:
@@ -944,13 +964,20 @@ class OriginalCharacterRules final : public rules::CharacterRules
     bool choices_require_reroll(const CharacterDraft &before,
                                 const CharacterDraft &after) const override
     {
+        // A Buck Rogers record holds its gender, which also chooses its icon.
         return CharacterRules::choices_require_reroll(before, after) ||
+               (is_buck_rogers(game_) && before.gender != after.gender) ||
                (krynn_game(game_) &&
                 (before.background != after.background || before.alignment != after.alignment));
     }
 
     void roll_in_place(CharacterDraft &draft, RandomState &random) const override
     {
+        if (is_buck_rogers(game_))
+        {
+            roll_buck_rogers_draft(draft, game_, random);
+            return;
+        }
         const auto chosen = read_choices(draft, game_);
         draft.rules_data = encode(roll_character(
             chosen.race, chosen.profession, game_,
@@ -970,6 +997,10 @@ class OriginalCharacterRules final : public rules::CharacterRules
     bool allows(const CharacterDraft &draft, CreationField field,
                 std::string_view id) const override
     {
+        if (is_buck_rogers(game_))
+        {
+            return buck_rogers_creation_allows(draft, field, id, game_);
+        }
         switch (field)
         {
         case CreationField::race:
@@ -1065,6 +1096,10 @@ class OriginalCharacterRules final : public rules::CharacterRules
 
     std::optional<int> ability_score(const CharacterDraft &draft, Ability ability) const override
     {
+        if (const auto record = buck_rogers_record_of(draft.rules_data))
+        {
+            return record->creature.current_abilities.at(rules::ability_index(ability));
+        }
         if (const auto record = record_of(draft, game_))
         {
             return record_scores(*record)[ability];
