@@ -2217,6 +2217,10 @@ void RolfTourView::advance_frame(double delta)
             refresh_rest();
         }
     }
+    if (note_seconds_ > 0 && (note_seconds_ -= delta) <= 0)
+    {
+        refresh();
+    }
     if (session_)
     {
         session_->advance(checking_ ? 0.3 : delta);
@@ -3172,7 +3176,9 @@ void RolfTourView::refresh()
                   : s.tour_finished || waiting ? String()
                                                : i18n::text("Following the guide"));
     required_node<Label>(*this, "%Movement")
-        .set_text(i18n::text(completed ? N_("Explore  /  arrow keys") : N_("Movement paused")));
+        .set_text(note_seconds_ > 0 ? note_
+                                    : i18n::text(completed ? N_("Explore  /  arrow keys")
+                                                           : N_("Movement paused")));
     for (const char *name : {"%Left", "%Forward", "%Right", "%Look", "%Camp", "%Cast", "%Search"})
     {
         required_node<Button>(*this, name).set_disabled(!completed);

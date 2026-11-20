@@ -94,6 +94,8 @@ class RolfTourView : public godot::Control
     void restore_design(std::shared_ptr<opengold::CampaignParty> party,
                         std::unique_ptr<opengold::ExplorationSession> design);
     void request_save(bool saving);
+    // A short note where "The way is blocked" shows, for three seconds.
+    void show_note(const godot::String &note);
     // Reads the difficulty, encounter challenge and auto-equip settings
     // again, as the Options screen changed them.
     void apply_settings();
@@ -353,6 +355,9 @@ class RolfTourView : public godot::Control
     opengold::MemberId rest_member_{};
     godot::String rest_result_;
     bool rest_save_open_{};
+    // show_note's note, kept over the movement hint while its seconds last.
+    godot::String note_;
+    double note_seconds_{};
     // The event whose camp offer the camp dialog last answered, and the one
     // that last opened Treasures' camp menu.
     unsigned camp_offer_run_{}, camp_menu_run_{};

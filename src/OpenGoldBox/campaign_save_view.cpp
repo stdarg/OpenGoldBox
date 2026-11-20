@@ -130,6 +130,22 @@ void CharacterCreationView::setup_saves()
             load_campaign(p);
         });
     presentation::attach_child(*this, std::move(dialog));
+    presentation::attach_child(
+        *this, presentation::instantiate_scene("res://scenes/dialog_layouts/QuickLoad.tscn"));
+    auto &quick_load = required_node<Window>(*this, "QuickLoad");
+    quick_load.set_title(i18n::text(N_("Quick load")));
+    required_node<Label>(quick_load, "Body")
+        .set_text(i18n::text(
+            N_("Load the quick save? Any unsaved campaign progress will be discarded.")));
+    required_node<Button>(quick_load, "Load").set_text(i18n::text(N_("Confirm load")));
+    required_node<Button>(quick_load, "Load")
+        .connect("pressed",
+                 presentation::guarded(this, &CharacterCreationView::confirm_quick_load));
+    required_node<Button>(quick_load, "Cancel").set_text(i18n::text(N_("Cancel")));
+    required_node<Button>(quick_load, "Cancel")
+        .connect("pressed", presentation::guarded(this, &CharacterCreationView::cancel_quick_load));
+    quick_load.connect("close_requested",
+                       presentation::guarded(this, &CharacterCreationView::cancel_quick_load));
     for (bool saving : {true, false})
     {
         auto &button = required_node<Button>(*this, saving ? "PartyPanel/Save" : "PartyPanel/Load");
@@ -156,6 +172,56 @@ void CharacterCreationView::open_saves(bool saving)
         return;
     }
     required_node<SaveSlots>(*this, "SaveSlots").open(saving);
+}
+
+void CharacterCreationView::quick_save()
+{
+    if (!may_save())
+    {
+        show_note(i18n::text(N_("The game cannot be saved now.")));
+        return;
+    }
+    save_campaign(quick_save_file(settings::chosen_game()));
+    show_note(i18n::text(N_("Quick saved.")));
+}
+
+void CharacterCreationView::quick_load()
+{
+    if (!may_load())
+    {
+        show_note(i18n::text(N_("The game cannot be loaded now.")));
+        return;
+    }
+    if (!std::filesystem::exists(quick_save_file(settings::chosen_game())))
+    {
+        show_note(i18n::text(N_("There is no quick save.")));
+        return;
+    }
+    auto &dialog = required_node<Window>(*this, "QuickLoad");
+    dialog.popup_centered();
+    required_node<Button>(dialog, "Load").grab_focus();
+}
+
+void CharacterCreationView::confirm_quick_load()
+{
+    required_node<Window>(*this, "QuickLoad").hide();
+    load_campaign(quick_save_file(settings::chosen_game()));
+}
+
+void CharacterCreationView::cancel_quick_load()
+{
+    required_node<Window>(*this, "QuickLoad").hide();
+}
+
+void CharacterCreationView::show_note(const String &note)
+{
+    error_ = note;
+    refresh_party();
+    if (auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown"));
+        town && town->is_visible())
+    {
+        town->show_note(note);
+    }
 }
 
 void CharacterCreationView::save_campaign(const std::filesystem::path &path)
@@ -443,6 +509,13 @@ void RolfTourView::restore_design(std::shared_ptr<CampaignParty> party,
     played_thunder_ = session_->snapshot().thunder;
     played_script_sounds_ = session_->snapshot().script_sounds;
     refresh();
+}
+
+void RolfTourView::show_note(const String &note)
+{
+    note_ = note;
+    note_seconds_ = 3.0;
+    required_node<Label>(*this, "%Movement").set_text(note);
 }
 
 void RolfTourView::request_save(bool saving)

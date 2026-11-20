@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <memory>
 #include <stdexcept>
+#include <string_view>
 using namespace godot;
 using presentation::required_node;
 
@@ -55,6 +56,10 @@ std::string decoded(std::string_view stem)
     }
     return result;
 }
+
+// The quick save's file name is the same in every language, so a player who
+// changes language keeps the one quick save.
+constexpr std::string_view quick_save_name = "Quick save";
 } // namespace
 
 std::filesystem::path campaign_save_directory(opengold::GoldBoxGame game)
@@ -97,6 +102,11 @@ std::optional<std::filesystem::path> newest_campaign_save(opengold::GoldBoxGame 
         }
     }
     return newest;
+}
+
+std::filesystem::path quick_save_file(opengold::GoldBoxGame game)
+{
+    return campaign_save_directory(game) / (encoded(quick_save_name) + ".ogs");
 }
 
 void SaveSlots::_ready()
@@ -216,13 +226,16 @@ void SaveSlots::open(bool saving)
             }
         }
         std::sort(paths_.begin(), paths_.end());
+        const auto quick_save =
+            character_saves_ ? std::filesystem::path() : quick_save_file(settings::chosen_game());
         for (auto &p : paths_)
         {
             bool backup = p.extension() == ".bak";
             auto base = backup ? p.stem() : p;
-            auto name = decoded(opengold::path_text(base.stem()));
-            list->add_item(String::utf8(name.c_str()) +
-                           (backup ? i18n::text(" (previous version)") : String()));
+            auto name = base == quick_save
+                            ? i18n::text(N_("Quick save"))
+                            : String::utf8(decoded(opengold::path_text(base.stem())).c_str());
+            list->add_item(name + (backup ? i18n::text(" (previous version)") : String()));
         }
         required_node<Label>(*this, "Status").set_text("");
     }

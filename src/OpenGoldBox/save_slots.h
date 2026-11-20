@@ -18,6 +18,9 @@
 [[nodiscard]] std::string campaign_save_name(const std::filesystem::path &file);
 // The game's save written last, if it has one: what Continue loads.
 [[nodiscard]] std::optional<std::filesystem::path> newest_campaign_save(opengold::GoldBoxGame game);
+// The game's one quick save, which F5 writes and F9 loads: a named save like
+// any other, which the load screen lists under its translated name.
+[[nodiscard]] std::filesystem::path quick_save_file(opengold::GoldBoxGame game);
 
 // Scene-owned shared save UI. Callbacks remain in the campaign host.
 class SaveSlots : public godot::Window

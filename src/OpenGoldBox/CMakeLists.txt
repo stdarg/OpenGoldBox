@@ -698,6 +698,12 @@ if(OPENGOLD_BUILD_TESTS)
             "Saves by game passed: found folder ${found_load}"
             "-DARGS=--found-load=${found_load}")
     endforeach()
+    # Quick save and quick load, F5 and F9 and the in-game menu's entries, in
+    # Pool of Radiance under the SRD and Curse under the original rules.
+    opengold_settings_check(quick_save_pool quick_save_tests "Quick save passed: POOLRAD"
+        "-DARGS=--game=POOLRAD\;--rules=srd\;--default-party")
+    opengold_settings_check(quick_save_curse quick_save_tests "Quick save passed: CURSE"
+        "-DARGS=--game=CURSE\;--rules=original\;--default-party")
     # Play with Default Party: each game begun with its default party, under
     # the original rules and under the SRD, explores with its six members and
     # plays its opening; Curse's game under the original rules is then saved

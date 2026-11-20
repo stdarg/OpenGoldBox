@@ -5,10 +5,11 @@
 #include <cstdint>
 #include <exception>
 
-// The in-game menu Escape opens (Return to game, Save game, Load game,
-// Options, Exit to main menu, Exit to desktop) and its Options screen. The
-// host decides what the menu allows, pauses the game beneath it and answers
-// its signals: save_requested(saving), main_menu_requested, closed,
+// The in-game menu Escape opens (Return to game, Save game, Load game, Quick
+// save, Quick load, Options, Exit to main menu, Exit to desktop) and its
+// Options screen. The host decides what the menu allows, pauses the game
+// beneath it and answers its signals: save_requested(saving),
+// quick_save_requested, quick_load_requested, main_menu_requested, closed,
 // art_changed, new_art_changed (another new art folder was chosen) and
 // volume_changed.
 class GameMenuView : public godot::Control
@@ -39,6 +40,7 @@ class GameMenuView : public godot::Control
   private:
     void respond_to_input(const godot::Ref<godot::InputEvent> &event);
     void menu_save(bool saving);
+    void menu_quick(bool saving);
     void exit_to_main_menu();
     void exit_to_desktop();
     void open_options();

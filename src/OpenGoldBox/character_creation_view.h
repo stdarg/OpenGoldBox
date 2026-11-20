@@ -234,6 +234,15 @@ class CharacterCreationView : public godot::Control
     bool campaign_defeated_{}, defeat_check_{};
     unsigned defeat_check_stage_{}, defeat_check_frames_{};
     void open_saves(bool saving);
+    // F5 and the menu's Quick save write the game's quick save at once; F9
+    // and Quick load load it after the load's confirmation.
+    void quick_save();
+    void quick_load();
+    void confirm_quick_load();
+    void cancel_quick_load();
+    // A short note on the party screen and, while exploring, on the
+    // exploration screen.
+    void show_note(const godot::String &note);
     void save_campaign(const std::filesystem::path &path);
     void load_campaign(const std::filesystem::path &path);
     void ask_save_folders();
@@ -289,7 +298,19 @@ class CharacterCreationView : public godot::Control
     // The in-game menu (game_menu_host.cpp): opened with what it allows, the
     // exploration screen and the fight paused beneath it until it closes.
     void attach_game_menu();
+    void respond_to_unhandled_key(const godot::Ref<godot::InputEvent> &event);
     void open_game_menu();
+
+    // What the game is doing now, which decides what the in-game menu, quick
+    // save and quick load allow.
+    struct PlayState
+    {
+        bool fighting{}, exploring{}, idle{};
+    };
+
+    [[nodiscard]] PlayState play_state() const;
+    [[nodiscard]] bool may_save() const;
+    [[nodiscard]] bool may_load() const;
     void game_menu_closed();
     // The town's walls and a fight's creatures take the new art setting.
     void art_changed();

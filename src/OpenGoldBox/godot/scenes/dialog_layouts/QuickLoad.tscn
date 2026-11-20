@@ -1,0 +1,32 @@
+[gd_scene format=3]
+
+[node name="QuickLoad" type="Window"]
+title = "Quick load"
+size = Vector2i(520, 200)
+min_size = Vector2i(520, 200)
+visible = false
+unresizable = true
+transient = true
+exclusive = true
+
+[node name="Body" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 30.0
+offset_right = 496.0
+offset_bottom = 110.0
+autowrap_mode = 3
+text = "Load the quick save? Any unsaved campaign progress will be discarded."
+
+[node name="Load" type="Button" parent="."]
+offset_left = 24.0
+offset_top = 130.0
+offset_right = 292.0
+offset_bottom = 174.0
+text = "Confirm load"
+
+[node name="Cancel" type="Button" parent="."]
+offset_left = 308.0
+offset_top = 130.0
+offset_right = 496.0
+offset_bottom = 174.0
+text = "Cancel"

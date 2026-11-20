@@ -37,6 +37,8 @@ constexpr std::array<settings::SoundKind, 2> volume_kinds{settings::SoundKind::e
 void GameMenuView::_bind_methods()
 {
     ADD_SIGNAL(MethodInfo("save_requested", PropertyInfo(Variant::BOOL, "saving")));
+    ADD_SIGNAL(MethodInfo("quick_save_requested"));
+    ADD_SIGNAL(MethodInfo("quick_load_requested"));
     ADD_SIGNAL(MethodInfo("main_menu_requested"));
     ADD_SIGNAL(MethodInfo("closed"));
     // The 3D view art or the Combat art setting changed (#274).
@@ -56,6 +58,9 @@ void GameMenuView::_ready()
     {
         required_node<Button>(*this, saving ? "Menu/Save" : "Menu/Load")
             .connect("pressed", presentation::guarded(this, &GameMenuView::menu_save).bind(saving));
+        required_node<Button>(*this, saving ? "Menu/QuickSave" : "Menu/QuickLoad")
+            .connect("pressed",
+                     presentation::guarded(this, &GameMenuView::menu_quick).bind(saving));
     }
     required_node<Button>(*this, "Menu/Options")
         .connect("pressed", presentation::guarded(this, &GameMenuView::open_options));
@@ -113,6 +118,9 @@ void GameMenuView::open(Allowed allowed)
 {
     required_node<Button>(*this, "Menu/Save").set_disabled(!allowed.save);
     required_node<Button>(*this, "Menu/Load").set_disabled(!allowed.load);
+    // A quick save or load is allowed where the save or load screen is.
+    required_node<Button>(*this, "Menu/QuickSave").set_disabled(!allowed.save);
+    required_node<Button>(*this, "Menu/QuickLoad").set_disabled(!allowed.load);
     required_node<Button>(*this, "Menu/MainMenu").set_disabled(!allowed.main_menu);
     may_change_art_folder_ = allowed.load;
     srd_rules_ = allowed.srd_rules;
@@ -157,6 +165,12 @@ void GameMenuView::menu_save(bool saving)
 {
     close();
     emit_signal("save_requested", saving);
+}
+
+void GameMenuView::menu_quick(bool saving)
+{
+    close();
+    emit_signal(saving ? "quick_save_requested" : "quick_load_requested");
 }
 
 void GameMenuView::exit_to_main_menu()

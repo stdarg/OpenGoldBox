@@ -28,6 +28,10 @@ void CharacterCreationView::attach_game_menu()
     menu->set_name("GameMenu");
     menu->connect("save_requested",
                   presentation::guarded(this, &CharacterCreationView::open_saves));
+    menu->connect("quick_save_requested",
+                  presentation::guarded(this, &CharacterCreationView::quick_save));
+    menu->connect("quick_load_requested",
+                  presentation::guarded(this, &CharacterCreationView::quick_load));
     menu->connect("main_menu_requested",
                   presentation::guarded(this, &CharacterCreationView::party_button_pressed)
                       .bind(static_cast<int>(PartyAction::return_to_party)));
@@ -45,25 +49,73 @@ void CharacterCreationView::_unhandled_input(const Ref<InputEvent> &event)
     presentation::run_guarded(*this,
                               [&]
                               {
-                                  const Ref<InputEventKey> key = event;
-                                  if (key.is_null() || !key->is_pressed() || key->is_echo() ||
-                                      key->get_keycode() != Key::KEY_ESCAPE)
-                                  {
-                                      return;
-                                  }
-                                  // A dialog window open over the screen keeps Escape for itself.
-                                  for (int i = 0; i < get_child_count(); ++i)
-                                  {
-                                      if (const auto *window =
-                                              Object::cast_to<Window>(get_child(i));
-                                          window && window->is_visible())
-                                      {
-                                          return;
-                                      }
-                                  }
-                                  get_viewport()->set_input_as_handled();
-                                  open_game_menu();
+                                  respond_to_unhandled_key(event);
                               });
+}
+
+// Escape opens the in-game menu, F5 quick saves and F9 quick loads, unless a
+// dialog window open over the screen keeps the key for itself.
+void CharacterCreationView::respond_to_unhandled_key(const Ref<InputEvent> &event)
+{
+    const Ref<InputEventKey> key = event;
+    if (key.is_null() || !key->is_pressed() || key->is_echo())
+    {
+        return;
+    }
+    const auto keycode = key->get_keycode();
+    if (keycode != Key::KEY_ESCAPE && keycode != Key::KEY_F5 && keycode != Key::KEY_F9)
+    {
+        return;
+    }
+    for (int i = 0; i < get_child_count(); ++i)
+    {
+        if (const auto *window = Object::cast_to<Window>(get_child(i));
+            window && window->is_visible())
+        {
+            return;
+        }
+    }
+    // The menu, open, has Quick save and Quick load of its own.
+    if (keycode != Key::KEY_ESCAPE && required_node<GameMenuView>(*this, "GameMenu").is_open())
+    {
+        return;
+    }
+    get_viewport()->set_input_as_handled();
+    switch (keycode)
+    {
+    case Key::KEY_F5:
+        quick_save();
+        break;
+    case Key::KEY_F9:
+        quick_load();
+        break;
+    default:
+        open_game_menu();
+        break;
+    }
+}
+
+CharacterCreationView::PlayState CharacterCreationView::play_state() const
+{
+    const auto *combat = Object::cast_to<Control>(get_node_or_null("CampaignCombat"));
+    const auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown"));
+    const bool exploring = town && town->is_visible();
+    return {.fighting = (combat && combat->is_visible()) || (campaign_ && campaign_->in_combat()),
+            .exploring = exploring,
+            .idle = !exploring || town->can_leave()};
+}
+
+bool CharacterCreationView::may_save() const
+{
+    const auto play = play_state();
+    const bool party = campaign_ && campaign_->selected();
+    return party && !play.fighting && play.idle && !campaign_defeated_;
+}
+
+bool CharacterCreationView::may_load() const
+{
+    const auto play = play_state();
+    return !play.fighting && (play.idle || campaign_defeated_);
 }
 
 void CharacterCreationView::open_game_menu()
@@ -73,15 +125,10 @@ void CharacterCreationView::open_game_menu()
     {
         return;
     }
-    const auto *combat = Object::cast_to<Control>(get_node_or_null("CampaignCombat"));
-    const auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown"));
-    const bool fighting = (combat && combat->is_visible()) || (campaign_ && campaign_->in_combat());
-    const bool exploring = town && town->is_visible();
-    const bool idle = !exploring || town->can_leave();
-    const bool party = campaign_ && campaign_->selected();
-    menu.open({.save = party && !fighting && idle && !campaign_defeated_,
-               .load = !fighting && (idle || campaign_defeated_),
-               .main_menu = exploring && !fighting && idle,
+    const auto play = play_state();
+    menu.open({.save = may_save(),
+               .load = may_load(),
+               .main_menu = play.exploring && !play.fighting && play.idle,
                .srd_rules = !campaign_ || game_rules_of(*campaign_).set == GameRules::Set::srd});
     // Nothing beneath moves or hears keys while the menu is open.
     paused_.clear();
