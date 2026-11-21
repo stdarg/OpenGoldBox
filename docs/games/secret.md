@@ -348,14 +348,17 @@ several PCs standing. No retained battle defeat accompanies this win.
 The normal seven-member winning save reencodes byte-identically. Fresh whole
 route results and integrated checks are recorded in [PLAYABILITY.md](../PLAYABILITY.md).
 
-This ending still plays with Original movement off
-([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Movement). With it on
-(2026-11-21) the party reaches Oswulf whole, globed and hasted, but the Black
-Circle's charge after the cloud giants' rear guard holds and kills it in every
-play tried: each of the event's 20 reloads, with the beat's own dice and five
-other dice, and with the full Globe of Invulnerability and Prayer added. From
-the save the earlier movement's run reaches, the same battles are won on the
-fourth reload, so the run's state there, not the movement alone, decides it.
+Since 2026-11-21 this ending plays with Original movement on, the default
+([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Movement). Under it the clerics
+spent their last spells curing the party after the last red dragons' guard
+post, and the Black Circle's charge after the cloud giants' rear guard held
+and killed the party in every play tried (each of the event's 20 reloads,
+with five other dice, and with the full Globe of Invulnerability and Prayer
+added). The party now camps past that guard post, at 10,15: it Fixes and
+rests a night for its spells, as the cluebook says the crevasses mostly
+allow, and then wins Oswulf's chained battles on the event's first play. A
+camp nearer the castle draws its guards. The fresh registered test passes in
+480s: 155 battle victories, no retained defeat, the actual ending shown.
 
 ## The script host
 

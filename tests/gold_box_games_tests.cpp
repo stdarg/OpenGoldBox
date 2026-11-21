@@ -2047,6 +2047,22 @@ std::vector<RouteBeat> secret_earned_route(SecretProgress progress)
                 const std::array oswulf_preparation{protect_oswulf, hasten_oswulf};
                 beats.insert(beats.begin() + oswulf_index, oswulf_preparation.begin(),
                              oswulf_preparation.end());
+                // The clerics spend their spells healing after the last red
+                // dragons' guard post. Camp past it (Fix, then a night for
+                // spells), as the cluebook says the crevasses mostly allow,
+                // short of the castle walls, whose guards attack a camp there.
+                const auto ending_start =
+                    std::make_reverse_iterator(beats.begin() + first_ending_beat);
+                const auto past_the_dragons = std::find_if(
+                    std::make_reverse_iterator(beats.begin() + oswulf_index), ending_start,
+                    [](const RouteBeat &beat)
+                    {
+                        return beat.map == 82 && beat.x == 10 && beat.y == 15;
+                    });
+                check(past_the_dragons != ending_start,
+                      "The earned route passes the last red dragons on its way to Oswulf");
+                past_the_dragons->rest_first = true;
+                past_the_dragons->rest_for_spells = true;
                 const auto castle_gate =
                     std::find_if(beats.begin() + first_ending_beat, beats.end(),
                                  [](const RouteBeat &beat)
@@ -12415,11 +12431,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                (session.snapshot().area_id == 40 && event < 121);
     };
     // A party under the original rules, fighting Curse's own creatures.
-    auto content = opengold::load_original_content(folder, game);
-    // Secret's earned ending's dice are tuned to the earlier movement: it plays with
-    // Original movement off until re-tuned under the default.
-    content.original_movement = !route || !(game == GoldBoxGame::secret_of_the_silver_blades &&
-                                            secret_progress == SecretProgress::ending);
+    const auto content = opengold::load_original_content(folder, game);
     std::shared_ptr<const opengold::rules::CharacterRules> creation =
         opengold::original::character_rules(opengold::original::default_aging, game);
     std::shared_ptr<opengold::CampaignParty> party;

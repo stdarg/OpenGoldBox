@@ -1448,9 +1448,8 @@ original does, from *Pool of Radiance*'s combat units (`combat.pas`,
   fields cost 1 everywhere). The fixed-dice route tests play with it on:
   Pool's earned campaign (its fixed fight seed chosen for it), Curse's
   routes ([games/curse.md](games/curse.md), Original movement), Secret's
-  story route, Pools of Darkness and the Gateway and Treasures earned
-  endings. Only Secret's earned ending still plays with it off, its dice
-  tuned to the earlier movement ([games/secret.md](games/secret.md)).
+  story route and earned ending ([games/secret.md](games/secret.md)), Pools
+  of Darkness and the Gateway and Treasures earned endings.
   Leaving an enemy's side gives it a free attack, against the mover's rear
   Armor Class; stepping next to a guarding enemy draws its strike.
 - **To hit:** d20 against THAC0 minus the target's Armor Class; a natural 1
