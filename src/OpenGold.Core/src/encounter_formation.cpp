@@ -219,7 +219,7 @@ std::vector<std::optional<Cell>> place(const DungeonBattlefield &field, const Si
             if (std::all_of(squares.begin(), squares.end(),
                             [&](Cell square)
                             {
-                                return field.geometry.at(square) != rules::Terrain::obstacle &&
+                                return !rules::blocks_movement(field.geometry.at(square)) &&
                                        !occupied.contains(square);
                             }))
             {

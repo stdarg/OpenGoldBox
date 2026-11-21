@@ -1894,7 +1894,7 @@ bool Session::place_near(Fighter &f, Cell wanted)
             {
                 const Cell next{frontier[n].x + dx, frontier[n].y + dy};
                 if (board_.contains(next) && !reached[at(next)] &&
-                    board_.at(next) != rules::Terrain::obstacle)
+                    !rules::blocks_movement(board_.at(next)))
                 {
                     reached[at(next)] = true;
                     frontier.push_back(next);
@@ -1909,8 +1909,7 @@ bool Session::place_near(Fighter &f, Cell wanted)
                std::all_of(squares.begin(), squares.end(),
                            [this](Cell c)
                            {
-                               return board_.contains(c) &&
-                                      board_.at(c) != rules::Terrain::obstacle;
+                               return board_.contains(c) && !rules::blocks_movement(board_.at(c));
                            }) &&
                (!enemies_stand || reached[at(f.cell)]);
     };
@@ -3386,7 +3385,7 @@ std::vector<rules::Command> Session::aiming_commands(const Fighter &caster) cons
             for (int x = 0; x < board_.width; ++x)
             {
                 const Cell cell{x, y};
-                if (board_.at(cell) == rules::Terrain::obstacle ||
+                if (rules::blocks_movement(board_.at(cell)) ||
                     doubled_distance(caster.cell, cell) / 2 > range ||
                     !clear_line(board_, caster.cell, cell))
                 {
@@ -3997,7 +3996,7 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
     case 183:
     {
         // Dimension Door: to the square aimed at, free of any hold.
-        if (standing_at(aim) || !board_.contains(aim) || board_.at(aim) == rules::Terrain::obstacle)
+        if (standing_at(aim) || !board_.contains(aim) || rules::blocks_movement(board_.at(aim)))
         {
             break;
         }
@@ -8476,8 +8475,7 @@ std::optional<Cell> Session::treasures_area_aim(const Fighter &f, int number)
                             {
                                 return doubled_distance(at, cell) <= 2 * radius + 4;
                             });
-            if (!near_one || !board_.contains(cell) ||
-                board_.at(cell) == rules::Terrain::obstacle ||
+            if (!near_one || !board_.contains(cell) || rules::blocks_movement(board_.at(cell)) ||
                 doubled_distance(f.cell, cell) / 2 > range || !clear_line(board_, f.cell, cell))
             {
                 continue;
@@ -11793,9 +11791,10 @@ bool Session::ground_cloud_at(Cell cell, CloudMatter matter) const
 }
 
 // A line walked as the original walks it (pathing.pas WalkLine): it sees
-// chaff and mist on any square, cover (difficult ground) past its first two
-// squares where no cloud lies, and stops on a wall, on chaff when asked to,
-// or past `range` straight steps (its doubled distance past 2 * range + 1).
+// chaff and mist on any square, cover (line class 2 ground, which may be
+// impassable) past its first two squares where no cloud lies, and stops on a
+// wall, on chaff when asked to, or past `range` straight steps (its doubled
+// distance past 2 * range + 1).
 Session::GroundWalk Session::ground_walk(Cell from, Cell to, int range, bool stops_at_chaff) const
 {
     GroundWalk walk;
@@ -11820,7 +11819,8 @@ Session::GroundWalk Session::ground_walk(Cell from, Cell to, int range, bool sto
             --grace;
         }
         else if (!ground_cloud_at(at, CloudMatter::gas) &&
-                 board_.at(at) == rules::Terrain::difficult)
+                 (board_.at(at) == rules::Terrain::difficult ||
+                  board_.at(at) == rules::Terrain::impassable_cover))
         {
             walk.blocked = true;
         }
@@ -12107,8 +12107,8 @@ void Session::ground_launch(Fighter &attacker, Cell aim)
                                                    [this](Cell cell)
                                                    {
                                                        return board_.contains(cell) &&
-                                                              board_.at(cell) !=
-                                                                  rules::Terrain::obstacle;
+                                                              !rules::blocks_movement(
+                                                                  board_.at(cell));
                                                    }));
         }
     }
@@ -12426,7 +12426,7 @@ void Session::ground_jetpack(Fighter &f)
         } while (!board_.contains(at));
         auto moved = f;
         moved.cell = at;
-        if (board_.at(at) != rules::Terrain::obstacle && cell_free(moved) && at != f.cell)
+        if (!rules::blocks_movement(board_.at(at)) && cell_free(moved) && at != f.cell)
         {
             landing = at;
         }
@@ -12492,7 +12492,7 @@ std::vector<rules::Command> Session::ground_commands(const Fighter &actor) const
     {
         auto moved = actor;
         moved.cell = cell;
-        return board_.contains(cell) && board_.at(cell) != rules::Terrain::obstacle &&
+        return board_.contains(cell) && !rules::blocks_movement(board_.at(cell)) &&
                cell_free(moved);
     };
     if (g.flying)
@@ -12528,7 +12528,7 @@ std::vector<rules::Command> Session::ground_commands(const Fighter &actor) const
                     const int dx = std::abs(x - actor.cell.x), dy = std::abs(y - actor.cell.y);
                     if (cell != actor.cell &&
                         (2 * std::max(dx, dy) + std::min(dx, dy)) / 2 <= range &&
-                        board_.at(cell) != rules::Terrain::obstacle &&
+                        !rules::blocks_movement(board_.at(cell)) &&
                         ground_walk(actor.cell, cell, 255, false).reached)
                     {
                         add("launch", 0, cell);

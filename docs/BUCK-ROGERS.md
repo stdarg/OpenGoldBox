@@ -470,9 +470,11 @@ it (one code path).
   - the ship combat screen and the code that drives a ship fight
     (`buck_rogers_ship_fight.h`);
   - quick save and quick load, for every game;
-  - Novice reaching the game, the antidote asked about after a fight, and
-    ground that blocks movement but not shots;
+  - Novice reaching the game and the antidote asked about after a fight;
   - B5: the Options rows, the difficulty names and the rest of the menus.
+- **The macOS Claude session took back** two items on 2026-11-21 (the
+  user): ground that blocks movement but not shots, and the fight screen
+  saying why F5 and F9 do nothing in a fight.
 - **A Codex session** plays *Countdown* to its end: B3's route test. It
   flies the solar map and fights the ship fights through the code above,
   and fixes what its route finds missing in the script host.

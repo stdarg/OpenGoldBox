@@ -5,15 +5,18 @@ extends SceneTree
 # writes the game's quick save, F9 asks before it loads it and puts back what
 # changed since; the in-game menu's Quick save and Quick load do the same; and
 # the load screen lists the quick save as "Quick save". Where the menu's Save
-# is not allowed, neither is a quick save. Run by tests/settings_check.cmake
+# is not allowed, neither is a quick save; in a fight the fight's screen says
+# so. Run by tests/settings_check.cmake
 # with --game=<folder>, --rules=original or --rules=srd and --default-party;
 # skipped without the game's files.
 
 var folder := ""
+var rules := ""
 
 func _initialize() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--game="): folder = arg.trim_prefix("--game=")
+		if arg.begins_with("--rules="): rules = arg.trim_prefix("--rules=")
 	call_deferred("run_checks")
 
 func require(condition: bool, message: String) -> void:
@@ -107,6 +110,37 @@ func confirm_quick_load() -> void:
 	await press("PartyPanel/ActionRow2/Explore")
 	require(town().visible, "Explore must go back to exploring")
 
+# The fight screen's header, where it says what the player must do now.
+func fight_header() -> String:
+	return current_scene.get_node("CampaignCombat/LogStack/LogHeader").text
+
+# In a fight F5 and F9 neither save nor load, and the fight's own screen says
+# so: the exploration screen is not in view then. Every game fights on the
+# same combat screen; its check fight's Bandit is the SRD's, so the run under
+# the SRD plays it. The fight starts from the party screen, where the quick
+# load leaves the party, with the exploration screen put away as a fight
+# puts it away.
+func check_fight_keys() -> void:
+	await key(KEY_F9)
+	await press("QuickLoad/Load")
+	require(not town().visible, "The quick load must leave the party on the party screen")
+	current_scene.call("start_check_fight")
+	await settle()
+	var fight: Control = current_scene.get_node_or_null("CampaignCombat")
+	require(fight != null and fight.is_visible_in_tree(), "The fight must start")
+	# A question open over the fight keeps the keys, as one over any screen
+	# does: the party keeps its Initiative first.
+	var initiative: Window = fight.get_node("InitiativeChoice")
+	while initiative.visible:
+		await press("CampaignCombat/InitiativeChoice/Keep")
+	var saved := FileAccess.get_file_as_bytes(quick_save_file())
+	await key(KEY_F5)
+	require(FileAccess.get_file_as_bytes(quick_save_file()) == saved, "F5 must not save in a fight")
+	require(fight_header().contains("The game cannot be saved now."), "F5 in a fight must say so on the fight's screen: " + fight_header())
+	await key(KEY_F9)
+	require(not quick_dialog().visible, "F9 must not ask to load in a fight")
+	require(fight_header().contains("The game cannot be loaded now."), "F9 in a fight must say so on the fight's screen: " + fight_header())
+
 func turn_right() -> void:
 	var before := location()
 	await press("CampaignTown/%Right")
@@ -162,5 +196,7 @@ func run_checks() -> void:
 	for i in range(list.item_count): listed.append(list.get_item_text(i))
 	require(listed.has("Quick save") and listed.has("Quick save (previous version)"), "The load screen must list the quick save: " + str(listed))
 	await press("SaveSlots/Cancel")
-	print("Quick save passed: " + folder + ", F5 and F9, the menu's Quick save and Quick load, and the load screen's Quick save.")
+	if rules == "srd":
+		await check_fight_keys()
+	print("Quick save passed: " + folder + ", F5 and F9, the menu's Quick save and Quick load, the load screen's Quick save" + (", and the keys refused in a fight." if rules == "srd" else "."))
 	quit(0)

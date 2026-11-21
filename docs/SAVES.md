@@ -15,7 +15,9 @@ the current campaign. The load list also offers previous versions for recovery.
 the game's one quick save, replacing the last without asking (its previous
 version is kept, as for any overwrite). **Quick load** (F9, or the menu) loads
 it without the load screen, after the same question a load asks; with no quick
-save it says so. Both are allowed only where Save game and Load game are. Each
+save it says so. Both are allowed only where Save game and Load game are;
+elsewhere, in a fight too, the screen in view says the game cannot be saved
+or loaded now. Each
 game has its own quick save, a named save like the others (its file name is
 `Quick save`), which the load screen lists as "Quick save" in the player's
 language.

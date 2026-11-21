@@ -56,6 +56,9 @@ class CombatView : public godot::Control
     void refresh_art();
     // The Sound effects volume, to the fight's sounds, playing or not.
     void apply_sound_volume();
+    // A note from the game around the fight, such as a refused quick save:
+    // the screen shows it as it shows a refused choice, until the next one.
+    void show_note(const godot::String &note);
 
     void campaign_party(std::shared_ptr<opengold::CampaignParty> party,
                         std::vector<opengold::CombatArt> art)

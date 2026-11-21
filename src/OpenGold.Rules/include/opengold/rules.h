@@ -599,8 +599,20 @@ enum class Terrain : std::uint8_t
     obstacle = 1, // Opaque: blocks movement and sight.
     difficult = 2,
     // Plant Growth's Overgrowth: 4 feet of movement for each foot moved.
-    overgrown = 3
+    overgrown = 3,
+    // Ground no one enters that sight and shots still cross: Buck Rogers'
+    // impassable combat terrain of line class 0.
+    impassable = 4,
+    // The same, but cover to a shot across it (line class 2).
+    impassable_cover = 5
 };
+
+// Whether no creature may enter or stand on ground of this kind.
+[[nodiscard]] constexpr bool blocks_movement(Terrain ground) noexcept
+{
+    return ground == Terrain::obstacle || ground == Terrain::impassable ||
+           ground == Terrain::impassable_cover;
+}
 
 struct Battlefield
 {

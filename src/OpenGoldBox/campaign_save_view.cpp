@@ -222,6 +222,11 @@ void CharacterCreationView::show_note(const String &note)
     {
         town->show_note(note);
     }
+    if (auto *fight = Object::cast_to<CombatView>(get_node_or_null("CampaignCombat"));
+        fight && fight->is_visible())
+    {
+        fight->show_note(note);
+    }
 }
 
 void CharacterCreationView::save_campaign(const std::filesystem::path &path)

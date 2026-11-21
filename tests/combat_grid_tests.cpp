@@ -283,6 +283,23 @@ void original_step_costs()
         "A step must cost something");
 }
 
+// Buck Rogers' impassable ground stops feet as an obstacle does, but sight
+// crosses it (docs/games/countdown.md).
+void impassable_ground()
+{
+    for (const auto ground : {Terrain::impassable, Terrain::impassable_cover})
+    {
+        Battlefield board{5, 3, std::vector<Terrain>(15, Terrain::open)};
+        board.terrain[1 * 5 + 2] = ground;
+        const MovementGrid grid(board, {1, 1}, {});
+        check(!grid.step_cost({1, 1}, {2, 1}) && !grid.can_stop_at({2, 1}),
+              "No one steps onto impassable ground");
+        check(!grid.step_cost({1, 1}, {2, 0}) && !grid.step_cost({2, 0}, {3, 1}),
+              "Nor cuts its corner");
+        check(has_line_of_sight(board, {0, 1}, {4, 1}), "Sight crosses impassable ground");
+    }
+}
+
 void tall_footprint()
 {
     Battlefield board{5, 5, std::vector<Terrain>(25, Terrain::open)};
@@ -353,7 +370,7 @@ void boundaries_and_ties()
             (void)MovementGrid(invalid, {0, 0}, {});
         });
     invalid = board;
-    invalid.terrain[0] = static_cast<Terrain>(4);
+    invalid.terrain[0] = static_cast<Terrain>(6);
     rejects<std::runtime_error>(
         [&]
         {
@@ -406,6 +423,7 @@ int main()
     {
         allied_transit();
         tall_footprint();
+        impassable_ground();
         original_step_costs();
         boundaries_and_ties();
         exhaustive_movement();

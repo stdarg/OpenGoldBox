@@ -554,8 +554,8 @@ Worked out at every turn and attack (`charhlp.pas` `RecalcStats`,
   Rogue from behind (the original's 2 higher is a bug, fixed; Bugs).
   A guard's shot with a ranged weapon is 5 harder; otherwise cover on the
   line past the shooter's first two squares adds 2, and range adds 2 past half
-  the weapon's range and 5 past three quarters. Cover is difficult ground on
-  the battlefield until step B3 maps the arenas' tiles.
+  the weapon's range and 5 past three quarters. Cover is the ground of line
+  class 2 (Ground fights).
 - **From behind** (`IsRearAttack`): a one-square defender that has drawn two
   attacks this turn, struck along its facing or one direction to either side.
   A defender turns to face its first attacker of a turn.
@@ -1032,9 +1032,12 @@ kinds 82h and 88h, laid from the walls round the team's square
 (`BuildDungeonArena`, its decoration seeded by the script's number as the
 original seeds it), and `MARSCOM` or `VENUSCOM` scattered by the wilderness
 ground cell 4BB7h (`BuildWildernessArena`). Each cell is one of the 154 kinds
-of combat terrain: an impassable one or one that blocks a line of fire is an
-obstacle, one that gives cover difficult ground (the line's cover past its
-first two squares). Bit 10h of the area's kind is zero gravity. Creatures are
+of combat terrain (`gdconsts.pas` `combatTerrain`): its line class 1 stops
+a line of fire (`pathing.pas` `WalkLine`) and is an obstacle; any other kind
+costing 255 is impassable ground that shots and sight still cross, and class
+2 is cover past the line's first two squares (difficult ground where it can
+be walked, impassable cover where it cannot). No one stands, lands or aims a
+grenade on impassable ground, and no cloud lies there. Bit 10h of the area's kind is zero gravity. Creatures are
 `MON0CHA` records with `MON0ITM`'s items, drawn with the disk's `CPIC` icon;
 the team fights with its `CHARS` icons. The fight's end (`PostCombat`): the
 fallen enemies' experience, shared by the members who can act; their

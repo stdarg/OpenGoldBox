@@ -4,6 +4,7 @@
 // on made-up bytes, then on the game's own files when its folder is found
 // (installed_games.h, docs/games/countdown.md). The whole census
 // of the real files also runs in tests/game_census.cmake.
+#include "opengold/buck_rogers_battlefield.h"
 #include "opengold/buck_rogers_combat.h"
 #include "opengold/buck_rogers_records.h"
 #include "opengold/buck_rogers_rules.h"
@@ -1360,12 +1361,14 @@ opengold::rules::Participant ground_participant(opengold::rules::EntityId id,
 
 GroundFight ground_fight(std::vector<opengold::rules::Participant> participants, std::uint64_t seed,
                          bool outdoors = false, bool zero_gravity = false,
-                         GoldBoxGame game = countdown)
+                         GoldBoxGame game = countdown,
+                         std::vector<opengold::rules::Terrain> ground = {})
 {
     opengold::rules::Encounter encounter;
     encounter.battlefield.width = 12;
     encounter.battlefield.height = 8;
-    encounter.battlefield.terrain.assign(96, opengold::rules::Terrain::open);
+    encounter.battlefield.terrain =
+        ground.empty() ? std::vector(96, opengold::rules::Terrain::open) : std::move(ground);
     encounter.participants = std::move(participants);
     encounter.outdoors = outdoors;
     encounter.zero_gravity = zero_gravity;
@@ -1592,6 +1595,58 @@ void zero_gravity_and_difficulty_in_a_fight()
                                   return entry.message.source == "{name} fails the Zero-G roll.";
                               }),
           "The log says so");
+}
+
+// gdconsts.pas combatTerrain and pathing.pas WalkLine: ground no one can
+// cross (cost 255) stops a shot only when its line class is 1; class 2 is
+// cover to the shot.
+void impassable_ground_lets_shots_across()
+{
+    using opengold::por::combat_ground;
+    using opengold::rules::Cell;
+    using opengold::rules::Side;
+    using opengold::rules::Terrain;
+    check(combat_ground(8) == Terrain::obstacle && combat_ground(92) == Terrain::impassable &&
+              combat_ground(79) == Terrain::impassable_cover &&
+              combat_ground(46) == Terrain::difficult && combat_ground(1) == Terrain::open,
+          "The terrain kinds become the rules' ground by cost and line class");
+    const auto gunner = made_fighter(Profession::rocket_jock);
+    const auto trooper = made_fighter(Profession::warrior);
+    const Cell between{3, 4};
+    const auto fight_across = [&](Terrain ground)
+    {
+        std::vector<Terrain> field(96, Terrain::open);
+        field[static_cast<std::size_t>(between.y * 12 + between.x)] = ground;
+        return ground_fight(
+            {ground_participant(1, Side::party, {1, 4}, gunner, {ground_item(9, 10)}),
+             ground_participant(2, Side::opposition, {6, 4}, trooper, {})},
+            12, false, false, countdown, std::move(field));
+    };
+    const auto steps_onto = [&](const opengold::rules::CombatSession &session)
+    {
+        return std::ranges::any_of(session.legal_commands(),
+                                   [&](const opengold::rules::Command &command)
+                                   {
+                                       return command.verb == "move" &&
+                                              command.destination == between;
+                                   });
+    };
+    auto open = fight_across(Terrain::open);
+    check(to_turn_of(*open.session, 1) && offered(*open.session, "ranged", 2) &&
+              steps_onto(*open.session),
+          "On open ground the gunner may shoot the trooper or step between");
+    for (const auto ground : {Terrain::impassable, Terrain::impassable_cover})
+    {
+        auto fight = fight_across(ground);
+        check(to_turn_of(*fight.session, 1), "The gunner gets a turn");
+        check(offered(*fight.session, "ranged", 2).has_value(),
+              "A shot crosses ground no one can walk on");
+        check(!steps_onto(*fight.session), "No one steps onto that ground");
+    }
+    auto walled = fight_across(Terrain::obstacle);
+    check(to_turn_of(*walled.session, 1) && !offered(*walled.session, "ranged", 2) &&
+              !steps_onto(*walled.session),
+          "A wall (line class 1) stops both the shot and the step");
 }
 
 std::optional<std::filesystem::path> files_of(GoldBoxGame game)
@@ -1890,6 +1945,7 @@ int main()
         area_weapons_and_clouds_in_a_fight();
         medics_and_jetpacks_in_a_fight();
         zero_gravity_and_difficulty_in_a_fight();
+        impassable_ground_lets_shots_across();
         the_files_decode();
         std::cout << "Countdown to Doomsday passed.\n";
     }

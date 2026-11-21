@@ -727,6 +727,21 @@ CombatTerrain combat_terrain(unsigned kind)
     return terrains[kind - 1];
 }
 
+rules::Terrain combat_ground(unsigned kind)
+{
+    const auto terrain = combat_terrain(kind);
+    if (terrain.line_class == 1)
+    {
+        return rules::Terrain::obstacle;
+    }
+    if (terrain.cost == 255)
+    {
+        return terrain.line_class == 2 ? rules::Terrain::impassable_cover
+                                       : rules::Terrain::impassable;
+    }
+    return terrain.line_class == 2 ? rules::Terrain::difficult : rules::Terrain::open;
+}
+
 BuckRogersBattlefield buck_rogers_battlefield(const GeoMap &map, unsigned x, unsigned y,
                                               unsigned area_kind, unsigned script,
                                               unsigned wilderness_terrain, std::uint32_t seed,
@@ -762,10 +777,7 @@ BuckRogersBattlefield buck_rogers_battlefield(const GeoMap &map, unsigned x, uns
             }
             const auto terrain = combat_terrain(kind);
             result.terrain[index] = static_cast<std::uint8_t>(kind);
-            field.geometry.terrain[index] = terrain.cost == 255 || terrain.line_class == 1
-                                                ? rules::Terrain::obstacle
-                                            : terrain.line_class == 2 ? rules::Terrain::difficult
-                                                                      : rules::Terrain::open;
+            field.geometry.terrain[index] = combat_ground(kind);
             unsigned tile = terrain.tile;
             if (tile < set.first_slot || tile - set.first_slot >= tiles_in_file)
             {

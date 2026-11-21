@@ -1032,6 +1032,14 @@ void CombatView::apply_sound_volume()
     }
 }
 
+// The note comes translated; showing it looks it up again, which leaves text
+// with no catalog entry of its own as it is.
+void CombatView::show_note(const String &note)
+{
+    error_ = note.utf8().get_data();
+    refresh();
+}
+
 void CombatView::refresh_art()
 {
     sync_art(true);
@@ -1785,7 +1793,7 @@ void CombatView::move_selected(Cell direction)
     {
         explain("That square is occupied.");
     }
-    else if (state.battlefield.at(destination) == Terrain::obstacle)
+    else if (blocks_movement(state.battlefield.at(destination)))
     {
         explain("That square is blocked by terrain.");
     }
@@ -3971,7 +3979,7 @@ Dictionary CombatView::battlefield_visuals()
         for (int x = 0; x < s.battlefield.width; ++x)
         {
             const auto kind = s.battlefield.at({x, y});
-            terrain.push_back(kind == Terrain::obstacle    ? 2
+            terrain.push_back(blocks_movement(kind)        ? 2
                               : kind == Terrain::difficult ? 1
                               : kind == Terrain::overgrown ? 3
                                                            : 0);

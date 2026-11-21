@@ -20,7 +20,7 @@ void validate_battlefield(const Battlefield &board)
         std::any_of(board.terrain.begin(), board.terrain.end(),
                     [](auto tile)
                     {
-                        return tile > Terrain::overgrown;
+                        return tile > Terrain::impassable_cover;
                     }) ||
         (!board.plants.empty() && board.plants.size() != board.terrain.size()) ||
         board.clearance.size() != board.blocking.size() ||
@@ -37,7 +37,7 @@ MovementGrid::MovementGrid(const Battlefield &board, Cell origin,
       incorporeal_(incorporeal), footprint_(footprint), costs_(costs)
 {
     validate_battlefield(board_);
-    if (footprint_.width < 1 || footprint_.height < 1 || board_.at(origin_) == Terrain::obstacle)
+    if (footprint_.width < 1 || footprint_.height < 1 || blocks_movement(board_.at(origin_)))
     {
         throw std::runtime_error("Invalid movement origin");
     }
@@ -92,7 +92,7 @@ bool MovementGrid::can_stop_at(Cell destination) const
         for (int dx = 0; dx < footprint_.width; ++dx)
         {
             const Cell square{destination.x + dx, destination.y + dy};
-            if (board_.at(square) == Terrain::obstacle || held_[index(square)])
+            if (blocks_movement(board_.at(square)) || held_[index(square)])
             {
                 return false;
             }
@@ -128,8 +128,7 @@ std::optional<int> MovementGrid::square_step_cost(Cell from, Cell to) const
     {
         return std::nullopt;
     }
-    if (!incorporeal_ &&
-        (board_.at(from) == Terrain::obstacle || board_.at(to) == Terrain::obstacle))
+    if (!incorporeal_ && (blocks_movement(board_.at(from)) || blocks_movement(board_.at(to))))
     {
         return std::nullopt;
     }
@@ -139,8 +138,7 @@ std::optional<int> MovementGrid::square_step_cost(Cell from, Cell to) const
         return std::nullopt;
     }
     if (dx && dy && !incorporeal_ &&
-        (board_.at({from.x, to.y}) == Terrain::obstacle ||
-         board_.at({to.x, from.y}) == Terrain::obstacle))
+        (blocks_movement(board_.at({from.x, to.y})) || blocks_movement(board_.at({to.x, from.y}))))
     {
         return std::nullopt;
     }
@@ -151,8 +149,7 @@ std::optional<int> MovementGrid::square_step_cost(Cell from, Cell to) const
     }
     const auto ground = board_.at(to);
     const bool difficult = (!flying_ && ground == Terrain::difficult) ||
-                           occupant == Occupancy::incapacitated_enemy ||
-                           ground == Terrain::obstacle;
+                           occupant == Occupancy::incapacitated_enemy || blocks_movement(ground);
     const int base = dx && dy ? costs_.diagonal : costs_.straight;
     const int factor = !flying_ && ground == Terrain::overgrown ? costs_.overgrown_factor
                        : difficult                              ? costs_.difficult_factor

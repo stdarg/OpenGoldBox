@@ -38,6 +38,11 @@ struct CombatTerrain
 inline constexpr unsigned combat_terrain_kinds = 154;
 [[nodiscard]] CombatTerrain combat_terrain(unsigned kind);
 
+// The rules' ground for a kind of combat terrain (pathing.pas WalkLine): a
+// line class 1 kind is a wall; any other kind costing 255 stops feet, not
+// shots; line class 2 is cover.
+[[nodiscard]] rules::Terrain combat_ground(unsigned kind);
+
 // The arena of a fight at the team's square (x, y) of the map, in an area of
 // this kind, started by this script (whose number seeds the indoor arena's
 // decoration, as the original reseeds its dice with it); out of doors the
