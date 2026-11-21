@@ -2545,6 +2545,79 @@ void a_drain_lasts_beyond_the_fight()
           "Training gives the drained level back");
 }
 
+// The member a fight left in the party, as its numbers carry it out of the
+// fight: `levels_drained` fewer fighter levels and their share of its Hit
+// Points, which the game keeps at the fight's end, and 1 Hit Point left.
+void leave_a_fight(CampaignParty &party, MemberId id, int levels_drained)
+{
+    const auto &module = party.rule_module();
+    auto state = party.checkpoint();
+    for (auto &member : state.roster)
+    {
+        if (member.id != id)
+        {
+            continue;
+        }
+        constexpr auto fighter_slot = static_cast<std::size_t>(original::ClassSlot::fighter);
+        const auto sheet = member.character.sheet();
+        auto numbers = *original::Combatant::decode(module.character_profile(sheet, {}).data);
+        numbers.class_levels[fighter_slot] -= levels_drained;
+        numbers.max_hit_points -=
+            levels_drained * sheet.hit_points / sheet.original->class_levels[fighter_slot];
+        member.vitals = {1, false, numbers.encode(), {}};
+        for (const auto &change : module.lasting_changes(sheet, member.vitals))
+        {
+            check(member.character.advance(module, member.vitals, change),
+                  "The member keeps what the fight left");
+        }
+    }
+    party.restore(std::move(state));
+}
+
+// A training since the member's last fight is its own: a cleric's cure in
+// camp before the next fight leaves its level, Hit Points and experience as
+// trained. A level a fight drained stays drained after a camp spell.
+void a_camp_cure_keeps_a_training_since_the_fight()
+{
+    std::shared_ptr<const rules::CharacterRules> creation = original::character_rules();
+    CampaignParty party(original::rules_module(), creation);
+    const auto cleric = member_with(party, creation, "cleric", "Tobin");
+    const auto fighter = member_with(party, creation, "fighter", "Gareth");
+    party.add_coins(Coin::gold, 3000);
+    check(party.rest(), "The party rests a day");
+    party.choose_spells(cleric, {{}, std::vector<std::string>{"cleric:cure_light_wounds"}});
+    leave_a_fight(party, fighter, 0);
+    party.award_experience(2 * 2001, "test:trained-since-the-fight");
+    party.train_at_hall_level(fighter, TrainingHall::fighters, {});
+    const auto trained = party.member(fighter);
+    check(trained.character.sheet().original->class_levels[2] == 2,
+          "The fighter trained to level 2 since the fight");
+
+    party.use_camp_action(cleric, fighter, "cast:cleric:cure_light_wounds");
+    const auto &cured = party.member(fighter);
+    check(cured.vitals.hit_points > trained.vitals.hit_points, "The cure heals the fighter");
+    check(cured.character.sheet().original->class_levels[2] == 2 &&
+              cured.character.sheet().hit_points == trained.character.sheet().hit_points &&
+              cured.experience == trained.experience &&
+              cured.character.advancements().size() == trained.character.advancements().size(),
+          "The cure leaves the level, Hit Points and experience as trained");
+
+    check(party.rest(), "The party rests again");
+    party.choose_spells(cleric, {{}, std::vector<std::string>{"cleric:cure_light_wounds"}});
+    leave_a_fight(party, fighter, 1);
+    const auto drained = party.member(fighter);
+    check(drained.character.sheet().original->class_levels[2] == 1 &&
+              drained.character.sheet().original->drained_levels == 1,
+          "A fight drains the fighter a level");
+    party.use_camp_action(cleric, fighter, "cast:cleric:cure_light_wounds");
+    const auto &after_cure = party.member(fighter);
+    check(after_cure.character.sheet().original->class_levels[2] == 1 &&
+              after_cure.character.sheet().original->drained_levels == 1 &&
+              after_cure.character.sheet().hit_points == drained.character.sheet().hit_points &&
+              after_cure.character.advancements().size() == drained.character.advancements().size(),
+          "The drained level stays drained after the cure");
+}
+
 // Pools of Darkness's Restoration in camp (magic.pas, SpellRestoration):
 // a drained member gets a level of its drained class back at a time, with
 // the drained Hit Points' share of a level and the experience that level
@@ -3234,6 +3307,7 @@ int main()
         a_dragon_breath_scroll_protects_before_combat();
         an_npc_joins_as_its_record();
         a_drain_lasts_beyond_the_fight();
+        a_camp_cure_keeps_a_training_since_the_fight();
         darkness_restoration_gives_levels_back();
         ages_change_after_creation();
         items_are_readied_mid_fight();

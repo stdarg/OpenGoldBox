@@ -1292,7 +1292,10 @@ lines in all:
      Hit Points a fight drains stay drained, kept in the character's level
      history; the original's count of them goes down by one for each class a
      later training raises (`TrainingMenu`). *Pools of Darkness*'s
-     Restoration gives them back one at a time (Pools of Darkness).
+     Restoration gives them back one at a time (Pools of Darkness). A drain
+     is counted once, as the fight ends: a training or a level given back
+     before the next fight stays the member's when a spell, service or
+     item is used on it in camp.
    - **A charmed member** who ends a fight on the monsters' side is still the
      party's.
 7. **The monsters' tactics and the original rules' difficulty levels.** The

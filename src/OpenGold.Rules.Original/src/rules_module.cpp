@@ -732,6 +732,8 @@ class OriginalModule final : public RulesModule
                                                     const AdvancementChoice &) const override;
     bool advance_character(CharacterSheet &sheet, VitalState &state,
                            const AdvancementChoice &) const override;
+    void take_advancement(CharacterSheet &sheet, VitalState &state,
+                          const AdvancementChoice &) const;
     [[nodiscard]] bool ready_to_advance(const CharacterSheet &sheet,
                                         unsigned experience) const override;
 
@@ -2245,10 +2247,33 @@ void spend_spell(const CharacterSheet &user, VitalState &state, int number)
     numbers.spells = std::move(left);
     state.resources = numbers.encode();
 }
+
+// The class levels the member's last fight left follow its sheet's: the
+// fight's drain was kept as it ended, and lasting_changes counts the levels
+// those numbers lack against the sheet's as a drain, which a training or a
+// level given back since is not.
+void follow_class_levels(const CharacterSheet &sheet, VitalState &state)
+{
+    auto carried = carried_state(state.resources, game_of(sheet.identity));
+    if (!carried.last_fight)
+    {
+        return;
+    }
+    carried.last_fight->class_levels = sheet.original->class_levels;
+    state.resources = carried.last_fight->encode();
+}
 } // namespace
 
 bool OriginalModule::advance_character(CharacterSheet &sheet, VitalState &state,
                                        const AdvancementChoice &choice) const
+{
+    take_advancement(sheet, state, choice);
+    follow_class_levels(sheet, state);
+    return true;
+}
+
+void OriginalModule::take_advancement(CharacterSheet &sheet, VitalState &state,
+                                      const AdvancementChoice &choice) const
 {
     if (choice.rules_data.starts_with("boon:knight:"))
     {
@@ -2262,7 +2287,7 @@ bool OriginalModule::advance_character(CharacterSheet &sheet, VitalState &state,
         train_at_hall(next, choice.rules_data);
         state.hit_points = std::min(state.hit_points, next.hit_points);
         sheet = std::move(next);
-        return true;
+        return;
     }
     const auto &numbers = original_numbers(sheet);
     if (const auto days = decode_krynn_calendar(choice.rules_data))
@@ -2293,37 +2318,37 @@ bool OriginalModule::advance_character(CharacterSheet &sheet, VitalState &state,
                 }
                 return known->caster_class != SpellClass::magic_user || base == 0 || ++extra > moon;
             });
-        return true;
+        return;
     }
     if (const auto drain = decode_drain(choice.rules_data))
     {
         drain_character(sheet, state, *drain);
-        return true;
+        return;
     }
     if (const auto raised = decode_raised(choice.rules_data))
     {
         raise_character(sheet, state, *raised);
-        return true;
+        return;
     }
     if (const auto years = decode_age(choice.rules_data))
     {
         age_character(sheet, *years);
-        return true;
+        return;
     }
     if (const auto points = decode_charisma_loss(choice.rules_data))
     {
         lose_charisma(sheet, state, *points);
-        return true;
+        return;
     }
     if (choice.rules_data == romance_refused_entry)
     {
         refuse_romance(sheet, state);
-        return true;
+        return;
     }
     if (const auto given_back = decode_restoration(choice.rules_data))
     {
         restore_character(sheet, state, *given_back);
-        return true;
+        return;
     }
     const auto training = decode_training(choice.rules_data);
     // The spell a magic-user learns, when the level is one of its own; and
@@ -2393,7 +2418,6 @@ bool OriginalModule::advance_character(CharacterSheet &sheet, VitalState &state,
     ++next.level;
     sheet = std::move(next);
     state.hit_points += gain;
-    return true;
 }
 
 // The drain is the character's: its classes' levels, its sheet's highest level
@@ -2605,11 +2629,9 @@ std::vector<AdvancementChoice> OriginalModule::lasting_changes(const CharacterSh
     }
     std::vector<AdvancementChoice> changes;
     const auto carried = carried_state(after.resources, game_of(sheet.identity));
-    const auto &marks = carried.last_fight ? carried.last_fight->effects : carried.conditions;
-    // Restoration is given outside fights, where a last fight's levels below
-    // the sheet's are a training since, not a drain.
-    const bool restoring_now = std::ranges::find(marks, restoring, &Effect::code) != marks.end();
-    if (const auto &last = carried.last_fight; last && !restoring_now)
+    // The levels the last fight's numbers lack against the sheet's are its
+    // drain: every level change since follows them (follow_class_levels).
+    if (const auto &last = carried.last_fight)
     {
         Drain drain;
         bool drained = false;
