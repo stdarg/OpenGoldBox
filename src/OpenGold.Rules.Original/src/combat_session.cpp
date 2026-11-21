@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <charconv>
 #include <limits>
+#include <map>
 #include <numeric>
 #include <optional>
 #include <span>
@@ -22,6 +23,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <vector>
 
 // A fight under the original rules, as Pool of Radiance's combat units play it
@@ -245,6 +247,35 @@ constexpr int aurak_energy = champions_effect_offset + 4, maya_breath = champion
               kender_yelled = champions_effect_offset + 253,
               baaz_banked_weapon = champions_effect_offset + 254;
 } // namespace effect
+
+// The effects an outlook counts as leaving a creature unable to fight for
+// its side (Session::Forecast): the helpless ones (nausea, snake charm,
+// paralysis, sleep), a charm, confusion, fear, being held still or slowed,
+// Secret's stun and Pools of Darkness's dance.
+constexpr std::array<int, 11> disabling_effects{
+    effect::nausea, effect::snake_charm, effect::paralysis, effect::sleep,   effect::charm,  235,
+    effect::fear,   effect::held_still,  effect::slowed,    effect::stunned, effect::dancing};
+// The spells' effects that help the creature they are on, and that hinder
+// it, which Dispel Magic may take (Session::Forecast).
+constexpr std::array<int, 37> helping_effects{
+    effect::bless, effect::protection_from_evil, effect::protection_from_good, effect::resist_cold,
+    effect::enlarged, effect::shield, effect::resist_fire, effect::spiritual_hammer,
+    effect::invisible, effect::mirror_image, effect::animated, effect::blink, effect::strengthened,
+    effect::hasted, effect::stinking_cloud, effect::missile_protection,
+    effect::protection_from_evil_aura, effect::protection_from_good_aura, effect::prayer,
+    effect::dust, effect::displacement,
+    // Curse's: Dispel Evil, the fire shields, Minor Globe of
+    // Invulnerability, the cloudkill a caster keeps.
+    204, 345, 250, 254, 335, 263, effect::cloudkill, effect::retaliating_shield,
+    // Secret's and Pools of Darkness's.
+    effect::globe_of_invulnerability, effect::delayed_blast, effect::druid_fire_protection,
+    effect::fire_touch, effect::iron_skin, effect::mind_blank, effect::blade_barrier,
+    effect::see_invisible};
+constexpr std::array<int, 10> hindering_effects{effect::curse, effect::silence, effect::enfeebled,
+                                                effect::coughing, effect::blind,
+                                                // Cause Disease, Bestow Curse, Sticks to Snakes,
+                                                // Faerie Fire and Feeblemind.
+                                                34, effect::bestow_curse, 203, 207, 268};
 
 // What a hit carries, by the attacker's effects, in the original's order: a
 // primary attack's hit and a secondary one's (effhndlr.pas, HIT_PHASE_1 and
@@ -976,6 +1007,126 @@ struct Cloud
     }
 };
 
+// The dice a run of a rule draws, served from a script of outcomes, so that
+// each_way can try every way the run can go. The first die the script does
+// not cover is noted, and any it does not cover falls as a 1 for a run whose
+// result is set aside.
+class ScriptedDice
+{
+  public:
+    explicit ScriptedDice(const std::vector<int> &script) : script_(script)
+    {
+    }
+
+    int operator()(int sides)
+    {
+        if (drawn_ < script_.size())
+        {
+            return script_[drawn_++];
+        }
+        if (unscripted_sides_ == 0)
+        {
+            unscripted_sides_ = sides;
+        }
+        ++drawn_;
+        return 1;
+    }
+
+    // The sides of the first die the script did not cover, 0 for none.
+    [[nodiscard]] int unscripted_sides() const noexcept
+    {
+        return unscripted_sides_;
+    }
+
+  private:
+    const std::vector<int> &script_;
+    std::size_t drawn_{};
+    int unscripted_sides_{};
+};
+
+// Every way a run of a rule that draws dice can go, each with its chance:
+// `run` (given the dice to draw from) is run again for each outcome of each
+// die it draws, and `take` given each way's chance and the run's result.
+// The run must change nothing but its dice, as the rule's const parts do.
+template <typename Result, typename Run, typename Take> void each_way(Run &&run, Take &&take)
+{
+    std::vector<std::pair<std::vector<int>, double>> pending{{{}, 1.0}};
+    while (!pending.empty())
+    {
+        auto [script, chance] = std::move(pending.back());
+        pending.pop_back();
+        ScriptedDice dice(script);
+        const Result result = run(dice);
+        const int sides = dice.unscripted_sides();
+        if (sides == 0)
+        {
+            take(chance, result);
+            continue;
+        }
+        for (int outcome = 1; outcome <= sides; ++outcome)
+        {
+            auto next = script;
+            next.push_back(outcome);
+            pending.emplace_back(std::move(next), chance / sides);
+        }
+    }
+}
+
+// The chance of each total of `count` dice of `sides`, plus `bonus`, by the total.
+std::vector<double> dice_chances(int count, int sides, int bonus)
+{
+    std::vector<double> chances{1.0};
+    for (int die = 0; die < count; ++die)
+    {
+        std::vector<double> next(chances.size() + static_cast<std::size_t>(sides), 0.0);
+        for (std::size_t total = 0; total < chances.size(); ++total)
+        {
+            for (int face = 1; face <= sides; ++face)
+            {
+                next[total + static_cast<std::size_t>(face)] += chances[total] / sides;
+            }
+        }
+        chances = std::move(next);
+    }
+    std::vector<double> shifted(static_cast<std::size_t>(std::max(bonus, 0)), 0.0);
+    shifted.insert(shifted.end(), chances.begin(), chances.end());
+    return shifted;
+}
+
+// The chance of each sum of two amounts that fall apart from each other.
+std::vector<double> sum_chances(const std::vector<double> &first, const std::vector<double> &second)
+{
+    std::vector<double> sum(first.size() + second.size() - 1, 0.0);
+    for (std::size_t a = 0; a < first.size(); ++a)
+    {
+        for (std::size_t b = 0; b < second.size(); ++b)
+        {
+            sum[a + b] += first[a] * second[b];
+        }
+    }
+    return sum;
+}
+
+// A spell's damage dice: so many dice of so many sides, plus a bonus.
+struct SpellDice
+{
+    int count{}, sides{}, bonus{};
+};
+
+// Meteor Swarm's meteor, which strikes each creature for its own 10d4
+// (cast_meteor_swarm), and Blade Barrier's cut of 8d8 (cut_by_blades).
+constexpr SpellDice meteor_dice{10, 4, 0};
+constexpr SpellDice blade_dice{8, 8, 0};
+// Where Meteor Swarm's four meteors fall, from its aim (meteor_fall).
+constexpr std::array<Cell, 4> meteor_landings{{{-1, -1}, {1, -1}, {-1, 1}, {1, 1}}};
+
+// A creature's most Hit Points as the rules know them, for a rule that may
+// weigh them as a caster can know them instead (Session::Forecast).
+constexpr auto true_most_hit_points = [](const Fighter &f)
+{
+    return f.numbers.max_hit_points;
+};
+
 class Session final : public rules::CombatSession
 {
   public:
@@ -1029,6 +1180,8 @@ class Session final : public rules::CombatSession
     bool submit(const rules::Command &command) override;
     void turn_against_party(const std::vector<EntityId> &turning) override;
     [[nodiscard]] std::string save() const override;
+    [[nodiscard]] std::optional<rules::AreaOutlook> area_outlook(EntityId caster, unsigned spell,
+                                                                 Cell aim) const override;
 
   private:
     Session() = default;
@@ -1052,6 +1205,9 @@ class Session final : public rules::CombatSession
     // Pools of Darkness's gazes are played (play_gazes).
     bool gazes_played_{};
     bool original_movement_{true};
+    // The player's limits on a party member's area spells
+    // (Content::party_spell_limits).
+    rules::AreaSpellLimits party_spell_limits_;
     // The side the member who ended such a fight ran off.
     std::optional<unsigned> escape_side_;
     // The party's facing and the script's change to its movement
@@ -1149,6 +1305,11 @@ class Session final : public rules::CombatSession
     void move_as_the_original(bool on)
     {
         original_movement_ = on;
+    }
+
+    void limit_party_area_spells(const rules::AreaSpellLimits &limits)
+    {
+        party_spell_limits_ = limits;
     }
 
     // Treasures' romance as the fight starts (its romance.pas,
@@ -1256,6 +1417,15 @@ class Session final : public rules::CombatSession
         return roll_die(random_, sides);
     }
 
+    // The fight's own dice, for a rule written to draw from any dice (each_way).
+    [[nodiscard]] auto fight_dice()
+    {
+        return [this](int sides)
+        {
+            return roll(sides);
+        };
+    }
+
     [[nodiscard]] Fighter *find(EntityId id);
     [[nodiscard]] const Fighter *find(EntityId id) const;
     [[nodiscard]] rules::MovementGrid grid_for(const Fighter &mover) const;
@@ -1329,24 +1499,101 @@ class Session final : public rules::CombatSession
     void lose_spell(Fighter &caster);
     void spend_item(Fighter &user, int ordinal, int number);
     [[nodiscard]] std::vector<rules::Command> aiming_commands(const Fighter &caster) const;
-    [[nodiscard]] bool reachable_by_spell(const Fighter &caster, const Fighter &target) const;
+    [[nodiscard]] bool reachable_by_spell(const Fighter &caster, const Fighter &target,
+                                          int spell) const;
     [[nodiscard]] std::vector<EntityId> within(Cell aim, int radius) const;
+    [[nodiscard]] int burst_gap(Cell aim, const Fighter &f) const;
+
+    // Whether a burst of this radius reaches a creature so far from its
+    // square (burst_gap).
+    [[nodiscard]] static bool in_burst(int gap, int radius) noexcept
+    {
+        return gap <= 2 * radius + 1;
+    }
+
     void cast_generic(Fighter &caster, int number, int level, const std::vector<EntityId> &targets,
                       int damage, int element, int save_modifier = 0, int minutes = -1);
     [[nodiscard]] bool silenced(const Fighter &f) const;
     [[nodiscard]] int prayer_bonus(const Fighter &f) const;
     [[nodiscard]] bool protected_from(const Fighter &f, int code, int aura) const;
     bool mirror_absorbs(Fighter &target);
+    void lose_image(Fighter &target);
+
+    // Whether one of a creature's mirror images takes a harm: on 1d(images +
+    // 1) above 1 (effhndlr.pas, EffMirrorImage).
+    template <typename Dice>
+    [[nodiscard]] static bool image_takes_it(const Effect &images, Dice &&dice)
+    {
+        return dice(images.strength + 1) > 1;
+    }
+
     [[nodiscard]] bool aura_protects(const Fighter &attacker, const Fighter &defender) const;
     bool add_with_message(Fighter &target, Effect added, bool negates, bool saved, int element,
                           int caster_level, const Spell *spell);
+    template <typename Dice>
+    [[nodiscard]] bool refuses_effect(const Fighter &target, int code, int element,
+                                      int caster_level, const Spell *known, Dice &&dice) const;
     void nonweapon_damage(Fighter &target, int damage, int save_result, bool saved, int element,
                           int caster_level, int spell_number, bool single_target);
+
+    // What a target's defenses make of a non-weapon harm (defended_harm): the
+    // damage it comes to, an image taking it, a protection turning it, a
+    // shambling mound growing by so many Hit Points, the druid's Protection
+    // from Fire spending so many of its levels or ending, and a troll's
+    // regeneration about to begin.
+    struct Defended
+    {
+        int damage{};
+        bool image_took_it{}, unaffected{};
+        int grown{}, soak_spent{};
+        bool soak_ends{}, regenerates_soon{};
+    };
+
+    template <typename Dice>
+    [[nodiscard]] Defended defended_harm(const Fighter &target, int damage, int save_result,
+                                         bool saved, int element, int caster_level,
+                                         int spell_number, bool single_target, int damage_dice,
+                                         Dice &&dice) const;
+    void absorb_harm(Fighter &target, int damage, int element);
     void charm(Fighter &target, Side charmer);
     void cast_sleep(int level, Cell aim);
+    [[nodiscard]] std::vector<EntityId> sleep_takes(Cell aim, int pool) const;
     [[nodiscard]] std::vector<EntityId> path_area(const Fighter &caster, Cell aim, int max_range,
                                                   int width) const;
+    [[nodiscard]] std::vector<Cell> path_squares(const Fighter &caster, Cell aim, int max_range,
+                                                 int width) const;
     void lay_cloud(Fighter &caster, int level, Cell aim, CloudKind kind);
+    [[nodiscard]] Cloud cloud_over(EntityId caster, int index, Cell aim, CloudKind kind) const;
+    [[nodiscard]] std::vector<EntityId>
+    haste_slow_takes(const Fighter &caster, int number, int level,
+                     const std::vector<EntityId> &targets) const;
+    [[nodiscard]] bool dispellable(const Effect &e) const;
+    [[nodiscard]] static int dispel_chance(const Effect &e, int caster_level);
+    [[nodiscard]] static SpellDice shared_dice(int number, int level, int necklace_missile = 1);
+
+    // Lightning Bolt's length in squares past its aim: 8 in Pool of
+    // Radiance, 9 in Treasures and 7 in the other games (resolve_spell).
+    [[nodiscard]] int bolt_length() const
+    {
+        const auto game = game_of(identity_);
+        return game == GoldBoxGame::pool_of_radiance                   ? 8
+               : game == GoldBoxGame::treasures_of_the_savage_frontier ? 9
+                                                                       : 7;
+    }
+
+    // Cone of Cold's length: half the caster's level, at least a square.
+    [[nodiscard]] static int cone_length(int level) noexcept
+    {
+        return std::max((level + 1) / 2, 1);
+    }
+
+    // Ice Storm's element: cold and magic, magic alone in Pools of Darkness
+    // and the kit (resolve_spell).
+    [[nodiscard]] int ice_storm_element() const
+    {
+        return darkness() || kit() ? 8 : 10;
+    }
+
     void remove_with_handler(Fighter &f, std::size_t node);
     void dispel(Fighter &target, int level);
     void animate_dead(Fighter &caster, int level);
@@ -1363,9 +1610,12 @@ class Session final : public rules::CombatSession
                       int spell_number = 51);
     void lightning_path(Cell origin, Cell aim, int length, int damage, int level, bool bounce,
                         int save = 4, int element = 12, int spell_number = 51);
-    void treasures_lightning_path(Cell origin, Cell aim, int length, int damage, int level,
-                                  bool near_bounce_doubles, int save, int element,
-                                  int spell_number);
+    [[nodiscard]] bool turns_bolt(Cell cell) const;
+    template <typename Strike>
+    void bolt_walk(Cell origin, Cell aim, int length, bool bounce, Strike &&strike) const;
+    template <typename Strike>
+    void treasures_bolt_walk(Cell origin, Cell aim, int length, bool near_bounce_doubles,
+                             Strike &&strike) const;
     void monster_specials(Fighter &f);
     void darkness_gazes(Fighter &f);
     void curse_specials(Fighter &f);
@@ -1392,12 +1642,42 @@ class Session final : public rules::CombatSession
     void cast_strength_spell(Fighter &caster, int number, int level,
                              const std::vector<EntityId> &targets);
     void cast_death_spell(const std::vector<EntityId> &targets);
+    template <typename Most>
+    [[nodiscard]] std::vector<EntityId> death_spell_takes(const std::vector<EntityId> &targets,
+                                                          int budget, Most &&most_hit_points) const;
     void cast_darkness_spell(Fighter &caster, int number, int level,
                              const std::vector<EntityId> &targets, Cell aim);
     void cast_mass_charm(Fighter &caster, int level, const std::vector<EntityId> &targets);
+
+    // What Mass Charm does with a target: passes over one it cannot take,
+    // saying so, passes over one whose Hit Dice it has no room left for, or
+    // tries to charm it.
+    enum class MassCharmTake
+    {
+        unaffected,
+        passed_over,
+        tried
+    };
+
+    [[nodiscard]] std::vector<std::pair<EntityId, MassCharmTake>>
+    mass_charm_takes(const Fighter &caster, int level, const std::vector<EntityId> &targets) const;
     void cast_power_word_blind(const std::vector<EntityId> &targets);
+    template <typename Most>
+    [[nodiscard]] std::vector<EntityId> blinded_by_word(const std::vector<EntityId> &targets,
+                                                        Most &&most_hit_points) const;
     void cast_meteor_swarm(Fighter &caster, int level, Cell aim);
+
+    struct MeteorFall
+    {
+        Cell landing;
+        std::vector<EntityId> struck;
+    };
+
+    [[nodiscard]] MeteorFall meteor_fall(const Fighter &caster, Cell aim, Cell offset) const;
     void cast_power_word_kill(const std::vector<EntityId> &targets);
+    template <typename Most>
+    [[nodiscard]] std::vector<EntityId> slain_by_word(const std::vector<EntityId> &targets,
+                                                      Most &&most_hit_points) const;
     void cut_by_blades(Fighter &f, bool may_save);
     [[nodiscard]] bool turns_aside_slaying(Fighter &target);
     void secret_poison(Fighter &victim, int modifier);
@@ -1435,6 +1715,18 @@ class Session final : public rules::CombatSession
     void age_effects();
     [[nodiscard]] bool saving_throw(const Fighter &f, int save, int modifier,
                                     const Fighter *caster = nullptr, int element = 0);
+    [[nodiscard]] bool saves_with(const Fighter &f, int natural, int save, int modifier,
+                                  const Fighter *caster = nullptr, int element = 0) const;
+    [[nodiscard]] double save_chance(const Fighter &f, int save, int modifier,
+                                     const Fighter *caster = nullptr, int element = 0) const;
+
+    // A saving throw's natural roll: a dancer's is always a 1 (fxengine.pas,
+    // RollSavingThrow).
+    template <typename Dice> [[nodiscard]] static int save_die(const Fighter &f, Dice &&dice)
+    {
+        return f.has(effect::dancing) ? 1 : dice(20);
+    }
+
     void update_hostile_hit_points();
     [[nodiscard]] int highest_enemy_movement(const Fighter &f) const;
     bool check_morale(Fighter &f);
@@ -1445,8 +1737,17 @@ class Session final : public rules::CombatSession
     void ai_turn(Fighter &f, bool magic);
     bool ai_use_item(Fighter &f);
     bool ai_cast(Fighter &f, bool magic);
-    [[nodiscard]] bool ai_decides(const Fighter &f, int number, int least_priority) const;
+    // The best aims found so far for area spells a party-side caster weighs
+    // in one turn, by spell (party_area_aim).
+    using AreaAims = std::map<int, std::optional<Cell>>;
+    [[nodiscard]] bool ai_decides(const Fighter &f, int number, int least_priority,
+                                  AreaAims &area_aims) const;
     bool ai_aim(Fighter &f);
+    // A party member's area spells (docs/ORIGINAL-RULES.md, Party area spells).
+    class Forecast;
+    [[nodiscard]] bool weighs_area_spell(const Fighter &f, int number) const;
+    [[nodiscard]] std::optional<Cell> party_area_aim(const Fighter &f, int number) const;
+    bool aim_party_area_spell(Fighter &f);
     // Treasures' own (its combatai.pas and cbtacts.pas): the spell of highest
     // AI weight that has a target, its targets rated, and an area spell
     // aimed where it takes the most.
@@ -3337,14 +3638,14 @@ void Session::start_aiming(Fighter &caster, int spell_number)
 // Whether the caster can single out a creature for its spell: within range,
 // in sight, and no veto (cbtacts.pas, AimTargetMenu). Healing reaches the
 // downed but not the dead, Secret's Stone to Flesh a statue.
-bool Session::reachable_by_spell(const Fighter &caster, const Fighter &target) const
+bool Session::reachable_by_spell(const Fighter &caster, const Fighter &target, int spell) const
 {
     constexpr int heal = 236, druid_cure = 298, stone_to_flesh = 313;
-    const auto &known = *game_spell(caster.aiming);
-    const bool heals = caster.aiming == 3 || caster.aiming == heal || caster.aiming == druid_cure;
+    const auto &known = *game_spell(spell);
+    const bool heals = spell == 3 || spell == heal || spell == druid_cure;
     const bool slows_poison =
-        caster.aiming == 26 && target.has(effect::poisoned) && target.condition == Condition::dead;
-    const bool unstones = caster.aiming == stone_to_flesh && target.condition == Condition::stoned;
+        spell == 26 && target.has(effect::poisoned) && target.condition == Condition::dead;
+    const bool unstones = spell == stone_to_flesh && target.condition == Condition::stoned;
     if (!(target.able() || (heals && target.downed()) || slows_poison || unstones) ||
         std::find(caster.picked.begin(), caster.picked.end(), target.id) != caster.picked.end())
     {
@@ -3420,7 +3721,7 @@ std::vector<rules::Command> Session::aiming_commands(const Fighter &caster) cons
     {
         for (const auto &f : fighters_)
         {
-            if (reachable_by_spell(caster, f))
+            if (reachable_by_spell(caster, f, caster.aiming))
             {
                 auto aim = command("aim");
                 aim.target = f.id;
@@ -3451,17 +3752,9 @@ std::vector<EntityId> Session::within(Cell aim, int radius) const
         {
             continue;
         }
-        int nearest = 1000;
-        for (const auto square : squares_of(f))
+        if (const int gap = burst_gap(aim, f); in_burst(gap, radius))
         {
-            if (clear_line(board_, aim, square))
-            {
-                nearest = std::min(nearest, doubled_distance(aim, square));
-            }
-        }
-        if (nearest <= 2 * radius + 1)
-        {
-            found.emplace_back(nearest, f.id);
+            found.emplace_back(gap, f.id);
         }
     }
     std::stable_sort(found.begin(), found.end(),
@@ -3475,6 +3768,48 @@ std::vector<EntityId> Session::within(Cell aim, int radius) const
         ids.push_back(id);
     }
     return ids;
+}
+
+// How far a burst at a square reaches to a creature: the doubled distance to
+// the nearest of its squares a line from the square reaches, 1000 for none.
+int Session::burst_gap(Cell aim, const Fighter &f) const
+{
+    int nearest = 1000;
+    for (const auto square : squares_of(f))
+    {
+        if (clear_line(board_, aim, square))
+        {
+            nearest = std::min(nearest, doubled_distance(aim, square));
+        }
+    }
+    return nearest;
+}
+
+// The damage dice an area spell rolls once for all it reaches, by the
+// caster's level (magic.pas): Fireball's and Lightning Bolt's level d6, Cone
+// of Cold's level d4 and the level, Ice Storm's 3d10, a blast's 6d6, Delayed
+// Blast Fireball's level d6 and the level, and a Necklace of Missiles' 3, 5
+// or 7 d6 as its missile (1d3) falls; none for any other spell.
+SpellDice Session::shared_dice(int number, int level, int necklace_missile)
+{
+    switch (number)
+    {
+    case 47:
+    case 51:
+        return {level, 6, 0};
+    case 64:
+        return {necklace_missile * 2 + 1, 6, 0};
+    case 187:
+        return {3, 10, 0};
+    case 192:
+        return {level, 4, level};
+    case 198:
+        return {6, 6, 0};
+    case delayed_blast_spell:
+        return {level, 6, level};
+    default:
+        return {};
+    }
 }
 
 // A spell lost: its memorized copy is gone (cbtacts.pas, ProcessAttackResult).
@@ -3838,10 +4173,13 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         cast_generic(caster, number, level, targets, 0, 0, 0, roll_dice(2, 10) * 10);
         break;
     case 64:
+    {
         // A Necklace of Missiles: a fireball of 3, 5 or 7 dice.
+        const auto dice = shared_dice(number, level, roll(3));
         cast_generic(caster, number, level, fireball_reach(targets, aim),
-                     roll_dice(roll(3) * 2 + 1, 6), 9);
+                     roll_dice(dice.count, dice.sides) + dice.bonus, 9);
         break;
+    }
     case 65:
         // A Wand of Magic Missiles: 2d4+2, which Shield does not stop.
         cast_generic(caster, number, level, targets, roll_dice(2, 4) + 2, 8);
@@ -3862,19 +4200,20 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         // and 7 in the other games (magic.pas, SpellLightningBolt; the kit's
         // spellfx.c, spell_lightning_bolt). OpenGoldBox ran Pool of
         // Radiance's bolt in every game (Bugs).
-        const auto game = game_of(identity_);
-        const int length = game == GoldBoxGame::pool_of_radiance                   ? 8
-                           : game == GoldBoxGame::treasures_of_the_savage_frontier ? 9
-                                                                                   : 7;
-        const int damage = roll_dice(level, 6);
+        const auto dice = shared_dice(number, level);
+        const int damage = roll_dice(dice.count, dice.sides) + dice.bonus;
         lightning_at(aim, damage, level);
-        lightning_path(caster.cell, aim, length, damage, level, true);
+        lightning_path(caster.cell, aim, bolt_length(), damage, level, true);
         break;
     }
     case 47:
+    {
         // Fireball: the caster's level in d6, one roll for all, saved for half.
-        cast_generic(caster, number, level, fireball_reach(targets, aim), roll_dice(level, 6), 9);
+        const auto dice = shared_dice(number, level);
+        cast_generic(caster, number, level, fireball_reach(targets, aim),
+                     roll_dice(dice.count, dice.sides) + dice.bonus, 9);
         break;
+    }
     case 178:
         // Entangle: out of doors, each that fails its save is held by the
         // plants (Curse's SpellEntangle); in a dungeon nothing grows.
@@ -3898,15 +4237,9 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         // them, the nearest first; one under the opposite spell is only freed
         // of it (magic.pas, Haste and Slow).
         const bool haste = number == 48;
-        int left = level;
-        for (const auto id : targets)
+        for (const auto id : haste_slow_takes(caster, number, level, targets))
         {
             auto &f = *find(id);
-            if ((f.side == caster.side) != haste || left <= 0)
-            {
-                continue;
-            }
-            --left;
             const int opposite = haste ? effect::slowed : effect::hasted;
             if (f.has(opposite))
             {
@@ -4076,16 +4409,20 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         // (Curse's, Secret's, Gateway's and Treasures' magic.pas,
         // SpellIceStorm), of magic alone in Pools of Darkness and the kit
         // (its spellfx.c, spell_ice_storm).
-        cast_generic(caster, number, level, targets, roll_dice(3, 10),
-                     darkness() || kit() ? 8 : 10);
-        break;
+        {
+            const auto dice = shared_dice(number, level);
+            cast_generic(caster, number, level, targets,
+                         roll_dice(dice.count, dice.sides) + dice.bonus, ice_storm_element());
+            break;
+        }
     case 192:
     {
         // Cone of Cold: the caster's level and as many d4 of cold and magic,
         // along a path two wide to half its level (magic.pas,
         // SpellConeOfCold; the kit's spellfx.c, spell_cone_of_cold).
-        cast_generic(caster, number, level, path_area(caster, aim, std::max((level + 1) / 2, 1), 2),
-                     level + roll_dice(level, 4), 10);
+        const auto dice = shared_dice(number, level);
+        cast_generic(caster, number, level, path_area(caster, aim, cone_length(level), 2),
+                     roll_dice(dice.count, dice.sides) + dice.bonus, 10);
         break;
     }
     case 198:
@@ -4093,7 +4430,8 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         // A blast (Curse's Wand of Defoliation, a monster's): 6d6 along a path
         // to 3 squares; a plant takes it whole, with no save (ovr023, sub_61727).
         constexpr int plant = 18;
-        const int damage = roll_dice(6, 6);
+        const auto dice = shared_dice(number, level);
+        const int damage = roll_dice(dice.count, dice.sides) + dice.bonus;
         std::vector<EntityId> others;
         for (const auto id : path_area(caster, aim, 3, 1))
         {
@@ -4855,6 +5193,23 @@ void Session::spend_item(Fighter &user, int ordinal, int number)
 std::vector<EntityId> Session::path_area(const Fighter &caster, Cell aim, int max_range,
                                          int width) const
 {
+    std::vector<EntityId> found;
+    for (const auto square : path_squares(caster, aim, max_range, width))
+    {
+        if (const auto id = standing_at(square);
+            id && id != caster.id && std::ranges::find(found, id) == found.end())
+        {
+            found.push_back(id);
+        }
+    }
+    return found;
+}
+
+// The squares of path_area's path, in the order it takes them: each line
+// from its end back to the caster.
+std::vector<Cell> Session::path_squares(const Fighter &caster, Cell aim, int max_range,
+                                        int width) const
+{
     constexpr std::array<Cell, 8> beside{
         {{1, 0}, {1, 0}, {0, 1}, {0, 1}, {-1, 0}, {-1, 0}, {0, -1}, {0, -1}}};
     constexpr std::array<Cell, 8> other_side{
@@ -4878,7 +5233,7 @@ std::vector<EntityId> Session::path_area(const Fighter &caster, Cell aim, int ma
             end = out.at;
         }
     }
-    std::vector<EntityId> found;
+    std::vector<Cell> squares;
     const auto gather = [&](Cell from)
     {
         if (!board_.contains(from))
@@ -4888,11 +5243,7 @@ std::vector<EntityId> Session::path_area(const Fighter &caster, Cell aim, int ma
         LineWalk back(from, caster.cell);
         do
         {
-            if (const auto id = standing_at(back.at);
-                id && id != caster.id && std::ranges::find(found, id) == found.end())
-            {
-                found.push_back(id);
-            }
+            squares.push_back(back.at);
         } while (back.next());
     };
     gather(end);
@@ -4905,7 +5256,24 @@ std::vector<EntityId> Session::path_area(const Fighter &caster, Cell aim, int ma
     {
         gather({end.x + other_side[toward_caster].x, end.y + other_side[toward_caster].y});
     }
-    return found;
+    return squares;
+}
+
+// Whom Haste (48) or Slow takes among its targets: up to the caster's level of
+// the caster's side or of its enemies, the nearest first (resolve_spell).
+std::vector<EntityId> Session::haste_slow_takes(const Fighter &caster, int number, int level,
+                                                const std::vector<EntityId> &targets) const
+{
+    const bool haste = number == 48;
+    std::vector<EntityId> taken;
+    for (const auto id : targets)
+    {
+        if (static_cast<int>(taken.size()) < level && (find(id)->side == caster.side) == haste)
+        {
+            taken.push_back(id);
+        }
+    }
+    return taken;
 }
 
 // The original's resolver (magic.pas, ResolveSpell): each target saves if the
@@ -5319,10 +5687,11 @@ void Session::cast_delayed_blast(Fighter &caster, int level, const std::vector<E
     caster.blast_delay = -1;
     if (delay == 0)
     {
-        int total = level;
-        for (int die = 0; die < level; ++die)
+        const auto dice = shared_dice(delayed_blast_fireball, level);
+        int total = dice.bonus;
+        for (int die = 0; die < dice.count; ++die)
         {
-            total += roll(6);
+            total += roll(dice.sides);
         }
         cast_generic(caster, delayed_blast_fireball, level, targets, total, fire);
         return;
@@ -5351,10 +5720,11 @@ void Session::delayed_blast_goes_off(Fighter &caster, int index)
     const auto set = *blast;
     blasts_.erase(blast);
     log({"Delayed Blast Fireball goes off.", {}});
-    int total = set.level;
-    for (int die = 0; die < set.level; ++die)
+    const auto dice = shared_dice(delayed_blast_fireball, set.level);
+    int total = dice.bonus;
+    for (int die = 0; die < dice.count; ++die)
     {
-        total += roll(6);
+        total += roll(dice.sides);
     }
     for (const auto id : within(set.cell, 3))
     {
@@ -5413,16 +5783,30 @@ void Session::heal_all_but_1d4(Fighter &target)
 // (refuses_spell).
 void Session::cast_death_spell(const std::vector<EntityId> &targets)
 {
-    int budget = (roll(20) + roll(20) + roll(20) + roll(20)) * 2;
+    const int budget = (roll(20) + roll(20) + roll(20) + roll(20)) * 2;
+    for (const auto id : death_spell_takes(targets, budget, true_most_hit_points))
+    {
+        kill(*find(id), "{name} drops dead.");
+    }
+}
+
+// Whom a Death Spell of this budget slays among its targets, by their
+// levels and each one's most Hit Points as `most_hit_points` gives them
+// (cast_death_spell).
+template <typename Most>
+std::vector<EntityId> Session::death_spell_takes(const std::vector<EntityId> &targets, int budget,
+                                                 Most &&most_hit_points) const
+{
+    std::vector<EntityId> taken;
     for (const auto id : targets)
     {
-        auto &target = *find(id);
+        const auto &target = *find(id);
         const int level = target.numbers.level;
         const int cost = level == 0   ? 1
                          : level == 1 ? 2
                          : level <= 3 ? 8
                          : level <= 5 ? 16
-                         : level == 6 ? (target.numbers.max_hit_points <= 51 ? 16 : 20)
+                         : level == 6 ? (most_hit_points(target) <= 51 ? 16 : 20)
                          : level <= 8 ? 20
                                       : 162;
         if (budget < cost)
@@ -5430,8 +5814,9 @@ void Session::cast_death_spell(const std::vector<EntityId> &targets)
             continue;
         }
         budget -= cost;
-        kill(target, "{name} drops dead.");
+        taken.push_back(id);
     }
+    return taken;
 }
 
 // Pools of Darkness's own spells in a fight (magic.pas, in its
@@ -5545,28 +5930,18 @@ void Session::cast_darkness_spell(Fighter &caster, int number, int level,
 void Session::cast_mass_charm(Fighter &caster, int level, const std::vector<EntityId> &targets)
 {
     const auto &known = *game_spell(320);
-    const int limit = 2 * level;
-    int total = 0;
-    for (const auto id : targets)
+    for (const auto [id, take] : mass_charm_takes(caster, level, targets))
     {
-        if (total == limit)
-        {
-            break;
-        }
         auto &target = *find(id);
-        const bool person =
-            target.numbers.race != 0 || (target.numbers.traits & trait::person) != 0;
-        if ((darkness() && !person) || target.numbers.large || target.side == caster.side)
+        if (take == MassCharmTake::unaffected)
         {
             log({"{name} is unaffected.", {{"name", target.name}}});
             continue;
         }
-        const int cost = target.numbers.level;
-        if (total + cost > limit)
+        if (take == MassCharmTake::passed_over)
         {
             continue;
         }
-        total += cost;
         const bool saved = saving_throw(target, 4, -2, &caster);
         const int strength = (caster.side == Side::opposition ? 128 : 0) + level;
         if (add_with_message(target, {effect::charm, 0, strength, true}, true, saved, 0, level,
@@ -5577,6 +5952,41 @@ void Session::cast_mass_charm(Fighter &caster, int level, const std::vector<Enti
     }
 }
 
+// What Mass Charm does with each target in turn, until its Hit Dice are spent
+// (cast_mass_charm).
+std::vector<std::pair<EntityId, Session::MassCharmTake>>
+Session::mass_charm_takes(const Fighter &caster, int level,
+                          const std::vector<EntityId> &targets) const
+{
+    std::vector<std::pair<EntityId, MassCharmTake>> takes;
+    const int limit = 2 * level;
+    int total = 0;
+    for (const auto id : targets)
+    {
+        if (total == limit)
+        {
+            break;
+        }
+        const auto &target = *find(id);
+        const bool person =
+            target.numbers.race != 0 || (target.numbers.traits & trait::person) != 0;
+        if ((darkness() && !person) || target.numbers.large || target.side == caster.side)
+        {
+            takes.emplace_back(id, MassCharmTake::unaffected);
+            continue;
+        }
+        const int cost = target.numbers.level;
+        if (total + cost > limit)
+        {
+            takes.emplace_back(id, MassCharmTake::passed_over);
+            continue;
+        }
+        total += cost;
+        takes.emplace_back(id, MassCharmTake::tried);
+    }
+    return takes;
+}
+
 // Power Word Blind blinds those within reach, the nearest first, up to 100
 // Hit Points of them in all: for 1d4+1 rounds, ten times as long when they
 // have fewer than 51 between them (SpellPowerWordBlind, which worked the time
@@ -5584,11 +5994,31 @@ void Session::cast_mass_charm(Fighter &caster, int level, const std::vector<Enti
 void Session::cast_power_word_blind(const std::vector<EntityId> &targets)
 {
     const auto &known = *game_spell(323);
+    const auto blinded = blinded_by_word(targets, true_most_hit_points);
+    int total = 0;
+    for (const auto id : blinded)
+    {
+        total += find(id)->numbers.max_hit_points;
+    }
+    const int rounds = (roll(4) + 1) * (total < 51 ? 10 : 1);
+    for (const auto id : blinded)
+    {
+        (void)add_with_message(*find(id), {effect::blind, rounds, 0, false}, false, false, 0, 0,
+                               &known);
+    }
+}
+
+// Whom Power Word Blind blinds among its targets, the nearest first, by each
+// one's most Hit Points as `most_hit_points` gives them (cast_power_word_blind).
+template <typename Most>
+std::vector<EntityId> Session::blinded_by_word(const std::vector<EntityId> &targets,
+                                               Most &&most_hit_points) const
+{
     std::vector<EntityId> blinded;
     int total = 0;
     for (const auto id : targets)
     {
-        const int hit_points = find(id)->numbers.max_hit_points;
+        const int hit_points = most_hit_points(*find(id));
         if (total > 100)
         {
             break;
@@ -5599,12 +6029,7 @@ void Session::cast_power_word_blind(const std::vector<EntityId> &targets)
             blinded.push_back(id);
         }
     }
-    const int rounds = (roll(4) + 1) * (total < 51 ? 10 : 1);
-    for (const auto id : blinded)
-    {
-        (void)add_with_message(*find(id), {effect::blind, rounds, 0, false}, false, false, 0, 0,
-                               &known);
-    }
+    return blinded;
 }
 
 // Meteor Swarm: four meteors land on the squares diagonal to the aim, or on
@@ -5613,35 +6038,19 @@ void Session::cast_power_word_blind(const std::vector<EntityId> &targets)
 // save (SpellMeteorSwarm).
 void Session::cast_meteor_swarm(Fighter &caster, int level, Cell aim)
 {
-    constexpr std::array<Cell, 4> landings{{{-1, -1}, {1, -1}, {-1, 1}, {1, 1}}};
     constexpr int fire_and_magic = 9;
     const auto ten_d4 = [this]
     {
-        int total = 0;
-        for (int die = 0; die < 10; ++die)
+        int total = meteor_dice.bonus;
+        for (int die = 0; die < meteor_dice.count; ++die)
         {
-            total += roll(4);
+            total += roll(meteor_dice.sides);
         }
         return total;
     };
-    for (const auto offset : landings)
+    for (const auto offset : meteor_landings)
     {
-        Cell landing{aim.x + offset.x, aim.y + offset.y};
-        if (!board_.contains(landing) || !rules::has_line_of_sight(board_, caster.cell, landing))
-        {
-            landing = aim;
-        }
-        std::vector<EntityId> struck;
-        LineWalk path(caster.cell, landing);
-        while (path.next())
-        {
-            const auto id = standing_at(path.at);
-            if (id && id != caster.id && path.at != landing &&
-                std::ranges::find(struck, id) == struck.end())
-            {
-                struck.push_back(id);
-            }
-        }
+        const auto [landing, struck] = meteor_fall(caster, aim, offset);
         for (const auto id : struck)
         {
             auto &target = *find(id);
@@ -5662,36 +6071,68 @@ void Session::cast_meteor_swarm(Fighter &caster, int level, Cell aim)
     }
 }
 
+// Where a meteor of Meteor Swarm lands, by its offset from the aim (on the
+// aim where the caster cannot see the square), and whom it strikes on its
+// way there: everyone standing on its path but the caster and the one where
+// it lands (cast_meteor_swarm).
+Session::MeteorFall Session::meteor_fall(const Fighter &caster, Cell aim, Cell offset) const
+{
+    MeteorFall fall{{aim.x + offset.x, aim.y + offset.y}, {}};
+    if (!board_.contains(fall.landing) ||
+        !rules::has_line_of_sight(board_, caster.cell, fall.landing))
+    {
+        fall.landing = aim;
+    }
+    LineWalk path(caster.cell, fall.landing);
+    while (path.next())
+    {
+        const auto id = standing_at(path.at);
+        if (id && id != caster.id && path.at != fall.landing &&
+            std::ranges::find(fall.struck, id) == fall.struck.end())
+        {
+            fall.struck.push_back(id);
+        }
+    }
+    return fall;
+}
+
 // Power Word Kill slays its first target of 11 to 60 most Hit Points, or
 // else every one of 10 or fewer (SpellPowerWordKill).
 void Session::cast_power_word_kill(const std::vector<EntityId> &targets)
 {
-    if (targets.empty())
+    for (const auto id : slain_by_word(targets, true_most_hit_points))
     {
-        return;
-    }
-    const auto slay = [this](Fighter &target)
-    {
-        if (!turns_aside_slaying(target))
+        if (auto &target = *find(id); !turns_aside_slaying(target))
         {
             kill(target, "{name} is slain.");
         }
-    };
-    auto &first = *find(targets.front());
-    const int most = first.numbers.max_hit_points;
-    if (most > 10 && most <= 60)
-    {
-        slay(first);
-        return;
     }
+}
+
+// Whom Power Word Kill slays among its targets, by each one's most Hit
+// Points as `most_hit_points` gives them (cast_power_word_kill).
+template <typename Most>
+std::vector<EntityId> Session::slain_by_word(const std::vector<EntityId> &targets,
+                                             Most &&most_hit_points) const
+{
+    if (targets.empty())
+    {
+        return {};
+    }
+    const int first_most = most_hit_points(*find(targets.front()));
+    if (first_most > 10 && first_most <= 60)
+    {
+        return {targets.front()};
+    }
+    std::vector<EntityId> slain;
     for (const auto id : targets)
     {
-        auto &target = *find(id);
-        if (target.numbers.max_hit_points <= 10)
+        if (most_hit_points(*find(id)) <= 10)
         {
-            slay(target);
+            slain.push_back(id);
         }
     }
+    return slain;
 }
 
 // Whether a spell that slays or petrifies outright is turned aside before
@@ -5716,14 +6157,42 @@ bool Session::add_with_message(Fighter &target, Effect added, bool negates, bool
                                int caster_level, const Spell *known)
 {
     const int code = added.code;
+    if (refuses_effect(target, code, element, caster_level, known, fight_dice()) ||
+        (negates && saved))
+    {
+        log({"{name} is unaffected.", {{"name", target.name}}});
+        return false;
+    }
+    if (auto *old = target.find_effect(code);
+        old && ((old->minutes != 0 && added.minutes > old->minutes) || added.minutes == 0))
+    {
+        target.remove(code);
+    }
+    target.numbers.effects.push_back(added);
+    if (code == effect::sleep && target.condition == Condition::okay)
+    {
+        target.initiative = 0;
+    }
+    log({"{name} is affected by {spell}.",
+         {{"name", target.name}, {"spell", std::string(known ? known->name : ""), true}}});
+    return true;
+}
+
+// Whether the target's immunities nullify an effect a spell would add
+// (add_with_message); `dice` draws the chances some of them take. It changes
+// nothing, so an outlook may weigh each way it can go (each_way).
+template <typename Dice>
+bool Session::refuses_effect(const Fighter &target, int code, int element, int caster_level,
+                             const Spell *known, Dice &&dice) const
+{
     const auto is = [code](std::initializer_list<int> codes)
     {
         return std::find(codes.begin(), codes.end(), code) != codes.end();
     };
     bool immune = target.has(effect::aurak_invulnerable) ||
-                  (resists_magic_at_all(target) && magic_resists(target, caster_level, roll(100)));
-    immune = immune || (target.has(107) && is({effect::sleep, effect::charm}) && roll(100) <= 90);
-    immune = immune || (target.has(124) && is({effect::sleep, effect::charm}) && roll(100) <= 30);
+                  (resists_magic_at_all(target) && magic_resists(target, caster_level, dice(100)));
+    immune = immune || (target.has(107) && is({effect::sleep, effect::charm}) && dice(100) <= 90);
+    immune = immune || (target.has(124) && is({effect::sleep, effect::charm}) && dice(100) <= 30);
     immune = immune || (target.has(108) && is({effect::charm, effect::sleep}));
     immune = immune || (target.has(109) && is({effect::paralysis}));
     immune = immune || (target.has(110) && (element & 2));
@@ -5765,31 +6234,70 @@ bool Session::add_with_message(Fighter &target, Effect added, bool negates, bool
     // and a stone golem none from a spell but Stone to Flesh (EffSlowAura).
     immune = immune || target.has(effect::effects_proof);
     immune = immune || (target.has(effect::stone_golem) && known);
-    if (immune || (negates && saved))
-    {
-        log({"{name} is unaffected.", {{"name", target.name}}});
-        return false;
-    }
-    if (auto *old = target.find_effect(code);
-        old && ((old->minutes != 0 && added.minutes > old->minutes) || added.minutes == 0))
-    {
-        target.remove(code);
-    }
-    target.numbers.effects.push_back(added);
-    if (code == effect::sleep && target.condition == Condition::okay)
-    {
-        target.initiative = 0;
-    }
-    log({"{name} is affected by {spell}.",
-         {{"name", target.name}, {"spell", std::string(known ? known->name : ""), true}}});
-    return true;
+    return immune;
+}
+
+// Whether a non-weapon harm does something else to the target than damage:
+// an iron golem's, a flesh golem's and fire on one that fire heals
+// (absorb_harm).
+bool absorbs_harm(const Fighter &target, int element)
+{
+    return target.has(effect::iron_golem) || target.has(dkk_effect::flesh_golem) ||
+           (target.has(dkk_effect::fire_heals) && (element & 1));
 }
 
 // Damage that is not a weapon's (fxengine.pas, InflictNonWeaponDamage): the
 // target's resistances weigh it by its element (1 fire, 2 cold, 4
-// electricity, 8 magic, 16 acid), then a save halves or negates it.
+// electricity, 8 magic, 16 acid), then a save halves or negates it
+// (defended_harm).
 void Session::nonweapon_damage(Fighter &target, int damage, int save_result, bool saved,
                                int element, int caster_level, int spell_number, bool single_target)
+{
+    if (absorbs_harm(target, element))
+    {
+        absorb_harm(target, damage, element);
+        return;
+    }
+    const auto defended = defended_harm(target, damage, save_result, saved, element, caster_level,
+                                        spell_number, single_target, damage_dice_, fight_dice());
+    if (defended.image_took_it)
+    {
+        lose_image(target);
+    }
+    if (auto *soak = target.find_effect(effect::druid_fire_protection);
+        soak && (defended.soak_spent > 0 || defended.soak_ends))
+    {
+        soak->strength -= defended.soak_spent;
+        if (defended.soak_ends)
+        {
+            target.remove(effect::druid_fire_protection);
+        }
+    }
+    if (defended.unaffected)
+    {
+        log({"{name} is unaffected.", {{"name", target.name}}});
+    }
+    if (defended.grown > 0)
+    {
+        target.hit_points += defended.grown;
+        log({"{name} grows.", {{"name", target.name}}});
+    }
+    if (defended.regenerates_soon)
+    {
+        target.numbers.effects.push_back({effect::regenerating_soon, 3, 0, true});
+    }
+    if (defended.damage <= 0)
+    {
+        return;
+    }
+    log({"{name} takes {damage}.",
+         {{"name", target.name}, {"damage", std::to_string(defended.damage)}}});
+    inflict(target, defended.damage);
+}
+
+// What an iron golem, a flesh golem or one that fire heals does with a
+// non-weapon harm (absorbs_harm).
+void Session::absorb_harm(Fighter &target, int damage, int element)
 {
     if (target.has(effect::iron_golem))
     {
@@ -5811,15 +6319,25 @@ void Session::nonweapon_damage(Fighter &target, int damage, int save_result, boo
         }
         return;
     }
-    if (target.has(dkk_effect::fire_heals) && (element & 1))
+    if (element & 8)
     {
-        if (element & 8)
-        {
-            target.hit_points = std::min(target.hit_points + damage, target.numbers.max_hit_points);
-            log({"{name} is healed.", {{"name", target.name}}});
-        }
-        return;
+        target.hit_points = std::min(target.hit_points + damage, target.numbers.max_hit_points);
+        log({"{name} is healed.", {{"name", target.name}}});
     }
+}
+
+// The damage a non-weapon harm comes to once the target's defenses weigh it,
+// and what they do on the way, which nonweapon_damage then does; `dice`
+// draws what the defenses roll, and `damage_dice` is how many dice the harm
+// was rolled with, which the kit's defenses weigh fire by. It changes
+// nothing, so an outlook may weigh each way it can go (each_way).
+template <typename Dice>
+Session::Defended Session::defended_harm(const Fighter &target, int damage, int save_result,
+                                         bool saved, int element, int caster_level,
+                                         int spell_number, bool single_target, int damage_dice,
+                                         Dice &&dice) const
+{
+    Defended defended;
     if (target.has(dkk_effect::cold_vulnerable) && (element & 2))
     {
         damage *= 2;
@@ -5829,8 +6347,10 @@ void Session::nonweapon_damage(Fighter &target, int damage, int save_result, boo
         damage /= 2;
     }
     // Mirror images take a single target's spell (effhndlr.pas, EffMirrorImage).
-    if (single_target && mirror_absorbs(target))
+    if (const auto *images = target.find_effect(effect::mirror_image);
+        single_target && images && image_takes_it(*images, dice))
     {
+        defended.image_took_it = true;
         damage = 0;
     }
     if (target.has(91) && (spell_number == 15 || (element & 4)))
@@ -5847,7 +6367,8 @@ void Session::nonweapon_damage(Fighter &target, int damage, int save_result, boo
     // the elements and magic (EffHalfElemental).
     if ((element & 1) && target.has(effect::fire_harms_more))
     {
-        damage += roll(6) + (saved ? 0 : roll(6));
+        damage += dice(6);
+        damage += saved ? 0 : dice(6);
     }
     if ((element & 1) && target.has(effect::fire_harms_half_more))
     {
@@ -5868,15 +6389,12 @@ void Session::nonweapon_damage(Fighter &target, int damage, int save_result, boo
     // The druid's Protection from Fire takes 12 points of fire a level of its
     // strength, and ends once it has taken them all (effhndlr.pas,
     // EffResistFireDruid).
-    if (auto *soak = target.find_effect(effect::druid_fire_protection); soak && (element & 1))
+    if (const auto *soak = target.find_effect(effect::druid_fire_protection); soak && (element & 1))
     {
         const int taken = std::min(damage, 12 * soak->strength);
         damage -= taken;
-        soak->strength -= (taken + 11) / 12;
-        if (soak->strength <= 0 || damage > 0)
-        {
-            target.remove(effect::druid_fire_protection);
-        }
+        defended.soak_spent = (taken + 11) / 12;
+        defended.soak_ends = soak->strength - defended.soak_spent <= 0 || damage > 0;
     }
     // Secret's resistance turns a spell's damage only when the spell carries
     // an effect too, so a Fireball's goes through (fxengine.pas,
@@ -5884,7 +6402,7 @@ void Session::nonweapon_damage(Fighter &target, int damage, int save_result, boo
     const auto *cast = game_spell(spell_number);
     const bool resistible = target.numbers.magic_resistance == 0 || (cast && cast->effect != 0);
     if ((element & 8) && resistible && resists_magic_at_all(target) &&
-        magic_resists(target, caster_level, roll(100)))
+        magic_resists(target, caster_level, dice(100)))
     {
         damage = 0;
     }
@@ -5900,7 +6418,7 @@ void Session::nonweapon_damage(Fighter &target, int damage, int save_result, boo
         (target.has(effect::globe_of_invulnerability) && spell_cast && cast->level <= 4) ||
         (target.has(effect::spell_proof) && spell_cast && cast->level < 8))
     {
-        log({"{name} is unaffected.", {{"name", target.name}}});
+        defended.unaffected = true;
         damage = 0;
     }
     // A shambling mound takes in electricity and grows: 1d8 Hit Points, past
@@ -5908,14 +6426,14 @@ void Session::nonweapon_damage(Fighter &target, int damage, int save_result, boo
     if ((element & 4) && target.has(284) && damage > 0)
     {
         damage = 0;
-        target.hit_points += roll(8);
-        log({"{name} grows.", {{"name", target.name}}});
+        defended.grown = dice(8);
     }
     // Resisting fire and cold (282): a save takes none of a spell that allows
     // one, else half.
     if ((element & 3) && target.has(282) && damage > 0)
     {
-        damage = saving_throw(target, 4, 0) && save_result != 0 ? 0 : damage / 2;
+        const bool saved_whole = saves_with(target, save_die(target, dice), 4, 0);
+        damage = saved_whole && save_result != 0 ? 0 : damage / 2;
     }
     if ((element & 1) && target.has(112))
     {
@@ -5937,27 +6455,25 @@ void Session::nonweapon_damage(Fighter &target, int damage, int save_result, boo
     {
         damage /= 2;
     }
-    if (target.has(effect::troll_heal) && !target.has(effect::regeneration) &&
-        !target.has(effect::regenerating_soon))
-    {
-        target.numbers.effects.push_back({effect::regenerating_soon, 3, 0, true});
-    }
+    defended.regenerates_soon = target.has(effect::troll_heal) &&
+                                !target.has(effect::regeneration) &&
+                                !target.has(effect::regenerating_soon);
     // The kit's (effects.c), by the dice the damage was rolled with: a mummy
     // takes 1 more a die of magical fire (168); an efreeti 1 less a die of
     // fire, never under 1 a die (219).
     if ((element & 9) == 9 && target.has(effect::hurt_more_by_magical_fire) && damage > 0)
     {
-        damage += damage_dice_;
+        damage += damage_dice;
     }
     if ((element & 1) && target.has(effect::fire_less_by_the_die) && damage > 0)
     {
-        damage = std::max(damage - damage_dice_, damage_dice_);
+        damage = std::max(damage - damage_dice, damage_dice);
     }
     // The kit's ring of fire resistance: no harm from ordinary fire, and 2
     // less a die of magical fire, never under 1 a die (effects.c, fx_fire_ring).
     if ((element & 1) && target.has(effect::fire_resistance_ring) && damage > 0)
     {
-        damage = (element & 8) ? std::max(damage - 2 * damage_dice_, damage_dice_) : 0;
+        damage = (element & 8) ? std::max(damage - 2 * damage_dice, damage_dice) : 0;
     }
     if (saved && save_result == 1)
     {
@@ -5972,12 +6488,8 @@ void Session::nonweapon_damage(Fighter &target, int damage, int save_result, boo
     {
         damage *= 2;
     }
-    if (damage <= 0)
-    {
-        return;
-    }
-    log({"{name} takes {damage}.", {{"name", target.name}, {"damage", std::to_string(damage)}}});
-    inflict(target, damage);
+    defended.damage = damage;
+    return defended;
 }
 
 // Secret's iron golem takes no damage but a weapon's (effhndlr.pas,
@@ -6016,11 +6528,23 @@ void Session::charm(Fighter &target, Side charmer)
 // passed over.
 void Session::cast_sleep(int level, Cell aim)
 {
-    int pool = roll(4) + roll(4) + roll(4) + roll(4);
+    const int pool = roll(4) + roll(4) + roll(4) + roll(4);
     const auto &known = *game_spell(21);
-    for (const auto id : within(aim, known.area & 7))
+    for (const auto id : sleep_takes(aim, pool))
     {
-        auto &f = *find(id);
+        add_with_message(*find(id), {effect::sleep, 5 * level, level, false}, false, false, 0,
+                         level, &known);
+    }
+}
+
+// Whom a Sleep of this pool of levels at a square puts to sleep, the
+// nearest first (cast_sleep).
+std::vector<EntityId> Session::sleep_takes(Cell aim, int pool) const
+{
+    std::vector<EntityId> taken;
+    for (const auto id : within(aim, game_spell(21)->area & 7))
+    {
+        const auto &f = *find(id);
         if (f.has(effect::sleep) || f.has(effect::animated))
         {
             continue;
@@ -6037,9 +6561,9 @@ void Session::cast_sleep(int level, Cell aim)
             continue;
         }
         pool -= cost;
-        add_with_message(f, {effect::sleep, 5 * level, level, false}, false, false, 0, level,
-                         &known);
+        taken.push_back(id);
     }
+    return taken;
 }
 
 // Whether a carrier of Silence stands within a square of it, itself
@@ -6108,17 +6632,24 @@ bool Session::aura_protects(const Fighter &attacker, const Fighter &defender) co
 // (effhndlr.pas, EffMirrorImage).
 bool Session::mirror_absorbs(Fighter &target)
 {
-    auto *images = target.find_effect(effect::mirror_image);
-    if (!images || roll(images->strength + 1) <= 1)
+    const auto *images = target.find_effect(effect::mirror_image);
+    if (!images || !image_takes_it(*images, fight_dice()))
     {
         return false;
     }
+    lose_image(target);
+    return true;
+}
+
+// The image that took the harm is gone.
+void Session::lose_image(Fighter &target)
+{
     log({"{name} loses an image.", {{"name", target.name}}});
+    auto *images = target.find_effect(effect::mirror_image);
     if (--images->strength <= 0)
     {
         target.remove(effect::mirror_image);
     }
-    return true;
 }
 
 // The creature standing on a square, 0 for none.
@@ -6147,6 +6678,12 @@ bool Session::lightning_at(Cell cell, int damage, int level, int save, int eleme
         const bool saved = saving_throw(target, save, 0, nullptr, element);
         nonweapon_damage(target, damage, 2, saved, element, level, spell_number, false);
     }
+    return turns_bolt(cell);
+}
+
+// Whether a bolt striking a square turns there: a wall stands on it.
+bool Session::turns_bolt(Cell cell) const
+{
     return board_.contains(cell) && board_.at(cell) == rules::Terrain::obstacle;
 }
 
@@ -6159,14 +6696,27 @@ bool Session::lightning_at(Cell cell, int damage, int level, int save, int eleme
 void Session::lightning_path(Cell origin, Cell aim, int length, int damage, int level, bool bounce,
                              int save, int element, int spell_number)
 {
+    const auto strike = [&](Cell cell)
+    {
+        return lightning_at(cell, damage, level, save, element, spell_number);
+    };
+    bolt_walk(origin, aim, length, bounce, strike);
+}
+
+// The way lightning_path's bolt runs, telling `strike` of each square it
+// strikes, which answers whether the bolt turns there; Treasures' bolt runs
+// its own way (treasures_bolt_walk). The squares it walks take whoever
+// stands on them as it goes.
+template <typename Strike>
+void Session::bolt_walk(Cell origin, Cell aim, int length, bool bounce, Strike &&strike) const
+{
     if (origin == aim)
     {
         return;
     }
     if (treasures())
     {
-        treasures_lightning_path(origin, aim, length, damage, level, bounce, save, element,
-                                 spell_number);
+        treasures_bolt_walk(origin, aim, length, bounce, strike);
         return;
     }
     Cell target = aim;
@@ -6197,7 +6747,7 @@ void Session::lightning_path(Cell origin, Cell aim, int length, int damage, int 
             {
                 budget = 0;
             }
-            blocked = lightning_at(walk.at, damage, level, save, element, spell_number);
+            blocked = strike(walk.at);
             if (blocked)
             {
                 target = walk.at;
@@ -6229,9 +6779,9 @@ void Session::lightning_path(Cell origin, Cell aim, int length, int damage, int 
 // the first creature it met; and at the field's edge it struck the square
 // before again, hitting the creature it had just hit a second time (obvious
 // bugs, fixed: docs/ORIGINAL-RULES.md, Bugs).
-void Session::treasures_lightning_path(Cell origin, Cell aim, int length, int damage, int level,
-                                       bool near_bounce_doubles, int save, int element,
-                                       int spell_number)
+template <typename Strike>
+void Session::treasures_bolt_walk(Cell origin, Cell aim, int length, bool near_bounce_doubles,
+                                  Strike &&strike) const
 {
     Cell target = aim;
     EntityId last = standing_at(aim);
@@ -6264,7 +6814,7 @@ void Session::treasures_lightning_path(Cell origin, Cell aim, int length, int da
             }
             if (here != last && here)
             {
-                (void)lightning_at(walk.at, damage, level, save, element, spell_number);
+                (void)strike(walk.at);
             }
             last = here;
             int walked = walk.distance;
@@ -6307,13 +6857,8 @@ void Session::lay_cloud(Fighter &caster, int level, Cell aim, CloudKind kind)
     {
         index += clouds_[n].caster == caster.id && clouds_[n].kind == kind ? 1 : 0;
     }
-    Cloud cloud{caster.id, index, aim, {}, kind};
+    const auto cloud = cloud_over(caster.id, index, aim, kind);
     const auto squares = cloud.squares();
-    for (std::size_t n = 0; n < squares.size(); ++n)
-    {
-        cloud.covers[n] =
-            board_.contains(squares[n]) && board_.at(squares[n]) != rules::Terrain::obstacle;
-    }
     clouds_.push_back(cloud);
     if (kind == CloudKind::blades)
     {
@@ -6343,6 +6888,20 @@ void Session::lay_cloud(Fighter &caster, int level, Cell aim, CloudKind kind)
             breathe_cloud(*find(id));
         }
     }
+}
+
+// A cloud of the kind laid at a square, covering its squares on the field
+// that no wall stands on.
+Cloud Session::cloud_over(EntityId caster, int index, Cell aim, CloudKind kind) const
+{
+    Cloud cloud{caster, index, aim, {}, kind};
+    const auto squares = cloud.squares();
+    for (std::size_t n = 0; n < squares.size(); ++n)
+    {
+        cloud.covers[n] =
+            board_.contains(squares[n]) && board_.at(squares[n]) != rules::Terrain::obstacle;
+    }
+    return cloud;
 }
 
 bool Session::in_cloud(const Fighter &f, CloudKind kind) const
@@ -6442,10 +7001,10 @@ void Session::cut_by_blades(Fighter &f, bool may_save)
         return;
     }
     log({"{name} is cut by the blades.", {{"name", f.name}}});
-    int damage = 0;
-    for (int die = 0; die < 8; ++die)
+    int damage = blade_dice.bonus;
+    for (int die = 0; die < blade_dice.count; ++die)
     {
-        damage += roll(8);
+        damage += roll(blade_dice.sides);
     }
     nonweapon_damage(f, damage, 0, false, 0, level, 301, false);
 }
@@ -6589,20 +7148,12 @@ void Session::dispel(Fighter &target, int level)
     for (std::size_t node = 0; node < target.numbers.effects.size();)
     {
         const auto &e = target.numbers.effects[node];
-        // Treasures' takes no love, kampfult's crushing, stone golem or
-        // yeti's grab (its magic.pas, SpellDispelMagic).
-        const bool treasures_kept =
-            treasures() && (e.code == effect::in_love || e.code == effect::crushes ||
-                            (e.code >= effect::stone_golem && e.code <= effect::grabs_6d4));
-        if (e.code == effect::age_in_years || treasures_kept)
+        if (!dispellable(e))
         {
             ++node;
             continue;
         }
-        const int effect_level = e.strength & 0x0F;
-        const int chance = level >= effect_level ? 50 + 5 * (level - effect_level)
-                                                 : 50 - 2 * (effect_level - level);
-        if (e.strength < 255 && roll(100) <= chance)
+        if (roll(100) <= dispel_chance(e, level))
         {
             remove_with_handler(target, node);
             any = true;
@@ -6614,6 +7165,27 @@ void Session::dispel(Fighter &target, int level)
     {
         log({"{name} is dispelled.", {{"name", target.name}}});
     }
+}
+
+// Whether Dispel Magic may take an effect: one of a strength below 255, but
+// never a creature's age, nor in Treasures love, a kampfult's crushing, a
+// stone golem's or a yeti's grab (its magic.pas, SpellDispelMagic).
+bool Session::dispellable(const Effect &e) const
+{
+    const bool treasures_kept =
+        treasures() && (e.code == effect::in_love || e.code == effect::crushes ||
+                        (e.code >= effect::stone_golem && e.code <= effect::grabs_6d4));
+    return e.code != effect::age_in_years && !treasures_kept && e.strength < 255;
+}
+
+// The percent chance Dispel Magic of a caster's level takes an effect: 50,
+// 5 more for each level the caster has above the effect's (its strength's
+// low 4 bits) or 2 less for each below.
+int Session::dispel_chance(const Effect &e, int caster_level)
+{
+    const int effect_level = e.strength & 0x0F;
+    return caster_level >= effect_level ? 50 + 5 * (caster_level - effect_level)
+                                        : 50 - 2 * (effect_level - caster_level);
 }
 
 // Animate Dead (magic.pas, the animation): up to the caster's level of the
@@ -8179,13 +8751,14 @@ bool Session::ai_use_item(Fighter &f)
     {
         return false;
     }
+    AreaAims area_aims;
     for (int pass = 1; pass <= passes; ++pass)
     {
         for (const auto &item : f.numbers.items)
         {
             const int number = item.spells[0];
             if (item.scroll || !item.readied || !spell_built(number) ||
-                !ai_decides(f, number, 8 - pass))
+                !ai_decides(f, number, 8 - pass, area_aims))
             {
                 continue;
             }
@@ -8229,6 +8802,7 @@ bool Session::ai_cast(Fighter &f, bool magic)
     {
         return false;
     }
+    AreaAims area_aims;
     for (int pass = 1; pass <= passes; ++pass)
     {
         for (int pick = 0; pick < 3; ++pick)
@@ -8236,7 +8810,7 @@ bool Session::ai_cast(Fighter &f, bool magic)
             const int number =
                 spells[static_cast<std::size_t>(roll(static_cast<int>(spells.size())) - 1)];
             if (game_spell(number) && game_spell(number)->when != 0 && spell_built(number) &&
-                ai_decides(f, number, 8 - pass))
+                ai_decides(f, number, 8 - pass, area_aims))
             {
                 begin_cast(f, number);
                 if (f.aiming && !ai_aim(f))
@@ -8420,6 +8994,10 @@ int Session::treasures_spell_rating(const Fighter &caster, const Fighter &target
 // sight it rates above 0.
 bool Session::treasures_spell_has_target(const Fighter &f, int number) const
 {
+    if (weighs_area_spell(f, number))
+    {
+        return party_area_aim(f, number).has_value();
+    }
     const auto &known = *game_spell(number);
     if (known.area == 0)
     {
@@ -8626,8 +9204,11 @@ bool Session::treasures_ai_aim(Fighter &f)
 // Whether the AI takes this spell (combatai.pas, DecideCastSpell): of high
 // enough priority; one on itself always, Cure Light Wounds when someone needs
 // it; one at an enemy when an enemy is in range and sight, and none of those
-// has a friend within the spell's blast.
-bool Session::ai_decides(const Fighter &f, int number, int least_priority) const
+// has a friend within the spell's blast. A party-side caster takes an area
+// spell only where its outlook finds an aim the player's limits allow
+// (party_area_aim), kept for the turn in `area_aims`.
+bool Session::ai_decides(const Fighter &f, int number, int least_priority,
+                         AreaAims &area_aims) const
 {
     const auto &known = *game_spell(number);
     if (known.ai_priority == 0 || known.ai_priority < least_priority)
@@ -8641,6 +9222,15 @@ bool Session::ai_decides(const Fighter &f, int number, int least_priority) const
     if (!known.offensive)
     {
         return true;
+    }
+    if (weighs_area_spell(f, number))
+    {
+        auto [aim, unweighed] = area_aims.try_emplace(number);
+        if (unweighed)
+        {
+            aim->second = party_area_aim(f, number);
+        }
+        return aim->second.has_value();
     }
     const int range = spell_range(known, caster_level(f, known, game_of(identity_)));
     const auto targets = enemies_within(f, range, true);
@@ -8701,9 +9291,15 @@ Fighter *Session::cure_search(const Fighter &f)
 // The AI aims what it casts or uses (cbtacts.pas, SelectCombatTargets): on
 // itself, or Cure Light Wounds on whom the cure search finds, or at random
 // enemies in range and sight, not one with a friend within the blast nor a
-// helpless one for a spell that makes helpless. False when it finds none.
+// helpless one for a spell that makes helpless; a party-side caster an area
+// spell where its outlook is best (aim_party_area_spell). False when it
+// finds none.
 bool Session::ai_aim(Fighter &f)
 {
+    if (weighs_area_spell(f, f.aiming))
+    {
+        return aim_party_area_spell(f);
+    }
     if (weighs_spells())
     {
         return treasures_ai_aim(f);
@@ -8767,6 +9363,1162 @@ bool Session::ai_aim(Fighter &f)
     const auto aim = find(picked.front())->cell;
     resolve_spell(f, area >= 8 && area <= 14 ? within(aim, area & 7) : picked, aim);
     return true;
+}
+
+// A party member's area spells (docs/ORIGINAL-RULES.md, Party area spells;
+// the user's decision, 2026-11-21): a computer-run member of the party, or a
+// creature the computer plays on the party's side, weighs what an area spell
+// would likely do to its own side against what it would likely do to the
+// enemies, and aims it where that is best (rules::judge_area_spell).
+// Monsters and the creatures against the party keep the original's AI.
+class Session::Forecast
+{
+  public:
+    Forecast(const Session &session, const Fighter &caster, int number, int level)
+        : session_(session), caster_(caster), number_(number), level_(level),
+          spell_(*session.game_spell(number))
+    {
+        int enemies = 0, levels = 0;
+        for (const auto &f : session_.fighters_)
+        {
+            if (f.able() && f.side != caster_.side && !is_ally(f))
+            {
+                enemy_ids_.push_back(f.id);
+                ++enemies;
+                levels += f.numbers.level + 1;
+            }
+        }
+        average_enemy_level_ = enemies > 0 ? static_cast<double>(levels) / enemies : 1.0;
+    }
+
+    // The spells the forecast weighs: those that reach an area around their
+    // aim or along a path, whoever stands there.
+    [[nodiscard]] static bool weighs(int number) noexcept
+    {
+        constexpr std::array<int, 23> area_spells{21,  34,  41,  46,  47,  51,  55,  60,
+                                                  64,  178, 182, 184, 187, 191, 192, 198,
+                                                  301, 310, 315, 320, 323, 324, 325};
+        return std::ranges::find(area_spells, number) != area_spells.end();
+    }
+
+    [[nodiscard]] rules::AreaOutlook outlook(Cell aim)
+    {
+        const auto reach = reach_at(aim);
+        return summed(reach, scenarios(reach));
+    }
+
+    // The best of the aims the rules let the caster give the spell, among
+    // those the limits let it cast at; none when no aim passes.
+    [[nodiscard]] std::optional<Cell> best_aim(const rules::AreaSpellLimits &limits)
+    {
+        std::optional<Cell> best;
+        rules::AreaSpellJudgement best_judgement;
+        std::map<std::vector<std::int64_t>, rules::AreaSpellJudgement> judged;
+        for (const auto aim : aims())
+        {
+            const auto reach = reach_at(aim);
+            if (reach.hits.empty() && reach.downed.empty())
+            {
+                continue;
+            }
+            auto [found, unjudged] = judged.try_emplace(reach.key());
+            if (unjudged)
+            {
+                found->second = rules::judge_area_spell(summed(reach, scenarios(reach)), limits);
+            }
+            const auto &judgement = found->second;
+            if (judgement.cast && (!best || rules::better_area_aim(judgement, best_judgement)))
+            {
+                best = aim;
+                best_judgement = judgement;
+            }
+        }
+        return best;
+    }
+
+  private:
+    // How the caster knows a creature: of its own side or not; its Hit
+    // Points, an enemy's estimated from its Hit Dice (4.5 a die, 2 below one)
+    // less what it has visibly lost, at least 1; an enemy's worth by its
+    // level against the fight's enemies' average (each level plus 1); and
+    // whether an able enemy of the caster's stands next to it.
+    struct Known
+    {
+        bool ally{};
+        int hit_points{}, max_hit_points{};
+        double weight{1.0};
+        bool enemy_beside{};
+    };
+
+    // One way the spell reaches a creature: a burst or path takes it (0), a
+    // bolt strikes it once (1, Javelin of Lightning's mark 2), or a meteor
+    // strikes it on its way (3) or bursts on it (4). A creature may be
+    // reached several ways.
+    struct Hit
+    {
+        EntityId id{};
+        int way{};
+    };
+
+    // Whom the spell reaches at an aim, in the rules' order, and the members
+    // already down lying in its area.
+    struct Reach
+    {
+        Cell aim;
+        std::vector<Hit> hits;
+        std::vector<EntityId> downed;
+
+        // Aims that reach alike fare alike.
+        [[nodiscard]] std::vector<std::int64_t> key() const
+        {
+            std::vector<std::int64_t> key;
+            for (const auto &hit : hits)
+            {
+                key.push_back(static_cast<std::int64_t>(hit.id) * 8 + hit.way);
+            }
+            key.push_back(-1);
+            key.insert(key.end(), downed.begin(), downed.end());
+            return key;
+        }
+    };
+
+    // What one creature faces in one way the spell's shared dice fall.
+    struct Fate
+    {
+        std::vector<double> loss{1.0};
+        double disabled{}, helps_lost{}, hindrances_lost{}, hindrances_gained{}, freed{};
+    };
+
+    // One way the spell's shared dice fall, its chance, and the fate of each
+    // creature it reaches then, each apart from the others'.
+    struct Scenario
+    {
+        double chance{1.0};
+        std::map<EntityId, Fate> fates;
+    };
+
+    static constexpr int burst_way = 0, bolt_way = 1, mark_way = 2, meteor_path_way = 3,
+                         meteor_burst_way = 4;
+
+    const Session &session_;
+    const Fighter &caster_;
+    int number_, level_;
+    const Spell &spell_;
+    std::vector<EntityId> enemy_ids_;
+    double average_enemy_level_{1.0};
+    std::map<EntityId, Known> known_;
+    std::map<std::tuple<EntityId, int, bool, int, int, int, int>, std::vector<double>> harm_;
+
+    // The side a creature fights for at heart: a charmed one its own.
+    [[nodiscard]] bool is_ally(const Fighter &f) const
+    {
+        return (f.has(effect::charm) ? f.own_side : f.side) == caster_.side;
+    }
+
+    [[nodiscard]] const Known &known(const Fighter &f)
+    {
+        if (const auto found = known_.find(f.id); found != known_.end())
+        {
+            return found->second;
+        }
+        Known known;
+        known.ally = is_ally(f);
+        known.hit_points = f.hit_points;
+        known.max_hit_points = f.numbers.max_hit_points;
+        if (!known.ally)
+        {
+            const int level = f.numbers.level;
+            known.max_hit_points = level >= 1 ? (9 * level + 1) / 2 : 2;
+            const int lost = std::max(f.numbers.max_hit_points - f.hit_points, 0);
+            known.hit_points = std::max(known.max_hit_points - lost, 1);
+            known.weight = (level + 1) / average_enemy_level_;
+        }
+        known.enemy_beside = known.ally && std::ranges::any_of(session_.fighters_,
+                                                               [&](const Fighter &o)
+                                                               {
+                                                                   return o.able() &&
+                                                                          o.side != caster_.side &&
+                                                                          adjacent(o, f);
+                                                               });
+        return known_.emplace(f.id, known).first->second;
+    }
+
+    // A creature's most Hit Points as the caster knows them.
+    [[nodiscard]] auto known_most_hit_points()
+    {
+        return [this](const Fighter &f)
+        {
+            return known(f).max_hit_points;
+        };
+    }
+
+    // The largest loss a creature's outlook tells apart: all it has.
+    [[nodiscard]] int cap_of(const Fighter &f)
+    {
+        const auto &k = known(f);
+        return std::max({k.hit_points, k.max_hit_points, 1});
+    }
+
+    // A loss of `chances` kept to a creature's cap, more lumped with it.
+    [[nodiscard]] std::vector<double> capped(std::vector<double> chances, int cap) const
+    {
+        const auto size = static_cast<std::size_t>(cap) + 1;
+        if (chances.size() > size)
+        {
+            for (std::size_t lost = size; lost < chances.size(); ++lost)
+            {
+                chances[size - 1] += chances[lost];
+            }
+            chances.resize(size);
+        }
+        return chances;
+    }
+
+    // The loss a non-weapon harm of `damage` does a creature once its
+    // defenses weigh it, each way they can go (nonweapon_damage).
+    [[nodiscard]] const std::vector<double> &harm(const Fighter &target, int damage,
+                                                  int save_result, bool saved, int element,
+                                                  int spell, int damage_dice)
+    {
+        const auto key =
+            std::tuple{target.id, damage, saved, save_result, element, spell, damage_dice};
+        if (const auto found = harm_.find(key); found != harm_.end())
+        {
+            return found->second;
+        }
+        const int cap = cap_of(target);
+        std::vector<double> chances(static_cast<std::size_t>(cap) + 1, 0.0);
+        if (absorbs_harm(target, element))
+        {
+            chances[0] = 1;
+        }
+        else
+        {
+            each_way<int>(
+                [&](auto &&dice)
+                {
+                    return session_
+                        .defended_harm(target, damage, save_result, saved, element, level_, spell,
+                                       false, damage_dice, dice)
+                        .damage;
+                },
+                [&](double way, int taken)
+                {
+                    chances[static_cast<std::size_t>(std::clamp(taken, 0, cap))] += way;
+                });
+        }
+        return harm_.emplace(key, std::move(chances)).first->second;
+    }
+
+    // The loss a harm of `damage` does a creature that saves with this
+    // chance, which halves or negates it as `save_result` says.
+    [[nodiscard]] std::vector<double> struck(const Fighter &target, int damage, double save,
+                                             int save_result, int element, int spell,
+                                             int damage_dice)
+    {
+        auto loss = harm(target, damage, save_result, false, element, spell, damage_dice);
+        if (save_result == 0 || save <= 0)
+        {
+            return loss;
+        }
+        const auto &saved = harm(target, damage, save_result, true, element, spell, damage_dice);
+        for (std::size_t lost = 0; lost < loss.size(); ++lost)
+        {
+            loss[lost] = (1 - save) * loss[lost] + save * saved[lost];
+        }
+        return loss;
+    }
+
+    // The same for a harm of its own dice.
+    [[nodiscard]] std::vector<double> struck_by_dice(const Fighter &target, const SpellDice &dice,
+                                                     double save, int save_result, int element,
+                                                     int spell)
+    {
+        std::vector<double> loss(static_cast<std::size_t>(cap_of(target)) + 1, 0.0);
+        const auto totals = dice_chances(dice.count, dice.sides, dice.bonus);
+        for (std::size_t total = 0; total < totals.size(); ++total)
+        {
+            if (totals[total] <= 0)
+            {
+                continue;
+            }
+            const auto one =
+                struck(target, static_cast<int>(total), save, save_result, element, spell, 0);
+            for (std::size_t lost = 0; lost < loss.size(); ++lost)
+            {
+                loss[lost] += totals[total] * one[lost];
+            }
+        }
+        return loss;
+    }
+
+    // The chance the target's immunities nullify an effect the spell adds
+    // (refuses_effect), at a caster level.
+    [[nodiscard]] double refusal(const Fighter &target, int code, int caster_level,
+                                 const Spell &known) const
+    {
+        double chance = 0;
+        each_way<bool>(
+            [&](auto &&dice)
+            {
+                return session_.refuses_effect(target, code, 0, caster_level, &known, dice);
+            },
+            [&](double way, bool refused)
+            {
+                chance += refused ? way : 0;
+            });
+        return chance;
+    }
+
+    // The chance an effect the spell adds takes the target (cast_generic): a
+    // save of this modifier, where the spell allows one, refuses it when the
+    // save negates; then its immunities may.
+    [[nodiscard]] double effect_takes(const Fighter &target, int code, int save_modifier) const
+    {
+        const double save = spell_.save_result == 1 ? session_.save_chance(target, spell_.save_type,
+                                                                           save_modifier, &caster_)
+                                                    : 0.0;
+        return (1 - save) * (1 - refusal(target, code, level_, spell_));
+    }
+
+    // A fate that slays with this chance.
+    [[nodiscard]] Fate slain(const Fighter &target, double chance)
+    {
+        Fate fate;
+        fate.loss.assign(static_cast<std::size_t>(cap_of(target)) + 1, 0.0);
+        fate.loss.front() = 1 - chance;
+        fate.loss.back() += chance;
+        return fate;
+    }
+
+    [[nodiscard]] static Fate disabled_by(double chance)
+    {
+        Fate fate;
+        fate.disabled = chance;
+        return fate;
+    }
+
+    // Two fates of one creature, falling apart from each other.
+    [[nodiscard]] Fate joined(const Fate &first, const Fate &second, int cap) const
+    {
+        Fate fate;
+        fate.loss = capped(sum_chances(first.loss, second.loss), cap);
+        fate.disabled = 1 - (1 - first.disabled) * (1 - second.disabled);
+        fate.helps_lost = first.helps_lost + second.helps_lost;
+        fate.hindrances_lost = first.hindrances_lost + second.hindrances_lost;
+        fate.hindrances_gained = first.hindrances_gained + second.hindrances_gained;
+        fate.freed = std::max(first.freed, second.freed);
+        return fate;
+    }
+
+    void add_fate(Scenario &scenario, const Fighter &target, Fate fate)
+    {
+        if (auto found = scenario.fates.find(target.id); found != scenario.fates.end())
+        {
+            found->second = joined(found->second, fate, cap_of(target));
+            return;
+        }
+        scenario.fates.emplace(target.id, std::move(fate));
+    }
+
+    // The aims the rules let the caster give the spell (aiming_commands):
+    // for one that reaches around a square, each open square in range and
+    // sight; for Javelin of Lightning, each creature it may single out.
+    [[nodiscard]] std::vector<Cell> aims() const
+    {
+        std::vector<Cell> aims;
+        const int area = spell_.area & 0x0F;
+        if (area < 8 || area > 14)
+        {
+            for (const auto &f : session_.fighters_)
+            {
+                if (session_.reachable_by_spell(caster_, f, number_))
+                {
+                    aims.push_back(f.cell);
+                }
+            }
+            return aims;
+        }
+        const auto &board = session_.board_;
+        const int range = spell_range(spell_, level_);
+        for (int y = 0; y < board.height; ++y)
+        {
+            for (int x = 0; x < board.width; ++x)
+            {
+                const Cell cell{x, y};
+                if (!rules::blocks_movement(board.at(cell)) &&
+                    doubled_distance(caster_.cell, cell) / 2 <= range &&
+                    clear_line(board, caster_.cell, cell))
+                {
+                    aims.push_back(cell);
+                }
+            }
+        }
+        return aims;
+    }
+
+    // The targets a spell reaching around its aim is given (the aim
+    // command's), less those that refuse it (resolve_spell).
+    [[nodiscard]] std::vector<EntityId> burst_targets(Cell aim) const
+    {
+        auto targets = session_.within(aim, spell_.area & 7);
+        std::erase_if(targets,
+                      [&](EntityId id)
+                      {
+                          return session_.refuses_spell(*session_.find(id), number_);
+                      });
+        return targets;
+    }
+
+    [[nodiscard]] Reach reach_at(Cell aim) const
+    {
+        Reach reach{aim, {}, {}};
+        const auto &session = session_;
+        const auto take = [&](const std::vector<EntityId> &ids, int way)
+        {
+            for (const auto id : ids)
+            {
+                reach.hits.push_back({id, way});
+            }
+        };
+        const auto standing_on = [&](const std::vector<Cell> &cells, int way)
+        {
+            std::vector<EntityId> found;
+            for (const auto cell : cells)
+            {
+                if (const auto id = session.standing_at(cell);
+                    id && std::ranges::find(found, id) == found.end())
+                {
+                    found.push_back(id);
+                }
+            }
+            take(found, way);
+        };
+        const auto downed = [&](const auto &lies_in_area)
+        {
+            for (const auto &f : session.fighters_)
+            {
+                if (f.downed() && is_ally(f) && lies_in_area(f) &&
+                    std::ranges::find(reach.downed, f.id) == reach.downed.end())
+                {
+                    reach.downed.push_back(f.id);
+                }
+            }
+        };
+        const auto downed_in_burst = [&](Cell at, int radius)
+        {
+            downed(
+                [&](const Fighter &f)
+                {
+                    return in_burst(session.burst_gap(at, f), radius);
+                });
+        };
+        const auto downed_on = [&](const std::vector<Cell> &cells)
+        {
+            downed(
+                [&](const Fighter &f)
+                {
+                    return std::ranges::any_of(squares_of(f),
+                                               [&](Cell square)
+                                               {
+                                                   return std::ranges::find(cells, square) !=
+                                                          cells.end();
+                                               });
+                });
+        };
+        const int radius = spell_.area & 7;
+        switch (number_)
+        {
+        case 47:
+        case 64:
+            take(session.fireball_reach(burst_targets(aim), aim), burst_way);
+            downed_in_burst(aim, session.outdoors_ ? 2 : radius);
+            break;
+        case 21:
+            take(session.within(aim, radius), burst_way);
+            downed_in_burst(aim, radius);
+            break;
+        case 184:
+        case 192:
+        case 198:
+        {
+            const int length = number_ == 184 ? 6 : number_ == 192 ? cone_length(level_) : 3;
+            const int width = number_ == 184 ? 3 : number_ == 192 ? 2 : 1;
+            take(session.path_area(caster_, aim, length, width), burst_way);
+            downed_on(session.path_squares(caster_, aim, length, width));
+            break;
+        }
+        case 34:
+        case 191:
+        case 301:
+        {
+            const auto kind = number_ == 34    ? CloudKind::stinking
+                              : number_ == 191 ? CloudKind::deadly
+                                               : CloudKind::blades;
+            const auto cloud = session.cloud_over(caster_.id, 0, aim, kind);
+            const auto squares = cloud.squares();
+            std::vector<Cell> covered;
+            for (std::size_t n = 0; n < squares.size(); ++n)
+            {
+                if (cloud.covers[n])
+                {
+                    covered.push_back(squares[n]);
+                }
+            }
+            standing_on(covered, burst_way);
+            downed_on(covered);
+            break;
+        }
+        case 51:
+        case 60:
+        {
+            const bool javelin = number_ == 60;
+            if (const auto id = session.standing_at(aim))
+            {
+                reach.hits.push_back({id, javelin ? mark_way : bolt_way});
+            }
+            std::vector<Cell> line;
+            Cell from = aim;
+            line.push_back(aim);
+            session.bolt_walk(caster_.cell, aim, javelin ? 3 : session.bolt_length(), !javelin,
+                              [&](Cell cell)
+                              {
+                                  if (const auto id = session.standing_at(cell))
+                                  {
+                                      reach.hits.push_back({id, bolt_way});
+                                  }
+                                  LineWalk walk(from, cell);
+                                  while (walk.next())
+                                  {
+                                      line.push_back(walk.at);
+                                  }
+                                  from = cell;
+                                  return session.turns_bolt(cell);
+                              });
+            downed_on(line);
+            break;
+        }
+        case 324:
+            for (const auto offset : meteor_landings)
+            {
+                const auto fall = session.meteor_fall(caster_, aim, offset);
+                take(fall.struck, meteor_path_way);
+                take(session.within(fall.landing, 1), meteor_burst_way);
+                std::vector<Cell> path;
+                LineWalk walk(caster_.cell, fall.landing);
+                while (walk.next())
+                {
+                    path.push_back(walk.at);
+                }
+                downed_on(path);
+                downed_in_burst(fall.landing, 1);
+            }
+            break;
+        default:
+            take(burst_targets(aim), burst_way);
+            downed_in_burst(aim, radius);
+            break;
+        }
+        return reach;
+    }
+
+    [[nodiscard]] const Fighter &fighter(EntityId id) const
+    {
+        return *session_.find(id);
+    }
+
+    // The ways the spell's shared dice fall at an aim, and each creature's
+    // fate in each, as its resolver plays it.
+    [[nodiscard]] std::vector<Scenario> scenarios(const Reach &reach)
+    {
+        switch (number_)
+        {
+        case 47:
+        case 64:
+        case 187:
+        case 192:
+        case 198:
+        case 315:
+            return damage_scenarios(reach);
+        case 51:
+        case 60:
+            return bolt_scenarios(reach);
+        case 324:
+            return meteor_scenarios(reach);
+        case 21:
+            return sleep_scenarios(reach);
+        case 182:
+            return confusion_scenarios(reach);
+        case 310:
+            return death_spell_scenarios(reach);
+        default:
+            return {fixed_scenario(reach)};
+        }
+    }
+
+    // Spells of damage rolled once for all they reach (resolve_spell).
+    [[nodiscard]] std::vector<Scenario> damage_scenarios(const Reach &reach)
+    {
+        struct Roll
+        {
+            double chance{};
+            int total{}, dice{};
+        };
+
+        std::vector<Roll> rolls;
+        // A necklace's missile (1d3) sets its dice; Delayed Blast
+        // Fireball's are rolled one at a time, which the kit does not
+        // weigh by.
+        for (int missile = 1; missile <= (number_ == 64 ? 3 : 1); ++missile)
+        {
+            const auto dice = shared_dice(number_, level_, missile);
+            const auto totals = dice_chances(dice.count, dice.sides, dice.bonus);
+            const double weight = number_ == 64 ? 1.0 / 3 : 1.0;
+            for (std::size_t total = 0; total < totals.size(); ++total)
+            {
+                if (totals[total] > 0)
+                {
+                    rolls.push_back({weight * totals[total], static_cast<int>(total),
+                                     number_ == delayed_blast_spell ? 0 : dice.count});
+                }
+            }
+        }
+        const int element = number_ == 187   ? session_.ice_storm_element()
+                            : number_ == 192 ? 10
+                            : number_ == 198 ? 8
+                                             : 9;
+        // A blast takes a plant whole, with no save.
+        constexpr int plant = 18;
+        std::vector<int> save_results;
+        std::vector<double> saves;
+        for (const auto &hit : reach.hits)
+        {
+            const auto &target = fighter(hit.id);
+            const bool whole = number_ == 198 && target.numbers.creature_type == plant;
+            save_results.push_back(whole ? 0 : spell_.save_result);
+            saves.push_back(
+                save_results.back() != 0
+                    ? session_.save_chance(target, spell_.save_type, 0, &caster_, element)
+                    : 0.0);
+        }
+        std::vector<Scenario> scenarios;
+        for (const auto &roll : rolls)
+        {
+            Scenario scenario{roll.chance, {}};
+            for (std::size_t n = 0; n < reach.hits.size(); ++n)
+            {
+                const auto &target = fighter(reach.hits[n].id);
+                Fate fate;
+                fate.loss = struck(target, roll.total, saves[n], save_results[n], element, number_,
+                                   roll.dice);
+                add_fate(scenario, target, std::move(fate));
+            }
+            scenarios.push_back(std::move(scenario));
+        }
+        return scenarios;
+    }
+
+    // Lightning Bolt's one roll at its aim and each square its bolt
+    // strikes, or Javelin of Lightning's 1d6+20 at its mark and 20 along its
+    // bolt; each strike saved for half against spells (lightning_at).
+    [[nodiscard]] std::vector<Scenario> bolt_scenarios(const Reach &reach)
+    {
+        constexpr int bolt_element = 12, bolt_spell = 51;
+        std::vector<std::pair<double, int>> rolls;
+        int damage_dice = 0;
+        if (number_ == 60)
+        {
+            rolls.emplace_back(1.0, 20);
+        }
+        else
+        {
+            const auto dice = shared_dice(number_, level_);
+            damage_dice = dice.count;
+            const auto totals = dice_chances(dice.count, dice.sides, dice.bonus);
+            for (std::size_t total = 0; total < totals.size(); ++total)
+            {
+                if (totals[total] > 0)
+                {
+                    rolls.emplace_back(totals[total], static_cast<int>(total));
+                }
+            }
+        }
+        std::vector<double> saves;
+        for (const auto &hit : reach.hits)
+        {
+            saves.push_back(session_.save_chance(fighter(hit.id), 4, 0, nullptr, bolt_element));
+        }
+        std::vector<Scenario> scenarios;
+        for (const auto [chance, total] : rolls)
+        {
+            Scenario scenario{chance, {}};
+            for (std::size_t n = 0; n < reach.hits.size(); ++n)
+            {
+                const auto &target = fighter(reach.hits[n].id);
+                Fate fate;
+                fate.loss =
+                    reach.hits[n].way == mark_way
+                        ? struck_by_dice(target, {1, 6, 20}, saves[n], 2, bolt_element, bolt_spell)
+                        : struck(target, total, saves[n], 2, bolt_element, bolt_spell, damage_dice);
+                add_fate(scenario, target, std::move(fate));
+            }
+            scenarios.push_back(std::move(scenario));
+        }
+        return scenarios;
+    }
+
+    // Meteor Swarm's meteors, each striking for its own 10d4 on its way and
+    // bursting on those around where it lands, saved for half
+    // (cast_meteor_swarm).
+    [[nodiscard]] std::vector<Scenario> meteor_scenarios(const Reach &reach)
+    {
+        constexpr int fire_and_magic = 9;
+        Scenario scenario;
+        for (const auto &hit : reach.hits)
+        {
+            const auto &target = fighter(hit.id);
+            const bool burst = hit.way == meteor_burst_way;
+            const double save =
+                burst ? session_.save_chance(target, 4, 0, &caster_, fire_and_magic) : 0.0;
+            Fate fate;
+            fate.loss =
+                struck_by_dice(target, meteor_dice, save, burst ? 2 : 0, fire_and_magic, number_);
+            add_fate(scenario, target, std::move(fate));
+        }
+        return {scenario};
+    }
+
+    // Sleep's 4d4 levels, spent on the nearest first (sleep_takes), each
+    // asleep unless its immunities refuse it.
+    [[nodiscard]] std::vector<Scenario> sleep_scenarios(const Reach &reach)
+    {
+        const auto pools = dice_chances(4, 4, 0);
+        std::vector<Scenario> scenarios;
+        for (std::size_t pool = 0; pool < pools.size(); ++pool)
+        {
+            if (pools[pool] <= 0)
+            {
+                continue;
+            }
+            Scenario scenario{pools[pool], {}};
+            for (const auto id : session_.sleep_takes(reach.aim, static_cast<int>(pool)))
+            {
+                const auto &target = fighter(id);
+                add_fate(scenario, target,
+                         disabled_by(1 - refusal(target, effect::sleep, level_, spell_)));
+            }
+            scenarios.push_back(std::move(scenario));
+        }
+        return scenarios;
+    }
+
+    // Confusion takes at most 2d8 of its targets, the nearest first.
+    [[nodiscard]] std::vector<Scenario> confusion_scenarios(const Reach &reach)
+    {
+        constexpr int confused = 235;
+        const auto counts = dice_chances(2, 8, 0);
+        std::vector<Scenario> scenarios;
+        for (std::size_t count = 0; count < counts.size(); ++count)
+        {
+            if (counts[count] <= 0)
+            {
+                continue;
+            }
+            Scenario scenario{counts[count], {}};
+            for (std::size_t n = 0; n < reach.hits.size() && n < count; ++n)
+            {
+                const auto &target = fighter(reach.hits[n].id);
+                add_fate(scenario, target, disabled_by(effect_takes(target, confused, 0)));
+            }
+            scenarios.push_back(std::move(scenario));
+        }
+        return scenarios;
+    }
+
+    // Death Spell's 4d20 x 2 to spend on its targets by their levels
+    // (death_spell_takes), weighing an enemy's most Hit Points as the
+    // caster knows them.
+    [[nodiscard]] std::vector<Scenario> death_spell_scenarios(const Reach &reach)
+    {
+        std::vector<EntityId> targets;
+        for (const auto &hit : reach.hits)
+        {
+            targets.push_back(hit.id);
+        }
+        const auto budgets = dice_chances(4, 20, 0);
+        std::vector<Scenario> scenarios;
+        for (std::size_t budget = 0; budget < budgets.size(); ++budget)
+        {
+            if (budgets[budget] <= 0)
+            {
+                continue;
+            }
+            Scenario scenario{budgets[budget], {}};
+            for (const auto id : session_.death_spell_takes(targets, static_cast<int>(budget) * 2,
+                                                            known_most_hit_points()))
+            {
+                add_fate(scenario, fighter(id), slain(fighter(id), 1.0));
+            }
+            scenarios.push_back(std::move(scenario));
+        }
+        return scenarios;
+    }
+
+    // The spells with no dice shared among those they reach.
+    [[nodiscard]] Scenario fixed_scenario(const Reach &reach)
+    {
+        Scenario scenario;
+        std::vector<EntityId> targets;
+        for (const auto &hit : reach.hits)
+        {
+            targets.push_back(hit.id);
+        }
+        const auto fate_of = [&](EntityId id, Fate fate)
+        {
+            add_fate(scenario, fighter(id), std::move(fate));
+        };
+        switch (number_)
+        {
+        case 34:
+            for (const auto id : targets)
+            {
+                fate_of(id, disabled_by(sickening(fighter(id))));
+            }
+            break;
+        case 191:
+            for (const auto id : targets)
+            {
+                fate_of(id, poisoning(fighter(id)));
+            }
+            break;
+        case 301:
+            for (const auto id : targets)
+            {
+                fate_of(id, cutting(fighter(id)));
+            }
+            break;
+        case 55:
+            // Slow: up to the caster's level of its enemies, a hasted one
+            // only losing its Haste (resolve_spell).
+            for (const auto id : session_.haste_slow_takes(caster_, number_, level_, targets))
+            {
+                const auto &target = fighter(id);
+                Fate fate;
+                if (target.has(effect::hasted))
+                {
+                    fate.helps_lost = 1;
+                }
+                else
+                {
+                    fate.disabled = effect_takes(target, effect::slowed, 0);
+                }
+                fate_of(id, std::move(fate));
+            }
+            break;
+        case 178:
+            // Entangle holds those who fail their saves, out of doors only.
+            for (const auto id : session_.outdoors_ ? targets : std::vector<EntityId>{})
+            {
+                const auto &target = fighter(id);
+                const double save = session_.save_chance(target, 4, 0, &caster_);
+                fate_of(id, disabled_by((1 - save) *
+                                        (1 - refusal(target, effect::held_still, level_, spell_))));
+            }
+            break;
+        case 184:
+            // Fear: those who fail their saves flee.
+            for (const auto id : targets)
+            {
+                const auto &target = fighter(id);
+                const double save = session_.save_chance(target, 4, 0, &caster_);
+                fate_of(id, disabled_by((1 - save) *
+                                        (1 - refusal(target, effect::fear, level_, spell_))));
+            }
+            break;
+        case 320:
+            for (const auto [id, take] : session_.mass_charm_takes(caster_, level_, targets))
+            {
+                if (take == MassCharmTake::tried)
+                {
+                    const auto &target = fighter(id);
+                    const double save = session_.save_chance(target, 4, -2, &caster_);
+                    fate_of(id, disabled_by((1 - save) *
+                                            (1 - refusal(target, effect::charm, level_, spell_))));
+                }
+            }
+            break;
+        case 323:
+            for (const auto id : session_.blinded_by_word(targets, known_most_hit_points()))
+            {
+                Fate fate;
+                fate.hindrances_gained = 1 - refusal(fighter(id), effect::blind, 0, spell_);
+                fate_of(id, std::move(fate));
+            }
+            break;
+        case 325:
+            for (const auto id : session_.slain_by_word(targets, known_most_hit_points()))
+            {
+                const auto &target = fighter(id);
+                const auto *images = target.find_effect(effect::mirror_image);
+                const double turned =
+                    target.has(effect::iron_golem) ? 1.0
+                    : images ? static_cast<double>(images->strength) / (images->strength + 1)
+                             : 0.0;
+                fate_of(id, slain(target, 1 - turned));
+            }
+            break;
+        case 41:
+        case 46:
+            for (const auto id : targets)
+            {
+                fate_of(id, dispelling(fighter(id)));
+            }
+            break;
+        default:
+            break;
+        }
+        return scenario;
+    }
+
+    // The chance a stinking cloud laid on a creature leaves it helpless with
+    // nausea (breathe_stinking_cloud, breathe_darkness_stench).
+    [[nodiscard]] double sickening(const Fighter &f) const
+    {
+        const bool spared =
+            session_.darkness()
+                ? f.numbers.undead_level > 0 || f.has(effect::nausea) ||
+                      (f.numbers.traits & (trait::unliving | trait::poison_proof)) != 0
+                : f.has(effect::coughing) || f.has(effect::nausea) || f.has(effect::animated) ||
+                      f.has(111) || f.has(125) || session_.breathes_clouds_freely(f);
+        if (spared)
+        {
+            return 0;
+        }
+        const double save = session_.save_chance(f, 0, 0);
+        return (1 - save) * (1 - refusal(f, effect::nausea, 0, *session_.game_spell(34)));
+    }
+
+    // What a cloudkill laid on a creature does (breathe_cloudkill,
+    // breathe_darkness_cloudkill).
+    [[nodiscard]] Fate poisoning(const Fighter &f)
+    {
+        const int level = f.numbers.level;
+        if (session_.darkness())
+        {
+            if ((f.numbers.traits & trait::poison_proof) != 0)
+            {
+                return {};
+            }
+            if (level > 6)
+            {
+                constexpr int magical_poison = 0x88;
+                Fate fate;
+                fate.loss = struck_by_dice(f, {1, 10, 0}, 0, 0, magical_poison, number_);
+                return fate;
+            }
+        }
+        else if (level > 6)
+        {
+            return {};
+        }
+        const double save = level >= 5 ? session_.save_chance(f, 0, level == 5 ? -4 : 0) : 0.0;
+        return slain(f, 1 - save);
+    }
+
+    // What a Blade Barrier rising on a creature does: unless magic
+    // resistance turns it or a save, 8d8 (cut_by_blades).
+    [[nodiscard]] Fate cutting(const Fighter &f)
+    {
+        double resisted = 0;
+        if (resists_magic_at_all(f))
+        {
+            each_way<bool>(
+                [&](auto &&dice)
+                {
+                    return magic_resists(f, level_, dice(100));
+                },
+                [&](double way, bool resists)
+                {
+                    resisted += resists ? way : 0;
+                });
+        }
+        const double cut = (1 - resisted) * (1 - session_.save_chance(f, 4, 0, &caster_));
+        Fate fate;
+        fate.loss = struck_by_dice(f, blade_dice, 0, 0, 0, number_);
+        for (auto &chance : fate.loss)
+        {
+            chance *= cut;
+        }
+        fate.loss.front() += 1 - cut;
+        return fate;
+    }
+
+    // What Dispel Magic likely takes from a creature (dispel): each effect
+    // it may take goes by its own chance, counted as helping or hindering
+    // the creature, and the creature is freed once every effect that
+    // disables it goes.
+    [[nodiscard]] Fate dispelling(const Fighter &f) const
+    {
+        Fate fate;
+        bool disabled = false;
+        double freed = 1;
+        for (const auto &e : f.numbers.effects)
+        {
+            const bool disables =
+                std::ranges::find(disabling_effects, e.code) != disabling_effects.end();
+            const double chance =
+                session_.dispellable(e)
+                    ? std::clamp(session_.dispel_chance(e, level_), 0, 100) / 100.0
+                    : 0.0;
+            if (disables)
+            {
+                disabled = true;
+                freed *= chance;
+            }
+            else if (std::ranges::find(helping_effects, e.code) != helping_effects.end())
+            {
+                fate.helps_lost += chance;
+            }
+            else if (std::ranges::find(hindering_effects, e.code) != hindering_effects.end())
+            {
+                fate.hindrances_lost += chance;
+            }
+        }
+        fate.freed = disabled ? freed : 0.0;
+        return fate;
+    }
+
+    // Each creature's outlook from the spell's scenarios: the chances of each
+    // fate weighed together, and the chance every able enemy goes down in
+    // the same fall of the dice. A member already down in the area counts as
+    // slain.
+    [[nodiscard]] rules::AreaOutlook summed(const Reach &reach,
+                                            const std::vector<Scenario> &scenarios)
+    {
+        rules::AreaOutlook outlook;
+        std::vector<EntityId> ids;
+        for (const auto &hit : reach.hits)
+        {
+            if (std::ranges::find(ids, hit.id) == ids.end())
+            {
+                ids.push_back(hit.id);
+            }
+        }
+        for (const auto id : ids)
+        {
+            const auto &target = fighter(id);
+            const auto &k = known(target);
+            rules::CreatureOutlook creature;
+            creature.id = id;
+            creature.ally = k.ally;
+            creature.hit_points = k.hit_points;
+            creature.max_hit_points = k.max_hit_points;
+            creature.weight = k.weight;
+            creature.enemy_beside = k.enemy_beside;
+            creature.loss.assign(static_cast<std::size_t>(cap_of(target)) + 1, 0.0);
+            for (const auto &scenario : scenarios)
+            {
+                const auto found = scenario.fates.find(id);
+                if (found == scenario.fates.end())
+                {
+                    creature.loss.front() += scenario.chance;
+                    continue;
+                }
+                const auto &fate = found->second;
+                for (std::size_t lost = 0; lost < fate.loss.size(); ++lost)
+                {
+                    creature.loss[lost] += scenario.chance * fate.loss[lost];
+                }
+                creature.disabled += scenario.chance * fate.disabled;
+                creature.helps_lost += scenario.chance * fate.helps_lost;
+                creature.hindrances_lost += scenario.chance * fate.hindrances_lost;
+                creature.hindrances_gained += scenario.chance * fate.hindrances_gained;
+                creature.freed += scenario.chance * fate.freed;
+            }
+            outlook.creatures.push_back(std::move(creature));
+        }
+        for (const auto id : reach.downed)
+        {
+            const auto &target = fighter(id);
+            rules::CreatureOutlook creature;
+            creature.id = id;
+            creature.ally = true;
+            creature.hit_points = std::min(target.hit_points, 0);
+            creature.max_hit_points = target.numbers.max_hit_points;
+            outlook.creatures.push_back(std::move(creature));
+        }
+        for (const auto &scenario : scenarios)
+        {
+            double all_down = scenario.chance;
+            for (const auto id : enemy_ids_)
+            {
+                const auto found = scenario.fates.find(id);
+                if (found == scenario.fates.end())
+                {
+                    all_down = 0;
+                    break;
+                }
+                const int hit_points = known(fighter(id)).hit_points;
+                double down = found->second.disabled;
+                for (auto lost = static_cast<std::size_t>(hit_points);
+                     lost < found->second.loss.size(); ++lost)
+                {
+                    down += found->second.loss[lost];
+                }
+                all_down *= std::min(down, 1.0);
+            }
+            outlook.every_enemy_down += all_down;
+        }
+        return outlook;
+    }
+};
+
+// Whether the computer weighs this spell's outlook for its caster: an area
+// spell of a creature on the party's side.
+bool Session::weighs_area_spell(const Fighter &f, int number) const
+{
+    return f.side == Side::party && Forecast::weighs(number);
+}
+
+// The best aim a party-side caster's outlook allows for an area spell
+// (Forecast::best_aim), none when no aim passes the player's limits.
+std::optional<Cell> Session::party_area_aim(const Fighter &f, int number) const
+{
+    const auto &known = *game_spell(number);
+    Forecast forecast(*this, f, number, caster_level(f, known, game_of(identity_)));
+    return forecast.best_aim(party_spell_limits_);
+}
+
+// A party-side caster's area spell goes off at its best aim; false, the
+// spell given up, when no aim passes.
+bool Session::aim_party_area_spell(Fighter &f)
+{
+    const auto aim = party_area_aim(f, f.aiming);
+    if (!aim)
+    {
+        log({"{name} aborts the spell.", {{"name", f.name}}});
+        return false;
+    }
+    const int area = game_spell(f.aiming)->area & 0x0F;
+    resolve_spell(f,
+                  area >= 8 && area <= 14 ? within(*aim, area & 7)
+                                          : std::vector<EntityId>{standing_at(*aim)},
+                  *aim);
+    return true;
+}
+
+std::optional<rules::AreaOutlook> Session::area_outlook(EntityId caster, unsigned spell,
+                                                        Cell aim) const
+{
+    const auto *f = find(caster);
+    const int number = static_cast<int>(spell);
+    const auto *known = game_spell(number);
+    if (!f || !known || !Forecast::weighs(number))
+    {
+        return std::nullopt;
+    }
+    Forecast forecast(*this, *f, number, caster_level(*f, *known, game_of(identity_)));
+    return forecast.outlook(aim);
 }
 
 // The roll a cleric needs to turn undead, by the undead's level (1 skeleton to
@@ -10532,15 +12284,38 @@ bool Session::eat_armor(const Fighter &pudding, Fighter &target)
     return eaten;
 }
 
-// A saving throw (fxengine.pas, RollSavingThrow): a natural 1 fails and a
-// natural 20 saves; otherwise the roll with the creature's save bonus and the
-// modifier must reach its number for the save. A total below 0 fails, where
-// the original's byte wrapped it to a success (an obvious bug, fixed).
+// A saving throw (fxengine.pas, RollSavingThrow): its natural roll
+// (save_die), judged by saves_with.
 bool Session::saving_throw(const Fighter &f, int save, int modifier, const Fighter *caster,
                            int element)
 {
-    // A dancer's roll is always a 1 (fxengine.pas, RollSavingThrow).
-    const int natural = f.has(effect::dancing) ? 1 : roll(20);
+    return saves_with(f, save_die(f, fight_dice()), save, modifier, caster, element);
+}
+
+// The chance a saving throw saves, each way its natural roll falls weighed.
+double Session::save_chance(const Fighter &f, int save, int modifier, const Fighter *caster,
+                            int element) const
+{
+    double chance = 0;
+    each_way<bool>(
+        [&](auto &&draw)
+        {
+            return saves_with(f, save_die(f, draw), save, modifier, caster, element);
+        },
+        [&](double way, bool saved)
+        {
+            chance += saved ? way : 0;
+        });
+    return chance;
+}
+
+// Whether a saving throw of this natural roll saves: a natural 1 fails and a
+// natural 20 saves; otherwise the roll with the creature's save bonus and the
+// modifier must reach its number for the save. A total below 0 fails, where
+// the original's byte wrapped it to a success (an obvious bug, fixed).
+bool Session::saves_with(const Fighter &f, int natural, int save, int modifier,
+                         const Fighter *caster, int element) const
+{
     if (natural == 1 || natural == 20)
     {
         return natural == 20;
@@ -13515,6 +15290,7 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
     session->know_item_types(content.item_types);
     session->play_gazes(gazes_played);
     session->move_as_the_original(content.original_movement);
+    session->limit_party_area_spells(content.party_spell_limits);
     session->pair_lovers(std::move(encounter.romance));
     return session;
 }
@@ -13526,6 +15302,7 @@ std::unique_ptr<rules::CombatSession> restore_session(rules::Identity identity,
     auto session = Session::restored(std::move(identity), checkpoint, content);
     session->play_gazes(gazes_played);
     session->move_as_the_original(content.original_movement);
+    session->limit_party_area_spells(content.party_spell_limits);
     return session;
 }
 

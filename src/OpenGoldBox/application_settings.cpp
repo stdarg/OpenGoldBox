@@ -18,6 +18,7 @@
 #include <godot_cpp/variant/dictionary.hpp>
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <functional>
 #include <map>
 #include <optional>
@@ -480,6 +481,59 @@ bool save_original_movement(opengold::GoldBoxGame game, bool on)
 {
     const std::string folder(opengold::game_folder(game));
     return save("original_movement", folder.c_str(), on ? "on" : "off");
+}
+
+opengold::rules::AreaSpellLimits party_spell_limits()
+{
+    opengold::rules::AreaSpellLimits limits;
+    Ref<ConfigFile> config;
+    config.instantiate();
+    if (config->load(path()) != OK)
+    {
+        return limits;
+    }
+    // A number of the section, kept within its bounds; `fallback` when unset
+    // or no number.
+    const auto number = [&](const char *key, double fallback, double lowest, double highest)
+    {
+        if (!config->has_section_key("party_spell_ai", key))
+        {
+            return fallback;
+        }
+        const Variant value = config->get_value("party_spell_ai", key);
+        if (value.get_type() != Variant::INT && value.get_type() != Variant::FLOAT)
+        {
+            return fallback;
+        }
+        return std::clamp(static_cast<double>(value), lowest, highest);
+    };
+    limits.death_limit = number("death_limit", limits.death_limit * 100, 0, 100) / 100;
+    limits.hurt_share = number("hurt_share", limits.hurt_share * 100, 0, 100) / 100;
+    limits.hurt_chance = number("hurt_chance", limits.hurt_chance * 100, 0, 100) / 100;
+    limits.fight_end_chance =
+        number("fight_end_chance", limits.fight_end_chance * 100, 0, 100) / 100;
+    limits.party_weight = number("party_weight", limits.party_weight, 1, 5);
+    return limits;
+}
+
+bool save_party_spell_limits(const opengold::rules::AreaSpellLimits &limits)
+{
+    const auto percent = [](double share)
+    {
+        return static_cast<int>(std::lround(std::clamp(share, 0.0, 1.0) * 100));
+    };
+    opengold::log_diagnostic(opengold::LogPriority::notice, "settings", "party_spell_ai changed");
+    return save_config(
+        [&](ConfigFile &config)
+        {
+            config.set_value("party_spell_ai", "death_limit", percent(limits.death_limit));
+            config.set_value("party_spell_ai", "hurt_share", percent(limits.hurt_share));
+            config.set_value("party_spell_ai", "hurt_chance", percent(limits.hurt_chance));
+            config.set_value("party_spell_ai", "fight_end_chance",
+                             percent(limits.fight_end_chance));
+            config.set_value("party_spell_ai", "party_weight",
+                             std::clamp(limits.party_weight, 1.0, 5.0));
+        });
 }
 
 bool course_flown(opengold::GoldBoxGame game)

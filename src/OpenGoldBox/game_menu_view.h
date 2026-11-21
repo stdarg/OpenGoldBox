@@ -89,6 +89,20 @@ class GameMenuView : public godot::Control
     void course_flown_selected(std::int64_t index);
     // Whether the game's fights under the original rules move as its original.
     void original_movement_selected(std::int64_t index);
+
+    // The player's limits on a computer-run party member's area spells, by
+    // their Options rows (settings::party_spell_limits).
+    enum class PartySpellLimit
+    {
+        death_limit,
+        hurt_share,
+        hurt_chance,
+        fight_end_chance,
+        party_weight
+    };
+
+    void show_party_spell_limits();
+    void party_spell_limit_changed(double value, std::int64_t row);
     // A Buck Rogers game shows its ship-combat options where the other games'
     // own options stand.
     void show_game_options();

@@ -327,6 +327,17 @@ Departures from the original game's own rules, when OpenGoldBox plays by them
   step, no diagonal passes a wall's corner, a large creature pays for its
   dearest square, the computer spends its last half-moves, and a last
   half-move is kept. The SRD rules move as before either way.
+- **The party's area spells** (the user, 2026-11-21). The original's AI
+  plays the party's members on Quick, and its companions, as it plays the
+  monsters: it casts an area spell at a random enemy unless a friend stands
+  within the spell's own blast radius, which Lightning Bolt and Cone of Cold
+  set at none, so a member's bolt or cone ran through the party. A computer-
+  run member of the party now weighs each aim's likely harm to the party
+  against its likely harm to the enemies, as the player would, and casts
+  only where the player's limits allow
+  ([ORIGINAL-RULES.md](ORIGINAL-RULES.md), Party area spells; the Options
+  screen's Party area spells, [CONFIGURATION.md](CONFIGURATION.md)).
+  Monsters and the creatures against the party keep the original's AI.
 - **The Buck Rogers games' ship combat, three options** (the user,
   2026-11-20; [games/countdown.md](games/countdown.md), "Ship combat"). Each
   is set per game on the Options screen while a Buck Rogers game plays

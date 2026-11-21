@@ -9,6 +9,7 @@
 #include "test_support.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -3668,6 +3669,304 @@ void treasures_ai_casts_its_weightiest_spell(GoldBoxGame game)
           "The sorceress casts Lightning Bolt first: " + first_spell());
 }
 
+// A creature an outlook reaches.
+const rules::CreatureOutlook &outlook_for(const rules::AreaOutlook &outlook, rules::EntityId id)
+{
+    const auto found = std::ranges::find(outlook.creatures, id, &rules::CreatureOutlook::id);
+    check(found != outlook.creatures.end(), "The outlook reaches " + std::to_string(id));
+    return *found;
+}
+
+bool reaches(const rules::AreaOutlook &outlook, rules::EntityId id)
+{
+    return std::ranges::find(outlook.creatures, id, &rules::CreatureOutlook::id) !=
+           outlook.creatures.end();
+}
+
+double expected_loss(const rules::CreatureOutlook &creature)
+{
+    double expected = 0;
+    for (std::size_t lost = 0; lost < creature.loss.size(); ++lost)
+    {
+        expected += static_cast<double>(lost) * creature.loss[lost];
+    }
+    return expected;
+}
+
+bool near(double first, double second)
+{
+    return std::abs(first - second) < 1e-9;
+}
+
+rules::EntityId id_of(const rules::CombatSession &session, std::string_view name)
+{
+    return view_of(session.snapshot(), name).id;
+}
+
+// A party member's outlook for its Fireball (docs/ORIGINAL-RULES.md, Party
+// area spells): each creature's 5d6, rolled once for all, weighed with its
+// save, the whole on a failed one and half on a made one; a friend's Hit
+// Points as they are, a foe's estimated from its Hit Dice (4.5 a die).
+void a_fireball_outlook_weighs_each_save()
+{
+    using original::ClassSlot;
+    auto fight =
+        arrange({{"Mage", rules::Side::party, {0, 0}, caster(ClassSlot::magic_user, 5, {47})},
+                 {"Friend", rules::Side::party, {5, 4}, victim(100)},
+                 {"Foe", rules::Side::opposition, {6, 5}, victim(100)}},
+                103);
+    const auto &session = *fight.session;
+    const auto outlook = session.area_outlook(id_of(session, "Mage"), 47, {6, 5});
+    check(outlook.has_value() && outlook->creatures.size() == 2,
+          "Fireball's outlook reaches the friend and the foe");
+    // Each way 5d6 falls; a victim saves only on a natural 20.
+    double whole = 0, half = 0;
+    std::vector<double> totals(31, 0.0);
+    for (int way = 0; way < 7776; ++way)
+    {
+        int total = 0;
+        for (int die = 0, rest = way; die < 5; ++die, rest /= 6)
+        {
+            total += rest % 6 + 1;
+        }
+        whole += total / 7776.0;
+        half += (total / 2) / 7776.0;
+        totals[static_cast<std::size_t>(total)] += 1 / 7776.0;
+    }
+    const auto &ally = outlook_for(*outlook, id_of(session, "Friend"));
+    check(ally.ally && ally.hit_points == 100 && ally.max_hit_points == 100 &&
+              near(expected_loss(ally), 0.95 * whole + 0.05 * half) &&
+              near(ally.loss[30], 0.95 * totals[30]),
+          "The friend loses the whole 5d6 unless it saves, half if it does");
+    const auto &foe = outlook_for(*outlook, id_of(session, "Foe"));
+    check(!foe.ally && foe.hit_points == 5 && foe.max_hit_points == 5,
+          "A foe of one Hit Die is taken for 5 Hit Points, not its own 100");
+    double felled_saving = 0;
+    for (int total = 10; total <= 30; ++total)
+    {
+        felled_saving += totals[static_cast<std::size_t>(total)];
+    }
+    check(near(outlook->every_enemy_down, 0.95 + 0.05 * felled_saving),
+          "The foe goes down unless it saves and the dice fall under 10");
+    const auto judgement = rules::judge_area_spell(*outlook, {});
+    check(judgement.cast && !judgement.hurts_party_badly,
+          "A friend's light burn is worth the foe's likely fall");
+}
+
+// Cone of Cold reaches a friend between the caster and its aim, and a
+// Lightning Bolt runs on past its aim into a friend there, each as the
+// rules' own shapes draw them (path_area, bolt_walk).
+void cone_and_bolt_outlooks_reach_friends()
+{
+    using original::ClassSlot;
+    auto fight =
+        arrange({{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 10, {192, 51})},
+                 {"Friend", rules::Side::party, {2, 3}, victim(30)},
+                 {"Foe", rules::Side::opposition, {4, 3}, victim(200)},
+                 {"Beyond", rules::Side::party, {6, 3}, victim(30)}},
+                211, {}, 100, GoldBoxGame::curse_of_the_azure_bonds);
+    const auto &session = *fight.session;
+    const auto mage = id_of(session, "Mage"), ally = id_of(session, "Friend"),
+               foe = id_of(session, "Foe"), beyond = id_of(session, "Beyond");
+    const auto cone = session.area_outlook(mage, 192, {4, 3});
+    check(cone && reaches(*cone, foe) && reaches(*cone, ally) && !reaches(*cone, beyond) &&
+              expected_loss(outlook_for(*cone, ally)) > 15,
+          "Cone of Cold aimed at the foe reaches the friend before it");
+    const auto bolt = session.area_outlook(mage, 51, {4, 3});
+    check(bolt && reaches(*bolt, foe) && reaches(*bolt, beyond) && !reaches(*bolt, ally) &&
+              expected_loss(outlook_for(*bolt, beyond)) > 15,
+          "Lightning Bolt aimed at the foe runs on into the friend beyond it");
+    check(!rules::judge_area_spell(*cone, {}).cast && !rules::judge_area_spell(*bolt, {}).cast,
+          "Neither is cast so: the friends would likely go down");
+}
+
+// A party mage on Quick, with Quick magic, plays its turns while the others
+// end theirs, until it casts or six rounds pass, under these limits when
+// given (the Options reach the fight through the rules module): how many
+// spells it cast, and its friend's Hit Points left.
+std::pair<int, int> quick_mage_plays(Fight fight, std::optional<rules::AreaSpellLimits> limits)
+{
+    if (limits)
+    {
+        fight.module->limit_party_area_spells(*limits);
+        fight.session = fight.module->restore(fight.session->save());
+    }
+    auto &session = *fight.session;
+    play_until(
+        session,
+        [&](const std::string &actor)
+        {
+            // A spell coming due is aimed by Quick.
+            const bool aiming = !offered(session, "quick_magic");
+            return order(session, actor != "Mage" ? "end" : aiming ? "quick" : "quick_magic");
+        },
+        [&]
+        {
+            return logged(session, "{name} casts {spell}.") > 0 || session.snapshot().round > 6;
+        });
+    return {logged(session, "{name} casts {spell}."),
+            view_of(session.snapshot(), "Friend").hit_points};
+}
+
+// Limits that let a party member risk anything.
+constexpr rules::AreaSpellLimits reckless{1.0, 0.0, 0.0, 0.0, 1.0};
+
+// A party mage on Quick with only Cone of Cold, its friend between it and
+// the foe in a corridor, finds no aim its player's limits allow and casts
+// none; the original's AI cones through a friend (Cone of Cold keeps none
+// clear). With limits that risk anything the same mage cones them both.
+void a_quick_mage_keeps_its_cone_off_a_friend()
+{
+    using original::ClassSlot;
+    std::vector<rules::Cell> walls;
+    for (int x = 0; x < 8; ++x)
+    {
+        walls.push_back({x, 2});
+        walls.push_back({x, 4});
+    }
+    const auto fight = [&]
+    {
+        return arrange({{"Mage",
+                         rules::Side::party,
+                         {0, 3},
+                         caster(ClassSlot::magic_user, 10, {192, 192, 192})},
+                        {"Friend", rules::Side::party, {1, 3}, victim(30)},
+                        {"Foe", rules::Side::opposition, {3, 3}, victim(200)}},
+                       223, walls, 100, GoldBoxGame::curse_of_the_azure_bonds);
+    };
+    const auto [cast, friend_left] = quick_mage_plays(fight(), std::nullopt);
+    check(cast == 0 && friend_left == 30, "A Quick mage casts no Cone of Cold through its friend");
+    const auto [reckless_cast, reckless_friend_left] = quick_mage_plays(fight(), reckless);
+    check(reckless_cast > 0 && reckless_friend_left < 30,
+          "With limits that risk anything it cones its friend too");
+}
+
+// Treasures' computer (the 256-color engine's) aims a Lightning Bolt at the
+// enemy it singles out, and the bolt runs on beyond; a party mage on Quick
+// weighs the friend beyond it and casts none, or with limits that risk
+// anything, bolts them both.
+void a_treasures_party_mage_keeps_its_bolt_off_a_friend()
+{
+    using original::ClassSlot;
+    const auto fight = [&]
+    {
+        return arrange(
+            {{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 5, {51, 51})},
+             {"Foe", rules::Side::opposition, {4, 3}, victim(200)},
+             {"Friend", rules::Side::party, {5, 3}, victim(12)}},
+            239, {}, 100, GoldBoxGame::treasures_of_the_savage_frontier);
+    };
+    const auto [cast, friend_left] = quick_mage_plays(fight(), std::nullopt);
+    check(cast == 0 && friend_left == 12,
+          "A Quick mage casts no bolt that runs on into its friend");
+    const auto [reckless_cast, reckless_friend_left] = quick_mage_plays(fight(), reckless);
+    check(reckless_cast > 0 && reckless_friend_left < 12,
+          "With limits that risk anything it bolts its friend too");
+}
+
+// Secret's Dispel Magic tries each creature in its area once, as the rules
+// play it (the original tried its first target again and again:
+// docs/ORIGINAL-RULES.md, Bugs), and the outlook weighs each so: a friend's
+// Haste lost is a cost, a held friend freed and a foe's Haste lost gains.
+void secret_dispel_outlook_weighs_each_creature()
+{
+    using original::ClassSlot;
+    const auto with = [](int code)
+    {
+        auto c = creature(30, 1);
+        c.effects = {{code, 5, 7, false}};
+        return c;
+    };
+    const auto start = [&](int cleric_level)
+    {
+        return arrange(
+            {{"Cleric", rules::Side::party, {0, 3}, caster(ClassSlot::cleric, cleric_level, {41})},
+             {"Hasted", rules::Side::party, {4, 3}, with(39)},
+             {"Held", rules::Side::party, {4, 4}, with(52)},
+             {"Foe", rules::Side::opposition, {5, 3}, with(39)}},
+            229, {}, 100, GoldBoxGame::secret_of_the_silver_blades);
+    };
+    auto even = start(7);
+    const auto &session = *even.session;
+    const auto outlook = session.area_outlook(id_of(session, "Cleric"), 41, {4, 3});
+    check(outlook.has_value(), "Dispel Magic has an outlook");
+    const auto &hasted = outlook_for(*outlook, id_of(session, "Hasted"));
+    const auto &held = outlook_for(*outlook, id_of(session, "Held"));
+    const auto &foe = outlook_for(*outlook, id_of(session, "Foe"));
+    check(near(hasted.helps_lost, 0.5) && near(held.freed, 0.5) && near(foe.helps_lost, 0.5),
+          "At the effects' own level each creature keeps each of them half the time");
+    check(rules::judge_area_spell(*outlook, {}).cast,
+          "Freeing a held friend is worth a friend's Haste");
+    auto sure = start(20);
+    auto &dispelling = *sure.session;
+    const auto certain = dispelling.area_outlook(id_of(dispelling, "Cleric"), 41, {4, 3});
+    check(certain && near(outlook_for(*certain, id_of(dispelling, "Foe")).helps_lost, 1.0) &&
+              near(outlook_for(*certain, id_of(dispelling, "Held")).freed, 1.0),
+          "Far above the effects' level, every one goes");
+    cast_now(dispelling, "Cleric", 41,
+             [&]
+             {
+                 return aim_at_cell(dispelling, {4, 3});
+             });
+    for (const auto *name : {"Hasted", "Held", "Foe"})
+    {
+        check(left_by_fight(dispelling, name).effects.empty(),
+              std::string(name) + " is dispelled too, as the outlook said");
+    }
+}
+
+// Sleep that would take a friend standing beside an able foe counts as
+// felling it, and is not cast so; aimed at the foe alone, it is.
+void sleep_outlook_counts_a_friend_beside_a_foe()
+{
+    using original::ClassSlot;
+    auto fight =
+        arrange({{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 1, {21})},
+                 {"Friend", rules::Side::party, {4, 3}, creature(8, 1)},
+                 {"Foe", rules::Side::opposition, {5, 3}, creature(8, 1)}},
+                227);
+    const auto &session = *fight.session;
+    const auto mage = id_of(session, "Mage"), ally = id_of(session, "Friend"),
+               foe = id_of(session, "Foe");
+    const auto both = session.area_outlook(mage, 21, {4, 3});
+    check(both && near(outlook_for(*both, ally).disabled, 1.0) &&
+              outlook_for(*both, ally).enemy_beside && near(outlook_for(*both, foe).disabled, 1.0),
+          "Sleep there takes the friend beside the foe, and the foe");
+    check(!rules::judge_area_spell(*both, {}).cast,
+          "A friend asleep beside a foe is as good as down");
+    const auto foe_alone = session.area_outlook(mage, 21, {6, 3});
+    check(foe_alone && !reaches(*foe_alone, ally) && rules::judge_area_spell(*foe_alone, {}).cast,
+          "Sleep beyond the foe takes the foe alone, and is cast");
+}
+
+// A monster's caster keeps the original's AI (combatai.pas, DecideCastSpell):
+// Lightning Bolt keeps no friend clear, so it bolts the fighter though its
+// own orc stands beyond, where the bolt runs on.
+void a_monster_bolts_through_its_own()
+{
+    using original::ClassSlot;
+    auto shaman = caster(ClassSlot::magic_user, 5, {51, 51, 51});
+    shaman.morale = 0x80 + 50;
+    auto fight = arrange({{"Fighter", rules::Side::party, {3, 3}, creature(50)},
+                          {"Orc", rules::Side::opposition, {1, 3}, victim(60)},
+                          {"Shaman", rules::Side::opposition, {6, 3}, shaman}},
+                         233);
+    auto &session = *fight.session;
+    play_until(
+        session,
+        [&](const std::string &actor)
+        {
+            return order(session, actor == "Shaman" ? "quick" : "end");
+        },
+        [&]
+        {
+            return logged(session, "{name} casts {spell}.") > 0 || session.snapshot().round > 10;
+        });
+    check(logged(session, "{name} casts {spell}.") > 0 &&
+              view_of(session.snapshot(), "Orc").hit_points < 60,
+          "The shaman's bolt runs on into its own orc");
+}
+
 // The AI steps only onto an empty square, so a monster behind another in a
 // corridor waits rather than share its square (combatai.pas, AiMoveStep).
 void the_ai_never_shares_a_square()
@@ -4883,8 +5182,7 @@ void darkness_effects_take_their_own_numbers()
               mapped(126) == 726,
           "The Rakshasa's protection, weapons below +3 and +4, the +2 weapon and gaze immunity "
           "take the kit's numbers, which play them alike");
-    check(mapped(118) == 518 && mapped(67) == 537 &&
-              mapped(100) == 570 && mapped(104) == 574,
+    check(mapped(118) == 518 && mapped(67) == 537 && mapped(100) == 570 && mapped(104) == 574,
           "Its own are 400 up, or 470 where one of Secret's has that number");
 }
 
@@ -5705,8 +6003,7 @@ void a_quarrel_of_slaying_slays_its_quarry()
             return logged(session, "{name} is slain.") > 0;
         },
         353, kit);
-    check(logged(*slain.session, "{name} is slain.") == 1,
-          "A quarrel of slaying slays its quarry");
+    check(logged(*slain.session, "{name} is slain.") == 1, "A quarrel of slaying slays its quarry");
     archer.striker = original::StrikingItem{0, false, 0, false, false};
     const auto plain = attack_until(
         archer, quarry,
@@ -7149,6 +7446,13 @@ int main()
         the_ai_fights_to_the_end();
         a_lone_mage_stays();
         a_monster_casts();
+        a_fireball_outlook_weighs_each_save();
+        cone_and_bolt_outlooks_reach_friends();
+        a_quick_mage_keeps_its_cone_off_a_friend();
+        a_treasures_party_mage_keeps_its_bolt_off_a_friend();
+        secret_dispel_outlook_weighs_each_creature();
+        sleep_outlook_counts_a_friend_beside_a_foe();
+        a_monster_bolts_through_its_own();
         treasures_ai_casts_its_weightiest_spell(GoldBoxGame::treasures_of_the_savage_frontier);
         treasures_ai_casts_its_weightiest_spell(GoldBoxGame::pools_of_darkness);
         quick_magic_lets_the_party_cast();

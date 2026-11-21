@@ -96,7 +96,7 @@ func solar() -> Dictionary:
 func set_option(option: String, on: bool) -> void:
 	await press(town().get_node("%RocketChange"))
 	var menu: Control = current_scene.get_node("GameMenu")
-	var gameplay: Control = menu.get_node("Options/Gameplay")
+	var gameplay: Control = menu.get_node("Options/Gameplay/Scroll/Page")
 	require(menu.visible and menu.get_node("Options").visible, "Change opens the Options")
 	var choice: OptionButton = gameplay.get_node(option)
 	require(choice.visible, option + " shows on the Options while Countdown plays")

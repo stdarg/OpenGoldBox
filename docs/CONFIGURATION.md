@@ -50,6 +50,13 @@ buck-rogers-countdown-to-doomsday="off"
 [original_movement]
 CURSE="on"
 
+[party_spell_ai]
+death_limit=5
+hurt_share=50
+hurt_chance=50
+fight_end_chance=75
+party_weight=2.0
+
 [design_difficulty]
 UA="both"
 
@@ -228,6 +235,31 @@ the default, also used for any value but `off`, moves the game's fights as
 its original does ([ORIGINAL-RULES.md](ORIGINAL-RULES.md), Movement); `off`
 plays OpenGoldBox's earlier movement ([DEVIATIONS.md](DEVIATIONS.md)). A
 fight takes it as it starts (`rules::RulesModule::move_as_the_original`).
+
+`[party_spell_ai]` is the Options screen's Party area spells (the user,
+2026-11-21), shown under the original rules but for a Buck Rogers game, the
+same for every game: how far a member of the party on Quick, or a companion
+the computer plays, may risk its own side with a spell or item that strikes
+an area ([ORIGINAL-RULES.md](ORIGINAL-RULES.md), Party area spells).
+
+- `death_limit`, Death limit: it never casts while any member could go down
+  with this chance or more, in percent; 5 unless set.
+- `hurt_share`, Badly hurt: a member is badly hurt when it may lose at least
+  this share of its most Hit Points, in percent, or be put out of the fight;
+  50 unless set.
+- `hurt_chance`, Badly hurt chance: how likely that loss must be to count,
+  in percent; 50 unless set.
+- `fight_end_chance`, Fight end chance: with a member badly hurt, it casts
+  only if every enemy then goes down with this chance or more, in percent;
+  75 unless set.
+- `party_weight`, Party weight: for lighter harm, it casts only if the
+  enemies' likely loss outweighs the party's, the party's counting this many
+  times as much; 1.0 to 5.0, 2.0 unless set.
+
+A percentage takes 0 to 100; a value outside its bounds is brought within
+them, and one missing or not a number keeps its default. A fight takes them
+as it starts (`rules::RulesModule::limit_party_area_spells`). The Gameplay
+page of Options scrolls, its rows being more than a small window shows.
 
 `[design_difficulty] UA` is the Options screen's Design difficulty: how
 `difficulty` plays in an *Unlimited Adventures* design (the user, 2026-11-15;

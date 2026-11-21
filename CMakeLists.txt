@@ -102,6 +102,7 @@ if(OPENGOLD_BUILD_FUZZERS)
 endif()
 
 add_library(opengold_rules STATIC src/OpenGold.Rules/src/rules.cpp src/OpenGold.Rules/src/character_rules.cpp
+    src/OpenGold.Rules/src/area_spells.cpp
     src/OpenGold.Rules/src/movement_grid.cpp)
 target_include_directories(opengold_rules PUBLIC src/OpenGold.Rules/include)
 add_library(opengold_rules_srd5 STATIC
@@ -285,6 +286,9 @@ if(OPENGOLD_BUILD_TESTS)
     add_executable(opengold_original_rules_tests tests/original_rules_tests.cpp)
     target_link_libraries(opengold_original_rules_tests PRIVATE opengold_rules_original)
     add_test(NAME opengold_original_rules_tests COMMAND opengold_original_rules_tests)
+    add_executable(opengold_area_spell_tests tests/area_spell_tests.cpp)
+    target_link_libraries(opengold_area_spell_tests PRIVATE opengold_rules)
+    add_test(NAME opengold_area_spell_tests COMMAND opengold_area_spell_tests)
     add_executable(opengold_original_creation_tests tests/original_creation_tests.cpp)
     target_link_libraries(opengold_original_creation_tests PRIVATE opengold_rules_original
         opengold_core)

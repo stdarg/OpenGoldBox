@@ -10,6 +10,7 @@
 
 #include "opengold/game_finder.h"
 #include "opengold/gold_box_game.h"
+#include "opengold/rules.h"
 
 namespace settings
 {
@@ -100,6 +101,13 @@ bool save_course_flown(opengold::GoldBoxGame game, bool on);
 // (rules::RulesModule::move_as_the_original).
 bool original_movement(opengold::GoldBoxGame game);
 bool save_original_movement(opengold::GoldBoxGame game, bool on);
+// [party_spell_ai]: the player's limits on the area spells a computer-run
+// party member casts under the original rules (rules::AreaSpellLimits), the
+// same for every game. death_limit, hurt_share, hurt_chance and
+// fight_end_chance are percentages, 0-100 (5, 50, 50 and 75 unless set);
+// party_weight is 1.0 to 5.0 (2.0 unless set).
+[[nodiscard]] opengold::rules::AreaSpellLimits party_spell_limits();
+bool save_party_spell_limits(const opengold::rules::AreaSpellLimits &limits);
 // [design_difficulty] UA: how the difficulty plays in an Unlimited Adventures
 // design, "design" (the kit's own levels), "table" (OpenGoldBox's table) or
 // "both", the default.

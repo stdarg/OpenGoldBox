@@ -451,6 +451,10 @@ struct Content
     // half-moves, and a last half-move lost as a move ends. Off, they move as
     // OpenGoldBox did before (docs/DEVIATIONS.md).
     bool original_movement{true};
+    // The player's limits on the area spells a computer-run party member
+    // casts (the Options screen's Party area spells;
+    // rules::RulesModule::limit_party_area_spells).
+    rules::AreaSpellLimits party_spell_limits;
 };
 
 // The original rules as the module the game's fights and party run through.

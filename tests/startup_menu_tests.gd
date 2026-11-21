@@ -179,7 +179,7 @@ func run_checks() -> void:
 		"Options must open without the in-game menu")
 	# Pool of Radiance, the game until another is chosen, shows its own and
 	# the other games' options, not the Buck Rogers games' ship combat.
-	var gameplay: Control = options.get_node("Options/Gameplay")
+	var gameplay: Control = options.get_node("Options/Gameplay/Scroll/Page")
 	require(gameplay.get_node("OriginalShops").visible and gameplay.get_node("DarknessGazes").visible
 		and not gameplay.get_node("CommandEveryRound").visible and not gameplay.get_node("EmptyHelmDodges").visible
 		and not gameplay.get_node("BoardingFuel").visible,
@@ -566,7 +566,7 @@ func check_buck_rogers() -> void:
 		require(game_menu.visible, folder + "'s menu follows its title")
 		game_menu.get_node("Buttons/Options").pressed.emit()
 		await settle()
-		var gameplay: Control = current_scene.get_node("Options/Options/Gameplay")
+		var gameplay: Control = current_scene.get_node("Options/Options/Gameplay/Scroll/Page")
 		require(not gameplay.get_node("OriginalShops").visible and not gameplay.get_node("DarknessGazes").visible
 			and not gameplay.get_node("DesignDifficulty").visible,
 			"The other games' options step aside for the ship combat's and the solar map's")
@@ -587,7 +587,7 @@ func check_buck_rogers() -> void:
 		await press("Options/Options/Close")
 		game_menu.get_node("Buttons/Options").pressed.emit()
 		await settle()
-		gameplay = current_scene.get_node("Options/Options/Gameplay")
+		gameplay = current_scene.get_node("Options/Options/Gameplay/Scroll/Page")
 		for name in options:
 			require((gameplay.get_node(name) as OptionButton).selected == 1 - options[name][1],
 				name + " shows the saved choice again for " + folder)
@@ -596,6 +596,38 @@ func check_buck_rogers() -> void:
 		await settle()
 	print("Startup menu passed: Buck Rogers' ship-combat and solar-map options, each game's own, at their defaults and saved.")
 	quit(0)
+
+# The in-game Options' Party area spells under the original rules
+# (docs/CONFIGURATION.md, [party_spell_ai]): the five limits at their
+# defaults, each saved as it changes, shown again as Options reopen, and put
+# back. Options are open as it starts and as it ends.
+func check_party_spell_limits(gameplay: Control) -> void:
+	var limits := {"DeathLimit": ["death_limit", 5.0, 10.0], "HurtShare": ["hurt_share", 50.0, 40.0],
+		"HurtChance": ["hurt_chance", 50.0, 60.0], "FightEndChance": ["fight_end_chance", 75.0, 90.0],
+		"PartyWeight": ["party_weight", 2.0, 3.5]}
+	require(gameplay.get_node("PartySpellsHeader").is_visible_in_tree(), "Options show the party's area spells")
+	for row in limits:
+		var spin: SpinBox = gameplay.get_node(row)
+		require(spin.is_visible_in_tree() and gameplay.get_node(row + "Label").visible
+			and not (spin.tooltip_text as String).is_empty() and spin.value == limits[row][1],
+			row + " shows its default and explains itself")
+		spin.value = limits[row][2]
+	var config := ConfigFile.new()
+	config.load(OS.get_environment("OPENGOLD_SETTINGS_FILE"))
+	for row in limits:
+		require(float(config.get_value("party_spell_ai", limits[row][0], -1.0)) == limits[row][2],
+			row + " is saved: " + str(config.get_value("party_spell_ai", limits[row][0], "")))
+	await press("GameMenu/Options/Close")
+	await press("GameMenu/Menu/Options")
+	var page: Control = current_scene.get_node("GameMenu/Options/Gameplay/Scroll/Page")
+	for row in limits:
+		var spin: SpinBox = page.get_node(row)
+		require(spin.value == limits[row][2], row + " shows the saved limit again")
+		spin.value = limits[row][1]
+	config.load(OS.get_environment("OPENGOLD_SETTINGS_FILE"))
+	for row in limits:
+		require(float(config.get_value("party_spell_ai", limits[row][0], -1.0)) == limits[row][1],
+			row + " is back at its default")
 
 func check_ua() -> void:
 	var kit := StartupView.game_folder("UA")
@@ -681,7 +713,7 @@ func check_ua() -> void:
 	# The in-game Options: a design plays the Difficulty as Design difficulty
 	# says, Both by default, and a choice is kept for Unlimited Adventures.
 	await press("GameMenu/Menu/Options")
-	var gameplay: Control = current_scene.get_node("GameMenu/Options/Gameplay")
+	var gameplay: Control = current_scene.get_node("GameMenu/Options/Gameplay/Scroll/Page")
 	var design_difficulty: OptionButton = gameplay.get_node("DesignDifficulty")
 	require(design_difficulty.is_visible_in_tree() and design_difficulty.item_count == 3
 		and design_difficulty.get_item_text(0) == "The design's" and design_difficulty.selected == 2,
@@ -695,6 +727,7 @@ func check_ua() -> void:
 	config.load(OS.get_environment("OPENGOLD_SETTINGS_FILE"))
 	require(config.get_value("design_difficulty", "UA", "") == "design",
 		"The design's own difficulty is saved for Unlimited Adventures")
+	await check_party_spell_limits(gameplay)
 	await press("GameMenu/Options/Close")
 	await press("GameMenu/Menu/Save")
 	var slots: Window = current_scene.get_node("SaveSlots")

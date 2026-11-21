@@ -1962,7 +1962,9 @@ gear.
    ends on another creature's square. The game's computer turns under these
    rules (monsters, allies and party members on Quick) are this AI's: the
    shared command chooser takes `quick` (or `quick_magic`) whenever the rules
-   offer it.
+   offer it. Since 2026-11-21 a creature on the party's side weighs its area
+   spells and items by their likely outcome instead ([Party area
+   spells](#party-area-spells)); monsters keep the original's way.
 10. The fight's sides and its end, from each game's reconstruction (rules
     round 6, 2026-11-16):
     - **SETUP MONSTER's sides.** *Pools of Darkness*'s and *Treasures*'
@@ -2020,6 +2022,108 @@ gear.
       bit 8; fxengine.pas names bit 16 acid). The reconstruction outranks
       coab, whose ovr023 had them deal acid, so *Curse* plays 10 as the
       others and that Bugs entry is gone (2026-11-16).
+
+## Party area spells
+
+*The user's decision, 2026-11-21.* A computer-run member of the party, a
+member on Quick (its spells with Quick magic on, its magic items either way)
+or a companion the computer plays on the party's side, weighs what an area
+spell or item would likely do to its own side against what it would likely
+do to the enemies, and aims it where that is best. Monsters and the creatures
+against the party keep the original's AI (`combatai.pas`, DecideCastSpell;
+`Session::ai_decides`): a monster's Lightning Bolt still runs on into its
+own. This is a departure from the original ([DEVIATIONS.md](DEVIATIONS.md)).
+
+**The spells weighed** are those that take whoever stands in their area:
+Sleep, Stinking Cloud, Dispel Magic, Fireball, Lightning Bolt, Slow, a
+Javelin of Lightning, a Necklace of Missiles, Entangle, Confusion, Fear, Ice
+Storm, Cloudkill, Cone of Cold, a blast, Blade Barrier, Death Spell, Delayed
+Blast Fireball, Mass Charm, Power Word Blind, Meteor Swarm and Power Word
+Kill. A spell aimed at creatures the caster picks (Hold Person, Charm
+Monsters, Magic Missile) only ever takes enemies, and keeps the original's
+AI.
+
+**What the caster may know.** Its own side's Hit Points, saves, magic
+resistance, immunities and spell effects, as they are. An enemy's Hit Points
+it can only guess: at most 4.5 a Hit Die (2 for a creature of less than
+one), and now that less the damage it has visibly taken this fight, at least
+1. An enemy's saves, immunities and resistances count as the rules know
+them (a fire creature and a Fireball). It never looks at a die rolled or
+still to roll: it weighs every way the dice can fall.
+
+**Each aim.** The caster tries every aim the rules let it give the spell:
+each open square in range and sight for a spell that reaches around a
+square, each creature it may single out for a Javelin of Lightning. At each
+it asks the rules what the spell would reach there, by their own shapes
+(`within`, `fireball_reach`, `path_area`, the bolt's walk, the clouds'
+squares, the meteors' falls), and what it would likely do to each creature
+it reaches (`rules::CombatSession::area_outlook`):
+
+- Damage: every total of the dice, one roll for all for a Fireball, a
+  Lightning Bolt or a Cone of Cold and each creature's own for a meteor or
+  the blades, through each creature's save for half or none and its defenses
+  as the rules play them (`defended_harm`), magic resistance included. A
+  bolt that strikes a creature twice harms it twice.
+- Sleep, Stinking Cloud, Slow, Confusion, Entangle, Fear and Mass Charm: the
+  chance each creature is put out of the fight (asleep, sickened, slowed,
+  confused, held, afraid, charmed), its save and immunities weighed, Sleep's
+  4d4 levels and Confusion's 2d8 creatures each way they can fall. Slow takes
+  only enemies, and a hasted one only loses its Haste.
+- Cloudkill, Death Spell and Power Word Kill: the chance each is slain.
+  Power Word Blind: the chance each is blinded.
+- Dispel Magic: the chance each effect goes, by the caster's level against
+  the effect's. An effect that helps a member (Haste, Bless, a Globe,
+  Invisibility) lost is a cost; a member freed of what holds, charms or
+  sleeps it is a gain; for an enemy, the other way round. Each creature in
+  the area is tried once, as the rules play Dispel Magic in every game (the
+  original, *Secret* included, tried its first target again and again:
+  [Bugs](#bugs-in-the-original)).
+
+The caster counts as a member of the party when it stands in its own area,
+and a member already down lying in the area counts as slain.
+
+**The decision**, in order (`rules::judge_area_spell`):
+
+1. No member may go down with the death limit's chance or more (5%). A
+   member put out of the fight beside an able enemy counts as down.
+2. A member is badly hurt by a chance of at least the hurt chance (50%) of
+   losing the hurt share (50%) of its most Hit Points, or of being put out
+   of the fight. With a member badly hurt, the spell is cast only if every
+   able enemy in the fight then goes down, or is put out of it, with the
+   fight end chance or more (75%).
+3. Lighter harm: the gain is, for each enemy, its weight times its chance of
+   going down or out of the fight, plus, should it stand, the share of its
+   Hit Points it likely loses; the cost is the party weight (2) times each
+   member's likely share of its most Hit Points lost. A member put out of
+   the fight counts as losing the hurt share, and a spell effect lost or
+   gained as a quarter of it. The spell is cast if the gain is above nothing
+   and at least the cost.
+4. With no member in the area, any gain will do.
+
+An enemy weighs its level (Hit Dice) plus one, over the average of that
+among the fight's able enemies: a stronger enemy counts more, an average one
+1. Among the aims that pass, the caster takes the one of most gain over
+cost; one that passes only as a likely end of the fight ranks below any
+that hurts no member badly, and among those by that chance. With no aim
+passing the spell is not cast, and the AI goes on to its next choice, as the
+original's does when DecideCastSpell refuses; a spell that comes due with no
+aim left passing is given up.
+
+The five numbers are the player's, on the Options screen's Party area
+spells (`[party_spell_ai]`, [CONFIGURATION.md](CONFIGURATION.md)), the same
+for every game. The SRD rules have no outlook (their module answers none),
+and their test player keeps its own rule for areas (`area_risks_side`,
+`safe_area_target` and the items' `area_risks_ally` in `combat_demo.cpp`).
+Under the original rules the test player hands each turn to the rules' own
+AI (`quick`, `quick_magic`), so its area spells are weighed the same way,
+and its answer to a held or charmed member (`free_the_bound` in
+`tests/gold_box_games_tests.cpp`) aims Dispel Magic by the same outlook and
+decision, at the default limits.
+
+**Left out.** The outlook takes a bolt's path as if no one it strikes fell
+on the way; Blade Barrier and Cloudkill as the caster's own new cloud, though
+the rules weigh an older one's caster; and the clouds' later rounds, and
+what a Stinking Cloud's cough costs one that saves.
 
 ## Encumbrance
 

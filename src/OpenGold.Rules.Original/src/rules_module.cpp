@@ -836,6 +836,11 @@ class OriginalModule final : public RulesModule
         content_.original_movement = on;
     }
 
+    void limit_party_area_spells(const AreaSpellLimits &limits) override
+    {
+        content_.party_spell_limits = limits;
+    }
+
     [[nodiscard]] bool offers_temple_service(TempleService service) const override
     {
         return service != TempleService::resurrection && service != TempleService::cure_feeblemind;

@@ -14549,7 +14549,10 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
     // men, Pools of Darkness's rakshasas): Charm Person at a charmed one,
     // which frees it with no save as the original Treasures' does, or Dispel
     // Magic, which ends a charm or a hold as the original's dispel does,
-    // where a caster has it memorized.
+    // where a caster has it memorized. Dispel Magic goes where the party's
+    // own outlook and the default limits judge best (docs/ORIGINAL-RULES.md,
+    // Party area spells), so it strips no member's Haste or Globe for
+    // nothing, and is cast only where some aim beside the bound would pass.
     const auto free_the_bound =
         [&](const opengold::rules::CombatSession &fight) -> std::optional<opengold::rules::Command>
     {
@@ -14599,15 +14602,40 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                                    command.destination.y == unit.cell.y);
                                        });
         };
+        // How the outlook judges Dispel Magic aimed at a square.
+        const auto judged = [&](const opengold::rules::Command &command, opengold::rules::Cell aim)
+        {
+            const auto outlook = fight.area_outlook(command.actor, command.item, aim);
+            return outlook ? opengold::rules::judge_area_spell(*outlook, {})
+                           : opengold::rules::AreaSpellJudgement{};
+        };
         const auto commands = fight.legal_commands();
         for (const auto &command : commands)
         {
-            if (command.verb == "aim" &&
-                ((command.item == charm_person && aims_at(command, charmed)) ||
-                 (dispel(command) && (aims_at(command, charmed) || aims_at(command, held)))))
+            if (command.verb == "aim" && command.item == charm_person && aims_at(command, charmed))
             {
                 return command;
             }
+        }
+        const opengold::rules::Command *best = nullptr;
+        opengold::rules::AreaSpellJudgement best_judgement;
+        for (const auto &command : commands)
+        {
+            if (command.verb != "aim" || !dispel(command))
+            {
+                continue;
+            }
+            const auto judgement = judged(command, command.destination);
+            if (judgement.cast &&
+                (!best || opengold::rules::better_area_aim(judgement, best_judgement)))
+            {
+                best = &command;
+                best_judgement = judgement;
+            }
+        }
+        if (best)
+        {
+            return *best;
         }
         for (const auto &command : commands)
         {
@@ -14616,9 +14644,30 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 return command;
             }
         }
+        // Whether Dispel Magic would pass aimed at a bound member or beside it.
+        const auto passes_beside_the_bound = [&](const opengold::rules::Command &command)
+        {
+            for (const auto *bound : {&charmed, &held})
+            {
+                for (const auto &unit : *bound)
+                {
+                    for (int dy = -1; dy <= 1; ++dy)
+                    {
+                        for (int dx = -1; dx <= 1; ++dx)
+                        {
+                            if (judged(command, {unit.cell.x + dx, unit.cell.y + dy}).cast)
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
+        };
         for (const auto &command : commands)
         {
-            if (command.verb == "cast" && dispel(command))
+            if (command.verb == "cast" && dispel(command) && passes_beside_the_bound(command))
             {
                 return command;
             }

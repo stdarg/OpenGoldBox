@@ -125,7 +125,7 @@ func check_leader() -> void:
 # magic items" and each sheet's Maximize defense / Maximize damage hide; on
 # again they show, and a member's choice stays theirs.
 func check_auto_equip() -> void:
-    var gameplay: Control = current_scene.get_node("GameMenu/Options/Gameplay")
+    var gameplay: Control = current_scene.get_node("GameMenu/Options/Gameplay/Scroll/Page")
     var auto_equip: OptionButton = gameplay.get_node("AutoEquip")
     var member: Button = town().get_node("%PartyList/Rows/Member0")
     var sheet: Window = current_scene.get_node("TownSheet")

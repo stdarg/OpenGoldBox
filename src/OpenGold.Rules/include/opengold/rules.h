@@ -1204,6 +1204,87 @@ struct Command
     int close_damage{};
 };
 
+// The player's limits on what an area spell cast by a computer-run member of
+// the party may risk (the Options screen's Party area spells;
+// docs/CONFIGURATION.md, [party_spell_ai]). Chances and shares are fractions
+// from 0 to 1.
+struct AreaSpellLimits
+{
+    // No member may go down with this chance or more.
+    double death_limit{0.05};
+    // A member is badly hurt by a chance of at least hurt_chance of losing at
+    // least hurt_share of its most Hit Points, or of being disabled ...
+    double hurt_share{0.5};
+    double hurt_chance{0.5};
+    // ... which only every able enemy going down with this chance is worth.
+    double fight_end_chance{0.75};
+    // Any lighter harm: a member's share of Hit Points weighs this many times
+    // an enemy's.
+    double party_weight{2.0};
+};
+
+// What an area spell aimed at one square would likely do to one creature it
+// reaches, as its caster can know it: an enemy's Hit Points are estimated
+// from its Hit Dice and the damage it has visibly taken.
+struct CreatureOutlook
+{
+    EntityId id{};
+    // Of the caster's side: harm to it is a cost, not a gain.
+    bool ally{};
+    // Now and at most; 0 or below is down already.
+    int hit_points{}, max_hit_points{};
+    // An enemy's worth against the fight's other enemies (by its level or
+    // Hit Dice, 1 on average); 1 for an ally.
+    double weight{1.0};
+    // An able enemy stands next to it.
+    bool enemy_beside{};
+    // The chance of each loss of Hit Points, by the points lost (index 0, no
+    // harm). One slain counts as losing all it has.
+    std::vector<double> loss{1.0};
+    // The chance it is left unable to act: asleep, held, sickened, charmed,
+    // confused, afraid, slowed.
+    double disabled{};
+    // The spell effects the spell would likely take from it or give it: the
+    // expected number of those that help it it loses, of those that hinder it
+    // it loses and it gains, and the chance it is freed of what disables it.
+    double helps_lost{}, hindrances_lost{}, hindrances_gained{}, freed{};
+};
+
+// What an area spell aimed at one square would likely do.
+struct AreaOutlook
+{
+    // Everyone it reaches, the caster too when in its own area.
+    std::vector<CreatureOutlook> creatures;
+    // The chance that every able enemy in the fight goes down or is disabled.
+    double every_enemy_down{};
+};
+
+// The verdict on one aim of an area spell (judge_area_spell).
+struct AreaSpellJudgement
+{
+    bool cast{};
+    // It passes only because it likely ends the fight with a member badly
+    // hurt; such an aim ranks below any that hurts no member badly.
+    bool hurts_party_badly{};
+    // What it likely does to the enemies and to the party, weighed.
+    double gain{}, cost{};
+    // Its rank among aims alike in hurts_party_badly, higher better: the
+    // chance it ends the fight, or gain less cost.
+    double score{};
+};
+
+// Whether a computer-run party member casts an area spell aimed so, and how
+// well that aim ranks (docs/ORIGINAL-RULES.md, Party area spells): no member
+// may go down with death_limit's chance or more; a member badly hurt allows
+// it only if every enemy likely goes down; lighter harm only if the enemies'
+// loss outweighs the party's, weighed by party_weight; with no member caught,
+// any gain does.
+[[nodiscard]] AreaSpellJudgement judge_area_spell(const AreaOutlook &outlook,
+                                                  const AreaSpellLimits &limits);
+// Whether the aim judged `first` is better than the one judged `second`.
+[[nodiscard]] bool better_area_aim(const AreaSpellJudgement &first,
+                                   const AreaSpellJudgement &second) noexcept;
+
 class CombatSession
 {
   public:
@@ -1221,6 +1302,19 @@ class CombatSession
     // opposition for the rest of the fight.
     virtual void turn_against_party(const std::vector<EntityId> &turning) = 0;
     [[nodiscard]] virtual std::string save() const = 0;
+
+    // What an area spell or item power (by the module's number for it, as a
+    // cast, use or aim command's item names it) the caster would cast at
+    // `aim` would likely do, as the caster can know it; nothing for a spell
+    // that reaches no area, or a module that has no outlook (the SRD's).
+    [[nodiscard]] virtual std::optional<AreaOutlook> area_outlook(EntityId caster, unsigned spell,
+                                                                  Cell aim) const
+    {
+        (void)caster;
+        (void)spell;
+        (void)aim;
+        return std::nullopt;
+    }
 
   protected:
     // Implementations may copy themselves (a session's rollback does), but an
@@ -1270,6 +1364,14 @@ class RulesModule
     virtual void move_as_the_original(bool on)
     {
         (void)on;
+    }
+
+    // The player's limits on the area spells a computer-run party member
+    // casts in later fights (the Options screen's Party area spells). A
+    // module whose computer does not weigh area spells has nothing to change.
+    virtual void limit_party_area_spells(const AreaSpellLimits &limits)
+    {
+        (void)limits;
     }
 
     [[nodiscard]] virtual CharacterProfile
