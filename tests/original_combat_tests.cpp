@@ -3864,6 +3864,48 @@ void a_treasures_party_mage_keeps_its_bolt_off_a_friend()
           "With limits that risk anything it bolts its friend too");
 }
 
+// A party mage on Quick weighs its Wand of Fireballs as the wand casts it,
+// at level 6 (range 16), not at its own level 10 (range 20): with the only
+// foe beyond the wand's reach it leaves the wand alone, where it once took
+// the wand up on its own range and gave the aim up on the wand's; with the
+// foe within reach it fires.
+void a_quick_mage_weighs_a_wand_at_the_wands_level()
+{
+    using original::ClassSlot;
+    const auto plays = [](rules::Cell foe, std::uint64_t seed)
+    {
+        auto mage = caster(ClassSlot::magic_user, 10, {});
+        mage.items = {{0, true, false, 14, true, {47, 0, 0}, 30, 0}};
+        auto fight =
+            arrange({{"Mage", rules::Side::party, {0, 3}, mage},
+                     {"Foe", rules::Side::opposition, foe, victim(200)}},
+                    seed, {}, 100, GoldBoxGame::curse_of_the_azure_bonds, false, false,
+                    [](rules::Encounter &encounter)
+                    {
+                        encounter.battlefield = {
+                            24, 8, std::vector<rules::Terrain>(24 * 8, rules::Terrain::open)};
+                    });
+        auto &session = *fight.session;
+        until_turn_of(session, "Mage");
+        session.submit(order(session, "quick_magic"));
+        return std::pair{logged(session, "{name} uses an item."),
+                         logged(session, "{name} aborts the spell.")};
+    };
+    int far_uses = 0, far_aborts = 0, near_uses = 0, near_aborts = 0;
+    for (std::uint64_t seed = 1; seed <= 20; ++seed)
+    {
+        const auto [uses, aborts] = plays({21, 3}, seed);
+        far_uses += uses;
+        far_aborts += aborts;
+        const auto [near_use, near_abort] = plays({14, 3}, seed);
+        near_uses += near_use;
+        near_aborts += near_abort;
+    }
+    check(far_uses == 0 && far_aborts == 0,
+          "A Quick mage takes up no Wand of Fireballs whose own reach falls short of the foe");
+    check(near_uses > 0 && near_aborts == 0, "With the foe within the wand's reach it fires");
+}
+
 // Secret's Dispel Magic tries each creature in its area once, as the rules
 // play it (the original tried its first target again and again:
 // docs/ORIGINAL-RULES.md, Bugs), and the outlook weighs each so: a friend's
@@ -7449,6 +7491,7 @@ int main()
         a_fireball_outlook_weighs_each_save();
         cone_and_bolt_outlooks_reach_friends();
         a_quick_mage_keeps_its_cone_off_a_friend();
+        a_quick_mage_weighs_a_wand_at_the_wands_level();
         a_treasures_party_mage_keeps_its_bolt_off_a_friend();
         secret_dispel_outlook_weighs_each_creature();
         sleep_outlook_counts_a_friend_beside_a_foe();

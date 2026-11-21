@@ -2107,7 +2107,13 @@ cost; one that passes only as a likely end of the fight ranks below any
 that hurts no member badly, and among those by that chance. With no aim
 passing the spell is not cast, and the AI goes on to its next choice, as the
 original's does when DecideCastSpell refuses; a spell that comes due with no
-aim left passing is given up.
+aim left passing is given up. An item's spell is weighed as the item casts
+it, at level 6 (12 for an item's own power), both as the caster decides on
+it and as it aims it: a magic-user deciding on its Wand of Fireballs at its
+own level, with its longer range, would take it up and then find no aim in
+the wand's reach. Monsters decide on an item as the original's AI does
+(`combatai.pas`, SelectItemToUse asks DecideCastSpell before the item is in
+use), at their own level.
 
 The five numbers are the player's, on the Options screen's Party area
 spells (`[party_spell_ai]`, [CONFIGURATION.md](CONFIGURATION.md)), the same

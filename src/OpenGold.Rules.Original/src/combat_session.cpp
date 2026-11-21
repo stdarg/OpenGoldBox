@@ -8757,9 +8757,17 @@ bool Session::ai_use_item(Fighter &f)
         for (const auto &item : f.numbers.items)
         {
             const int number = item.spells[0];
-            if (item.scroll || !item.readied || !spell_built(number) ||
-                !ai_decides(f, number, 8 - pass, area_aims))
+            if (item.scroll || !item.readied || !spell_built(number))
             {
+                continue;
+            }
+            // A party member weighs an item's area spell as the item casts
+            // it, at the item's level (caster_level), as its aim will; the
+            // original's AI decides at the creature's own level.
+            f.using_item = weighs_area_spell(f, number) ? item.ordinal : -1;
+            if (!ai_decides(f, number, 8 - pass, area_aims))
+            {
+                f.using_item = -1;
                 continue;
             }
             f.using_item = item.ordinal;
