@@ -12,12 +12,10 @@
 // Shops setting chooses. Throws on a file the game cannot use.
 inline void use_shop_data(opengold::por::RolfTourSession &session)
 {
-    auto data =
-        opengold::load_shop_data(presentation::path_from_godot(game_data_path("data/shops")));
-    session.temples(std::move(data.temples));
-    session.shops(std::move(data.shops), settings::original_shops(settings::chosen_game())
-                                             ? opengold::ShopStock::original
-                                             : opengold::ShopStock::modified);
+    session.use_shop_data(presentation::path_from_godot(game_data_path("data/shops")),
+                          settings::original_shops(settings::chosen_game())
+                              ? opengold::ShopStock::original
+                              : opengold::ShopStock::modified);
 }
 
 #endif

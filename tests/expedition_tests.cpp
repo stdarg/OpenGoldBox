@@ -1617,14 +1617,15 @@ void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &par
     for (unsigned attempt = 0; attempt < tries; ++attempt)
     {
         party->restore(before_fight);
-        auto rules = fight_module(*party);
-        // The earned campaign's dice are tuned to the earlier movement: it
-        // plays with Original movement off until re-tuned under the default.
-        rules->move_as_the_original(!earned_campaign);
-        CombatDemo combat(std::move(rules));
+        CombatDemo combat(fight_module(*party));
         combat.campaign_party(party);
+        // The earned campaign plays every fight on one fixed seed, chosen
+        // for Original movement (the default): from the Slums' first
+        // roaming orcs on, its fights play out differently from the earlier
+        // movement's. On 59 no stage needs more than 11 of its 40 reloads.
+        constexpr std::uint64_t earned_fight_seed = 59;
         combat.encounter(*town.pending_encounter(),
-                         earned_campaign ? 42 : 42 + fight_seed_offset() + attempt);
+                         earned_campaign ? earned_fight_seed : 42 + fight_seed_offset() + attempt);
         if (attempt == 0)
         {
             for (const auto &unit : combat.combat().snapshot().combatants)
@@ -2262,6 +2263,15 @@ struct Expedition
     por::RolfTourSession town;
 };
 
+// The town's shops and temples, as the game gives them to a new campaign and
+// to an opened save. The earned campaign plays with the Options screen's
+// default Original shops; the other expeditions test the modified shops.
+void use_shop_data(por::RolfTourSession &town)
+{
+    town.use_shop_data(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/shops",
+                       earned_campaign ? ShopStock::original : ShopStock::modified);
+}
+
 // Six created fighters with the new-character purse, after Rolf's tour, in a
 // town that uses data/shops and, unless told otherwise, data/monsters as the
 // game does.
@@ -2277,9 +2287,7 @@ Expedition create_party(const std::filesystem::path &directory,
         party->add_coins(Coin::gold, 250);
     }
     auto town = por::RolfTourSession::load(directory, encounters, {}, std::move(monsters));
-    auto shop_data = load_shop_data(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/shops");
-    town.temples(std::move(shop_data.temples));
-    town.shops(std::move(shop_data.shops));
+    use_shop_data(town);
     town.companion_rules(srd5::character_rules(), repository_companions());
     town.campaign_party(party);
     settle(town, party);
@@ -3088,6 +3096,7 @@ Expedition load_expedition(const std::filesystem::path &save,
     party->restore(std::move(loaded.party));
     Expedition trip{party, std::move(*loaded.town)};
     trip.town.attach_restored_party(party);
+    use_shop_data(trip.town);
     trip.town.companion_rules(creation, repository_companions());
     check(fresh || encode_campaign(*party, &trip.town, assets) == bytes,
           "The reloaded campaign is the saved campaign");
@@ -7817,9 +7826,7 @@ Expedition create_earned_party(const std::filesystem::path &directory)
         check(party->member(id).experience == 0, "The earned campaign starts with no experience");
     }
     auto town = por::RolfTourSession::load(directory, repository_encounters(), {}, game_monsters());
-    auto shops = load_shop_data(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/shops");
-    town.shops(std::move(shops.shops));
-    town.temples(std::move(shops.temples));
+    use_shop_data(town);
     town.companion_rules(party->character_rules(), repository_companions());
     town.campaign_party(party);
     settle(town, party);

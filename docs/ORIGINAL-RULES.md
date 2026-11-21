@@ -1445,11 +1445,12 @@ original does, from *Pool of Radiance*'s combat units (`combat.pas`,
   spending its last half-moves and a last half-move kept. The fight boards
   carry each square's cost (Buck Rogers' arenas, and Pool's, Curse's,
   Gateway's, Champions' and Death Knights' fields out of doors; indoor
-  fields cost 1 everywhere). The fixed-dice route tests of Pool,
-  Secret, Pools of Darkness, Gateway and Treasures play with it off: their
-  dice are tuned to the earlier movement until they are re-tuned. Curse's
-  routes play with it on ([games/curse.md](games/curse.md), Original
-  movement).
+  fields cost 1 everywhere). The fixed-dice route tests play with it on:
+  Pool's earned campaign (its fixed fight seed chosen for it), Curse's
+  routes ([games/curse.md](games/curse.md), Original movement), Secret's
+  story route, Pools of Darkness and the Gateway and Treasures earned
+  endings. Only Secret's earned ending still plays with it off, its dice
+  tuned to the earlier movement ([games/secret.md](games/secret.md)).
   Leaving an enemy's side gives it a free attack, against the mover's rear
   Armor Class; stepping next to a guarding enemy draws its strike.
 - **To hit:** d20 against THAC0 minus the target's Armor Class; a natural 1

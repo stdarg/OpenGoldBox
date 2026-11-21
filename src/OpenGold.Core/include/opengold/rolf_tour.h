@@ -705,6 +705,12 @@ class RolfTourSession
     void shops(std::vector<opengold::ShopSite> sites,
                opengold::ShopStock stock = opengold::ShopStock::modified);
 
+    // The town's shops and temples as the game gives them to a new campaign
+    // and to an opened save: those the data/shops folder `shop_folder`
+    // describes, with the stock the game's Original Shops setting chooses.
+    // Throws on a file the game cannot use.
+    void use_shop_data(const std::filesystem::path &shop_folder, opengold::ShopStock stock);
+
     [[nodiscard]] const std::vector<opengold::ShopSite> &shops() const noexcept
     {
         return shops_;

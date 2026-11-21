@@ -16,7 +16,9 @@ and plays through Tyranthraxus's defeat and the ending. Arena practice earns XP
 through actual mirror duels; losses, paid lodging, healing spells and save/reload
 remain normal game actions. It supplies no levels, money, equipment, HP, quest
 flags, relocations or combat results. The actual dragon record must be defeated;
-a living boss at a ceasefire cannot pass.
+a living boss at a ceasefire cannot pass. It plays with the Options screen's
+defaults, Original movement and Original shops on; a reloaded stage gets the
+town's shops and temples as the game gives them to an opened save.
 
 ```sh
 OPENGOLD_GOLDBOX_DIR=/home/edmond/GoldBox \

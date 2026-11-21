@@ -718,6 +718,14 @@ void RolfTourSession::shops(std::vector<opengold::ShopSite> sites, opengold::Sho
     apply_entrances();
 }
 
+void RolfTourSession::use_shop_data(const std::filesystem::path &shop_folder,
+                                    opengold::ShopStock stock)
+{
+    auto data = opengold::load_shop_data(shop_folder);
+    temples(std::move(data.temples));
+    shops(std::move(data.shops), stock);
+}
+
 void RolfTourSession::restart()
 {
     if (town_ && town_->map)
