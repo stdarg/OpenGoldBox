@@ -1202,15 +1202,23 @@ const std::vector<RouteBeat> &curse_route()
          false,
          true},
         // Out of Voonlar back to Yulash's edge, camped there until healed, and
-        // on to the edge of Zhentil Keep.
-        {0,
-         0,
-         0,
-         D::north,
-         {"LEAVE", "JOURNEY", "YULASH", "TRAIL", "stop:JOURNEY"},
-         false,
-         false,
-         true},
+        // on to the edge of Zhentil Keep. The clerics cure the hurt first: a
+        // camp heals a point a night, and the Pit's way out can leave a
+        // paladin more hurt than the ninety nights the route camps mend.
+        []
+        {
+            RouteBeat back{0,
+                           0,
+                           0,
+                           D::north,
+                           {"LEAVE", "JOURNEY", "YULASH", "TRAIL", "stop:JOURNEY"},
+                           false,
+                           false,
+                           true};
+            back.cure_first = true;
+            back.cure_to_full = true;
+            return back;
+        }(),
         {0, 0, 0, D::north, {"stop:JOURNEY"}, true, false, true},
         {0,
          0,
@@ -9818,6 +9826,10 @@ std::vector<RouteBeat> curse_earned_route(CurseProgress progress)
         beats.back().ready_types.emplace_back(12, "cleric 5");
         world({"JOURNEY", "ESSEMBRA", "stop:JOURNEY"});
         beats.back().reloads_until_won = 360;
+        // Crimdrac's revenge on the road: under Original movement the best
+        // play of the first dice wins with paladin 1 and the ranger dead,
+        // whom the party's clerics cannot yet raise, so the player reloads once.
+        beats.back().reloads = 1;
         world({"stop:JOURNEY"}, true);
         world({"JOURNEY", "STANDING STONE", "stop:JOURNEY"});
         world({"stop:JOURNEY"}, true);
@@ -12379,9 +12391,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
     // These routes' dice are tuned to the earlier movement: they play with
     // Original movement off until re-tuned under the default.
     content.original_movement =
-        !route || !((game == GoldBoxGame::curse_of_the_azure_bonds &&
-                     (progress == CurseProgress::none || progress >= CurseProgress::third_bond)) ||
-                    (game == GoldBoxGame::secret_of_the_silver_blades &&
+        !route || !((game == GoldBoxGame::secret_of_the_silver_blades &&
                      (secret_progress == SecretProgress::none ||
                       secret_progress == SecretProgress::ending)) ||
                     game == GoldBoxGame::pools_of_darkness || earned_gateway || earned_treasure);

@@ -643,3 +643,27 @@ earned suffix winner save also decodes and reencodes byte-identically. The
 win notification is transient and is not replayed by loading that terminal
 save; the saved party, map and ending dialogue are intact. See
 [PLAYABILITY](../PLAYABILITY.md) for traces, exact tested tree and delivery.
+
+### Original movement (2026-11-21)
+
+Curse's assisted route and every earned progression play with Original
+movement on, the default ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md),
+Movement). Two player choices changed:
+
+- **Crimdrac on the road back** (earned, from the third bond). The best play
+  of the first dice won with paladin 1 and the ranger dead, whom the party's
+  level 7 clerics cannot raise; the shambling mounds in Yulash then beat the
+  four left. The player reloads the fight once: its best play loses no one.
+- **Leaving Voonlar** (assisted route). The clerics cast their cures before
+  the party camps at Yulash's edge. A camp heals a point a night, and the
+  Pit's way out left paladin 2 at 39 of 131, more than the route's ninety
+  nights mend; still hurt, the party rested again in the Caves of the
+  Beholder, whose wanderers come night after night, and fell there.
+
+The earned ending wins with the ranger alone standing after Tyranthraxus,
+as the original counts a fight won with one member standing.
+
+On macOS (2026-11-21) the five routes pass with the option on: the assisted
+route in 279s, the third bond in 242s (56 fights, one with casualties), the
+Moander recovery in 267s (61, one), the fourth bond in 363s (75, one) and the
+earned ending in 436s (91 fights, none lost, two with casualties).
