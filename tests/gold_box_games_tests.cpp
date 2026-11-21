@@ -2218,12 +2218,15 @@ std::vector<RouteBeat> secret_earned_route(SecretProgress progress)
                                  });
                 check(gem != beats.end(), "The earned route reaches the soul gem");
                 // This party keeps its second Haste for the chamber's door
-                // (below), not the story route's casts on the way there.
+                // (below), not the story route's camp and casts on the way
+                // there.
                 for (auto at = beats.begin() + first_ending_beat; at != gem; ++at)
                 {
                     if (at->map == 98 && at->x == 2 && (at->y == 3 || at->y == 4))
                     {
                         at->cast_after.clear();
+                        at->rest_first = false;
+                        at->rest_for_spells = false;
                     }
                 }
                 RouteBeat hasten_for_gem{98, 1, 3, D::north, {}};
@@ -3247,10 +3250,15 @@ const std::vector<RouteBeat> &secret_route()
             {
                 beat.cast_after = {"mirror_image"};
             }
-            // The same again on the way to the soul's chamber, with the
-            // spells the Dreadlord's fight left.
+            // The same again on the way to the soul's chamber: the party
+            // first camps where the Dreadlord fell for its spells again (the
+            // guards who come are fought), as a player rests before a known
+            // fight; only passing by, it would just Fix there (the castle's
+            // guards break its camps) and have neither spell left.
             if (beat.map == 98 && beat.x == 2 && beat.y == 4)
             {
+                beat.rest_first = true;
+                beat.rest_for_spells = true;
                 beat.cast_after = {"haste"};
             }
             if (beat.map == 98 && beat.x == 2 && beat.y == 3)

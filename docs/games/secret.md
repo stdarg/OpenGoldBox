@@ -510,8 +510,12 @@ fight through combat commands. The town hall spends already earned
 experience on the mid-game return; a later temple visit raises the dead and
 cures the petrified magic-user before further training. The last Well rest
 retains the globe, Mass Invisibility, Mirror Image and Haste plan; under
-Original movement (2026-11-21) the Haste and Mass Invisibility the Dreadlord's
-fight leaves are cast again on the way to the soul chamber (2,4 and 2,3). Globes
+Original movement (2026-11-21) Haste and Mass Invisibility are cast again on
+the way to the soul chamber (2,4 and 2,3). Since the party area-spell
+judgement (2026-11-21) the party first camps at 2,4, where the Dreadlord fell,
+for those spells again, fighting the guards who come: a party only passing
+through the castle, whose guards break its camps, would just Fix there and
+meet the soul's guards without them. Globes
 and Mass Invisibility are now available in camp, and the globes persist
 into combat ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md)). Holds prioritize
 hostile casters, clerics retain Dispel Magic, and fireball planning respects
