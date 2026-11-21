@@ -1566,7 +1566,10 @@ from the kept Kalistes play):
 | From ahead after fleeing, warded as the route | 72 of 244, 0 clean | 5 of 120, 2 clean |
 
 The route's player now rests in the guards' quarters memorizing a
-Protection from Evil for each member and two Hastes, casts the Protections
+Protection from Evil for each member and two Hastes, even when the kitchen
+has left the party whole (since 2026-11-21: with the party's area spells
+weighed, ORIGINAL-RULES.md, the kitchen's fight left it unhurt, the rest
+was skipped, and the egg room was fought unwarded and lost), casts the Protections
 on the square before the eggs (the paladins' and the magic-user's), and the
 magic-user's Haste, which takes the whole party, as it steps onto them. Its
 fights are its own: Kalistes is won in about a play in four, never with no

@@ -4942,7 +4942,9 @@ const std::vector<RouteBeat> &darkness_route()
         rested_for_the_larder.rest_first = true;
         // The lower level has no camp that rests, so this rest readies the
         // egg room's wards: a Protection from Evil for each member and the
-        // magic-user's Hastes.
+        // magic-user's Hastes. The party rests for them even when the
+        // kitchen left it whole.
+        rested_for_the_larder.rest_for_spells = true;
         rested_for_the_larder.ward_memorized = "protection_from_evil";
         rested_for_the_larder.memorize_first_of = {"haste", "haste"};
         route.push_back(rested_for_the_larder);
