@@ -293,6 +293,13 @@ void overland_fights_are_on_grass()
     // a multiple of 7) and drifts a column a row.
     check(tile(0, 26) == 28 && terrain(0, 26) == Terrain::open, "The river can be waded");
     check(tile(0, 27) == 32 && tile(1, 27) == 28, "A ford crosses it, and it drifts east");
+    // Its cbtacts.pas CombatMoveCreature charges each terrain's movement cost.
+    const auto cost = [&](int row, int column)
+    {
+        return board.move_cost.at(static_cast<std::size_t>(row * board.width + column));
+    };
+    check(cost(0, 26) == 4 && cost(0, 27) == 1,
+          "Wading the river costs 4 steps a square, the ford 1");
     check(tile(1, 0) == 10 && terrain(1, 0) == Terrain::obstacle, "A small tree stands in the way");
     check(tile(0, 0) == 16 && terrain(0, 0) == Terrain::open, "Features lie on the grass");
 }

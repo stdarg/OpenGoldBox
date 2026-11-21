@@ -12375,7 +12375,16 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                (session.snapshot().area_id == 40 && event < 121);
     };
     // A party under the original rules, fighting Curse's own creatures.
-    const auto content = opengold::load_original_content(folder, game);
+    auto content = opengold::load_original_content(folder, game);
+    // These routes' dice are tuned to the earlier movement: they play with
+    // Original movement off until re-tuned under the default.
+    content.original_movement =
+        !route || !((game == GoldBoxGame::curse_of_the_azure_bonds &&
+                     (progress == CurseProgress::none || progress >= CurseProgress::third_bond)) ||
+                    (game == GoldBoxGame::secret_of_the_silver_blades &&
+                     (secret_progress == SecretProgress::none ||
+                      secret_progress == SecretProgress::ending)) ||
+                    game == GoldBoxGame::pools_of_darkness || earned_gateway || earned_treasure);
     std::shared_ptr<const opengold::rules::CharacterRules> creation =
         opengold::original::character_rules(opengold::original::default_aging, game);
     std::shared_ptr<opengold::CampaignParty> party;

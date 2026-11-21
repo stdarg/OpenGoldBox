@@ -517,7 +517,7 @@ class FieldBuilder
         DungeonBattlefield result{
             {field_columns, field_rows, std::vector<rules::Terrain>(grid_.size()),
              std::vector<bool>(grid_.size(), true), std::vector<std::uint8_t>(grid_.size()),
-             std::vector<std::uint8_t>(grid_.size())},
+             std::vector<std::uint8_t>(grid_.size()), std::vector<std::uint8_t>(grid_.size())},
             std::vector<std::uint8_t>(grid_.size())};
         for (std::size_t n = 0; n < grid_.size(); ++n)
         {
@@ -527,6 +527,11 @@ class FieldBuilder
                 tile.cost == 255 ? rules::Terrain::obstacle : rules::Terrain::open;
             result.geometry.clearance[n] = tile.clearance;
             result.geometry.blocking[n] = tile.blocking;
+            // What a step onto it costs, as every game after Pool of Radiance
+            // charges it (Curse's cbtacts.pas CombatMoveCreature); Pool's
+            // tiles cost 1 or 255. The original rules charge it while the
+            // game's Original movement option is on (docs/ORIGINAL-RULES.md).
+            result.geometry.move_cost[n] = tile.cost;
         }
         return result;
     }

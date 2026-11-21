@@ -831,6 +831,11 @@ class OriginalModule final : public RulesModule
         gazes_played_ = played;
     }
 
+    void move_as_the_original(bool on) override
+    {
+        content_.original_movement = on;
+    }
+
     [[nodiscard]] bool offers_temple_service(TempleService service) const override
     {
         return service != TempleService::resurrection && service != TempleService::cure_feeblemind;

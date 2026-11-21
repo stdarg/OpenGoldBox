@@ -493,6 +493,32 @@ autowrap_mode = 3
 theme_type_variation = &"LabelMuted"
 text = "Unlimited Adventures. The design's: the kit's five levels change the party's to-hit and the monsters' Hit Points. OpenGoldBox's: the difficulty table changes the monsters' to-hit, Hit Points and Armor Class. Both: the kit's levels, with the table's to-hit and Armor Class for the monsters."
 
+[node name="OriginalMovementLabel" type="Label" parent="Options/Gameplay"]
+visible = false
+offset_left = 20
+offset_top = 756
+offset_right = 280
+offset_bottom = 792
+text = "Original movement"
+
+[node name="OriginalMovement" type="OptionButton" parent="Options/Gameplay"]
+visible = false
+offset_left = 290
+offset_top = 752
+offset_right = 510
+offset_bottom = 792
+
+[node name="OriginalMovementNote" type="Label" parent="Options/Gameplay"]
+visible = false
+anchor_right = 1
+offset_left = 540
+offset_right = -20
+offset_top = 748
+offset_bottom = 820
+autowrap_mode = 3
+theme_type_variation = &"LabelMuted"
+text = "Original rules. On, as in the original: rough ground costs its terrain's price, a diagonal step may pass a wall's corner, a creature the computer plays needs more movement than a step costs, a large creature pays for its top-left square, and a move ends with less than 2 half-moves left. Off: every walkable square costs one step."
+
 [node name="AbilitiesHeader" type="Label" parent="Options/Gameplay"]
 offset_left = 20
 offset_top = 694

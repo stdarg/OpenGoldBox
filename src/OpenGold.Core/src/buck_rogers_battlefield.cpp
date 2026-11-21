@@ -739,7 +739,7 @@ rules::Terrain combat_ground(unsigned kind)
         return terrain.line_class == 2 ? rules::Terrain::impassable_cover
                                        : rules::Terrain::impassable;
     }
-    return terrain.line_class == 2 ? rules::Terrain::difficult : rules::Terrain::open;
+    return terrain.line_class == 2 ? rules::Terrain::cover : rules::Terrain::open;
 }
 
 BuckRogersBattlefield buck_rogers_battlefield(const GeoMap &map, unsigned x, unsigned y,
@@ -758,6 +758,7 @@ BuckRogersBattlefield buck_rogers_battlefield(const GeoMap &map, unsigned x, uns
     BuckRogersBattlefield result;
     auto &field = result.field;
     field.geometry = {columns, rows, std::vector<rules::Terrain>(columns * rows), {}};
+    field.geometry.move_cost.assign(columns * rows, 1);
     field.tiles.assign(columns * rows, 0);
     result.terrain.assign(columns * rows, 0);
     // A terrain whose tile the set's file lacks (LOTEK holds 52 of the 53 the
@@ -778,6 +779,7 @@ BuckRogersBattlefield buck_rogers_battlefield(const GeoMap &map, unsigned x, uns
             const auto terrain = combat_terrain(kind);
             result.terrain[index] = static_cast<std::uint8_t>(kind);
             field.geometry.terrain[index] = combat_ground(kind);
+            field.geometry.move_cost[index] = terrain.cost;
             unsigned tile = terrain.tile;
             if (tile < set.first_slot || tile - set.first_slot >= tiles_in_file)
             {

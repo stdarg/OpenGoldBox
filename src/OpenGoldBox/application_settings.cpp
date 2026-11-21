@@ -470,6 +470,18 @@ bool save_direct_flight(opengold::GoldBoxGame game, bool on)
     return save("direct_flight", folder.c_str(), on ? "on" : "off");
 }
 
+bool original_movement(opengold::GoldBoxGame game)
+{
+    const std::string folder(opengold::game_folder(game));
+    return read("original_movement", folder.c_str()).to_lower() != "off";
+}
+
+bool save_original_movement(opengold::GoldBoxGame game, bool on)
+{
+    const std::string folder(opengold::game_folder(game));
+    return save("original_movement", folder.c_str(), on ? "on" : "off");
+}
+
 bool course_flown(opengold::GoldBoxGame game)
 {
     const std::string folder(opengold::game_folder(game));

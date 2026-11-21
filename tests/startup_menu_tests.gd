@@ -544,14 +544,15 @@ func check_secret(menu: Window) -> void:
 # (a folder that is not a design refused), no title, its default party offered, the
 # original rules only, then a fighter made under the kit's rules plays the
 # design's start: its welcome, the 3D view drawn, and a step.
-# The ship-combat and solar-map options (docs/CONFIGURATION.md) show while a Buck Rogers
+# The ship-combat and solar-map options and Original movement (docs/CONFIGURATION.md) show while a Buck Rogers
 # game is the game, each at its default, and each choice is saved under that
 # game's folder. The games' buttons wait until they play, so the check
 # presses them as the startup menu will.
 func check_buck_rogers() -> void:
 	var options := {"CommandEveryRound": ["command_every_round", 1],
 		"EmptyHelmDodges": ["empty_helm_dodges", 1], "BoardingFuel": ["boarding_fuel", 0],
-		"DirectFlight": ["direct_flight", 0], "CourseFlown": ["course_flown", 1]}
+		"DirectFlight": ["direct_flight", 0], "CourseFlown": ["course_flown", 1],
+		"OriginalMovement": ["original_movement", 0]}
 	for folder in ["buck-rogers-countdown-to-doomsday", "buck-rogers-matrix-cubed"]:
 		if StartupView.game_folder(folder).is_empty():
 			print("Skipped: the Buck Rogers games' files are not here.")

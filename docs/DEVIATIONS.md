@@ -315,6 +315,18 @@ Departures from the original game's own rules, when OpenGoldBox plays by them
   target for 10 rounds unless it saves against paralysis at +3 or meets
   gazes unharmed, a mirror turning it back on the gazer; the charming gaze
   casts Charm Person. Off, the default, they do nothing, as in the original.
+- **Original movement, an option** (the user, 2026-11-21). Every game's
+  fights under the original rules move as its original by default: a square
+  costs its terrain table's movement cost, a diagonal step may pass a
+  wall's corner, a large creature pays for its top-left square, the computer
+  steps only while it keeps some movement, and a last half-move is lost as a
+  move ends ([ORIGINAL-RULES.md](ORIGINAL-RULES.md), Movement). The Options
+  screen's Original movement (`[original_movement]`, per game,
+  [CONFIGURATION.md](CONFIGURATION.md)) off plays OpenGoldBox's earlier
+  movement, a departure from the original: every walkable square costs one
+  step, no diagonal passes a wall's corner, a large creature pays for its
+  dearest square, the computer spends its last half-moves, and a last
+  half-move is kept. The SRD rules move as before either way.
 - **The Buck Rogers games' ship combat, three options** (the user,
   2026-11-20; [games/countdown.md](games/countdown.md), "Ship combat"). Each
   is set per game on the Options screen while a Buck Rogers game plays

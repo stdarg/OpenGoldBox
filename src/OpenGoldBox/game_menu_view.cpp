@@ -298,7 +298,9 @@ void GameMenuView::build_options()
           std::pair{"Options/Gameplay/EmptyHelmDodges", &GameMenuView::empty_helm_dodges_selected},
           std::pair{"Options/Gameplay/BoardingFuel", &GameMenuView::boarding_fuel_selected},
           std::pair{"Options/Gameplay/DirectFlight", &GameMenuView::direct_flight_selected},
-          std::pair{"Options/Gameplay/CourseFlown", &GameMenuView::course_flown_selected}})
+          std::pair{"Options/Gameplay/CourseFlown", &GameMenuView::course_flown_selected},
+          std::pair{"Options/Gameplay/OriginalMovement",
+                    &GameMenuView::original_movement_selected}})
     {
         auto &choice = required_node<OptionButton>(*this, path);
         choice.add_item(i18n::text(N_("On")));
@@ -396,11 +398,18 @@ void GameMenuView::ability_selected(std::int64_t index, std::int64_t row)
 void GameMenuView::show_srd_balance()
 {
     auto &gameplay = required_node<Control>(*this, "Options/Gameplay");
+    // A Buck Rogers game has no rules but the original's, and shows Original
+    // movement where the SRD balance's rows would stand.
+    const bool srd_balance = srd_rules_ && !opengold::is_buck_rogers(settings::chosen_game());
     for (const char *name :
          {"ChallengeLabel", "Challenge", "ChallengeNote", "AbilitiesHeader", "AbilityColumn",
           "MonstersColumn", "FromColumn", "Abilities", "Defaults"})
     {
-        required_node<Control>(gameplay, name).set_visible(srd_rules_);
+        required_node<Control>(gameplay, name).set_visible(srd_balance);
+    }
+    for (const char *name : {"OriginalMovementLabel", "OriginalMovement", "OriginalMovementNote"})
+    {
+        required_node<Control>(gameplay, name).set_visible(!srd_balance);
     }
     required_node<Label>(gameplay, "DifficultyNote")
         .set_text(
@@ -580,6 +589,11 @@ void GameMenuView::course_flown_selected(std::int64_t index)
     settings::save_course_flown(settings::chosen_game(), index == 0);
 }
 
+void GameMenuView::original_movement_selected(std::int64_t index)
+{
+    settings::save_original_movement(settings::chosen_game(), index == 0);
+}
+
 void GameMenuView::show_game_options()
 {
     const auto game = settings::chosen_game();
@@ -594,6 +608,8 @@ void GameMenuView::show_game_options()
     {
         required_node<Control>(gameplay, name).set_visible(!buck_rogers);
     }
+    required_node<OptionButton>(gameplay, "OriginalMovement")
+        .select(settings::original_movement(game) ? 0 : 1);
     for (const char *name :
          {"CommandEveryRoundLabel", "CommandEveryRound", "CommandEveryRoundNote",
           "EmptyHelmDodgesLabel", "EmptyHelmDodges", "EmptyHelmDodgesNote", "BoardingFuelLabel",

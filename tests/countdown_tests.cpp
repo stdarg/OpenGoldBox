@@ -1362,13 +1362,15 @@ opengold::rules::Participant ground_participant(opengold::rules::EntityId id,
 GroundFight ground_fight(std::vector<opengold::rules::Participant> participants, std::uint64_t seed,
                          bool outdoors = false, bool zero_gravity = false,
                          GoldBoxGame game = countdown,
-                         std::vector<opengold::rules::Terrain> ground = {})
+                         std::vector<opengold::rules::Terrain> ground = {},
+                         std::vector<std::uint8_t> move_cost = {})
 {
     opengold::rules::Encounter encounter;
     encounter.battlefield.width = 12;
     encounter.battlefield.height = 8;
     encounter.battlefield.terrain =
         ground.empty() ? std::vector(96, opengold::rules::Terrain::open) : std::move(ground);
+    encounter.battlefield.move_cost = std::move(move_cost);
     encounter.participants = std::move(participants);
     encounter.outdoors = outdoors;
     encounter.zero_gravity = zero_gravity;
@@ -1608,7 +1610,7 @@ void impassable_ground_lets_shots_across()
     using opengold::rules::Terrain;
     check(combat_ground(8) == Terrain::obstacle && combat_ground(92) == Terrain::impassable &&
               combat_ground(79) == Terrain::impassable_cover &&
-              combat_ground(46) == Terrain::difficult && combat_ground(1) == Terrain::open,
+              combat_ground(46) == Terrain::cover && combat_ground(1) == Terrain::open,
           "The terrain kinds become the rules' ground by cost and line class");
     const auto gunner = made_fighter(Profession::rocket_jock);
     const auto trooper = made_fighter(Profession::warrior);
@@ -1647,6 +1649,171 @@ void impassable_ground_lets_shots_across()
     check(to_turn_of(*walled.session, 1) && !offered(*walled.session, "ranged", 2) &&
               !steps_onto(*walled.session),
           "A wall (line class 1) stops both the shot and the step");
+}
+
+// gdconsts.pas combatTerrain and cbtacts.pas CombatMoveCreature: a step
+// costs its ground's own movement cost (2 half-moves straight, 3 diagonally,
+// times it), whatever its line class; line class 2 stays cover to a shot
+// across it (pathing.pas WalkLine).
+void ground_costs_its_own_movement()
+{
+    using opengold::por::combat_ground;
+    using opengold::por::combat_terrain;
+    using opengold::rules::Cell;
+    using opengold::rules::Side;
+    using opengold::rules::Terrain;
+    for (unsigned kind = 1; kind <= opengold::por::combat_terrain_kinds; ++kind)
+    {
+        const auto terrain = combat_terrain(kind);
+        const bool cover = terrain.line_class == 2;
+        const auto expected = terrain.line_class == 1 ? Terrain::obstacle
+                              : terrain.cost == 255
+                                  ? (cover ? Terrain::impassable_cover : Terrain::impassable)
+                              : cover ? Terrain::cover
+                                      : Terrain::open;
+        check(combat_ground(kind) == expected, "Kind " + std::to_string(kind) +
+                                                   " is walled, impassable, cover or open by its "
+                                                   "line class and cost alone");
+    }
+    const auto arena = opengold::por::buck_rogers_battlefield(
+        opengold::por::GeoMap{}, 8, 8, opengold::por::mars_wilderness, 64, 3, 7, 255);
+    const auto &costs = arena.field.geometry.move_cost;
+    check(costs.size() == arena.terrain.size(), "The arena has a cost for every square");
+    for (std::size_t n = 0; n < costs.size(); ++n)
+    {
+        check(costs[n] == combat_terrain(arena.terrain[n]).cost,
+              "Each square costs what its kind of terrain costs");
+    }
+    const auto runner = made_fighter(Profession::warrior);
+    auto trooper = made_fighter(Profession::warrior);
+    trooper.hit_points = trooper.hit_point_maximum = 200;
+    const Cell onto{5, 4};
+    for (const auto ground : {Terrain::open, Terrain::cover})
+    {
+        for (std::uint8_t cost = 1; cost <= 4; ++cost)
+        {
+            std::vector<Terrain> field(96, Terrain::open);
+            std::vector<std::uint8_t> cost_of(96, 1);
+            field[static_cast<std::size_t>(onto.y * 12 + onto.x)] = ground;
+            cost_of[static_cast<std::size_t>(onto.y * 12 + onto.x)] = cost;
+            auto fight =
+                ground_fight({ground_participant(1, Side::party, {4, 4}, runner, {}),
+                              ground_participant(2, Side::opposition, {11, 7}, trooper, {})},
+                             21, false, false, countdown, std::move(field), std::move(cost_of));
+            auto &session = *fight.session;
+            check(to_turn_of(session, 1), "The runner gets a turn");
+            const int before = view_of(session.snapshot(), 1).movement_feet;
+            std::optional<opengold::rules::Command> step;
+            for (const auto &command : session.legal_commands())
+            {
+                if (command.verb == "move" && command.destination == onto)
+                {
+                    step = command;
+                }
+            }
+            check(step && session.submit(*step), "The runner steps onto the square");
+            check(before - view_of(session.snapshot(), 1).movement_feet == 5 * cost,
+                  "A straight step onto ground costing " + std::to_string(cost) +
+                      " spends that many times 2 half-moves");
+        }
+    }
+    // With the game's Original movement option off, it costs a plain step.
+    std::vector<std::uint8_t> dear(96, 1);
+    dear[static_cast<std::size_t>(onto.y * 12 + onto.x)] = 4;
+    auto plain = ground_fight({ground_participant(1, Side::party, {4, 4}, runner, {}),
+                               ground_participant(2, Side::opposition, {11, 7}, trooper, {})},
+                              21, false, false, countdown, {}, std::move(dear));
+    plain.module->move_as_the_original(false);
+    plain.session = plain.module->restore(plain.session->save());
+    check(to_turn_of(*plain.session, 1), "The runner gets a turn");
+    const int before = view_of(plain.session->snapshot(), 1).movement_feet;
+    for (const auto &command : plain.session->legal_commands())
+    {
+        if (command.verb == "move" && command.destination == onto)
+        {
+            check(plain.session->submit(command), "The runner steps onto ground costing 4");
+            break;
+        }
+    }
+    check(before - view_of(plain.session->snapshot(), 1).movement_feet == 5,
+          "Original movement off: ground costing 4 spends a plain step");
+    const auto gunner = made_fighter(Profession::rocket_jock);
+    int open_hits = 0, cover_hits = 0;
+    bool only_across_cover = false;
+    for (std::uint64_t seed = 1; seed <= 60; ++seed)
+    {
+        const auto hit_across = [&](Terrain ground)
+        {
+            std::vector<Terrain> field(96, Terrain::open);
+            field[static_cast<std::size_t>(onto.y * 12 + onto.x)] = ground;
+            auto fight = ground_fight(
+                {ground_participant(1, Side::party, {1, 4}, gunner, {ground_item(9, 10)}),
+                 ground_participant(2, Side::opposition, {8, 4}, trooper, {})},
+                seed, false, false, countdown, std::move(field), std::vector<std::uint8_t>(96, 1));
+            auto &session = *fight.session;
+            check(to_turn_of(session, 1), "The gunner gets a turn");
+            const auto shot = offered(session, "ranged", 2);
+            check(shot && session.submit(*shot), "It shoots across the square");
+            return view_of(session.snapshot(), 2).hit_points < 200;
+        };
+        const bool open = hit_across(Terrain::open), covered = hit_across(Terrain::cover);
+        open_hits += open ? 1 : 0;
+        cover_hits += covered ? 1 : 0;
+        only_across_cover = only_across_cover || (covered && !open);
+    }
+    check(cover_hits < open_hits && !only_across_cover,
+          "Cover costing one step still makes the trooper harder to hit");
+}
+
+// The rest of the original's way of moving (cbtmap.pas ProbeDirection,
+// combatai.pas AiCanStep, the move menu in combat.pas): a diagonal step may
+// pass a wall's corner, the computer steps only while it keeps some
+// movement, and a half-move left as a move ends is lost.
+void the_original_way_of_moving()
+{
+    using opengold::rules::Cell;
+    using opengold::rules::Side;
+    using opengold::rules::Terrain;
+    const auto steps_to = [](const opengold::rules::CombatSession &session, Cell cell)
+    {
+        for (const auto &command : session.legal_commands())
+        {
+            if (command.verb == "move" && command.destination == cell)
+            {
+                return std::optional{command};
+            }
+        }
+        return std::optional<opengold::rules::Command>{};
+    };
+    auto runner = made_fighter(Profession::warrior);
+    const auto trooper = made_fighter(Profession::warrior);
+    std::vector<Terrain> walls(96, Terrain::open);
+    walls[1] = walls[12] = Terrain::obstacle;
+    auto walled = ground_fight({ground_participant(1, Side::party, {0, 0}, runner, {}),
+                                ground_participant(2, Side::opposition, {11, 7}, trooper, {})},
+                               21, false, false, countdown, std::move(walls));
+    check(to_turn_of(*walled.session, 1) && steps_to(*walled.session, {1, 1}),
+          "Walled in on two sides, the runner steps out between the walls' corners");
+    runner.base_movement = 6;
+    auto moving = ground_fight({ground_participant(1, Side::party, {0, 0}, runner, {}),
+                                ground_participant(2, Side::opposition, {11, 7}, trooper, {})},
+                               21);
+    auto &session = *moving.session;
+    check(to_turn_of(session, 1), "The runner gets a turn");
+    const auto move = steps_to(session, {4, 3});
+    check(move && session.submit(*move),
+          "Three diagonal steps and a straight one: 11 of its 12 half-moves");
+    check(view_of(session.snapshot(), 1).movement_feet == 0, "The half-move left is lost");
+    auto walker = made_fighter(Profession::warrior);
+    walker.base_movement = 3;
+    auto chase = ground_fight({ground_participant(1, Side::party, {11, 4}, runner, {}),
+                               ground_participant(2, Side::opposition, {0, 4}, walker, {})},
+                              21);
+    check(to_turn_of(*chase.session, 2), "The walker gets a turn");
+    const auto quick = offered(*chase.session, "quick");
+    check(quick && chase.session->submit(*quick), "The computer plays it");
+    check(view_of(chase.session->snapshot(), 2).cell == Cell{2, 4},
+          "Movement 3 walks two squares: the computer keeps its last 2 half-moves");
 }
 
 std::optional<std::filesystem::path> files_of(GoldBoxGame game)
@@ -1946,6 +2113,8 @@ int main()
         medics_and_jetpacks_in_a_fight();
         zero_gravity_and_difficulty_in_a_fight();
         impassable_ground_lets_shots_across();
+        ground_costs_its_own_movement();
+        the_original_way_of_moving();
         the_files_decode();
         std::cout << "Countdown to Doomsday passed.\n";
     }

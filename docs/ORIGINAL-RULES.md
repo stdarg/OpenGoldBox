@@ -1430,6 +1430,24 @@ original does, from *Pool of Radiance*'s combat units (`combat.pas`,
   with no one able to act loses.
 - **Movement** counts half-moves, twice the creature's movement: a straight
   step costs 2, a diagonal 3, times the ground's cost. Heavy armor caps it.
+  The ground's cost is the terrain table's for the square stepped onto
+  (`rules::Battlefield::move_cost`; *Pool*'s squares all cost 1, and its
+  steps spend 2 or 3 whatever they cost). A creature larger than one square
+  needs what its dearest square costs but spends its top-left square's. A
+  diagonal step may pass a wall's corner (`cbtmap.pas`, ProbeDirection looks
+  only at the squares stepped onto). The computer steps only while the step
+  leaves it some movement, except in *Pool* (`combatai.pas`, AiCanStep), and
+  a single half-move left as the move menu closes is lost (`combat.pas`).
+  This is the Options screen's **Original movement** (`[original_movement]`,
+  per game, on by default; [DEVIATIONS.md](DEVIATIONS.md)): off, a fight
+  moves as OpenGoldBox did before, every walkable square one step, no corner
+  passed, a large creature paying for its dearest square, the computer
+  spending its last half-moves and a last half-move kept. The fight boards
+  carry each square's cost (Buck Rogers' arenas, and Pool's, Curse's,
+  Gateway's, Champions' and Death Knights' fields out of doors; indoor
+  fields cost 1 everywhere). The fixed-dice route tests of Pool, Curse,
+  Secret, Pools of Darkness, Gateway and Treasures play with it off: their
+  dice are tuned to the earlier movement until they are re-tuned.
   Leaving an enemy's side gives it a free attack, against the mover's rear
   Armor Class; stepping next to a guarding enemy draws its strike.
 - **To hit:** d20 against THAC0 minus the target's Armor Class; a natural 1

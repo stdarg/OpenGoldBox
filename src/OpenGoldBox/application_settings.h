@@ -94,6 +94,12 @@ bool direct_flight(opengold::GoldBoxGame game);
 bool save_direct_flight(opengold::GoldBoxGame game, bool on);
 bool course_flown(opengold::GoldBoxGame game);
 bool save_course_flown(opengold::GoldBoxGame game, bool on);
+// [original_movement], by game folder: "off" moves the original rules' fights
+// as OpenGoldBox did before (every walkable square one step, no corner
+// passed); otherwise they move as the original game does
+// (rules::RulesModule::move_as_the_original).
+bool original_movement(opengold::GoldBoxGame game);
+bool save_original_movement(opengold::GoldBoxGame game, bool on);
 // [design_difficulty] UA: how the difficulty plays in an Unlimited Adventures
 // design, "design" (the kit's own levels), "table" (OpenGoldBox's table) or
 // "both", the default.

@@ -47,6 +47,9 @@ buck-rogers-countdown-to-doomsday="on"
 [course_flown]
 buck-rogers-countdown-to-doomsday="off"
 
+[original_movement]
+CURSE="on"
+
 [design_difficulty]
 UA="both"
 
@@ -218,6 +221,13 @@ solar map reads them as it draws and as the rocket flies:
 - `[course_flown]`, Course flown: `off`, the default, also used for any
   value but `on`, draws no course, as the original. `on` marks the cells the
   rocket has flown since the solar map opened with dots.
+
+`[original_movement]`, by game folder, is the Options screen's Original
+movement, shown under the original rules (a Buck Rogers game always): `on`,
+the default, also used for any value but `off`, moves the game's fights as
+its original does ([ORIGINAL-RULES.md](ORIGINAL-RULES.md), Movement); `off`
+plays OpenGoldBox's earlier movement ([DEVIATIONS.md](DEVIATIONS.md)). A
+fight takes it as it starts (`rules::RulesModule::move_as_the_original`).
 
 `[design_difficulty] UA` is the Options screen's Design difficulty: how
 `difficulty` plays in an *Unlimited Adventures* design (the user, 2026-11-15;

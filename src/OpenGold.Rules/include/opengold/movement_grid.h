@@ -20,6 +20,27 @@ struct StepCosts
     int crawling_extra{5};
 };
 
+// Whose way of stepping a grid follows. The original games' (cbtmap.pas
+// ProbeDirection, cbtacts.pas CombatMoveCreature) charge each square's own
+// movement cost (Battlefield::move_cost), let a diagonal step pass a wall's
+// corner, and let a creature larger than one square take a step its dearest
+// square can pay for while charging only its anchor (top-left) square's cost.
+// The standard way is the SRD rules', and the original rules' with a game's
+// Original movement option off (docs/ORIGINAL-RULES.md).
+enum class StepRules : std::uint8_t
+{
+    standard,
+    original
+};
+
+// What a step asks of the mover: `need` must be left to take it and `charge`
+// is spent. They differ only for a large creature under the original rules.
+struct StepPrice
+{
+    int need{}, charge{};
+    friend bool operator==(const StepPrice &, const StepPrice &) = default;
+};
+
 struct Occupant
 {
     rules::Cell cell;
@@ -57,9 +78,12 @@ class MovementGrid
     // never stopping in them.
     MovementGrid(const rules::Battlefield &board, rules::Cell origin,
                  std::span<const Occupant> occupants, bool crawling = false, bool flying = false,
-                 bool incorporeal = false, rules::Footprint footprint = {}, StepCosts costs = {});
+                 bool incorporeal = false, rules::Footprint footprint = {}, StepCosts costs = {},
+                 StepRules step_rules = StepRules::standard);
     [[nodiscard]] bool can_stop_at(rules::Cell destination) const;
+    // What the step charges.
     [[nodiscard]] std::optional<int> step_cost(rules::Cell from, rules::Cell to) const;
+    [[nodiscard]] std::optional<StepPrice> step_price(rules::Cell from, rules::Cell to) const;
     [[nodiscard]] ReachableCells reachable(int budget) const;
 
   private:
@@ -75,6 +99,7 @@ class MovementGrid
     bool crawling_{}, flying_{}, incorporeal_{};
     rules::Footprint footprint_;
     StepCosts costs_;
+    StepRules step_rules_;
     std::vector<Occupancy> occupancy_;
     std::vector<bool> held_; // A creature not downed stands there.
     [[nodiscard]] int index(rules::Cell cell) const;

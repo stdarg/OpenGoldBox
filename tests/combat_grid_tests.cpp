@@ -283,6 +283,84 @@ void original_step_costs()
         "A step must cost something");
 }
 
+// The original games' terrain tables give each square its own movement
+// cost (cbtacts.pas CombatMoveCreature): under the original rules a step onto
+// it costs that many times a plain step's 2 or 3 half-moves, whatever its
+// terrain; the SRD rules leave the costs alone.
+void original_move_costs()
+{
+    Battlefield board{6, 3, std::vector<Terrain>(18, Terrain::open)};
+    board.move_cost.assign(18, 1);
+    for (int cost = 2; cost <= 4; ++cost)
+    {
+        board.move_cost[static_cast<std::size_t>(6 + cost)] = static_cast<std::uint8_t>(cost);
+    }
+    board.terrain[6 + 1] = Terrain::cover;
+    const StepCosts half_moves{2, 3, 2, 4, 0};
+    const MovementGrid grid(board, {0, 1}, {}, false, false, false, {}, half_moves,
+                            StepRules::original);
+    check(grid.step_cost({0, 1}, {1, 1}) == 2, "Cover costing 1 is a plain step");
+    check(grid.step_cost({1, 1}, {2, 1}) == 4 && grid.step_cost({2, 1}, {3, 1}) == 6 &&
+              grid.step_cost({3, 1}, {4, 1}) == 8,
+          "Ground costing 2, 3 or 4 takes 2, 3 or 4 times a straight step's 2 half-moves");
+    check(grid.step_cost({1, 0}, {2, 1}) == 6 && grid.step_cost({3, 0}, {4, 1}) == 12,
+          "and that many times a diagonal step's 3");
+    check(grid.reachable(13).cost_to({5, 1}) == 2 + 3 + 2 + 2 + 3,
+          "The cheapest way goes round the dear squares");
+    const MovementGrid srd(board, {0, 1}, {}, false, false, false, {}, half_moves);
+    check(srd.step_cost({3, 1}, {4, 1}) == 2, "The SRD rules ignore the costs");
+    board.move_cost.pop_back();
+    rejects(
+        [&]
+        {
+            static_cast<void>(MovementGrid(board, {0, 1}, {}));
+        },
+        "A cost for every square, or none");
+    board.move_cost.push_back(0);
+    rejects(
+        [&]
+        {
+            static_cast<void>(MovementGrid(board, {0, 1}, {}));
+        },
+        "No square costs nothing");
+}
+
+// The original looks only at the squares a step lands on (cbtmap.pas
+// ProbeDirection), so a diagonal step may pass a wall's corner; the SRD rules
+// do not let it.
+void original_corners()
+{
+    Battlefield board{3, 3, std::vector<Terrain>(9, Terrain::open)};
+    board.terrain[1] = Terrain::obstacle;
+    board.terrain[3] = Terrain::obstacle;
+    const StepCosts half_moves{2, 3, 2, 4, 0};
+    const MovementGrid original(board, {0, 0}, {}, false, false, false, {}, half_moves,
+                                StepRules::original);
+    check(original.step_cost({0, 0}, {1, 1}) == 3, "The original steps between two walls");
+    const MovementGrid srd(board, {0, 0}, {}, false, false, false, {}, half_moves);
+    check(!srd.step_cost({0, 0}, {1, 1}), "The SRD rules do not");
+}
+
+// A creature larger than one square takes a step its dearest square can pay
+// for, but pays for its anchor (top-left) square only (cbtmap.pas
+// ProbeDirection, cbtacts.pas CombatMoveCreature).
+void original_large_steps()
+{
+    Battlefield board{4, 4, std::vector<Terrain>(16, Terrain::open)};
+    board.move_cost.assign(16, 1);
+    board.move_cost[2 * 4 + 1] = 4;
+    const StepCosts half_moves{2, 3, 2, 4, 0};
+    const Footprint tall{1, 2};
+    const MovementGrid grid(board, {1, 0}, {}, false, false, false, tall, half_moves,
+                            StepRules::original);
+    check(grid.step_price({1, 0}, {1, 1}) == StepPrice{8, 2},
+          "Stepping its lower square onto ground costing 4 needs 8 half-moves and spends 2");
+    check(!grid.reachable(7).cost_to({1, 1}) && grid.reachable(8).cost_to({1, 1}) == 2,
+          "It goes only with the 8 half-moves left, and keeps 6 of them");
+    const MovementGrid srd(board, {1, 0}, {}, false, false, false, tall, half_moves);
+    check(srd.step_price({1, 0}, {1, 1}) == StepPrice{2, 2}, "The SRD rules ignore the costs");
+}
+
 // Buck Rogers' impassable ground stops feet as an obstacle does, but sight
 // crosses it (docs/games/countdown.md).
 void impassable_ground()
@@ -370,7 +448,7 @@ void boundaries_and_ties()
             (void)MovementGrid(invalid, {0, 0}, {});
         });
     invalid = board;
-    invalid.terrain[0] = static_cast<Terrain>(6);
+    invalid.terrain[0] = static_cast<Terrain>(7);
     rejects<std::runtime_error>(
         [&]
         {
@@ -425,6 +503,9 @@ int main()
         tall_footprint();
         impassable_ground();
         original_step_costs();
+        original_move_costs();
+        original_corners();
+        original_large_steps();
         boundaries_and_ties();
         exhaustive_movement();
         exhaustive_sight();

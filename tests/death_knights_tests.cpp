@@ -768,10 +768,22 @@ void a_saved_fight_advances_the_native_campaign_calendar()
     check(party->state().time_minutes == once,
           "Reapplying a combat snapshot does not advance time again");
     const auto save = fight->save();
-    check(save.find("OGORIGINALCOMBAT 28") != std::string::npos,
+    check(save.find("OGORIGINALCOMBAT 30") != std::string::npos,
           "The native calendar checkpoint records its context explicitly");
     auto restored = module.restore(save);
     check(restored->save() == save, "Native calendar and new effects round-trip byte-for-byte");
+    // One written before the squares' costs (28): width, height, starting
+    // time, 64 squares, no plants and no heights, then no costs.
+    std::size_t at = 0;
+    for (int value = 0; value < 71; ++value)
+    {
+        at = save.find(' ', at) + 1;
+    }
+    check(save.compare(at, 2, "0 ") == 0, "The fight records no costs");
+    auto older = save;
+    older.erase(at, 2);
+    older.replace(older.find("OGORIGINALCOMBAT 30"), 19, "OGORIGINALCOMBAT 28");
+    check(module.restore(older)->save() == save, "A format 28 checkpoint still reads");
     for (unsigned step = 0; step < 8; ++step)
     {
         const auto commands = fight->legal_commands();

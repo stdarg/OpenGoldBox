@@ -604,7 +604,10 @@ enum class Terrain : std::uint8_t
     // impassable combat terrain of line class 0.
     impassable = 4,
     // The same, but cover to a shot across it (line class 2).
-    impassable_cover = 5
+    impassable_cover = 5,
+    // Ground walked as open ground that is cover to a shot across it: Buck
+    // Rogers' walkable combat terrain of line class 2.
+    cover = 6
 };
 
 // Whether no creature may enter or stand on ground of this kind.
@@ -628,6 +631,11 @@ struct Battlefield
     // below the square's blocking. Empty means an obstacle blocks sight and
     // nothing else does.
     std::vector<std::uint8_t> clearance, blocking;
+    // The original's movement cost of each square (its terrain table's cost
+    // byte, 255 where no one may enter): under the original rules a step onto
+    // a square costs that many times a plain step. Empty means the terrain
+    // sets the cost.
+    std::vector<std::uint8_t> move_cost;
     [[nodiscard]] bool contains(Cell p) const noexcept;
     // Outside the board, or past a short terrain list, is an obstacle.
     [[nodiscard]] Terrain at(Cell p) const noexcept;
@@ -1254,6 +1262,14 @@ class RulesModule
     virtual void play_unplayed_gazes(bool played)
     {
         (void)played;
+    }
+
+    // Whether later fights move as the original game does (the game's
+    // Original movement option, on by default; docs/ORIGINAL-RULES.md). A
+    // module without the original's movement has nothing to change.
+    virtual void move_as_the_original(bool on)
+    {
+        (void)on;
     }
 
     [[nodiscard]] virtual CharacterProfile

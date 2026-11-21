@@ -543,6 +543,10 @@ Worked out at every turn and attack (`charhlp.pas` `RecalcStats`,
   package their own.
 - **Movement:** 12, a Tinker's 9 and a Desert Runner's 15, halved past half
   the weight Strength allows; doubled in half-moves, as the frame counts it.
+  A step spends 2 half-moves straight and 3 diagonally, times the cost of the
+  ground stepped onto, as in the earlier games; a diagonal step may pass a
+  wall's corner, the computer steps only while it keeps some movement, and a
+  half-move left as a move ends is lost (docs/ORIGINAL-RULES.md).
 
 ### The attack roll
 
@@ -1035,8 +1039,12 @@ ground cell 4BB7h (`BuildWildernessArena`). Each cell is one of the 154 kinds
 of combat terrain (`gdconsts.pas` `combatTerrain`): its line class 1 stops
 a line of fire (`pathing.pas` `WalkLine`) and is an obstacle; any other kind
 costing 255 is impassable ground that shots and sight still cross, and class
-2 is cover past the line's first two squares (difficult ground where it can
-be walked, impassable cover where it cannot). No one stands, lands or aims a
+2 is cover past the line's first two squares (cover ground where it can be
+walked, impassable cover where it cannot). A step onto a kind costs its own
+movement cost, 1 to 4, whatever its line class (`cbtacts.pas`
+`CombatMoveCreature`). Until 2026-11-21 the engine charged walkable cover
+double and every other walkable kind as open ground; that was ours, not the
+original's. No one stands, lands or aims a
 grenade on impassable ground, and no cloud lies there. Bit 10h of the area's kind is zero gravity. Creatures are
 `MON0CHA` records with `MON0ITM`'s items, drawn with the disk's `CPIC` icon;
 the team fights with its `CHARS` icons. The fight's end (`PostCombat`): the

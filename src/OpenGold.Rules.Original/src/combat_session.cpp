@@ -41,8 +41,12 @@ using rules::Side;
 
 // The original counts movement in half-moves: 2 a straight step, 3 a diagonal one.
 constexpr rules::StepCosts half_moves{2, 3, 2, 4, 0};
-constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 27";
-constexpr std::string_view death_knights_checkpoint_format = "OGORIGINALCOMBAT 28";
+// A checkpoint keeps each square's movement cost after its heights, and
+// Death Knights' its starting time for the native calendar. The reader still
+// takes those written before the costs: 27, and Death Knights' 28.
+constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 30";
+constexpr std::string_view costless_checkpoint_format = "OGORIGINALCOMBAT 27";
+constexpr std::string_view costless_death_knights_checkpoint_format = "OGORIGINALCOMBAT 28";
 // The rounds a fight lasts with no one attacking (has_round_limit).
 constexpr unsigned rounds_without_attacks = 15;
 // Champions' removed creatures wait for a gating power, never a timed arrival.
@@ -1047,6 +1051,7 @@ class Session final : public rules::CombatSession
     bool escape_ends_fight_{};
     // Pools of Darkness's gazes are played (play_gazes).
     bool gazes_played_{};
+    bool original_movement_{true};
     // The side the member who ended such a fight ran off.
     std::optional<unsigned> escape_side_;
     // The party's facing and the script's change to its movement
@@ -1141,6 +1146,11 @@ class Session final : public rules::CombatSession
         gazes_played_ = played;
     }
 
+    void move_as_the_original(bool on)
+    {
+        original_movement_ = on;
+    }
+
     // Treasures' romance as the fight starts (its romance.pas,
     // TagRelationshipPair): the creatures of the pair's names, the last of
     // each, love each other, and no one else does.
@@ -1182,6 +1192,15 @@ class Session final : public rules::CombatSession
     [[nodiscard]] bool buck_rogers() const
     {
         return is_buck_rogers(game_of(identity_));
+    }
+
+    // Whether the fight moves as the original does (Content::original_movement,
+    // the game's option): rules::StepRules::original's steps, the computer
+    // stepping only while it keeps some movement, and a last half-move lost
+    // as the move menu closes.
+    [[nodiscard]] bool original_movement() const
+    {
+        return original_movement_;
     }
 
     // The 256-color engine's computer (Pools of Darkness's and Treasures'
@@ -2396,13 +2415,13 @@ void Session::step_to(Fighter &mover, Cell next)
     // strike it as it steps (cbtacts.pas CombatMoveCreature).
     if (mover.ground)
     {
-        const auto cost = grid_for(mover).step_cost(mover.cell, next);
-        if (!cost || *cost > mover.half_moves)
+        const auto price = grid_for(mover).step_price(mover.cell, next);
+        if (!price || price->need > mover.half_moves)
         {
             mover.half_moves = 0;
             return;
         }
-        mover.half_moves -= *cost;
+        mover.half_moves -= price->charge;
         mover.direction = direction_toward(mover.cell, next);
         mover.facing_left = next.x < mover.cell.x || (next.x == mover.cell.x && mover.facing_left);
         mover.cell = next;
@@ -2416,13 +2435,13 @@ void Session::step_to(Fighter &mover, Cell next)
         mover.half_moves = 0;
         return;
     }
-    const auto cost = grid_for(mover).step_cost(mover.cell, next);
-    if (!cost || *cost > mover.half_moves)
+    const auto price = grid_for(mover).step_price(mover.cell, next);
+    if (!price || price->need > mover.half_moves)
     {
         mover.half_moves = 0;
         return;
     }
-    mover.half_moves -= *cost;
+    mover.half_moves -= price->charge;
     mover.direction = direction_toward(mover.cell, next);
     mover.facing_left = next.x < mover.cell.x || (next.x == mover.cell.x && mover.facing_left);
     mover.cell = next;
@@ -7901,9 +7920,15 @@ bool Session::can_step(const Fighter &f, int direction, bool &edge) const
         }
     }
     // Each step is a stop: it may not end on another creature's square.
+    // Moving as the original does, it must leave some movement, except in Pool
+    // of Radiance, whose computer spends its last half-moves.
     const auto grid = grid_for(f);
-    const auto cost = grid.step_cost(f.cell, moved.cell);
-    if (!cost || *cost > f.half_moves || !grid.can_stop_at(moved.cell))
+    const auto price = grid.step_price(f.cell, moved.cell);
+    const bool keeps_some =
+        original_movement() && game_of(identity_) != GoldBoxGame::pool_of_radiance;
+    const bool affordable =
+        price && (keeps_some ? price->need < f.half_moves : price->need <= f.half_moves);
+    if (!affordable || !grid.can_stop_at(moved.cell))
     {
         return false;
     }
@@ -10892,8 +10917,9 @@ rules::MovementGrid Session::grid_for(const Fighter &mover) const
         }
         occupants.push_back({f.cell, f.side != mover.side, !f.able(), f.downed(), f.footprint});
     }
-    return rules::MovementGrid(board_, mover.cell, occupants, false, false, false, mover.footprint,
-                               half_moves);
+    return rules::MovementGrid(
+        board_, mover.cell, occupants, false, false, false, mover.footprint, half_moves,
+        original_movement() ? rules::StepRules::original : rules::StepRules::standard);
 }
 
 namespace
@@ -11358,6 +11384,12 @@ bool Session::submit(const rules::Command &command)
             }
             step_to(actor, cell);
         }
+        // As the move menu closes, less than a straight step is nothing
+        // (combat.pas, the move menu).
+        if (original_movement() && actor.half_moves < 2)
+        {
+            actor.half_moves = 0;
+        }
     }
     else if (command.verb == "melee")
     {
@@ -11819,7 +11851,7 @@ Session::GroundWalk Session::ground_walk(Cell from, Cell to, int range, bool sto
             --grace;
         }
         else if (!ground_cloud_at(at, CloudMatter::gas) &&
-                 (board_.at(at) == rules::Terrain::difficult ||
+                 (board_.at(at) == rules::Terrain::cover ||
                   board_.at(at) == rules::Terrain::impassable_cover))
         {
             walk.blocked = true;
@@ -12764,8 +12796,7 @@ std::string Session::save() const
 {
     Writer out;
     const bool native_calendar = game_of(identity_) == GoldBoxGame::death_knights_of_krynn;
-    out(std::string(native_calendar ? death_knights_checkpoint_format : checkpoint_format),
-        board_.width, board_.height);
+    out(std::string(checkpoint_format), board_.width, board_.height);
     if (native_calendar)
     {
         out(starting_time_minutes_);
@@ -12783,6 +12814,11 @@ std::string Session::save() const
     for (std::size_t n = 0; n < board_.blocking.size(); ++n)
     {
         out(static_cast<unsigned>(board_.clearance[n]), static_cast<unsigned>(board_.blocking[n]));
+    }
+    out(board_.move_cost.size());
+    for (const auto cost : board_.move_cost)
+    {
+        out(static_cast<unsigned>(cost));
     }
     out(random_.value, round_, revision_, actor_, static_cast<unsigned>(outcome_),
         morale_threshold_, outdoors_, escape_ends_fight_, escape_side_.value_or(4), party_facing_,
@@ -12930,11 +12966,15 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
 {
     Reader in(checkpoint);
     const auto format = in.text();
-    const bool native_calendar = format == death_knights_checkpoint_format;
-    if (format != checkpoint_format && !native_calendar)
+    const bool has_costs = format == checkpoint_format;
+    if (!has_costs && format != costless_checkpoint_format &&
+        format != costless_death_knights_checkpoint_format)
     {
         throw std::runtime_error(rules::older_save_message);
     }
+    const bool native_calendar = has_costs
+                                     ? game_of(identity) == GoldBoxGame::death_knights_of_krynn
+                                     : format == costless_death_knights_checkpoint_format;
     std::unique_ptr<Session> session(new Session);
     session->identity_ = std::move(identity);
     session->item_types_ = content.item_types;
@@ -12972,6 +13012,15 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
     {
         board.clearance.push_back(static_cast<std::uint8_t>(in.as<unsigned>()));
         board.blocking.push_back(static_cast<std::uint8_t>(in.as<unsigned>()));
+    }
+    const auto costs = has_costs ? in.as<std::size_t>() : 0;
+    if (costs != 0 && costs != board.terrain.size())
+    {
+        throw std::runtime_error("Invalid original-rules combat checkpoint");
+    }
+    for (std::size_t n = 0; n < costs; ++n)
+    {
+        board.move_cost.push_back(static_cast<std::uint8_t>(in.as<unsigned>()));
     }
     rules::validate_battlefield(board);
     session->random_.value = in.as<std::uint64_t>();
@@ -13465,6 +13514,7 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
         encounter.zero_gravity);
     session->know_item_types(content.item_types);
     session->play_gazes(gazes_played);
+    session->move_as_the_original(content.original_movement);
     session->pair_lovers(std::move(encounter.romance));
     return session;
 }
@@ -13475,6 +13525,7 @@ std::unique_ptr<rules::CombatSession> restore_session(rules::Identity identity,
 {
     auto session = Session::restored(std::move(identity), checkpoint, content);
     session->play_gazes(gazes_played);
+    session->move_as_the_original(content.original_movement);
     return session;
 }
 

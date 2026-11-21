@@ -20,11 +20,13 @@ void validate_battlefield(const Battlefield &board)
         std::any_of(board.terrain.begin(), board.terrain.end(),
                     [](auto tile)
                     {
-                        return tile > Terrain::impassable_cover;
+                        return tile > Terrain::cover;
                     }) ||
         (!board.plants.empty() && board.plants.size() != board.terrain.size()) ||
         board.clearance.size() != board.blocking.size() ||
-        (!board.blocking.empty() && board.blocking.size() != board.terrain.size()))
+        (!board.blocking.empty() && board.blocking.size() != board.terrain.size()) ||
+        (!board.move_cost.empty() && board.move_cost.size() != board.terrain.size()) ||
+        std::ranges::find(board.move_cost, 0) != board.move_cost.end())
     {
         throw std::runtime_error("Invalid battlefield");
     }
@@ -32,9 +34,10 @@ void validate_battlefield(const Battlefield &board)
 
 MovementGrid::MovementGrid(const Battlefield &board, Cell origin,
                            std::span<const Occupant> occupants, bool crawling, bool flying,
-                           bool incorporeal, Footprint footprint, StepCosts costs)
+                           bool incorporeal, Footprint footprint, StepCosts costs,
+                           StepRules step_rules)
     : board_(board), origin_(origin), crawling_(crawling), flying_(flying),
-      incorporeal_(incorporeal), footprint_(footprint), costs_(costs)
+      incorporeal_(incorporeal), footprint_(footprint), costs_(costs), step_rules_(step_rules)
 {
     validate_battlefield(board_);
     if (footprint_.width < 1 || footprint_.height < 1 || blocks_movement(board_.at(origin_)))
@@ -101,11 +104,22 @@ bool MovementGrid::can_stop_at(Cell destination) const
     return true;
 }
 
-// The dearest square sets the step's cost: a large creature is slowed when any
-// of its squares is.
 std::optional<int> MovementGrid::step_cost(Cell from, Cell to) const
 {
-    int cost = 0;
+    const auto price = step_price(from, to);
+    if (!price)
+    {
+        return std::nullopt;
+    }
+    return price->charge;
+}
+
+// The dearest square sets what the step needs: a large creature is slowed
+// when any of its squares is. The SRD rules charge that too; the original
+// charges its anchor square's cost.
+std::optional<StepPrice> MovementGrid::step_price(Cell from, Cell to) const
+{
+    int need = 0, anchor = 0;
     for (int dy = 0; dy < footprint_.height; ++dy)
     {
         for (int dx = 0; dx < footprint_.width; ++dx)
@@ -116,10 +130,11 @@ std::optional<int> MovementGrid::step_cost(Cell from, Cell to) const
             {
                 return std::nullopt;
             }
-            cost = std::max(cost, *square);
+            need = std::max(need, *square);
+            anchor = dx == 0 && dy == 0 ? *square : anchor;
         }
     }
-    return cost;
+    return StepPrice{need, step_rules_ == StepRules::original ? anchor : need};
 }
 
 std::optional<int> MovementGrid::square_step_cost(Cell from, Cell to) const
@@ -137,7 +152,7 @@ std::optional<int> MovementGrid::square_step_cost(Cell from, Cell to) const
     {
         return std::nullopt;
     }
-    if (dx && dy && !incorporeal_ &&
+    if (dx && dy && !incorporeal_ && step_rules_ == StepRules::standard &&
         (blocks_movement(board_.at({from.x, to.y})) || blocks_movement(board_.at({to.x, from.y}))))
     {
         return std::nullopt;
@@ -151,9 +166,14 @@ std::optional<int> MovementGrid::square_step_cost(Cell from, Cell to) const
     const bool difficult = (!flying_ && ground == Terrain::difficult) ||
                            occupant == Occupancy::incapacitated_enemy || blocks_movement(ground);
     const int base = dx && dy ? costs_.diagonal : costs_.straight;
-    const int factor = !flying_ && ground == Terrain::overgrown ? costs_.overgrown_factor
-                       : difficult                              ? costs_.difficult_factor
-                                                                : 1;
+    int factor = !flying_ && ground == Terrain::overgrown ? costs_.overgrown_factor
+                 : difficult                              ? costs_.difficult_factor
+                                                          : 1;
+    if (step_rules_ == StepRules::original && !flying_ && !board_.move_cost.empty() &&
+        !blocks_movement(ground))
+    {
+        factor = std::max(factor, static_cast<int>(board_.move_cost[index(to)]));
+    }
     return base * factor + (crawling_ ? costs_.crawling_extra : 0);
 }
 
@@ -199,12 +219,12 @@ ReachableCells MovementGrid::reachable(int budget) const
             for (int dx = -1; dx <= 1; ++dx)
             {
                 const Cell next{current.x + dx, current.y + dy};
-                const auto step = step_cost(current, next);
-                if (!step || *step > budget - spent)
+                const auto step = step_price(current, next);
+                if (!step || step->need > budget - spent)
                 {
                     continue;
                 }
-                const int next_index = index(next), total = spent + *step;
+                const int next_index = index(next), total = spent + step->charge;
                 if (total >= result.costs_[next_index])
                 {
                     continue;

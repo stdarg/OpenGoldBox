@@ -40,7 +40,8 @@ inline constexpr unsigned combat_terrain_kinds = 154;
 
 // The rules' ground for a kind of combat terrain (pathing.pas WalkLine): a
 // line class 1 kind is a wall; any other kind costing 255 stops feet, not
-// shots; line class 2 is cover.
+// shots; line class 2 is cover. What a step onto it costs is its own cost
+// (the arena's Battlefield::move_cost), whatever its line class.
 [[nodiscard]] rules::Terrain combat_ground(unsigned kind);
 
 // The arena of a fight at the team's square (x, y) of the map, in an area of

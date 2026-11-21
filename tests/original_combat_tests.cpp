@@ -501,6 +501,128 @@ void play_until(rules::CombatSession &session,
     }
 }
 
+void until_turn_of(rules::CombatSession &session, std::string_view name);
+
+// The checkpoint keeps each square's cost (format 30); one written before
+// the costs (27) still reads, with none.
+void a_checkpoint_keeps_the_costs()
+{
+    auto costly = arrange({{"Walker", rules::Side::party, {1, 3}, creature(50)},
+                           {"Kobold", rules::Side::opposition, {7, 7}, creature(50)}},
+                          9, {}, 100, GoldBoxGame::curse_of_the_azure_bonds, false, false,
+                          [](rules::Encounter &encounter)
+                          {
+                              encounter.battlefield.move_cost.assign(64, 2);
+                          });
+    const auto save = costly.session->save();
+    check(save.find("OGORIGINALCOMBAT 30") != std::string::npos, "Checkpoints are format 30");
+    const auto restored = costly.module->restore(save);
+    check(restored->snapshot().battlefield.move_cost == std::vector<std::uint8_t>(64, 2) &&
+              restored->save() == save,
+          "A restored fight keeps each square's cost");
+    auto plain = arrange({{"Walker", rules::Side::party, {1, 3}, creature(50)},
+                          {"Kobold", rules::Side::opposition, {7, 7}, creature(50)}},
+                         9);
+    const auto now = plain.session->save();
+    // Width, height, 64 squares, no plants and no heights: the cost count
+    // is the 71st value.
+    std::size_t at = 0;
+    for (int value = 0; value < 70; ++value)
+    {
+        at = now.find(' ', at) + 1;
+    }
+    check(now.compare(at, 2, "0 ") == 0, "A fight without costs records none");
+    auto older = now;
+    older.erase(at, 2);
+    older.replace(older.find("OGORIGINALCOMBAT 30"), 19, "OGORIGINALCOMBAT 27");
+    const auto read = plain.module->restore(older);
+    check(read->snapshot().battlefield.move_cost.empty() && read->save() == now,
+          "A format 27 checkpoint reads with no costs");
+}
+
+// The same fight, restored to move as the original or not (the game's
+// Original movement option).
+void move_as(Fight &fight, bool original)
+{
+    fight.module->move_as_the_original(original);
+    fight.session = fight.module->restore(fight.session->save());
+}
+
+// The Original movement option, on by default (docs/ORIGINAL-RULES.md). On, a
+// fight moves as the original (Curse's cbtacts.pas CombatMoveCreature,
+// cbtmap.pas ProbeDirection, combatai.pas AiCanStep, combat.pas's move menu):
+// a square costs its terrain table's cost, a diagonal step may pass a wall's
+// corner, the computer steps only while it keeps some movement (Pool of
+// Radiance's spends its last half-moves) and a last half-move is lost as a
+// move ends. Off, it moves as OpenGoldBox did before.
+void the_original_movement_option()
+{
+    for (const bool original : {true, false})
+    {
+        const std::string setting = original ? "On: " : "Off: ";
+        auto costly = arrange({{"Walker", rules::Side::party, {1, 3}, creature(50)},
+                               {"Kobold", rules::Side::opposition, {7, 7}, creature(50)}},
+                              9, {}, 100, GoldBoxGame::curse_of_the_azure_bonds, false, false,
+                              [](rules::Encounter &encounter)
+                              {
+                                  encounter.battlefield.move_cost.assign(64, 1);
+                                  encounter.battlefield.move_cost[3 * 8 + 2] = 4;
+                              });
+        move_as(costly, original);
+        until_turn_of(*costly.session, "Walker");
+        const int before = view_of(costly.session->snapshot(), "Walker").movement_feet;
+        check(costly.session->submit(order(*costly.session, "move", {}, rules::Cell{2, 3})),
+              setting + "the walker steps onto ground costing 4");
+        check(before - view_of(costly.session->snapshot(), "Walker").movement_feet ==
+                  (original ? 20 : 5),
+              setting + "it pays 4 straight steps, or 1 off");
+        auto walled = arrange({{"Walker", rules::Side::party, {0, 0}, creature(50)},
+                               {"Kobold", rules::Side::opposition, {7, 7}, creature(50)}},
+                              9, {{1, 0}, {0, 1}}, 100, GoldBoxGame::curse_of_the_azure_bonds);
+        move_as(walled, original);
+        until_turn_of(*walled.session, "Walker");
+        check(offered(*walled.session, "move", {}, rules::Cell{1, 1}).has_value() == original,
+              setting + "walled in on two sides, it steps out between the walls' corners only on");
+        for (const auto game :
+             {GoldBoxGame::pool_of_radiance, GoldBoxGame::curse_of_the_azure_bonds})
+        {
+            auto walker = creature(50);
+            walker.movement = 3;
+            auto chase = arrange({{"Target", rules::Side::party, {7, 3}, creature(500)},
+                                  {"Walker", rules::Side::opposition, {0, 3}, walker}},
+                                 5, {}, 100, game);
+            move_as(chase, original);
+            auto &session = *chase.session;
+            const auto first_round = session.snapshot().round;
+            play_until(
+                session,
+                [&](const std::string &actor)
+                {
+                    return order(session, actor == "Walker" ? "quick" : "end");
+                },
+                [&]
+                {
+                    return session.snapshot().round > first_round;
+                });
+            const bool keeps_some = original && game != GoldBoxGame::pool_of_radiance;
+            check(view_of(session.snapshot(), "Walker").cell == rules::Cell{keeps_some ? 2 : 3, 3},
+                  setting + "movement 3 walks two squares where the computer keeps its last "
+                            "half-moves, three where it spends them");
+        }
+        auto walker = creature(50);
+        walker.movement = 6;
+        auto mover = arrange({{"Walker", rules::Side::party, {0, 0}, walker},
+                              {"Kobold", rules::Side::opposition, {7, 7}, creature(50)}},
+                             9, {}, 100, GoldBoxGame::curse_of_the_azure_bonds);
+        move_as(mover, original);
+        until_turn_of(*mover.session, "Walker");
+        check(mover.session->submit(order(*mover.session, "move", {}, rules::Cell{4, 3})),
+              setting + "three diagonal steps and a straight one: 11 of its 12 half-moves");
+        check(view_of(mover.session->snapshot(), "Walker").movement_feet == (original ? 0 : 2),
+              setting + "the half-move left is lost, or kept off");
+    }
+}
+
 // A guard strikes an enemy that comes next to it; one that only ended its
 // actions does not (cbtacts.pas, GuardersAttack).
 void a_guard_strikes_who_comes_near()
@@ -6922,6 +7044,8 @@ int main()
         a_melee_fight_resolves();
         a_saved_fight_goes_on_unchanged();
         readied_gear_counts();
+        a_checkpoint_keeps_the_costs();
+        the_original_movement_option();
         a_guard_strikes_who_comes_near();
         leaving_an_enemy_draws_a_free_attack();
         delay_acts_later_in_the_round();

@@ -280,8 +280,12 @@ What else the overland changes, as the original has it:
   features, by the class bits of the ground (cell 4CA1h, which nothing sets,
   so class 0). The terrains (each one's movement cost and `WILDCOM` tile) and
   the 32 grounds' classes are read from the unpacked `GAME.EXE`
-  (`gateway_wilderness`); movement costs above 1 are open ground, as in
-  *Curse*'s fields.
+  (`gateway_wilderness`). In the original a step onto a terrain costs its
+  movement cost, 4 to wade the river (`cbtacts.pas` `CombatMoveCreature`),
+  as in *Curse*'s, *Champions*' and *Death Knights*' fields out of doors; the
+  field carries each square's cost, charged while Original movement is on
+  (docs/ORIGINAL-RULES.md). Gateway's earned-ending test plays with it off
+  until its route is re-tuned.
 
 ## Earned campaign verification (2026-11-18)
 

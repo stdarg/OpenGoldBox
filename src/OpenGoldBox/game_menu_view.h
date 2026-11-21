@@ -87,6 +87,8 @@ class GameMenuView : public godot::Control
     // The Buck Rogers games' solar-map options, for the game being played.
     void direct_flight_selected(std::int64_t index);
     void course_flown_selected(std::int64_t index);
+    // Whether the game's fights under the original rules move as its original.
+    void original_movement_selected(std::int64_t index);
     // A Buck Rogers game shows its ship-combat options where the other games'
     // own options stand.
     void show_game_options();

@@ -551,12 +551,14 @@ void CombatView::flee()
 namespace
 {
 // The game's rules for a fight, without the monster abilities the options and
-// the difficulty switch off (MONSTER-2).
+// the difficulty switch off (MONSTER-2), moving as the game's Original
+// movement option says.
 std::unique_ptr<rules::RulesModule> fight_rules(const GameRules &rules)
 {
     auto module = make_rules_module(rules, game_rules_files());
     module->switch_off_abilities(settings::monster_abilities_off());
     module->play_unplayed_gazes(settings::darkness_gazes());
+    module->move_as_the_original(settings::original_movement(settings::chosen_game()));
     return module;
 }
 } // namespace

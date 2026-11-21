@@ -163,6 +163,32 @@ void squares_keep_their_heights()
     check(kept, "Every square has its tile's clearance and blocking");
 }
 
+// Each square costs what its tile's entry in the table costs, as the games
+// after Pool of Radiance charge it (Curse's and Gateway's cbtacts.pas
+// CombatMoveCreature): here the floor costs 3 and a tree's trunk 1.
+void squares_cost_their_tiles()
+{
+    auto costly = world();
+    for (auto &tile : costly.combat_tiles)
+    {
+        tile.cost = static_cast<std::uint8_t>(1 + tile.frame % 4);
+    }
+    Dice dice({100, 1, 1, 1, 1});
+    const auto field = wilderness_battlefield(costly, 0x25,
+                                              [&](int count, int sides)
+                                              {
+                                                  return dice(count, sides);
+                                              });
+    const auto &costs = field.geometry.move_cost;
+    check(costs.size() == field.tiles.size(), "Every square has its cost");
+    check(costs[1 * 50] == 1 && costs[1 * 50 + 1] == 3,
+          "A tree and the floor cost what their tiles cost");
+    for (std::size_t n = 0; n < costs.size(); ++n)
+    {
+        check(costs[n] == 1 + field.tiles[n] % 4, "Each square costs what its tile costs");
+    }
+}
+
 int main()
 {
     try
@@ -172,6 +198,7 @@ int main()
         pair_beside_a_bare_road();
         road_to_the_last_column();
         squares_keep_their_heights();
+        squares_cost_their_tiles();
     }
     catch (const std::exception &error)
     {

@@ -1617,7 +1617,11 @@ void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &par
     for (unsigned attempt = 0; attempt < tries; ++attempt)
     {
         party->restore(before_fight);
-        CombatDemo combat(fight_module(*party));
+        auto rules = fight_module(*party);
+        // The earned campaign's dice are tuned to the earlier movement: it
+        // plays with Original movement off until re-tuned under the default.
+        rules->move_as_the_original(!earned_campaign);
+        CombatDemo combat(std::move(rules));
         combat.campaign_party(party);
         combat.encounter(*town.pending_encounter(),
                          earned_campaign ? 42 : 42 + fight_seed_offset() + attempt);

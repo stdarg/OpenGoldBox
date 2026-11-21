@@ -444,6 +444,13 @@ struct Content
     GoldBoxGame game{GoldBoxGame::pool_of_radiance};
     // Each monster's record and items, by the bestiary's keys.
     std::map<std::string, MonsterGear, std::less<>> gear;
+    // Whether fights move as the original does (the game's Original movement
+    // option, on by default; rules::RulesModule::move_as_the_original): each
+    // square's own cost, diagonals past a wall's corner, a large creature
+    // paying for its top-left square, the computer keeping its last
+    // half-moves, and a last half-move lost as a move ends. Off, they move as
+    // OpenGoldBox did before (docs/DEVIATIONS.md).
+    bool original_movement{true};
 };
 
 // The original rules as the module the game's fights and party run through.
