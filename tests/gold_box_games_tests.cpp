@@ -2201,6 +2201,15 @@ std::vector<RouteBeat> secret_earned_route(SecretProgress progress)
                                      return beat.expect_cell && beat.expect_cell->first == 0x4CD9;
                                  });
                 check(gem != beats.end(), "The earned route reaches the soul gem");
+                // This party keeps its second Haste for the chamber's door
+                // (below), not the story route's casts on the way there.
+                for (auto at = beats.begin() + first_ending_beat; at != gem; ++at)
+                {
+                    if (at->map == 98 && at->x == 2 && (at->y == 3 || at->y == 4))
+                    {
+                        at->cast_after.clear();
+                    }
+                }
                 RouteBeat hasten_for_gem{98, 1, 3, D::north, {}};
                 hasten_for_gem.waiting = true;
                 hasten_for_gem.cast_after = {"haste"};
@@ -3221,6 +3230,16 @@ const std::vector<RouteBeat> &secret_route()
             if (beat.map == 98 && beat.x == 4 && beat.y == 4)
             {
                 beat.cast_after = {"mirror_image"};
+            }
+            // The same again on the way to the soul's chamber, with the
+            // spells the Dreadlord's fight left.
+            if (beat.map == 98 && beat.x == 2 && beat.y == 4)
+            {
+                beat.cast_after = {"haste"};
+            }
+            if (beat.map == 98 && beat.x == 2 && beat.y == 3)
+            {
+                beat.cast_after = {"mass_invisibility"};
             }
         }
         RouteBeat secret_door{98, 1, 3, D::north, {}};
@@ -6527,6 +6546,10 @@ const std::vector<RouteBeat> &darkness_route()
         // The mage carries the crystal; the paladin keeps the protection
         // scroll packed until the last battle.
         route[palace_entry].answers = {"paladin 1", "magic_user 6", "paladin 2", "EXIT"};
+        // Blessed and hasted on the last two steps to Sasha, as before the
+        // finale.
+        route[route.size() - 2].cast_after = {"bless"};
+        route.back().cast_after = {"haste"};
         // "Sasha" and the Phlanerians (4,4, event 0; the cluebook's 4), met
         // with searching off, the clerics curing first (the palace's
         // wandering monsters break a camp): the party will not tell where
@@ -6545,6 +6568,9 @@ const std::vector<RouteBeat> &darkness_route()
             sasha.cure_to_full = true;
             sasha.camp_broken = true;
             sasha.reloads_until_won = 240;
+            // The bolts' bearers enlarged, as for the finale.
+            sasha.ward_each_with = "enlarge";
+            sasha.ward_members = {"paladin 1", "paladin 2", "ranger 3"};
             for (const char *bearer : {"paladin 1", "paladin 2", "ranger 3"})
             {
                 sasha.ready_types.emplace_back(27, bearer);
@@ -9108,7 +9134,9 @@ std::vector<RouteBeat> treasure_earned_route()
             // here and protect the party before walking through its mages.
             beats[i].rest_first = true;
             beats[i].rest_for_spells = true;
-            beats[i].memorize_first_of = {"fireball", "minor_globe_of_invulnerability"};
+            // A second globe, as the guards outside may draw the first.
+            beats[i].memorize_first_of = {"fireball", "minor_globe_of_invulnerability",
+                                          "minor_globe_of_invulnerability"};
             beats[i].ward_memorized = "resist_fire";
             beats[i].ward_members = {"paladin 1", "paladin 2", "ranger 3",
                                      "cleric 4",  "cleric 5",  "magic_user 6"};
@@ -12388,13 +12416,10 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
     };
     // A party under the original rules, fighting Curse's own creatures.
     auto content = opengold::load_original_content(folder, game);
-    // These routes' dice are tuned to the earlier movement: they play with
+    // Secret's earned ending's dice are tuned to the earlier movement: it plays with
     // Original movement off until re-tuned under the default.
-    content.original_movement =
-        !route || !((game == GoldBoxGame::secret_of_the_silver_blades &&
-                     (secret_progress == SecretProgress::none ||
-                      secret_progress == SecretProgress::ending)) ||
-                    game == GoldBoxGame::pools_of_darkness || earned_gateway || earned_treasure);
+    content.original_movement = !route || !(game == GoldBoxGame::secret_of_the_silver_blades &&
+                                            secret_progress == SecretProgress::ending);
     std::shared_ptr<const opengold::rules::CharacterRules> creation =
         opengold::original::character_rules(opengold::original::default_aging, game);
     std::shared_ptr<opengold::CampaignParty> party;
@@ -16954,6 +16979,34 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     catch (const std::exception &)
                     {
                     }
+                }
+            }
+            // Gateway's paladins cure a member a mummy's touch diseased, who
+            // no cure heals until then (their week's Cure Disease).
+            for (const auto sick : party->state().slots)
+            {
+                if (!earned_gateway || !sick || party->member(sick).vitals.dead ||
+                    !party->temple_service_helps(sick,
+                                                 opengold::rules::TempleService::cure_disease))
+                {
+                    continue;
+                }
+                for (const auto paladin : party->state().slots)
+                {
+                    if (!paladin || party->member(paladin).vitals.dead ||
+                        !std::ranges::any_of(party->camp_actions(paladin),
+                                             [](const opengold::rules::CampAction &action)
+                                             {
+                                                 return action.id == "paladin:cure_disease";
+                                             }))
+                    {
+                        continue;
+                    }
+                    std::cout << "  " << party->member(paladin).character.sheet().name
+                              << " cures the disease of "
+                              << party->member(sick).character.sheet().name << "\n";
+                    cast_cure(paladin, sick, "paladin:cure_disease");
+                    break;
                 }
             }
             // Wake unconscious members before spending the standing cleric's

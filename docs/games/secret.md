@@ -348,6 +348,15 @@ several PCs standing. No retained battle defeat accompanies this win.
 The normal seven-member winning save reencodes byte-identically. Fresh whole
 route results and integrated checks are recorded in [PLAYABILITY.md](../PLAYABILITY.md).
 
+This ending still plays with Original movement off
+([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Movement). With it on
+(2026-11-21) the party reaches Oswulf whole, globed and hasted, but the Black
+Circle's charge after the cloud giants' rear guard holds and kills it in every
+play tried: each of the event's 20 reloads, with the beat's own dice and five
+other dice, and with the full Globe of Invulnerability and Prayer added. From
+the save the earlier movement's run reaches, the same battles are won on the
+fourth reload, so the run's state there, not the movement alone, decides it.
+
 ## The script host
 
 What *Secret*'s scripts need beyond *Curse*'s (found by walking every map):
@@ -497,7 +506,9 @@ ending and wins Oswulf's chained battles, the Dreadlord and the soul-gem
 fight through combat commands. The town hall spends already earned
 experience on the mid-game return; a later temple visit raises the dead and
 cures the petrified magic-user before further training. The last Well rest
-retains the globe, Mass Invisibility, Mirror Image and Haste plan. Globes
+retains the globe, Mass Invisibility, Mirror Image and Haste plan; under
+Original movement (2026-11-21) the Haste and Mass Invisibility the Dreadlord's
+fight leaves are cast again on the way to the soul chamber (2,4 and 2,3). Globes
 and Mass Invisibility are now available in camp, and the globes persist
 into combat ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md)). Holds prioritize
 hostile casters, clerics retain Dispel Magic, and fireball planning respects

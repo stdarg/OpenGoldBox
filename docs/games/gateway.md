@@ -313,7 +313,10 @@ departure window. No clock is set directly.
 
 The route collects Nesme's magic mace, chain mail and ring, Sub-Yartar's +2
 sword and the Hosttower's bracers from actual treasure. Its paid Sundabar
-temple visit restores the petrified paladin before Ascore. The final maze
+temple visit restores the petrified paladin before Ascore. In Ascore the
+paladins' Cure Disease cures a member a mummy's touch diseased, so the
+clerics' cures heal it again (under Original movement, 2026-11-21, the mummies
+reach a cleric too). The final maze
 uses the intended northward exits. All six PCs and Krevish are healthy at the
 win; after actual Continue, the script dismisses Krevish and returns the six
 PCs to Yartar. That normal post-ending save reencodes byte-identically. The

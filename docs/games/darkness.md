@@ -991,7 +991,9 @@ by what it is offered:
   cluebook's 4): it will not tell where Elminster is (NO, NO), which sets
   the Tantalus Clock's strikes to 77 (cell 1CDh; telling sets 66, and a
   party that never meets her has none, so Gothmenes returns at once), and
-  the rakshasas are revealed (a stand-in). At the inner palace's entrance
+  the rakshasas are revealed (a stand-in). Since Original movement
+  (2026-11-21) the party is blessed and hasted on its last two steps there
+  and the bolts' bearers enlarged, as before the finale. At the inner palace's entrance
   (8,8, event 11) Gothmenes winds the clock and leaves (script 74, then 73).
   The clock strikes every second step (cell 1CEh), no wandering monster
   comes while it ticks, and Bane's Crystal shows in the pool only past the

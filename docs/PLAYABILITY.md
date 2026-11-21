@@ -1875,7 +1875,10 @@ finite charges; thrown firepots are bought and consumed normally.
 Paid training at Llorkh provides the mage's normal Haste/Minor Globe choices
 before Redbeard. Luskan's paid inn prepares Haste, Minor Globe and Dispel Magic;
 the party then walks to (10,3), casts its protections there, and only then
-approaches Siulajia's guards. Mirabar prepares three first-level Protection
+approaches Siulajia's guards. After freeing Redleg the party rests at his
+farewell (8,3) with a second Minor Globe memorized, since the guards outside
+may draw the first, and casts the other at (10,3) before the stronghold's
+mages (Original movement, 2026-11-21). Mirabar prepares three first-level Protection
 from Evil copies per cleric for six actual casts, followed by Haste and Minor
 Globe. Requiring six casts after preparing two correctly failed verification;
 the plan was corrected without relaxing that check.
