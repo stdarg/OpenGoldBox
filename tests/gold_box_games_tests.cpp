@@ -9148,6 +9148,25 @@ std::vector<RouteBeat> treasure_earned_route()
     prisoner->keep_preparation = true;
     beats.insert(prisoner, {rescue_approach, protection_at_door, speed_at_door});
 
+    // Redleg freed, Ruathym's guards and the Hosttower's mages fall on the
+    // party in the streets on its way to his boat. A walk that costs members
+    // is reloaded, but not once the boat has carried the party to Luskan:
+    // walk to the foot of the pier first, then step onto it.
+    const auto redleg_boat =
+        std::ranges::find_if(beats,
+                             [](const RouteBeat &beat)
+                             {
+                                 return beat.map == 32 && beat.x == 15 && beat.y == 4;
+                             });
+    check(redleg_boat != beats.end(), "The earned party leaves Ruathym in Redleg's boat");
+    RouteBeat pier_foot{32, 14, 4, D::east, {}};
+    pier_foot.arrive_only = true;
+    pier_foot.cure_first = true;
+    pier_foot.cure_to_full = true;
+    pier_foot.reload_event = true;
+    pier_foot.reloads_until_won = 600;
+    beats.insert(redleg_boat, std::move(pier_foot));
+
     // Return to the actual hall with the experience and money won since
     // Llorkh. The imported winners started below Treasures' new-party levels.
     for (std::size_t i = 0; i + 1 < beats.size(); ++i)

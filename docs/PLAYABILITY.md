@@ -1875,8 +1875,12 @@ finite charges; thrown firepots are bought and consumed normally.
 Paid training at Llorkh provides the mage's normal Haste/Minor Globe choices
 before Redbeard. Luskan's paid inn prepares Haste, Minor Globe and Dispel Magic;
 the party then walks to (10,3), casts its protections there, and only then
-approaches Siulajia's guards. After freeing Redleg the party rests at his
-farewell (8,3) with a second Minor Globe memorized, since the guards outside
+approaches Siulajia's guards. On Ruathym, Redleg freed, the party walks to the
+foot of his pier (32:(14,4)) before stepping onto it: the island's guards and
+the Hosttower mages' four Ice Storms meet it in the streets, and a walk that
+costs a member is reloaded there, as it could not be once the boat has carried
+the party to Luskan (party area-spell AI, 2026-11-21). Back in Luskan the
+party rests at Redleg's farewell (8,3) with a second Minor Globe memorized, since the guards outside
 may draw the first, and casts the other at (10,3) before the stronghold's
 mages (Original movement, 2026-11-21). Mirabar prepares three first-level Protection
 from Evil copies per cleric for six actual casts, followed by Haste and Minor
