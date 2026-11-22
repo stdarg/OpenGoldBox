@@ -9312,6 +9312,7 @@ std::vector<RouteBeat> treasure_earned_route()
     recovery.memorize_first_of = {"fireball", "minor_globe_of_invulnerability"};
     training_trip.push_back(hall);
     training_trip.push_back(recovery);
+    const auto trip_to_the_hall = training_trip.size();
     // Training caps excess XP. Meet actual road encounters between the
     // next visits; no experience is supplied by a hall waypoint.
     for (unsigned visit = 0; visit < 3; ++visit)
@@ -9335,6 +9336,7 @@ std::vector<RouteBeat> treasure_earned_route()
         training_trip.push_back(step_beat(16, 2, 3, D::west, {"YES", "magic_user 6", "Leave"}));
         training_trip.push_back(recovery);
     }
+    const auto trip_back_to_the_inn = training_trip.size();
     training_trip.push_back(step_beat(16, 0, 10, D::west, {"YES"}));
     walk_overland(training_trip, 57,
                   {{14, 4, D::west},   {13, 4, D::west},  {12, 4, D::south},  {12, 5, D::south},
@@ -9430,7 +9432,32 @@ std::vector<RouteBeat> treasure_earned_route()
     redbeard->memorize_first_of = protection.memorize_first_of;
     redbeard->ward_each_with = "minor_globe_of_invulnerability";
     redbeard->ward_members = {"magic_user 6"};
-    beats.insert(redbeard, std::move(protection));
+    // Readying a two-handed staff and then a shield left the second paladin
+    // with no weapon in hand: a player draws the enchanted long sword.
+    redbeard->ready_types = {{18, "paladin 2"}};
+    const auto protection_at = beats.insert(redbeard, std::move(protection));
+    // Redbeard's captors beat the party at the levels it reached the Way Inn
+    // with, though most members have earned the next since: down the stairs and
+    // back to Llorkh's hall to train, then up the stairs again.
+    auto downstairs = step_beat(40, 10, 13, D::west, {"YES"});
+    auto upstairs = step_beat(40, 9, 6, D::north, {"YES"});
+    for (auto *stairway : {&downstairs, &upstairs})
+    {
+        stairway->searching = false;
+        stairway->cure_first = true;
+        stairway->cure_to_full = true;
+        stairway->reload_event = true;
+        stairway->reloads_until_won = 600;
+    }
+    std::vector<RouteBeat> second_training{downstairs};
+    second_training.insert(second_training.end(), training_trip.begin(),
+                           training_trip.begin() + static_cast<std::ptrdiff_t>(trip_to_the_hall));
+    second_training.insert(second_training.end(),
+                           training_trip.begin() +
+                               static_cast<std::ptrdiff_t>(trip_back_to_the_inn),
+                           training_trip.end());
+    second_training.push_back(upstairs);
+    beats.insert(protection_at, second_training.begin(), second_training.end());
     for (auto &beat : beats)
     {
         if (beat.map >= 51 && beat.map <= 57)
