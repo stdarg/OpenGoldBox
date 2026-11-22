@@ -9432,9 +9432,6 @@ std::vector<RouteBeat> treasure_earned_route()
     redbeard->memorize_first_of = protection.memorize_first_of;
     redbeard->ward_each_with = "minor_globe_of_invulnerability";
     redbeard->ward_members = {"magic_user 6"};
-    // Readying a two-handed staff and then a shield left the second paladin
-    // with no weapon in hand: a player draws the enchanted long sword.
-    redbeard->ready_types = {{18, "paladin 2"}};
     const auto protection_at = beats.insert(redbeard, std::move(protection));
     // Redbeard's captors beat the party at the levels it reached the Way Inn
     // with, though most members have earned the next since: down the stairs and
@@ -15746,6 +15743,62 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         }
         return false;
     };
+    const auto readied_melee_weapons = [&](opengold::MemberId id)
+    {
+        std::vector<std::uint64_t> weapons;
+        for (const auto item : party->member(id).equipped)
+        {
+            const auto info = party->equipment_info(id, item);
+            if (info.slot == opengold::rules::EquipmentSlot::weapon && !info.ranged)
+            {
+                weapons.push_back(item);
+            }
+        }
+        return weapons;
+    };
+    // A shield readied over a two-handed weapon leaves the member's hands
+    // without one: a player then draws the best one-handed melee weapon the
+    // member carries, or, carrying none, takes up the old weapon again.
+    const auto keep_a_weapon_in_hand = [&](opengold::MemberId id, std::uint64_t old_weapon)
+    {
+        const auto &member = party->member(id);
+        const opengold::InventoryItem *best = nullptr;
+        const auto bonus = [&](const opengold::InventoryItem &item)
+        {
+            const auto found = member.item_sources.find(item.id);
+            return found == member.item_sources.end() ? 0 : found->second.stored.magic_bonus;
+        };
+        for (const auto &item : member.character.inventory().items())
+        {
+            const auto info = party->equipment_info(id, item.id);
+            if (item.id != old_weapon && info.slot == opengold::rules::EquipmentSlot::weapon &&
+                !info.ranged && info.hands == 1 && (!best || bonus(item) > bonus(*best)))
+            {
+                best = &item;
+            }
+        }
+        const auto name = member.character.sheet().name;
+        if (best)
+        {
+            const auto drawn = best->id;
+            const auto drawn_name = best->name;
+            try
+            {
+                (void)party->equip(id, drawn);
+                std::cout << "  " << name << " draws " << drawn_name << " beside the shield\n";
+                return;
+            }
+            catch (const std::exception &)
+            {
+                // The rules refuse it (a cursed weapon, a class that may not
+                // wield it): the old weapon goes back in hand.
+            }
+        }
+        ready_in_place(id, old_weapon);
+        std::cout << "  " << name << " takes up "
+                  << party->member(id).character.inventory().find(old_weapon)->get().name
+                  << " again\n";
+    };
     // Keep and ready better weapons and armor actually won in treasure.
     // Treasures also keeps usable enchanted melee weapons of another type.
     const auto take_equipment_upgrade = [&](const std::vector<opengold::por::Equipment> &pile)
@@ -15841,9 +15894,14 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 if (session.take_treasure(session.snapshot().continue_ticket, at))
                 {
                     const auto taken = party->member(id).character.inventory().items().back().id;
+                    const auto held_weapons = readied_melee_weapons(id);
                     ready_in_place(id, taken);
                     std::cout << "  " << party->member(id).character.sheet().name
                               << " takes and readies an upgrade: " << label << "\n";
+                    if (!held_weapons.empty() && readied_melee_weapons(id).empty())
+                    {
+                        keep_a_weapon_in_hand(id, held_weapons.front());
+                    }
                     return true;
                 }
             }

@@ -1876,9 +1876,10 @@ Paid training at Llorkh provides the mage's normal Haste/Minor Globe choices
 before Redbeard. His captors beat the party at the levels it reached the Way
 Inn with, so after the inn's other rooms it goes down the stairs and back to
 Llorkh's hall, where the members who have earned it since train a level (the
-purse stops short of the ranger), and the second paladin, left with no weapon
-in hand by a staff and then a shield readied over his sword, draws the
-enchanted long sword again (party area-spell AI, 2026-11-22). Luskan's paid inn prepares Haste, Minor Globe and Dispel Magic;
+purse stops short of the ranger) (party area-spell AI, 2026-11-22). Every
+route player that readies a shield over a two-handed weapon draws the best
+one-handed melee weapon the member carries, or takes up the old weapon again,
+so no fighter goes into a fight empty-handed. Luskan's paid inn prepares Haste, Minor Globe and Dispel Magic;
 the party then walks to (10,3), casts its protections there, and only then
 approaches Siulajia's guards. On Ruathym, Redleg freed, the party walks to the
 foot of his pier (32:(14,4)) before stepping onto it: the island's guards and
