@@ -14416,7 +14416,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         // The magic-user's spells of the eighth and ninth levels, the only
         // ones that touch Pools of Darkness's rakshasas: Meteor Swarm, Power
         // Word Kill, Mass Charm and Power Word Blind.
-        constexpr std::array<unsigned, 4> rakshasa_spells{324, 325, 320, 323};
+        // Static: MSVC gives a lambda its own copy of a plain constexpr local,
+        // so an iterator into one copy was compared with the other's end.
+        static constexpr std::array<unsigned, 4> rakshasa_spells{324, 325, 320, 323};
         const auto state = session.snapshot();
         const bool rakshasas =
             std::ranges::any_of(state.combatants,

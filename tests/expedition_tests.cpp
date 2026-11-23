@@ -1906,11 +1906,13 @@ void keep_rest_choices(CampaignParty &party)
         }
         const auto &numbers = *party.member(id).character.sheet().original;
         std::vector<std::string> prepared;
-        constexpr std::array favorites{"bless",          "cure_light_wounds", "shield",
-                                       "haste",          "fireball",          "knock",
-                                       "stinking_cloud", "silence",           "hold_person",
-                                       "sleep",          "magic_missile",     "prayer",
-                                       "dispel_magic"};
+        // Static: MSVC gives a lambda its own copy of a plain constexpr local,
+        // so the distance from favorites.begin() mixed two arrays.
+        static constexpr std::array favorites{"bless",          "cure_light_wounds", "shield",
+                                              "haste",          "fireball",          "knock",
+                                              "stinking_cloud", "silence",           "hold_person",
+                                              "sleep",          "magic_missile",     "prayer",
+                                              "dispel_magic"};
         for (const auto &[prefix, slots] :
              {std::pair{std::string("cleric:"), numbers.cleric_slots},
               std::pair{std::string("magic_user:"), numbers.magic_user_slots}})
