@@ -491,7 +491,7 @@ std::filesystem::path build_test_design(const std::filesystem::path &kit,
     check(settings && settings->size() == 388, "The kit has its game record");
     auto game = *settings;
     const std::string_view title = "Test Design";
-    std::fill_n(game.begin(), 0x20, 0);
+    std::fill_n(game.begin(), 0x20, std::uint8_t{0});
     std::copy(title.begin(), title.end(), game.begin());
     game[0x30] = 5;
     game[0x31] = 1;

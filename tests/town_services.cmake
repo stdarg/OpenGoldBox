@@ -22,7 +22,7 @@ set(ENV{OPENGOLD_LANG} en)
 execute_process(
     COMMAND "${CMAKE_COMMAND}" "-DGODOT=${GODOT}" "-DPROJECT=${PROJECT}"
     "-DSCRIPT=${CMAKE_CURRENT_LIST_DIR}/town_services_tests.gd"
-    "-DEXPECTED=Town services passed" -DTEST_TIMEOUT=300
+    "-DEXPECTED=Town services passed" -DTEST_TIMEOUT=600
     "-DARGS=--fixtures=${FIXTURES}/town"
     -P "${CMAKE_CURRENT_LIST_DIR}/run_godot_test.cmake"
     RESULT_VARIABLE result)

@@ -27,6 +27,11 @@ func require(condition: bool, message: String) -> void:
 		push_error(message)
 		quit(1)
 
+# The game shows a folder in the platform's own form (backslashes on Windows);
+# settings and environment folders may come with forward slashes.
+func same_folder(shown: String, expected: String) -> bool:
+	return shown.replace("\\", "/") == expected.replace("\\", "/")
+
 func settle() -> void:
 	for frame in range(8): await process_frame
 
@@ -115,7 +120,7 @@ func choose_save_from_found_folder(screen: Node, dialog: Window, saves: ItemList
 	config.erase_section_key("games", "GATEWAY")
 	require(config.save(settings_file()) == OK, "Cannot forget Gateway's folder")
 	OS.set_environment("OPENGOLD_GOLDBOX_DIR", expected)
-	require(StartupView.game_folder("GATEWAY") == expected, "The search must find Gateway's folder")
+	require(same_folder(StartupView.game_folder("GATEWAY"), expected), "The search must find Gateway's folder")
 	var saved_before := FileAccess.get_file_as_string(settings_file())
 	var members: ItemList = dialog.get_node("Margin/Rows/Lists/MemberColumn/Members")
 	var found: Window = screen.get_node("FolderQuestions/FoundFolder")
@@ -123,7 +128,7 @@ func choose_save_from_found_folder(screen: Node, dialog: Window, saves: ItemList
 	await pick(saves, 0)
 	require(not dialog.visible and found.visible and not path_dialog.visible, "Choosing the save must show the folder found for the player to confirm")
 	require(found.title == "Gateway to the Savage Frontier game files" and found.get_node("Title").text == found.title, "The question names Gateway: " + found.title)
-	require(found.get_node("Folder").text == expected, "The question shows the folder found: " + found.get_node("Folder").text)
+	require(same_folder(found.get_node("Folder").text, expected), "The question shows the folder found: " + found.get_node("Folder").text)
 	require(found.get_node("Use").has_focus(), "Use this folder takes the focus")
 	if found_import == "decline":
 		found.get_node("Choose").pressed.emit()
@@ -147,7 +152,7 @@ func choose_save_from_found_folder(screen: Node, dialog: Window, saves: ItemList
 		found.get_node("Use").pressed.emit()
 		await settle()
 	require(not found.visible and not path_dialog.visible and dialog.visible, "The questions close once Gateway's folder is known, back to the import")
-	require(read_config().get_value("games", "GATEWAY", "") == expected, "Gateway's confirmed folder was not saved")
+	require(same_folder(read_config().get_value("games", "GATEWAY", ""), expected), "Gateway's confirmed folder was not saved")
 
 func run_checks() -> void:
 	place_gateway_save()

@@ -884,12 +884,12 @@ EclHostReply RolfTourSession::character_reply(PartySlot slot) const
                     at(0x10E) = static_cast<std::uint16_t>(40 + profile.melee_attack_bonus);
                     at(0x10F) = at(0x110) = static_cast<std::uint16_t>(60 - profile.armor_class);
                     const auto spells = campaign_->memorized_spells(id);
-                    for (std::uint16_t n = 0; n < 74; ++n)
+                    for (std::uint16_t spell_slot = 0; spell_slot < 74; ++spell_slot)
                     {
-                        const auto number = n < spells.size()
-                                                ? original::spell_number(spells[n], game())
+                        const auto number = spell_slot < spells.size()
+                                                ? original::spell_number(spells[spell_slot], game())
                                                 : std::nullopt;
-                        at(static_cast<std::uint16_t>(0x1B + n)) =
+                        at(static_cast<std::uint16_t>(0x1B + spell_slot)) =
                             number ? static_cast<std::uint16_t>(
                                          original::native_spell(*number, game()))
                                    : 0;

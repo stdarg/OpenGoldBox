@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <array>
 #include <string>
-#include <utility>
 
 namespace opengold::por
 {
@@ -48,7 +47,10 @@ ZoneStarts zone_starts(GoldBoxGame game)
 // memory"): its cells 1h to 400h are the game's state, each named cell at its
 // own place, and 401h to 800h are the current character's record, byte for
 // byte. Each Pool of Radiance cell the engine names has its cell here.
-using CellPair = std::pair<std::uint16_t, std::uint16_t>;
+struct CellPair
+{
+    std::uint16_t first{}, second{};
+};
 constexpr std::uint16_t vga_record = 0x401;
 constexpr std::array<CellPair, 34> vga_cells{{
     {0x6DC9, 0x0003}, // FFh holds back the step a step's event began with.

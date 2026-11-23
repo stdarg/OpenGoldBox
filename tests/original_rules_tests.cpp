@@ -279,7 +279,6 @@ void thief_skill_chances()
     // Curse's thieves rise to level 12 and Secret's to 18. Secret's table gives
     // humans the half-orc's adjustments; OpenGoldBox gives them none
     // (docs/ORIGINAL-RULES.md, Bugs).
-    const auto curse = opengold::GoldBoxGame::curse_of_the_azure_bonds;
     const auto secret = opengold::GoldBoxGame::secret_of_the_silver_blades;
     check(thief_skills(Race::human, 12, 13, curse) ==
                   std::array<int, 8>{100, 77, 75, 94, 77, 35, 99, 65} &&
@@ -417,7 +416,6 @@ void training()
     // paladins and rangers gain more from 17 up; Curse gives it to a single
     // class and doubles a first-level ranger's, Secret counts each class's own
     // bonus once for each of its first level's dice.
-    const auto curse = opengold::GoldBoxGame::curse_of_the_azure_bonds;
     const auto secret = opengold::GoldBoxGame::secret_of_the_silver_blades;
     check(constitution_hit_point_bonus(Profession::paladin, 18, curse) == 4 &&
               constitution_hit_point_bonus(Profession::fighter, 19, curse) == 5,
@@ -467,7 +465,6 @@ void spell_slots_and_wisdom()
     // Secret's casters go on to level 15 and seventh-level spells, the sixth
     // and seventh only with Wisdom 17 and 18 (clerics), Intelligence 12 and
     // 14 (magic-users).
-    const auto curse = opengold::GoldBoxGame::curse_of_the_azure_bonds;
     const auto secret = opengold::GoldBoxGame::secret_of_the_silver_blades;
     check(spell_slots(ClassSlot::cleric, 15, 18, 9, secret) == SpellSlots{9, 9, 8, 6, 4, 2, 0} &&
               spell_slots(ClassSlot::cleric, 15, 16, 9, secret)[5] == 0,
@@ -487,7 +484,6 @@ void spell_slots_and_wisdom()
 // on to Secret's level 15; Gateway stops them short of any.
 void paladins_and_rangers_cast()
 {
-    const auto curse = opengold::GoldBoxGame::curse_of_the_azure_bonds;
     const auto secret = opengold::GoldBoxGame::secret_of_the_silver_blades;
     const auto only = [](ClassSlot slot, int level)
     {
@@ -678,9 +674,9 @@ void constitution_and_age()
     {
         const int gateway = starting_age(Race::half_elf, Profession::ranger, random,
                                          opengold::GoldBoxGame::gateway_to_the_savage_frontier);
-        const int curse = starting_age(Race::half_elf, Profession::ranger, random,
+        const int curse_age = starting_age(Race::half_elf, Profession::ranger, random,
                                        opengold::GoldBoxGame::curse_of_the_azure_bonds);
-        check(gateway >= 29 && gateway <= 50 && curse >= 25 && curse <= 34,
+        check(gateway >= 29 && gateway <= 50 && curse_age >= 25 && curse_age <= 34,
               "A half-elf ranger starts at 26+3d8 in Gateway, as a half-elf fighter in Curse");
     }
     rejects(

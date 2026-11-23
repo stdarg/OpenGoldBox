@@ -512,7 +512,7 @@ por::CharacterRecord character_record(const CharacterSheet &sheet)
                      level(ClassSlot::fighter), level(ClassSlot::paladin),
                      level(ClassSlot::ranger),  level(ClassSlot::magic_user),
                      level(ClassSlot::thief),   level(ClassSlot::monk)};
-    record.highest_level_raw = *std::max_element(l.begin(), l.end());
+    record.highest_level_raw = static_cast<std::uint8_t>(*std::max_element(l.begin(), l.end()));
     // The original's race numbers run from 1 (dwarf) to 7 (human).
     record.race =
         static_cast<std::uint8_t>(record_race(static_cast<Race>(original.race), record.game));
@@ -3117,7 +3117,7 @@ void OriginalModule::temple_service(VitalState &state, const CharacterSheet &she
         throw std::runtime_error("The temple cannot help with that");
     }
     const auto game = game_of(sheet.identity);
-    const auto heal = [&](int dice, int bonus)
+    const auto heal_wounds = [&](int dice, int bonus)
     {
         int healing = bonus;
         for (int die = 0; die < dice; ++die)
@@ -3129,13 +3129,13 @@ void OriginalModule::temple_service(VitalState &state, const CharacterSheet &she
     switch (service)
     {
     case TempleService::cure_light_wounds:
-        heal(1, 0);
+        heal_wounds(1, 0);
         break;
     case TempleService::cure_serious_wounds:
-        heal(2, 1);
+        heal_wounds(2, 1);
         break;
     case TempleService::cure_critical_wounds:
-        heal(3, 3);
+        heal_wounds(3, 3);
         break;
     case TempleService::heal:
         // Curse's Heal: all but 1d4 Hit Points (ovr005, temple_heal); Secret's

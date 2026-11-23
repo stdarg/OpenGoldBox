@@ -34,6 +34,7 @@
 #include "installed_games.h"
 #include "test_support.h"
 
+#include <cctype>
 #include <cstdio>
 #include <cstdlib>
 #include <deque>
@@ -263,6 +264,17 @@ void the_machine_runs_curse_scripts()
     check(machine.variable(opengold::por::EclAddress{0x4000}) == 7, "SAVE wrote the variable");
 }
 
+char uppercase(unsigned char letter)
+{
+    return static_cast<char>(std::toupper(letter));
+}
+
+constexpr std::pair<std::uint16_t, std::uint16_t> script_cell(std::uint16_t address,
+                                                              std::uint16_t value)
+{
+    return {address, value};
+}
+
 // Every cell Curse's source names lies where moving Pool of Radiance's zones puts it.
 void curse_script_memory_is_pool_of_radiance_moved()
 {
@@ -270,25 +282,25 @@ void curse_script_memory_is_pool_of_radiance_moved()
     using opengold::por::game_address;
     constexpr auto curse = GoldBoxGame::curse_of_the_azure_bonds;
     const std::vector<std::pair<std::uint16_t, std::uint16_t>> cells{
-        {0x49C5, 0x4BC5}, // The 3D map loaded.
-        {0x49C9, 0x4BC9}, // The clock's hour.
-        {0x49E6, 0x4BE6}, // A 3D map is loaded.
-        {0x49F2, 0x4BF2}, // The script before the last NEW ECL.
-        {0x6DC1, 0x7EC1}, // The monsters' distance.
-        {0x6DC6, 0x7EC6}, // Morale.
-        {0x6DC9, 0x7EC9}, // The party's next step blocked.
-        {0x6DCA, 0x7ECA}, // Search flags.
-        {0x6DCB, 0x7ECB}, // Surprise.
-        {0x6DD2, 0x7ED2}, // Rest checks.
-        {0x6DD5, 0x7ED5}, // Leaving the map.
-        {0x6DE1, 0x7EE1}, // The portrait's head.
-        {0x6DE6, 0x7EE6}, // The mirror duel.
-        {0x6E33, 0x7F33}, // An ally attacked.
-        {0x6E3E, 0x7F3E}, // The party's size.
-        {0x6E70, 0x7F70}, // Monsters' to-hit.
-        {0x6E72, 0x7F72}, // The party's movement in combat.
-        {0x9700, 0x7A00}, // The strings.
-        {0xC04B, 0xC04B}, // The party's position stays.
+        script_cell(0x49C5, 0x4BC5), // The 3D map loaded.
+        script_cell(0x49C9, 0x4BC9), // The clock's hour.
+        script_cell(0x49E6, 0x4BE6), // A 3D map is loaded.
+        script_cell(0x49F2, 0x4BF2), // The script before the last NEW ECL.
+        script_cell(0x6DC1, 0x7EC1), // The monsters' distance.
+        script_cell(0x6DC6, 0x7EC6), // Morale.
+        script_cell(0x6DC9, 0x7EC9), // The party's next step blocked.
+        script_cell(0x6DCA, 0x7ECA), // Search flags.
+        script_cell(0x6DCB, 0x7ECB), // Surprise.
+        script_cell(0x6DD2, 0x7ED2), // Rest checks.
+        script_cell(0x6DD5, 0x7ED5), // Leaving the map.
+        script_cell(0x6DE1, 0x7EE1), // The portrait's head.
+        script_cell(0x6DE6, 0x7EE6), // The mirror duel.
+        script_cell(0x6E33, 0x7F33), // An ally attacked.
+        script_cell(0x6E3E, 0x7F3E), // The party's size.
+        script_cell(0x6E70, 0x7F70), // Monsters' to-hit.
+        script_cell(0x6E72, 0x7F72), // The party's movement in combat.
+        script_cell(0x9700, 0x7A00), // The strings.
+        script_cell(0xC04B, 0xC04B), // The party's position stays.
     };
     for (const auto &[pool, expected] : cells)
     {
@@ -970,7 +982,7 @@ const std::vector<RouteBeat> &curse_route()
          false,
          false,
          true,
-         std::pair<std::uint16_t, std::uint16_t>{0x4C9C, 1}},
+         script_cell(0x4C9C, 1)},
         {0, 0, 0, D::north, {"TRAIL", "stop:JOURNEY"}, false, false, true},
         {0, 0, 0, D::north, {"stop:JOURNEY"}, true, false, true},
         // On to Hap, resting at each stop: by boat on the Ashaben (kept clear of
@@ -1005,7 +1017,7 @@ const std::vector<RouteBeat> &curse_route()
          std::nullopt,
          0,
          0,
-         std::pair<std::uint16_t, std::uint16_t>{0x4C47, 4}},
+         script_cell(0x4C47, 4)},
         {50, 8, 4, D::north, {}}, // The efreeti and the dark elves in the barn.
         // Out through Hap's gate, following the efreeti's map to the caves.
         {50,
@@ -1034,7 +1046,7 @@ const std::vector<RouteBeat> &curse_route()
         []
         {
             RouteBeat dracandros{51, 4, 13, D::north, {}, true};
-            dracandros.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C59, 1};
+            dracandros.expect_cell = script_cell(0x4C59, 1);
             dracandros.take_items = {{"BRACERS", "magic_user 6"},
                                      {"RING (", "paladin 1"},
                                      {"RING (", "magic_user 6"},
@@ -1510,7 +1522,7 @@ std::vector<RouteBeat> secret_earned_opening()
     exposed.cure_first = true;
     exposed.cure_to_full = true;
     exposed.reloads_until_won = 600;
-    exposed.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C4D, 128};
+    exposed.expect_cell = script_cell(0x4C4D, 128);
     beats.push_back(exposed);
     RouteBeat return_home{33, 1, 1, D::north, {"YES"}};
     return_home.arrive_only = true;
@@ -1526,7 +1538,7 @@ std::vector<RouteBeat> secret_earned_opening()
     pets.cure_first = true;
     pets.cure_to_full = true;
     pets.reloads_until_won = 600;
-    pets.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C2D, 255};
+    pets.expect_cell = script_cell(0x4C2D, 255);
     beats.push_back(pets);
     beats.push_back(
         {16, 10, 8, D::south, {"YES",  "raise:dead",   "stone:flesh", "Heal", "paladin 1", "Pay",
@@ -1578,7 +1590,7 @@ std::vector<RouteBeat> secret_earned_route(SecretProgress progress)
     dragon.cure_first = true;
     dragon.cure_to_full = true;
     dragon.reloads_until_won = 600;
-    dragon.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C63, 255};
+    dragon.expect_cell = script_cell(0x4C63, 255);
     beats.push_back(dragon);
     RouteBeat return_home{33, 1, 1, D::north, {"YES"}};
     return_home.arrive_only = true;
@@ -1613,7 +1625,7 @@ std::vector<RouteBeat> secret_earned_route(SecretProgress progress)
                            {"Plate Mail", "paladin 2"},
                            {"Long Sword", "ranger 3"}};
         lair.reloads_until_won = 600;
-        lair.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C53, 255};
+        lair.expect_cell = script_cell(0x4C53, 255);
         beats.push_back(lair);
         RouteBeat recover{33, 1, 1, D::north, {"NO"}, true};
         recover.arrive_only = true;
@@ -1627,19 +1639,19 @@ std::vector<RouteBeat> secret_earned_route(SecretProgress progress)
     if (progress >= SecretProgress::headquarters)
     {
         const auto first_hq_beat = beats.size();
-        RouteBeat prepare{33, 1, 1, D::north, {"NO"}, true};
-        prepare.arrive_only = true;
-        prepare.rest_for_spells = true;
-        prepare.cure_first = true;
-        prepare.cure_to_full = true;
-        prepare.memorize_first_of = {"magic_missile", "fireball", "hold_monster", "bless",
+        RouteBeat prepare_beat{33, 1, 1, D::north, {"NO"}, true};
+        prepare_beat.arrive_only = true;
+        prepare_beat.rest_for_spells = true;
+        prepare_beat.cure_first = true;
+        prepare_beat.cure_to_full = true;
+        prepare_beat.memorize_first_of = {"magic_missile", "fireball", "hold_monster", "bless",
                                      "prayer"};
-        prepare.cast_after = {"bless"};
-        beats.push_back(prepare);
-        RouteBeat prayer{33, 1, 1, D::north, {}};
-        prayer.waiting = true;
-        prayer.cast_after = {"prayer"};
-        beats.push_back(prayer);
+        prepare_beat.cast_after = {"bless"};
+        beats.push_back(prepare_beat);
+        RouteBeat prayer_beat{33, 1, 1, D::north, {}};
+        prayer_beat.waiting = true;
+        prayer_beat.cast_after = {"prayer"};
+        beats.push_back(prayer_beat);
         auto leave_well = step_beat(33, 0, 0, D::north);
         leave_well.searching = false;
         beats.push_back(leave_well);
@@ -1678,7 +1690,7 @@ std::vector<RouteBeat> secret_earned_route(SecretProgress progress)
         return_hq.cure_first = true;
         return_hq.cure_to_full = true;
         return_hq.ward_memorized = "resist_fire";
-        return_hq.memorize_first_of = prepare.memorize_first_of;
+        return_hq.memorize_first_of = prepare_beat.memorize_first_of;
         beats.push_back(return_hq);
         // Look searches this square; do not search on every approach step.
         beats.push_back({34, 8, 4, D::south, {}});
@@ -1689,7 +1701,7 @@ std::vector<RouteBeat> secret_earned_route(SecretProgress progress)
         late_wards.ward_each_with = "resist_fire";
         late_wards.cast_after = {"bless"};
         beats.push_back(late_wards);
-        auto renewed_prayer = prayer;
+        auto renewed_prayer = prayer_beat;
         renewed_prayer.map = 34;
         renewed_prayer.x = 8;
         renewed_prayer.y = 8;
@@ -1734,10 +1746,10 @@ std::vector<RouteBeat> secret_earned_route(SecretProgress progress)
         sanctum.reloads_until_won = 1200;
         sanctum.take_items = {
             {"Girdle", "paladin 1"}, {"Bracers", "magic_user 6"}, {"Wand", "magic_user 6"}};
-        sanctum.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C98, 255};
+        sanctum.expect_cell = script_cell(0x4C98, 255);
         beats.push_back(sanctum);
         town_recovery(true);
-        auto recover = prepare;
+        auto recover = prepare_beat;
         recover.memorize_first_of = {"magic_missile", "fireball", "cure_light_wounds",
                                      "cure_serious_wounds"};
         recover.cast_after.clear();
@@ -1776,7 +1788,7 @@ std::vector<RouteBeat> secret_earned_route(SecretProgress progress)
         beats.push_back(step_beat(49, 3, 6, D::south, {"ATTACK"}));
         beats.push_back(step_beat(49, 5, 15, D::south, {"ENTER"}));
         auto derf = step_beat(50, 14, 3, D::north, {"TALK", "NO"});
-        derf.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C85, 1};
+        derf.expect_cell = script_cell(0x4C85, 1);
         beats.push_back(derf);
         // Derf shoos the party south. Leave by the outer temple aisle;
         // the shorter geometric path repeatedly reenters his chamber.
@@ -1801,7 +1813,7 @@ std::vector<RouteBeat> secret_earned_route(SecretProgress progress)
                                               });
         check(first_piece != story.end(), "The established route reaches the first staff piece");
         beats.insert(beats.end(), ring + 1, first_piece + 1);
-        beats.back().expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C84, 1};
+        beats.back().expect_cell = script_cell(0x4C84, 1);
         if (progress >= SecretProgress::staff)
         {
             const auto restored =
@@ -1947,7 +1959,7 @@ std::vector<RouteBeat> secret_earned_route(SecretProgress progress)
                 RouteBeat prepare_army{82, 5, 8, D::east, {}};
                 prepare_army.waiting = true;
                 prepare_army.cast_after = {"invisibility_10_radius", "prayer"};
-                prepare_army.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C6B, 1};
+                prepare_army.expect_cell = script_cell(0x4C6B, 1);
                 add(prepare_army);
                 auto prayer_army = prepare_army;
                 prayer_army.expect_cell.reset();
@@ -2332,7 +2344,7 @@ const std::vector<RouteBeat> &secret_route()
         // Eldamar (cell 4C53); its gateway takes the party to the Well.
         auto lair = step_beat(32, 0, 3, D::north, {"ATTACK", "YES"});
         lair.rest_first = true;
-        lair.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C53, 255};
+        lair.expect_cell = script_cell(0x4C53, 255);
         route.push_back(lair);
         // From the Well's north-west corner into the ruins (sector 6), and
         // through sector 8 to the Black Circle Headquarters' main entrance;
@@ -2393,7 +2405,7 @@ const std::vector<RouteBeat> &secret_route()
         route.push_back(step_beat(49, 3, 6, D::south, {"ATTACK"}));
         route.push_back(step_beat(49, 5, 15, D::south, {"ENTER"}));
         auto derf = step_beat(50, 14, 3, D::north, {"TALK", "NO"});
-        derf.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C85, 1};
+        derf.expect_cell = script_cell(0x4C85, 1);
         route.push_back(derf);
         // Back out of the temple and through the passage to the wheel lift.
         route.push_back(step_beat(50, 8, 0, D::north));
@@ -2686,7 +2698,7 @@ const std::vector<RouteBeat> &secret_route()
         route.push_back(step_beat(49, 3, 6, D::south));
         route.push_back(step_beat(49, 5, 15, D::south, {"ENTER"}));
         auto staff = step_beat(50, 14, 3, D::north);
-        staff.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C86, 1};
+        staff.expect_cell = script_cell(0x4C86, 1);
         route.push_back(staff);
         route.push_back(step_beat(50, 8, 0, D::north));
         route.push_back(step_beat(49, 5, 12, D::north));
@@ -3268,7 +3280,7 @@ const std::vector<RouteBeat> &secret_route()
         }
         RouteBeat secret_door{98, 1, 3, D::north, {}};
         secret_door.repeat_in_place = true;
-        secret_door.repeat_until_at_least = std::pair<std::uint16_t, std::uint16_t>{0x4CDC, 128};
+        secret_door.repeat_until_at_least = script_cell(0x4CDC, 128);
         route.push_back(secret_door);
         // Through it, the chamber of the Dreadlord's soul: the party explores
         // it, beats the iron golems and medusae about the gem, and the gem is
@@ -3276,7 +3288,7 @@ const std::vector<RouteBeat> &secret_route()
         // game is won. Twelve iron golems, whom only the weapons +3 of two
         // paladins and Vala harm, and six medusae guard the gem.
         RouteBeat soul_gem = step_beat(98, 1, 3, D::north, {"EXPLORE ROOM"});
-        soul_gem.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CD9, 1};
+        soul_gem.expect_cell = script_cell(0x4CD9, 1);
         route.push_back(soul_gem);
         // The treasures on the way that arm the party better, as the
         // cluebook's list of items finds them (its Items), each taken where
@@ -3385,7 +3397,7 @@ const std::vector<RouteBeat> &darkness_route()
         // any dungeon: a step west.
         RouteBeat west{17, 0, 0, D::north, {}};
         west.area_steps = {opengold::por::ExplorationCommand::west};
-        west.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x25, 25};
+        west.expect_cell = script_cell(0x25, 25);
         route.push_back(west);
         // North-west across the Lands of Thar, past Melvaunt's army and the
         // farmhouse, to the stockade of Taydome's Keep (19,1), where Sasha is
@@ -3415,7 +3427,7 @@ const std::vector<RouteBeat> &darkness_route()
                        {4, 10, D::south},
                        {4, 11, D::east}});
         auto bostell = step_beat(22, 5, 11, D::north, {"BREAK CHAINS"});
-        bostell.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x128, 1};
+        bostell.expect_cell = script_cell(0x128, 1);
         route.push_back(bostell);
         // Back north and east through the halls, past the study where Kimarr
         // plots (11,6), to the room where his giants hold Quil (9,5): the
@@ -3431,7 +3443,7 @@ const std::vector<RouteBeat> &darkness_route()
                        {11, 6, D::west},  {10, 6, D::west}});
         auto quil = step_beat(22, 9, 6, D::north, {"NO", "YES", "NO"});
         quil.rest_first = true;
-        quil.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x123, 1};
+        quil.expect_cell = script_cell(0x123, 1);
         route.push_back(quil);
         // East along the mountains to the Silver Blades' cave (27,2), where
         // Vala digs for the four items that rule the elementals.
@@ -3536,7 +3548,7 @@ const std::vector<RouteBeat> &darkness_route()
                        {12, 8, D::east}});
         route[to_breach].rest_first = true;
         auto vaasans = step_beat(37, 13, 8, D::east, {"YES"});
-        vaasans.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x1AB, 128};
+        vaasans.expect_cell = script_cell(0x1AB, 128);
         route.push_back(vaasans);
         // Back west along the passage and out of the cave (0,8), onto the
         // area map by its door (27,2).
@@ -3589,7 +3601,7 @@ const std::vector<RouteBeat> &darkness_route()
         walk_passages(route, 50,
                       {{2, 5, D::north}, {2, 4, D::north}, {2, 3, D::north}, {2, 2, D::east}});
         auto altar = step_beat(50, 3, 2, D::north, {"SCRUB PAINT"});
-        altar.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x17F, 2};
+        altar.expect_cell = script_cell(0x17F, 2);
         route.push_back(altar);
         // East and south to the stairs down (6,5), the wall of type 7 east of
         // it, and down into the catacombs (script 54, the map's lower half),
@@ -3630,21 +3642,21 @@ const std::vector<RouteBeat> &darkness_route()
                        {12, 13, D::south},
                        {12, 14, D::east}});
         auto brimwulf = step_beat(50, 13, 14, D::north, {"OPEN COFFIN", "STAND AWAY", "YES"});
-        brimwulf.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0xAB, 1};
+        brimwulf.expect_cell = script_cell(0xAB, 1);
         route.push_back(brimwulf);
         // Through the secret door beyond him to the small altar (12,10): the
         // ritual journal entry 11 gives, its third way (cell 17Fh bit 0),
         // so fewer elementals guard the tests.
         walk_passages(route, 50, {{13, 13, D::north}, {13, 12, D::north}, {13, 11, D::west}});
         auto ritual = step_beat(50, 12, 11, D::north, {"LIGHT INCENSE"});
-        ritual.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x17F, 3};
+        ritual.expect_cell = script_cell(0x17F, 3);
         route.push_back(ritual);
         // The earth rises at (10,10); beaten, it leaves the Vessel of Purity,
         // which the party takes (cell 17Fh bit 3).
         walk_passages(route, 50, {{12, 10, D::south}, {12, 11, D::west}, {11, 11, D::west}});
         auto vessel = step_beat(50, 10, 11, D::north, {"TAKE BOWL"});
         vessel.rest_first = true;
-        vessel.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x17F, 11};
+        vessel.expect_cell = script_cell(0x17F, 11);
         route.push_back(vessel);
         // Ilmater's symbol (12,8) ignites; the fire elemental's dying flame
         // passes into the bowl, the Spirit Flame (cell 17Fh bit 4).
@@ -3655,7 +3667,7 @@ const std::vector<RouteBeat> &darkness_route()
                        {9, 8, D::east},
                        {10, 8, D::east}});
         auto flame = step_beat(50, 11, 8, D::east);
-        flame.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x17F, 27};
+        flame.expect_cell = script_cell(0x17F, 27);
         route.push_back(flame);
         // The armory (14,10): the flame lights the Lamp of Vigilance,
         // Brimwulf tells the party to rekindle the four braziers and ring the
@@ -3663,7 +3675,7 @@ const std::vector<RouteBeat> &darkness_route()
         // the shelves of arms Priam sought.
         walk_passages(route, 50, {{12, 8, D::east}, {13, 8, D::south}, {13, 9, D::south}});
         auto lamp = step_beat(50, 13, 10, D::east, {"YES"});
-        lamp.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x17F, 59};
+        lamp.expect_cell = script_cell(0x17F, 59);
         route.push_back(lamp);
         route.push_back(step_beat(50, 14, 10, D::east));
         // Back west and up the stairs at (8,9) to the catacombs' west half
@@ -3707,7 +3719,7 @@ const std::vector<RouteBeat> &darkness_route()
                        {10, 1, D::west},
                        {9, 1, D::north}});
         auto first_brazier = step_beat(50, 9, 0, D::west, {"LIGHT BRAZIER"});
-        first_brazier.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x17D, 77};
+        first_brazier.expect_cell = script_cell(0x17D, 77);
         route.push_back(first_brazier);
         // The north-east tower (15,0).
         walk_passages(route, 50,
@@ -3722,7 +3734,7 @@ const std::vector<RouteBeat> &darkness_route()
                        {13, 1, D::east},
                        {14, 1, D::north}});
         auto second_brazier = step_beat(50, 14, 0, D::east, {"LIGHT BRAZIER"});
-        second_brazier.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x17D, 205};
+        second_brazier.expect_cell = script_cell(0x17D, 205);
         route.push_back(second_brazier);
         // The south-east tower (15,7).
         walk_passages(route, 50,
@@ -3733,7 +3745,7 @@ const std::vector<RouteBeat> &darkness_route()
                        {15, 4, D::south},
                        {15, 5, D::south}});
         auto third_brazier = step_beat(50, 15, 6, D::south, {"LIGHT BRAZIER"});
-        third_brazier.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x17D, 237};
+        third_brazier.expect_cell = script_cell(0x17D, 237);
         route.push_back(third_brazier);
         // The south-west tower (8,7): the darkness is swept from the temple.
         walk_passages(route, 50,
@@ -3748,7 +3760,7 @@ const std::vector<RouteBeat> &darkness_route()
                        {10, 6, D::west},
                        {9, 6, D::south}});
         auto fourth_brazier = step_beat(50, 9, 7, D::west, {"LIGHT BRAZIER"});
-        fourth_brazier.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x17D, 253};
+        fourth_brazier.expect_cell = script_cell(0x17D, 253);
         route.push_back(fourth_brazier);
         // The bell tower (12,3): with every brazier lit the bells ring clear,
         // and the shades of Laurellin and Brimwulf, neither slain, are reunited
@@ -3762,7 +3774,7 @@ const std::vector<RouteBeat> &darkness_route()
                        {10, 4, D::north},
                        {10, 3, D::east}});
         auto bells = step_beat(50, 11, 3, D::east, {"PULL ROPES", "STEP AWAY"});
-        bells.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x181, 1};
+        bells.expect_cell = script_cell(0x181, 1);
         route.push_back(bells);
         for (auto beat = route.begin() + static_cast<std::ptrdiff_t>(temple_unfreed);
              beat != route.end(); ++beat)
@@ -3815,14 +3827,14 @@ const std::vector<RouteBeat> &darkness_route()
                        {7, 9, D::north},
                        {7, 8, D::east}});
         auto kardal = step_beat(21, 8, 8, D::east, {"YES", "YES"});
-        kardal.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x114, 3};
+        kardal.expect_cell = script_cell(0x114, 3);
         route.push_back(kardal);
         // The cloud giants at their gaming table (9,10), rested first: beaten,
         // they earn the party its notoriety (bit 2).
         walk_passages(route, 21, {{9, 8, D::south}});
         auto cloud_giants = step_beat(21, 9, 9, D::south);
         cloud_giants.rest_first = true;
-        cloud_giants.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x114, 7};
+        cloud_giants.expect_cell = script_cell(0x114, 7);
         route.push_back(cloud_giants);
         // Back past the tavern to the inner steading's barred door (7,8): the
         // hill giants pull the party through, and the shaman sends for it
@@ -3847,7 +3859,7 @@ const std::vector<RouteBeat> &darkness_route()
                        {9, 5, D::north},
                        {9, 4, D::north}});
         auto dagger = step_beat(21, 9, 3, D::west);
-        dagger.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x114, 31};
+        dagger.expect_cell = script_cell(0x114, 31);
         route.push_back(dagger);
         // Down the trail to Kardal (6,4), whom the party rescues from his
         // captors, rested first; he tells it of the Fire Giants (journal entry
@@ -3855,7 +3867,7 @@ const std::vector<RouteBeat> &darkness_route()
         walk_passages(route, 21, {{8, 3, D::west}, {7, 3, D::west}});
         auto rescue = step_beat(21, 6, 3, D::south, {"RESCUE HIM"});
         rescue.rest_first = true;
-        rescue.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x114, 63};
+        rescue.expect_cell = script_cell(0x114, 63);
         route.push_back(rescue);
         // A door slams in the distance (3,4), and a rear guard of hill giants
         // and ogres blocks the way south (3,6). A paladin challenges their
@@ -3906,7 +3918,7 @@ const std::vector<RouteBeat> &darkness_route()
         walk_passages(route, 21, {{11, 1, D::east}});
         auto shaman = step_beat(21, 12, 1, D::east);
         shaman.rest_first = true;
-        shaman.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x116, 255};
+        shaman.expect_cell = script_cell(0x116, 255);
         route.push_back(shaman);
         // His vault (12,0) is locked, and no one forces its door; past it,
         // the door in the steading's north wall (15,0) leads to the Fire Giant
@@ -3942,7 +3954,7 @@ const std::vector<RouteBeat> &darkness_route()
         auto corridor = step_beat(32, 11, 15, D::east, {"YES", "YES", "THROW IT AWAY"});
         corridor.passing = true;
         corridor.repeat_in_place = true;
-        corridor.repeat_until_bits = std::pair<std::uint16_t, std::uint16_t>{0x132, 1};
+        corridor.repeat_until_bits = script_cell(0x132, 1);
         route.push_back(corridor);
         // Out of the corridor's east end and round by the fire giants who
         // block the way (13,12), north through the room that teleports the
@@ -3990,14 +4002,14 @@ const std::vector<RouteBeat> &darkness_route()
                       {{2, 5, D::west}, {1, 5, D::west}, {0, 5, D::north}, {0, 4, D::north}});
         auto cave_dragons = step_beat(32, 0, 3, D::north);
         cave_dragons.rest_first = true;
-        cave_dragons.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x133, 3};
+        cave_dragons.expect_cell = script_cell(0x133, 3);
         route.push_back(cave_dragons);
         // West from (0,1) the party sees the dragons flying off to the north-
         // west and follows them; the tunnel seals behind it, and it comes out
         // on the area map below the Dragons' Aerie (7,1).
         walk_passages(route, 32, {{0, 2, D::north}});
         auto follow_dragons = step_beat(32, 0, 1, D::west, {"YES"});
-        follow_dragons.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x25, 7};
+        follow_dragons.expect_cell = script_cell(0x25, 7);
         route.push_back(follow_dragons);
         // North-west, a dragon flies into an opening in the mountains: the
         // party enters the Dragons' Aerie.
@@ -4031,7 +4043,7 @@ const std::vector<RouteBeat> &darkness_route()
         // copper key (cell 144h bit 3).
         auto copper_key = step_beat(33, 12, 15, D::west);
         copper_key.rest_first = true;
-        copper_key.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x144, 8};
+        copper_key.expect_cell = script_cell(0x144, 8);
         route.push_back(copper_key);
         walk_passages(
             route, 33,
@@ -4055,7 +4067,7 @@ const std::vector<RouteBeat> &darkness_route()
         // key in their treasure (bit 2).
         auto iron_key = step_beat(33, 12, 1, D::west, {"YES"});
         iron_key.rest_first = true;
-        iron_key.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x144, 12};
+        iron_key.expect_cell = script_cell(0x144, 12);
         route.push_back(iron_key);
         walk_passages(route, 33,
                       {{11, 1, D::east},
@@ -4079,7 +4091,7 @@ const std::vector<RouteBeat> &darkness_route()
         // silver key (bit 0).
         auto silver_key = step_beat(33, 3, 1, D::east);
         silver_key.rest_first = true;
-        silver_key.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x144, 13};
+        silver_key.expect_cell = script_cell(0x144, 13);
         route.push_back(silver_key);
         // The party rests in the north-west disused room (3,2) on its way.
         walk_passages(route, 33, {{4, 1, D::south}, {4, 2, D::west}});
@@ -4119,7 +4131,7 @@ const std::vector<RouteBeat> &darkness_route()
         auto steel_key = step_beat(33, 3, 14, D::east);
         steel_key.rest_first = true;
         steel_key.reloads_until_won = 240;
-        steel_key.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x144, 15};
+        steel_key.expect_cell = script_cell(0x144, 15);
         route.push_back(steel_key);
         // Back west and north to the doors before the dimensional gate (7,2):
         // the four keys unlock them (cell 144h FFh).
@@ -4143,13 +4155,13 @@ const std::vector<RouteBeat> &darkness_route()
                        {6, 4, D::west},   {5, 4, D::north},  {5, 3, D::east},   {6, 3, D::east},
                        {7, 3, D::north}});
         auto locks = step_beat(33, 7, 2, D::north, {"USE KEYS"});
-        locks.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x144, 255};
+        locks.expect_cell = script_cell(0x144, 255);
         route.push_back(locks);
         // Through them Modthryth stands beside his dracoliches, which the
         // party beats (cell 141h FFh), rested first.
         auto dracolich = step_beat(33, 7, 2, D::north);
         dracolich.rest_first = true;
-        dracolich.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x141, 255};
+        dracolich.expect_cell = script_cell(0x141, 255);
         route.push_back(dracolich);
         // Round to the dimensional gate (7,0), entered facing west: the party
         // steps through to Thorne's cave.
@@ -4238,7 +4250,7 @@ const std::vector<RouteBeat> &darkness_route()
         thorne.cure_first = true;
         thorne.cure_to_full = true;
         thorne.ward_each_with = "resist_fire";
-        thorne.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x152, 255};
+        thorne.expect_cell = script_cell(0x152, 255);
         route.push_back(thorne);
         // Back the way it came to the dimensional gate (0,13), stepped
         // through westward, and from Limbo on to the Realms.
@@ -4472,7 +4484,7 @@ const std::vector<RouteBeat> &darkness_route()
             route, 68,
             {{14, 12, D::north}, {14, 11, D::west}, {13, 11, D::west}, {12, 11, D::west}});
         auto swanmays = step_beat(68, 11, 11, D::west);
-        swanmays.expect_cell = std::pair<std::uint16_t, std::uint16_t>{606, 3};
+        swanmays.expect_cell = script_cell(606, 3);
         route.push_back(swanmays);
         walk_passages(route, 68,
                       {{10, 11, D::east},
@@ -4613,7 +4625,7 @@ const std::vector<RouteBeat> &darkness_route()
                        {8, 9, D::north},
                        {8, 8, D::north}});
         auto statue = step_beat(69, 8, 7, D::north, {"type:HANDS"});
-        statue.expect_cell = std::pair<std::uint16_t, std::uint16_t>{632, 1};
+        statue.expect_cell = script_cell(632, 1);
         route.push_back(statue);
         walk_passages(route, 69, {{8, 6, D::north}});
         route.push_back(step_beat(69, 8, 5, D::north, {"YES", "stop:REST"}));
@@ -4784,7 +4796,7 @@ const std::vector<RouteBeat> &darkness_route()
         // the amulets that repel spiders, which the party takes (cell 1FFh).
         walk_passages(route, 81, {{4, 12, D::south}, {4, 13, D::south}, {4, 14, D::east}});
         auto amulets = step_beat(81, 5, 14, D::east);
-        amulets.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x1FF, 1};
+        amulets.expect_cell = script_cell(0x1FF, 1);
         route.push_back(amulets);
         // North to the altar room (8,9), where Hem's fate is decided and Daris
         // flees with the Ward; the party follows.
@@ -4801,7 +4813,7 @@ const std::vector<RouteBeat> &darkness_route()
         // Kalistes' Pet, and his enormous spiders (cell 1F7h).
         walk_passages(route, 81, {{8, 9, D::west}, {7, 9, D::west}, {6, 9, D::north}});
         auto ward = step_beat(81, 6, 8, D::east, {"YES"});
-        ward.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x1F7, 1};
+        ward.expect_cell = script_cell(0x1F7, 1);
         route.push_back(ward);
         // Back through the Test's chambers, resting where it is hurt (the
         // cluebook: in any section of the Test it has completed), and out by
@@ -4848,7 +4860,7 @@ const std::vector<RouteBeat> &darkness_route()
         route.push_back(to_roadside_village);
         RouteBeat into_roadside_village{83, 0, 0, D::north, {"YES"}};
         into_roadside_village.area_steps = {C::east};
-        into_roadside_village.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x25, 33};
+        into_roadside_village.expect_cell = script_cell(0x25, 33);
         route.push_back(into_roadside_village);
         // Round the village to the Parlor's wall of gossamer (1,4), where
         // Locaste marches in by her own Ward; the party tries to enter as
@@ -4985,7 +4997,7 @@ const std::vector<RouteBeat> &darkness_route()
         eggs.ward_each_with = "haste";
         eggs.ward_members = {"paladin 1"};
         eggs.reloads_until_won = 240;
-        eggs.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x208, 1};
+        eggs.expect_cell = script_cell(0x208, 1);
         route.push_back(eggs);
         // Out with the ring: east through the lower level to the stairs up
         // (13,4, YES), and through the upper level to the foyer and out by
@@ -5015,7 +5027,7 @@ const std::vector<RouteBeat> &darkness_route()
         route.push_back(to_ruined_temple);
         RouteBeat into_ruined_temple{83, 0, 0, D::north, {"YES"}};
         into_ruined_temple.area_steps = {C::west};
-        into_ruined_temple.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x25, 4};
+        into_ruined_temple.expect_cell = script_cell(0x25, 4);
         route.push_back(into_ruined_temple);
         walk_passages(route, 83,
                       {{7, 9, D::east},
@@ -5320,7 +5332,7 @@ const std::vector<RouteBeat> &darkness_route()
         auto maharajah = step_beat(66, 5, 0, D::south, {"SMASH GLOBES"});
         maharajah.camp_broken = true;
         ready_the_bolts(maharajah, true);
-        maharajah.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x1D8, 255};
+        maharajah.expect_cell = script_cell(0x1D8, 255);
         route.push_back(maharajah);
         // Nacacia smiles and bids the party back to the glen: it walks back
         // over the door it climbed, past the altar and round to the broken
@@ -6022,7 +6034,7 @@ const std::vector<RouteBeat> &darkness_route()
                     {15, 8, D::west},
                     {14, 8, D::west}});
         auto reward = step_beat(52, 13, 8, D::west, {"YES"});
-        reward.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x23B, 1};
+        reward.expect_cell = script_cell(0x23B, 1);
         route.push_back(reward);
         // Aeghwaet helped, the wound's camps rest (the cluebook): the party
         // rests whole, walks back south to the wound's opening (12,15) and
@@ -6073,13 +6085,13 @@ const std::vector<RouteBeat> &darkness_route()
         // the tissue east of where it swam in (4,14 to 4,15) until each has
         // come, as a player wanders it.
         route.push_back(step_beat(53, 2, 15, D::east));
-        for (const std::uint16_t bit : {32, 4, 1})
+        for (const std::uint16_t bit : std::initializer_list<std::uint16_t>{32, 4, 1})
         {
             auto pace = step_beat(53, 4, 14, D::south);
             pace.repeat_in_place = true;
             pace.cure_first = true;
             pace.camp_broken = true;
-            pace.repeat_until_bits = std::pair<std::uint16_t, std::uint16_t>{0x24A, bit};
+            pace.repeat_until_bits = script_cell(0x24A, bit);
             route.push_back(pace);
         }
         // The heart's walks: the clerics cure the badly hurt, no camp.
@@ -6111,7 +6123,7 @@ const std::vector<RouteBeat> &darkness_route()
         // it of the slime (YES; cell 241h 1).
         walk_heart({{4, 15, D::north}, {4, 14, D::north}, {4, 13, D::west}, {3, 13, D::west}});
         auto potions = step_beat(53, 2, 13, D::west, {"YES"});
-        potions.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x241, 1};
+        potions.expect_cell = script_cell(0x241, 1);
         route.push_back(potions);
         // The heart beats every 60 steps (cell 9Bh counts them; 243h holds
         // the beat): DUB at 30, when one in an atrium or its vessels (events
@@ -6127,7 +6139,7 @@ const std::vector<RouteBeat> &darkness_route()
             pace.repeat_in_place = true;
             pace.cure_first = true;
             pace.camp_broken = true;
-            pace.repeat_until_bits = std::pair<std::uint16_t, std::uint16_t>{0x9A, beat};
+            pace.repeat_until_bits = script_cell(0x9A, beat);
             route.push_back(pace);
         };
         constexpr std::uint16_t after_lub = 1, after_dub = 2;
@@ -6143,7 +6155,7 @@ const std::vector<RouteBeat> &darkness_route()
                     {3, 1, D::east},   {4, 1, D::east},   {5, 1, D::east},   {6, 1, D::east},
                     {7, 1, D::east},   {8, 1, D::east},   {9, 1, D::east}});
         auto tools = step_beat(53, 10, 1, D::east, {"YES"});
-        tools.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x24A, 173};
+        tools.expect_cell = script_cell(0x24A, 173);
         route.push_back(tools);
         // After the LUB, back west to the vena cava and south to the arrow
         // in the old wound (4,5, event 5; the cluebook's 7): the tools fashion
@@ -6175,7 +6187,7 @@ const std::vector<RouteBeat> &darkness_route()
             pace.repeat_in_place = true;
             pace.cure_first = true;
             pace.camp_broken = true;
-            pace.repeat_until_bits = std::pair<std::uint16_t, std::uint16_t>{0x24C, 34};
+            pace.repeat_until_bits = script_cell(0x24C, 34);
             route.push_back(pace);
         }
         // East to the Watcher's second spot (7,6, event 30; the cluebook's
@@ -6316,7 +6328,7 @@ const std::vector<RouteBeat> &darkness_route()
         showdown.camp_broken = true;
         showdown.ward_each_with = "haste";
         showdown.ward_members = {"paladin 1"};
-        showdown.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x245, 1};
+        showdown.expect_cell = script_cell(0x245, 1);
         route.push_back(showdown);
         // Out of the heart by the vena cava's end (2,15, south: ARE YOU SURE
         // YOU WANT TO LEAVE THE HEART? YES), onto Moander's body by the wound
@@ -6374,7 +6386,7 @@ const std::vector<RouteBeat> &darkness_route()
         route.push_back(to_mulmaster);
         RouteBeat into_mulmaster{18, 0, 0, D::north, {"YES", "MOVE ON"}};
         into_mulmaster.area_steps = {C::northeast};
-        into_mulmaster.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x16, 26};
+        into_mulmaster.expect_cell = script_cell(0x16, 26);
         route.push_back(into_mulmaster);
         // MOVE ON past the gate's guards (0,3; the cluebook's 1), and through
         // the alleys, where Banites chant the labyrinth's way (journal entry
@@ -6637,12 +6649,12 @@ const std::vector<RouteBeat> &darkness_route()
         // once it has struck more than 50 times. The party paces the
         // entrance hall (8,8 to 8,7) until then, as a player waits, and
         // Gothmenes returns at the 77th strike.
-        for (const std::uint16_t strikes : {18, 36, 52})
+        for (const std::uint16_t strikes : std::initializer_list<std::uint16_t>{18, 36, 52})
         {
             auto pace = step_beat(65, 8, 8, D::north);
             pace.repeat_in_place = true;
             pace.camp_broken = true;
-            pace.repeat_until_at_least = std::pair<std::uint16_t, std::uint16_t>{0x1CE, strikes};
+            pace.repeat_until_at_least = script_cell(0x1CE, strikes);
             route.push_back(pace);
         }
         // Round to the pool's north edge (9,8; the cluebook's 16), where a
@@ -6706,7 +6718,7 @@ const std::vector<RouteBeat> &darkness_route()
             // party in most plays: the player reloads that fight until a
             // play wins, before reloading the whole event.
             finale.reloads_until_won = 480;
-            finale.repeat_until_at_least = std::pair<std::uint16_t, std::uint16_t>{0x16, 75};
+            finale.repeat_until_at_least = script_cell(0x16, 75);
             route.push_back(finale);
         }
         return route;
@@ -6766,7 +6778,7 @@ const std::vector<RouteBeat> &gateway_route()
         {
             auto cleric = step_beat(3, 9, 0, D::south);
             cleric.rest_first = true;
-            cleric.expect_cell = {{0x4C93, 1}};
+            cleric.expect_cell = script_cell(0x4C93, 1);
             route.push_back(cleric);
         }
         // Out of the temple and the eastern gate, and overland east to
@@ -6882,7 +6894,7 @@ const std::vector<RouteBeat> &gateway_route()
         {
             auto amanitas = step_beat(5, 4, 13, D::east);
             amanitas.rest_first = true;
-            amanitas.expect_cell = {{0x4C32, 1}};
+            amanitas.expect_cell = script_cell(0x4C32, 1);
             route.push_back(amanitas);
         }
         // Out of Everlund and overland west to Yartar, as Amanitas bids.
@@ -6934,7 +6946,7 @@ const std::vector<RouteBeat> &gateway_route()
         // unlocks it (cell 4C08), tried again after a fall, as a player would.
         {
             auto grating = step_beat(2, 12, 15, D::west, {"YES", "Krevish"});
-            grating.repeat_until_at_least = {{0x4C08, 1}};
+            grating.repeat_until_at_least = script_cell(0x4C08, 1);
             grating.repeat_in_place = true;
             route.push_back(grating);
         }
@@ -7066,7 +7078,7 @@ const std::vector<RouteBeat> &gateway_route()
         {
             auto east = step_beat(9, 14, 1, D::north);
             east.rest_first = true;
-            east.expect_cell = {{0x4C27, 1}};
+            east.expect_cell = script_cell(0x4C27, 1);
             route.push_back(east);
         }
         // Out of the Hosttower, where Brinshaar turns on the party, back through
@@ -7196,7 +7208,7 @@ const std::vector<RouteBeat> &gateway_route()
         // leave the statuette of the West (bit 2 of cell 4C27).
         {
             RouteBeat chest{13, 3, 9, D::west, {}};
-            chest.repeat_until_at_least = {{0x4C27, 3}};
+            chest.repeat_until_at_least = script_cell(0x4C27, 3);
             chest.repeat_in_place = true;
             chest.holding_foes = true;
             route.push_back(chest);
@@ -7225,7 +7237,7 @@ const std::vector<RouteBeat> &gateway_route()
         {
             auto ambush = step_beat(6, 1, 2, D::north);
             ambush.rest_first = true;
-            ambush.expect_cell = {{0x4C2A, 1}};
+            ambush.expect_cell = script_cell(0x4C2A, 1);
             route.push_back(ambush);
         }
         // Out of Neverwinter's south gate and overland east and south, past
@@ -7326,7 +7338,7 @@ const std::vector<RouteBeat> &gateway_route()
         {
             RouteBeat cell{17, 12, 4, D::south, {"Krevish"}};
             cell.rest_first = true;
-            cell.repeat_until_at_least = {{0x4C06, 2}};
+            cell.repeat_until_at_least = script_cell(0x4C06, 2);
             cell.repeat_in_place = true;
             route.push_back(cell);
         }
@@ -7353,7 +7365,7 @@ const std::vector<RouteBeat> &gateway_route()
                        {2, 2, D::west}},
                       true);
         // The statuette of the North (bit 3 of cell 4C27) joins the other two.
-        route.back().expect_cell = {{0x4C27, 7}};
+        route.back().expect_cell = script_cell(0x4C27, 7);
         // Out of Llorkh and overland west to the foot of the Star Mounts, where
         // the aarakocra fly the party up to Ceptienne's aerie.
         {
@@ -7427,7 +7439,7 @@ const std::vector<RouteBeat> &gateway_route()
                        {6, 9, D::north},  {6, 8, D::west},   {5, 8, D::south},  {5, 9, D::south},
                        {5, 10, D::west},  {4, 10, D::north}, {4, 9, D::north},  {4, 8, D::west}},
                       true);
-        route.back().expect_cell = {{0x4C27, 15}};
+        route.back().expect_cell = script_cell(0x4C27, 15);
         // Rested in her chamber, back to the alcove where the aarakocra wait to
         // fly the party down, and overland north-east to Sundabar.
         {
@@ -7831,7 +7843,7 @@ const std::vector<RouteBeat> &treasure_route()
         // breaking a camp here leave the party worn.
         captain.cure_first = true;
         captain.ward_each_with = "resist_fire";
-        captain.expect_cell = {{0x128, 1}};
+        captain.expect_cell = script_cell(0x128, 1);
         route.push_back(captain);
         walk_passages(route, 22,
                       {{12, 0, D::east},
@@ -7921,7 +7933,7 @@ const std::vector<RouteBeat> &treasure_route()
         // 69 plays of 600 (2026-11-16), so it reloads until it wins.
         route.back().memorize_first_of = {"fireball", "charm_person", "dispel_magic"};
         route.back().reloads_until_won = 600;
-        route.back().expect_cell = {{0x129, 1}};
+        route.back().expect_cell = script_cell(0x129, 1);
         // Down the stairs (9,13) and out of the Way Inn, then overland north
         // by maps 56 and 54 to Yartar (map 23).
         walk_passages(route, 40,
@@ -8021,7 +8033,7 @@ const std::vector<RouteBeat> &treasure_route()
             fight.rest_for_spells = true;
             route.push_back(fight);
         }
-        route.back().expect_cell = {{0x12A, 1}};
+        route.back().expect_cell = script_cell(0x12A, 1);
         // The Lord Protector of Triboar hears the Waterbaron (12,2); the party
         // rests first.
         route.push_back({24, 13, 7, D::north, {}});
@@ -8087,7 +8099,7 @@ const std::vector<RouteBeat> &treasure_route()
             ranch.wait_until_minute = 9 * 60;
             route.push_back(ranch);
         }
-        route.back().expect_cell = {{0x12B, 1}};
+        route.back().expect_cell = script_cell(0x12B, 1);
         // Back overland south (maps 52, 53 and 55) to the Smuggler's Dock,
         // paying its gatekeeper's fee, for the ship to Mintarn.
         walk_passages(route, 25,
@@ -8161,7 +8173,7 @@ const std::vector<RouteBeat> &treasure_route()
             fight.rest_for_spells = true;
             route.push_back(fight);
         }
-        route.back().expect_cell = {{0x12C, 1}};
+        route.back().expect_cell = script_cell(0x12C, 1);
         // At 0600 the sailor on the passenger dock (7,0, facing the sea) books
         // the party's passage to Orlumbor (map 27); as it boards, pirates
         // carry Siulajia off to Luskan, and the party sails on.
@@ -8183,7 +8195,7 @@ const std::vector<RouteBeat> &treasure_route()
         route.push_back({27, 3, 3, D::north, {}});
         RouteBeat wrighttson{27, 11, 3, D::north, {}};
         wrighttson.rest_first = true;
-        wrighttson.expect_cell = {{0x12D, 1}};
+        wrighttson.expect_cell = script_cell(0x12D, 1);
         route.push_back(wrighttson);
         // At 0600 a ship at the dock where the party came in (13,11, facing
         // the sea) sails it to Neverwinter (map 28).
@@ -8224,7 +8236,7 @@ const std::vector<RouteBeat> &treasure_route()
             }
             route.push_back(fight);
         }
-        route.back().expect_cell = {{0x12E, 1}};
+        route.back().expect_cell = script_cell(0x12E, 1);
         route.push_back({28, 5, 7, D::north, {}});
         // Out of Neverwinter's north gate and overland (map 51) to Luskan
         // (map 31).
@@ -8295,7 +8307,7 @@ const std::vector<RouteBeat> &treasure_route()
         // Redleg's boat under the north-east pier (15,4) carries the party off
         // Ruathym, ending the ninth mission (cell 12Fh).
         RouteBeat redleg_boat{32, 15, 4, D::north, {"GET IN BOAT"}};
-        redleg_boat.expect_cell = {{0x12F, 1}};
+        redleg_boat.expect_cell = script_cell(0x12F, 1);
         route.push_back(redleg_boat);
         // Luskan again: Redleg's farewell (8,3) and Jagaerda, captured for her
         // help, freed to join the party once more (7,4). The room where a
@@ -8356,7 +8368,7 @@ const std::vector<RouteBeat> &treasure_route()
         // dead raised at the Temple of Vergadain (2,13) and rests at the Dig
         // Inn (4,11).
         RouteBeat council_done{30, 2, 13, D::north, {"YES", "raise:dead", "Leave"}};
-        council_done.expect_cell = {{0x1F8, 0xFF}};
+        council_done.expect_cell = script_cell(0x1F8, 0xFF);
         route.push_back(council_done);
         route.push_back({30, 4, 11, D::north, {"YES"}});
         // Out of Mirabar's south gate (7,15) and overland west and south
@@ -8442,7 +8454,7 @@ const std::vector<RouteBeat> &treasure_route()
                        {8, 9, D::north},
                        {8, 8, D::west}});
         RouteBeat grand_yeti = step_beat(34, 7, 8, D::north);
-        grand_yeti.expect_cell = {{0x22D, 1}};
+        grand_yeti.expect_cell = script_cell(0x22D, 1);
         route.push_back(grand_yeti);
         // West through the mines and up the shaft at (1,11) to Fireshear
         // (2,5), whose streets are safe now; resting first, the party steps
@@ -8466,7 +8478,7 @@ const std::vector<RouteBeat> &treasure_route()
         auto beholder = step_beat(33, 2, 4, D::west);
         beholder.rest_first = true;
         beholder.rest_for_spells = true;
-        beholder.expect_cell = {{0x231, 1}};
+        beholder.expect_cell = script_cell(0x231, 1);
         route.push_back(beholder);
         // From the dock (0,4, facing the sea) the Fireshear dwarves take the
         // party free to the Ice Peak's Aurilssbaarg (map 35), rested first.
@@ -8543,7 +8555,7 @@ const std::vector<RouteBeat> &treasure_route()
         walk_passages(route, 38,
                       {{6, 8, D::west}, {5, 8, D::north}, {5, 7, D::west}, {4, 7, D::north}});
         auto freezefire = step_beat(38, 4, 6, D::west);
-        freezefire.expect_cell = {{0x25C, 1}};
+        freezefire.expect_cell = script_cell(0x25C, 1);
         // The black-robed masters, mages and spies hold, slay and charm the
         // party's members (Hold Monster, Hold Person, Slay Living and Charm
         // Person) from the first round; the route's player frees them with
@@ -10164,12 +10176,12 @@ std::vector<RouteBeat> curse_earned_route(CurseProgress progress)
         exit_guard.reloads_until_won = 360;
         exit_guard.searching = false;
         exit_guard.arrive_only = true;
-        exit_guard.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C2D, 255};
+        exit_guard.expect_cell = script_cell(0x4C2D, 255);
         beats.push_back(exit_guard);
         beats.push_back({17, 0, 11, D::west, {"stop:JOURNEY"}});
         beats.back().step = true;
         beats.back().searching = false;
-        beats.back().expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C5B, 255};
+        beats.back().expect_cell = script_cell(0x4C5B, 255);
         // Sell Dracandros's ring through the real shop to pay for the
         // fallen PCs' resurrection and the next eligible hall training.
         world({"JOURNEY", "VOONLAR", "TRAIL", "ENTER CITY", "STORE", "sell:RING@magic_user 6",
@@ -10281,7 +10293,7 @@ std::vector<RouteBeat> curse_earned_route(CurseProgress progress)
         dexam.arrive_only = true;
         dexam.searching = false;
         dexam.reloads_until_won = 1200;
-        dexam.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C5A, 1};
+        dexam.expect_cell = script_cell(0x4C5A, 1);
         beats.push_back(dexam);
         approach_room(4, 12);
         beats.push_back(story[66]);
@@ -10673,7 +10685,7 @@ std::vector<RouteBeat> death_knights_earned_route(DeathKnightsProgress progress)
     RouteBeat stairs{36, 8, 7, D::north, {"YES"}};
     RouteBeat commander{36, 11, 8, D::north, {"YES"}};
     RouteBeat temple{36, 6, 9, D::east, {"YES"}};
-    temple.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C2D, 3};
+    temple.expect_cell = script_cell(0x4C2D, 3);
     RouteBeat report{36, 11, 8, D::north, {"NO", "YES", "CEMETERY"}};
     RouteBeat tavern{36, 5, 9, D::north, {"YES", "TALK", "LEAVE"}};
     tavern.arrive_only = true;
@@ -10716,7 +10728,7 @@ std::vector<RouteBeat> death_knights_earned_route(DeathKnightsProgress progress)
         return beats;
     }
     RouteBeat audience{32, 15, 3, D::north, {"YES", "YES"}};
-    audience.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C4E, 1};
+    audience.expect_cell = script_cell(0x4C4E, 1);
     beats.push_back(audience);
     if (progress == DeathKnightsProgress::kalaman_audience)
     {
@@ -10730,10 +10742,10 @@ std::vector<RouteBeat> death_knights_earned_route(DeathKnightsProgress progress)
     beats.push_back(morning);
     RouteBeat pavilion{32, 2, 3, D::north, {"YES"}};
     pavilion.reload_event = true;
-    pavilion.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C4C, 1};
+    pavilion.expect_cell = script_cell(0x4C4C, 1);
     beats.push_back(pavilion);
     RouteBeat note{32, 4, 14, D::west, {"YES"}};
-    note.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C4C, 2};
+    note.expect_cell = script_cell(0x4C4C, 2);
     beats.push_back(note);
     RouteBeat night{32, 4, 14, D::west, {"NO"}};
     night.arrive_only = true;
@@ -10741,14 +10753,14 @@ std::vector<RouteBeat> death_knights_earned_route(DeathKnightsProgress progress)
     beats.push_back(night);
     RouteBeat parley{32, 6, 6, D::north, {"LISTEN", "YES", "LISTEN"}};
     parley.reload_event = true;
-    parley.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C4C, 3};
+    parley.expect_cell = script_cell(0x4C4C, 3);
     beats.push_back(parley);
     if (progress == DeathKnightsProgress::kalaman_parley)
     {
         return beats;
     }
     auto report_escape = audience;
-    report_escape.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C4C, 4};
+    report_escape.expect_cell = script_cell(0x4C4C, 4);
     beats.push_back(report_escape);
     RouteBeat inn_room{32, 3, 14, D::north, {"YES"}};
     beats.push_back(inn_room);
@@ -10776,15 +10788,15 @@ std::vector<RouteBeat> death_knights_earned_route(DeathKnightsProgress progress)
         return beats;
     }
     RouteBeat merchant{33, 8, 14, D::north, {"YES", "AGREE"}};
-    merchant.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C53, 1};
+    merchant.expect_cell = script_cell(0x4C53, 1);
     beats.push_back(merchant);
     RouteBeat dream_nap{33, 9, 14, D::north, {}, true};
     dream_nap.arrive_only = true;
     dream_nap.rest_for_spells = true;
-    dream_nap.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C53, 2};
+    dream_nap.expect_cell = script_cell(0x4C53, 2);
     beats.push_back(dream_nap);
     RouteBeat interpretation{33, 8, 14, D::north, {"DREAM", "NO"}};
-    interpretation.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C53, 3};
+    interpretation.expect_cell = script_cell(0x4C53, 3);
     beats.push_back(interpretation);
     if (progress == DeathKnightsProgress::vingaard_dream)
     {
@@ -10792,7 +10804,7 @@ std::vector<RouteBeat> death_knights_earned_route(DeathKnightsProgress progress)
     }
     RouteBeat nightmare{33, 8, 14, D::north, {"SLEEP", "YES", "FIGHT", "FIGHT"}};
     nightmare.reload_event = true;
-    nightmare.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C54, 2};
+    nightmare.expect_cell = script_cell(0x4C54, 2);
     beats.push_back(nightmare);
     if (progress == DeathKnightsProgress::vingaard_nightmare)
     {
@@ -10830,7 +10842,7 @@ std::vector<RouteBeat> death_knights_earned_route(DeathKnightsProgress progress)
         step.reload_event = true;
         beats.push_back(step);
     }
-    beats.back().expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C68, 1};
+    beats.back().expect_cell = script_cell(0x4C68, 1);
     if (progress == DeathKnightsProgress::sebas)
     {
         return beats;
@@ -10975,7 +10987,7 @@ std::vector<RouteBeat> death_knights_earned_route(DeathKnightsProgress progress)
         step.reload_event = true;
         beats.push_back(step);
     }
-    beats.back().expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C57, 2};
+    beats.back().expect_cell = script_cell(0x4C57, 2);
     if (progress == DeathKnightsProgress::dragon_mission)
     {
         return beats;
@@ -11034,7 +11046,7 @@ std::vector<RouteBeat> death_knights_earned_route(DeathKnightsProgress progress)
     auto wolf = step_beat(50, 3, 11, D::north, {"YES"});
     wolf.reload_event = true;
     wolf.holding_foes = true;
-    wolf.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C81, 1};
+    wolf.expect_cell = script_cell(0x4C81, 1);
     beats.push_back(wolf);
     if (progress == DeathKnightsProgress::dragon_pit_wolf)
     {
@@ -11053,7 +11065,7 @@ std::vector<RouteBeat> death_knights_earned_route(DeathKnightsProgress progress)
     death_dragon.reload_event = true;
     death_dragon.holding_foes = true;
     death_dragon.take_items = {{"Dragonlance", "knight 1"}};
-    death_dragon.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C7C, 255};
+    death_dragon.expect_cell = script_cell(0x4C7C, 255);
     beats.push_back(death_dragon);
     if (progress == DeathKnightsProgress::dragon_pit)
     {
@@ -11102,7 +11114,7 @@ std::vector<RouteBeat> death_knights_earned_route(DeathKnightsProgress progress)
         step.reload_event = true;
         beats.push_back(step);
     }
-    beats.back().expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C57, 3};
+    beats.back().expect_cell = script_cell(0x4C57, 3);
     beats.push_back(safe_room);
     beats.push_back(prepare_tower);
     RouteBeat hideout{33, 12, 14, D::north, {"NO"}};
@@ -11113,7 +11125,7 @@ std::vector<RouteBeat> death_knights_earned_route(DeathKnightsProgress progress)
     beats.push_back(hideout);
     hideout.arrive_only = false;
     hideout.repeat_in_place = true;
-    hideout.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C57, 5};
+    hideout.expect_cell = script_cell(0x4C57, 5);
     beats.push_back(hideout);
     if (progress == DeathKnightsProgress::sebas_abducted)
     {
@@ -11153,7 +11165,7 @@ std::vector<RouteBeat> death_knights_earned_route(DeathKnightsProgress progress)
     confront_ariela.cure_first = true;
     confront_ariela.cure_to_full = true;
     confront_ariela.holding_foes = true;
-    confront_ariela.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C4A, 1};
+    confront_ariela.expect_cell = script_cell(0x4C4A, 1);
     beats.push_back(confront_ariela);
     if (progress == DeathKnightsProgress::kalaman_ariela)
     {
@@ -11165,7 +11177,7 @@ std::vector<RouteBeat> death_knights_earned_route(DeathKnightsProgress progress)
     captive.cure_first = true;
     captive.cure_to_full = true;
     captive.take_items = {{"Dart", "magic_user 6"}, {"Banded", "knight 3"}};
-    captive.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C4A, 2};
+    captive.expect_cell = script_cell(0x4C4A, 2);
     beats.push_back(captive);
     if (progress == DeathKnightsProgress::kalaman_rescue)
     {
@@ -11224,12 +11236,12 @@ std::vector<RouteBeat> death_knights_earned_route(DeathKnightsProgress progress)
     guards.arrive_only = true;
     guards.reload_event = true;
     guards.cure_first = true;
-    guards.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CB1, 1};
+    guards.expect_cell = script_cell(0x4CB1, 1);
     beats.push_back(guards);
     guards.arrive_only = false;
     guards.facing = D::east;
     guards.repeat_in_place = true;
-    guards.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CB1, 2};
+    guards.expect_cell = script_cell(0x4CB1, 2);
     beats.push_back(guards);
     prepare_guards.y = 0;
     beats.push_back(prepare_guards);
@@ -11239,14 +11251,14 @@ std::vector<RouteBeat> death_knights_earned_route(DeathKnightsProgress progress)
     lich.cure_first = true;
     lich.cure_to_full = true;
     lich.holding_foes = true;
-    lich.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CAF, 1};
+    lich.expect_cell = script_cell(0x4CAF, 1);
     beats.push_back(lich);
     RouteBeat phylactery{80, 2, 13, D::south, {"YES"}};
     phylactery.arrive_only = true;
     phylactery.reload_event = true;
     phylactery.cure_first = true;
     phylactery.cure_to_full = true;
-    phylactery.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CAF, 2};
+    phylactery.expect_cell = script_cell(0x4CAF, 2);
     beats.push_back(phylactery);
     if (progress == DeathKnightsProgress::dulcimer)
     {
@@ -11272,7 +11284,7 @@ std::vector<RouteBeat> death_knights_earned_route(DeathKnightsProgress progress)
     rod.reload_event = true;
     rod.cure_first = true;
     rod.cure_to_full = true;
-    rod.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CB8, 1};
+    rod.expect_cell = script_cell(0x4CB8, 1);
     beats.push_back(rod);
     if (progress == DeathKnightsProgress::rod)
     {
@@ -11303,7 +11315,7 @@ std::vector<RouteBeat> death_knights_earned_route(DeathKnightsProgress progress)
     controls.reload_event = true;
     controls.cure_first = true;
     controls.cure_to_full = true;
-    controls.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CCA, 1};
+    controls.expect_cell = script_cell(0x4CCA, 1);
     beats.push_back(controls);
     RouteBeat upper{96, 14, 0, D::north, {"YES"}};
     upper.arrive_only = true;
@@ -11319,39 +11331,39 @@ std::vector<RouteBeat> death_knights_earned_route(DeathKnightsProgress progress)
     chase.arrive_only = true;
     chase.reload_event = true;
     chase.cure_first = true;
-    chase.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CCB, 2};
+    chase.expect_cell = script_cell(0x4CCB, 2);
     beats.push_back(chase);
     RouteBeat vampires{97, 4, 2, D::north, {"ATTACK"}};
     vampires.arrive_only = true;
     vampires.reload_event = true;
     vampires.cure_first = true;
-    vampires.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CCC, 1};
+    vampires.expect_cell = script_cell(0x4CCC, 1);
     beats.push_back(vampires);
     RouteBeat first_lever{97, 1, 1, D::north, {"YES"}};
     first_lever.arrive_only = true;
     first_lever.reload_event = true;
     first_lever.cure_first = true;
-    first_lever.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CCC, 2};
+    first_lever.expect_cell = script_cell(0x4CCC, 2);
     beats.push_back(first_lever);
     RouteBeat flesh_golems{97, 3, 5, D::north, {"YES"}};
     flesh_golems.arrive_only = true;
     flesh_golems.reload_event = true;
     flesh_golems.cure_first = true;
     flesh_golems.cure_to_full = true;
-    flesh_golems.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CCC, 3};
+    flesh_golems.expect_cell = script_cell(0x4CCC, 3);
     beats.push_back(flesh_golems);
     RouteBeat second_lever{97, 3, 3, D::north, {"YES"}};
     second_lever.arrive_only = true;
     second_lever.reload_event = true;
     second_lever.cure_first = true;
-    second_lever.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CCC, 4};
+    second_lever.expect_cell = script_cell(0x4CCC, 4);
     beats.push_back(second_lever);
     RouteBeat rescued_clerics{97, 5, 5, D::south, {"YES"}};
     rescued_clerics.arrive_only = true;
     rescued_clerics.reload_event = true;
     rescued_clerics.cure_first = true;
     rescued_clerics.cure_to_full = true;
-    rescued_clerics.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CCB, 3};
+    rescued_clerics.expect_cell = script_cell(0x4CCB, 3);
     beats.push_back(rescued_clerics);
     RouteBeat safe_cell{97, 3, 7, D::north, {"NO"}};
     safe_cell.arrive_only = true;
@@ -11388,13 +11400,13 @@ std::vector<RouteBeat> death_knights_earned_route(DeathKnightsProgress progress)
     prison_guards.reload_event = true;
     prison_guards.cure_first = true;
     prison_guards.cure_to_full = true;
-    prison_guards.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CCC, 5};
+    prison_guards.expect_cell = script_cell(0x4CCC, 5);
     beats.push_back(prison_guards);
     RouteBeat sebas{97, 8, 7, D::east, {"YES"}};
     sebas.arrive_only = true;
     sebas.reload_event = true;
     sebas.cure_first = true;
-    sebas.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CCC, 7};
+    sebas.expect_cell = script_cell(0x4CCC, 7);
     beats.push_back(sebas);
     safe_cell.x = 9;
     beats.push_back(safe_cell);
@@ -11404,7 +11416,7 @@ std::vector<RouteBeat> death_knights_earned_route(DeathKnightsProgress progress)
     cache.arrive_only = true;
     cache.reload_event = true;
     cache.cure_first = true;
-    cache.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CCE, 1};
+    cache.expect_cell = script_cell(0x4CCE, 1);
     beats.push_back(cache);
     auto sturm_wards = fire_wards;
     sturm_wards.map = 97;
@@ -11418,7 +11430,7 @@ std::vector<RouteBeat> death_knights_earned_route(DeathKnightsProgress progress)
     sturm.cure_first = true;
     sturm.cure_to_full = true;
     sturm.holding_foes = true;
-    sturm.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CCB, 4};
+    sturm.expect_cell = script_cell(0x4CCB, 4);
     beats.push_back(sturm);
     if (progress == DeathKnightsProgress::dargaard_sturm)
     {
@@ -11441,7 +11453,7 @@ std::vector<RouteBeat> death_knights_earned_route(DeathKnightsProgress progress)
     lenore.reload_event = true;
     lenore.cure_first = true;
     lenore.cure_to_full = true;
-    lenore.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CCF, 4};
+    lenore.expect_cell = script_cell(0x4CCF, 4);
     beats.push_back(lenore);
     RouteBeat statues{98, 10, 11, D::east, {"ATTACK", "knight 1"}};
     statues.arrive_only = true;
@@ -11449,7 +11461,7 @@ std::vector<RouteBeat> death_knights_earned_route(DeathKnightsProgress progress)
     statues.cure_first = true;
     statues.cure_to_full = true;
     statues.holding_foes = true;
-    statues.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C02, 2};
+    statues.expect_cell = script_cell(0x4C02, 2);
     beats.push_back(statues);
     RouteBeat undead_durfey{98, 11, 11, D::east, {"YES"}};
     undead_durfey.arrive_only = true;
@@ -11457,7 +11469,7 @@ std::vector<RouteBeat> death_knights_earned_route(DeathKnightsProgress progress)
     undead_durfey.cure_first = true;
     undead_durfey.cure_to_full = true;
     undead_durfey.holding_foes = true;
-    undead_durfey.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C03, 1};
+    undead_durfey.expect_cell = script_cell(0x4C03, 1);
     beats.push_back(undead_durfey);
     if (progress == DeathKnightsProgress::dargaard_durfey)
     {
@@ -11493,7 +11505,7 @@ std::vector<RouteBeat> death_knights_earned_route(DeathKnightsProgress progress)
     auto soth = step_beat(98, 12, 7, D::north, {"YES", "YES"});
     soth.reload_event = true;
     soth.holding_foes = true;
-    soth.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CD0, 1};
+    soth.expect_cell = script_cell(0x4CD0, 1);
     beats.push_back(soth);
 
     // The council leaves the party in ordinary exploration. A surviving
@@ -11592,7 +11604,7 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
     beats.push_back(prepare);
     RouteBeat key{32, 0, 13, D::north, {"ATTACK"}};
     key.reload_event = true;
-    key.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C46, 1};
+    key.expect_cell = script_cell(0x4C46, 1);
     beats.push_back(key);
     if (progress >= ChampionsProgress::altar)
     {
@@ -11626,7 +11638,7 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
     {
         RouteBeat altar{32, 12, 7, D::south, {"ATTACK"}};
         altar.reload_event = true;
-        altar.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C61, 255};
+        altar.expect_cell = script_cell(0x4C61, 255);
         beats.push_back(altar);
     }
     if (progress >= ChampionsProgress::catacombs)
@@ -11682,18 +11694,18 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
         // Patrols may have spent prepared copies; protect the low-HP mage
         // with the remaining spell rather than assuming six still remain.
         dragons.ward_members = {"magic_user 6"};
-        dragons.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C5C, 255};
+        dragons.expect_cell = script_cell(0x4C5C, 255);
         beats.push_back(dragons);
     }
     if (progress >= ChampionsProgress::report)
     {
-        auto shelter = beats.at(25);
-        shelter.rest_first = false;
-        shelter.rest_for_spells = false;
-        shelter.cure_first = true;
-        shelter.keep_preparation = true;
-        shelter.reload_event = true;
-        beats.push_back(shelter);
+        auto shelter_beat = beats.at(25);
+        shelter_beat.rest_first = false;
+        shelter_beat.rest_for_spells = false;
+        shelter_beat.cure_first = true;
+        shelter_beat.keep_preparation = true;
+        shelter_beat.reload_event = true;
+        beats.push_back(shelter_beat);
         auto recover = beats.at(25);
         recover.ward_memorized = "cure_light_wounds";
         recover.memorize_first_of = {"cure_light_wounds", "sleep", "bless"};
@@ -11734,15 +11746,15 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
         inn.reload_event = true;
         inn.cure_first = true;
         beats.push_back(inn);
-        auto prepare = inn;
-        prepare.rest_first = true;
-        prepare.rest_for_spells = true;
-        prepare.keep_preparation = true;
-        prepare.cure_to_full = true;
-        prepare.ward_memorized = "cure_light_wounds";
-        prepare.memorize_first_of = {"stinking_cloud", "hold_person", "cure_light_wounds",
+        auto prepare_beat = inn;
+        prepare_beat.rest_first = true;
+        prepare_beat.rest_for_spells = true;
+        prepare_beat.keep_preparation = true;
+        prepare_beat.cure_to_full = true;
+        prepare_beat.ward_memorized = "cure_light_wounds";
+        prepare_beat.memorize_first_of = {"stinking_cloud", "hold_person", "cure_light_wounds",
                                      "magic_missile"};
-        beats.push_back(prepare);
+        beats.push_back(prepare_beat);
         RouteBeat approach{48, 4, 1, D::north, {"ATTACK"}};
         approach.arrive_only = true;
         approach.reload_event = true;
@@ -11760,7 +11772,7 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
         RouteBeat castellan{49, 5, 5, D::north, {"GREET"}};
         castellan.reload_event = true;
         castellan.cure_first = true;
-        castellan.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C70, 255};
+        castellan.expect_cell = script_cell(0x4C70, 255);
         beats.push_back(castellan);
         RouteBeat sanctuary{49, 4, 9, D::north, {"ATTACK"}};
         sanctuary.reload_event = true;
@@ -11788,10 +11800,10 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
         myrtani.ward_each_with = "bless";
         myrtani.ward_members = {"knight 1"};
         beats.push_back(myrtani);
-        auto shelter = beats.at(42);
-        shelter.arrive_only = true;
-        shelter.cure_to_full = true;
-        beats.push_back(shelter);
+        auto shelter_beat = beats.at(42);
+        shelter_beat.arrive_only = true;
+        shelter_beat.cure_to_full = true;
+        beats.push_back(shelter_beat);
         beats.push_back(beats.at(43));
         myrtani.answers = {"YES", "STAY"};
         myrtani.ward_each_with.clear();
@@ -11809,7 +11821,7 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
         roof.reload_event = true;
         roof.cure_first = true;
         roof.cure_to_full = true;
-        roof.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C7D, 255};
+        roof.expect_cell = script_cell(0x4C7D, 255);
         beats.push_back(roof);
     }
 
@@ -11819,10 +11831,10 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
         down.reload_event = true;
         down.cure_first = true;
         beats.push_back(down);
-        auto shelter = beats.at(42);
-        shelter.arrive_only = true;
-        shelter.cure_to_full = true;
-        beats.push_back(shelter);
+        auto shelter_beat = beats.at(42);
+        shelter_beat.arrive_only = true;
+        shelter_beat.cure_to_full = true;
+        beats.push_back(shelter_beat);
         beats.push_back(beats.at(43));
         auto secret_exit = step_beat(49, 15, 8, D::east, {"YES", "NO"});
         secret_exit.reload_event = true;
@@ -11868,15 +11880,15 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
         refuge.reload_event = true;
         refuge.cure_first = true;
         beats.push_back(refuge);
-        auto prepare = refuge;
-        prepare.rest_first = true;
-        prepare.rest_for_spells = true;
-        prepare.cure_to_full = true;
-        prepare.keep_preparation = true;
-        prepare.ward_memorized = "cure_light_wounds";
-        prepare.memorize_first_of = {"dispel_magic", "stinking_cloud", "hold_person",
+        auto prepare_beat = refuge;
+        prepare_beat.rest_first = true;
+        prepare_beat.rest_for_spells = true;
+        prepare_beat.cure_to_full = true;
+        prepare_beat.keep_preparation = true;
+        prepare_beat.ward_memorized = "cure_light_wounds";
+        prepare_beat.memorize_first_of = {"dispel_magic", "stinking_cloud", "hold_person",
                                      "cure_light_wounds", "magic_missile"};
-        beats.push_back(prepare);
+        beats.push_back(prepare_beat);
         RouteBeat office{50, 12, 7, D::north, {}};
         office.reload_event = true;
         office.cure_first = true;
@@ -11885,7 +11897,7 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
         rose.reload_event = true;
         rose.cure_first = true;
         rose.cure_to_full = true;
-        rose.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C7B, 255};
+        rose.expect_cell = script_cell(0x4C7B, 255);
         beats.push_back(rose);
         RouteBeat undead{50, 2, 1, D::north, {"ATTACK"}};
         undead.reload_event = true;
@@ -11894,7 +11906,7 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
         undead.take_items = {{"SCROLL", "magic_user 6"}, {"PERIAPT", "magic_user 6"}};
         beats.push_back(undead);
         beats.push_back(refuge);
-        beats.push_back(prepare);
+        beats.push_back(prepare_beat);
     }
     if (progress >= ChampionsProgress::jelek_report)
     {
@@ -11934,7 +11946,7 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
             ring.cure_first = false;
             beats.push_back(ring);
         }
-        beats.back().expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C9A, 1};
+        beats.back().expect_cell = script_cell(0x4C9A, 1);
     }
     if (progress >= ChampionsProgress::tomb_honor)
     {
@@ -11955,7 +11967,7 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
         auto sacrifice = honor;
         sacrifice.y = 2;
         sacrifice.answers = {"YES"};
-        sacrifice.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C9A, 2};
+        sacrifice.expect_cell = script_cell(0x4C9A, 2);
         beats.push_back(sacrifice);
     }
     if (progress >= ChampionsProgress::tomb)
@@ -11973,7 +11985,7 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
         auto dragons = skeletons;
         dragons.x = 1;
         dragons.y = 12;
-        dragons.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C9A, 3};
+        dragons.expect_cell = script_cell(0x4C9A, 3);
         beats.push_back(dragons);
         for (const auto &[x, y] : {std::pair{12u, 13u}, std::pair{9u, 13u}, std::pair{12u, 15u}})
         {
@@ -11992,7 +12004,7 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
                              {"Solamnic Plate", "knight 2"},
                              {"Solamnic Plate", "knight 3"},
                              {"Long Sword", "knight 2"}};
-        spirit.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C9B, 1};
+        spirit.expect_cell = script_cell(0x4C9B, 1);
         beats.push_back(spirit);
     }
     if (progress >= ChampionsProgress::neraka_entry)
@@ -12008,7 +12020,7 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
         maya.area_steps = {C::look};
         maya.reload_event = true;
         maya.cure_first = true;
-        maya.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C8B, 1};
+        maya.expect_cell = script_cell(0x4C8B, 1);
         beats.push_back(maya);
     }
     if (progress >= ChampionsProgress::neraka_prison)
@@ -12053,12 +12065,12 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
         auto report = tanis;
         report.x = 15;
         report.y = 8;
-        report.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C98, 7};
+        report.expect_cell = script_cell(0x4C98, 7);
         beats.push_back(report);
         auto exit = step_beat(66, 0, 9, D::west, {"YES", "NO"});
         exit.reload_event = true;
         exit.cure_first = true;
-        exit.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C97, 1};
+        exit.expect_cell = script_cell(0x4C97, 1);
         beats.push_back(exit);
     }
     if (progress >= ChampionsProgress::sanction_entry)
@@ -12085,23 +12097,23 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
         room.reload_event = true;
         room.cure_first = true;
         beats.push_back(room);
-        auto prepare = room;
-        prepare.rest_first = true;
-        prepare.rest_for_spells = true;
-        prepare.cure_to_full = true;
-        prepare.keep_preparation = true;
-        prepare.ward_memorized = "cure_light_wounds";
-        prepare.memorize_first_of = {"dispel_magic", "fireball",          "stinking_cloud",
+        auto prepare_beat = room;
+        prepare_beat.rest_first = true;
+        prepare_beat.rest_for_spells = true;
+        prepare_beat.cure_to_full = true;
+        prepare_beat.keep_preparation = true;
+        prepare_beat.ward_memorized = "cure_light_wounds";
+        prepare_beat.memorize_first_of = {"dispel_magic", "fireball",          "stinking_cloud",
                                      "hold_person",  "cure_light_wounds", "magic_missile"};
-        beats.push_back(prepare);
+        beats.push_back(prepare_beat);
         RouteBeat dark_elf{80, 14, 11, D::north, {"ATTACK"}};
         dark_elf.reload_event = true;
         dark_elf.cure_first = true;
         dark_elf.cure_to_full = true;
-        dark_elf.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CB3, 255};
+        dark_elf.expect_cell = script_cell(0x4CB3, 255);
         beats.push_back(dark_elf);
         beats.push_back(room);
-        beats.push_back(prepare);
+        beats.push_back(prepare_beat);
         RouteBeat minotaurs{80, 9, 5, D::south, {"ATTACK"}};
         minotaurs.reload_event = true;
         minotaurs.cure_first = true;
@@ -12114,7 +12126,7 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
         RouteBeat pier{80, 1, 12, D::south, {}};
         pier.reload_event = true;
         pier.cure_first = true;
-        pier.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CB4, 255};
+        pier.expect_cell = script_cell(0x4CB4, 255);
         beats.push_back(pier);
         RouteBeat entrance{80, 8, 9, D::east, {"YES"}};
         entrance.arrive_only = true;
@@ -12128,7 +12140,7 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
         guards.reload_event = true;
         guards.cure_first = true;
         guards.cure_to_full = true;
-        guards.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CB7, 255};
+        guards.expect_cell = script_cell(0x4CB7, 255);
         beats.push_back(guards);
         RouteBeat conclave{81, 13, 12, D::south, {}};
         conclave.reload_event = true;
@@ -12139,15 +12151,15 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
         common.reload_event = true;
         common.cure_first = true;
         beats.push_back(common);
-        auto prepare = common;
-        prepare.rest_first = true;
-        prepare.rest_for_spells = true;
-        prepare.cure_to_full = true;
-        prepare.keep_preparation = true;
-        prepare.ward_memorized = "resist_fire";
-        prepare.memorize_first_of = {"dispel_magic", "fireball", "cure_light_wounds",
+        auto prepare_beat = common;
+        prepare_beat.rest_first = true;
+        prepare_beat.rest_for_spells = true;
+        prepare_beat.cure_to_full = true;
+        prepare_beat.keep_preparation = true;
+        prepare_beat.ward_memorized = "resist_fire";
+        prepare_beat.memorize_first_of = {"dispel_magic", "fireball", "cure_light_wounds",
                                      "stinking_cloud", "magic_missile"};
-        beats.push_back(prepare);
+        beats.push_back(prepare_beat);
         RouteBeat revered{81, 2, 10, D::west, {}};
         revered.reload_event = true;
         revered.cure_first = true;
@@ -12165,15 +12177,15 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
         lance.cure_to_full = true;
         lance.take_items = {{"Dragonlance", "knight 1"}};
         beats.push_back(lance);
-        auto prepare = lance;
-        prepare.arrive_only = true;
-        prepare.rest_first = true;
-        prepare.rest_for_spells = true;
-        prepare.keep_preparation = true;
-        prepare.ward_memorized = "resist_fire";
-        prepare.memorize_first_of = {"dispel_magic", "fireball", "cure_light_wounds",
+        auto prepare_beat = lance;
+        prepare_beat.arrive_only = true;
+        prepare_beat.rest_first = true;
+        prepare_beat.rest_for_spells = true;
+        prepare_beat.keep_preparation = true;
+        prepare_beat.ward_memorized = "resist_fire";
+        prepare_beat.memorize_first_of = {"dispel_magic", "fireball", "cure_light_wounds",
                                      "stinking_cloud", "magic_missile"};
-        beats.push_back(prepare);
+        beats.push_back(prepare_beat);
     }
     if (progress >= ChampionsProgress::lebaum)
     {
@@ -12195,7 +12207,7 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
         lord.reload_event = true;
         lord.cure_first = true;
         lord.cure_to_full = true;
-        lord.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CC5, 255};
+        lord.expect_cell = script_cell(0x4CC5, 255);
         beats.push_back(lord);
     }
     if (progress >= ChampionsProgress::flying_citadel)
@@ -12256,7 +12268,7 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
         captain.ward_memorized = "cure_light_wounds";
         captain.memorize_first_of = {"dispel_magic", "fireball", "cure_light_wounds",
                                      "stinking_cloud", "magic_missile"};
-        captain.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C04, 1};
+        captain.expect_cell = script_cell(0x4C04, 1);
         beats.push_back(captain);
     }
 
@@ -12281,24 +12293,24 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
         uniforms.reload_event = true;
         uniforms.cure_first = true;
         uniforms.cure_to_full = true;
-        uniforms.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CD1, 1};
+        uniforms.expect_cell = script_cell(0x4CD1, 1);
         beats.push_back(uniforms);
     }
 
     if (progress >= ChampionsProgress::kernen_gate)
     {
-        RouteBeat prepare{97, 12, 13, D::south};
-        prepare.arrive_only = true;
-        prepare.reload_event = true;
-        prepare.rest_first = true;
-        prepare.rest_for_spells = true;
-        prepare.cure_first = true;
-        prepare.cure_to_full = true;
-        prepare.keep_preparation = true;
-        prepare.ward_memorized = "resist_fire";
-        prepare.memorize_first_of = {"dispel_magic", "fireball", "cure_light_wounds",
+        RouteBeat prepare_beat{97, 12, 13, D::south};
+        prepare_beat.arrive_only = true;
+        prepare_beat.reload_event = true;
+        prepare_beat.rest_first = true;
+        prepare_beat.rest_for_spells = true;
+        prepare_beat.cure_first = true;
+        prepare_beat.cure_to_full = true;
+        prepare_beat.keep_preparation = true;
+        prepare_beat.ward_memorized = "resist_fire";
+        prepare_beat.memorize_first_of = {"dispel_magic", "fireball", "cure_light_wounds",
                                      "stinking_cloud", "magic_missile"};
-        beats.push_back(prepare);
+        beats.push_back(prepare_beat);
         const auto visit = [&](unsigned x, unsigned y, std::vector<std::string> answers)
         {
             RouteBeat beat{97, x, y, D::north, std::move(answers)};
@@ -12315,15 +12327,15 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
         visit(6, 14,
               {"YES", "knight 1", "knight 2", "knight 3", "cleric 4", "cleric 5", "magic_user 6",
                "Leave"});
-        prepare.x = 6;
-        prepare.y = 13;
-        beats.push_back(prepare);
+        prepare_beat.x = 6;
+        prepare_beat.y = 13;
+        beats.push_back(prepare_beat);
         RouteBeat gate{97, 7, 8, D::north, {"ATTACK", "NO"}};
         gate.reload_event = true;
         gate.cure_first = true;
         gate.cure_to_full = true;
         gate.ward_each_with = "resist_fire";
-        gate.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4CE7, 1};
+        gate.expect_cell = script_cell(0x4CE7, 1);
         beats.push_back(gate);
     }
 
@@ -12339,32 +12351,32 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
         vault.cure_first = true;
         vault.cure_to_full = true;
         beats.push_back(vault);
-        auto prepare = vault;
-        prepare.arrive_only = true;
-        prepare.rest_first = true;
-        prepare.rest_for_spells = true;
-        prepare.keep_preparation = true;
-        prepare.ward_memorized = "resist_fire";
-        prepare.memorize_first_of = {"ice_storm",         "dispel_magic",   "fireball",
+        auto prepare_beat = vault;
+        prepare_beat.arrive_only = true;
+        prepare_beat.rest_first = true;
+        prepare_beat.rest_for_spells = true;
+        prepare_beat.keep_preparation = true;
+        prepare_beat.ward_memorized = "resist_fire";
+        prepare_beat.memorize_first_of = {"ice_storm",         "dispel_magic",   "fireball",
                                      "cure_light_wounds", "stinking_cloud", "magic_missile"};
-        beats.push_back(prepare);
-        RouteBeat key{97, 10, 5, D::north, {"NO"}};
-        key.reload_event = true;
-        key.cure_first = true;
-        key.cure_to_full = true;
-        key.searching = true;
-        key.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C07, 1};
-        beats.push_back(key);
-        auto library = key;
+        beats.push_back(prepare_beat);
+        RouteBeat key_beat{97, 10, 5, D::north, {"NO"}};
+        key_beat.reload_event = true;
+        key_beat.cure_first = true;
+        key_beat.cure_to_full = true;
+        key_beat.searching = true;
+        key_beat.expect_cell = script_cell(0x4C07, 1);
+        beats.push_back(key_beat);
+        auto library = key_beat;
         library.x = 9;
         library.y = 2;
         library.answers = {"USE KEY"};
-        library.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C08, 2};
+        library.expect_cell = script_cell(0x4C08, 2);
         beats.push_back(library);
         auto laboratory = library;
         laboratory.x = 11;
         laboratory.answers.clear();
-        laboratory.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C0A, 1};
+        laboratory.expect_cell = script_cell(0x4C0A, 1);
         beats.push_back(laboratory);
     }
 
@@ -12376,14 +12388,14 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
         vault.cure_first = true;
         vault.cure_to_full = true;
         beats.push_back(vault);
-        auto prepare = vault;
-        prepare.rest_first = true;
-        prepare.rest_for_spells = true;
-        prepare.keep_preparation = true;
-        prepare.ward_memorized = "resist_fire";
-        prepare.memorize_first_of = {"ice_storm",         "dispel_magic",   "fireball",
+        auto prepare_beat = vault;
+        prepare_beat.rest_first = true;
+        prepare_beat.rest_for_spells = true;
+        prepare_beat.keep_preparation = true;
+        prepare_beat.ward_memorized = "resist_fire";
+        prepare_beat.memorize_first_of = {"ice_storm",         "dispel_magic",   "fireball",
                                      "cure_light_wounds", "stinking_cloud", "magic_missile"};
-        beats.push_back(prepare);
+        beats.push_back(prepare_beat);
         RouteBeat guardian{97, 4, 3, D::south, {"NO"}};
         guardian.reload_event = true;
         guardian.cure_first = true;
@@ -12393,13 +12405,13 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
         // Patrols and the inner guards can spend the party's cures on the
         // way to the guardian. Revisit the actual vault before the next guards.
         beats.push_back(vault);
-        beats.push_back(prepare);
+        beats.push_back(prepare_beat);
         RouteBeat master{97, 4, 6, D::south, {"NO"}};
         master.reload_event = true;
         master.cure_first = true;
         master.cure_to_full = true;
         master.ward_each_with = "resist_fire";
-        master.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C04, 1};
+        master.expect_cell = script_cell(0x4C04, 1);
         beats.push_back(master);
     }
 
@@ -12411,15 +12423,15 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
         vault.cure_first = true;
         vault.cure_to_full = true;
         beats.push_back(vault);
-        auto prepare = vault;
-        prepare.rest_first = true;
-        prepare.rest_for_spells = true;
-        prepare.keep_preparation = true;
-        prepare.ward_memorized = "resist_fire";
-        prepare.memorize_first_of = {
+        auto prepare_beat = vault;
+        prepare_beat.rest_first = true;
+        prepare_beat.rest_for_spells = true;
+        prepare_beat.keep_preparation = true;
+        prepare_beat.ward_memorized = "resist_fire";
+        prepare_beat.memorize_first_of = {
             "ice_storm",         "prayer",         "dispel_magic", "fireball",
             "cure_light_wounds", "stinking_cloud", "magic_missile"};
-        beats.push_back(prepare);
+        beats.push_back(prepare_beat);
         RouteBeat passage{97, 4, 6, D::south, {"NO"}};
         passage.arrive_only = true;
         passage.reload_event = true;
@@ -12431,7 +12443,7 @@ std::vector<RouteBeat> champions_earned_route(ChampionsProgress progress)
         finale.answers = {"YES"};
         finale.ward_each_with = "resist_fire";
         finale.ward_members = {"magic_user 6"};
-        finale.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x4C3A, 1};
+        finale.expect_cell = script_cell(0x4C3A, 1);
         beats.push_back(finale);
     }
 
@@ -12595,34 +12607,36 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
     const auto memorize = [&]
     {
         // Pools of Darkness's spells of levels 6 to 9 come first at theirs,
-        // which only its route's casters memorize.
-        constexpr std::array<std::string_view, 27> favorites{"meteor_swarm",
-                                                             "power_word_kill",
-                                                             "mass_charm",
-                                                             "power_word_blind",
-                                                             "delayed_blast_fireball",
-                                                             "power_word_stun",
-                                                             "death_spell",
-                                                             "disintegrate",
-                                                             "heal",
-                                                             "blade_barrier",
-                                                             "destruction",
-                                                             "resurrection",
-                                                             "cone_of_cold",
-                                                             "ice_storm",
-                                                             "confusion",
-                                                             "hold_monster",
-                                                             "fireball",
-                                                             "stinking_cloud",
-                                                             "magic_missile",
-                                                             "sleep",
-                                                             "lightning_bolt",
-                                                             "flame_strike",
-                                                             "hold_person",
-                                                             "cure_serious_wounds",
-                                                             "cure_light_wounds",
-                                                             "prayer",
-                                                             "bless"};
+        // which only its route's casters memorize. Static: MSVC gives a lambda
+        // its own copy of a plain constexpr local, so ranking by the distance
+        // from favorites.begin() mixed two arrays and gave negative ranks.
+        static constexpr std::array<std::string_view, 27> favorites{"meteor_swarm",
+                                                                    "power_word_kill",
+                                                                    "mass_charm",
+                                                                    "power_word_blind",
+                                                                    "delayed_blast_fireball",
+                                                                    "power_word_stun",
+                                                                    "death_spell",
+                                                                    "disintegrate",
+                                                                    "heal",
+                                                                    "blade_barrier",
+                                                                    "destruction",
+                                                                    "resurrection",
+                                                                    "cone_of_cold",
+                                                                    "ice_storm",
+                                                                    "confusion",
+                                                                    "hold_monster",
+                                                                    "fireball",
+                                                                    "stinking_cloud",
+                                                                    "magic_missile",
+                                                                    "sleep",
+                                                                    "lightning_bolt",
+                                                                    "flame_strike",
+                                                                    "hold_person",
+                                                                    "cure_serious_wounds",
+                                                                    "cure_light_wounds",
+                                                                    "prayer",
+                                                                    "bless"};
         // The route's Pools of Darkness and Secret casters take spells of
         // every level they have slots of (Secret's to the seventh); the
         // other routes, levels 1 to 5.
@@ -14983,8 +14997,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
              combat.combat().snapshot().outcome == opengold::rules::Outcome::ongoing;
              ++command)
         {
-            const auto &session = combat.combat();
-            const auto state = session.snapshot();
+            const auto &battle = combat.combat();
+            const auto state = battle.snapshot();
             const auto actor = std::ranges::find(state.combatants, state.actor,
                                                  &opengold::rules::CombatantView::id);
             const bool member = actor != state.combatants.end() &&
@@ -14995,13 +15009,13 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 member && (game == GoldBoxGame::treasures_of_the_savage_frontier ||
                            game == GoldBoxGame::pools_of_darkness ||
                            game == GoldBoxGame::secret_of_the_silver_blades || earned_champions)
-                    ? free_the_bound(session)
+                    ? free_the_bound(battle)
                     : std::nullopt;
             if (!held && member && tactic == 2 &&
                 (game == GoldBoxGame::treasures_of_the_savage_frontier ||
                  game == GoldBoxGame::secret_of_the_silver_blades || earned_champions))
             {
-                held = treasures_turn(session);
+                held = treasures_turn(battle);
             }
             if (!held && member && tactic == 2 && !wanted_exit &&
                 (game == GoldBoxGame::gateway_to_the_savage_frontier || yulash_mounds ||
@@ -15016,16 +15030,16 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             {
                 // Crimdrac is fought with the real Fireball wand won from
                 // Dracandros. These are ordinary targeting/movement commands.
-                held = mounds_turn(session);
+                held = mounds_turn(battle);
             }
             if (!held && member && tactic == 2 && game == GoldBoxGame::curse_of_the_azure_bonds)
             {
-                held = finale_turn(session);
+                held = finale_turn(battle);
             }
             if (!held && member && tactic == 2 && game == GoldBoxGame::pools_of_darkness &&
                 keeps_preparation)
             {
-                held = darkness_finale_turn(session, spaced);
+                held = darkness_finale_turn(battle, spaced);
             }
             // Treasures' Hold Person takes no monster, and its Quick casts by
             // its own AI, which aims its holds where they take: the other
@@ -15033,7 +15047,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             if (!held && member && tactic == 2 &&
                 game != GoldBoxGame::treasures_of_the_savage_frontier)
             {
-                held = player_turn(session, picked, bolt_bearers);
+                held = player_turn(battle, picked, bolt_bearers);
             }
             // In a maze fight each member makes for the side the party means to
             // leave by and runs off it there.
@@ -15041,7 +15055,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             {
                 const auto &field = state.battlefield;
                 const auto to_exit = edge_steps(field, wanted_exit);
-                for (const auto &option : session.legal_commands())
+                for (const auto &option : battle.legal_commands())
                 {
                     if (option.verb == "flee" && edge_side(field, actor->cell) == wanted_exit)
                     {
@@ -15059,9 +15073,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             auto chosen =
                 held     ? *held
                 : member ? opengold::choose_quick_command(
-                               session, tactic != 1 || actor->name.starts_with("magic_user"),
+                               battle, tactic != 1 || actor->name.starts_with("magic_user"),
                                opengold::Searching::everyone)
-                         : opengold::choose_demo_command(session, opengold::Searching::everyone,
+                         : opengold::choose_demo_command(battle, opengold::Searching::everyone,
                                                          opengold::default_difficulty);
             // A Secret or Pools of Darkness player casts no spell on iron golems that
             // heals them or does nothing to them (wasted_on_golems), as the
@@ -15073,17 +15087,17 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             if (member && iron_golems && wasted_on_golems(state, chosen))
             {
                 chosen =
-                    opengold::choose_quick_command(session, false, opengold::Searching::everyone);
+                    opengold::choose_quick_command(battle, false, opengold::Searching::everyone);
                 // Lightning slows an iron golem (EffIronGolem): a member with
                 // Lightning Bolt casts it at one instead.
-                if (const auto bolt = lightning_at_golems(session))
+                if (const auto bolt = lightning_at_golems(battle))
                 {
                     chosen = *bolt;
                 }
             }
             else if (member && iron_golems && chosen.verb == "aim")
             {
-                if (const auto bolt = lightning_at_golems(session); bolt && bolt->verb == "aim")
+                if (const auto bolt = lightning_at_golems(battle); bolt && bolt->verb == "aim")
                 {
                     chosen = *bolt;
                 }
@@ -15682,7 +15696,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
     {
         const auto upper = [](std::string text)
         {
-            std::ranges::transform(text, text.begin(), ::toupper);
+            std::ranges::transform(text, text.begin(), uppercase);
             return text;
         };
         const auto slots = party->state().slots;
@@ -15837,9 +15851,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             }
             std::optional<std::size_t> taker;
             int best_gain = 0;
-            for (std::size_t slot = 0; slot < members.size(); ++slot)
+            for (std::size_t member_slot = 0; member_slot < members.size(); ++member_slot)
             {
-                const auto id = members[slot];
+                const auto id = members[member_slot];
                 if (!id || party->member(id).vitals.dead || !party->member(id).npc_source.empty())
                 {
                     continue;
@@ -15883,7 +15897,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 if (gain > best_gain)
                 {
                     best_gain = gain;
-                    taker = slot;
+                    taker = member_slot;
                 }
             }
             if (taker)
@@ -16305,10 +16319,10 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                             pick = 0;
                         }
                     }
-                    const auto flee = std::ranges::find(s.choices, "FLEE");
-                    if (fleeing && flee != s.choices.end())
+                    const auto flee_choice = std::ranges::find(s.choices, "FLEE");
+                    if (fleeing && flee_choice != s.choices.end())
                     {
-                        pick = static_cast<std::size_t>(flee - s.choices.begin());
+                        pick = static_cast<std::size_t>(flee_choice - s.choices.begin());
                     }
                 }
                 // A magic-user learns the spell a player would take.
@@ -16664,7 +16678,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     for (const auto &item : items)
                     {
                         auto name = item.name;
-                        std::ranges::transform(name, name.begin(), ::toupper);
+                        std::ranges::transform(name, name.begin(), uppercase);
                         if (name.find(wanted) == std::string::npos)
                         {
                             continue;
@@ -16706,7 +16720,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                         [&](const opengold::InventoryItem &entry)
                         {
                             auto name = entry.name;
-                            std::ranges::transform(name, name.begin(), ::toupper);
+                            std::ranges::transform(name, name.begin(), uppercase);
                             return name.find(wanted) != std::string::npos;
                         });
                     check(item != items.end(), "The sale uses an actual carried item");
@@ -16752,7 +16766,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                             [&](const opengold::por::Equipment &offered)
                             {
                                 auto name = offered.label();
-                                std::ranges::transform(name, name.begin(), ::toupper);
+                                std::ranges::transform(name, name.begin(), uppercase);
                                 return name.find(wanted) != std::string::npos;
                             });
                         check(!(sewers || earned_gateway || earned_treasure || earned_champions) ||
@@ -16822,7 +16836,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                          [](const opengold::por::Equipment &item)
                                          {
                                              auto name = item.label();
-                                             std::ranges::transform(name, name.begin(), ::toupper);
+                                             std::ranges::transform(name, name.begin(), uppercase);
                                              return name.find("WAND") != std::string::npos;
                                          });
                 const auto slots = party->state().slots;
@@ -18652,11 +18666,11 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 std::cout << (session.snapshot().camp_offered ? " (camp offered)" : "") << "\n";
                 if (std::getenv("OPENGOLD_CURSE_CELL"))
                 {
-                    const auto cell =
+                    const auto target_cell =
                         static_cast<std::uint16_t>(std::stoul(std::getenv("OPENGOLD_CURSE_CELL")));
-                    std::cout << "  cell " << cell << " = "
+                    std::cout << "  cell " << target_cell << " = "
                               << opengold::test::TourAccess::machine(session).variable(
-                                     opengold::por::EclAddress{cell})
+                                     opengold::por::EclAddress{target_cell})
                               << "\n";
                 }
                 // OPENGOLD_ROUTE_SAVES=PREFIX saves the game after each of the
@@ -18980,7 +18994,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     cells.emplace_back(
                         static_cast<std::uint16_t>(std::stoul(item.substr(0, equals), nullptr, 16)),
                         equals == std::string::npos
-                            ? 0
+                            ? std::uint16_t{0}
                             : static_cast<std::uint16_t>(std::stoul(item.substr(equals + 1))));
                 }
                 return cells;

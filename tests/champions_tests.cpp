@@ -439,12 +439,12 @@ void actual_champions_records_decode()
     const auto campsite = session.detached_copy();
     const auto rested_party = party->checkpoint();
     bool encountered = false;
-    for (unsigned seed = 1; seed <= 8 && !encountered; ++seed)
+    for (unsigned dice_seed = 1; dice_seed <= 8 && !encountered; ++dice_seed)
     {
         session = campsite.detached_copy();
         party->restore(rested_party);
         session.attach_restored_party(party);
-        session.reseed_dice(seed);
+        session.reseed_dice(dice_seed);
         check(session.camp(opengold::RestKind::long_rest), "Camp in the actual wilderness");
         for (unsigned screen = 0; screen < 100; ++screen)
         {
@@ -681,7 +681,7 @@ void spell_queries_preserve_preparations_until_the_script_spends_one()
                          machine.variable(por::EclAddress{0x7F7B})};
     };
     const auto before = party->checkpoint();
-    check(run(query(22)) == std::pair<std::uint16_t, std::uint16_t>{1, 1} &&
+    check(run(query(22)) == std::pair{std::uint16_t{1}, std::uint16_t{1}} &&
               party->member(before.slots[1]).vitals.resources == before.roster[1].vitals.resources,
           "Find Traps locates the exact prepared slot and caster without consuming a copy");
     check(run(query(22)).first == 1 &&
@@ -692,7 +692,7 @@ void spell_queries_preserve_preparations_until_the_script_spends_one()
                                     10, 0, 129};              // Store selected character 1.
     const auto again = query(22);
     spend.insert(spend.end(), again.begin(), again.end());
-    check(run(spend) == std::pair<std::uint16_t, std::uint16_t>{1, 1} &&
+    check(run(spend) == std::pair{std::uint16_t{1}, std::uint16_t{1}} &&
               party->memorized_spells(before.slots[1]).size() == 2 &&
               party->member(before.slots[0]).vitals.resources == before.roster[0].vitals.resources,
           "Choosing to cast spends exactly one copy from the selected priest");

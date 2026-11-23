@@ -489,7 +489,12 @@ void the_records_save_as_they_were(const std::filesystem::path &folder)
 void the_hail_is_corrected_where_it_is(const std::filesystem::path &folder)
 {
     const auto listing = opengold::list_buck_rogers_scripts(folder, matrix);
-    const std::array<std::pair<std::uint16_t, unsigned>, 3> hails{
+    struct Hail
+    {
+        std::uint16_t address{};
+        unsigned shipped{};
+    };
+    const std::array<Hail, 3> hails{
         {{0x932E, 74}, {0x93B7, 70}, {0x9422, 69}}};
     for (const auto &[address, shipped] : hails)
     {

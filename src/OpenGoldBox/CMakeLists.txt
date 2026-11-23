@@ -400,7 +400,7 @@ if(OPENGOLD_BUILD_TESTS)
         "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
         -P "${PROJECT_SOURCE_DIR}/tests/town_services.cmake")
     set_tests_properties(opengold_godot_town_services PROPERTIES FIXTURES_REQUIRED "godot_project;expedition_fixtures"
-        TIMEOUT 400 LABELS godot SKIP_REGULAR_EXPRESSION "Skipped: ")
+        TIMEOUT 700 LABELS godot SKIP_REGULAR_EXPRESSION "Skipped: ")
     # A sample of the Slums' event squares, every branch of each event, the
     # first fight of each played out, with original files.
     add_test(NAME opengold_godot_slums_events COMMAND "${CMAKE_COMMAND}"

@@ -83,7 +83,7 @@ std::optional<std::uint8_t> treasures_word(const ImportTables &tables, std::uint
     constexpr std::uint8_t first_dropped = 210, last_dropped = 212;
     if (word == 0 || (word >= first_dropped && word <= last_dropped))
     {
-        return 0;
+        return std::uint8_t{0};
     }
     if (word >= tables.gateway_words.size())
     {

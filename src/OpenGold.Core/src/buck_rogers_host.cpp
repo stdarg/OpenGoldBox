@@ -75,10 +75,10 @@ void RolfTourSession::enable_buck_rogers_party_commands()
     // DAMAGE, ECL CLOCK, ADD NPC, DUMP, DESTROY ITEMS, AWARD EXPERIENCE,
     // PLAY SOUND, DISTANCE AHEAD, SWAP ITEM LISTS, SKILL CHECK WITH DAMAGE,
     // SOLO COMBAT, SHOP and PICTURE MODE.
-    for (const std::uint8_t op : {0x0B, 0x1D, 0x1E, 0x1F, 0x22, 0x23, 0x2E, 0x34, 0x36, 0x3E, 0x40,
+    for (const int op : {0x0B, 0x1D, 0x1E, 0x1F, 0x22, 0x23, 0x2E, 0x34, 0x36, 0x3E, 0x40,
                                   0x41, 0x43, 0x45, 0x48, 0x49, 0x4A, 0x4B, 0x4C})
     {
-        machine_.enable_host(op);
+        machine_.enable_host(static_cast<std::uint8_t>(op));
     }
 }
 
@@ -1167,7 +1167,7 @@ bool RolfTourSession::resolve_buck_rogers_combat(const rules::Snapshot &result)
     // The fallen enemies (postcbt.pas DetermineLootExp): their experience,
     // their credits to the pool and, unless the script said not, their gear
     // to the booty, not readied.
-    std::uint32_t experience = 0;
+    std::uint32_t loot_experience = 0;
     unsigned defeated = 0;
     const bool solo = encounter_->champion != 0;
     const bool takes_gear = (machine_.variable(skips_combat_items) & 0xFF) != 1;
@@ -1184,7 +1184,7 @@ bool RolfTourSession::resolve_buck_rogers_combat(const rules::Snapshot &result)
             continue;
         }
         ++defeated;
-        experience += record->creature.experience_award;
+        loot_experience += record->creature.experience_award;
         if (!solo)
         {
             buck_rogers_pool_ += record->creature.credits;
@@ -1212,7 +1212,7 @@ bool RolfTourSession::resolve_buck_rogers_combat(const rules::Snapshot &result)
         ++snapshot_.revision;
         return true;
     }
-    if (won && experience > 0)
+    if (won && loot_experience > 0)
     {
         // Shared by the members who can still act (AwardExperience), all of
         // it to a solo fighter.
@@ -1222,8 +1222,8 @@ bool RolfTourSession::resolve_buck_rogers_combat(const rules::Snapshot &result)
             sharing += member.record.creature.enabled != 0 ? 1 : 0;
         }
         const auto share =
-            solo ? experience
-                 : static_cast<std::uint32_t>(experience / std::max<std::size_t>(sharing, 1));
+            solo ? loot_experience
+                 : static_cast<std::uint32_t>(loot_experience / std::max<std::size_t>(sharing, 1));
         for (auto &member : team)
         {
             if (solo ? member.id == encounter_->champion : member.record.creature.enabled != 0)
@@ -1334,7 +1334,7 @@ void RolfTourSession::show_buck_rogers_menu(BuckRogersMenu::Kind kind,
     const auto id = campaign_->state().slots.at(acting_slot(*campaign_, selected_character_));
     const auto shopper = id ? original::buck_rogers_record_of(campaign_->game_record(id))
                             : std::optional<original::GroundRecord>{};
-    const auto credits = [&]
+    const auto credits_notice = [&]
     {
         return rules::Message{"{name} has {credits} credits; the pool holds {pool}.",
                               {{"name", shopper ? shopper->creature.name : std::string{}},
@@ -1354,7 +1354,7 @@ void RolfTourSession::show_buck_rogers_menu(BuckRogersMenu::Kind kind,
         }
         if (buck_rogers_pool_ != 0)
         {
-            dialogue.push_back(credits());
+            dialogue.push_back(credits_notice());
             add({"Take the credits", {}}, Action::take_credits);
             add({"Divvy", {}}, Action::share_credits);
         }
@@ -1362,7 +1362,7 @@ void RolfTourSession::show_buck_rogers_menu(BuckRogersMenu::Kind kind,
         add({"Exit", {}}, Action::leave);
         break;
     case BuckRogersMenu::Kind::shop:
-        dialogue.push_back(credits());
+        dialogue.push_back(credits_notice());
         add({"Buy", {}}, Action::open_buy);
         add({"Sell", {}}, Action::open_sell);
         add({"Ammo", {}}, Action::open_ammunition);
@@ -1375,7 +1375,7 @@ void RolfTourSession::show_buck_rogers_menu(BuckRogersMenu::Kind kind,
         add({"Exit", {}}, Action::leave);
         break;
     case BuckRogersMenu::Kind::shop_buy:
-        dialogue.push_back(credits());
+        dialogue.push_back(credits_notice());
         for (std::size_t n = 0; n < menu.stock.size(); ++n)
         {
             add({"{item}: {price} credits",
@@ -1386,7 +1386,7 @@ void RolfTourSession::show_buck_rogers_menu(BuckRogersMenu::Kind kind,
         add({"Back", {}}, Action::back);
         break;
     case BuckRogersMenu::Kind::shop_sell:
-        dialogue.push_back(credits());
+        dialogue.push_back(credits_notice());
         for (std::size_t n = 0; shopper && n < shopper->items.size(); ++n)
         {
             add({"{item}: {price} credits",
@@ -1397,7 +1397,7 @@ void RolfTourSession::show_buck_rogers_menu(BuckRogersMenu::Kind kind,
         add({"Back", {}}, Action::back);
         break;
     case BuckRogersMenu::Kind::shop_ammunition:
-        dialogue.push_back(credits());
+        dialogue.push_back(credits_notice());
         for (std::size_t n = 0; shopper && n < shopper->items.size(); ++n)
         {
             const auto &weapon = shopper->items[n];

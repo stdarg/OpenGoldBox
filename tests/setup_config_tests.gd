@@ -25,6 +25,11 @@ func require(value: bool, message: String) -> void:
 		quit(1)
 		assert(value, message)
 
+# The game shows a folder in the platform's own form (backslashes on Windows);
+# settings and environment folders may come with forward slashes.
+func same_folder(shown: String, expected: String) -> bool:
+	return shown.replace("\\", "/") == expected.replace("\\", "/")
+
 func settle() -> void:
 	for frame in range(6): await process_frame
 
@@ -277,7 +282,7 @@ func check_found_folder(games_folder: String) -> void:
 		return
 	require(found.visible and not path_dialog.visible, "The folder found must be shown for the player to confirm")
 	require(found.get_node("Title").text == heading and found.title == heading, "The question names its game: " + found.title)
-	require(found.get_node("Folder").text == expected, "The question shows the folder found: " + found.get_node("Folder").text)
+	require(same_folder(found.get_node("Folder").text, expected), "The question shows the folder found: " + found.get_node("Folder").text)
 	require(found.get_node("Use").has_focus(), "Use this folder takes the focus")
 	var saved_before := FileAccess.get_file_as_string(CONFIG)
 	await capture(found, "found-folder-" + scenario)
@@ -298,7 +303,7 @@ func check_found_folder(games_folder: String) -> void:
 	require(not found.visible and not path_dialog.visible, "Startup must go on once the folder is confirmed")
 	var section := "games" if game == "CURSE" else "game"
 	var key := "CURSE" if game == "CURSE" else "path"
-	require(read_config().get_value(section, key, "") == expected, "The confirmed folder was not saved")
+	require(same_folder(read_config().get_value(section, key, ""), expected), "The confirmed folder was not saved")
 	if game == "POOLRAD":
 		require(shows_pool_title("en"), "Pool of Radiance's title did not start")
 	else:

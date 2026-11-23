@@ -146,9 +146,10 @@ void require_buck_rogers(GoldBoxGame game)
 
 } // namespace
 
-int buck_rogers_missile_adjustment(int dexterity)
+int buck_rogers_missile_adjustment(int dexterity_score)
 {
-    const int clamped = std::clamp(dexterity, 1, static_cast<int>(missile_adjustments.size()));
+    const int clamped =
+        std::clamp(dexterity_score, 1, static_cast<int>(missile_adjustments.size()));
     return missile_adjustments[static_cast<std::size_t>(clamped - 1)];
 }
 

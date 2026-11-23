@@ -380,6 +380,9 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_darkness_walk COMMAND opengold_gold_box_games_tests --darkness-walk)
     # And every map of Treasures of the Savage Frontier, its overland too.
     add_test(NAME opengold_treasure_walk COMMAND opengold_gold_box_games_tests --treasure-walk)
+    # About 1,100 s on Linux and 1,400 s alone on Windows: CTest's default
+    # 1,500 s ran out under a full parallel run there.
+    set_tests_properties(opengold_treasure_walk PROPERTIES TIMEOUT 3600)
     add_test(NAME opengold_champions_walk COMMAND opengold_gold_box_games_tests --champions-walk)
     add_test(NAME opengold_death_knights_walk COMMAND opengold_gold_box_games_tests --death-knights-walk)
     set_tests_properties(opengold_death_knights_walk PROPERTIES TIMEOUT 1800
@@ -395,6 +398,8 @@ if(OPENGOLD_BUILD_TESTS)
         SKIP_REGULAR_EXPRESSION "files are not here")
     # Curse's story, beat by beat, with a party made for it (plan step 7).
     add_test(NAME opengold_curse_route COMMAND opengold_gold_box_games_tests --curse-route)
+    # About 1,600 s on Windows, past CTest's default 1,500 s.
+    set_tests_properties(opengold_curse_route PROPERTIES TIMEOUT 3600)
     # Earned sewer rewards and training, reached with real sewer movement.
     add_test(NAME opengold_curse_sewers COMMAND opengold_gold_box_games_tests --curse-sewers)
     set_tests_properties(opengold_curse_sewers PROPERTIES TIMEOUT 300

@@ -1011,7 +1011,8 @@ bool walk(const std::filesystem::path &folder)
         // landed at: the walk flies the rocket from Earth to each body and
         // takes its outpost from the body's menu.
         constexpr unsigned outposts_script = 99;
-        const unsigned visits = script == outposts_script ? outposts.size() : 1;
+        const unsigned visits =
+            script == outposts_script ? static_cast<unsigned>(outposts.size()) : 1U;
         for (unsigned visit = 0; visit < visits; ++visit)
         {
             const auto where = "script " + std::to_string(script) +

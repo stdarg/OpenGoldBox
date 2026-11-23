@@ -184,9 +184,9 @@ UaSession UaSession::resume(DesignFiles files, std::string_view state)
     {
         require(x < map.columns && y < map.rows, "The saved square is outside its area");
     };
-    const auto x = next<unsigned>(in), y = next<unsigned>(in);
-    square(x, y);
-    session.move_party(x, y, facing_from(next<unsigned>(in)));
+    const auto saved_x = next<unsigned>(in), saved_y = next<unsigned>(in);
+    square(saved_x, saved_y);
+    session.move_party(saved_x, saved_y, facing_from(next<unsigned>(in)));
     por::PartyPose back;
     back.x = next<unsigned>(in);
     back.y = next<unsigned>(in);

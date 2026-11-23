@@ -233,7 +233,7 @@ void installed_records()
               campaign.resources()->animations.contains(83) &&
               !campaign.resources()->animations.at(83).empty(),
           "The native shared sprites and seventh picture bank load across all districts");
-    check(opengold::title_music_piece(game) == 1,
+    check(opengold::title_music_piece(game) == 1U,
           "The native introduction starts MUSIC.DAX piece one");
     auto music = opengold::load_music_bank(folder, game, 1);
     check(!music.songs.empty() && !music.instruments.empty(),
@@ -368,7 +368,6 @@ void native_creation_profiles_and_training_use_the_right_game()
 {
     using namespace opengold;
     using namespace original;
-    constexpr auto game = GoldBoxGame::death_knights_of_krynn;
     const auto creation = character_rules(Aging::original, game);
     Content content;
     content.game = game;

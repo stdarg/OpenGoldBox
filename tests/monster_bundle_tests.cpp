@@ -1,6 +1,7 @@
 // data/monsters as the game reads it (#274): the Combat Sprite Catalog's export
 // of each creature's name, gear and new art, and which weapon set shows.
 #include "opengold/monster_bundle.h"
+#include "opengold/path_text.h"
 #include "png_size_only.h"
 #include "test_support.h"
 #include <algorithm>
@@ -191,11 +192,18 @@ void handmade()
                               const std::filesystem::path &file, bool keeps_creature,
                               const std::string &message)
     {
+        // Windows writes the joined path with backslashes; the test's has slashes.
+        const auto forward_slashes = [](std::string text)
+        {
+            std::ranges::replace(text, '\\', '/');
+            return text;
+        };
         const auto bundle = load(folder);
         const bool kept =
             bundle.monsters.size() == 1 && bundle.monsters.begin()->second.variants.empty();
         check((keeps_creature ? kept : bundle.monsters.empty()) && bundle.problems.size() == 1 &&
-                  bundle.problems[0].find(file.string()) != std::string::npos,
+                  forward_slashes(bundle.problems[0]).find(forward_slashes(path_text(file))) !=
+                      std::string::npos,
               message);
     };
     const auto refused = [&](std::string record, std::string_view from, std::string_view to,
