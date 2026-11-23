@@ -1,5 +1,33 @@
 # Native coverage and fuzz testing
 
+## Windows verification (2026-11-23)
+
+On Windows (MSVC 14.51, Godot 4.7.2), with every Gold Box game in
+`C:\Users\imper\GoldBox`, at `f3f71172`:
+
+- Game tree: 383 of 386 checks pass. The 3 failures are the earned
+  campaign routes listed below.
+- Native tree: every check except those routes passes. Two Death Knights
+  earned checks skip until the Champions winners are saved.
+- Demo tree 9/9, DOS probe 2/2, 38 Python tests, localization (4,358
+  messages), and every developer tool's headless check pass.
+- The Countdown solar map check still skips, waiting for Buck Rogers
+  character creation (#312).
+
+Main did not build on Windows. MSVC's /W4 warnings, all errors here, are now
+fixed. MSVC also gives a lambda its own copy of a plain `constexpr` local array
+it uses. An iterator from one copy then meets the other's `begin()` or `end()`:
+`find(table, x) != table.end()` is true for every `x`. Make such a table
+`static constexpr`. This broke the route players' spell choices; the fix lets
+Secret's and Curse's milestones pass.
+
+Still failing on Windows: `opengold_curse_earned_ending` (lost to
+Tyranthraxus, about 2,600 s), `opengold_treasure_earned_ending` (lost at
+Luskan, map 31, about 5,900 s) and `opengold_darkness_route`, which runs
+several times longer than on Linux. Each Windows run is deterministic. The
+routes still take different decisions on Windows than on Linux or macOS. A
+trace compared with a macOS or Linux run should show where they first part.
+
 ## Earned Original Rules campaign (2026-11-17)
 
 All 337 Linux checks pass across the complete run and the corrected route
