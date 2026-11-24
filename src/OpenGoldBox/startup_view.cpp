@@ -121,13 +121,13 @@ constexpr std::array<MenuGame, 12> playable_games{
      {opengold::GoldBoxGame::secret_of_the_silver_blades, N_("Secret of the Silver Blades"),
       World::forgotten_realms},
      {opengold::GoldBoxGame::countdown_to_doomsday, N_("Buck Rogers: Countdown to Doomsday"),
-      World::buck_rogers, false},
+      World::buck_rogers, true},
      {opengold::GoldBoxGame::death_knights_of_krynn, N_("Death Knights of Krynn"), World::krynn},
      {opengold::GoldBoxGame::gateway_to_the_savage_frontier, N_("Gateway to the Savage Frontier"),
       World::forgotten_realms},
      {opengold::GoldBoxGame::pools_of_darkness, N_("Pools of Darkness"), World::forgotten_realms},
      {opengold::GoldBoxGame::matrix_cubed, N_("Buck Rogers: Matrix Cubed"), World::buck_rogers,
-      false},
+      true},
      {opengold::GoldBoxGame::treasures_of_the_savage_frontier,
       N_("Treasures of the Savage Frontier"), World::forgotten_realms},
      {opengold::GoldBoxGame::dark_queen_of_krynn, N_("The Dark Queen of Krynn"), World::krynn,
@@ -178,7 +178,7 @@ std::optional<std::pair<opengold::GoldBoxGame, std::filesystem::path>> newest_sa
 
 // --game=POOLRAD (or CURSE, SECRET, GATEWAY, DARKNESS, TREASURE or UA): the game a check plays,
 // without the titles and the menus; a check may play a game whose button still
-// waits (the Buck Rogers games' screens, before their routes are done).
+// waits for its earned ending, such as The Dark Queen of Krynn.
 std::optional<opengold::GoldBoxGame> game_from_command_line()
 {
     auto *os = OS::get_singleton(); // borrowed engine singleton
@@ -1020,11 +1020,13 @@ void StartupView::ask_rules()
             .connect("pressed", presentation::guarded(this, &StartupView::begin_game));
         connect_escape(*dialog, &StartupView::cancel_new_game);
     }
-    // A design plays by the kit's own rules: the SRD has none of its monsters
-    // (docs/games/ua.md).
-    const bool design = settings::chosen_game() == opengold::GoldBoxGame::unlimited_adventures;
-    rules.set_item_disabled(1, design);
-    if (design)
+    // Designs and Buck Rogers use their own rules: the SRD does not supply
+    // their native monsters and character records.
+    const auto game = settings::chosen_game();
+    const bool original_only =
+        game == opengold::GoldBoxGame::unlimited_adventures || opengold::is_buck_rogers(game);
+    rules.set_item_disabled(1, original_only);
+    if (original_only)
     {
         rules.select(0);
     }

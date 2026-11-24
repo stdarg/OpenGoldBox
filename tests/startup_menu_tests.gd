@@ -8,7 +8,7 @@ extends SceneTree
 # to the Savage Frontier's, with --darkness Pools of Darkness', with
 # --treasure Treasures of the Savage Frontier's, with --ua and --ua-design=FOLDER Unlimited
 # Adventures' with the test design in FOLDER, with --buck-rogers the Buck
-# Rogers games' ship-combat and solar-map options. A game other than Pool
+# Rogers games' real button activation, options and Original creation. A game other than Pool
 # of Radiance first shows its own title pictures (TITLE.DAX), as its original
 # does when it starts, then its menu.
 
@@ -39,6 +39,7 @@ func require(condition: bool, message: String) -> void:
 	if not condition:
 		push_error(message)
 		quit(1)
+		assert(condition, message)
 
 func settle() -> void:
 	for frame in range(8): await process_frame
@@ -205,6 +206,42 @@ func pick(folder: String) -> void:
 	await settle()
 	current_scene.get_node("GamePicker/Buttons/Games/" + folder).pressed.emit()
 	await settle()
+
+# The Buck startup check uses ordinary input through the button's own window.
+# Emitting pressed directly would also activate a disabled game entry.
+func activate(button: Button, by_keyboard: bool) -> void:
+	require(button.is_visible_in_tree(), "A real startup button is visible: " + String(button.name))
+	require(not button.disabled, "A real startup button is enabled: " + String(button.name))
+	var viewport := button.get_viewport()
+	if by_keyboard:
+		button.grab_focus()
+		for down in [true, false]:
+			var event := InputEventKey.new()
+			event.keycode = KEY_ENTER
+			event.pressed = down
+			viewport.push_input(event, true)
+	else:
+		var point := Vector2(button.get_window().position) + button.get_global_rect().get_center()
+		var motion := InputEventMouseMotion.new()
+		motion.position = point
+		motion.global_position = point
+		root.push_input(motion, true)
+		for down in [true, false]:
+			var event := InputEventMouseButton.new()
+			event.button_index = MOUSE_BUTTON_LEFT
+			event.pressed = down
+			event.position = point
+			event.global_position = point
+			root.push_input(event, true)
+	await settle()
+
+func pick_buck(folder: String, by_keyboard: bool) -> void:
+	await activate(current_scene.get_node("MainMenu/Buttons/PickGame"), by_keyboard)
+	var picker: Window = current_scene.get_node("GamePicker")
+	require(picker.visible, "Real input opens the game picker")
+	require((picker.get_node("Buttons/Games/DQK") as Button).disabled,
+		"Dark Queen still waits for its actual ending proof")
+	await activate(picker.get_node("Buttons/Games/" + folder), by_keyboard)
 
 # The game's menu's Create new party, which asks the rules first.
 func create_new_party(original := false) -> void:
@@ -604,6 +641,8 @@ func check_secret(menu: Window) -> void:
 # game's folder. The games' buttons wait until they play, so the check
 # presses them as the startup menu will.
 func check_buck_rogers() -> void:
+	root.size = Vector2i(1120, 800)
+	await settle()
 	var options := {"CommandEveryRound": ["command_every_round", 1],
 		"EmptyHelmDodges": ["empty_helm_dodges", 1], "BoardingFuel": ["boarding_fuel", 0],
 		"DirectFlight": ["direct_flight", 0], "CourseFlown": ["course_flown", 1],
@@ -613,7 +652,8 @@ func check_buck_rogers() -> void:
 			print("Skipped: the Buck Rogers games' files are not here.")
 			quit(0)
 			return
-		await pick(folder)
+		var by_keyboard: bool = folder == "buck-rogers-matrix-cubed"
+		await pick_buck(folder, by_keyboard)
 		var game_menu: Window = current_scene.get_node("GameMenu")
 		for wait in range(40):
 			if game_menu.visible: break
@@ -676,9 +716,24 @@ func check_buck_rogers() -> void:
 			require((gameplay.get_node("Choices/" + name) as OptionButton).selected == 1 - options[name][1],
 				name + " shows the saved choice again for " + folder)
 		await press("Options/Options/Close")
-		game_menu.get_node("Buttons/MainMenu").pressed.emit()
+		await activate(game_menu.get_node("Buttons/NewParty"), by_keyboard)
+		var rules_dialog: Window = current_scene.get_node("RulesDialog")
+		require(rules_dialog.visible, "New Party reaches the rules question through real input")
+		var rules: OptionButton = rules_dialog.get_node("Rows/Rules")
+		require(rules.selected == 0 and not rules.is_item_disabled(0) and rules.is_item_disabled(1),
+			"A Buck game starts with its supported Original rules and cannot choose SRD")
+		await activate(rules_dialog.get_node("Rows/Begin"), by_keyboard)
+		require(current_scene.name == "CharacterCreation", folder + " reaches creation from the enabled game button")
+		require((current_scene.get_node("Name") as LineEdit).max_length == 15,
+			"The selected game opens native Buck character creation")
+		var races: ItemList = current_scene.get_node("Choices")
+		var terran := false
+		for choice in range(races.item_count):
+			terran = terran or races.get_item_text(choice) == "Terran"
+		require(terran, "The creation screen offers the native Terran race")
+		await open_main_menu()
 		await settle()
-	print("Startup menu passed: Buck Rogers' ship-combat and solar-map options, each game's own, at their defaults and saved.")
+	print("Startup menu passed: Buck Rogers' real mouse and keyboard buttons, Original creation, and each game's saved options.")
 	quit(0)
 
 # The in-game Options' Party area spells under the original rules
