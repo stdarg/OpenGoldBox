@@ -112,8 +112,8 @@ class PartyReader
 
     rules::Ability ability(const Json &object, std::string_view key, std::string_view where) const
     {
-        constexpr std::array<std::string_view, 6> names{"strength",     "dexterity", "constitution",
-                                                        "intelligence", "wisdom",    "charisma"};
+        static constexpr std::array<std::string_view, 6> names{
+            "strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"};
         const auto &name = text(object, key, where);
         const auto found = std::ranges::find(names, name);
         if (found == names.end())

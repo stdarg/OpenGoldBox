@@ -1426,7 +1426,7 @@ void RolfTourSession::log_player(const std::string &action) const
     {
         return;
     }
-    constexpr std::array<std::string_view, 4> facings{"north", "east", "south", "west"};
+    static constexpr std::array<std::string_view, 4> facings{"north", "east", "south", "west"};
     const auto facing = static_cast<std::size_t>(snapshot_.pose.facing);
     log_diagnostic(LogPriority::info, "player",
                    action + " (area " + std::to_string(snapshot_.area_id) + " at " +
@@ -1514,10 +1514,10 @@ bool RolfTourSession::explore(ExplorationCommand command)
     {
         return false;
     }
-    constexpr std::array<std::string_view, 14> commands{
-        "turns left", "turns right", "turns around", "steps forward", "looks",
-        "camps",      "goes north",  "goes northeast", "goes east", "goes southeast",
-        "goes south", "goes southwest", "goes west",  "goes northwest"};
+    static constexpr std::array<std::string_view, 14> commands{
+        "turns left", "turns right",    "turns around",   "steps forward", "looks",
+        "camps",      "goes north",     "goes northeast", "goes east",     "goes southeast",
+        "goes south", "goes southwest", "goes west",      "goes northwest"};
     log_player(std::string(commands.at(static_cast<std::size_t>(command))));
     if (town_)
     {

@@ -488,8 +488,8 @@ Character character(std::string name, std::uint64_t seed = 42,
                          return rolls[a].total() > rolls[b].total();
                      });
     using enum rules::Ability;
-    constexpr std::array priority{strength, constitution, dexterity,
-                                  wisdom,   charisma,     intelligence};
+    static constexpr std::array priority{strength, constitution, dexterity,
+                                         wisdom,   charisma,     intelligence};
     for (unsigned i = 0; i < 6; ++i)
     {
         creator.assign_roll(best[i], priority[i]);
@@ -2169,7 +2169,7 @@ void walk_to(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &p
     {
         return bash_doors && wall && door == 2;
     };
-    constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
+    static constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
     std::set<std::pair<int, int>> refused;
     for (unsigned moves = 0; moves < 400; ++moves)
     {
@@ -3293,7 +3293,7 @@ void write_approach_fixture(const std::filesystem::path &from, unsigned x, unsig
                             const Answer &answer = peaceful)
 {
     auto trip = load_expedition(from, directory);
-    constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
+    static constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
     for (unsigned facing = 0; facing < 4; ++facing)
     {
         const int nx = int(x) - dx[facing], ny = int(y) - dy[facing];
@@ -3950,7 +3950,7 @@ void cadorna_payment(const std::filesystem::path &directory)
 // Whether (x, y) can be walked to from `from` over open edges and unlocked doors.
 bool reachable(const por::GeoMap &map, por::PartyPose from, unsigned x, unsigned y)
 {
-    constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
+    static constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
     std::set<unsigned> seen{from.y * 16 + from.x};
     std::queue<unsigned> cells;
     cells.push(from.y * 16 + from.x);
@@ -6466,7 +6466,7 @@ void podol_group_rolls(const std::filesystem::path &save, const std::filesystem:
          {"ORCS", "slums-orc", "slums-orc-leader", 1, 45, 30, 4},
          {"HOBGOBLINS", "slums-hobgoblin", "slums-hobgoblin", 2, 45, 20, 3},
          {"OGRES", "ogre", "ogre", 4, 50, 11, 0}}};
-    constexpr std::array<unsigned, 9> type_of_roll{0, 0, 1, 1, 2, 2, 3, 4, 5};
+    static constexpr std::array<unsigned, 9> type_of_roll{0, 0, 1, 1, 2, 2, 3, 4, 5};
     for (unsigned roll = 0; roll < type_of_roll.size(); ++roll)
     {
         auto trip = load_expedition(save, directory);
@@ -7326,8 +7326,8 @@ void slums_flight(const std::filesystem::path &save, const std::filesystem::path
 // player meets between areas.
 void reach_level(CampaignParty &party, int level, const std::string &reason)
 {
-    constexpr std::array<unsigned, 11> experience_for{0,     0,     300,   900,   2700, 6500,
-                                                      14000, 23000, 34000, 48000, 64000};
+    static constexpr std::array<unsigned, 11> experience_for{0,     0,     300,   900,   2700, 6500,
+                                                             14000, 23000, 34000, 48000, 64000};
     unsigned lacking = 0;
     for (const auto id : party.state().slots)
     {
@@ -8888,7 +8888,7 @@ bool walk_to_door(por::RolfTourSession &town, const std::shared_ptr<CampaignPart
                   std::optional<unsigned> only_facing = std::nullopt,
                   std::string *failures = nullptr)
 {
-    constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
+    static constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
     std::string tried;
     for (const bool street : {true, false})
     {
@@ -9274,7 +9274,7 @@ void write_area_event_fixtures(const std::filesystem::path &directory,
                 }
                 // No walk gets there: the party is stood on each open side
                 // instead ("...-placed.ogs"), as a save made there would be.
-                constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
+                static constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
                 for (unsigned facing = 0; facing < 4 && !reached; ++facing)
                 {
                     const int nx = int(x) - dx[facing], ny = int(y) - dy[facing];

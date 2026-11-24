@@ -437,8 +437,8 @@ unsigned reaction_score(int charisma)
 {
     // The original reads this table for Charisma 3 to 18 (and 25); a
     // Charisma above 18 keeps 18's score.
-    constexpr std::array<unsigned, 16> by_charisma{0,  5,  10, 15, 20, 25, 25, 25,
-                                                   25, 25, 30, 35, 40, 50, 55, 60};
+    static constexpr std::array<unsigned, 16> by_charisma{0,  5,  10, 15, 20, 25, 25, 25,
+                                                          25, 25, 30, 35, 40, 50, 55, 60};
     return by_charisma[static_cast<std::size_t>(std::clamp(charisma, 3, 18) - 3)];
 }
 

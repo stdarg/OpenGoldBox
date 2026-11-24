@@ -76,10 +76,10 @@ void malformed_content()
     rejects(std::string(header) + row().substr(0, row().size() - 1) + " extra\n");
     rejects(std::string(header) + "creature bandit 9999999999999999999999" + row().substr(18));
     // Both ends of every numeric field, plus non-grid movement and reversed ranges.
-    constexpr std::array<int, 19> low{1, 1,   -10, 5,  -10, 1, 2,   -10, -10, 1,
-                                      2, -10, 5,   80, 0,   0, -10, 1,   0};
-    constexpr std::array<int, 19> high{40, 1000, 20,  120, 30, 10, 20, 30, 30, 10,
-                                       20, 30,   320, 600, 10, 20, 30, 4,  7};
+    static constexpr std::array<int, 19> low{1, 1,   -10, 5,  -10, 1, 2,   -10, -10, 1,
+                                             2, -10, 5,   80, 0,   0, -10, 1,   0};
+    static constexpr std::array<int, 19> high{40, 1000, 20,  120, 30, 10, 20, 30, 30, 10,
+                                              20, 30,   320, 600, 10, 20, 30, 4,  7};
     for (std::size_t i = 0; i < definition.size(); ++i)
     {
         for (auto boundary : {low[i], high[i]})

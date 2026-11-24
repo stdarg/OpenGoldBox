@@ -205,8 +205,8 @@ int whole_member(const Json &object, std::string_view key, const std::string &wh
 
 rules::Ability ability(const Json &object, std::string_view key, const std::string &where)
 {
-    constexpr std::array<std::string_view, 6> names{"strength",     "dexterity", "constitution",
-                                                    "intelligence", "wisdom",    "charisma"};
+    static constexpr std::array<std::string_view, 6> names{
+        "strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"};
     const auto &name = member<std::string>(object, key, where);
     const auto found = std::find(names.begin(), names.end(), name);
     if (found == names.end())

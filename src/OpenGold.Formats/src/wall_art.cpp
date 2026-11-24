@@ -100,22 +100,22 @@ std::optional<WallArtSet> decode_wall_art(std::span<const std::uint8_t> definiti
     }
 
     // Normal EGA palette. Wall index 8 is gray; black (0) is opaque.
-    constexpr std::array<std::array<std::uint8_t, 3>, 16> palette{{{0, 0, 0},
-                                                                   {0, 0, 170},
-                                                                   {0, 170, 0},
-                                                                   {0, 170, 170},
-                                                                   {170, 0, 0},
-                                                                   {170, 0, 170},
-                                                                   {170, 85, 0},
-                                                                   {170, 170, 170},
-                                                                   {85, 85, 85},
-                                                                   {85, 85, 255},
-                                                                   {85, 255, 85},
-                                                                   {85, 255, 255},
-                                                                   {255, 85, 85},
-                                                                   {255, 85, 255},
-                                                                   {255, 255, 85},
-                                                                   {255, 255, 255}}};
+    static constexpr std::array<std::array<std::uint8_t, 3>, 16> palette{{{0, 0, 0},
+                                                                          {0, 0, 170},
+                                                                          {0, 170, 0},
+                                                                          {0, 170, 170},
+                                                                          {170, 0, 0},
+                                                                          {170, 0, 170},
+                                                                          {170, 85, 0},
+                                                                          {170, 170, 170},
+                                                                          {85, 85, 85},
+                                                                          {85, 85, 255},
+                                                                          {85, 255, 85},
+                                                                          {85, 255, 255},
+                                                                          {255, 85, 85},
+                                                                          {255, 85, 255},
+                                                                          {255, 255, 85},
+                                                                          {255, 255, 255}}};
     WallArtSet result;
     result.appearances.resize(definitions.size() / slice_size);
     for (std::size_t appearance = 0; appearance < result.appearances.size(); ++appearance)

@@ -1531,10 +1531,11 @@ OriginalModule::hall_training_options(const CharacterSheet &sheet,
     {
         return options;
     }
-    constexpr std::array<std::array<int, 6>, 2> requirements{
+    static constexpr std::array<std::array<int, 6>, 2> requirements{
         {{12, 9, 13, 9, 10, 3}, {15, 10, 13, 12, 15, 3}}};
-    constexpr std::array abilities{Ability::strength,  Ability::intelligence, Ability::wisdom,
-                                   Ability::dexterity, Ability::constitution, Ability::charisma};
+    static constexpr std::array abilities{Ability::strength,     Ability::intelligence,
+                                          Ability::wisdom,       Ability::dexterity,
+                                          Ability::constitution, Ability::charisma};
     for (std::size_t at = 0; at < abilities.size(); ++at)
     {
         if (sheet.base[abilities[at]] < requirements[static_cast<std::size_t>(order - 1)][at])
@@ -2161,9 +2162,9 @@ constexpr int party_target = 4;
 // through when Detect Magic is cast before her twin).
 [[nodiscard]] bool sight_spell(int number)
 {
-    constexpr std::array<std::string_view, 4> sight{"cleric:detect_magic",
-                                                    "magic_user:detect_magic", "druid:detect_magic",
-                                                    "deity:detect_magic"};
+    static constexpr std::array<std::string_view, 4> sight{
+        "cleric:detect_magic", "magic_user:detect_magic", "druid:detect_magic",
+        "deity:detect_magic"};
     return std::ranges::any_of(sight,
                                [number](std::string_view id)
                                {

@@ -242,7 +242,7 @@ void composition_tests(const CharacterArt &art)
         }
     }
 
-    constexpr std::array<unsigned, 6> masks{7, 1, 4, 6, 2, 3};
+    static constexpr std::array<unsigned, 6> masks{7, 1, 4, 6, 2, 3};
     for (bool tall : {false, true})
     {
         appearance = {};

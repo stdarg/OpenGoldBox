@@ -628,18 +628,18 @@ void dexterity_bonuses()
     };
 
     // The original's values up to 18.
-    constexpr std::array<Expected, 12> original{{{3, -4, -3},
-                                                 {4, -3, -2},
-                                                 {5, -2, -1},
-                                                 {6, -1, 0},
-                                                 {7, 0, 0},
-                                                 {14, 0, 0},
-                                                 {15, 1, 0},
-                                                 {16, 2, 1},
-                                                 {17, 3, 2},
-                                                 {18, 4, 3},
-                                                 {2, -4, -4},
-                                                 {1, -4, -4}}};
+    static constexpr std::array<Expected, 12> original{{{3, -4, -3},
+                                                        {4, -3, -2},
+                                                        {5, -2, -1},
+                                                        {6, -1, 0},
+                                                        {7, 0, 0},
+                                                        {14, 0, 0},
+                                                        {15, 1, 0},
+                                                        {16, 2, 1},
+                                                        {17, 3, 2},
+                                                        {18, 4, 3},
+                                                        {2, -4, -4},
+                                                        {1, -4, -4}}};
     for (const auto &expected : original)
     {
         check(dexterity_armor_class_bonus(expected.dexterity) == expected.armor_class &&

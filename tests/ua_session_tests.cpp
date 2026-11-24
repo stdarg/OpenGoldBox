@@ -1686,7 +1686,7 @@ void a_design_plays_the_difficulty(const std::filesystem::path &kit)
     };
 
     // Easy is the kit's level 1, Normal 3, Infernal 5.
-    constexpr std::array<Expected, 9> table{{
+    static constexpr std::array<Expected, 9> table{{
         {Difficulty::easy, DesignDifficulty::design, 3 * 2 / 4, 20, 7, 2},
         {Difficulty::normal, DesignDifficulty::design, 3, 20, 7, 0},
         {Difficulty::infernal, DesignDifficulty::design, 3 * 6 / 4, 20, 7, -2},

@@ -777,7 +777,7 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants,
         else if (grant.source_id == fiendish_resilience)
         {
             // Fiendish Resilience: any type but Force, chosen at level ten.
-            constexpr std::array<std::string_view, 12> types{
+            static constexpr std::array<std::string_view, 12> types{
                 "acid",     "bludgeoning", "cold",    "fire",    "lightning", "necrotic",
                 "piercing", "poison",      "psychic", "radiant", "slashing",  "thunder"};
             require(grant.level == history.reached(CharacterClass::warlock, 10) &&

@@ -150,7 +150,7 @@ void UaSession::take_treasure()
 // The party's one purse takes all the money.
 void UaSession::take_treasure_money()
 {
-    constexpr std::array<Coin, 3> money{Coin::platinum, Coin::gems, Coin::jewelry};
+    static constexpr std::array<Coin, 3> money{Coin::platinum, Coin::gems, Coin::jewelry};
     for (std::size_t n = 0; n < money.size(); ++n)
     {
         if (pile_money_[n] != 0)

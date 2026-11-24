@@ -37,7 +37,7 @@ CampaignParty::ItemConversion champions_items_for_death_knights(const std::files
         ImportTables{std::move(*words), std::move(*templates)});
     return [tables](const por::Equipment &from) -> std::optional<por::Equipment>
     {
-        constexpr std::array<int, 7> discontinued{42, 47, 58, 60, 63, 69, 72};
+        static constexpr std::array<int, 7> discontinued{42, 47, 58, 60, 63, 69, 72};
         const auto &item = from.stored;
         if (std::ranges::find(discontinued, item.type) != discontinued.end() ||
             item.type >= tables->templates.size())

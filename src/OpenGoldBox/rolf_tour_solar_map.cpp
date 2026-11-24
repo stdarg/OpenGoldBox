@@ -49,7 +49,7 @@ constexpr std::array<const char *, 8> heading_names{
 // Venus's, Earth's and Mars's, and the asteroids' gray.
 [[nodiscard]] int frame_color(std::optional<std::size_t> body)
 {
-    constexpr std::array<int, 4> planets{12, 2, 1, 4};
+    static constexpr std::array<int, 4> planets{12, 2, 1, 4};
     constexpr int en_route = 5, asteroids = 8;
     if (!body)
     {
@@ -90,7 +90,7 @@ constexpr std::array<std::pair<const char *, ExplorationCommand>, 8> pad{{
     const int sy = 2 * std::abs(dy) < std::abs(dx) ? 0 : sign(dy);
     for (const auto &[button, command] : pad)
     {
-        constexpr std::array<int, 8> columns{0, 1, 1, 1, 0, -1, -1, -1},
+        static constexpr std::array<int, 8> columns{0, 1, 1, 1, 0, -1, -1, -1},
             rows{-1, -1, 0, 1, 1, 1, 0, -1};
         const auto way =
             static_cast<std::size_t>(command) - static_cast<std::size_t>(ExplorationCommand::north);
@@ -386,9 +386,9 @@ void RolfTourView::show_solar_map(const TourSnapshot &s)
     auto &dialogue = required_node<RichTextLabel>(*this, "%Dialogue");
     if (rocket_shown_)
     {
-        constexpr std::array<const char *, 6> system_names{N_("Hull"),     N_("Sensors"),
-                                                           N_("Controls"), N_("Life support"),
-                                                           N_("Fuel"),     N_("Engines")};
+        static constexpr std::array<const char *, 6> system_names{
+            N_("Hull"),         N_("Sensors"), N_("Controls"),
+            N_("Life support"), N_("Fuel"),    N_("Engines")};
         // Three systems a line, under the ship's name, which heads the box.
         String text;
         for (std::size_t n = 0; n < ship.systems.size(); ++n)

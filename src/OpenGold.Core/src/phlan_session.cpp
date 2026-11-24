@@ -348,7 +348,7 @@ struct ScriptDamage
 
 std::optional<ScriptDamage> listed_damage(unsigned script, std::uint16_t address)
 {
-    constexpr std::array types{
+    static constexpr std::array types{
         ScriptDamage{2, 0xADB1, "bludgeoning"}, // the Cadorna well's fall
         ScriptDamage{15, 0x9D31, "acid"},       // Mendor's green slime
         // Stojanow Gate (GATE-1).
@@ -840,7 +840,7 @@ EclHostReply RolfTourSession::character_reply(PartySlot slot) const
                 {
                     const auto &sheet = member.character.sheet();
                     const auto &n = *sheet.original;
-                    constexpr std::array abilities{
+                    static constexpr std::array abilities{
                         rules::Ability::strength,     rules::Ability::intelligence,
                         rules::Ability::wisdom,       rules::Ability::dexterity,
                         rules::Ability::constitution, rules::Ability::charisma};
@@ -871,7 +871,8 @@ EclHostReply RolfTourSession::character_reply(PartySlot slot) const
                         at(static_cast<std::uint16_t>(0xA5 + skill)) =
                             static_cast<std::uint16_t>(n.thief_skills[skill]);
                     }
-                    constexpr std::array<std::uint16_t, 8> masks{2, 32, 8, 64, 128, 1, 4, 16};
+                    static constexpr std::array<std::uint16_t, 8> masks{2,   32, 8, 64,
+                                                                        128, 1,  4, 16};
                     for (std::size_t cls = 0; cls < n.class_levels.size(); ++cls)
                     {
                         if (n.class_levels[cls] > 0)
@@ -2979,7 +2980,7 @@ void RolfTourSession::try_locked_door(DoorMethod method)
 std::string RolfTourSession::treasure_identity(std::uint16_t address) const
 {
     // A TREASURE instruction is identified by its script and original address.
-    constexpr char digits[] = "0123456789abcdef";
+    static constexpr char digits[] = "0123456789abcdef";
     std::string hex;
     for (int shift = 12; shift >= 0; shift -= 4)
     {
@@ -3776,7 +3777,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     // The party's own requests need a campaign party: a session copied without
     // one (detached_copy) refuses them rather than reading none.
     const bool clock_moved = adopt_script_clock();
-    constexpr std::array party_requests{11, 29, 30, 34, 35, 41, 46, 52, 54, 59, 62};
+    static constexpr std::array party_requests{11, 29, 30, 34, 35, 41, 46, 52, 54, 59, 62};
     if (!campaign_ &&
         std::find(party_requests.begin(), party_requests.end(), op) != party_requests.end())
     {
@@ -4249,8 +4250,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         read_character();
         if (game() == GoldBoxGame::death_knights_of_krynn)
         {
-            constexpr std::array<std::int64_t, 7> seconds{6,     60,      600,     3600,
-                                                          86400, 2592000, 31104000};
+            static constexpr std::array<std::int64_t, 7> seconds{6,     60,      600,     3600,
+                                                                 86400, 2592000, 31104000};
             if (arg(1) >= seconds.size())
             {
                 throw EclError("Invalid Death Knights clock unit");
@@ -5843,7 +5844,8 @@ void RolfTourSession::roll_plaza_group(const EclRequest &request, EclHostReply &
     };
     const unsigned pick = machine_.host_random(request.id, 9);
     const unsigned kind = table(0xB260, pick);
-    constexpr std::array<std::string_view, 4> names{" GOBLINS", " ORCS", " HOBGOBLINS", " OGRES"};
+    static constexpr std::array<std::string_view, 4> names{" GOBLINS", " ORCS", " HOBGOBLINS",
+                                                           " OGRES"};
     const auto name = names[pick < 4 ? 0 : pick < 7 ? 1 : pick < 8 ? 2 : 3];
     unsigned size = party_strength(*campaign_) / std::max(1u, table(0xB275, kind)) / 3;
     size += machine_.host_random(request.id, size + 1);
@@ -6101,7 +6103,7 @@ void RolfTourSession::search_for_secret_door()
             snapshot_.secret_door_found = true;
             entrances_[shop.id] = EntranceState::found;
             apply_entrances();
-            constexpr std::array<std::string_view, 4> found{
+            static constexpr std::array<std::string_view, 4> found{
                 "You find a secret door in the north wall.",
                 "You find a secret door in the east wall.",
                 "You find a secret door in the south wall.",

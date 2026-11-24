@@ -102,7 +102,7 @@ std::vector<std::string_view> original_mask_classes(unsigned class_mask, GoldBox
 {
     if (game == GoldBoxGame::death_knights_of_krynn)
     {
-        constexpr std::array<std::pair<std::string_view, unsigned>, 7> krynn_bits{
+        static constexpr std::array<std::pair<std::string_view, unsigned>, 7> krynn_bits{
             {{"magic_user", 1},
              {"cleric", 2},
              {"thief", 4},
@@ -120,7 +120,7 @@ std::vector<std::string_view> original_mask_classes(unsigned class_mask, GoldBox
         }
         return classes;
     }
-    constexpr std::array<std::pair<std::string_view, unsigned>, 8> class_bits{{
+    static constexpr std::array<std::pair<std::string_view, unsigned>, 8> class_bits{{
         {"cleric", 0x02},
         {"druid", 0x02},
         {"fighter", 0x08},

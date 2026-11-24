@@ -607,11 +607,18 @@ bool contingent(const detail::SpellDef &spell)
 // A feature's command that strikes the creature it targets (CLOSE-1).
 bool struck_by(std::string_view verb)
 {
-    constexpr std::array<std::string_view, 12> verbs{
-        "martial_arts",           "flurry_",           "evil_eye_",
-        "vampiric_touch_again",   "spiritual_weapon_strike", "arcane_sword_strike",
-        "conjure_fey_strike",     "light_",            "nick_",
-        "divine_spark_radiant",   "superior_hunters_prey", "horde_breaker"};
+    static constexpr std::array<std::string_view, 12> verbs{"martial_arts",
+                                                            "flurry_",
+                                                            "evil_eye_",
+                                                            "vampiric_touch_again",
+                                                            "spiritual_weapon_strike",
+                                                            "arcane_sword_strike",
+                                                            "conjure_fey_strike",
+                                                            "light_",
+                                                            "nick_",
+                                                            "divine_spark_radiant",
+                                                            "superior_hunters_prey",
+                                                            "horde_breaker"};
     return verb == "rampage" || std::any_of(verbs.begin(), verbs.end(),
                                             [&](std::string_view prefix)
                                             {
@@ -639,8 +646,8 @@ bool charms(const detail::SpellDef &spell)
 // A Contingency trigger as players read it, by its index in contingency_triggers.
 std::string_view contingency_label(std::size_t trigger)
 {
-    constexpr std::array<std::string_view, 3> labels{"at half Hit Points", "when a fight starts",
-                                                     "at 0 Hit Points"};
+    static constexpr std::array<std::string_view, 3> labels{
+        "at half Hit Points", "when a fight starts", "at 0 Hit Points"};
     return labels.at(trigger);
 }
 
@@ -650,33 +657,33 @@ std::string_view contingency_label(std::size_t trigger)
 // the field where they are offered.
 bool magical_command(std::string_view verb)
 {
-    constexpr std::array<std::string_view, 27> verbs{"dispel_break",
-                                                     "compulsion_heading",
-                                                     "dispel_dismissal",
-                                                     "move_moonbeam",
-                                                     "sunbeam_line",
-                                                     "vampiric_touch_again",
-                                                     "flame_blade_strike",
-                                                     "hurl_flame",
-                                                     "armor_of_shadows",
-                                                     "fiendish_vigor",
-                                                     "lands_aid",
-                                                     "divine_spark",
-                                                     "divine_spark_radiant",
-                                                     "turn_undead",
-                                                     "preserve_life",
-                                                     "abjure_foes",
-                                                     "tireless",
-                                                     "spiritual_weapon_strike",
-                                                     "move_spirit_pack",
-                                                     "move_pillar",
-                                                     "potent_vitality",
-                                                     "sacred_weapon",
-                                                     "sacred_weapon_radiant",
-                                                     "move_hound",
-                                                     "arcane_sword_strike",
-                                                     "call_lightning_again",
-                                                     "conjure_fey_strike"};
+    static constexpr std::array<std::string_view, 27> verbs{"dispel_break",
+                                                            "compulsion_heading",
+                                                            "dispel_dismissal",
+                                                            "move_moonbeam",
+                                                            "sunbeam_line",
+                                                            "vampiric_touch_again",
+                                                            "flame_blade_strike",
+                                                            "hurl_flame",
+                                                            "armor_of_shadows",
+                                                            "fiendish_vigor",
+                                                            "lands_aid",
+                                                            "divine_spark",
+                                                            "divine_spark_radiant",
+                                                            "turn_undead",
+                                                            "preserve_life",
+                                                            "abjure_foes",
+                                                            "tireless",
+                                                            "spiritual_weapon_strike",
+                                                            "move_spirit_pack",
+                                                            "move_pillar",
+                                                            "potent_vitality",
+                                                            "sacred_weapon",
+                                                            "sacred_weapon_radiant",
+                                                            "move_hound",
+                                                            "arcane_sword_strike",
+                                                            "call_lightning_again",
+                                                            "conjure_fey_strike"};
     return std::find(verbs.begin(), verbs.end(), verb) != verbs.end() ||
            verb.starts_with("lay_on_hands") || verb.starts_with("wild_shape") ||
            verb.starts_with("dragons_breath_exhale") || verb.starts_with("breath_weapon") ||
@@ -705,7 +712,7 @@ std::string_view spell_label(std::string_view spell) noexcept
 
 std::string_view feat_label(std::string_view feat) noexcept
 {
-    constexpr std::array<std::pair<std::string_view, std::string_view>, 11> labels{{
+    static constexpr std::array<std::pair<std::string_view, std::string_view>, 11> labels{{
         {"ability_score_improvement", "Ability Score Improvement"},
         {"alert", "Alert"},
         {"archery", "Archery"},
@@ -1482,8 +1489,8 @@ bool bard_secret(CharacterClass klass, unsigned level, std::span<const FeatureGr
                                         {
                                             return g.id == "discovery:" + std::string(id);
                                         });
-    constexpr std::array lists{CharacterClass::cleric, CharacterClass::druid,
-                               CharacterClass::wizard};
+    static constexpr std::array lists{CharacterClass::cleric, CharacterClass::druid,
+                                      CharacterClass::wizard};
     return klass == CharacterClass::bard && (level >= 10 || discovered) &&
            std::any_of(lists.begin(), lists.end(),
                        [&](auto list)
@@ -3652,31 +3659,31 @@ bool cursed(const Actor &a)
 // "Celestials", "Elementals", "Fey", "Fiends" or "Undead".
 std::string ward_label(std::size_t type)
 {
-    constexpr std::array<std::string_view, 5> labels{"Celestials", "Elementals", "Fey", "Fiends",
-                                                     "Undead"};
+    static constexpr std::array<std::string_view, 5> labels{"Celestials", "Elementals", "Fey",
+                                                            "Fiends", "Undead"};
     return std::string(labels.at(type));
 }
 
 // A Bestow Curse curse as players read it, by its index in curses.
 std::string curse_label(std::size_t curse)
 {
-    constexpr std::array<std::string_view, 9> labels{"Strength",
-                                                     "Dexterity",
-                                                     "Constitution",
-                                                     "Intelligence",
-                                                     "Wisdom",
-                                                     "Charisma",
-                                                     "Disadvantage attacking you",
-                                                     "forced Dodge",
-                                                     "extra Necrotic damage"};
+    static constexpr std::array<std::string_view, 9> labels{"Strength",
+                                                            "Dexterity",
+                                                            "Constitution",
+                                                            "Intelligence",
+                                                            "Wisdom",
+                                                            "Charisma",
+                                                            "Disadvantage attacking you",
+                                                            "forced Dodge",
+                                                            "extra Necrotic damage"};
     return std::string(labels.at(curse));
 }
 
 // A wall's direction as players read it, by its index in wall_directions.
 std::string wall_direction_label(std::size_t direction)
 {
-    constexpr std::array<std::string_view, 5> labels{"horizontal", "vertical", "rising diagonal",
-                                                     "falling diagonal", "ring"};
+    static constexpr std::array<std::string_view, 5> labels{
+        "horizontal", "vertical", "rising diagonal", "falling diagonal", "ring"};
     return std::string(labels.at(direction));
 }
 
@@ -3694,7 +3701,7 @@ constexpr std::array<Cell, 8> wave_headings{Cell{0, 1}, Cell{0, -1},  Cell{1, 0}
 std::size_t wave_heading(std::string_view verb, Cell origin, Cell center)
 {
     // Across a row, a column, a rising or a falling diagonal.
-    constexpr std::array<std::size_t, 4> across{0, 2, 4, 6};
+    static constexpr std::array<std::size_t, 4> across{0, 2, 4, 6};
     const auto forward = across[detail::wall_direction(verb).value_or(0)];
     const auto step = wave_headings[forward];
     const bool backward = (center.x - origin.x) * step.x + (center.y - origin.y) * step.y < 0;
@@ -4129,9 +4136,9 @@ character_definition(std::string_view bytes,
     d.champion = at(CharacterClass::fighter) >= 3;
     d.critical_from = !d.champion ? 20 : at(CharacterClass::fighter) >= 15 ? 18 : 19;
     // Extra Attack from two classes does not stack (SRD 5.2.1 p. 25).
-    constexpr std::array extra_attack_classes{CharacterClass::fighter, CharacterClass::barbarian,
-                                              CharacterClass::monk, CharacterClass::paladin,
-                                              CharacterClass::ranger};
+    static constexpr std::array extra_attack_classes{
+        CharacterClass::fighter, CharacterClass::barbarian, CharacterClass::monk,
+        CharacterClass::paladin, CharacterClass::ranger};
     d.extra_attacks = std::any_of(extra_attack_classes.begin(), extra_attack_classes.end(),
                                   [&](CharacterClass held)
                                   {
@@ -11666,7 +11673,7 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         }
         if (spell.rider == detail::Rider::contagion)
         {
-            constexpr std::array<std::pair<std::string_view, std::string_view>, 6> abilities{
+            static constexpr std::array<std::pair<std::string_view, std::string_view>, 6> abilities{
                 {{"strength", "Strength"},
                  {"dexterity", "Dexterity"},
                  {"constitution", "Constitution"},
@@ -14819,7 +14826,7 @@ std::vector<Cell> Session::area_shape(const detail::SpellDef &spell, std::string
     }
     if (spell.wall)
     {
-        constexpr std::array<Cell, 4> steps{Cell{1, 0}, Cell{0, 1}, Cell{1, -1}, Cell{1, 1}};
+        static constexpr std::array<Cell, 4> steps{Cell{1, 0}, Cell{0, 1}, Cell{1, -1}, Cell{1, 1}};
         const auto step = steps[detail::wall_direction(verb).value_or(0)];
         const int length = spell.wall / 5;
         for (int n = -length / 2; n < length - length / 2; ++n)
@@ -16540,7 +16547,7 @@ std::vector<Cell> Session::burning_side(std::string_view verb, Cell center,
 {
     // A straight wall's side by the sign of the square's offset across it;
     // a ring's inside or outside by its distance from the centre.
-    constexpr std::array<Cell, 4> steps{Cell{1, 0}, Cell{0, 1}, Cell{1, -1}, Cell{1, 1}};
+    static constexpr std::array<Cell, 4> steps{Cell{1, 0}, Cell{0, 1}, Cell{1, -1}, Cell{1, 1}};
     const auto side = *detail::wall_side(verb);
     const auto direction = side / 2;
     const bool first = side % 2 == 0;
@@ -16626,7 +16633,8 @@ bool Session::confused_turn(Actor &a)
     if (behavior == 1)
     {
         // It wanders north, east, south or west as far as its movement allows.
-        constexpr std::array<Cell, 4> directions{Cell{0, -1}, Cell{1, 0}, Cell{0, 1}, Cell{-1, 0}};
+        static constexpr std::array<Cell, 4> directions{Cell{0, -1}, Cell{1, 0}, Cell{0, 1},
+                                                        Cell{-1, 0}};
         const auto step = directions[static_cast<std::size_t>(roll(4) - 1)];
         int left = movement_left(a);
         const auto board = zoned_board();
@@ -16994,11 +17002,11 @@ void Session::prismatic_rays(Actor &caster, Actor &struck, bool saved, int dc, c
             }
         }
     }
-    constexpr std::array<std::string_view, 7> colors{"red",  "orange", "yellow", "green",
-                                                     "blue", "indigo", "violet"};
-    constexpr std::array types{detail::DamageType::fire, detail::DamageType::acid,
-                               detail::DamageType::lightning, detail::DamageType::poison,
-                               detail::DamageType::cold};
+    static constexpr std::array<std::string_view, 7> colors{"red",  "orange", "yellow", "green",
+                                                            "blue", "indigo", "violet"};
+    static constexpr std::array types{detail::DamageType::fire, detail::DamageType::acid,
+                                      detail::DamageType::lightning, detail::DamageType::poison,
+                                      detail::DamageType::cold};
     for (const int ray : rays)
     {
         if (struck.life.dead)
@@ -17447,8 +17455,8 @@ void Session::take_legendary_action(Actor &monster)
                                     detail::EffectKind::legendary_spent, 0);
     }
     spent_effect()->dc += 1 + (*chosen == Option::beguile ? 16 : 0);
-    constexpr std::array<std::string_view, 5> labels{"Beguile", "Deathless Strike",
-                                                     "Guiding Light", "Pounce", "Thunderclap"};
+    static constexpr std::array<std::string_view, 5> labels{
+        "Beguile", "Deathless Strike", "Guiding Light", "Pounce", "Thunderclap"};
     const std::string label(labels[static_cast<std::size_t>(*chosen)]);
     log(monster.source.name + " uses " + label + " (Legendary Action).",
         {"{name} uses {action} (Legendary Action).",
@@ -22151,8 +22159,8 @@ Dice Session::weapon_dice(const Actor &a, AttackRange range) const
     // d12 from 11 and 2d6 from 17.
     if (!ranged && shillelagh(a))
     {
-        constexpr std::array<Dice, 4> dice{Dice{1, 8, 0}, Dice{1, 10, 0}, Dice{1, 12, 0},
-                                           Dice{2, 6, 0}};
+        static constexpr std::array<Dice, 4> dice{Dice{1, 8, 0}, Dice{1, 10, 0}, Dice{1, 12, 0},
+                                                  Dice{2, 6, 0}};
         result = dice[static_cast<std::size_t>(cantrip_tier(d) - 1)];
         result.bonus = casting_modifier(d, "shillelagh");
     }
@@ -24630,9 +24638,9 @@ void Session::log_luck(const Actor &a, bool rerolled)
 
 void Session::log_save(const Actor &target, const detail::SaveResult &result)
 {
-    constexpr std::array names{"Strength",     "Dexterity", "Constitution",
-                               "Intelligence", "Wisdom",    "Charisma"};
-    constexpr std::array messages{
+    static constexpr std::array names{"Strength",     "Dexterity", "Constitution",
+                                      "Intelligence", "Wisdom",    "Charisma"};
+    static constexpr std::array messages{
         "{name} Strength save: d20 {roll} + {bonus} vs DC {dc} ({result}).",
         "{name} Dexterity save: d20 {roll} + {bonus} vs DC {dc} ({result}).",
         "{name} Constitution save: d20 {roll} + {bonus} vs DC {dc} ({result}).",
@@ -24640,7 +24648,7 @@ void Session::log_save(const Actor &target, const detail::SaveResult &result)
         "{name} Wisdom save: d20 {roll} + {bonus} vs DC {dc} ({result}).",
         "{name} Charisma save: d20 {roll} + {bonus} vs DC {dc} ({result})."};
     // The Aura of Protection's share of the bonus is named with the roll.
-    constexpr std::array aura_messages{
+    static constexpr std::array aura_messages{
         "{name} Strength save: d20 {roll} + {bonus} (Aura of Protection +{aura}) vs DC {dc} ({result}).",
         "{name} Dexterity save: d20 {roll} + {bonus} (Aura of Protection +{aura}) vs DC {dc} ({result}).",
         "{name} Constitution save: d20 {roll} + {bonus} (Aura of Protection +{aura}) vs DC {dc} ({result}).",
@@ -32521,9 +32529,9 @@ class Module final : public RulesModule
     std::string reincarnation_species(RandomState &random_state) const override
     {
         // A d10, rolled again on a 1. Same SplitMix64 as combat.
-        constexpr std::array<std::string_view, 9> species{"dragonborn", "dwarf",   "elf",
-                                                          "gnome",      "goliath", "halfling",
-                                                          "human",      "orc",     "tiefling"};
+        static constexpr std::array<std::string_view, 9> species{
+            "dragonborn", "dwarf", "elf", "gnome",   "goliath",
+            "halfling",   "human", "orc", "tiefling"};
         auto rng = random_state.value;
         int rolled = 1;
         while (rolled == 1)
@@ -35788,7 +35796,7 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
                 throw std::runtime_error("Invalid Legendary Actions: " + key);
             }
             using Option = Definition::LegendaryAction;
-            constexpr std::array<std::pair<std::string_view, Option>, 5> options{
+            static constexpr std::array<std::pair<std::string_view, Option>, 5> options{
                 {{"beguile", Option::beguile},
                  {"deathless_strike", Option::deathless_strike},
                  {"guiding_light", Option::guiding_light},

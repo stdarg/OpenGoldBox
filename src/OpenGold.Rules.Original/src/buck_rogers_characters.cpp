@@ -97,9 +97,9 @@ rules::CharacterSheet buck_rogers_sheet(const rules::CharacterDraft &draft,
     sheet.race = std::string(buck_rogers_race_name(race));
     sheet.gender = creature.gender ? "Female" : "Male";
     sheet.character_class = std::string(buck_rogers_career_name(career));
-    constexpr std::array<Ability, 6> abilities{Ability::strength,     Ability::dexterity,
-                                               Ability::constitution, Ability::intelligence,
-                                               Ability::wisdom,       Ability::charisma};
+    static constexpr std::array<Ability, 6> abilities{Ability::strength,     Ability::dexterity,
+                                                      Ability::constitution, Ability::intelligence,
+                                                      Ability::wisdom,       Ability::charisma};
     for (std::size_t n = 0; n < abilities.size(); ++n)
     {
         sheet.base[abilities[n]] = creature.abilities[n];

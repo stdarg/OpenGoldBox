@@ -250,7 +250,8 @@ bool is_music_driver(Bytes bytes, GoldBoxGame game) noexcept
     }
     // Its far entry sets its data segment from its code segment, and it names
     // the banks it refuses.
-    constexpr std::array<std::uint8_t, 8> entry{0x55, 0x8B, 0xEC, 0x1E, 0x06, 0x8C, 0xC8, 0x05};
+    static constexpr std::array<std::uint8_t, 8> entry{0x55, 0x8B, 0xEC, 0x1E,
+                                                       0x06, 0x8C, 0xC8, 0x05};
     constexpr std::string_view refusal = "Invalid Parts File";
     return bytes.size() > entry.size() && std::equal(entry.begin(), entry.end(), bytes.begin()) &&
            std::search(bytes.begin(), bytes.end(), refusal.begin(), refusal.end()) != bytes.end();

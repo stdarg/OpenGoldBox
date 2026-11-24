@@ -106,7 +106,7 @@ std::string_view speaking_npc_portrait(const por::TourSnapshot &state,
 
     // These are the exact opening words of dialogue in the supported original
     // ECL scripts, verified without consulting the old head/body artwork.
-    constexpr std::array cues{
+    static constexpr std::array cues{
         Cue{0, "THE HARBOR MASTER TELLS", "NPCs/harbor-master.png"},
         Cue{0, "'BY ORDER OF THE CITY COUNCIL,' THE HARBOR MASTER", "NPCs/harbor-master.png"},
         Cue{0, "YOU ARE USHERED INTO THE BISHOP'S STUDY", "NPCs/bishop-braccio.png"},

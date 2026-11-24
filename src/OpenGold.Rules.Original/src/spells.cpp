@@ -345,7 +345,7 @@ int canonical_spell(int number, GoldBoxGame game) noexcept
     if (game == GoldBoxGame::secret_of_the_silver_blades || darkness_table(game))
     {
         // Secret keeps Curse's numbers but where its own spells took them.
-        constexpr std::array<int, 6> own{36, 56, 63, 90, 96, 98};
+        static constexpr std::array<int, 6> own{36, 56, 63, 90, 96, 98};
         if (std::ranges::find(own, number) != own.end() || number > 100)
         {
             return number + secret_spell_offset;

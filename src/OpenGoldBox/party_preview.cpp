@@ -1907,7 +1907,7 @@ void CharacterCreationView::load_saved_start()
 // another, each whole as the original's (ORIGINAL-RULES.md).
 void CharacterCreationView::add_original_expedition_party()
 {
-    constexpr std::array<std::uint8_t, 3> kit{36, 55, 59};
+    static constexpr std::array<std::uint8_t, 3> kit{36, 55, 59};
     for (unsigned i = 0; i < 6; ++i)
     {
         CharacterCreator creator(campaign_->character_rules(), 40 + i);

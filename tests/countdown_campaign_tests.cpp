@@ -214,8 +214,8 @@ void arenas_use_the_tiles_the_files_hold(const std::filesystem::path &folder)
             session, opengold::por::buck_rogers_tile_set(kind).file));
     };
     // The kinds the scripts write to cell 4BE6h, indoors.
-    constexpr std::array<unsigned, 12> kinds{0x84, 0x10, 0x40, 0x50, 0x88, 0x08,
-                                             0x82, 0x22, 0x01, 0x11, 0x00, 0x70};
+    static constexpr std::array<unsigned, 12> kinds{0x84, 0x10, 0x40, 0x50, 0x88, 0x08,
+                                                    0x82, 0x22, 0x01, 0x11, 0x00, 0x70};
     std::set<unsigned> lacking;
     for (const auto &[map, script] : opengold::test::TourAccess::area_scripts(session))
     {
@@ -601,7 +601,7 @@ void the_solar_map_flies(const std::filesystem::path &folder)
 // Juno's rendezvous) are not offered yet.
 void each_body_offers_its_places(const std::filesystem::path &folder)
 {
-    constexpr std::array<std::string_view, og::solar_bodies> places{
+    static constexpr std::array<std::string_view, og::solar_bodies> places{
         "HIELO|MARIPOSA THREE|EXIT|",
         "NEW ELYSIUM|VENUS LOWLANDS|EXIT|",
         "SALVATION|TYCHO|EXIT|",
@@ -1039,8 +1039,9 @@ bool walk(const std::filesystem::path &folder)
                 // On the wildernesses of Venus and Mars the team steps about
                 // the big picture, as its random fights come on it.
                 using Command = opengold::por::ExplorationCommand;
-                constexpr std::array steps{Command::east,  Command::south,     Command::west,
-                                           Command::north, Command::southeast, Command::northwest};
+                static constexpr std::array steps{Command::east,      Command::south,
+                                                  Command::west,      Command::north,
+                                                  Command::southeast, Command::northwest};
                 for (unsigned step = 0; step < 60 && campaign.session.can_leave(); ++step)
                 {
                     if (!campaign.session.explore(steps[(step / 5) % steps.size()]))

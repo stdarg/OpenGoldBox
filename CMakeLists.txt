@@ -758,6 +758,11 @@ if(OPENGOLD_BUILD_TESTS)
                  COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tests/session_board_tests.py)
         add_test(NAME opengold_release_tool_tests
                  COMMAND ${Python3_EXECUTABLE} -B ${PROJECT_SOURCE_DIR}/tests/release_tool_tests.py)
+        # MSVC gives a lambda its own copy of a plain constexpr local table;
+        # every function-local table must be static constexpr.
+        add_test(NAME opengold_static_tables
+                 COMMAND ${Python3_EXECUTABLE} -B ${PROJECT_SOURCE_DIR}/tools/static_tables.py
+                         ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/tests ${PROJECT_SOURCE_DIR}/tools)
     endif()
     add_executable(opengold_creature_edits_tests tests/creature_edits_tests.cpp)
     target_link_libraries(opengold_creature_edits_tests PRIVATE opengold_creature_edits)

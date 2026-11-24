@@ -86,7 +86,7 @@ bool is_if(const EclInstruction &instruction)
 
 bool falls_through(const EclInstruction &instruction)
 {
-    constexpr std::array<std::uint8_t, 7> leaving{
+    static constexpr std::array<std::uint8_t, 7> leaving{
         opcode::exit,     opcode::go_to,    opcode::return_,       opcode::new_ecl,
         opcode::empty_3b, opcode::empty_3c, opcode::clear_and_stop};
     return std::find(leaving.begin(), leaving.end(), instruction.opcode) == leaving.end();
@@ -131,13 +131,15 @@ std::vector<std::size_t> written_operands(std::uint8_t command)
 // (eclmenu.pas SkipEclCmd); any other command it steps over as one byte.
 std::size_t skipped_operands(std::uint8_t command)
 {
-    constexpr std::array<std::uint8_t, 17> one{0x01, 0x02, 0x0A, 0x0E, 0x11, 0x12, 0x20, 0x2D, 0x32,
-                                               0x34, 0x36, 0x38, 0x39, 0x3C, 0x43, 0x48, 0x4B};
-    constexpr std::array<std::uint8_t, 13> two{0x03, 0x08, 0x09, 0x0F, 0x10, 0x1F, 0x41,
-                                               0x40, 0x1D, 0x3F, 0x45, 0x46, 0x4C};
-    constexpr std::array<std::uint8_t, 16> three{0x04, 0x05, 0x06, 0x07, 0x0B, 0x0C, 0x21, 0x28,
-                                                 0x2A, 0x2F, 0x30, 0x35, 0x37, 0x3B, 0x22, 0x23};
-    constexpr std::array<std::uint8_t, 2> six{0x1E, 0x49};
+    static constexpr std::array<std::uint8_t, 17> one{0x01, 0x02, 0x0A, 0x0E, 0x11, 0x12,
+                                                      0x20, 0x2D, 0x32, 0x34, 0x36, 0x38,
+                                                      0x39, 0x3C, 0x43, 0x48, 0x4B};
+    static constexpr std::array<std::uint8_t, 13> two{0x03, 0x08, 0x09, 0x0F, 0x10, 0x1F, 0x41,
+                                                      0x40, 0x1D, 0x3F, 0x45, 0x46, 0x4C};
+    static constexpr std::array<std::uint8_t, 16> three{0x04, 0x05, 0x06, 0x07, 0x0B, 0x0C,
+                                                        0x21, 0x28, 0x2A, 0x2F, 0x30, 0x35,
+                                                        0x37, 0x3B, 0x22, 0x23};
+    static constexpr std::array<std::uint8_t, 2> six{0x1E, 0x49};
     const auto among = [command](const auto &commands)
     {
         return std::find(commands.begin(), commands.end(), command) != commands.end();

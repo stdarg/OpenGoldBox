@@ -150,7 +150,7 @@ void settle(RolfTourSession &town, bool *temple = nullptr,
 bool walk_to(RolfTourSession &town, unsigned tx, unsigned ty, bool *temple = nullptr,
              const std::function<void(RolfTourSession &)> &visit = {})
 {
-    constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
+    static constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
     std::set<std::pair<int, int>> refused;
     for (unsigned step = 0; step < 400; ++step)
     {

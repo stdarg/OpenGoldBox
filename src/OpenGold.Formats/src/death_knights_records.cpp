@@ -148,8 +148,8 @@ std::optional<std::vector<por::ItemRecord>> decode_item_list(std::span<const std
 std::optional<std::vector<std::vector<std::uint8_t>>>
 decode_stores(std::span<const std::uint8_t> program)
 {
-    constexpr std::array<std::uint8_t, 16> shape{1,  16, 23, 29, 31, 34, 37, 40,
-                                                 15, 7,  6,  2,  3,  3,  3,  30};
+    static constexpr std::array<std::uint8_t, 16> shape{1,  16, 23, 29, 31, 34, 37, 40,
+                                                        15, 7,  6,  2,  3,  3,  3,  30};
     constexpr std::size_t stock_count = 69;
     const auto at = std::search(program.begin(), program.end(), shape.begin(), shape.end());
     if (at == program.end() ||

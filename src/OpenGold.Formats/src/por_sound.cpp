@@ -454,7 +454,7 @@ std::vector<SoundEffect> load_sound_effects(const std::filesystem::path &directo
     {
         invalid("unsupported START.EXE revision; this demo requires the Steam PC 1.3 image");
     }
-    constexpr std::array<std::string_view, 21> names{
+    static constexpr std::array<std::string_view, 21> names{
         "Silence",          "Cast spell",       "Magic damage",
         "Magic effect",     "Reduced to 0 HP",  "Ranged attack launched",
         "Melee hit",        "Lightning bolt",   "Melee miss",
@@ -515,8 +515,8 @@ std::vector<SoundEffect> decode_driver_sound_effects(std::span<const std::uint8_
 {
     // The driver opens with its tick divider (chain the BIOS handler every 13
     // ticks), the exit countdown and the coded error message.
-    constexpr std::array<std::uint8_t, 10> driver_start{0x0d, 0x00, 0x00, 0x30, 0x00,
-                                                        0x00, 0xd2, 0xf5, 0xee, 0xad};
+    static constexpr std::array<std::uint8_t, 10> driver_start{0x0d, 0x00, 0x00, 0x30, 0x00,
+                                                               0x00, 0xd2, 0xf5, 0xee, 0xad};
     const auto found =
         std::search(image.begin(), image.end(), driver_start.begin(), driver_start.end());
     if (found == image.end())
@@ -556,7 +556,7 @@ std::vector<SoundEffect> decode_driver_sound_effects(std::span<const std::uint8_
     }
     const auto segment = image.subspan(driver + voice_blocks_in_driver - voice_blocks);
     // InstallSoundTimer loads the timer's divisor: mov al,0B6h; out 43h,al; mov ax,divisor.
-    constexpr std::array<std::uint8_t, 5> set_timer{0xb0, 0xb6, 0xe6, 0x43, 0xb8};
+    static constexpr std::array<std::uint8_t, 5> set_timer{0xb0, 0xb6, 0xe6, 0x43, 0xb8};
     const auto timer_code =
         std::search(segment.begin(), segment.end(), set_timer.begin(), set_timer.end());
     if (timer_code == segment.end())

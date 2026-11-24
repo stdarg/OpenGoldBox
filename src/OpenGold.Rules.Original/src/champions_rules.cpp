@@ -119,7 +119,7 @@ AbilityLimits champions_ability_limits(Race race, Gender gender)
 {
     // Strength minima, male/female maxima, exceptional maxima, then the five
     // other abilities' minima and maxima in the original record's order.
-    constexpr std::array<std::array<int, 15>, 7> limits{
+    static constexpr std::array<std::array<int, 15>, 7> limits{
         {{3, 18, 16, 75, 0, 10, 18, 6, 18, 7, 19, 6, 18, 12, 18},
          {7, 18, 16, 75, 0, 8, 18, 3, 18, 7, 19, 7, 18, 8, 18},
          {3, 18, 17, 90, 0, 4, 18, 3, 18, 6, 18, 6, 18, 3, 18},
@@ -196,13 +196,13 @@ std::span<const Profession> champions_professions(Race race)
 
 std::array<int, 4> champions_age_categories(Race race)
 {
-    constexpr std::array<std::array<int, 4>, 7> ages{{{250, 650, 1000, 1500},
-                                                      {250, 650, 1000, 1500},
-                                                      {40, 100, 175, 250},
-                                                      {60, 175, 275, 400},
-                                                      {50, 150, 250, 350},
-                                                      {33, 68, 101, 144},
-                                                      {20, 40, 60, 90}}};
+    static constexpr std::array<std::array<int, 4>, 7> ages{{{250, 650, 1000, 1500},
+                                                             {250, 650, 1000, 1500},
+                                                             {40, 100, 175, 250},
+                                                             {60, 175, 275, 400},
+                                                             {50, 150, 250, 350},
+                                                             {33, 68, 101, 144},
+                                                             {20, 40, 60, 90}}};
     return ages[race_index(race)];
 }
 
@@ -210,7 +210,7 @@ int champions_starting_age(Race race, Profession profession, RandomState &random
 {
     // Rows give cleric, fighter, ranger, mage, thief and knight age dice.
     using Age = std::array<int, 3>;
-    constexpr std::array<std::array<Age, 6>, 7> ages{
+    static constexpr std::array<std::array<Age, 6>, 7> ages{
         {{{{250, 10, 10}, {150, 5, 6}, {150, 5, 6}, {250, 10, 10}, {150, 5, 4}, {130, 5, 6}}},
          {{{250, 10, 10}, {150, 5, 6}, {150, 5, 6}, {250, 10, 10}, {150, 5, 4}, {130, 5, 6}}},
          {{{40, 3, 6}, {22, 3, 4}, {22, 3, 4}, {40, 3, 6}, {22, 3, 8}, {22, 3, 4}}},
@@ -241,19 +241,19 @@ int champions_starting_age(Race race, Profession profession, RandomState &random
 
 std::array<int, 8> champions_thief_adjustments(Race race)
 {
-    constexpr std::array<std::array<int, 8>, 7> adjustments{{{0, 10, 15, 0, 0, 0, -10, -5},
-                                                             {5, -5, 0, 5, 10, 5, 0, 0},
-                                                             {0, 5, 10, 5, 5, 10, -15, 0},
-                                                             {10, 0, 0, 0, 5, 0, 0, 0},
-                                                             {5, 5, 5, 10, 15, 5, -15, -5},
-                                                             {-5, 5, 5, 0, 0, 5, 5, -10},
-                                                             {}}};
+    static constexpr std::array<std::array<int, 8>, 7> adjustments{{{0, 10, 15, 0, 0, 0, -10, -5},
+                                                                    {5, -5, 0, 5, 10, 5, 0, 0},
+                                                                    {0, 5, 10, 5, 5, 10, -15, 0},
+                                                                    {10, 0, 0, 0, 5, 0, 0, 0},
+                                                                    {5, 5, 5, 10, 15, 5, -15, -5},
+                                                                    {-5, 5, 5, 0, 0, 5, 5, -10},
+                                                                    {}}};
     return adjustments[race_index(race)];
 }
 
 int champions_thac0(const ClassLevels &levels)
 {
-    constexpr std::array<std::array<int, 13>, 8> stored{
+    static constexpr std::array<std::array<int, 13>, 8> stored{
         {{40, 40, 40, 40, 42, 42, 42, 44, 44, 44, 46, 46, 46},
          {40, 40, 40, 40, 42, 42, 42, 44, 44, 44, 46, 46, 46},
          {39, 40, 40, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51},
@@ -343,7 +343,7 @@ std::array<int, 9> champions_spell_slots(C slot, int level, int wisdom, KrynnOrd
     }
     if (slot == C::cleric)
     {
-        constexpr std::array<int, 4> thresholds{12, 14, 16, 17};
+        static constexpr std::array<int, 4> thresholds{12, 14, 16, 17};
         for (std::size_t at = 0; at < thresholds.size(); ++at)
         {
             if (slots[at])
@@ -397,7 +397,7 @@ void recalculate_champions_numbers(rules::CharacterSheet::Original &numbers,
                       return !s || s->caster_class != SpellClass::magic_user;
                   });
     // Champions caps rangers at seven, before their first druid/mage slots.
-    constexpr std::array<std::array<int, 7>, 4> cleric_known{
+    static constexpr std::array<std::array<int, 7>, 4> cleric_known{
         {{1, 3, 5, 6, 8}, {22, 23, 24, 25, 26, 27, 28}, {37, 39, 41, 42, 43}, {67, 70, 58, 69}}};
     for (std::size_t level = 0; level < cleric_known.size(); ++level)
     {
@@ -422,7 +422,7 @@ void recalculate_champions_numbers(rules::CharacterSheet::Original &numbers,
     if (level_in(levels, C::cleric) > 0 && numbers.deity >= 1 && numbers.deity <= 7)
     {
         numbers.deity_spell_slots[0] = numbers.deity == 4 ? 3 : numbers.deity == 6 ? 0 : 1;
-        constexpr std::array<std::array<int, 3>, 7> gifts{
+        static constexpr std::array<std::array<int, 3>, 7> gifts{
             {{501}, {502}, {503}, {504, 505, 506}, {507}, {}, {506}}};
         for (const auto gift : gifts[static_cast<std::size_t>(numbers.deity - 1)])
         {
@@ -444,14 +444,14 @@ void recalculate_champions_numbers(rules::CharacterSheet::Original &numbers,
 
 std::vector<int> champions_learning_spells(int robe, int highest_spell_level)
 {
-    constexpr std::array<std::array<int, 8>, 4> white{{{10, 11, 14, 15, 16, 18, 19, 21},
-                                                       {29, 34, 33},
-                                                       {46, 47, 49, 51, 52, 54},
-                                                       {85, 87, 81, 82, 86, 88, 89}}};
-    constexpr std::array<std::array<int, 8>, 4> red{{{9, 11, 12, 15, 18, 19, 20},
-                                                     {29, 30, 31, 32, 34, 35},
-                                                     {45, 47, 48, 50, 51, 55},
-                                                     {85, 87, 83, 84}}};
+    static constexpr std::array<std::array<int, 8>, 4> white{{{10, 11, 14, 15, 16, 18, 19, 21},
+                                                              {29, 34, 33},
+                                                              {46, 47, 49, 51, 52, 54},
+                                                              {85, 87, 81, 82, 86, 88, 89}}};
+    static constexpr std::array<std::array<int, 8>, 4> red{{{9, 11, 12, 15, 18, 19, 20},
+                                                            {29, 30, 31, 32, 34, 35},
+                                                            {45, 47, 48, 50, 51, 55},
+                                                            {85, 87, 83, 84}}};
     const auto &table = robe == 1 ? white : red;
     std::vector<int> spells;
     for (int level = 0; level < std::clamp(highest_spell_level, 0, 4); ++level)

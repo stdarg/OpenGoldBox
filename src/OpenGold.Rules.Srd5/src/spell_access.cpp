@@ -1442,8 +1442,8 @@ SpellAccess class_spell_access(std::span<const FeatureGrant> grants, CharacterCl
     require(level >= 1 && level <= level_cap(klass));
     require(holds(grants, "feature:spellcasting", "class:wizard"));
     // SRD 5.2.1 p. 77: cantrips and prepared spells by Wizard level.
-    constexpr std::array<unsigned, 15> prepared_by_level{4,  5,  6,  7,  9,  10, 11, 12,
-                                                         14, 15, 16, 16, 17, 18, 19};
+    static constexpr std::array<unsigned, 15> prepared_by_level{4,  5,  6,  7,  9,  10, 11, 12,
+                                                                14, 15, 16, 16, 17, 18, 19};
     result.cantrip_choices = level >= 10 ? 5 : level >= 4 ? 4 : 3;
     result.spellbook_choices = 6 + 2 * (level - 1);
     result.prepared_choices = prepared_by_level[level - 1];
@@ -2464,7 +2464,7 @@ std::vector<InitiateSpells> lineage_spells(std::span<const FeatureGrant> grants,
         std::string_view choice, cantrip, third, fifth;
     };
 
-    constexpr std::array legacies{
+    static constexpr std::array legacies{
         Legacy{"legacy:abyssal", "poison_spray", "ray_of_sickness", "hold_person"},
         Legacy{"legacy:chthonic", "chill_touch", "false_life", "ray_of_enfeeblement"},
         Legacy{"legacy:infernal", "fire_bolt", "hellish_rebuke", "darkness"}};

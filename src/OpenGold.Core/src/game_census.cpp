@@ -1018,7 +1018,7 @@ bool GameCensus::complete() const noexcept
 std::optional<GoldBoxGame> identify_game(const std::filesystem::path &folder)
 {
     // Each file below exists in only one of the games' folders.
-    constexpr std::array<std::pair<std::string_view, GoldBoxGame>, 9> markers{{
+    static constexpr std::array<std::pair<std::string_view, GoldBoxGame>, 9> markers{{
         {"CKIT.EXE", GoldBoxGame::unlimited_adventures},
         {"DKK.CFG", GoldBoxGame::death_knights_of_krynn},
         // Champions also has TILES.DAX and SOUND.DAX; prefer its own marker.

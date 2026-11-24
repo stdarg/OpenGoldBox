@@ -859,7 +859,7 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
         throw std::runtime_error("Missing original Kobold combat icon");
     }
     const auto creatures = CreatureCatalog::load(game_directory);
-    constexpr std::array<Cell, 6> removed{{{6, 4}, {9, 4}, {9, 7}, {7, 8}, {4, 8}, {4, 5}}};
+    static constexpr std::array<Cell, 6> removed{{{6, 4}, {9, 4}, {9, 7}, {7, 8}, {4, 8}, {4, 5}}};
     unsigned number = 0;
     for (int y = 4; y <= 8; ++y)
     {

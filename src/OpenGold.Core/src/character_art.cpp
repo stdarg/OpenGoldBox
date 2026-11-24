@@ -296,22 +296,22 @@ void validate_character_appearance(const CharacterAppearance &a)
 
 std::array<std::uint8_t, 3> character_color(unsigned index)
 {
-    constexpr std::array<std::array<std::uint8_t, 3>, 16> palette{{{0, 0, 0},
-                                                                   {0, 0, 170},
-                                                                   {0, 170, 0},
-                                                                   {0, 170, 170},
-                                                                   {170, 0, 0},
-                                                                   {170, 0, 170},
-                                                                   {170, 85, 0},
-                                                                   {170, 170, 170},
-                                                                   {85, 85, 85},
-                                                                   {85, 85, 255},
-                                                                   {85, 255, 85},
-                                                                   {85, 255, 255},
-                                                                   {255, 85, 85},
-                                                                   {255, 85, 255},
-                                                                   {255, 255, 85},
-                                                                   {255, 255, 255}}};
+    static constexpr std::array<std::array<std::uint8_t, 3>, 16> palette{{{0, 0, 0},
+                                                                          {0, 0, 170},
+                                                                          {0, 170, 0},
+                                                                          {0, 170, 170},
+                                                                          {170, 0, 0},
+                                                                          {170, 0, 170},
+                                                                          {170, 85, 0},
+                                                                          {170, 170, 170},
+                                                                          {85, 85, 85},
+                                                                          {85, 85, 255},
+                                                                          {85, 255, 85},
+                                                                          {85, 255, 255},
+                                                                          {255, 85, 85},
+                                                                          {255, 85, 255},
+                                                                          {255, 255, 85},
+                                                                          {255, 255, 255}}};
     if (index >= palette.size())
     {
         throw std::runtime_error("Invalid character color");

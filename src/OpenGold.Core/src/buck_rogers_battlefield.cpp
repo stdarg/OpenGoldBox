@@ -307,7 +307,7 @@ Cells dungeon_arena(const GeoMap &map, unsigned x, unsigned y, unsigned kind, un
                     {
                         if (roll(10) < 5)
                         {
-                            constexpr std::array<unsigned, 3> pieces{46, 49, 50};
+                            static constexpr std::array<unsigned, 3> pieces{46, 49, 50};
                             const auto piece = roll(3);
                             if (roll(10) < 8)
                             {
@@ -320,7 +320,7 @@ Cells dungeon_arena(const GeoMap &map, unsigned x, unsigned y, unsigned kind, un
                         }
                         else
                         {
-                            constexpr std::array<unsigned, 6> pieces{45, 46, 48, 49, 53, 54};
+                            static constexpr std::array<unsigned, 6> pieces{45, 46, 48, 49, 53, 54};
                             const auto piece = roll(6);
                             if (roll(10) < 8)
                             {
@@ -348,8 +348,8 @@ Cells dungeon_arena(const GeoMap &map, unsigned x, unsigned y, unsigned kind, un
                     {
                         if (roll(10) < 8)
                         {
-                            constexpr std::array<unsigned, 6> varied{59, 60, 62, 63, 66, 68};
-                            constexpr std::array<unsigned, 3> plain{62, 66, 67};
+                            static constexpr std::array<unsigned, 6> varied{59, 60, 62, 63, 66, 68};
+                            static constexpr std::array<unsigned, 3> plain{62, 66, 67};
                             plot_on_floor(i, 2, variant ? varied[roll(6)] : plain[roll(3)]);
                         }
                     }
@@ -366,11 +366,11 @@ Cells dungeon_arena(const GeoMap &map, unsigned x, unsigned y, unsigned kind, un
                         {
                             // The original lays these on the north row, as
                             // its other branch for this wall does not.
-                            constexpr std::array<unsigned, 3> plain{62, 66, 67};
+                            static constexpr std::array<unsigned, 3> plain{62, 66, 67};
                             plot_on_floor(j + 2, 2, plain[roll(3)]);
                             continue;
                         }
-                        constexpr std::array<unsigned, 5> pieces{61, 62, 65, 66, 67};
+                        static constexpr std::array<unsigned, 5> pieces{61, 62, 65, 66, 67};
                         const auto piece = roll(6);
                         if (piece < pieces.size())
                         {

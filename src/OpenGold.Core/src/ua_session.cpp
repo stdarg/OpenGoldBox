@@ -278,7 +278,7 @@ DesignStrength design_strength(Difficulty difficulty, DesignDifficulty plays)
 {
     // The kit's level for each difficulty: Easy its lowest, Normal its
     // default 3 (newgame.c), and each level above a step up, to the kit's 5.
-    constexpr std::array<int, 5> kit_levels{1, 3, 4, 5, 5};
+    static constexpr std::array<int, 5> kit_levels{1, 3, 4, 5, 5};
     const int level = kit_levels[static_cast<std::size_t>(difficulty)];
     DesignStrength strength;
     if (plays != DesignDifficulty::table)
@@ -1121,7 +1121,7 @@ void UaSession::offer_treasure()
     {
         return;
     }
-    constexpr std::array<Coin, 3> money{Coin::platinum, Coin::gems, Coin::jewelry};
+    static constexpr std::array<Coin, 3> money{Coin::platinum, Coin::gems, Coin::jewelry};
     for (std::size_t n = 0; n < money.size(); ++n)
     {
         pile_money_[n] += treasure_wealth_[static_cast<std::size_t>(money[n])];

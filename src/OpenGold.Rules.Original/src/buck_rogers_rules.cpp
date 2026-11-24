@@ -610,29 +610,30 @@ template <typename T> [[nodiscard]] int by_score(const std::array<T, 22> &table,
 
 int buck_rogers_armor_adjustment(int dexterity)
 {
-    constexpr std::array<int, 22> table{-5, -5, -4, -3, -2, -1, 0, 0, 0, 0, 0,
-                                        0,  0,  0,  1,  2,  3,  4, 4, 4, 5, 5};
+    static constexpr std::array<int, 22> table{-5, -5, -4, -3, -2, -1, 0, 0, 0, 0, 0,
+                                               0,  0,  0,  1,  2,  3,  4, 4, 4, 5, 5};
     return by_score(table, dexterity);
 }
 
 int buck_rogers_strength_to_hit(int strength)
 {
-    constexpr std::array<int, 22> table{-5, -4, -3, -2, -2, -1, -1, 0, 0, 0, 0,
-                                        0,  0,  0,  0,  0,  1,  2,  3, 3, 4, 4};
+    static constexpr std::array<int, 22> table{-5, -4, -3, -2, -2, -1, -1, 0, 0, 0, 0,
+                                               0,  0,  0,  0,  0,  1,  2,  3, 3, 4, 4};
     return by_score(table, strength);
 }
 
 int buck_rogers_strength_damage(int strength)
 {
-    constexpr std::array<int, 22> table{-4, -3, -2, -1, -1, 0, 0, 0, 0, 0, 0,
-                                        0,  0,  0,  0,  1,  1, 2, 4, 6, 8, 10};
+    static constexpr std::array<int, 22> table{-4, -3, -2, -1, -1, 0, 0, 0, 0, 0, 0,
+                                               0,  0,  0,  0,  1,  1, 2, 4, 6, 8, 10};
     return by_score(table, strength);
 }
 
 int buck_rogers_weight_allowance(int strength)
 {
-    constexpr std::array<int, 22> table{2,   4,   10,  20,  30,  40,  50,  60,  70,  80,  90,
-                                        100, 110, 120, 130, 140, 170, 220, 400, 600, 900, 1200};
+    static constexpr std::array<int, 22> table{2,   4,   10,  20,  30,  40,  50,  60,
+                                               70,  80,  90,  100, 110, 120, 130, 140,
+                                               170, 220, 400, 600, 900, 1200};
     return by_score(table, strength);
 }
 
@@ -736,7 +737,7 @@ bool meets_skill_prerequisite(const SkillLevels &levels, Profession career, Skil
 int starting_skill_level(const SkillLevels &levels, Profession career, Skill skill)
 {
     constexpr int favored_start = 10;
-    constexpr std::array<Skill, 10> rogue_favored{
+    static constexpr std::array<Skill, 10> rogue_favored{
         S::bypass_security, S::open_lock, S::move_silently,   S::pick_pockets,
         S::hide_in_shadows, S::climb,     S::animal_training, S::read_lips,
         S::notice,          S::fast_talk};
@@ -1144,9 +1145,9 @@ void reroll_buck_rogers_character(Creature &character, GoldBoxGame game, RandomS
 
 std::uint8_t default_icon(Race race, Gender gender, Profession career, RandomState &random)
 {
-    constexpr std::array<std::array<std::uint8_t, 5>, 2> career_icons{
+    static constexpr std::array<std::array<std::uint8_t, 5>, 2> career_icons{
         {{32, 0, 3, 7, 21}, {33, 1, 6, 15, 25}}};
-    constexpr std::array<std::uint8_t, 4> desert_runner_icons{16, 23, 24, 31};
+    static constexpr std::array<std::uint8_t, 4> desert_runner_icons{16, 23, 24, 31};
     if (race == R::tinker)
     {
         return 17;
@@ -1171,7 +1172,7 @@ std::vector<Item> buck_rogers_starting_items(std::span<const Item> templates)
         std::uint8_t quantity;
     };
 
-    constexpr std::array<FreeItem, 2> free_items{{{7, 100}, {20, 0}}};
+    static constexpr std::array<FreeItem, 2> free_items{{{7, 100}, {20, 0}}};
     std::vector<Item> items;
     for (const auto &free : free_items)
     {

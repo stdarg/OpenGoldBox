@@ -359,12 +359,12 @@ void effect_contracts()
 {
     // Exhaust the byte namespace: reserved codes must remain explicitly
     // unknown, and optional magnitudes must never acquire invented defaults.
-    constexpr std::array<unsigned, 9> reserved{0x39, 0x3c, 0x3f, 0x4a, 0x4b,
-                                               0x4e, 0x5c, 0x66, 0x69};
+    static constexpr std::array<unsigned, 9> reserved{0x39, 0x3c, 0x3f, 0x4a, 0x4b,
+                                                      0x4e, 0x5c, 0x66, 0x69};
     const std::map<unsigned, int> saves{{0x40, 0}, {0x41, 4},  {0x42, 2}, {0x43, 0},
                                         {0x44, 0}, {0x45, -2}, {0x46, -2}};
     const std::map<unsigned, int> resistances{{0x6a, 100}, {0x6b, 90}, {0x7c, 30}};
-    constexpr std::array<unsigned, 6> halves{0x5d, 0x5e, 0x72, 0x73, 0x74, 0x76};
+    static constexpr std::array<unsigned, 6> halves{0x5d, 0x5e, 0x72, 0x73, 0x74, 0x76};
     for (unsigned code = 0; code < 256; ++code)
     {
         const auto effect = describe_effect(static_cast<std::uint8_t>(code));

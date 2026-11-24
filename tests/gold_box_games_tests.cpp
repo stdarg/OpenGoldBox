@@ -10398,7 +10398,7 @@ void walk_earned_campaign(opengold::por::RolfTourSession &session, unsigned tx, 
                           const std::set<unsigned> &blocked_events = {})
 {
     using C = opengold::por::ExplorationCommand;
-    constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
+    static constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
     const auto area = session.snapshot().area_id;
     const auto script = session.snapshot().script_id;
     for (unsigned moves = 0; moves < 400; ++moves)
@@ -16330,14 +16330,14 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 // A magic-user learns the spell a player would take.
                 if (s.dialogue.starts_with("Choose a spell for"))
                 {
-                    constexpr std::array<std::string_view, 12> learned{
+                    static constexpr std::array<std::string_view, 12> learned{
                         "Hold Monster",  "Cone of Cold", "Ice Storm",      "Fireball",
                         "Haste",         "Slow",         "Lightning Bolt", "Stinking Cloud",
                         "Magic Missile", "Sleep",        "Enlarge",        "Shield"};
                     // Pools of Darkness's magic-user takes the strongest of
                     // its new levels first: only the eighth and ninth touch
                     // its rakshasas.
-                    constexpr std::array<std::string_view, 7> darkness_first{
+                    static constexpr std::array<std::string_view, 7> darkness_first{
                         "Meteor Swarm",
                         "Mind Blank",
                         "Mass Charm",
@@ -16349,7 +16349,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     // reaches them: the Globe against the storm giants'
                     // bolts (the cluebook's advice), Disintegrate against
                     // the Black Circle's lords.
-                    constexpr std::array<std::string_view, 4> secret_first{
+                    static constexpr std::array<std::string_view, 4> secret_first{
                         "Mass Invisibility", "Globe of Invulnerability", "Disintegrate",
                         "Stone to Flesh"};
                     std::vector<std::string_view> wanted(learned.begin(), learned.end());
@@ -16594,22 +16594,22 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 std::string typed = "0";
                 // Secret's dungeon spirit's riddles and the secret word, as
                 // its cluebook answers them.
-                constexpr std::array<std::pair<std::string_view, std::string_view>, 12> riddles{
-                    {{"YOU FEEL IT, YOU NEVER SAW IT", "YOUR HEART"},
-                     {"YOU MUST KEEP IT AFTER GIVING IT", "YOUR WORD"},
-                     {"LIGHT AS A FEATHER", "YOUR BREATH"},
-                     {"HAS A MOUTH BUT DOES NOT SPEAK", "RIVER"},
-                     {"RUNS SMOOTHER THAN ANY RHYME", "WATER"},
-                     {"YOU BREAK IT IF YOU EVEN NAME IT", "SILENCE"},
-                     {"PASSES BEFORE THE SUN", "WIND"},
-                     {"YOU FEED IT, IT LIVES", "FIRE"},
-                     {"WHAT IS THE SECRET WORD?", "NACACIA"},
-                     // The castle's: the iron golems' password (where a
-                     // magic mouth names a false one too), and the
-                     // Dreadlord's door, which asks for his brother.
-                     {"IRON GOLEMS APPEARS", "STEELEYE"},
-                     {"THE PASSWORD HERE IS FOOL", "STEELEYE"},
-                     {"FRATERNAL BONDS", "OSWULF"}}};
+                static constexpr std::array<std::pair<std::string_view, std::string_view>, 12>
+                    riddles{{{"YOU FEEL IT, YOU NEVER SAW IT", "YOUR HEART"},
+                             {"YOU MUST KEEP IT AFTER GIVING IT", "YOUR WORD"},
+                             {"LIGHT AS A FEATHER", "YOUR BREATH"},
+                             {"HAS A MOUTH BUT DOES NOT SPEAK", "RIVER"},
+                             {"RUNS SMOOTHER THAN ANY RHYME", "WATER"},
+                             {"YOU BREAK IT IF YOU EVEN NAME IT", "SILENCE"},
+                             {"PASSES BEFORE THE SUN", "WIND"},
+                             {"YOU FEED IT, IT LIVES", "FIRE"},
+                             {"WHAT IS THE SECRET WORD?", "NACACIA"},
+                             // The castle's: the iron golems' password (where a
+                             // magic mouth names a false one too), and the
+                             // Dreadlord's door, which asks for his brother.
+                             {"IRON GOLEMS APPEARS", "STEELEYE"},
+                             {"THE PASSWORD HERE IS FOOL", "STEELEYE"},
+                             {"FRATERNAL BONDS", "OSWULF"}}};
                 for (const auto &[riddle, answer] : riddles)
                 {
                     if ((said + s.dialogue).find(riddle) != std::string::npos)

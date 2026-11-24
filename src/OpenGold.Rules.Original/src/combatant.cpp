@@ -277,7 +277,7 @@ std::uint8_t combat_race(const por::CharacterRecord &record)
     {
         return record.race;
     }
-    constexpr std::array<std::uint8_t, 8> canonical{2, 2, 4, 1, 1, 5, 7, 0};
+    static constexpr std::array<std::uint8_t, 8> canonical{2, 2, 4, 1, 1, 5, 7, 0};
     return record.race < canonical.size() ? canonical[record.race] : 0;
 }
 
@@ -632,7 +632,7 @@ std::optional<Effect> granted_effect(const CarriedItem &carried, GoldBoxGame gam
     }
     if (game == GoldBoxGame::pool_of_radiance)
     {
-        constexpr std::array<int, 8> granting{128, 129, 130, 133, 134, 136, 138, 139};
+        static constexpr std::array<int, 8> granting{128, 129, 130, 133, 134, 136, 138, 139};
         constexpr int strength = 12;
         if (std::ranges::find(granting, special) == granting.end())
         {
@@ -727,7 +727,7 @@ namespace
 // Curse's 145). From 57 its effects are new or moved.
 int secret_canonical_effect(int code) noexcept
 {
-    constexpr std::array<std::pair<int, int>, 27> moved{{
+    static constexpr std::array<std::pair<int, int>, 27> moved{{
         {6, 335},   {7, 18},    {18, 124},  {32, 345},  {59, 127},  {61, 61},   {63, 263},
         {68, 268},  {69, 269},  {71, 207},  {73, 273},  {77, 277},  {89, 89},   {91, 291},
         {93, 112},  {95, 107},  {96, 108},  {97, 97},   {98, 310},  {99, 111},  {103, 119},
@@ -767,7 +767,7 @@ int darkness_canonical_effect(int code) noexcept
 {
     constexpr int own = secret_effect_offset, past = darkness_effect_offset,
                   kit = kit_effect_offset;
-    constexpr std::array<std::pair<int, int>, 24> moved{{
+    static constexpr std::array<std::pair<int, int>, 24> moved{{
         {40, 40 + kit},   {66, 115},         {67, 67 + past},  {75, 75 + kit},   {80, 80 + kit},
         {81, 81 + kit},   {82, 82 + past},   {83, 83 + past},  {84, 104 + own},  {85, 83 + own},
         {125, 125 + kit}, {126, 126 + kit},  {90, 690},        {91, 91 + past},  {96, 96 + past},
@@ -790,7 +790,7 @@ int kit_canonical_effect(int code) noexcept
     // (117, which Pools of Darkness's share) and its rot (170), which takes
     // Charisma month by month, differ from every earlier game's, and are its
     // own.
-    constexpr std::array<std::pair<int, int>, 51> matched{{
+    static constexpr std::array<std::pair<int, int>, 51> matched{{
         {6, 335},
         {8, 8},
         {18, 124},
@@ -876,7 +876,7 @@ int gateway_canonical_effect(int code) noexcept
 // its 153), each by Treasures' own name words.
 int treasures_canonical_effect(int code) noexcept
 {
-    constexpr std::array<std::pair<int, int>, 5> moved{{
+    static constexpr std::array<std::pair<int, int>, 5> moved{{
         {156, 336},
         {132, 154 + gateway_effect_offset},
         {135, 152 + gateway_effect_offset},
@@ -902,7 +902,7 @@ int canonical_effect(int code, GoldBoxGame game) noexcept
     if (game == GoldBoxGame::death_knights_of_krynn)
     {
         // Matched by the native handler's behavior, not by the reused ID.
-        constexpr std::array<std::pair<int, int>, 89> shared{
+        static constexpr std::array<std::pair<int, int>, 89> shared{
             {{1, 1},     {3, 203},    {5, 5},      {6, 336},    {8, 8},     {9, 474},   {10, 10},
              {11, 11},   {12, 12},    {13, 207},   {14, 14},    {15, 15},   {16, 16},   {17, 17},
              {18, 124},  {19, 19},    {20, 20},    {21, 21},    {22, 22},   {23, 23},   {24, 24},
@@ -921,7 +921,7 @@ int canonical_effect(int code, GoldBoxGame game) noexcept
     }
     if (game == GoldBoxGame::champions_of_krynn)
     {
-        constexpr std::array<std::pair<int, int>, 27> shared{
+        static constexpr std::array<std::pair<int, int>, 27> shared{
             {{18, 124},  {61, 61},   {63, 263},  {64, 64},   {65, 65},   {73, 273}, {77, 277},
              {83, 483},  {84, 690},  {85, 561},  {86, 486},  {89, 89},   {90, 566}, {92, 492},
              {93, 94},   {94, 494},  {95, 107},  {96, 108},  {97, 109},  {98, 110}, {99, 111},
@@ -951,7 +951,7 @@ int canonical_effect(int code, GoldBoxGame game) noexcept
         {
             return 113;
         }
-        constexpr std::array<int, 6> own_low{4, 6, 7, 13, 32, 48};
+        static constexpr std::array<int, 6> own_low{4, 6, 7, 13, 32, 48};
         if (code < 57 && std::ranges::find(own_low, code) == own_low.end())
         {
             return canonical_effect(code, GoldBoxGame::curse_of_the_azure_bonds);
@@ -983,12 +983,12 @@ int canonical_effect(int code, GoldBoxGame game) noexcept
         return code;
     }
     // Curse's codes that do what Pool of Radiance's of the same number do.
-    constexpr std::array<int, 74> same{
+    static constexpr std::array<int, 74> same{
         1,  2,  5,  6,  8,  9,  10, 11,  12,  13,  14,  15,  16,  17,  18,  19,  20, 21, 22,
         23, 24, 25, 26, 28, 29, 30, 31,  32,  33,  34,  36,  38,  39,  40,  41,  42, 43, 44,
         45, 46, 47, 48, 49, 51, 52, 53,  55,  56,  58,  59,  61,  64,  65,  66,  67, 70, 71,
         72, 79, 80, 83, 88, 89, 98, 100, 101, 102, 104, 107, 108, 109, 112, 113, 119};
-    constexpr std::array<int, 7> also_same{121, 124, 125, 127, 114, 115, 116};
+    static constexpr std::array<int, 7> also_same{121, 124, 125, 127, 114, 115, 116};
     if (std::ranges::find(same, code) != same.end() ||
         std::ranges::find(also_same, code) != also_same.end())
     {
@@ -1255,7 +1255,7 @@ bool elf_weapon(std::uint8_t type, GoldBoxGame game) noexcept
 
 bool lasting_condition(const Effect &effect, GoldBoxGame game) noexcept
 {
-    constexpr std::array<int, 38> lasting{
+    static constexpr std::array<int, 38> lasting{
         33, 34, 43, 44, 55, 15, 22, 36, 268, 340, 341, 12, 38, strength_wasted, 23,
         // Treasures' romance's love (131), which its pair keeps.
         1331,
@@ -1348,8 +1348,8 @@ std::string rested_state(std::span<const Effect> conditions)
 
 std::uint8_t usability_of(const std::array<int, 8> &class_levels, GoldBoxGame game)
 {
-    constexpr std::array<std::uint8_t, class_slot_count> bits_of{1 << 1, 1 << 4, 1 << 3, 1 << 6,
-                                                                 1 << 7, 1 << 0, 1 << 2, 1 << 5};
+    static constexpr std::array<std::uint8_t, class_slot_count> bits_of{
+        1 << 1, 1 << 4, 1 << 3, 1 << 6, 1 << 7, 1 << 0, 1 << 2, 1 << 5};
     const bool secret = game == GoldBoxGame::secret_of_the_silver_blades || vga_engine(game);
     std::uint8_t bits = 0;
     for (std::size_t at = 0; at < class_slot_count; ++at)

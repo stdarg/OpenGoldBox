@@ -37,10 +37,10 @@ constexpr unsigned cell_pixels = 8;
 [[nodiscard]] original::RocketHeading heading_of(ExplorationCommand command)
 {
     using original::RocketHeading;
-    constexpr std::array clockwise{RocketHeading::north, RocketHeading::northeast,
-                                   RocketHeading::east,  RocketHeading::southeast,
-                                   RocketHeading::south, RocketHeading::southwest,
-                                   RocketHeading::west,  RocketHeading::northwest};
+    static constexpr std::array clockwise{RocketHeading::north, RocketHeading::northeast,
+                                          RocketHeading::east,  RocketHeading::southeast,
+                                          RocketHeading::south, RocketHeading::southwest,
+                                          RocketHeading::west,  RocketHeading::northwest};
     return clockwise.at(static_cast<std::size_t>(command) -
                         static_cast<std::size_t>(ExplorationCommand::north));
 }

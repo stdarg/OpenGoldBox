@@ -725,7 +725,7 @@ constexpr std::array<std::array<int, 5>, 11> thief_dexterity_adjustments{{{-15, 
 
 std::string_view class_slot_id(ClassSlot slot) noexcept
 {
-    constexpr std::array<std::string_view, class_slot_count> ids{
+    static constexpr std::array<std::string_view, class_slot_count> ids{
         "cleric", "druid", "fighter", "paladin", "ranger", "magic_user", "thief", "monk"};
     return ids[index(slot)];
 }
@@ -2289,7 +2289,7 @@ std::pair<int, int> enlarged_strength(int caster_level, GoldBoxGame game) noexce
 {
     // Pool of Radiance leaves a caster above level 6, and Curse one above 11,
     // whatever Strength the last Enlarge left: they give the most below them.
-    constexpr std::array<int, 6> exceptional{0, 1, 51, 76, 91, 100};
+    static constexpr std::array<int, 6> exceptional{0, 1, 51, 76, 91, 100};
     const int level = std::max(caster_level, 1);
     if (level <= 6 || game == GoldBoxGame::pool_of_radiance)
     {
@@ -2470,7 +2470,7 @@ bool scales_monster_hit_points(GoldBoxGame game) noexcept
 
 unsigned game_hit_points_percent(DifficultyLevel level) noexcept
 {
-    constexpr std::array<unsigned, 5> quarters{3, 4, 5, 6, 8};
+    static constexpr std::array<unsigned, 5> quarters{3, 4, 5, 6, 8};
     return 25 * quarters[static_cast<std::size_t>(level)];
 }
 

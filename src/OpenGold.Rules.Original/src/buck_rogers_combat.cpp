@@ -489,13 +489,13 @@ bool ground_attack_hits(int natural, int attack_bonus, int modifier, int target)
 
 int party_to_hit(BuckRogersDifficulty level) noexcept
 {
-    constexpr std::array<int, 6> to_hit{2, 1, 0, -1, -2, -3};
+    static constexpr std::array<int, 6> to_hit{2, 1, 0, -1, -2, -3};
     return to_hit[static_cast<std::size_t>(level)];
 }
 
 unsigned monster_hit_points_percent(BuckRogersDifficulty level) noexcept
 {
-    constexpr std::array<unsigned, 6> percent{50, 75, 100, 125, 150, 200};
+    static constexpr std::array<unsigned, 6> percent{50, 75, 100, 125, 150, 200};
     return percent[static_cast<std::size_t>(level)];
 }
 
@@ -786,8 +786,8 @@ std::array<rules::Cell, 9> block_around(rules::Cell center) noexcept
 {
     // Center, then east, south-east, south, south-west, west, north-west,
     // north and north-east.
-    constexpr std::array<int, 9> dx{0, 1, 1, 0, -1, -1, -1, 0, 1};
-    constexpr std::array<int, 9> dy{0, 0, 1, 1, 1, 0, -1, -1, -1};
+    static constexpr std::array<int, 9> dx{0, 1, 1, 0, -1, -1, -1, 0, 1};
+    static constexpr std::array<int, 9> dy{0, 0, 1, 1, 1, 0, -1, -1, -1};
     std::array<rules::Cell, 9> block{};
     for (std::size_t at = 0; at < block.size(); ++at)
     {

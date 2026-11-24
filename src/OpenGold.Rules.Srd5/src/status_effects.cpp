@@ -71,18 +71,18 @@ std::array<Ability, 2> class_save_proficiencies(CharacterClass character_class)
 {
     using enum Ability;
     // Indexed by CharacterClass.
-    constexpr std::array<std::array<Ability, 2>, 12> saves{{{strength, constitution},
-                                                            {dexterity, charisma},
-                                                            {wisdom, charisma},
-                                                            {intelligence, wisdom},
-                                                            {strength, constitution},
-                                                            {strength, dexterity},
-                                                            {wisdom, charisma},
-                                                            {strength, dexterity},
-                                                            {dexterity, intelligence},
-                                                            {constitution, charisma},
-                                                            {wisdom, charisma},
-                                                            {intelligence, wisdom}}};
+    static constexpr std::array<std::array<Ability, 2>, 12> saves{{{strength, constitution},
+                                                                   {dexterity, charisma},
+                                                                   {wisdom, charisma},
+                                                                   {intelligence, wisdom},
+                                                                   {strength, constitution},
+                                                                   {strength, dexterity},
+                                                                   {wisdom, charisma},
+                                                                   {strength, dexterity},
+                                                                   {dexterity, intelligence},
+                                                                   {constitution, charisma},
+                                                                   {wisdom, charisma},
+                                                                   {intelligence, wisdom}}};
     return saves.at(static_cast<std::size_t>(character_class));
 }
 

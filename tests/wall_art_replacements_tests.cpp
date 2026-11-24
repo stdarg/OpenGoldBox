@@ -60,16 +60,16 @@ Image solid(unsigned width, unsigned height, std::uint8_t red)
 // One opaque appearance with every piece at its original size.
 WallArtSet one_appearance(std::uint8_t red)
 {
-    constexpr std::array<std::array<unsigned, 2>, 10> sizes{{{8, 16},
-                                                             {8, 32},
-                                                             {8, 32},
-                                                             {24, 32},
-                                                             {16, 64},
-                                                             {16, 64},
-                                                             {56, 64},
-                                                             {16, 88},
-                                                             {16, 88},
-                                                             {8, 16}}};
+    static constexpr std::array<std::array<unsigned, 2>, 10> sizes{{{8, 16},
+                                                                    {8, 32},
+                                                                    {8, 32},
+                                                                    {24, 32},
+                                                                    {16, 64},
+                                                                    {16, 64},
+                                                                    {56, 64},
+                                                                    {16, 88},
+                                                                    {16, 88},
+                                                                    {8, 16}}};
     WallArtSet art;
     art.appearances.emplace_back();
     for (unsigned view = 0; view < sizes.size(); ++view)

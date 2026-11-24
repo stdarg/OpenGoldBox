@@ -1059,8 +1059,8 @@ void deity_gifts_have_their_own_shared_preparations()
     content.game = game;
     const auto module = rules_module(std::move(content));
     RandomState random{271};
-    constexpr std::array<std::string_view, 7> gods{"paladine", "majere", "kiri_jolith", "mishakal",
-                                                   "sirrion",  "reorx",  "shinare"};
+    static constexpr std::array<std::string_view, 7> gods{
+        "paladine", "majere", "kiri_jolith", "mishakal", "sirrion", "reorx", "shinare"};
     for (std::size_t god = 0; god < gods.size(); ++god)
     {
         rules::CharacterDraft draft;

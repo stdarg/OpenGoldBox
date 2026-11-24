@@ -174,7 +174,7 @@ void RolfTourSession::vga_area_step()
     const auto previous_row = champions ? game_cell(EclAddress{0x49F1}) : EclAddress{0x0018};
     constexpr int columns = 38, rows = 15;
     // North and on clockwise to north-west (its dirDeltaX and dirDeltaY).
-    constexpr std::array<int, 8> step_columns{0, 1, 1, 1, 0, -1, -1, -1},
+    static constexpr std::array<int, 8> step_columns{0, 1, 1, 1, 0, -1, -1, -1},
         step_rows{-1, -1, 0, 1, 1, 1, 0, -1};
     const auto direction = static_cast<std::size_t>(*pending_movement_) -
                            static_cast<std::size_t>(ExplorationCommand::north);
@@ -1469,11 +1469,11 @@ unsigned love_band(unsigned love)
 // told alike either way round (113; an obvious bug, fixed).
 unsigned romance_entry(unsigned member_band, unsigned npc_band)
 {
-    constexpr std::array<std::array<unsigned, 5>, 5> entries{{{0, 101, 102, 103, 104},
-                                                              {101, 105, 106, 107, 108},
-                                                              {102, 106, 109, 110, 111},
-                                                              {103, 107, 110, 112, 113},
-                                                              {104, 108, 111, 113, 0}}};
+    static constexpr std::array<std::array<unsigned, 5>, 5> entries{{{0, 101, 102, 103, 104},
+                                                                     {101, 105, 106, 107, 108},
+                                                                     {102, 106, 109, 110, 111},
+                                                                     {103, 107, 110, 112, 113},
+                                                                     {104, 108, 111, 113, 0}}};
     return entries.at(member_band).at(npc_band);
 }
 } // namespace

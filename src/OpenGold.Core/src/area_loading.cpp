@@ -87,7 +87,7 @@ std::string AreaFiles::disk_record_archive(std::string_view family, unsigned dis
     if (game_ == GoldBoxGame::death_knights_of_krynn &&
         (family == "WALLDEF" || family == "8X8D" || family == "BACK") && id >= 1 && id <= 7)
     {
-        constexpr std::array<unsigned, 7> disks{1, 4, 2, 2, 3, 3, 5};
+        static constexpr std::array<unsigned, 7> disks{1, 4, 2, 2, 3, 3, 5};
         disk = disks[id - 1];
     }
     for (const auto &name : disk_archives(family, disk))

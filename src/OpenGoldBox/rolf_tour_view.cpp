@@ -1584,7 +1584,7 @@ String wand_of_secrets_notice(const String &name, const std::optional<WandSign> 
             N_("{name} points the Wand of Secrets. It pulses toward a trap at ({x}, {y})."),
             {{"name", name}, {"x", sign->x}, {"y", sign->y}});
     }
-    constexpr std::array<const char *, 4> walls{
+    static constexpr std::array<const char *, 4> walls{
         N_("{name} points the Wand of Secrets. It pulses toward a secret door in the north wall of ({x}, {y})."),
         N_("{name} points the Wand of Secrets. It pulses toward a secret door in the east wall of ({x}, {y})."),
         N_("{name} points the Wand of Secrets. It pulses toward a secret door in the south wall of ({x}, {y})."),
@@ -4118,7 +4118,7 @@ void RolfTourView::check_walk_to(unsigned tx, unsigned ty)
         }
         check_pending_edge_.reset();
     }
-    constexpr int dx[]{0, 1, 0, -1}, dy[]{-1, 0, 1, 0};
+    static constexpr int dx[]{0, 1, 0, -1}, dy[]{-1, 0, 1, 0};
     std::array<int, 256> previous;
     previous.fill(-1);
     std::queue<int> cells;

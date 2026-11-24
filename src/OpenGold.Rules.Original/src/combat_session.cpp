@@ -942,7 +942,7 @@ enum class Flames : unsigned
 // The spells built so far; the rest are not offered yet.
 bool spell_built(int number)
 {
-    constexpr std::array built{
+    static constexpr std::array built{
         26, 27, 36, 41, 46, 57, 58, 59, 60, 61, 62, 63, 64, 65, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
         12, 13, 15, 16, 17, 19, 20, 21, 23, 24, 25, 28, 29, 30, 32, 33, 35, 37, 38, 40, 42, 34, 43,
         44, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55,
@@ -1254,7 +1254,7 @@ class Session final : public rules::CombatSession
     // south, 6 west).
     [[nodiscard]] static int field_direction(int facing)
     {
-        constexpr std::array<int, 4> turned{7, 2, 3, 6};
+        static constexpr std::array<int, 4> turned{7, 2, 3, 6};
         return turned[static_cast<std::size_t>(facing / 2 % 4)];
     }
 
@@ -3674,9 +3674,9 @@ std::vector<rules::Command> Session::aiming_commands(const Fighter &caster) cons
     if (caster.aiming == delayed_blast_spell && caster.blast_delay < 0)
     {
         // How many rounds it waits (the original's 1 to 50 segments, in tens).
-        constexpr std::array<const char *, 6> delays{"No delay",       "Delay 1 round",
-                                                     "Delay 2 rounds", "Delay 3 rounds",
-                                                     "Delay 4 rounds", "Delay 5 rounds"};
+        static constexpr std::array<const char *, 6> delays{"No delay",       "Delay 1 round",
+                                                            "Delay 2 rounds", "Delay 3 rounds",
+                                                            "Delay 4 rounds", "Delay 5 rounds"};
         for (std::size_t rounds = 0; rounds < delays.size(); ++rounds)
         {
             auto choice = command("blast_delay");
@@ -5210,9 +5210,9 @@ std::vector<EntityId> Session::path_area(const Fighter &caster, Cell aim, int ma
 std::vector<Cell> Session::path_squares(const Fighter &caster, Cell aim, int max_range,
                                         int width) const
 {
-    constexpr std::array<Cell, 8> beside{
+    static constexpr std::array<Cell, 8> beside{
         {{1, 0}, {1, 0}, {0, 1}, {0, 1}, {-1, 0}, {-1, 0}, {0, -1}, {0, -1}}};
-    constexpr std::array<Cell, 8> other_side{
+    static constexpr std::array<Cell, 8> other_side{
         {{-1, 0}, {0, -1}, {0, -1}, {1, 0}, {1, 0}, {0, 1}, {0, 1}, {-1, 0}}};
     Cell end = aim;
     if (aim != caster.cell)
@@ -9403,9 +9403,9 @@ class Session::Forecast
     // aim or along a path, whoever stands there.
     [[nodiscard]] static bool weighs(int number) noexcept
     {
-        constexpr std::array<int, 23> area_spells{21,  34,  41,  46,  47,  51,  55,  60,
-                                                  64,  178, 182, 184, 187, 191, 192, 198,
-                                                  301, 310, 315, 320, 323, 324, 325};
+        static constexpr std::array<int, 23> area_spells{21,  34,  41,  46,  47,  51,  55,  60,
+                                                         64,  178, 182, 184, 187, 191, 192, 198,
+                                                         301, 310, 315, 320, 323, 324, 325};
         return std::ranges::find(area_spells, number) != area_spells.end();
     }
 
@@ -11914,12 +11914,12 @@ int Session::six_weapons_blow(const Fighter &attacker, int primary_attacks, int 
         std::string_view name;
     };
 
-    constexpr std::array<Weapon, 6> weapons{{{1, 10, "Two-Handed Sword +4"},
-                                             {2, 4, "Bastard Sword +4"},
-                                             {1, 8, "Long Sword +4"},
-                                             {1, 8, "Scimitar +4"},
-                                             {1, 4, "Dagger +4"},
-                                             {1, 6, "Spear +4"}}};
+    static constexpr std::array<Weapon, 6> weapons{{{1, 10, "Two-Handed Sword +4"},
+                                                    {2, 4, "Bastard Sword +4"},
+                                                    {1, 8, "Long Sword +4"},
+                                                    {1, 8, "Scimitar +4"},
+                                                    {1, 4, "Dagger +4"},
+                                                    {1, 6, "Spear +4"}}};
     if (primary_attacks < 1 || primary_attacks > static_cast<int>(weapons.size()))
     {
         return damage;

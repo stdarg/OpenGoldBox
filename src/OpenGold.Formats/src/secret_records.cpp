@@ -43,7 +43,7 @@ por::DamageDice attack_damage(std::span<const std::uint8_t> bytes, std::size_t c
 // half-orc and human 1 to 7.
 std::uint8_t shared_race(std::uint8_t race)
 {
-    constexpr std::array<std::uint8_t, 8> shared{0, 2, 4, 1, 3, 5, 7, 0};
+    static constexpr std::array<std::uint8_t, 8> shared{0, 2, 4, 1, 3, 5, 7, 0};
     return race < shared.size() ? shared[race] : 0;
 }
 

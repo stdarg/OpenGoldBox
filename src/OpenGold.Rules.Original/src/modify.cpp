@@ -372,7 +372,7 @@ int champions_constitution(ClassSlot slot, int constitution)
 
 int champions_maximum(const ModifiedCharacter &character, int constitution)
 {
-    constexpr std::array<int, 8> caps{10, 15, 10, 10, 11, 12, 11, 10};
+    static constexpr std::array<int, 8> caps{10, 15, 10, 10, 11, 12, 11, 10};
     int total = 0;
     each_class(character.levels,
                [&](ClassSlot slot, int level)

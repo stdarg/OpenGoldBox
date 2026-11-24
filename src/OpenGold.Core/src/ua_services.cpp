@@ -984,7 +984,7 @@ namespace
 // A gem's value in platinum by a d100 (money.c, appraise).
 [[nodiscard]] unsigned gem_value(unsigned roll)
 {
-    constexpr std::array<std::pair<unsigned, unsigned>, 6> table{
+    static constexpr std::array<std::pair<unsigned, unsigned>, 6> table{
         {{25, 5}, {50, 25}, {70, 50}, {90, 250}, {99, 500}, {100, 2500}}};
     return std::ranges::find_if(table,
                                 [roll](const auto &row)

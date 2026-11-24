@@ -95,9 +95,9 @@ std::span<const P> death_knights_professions(Race race)
 
 bool death_knights_alignment_allowed(P profession, Alignment alignment)
 {
-    constexpr std::array<Alignment, 6> choices{Alignment::lawful_good,  Alignment::lawful_neutral,
-                                               Alignment::neutral_good, Alignment::true_neutral,
-                                               Alignment::chaotic_good, Alignment::chaotic_neutral};
+    static constexpr std::array<Alignment, 6> choices{
+        Alignment::lawful_good,  Alignment::lawful_neutral, Alignment::neutral_good,
+        Alignment::true_neutral, Alignment::chaotic_good,   Alignment::chaotic_neutral};
     const auto at = std::ranges::find(choices, alignment);
     return at != choices.end() && (data::classAlignments[0].at(native_profession(profession)) &
                                    (1 << (at - choices.begin()))) != 0;
@@ -144,8 +144,8 @@ KrynnSpellRows death_knights_base_slots(const ClassLevels &levels, int wisdom, K
     {
         slots[0][0] = orders.deity > 4 ? 2 : 1;
         add(orders.deity > 4 ? 1 : 0, 2, cleric, 0, 0, 7);
-        constexpr std::array<int, 6> wisdom_thresholds{12, 13, 14, 15, 16, 17};
-        constexpr std::array<std::size_t, 6> spell_levels{0, 0, 1, 1, 2, 3};
+        static constexpr std::array<int, 6> wisdom_thresholds{12, 13, 14, 15, 16, 17};
+        static constexpr std::array<std::size_t, 6> spell_levels{0, 0, 1, 1, 2, 3};
         for (std::size_t at = 0; at < wisdom_thresholds.size(); ++at)
         {
             if (slots[0][spell_levels[at]] > 0 && wisdom > wisdom_thresholds[at])
@@ -178,7 +178,7 @@ std::uint64_t death_knights_calendar_day(std::uint64_t minutes) noexcept
 
 void death_knights_calendar(rules::CharacterSheet::Original &numbers, std::uint64_t days)
 {
-    constexpr std::array<unsigned, 3> periods{9, 2, 7};
+    static constexpr std::array<unsigned, 3> periods{9, 2, 7};
     numbers.krynn_calendar_days = days;
     for (std::size_t moon = 0; moon < periods.size(); ++moon)
     {
@@ -298,7 +298,7 @@ void recalculate_death_knights_numbers(rules::CharacterSheet::Original &numbers,
     numbers.deity_spell_slots = {};
     if (level_in(numbers.class_levels, C::cleric) > 0 && numbers.deity >= 1 && numbers.deity <= 7)
     {
-        constexpr std::array<std::array<int, 3>, 7> gifts{
+        static constexpr std::array<std::array<int, 3>, 7> gifts{
             {{501}, {502}, {503}, {504, 505, 506}, {507}, {}, {506}}};
         numbers.deity_spell_slots[0] = numbers.deity == 4 ? 3 : numbers.deity == 6 ? 0 : 1;
         for (const auto gift : gifts[numbers.deity - 1])

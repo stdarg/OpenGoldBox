@@ -3505,8 +3505,8 @@ inline std::optional<std::size_t> greater_harm(std::string_view verb)
 // The ability a Contagion verb ("contagion_<ability>") names, if it is one.
 inline std::optional<std::size_t> contagion_ability(std::string_view verb)
 {
-    constexpr std::array<std::string_view, 6> abilities{"strength",     "dexterity", "constitution",
-                                                        "intelligence", "wisdom",    "charisma"};
+    static constexpr std::array<std::string_view, 6> abilities{
+        "strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"};
     verb = without_cast_suffix(verb);
     if (!verb.starts_with("contagion_"))
     {

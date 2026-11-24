@@ -454,7 +454,7 @@ class FieldBuilder
             return;
         }
         // Each kind's terrains: the one before its first, and how many.
-        constexpr std::array<std::pair<int, int>, 5> kinds{
+        static constexpr std::array<std::pair<int, int>, 5> kinds{
             {{57, 2}, {47, 2}, {43, 4}, {54, 3}, {49, 4}}};
         for (int column = 0; column < field_columns; ++column)
         {
@@ -546,7 +546,7 @@ class FieldBuilder
 std::optional<OverlandWorld> read_overland_world(std::span<const std::uint8_t> image)
 {
     // The landmark table's first two entries, as little-endian words.
-    constexpr std::array<std::uint8_t, 12> signature{10, 0, 9, 0, 240, 0, 3, 0, 32, 0, 2, 0};
+    static constexpr std::array<std::uint8_t, 12> signature{10, 0, 9, 0, 240, 0, 3, 0, 32, 0, 2, 0};
     const auto found = std::search(image.begin(), image.end(), signature.begin(), signature.end());
     const auto at = static_cast<std::size_t>(found - image.begin());
     if (found == image.end() || at < landmark_offset ||
@@ -870,11 +870,11 @@ std::optional<GatewayWilderness> champions_wilderness(std::span<const std::uint8
 {
     // GDConsts' first five terrain records and the complete terrain-class
     // table identify the data without executing START.EXE or fixing its load address.
-    constexpr std::array<std::uint8_t, 20> first_tiles{255, 1, 2,   0, 255, 1, 2, 1, 255, 1,
-                                                       2,   2, 255, 1, 2,   3, 1, 1, 0,   4};
-    constexpr std::array<std::uint8_t, 32> classes{0,  24,  17, 21, 1, 1,  96, 20, 8,  1,  0,
-                                                   33, 113, 9,  6,  4, 1,  9,  9,  8,  89, 0,
-                                                   17, 17,  0,  0,  1, 17, 0,  0,  32, 32};
+    static constexpr std::array<std::uint8_t, 20> first_tiles{255, 1, 2,   0, 255, 1, 2, 1, 255, 1,
+                                                              2,   2, 255, 1, 2,   3, 1, 1, 0,   4};
+    static constexpr std::array<std::uint8_t, 32> classes{0,  24,  17, 21, 1, 1,  96, 20, 8,  1,  0,
+                                                          33, 113, 9,  6,  4, 1,  9,  9,  8,  89, 0,
+                                                          17, 17,  0,  0,  1, 17, 0,  0,  32, 32};
     const auto tiles =
         std::search(image.begin(), image.end(), first_tiles.begin(), first_tiles.end());
     const auto terrain = std::search(image.begin(), image.end(), classes.begin(), classes.end());
