@@ -746,6 +746,16 @@ OPENGOLD_GOLDBOX_DIR="$HOME/GoldBox" \
 ctest --test-dir build -V -R '^opengold_treasure_earned_ending$'
 ```
 
+*Re-tuned 2026-11-24.* The route had come to lose in Luskan on the way back
+from Ruathym: the guards who pass the stronghold's door (10,3) drew all three
+Fireballs and the first Minor Globe, and the captains, guards and six
+Hosttower sorceresses inside (11,3) then beat the party at every reload. The
+party now fights the passing guards with weapons alone, sparing its spells for
+the sorceresses (`RouteBeat::sparing_spells_for`), and wins the stronghold at
+the first try. A fresh chain from a newly banked Gateway
+winners save (`.ogs`) wins: Treasure **146 fights, zero defeats in 2342s**
+(Linux).
+
 The Gateway setup is a required fixture; no resume or forced combat settings
 are needed. Exact checks, limitations, final logs and the four exposed engine
 corrections are recorded in [PLAYABILITY.md](../PLAYABILITY.md#treasure-earned-imported-campaign).

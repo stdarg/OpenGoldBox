@@ -1888,7 +1888,9 @@ costs a member is reloaded there, as it could not be once the boat has carried
 the party to Luskan (party area-spell AI, 2026-11-21). Back in Luskan the
 party rests at Redleg's farewell (8,3) with a second Minor Globe memorized, since the guards outside
 may draw the first, and casts the other at (10,3) before the stronghold's
-mages (Original movement, 2026-11-21). Mirabar prepares three first-level Protection
+mages (Original movement, 2026-11-21). The guards passing at (10,3) are fought
+with weapons alone: spending the three Fireballs and the first Globe on them
+left the stronghold's sorceresses winning every reload (2026-11-24). Mirabar prepares three first-level Protection
 from Evil copies per cleric for six actual casts, followed by Haste and Minor
 Globe. Requiring six casts after preparing two correctly failed verification;
 the plan was corrected without relaxing that check.

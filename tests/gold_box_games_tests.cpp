@@ -9058,6 +9058,10 @@ std::vector<RouteBeat> treasure_earned_route()
             protection.cure_to_full = true;
             protection.reload_event = true;
             protection.reloads_until_won = 600;
+            // The guards passing (10,3) are fought with weapons: their
+            // fight otherwise spends every Fireball and the first Minor
+            // Globe, leaving none for the stronghold's sorceresses.
+            protection.sparing_spells_for = "HTOWER SORCSS";
             beats[i + 1].searching = false;
             beats.insert(beats.begin() + static_cast<std::ptrdiff_t>(i + 1), std::move(protection));
             ++i;
