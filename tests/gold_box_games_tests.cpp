@@ -14212,8 +14212,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             if (numbers && std::ranges::any_of(numbers->effects,
                                                [](const auto &effect)
                                                {
-                                                   return effect.code == 1459 ||
-                                                          effect.code == 1460;
+                                                   return effect.code == 1460;
                                                }))
             {
                 blasts.push_back(unit.cell);
