@@ -351,7 +351,10 @@ if(OPENGOLD_BUILD_TESTS)
     # The Buck Rogers games' records, scripts and music files (docs/BUCK-ROGERS.md, B1).
     add_executable(opengold_countdown_tests tests/countdown_tests.cpp)
     target_link_libraries(opengold_countdown_tests PRIVATE opengold_core)
+    target_compile_definitions(opengold_countdown_tests PRIVATE OPENGOLD_BINARY_DIR="${PROJECT_BINARY_DIR}")
     add_test(NAME opengold_countdown_tests COMMAND opengold_countdown_tests)
+    # It writes the fights the Buck Rogers combat view check loads.
+    set_tests_properties(opengold_countdown_tests PROPERTIES FIXTURES_SETUP buck_combat_fixtures)
     # Countdown played by the engine (B3): its campaign, and the walk of every map.
     add_executable(opengold_countdown_campaign_tests tests/countdown_campaign_tests.cpp)
     target_link_libraries(opengold_countdown_campaign_tests PRIVATE opengold_core

@@ -292,6 +292,8 @@ if(OPENGOLD_BUILD_TESTS)
     set_tests_properties(opengold_godot_bless PROPERTIES FIXTURES_REQUIRED "godot_project;bless_fixtures")
     opengold_godot_test(original_combat original_combat_view_tests "Original combat view checks passed" "--original-fixtures=${PROJECT_BINARY_DIR}/original-combat-fixtures")
     set_tests_properties(opengold_godot_original_combat PROPERTIES FIXTURES_REQUIRED "godot_project;original_combat_fixtures")
+    opengold_godot_test(buck_combat buck_combat_view_tests "Buck Rogers combat view checks passed" "--buck-fixtures=${PROJECT_BINARY_DIR}/buck-combat-fixtures")
+    set_tests_properties(opengold_godot_buck_combat PROPERTIES FIXTURES_REQUIRED "godot_project;buck_combat_fixtures")
     # The Buck Rogers ship combat screen, clicked through seeded fights of the
     # Countdown walk's team; skipped without Countdown's files.
     add_test(NAME opengold_godot_ship_combat COMMAND "${CMAKE_COMMAND}"

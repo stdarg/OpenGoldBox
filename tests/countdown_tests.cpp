@@ -1565,7 +1565,8 @@ std::optional<opengold::rules::Command> offered(const opengold::rules::CombatSes
     return std::nullopt;
 }
 
-// Ends every turn that is not the member's, until it is, or the fight ends.
+// Ends every turn that is not the member's, until it is, or the fight ends; a
+// companion the computer plays is left to it (Quick).
 bool to_turn_of(opengold::rules::CombatSession &session, opengold::rules::EntityId id)
 {
     for (int turns = 0; turns < 40; ++turns)
@@ -1579,7 +1580,8 @@ bool to_turn_of(opengold::rules::CombatSession &session, opengold::rules::Entity
         {
             return true;
         }
-        if (!session.submit(*offered(session, "end")))
+        const auto next = offered(session, "end");
+        if (!session.submit(next ? *next : *offered(session, "quick")))
         {
             return false;
         }
@@ -1688,6 +1690,113 @@ void area_weapons_and_clouds_in_a_fight()
     const auto restored = chaffed.module->restore(chaffed.session->save());
     check(restored->save() == chaffed.session->save() && restored->save() != before,
           "The cloud saves and restores with the fight");
+}
+
+// What the combat screen shows of a ground fight: the chaff a grenade lays,
+// and a companion Leadership takes off the computer's control, which the
+// player commands.
+void the_view_shows_chaff_and_led_companions()
+{
+    using opengold::rules::Side;
+    auto thrower = made_fighter(Profession::rocket_jock);
+    thrower.base_combat = 60;
+    auto trooper = made_fighter(Profession::warrior);
+    trooper.hit_points = trooper.hit_point_maximum = 60;
+    auto chaffed = ground_fight(
+        {ground_participant(1, Side::party, {1, 4}, thrower, {ground_item(37, 1, true, 8)}),
+         ground_participant(2, Side::opposition, {4, 4}, trooper, {})},
+        78);
+    auto &session = *chaffed.session;
+    check(to_turn_of(session, 1) && session.snapshot().obscured.empty(),
+          "No chaff lies on the field before the grenade");
+    std::optional<opengold::rules::Command> at_trooper;
+    for (const auto &command : session.legal_commands())
+    {
+        if (command.verb == "launch" && command.destination == opengold::rules::Cell{4, 4})
+        {
+            at_trooper = command;
+        }
+    }
+    check(at_trooper && session.submit(*at_trooper), "The grenade is thrown at the trooper");
+    const auto after = session.snapshot();
+    check(!after.obscured.empty() && std::ranges::all_of(after.obscured,
+                                                         [](opengold::rules::Cell cell)
+                                                         {
+                                                             return std::abs(cell.x - 4) <= 1 &&
+                                                                    std::abs(cell.y - 4) <= 1;
+                                                         }),
+          "The snapshot shows the chaff around the square it landed on");
+    check(chaffed.module->restore(session.save())->snapshot().obscured == after.obscured,
+          "A restored fight shows the same chaff");
+    const auto left = og::decode_ground_record(view_of(after, 1).persistent.resources);
+    check(left && left->items.empty(), "The thrown grenade is spent");
+
+    auto leader = made_fighter(Profession::rogue);
+    og::level_of(leader.skills, Skill::leadership) = 100;
+    auto follower = made_fighter(Profession::warrior);
+    follower.companion = 1;
+    follower.abilities[static_cast<std::size_t>(BuckRogersAbility::intelligence)] = 12;
+    auto dull = follower;
+    dull.abilities[static_cast<std::size_t>(BuckRogersAbility::intelligence)] = 3;
+    auto led = ground_fight({ground_participant(1, Side::party, {1, 3}, leader, {}),
+                             ground_participant(2000, Side::party, {1, 5}, follower, {}),
+                             ground_participant(2001, Side::party, {1, 6}, dull, {}),
+                             ground_participant(2, Side::opposition, {10, 4}, trooper, {})},
+                            41);
+    const auto led_view = led.session->snapshot();
+    check(view_of(led_view, 2000).player_controls_ally && !view_of(led_view, 2000).computer_plays,
+          "The player commands the companion Leadership leads");
+    check(!view_of(led_view, 2001).player_controls_ally && view_of(led_view, 2001).computer_plays,
+          "A companion Leadership cannot lead stays under the computer's control");
+    check(!view_of(led_view, 1).player_controls_ally, "The leader is no ally");
+    const auto restored = led.module->restore(led.session->save())->snapshot();
+    check(view_of(restored, 2000).player_controls_ally && view_of(restored, 2001).computer_plays,
+          "A restored fight keeps who was led");
+    check(to_turn_of(*led.session, 2000) && offered(*led.session, "move") &&
+              offered(*led.session, "end"),
+          "The led companion has the whole combat menu on its turn");
+}
+
+// The fights the Buck Rogers combat view check plays (tests/
+// buck_combat_view_tests.gd): a readied chaff grenade on the thrower's turn,
+// and a led companion on its own turn beside one the computer plays.
+void write_buck_view_fixtures()
+{
+    using opengold::rules::Side;
+    const auto folder = std::filesystem::path(OPENGOLD_BINARY_DIR) / "buck-combat-fixtures";
+    std::filesystem::create_directories(folder);
+    const auto write = [&](const char *name, const opengold::rules::CombatSession &session)
+    {
+        std::ofstream out(folder / name, std::ios::binary);
+        out << session.save();
+        check(bool(out), "The Buck Rogers view fixture is written");
+    };
+    auto thrower = made_fighter(Profession::rocket_jock);
+    thrower.base_combat = 60;
+    auto trooper = made_fighter(Profession::warrior);
+    trooper.hit_points = trooper.hit_point_maximum = 60;
+    auto chaffed = ground_fight(
+        {ground_participant(1, Side::party, {1, 4}, thrower, {ground_item(37, 1, true, 8)}),
+         ground_participant(2, Side::opposition, {4, 4}, trooper, {})},
+        78);
+    check(to_turn_of(*chaffed.session, 1) && offered(*chaffed.session, "launch"),
+          "The fixture's thrower may throw its grenade");
+    write("chaff.save", *chaffed.session);
+
+    auto leader = made_fighter(Profession::rogue);
+    og::level_of(leader.skills, Skill::leadership) = 100;
+    auto follower = made_fighter(Profession::warrior);
+    follower.companion = 1;
+    follower.abilities[static_cast<std::size_t>(BuckRogersAbility::intelligence)] = 12;
+    auto dull = follower;
+    dull.abilities[static_cast<std::size_t>(BuckRogersAbility::intelligence)] = 3;
+    auto led = ground_fight({ground_participant(1, Side::party, {1, 3}, leader, {}),
+                             ground_participant(2000, Side::party, {1, 5}, follower, {}),
+                             ground_participant(2001, Side::party, {1, 6}, dull, {}),
+                             ground_participant(2, Side::opposition, {10, 4}, trooper, {})},
+                            41);
+    check(to_turn_of(*led.session, 2000), "The fixture reaches the led companion's turn");
+    write("led_companion.save", *led.session);
 }
 
 void medics_and_jetpacks_in_a_fight()
@@ -2283,6 +2392,8 @@ int main()
         campaign_rest_uses_the_native_record_and_status();
         a_fight_runs_by_the_buck_rogers_rules();
         area_weapons_and_clouds_in_a_fight();
+        the_view_shows_chaff_and_led_companions();
+        write_buck_view_fixtures();
         medics_and_jetpacks_in_a_fight();
         zero_gravity_and_difficulty_in_a_fight();
         impassable_ground_lets_shots_across();

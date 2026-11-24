@@ -2,6 +2,7 @@
 #define OPENGOLD_COMBAT_VIEW_H
 #include "cached_combat.h"
 #include "opengold/combat_demo.h"
+#include "opengold/gold_box_game.h"
 #include "spell_effects.h"
 #include <godot_cpp/classes/control.hpp>
 #include <godot_cpp/classes/input_event.hpp>
@@ -262,6 +263,14 @@ class CombatView : public godot::Control
     // Area spells (CLASS-5): whether `verb` starts aiming one, and moving the preview.
     [[nodiscard]] bool aims_area(std::string_view verb) const;
     void aim_area_at(opengold::rules::Cell cell);
+    // Launch or throw (Buck Rogers): the squares offered, the one the keyboard
+    // has chosen, moving it, and launching at a square.
+    [[nodiscard]] std::vector<opengold::rules::Cell> launch_cells() const;
+    [[nodiscard]] opengold::rules::Cell
+    first_launch_cell(const std::vector<opengold::rules::Cell> &cells) const;
+    void step_launch_cell(opengold::rules::Cell direction);
+    void launch_at(opengold::rules::Cell cell);
+    opengold::rules::Cell launch_cell_{};
     void select_party(opengold::rules::EntityId id);
     void select_acting_character();
     void move_selected(opengold::rules::Cell direction);
@@ -307,6 +316,8 @@ class CombatView : public godot::Control
     void revisit();
     void save_game();
     void load_game();
+    void restore_original(std::string_view checkpoint, opengold::GoldBoxGame game);
+    [[nodiscard]] bool load_original_check(const godot::String &save_path, std::int64_t game);
     std::filesystem::path local_path(const char *path) const;
 };
 #endif

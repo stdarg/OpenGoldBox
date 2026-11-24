@@ -118,6 +118,7 @@ String original_action_label(const Command &command)
                         : command.verb == "bandage"  ? N_("Bandage")
                         : command.verb == "aim_done" ? N_("Done aiming")
                         : command.verb == "abort"    ? N_("Abort the spell")
+                        : command.verb == "launch"   ? N_("Launch or throw")
                                                      : nullptr;
     return label ? i18n::text(label) : String();
 }
@@ -201,6 +202,8 @@ void CombatView::_bind_methods()
     ClassDB::bind_method(D_METHOD("attack_pose_active", "id"), &CombatView::attack_pose_active);
     ClassDB::bind_method(D_METHOD("sprite_facing_left", "id"), &CombatView::sprite_facing_left);
     ClassDB::bind_method(D_METHOD("battlefield_visuals"), &CombatView::battlefield_visuals);
+    ClassDB::bind_method(D_METHOD("load_original_check", "save_path", "game"),
+                         &CombatView::load_original_check);
 }
 
 void CombatView::play_effect(opengold::por::SoundPlayer &player, unsigned sound)
@@ -1447,16 +1450,10 @@ void CombatView::load_game()
         if (std::string_view(bytes).substr(0, 32).find("OGORIGINALCOMBAT") !=
             std::string_view::npos)
         {
-            // Its checkpoint carries every creature's numbers, so the fight
-            // needs none of the game's files.
-            auto original = std::make_unique<CombatDemo>(opengold::original::rules_module());
-            original->restore_combat(bytes);
-            demo_ = std::move(original);
+            restore_original(bytes, opengold::GoldBoxGame::pool_of_radiance);
+            return;
         }
-        else
-        {
-            demo_.change().restore_combat(bytes);
-        }
+        demo_.change().restore_combat(bytes);
         sync_art();
         error_.clear();
         refresh();
@@ -1466,6 +1463,37 @@ void CombatView::load_game()
         error_ = e.what();
         refresh();
     }
+}
+
+// Its checkpoint carries every creature's numbers, so the fight needs none of
+// the game's files; but not its game, whose rules it is played on under.
+void CombatView::restore_original(std::string_view checkpoint, opengold::GoldBoxGame game)
+{
+    opengold::original::Content content;
+    content.game = game;
+    auto original =
+        std::make_unique<CombatDemo>(opengold::original::rules_module(std::move(content)));
+    original->restore_combat(checkpoint);
+    demo_ = std::move(original);
+    sync_art();
+    error_.clear();
+    refresh();
+}
+
+// For the checks: a fight saved under a game's original rules, such as a Buck
+// Rogers ground fight, which the training Load opens under Pool of Radiance's.
+bool CombatView::load_original_check(const String &save_path, std::int64_t game)
+{
+    bool loaded = false;
+    presentation::run_guarded(*this,
+                              [&]
+                              {
+                                  const auto bytes = read_save_file(
+                                      presentation::path_from_godot(save_path), 4 * 1024 * 1024);
+                                  restore_original(bytes, static_cast<opengold::GoldBoxGame>(game));
+                                  loaded = true;
+                              });
+    return loaded;
 }
 
 // Only the acting character can take an action, so choosing one stops showing
@@ -1616,10 +1644,16 @@ void CombatView::use_item()
         {
             return;
         }
-        if (chosen->verb == "bandage")
+        if (chosen->verb == "launch")
         {
-            // The dying member is clicked on the battlefield.
-            select_mode("bandage");
+            // Each launch begins aimed at the nearest enemy.
+            launch_cell_ = first_launch_cell(launch_cells());
+        }
+        if (chosen->verb == "bandage" || chosen->verb == "launch")
+        {
+            // The dying member, or the square to launch at, is chosen on the
+            // battlefield.
+            select_mode(gs(chosen->verb));
             return;
         }
         act(*chosen);
@@ -1830,6 +1864,80 @@ void CombatView::aim_area_at(Cell cell)
     for (const auto &c : demo_.legal_commands())
     {
         if (c.verb == "area_move" && c.destination == cell)
+        {
+            act(c);
+            return;
+        }
+    }
+}
+
+// Launch or throw (Buck Rogers' Target at a square): the squares the readied
+// launcher or grenade is offered at (ground_commands).
+std::vector<Cell> CombatView::launch_cells() const
+{
+    std::vector<Cell> cells;
+    if (!demo_ || !demo_->has_combat())
+    {
+        return cells;
+    }
+    for (const auto &command : demo_.legal_commands())
+    {
+        if (command.verb == "launch")
+        {
+            cells.push_back(command.destination);
+        }
+    }
+    return cells;
+}
+
+// The keyboard's square starts on the nearest enemy one can launch at, else
+// on the first square offered.
+Cell CombatView::first_launch_cell(const std::vector<Cell> &cells) const
+{
+    const auto &state = demo_.snapshot();
+    const auto actor = std::ranges::find(state.combatants, state.actor, &rules::CombatantView::id);
+    std::optional<Cell> nearest;
+    int nearest_distance = std::numeric_limits<int>::max();
+    for (const auto &enemy : state.combatants)
+    {
+        if (actor == state.combatants.end() || enemy.side == actor->side || enemy.dead ||
+            enemy.fled || std::ranges::find(cells, enemy.cell) == cells.end())
+        {
+            continue;
+        }
+        const int distance = std::max(std::abs(enemy.cell.x - actor->cell.x),
+                                      std::abs(enemy.cell.y - actor->cell.y));
+        if (distance < nearest_distance)
+        {
+            nearest = enemy.cell;
+            nearest_distance = distance;
+        }
+    }
+    return nearest.value_or(cells.front());
+}
+
+// An arrow moves the chosen square to the next square offered that way.
+void CombatView::step_launch_cell(Cell direction)
+{
+    const auto cells = launch_cells();
+    const auto &board = demo_.snapshot().battlefield;
+    for (Cell at{launch_cell_.x + direction.x, launch_cell_.y + direction.y}; board.contains(at);
+         at = {at.x + direction.x, at.y + direction.y})
+    {
+        if (std::ranges::find(cells, at) != cells.end())
+        {
+            launch_cell_ = at;
+            break;
+        }
+    }
+    refresh();
+}
+
+void CombatView::launch_at(Cell cell)
+{
+    for (const auto &c : demo_.legal_commands())
+    {
+        if (c.verb == "launch" && c.destination == cell)
         {
             act(c);
             return;
@@ -2540,6 +2648,32 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
             }
         }
     }
+    // Launching (Buck Rogers): arrows choose the square, Space or Enter
+    // launches at it and Escape cancels.
+    if (key.is_valid() && key->is_pressed() && !key->is_echo() && mode_ == "launch" &&
+        demo_->has_combat())
+    {
+        const auto code = key->get_keycode();
+        if (code == Key::KEY_ESCAPE)
+        {
+            mode_ = "move";
+            refresh();
+            get_viewport()->set_input_as_handled();
+            return;
+        }
+        if (code == Key::KEY_SPACE || code == Key::KEY_ENTER || code == Key::KEY_KP_ENTER)
+        {
+            launch_at(launch_cell_);
+            get_viewport()->set_input_as_handled();
+            return;
+        }
+        if (const auto step = movement_direction(code, key->is_shift_pressed()))
+        {
+            step_launch_cell(*step);
+            get_viewport()->set_input_as_handled();
+            return;
+        }
+    }
     if (key.is_valid() &&
         (required_node<Button>(*this, "Throw").has_focus() ||
          required_node<Button>(*this, "Stabilize").has_focus() ||
@@ -2681,8 +2815,9 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
                 std::find_if(offered.begin(), offered.end(),
                              [&](const auto &c)
                              {
-                                 return c.verb == mode_ && mode_ != "move" && !c.target &&
-                                        !c.aims_area && c.destination == Cell{} && matches_item(c);
+                                 return c.verb == mode_ && mode_ != "move" && mode_ != "launch" &&
+                                        !c.target && !c.aims_area && c.destination == Cell{} &&
+                                        matches_item(c);
                              });
             if (untargeted != offered.end())
             {
@@ -2839,7 +2974,7 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
                         return target != s.combatants.end() && target->cell == cell;
                     });
     if (!s.free_movement && !s.effect_targeting && !targets_clicked && mode_ != "stabilize" &&
-        mode_ != "aim" && mode_ != "bandage" && mode_ != "lay_on_hands" &&
+        mode_ != "aim" && mode_ != "launch" && mode_ != "bandage" && mode_ != "lay_on_hands" &&
         mode_ != "lay_on_hands_cure" && mode_ != "lay_on_hands_restore" && mode_ != "chill_touch" &&
         mode_ != "poison_spray" && mode_ != "sacred_flame" && mode_ != "shocking_grasp" &&
         mode_ != "eldritch_blast" && mode_ != "ray_of_frost")
@@ -2869,7 +3004,8 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
     {
         if (c.verb == mode_ && matches_item(c))
         {
-            if ((c.verb == "move" || c.verb == "effect_push" || (c.verb == "aim" && !c.target)) &&
+            if ((c.verb == "move" || c.verb == "effect_push" || c.verb == "launch" ||
+                 (c.verb == "aim" && !c.target)) &&
                 c.destination == cell)
             {
                 act(c);
@@ -3307,6 +3443,18 @@ void CombatView::refresh()
     else if (mode_ == "aim")
     {
         mode_ = "move";
+    }
+    if (mode_ == "launch")
+    {
+        const auto cells = launch_cells();
+        if (!player || cells.empty())
+        {
+            mode_ = "move";
+        }
+        else if (std::ranges::find(cells, launch_cell_) == cells.end())
+        {
+            launch_cell_ = first_launch_cell(cells);
+        }
     }
     const auto enabled = [&](std::string_view verb)
     {
@@ -3770,6 +3918,12 @@ void CombatView::refresh()
             }
         }
     }
+    if (player && mode_ == "launch")
+    {
+        required_node<Label>(*this, "Prompt")
+            .set_text(i18n::text(N_(
+                "Selected: Launch or throw. Click a highlighted square, or Arrows: square | Space: launch | Escape: cancel")));
+    }
     required_node<Label>(*this, "Footer")
         .set_text(i18n::text(
             "Arrows/Numpad: move | Shift+arrow: diagonal | A: action | Space: use | Z: slot | Enter: end | Q: party Quick | M: Quick magic"));
@@ -4032,7 +4186,7 @@ Dictionary CombatView::battlefield_visuals()
                                        });
     if (selected != s.combatants.end() && !selected->dead)
     {
-        if (selected_ == s.actor)
+        if (selected_ == s.actor && mode_ != "launch")
         {
             for (const auto cell : demo_->combat().movement_reach(selected_))
             {
@@ -4063,6 +4217,13 @@ Dictionary CombatView::battlefield_visuals()
                                     : "target");
                 }
             }
+        }
+    }
+    if (active != s.combatants.end() && active->side == rules::Side::party && mode_ == "launch")
+    {
+        for (const auto cell : launch_cells())
+        {
+            add_overlay(cell, cell == launch_cell_ ? "target_focus" : "target");
         }
     }
     for (const auto cell : s.silenced)

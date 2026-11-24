@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <charconv>
+#include <iterator>
 #include <limits>
 #include <map>
 #include <numeric>
@@ -13404,6 +13405,16 @@ rules::Snapshot Session::snapshot() const
     state.round_limit_reached = round_limit_reached_;
     state.battlefield = board_;
     state.log_entries = log_;
+    // Buck Rogers chaff is shown where it lies, as the original draws its
+    // clouds: the player must see what stops a launched missile or grenade
+    // (ground_launch) and some shots (CalcWeaponDamage).
+    for (const auto &cloud : ground_clouds_)
+    {
+        if (cloud.matter == CloudMatter::chaff)
+        {
+            std::ranges::copy(cloud.squares(), std::back_inserter(state.obscured));
+        }
+    }
     std::vector<const Fighter *> order;
     for (const auto &f : fighters_)
     {
@@ -13454,7 +13465,13 @@ rules::Snapshot Session::snapshot() const
         const bool native_npc = game_of(identity_) == GoldBoxGame::dark_queen_of_krynn &&
                                 f->side == Side::party && f->record &&
                                 (f->record->npc_flag & 0x80) != 0;
-        view.player_controls_ally = native_npc && f->has(dq_effect::led_by_knight);
+        // Leadership takes a Buck Rogers companion off the computer's control
+        // for the fight (ground_begin_round); nothing else does.
+        const bool led_companion = f->ground && f->side == Side::party &&
+                                   f->ground->creature().companion != 0 &&
+                                   !f->ground->computer_plays;
+        view.player_controls_ally =
+            (native_npc && f->has(dq_effect::led_by_knight)) || led_companion;
         view.computer_plays = frenzied(*f) || (f->ground && f->ground->computer_plays) ||
                               (native_npc && !view.player_controls_ally);
         view.persistent = {keeps ? f->hit_points : 0, view.dead, f->numbers.encode(),
