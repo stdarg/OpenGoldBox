@@ -2,7 +2,6 @@
 #define OPENGOLD_COMBAT_VIEW_H
 #include "cached_combat.h"
 #include "opengold/combat_demo.h"
-#include "opengold/gold_box_game.h"
 #include "spell_effects.h"
 #include <godot_cpp/classes/control.hpp>
 #include <godot_cpp/classes/input_event.hpp>
@@ -14,6 +13,11 @@
 #include <set>
 #include <vector>
 #include "opengold/sound_player.h"
+
+namespace opengold::original
+{
+struct Content;
+}
 
 class CombatView : public godot::Control
 {
@@ -234,6 +238,7 @@ class CombatView : public godot::Control
     bool quick_magic_{};
     [[nodiscard]] bool is_quick(opengold::rules::EntityId id) const;
     [[nodiscard]] bool any_quick() const;
+    [[nodiscard]] godot::Array ally_controls() const;
     [[nodiscard]] bool quick_magic() const;
     void quick();
     void take_control();
@@ -263,14 +268,15 @@ class CombatView : public godot::Control
     // Area spells (CLASS-5): whether `verb` starts aiming one, and moving the preview.
     [[nodiscard]] bool aims_area(std::string_view verb) const;
     void aim_area_at(opengold::rules::Cell cell);
-    // Launch or throw (Buck Rogers): the squares offered, the one the keyboard
-    // has chosen, moving it, and launching at a square.
-    [[nodiscard]] std::vector<opengold::rules::Cell> launch_cells() const;
+    // Launch or throw, and Land (Buck Rogers): the squares the selected one
+    // is offered at, the one the keyboard has chosen, moving it, and acting
+    // at a square.
+    [[nodiscard]] std::vector<opengold::rules::Cell> square_cells() const;
     [[nodiscard]] opengold::rules::Cell
-    first_launch_cell(const std::vector<opengold::rules::Cell> &cells) const;
-    void step_launch_cell(opengold::rules::Cell direction);
-    void launch_at(opengold::rules::Cell cell);
-    opengold::rules::Cell launch_cell_{};
+    first_square_cell(const std::vector<opengold::rules::Cell> &cells) const;
+    void step_square_cell(opengold::rules::Cell direction);
+    void act_at_square(opengold::rules::Cell cell);
+    opengold::rules::Cell square_cell_{};
     void select_party(opengold::rules::EntityId id);
     void select_acting_character();
     void move_selected(opengold::rules::Cell direction);
@@ -316,7 +322,7 @@ class CombatView : public godot::Control
     void revisit();
     void save_game();
     void load_game();
-    void restore_original(std::string_view checkpoint, opengold::GoldBoxGame game);
+    void restore_original(std::string_view checkpoint, opengold::original::Content content);
     [[nodiscard]] bool load_original_check(const godot::String &save_path, std::int64_t game);
     std::filesystem::path local_path(const char *path) const;
 };

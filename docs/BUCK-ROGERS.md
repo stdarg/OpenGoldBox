@@ -257,9 +257,14 @@ gets a Buck Rogers layout in a new `buck_rogers_records.cpp`, as
 - **On the combat screen**, an area weapon or grenade is used with **Launch
   or throw** under Items: the squares it can reach are highlighted, starting
   on the nearest enemy; click one, or choose with the arrows and press Space
-  (Escape cancels). Chaff is drawn on the squares it covers, with the
-  Heavily Obscured overlay. A companion Leadership leads is the player's to
-  command for the fight; one it does not lead stays on Quick.
+  (Escape cancels). Chaff and aerosol mist are drawn on the squares they
+  cover, with the Heavily Obscured overlay; gas is not shown yet. A companion
+  Leadership leads is the player's to command for the fight; one it does not
+  lead stays on Quick. Items also lists the combat menu's own commands
+  (Intimidate, Aid, Sprint, Dodge, Jetpack, Guard, Delay) and Ready or Put
+  away for each item, by the name the game prints (its item words). In
+  flight a jetpack's landing squares are shown at once: click one, or choose
+  with the arrows and press Space.
 - **Ammunition:** a ranged weapon carries its rounds; clips hold 10; rocket
   launchers and plasma throwers load one round at a time (`shop.pas`
   `ShopAmmoMenu`, `gdconsts.pas` `ammoPrices`). Grenades and antidotes come in

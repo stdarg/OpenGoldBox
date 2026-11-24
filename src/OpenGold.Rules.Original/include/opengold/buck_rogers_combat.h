@@ -401,6 +401,12 @@ struct GroundCloud
 // The cells of the block round a center, center first (blockCellDirections).
 [[nodiscard]] std::array<rules::Cell, 9> block_around(rules::Cell center) noexcept;
 
+// An item's name as the game prints it (charhlp.pas PrintItemString): its
+// words (the game's item words, by number), last first, and its bonus; "?"
+// with no words.
+[[nodiscard]] std::string item_name(const buck_rogers::Item &item,
+                                    std::span<const std::string> words);
+
 // A cloud laid where a projectile lands: each square of the block on the
 // arena that can be walked.
 template <typename Walkable>

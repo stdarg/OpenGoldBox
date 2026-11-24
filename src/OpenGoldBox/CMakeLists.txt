@@ -292,8 +292,6 @@ if(OPENGOLD_BUILD_TESTS)
     set_tests_properties(opengold_godot_bless PROPERTIES FIXTURES_REQUIRED "godot_project;bless_fixtures")
     opengold_godot_test(original_combat original_combat_view_tests "Original combat view checks passed" "--original-fixtures=${PROJECT_BINARY_DIR}/original-combat-fixtures")
     set_tests_properties(opengold_godot_original_combat PROPERTIES FIXTURES_REQUIRED "godot_project;original_combat_fixtures")
-    opengold_godot_test(buck_combat buck_combat_view_tests "Buck Rogers combat view checks passed" "--buck-fixtures=${PROJECT_BINARY_DIR}/buck-combat-fixtures")
-    set_tests_properties(opengold_godot_buck_combat PROPERTIES FIXTURES_REQUIRED "godot_project;buck_combat_fixtures")
     # The Buck Rogers ship combat screen, clicked through seeded fights of the
     # Countdown walk's team; skipped without Countdown's files.
     add_test(NAME opengold_godot_ship_combat COMMAND "${CMAKE_COMMAND}"
@@ -682,6 +680,18 @@ if(OPENGOLD_BUILD_TESTS)
         "-DARGS=--game=buck-rogers-countdown-to-doomsday\;--rules=original\;--load-save=${CMAKE_BINARY_DIR}/countdown-solar-map.ogs")
     set_tests_properties(opengold_godot_solar_map PROPERTIES
         FIXTURES_REQUIRED "godot_project;countdown_solar_map")
+    # A Buck Rogers ground fight on the combat screen, with Countdown's item
+    # names: a chaff grenade readied, launched and spent.
+    opengold_settings_check(buck_combat buck_combat_view_tests "Buck Rogers combat view checks passed"
+        "-DARGS=--buck-fixtures=${PROJECT_BINARY_DIR}/buck-combat-fixtures")
+    set_tests_properties(opengold_godot_buck_combat PROPERTIES
+        FIXTURES_REQUIRED "godot_project;buck_combat_fixtures")
+    # Matrix Cubed's surveillance-room fight from the earned route's save: the
+    # allies Leadership leads are the player's, the others stay on Quick.
+    opengold_settings_check(buck_led_allies buck_led_allies_tests "Buck Rogers led allies passed"
+        "-DARGS=--game=buck-rogers-matrix-cubed\;--rules=original\;--load-save=${PROJECT_BINARY_DIR}/matrix-led-allies.ogs")
+    set_tests_properties(opengold_godot_buck_led_allies PROPERTIES
+        FIXTURES_REQUIRED "godot_project;matrix_led_allies")
     # The Buck Rogers games' ship-combat options on the Options screen.
     opengold_settings_check(startup_menu_buck_rogers startup_menu_tests
         "Startup menu passed: Buck Rogers" -DARGS=--buck-rogers)

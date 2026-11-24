@@ -796,6 +796,23 @@ std::array<rules::Cell, 9> block_around(rules::Cell center) noexcept
     return block;
 }
 
+std::string item_name(const buck_rogers::Item &item, std::span<const std::string> words)
+{
+    std::string name;
+    for (const auto part : item.name_parts)
+    {
+        if (part != 0 && part < words.size())
+        {
+            name = words[part] + (name.empty() ? "" : " ") + name;
+        }
+    }
+    if (item.plus != 0)
+    {
+        name += (item.plus > 0 ? " +" : " ") + std::to_string(item.plus);
+    }
+    return name.empty() ? std::string("?") : name;
+}
+
 std::vector<rules::Cell> GroundCloud::squares() const
 {
     std::vector<rules::Cell> covered;

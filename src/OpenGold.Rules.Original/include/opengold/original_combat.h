@@ -470,6 +470,9 @@ struct Content
     GoldBoxGame game{GoldBoxGame::pool_of_radiance};
     // Each monster's record and items, by the bestiary's keys.
     std::map<std::string, MonsterGear, std::less<>> gear;
+    // A Buck Rogers game's item words, which name the items its fights offer
+    // to ready (buck_rogers_combat.h, item_name).
+    std::vector<std::string> buck_rogers_item_words;
     // Whether fights move as the original does (the game's Original movement
     // option, on by default; rules::RulesModule::move_as_the_original): each
     // square's own cost, diagonals past a wall's corner, a large creature

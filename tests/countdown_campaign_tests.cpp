@@ -8,6 +8,7 @@
 // (installed_games.h).
 #include "opengold/buck_rogers_battlefield.h"
 #include "opengold/buck_rogers_characters.h"
+#include "opengold/buck_rogers_combat.h"
 #include "opengold/buck_rogers_records.h"
 #include "opengold/buck_rogers_rules.h"
 #include "opengold/buck_rogers_solar_map.h"
@@ -1241,6 +1242,109 @@ void write_ship_fixture(const std::filesystem::path &folder)
                                   opengold::campaign_asset_identity(folder), countdown));
 }
 
+// The fight the Buck Rogers combat screen's check plays (tests/
+// buck_combat_view_tests.gd): a new Rocketjock carrying one of the game's
+// own chaff grenades, not yet readied, on its turn, and a RAM warrior. Its
+// items are named by the game's item words.
+void write_buck_view_fixture(const std::filesystem::path &folder)
+{
+    using opengold::rules::Side;
+    const auto stock = opengold::load_buck_rogers_stock(folder, countdown);
+    const auto chaff = std::ranges::find_if(stock.templates,
+                                            [](const br::Item &item)
+                                            {
+                                                return og::cloud_of(og::projectile_kind(item)) ==
+                                                       og::CloudMatter::chaff;
+                                            });
+    check(chaff != stock.templates.end(), "Countdown has a chaff grenade");
+    auto grenade = *chaff;
+    grenade.quantity = 1;
+    grenade.flags = static_cast<std::uint8_t>(grenade.flags & ~br::Item::readied);
+    check(og::item_name(grenade, stock.item_words) != "?", "The chaff grenade has its name");
+    opengold::RandomState random{2026};
+    auto thrower = new_member(folder, Race::terran, Profession::rocket_jock, "BUCK", random);
+    thrower.creature.base_combat = 60;
+    thrower.items = {grenade};
+    const auto session = opengold::load_campaign(folder, countdown);
+    const auto &warrior = session.resources()->buck_rogers_creatures.at(30);
+    const auto participant = [](opengold::rules::EntityId id, Side side, opengold::rules::Cell cell,
+                                const og::GroundRecord &record)
+    {
+        opengold::rules::Participant p;
+        p.id = id;
+        p.name = record.creature.name;
+        p.definition = p.name;
+        p.side = side;
+        p.cell = cell;
+        p.character_profile = og::encode_ground_record(record);
+        return p;
+    };
+    opengold::rules::Encounter encounter;
+    encounter.battlefield.width = 12;
+    encounter.battlefield.height = 8;
+    encounter.battlefield.terrain = std::vector(96, opengold::rules::Terrain::open);
+    encounter.participants = {
+        participant(1, Side::party, {1, 4}, thrower),
+        participant(2, Side::opposition, {4, 4}, {warrior.creature, warrior.items, stock.types})};
+    const auto module = og::rules_module(opengold::load_original_content(folder, countdown));
+    auto fight = module->create(std::move(encounter), 78);
+    for (int turns = 0; turns < 20 && fight->snapshot().actor != 1; ++turns)
+    {
+        const auto legal = fight->legal_commands();
+        const auto end = std::ranges::find(legal, "end", &opengold::rules::Command::verb);
+        check(end != legal.end() && fight->submit(*end), "The warrior's turn is ended");
+    }
+    const auto legal = fight->legal_commands();
+    const auto ready = std::ranges::find(legal, "ready", &opengold::rules::Command::verb);
+    check(fight->snapshot().actor == 1 && ready != legal.end() &&
+              ready->label == og::item_name(grenade, stock.item_words),
+          "The thrower may ready the named grenade");
+    const auto directory = std::filesystem::path(OPENGOLD_BINARY_DIR) / "buck-combat-fixtures";
+    std::filesystem::create_directories(directory);
+    std::ofstream out(directory / "chaff.save", std::ios::binary);
+    out << fight->save();
+    check(bool(out), "The Buck Rogers combat view fixture is written");
+    std::ofstream name(directory / "chaff-name.txt", std::ios::binary);
+    name << og::item_name(grenade, stock.item_words);
+
+    // Out of doors, a Medic with one of the game's jetpacks readied and the
+    // skill to fly it, on its turn.
+    const auto jetpack =
+        std::ranges::find_if(stock.templates,
+                             [&](const br::Item &item)
+                             {
+                                 return item.type < stock.types.size() &&
+                                        stock.types[item.type].slot == og::gear_slot::jetpack;
+                             });
+    check(jetpack != stock.templates.end(), "Countdown has a jetpack");
+    auto flyer = new_member(folder, Race::terran, Profession::medic, "BUCK", random);
+    og::level_of(flyer.creature.skills, Skill::use_jetpack) = 100;
+    auto pack = *jetpack;
+    pack.flags = static_cast<std::uint8_t>(pack.flags | br::Item::readied);
+    flyer.items = {pack};
+    opengold::rules::Encounter outdoors;
+    outdoors.battlefield.width = 12;
+    outdoors.battlefield.height = 8;
+    outdoors.battlefield.terrain = std::vector(96, opengold::rules::Terrain::open);
+    outdoors.outdoors = true;
+    outdoors.participants = {
+        participant(1, Side::party, {2, 2}, flyer),
+        participant(2, Side::opposition, {10, 6}, {warrior.creature, warrior.items, stock.types})};
+    auto flight = module->create(std::move(outdoors), 5);
+    for (int turns = 0; turns < 20 && flight->snapshot().actor != 1; ++turns)
+    {
+        const auto offered = flight->legal_commands();
+        const auto end = std::ranges::find(offered, "end", &opengold::rules::Command::verb);
+        check(end != offered.end() && flight->submit(*end), "The warrior's turn is ended");
+    }
+    const auto offered = flight->legal_commands();
+    check(std::ranges::find(offered, "jetpack", &opengold::rules::Command::verb) != offered.end(),
+          "The Medic may take off");
+    std::ofstream flying(directory / "jetpack.save", std::ios::binary);
+    flying << flight->save();
+    check(bool(flying), "The jetpack fixture is written");
+}
+
 // Every map: entered as its script's entry has it, then every square looked
 // at, its event played; an event that takes the team away is played from a
 // new game. Then every script without a map of its own, entered. Prints what
@@ -1485,6 +1589,7 @@ int main(int argc, char **argv)
         the_title_music_plays(folder);
         ship_fights_play_through_the_session(folder);
         write_ship_fixture(folder);
+        write_buck_view_fixture(folder);
         std::cout << "Countdown to Doomsday's campaign passed.\n";
     }
     catch (const std::exception &error)

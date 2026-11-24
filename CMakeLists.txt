@@ -351,10 +351,7 @@ if(OPENGOLD_BUILD_TESTS)
     # The Buck Rogers games' records, scripts and music files (docs/BUCK-ROGERS.md, B1).
     add_executable(opengold_countdown_tests tests/countdown_tests.cpp)
     target_link_libraries(opengold_countdown_tests PRIVATE opengold_core)
-    target_compile_definitions(opengold_countdown_tests PRIVATE OPENGOLD_BINARY_DIR="${PROJECT_BINARY_DIR}")
     add_test(NAME opengold_countdown_tests COMMAND opengold_countdown_tests)
-    # It writes the fights the Buck Rogers combat view check loads.
-    set_tests_properties(opengold_countdown_tests PROPERTIES FIXTURES_SETUP buck_combat_fixtures)
     # Countdown played by the engine (B3): its campaign, and the walk of every map.
     add_executable(opengold_countdown_campaign_tests tests/countdown_campaign_tests.cpp)
     target_link_libraries(opengold_countdown_campaign_tests PRIVATE opengold_core
@@ -362,9 +359,10 @@ if(OPENGOLD_BUILD_TESTS)
     target_compile_definitions(opengold_countdown_campaign_tests PRIVATE
         OPENGOLD_BINARY_DIR="${PROJECT_BINARY_DIR}")
     add_test(NAME opengold_countdown_campaign_tests COMMAND opengold_countdown_campaign_tests)
-    # It writes the team the ship-combat screen's check fights with.
+    # It writes the team the ship-combat screen's check fights with, and the
+    # fight the Buck Rogers combat screen's check plays.
     set_tests_properties(opengold_countdown_campaign_tests PROPERTIES
-        FIXTURES_SETUP countdown_ship_fixtures)
+        FIXTURES_SETUP "countdown_ship_fixtures;buck_combat_fixtures")
     add_test(NAME opengold_countdown_walk COMMAND opengold_countdown_campaign_tests --walk)
     # The save the solar map's screen check loads (src/OpenGoldBox, solar_map).
     add_test(NAME opengold_countdown_solar_map_fixture COMMAND opengold_countdown_campaign_tests
@@ -468,7 +466,11 @@ if(OPENGOLD_BUILD_TESTS)
         COMMAND opengold_matrix_campaign_tests --earned-caloris-preparation)
     add_test(NAME opengold_matrix_cubed_earned_ending
         COMMAND opengold_matrix_campaign_tests --earned-ending-novice)
-    set_tests_properties(opengold_matrix_cubed_earned_ending PROPERTIES TIMEOUT 300)
+    # It also saves the team before a fight beside the allies Leadership leads,
+    # for the combat screen's check (src/OpenGoldBox, buck_led_allies).
+    set_tests_properties(opengold_matrix_cubed_earned_ending PROPERTIES TIMEOUT 300
+        ENVIRONMENT "OPENGOLD_MATRIX_LED_ALLIES_SAVE=${PROJECT_BINARY_DIR}/matrix-led-allies.ogs"
+        FIXTURES_SETUP matrix_led_allies)
     add_executable(opengold_buck_rogers_ship_combat_tests tests/buck_rogers_ship_combat_tests.cpp)
     target_link_libraries(opengold_buck_rogers_ship_combat_tests PRIVATE opengold_rules_original
         opengold_core)

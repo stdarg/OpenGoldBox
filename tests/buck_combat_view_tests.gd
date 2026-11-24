@@ -1,9 +1,10 @@
 extends SceneTree
-# A Buck Rogers ground fight on the combat screen (docs/BUCK-ROGERS.md):
-# Launch or throw aims a readied chaff grenade at a square chosen with the
+# A Buck Rogers ground fight on the combat screen (docs/BUCK-ROGERS.md), with
+# Countdown to Doomsday's content: one of the game's chaff grenades is readied
+# from Items by its name, Launch or throw aims it at a square chosen with the
 # keyboard or the mouse, the chaff shows where it lies and the grenade is
-# spent; a companion Leadership leads is the player's on its turn. Run with
-# --buck-fixtures=<folder of chaff.save and led_companion.save>.
+# spent. Run by tests/settings_check.cmake with --buck-fixtures=<folder of
+# chaff.save and chaff-name.txt> (opengold_countdown_campaign_tests).
 var fixtures := ""
 
 func _initialize() -> void:
@@ -60,16 +61,23 @@ func overlay_cells(kind: String) -> Array:
 func log_text() -> String:
     return current_scene.get_node("LogStack/Log").get_parsed_text()
 
-func check_launch(locale: String, by_mouse: bool) -> void:
+func use(label: String) -> void:
+    var items: OptionButton = current_scene.get_node("ItemAction")
+    var index := item_index(label)
+    require(index >= 0, label + " is listed under Items: " + str(range(items.item_count).map(func(i): return items.get_item_text(i))))
+    items.select(index); items.item_selected.emit(index); await settle()
+    current_scene.get_node("UseItemAction").pressed.emit(); await settle()
+
+func check_launch(locale: String, by_mouse: bool, grenade: String) -> void:
     await load_fixture("chaff.save")
     var combat := current_scene
     var launch := tr("Launch or throw")
-    var index := item_index(launch)
-    require(index >= 0, "The readied grenade offers Launch or throw: " + locale)
+    require(item_index(launch) < 0, "A grenade not readied cannot be thrown: " + locale)
+    await use(tr("Ready {item}").format({"item": grenade}))
+    require(item_index(tr("Put away {item}").format({"item": grenade})) >= 0,
+        "The grenade is readied, and can be put away: " + locale)
     require(overlay_cells("obscured").is_empty(), "No chaff before the throw: " + locale)
-    var items: OptionButton = combat.get_node("ItemAction")
-    items.select(index); items.item_selected.emit(index); await settle()
-    combat.get_node("UseItemAction").pressed.emit(); await settle()
+    await use(launch)
     require(combat.get_node("Prompt").text == tr("Selected: Launch or throw. Click a highlighted square, or Arrows: square | Space: launch | Escape: cancel"),
         "The prompt asks for a square: " + locale)
     require(overlay_cells("target_focus") == [Vector2i(4, 4)],
@@ -81,7 +89,7 @@ func check_launch(locale: String, by_mouse: bool) -> void:
     await key(KEY_ESCAPE)
     require(overlay_cells("target").is_empty() and item_index(launch) >= 0,
         "Escape cancels without throwing: " + locale)
-    combat.get_node("UseItemAction").pressed.emit(); await settle()
+    await use(launch)
     var thrown := tr("{name} throws a grenade.").format({"name": "BUCK"})
     if by_mouse:
         await click_cell(Vector2(4, 4))
@@ -105,20 +113,42 @@ func check_launch(locale: String, by_mouse: bool) -> void:
     require(not end.disabled, "The thrower's turn comes round again: " + locale)
     require(item_index(launch) < 0, "The spent grenade is no longer offered: " + locale)
     require(log_text().count(thrown) == 1, "It was thrown once: " + locale)
+    require(item_index(tr("Ready {item}").format({"item": grenade})) < 0 and
+        item_index(tr("Put away {item}").format({"item": grenade})) < 0,
+        "The thrower no longer carries the grenade: " + locale)
 
-func check_led_companion(locale: String) -> void:
-    await load_fixture("led_companion.save")
+# Jetpack takes off; in flight the landing squares show at once, and the
+# arrows and Space, or a click, land.
+func check_jetpack(locale: String, by_mouse: bool) -> void:
+    await load_fixture("jetpack.save")
     var combat := current_scene
-    var name := "RAM TROOPER 2000"
-    var computer := tr("{name} fights under computer control (Quick). Space or Take control: play the party yourself.").format({"name": name})
-    require(log_text().contains(tr("{leader} leads {name}.").format({"leader": "BUCK", "name": name})),
-        "Leadership leads the companion: " + locale)
-    require(combat.get_node("Prompt").text != computer, "The led companion is not on Quick: " + locale)
-    require(not combat.get_node("Move").disabled and not combat.get_node("End").disabled,
-        "The player commands the led companion: " + locale)
-    require(combat.selected_character_id() == 2000, "The led companion is selected for its turn: " + locale)
+    await use(tr("Jetpack"))
+    require(log_text().contains(tr("{name} takes off.").format({"name": "BUCK"})), "The Medic takes off: " + locale)
+    require(combat.get_node("Prompt").text == tr("Flying: Land. Click a highlighted square, or Arrows: square | Space: land"),
+        "In flight the prompt asks where to land: " + locale)
+    var focus: Array = overlay_cells("target_focus")
+    require(focus.size() == 1 and max(abs(focus[0].x - 2), abs(focus[0].y - 2)) <= 1,
+        "The landing starts by the flyer: " + locale + " " + str(focus))
+    require(overlay_cells("target").size() > 20, "The squares it can land on are highlighted: " + locale)
+    require(item_index(tr("Land")) >= 0, "Items offers Land: " + locale)
+    var landed: Vector2i = Vector2i(6, 4)
+    if by_mouse:
+        await click_cell(Vector2(landed))
+    else:
+        landed = focus[0] + Vector2i(1, 0)
+        await key(KEY_RIGHT)
+        require(overlay_cells("target_focus") == [landed], "Right moves the landing square: " + locale)
+        await key(KEY_SPACE)
+    require(combat.selected_character_cell() == landed, "The Medic lands there: " + locale + " " + str(combat.selected_character_cell()))
+    require(overlay_cells("target_focus").is_empty() and item_index(tr("Land")) < 0, "Landed, it is no longer flying: " + locale)
 
 func run_checks() -> void:
+    if not FileAccess.file_exists(fixtures.path_join("chaff.save")):
+        print("Skipped: Countdown to Doomsday's fixture was not written (its files are not here).")
+        quit(0)
+        return
+    var grenade := FileAccess.get_file_as_string(fixtures.path_join("chaff-name.txt"))
+    require(not grenade.is_empty() and grenade != "?", "The grenade's name is known")
     for locale in ["en", "es"]:
         TranslationServer.set_locale(locale)
         change_scene_to_file("res://scenes/combat_demo.tscn")
@@ -126,8 +156,8 @@ func run_checks() -> void:
         current_scene.set_process(false)
         root.size = Vector2i(1120, 800)
         await settle()
-        await check_launch(locale, locale == "es")
-        await check_led_companion(locale)
+        await check_launch(locale, locale == "es", grenade)
+        await check_jetpack(locale, locale == "es")
     TranslationServer.set_locale("en")
     print("Buck Rogers combat view checks passed")
     quit(0)

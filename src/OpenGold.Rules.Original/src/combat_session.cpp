@@ -1202,6 +1202,12 @@ class Session final : public rules::CombatSession
         item_types_ = std::move(types);
     }
 
+    // A Buck Rogers game's item words, which name what the fight offers to ready.
+    void know_item_words(std::vector<std::string> words)
+    {
+        item_words_ = std::move(words);
+    }
+
     [[nodiscard]] rules::Snapshot snapshot() const override;
     [[nodiscard]] std::vector<rules::Command> legal_commands() const override;
     [[nodiscard]] std::vector<Cell> movement_reach(EntityId actor) const override;
@@ -1270,6 +1276,7 @@ class Session final : public rules::CombatSession
     int turning_penalty_{};
     std::uint64_t starting_time_minutes_{};
     std::vector<por::ItemTemplate> item_types_;
+    std::vector<std::string> item_words_;
 
     // The direction along the party's facing on the field: north gives
     // north-west and south south-east, as the original's table turns them
@@ -13405,12 +13412,12 @@ rules::Snapshot Session::snapshot() const
     state.round_limit_reached = round_limit_reached_;
     state.battlefield = board_;
     state.log_entries = log_;
-    // Buck Rogers chaff is shown where it lies, as the original draws its
-    // clouds: the player must see what stops a launched missile or grenade
-    // (ground_launch) and some shots (CalcWeaponDamage).
+    // Buck Rogers chaff and aerosol mist are shown where they lie, as the
+    // original draws its clouds: the player must see what stops a launched
+    // missile or grenade (ground_launch) and some shots (CalcWeaponDamage).
     for (const auto &cloud : ground_clouds_)
     {
-        if (cloud.matter == CloudMatter::chaff)
+        if (cloud.matter == CloudMatter::chaff || cloud.matter == CloudMatter::mist)
         {
             std::ranges::copy(cloud.squares(), std::back_inserter(state.obscured));
         }
@@ -15072,6 +15079,7 @@ std::vector<rules::Command> Session::ground_commands(const Fighter &actor) const
         {
             add(readied(items[at]) ? "unready" : "ready");
             commands.back().item = static_cast<unsigned>(at);
+            commands.back().label = item_name(items[at], item_words_);
         }
     }
     add("delay");
@@ -16011,6 +16019,7 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
         encounter.zero_gravity,
         content.game == GoldBoxGame::dark_queen_of_krynn && encounter.underwater);
     session->know_item_types(content.item_types);
+    session->know_item_words(content.buck_rogers_item_words);
     session->play_gazes(gazes_played);
     session->move_as_the_original(content.original_movement);
     session->limit_party_area_spells(content.party_spell_limits);
@@ -16023,6 +16032,7 @@ std::unique_ptr<rules::CombatSession> restore_session(rules::Identity identity,
                                                       const Content &content, bool gazes_played)
 {
     auto session = Session::restored(std::move(identity), checkpoint, content);
+    session->know_item_words(content.buck_rogers_item_words);
     session->play_gazes(gazes_played);
     session->move_as_the_original(content.original_movement);
     session->limit_party_area_spells(content.party_spell_limits);

@@ -2724,6 +2724,22 @@ bool walk_route(Campaign &campaign, const std::filesystem::path &folder, unsigne
                       << campaign.session.script_variable(opengold::por::EclAddress{0xC04E})
                       << ".\n";
         }
+        // OPENGOLD_MATRIX_LED_ALLIES_SAVE=PATH saves the team one step east
+        // of the surveillance room, facing it: the fight there has the prison
+        // gang beside the team, which Leadership leads, for the combat
+        // screen's check (tests/buck_led_allies_tests.gd).
+        if (const auto *path = std::getenv("OPENGOLD_MATRIX_LED_ALLIES_SAVE");
+            path && campaign.session.snapshot().area_id == 84 &&
+            campaign.session.snapshot().pose.x == 14 && campaign.session.snapshot().pose.y == 0 &&
+            campaign.session.snapshot().pose.facing == opengold::por::MapDirection::west)
+        {
+            opengold::write_save_file(
+                path,
+                opengold::encode_campaign(*campaign.party, &campaign.session,
+                                          opengold::campaign_asset_identity(folder), matrix),
+                16U * 1024U * 1024U);
+            std::cout << "Actual led-allies fixture saved before the surveillance room.\n";
+        }
         check(campaign.session.explore(Command::forward), "Walk through Matrix's actual map");
         if (!settle_route(campaign, folder, fights))
         {

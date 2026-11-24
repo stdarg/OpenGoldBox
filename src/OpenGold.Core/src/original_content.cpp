@@ -3,6 +3,7 @@
 #include "area_loading.h"
 #include "dark_queen_campaign.h"
 #include "opengold/buck_rogers_characters.h"
+#include "opengold/buck_rogers_combat.h"
 #include "opengold/buck_rogers_rules.h"
 #include "opengold/creature_catalog.h"
 #include "opengold/formats.h"
@@ -24,8 +25,10 @@ original::Content load_original_content(const std::filesystem::path &folder, Gol
     content.game = game;
     // A Buck Rogers creature fights as its own record, which each fight brings
     // with it (buck_rogers_combat.h): the game has no bestiary of AD&D numbers.
+    // Its items are named by the game's item words.
     if (is_buck_rogers(game))
     {
+        content.buck_rogers_item_words = load_buck_rogers_stock(folder, game).item_words;
         return content;
     }
     const auto catalog = por::CreatureCatalog::load(folder, game);
@@ -191,19 +194,7 @@ BuckRogersStock load_buck_rogers_stock(const std::filesystem::path &folder, Gold
 
 std::string buck_rogers_item_name(const buck_rogers::Item &item, std::span<const std::string> words)
 {
-    std::string name;
-    for (const auto part : item.name_parts)
-    {
-        if (part != 0 && part < words.size())
-        {
-            name = words[part] + (name.empty() ? "" : " ") + name;
-        }
-    }
-    if (item.plus != 0)
-    {
-        name += (item.plus > 0 ? " +" : " ") + std::to_string(item.plus);
-    }
-    return name.empty() ? std::string("?") : name;
+    return original::item_name(item, words);
 }
 
 void outfit_buck_rogers_character(CampaignParty &party, MemberId id, const BuckRogersStock &stock)

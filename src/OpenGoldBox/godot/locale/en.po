@@ -187,7 +187,7 @@ msgstr "< Body"
 msgid "< Head"
 msgstr "< Head"
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14026
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14033
 msgid "A Buck Rogers creature has no record: "
 msgstr "A Buck Rogers creature has no record: "
 
@@ -490,7 +490,7 @@ msgstr "A new class: its level-one features and part of its training."
 msgid "A pack of spirit animals appears."
 msgstr "A pack of spirit animals appears."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:15902
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:15910
 msgid "A party member has no original-rules profile: "
 msgstr "A party member has no original-rules profile: "
 
@@ -580,7 +580,7 @@ msgstr "A wielder of divine magic. Primary ability: Wisdom. Hit Die: d8."
 msgid "A wizard who learns powerful spells from a spellbook but fights poorly and wears no armor. Hit Die: d4."
 msgstr "A wizard who learns powerful spells from a spellbook but fights poorly and wears no armor. Hit Die: d4."
 
-#: src/OpenGoldBox/combat_view.cpp:3237 src/OpenGoldBox/combat_view.cpp:3270
+#: src/OpenGoldBox/combat_view.cpp:3306 src/OpenGoldBox/combat_view.cpp:3339
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "AC {ac}"
 msgstr "AC {ac}"
@@ -627,7 +627,7 @@ msgstr "Abjure Foes"
 msgid "Abjure Foes: a Magic action and a Channel Divinity use; up to your Charisma modifier (at least 1) of creatures you see within 60 feet make a Wisdom save or are Frightened for a minute or until damaged, doing only one of moving, an action or a Bonus Action on their turns.\nLevel 3 spell slots and Paladin spells; Oath of Devotion: Beacon of Hope and Dispel Magic are always prepared.\nProficiency Bonus +4."
 msgstr "Abjure Foes: a Magic action and a Channel Divinity use; up to your Charisma modifier (at least 1) of creatures you see within 60 feet make a Wisdom save or are Frightened for a minute or until damaged, doing only one of moving, an action or a Bonus Action on their turns.\nLevel 3 spell slots and Paladin spells; Oath of Devotion: Beacon of Hope and Dispel Magic are always prepared.\nProficiency Bonus +4."
 
-#: src/OpenGoldBox/combat_view.cpp:120
+#: src/OpenGoldBox/combat_view.cpp:122
 msgid "Abort the spell"
 msgstr "Abort the spell"
 
@@ -683,7 +683,7 @@ msgstr "Action"
 msgid "Action Surge"
 msgstr "Action Surge"
 
-#: src/OpenGoldBox/combat_view.cpp:3355
+#: src/OpenGoldBox/combat_view.cpp:3424
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Action Surge ({remaining}/{maximum})"
 msgstr "Action Surge ({remaining}/{maximum})"
@@ -696,11 +696,11 @@ msgstr "Action Surge action ready (no Magic)."
 msgid "Action Surge: one additional action, except Magic, on your turn. One use per Short or Long Rest."
 msgstr "Action Surge: one additional action, except Magic, on your turn. One use per Short or Long Rest."
 
-#: src/OpenGoldBox/combat_view.cpp:3199
+#: src/OpenGoldBox/combat_view.cpp:3268
 msgid "Action ready"
 msgstr "Action ready"
 
-#: src/OpenGoldBox/combat_view.cpp:3199
+#: src/OpenGoldBox/combat_view.cpp:3268
 msgid "Action spent"
 msgstr "Action spent"
 
@@ -864,7 +864,7 @@ msgstr "Admiral"
 msgid "Adrenaline Rush"
 msgstr "Adrenaline Rush"
 
-#: src/OpenGoldBox/combat_view.cpp:3338
+#: src/OpenGoldBox/combat_view.cpp:3407
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Adrenaline Rush ({remaining}/{maximum})"
 msgstr "Adrenaline Rush ({remaining}/{maximum})"
@@ -957,11 +957,11 @@ msgstr "Agonizing Blast (Starry Wisp)"
 msgid "Agonizing Blast (Vicious Mockery)"
 msgstr "Agonizing Blast (Vicious Mockery)"
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:67 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/ship_combat.tscn:245
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:67 src/OpenGoldBox/combat_view.cpp:135 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/ship_combat.tscn:245
 msgid "Aid"
 msgstr "Aid"
 
-#: src/OpenGoldBox/combat_view.cpp:3947
+#: src/OpenGoldBox/combat_view.cpp:4036
 msgid "Aim the spell."
 msgstr "Aim the spell."
 
@@ -1265,15 +1265,15 @@ msgstr "Arrow: party & facing\nGold: doors   Teal: visited"
 msgid "Arrows and numpad: fly   •   R: rocket   •   C: change   •   Escape: menu"
 msgstr "Arrows and numpad: fly   •   R: rocket   •   C: change   •   Escape: menu"
 
-#: src/OpenGoldBox/combat_view.cpp:872
+#: src/OpenGoldBox/combat_view.cpp:924
 msgid "Arrows/Numpad: move | Shift+arrow: diagonal | A: action | Space: use | Z: slot | Enter: end"
 msgstr "Arrows/Numpad: move | Shift+arrow: diagonal | A: action | Space: use | Z: slot | Enter: end"
 
-#: src/OpenGoldBox/combat_view.cpp:3928
+#: src/OpenGoldBox/combat_view.cpp:4017
 msgid "Arrows/Numpad: move | Shift+arrow: diagonal | A: action | Space: use | Z: slot | Enter: end | Q: party Quick | M: Quick magic"
 msgstr "Arrows/Numpad: move | Shift+arrow: diagonal | A: action | Space: use | Z: slot | Enter: end | Q: party Quick | M: Quick magic"
 
-#: src/OpenGoldBox/combat_view.cpp:3941
+#: src/OpenGoldBox/combat_view.cpp:4030
 msgid "Arrows: choose | Space: use | Escape: skip"
 msgstr "Arrows: choose | Space: use | Escape: skip"
 
@@ -1345,7 +1345,7 @@ msgstr "Attack rolls and save DCs of your lineage's spells."
 msgid "Attack twice with your pact weapon when you take the Attack action."
 msgstr "Attack twice with your pact weapon when you take the Attack action."
 
-#: src/OpenGoldBox/combat_view.cpp:2394
+#: src/OpenGoldBox/combat_view.cpp:2463
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Attack {name}, an ally? Your allies will turn on you."
 msgstr "Attack {name}, an ally? Your allies will turn on you."
@@ -1443,7 +1443,7 @@ msgstr "Balances competing principles or acts according to circumstances."
 msgid "Balances competing principles, or acts as circumstances demand."
 msgstr "Balances competing principles, or acts as circumstances demand."
 
-#: src/OpenGoldBox/combat_view.cpp:118
+#: src/OpenGoldBox/combat_view.cpp:120
 msgid "Bandage"
 msgstr "Bandage"
 
@@ -1549,7 +1549,7 @@ msgstr "Basic Poison"
 msgid "Basic Poison: coat weapon"
 msgstr "Basic Poison: coat weapon"
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12507
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12514
 msgid "Bastard Sword +4"
 msgstr "Bastard Sword +4"
 
@@ -2364,7 +2364,7 @@ msgstr "Cast [M]"
 msgid "Cast a spell or use a feature outside combat."
 msgstr "Cast a spell or use a feature outside combat."
 
-#: src/OpenGoldBox/combat_view.cpp:3412 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/combat_view.cpp:3481 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Cast spell"
 msgstr "Cast spell"
 
@@ -2651,7 +2651,7 @@ msgstr "Charmed until the fight ends; a hit slays it."
 msgid "Chemistry"
 msgstr "Chemistry"
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:35 src/OpenGoldBox/combat_view.cpp:3304 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:35 src/OpenGoldBox/combat_view.cpp:3373 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Chill Touch"
 msgstr "Chill Touch"
 
@@ -2660,7 +2660,7 @@ msgstr "Chill Touch"
 msgid "Chill Touch ({source}): cannot regain HP."
 msgstr "Chill Touch ({source}): cannot regain HP."
 
-#: src/OpenGoldBox/combat_view.cpp:3362
+#: src/OpenGoldBox/combat_view.cpp:3431
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Choose Temporary HP\n\nCurrent: {current} — {current_source}\nNew: {offered} — {offered_source}\n\nThe amounts do not add. The Bonus Action and use are already spent."
 msgstr "Choose Temporary HP\n\nCurrent: {current} — {current_source}\nNew: {offered} — {offered_source}\n\nThe amounts do not add. The Bonus Action and use are already spent."
@@ -2853,7 +2853,7 @@ msgstr "Choose the spells Magic Initiate teaches."
 msgid "Choose the spells Magic Initiate teaches. Unfilled choices remain pending; Back preserves your choices."
 msgstr "Choose the spells Magic Initiate teaches. Unfilled choices remain pending; Back preserves your choices."
 
-#: src/OpenGoldBox/combat_view.cpp:3988
+#: src/OpenGoldBox/combat_view.cpp:4077
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Choose up to {maximum} creatures. Chosen: {chosen}"
 msgstr "Choose up to {maximum} creatures. Chosen: {chosen}"
@@ -3077,11 +3077,11 @@ msgstr "Cleric/Ranger"
 msgid "Cleric/Thief"
 msgstr "Cleric/Thief"
 
-#: src/OpenGoldBox/combat_view.cpp:3982
+#: src/OpenGoldBox/combat_view.cpp:4071
 msgid "Click a foe: aim the next at it | Escape: cancel"
 msgstr "Click a foe: aim the next at it | Escape: cancel"
 
-#: src/OpenGoldBox/combat_view.cpp:3992
+#: src/OpenGoldBox/combat_view.cpp:4081
 msgid "Click: choose or remove | Space or Cast spell: cast | Escape: cancel"
 msgstr "Click: choose or remove | Space or Cast spell: cast | Escape: cancel"
 
@@ -3137,7 +3137,7 @@ msgstr "Club"
 msgid "Cold"
 msgstr "Cold"
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3886 src/OpenGold.Rules.Original/src/rules_module.cpp:3896
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3893 src/OpenGold.Rules.Original/src/rules_module.cpp:3896
 msgid "Cold flames"
 msgstr "Cold flames"
 
@@ -3194,7 +3194,7 @@ msgstr "Combat begins."
 msgid "Combat begins. Each square is 5 feet."
 msgstr "Combat begins. Each square is 5 feet."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:1942
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:1949
 msgid "Combat calendar overflow"
 msgstr "Combat calendar overflow"
 
@@ -3630,7 +3630,7 @@ msgstr "Dagger"
 msgid "Dagger +1"
 msgstr "Dagger +1"
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12510
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12517
 msgid "Dagger +4"
 msgstr "Dagger +4"
 
@@ -3677,7 +3677,7 @@ msgstr "Dark One's Own Luck used"
 msgid "Dark One's Own Luck: a failed save or ability check you could still pass gains 1d10, as many times as your Charisma modifier (at least once) per Long Rest."
 msgstr "Dark One's Own Luck: a failed save or ability check you could still pass gains 1d10, as many times as your Charisma modifier (at least once) per Long Rest."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:15946
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:15954
 msgid "Dark Queen effect "
 msgstr "Dark Queen effect "
 
@@ -3804,27 +3804,27 @@ msgstr "Deflect Energy: Deflect Attacks works against any damage type.\nProficie
 msgid "Deity"
 msgstr "Deity"
 
-#: src/OpenGoldBox/combat_view.cpp:115
+#: src/OpenGoldBox/combat_view.cpp:117
 msgid "Delay"
 msgstr "Delay"
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3865
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3872
 msgid "Delay 1 round"
 msgstr "Delay 1 round"
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3866
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3873
 msgid "Delay 2 rounds"
 msgstr "Delay 2 rounds"
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3866
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3873
 msgid "Delay 3 rounds"
 msgstr "Delay 3 rounds"
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3867
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3874
 msgid "Delay 4 rounds"
 msgstr "Delay 4 rounds"
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3867
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3874
 msgid "Delay 5 rounds"
 msgstr "Delay 5 rounds"
 
@@ -3832,7 +3832,7 @@ msgstr "Delay 5 rounds"
 msgid "Delayed Blast Fireball"
 msgstr "Delayed Blast Fireball"
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:5994
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:6001
 msgid "Delayed Blast Fireball goes off."
 msgstr "Delayed Blast Fireball goes off."
 
@@ -4105,7 +4105,7 @@ msgstr "Divvy"
 msgid "Do not equip unidentified magic items"
 msgstr "Do not equip unidentified magic items"
 
-#: src/OpenGoldBox/godot/scenes/combat_demo.tscn:260
+#: src/OpenGoldBox/combat_view.cpp:137 src/OpenGoldBox/godot/scenes/combat_demo.tscn:260
 msgid "Dodge"
 msgstr "Dodge"
 
@@ -4145,7 +4145,7 @@ msgstr "Donate"
 msgid "Done [M]"
 msgstr "Done [M]"
 
-#: src/OpenGoldBox/combat_view.cpp:119
+#: src/OpenGoldBox/combat_view.cpp:121
 msgid "Done aiming"
 msgstr "Done aiming"
 
@@ -4444,7 +4444,7 @@ msgstr "Eighth level"
 msgid "Eldamar's soul is free, and the Dreadlord is no more. You have won."
 msgstr "Eldamar's soul is free, and the Dreadlord is no more. You have won."
 
-#: src/OpenGoldBox/combat_view.cpp:3306 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/combat_view.cpp:3375 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Eldritch Blast"
 msgstr "Eldritch Blast"
 
@@ -4597,7 +4597,7 @@ msgstr "Encounter challenge"
 msgid "End turn"
 msgstr "End turn"
 
-#: src/OpenGoldBox/combat_view.cpp:3847
+#: src/OpenGoldBox/combat_view.cpp:3934
 msgid "Enemy turn"
 msgstr "Enemy turn"
 
@@ -4936,7 +4936,7 @@ msgstr "Faerie Fire (Magic Initiate)"
 msgid "Faerie Fire (level 2 slot)"
 msgstr "Faerie Fire (level 2 slot)"
 
-#: src/OpenGoldBox/combat_view.cpp:3388
+#: src/OpenGoldBox/combat_view.cpp:3457
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Failed Medicine check: d20 {roll} + {modifier} = {total} vs DC {dc}.\nSecond Wind uses: {uses}\n\nAdd 1d10. Spend one use only if the check succeeds.\nThe original Action is already spent."
 msgstr "Failed Medicine check: d20 {roll} + {modifier} = {total} vs DC {dc}.\nSecond Wind uses: {uses}\n\nAdd 1d10. Spend one use only if the check succeeds.\nThe original Action is already spent."
@@ -5195,7 +5195,7 @@ msgstr "Finish the rest's choices before casting Simulacrum"
 msgid "Fire"
 msgstr "Fire"
 
-#: src/OpenGoldBox/combat_view.cpp:3301 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/combat_view.cpp:3370 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Fire Bolt"
 msgstr "Fire Bolt"
 
@@ -5383,6 +5383,10 @@ msgstr "Fly west (Left, keypad 4)."
 msgid "Flyby"
 msgstr "Flyby"
 
+#: src/OpenGoldBox/combat_view.cpp:4013
+msgid "Flying: Land. Click a highlighted square, or Arrows: square | Space: land"
+msgstr "Flying: Land. Click a highlighted square, or Arrows: square | Space: land"
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Focus Points"
 msgstr "Focus Points"
@@ -5547,7 +5551,7 @@ msgstr "Fourth level"
 msgid "Free move"
 msgstr "Free move"
 
-#: src/OpenGoldBox/combat_view.cpp:3933
+#: src/OpenGoldBox/combat_view.cpp:4022
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Free move: {feet} ft | Arrows/click: move | Escape or Finish free move: finish"
 msgstr "Free move: {feet} ft | Arrows/click: move | Escape or Finish free move: finish"
@@ -5956,7 +5960,7 @@ msgstr "Green crystal"
 msgid "Grovel"
 msgstr "Grovel"
 
-#: src/OpenGoldBox/combat_view.cpp:114
+#: src/OpenGoldBox/combat_view.cpp:116
 msgid "Guard"
 msgstr "Guard"
 
@@ -6428,7 +6432,7 @@ msgstr "Horde Breaker"
 msgid "Hosttower of the Arcane"
 msgstr "Hosttower of the Arcane"
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3886 src/OpenGold.Rules.Original/src/rules_module.cpp:3896
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3893 src/OpenGold.Rules.Original/src/rules_module.cpp:3896
 msgid "Hot flames"
 msgstr "Hot flames"
 
@@ -6755,7 +6759,7 @@ msgstr "Intelligence"
 msgid "Interface"
 msgstr "Interface"
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/combat_view.cpp:134 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Intimidate"
 msgstr "Intimidate"
 
@@ -6795,7 +6799,7 @@ msgstr "Invalid knight petition"
 msgid "Invalid native scripted drain"
 msgstr "Invalid native scripted drain"
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:15211 src/OpenGold.Rules.Original/src/combat_session.cpp:15391 src/OpenGold.Rules.Original/src/combat_session.cpp:15474 src/OpenGold.Rules.Original/src/combat_session.cpp:15484 src/OpenGold.Rules.Original/src/combat_session.cpp:15493 src/OpenGold.Rules.Original/src/combat_session.cpp:15503 src/OpenGold.Rules.Original/src/combat_session.cpp:15548 src/OpenGold.Rules.Original/src/combat_session.cpp:15559 src/OpenGold.Rules.Original/src/combat_session.cpp:15571 src/OpenGold.Rules.Original/src/combat_session.cpp:15585 src/OpenGold.Rules.Original/src/combat_session.cpp:15594 src/OpenGold.Rules.Original/src/combat_session.cpp:15599 src/OpenGold.Rules.Original/src/combat_session.cpp:15614 src/OpenGold.Rules.Original/src/combat_session.cpp:15650 src/OpenGold.Rules.Original/src/combat_session.cpp:15657 src/OpenGold.Rules.Original/src/combat_session.cpp:15667 src/OpenGold.Rules.Original/src/combat_session.cpp:15678 src/OpenGold.Rules.Original/src/combat_session.cpp:15709 src/OpenGold.Rules.Original/src/combat_session.cpp:786 src/OpenGold.Rules.Original/src/combat_session.cpp:806
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:15219 src/OpenGold.Rules.Original/src/combat_session.cpp:15399 src/OpenGold.Rules.Original/src/combat_session.cpp:15482 src/OpenGold.Rules.Original/src/combat_session.cpp:15492 src/OpenGold.Rules.Original/src/combat_session.cpp:15501 src/OpenGold.Rules.Original/src/combat_session.cpp:15511 src/OpenGold.Rules.Original/src/combat_session.cpp:15556 src/OpenGold.Rules.Original/src/combat_session.cpp:15567 src/OpenGold.Rules.Original/src/combat_session.cpp:15579 src/OpenGold.Rules.Original/src/combat_session.cpp:15593 src/OpenGold.Rules.Original/src/combat_session.cpp:15602 src/OpenGold.Rules.Original/src/combat_session.cpp:15607 src/OpenGold.Rules.Original/src/combat_session.cpp:15622 src/OpenGold.Rules.Original/src/combat_session.cpp:15658 src/OpenGold.Rules.Original/src/combat_session.cpp:15665 src/OpenGold.Rules.Original/src/combat_session.cpp:15675 src/OpenGold.Rules.Original/src/combat_session.cpp:15686 src/OpenGold.Rules.Original/src/combat_session.cpp:15717 src/OpenGold.Rules.Original/src/combat_session.cpp:786 src/OpenGold.Rules.Original/src/combat_session.cpp:806
 msgid "Invalid original-rules combat checkpoint"
 msgstr "Invalid original-rules combat checkpoint"
 
@@ -6863,15 +6867,15 @@ msgstr "It can keep someone up again after a Long Rest."
 msgid "It could not get away. It runs at its enemies and strikes wildly at whoever is in reach, friend or foe, with Disadvantage; attack rolls against it have Advantage, and it has no Bonus Actions or Reactions."
 msgstr "It could not get away. It runs at its enemies and strikes wildly at whoever is in reach, friend or foe, with Disadvantage; attack rolls against it have Advantage, and it has no Bonus Actions or Reactions."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14573
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14580
 msgid "It goes astray."
 msgstr "It goes astray."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14581
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14588
 msgid "It hits chaff."
 msgstr "It hits chaff."
 
-#: src/OpenGoldBox/combat_view.cpp:3861
+#: src/OpenGoldBox/combat_view.cpp:3948
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "It is not {name}'s turn."
 msgstr "It is not {name}'s turn."
@@ -6964,6 +6968,10 @@ msgstr "Javelin of Lightning"
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:387
 msgid "Javelin of Lightning spent"
 msgstr "Javelin of Lightning spent"
+
+#: src/OpenGoldBox/combat_view.cpp:138
+msgid "Jetpack"
+msgstr "Jetpack"
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:2464
 msgid "Jewelry"
@@ -7099,6 +7107,10 @@ msgstr "L2 slots: {count}"
 msgid "Lance"
 msgstr "Lance"
 
+#: src/OpenGoldBox/combat_view.cpp:133
+msgid "Land"
+msgstr "Land"
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Land's Aid"
 msgstr "Land's Aid"
@@ -7111,7 +7123,7 @@ msgstr "Language"
 msgid "Lasts while its summoner keeps Concentration."
 msgstr "Lasts while its summoner keeps Concentration."
 
-#: src/OpenGoldBox/combat_view.cpp:121
+#: src/OpenGoldBox/combat_view.cpp:132
 msgid "Launch or throw"
 msgstr "Launch or throw"
 
@@ -7191,7 +7203,7 @@ msgstr "Leave shop"
 msgid "Leave the animal shape"
 msgstr "Leave the animal shape"
 
-#: src/OpenGoldBox/combat_view.cpp:3948
+#: src/OpenGoldBox/combat_view.cpp:4037
 msgid "Left click or arrows: move | Right click, Space or Enter: cast | Escape: cancel"
 msgstr "Left click or arrows: move | Right click, Space or Enter: cast | Escape: cancel"
 
@@ -7563,7 +7575,7 @@ msgstr "Long Rest"
 msgid "Long Rest cooldown remaining (minutes):"
 msgstr "Long Rest cooldown remaining (minutes):"
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12508
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12515
 msgid "Long Sword +4"
 msgstr "Long Sword +4"
 
@@ -7757,7 +7769,7 @@ msgstr "Magic Missile (Magic Initiate)"
 msgid "Magic Missile (level 2 slot)"
 msgstr "Magic Missile (level 2 slot)"
 
-#: src/OpenGoldBox/combat_view.cpp:3814
+#: src/OpenGoldBox/combat_view.cpp:3901
 msgid "Magic Missile is aimed at you. Cast Shield or decline."
 msgstr "Magic Missile is aimed at you. Cast Shield or decline."
 
@@ -8355,7 +8367,7 @@ msgstr "Morningstar"
 msgid "Mountain Dwarf"
 msgstr "Mountain Dwarf"
 
-#: src/OpenGoldBox/combat_view.cpp:3772 src/OpenGoldBox/godot/scenes/combat_demo.tscn:117
+#: src/OpenGoldBox/combat_view.cpp:3859 src/OpenGoldBox/godot/scenes/combat_demo.tscn:117
 msgid "Move"
 msgstr "Move"
 
@@ -8468,7 +8480,7 @@ msgstr "Mystic Arcanum: choose a level 7 Warlock spell to cast once per Long Res
 msgid "Mystic Arcanum: choose a level 8 Warlock spell to cast once per Long Rest without a spell slot.\nOne more Eldritch Invocation; Witch Sight is open."
 msgstr "Mystic Arcanum: choose a level 8 Warlock spell to cast once per Long Rest without a spell slot.\nOne more Eldritch Invocation; Witch Sight is open."
 
-#: src/OpenGoldBox/combat_view.cpp:3121
+#: src/OpenGoldBox/combat_view.cpp:3190
 msgid "NPC"
 msgstr "NPC"
 
@@ -8713,11 +8725,11 @@ msgstr "No armor"
 msgid "No character created yet."
 msgstr "No character created yet."
 
-#: src/OpenGoldBox/combat_view.cpp:4020
+#: src/OpenGoldBox/combat_view.cpp:4109
 msgid "No combat artwork assigned"
 msgstr "No combat artwork assigned"
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3865
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3872
 msgid "No delay"
 msgstr "No delay"
 
@@ -8754,11 +8766,11 @@ msgstr "No one aboard can act this round."
 msgid "No one can fix the party now."
 msgstr "No one can fix the party now."
 
-#: src/OpenGoldBox/combat_view.cpp:4626
+#: src/OpenGoldBox/combat_view.cpp:4715
 msgid "No one else can get away. Your party fights on."
 msgstr "No one else can get away. Your party fights on."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:13346
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:13353
 msgid "No one has attacked for 15 rounds, and the fight ends."
 msgstr "No one has attacked for 15 rounds, and the fight ends."
 
@@ -8767,7 +8779,7 @@ msgstr "No one has attacked for 15 rounds, and the fight ends."
 msgid "No one in the party needs {spell}."
 msgstr "No one in the party needs {spell}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:15937 src/OpenGold.Rules.Original/src/rules_module.cpp:1130
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:15945 src/OpenGold.Rules.Original/src/rules_module.cpp:1130
 msgid "No original-rules record for "
 msgstr "No original-rules record for "
 
@@ -8875,7 +8887,7 @@ msgstr "Not yet qualified. You may still plan for this class."
 msgid "Nothing can interrupt the party's rest."
 msgstr "Nothing can interrupt the party's rest."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11057 src/OpenGold.Rules.Original/src/combat_session.cpp:11150 src/OpenGold.Rules.Original/src/combat_session.cpp:11292 src/OpenGold.Rules.Original/src/combat_session.cpp:4450
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11064 src/OpenGold.Rules.Original/src/combat_session.cpp:11157 src/OpenGold.Rules.Original/src/combat_session.cpp:11299 src/OpenGold.Rules.Original/src/combat_session.cpp:4457
 msgid "Nothing happens."
 msgstr "Nothing happens."
 
@@ -9120,7 +9132,7 @@ msgstr "OpenGoldBox's"
 msgid "Opportunity Attacks against you have Disadvantage."
 msgstr "Opportunity Attacks against you have Disadvantage."
 
-#: src/OpenGoldBox/combat_view.cpp:3747 src/OpenGoldBox/godot/scenes/combat_demo.tscn:344
+#: src/OpenGoldBox/combat_view.cpp:3834 src/OpenGoldBox/godot/scenes/combat_demo.tscn:344
 msgid "Opportunity attack"
 msgstr "Opportunity attack"
 
@@ -9384,7 +9396,7 @@ msgstr "Party ({x}, {y})   {direction}"
 msgid "Party area spells"
 msgstr "Party area spells"
 
-#: src/OpenGoldBox/combat_view.cpp:3210
+#: src/OpenGoldBox/combat_view.cpp:3279
 msgid "Party incapacitated / defeat"
 msgstr "Party incapacitated / defeat"
 
@@ -9598,7 +9610,7 @@ msgstr "Points"
 msgid "Poison"
 msgstr "Poison"
 
-#: src/OpenGoldBox/combat_view.cpp:3302
+#: src/OpenGoldBox/combat_view.cpp:3371
 msgid "Poison Spray"
 msgstr "Poison Spray"
 
@@ -10004,7 +10016,7 @@ msgstr "Push"
 msgid "Pushing hits"
 msgstr "Pushing hits"
 
-#: src/OpenGoldBox/combat_view.cpp:111
+#: src/OpenGoldBox/combat_view.cpp:113
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Put away {item}"
 msgstr "Put away {item}"
@@ -10025,7 +10037,7 @@ msgstr "Pyramid, the laboratories"
 msgid "Pyramid, the prison of souls"
 msgstr "Pyramid, the prison of souls"
 
-#: src/OpenGoldBox/combat_view.cpp:4110
+#: src/OpenGoldBox/combat_view.cpp:4199
 msgid "QUICK"
 msgstr "QUICK"
 
@@ -10049,11 +10061,11 @@ msgstr "Quick load"
 msgid "Quick load (F9)"
 msgstr "Quick load (F9)"
 
-#: src/OpenGoldBox/combat_view.cpp:3735 src/OpenGoldBox/godot/scenes/combat_demo.tscn:325
+#: src/OpenGoldBox/combat_view.cpp:3822 src/OpenGoldBox/godot/scenes/combat_demo.tscn:325
 msgid "Quick magic: Off"
 msgstr "Quick magic: Off"
 
-#: src/OpenGoldBox/combat_view.cpp:3734
+#: src/OpenGoldBox/combat_view.cpp:3821
 msgid "Quick magic: On"
 msgstr "Quick magic: On"
 
@@ -10386,7 +10398,7 @@ msgstr "Ray of Enfeeblement"
 msgid "Ray of Enfeeblement subtracts {damage} damage."
 msgstr "Ray of Enfeeblement subtracts {damage} damage."
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:33 src/OpenGoldBox/combat_view.cpp:3307
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:33 src/OpenGoldBox/combat_view.cpp:3376
 msgid "Ray of Frost"
 msgstr "Ray of Frost"
 
@@ -10430,7 +10442,7 @@ msgstr "Read it in camp: Constitution and its maximum rise by 2. Its magic is th
 msgid "Read languages"
 msgstr "Read languages"
 
-#: src/OpenGoldBox/combat_view.cpp:3805
+#: src/OpenGoldBox/combat_view.cpp:3892
 msgid "Read the encounter text, then Continue."
 msgstr "Read the encounter text, then Continue."
 
@@ -10446,7 +10458,7 @@ msgstr "Ready"
 msgid "Ready to level up"
 msgstr "Ready to level up"
 
-#: src/OpenGoldBox/combat_view.cpp:111
+#: src/OpenGoldBox/combat_view.cpp:113
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Ready {item}"
 msgstr "Ready {item}"
@@ -11182,12 +11194,12 @@ msgstr "Rooted (Flesh to Stone)"
 msgid "Rotting Fist curse"
 msgstr "Rotting Fist curse"
 
-#: src/OpenGoldBox/combat_view.cpp:3194
+#: src/OpenGoldBox/combat_view.cpp:3263
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Round {round} / {name} reaction\nMove {feet} ft | {action}"
 msgstr "Round {round} / {name} reaction\nMove {feet} ft | {action}"
 
-#: src/OpenGoldBox/combat_view.cpp:3195
+#: src/OpenGoldBox/combat_view.cpp:3264
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Round {round} / {name} turn\nMove {feet} ft | {action}"
 msgstr "Round {round} / {name} turn\nMove {feet} ft | {action}"
@@ -11237,7 +11249,7 @@ msgstr "SRD 5.2.1 combat subset | Authored test arena | Original Slums dialogue 
 msgid "STR"
 msgstr "STR"
 
-#: src/OpenGoldBox/combat_view.cpp:3303
+#: src/OpenGoldBox/combat_view.cpp:3372
 msgid "Sacred Flame"
 msgstr "Sacred Flame"
 
@@ -11379,7 +11391,7 @@ msgstr "Scholar Expertise"
 msgid "Scimitar"
 msgstr "Scimitar"
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12509
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12516
 msgid "Scimitar +4"
 msgstr "Scimitar +4"
 
@@ -11566,36 +11578,36 @@ msgstr "Select weapon"
 msgid "Selected"
 msgstr "Selected"
 
-#: src/OpenGoldBox/combat_view.cpp:3924
+#: src/OpenGoldBox/combat_view.cpp:4014
 msgid "Selected: Launch or throw. Click a highlighted square, or Arrows: square | Space: launch | Escape: cancel"
 msgstr "Selected: Launch or throw. Click a highlighted square, or Arrows: square | Space: launch | Escape: cancel"
 
-#: src/OpenGoldBox/combat_view.cpp:3913
+#: src/OpenGoldBox/combat_view.cpp:4000
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Selected: Nick attack on {name}. Left/Right: target | Space: use | Escape: cancel"
 msgstr "Selected: Nick attack on {name}. Left/Right: target | Space: use | Escape: cancel"
 
-#: src/OpenGoldBox/combat_view.cpp:3916
+#: src/OpenGoldBox/combat_view.cpp:4003
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Selected: Stabilize on {name}. Left/Right: target | Space: use | Escape: cancel"
 msgstr "Selected: Stabilize on {name}. Left/Right: target | Space: use | Escape: cancel"
 
-#: src/OpenGoldBox/combat_view.cpp:3915
+#: src/OpenGoldBox/combat_view.cpp:4002
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Selected: Throw at {name}. Left/Right: target | Space: use | Escape: cancel"
 msgstr "Selected: Throw at {name}. Left/Right: target | Space: use | Escape: cancel"
 
-#: src/OpenGoldBox/combat_view.cpp:3798
+#: src/OpenGoldBox/combat_view.cpp:3885
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Selected: {action}. Click a highlighted creature."
 msgstr "Selected: {action}. Click a highlighted creature."
 
-#: src/OpenGoldBox/combat_view.cpp:3788
+#: src/OpenGoldBox/combat_view.cpp:3875
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Selected: {action}. Click a highlighted square."
 msgstr "Selected: {action}. Click a highlighted square."
 
-#: src/OpenGoldBox/combat_view.cpp:3800
+#: src/OpenGoldBox/combat_view.cpp:3887
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Selected: {action}. Press Space to use it."
 msgstr "Selected: {action}. Press Space to use it."
@@ -11701,7 +11713,7 @@ msgstr "Ship combat. On: with no one at the helm, the ship dodges a ram by its o
 msgid "Ship picture by range"
 msgstr "Ship picture by range"
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:38 src/OpenGold.Rules.Srd5/src/effect_labels.h:34 src/OpenGoldBox/combat_view.cpp:3305 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:38 src/OpenGold.Rules.Srd5/src/effect_labels.h:34 src/OpenGoldBox/combat_view.cpp:3374 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Shocking Grasp"
 msgstr "Shocking Grasp"
 
@@ -11763,7 +11775,7 @@ msgstr "Shortsword"
 msgid "Show character sheet"
 msgstr "Show character sheet"
 
-#: src/OpenGoldBox/combat_view.cpp:4021
+#: src/OpenGoldBox/combat_view.cpp:4110
 msgid "Showing unarmed with the saved body."
 msgstr "Showing unarmed with the saved body."
 
@@ -11872,7 +11884,7 @@ msgstr "Skills"
 msgid "Skip"
 msgstr "Skip"
 
-#: src/OpenGoldBox/combat_view.cpp:3411
+#: src/OpenGoldBox/combat_view.cpp:3480
 msgid "Skip effect"
 msgstr "Skip effect"
 
@@ -11920,7 +11932,7 @@ msgstr "Slippery Mind: proficiency in Wisdom and Charisma saving throws.\nSneak 
 msgid "Slot level 1"
 msgstr "Slot level 1"
 
-#: src/OpenGoldBox/combat_view.cpp:3692
+#: src/OpenGoldBox/combat_view.cpp:3779
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Slot level {level}"
 msgstr "Slot level {level}"
@@ -12277,7 +12289,7 @@ msgstr "Speak/Read Language"
 msgid "Spear"
 msgstr "Spear"
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12511
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12518
 msgid "Spear +4"
 msgstr "Spear +4"
 
@@ -12393,7 +12405,7 @@ msgstr "Spirit Guardians"
 msgid "Spirit guardians flit around {name}."
 msgstr "Spirit guardians flit around {name}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:5121 src/OpenGold.Rules.Original/src/spells.cpp:46
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:5128 src/OpenGold.Rules.Original/src/spells.cpp:46
 msgid "Spiritual Hammer"
 msgstr "Spiritual Hammer"
 
@@ -12408,6 +12420,10 @@ msgstr "Spiritual Weapon attack"
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Splint Armor"
 msgstr "Splint Armor"
+
+#: src/OpenGoldBox/combat_view.cpp:136
+msgid "Sprint"
+msgstr "Sprint"
 
 #: src/OpenGoldBox/ship_combat_view.cpp:89
 msgid "Sprinting"
@@ -12826,7 +12842,7 @@ msgstr "Target: {target}\nReduce Speed by 10 feet until your next turn starts.\n
 msgid "Teal: party | Orange: enemies\nStone: obstacle | Brown: difficult terrain\nSaving is available in training combat."
 msgstr "Teal: party | Orange: enemies\nStone: obstacle | Brown: difficult terrain\nSaving is available in training combat."
 
-#: src/OpenGoldBox/combat_view.cpp:862
+#: src/OpenGoldBox/combat_view.cpp:914
 msgid "Teal: party | Orange: enemies\nWheel: scroll | Shift+wheel: sideways\nMiddle-drag: pan | Scrollbars: navigate"
 msgstr "Teal: party | Orange: enemies\nWheel: scroll | Shift+wheel: sideways\nMiddle-drag: pan | Scrollbars: navigate"
 
@@ -12912,7 +12928,7 @@ msgstr "That cannot be done now"
 msgid "That cannot be used now"
 msgstr "That cannot be used now"
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4083
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4090
 msgid "That has no effect underwater!"
 msgstr "That has no effect underwater!"
 
@@ -13045,11 +13061,11 @@ msgstr "The Thieves' hall trains Rogues, Bards and Monks."
 msgid "The Wand of Secrets has no charges left."
 msgstr "The Wand of Secrets has no charges left."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11635
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11642
 msgid "The acid drains away."
 msgstr "The acid drains away."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11722 src/OpenGold.Rules.Original/src/combat_session.cpp:14735
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11729 src/OpenGold.Rules.Original/src/combat_session.cpp:14742
 msgid "The air clears a little."
 msgstr "The air clears a little."
 
@@ -13057,7 +13073,7 @@ msgstr "The air clears a little."
 msgid "The art settings above choose the new art or the original game's."
 msgstr "The art settings above choose the new art or the original game's."
 
-#: src/OpenGoldBox/combat_view.cpp:3825
+#: src/OpenGoldBox/combat_view.cpp:3912
 msgid "The attack is fully deflected. Redirect it at the attacker for 1 Focus Point, or decline."
 msgstr "The attack is fully deflected. Redirect it at the attacker for 1 Focus Point, or decline."
 
@@ -13314,11 +13330,11 @@ msgstr "The party has a drink."
 msgid "The party has acquired the..."
 msgstr "The party has acquired the..."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:13316
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:13323
 msgid "The party has fled."
 msgstr "The party has fled."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:13317
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:13324
 msgid "The party is defeated."
 msgstr "The party is defeated."
 
@@ -13360,7 +13376,7 @@ msgstr "The party takes the money."
 msgid "The party takes {loot}."
 msgstr "The party takes {loot}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:13315 src/OpenGold.Rules.Original/src/combat_session.cpp:13349
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:13322 src/OpenGold.Rules.Original/src/combat_session.cpp:13356
 msgid "The party wins the fight."
 msgstr "The party wins the fight."
 
@@ -13825,7 +13841,7 @@ msgstr "Training arena"
 msgid "Training choices pending"
 msgstr "Training choices pending"
 
-#: src/OpenGoldBox/combat_view.cpp:1434
+#: src/OpenGoldBox/combat_view.cpp:1486
 msgid "Training combat saved."
 msgstr "Training combat saved."
 
@@ -13968,7 +13984,7 @@ msgstr "Tsunami (vertical)"
 msgid "Turn Undead"
 msgstr "Turn Undead"
 
-#: src/OpenGoldBox/combat_view.cpp:116
+#: src/OpenGoldBox/combat_view.cpp:118
 msgid "Turn undead"
 msgstr "Turn undead"
 
@@ -14045,7 +14061,7 @@ msgstr "Two more Eldritch Invocations; Eldritch Smite and Thirsting Blade are op
 msgid "Two more Metamagic options.\nA sixth cantrip."
 msgstr "Two more Metamagic options.\nA sixth cantrip."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12506
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12513
 msgid "Two-Handed Sword +4"
 msgstr "Two-Handed Sword +4"
 
@@ -14073,11 +14089,11 @@ msgstr "Tyranthraxus, the vampire"
 msgid "Unable to continue"
 msgstr "Unable to continue"
 
-#: src/OpenGoldBox/combat_view.cpp:3182
+#: src/OpenGoldBox/combat_view.cpp:3251
 msgid "Unable to load rules"
 msgstr "Unable to load rules"
 
-#: src/OpenGoldBox/combat_view.cpp:3122
+#: src/OpenGoldBox/combat_view.cpp:3191
 msgid "Unarmed"
 msgstr "Unarmed"
 
@@ -14205,7 +14221,7 @@ msgstr "Unseen even when it attacks or casts a spell."
 msgid "Unseen until it attacks or casts a spell."
 msgstr "Unseen until it attacks or casts a spell."
 
-#: src/OpenGoldBox/combat_view.cpp:3118
+#: src/OpenGoldBox/combat_view.cpp:3187
 msgid "Unspecified"
 msgstr "Unspecified"
 
@@ -14289,7 +14305,7 @@ msgstr "Use it while exploring, a charge each time: it points out the nearest hi
 msgid "Use new"
 msgstr "Use new"
 
-#: src/OpenGoldBox/combat_view.cpp:3844
+#: src/OpenGoldBox/combat_view.cpp:3931
 msgid "Use or decline the opportunity attack."
 msgstr "Use or decline the opportunity attack."
 
@@ -14395,7 +14411,7 @@ msgstr "Vex ({source}): source's next attack against this creature has Advantage
 msgid "Vicious Mockery"
 msgstr "Vicious Mockery"
 
-#: src/OpenGoldBox/combat_view.cpp:3208
+#: src/OpenGoldBox/combat_view.cpp:3277
 msgid "Victory"
 msgstr "Victory"
 
@@ -14999,7 +15015,7 @@ msgstr "Yarash"
 msgid "Yartar"
 msgstr "Yartar"
 
-#: src/OpenGoldBox/combat_view.cpp:117
+#: src/OpenGoldBox/combat_view.cpp:119
 msgid "Yell"
 msgstr "Yell"
 
@@ -15015,44 +15031,44 @@ msgstr "Yellow: the party cannot afford it."
 msgid "Yes"
 msgstr "Yes"
 
-#: src/OpenGoldBox/combat_view.cpp:3820
+#: src/OpenGoldBox/combat_view.cpp:3907
 msgid "You are hit. Cast Shield (+5 AC) or decline."
 msgstr "You are hit. Cast Shield (+5 AC) or decline."
 
-#: src/OpenGoldBox/combat_view.cpp:3822
+#: src/OpenGoldBox/combat_view.cpp:3909
 msgid "You are hit. Deflect the attack (1d10 + Dexterity + Monk level less damage) or decline."
 msgstr "You are hit. Deflect the attack (1d10 + Dexterity + Monk level less damage) or decline."
 
-#: src/OpenGoldBox/combat_view.cpp:3837
+#: src/OpenGoldBox/combat_view.cpp:3924
 msgid "You are hit. Halve the damage with Uncanny Dodge, or decline."
 msgstr "You are hit. Halve the damage with Uncanny Dodge, or decline."
 
-#: src/OpenGoldBox/combat_view.cpp:3839
+#: src/OpenGoldBox/combat_view.cpp:3926
 msgid "You are hit. Resist this damage type for the rest of the turn with Superior Hunter's Defense, or decline."
 msgstr "You are hit. Resist this damage type for the rest of the turn with Superior Hunter's Defense, or decline."
 
-#: src/OpenGoldBox/combat_view.cpp:3831
+#: src/OpenGoldBox/combat_view.cpp:3918
 msgid "You are hit. Use Stone's Endurance (1d12 + Constitution modifier less damage), or decline."
 msgstr "You are hit. Use Stone's Endurance (1d12 + Constitution modifier less damage), or decline."
 
-#: src/OpenGoldBox/combat_view.cpp:3816
+#: src/OpenGoldBox/combat_view.cpp:3903
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "You are hit: {total} against AC {ac}. Cast Shield (+5 AC) or decline."
 msgstr "You are hit: {total} against AC {ac}. Cast Shield (+5 AC) or decline."
 
-#: src/OpenGoldBox/combat_view.cpp:3828
+#: src/OpenGoldBox/combat_view.cpp:3915
 msgid "You are hurt. Cast Hellish Rebuke at the attacker, or decline."
 msgstr "You are hurt. Cast Hellish Rebuke at the attacker, or decline."
 
-#: src/OpenGoldBox/combat_view.cpp:3842
+#: src/OpenGoldBox/combat_view.cpp:3929
 msgid "You are hurt. Strike back at the attacker with a melee attack (Retaliation), or decline."
 msgstr "You are hurt. Strike back at the attacker with a melee attack (Retaliation), or decline."
 
-#: src/OpenGoldBox/combat_view.cpp:3834
+#: src/OpenGoldBox/combat_view.cpp:3921
 msgid "You are hurt. Strike the attacker with Storm's Thunder (1d8 Thunder damage), or decline."
 msgstr "You are hurt. Strike the attacker with Storm's Thunder (1d8 Thunder damage), or decline."
 
-#: src/OpenGoldBox/combat_view.cpp:1790
+#: src/OpenGoldBox/combat_view.cpp:1852
 msgid "You cannot run off the battlefield now: an enemy is faster, you have no movement left, or you must stay."
 msgstr "You cannot run off the battlefield now: an enemy is faster, you have no movement left, or you must stay."
 
@@ -15092,15 +15108,15 @@ msgstr "You have lost the fight."
 msgid "You have won."
 msgstr "You have won."
 
-#: src/OpenGoldBox/combat_view.cpp:150
+#: src/OpenGoldBox/combat_view.cpp:174
 msgid "Your attack hit. Add Fire's Burn (1d10 Fire damage), or decline."
 msgstr "Your attack hit. Add Fire's Burn (1d10 Fire damage), or decline."
 
-#: src/OpenGoldBox/combat_view.cpp:142
+#: src/OpenGoldBox/combat_view.cpp:166
 msgid "Your attack hit. Add Frost's Chill (1d6 Cold damage, Speed 10 feet lower), or decline."
 msgstr "Your attack hit. Add Frost's Chill (1d6 Cold damage, Speed 10 feet lower), or decline."
 
-#: src/OpenGoldBox/combat_view.cpp:147
+#: src/OpenGoldBox/combat_view.cpp:171
 msgid "Your attack hit. Knock the target Prone with Hill's Tumble, or decline."
 msgstr "Your attack hit. Knock the target Prone with Hill's Tumble, or decline."
 
@@ -15121,7 +15137,7 @@ msgstr "Your hands are full!"
 msgid "Your melee weapon is your pact weapon: proficiency, Charisma for its attack and damage rolls, and Necrotic, Psychic or Radiant damage if you like."
 msgstr "Your melee weapon is your pact weapon: proficiency, Charisma for its attack and damage rolls, and Necrotic, Psychic or Radiant damage if you like."
 
-#: src/OpenGoldBox/combat_view.cpp:3209 src/OpenGoldBox/rolf_tour_view.cpp:2329
+#: src/OpenGoldBox/combat_view.cpp:3278 src/OpenGoldBox/rolf_tour_view.cpp:2329
 msgid "Your party flees the battle."
 msgstr "Your party flees the battle."
 
@@ -15129,7 +15145,7 @@ msgstr "Your party flees the battle."
 msgid "Your party has been defeated."
 msgstr "Your party has been defeated."
 
-#: src/OpenGoldBox/combat_view.cpp:3845
+#: src/OpenGoldBox/combat_view.cpp:3932
 msgid "Your party is fleeing."
 msgstr "Your party is fleeing."
 
@@ -15533,7 +15549,7 @@ msgstr "{ability} +{bonus}"
 msgid "{ability} {minimum}"
 msgstr "{ability} {minimum}"
 
-#: src/OpenGoldBox/combat_view.cpp:3553
+#: src/OpenGoldBox/combat_view.cpp:3634
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{action} ({count} left)"
 msgstr "{action} ({count} left)"
@@ -15558,32 +15574,32 @@ msgstr "{actor} grazes {target} for {damage} damage."
 msgid "{actor} stabilizes {target}: d20 {roll} + {modifier} + {boost} = {total} vs DC {dc}: {result}."
 msgstr "{actor} stabilizes {target}: d20 {roll} + {modifier} + {boost} = {total} vs DC {dc}: {result}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3241
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3248
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} attaches to {name}."
 msgstr "{attacker} attaches to {name}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14428 src/OpenGold.Rules.Original/src/combat_session.cpp:2383
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14435 src/OpenGold.Rules.Original/src/combat_session.cpp:2390
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} backstabs {name}."
 msgstr "{attacker} backstabs {name}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3252 src/OpenGold.Rules.Original/src/combat_session.cpp:3519
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3259 src/OpenGold.Rules.Original/src/combat_session.cpp:3526
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} constricts {name}."
 msgstr "{attacker} constricts {name}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11532
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11539
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} drinks {name}'s blood for {damage}."
 msgstr "{attacker} drinks {name}'s blood for {damage}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3520
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3527
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} engulfs {name}."
 msgstr "{attacker} engulfs {name}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3304
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3311
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} grabs {name}."
 msgstr "{attacker} grabs {name}."
@@ -15593,47 +15609,47 @@ msgstr "{attacker} grabs {name}."
 msgid "{attacker} hits one of {name}'s duplicates, which vanishes."
 msgstr "{attacker} hits one of {name}'s duplicates, which vanishes."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14475 src/OpenGold.Rules.Original/src/combat_session.cpp:2458
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14482 src/OpenGold.Rules.Original/src/combat_session.cpp:2465
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} hits {name} for {damage}."
 msgstr "{attacker} hits {name} for {damage}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3494
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3501
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} hugs {name}."
 msgstr "{attacker} hugs {name}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14510 src/OpenGold.Rules.Original/src/combat_session.cpp:2419 src/OpenGold.Rules.Original/src/combat_session.cpp:5562 src/OpenGold.Rules.Original/src/combat_session.cpp:6180
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14517 src/OpenGold.Rules.Original/src/combat_session.cpp:2426 src/OpenGold.Rules.Original/src/combat_session.cpp:5569 src/OpenGold.Rules.Original/src/combat_session.cpp:6187
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} misses {name}."
 msgstr "{attacker} misses {name}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11321
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11328
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} rakes {name}."
 msgstr "{attacker} rakes {name}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11555
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11562
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} slays the helpless {name}."
 msgstr "{attacker} slays the helpless {name}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11490
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11497
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} squeezes {name} for {damage}."
 msgstr "{attacker} squeezes {name} for {damage}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14771 src/OpenGold.Rules.Original/src/combat_session.cpp:2752
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14778 src/OpenGold.Rules.Original/src/combat_session.cpp:2759
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} strikes from guard."
 msgstr "{attacker} strikes from guard."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12523
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12530
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} strikes with a {weapon}."
 msgstr "{attacker} strikes with a {weapon}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:2729
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:2736
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} strikes {name} leaving."
 msgstr "{attacker} strikes {name} leaving."
@@ -15643,7 +15659,7 @@ msgstr "{attacker} strikes {name} leaving."
 msgid "{attacker} strikes {name}'s displaced image."
 msgstr "{attacker} strikes {name}'s displaced image."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:2681
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:2688
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{attacker} sweeps."
 msgstr "{attacker} sweeps."
@@ -15971,7 +15987,7 @@ msgstr "{item}: {rounds} rounds for {price} credits"
 msgid "{item}: {spells}"
 msgstr "{item}: {spells}"
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11781 src/OpenGold.Rules.Original/src/combat_session.cpp:14176
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11788 src/OpenGold.Rules.Original/src/combat_session.cpp:14183
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{leader} leads {name}."
 msgstr "{leader} leads {name}."
@@ -16146,7 +16162,7 @@ msgstr "{name} Wisdom save: d20 {roll} + {bonus} (Aura of Protection +{aura}) vs
 msgid "{name} Wisdom save: d20 {roll} + {bonus} vs DC {dc} ({result})."
 msgstr "{name} Wisdom save: d20 {roll} + {bonus} vs DC {dc} ({result})."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:10935 src/OpenGold.Rules.Original/src/combat_session.cpp:13930 src/OpenGold.Rules.Original/src/combat_session.cpp:9553 src/OpenGold.Rules.Original/src/combat_session.cpp:9796
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:10942 src/OpenGold.Rules.Original/src/combat_session.cpp:13937 src/OpenGold.Rules.Original/src/combat_session.cpp:9560 src/OpenGold.Rules.Original/src/combat_session.cpp:9803
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} aborts the spell."
 msgstr "{name} aborts the spell."
@@ -16181,7 +16197,7 @@ msgstr "{name} adds {die} to the check (Dark One's Own Luck)."
 msgid "{name} adds {die} to the save (Dark One's Own Luck)."
 msgstr "{name} adds {die} to the save (Dark One's Own Luck)."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4810
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4817
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} ages."
 msgstr "{name} ages."
@@ -16221,22 +16237,22 @@ msgstr "{name} automatically fails the {ability} save while Unconscious."
 msgid "{name} automatically fails the {ability} save while asleep."
 msgstr "{name} automatically fails the {ability} save while asleep."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12557
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12564
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} avoids it."
 msgstr "{name} avoids it."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12115 src/OpenGold.Rules.Original/src/combat_session.cpp:12119
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12122 src/OpenGold.Rules.Original/src/combat_session.cpp:12126
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} becomes a blazing shape."
 msgstr "{name} becomes a blazing shape."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:5782
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:5789
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} becomes flesh."
 msgstr "{name} becomes flesh."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:5393
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:5400
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} becomes younger."
 msgstr "{name} becomes younger."
@@ -16256,7 +16272,7 @@ msgstr "{name} begins casting {spell}."
 msgid "{name} begins to turn to stone."
 msgstr "{name} begins to turn to stone."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3621
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3628
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} belches in satisfaction."
 msgstr "{name} belches in satisfaction."
@@ -16281,32 +16297,32 @@ msgstr "{name} breaks into a helpless dance."
 msgid "{name} breaks the enchantment on {target}."
 msgstr "{name} breaks the enchantment on {target}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12377
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12384
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} breathes a blinding cloud."
 msgstr "{name} breathes a blinding cloud."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8251
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8258
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} breathes cold."
 msgstr "{name} breathes cold."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8114 src/OpenGold.Rules.Original/src/combat_session.cpp:8385 src/OpenGold.Rules.Original/src/combat_session.cpp:8408 src/OpenGold.Rules.Original/src/combat_session.cpp:8723
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8121 src/OpenGold.Rules.Original/src/combat_session.cpp:8392 src/OpenGold.Rules.Original/src/combat_session.cpp:8415 src/OpenGold.Rules.Original/src/combat_session.cpp:8730
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} breathes fire."
 msgstr "{name} breathes fire."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8114
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8121
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} breathes ice."
 msgstr "{name} breathes ice."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8251
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8258
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} breathes paralysis."
 msgstr "{name} breathes paralysis."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8183
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8190
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} breathes poison."
 msgstr "{name} breathes poison."
@@ -16331,7 +16347,7 @@ msgstr "{name} buys {item}."
 msgid "{name} can put down the cursed weapon."
 msgstr "{name} can put down the cursed weapon."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4269 src/OpenGold.Rules.Original/src/combat_session.cpp:6034
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4276 src/OpenGold.Rules.Original/src/combat_session.cpp:6041
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} can see."
 msgstr "{name} can see."
@@ -16486,7 +16502,7 @@ msgstr "{name} charges."
 msgid "{name} coats a weapon with Basic Poison."
 msgstr "{name} coats a weapon with Basic Poison."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:7446
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:7453
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} collapses."
 msgstr "{name} collapses."
@@ -16506,12 +16522,12 @@ msgstr "{name} copies the spell into the spellbook."
 msgid "{name} creates a level-{level} spell slot."
 msgstr "{name} creates a level-{level} spell slot."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:7193
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:7200
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} creates a noxious cloud."
 msgstr "{name} creates a noxious cloud."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:7193
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:7200
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} creates a poisonous cloud."
 msgstr "{name} creates a poisonous cloud."
@@ -16541,17 +16557,17 @@ msgstr "{name} death save: {roll} + {bonus} (Aura of Protection)"
 msgid "{name} deflects {damage} damage."
 msgstr "{name} deflects {damage} damage."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11619
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11626
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} dies from disease."
 msgstr "{name} dies from disease."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11697
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11704
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} dies from poison."
 msgstr "{name} dies from poison."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:2187
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:2194
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} dies of its wounds."
 msgstr "{name} dies of its wounds."
@@ -16571,17 +16587,17 @@ msgstr "{name} dies."
 msgid "{name} disengages."
 msgstr "{name} disengages."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:5758
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:5765
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} disintegrates."
 msgstr "{name} disintegrates."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12059
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12066
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} dissolves into acid."
 msgstr "{name} dissolves into acid."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12937
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12944
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} dissolves {target}'s armor!"
 msgstr "{name} dissolves {target}'s armor!"
@@ -16611,7 +16627,7 @@ msgstr "{name} doesn't have enough."
 msgid "{name} douses the blade."
 msgstr "{name} douses the blade."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:6065
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:6072
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} drops dead."
 msgstr "{name} drops dead."
@@ -16636,7 +16652,7 @@ msgstr "{name} drops to 1 Hit Point instead (Undead Fortitude)."
 msgid "{name} drops {item}. It is gone."
 msgstr "{name} drops {item}. It is gone."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8336
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8343
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} emits an evil stench."
 msgstr "{name} emits an evil stench."
@@ -16661,17 +16677,17 @@ msgstr "{name} equips {items}."
 msgid "{name} exhales Dragon's Breath."
 msgstr "{name} exhales Dragon's Breath."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11980 src/OpenGold.Rules.Original/src/combat_session.cpp:12001 src/OpenGold.Rules.Original/src/combat_session.cpp:12015 src/OpenGold.Rules.Original/src/combat_session.cpp:12143
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11987 src/OpenGold.Rules.Original/src/combat_session.cpp:12008 src/OpenGold.Rules.Original/src/combat_session.cpp:12022 src/OpenGold.Rules.Original/src/combat_session.cpp:12150
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} explodes."
 msgstr "{name} explodes."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14920
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14927
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} fails at use jetpack."
 msgstr "{name} fails at use jetpack."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14278
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14285
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} fails the Zero-G roll."
 msgstr "{name} fails the Zero-G roll."
@@ -16681,7 +16697,7 @@ msgstr "{name} fails the Zero-G roll."
 msgid "{name} fails to hide."
 msgstr "{name} fails to hide."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14805
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14812
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} fails to intimidate."
 msgstr "{name} fails to intimidate."
@@ -16711,7 +16727,7 @@ msgstr "{name} falls asleep."
 msgid "{name} falls back down."
 msgstr "{name} falls back down."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11680
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11687
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} falls dead."
 msgstr "{name} falls dead."
@@ -16731,7 +16747,7 @@ msgstr "{name} falls upward."
 msgid "{name} fights on with {hp} Hit Points (Relentless Rage)."
 msgstr "{name} fights on with {hp} Hit Points (Relentless Rage)."
 
-#: src/OpenGoldBox/combat_view.cpp:3810
+#: src/OpenGoldBox/combat_view.cpp:3897
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} fights under computer control (Quick). Space or Take control: play the party yourself."
 msgstr "{name} fights under computer control (Quick). Space or Take control: play the party yourself."
@@ -16741,32 +16757,32 @@ msgstr "{name} fights under computer control (Quick). Space or Take control: pla
 msgid "{name} finds its way out of the maze."
 msgstr "{name} finds its way out of the maze."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8860
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8867
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} fires a death ray."
 msgstr "{name} fires a death ray."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8839
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8846
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} fires a disintegrating ray."
 msgstr "{name} fires a disintegrating ray."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8852
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8859
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} fires a petrifying ray."
 msgstr "{name} fires a petrifying ray."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8869
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8876
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} fires a wounding ray."
 msgstr "{name} fires a wounding ray."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12391
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12398
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} fires an energy bolt."
 msgstr "{name} fires an energy bolt."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8124
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8131
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} fires its spines."
 msgstr "{name} fires its spines."
@@ -16786,7 +16802,7 @@ msgstr "{name} flees in panic."
 msgid "{name} flees the battle."
 msgstr "{name} flees the battle."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11373
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11380
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} flees."
 msgstr "{name} flees."
@@ -16816,7 +16832,7 @@ msgstr "{name} gains Resistance against {type} damage."
 msgid "{name} gains Resistance to {type} damage."
 msgstr "{name} gains Resistance to {type} damage."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:5145
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:5152
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} gains an item."
 msgstr "{name} gains an item."
@@ -16841,12 +16857,12 @@ msgstr "{name} gains {mastery} from {source}."
 msgid "{name} gains {spell}."
 msgstr "{name} gains {spell}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12241
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12248
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} gates in."
 msgstr "{name} gates in."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:7848 src/OpenGold.Rules.Original/src/combat_session.cpp:7864 src/OpenGold.Rules.Original/src/combat_session.cpp:7890 src/OpenGold.Rules.Original/src/combat_session.cpp:7937 src/OpenGold.Rules.Original/src/combat_session.cpp:7970 src/OpenGold.Rules.Original/src/combat_session.cpp:8099 src/OpenGold.Rules.Original/src/combat_session.cpp:8295 src/OpenGold.Rules.Original/src/combat_session.cpp:8394 src/OpenGold.Rules.Original/src/combat_session.cpp:8466 src/OpenGold.Rules.Original/src/combat_session.cpp:8778
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:7855 src/OpenGold.Rules.Original/src/combat_session.cpp:7871 src/OpenGold.Rules.Original/src/combat_session.cpp:7897 src/OpenGold.Rules.Original/src/combat_session.cpp:7944 src/OpenGold.Rules.Original/src/combat_session.cpp:7977 src/OpenGold.Rules.Original/src/combat_session.cpp:8106 src/OpenGold.Rules.Original/src/combat_session.cpp:8302 src/OpenGold.Rules.Original/src/combat_session.cpp:8401 src/OpenGold.Rules.Original/src/combat_session.cpp:8473 src/OpenGold.Rules.Original/src/combat_session.cpp:8785
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} gazes."
 msgstr "{name} gazes."
@@ -16861,32 +16877,32 @@ msgstr "{name} gets back up."
 msgid "{name} gives vitality to {target}."
 msgstr "{name} gives vitality to {target}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11395
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11402
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} goes berserk."
 msgstr "{name} goes berserk."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14683
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14690
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} goes down, and is dying."
 msgstr "{name} goes down, and is dying."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14684
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14691
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} goes down, comatose."
 msgstr "{name} goes down, comatose."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14682
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14689
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} goes down."
 msgstr "{name} goes down."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:2999
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3006
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} goes into a frenzy."
 msgstr "{name} goes into a frenzy."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:13197
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:13204
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} got away."
 msgstr "{name} got away."
@@ -16901,12 +16917,12 @@ msgstr "{name} grovels."
 msgid "{name} grows drowsy."
 msgstr "{name} grows drowsy."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:6573
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:6580
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} grows."
 msgstr "{name} grows."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:13961 src/OpenGold.Rules.Original/src/combat_session.cpp:15165 src/OpenGold.Rules.Original/src/combat_session.cpp:7722
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:13968 src/OpenGold.Rules.Original/src/combat_session.cpp:15173 src/OpenGold.Rules.Original/src/combat_session.cpp:7729
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} guards."
 msgstr "{name} guards."
@@ -16941,7 +16957,7 @@ msgstr "{name} has already trained in this at this level."
 msgid "{name} has been raised from the dead"
 msgstr "{name} has been raised from the dead"
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:5859
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:5866
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} has been reduced."
 msgstr "{name} has been reduced."
@@ -16981,7 +16997,7 @@ msgstr "{name} hurls {spell}."
 msgid "{name} inspires {target}."
 msgstr "{name} inspires {target}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12297
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12304
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} invokes Dispel Magic."
 msgstr "{name} invokes Dispel Magic."
@@ -17066,27 +17082,27 @@ msgstr "{name} is Stunned."
 msgid "{name} is addled."
 msgstr "{name} is addled."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12316
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12323
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is affected by the evil stench."
 msgstr "{name} is affected by the evil stench."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:6466 src/OpenGold.Rules.Original/src/combat_session.cpp:7553
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:6473 src/OpenGold.Rules.Original/src/combat_session.cpp:7560
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is affected by {spell}."
 msgstr "{name} is affected by {spell}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14654
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14661
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is affected."
 msgstr "{name} is affected."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11888
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11895
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is afraid."
 msgstr "{name} is afraid."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:7538
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:7545
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is animated."
 msgstr "{name} is animated."
@@ -17101,7 +17117,7 @@ msgstr "{name} is at the highest level."
 msgid "{name} is bandaged and stable."
 msgstr "{name} is bandaged and stable."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:13980 src/OpenGold.Rules.Original/src/combat_session.cpp:14894
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:13987 src/OpenGold.Rules.Original/src/combat_session.cpp:14901
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is bandaged."
 msgstr "{name} is bandaged."
@@ -17116,22 +17132,22 @@ msgstr "{name} is banished."
 msgid "{name} is befuddled: no spells or Magic actions."
 msgstr "{name} is befuddled: no spells or Magic actions."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3335
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3342
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is beheaded."
 msgstr "{name} is beheaded."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3294
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3301
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is being crushed."
 msgstr "{name} is being crushed."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:7923
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:7930
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is blinded by smoke."
 msgstr "{name} is blinded by smoke."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:7271
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:7278
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is burned by acid."
 msgstr "{name} is burned by acid."
@@ -17146,17 +17162,17 @@ msgstr "{name} is changed back to flesh"
 msgid "{name} is charmed by Snake Charm."
 msgstr "{name} is charmed by Snake Charm."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3269
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3276
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is charmed."
 msgstr "{name} is charmed."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11378
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11385
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is confused."
 msgstr "{name} is confused."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:2145
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:2152
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is coughing."
 msgstr "{name} is coughing."
@@ -17166,7 +17182,7 @@ msgstr "{name} is coughing."
 msgid "{name} is covered in oil."
 msgstr "{name} is covered in oil."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3231
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3238
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is crippled by venom."
 msgstr "{name} is crippled by venom."
@@ -17176,7 +17192,7 @@ msgstr "{name} is crippled by venom."
 msgid "{name} is cured of disease"
 msgstr "{name} is cured of disease"
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4345 src/OpenGold.Rules.Original/src/combat_session.cpp:4371 src/OpenGold.Rules.Original/src/combat_session.cpp:4480 src/OpenGold.Rules.Original/src/combat_session.cpp:6029 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4352 src/OpenGold.Rules.Original/src/combat_session.cpp:4378 src/OpenGold.Rules.Original/src/combat_session.cpp:4487 src/OpenGold.Rules.Original/src/combat_session.cpp:6036 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is cured."
 msgstr "{name} is cured."
@@ -17191,7 +17207,7 @@ msgstr "{name} is cursed."
 msgid "{name} is cursed: {curse}."
 msgstr "{name} is cursed: {curse}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:7314
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:7321
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is cut by the blades."
 msgstr "{name} is cut by the blades."
@@ -17201,7 +17217,7 @@ msgstr "{name} is cut by the blades."
 msgid "{name} is dazed."
 msgstr "{name} is dazed."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3702 src/OpenGold.Rules.Original/src/combat_session.cpp:3733
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3709 src/OpenGold.Rules.Original/src/combat_session.cpp:3740
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is dead forever."
 msgstr "{name} is dead forever."
@@ -17211,7 +17227,7 @@ msgstr "{name} is dead forever."
 msgid "{name} is defeated."
 msgstr "{name} is defeated."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11045 src/OpenGold.Rules.Original/src/combat_session.cpp:11138 src/OpenGold.Rules.Original/src/combat_session.cpp:11280 src/OpenGold.Rules.Original/src/combat_session.cpp:6133
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11052 src/OpenGold.Rules.Original/src/combat_session.cpp:11145 src/OpenGold.Rules.Original/src/combat_session.cpp:11287 src/OpenGold.Rules.Original/src/combat_session.cpp:6140
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is destroyed."
 msgstr "{name} is destroyed."
@@ -17221,27 +17237,27 @@ msgstr "{name} is destroyed."
 msgid "{name} is detoxified"
 msgstr "{name} is detoxified"
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3192 src/OpenGold.Rules.Original/src/combat_session.cpp:3214 src/OpenGold.Rules.Original/src/combat_session.cpp:3419 src/OpenGold.Rules.Original/src/combat_session.cpp:3435 src/OpenGold.Rules.Original/src/combat_session.cpp:3554
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3199 src/OpenGold.Rules.Original/src/combat_session.cpp:3221 src/OpenGold.Rules.Original/src/combat_session.cpp:3426 src/OpenGold.Rules.Original/src/combat_session.cpp:3442 src/OpenGold.Rules.Original/src/combat_session.cpp:3561
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is diseased."
 msgstr "{name} is diseased."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8307 src/OpenGold.Rules.Original/src/combat_session.cpp:8845
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8314 src/OpenGold.Rules.Original/src/combat_session.cpp:8852
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is disintegrated."
 msgstr "{name} is disintegrated."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3465 src/OpenGold.Rules.Original/src/combat_session.cpp:7483
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3472 src/OpenGold.Rules.Original/src/combat_session.cpp:7490
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is dispelled."
 msgstr "{name} is dispelled."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12609 src/OpenGold.Rules.Original/src/combat_session.cpp:12646
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12616 src/OpenGold.Rules.Original/src/combat_session.cpp:12653
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is disrupted."
 msgstr "{name} is disrupted."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12931
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12938
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is dissolving {target}'s armor!"
 msgstr "{name} is dissolving {target}'s armor!"
@@ -17251,17 +17267,17 @@ msgstr "{name} is dissolving {target}'s armor!"
 msgid "{name} is dominated by {caster}."
 msgstr "{name} is dominated by {caster}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3636
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3643
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is drained 2 levels."
 msgstr "{name} is drained 2 levels."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3636
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3643
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is drained a level."
 msgstr "{name} is drained a level."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:2854
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:2861
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is dying."
 msgstr "{name} is dying."
@@ -17276,7 +17292,7 @@ msgstr "{name} is enfeebled."
 msgid "{name} is enlarged."
 msgstr "{name} is enlarged."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11404
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11411
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is enraged."
 msgstr "{name} is enraged."
@@ -17286,7 +17302,7 @@ msgstr "{name} is enraged."
 msgid "{name} is entranced by the pattern."
 msgstr "{name} is entranced by the pattern."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11355
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11362
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is fighting with snakes."
 msgstr "{name} is fighting with snakes."
@@ -17296,7 +17312,7 @@ msgstr "{name} is fighting with snakes."
 msgid "{name} is flesh again."
 msgstr "{name} is flesh again."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:13117
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:13124
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is forced to flee."
 msgstr "{name} is forced to flee."
@@ -17306,7 +17322,7 @@ msgstr "{name} is forced to flee."
 msgid "{name} is forced to take the Dodge action."
 msgstr "{name} is forced to take the Dodge action."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11926
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11933
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is frightened."
 msgstr "{name} is frightened."
@@ -17321,12 +17337,12 @@ msgstr "{name} is gripped by its worst fears."
 msgid "{name} is healed"
 msgstr "{name} is healed"
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4164 src/OpenGold.Rules.Original/src/combat_session.cpp:4376 src/OpenGold.Rules.Original/src/combat_session.cpp:4392 src/OpenGold.Rules.Original/src/combat_session.cpp:4639 src/OpenGold.Rules.Original/src/combat_session.cpp:6052 src/OpenGold.Rules.Original/src/combat_session.cpp:6603 src/OpenGold.Rules.Original/src/combat_session.cpp:6615 src/OpenGold.Rules.Original/src/combat_session.cpp:6808
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4171 src/OpenGold.Rules.Original/src/combat_session.cpp:4383 src/OpenGold.Rules.Original/src/combat_session.cpp:4399 src/OpenGold.Rules.Original/src/combat_session.cpp:4646 src/OpenGold.Rules.Original/src/combat_session.cpp:6059 src/OpenGold.Rules.Original/src/combat_session.cpp:6610 src/OpenGold.Rules.Original/src/combat_session.cpp:6622 src/OpenGold.Rules.Original/src/combat_session.cpp:6815
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is healed."
 msgstr "{name} is healed."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3531
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3538
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is held fast."
 msgstr "{name} is held fast."
@@ -17336,7 +17352,7 @@ msgstr "{name} is held fast."
 msgid "{name} is helpless and slain."
 msgstr "{name} is helpless and slain."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14250 src/OpenGold.Rules.Original/src/combat_session.cpp:14791
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14257 src/OpenGold.Rules.Original/src/combat_session.cpp:14798
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is helpless."
 msgstr "{name} is helpless."
@@ -17376,12 +17392,12 @@ msgstr "{name} is immune to the {condition} condition."
 msgid "{name} is in no condition to try."
 msgstr "{name} is in no condition to try."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14251 src/OpenGold.Rules.Original/src/combat_session.cpp:14820
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14258 src/OpenGold.Rules.Original/src/combat_session.cpp:14827
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is intimidated."
 msgstr "{name} is intimidated."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14685 src/OpenGold.Rules.Original/src/combat_session.cpp:1514 src/OpenGold.Rules.Original/src/combat_session.cpp:2845 src/OpenGold.Rules.Original/src/combat_session.cpp:2854
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14692 src/OpenGold.Rules.Original/src/combat_session.cpp:1521 src/OpenGold.Rules.Original/src/combat_session.cpp:2852 src/OpenGold.Rules.Original/src/combat_session.cpp:2861
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is killed."
 msgstr "{name} is killed."
@@ -17446,7 +17462,7 @@ msgstr "{name} is no longer Poisoned."
 msgid "{name} is no longer Stunned."
 msgstr "{name} is no longer Stunned."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:5791
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:5798
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is no longer a statue."
 msgstr "{name} is no longer a statue."
@@ -17476,7 +17492,7 @@ msgstr "{name} is no longer {condition} (Self-Restoration)."
 msgid "{name} is no longer {condition}."
 msgstr "{name} is no longer {condition}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:5386
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:5393
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is now 18 years old."
 msgstr "{name} is now 18 years old."
@@ -17491,17 +17507,17 @@ msgstr "{name} is outlined."
 msgid "{name} is overloaded."
 msgstr "{name} is overloaded."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11850
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11857
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is paralyzed with fear."
 msgstr "{name} is paralyzed with fear."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3584 src/OpenGold.Rules.Original/src/combat_session.cpp:7857 src/OpenGold.Rules.Original/src/combat_session.cpp:8102 src/OpenGold.Rules.Original/src/combat_session.cpp:8781
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3591 src/OpenGold.Rules.Original/src/combat_session.cpp:7864 src/OpenGold.Rules.Original/src/combat_session.cpp:8109 src/OpenGold.Rules.Original/src/combat_session.cpp:8788
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is paralyzed."
 msgstr "{name} is paralyzed."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14492
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14499
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is poisoned and dizzy."
 msgstr "{name} is poisoned and dizzy."
@@ -17566,12 +17582,12 @@ msgstr "{name} is sent to another plane."
 msgid "{name} is sickened."
 msgstr "{name} is sickened."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:2138
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:2145
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is silenced."
 msgstr "{name} is silenced."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12592 src/OpenGold.Rules.Original/src/combat_session.cpp:4728 src/OpenGold.Rules.Original/src/combat_session.cpp:6397 src/OpenGold.Rules.Original/src/combat_session.cpp:8863
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12599 src/OpenGold.Rules.Original/src/combat_session.cpp:4735 src/OpenGold.Rules.Original/src/combat_session.cpp:6404 src/OpenGold.Rules.Original/src/combat_session.cpp:8870
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is slain."
 msgstr "{name} is slain."
@@ -17596,22 +17612,22 @@ msgstr "{name} is spared by Sculpt Spells."
 msgid "{name} is staggered: Speed halved, and the next attack against it has Advantage."
 msgstr "{name} is staggered: Speed halved, and the next attack against it has Advantage."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:5782
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:5789
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is still flesh."
 msgstr "{name} is still flesh."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3606 src/OpenGold.Rules.Original/src/combat_session.cpp:7949
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3613 src/OpenGold.Rules.Original/src/combat_session.cpp:7956
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is stoned."
 msgstr "{name} is stoned."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:5885
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:5892
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is stronger."
 msgstr "{name} is stronger."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12345
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12352
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is struck by an energy bolt."
 msgstr "{name} is struck by an energy bolt."
@@ -17621,7 +17637,7 @@ msgstr "{name} is struck by an energy bolt."
 msgid "{name} is struck by the {color} ray."
 msgstr "{name} is struck by the {color} ray."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12163 src/OpenGold.Rules.Original/src/combat_session.cpp:14252 src/OpenGold.Rules.Original/src/combat_session.cpp:14457
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12170 src/OpenGold.Rules.Original/src/combat_session.cpp:14259 src/OpenGold.Rules.Original/src/combat_session.cpp:14464
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is stunned."
 msgstr "{name} is stunned."
@@ -17631,17 +17647,17 @@ msgstr "{name} is stunned."
 msgid "{name} is sundered (Sundering Blow)."
 msgstr "{name} is sundered (Sundering Blow)."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3615
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3622
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is swallowed whole."
 msgstr "{name} is swallowed whole."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8656
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8663
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is terrified."
 msgstr "{name} is terrified."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14902
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14909
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is treated."
 msgstr "{name} is treated."
@@ -17656,22 +17672,22 @@ msgstr "{name} is tripped and falls Prone."
 msgid "{name} is turned."
 msgstr "{name} is turned."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12539
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12546
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is turning to green fire!"
 msgstr "{name} is turning to green fire!"
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4297
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4304
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is un-cursed."
 msgstr "{name} is un-cursed."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11846 src/OpenGold.Rules.Original/src/combat_session.cpp:14457 src/OpenGold.Rules.Original/src/combat_session.cpp:14654 src/OpenGold.Rules.Original/src/combat_session.cpp:14820 src/OpenGold.Rules.Original/src/combat_session.cpp:4118 src/OpenGold.Rules.Original/src/combat_session.cpp:4193 src/OpenGold.Rules.Original/src/combat_session.cpp:4244 src/OpenGold.Rules.Original/src/combat_session.cpp:4723 src/OpenGold.Rules.Original/src/combat_session.cpp:5788 src/OpenGold.Rules.Original/src/combat_session.cpp:5825 src/OpenGold.Rules.Original/src/combat_session.cpp:5855 src/OpenGold.Rules.Original/src/combat_session.cpp:6127 src/OpenGold.Rules.Original/src/combat_session.cpp:6219 src/OpenGold.Rules.Original/src/combat_session.cpp:6437 src/OpenGold.Rules.Original/src/combat_session.cpp:6453 src/OpenGold.Rules.Original/src/combat_session.cpp:6568 src/OpenGold.Rules.Original/src/combat_session.cpp:6817 src/OpenGold.Rules.Original/src/combat_session.cpp:7307
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11853 src/OpenGold.Rules.Original/src/combat_session.cpp:14464 src/OpenGold.Rules.Original/src/combat_session.cpp:14661 src/OpenGold.Rules.Original/src/combat_session.cpp:14827 src/OpenGold.Rules.Original/src/combat_session.cpp:4125 src/OpenGold.Rules.Original/src/combat_session.cpp:4200 src/OpenGold.Rules.Original/src/combat_session.cpp:4251 src/OpenGold.Rules.Original/src/combat_session.cpp:4730 src/OpenGold.Rules.Original/src/combat_session.cpp:5795 src/OpenGold.Rules.Original/src/combat_session.cpp:5832 src/OpenGold.Rules.Original/src/combat_session.cpp:5862 src/OpenGold.Rules.Original/src/combat_session.cpp:6134 src/OpenGold.Rules.Original/src/combat_session.cpp:6226 src/OpenGold.Rules.Original/src/combat_session.cpp:6444 src/OpenGold.Rules.Original/src/combat_session.cpp:6460 src/OpenGold.Rules.Original/src/combat_session.cpp:6575 src/OpenGold.Rules.Original/src/combat_session.cpp:6824 src/OpenGold.Rules.Original/src/combat_session.cpp:7314
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is unaffected."
 msgstr "{name} is unaffected."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4202
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4209
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is uncharmed."
 msgstr "{name} is uncharmed."
@@ -17696,7 +17712,7 @@ msgstr "{name} is wreathed in a warm shield."
 msgid "{name} is your pilot: what does {name} do?"
 msgstr "{name} is your pilot: what does {name} do?"
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:2218
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:2225
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} joins the battle."
 msgstr "{name} joins the battle."
@@ -17726,7 +17742,7 @@ msgstr "{name} lashes out in confusion."
 msgid "{name} lashes out in panic."
 msgstr "{name} lashes out in panic."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14552
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14559
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} launches a missile."
 msgstr "{name} launches a missile."
@@ -17746,7 +17762,7 @@ msgstr "{name} leaves Wild Shape."
 msgid "{name} lets go."
 msgstr "{name} lets go."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14808
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14815
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} looks real menacing."
 msgstr "{name} looks real menacing."
@@ -17771,22 +17787,22 @@ msgstr "{name} loses a Ray of Frost effect."
 msgid "{name} loses a Shocking Grasp effect."
 msgstr "{name} loses a Shocking Grasp effect."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4040
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4047
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} loses a spell."
 msgstr "{name} loses a spell."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12043
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12050
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} loses a weapon in the Baaz's stone body."
 msgstr "{name} loses a weapon in the Baaz's stone body."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12898
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12905
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} loses a weapon."
 msgstr "{name} loses a weapon."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:6952
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:6959
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} loses an image."
 msgstr "{name} loses an image."
@@ -17796,12 +17812,12 @@ msgstr "{name} loses an image."
 msgid "{name} loses {mastery} from {source}."
 msgstr "{name} loses {mastery} from {source}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14274
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14281
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} makes the Zero-G roll."
 msgstr "{name} makes the Zero-G roll."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14143
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14150
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} makes the tactics roll."
 msgstr "{name} makes the tactics roll."
@@ -17936,7 +17952,7 @@ msgstr "{name} radiates an Aura of Life."
 msgid "{name} raises Nature's Sanctuary."
 msgstr "{name} raises Nature's Sanctuary."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:7180
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:7187
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} raises a barrier of whirling blades."
 msgstr "{name} raises a barrier of whirling blades."
@@ -17986,12 +18002,12 @@ msgstr "{name} recovers {hp} HP."
 msgid "{name} redirects the attack at {target}."
 msgstr "{name} redirects the attack at {target}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:7852 src/OpenGold.Rules.Original/src/combat_session.cpp:7941 src/OpenGold.Rules.Original/src/combat_session.cpp:8470
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:7859 src/OpenGold.Rules.Original/src/combat_session.cpp:7948 src/OpenGold.Rules.Original/src/combat_session.cpp:8477
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} reflects it."
 msgstr "{name} reflects it."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4105
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4112
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} reflects the spell."
 msgstr "{name} reflects the spell."
@@ -18001,7 +18017,7 @@ msgstr "{name} reflects the spell."
 msgid "{name} regains every Rage use (Persistent Rage)."
 msgstr "{name} regains every Rage use (Persistent Rage)."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:6039
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:6046
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} regains intellect."
 msgstr "{name} regains intellect."
@@ -18021,7 +18037,7 @@ msgstr "{name} regenerates {amount} Hit Points."
 msgid "{name} rerolls weapon damage (Savage Attacker): {first} and {second}, keeps {kept}."
 msgstr "{name} rerolls weapon damage (Savage Attacker): {first} and {second}, keeps {kept}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3462
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3469
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} resists dispel evil."
 msgstr "{name} resists dispel evil."
@@ -18071,7 +18087,7 @@ msgstr "{name} returns to its own form."
 msgid "{name} returns to its own shape."
 msgstr "{name} returns to its own shape."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8067
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8074
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} returns to stone."
 msgstr "{name} returns to stone."
@@ -18081,7 +18097,7 @@ msgstr "{name} returns to stone."
 msgid "{name} ripostes."
 msgstr "{name} ripostes."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11733
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11740
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} rises again."
 msgstr "{name} rises again."
@@ -18101,7 +18117,7 @@ msgstr "{name} rises as a Specter."
 msgid "{name} rises as a Zombie."
 msgstr "{name} rises as a Zombie."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12065
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12072
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} rises in a frenzy."
 msgstr "{name} rises in a frenzy."
@@ -18151,7 +18167,7 @@ msgstr "{name} sells {item} for {gold} gp."
 msgid "{name} sends the hound after {target}."
 msgstr "{name} sends the hound after {target}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:5970
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:5977
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} sets a delayed blast fireball."
 msgstr "{name} sets a delayed blast fireball."
@@ -18201,7 +18217,7 @@ msgstr "{name} slams into an obstacle and takes {damage} Bludgeoning damage."
 msgid "{name} slips and falls Prone."
 msgstr "{name} slips and falls Prone."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14742
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14749
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} slips into a coma."
 msgstr "{name} slips into a coma."
@@ -18211,17 +18227,17 @@ msgstr "{name} slips into a coma."
 msgid "{name} slips into the Ethereal Plane."
 msgstr "{name} slips into the Ethereal Plane."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8080
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8087
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} slows {target}."
 msgstr "{name} slows {target}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:2925
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:2932
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} smashes a crystal."
 msgstr "{name} smashes a crystal."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4565
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4572
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} smashes them flat."
 msgstr "{name} smashes them flat."
@@ -18236,12 +18252,12 @@ msgstr "{name} speaks for the party."
 msgid "{name} spends 1 Focus Point and rolls the save again (Disciplined Survivor)."
 msgstr "{name} spends 1 Focus Point and rolls the save again (Disciplined Survivor)."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8433 src/OpenGold.Rules.Original/src/combat_session.cpp:8770
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8440 src/OpenGold.Rules.Original/src/combat_session.cpp:8777
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} spits acid and misses."
 msgstr "{name} spits acid and misses."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8033 src/OpenGold.Rules.Original/src/combat_session.cpp:8422 src/OpenGold.Rules.Original/src/combat_session.cpp:8762
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8040 src/OpenGold.Rules.Original/src/combat_session.cpp:8429 src/OpenGold.Rules.Original/src/combat_session.cpp:8769
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} spits acid."
 msgstr "{name} spits acid."
@@ -18251,7 +18267,7 @@ msgstr "{name} spits acid."
 msgid "{name} spreads dragon wings."
 msgstr "{name} spreads dragon wings."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:15123
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:15131
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} sprints."
 msgstr "{name} sprints."
@@ -18331,7 +18347,7 @@ msgstr "{name} stops laughing."
 msgid "{name} studies {target}."
 msgstr "{name} studies {target}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11421
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11428
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} suffocates."
 msgstr "{name} suffocates."
@@ -18346,7 +18362,7 @@ msgstr "{name} surrenders."
 msgid "{name} takes off a shield to use a bow."
 msgstr "{name} takes off a shield to use a bow."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14917
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14924
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} takes off."
 msgstr "{name} takes off."
@@ -18596,7 +18612,7 @@ msgstr "{name} takes {damage} {type} damage from {source}."
 msgid "{name} takes {damage} {type} damage."
 msgstr "{name} takes {damage} {type} damage."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14644 src/OpenGold.Rules.Original/src/combat_session.cpp:6583
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14651 src/OpenGold.Rules.Original/src/combat_session.cpp:6590
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} takes {damage}."
 msgstr "{name} takes {damage}."
@@ -18606,22 +18622,22 @@ msgstr "{name} takes {damage}."
 msgid "{name} takes {item}."
 msgstr "{name} takes {item}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4614
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4621
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} teleports."
 msgstr "{name} teleports."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12279
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12286
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} throws a fireball."
 msgstr "{name} throws a fireball."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:14552
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:14559
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} throws a grenade."
 msgstr "{name} throws a grenade."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:8737
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:8744
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} throws lightning."
 msgstr "{name} throws lightning."
@@ -18716,7 +18732,7 @@ msgstr "{name} turns to dust."
 msgid "{name} turns to stone."
 msgstr "{name} turns to stone."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:11000 src/OpenGold.Rules.Original/src/combat_session.cpp:11075 src/OpenGold.Rules.Original/src/combat_session.cpp:11237
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:11007 src/OpenGold.Rules.Original/src/combat_session.cpp:11082 src/OpenGold.Rules.Original/src/combat_session.cpp:11244
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} turns undead."
 msgstr "{name} turns undead."
@@ -18941,7 +18957,7 @@ msgstr "{name} uses Uncanny Metabolism."
 msgid "{name} uses Wholeness of Body."
 msgstr "{name} uses Wholeness of Body."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:13893 src/OpenGold.Rules.Original/src/combat_session.cpp:9201
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:13900 src/OpenGold.Rules.Original/src/combat_session.cpp:9208
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} uses an item."
 msgstr "{name} uses an item."
@@ -18991,7 +19007,7 @@ msgstr "{name} wakes up prone."
 msgid "{name} wanders in confusion."
 msgstr "{name} wanders in confusion."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12181
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12188
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} wants to kill {yeller}."
 msgstr "{name} wants to kill {yeller}."
@@ -19011,7 +19027,7 @@ msgstr "{name} will scribe the spell at the next rest."
 msgid "{name} writes a scroll of {spell}."
 msgstr "{name} writes a scroll of {spell}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12173
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12180
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} yells a taunt."
 msgstr "{name} yells a taunt."
@@ -19026,7 +19042,7 @@ msgstr "{name}'s Arcana check for the scroll: d20 {roll} + {bonus} vs DC {dc}."
 msgid "{name}'s Arcane Sword strikes."
 msgstr "{name}'s Arcane Sword strikes."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:12751
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:12758
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name}'s Fire Shield strikes {attacker}."
 msgstr "{name}'s Fire Shield strikes {attacker}."
@@ -19166,7 +19182,7 @@ msgstr "{name}'s spell dissipates."
 msgid "{name}'s spell fails under Slow."
 msgstr "{name}'s spell fails under Slow."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:6200
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:6207
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name}'s summons is not answered."
 msgstr "{name}'s summons is not answered."
@@ -19416,7 +19432,7 @@ msgstr "{spell} takes hold of {name}."
 msgid "{spell} with {name}"
 msgstr "{spell} with {name}"
 
-#: src/OpenGoldBox/combat_view.cpp:3976
+#: src/OpenGoldBox/combat_view.cpp:4065
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{spell}: aim {left} more of {maximum}. Aimed at: {chosen}"
 msgstr "{spell}: aim {left} more of {maximum}. Aimed at: {chosen}"
@@ -19441,7 +19457,7 @@ msgstr "{text}"
 msgid "{tons} tons · speed {speed}"
 msgstr "{tons} tons · speed {speed}"
 
-#: src/OpenGoldBox/combat_view.cpp:3138
+#: src/OpenGoldBox/combat_view.cpp:3207
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{type}\nAC {ac}  HP {hp}/{maximum}\nWeapon: {weapon}"
 msgstr "{type}\nAC {ac}  HP {hp}/{maximum}\nWeapon: {weapon}"
@@ -19456,7 +19472,7 @@ msgstr "{value} duplicates left that may take a hit in its place."
 msgid "{value} uses spent since the last Long Rest."
 msgstr "{value} uses spent since the last Long Rest."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:3621
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:3628
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{victim} is digested instantly."
 msgstr "{victim} is digested instantly."
