@@ -2029,6 +2029,9 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     beats.push_back(abyss_portal);
     auto leave_tripod = ending_walk(62, 4, 22, D::north);
     leave_tripod.dialogue_answers = abyss_portal.dialogue_answers;
+    // The egg hatches as the party moves off: the five-headed dragon is
+    // fought here, its heads slain while its body can neither be harmed nor
+    // act.
     beats.push_back(leave_tripod);
     auto egg_rest = palace_preparation;
     egg_rest.map = 62;

@@ -16044,6 +16044,21 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 continue;
             }
             const auto numbers = opengold::original::Combatant::decode(unit.persistent.resources);
+            const auto has = [&](int code)
+            {
+                return numbers && std::ranges::any_of(numbers->effects,
+                                                      [code](const auto &effect)
+                                                      {
+                                                          return effect.code == code;
+                                                      });
+            };
+            // A final shape that cannot be harmed and never acts (the
+            // five-headed dragon's body) is no target.
+            constexpr int unharmed_shape = 1459, zap = 1466;
+            if (has(unharmed_shape) && !has(zap))
+            {
+                continue;
+            }
             if (unit.name.find("SIVAK") != std::string::npos)
             {
                 sivaks.push_back(&unit);
@@ -17003,8 +17018,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                         (game == GoldBoxGame::pools_of_darkness &&
                          unit.name.starts_with("GOTHMENES")) ||
                         (earned_champions && unit.name.starts_with("MYRTANI")) ||
-                        (earned_dark_queen && (unit.name.starts_with("CHROMATIC DRAGN") ||
-                                               unit.name.find(" HEAD ") != std::string::npos));
+                        // The five-headed dragon's body cannot be harmed
+                        // and never acts; slaying its five heads wins.
+                        (earned_dark_queen && unit.name.find(" HEAD ") != std::string::npos);
                     return unit.side == opengold::rules::Side::opposition && final_boss &&
                            !unit.dead && unit.hit_points > 0;
                 });
@@ -17131,7 +17147,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     played.combatants,
                     [](const opengold::rules::CombatantView &unit)
                     {
-                        return unit.side == opengold::rules::Side::opposition && unit.conscious;
+                        return unit.side == opengold::rules::Side::opposition && unit.conscious &&
+                               !unit.name.starts_with("CHROMATIC DRAGN");
                     });
                 std::cout << "  try " << t << " (tactic " << tactic << "): score " << score(played)
                           << " outcome " << static_cast<int>(played.outcome) << " round "
