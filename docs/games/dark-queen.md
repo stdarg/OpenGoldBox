@@ -760,3 +760,38 @@ under tactics 0, 2 and 3. The old route allowed 240 reseeded reloads here,
 480 at the palace ritual and 2400 for the vampires. The Font of the Dark Queen
 is still ahead. **No earned Native ending exists yet.**
 `OPENGOLD_ROUTE_BEAT_TACTICS=N:T,...` sets a beat's tactic when planning.
+
+## Route past the Font (2026-11-24)
+
+The certifying standard is now the same as the other accepted endings: a lost
+fight replays from the save before it with fresh dice, up to the route's
+existing tries and event reloads. A fresh run from the imported Death Knights
+winners on Easy, with Original movement, wins through beat 333. That includes
+the Gnome court and the Font of the Dark Queen; the Font was won on its tenth
+of twenty event reloads, and the dead were raised after it.
+
+The beats after the Font had never been played and needed corrections:
+
+- After the Font, fire creatures break every camp on its lava floor, so the
+  route no longer rests there.
+- The gnome windship rises from the shaft north of 17,10. Stepping into it
+  plays the authored rescue of Crysia, whose spell choice is part of the
+  scene. The old destination, 17,8, is reached only through that shaft.
+- The windship sets the party down on a ledge at 0,24. Its way east crosses
+  two shaft edges, which the party jumps when the prompt offers.
+- Arriving at the Sanctum (5,25) plays both waves and the fall into the
+  Abyss, so the separate step beat that followed is gone.
+- Raistlin's cell is entered from 13,2. The party rests to full first, which
+  the Abyss allows.
+
+**Current blocker: Raistlin's torturers (map 66 at 15,2, beat 344).** Spells
+fail in the room, and the fight cannot be avoided: approaching, waiting and
+fighting all lead to it. The enemies include five enchanted Bozaks, whose Fire
+Shields return each blow as twice the damage, as untyped magic (raw 112,
+`fx_adjacent_double_zap`). There are also enchanted Sivaks whose deaths cast
+the spell table's spell 0x7c on their neighbours (`fx_queue_meteor_explosion`),
+plus a death dragon, amphi dragons and eyes of the deep. Both behaviors match
+the reconstructed source. The full-strength party loses in rounds 4 to 6. All
+20 event reloads lost with the default tactics, and tactic 4, which avoids
+shielded targets, won none of 1518 scored tries. The authored ending is not
+reached yet.

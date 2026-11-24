@@ -15910,9 +15910,13 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
     // A Dark Queen fighter's turn under tactic 3: it strikes the weakest
     // enemy spellcaster next to it, or, standing clear of every enemy, steps
     // next to the nearest one it can reach, among the orders the game offers.
-    const auto strike_casters =
-        [](const opengold::rules::CombatSession &battle) -> std::optional<opengold::rules::Command>
+    // Under tactic 4 it also leaves alone an enemy whose Fire Shield (343)
+    // returns each blow, striking the weakest other enemy next to it instead,
+    // or waiting while other enemies remain.
+    const auto strike_casters = [](const opengold::rules::CombatSession &battle,
+                                   bool avoid_shields) -> std::optional<opengold::rules::Command>
     {
+        constexpr int retaliating_shield = 343;
         const auto state = battle.snapshot();
         const auto actor =
             std::ranges::find(state.combatants, state.actor, &opengold::rules::CombatantView::id);
@@ -15924,7 +15928,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         {
             return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y));
         };
-        std::vector<const opengold::rules::CombatantView *> casters;
+        std::vector<const opengold::rules::CombatantView *> casters, unshielded;
         bool engaged = false;
         for (const auto &unit : state.combatants)
         {
@@ -15934,23 +15938,52 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             }
             engaged = engaged || apart(unit.cell, actor->cell) <= 1;
             const auto numbers = opengold::original::Combatant::decode(unit.persistent.resources);
-            if (numbers && !numbers->spells.empty())
+            const bool shielded = avoid_shields && numbers &&
+                                  std::ranges::any_of(numbers->effects,
+                                                      [](const auto &effect)
+                                                      {
+                                                          return effect.code == retaliating_shield;
+                                                      });
+            if (!shielded)
+            {
+                unshielded.push_back(&unit);
+            }
+            if (numbers && !numbers->spells.empty() && !shielded)
             {
                 casters.push_back(&unit);
             }
         }
         const auto commands = battle.legal_commands();
-        std::optional<opengold::rules::Command> strike;
-        int weakest = std::numeric_limits<int>::max();
-        for (const auto &command : commands)
+        const auto weakest_struck =
+            [&](const std::vector<const opengold::rules::CombatantView *> &among)
+            -> std::optional<opengold::rules::Command>
         {
-            const auto target =
-                std::ranges::find(casters, command.target, &opengold::rules::CombatantView::id);
-            if (command.verb == "melee" && target != casters.end() &&
-                (*target)->hit_points < weakest)
+            std::optional<opengold::rules::Command> strike;
+            int weakest = std::numeric_limits<int>::max();
+            for (const auto &command : commands)
             {
-                weakest = (*target)->hit_points;
-                strike = command;
+                const auto target =
+                    std::ranges::find(among, command.target, &opengold::rules::CombatantView::id);
+                if (command.verb == "melee" && target != among.end() &&
+                    (*target)->hit_points < weakest)
+                {
+                    weakest = (*target)->hit_points;
+                    strike = command;
+                }
+            }
+            return strike;
+        };
+        auto strike = weakest_struck(casters);
+        if (!strike && avoid_shields)
+        {
+            strike = weakest_struck(unshielded);
+            // Next only to shields while unshielded enemies remain, it waits
+            // for them rather than taking its own blows back twice over.
+            const auto end = std::ranges::find(commands, std::string_view("end"),
+                                               &opengold::rules::Command::verb);
+            if (!strike && engaged && !unshielded.empty() && end != commands.end())
+            {
+                strike = *end;
             }
         }
         if (strike || engaged)
@@ -15979,8 +16012,10 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
     };
     const auto fight_once = [&](std::uint64_t seed, unsigned chosen_tactic)
     {
-        // Tactic 3 is tactic 2 with fighters hunting the enemy's spellcasters.
-        const bool hunts_casters = chosen_tactic == 3;
+        // Tactics 3 and 4 are tactic 2 with fighters hunting the enemy's
+        // spellcasters, 4 also sparing itself enemies' Fire Shields.
+        const bool hunts_casters = chosen_tactic == 3 || chosen_tactic == 4;
+        const bool avoids_shields = chosen_tactic == 4;
         const unsigned tactic = hunts_casters ? 2 : chosen_tactic;
         const bool native_font =
             earned_dark_queen && session.script_variable(opengold::por::EclAddress{0x19E}) == 30;
@@ -16281,7 +16316,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             if (!held && member && hunts_casters && earned_dark_queen &&
                 !actor->name.starts_with("cleric") && !actor->name.starts_with("magic_user"))
             {
-                held = strike_casters(battle);
+                held = strike_casters(battle, avoids_shields);
             }
             if (!held && member && tactic == 2 &&
                 (game == GoldBoxGame::treasures_of_the_savage_frontier ||
@@ -17599,18 +17634,42 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     const auto native_assets = opengold::campaign_asset_identity(folder);
                     const auto bytes =
                         opengold::encode_campaign(*party, nullptr, native_assets, game);
-                    auto loaded =
-                        opengold::decode_campaign(bytes, *party->character_rules(),
-                                                  party->rule_module(), native_assets, nullptr);
+                    // Decode with rules and assets loaded afresh from the
+                    // installation, not the live party's, so nothing the
+                    // save omits can be supplied by the running game.
+                    const std::shared_ptr<const opengold::rules::CharacterRules> fresh_creation =
+                        opengold::original::character_rules(opengold::original::default_aging,
+                                                            game);
+                    const auto fresh_rules = opengold::original::rules_module(
+                        opengold::load_original_content(folder, game));
+                    auto loaded = opengold::decode_campaign(bytes, *fresh_creation, *fresh_rules,
+                                                            native_assets, nullptr);
                     auto winners = std::make_shared<opengold::CampaignParty>(
-                        opengold::original::rules_module(content), party->character_rules());
+                        opengold::original::rules_module(
+                            opengold::load_original_content(folder, game)),
+                        fresh_creation);
                     winners->restore(std::move(loaded.party));
+                    for (const auto &member : party->state().roster)
+                    {
+                        const auto &saved = winners->member(member.id);
+                        check(saved.character.sheet().name == member.character.sheet().name &&
+                                  saved.npc_source == member.npc_source &&
+                                  saved.experience == member.experience &&
+                                  saved.vitals.hit_points == member.vitals.hit_points &&
+                                  saved.vitals.dead == member.vitals.dead &&
+                                  winners->game_record(member.id) == party->game_record(member.id),
+                              "Every native victory-time PC and companion keeps its identity, "
+                              "condition and complete record");
+                    }
                     check(
                         winners->state().slots == party->state().slots &&
                             winners->state().roster.size() == party->state().roster.size() &&
                             opengold::encode_campaign(*winners, nullptr, native_assets, game) ==
                                 bytes,
                         "Every native victory-time character survives a byte-identical party save");
+                    std::cout << "Native victory before Continue: "
+                              << winners->state().roster.size()
+                              << " roster records resave byte for byte.\n";
                     native_winning_party = bytes;
                     if (const auto *path = std::getenv("OPENGOLD_ROUTE_WINNING_PARTY"))
                     {
@@ -20726,17 +20785,17 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         // map the route ended on, row by row, to find where a script's event is.
         if (std::getenv("OPENGOLD_ROUTE_EVENTS"))
         {
-            for (unsigned y = 0; y < 16; ++y)
+            for (unsigned y = 0; y < session.map().height; ++y)
             {
                 std::cout << "events row " << y << ":";
-                for (unsigned x = 0; x < 16; ++x)
+                for (unsigned x = 0; x < session.map().width; ++x)
                 {
                     std::cout << " " << session.map().at(x, y).event_number();
                 }
                 // Each square's way out north, east, south and west: its
                 // barrier code (1 open, 2 and 3 locked), with a wall marked.
                 std::cout << "\nbarriers row " << y << ":";
-                for (unsigned x = 0; x < 16; ++x)
+                for (unsigned x = 0; x < session.map().width; ++x)
                 {
                     const auto &cell = session.map().at(x, y);
                     std::cout << " ";
@@ -20767,9 +20826,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 play("walls");
             }
             const auto &map = session.map();
-            for (unsigned y = 0; y < 16; ++y)
+            for (unsigned y = 0; y < map.height; ++y)
             {
-                for (unsigned x = 0; x < 16; ++x)
+                for (unsigned x = 0; x < map.width; ++x)
                 {
                     const auto &c = map.at(x, y);
                     std::cout << "walls " << x << "," << y << " w" << int(c.walls[0]) << "."

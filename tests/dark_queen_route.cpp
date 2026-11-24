@@ -1926,24 +1926,31 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
         beat.reloads_until_won = 480;
         return beat;
     };
-    RouteBeat font_recovery = tower_upper_rest;
-    font_recovery.x = 21;
-    font_recovery.y = 10;
-    font_recovery.memorize_first_of.insert(font_recovery.memorize_first_of.begin(),
-                                           {"dispel_magic", "dispel_magic", "dispel_magic"});
-    beats.push_back(font_recovery);
-    beats.push_back(tower_fire);
-    beats.push_back(rescue_mind);
-    beats.push_back(rescue_wards);
+    // Fire creatures break every camp on the Font's lava floor, so the party
+    // does not rest there. The gnome windship rises from the shaft north of
+    // 17,10: stepping into it leaps aboard, and the scene's own spell choice
+    // frees Crysia before the party lands on an upper floor.
     auto upper_windship = ending_walk(
-        62, 17, 8, D::north, {"LEAP ABOARD", "USE SPELL", "DISPEL", "CRYSIA", "YES", "ATTACK"});
+        62, 17, 10, D::north, {"LEAP ABOARD", "USE SPELL", "DISPEL", "CRYSIA", "YES", "ATTACK"});
+    upper_windship.arrive_only = false;
+    upper_windship.step = true;
     upper_windship.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x19B, 4};
     beats.push_back(upper_windship);
     // The captain leaves with his rescued sister through the ordinary script.
+    // The windship sets the party down on a ledge whose way east crosses
+    // two shaft edges: the party jumps them, as the shaft's prompt offers.
+    RouteBeat ledge{62, 0, 24, D::east, {"YES"}};
+    ledge.step = true;
+    ledge.searching = false;
+    beats.push_back(ledge);
+    ledge.x = 1;
+    beats.push_back(ledge);
     // Rest again before the Sanctum's two consecutive waves and the Abyss.
-    RouteBeat upper_court_recovery = font_recovery;
+    RouteBeat upper_court_recovery = tower_upper_rest;
     upper_court_recovery.x = 4;
     upper_court_recovery.y = 22;
+    upper_court_recovery.memorize_first_of.insert(upper_court_recovery.memorize_first_of.begin(),
+                                                  {"dispel_magic", "dispel_magic", "dispel_magic"});
     beats.push_back(upper_court_recovery);
     beats.push_back(tower_fire);
     beats.push_back(rescue_mind);
@@ -1951,13 +1958,19 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     // Cast before entering the Abyss, whose field inhibits magic. Raistlin's
     // torturers must be faced with the party's ordinary readied weapons.
     beats.push_back(audience_preparation);
-    beats.push_back(ending_walk(62, 5, 25, D::south, {"YES"}));
-    auto inner_sanctum = ending_walk(62, 5, 25, D::south, {"YES", "ATTACK"});
-    inner_sanctum.arrive_only = false;
-    inner_sanctum.step = true;
-    beats.push_back(inner_sanctum);
-    // Neither Abyss beat camps or attempts cures. After freeing Raistlin,
-    // head straight for the portal while his warning still leaves time.
+    // Arriving at the Sanctum plays its two waves and the fall into the Abyss.
+    beats.push_back(ending_walk(62, 5, 25, D::south, {"YES", "ATTACK"}));
+    // Raistlin's cell is entered through its west wall from 13,2. The
+    // Sanctum's waves leave the party hurt: it rests and cures before
+    // stepping into the room that inhibits magic. After freeing him, no beat
+    // camps or cures: head straight for the portal while his warning still
+    // leaves time.
+    auto raistlin_cell = ending_walk(66, 13, 2, D::east, {"FIGHT MONSTERS", "CUT CHAINS", "YES"});
+    raistlin_cell.arrive_only = false;
+    raistlin_cell.step = true;
+    raistlin_cell.rest_first = true;
+    raistlin_cell.rest_for_spells = true;
+    beats.push_back(raistlin_cell);
     auto free_raistlin = ending_walk(66, 15, 2, D::north, {"FIGHT MONSTERS", "CUT CHAINS", "YES"});
     free_raistlin.cure_first = false;
     free_raistlin.cure_to_full = false;
@@ -1965,6 +1978,9 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
                                  {1, "Grunschka"},    {15, "cleric 4"}, {15, "cleric 5"},
                                  {15, "magic_user 6"}};
     free_raistlin.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x9F, 1};
+    // Raistlin's torturers include enchanted Bozaks whose Fire Shields return
+    // every blow twice over, and no spell works in the room.
+    free_raistlin.fight_tactic = 4;
     beats.push_back(free_raistlin);
     // All six imported PCs have Dexterity 18. The knight therefore ties for
     // their best throw. The first portal menu is still foggy: wait there,
@@ -2005,7 +2021,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     beats.push_back(lower_stair);
     auto queen_mirror = ending_walk(62, 8, 6, D::south, {"DEFEND", "LEAVE"});
     beats.push_back(queen_mirror);
-    RouteBeat flower_recovery = font_recovery;
+    RouteBeat flower_recovery = upper_court_recovery;
     flower_recovery.x = 4;
     flower_recovery.y = 8;
     beats.push_back(flower_recovery);
