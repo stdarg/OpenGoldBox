@@ -2094,7 +2094,8 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     beats.push_back(rescue_wards);
     // Pursue the Greystone through the actual Iron Flower guards and both
     // final waves. The last throw cuts Hrumbishnog's grapple before boarding.
-    auto iron_flower = ending_walk(62, 4, 4, D::north, {"ATTACK", "ATTACK", "knight 1", "YES"});
+    auto iron_flower = ending_walk(62, 4, 4, D::north, {"WAIT", "WAIT", "knight 1", "YES"});
+    iron_flower.fight_tactic = 6;
     iron_flower.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x104, 1};
     beats.push_back(iron_flower);
     auto celebration_lift = workshop_lift;

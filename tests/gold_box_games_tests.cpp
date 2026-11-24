@@ -16197,6 +16197,481 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         }
         return weakest("melee", sivaks, 0);
     };
+    // The Iron Flower's chained fights leave no camp between waves. Keep
+    // every companion clear of the enchanted death bursts, and ask the
+    // rules' exact outlook about a mage's spell instead of estimating rays.
+    const auto native_finale_turn =
+        [&](const opengold::rules::CombatSession &battle) -> std::optional<opengold::rules::Command>
+    {
+        using opengold::rules::CombatantView;
+        const auto state = battle.snapshot();
+        const auto commands = battle.legal_commands();
+        const auto actor = std::ranges::find(state.combatants, state.actor, &CombatantView::id);
+        if (actor == state.combatants.end())
+        {
+            return std::nullopt;
+        }
+        const auto own = opengold::original::Combatant::decode(actor->persistent.resources);
+        const auto has = [](const CombatantView &unit, int code)
+        {
+            const auto numbers = opengold::original::Combatant::decode(unit.persistent.resources);
+            return numbers && std::ranges::any_of(numbers->effects,
+                                                  [code](const auto &effect)
+                                                  {
+                                                      return effect.code == code;
+                                                  });
+        };
+        const auto distance = [](opengold::rules::Cell cell, const CombatantView &unit)
+        {
+            return std::max(
+                {unit.cell.x - cell.x, cell.x - (unit.cell.x + unit.footprint.width - 1),
+                 unit.cell.y - cell.y, cell.y - (unit.cell.y + unit.footprint.height - 1), 0});
+        };
+        const auto burst = [&](const CombatantView &unit)
+        {
+            return has(unit, 2188) || has(unit, 2189);
+        };
+        std::vector<const CombatantView *> hazards;
+        for (const auto &unit : state.combatants)
+        {
+            if (unit.side != actor->side && unit.conscious && burst(unit))
+            {
+                hazards.push_back(&unit);
+            }
+        }
+        // A dying Bozak or Sivak may kill another one beside it. Account
+        // conservatively for that chain before deliberately hurting one.
+        const auto burst_catches_party = [&](const CombatantView &target)
+        {
+            std::set<opengold::rules::EntityId> chain{target.id};
+            bool added = true;
+            while (added)
+            {
+                added = false;
+                for (const auto *hazard : hazards)
+                {
+                    if (!chain.contains(hazard->id) &&
+                        std::ranges::any_of(hazards,
+                                            [&](const auto *other)
+                                            {
+                                                return chain.contains(other->id) &&
+                                                       distance(hazard->cell, *other) <= 2;
+                                            }))
+                    {
+                        added = chain.insert(hazard->id).second || added;
+                    }
+                }
+            }
+            return std::ranges::any_of(hazards,
+                                       [&](const auto *hazard)
+                                       {
+                                           return chain.contains(hazard->id) &&
+                                                  std::ranges::any_of(
+                                                      state.combatants,
+                                                      [&](const auto &unit)
+                                                      {
+                                                          return unit.side == actor->side &&
+                                                                 !unit.dead && !unit.fled &&
+                                                                 distance(unit.cell, *hazard) <= 2;
+                                                      });
+                                       });
+        };
+        const auto positive_loss = [](const auto &outlook)
+        {
+            for (std::size_t lost = 1; lost < outlook.loss.size(); ++lost)
+            {
+                if (outlook.loss[lost] > 0)
+                {
+                    return true;
+                }
+            }
+            return false;
+        };
+        std::map<std::pair<unsigned, opengold::rules::Cell>, double> scores;
+        const auto spell_score = [&](unsigned number, opengold::rules::Cell aim)
+        {
+            const auto key = std::pair{number, aim};
+            if (const auto found = scores.find(key); found != scores.end())
+            {
+                return found->second;
+            }
+            double gain = 0;
+            // Cheap gain screen only; exact rays, burst cells, immunities
+            // and friendly harm are always decided by the public outlook.
+            if (std::ranges::none_of(state.combatants,
+                                     [&](const auto &unit)
+                                     {
+                                         return unit.side != actor->side && unit.conscious &&
+                                                distance(aim, unit) <= 3;
+                                     }))
+            {
+                scores.emplace(key, gain);
+                return gain;
+            }
+            const auto outlook = battle.area_outlook(state.actor, number, aim);
+            if (!outlook)
+            {
+                gain = -1;
+            }
+            else
+            {
+                for (const auto &creature : outlook->creatures)
+                {
+                    if (creature.ally && (creature.hit_points <= 0 || creature.disabled > 0 ||
+                                          positive_loss(creature)))
+                    {
+                        gain = -1;
+                        break;
+                    }
+                    if (creature.ally)
+                    {
+                        continue;
+                    }
+                    const auto target =
+                        std::ranges::find(state.combatants, creature.id, &CombatantView::id);
+                    if (target != state.combatants.end() && burst(*target) &&
+                        positive_loss(creature) && burst_catches_party(*target))
+                    {
+                        gain = -1;
+                        break;
+                    }
+                    gain += creature.disabled * creature.weight;
+                    for (std::size_t lost = 1; lost < creature.loss.size(); ++lost)
+                    {
+                        gain += static_cast<double>(lost) * creature.loss[lost] * creature.weight /
+                                std::max(creature.max_hit_points, 1);
+                    }
+                }
+            }
+            scores.emplace(key, gain);
+            return gain;
+        };
+        const auto fallback = [&]() -> std::optional<opengold::rules::Command>
+        {
+            for (const std::string_view verb : {"abort", "end", "guard"})
+            {
+                const auto option =
+                    std::ranges::find(commands, verb, &opengold::rules::Command::verb);
+                if (option != commands.end())
+                {
+                    return *option;
+                }
+            }
+            return std::nullopt;
+        };
+        const auto near_hazard = [&](opengold::rules::Cell cell)
+        {
+            int nearest = 99;
+            for (const auto *hazard : hazards)
+            {
+                nearest = std::min(nearest, distance(cell, *hazard));
+            }
+            return nearest;
+        };
+        const auto safe_cell = [&](opengold::rules::Cell cell)
+        {
+            return near_hazard(cell) >= 3 &&
+                   std::ranges::none_of(state.combatants,
+                                        [&](const auto &unit)
+                                        {
+                                            return unit.side != actor->side && unit.conscious &&
+                                                   has(unit, 1460) && distance(cell, unit) < 5;
+                                        });
+        };
+        const opengold::rules::Command *step = nullptr;
+        if (near_hazard(actor->cell) < 3)
+        {
+            for (const auto &command : commands)
+            {
+                if (command.verb == "move" && safe_cell(command.destination) &&
+                    (!step ||
+                     distance(command.destination, *actor) < distance(step->destination, *actor)))
+                {
+                    step = &command;
+                }
+            }
+            if (step)
+            {
+                return *step;
+            }
+        }
+        const bool mage = actor->name.starts_with("magic_user");
+        if (mage)
+        {
+            const auto missile_target = [&](const CombatantView &unit)
+            {
+                return unit.side != actor->side && unit.conscious && !has(unit, 17) &&
+                       !has(unit, 1459) && !has(unit, 1460) &&
+                       (!burst(unit) || !burst_catches_party(unit));
+            };
+            const opengold::rules::Command *best = nullptr;
+            double best_score = 0;
+            bool aiming = false;
+            for (const auto &command : commands)
+            {
+                if (command.verb == "blast_delay" && command.item == 0)
+                {
+                    return command;
+                }
+                if (command.verb == "aim")
+                {
+                    aiming = true;
+                    // Magic Missile has separate creature targets and no
+                    // area outlook. Its offered target must also be safe
+                    // from secondary death bursts; Shield still refuses it.
+                    if (command.item == 15)
+                    {
+                        const auto target =
+                            std::ranges::find(state.combatants, command.target, &CombatantView::id);
+                        if (target != state.combatants.end() && missile_target(*target))
+                        {
+                            return command;
+                        }
+                        continue;
+                    }
+                    const double score = spell_score(command.item, command.destination);
+                    if (score > best_score)
+                    {
+                        best = &command;
+                        best_score = score;
+                    }
+                }
+            }
+            if (best || aiming)
+            {
+                return best ? std::optional{*best} : fallback();
+            }
+            std::set<opengold::rules::Cell> aims;
+            for (const auto &unit : state.combatants)
+            {
+                if (unit.side != actor->side && unit.conscious && !has(unit, 1459) &&
+                    !has(unit, 1460))
+                {
+                    for (int y = unit.cell.y - 2; y < unit.cell.y + unit.footprint.height + 2; ++y)
+                    {
+                        for (int x = unit.cell.x - 2; x < unit.cell.x + unit.footprint.width + 2;
+                             ++x)
+                        {
+                            if (state.battlefield.contains({x, y}))
+                            {
+                                aims.insert({x, y});
+                            }
+                        }
+                    }
+                }
+            }
+            for (const auto &command : commands)
+            {
+                const auto *known = opengold::original::spell(command.item, game);
+                if (command.verb != "cast" || !known || !known->offensive || !own)
+                {
+                    continue;
+                }
+                const int level = opengold::original::level_in(
+                    own->class_levels, opengold::original::ClassSlot::magic_user);
+                const int range = known->range_fixed + level * known->range_per_level;
+                for (const auto aim : aims)
+                {
+                    const int dx = std::abs(aim.x - actor->cell.x);
+                    const int dy = std::abs(aim.y - actor->cell.y);
+                    if (2 * std::max(dx, dy) + std::min(dx, dy) > 2 * range ||
+                        !opengold::rules::has_line_of_sight(state.battlefield, actor->cell, aim))
+                    {
+                        continue;
+                    }
+                    const double score = spell_score(command.item, aim);
+                    if (score > best_score)
+                    {
+                        best = &command;
+                        best_score = score;
+                    }
+                }
+            }
+            if (best)
+            {
+                return *best;
+            }
+            for (const auto &command : commands)
+            {
+                if (command.verb != "cast" || command.item != 15 || !own)
+                {
+                    continue;
+                }
+                const auto *known = opengold::original::spell(15, game);
+                const int range =
+                    known->range_fixed +
+                    known->range_per_level *
+                        opengold::original::level_in(own->class_levels,
+                                                     opengold::original::ClassSlot::magic_user);
+                for (const auto &unit : state.combatants)
+                {
+                    const int dx = std::abs(unit.cell.x - actor->cell.x);
+                    const int dy = std::abs(unit.cell.y - actor->cell.y);
+                    if (missile_target(unit) &&
+                        2 * std::max(dx, dy) + std::min(dx, dy) <= 2 * range &&
+                        opengold::rules::has_line_of_sight(state.battlefield, actor->cell,
+                                                           unit.cell))
+                    {
+                        return command;
+                    }
+                }
+            }
+        }
+        const auto priority = [&](const CombatantView &unit)
+        {
+            const auto numbers = opengold::original::Combatant::decode(unit.persistent.resources);
+            return burst(unit)                                     ? 3
+                   : numbers && !numbers->spells.empty()           ? 0
+                   : unit.name.find("DRAGON") != std::string::npos ? 1
+                                                                   : 2;
+        };
+        const bool ordinary_foe =
+            std::ranges::any_of(state.combatants,
+                                [&](const auto &unit)
+                                {
+                                    return unit.side != actor->side && unit.conscious &&
+                                           !burst(unit) && !has(unit, 1459) && !has(unit, 1460);
+                                });
+        // A Sling drawn for the previous wave must not replace the actual
+        // dragonlance when the next wave brings dragons instead of bursts.
+        if (!mage && own && hazards.empty() && ordinary_foe && actor->name.starts_with("knight"))
+        {
+            const int wanted_type = actor->name == "knight 2" ? 19 : 69;
+            const std::string_view wanted_name =
+                actor->name == "knight 2" ? "Short Sword" : "Footman's Dragonlance";
+            bool carried = false;
+            for (const auto id : party->state().slots)
+            {
+                if (id && party->member(id).character.sheet().name == actor->name)
+                {
+                    carried = std::ranges::any_of(party->member(id).character.inventory().items(),
+                                                  [wanted_type](const auto &item)
+                                                  {
+                                                      return item.original_type == wanted_type;
+                                                  });
+                }
+            }
+            if (carried && own->weapon_type != wanted_type)
+            {
+                for (const auto &command : commands)
+                {
+                    if (command.verb == "ready" && command.label.starts_with(wanted_name))
+                    {
+                        return command;
+                    }
+                }
+                for (const auto &command : commands)
+                {
+                    if (command.verb == "unready" && command.label == "Sling")
+                    {
+                        return command;
+                    }
+                }
+            }
+        }
+        const opengold::rules::Command *attack = nullptr;
+        std::tuple<int, int, int> attack_rank{99, 0, 0};
+        for (const auto &command : commands)
+        {
+            if ((command.verb != "melee" && command.verb != "ranged" && command.verb != "throw") ||
+                (mage && command.verb == "melee"))
+            {
+                continue;
+            }
+            const auto target =
+                std::ranges::find(state.combatants, command.target, &CombatantView::id);
+            if (target == state.combatants.end() || target->side == actor->side ||
+                !target->conscious || has(*target, 1459) || has(*target, 1460) ||
+                (command.verb == "melee" && has(*target, 343)) ||
+                (burst(*target) &&
+                 (distance(actor->cell, *target) < 3 || burst_catches_party(*target))))
+            {
+                continue;
+            }
+            const auto rank =
+                std::tuple{priority(*target), -command.expected_damage, target->hit_points};
+            if (rank < attack_rank)
+            {
+                attack = &command;
+                attack_rank = rank;
+            }
+        }
+        if (attack)
+        {
+            return *attack;
+        }
+        // Draw a carried Sling only when the remaining threats are actual
+        // death bursts, rather than merely distant ordinary melee targets.
+        if (!mage && own && !own->missile && !hazards.empty() && !ordinary_foe)
+        {
+            bool carries_sling = false;
+            for (const auto id : party->state().slots)
+            {
+                if (id && party->member(id).character.sheet().name == actor->name)
+                {
+                    carries_sling =
+                        std::ranges::any_of(party->member(id).character.inventory().items(),
+                                            [](const auto &item)
+                                            {
+                                                return item.original_type == 28;
+                                            });
+                }
+            }
+            if (carries_sling)
+            {
+                for (const auto &command : commands)
+                {
+                    if (command.verb == "ready" && command.label == "Sling")
+                    {
+                        return command;
+                    }
+                }
+                for (const auto &command : commands)
+                {
+                    if (command.verb == "unready" &&
+                        (command.label.starts_with("Footman's Dragonlance") ||
+                         command.label.starts_with("Short Sword") ||
+                         command.label.starts_with("Long Sword")))
+                    {
+                        return command;
+                    }
+                }
+            }
+        }
+        if (!mage)
+        {
+            std::tuple<int, int, int> move_rank{99, 99, 99};
+            for (const auto &command : commands)
+            {
+                if (command.verb != "move" || !safe_cell(command.destination))
+                {
+                    continue;
+                }
+                for (const auto &target : state.combatants)
+                {
+                    if (target.side == actor->side || !target.conscious || burst(target) ||
+                        has(target, 1459) || has(target, 1460) ||
+                        distance(command.destination, target) >= distance(actor->cell, target))
+                    {
+                        continue;
+                    }
+                    const auto rank =
+                        std::tuple{priority(target), distance(command.destination, target),
+                                   distance(command.destination, *actor)};
+                    if (rank < move_rank)
+                    {
+                        step = &command;
+                        move_rank = rank;
+                    }
+                }
+            }
+            if (step)
+            {
+                return *step;
+            }
+        }
+        return fallback();
+    };
     const auto fight_once = [&](std::uint64_t seed, unsigned chosen_tactic)
     {
         // Tactics 3 and 4 are tactic 2 with fighters hunting the enemy's
@@ -16205,7 +16680,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         const bool avoids_shields = chosen_tactic == 4;
         // Tactic 5 is tactic 2 with every member playing torturer_turn.
         const bool against_torturers = chosen_tactic == 5;
-        const unsigned tactic = hunts_casters || against_torturers ? 2 : chosen_tactic;
+        const bool native_finale = earned_dark_queen && chosen_tactic == 6;
+        const unsigned tactic =
+            hunts_casters || against_torturers || native_finale ? 2 : chosen_tactic;
         const bool native_font =
             earned_dark_queen && session.script_variable(opengold::por::EclAddress{0x19E}) == 30;
         const auto &position = session.snapshot();
@@ -16502,6 +16979,11 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             {
                 held = native_dispel_shields(battle);
             }
+            if (!held && member && native_finale)
+            {
+                held = native_finale_turn(battle);
+                check(held.has_value(), "The Native finale player has an offered safe action");
+            }
             if (!held && member && against_torturers && earned_dark_queen)
             {
                 held = torturer_turn(battle);
@@ -16511,7 +16993,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             {
                 held = strike_casters(battle, avoids_shields);
             }
-            if (!held && member && tactic == 2 &&
+            if (!held && member && tactic == 2 && !native_finale &&
                 (game == GoldBoxGame::treasures_of_the_savage_frontier ||
                  game == GoldBoxGame::secret_of_the_silver_blades || earned_champions ||
                  earned_dark_queen))
@@ -16590,7 +17072,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                           : member
                               ? opengold::choose_quick_command(
                                     battle,
-                                    (earned_dark_queen
+                                    (native_finale ? false
+                                     : earned_dark_queen
                                          ? actor->name.starts_with("magic_user")
                                          : tactic != 1 || actor->name.starts_with("magic_user")),
                                     opengold::Searching::everyone)
