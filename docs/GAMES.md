@@ -39,7 +39,11 @@ live](#where-the-developers-copies-live).
 
 The original let a party travel on: *Curse* imports a *Pool of Radiance*
 party, *Secret* a *Curse* party and *Pools of Darkness* a *Secret* party.
-*Treasures* imports a *Gateway* party. OpenGoldBox follows the original.
+*Treasures* imports a *Gateway* party, *Death Knights* a *Champions* party,
+*Dark Queen* a *Death Knights* party and *Matrix Cubed* a *Countdown* party.
+OpenGoldBox follows the original. Since 2026-11-24 each game also banks its
+party at its win, its permanent NPCs among them, and the next game's party
+screen offers that winning party first ([SAVES.md](SAVES.md#the-winning-party)).
 
 Each game also shipped a pre-rolled party, for beginning to play at once.
 OpenGoldBox's startup menu offers Play with Default Party instead with its own
@@ -395,7 +399,13 @@ The steps of *Curse*'s phase 3, with *Secret*'s differences
    (*Curse*'s step 1.7).
 3. Making a party under *Secret*'s rules: 200,000 experience for a single
    class (100,000 dual, 66,667 triple) trained up at once, its classes,
-   level limits and 117 spells; bringing a *Curse* party across.
+   level limits and 117 spells; bringing a *Curse* party across. *Done
+   (2026-11-24):* the party screen's *Add from Curse* lists *Curse*'s
+   winning party and its saves made under the original rules, and brings a
+   character in as *Curse* brings a *Pool of Radiance* one, with *Secret*'s
+   tables, its items renumbered by their names and its share of all the
+   save's money ([secret.md](games/secret.md#bringing-a-curse-party-across);
+   `opengold_winner_bank_tests`, `opengold_godot_secret_from_curse`).
 4. Walking every map and playing every event and fight (the walk), then
    the cluebook's route to the end. *The walk passes (2026-11-13):*
    `opengold_secret_walk` walks every square of every map with six fighters
@@ -623,7 +633,8 @@ new decoders.
    and its creation spells (2026-11-14, `opengold_original_creation_tests`),
    and its starting equipment from `ITEM0`, which the creation screen gives a
    new character (2026-11-14, `opengold_game_rules_tests`). Bringing a
-   *Secret* party across, which the original offers, is still to come.
+   *Secret* party across, which the original offers, came on 2026-11-16
+   (*Add from Secret*, `opengold_godot_darkness_from_secret`).
 4. Walking every map and playing every event and fight (the walk). *The walk
    passes (2026-11-14):* `opengold_darkness_walk` walks every square of every
    map a script loads with six fighters made under its rules. Its script

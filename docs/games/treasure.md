@@ -726,6 +726,11 @@ river/coast/roads, pays for earned training and services, buys and takes actual
 equipment, and uses memorized spells and saved-event reloads. Wands retain
 finite charges and thrown firepots are bought and consumed normally. No XP,
 gold, gear, healing, quest flags, positions or victories are test-granted.
+Since 2026-11-24 the winners are the party Gateway's earned ending banks at
+its win as the game does (`OPENGOLD_WINNERS_SAVE`,
+[SAVES.md](../SAVES.md#the-winning-party)): an ordinary save of Gateway's own
+files (`gateway-earned-winners.ogs`), where the route's planning save used to
+serve.
 
 The fresh registered chain passes: Gateway **67 fights, zero defeats in
 154.25s**; Treasure **145 fights, zero defeats in 1561.40s**; **1715.66s total**.

@@ -1,0 +1,573 @@
+// The winner bank (docs/SAVES.md, The winning party): a game's party is
+// banked at its win as an ordinary save that reloads byte for byte, and the
+// series' next game brings in its winners, its permanent NPCs among them.
+#include "opengold/buck_rogers_characters.h"
+#include "opengold/buck_rogers_combat.h"
+#include "opengold/buck_rogers_rules.h"
+#include "opengold/campaign_party.h"
+#include "opengold/campaign_save.h"
+#include "opengold/campaign_session.h"
+#include "opengold/character_creator.h"
+#include "opengold/creature_catalog.h"
+#include "opengold/default_party.h"
+#include "opengold/original.h"
+#include "opengold/original_content.h"
+#include "opengold/pool_radiance.h"
+#include "opengold/winner_bank.h"
+#include "installed_games.h"
+#include "original_creation_support.h"
+#include "test_support.h"
+
+#include <algorithm>
+#include <cstdlib>
+#include <iostream>
+#include <memory>
+#include <optional>
+#include <string>
+#include <vector>
+
+namespace
+{
+using opengold::GoldBoxGame;
+using opengold::MemberId;
+using opengold::test::check;
+namespace og = opengold::original;
+
+const std::filesystem::path source_dir(OPENGOLD_SOURCE_DIR);
+
+// A game played under the original rules, from its installed folder.
+struct Game
+{
+    GoldBoxGame game{};
+    std::filesystem::path folder;
+    std::shared_ptr<const opengold::rules::CharacterRules> creation;
+
+    [[nodiscard]] std::shared_ptr<opengold::CampaignParty> party() const
+    {
+        return std::make_shared<opengold::CampaignParty>(
+            og::rules_module(opengold::load_original_content(folder, game)), creation);
+    }
+
+    [[nodiscard]] std::string assets() const
+    {
+        return opengold::campaign_asset_identity(folder);
+    }
+};
+
+std::optional<Game> installed(GoldBoxGame game)
+{
+    const auto folder = opengold::test::installed_game_folder(game);
+    if (folder.empty())
+    {
+        std::cout << opengold::game_title(game) << "'s files are not here.\n";
+        return std::nullopt;
+    }
+    return Game{game, folder, og::character_rules(og::default_aging, game)};
+}
+
+// The member in `party` named `name`.
+const opengold::PartyMember &named(const opengold::PartyState &party, std::string_view name)
+{
+    const auto found = std::ranges::find_if(party.roster,
+                                            [&](const opengold::PartyMember &member)
+                                            {
+                                                return member.character.sheet().name == name;
+                                            });
+    check(found != party.roster.end(), "The party has " + std::string(name));
+    return *found;
+}
+
+const opengold::PartyMember &member_of(const opengold::PartyState &party, MemberId id)
+{
+    return *std::ranges::find(party.roster, id, &opengold::PartyMember::id);
+}
+
+// The NPC creature record `record` of `bank`, joined as ADD NPC joins it
+// under the original rules: its record, its morale and its own items.
+MemberId join_npc(opengold::CampaignParty &party, const Game &game, unsigned bank, unsigned record)
+{
+    const auto catalog = opengold::por::CreatureCatalog::load(game.folder, game.game);
+    const auto found =
+        catalog.find({static_cast<std::uint8_t>(bank), static_cast<std::uint8_t>(record)});
+    check(found.has_value(), "The game has its NPC's creature record");
+    const auto &creature = found->get();
+    auto bytes = creature.stored.raw;
+    if (game.game == GoldBoxGame::death_knights_of_krynn)
+    {
+        bytes.insert(bytes.end(), creature.stored.raw_spell_block.begin(),
+                     creature.stored.raw_spell_block.end());
+    }
+    const auto draft = game.creation->record_draft(bytes);
+    check(draft.has_value(), "The NPC's record makes a character");
+    const auto id =
+        party.recruit("por:MON" + std::to_string(bank) + "CHA:" + std::to_string(record),
+                      opengold::Character(*game.creation, *draft, {}), 90);
+    for (const auto &item : creature.equipment)
+    {
+        party.take_item(id, item);
+    }
+    return id;
+}
+
+// Two player characters made by the game's creation rules.
+void make_player_characters(opengold::CampaignParty &party, const Game &game)
+{
+    const bool krynn = og::krynn_game(game.game);
+    for (const std::string klass : {"fighter", "fighter"})
+    {
+        opengold::CharacterCreator creator(game.creation, 40 + party.state().roster.size());
+        creator.select(opengold::rules::CreationField::race, krynn ? "krynn_human" : "human");
+        creator.select(opengold::rules::CreationField::character_class, klass);
+        creator.name("Winner " + std::to_string(party.state().roster.size() + 1));
+        opengold::test::walk_original_creation(creator);
+        (void)party.add_pc(creator.create_character());
+    }
+}
+
+// A party at its win: its default party's characters where the game has one
+// (data/default_parties), else two of its creation's, and an NPC of its own
+// records in an NPC position; with money to share.
+std::shared_ptr<opengold::CampaignParty> winning_party(const Game &game, unsigned npc_bank,
+                                                       unsigned npc_record)
+{
+    auto party = game.party();
+    const auto defaults = source_dir / "data/default_parties" /
+                          (std::string(opengold::game_folder(game.game)) + ".json");
+    if (std::filesystem::exists(defaults))
+    {
+        opengold::add_default_party(*party, opengold::load_default_party(defaults));
+    }
+    else
+    {
+        make_player_characters(*party, game);
+    }
+    (void)join_npc(*party, game, npc_bank, npc_record);
+    auto wealth = party->state().wealth;
+    wealth[static_cast<std::size_t>(opengold::Coin::platinum)] = 600;
+    wealth[static_cast<std::size_t>(opengold::Coin::gems)] = 12;
+    wealth[static_cast<std::size_t>(opengold::Coin::gold)] = 3000;
+    party->set_wealth(wealth);
+    return party;
+}
+
+// The bank's save decoded under its game's rules, after checking that it
+// reloads and saves again byte for byte.
+opengold::SavedCampaign reloaded_bank(const Game &game, const std::string &bytes)
+{
+    auto world = [&]
+    {
+        return opengold::load_campaign(game.folder, game.game);
+    };
+    auto saved = opengold::decode_campaign(
+        bytes, *game.creation,
+        *og::rules_module(opengold::load_original_content(game.folder, game.game)), game.assets(),
+        world);
+    auto again = game.party();
+    again->restore(saved.party);
+    std::optional<opengold::por::RolfTourSession> town;
+    if (saved.town)
+    {
+        town = std::move(*saved.town);
+        town->attach_restored_party(again);
+    }
+    check(opengold::encode_campaign(*again, town ? &*town : nullptr, game.assets(), game.game) ==
+              bytes,
+          std::string(opengold::game_title(game.game)) +
+              "'s winning party reloads and saves again byte for byte");
+    saved.party = again->state();
+    saved.town = std::move(town);
+    return saved;
+}
+
+// Brings every winner of `bank` into a new party of `sequel`, as its party
+// screen does, and checks each arrives where its kind belongs. Returns the
+// sequel's party.
+std::shared_ptr<opengold::CampaignParty> bring_winners(const Game &earlier, const Game &sequel,
+                                                       const opengold::PartyState &bank)
+{
+    const auto winners = opengold::winners(bank);
+    const auto player_characters = static_cast<std::size_t>(
+        std::ranges::count_if(winners,
+                              [&](MemberId id)
+                              {
+                                  return member_of(bank, id).npc_source.empty();
+                              }));
+    auto party = sequel.party();
+    std::size_t place = 0;
+    for (const auto id : winners)
+    {
+        const auto &from = member_of(bank, id);
+        const bool npc = !from.npc_source.empty();
+        const auto arrived = opengold::bring_into_sequel(*party, from,
+                                                         {.earlier = earlier.game,
+                                                          .earlier_folder = earlier.folder,
+                                                          .sequel_folder = sequel.folder,
+                                                          .source_wealth = bank.wealth,
+                                                          .player_character = place,
+                                                          .player_characters = player_characters,
+                                                          .gateway_money_kept = true});
+        place += npc ? 0 : 1;
+        const auto &member = party->member(arrived);
+        const auto position =
+            std::ranges::find(party->state().slots, arrived) - party->state().slots.begin();
+        check(member.character.sheet().name == from.character.sheet().name,
+              "A winner arrives under its own name");
+        check(npc ? position >= 6 &&
+                        member.npc_source ==
+                            "from:" + std::string(opengold::game_folder(earlier.game)) + ":" +
+                                from.npc_source
+                  : position < 6 && member.npc_source.empty(),
+              "A player character takes a PC position and a permanent NPC an NPC position, "
+              "as its game's NPC");
+        check(og::game_of(member.character.sheet().identity) == sequel.game,
+              "The winner arrives under the sequel's rules");
+        check(member.experience == from.experience || sequel.game == GoldBoxGame::pools_of_darkness,
+              "The winner keeps its experience");
+    }
+    check(winners.size() == bank.roster.size(),
+          "Every member of the winning party is a winner and comes across");
+    // The sequel's game saves and reloads them as any party.
+    const auto bytes = opengold::encode_campaign(*party, nullptr, sequel.assets(), sequel.game);
+    auto saved = opengold::decode_campaign(bytes, *sequel.creation, party->rule_module(),
+                                           sequel.assets(), nullptr);
+    auto again = sequel.party();
+    again->restore(std::move(saved.party));
+    check(opengold::encode_campaign(*again, nullptr, sequel.assets(), sequel.game) == bytes,
+          std::string(opengold::game_title(sequel.game)) +
+              "'s party of winners saves and reloads byte for byte");
+    std::cout << opengold::game_title(earlier.game) << " -> " << opengold::game_title(sequel.game)
+              << ": " << winners.size() << " winners came across, "
+              << winners.size() - player_characters << " of them NPCs.\n";
+    return party;
+}
+
+// The capture's moments: the party alone at the first moment the game is
+// won, the party with its world once the game is idle again, and nothing
+// banked twice; winners changed after the win leave the party alone banked.
+void the_capture_follows_the_win()
+{
+    const auto curse = installed(GoldBoxGame::curse_of_the_azure_bonds);
+    if (!curse)
+    {
+        return;
+    }
+    const auto party = winning_party(*curse, 3, 22);
+    unsigned alone = 0, with_world = 0;
+    const opengold::WinnerCapture::Saves saves{[&]
+                                               {
+                                                   ++alone;
+                                                   return std::string("party");
+                                               },
+                                               [&]
+                                               {
+                                                   ++with_world;
+                                                   return std::string("world");
+                                               }};
+    opengold::WinnerCapture capture;
+    check(!capture.observe(false, true, party->state(), saves), "Nothing is banked before a win");
+    check(capture.observe(true, false, party->state(), saves) == "party",
+          "The win banks the party alone, before Continue");
+    check(!capture.observe(true, false, party->state(), saves) &&
+              !capture.observe(false, false, party->state(), saves),
+          "The win is banked once while its scene plays on");
+    check(capture.observe(false, true, party->state(), saves) == "world",
+          "The game idle again banks the party with its world");
+    check(!capture.observe(false, true, party->state(), saves) && alone == 1 && with_world == 1,
+          "Nothing more is banked until the next win");
+
+    opengold::WinnerCapture departed;
+    check(departed.observe(true, false, party->state(), saves) == "party",
+          "Another win banks its party alone");
+    const auto npc = party->state().slots[6];
+    party->remove(npc);
+    check(!departed.observe(false, true, party->state(), saves),
+          "A winner gone after the win leaves the party banked at the win");
+
+    opengold::WinnerCapture idle;
+    check(idle.observe(true, true, party->state(), saves) == "world",
+          "A game won while idle (Matrix Cubed's) banks its world at once");
+    opengold::WinnerCapture loaded(true);
+    check(!loaded.observe(true, true, party->state(), saves),
+          "A game loaded already won is not banked again");
+
+    // Its permanent NPC is a winner; one fallen is not.
+    const auto restored = winning_party(*curse, 3, 22);
+    check(opengold::winners(restored->state()).size() == restored->state().roster.size(),
+          "Every PC and the living NPC of the party are its winners");
+    auto fallen = restored->state();
+    const auto npc_id = fallen.slots[6];
+    std::ranges::find(fallen.roster, npc_id, &opengold::PartyMember::id)->vitals.dead = true;
+    check(opengold::winners(fallen).size() == fallen.roster.size() - 1,
+          "An NPC fallen at the win is no winner");
+    std::cout << "The capture follows the win.\n";
+}
+
+// One link of a series: the earlier game's party at its win, banked as the
+// game banks it (with no world: a game is won mid-event), comes across to the
+// sequel whole.
+void a_link_carries_its_winners(GoldBoxGame earlier_game, GoldBoxGame sequel_game,
+                                unsigned npc_bank, unsigned npc_record)
+{
+    const auto earlier = installed(earlier_game);
+    const auto sequel = installed(sequel_game);
+    if (!earlier || !sequel)
+    {
+        return;
+    }
+    const auto party = winning_party(*earlier, npc_bank, npc_record);
+    const auto bytes = opengold::encode_campaign(*party, nullptr, earlier->assets(), earlier_game);
+    const auto bank = reloaded_bank(*earlier, bytes);
+    check(bank.game == earlier_game &&
+              opengold::winners(bank.party).size() == bank.party.roster.size(),
+          "The bank holds the game's winners");
+    (void)bring_winners(*earlier, *sequel, bank.party);
+}
+
+// Secret takes in a Curse character's items by their names: its arms and
+// armor by their words, a wand by the Secret item of the same name; what
+// Secret has no words for stays behind.
+void secret_renames_curse_items()
+{
+    const auto curse = installed(GoldBoxGame::curse_of_the_azure_bonds);
+    const auto secret = installed(GoldBoxGame::secret_of_the_silver_blades);
+    if (!curse || !secret)
+    {
+        return;
+    }
+    auto party = curse->party();
+    make_player_characters(*party, *curse);
+    const auto id = party->state().slots[0];
+    const auto item = [](std::uint8_t type, std::array<std::uint8_t, 3> words, std::int8_t bonus)
+    {
+        std::array<std::uint8_t, 63> raw{};
+        raw[46] = type;
+        std::ranges::copy(words, raw.begin() + 47);
+        raw[50] = static_cast<std::uint8_t>(bonus);
+        opengold::por::Equipment equipment;
+        equipment.stored = opengold::por::decode_items(raw)->front();
+        return equipment;
+    };
+    // Curse's long sword +1 (type 36, "+1" its word 162), its plate mail
+    // (58, "Mail" 48) and its wand of fireballs (79: "Fireballs" 242, "of"
+    // 167, "Wand" 69).
+    party->take_item(id, item(36, {0, 162, 36}, 1));
+    (void)party->equip(id, party->member(id).character.inventory().items().back().id);
+    party->take_item(id, item(58, {0, 48, 58}, 0));
+    party->take_item(id, item(79, {242, 167, 69}, 0));
+    const auto bank = reloaded_bank(
+        *curse, opengold::encode_campaign(*party, nullptr, curse->assets(), curse->game));
+    const auto sequel = bring_winners(*curse, *secret, bank.party);
+    const auto &veteran = named(sequel->state(), party->member(id).character.sheet().name);
+    std::vector<std::pair<unsigned, std::string>> arrived;
+    for (const auto &carried : veteran.character.inventory().items())
+    {
+        const auto &stored = veteran.item_sources.at(carried.id);
+        arrived.emplace_back(stored.stored.type, stored.decoded_name);
+        std::cout << "  arrived: type " << unsigned(stored.stored.type) << " "
+                  << stored.decoded_name << "\n";
+    }
+    const auto has = [&](unsigned type, std::string_view word)
+    {
+        return std::ranges::any_of(arrived,
+                                   [&](const auto &entry)
+                                   {
+                                       return entry.first == type &&
+                                              entry.second.find(word) != std::string::npos;
+                                   });
+    };
+    check(has(18, "Long Sword") && has(36, "Plate") && has(52, "Fireballs"),
+          "The long sword, plate mail and wand arrive as Secret's own types");
+    check(veteran.equipped.size() == 1, "The readied sword stays readied");
+    std::cout << "Secret renames Curse's items.\n";
+}
+
+// A real winning party banked by an earned ending (OPENGOLD_*_WINNERS),
+// with its world when it has one, comes across whole.
+void real_winners_come_across(const char *variable, GoldBoxGame earlier_game,
+                              GoldBoxGame sequel_game)
+{
+    const char *file = std::getenv(variable);
+    if (!file || !*file || !std::filesystem::exists(file))
+    {
+        std::cout << "No real " << opengold::game_title(earlier_game) << " winners: set "
+                  << variable << ".\n";
+        return;
+    }
+    const auto earlier = installed(earlier_game);
+    const auto sequel = installed(sequel_game);
+    if (!earlier || !sequel)
+    {
+        return;
+    }
+    const auto bank = reloaded_bank(*earlier, opengold::read_campaign_file(file));
+    check(bank.game == earlier_game, "The real winners are the game's");
+    for (const auto id : opengold::winners(bank.party))
+    {
+        const auto &member = member_of(bank.party, id);
+        std::cout << "  winner " << member.character.sheet().name
+                  << (member.npc_source.empty() ? "" : " (NPC " + member.npc_source + ")") << "\n";
+    }
+    const auto party =
+        bring_winners(*earlier, *sequel,
+                      [&]
+                      {
+                          // Only the winners: the roster also
+                          // keeps those who left before.
+                          auto winners_only = bank.party;
+                          std::erase_if(winners_only.roster,
+                                        [&](const opengold::PartyMember &member)
+                                        {
+                                            return !opengold::is_winner(bank.party, member);
+                                        });
+                          return winners_only;
+                      }());
+    if (sequel_game == GoldBoxGame::matrix_cubed)
+    {
+        // Nothing is converted: each record arrives as it was, its item
+        // types Matrix Cubed's.
+        for (const auto id : opengold::winners(bank.party))
+        {
+            const auto &from = member_of(bank.party, id);
+            const auto &to = named(party->state(), from.character.sheet().name);
+            const auto before = og::buck_rogers_record_of(from.vitals.resources);
+            const auto after = og::buck_rogers_record_of(party->game_record(to.id));
+            check(before && after && after->creature.level == before->creature.level &&
+                      after->creature.experience == before->creature.experience &&
+                      after->creature.credits == before->creature.credits &&
+                      after->items.size() == before->items.size(),
+                  "A Countdown record arrives in Matrix Cubed as it was");
+        }
+    }
+}
+
+// Two Countdown characters made by its creation, with their starting items
+// and credits.
+std::shared_ptr<opengold::CampaignParty> countdown_team(const Game &countdown)
+{
+    auto party = countdown.party();
+    opengold::RandomState random{2026};
+    const auto stock = opengold::load_buck_rogers_stock(countdown.folder, countdown.game);
+    for (const auto &[race, career, name] :
+         std::array<std::tuple<og::Race, og::Profession, std::string>, 2>{
+             {{og::Race::terran, og::Profession::rocket_jock, "Jock"},
+              {og::Race::martian, og::Profession::warrior, "Shade"}}})
+    {
+        auto creature =
+            og::new_buck_rogers_character(race, og::Gender::male, career, countdown.game, random);
+        creature.name = name;
+        creature.credits = 1234;
+        const auto id = party->add_pc(opengold::Character(
+            *countdown.creation, og::buck_rogers_draft(og::GroundRecord{creature, {}, {}}), {}));
+        opengold::outfit_buck_rogers_character(*party, id, stock);
+    }
+    return party;
+}
+
+// A Countdown party made by its creation comes to Matrix Cubed with its
+// whole record.
+void countdown_characters_come_to_matrix()
+{
+    const auto countdown = installed(GoldBoxGame::countdown_to_doomsday);
+    const auto matrix = installed(GoldBoxGame::matrix_cubed);
+    if (!countdown || !matrix)
+    {
+        return;
+    }
+    const auto party = countdown_team(*countdown);
+    const auto bank =
+        reloaded_bank(*countdown, opengold::encode_campaign(*party, nullptr, countdown->assets(),
+                                                            countdown->game));
+    const auto sequel = bring_winners(*countdown, *matrix, bank.party);
+    for (const auto id : party->state().slots)
+    {
+        if (!id)
+        {
+            continue;
+        }
+        const auto before = og::buck_rogers_record_of(party->game_record(id));
+        const auto &to = named(sequel->state(), party->member(id).character.sheet().name);
+        const auto after = og::buck_rogers_record_of(sequel->game_record(to.id));
+        check(before && after && after->creature.credits == 1234 &&
+                  after->items.size() == before->items.size() &&
+                  after->creature.level == before->creature.level,
+              "A Countdown character keeps its credits, items and level in Matrix Cubed");
+    }
+}
+
+// The saves the party screen's check (winner_bank_import.cmake) brings
+// characters from, written to `directory`: Curse's winning party with Alias
+// and an ordinary Curse save, and Countdown's.
+void write_screen_fixtures(const std::filesystem::path &directory)
+{
+    std::filesystem::create_directories(directory);
+    if (const auto curse = installed(GoldBoxGame::curse_of_the_azure_bonds))
+    {
+        const auto winners = winning_party(*curse, 3, 22);
+        opengold::write_campaign_file(
+            directory / "CURSE-winning-party.ogs",
+            opengold::encode_campaign(*winners, nullptr, curse->assets(), curse->game));
+        auto veterans = curse->party();
+        make_player_characters(*veterans, *curse);
+        opengold::write_campaign_file(
+            directory / "CURSE-save.ogs",
+            opengold::encode_campaign(*veterans, nullptr, curse->assets(), curse->game));
+    }
+    if (const auto countdown = installed(GoldBoxGame::countdown_to_doomsday))
+    {
+        const auto team = countdown_team(*countdown);
+        const auto bytes =
+            opengold::encode_campaign(*team, nullptr, countdown->assets(), countdown->game);
+        opengold::write_campaign_file(
+            directory / "buck-rogers-countdown-to-doomsday-winning-party.ogs", bytes);
+        opengold::write_campaign_file(directory / "buck-rogers-countdown-to-doomsday-save.ogs",
+                                      bytes);
+    }
+}
+
+} // namespace
+
+int main()
+{
+    try
+    {
+        // OPENGOLD_WINNER_BANK_FIXTURES=DIRECTORY writes the party screen's
+        // check's saves there.
+        if (const char *fixtures = std::getenv("OPENGOLD_WINNER_BANK_FIXTURES"))
+        {
+            write_screen_fixtures(fixtures);
+            return 0;
+        }
+        the_capture_follows_the_win();
+        // Each link, with an NPC of the earlier game's own records: Pool of
+        // Radiance's hero, Curse's Alias, Secret's Vala, Gateway's Erek,
+        // Champions' Strangbourn and Death Knights' Durfey.
+        a_link_carries_its_winners(GoldBoxGame::pool_of_radiance,
+                                   GoldBoxGame::curse_of_the_azure_bonds, 3, 109);
+        a_link_carries_its_winners(GoldBoxGame::curse_of_the_azure_bonds,
+                                   GoldBoxGame::secret_of_the_silver_blades, 3, 22);
+        a_link_carries_its_winners(GoldBoxGame::secret_of_the_silver_blades,
+                                   GoldBoxGame::pools_of_darkness, 1, 77);
+        a_link_carries_its_winners(GoldBoxGame::gateway_to_the_savage_frontier,
+                                   GoldBoxGame::treasures_of_the_savage_frontier, 2, 62);
+        a_link_carries_its_winners(GoldBoxGame::champions_of_krynn,
+                                   GoldBoxGame::death_knights_of_krynn, 1, 34);
+        a_link_carries_its_winners(GoldBoxGame::death_knights_of_krynn,
+                                   GoldBoxGame::dark_queen_of_krynn, 1, 74);
+        secret_renames_curse_items();
+        countdown_characters_come_to_matrix();
+        real_winners_come_across("OPENGOLD_CHAMPIONS_WINNERS", GoldBoxGame::champions_of_krynn,
+                                 GoldBoxGame::death_knights_of_krynn);
+        real_winners_come_across("OPENGOLD_DEATH_KNIGHTS_WINNERS",
+                                 GoldBoxGame::death_knights_of_krynn,
+                                 GoldBoxGame::dark_queen_of_krynn);
+        real_winners_come_across("OPENGOLD_COUNTDOWN_WINNERS", GoldBoxGame::countdown_to_doomsday,
+                                 GoldBoxGame::matrix_cubed);
+        std::cout << "Winner bank checks passed.\n";
+        return 0;
+    }
+    catch (const std::exception &error)
+    {
+        std::cerr << error.what() << '\n';
+        return 1;
+    }
+}

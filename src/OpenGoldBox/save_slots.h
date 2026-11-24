@@ -21,6 +21,10 @@
 // The game's one quick save, which F5 writes and F9 loads: a named save like
 // any other, which the load screen lists under its translated name.
 [[nodiscard]] std::filesystem::path quick_save_file(opengold::GoldBoxGame game);
+// The game's winning party, banked at its win for the series' next game
+// (opengold::WinnerCapture). Its name is no player's save name, so it never
+// replaces one; the load screen lists it under its translated name.
+[[nodiscard]] std::filesystem::path winning_party_file(opengold::GoldBoxGame game);
 
 // Scene-owned shared save UI. Callbacks remain in the campaign host.
 class SaveSlots : public godot::Window

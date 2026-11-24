@@ -142,6 +142,11 @@ identity passes the same check; its six characters retain their actual HP,
 XP, inventory and campaign continuation. Stable game IDs and all prior save
 versions remain supported.
 
+Since 2026-11-24 the earned ending banks its party at the win as the game does
+(`OPENGOLD_WINNERS_SAVE`, [SAVES.md](../SAVES.md#the-winning-party)), in
+`champions-earned-winners.ogs`, which CTest hands to Death Knights' earned
+opening and ending ([death-knights.md](death-knights.md)).
+
 ## Final verification
 
 The full Linux build/export is recorded in

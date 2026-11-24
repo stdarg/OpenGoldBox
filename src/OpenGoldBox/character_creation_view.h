@@ -3,6 +3,7 @@
 #include "opengold/buck_rogers_rules.h"
 #include "opengold/character_creator.h"
 #include "opengold/campaign_party.h"
+#include "opengold/winner_bank.h"
 #include "opengold/combat_body_catalog.h"
 #include "original_portrait_parts.h"
 #include "portrait_catalog.h"
@@ -295,6 +296,10 @@ class CharacterCreationView : public godot::Control
     void show_note(const godot::String &note);
     void save_campaign(const std::filesystem::path &path);
     void load_campaign(const std::filesystem::path &path);
+    // The winner bank: as the exploration screen shows the game, banks its
+    // party at its win beside the game's saves (winning_party_file).
+    void bank_winners(bool game_won);
+    opengold::WinnerCapture winner_capture_;
     void ask_save_folders();
     // Another game's save, loaded once its game's folders are known.
     std::filesystem::path save_awaiting_folders_;

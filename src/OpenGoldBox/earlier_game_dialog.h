@@ -14,11 +14,15 @@ class GameFolderQuestions;
 
 // The party screen's choice of the game before's saves: Curse's Add Character
 // to Party, From Where: Pool ("Pool adds a character whose last adventure was
-// in Pool of Radiance"), Treasures' characters from Gateway to the Savage
-// Frontier and Pools of Darkness's from Secret of the Silver Blades. It lists that game's saves
-// made under the original rules, the player characters of the one chosen, and brings each into the
-// campaign's party as its rules take it in (CampaignParty::bring_across). The controls come from
-// the creation scene.
+// in Pool of Radiance"), Secret's from Curse, Treasures' characters from
+// Gateway to the Savage Frontier, Pools of Darkness's from Secret of the
+// Silver Blades, Death Knights' from Champions, Dark Queen's from Death
+// Knights and Matrix Cubed's from Countdown to Doomsday. It lists that game's
+// winning party first (opengold::WinnerCapture), then its saves made under
+// the original rules; the winners of the winning party, its permanent NPCs
+// among them, or the player characters of a save; and brings each into the
+// campaign's party as its rules take it in (CampaignParty::bring_across).
+// The controls come from the creation scene.
 class EarlierGameDialog : public godot::Window
 {
     GDCLASS(EarlierGameDialog, godot::Window)
@@ -60,19 +64,27 @@ class EarlierGameDialog : public godot::Window
     // The game whose characters come into the campaign's: Pool of Radiance
     // for Curse, Gateway for Treasures, Secret for Pools of Darkness.
     [[nodiscard]] opengold::GoldBoxGame earlier_game() const;
+    // Brings the chosen member in as the campaign's game takes it.
+    void bring_in(const opengold::PartyMember &member);
+
+    [[nodiscard]] bool chosen_is_npc() const
+    {
+        return member_index_ >= player_characters_;
+    }
+
     CampaignAccess campaign_;
     std::function<void()> member_added_;
     GameFolderQuestions *folder_questions_{};
+    // The winning party's file, when there is one, first.
     std::vector<std::filesystem::path> saves_;
-    // The chosen save's player characters, and which of them have been
+    // The chosen save's members to bring in, its player characters first and
+    // then a winning party's permanent NPCs, and which of them have been
     // brought in since the save was chosen.
     std::vector<opengold::PartyMember> members_;
+    std::size_t player_characters_{};
     std::vector<bool> brought_;
     std::size_t member_index_{};
-    // A Gateway or Secret character's share of its save's platinum, gems and
-    // jewelry, which Treasures' Gateway's-money option lets it keep and Pools
-    // of Darkness always does.
-    std::optional<opengold::CampaignParty::BroughtMoney> money_share_;
+    // The chosen save's money, which the characters brought in share.
     opengold::Purse source_wealth_{};
 };
 

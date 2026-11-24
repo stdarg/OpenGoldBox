@@ -14,12 +14,9 @@
 #include "save_slots.h"
 #include "opengold/campaign_save.h"
 #include "opengold/campaign_session.h"
-#include "opengold/darkness_import.h"
-#include "opengold/death_knights_import.h"
-#include "opengold/dark_queen_import.h"
 #include "opengold/diagnostic_log.h"
 #include "opengold/original.h"
-#include "opengold/treasures_import.h"
+#include "opengold/winner_bank.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/item_list.hpp>
 #include <godot_cpp/classes/label.hpp>
@@ -79,19 +76,6 @@ PartyState saved_party(const std::filesystem::path &file, GoldBoxGame earlier)
     return std::move(loaded.saved.party);
 }
 
-// Each player character's even share of the party's platinum, gems and
-// jewelry: OpenGoldBox keeps a party's money in one purse, where the original
-// gives each character its own.
-CampaignParty::BroughtMoney money_share(const PartyState &party, std::size_t characters)
-{
-    const auto share = [&](Coin coin)
-    {
-        return static_cast<std::uint32_t>(party.wealth[static_cast<std::size_t>(coin)] /
-                                          std::max<std::size_t>(characters, 1));
-    };
-    return {share(Coin::platinum), share(Coin::gems), share(Coin::jewelry)};
-}
-
 // "Tarl / Fighter / Level 2", the levels of each class as the original's
 // sheet shows them ("2/3").
 String member_row(const PartyMember &member)
@@ -105,10 +89,77 @@ String member_row(const PartyMember &member)
             levels += (levels.empty() ? "" : "/") + std::to_string(level);
         }
     }
-    return i18n::format("{name} / {class} / Level {levels}",
-                        {{"name", gs(sheet.name)},
-                         {"class", i18n::text(sheet.character_class)},
-                         {"levels", gs(levels)}});
+    // A Buck Rogers character has one career and its level.
+    if (levels.empty())
+    {
+        levels = std::to_string(sheet.level);
+    }
+    const auto row = i18n::format("{name} / {class} / Level {levels}",
+                                  {{"name", gs(sheet.name)},
+                                   {"class", i18n::text(sheet.character_class)},
+                                   {"levels", gs(levels)}});
+    return member.npc_source.empty() ? row : i18n::format(N_("{member} (NPC)"), {{"member", row}});
+}
+
+// What the dialog says of each earlier game: its title, what to choose, that
+// none was found, and what a character brings.
+struct EarlierGameTexts
+{
+    const char *title;
+    const char *choose;
+    const char *none;
+    const char *arrival;
+};
+
+EarlierGameTexts texts_of(GoldBoxGame earlier)
+{
+    switch (earlier)
+    {
+    case GoldBoxGame::curse_of_the_azure_bonds:
+        return {
+            N_("Add character from Curse of the Azure Bonds"),
+            N_("Choose a Curse of the Azure Bonds save, then a character to bring into the party."),
+            N_("No Curse of the Azure Bonds game saved under the original rules was found."),
+            N_("Brings its levels, experience, spells and items, and its share of all the party's money.")};
+    case GoldBoxGame::secret_of_the_silver_blades:
+        return {
+            N_("Add character from Secret of the Silver Blades"),
+            N_("Choose a Secret of the Silver Blades save, then a character to bring into the party."),
+            N_("No Secret of the Silver Blades game saved under the original rules was found."),
+            N_("Brings its levels, experience, spells and items, and its share of the party's platinum, gems and jewelry.")};
+    case GoldBoxGame::gateway_to_the_savage_frontier:
+        return {
+            N_("Add character from Gateway to the Savage Frontier"),
+            N_("Choose a Gateway to the Savage Frontier save, then a character to bring into the party."),
+            N_("No Gateway to the Savage Frontier game saved under the original rules was found."),
+            settings::gateway_money_kept()
+                ? N_("Brings its levels, experience and the items Treasures knows, and its share of the party's platinum, gems and jewelry.")
+                : N_("Brings its levels, experience and the items Treasures knows, and 200 platinum; its money stays behind.")};
+    case GoldBoxGame::champions_of_krynn:
+        return {
+            N_("Add character from Champions of Krynn"),
+            N_("Choose a Champions of Krynn save, then a character to bring into the party."),
+            N_("No Champions of Krynn game saved under the original rules was found."),
+            N_("Brings its earned levels, experience, wounds, spells, surviving items and share of all party money.")};
+    case GoldBoxGame::death_knights_of_krynn:
+        return {
+            N_("Add character from Death Knights of Krynn"),
+            N_("Choose a Death Knights of Krynn save, then a character to bring into the party."),
+            N_("No Death Knights of Krynn game saved under the original rules was found."),
+            N_("Brings its earned levels, experience, wounds, spells, surviving items and share of all party money.")};
+    case GoldBoxGame::countdown_to_doomsday:
+        return {
+            N_("Add character from Countdown to Doomsday"),
+            N_("Choose a Countdown to Doomsday save, then a character to bring into the party."),
+            N_("No Countdown to Doomsday game saved under the original rules was found."),
+            N_("Brings its whole record as it was: its level, experience, credits, skills and items.")};
+    default:
+        return {
+            N_("Add character from Pool of Radiance"),
+            N_("Choose a Pool of Radiance save, then a character to bring into the party."),
+            N_("No Pool of Radiance game saved under the original rules was found."),
+            N_("Brings its levels, experience and items, and 300 platinum; its money stays behind.")};
+    }
 }
 } // namespace
 
@@ -118,6 +169,10 @@ std::optional<GoldBoxGame> earlier_game_of(GoldBoxGame game)
     {
     case GoldBoxGame::curse_of_the_azure_bonds:
         return GoldBoxGame::pool_of_radiance;
+    case GoldBoxGame::secret_of_the_silver_blades:
+        return GoldBoxGame::curse_of_the_azure_bonds;
+    case GoldBoxGame::matrix_cubed:
+        return GoldBoxGame::countdown_to_doomsday;
     case GoldBoxGame::treasures_of_the_savage_frontier:
         return GoldBoxGame::gateway_to_the_savage_frontier;
     case GoldBoxGame::pools_of_darkness:
@@ -185,17 +240,9 @@ void EarlierGameDialog::open()
     saves_.clear();
     members_.clear();
     brought_.clear();
-    money_share_.reset();
     const auto earlier = earlier_game();
-    const bool from_gateway = earlier == GoldBoxGame::gateway_to_the_savage_frontier;
-    const bool from_secret = earlier == GoldBoxGame::secret_of_the_silver_blades;
-    const bool from_death_knights = earlier == GoldBoxGame::death_knights_of_krynn;
-    required_node<Label>(*this, "Margin/Rows/Title")
-        .set_text(i18n::text(from_death_knights ? N_("Add character from Death Knights of Krynn")
-                             : from_gateway
-                                 ? N_("Add character from Gateway to the Savage Frontier")
-                             : from_secret ? N_("Add character from Secret of the Silver Blades")
-                                           : N_("Add character from Pool of Radiance")));
+    const auto texts = texts_of(earlier);
+    required_node<Label>(*this, "Margin/Rows/Title").set_text(i18n::text(texts.title));
     const auto directory = campaign_save_directory(earlier);
     if (std::filesystem::exists(directory))
     {
@@ -210,31 +257,23 @@ void EarlierGameDialog::open()
         }
     }
     std::ranges::sort(saves_);
+    // The party that won the game, banked at its win, comes first.
+    const auto winning_party = winning_party_file(earlier);
+    if (std::filesystem::exists(winning_party) && save_under_original_rules(winning_party, earlier))
+    {
+        saves_.insert(saves_.begin(), winning_party);
+    }
     auto &saves = required_node<ItemList>(*this, "Margin/Rows/Lists/SaveColumn/Saves");
     saves.clear();
     for (const auto &file : saves_)
     {
-        saves.add_item(gs(campaign_save_name(file)));
+        saves.add_item(file == winning_party ? i18n::text(N_("Winning party (banked at the win)"))
+                                             : gs(campaign_save_name(file)));
     }
     required_node<ItemList>(*this, "Margin/Rows/Lists/MemberColumn/Members").clear();
     required_node<Button>(*this, "Margin/Rows/Buttons/Add").set_disabled(true);
-    const auto status =
-        !saves_.empty()
-            ? (from_death_knights
-                   ? N_("Choose a Death Knights of Krynn save, then a character to bring into the party.")
-               : from_gateway
-                   ? N_("Choose a Gateway to the Savage Frontier save, then a character to bring into the party.")
-               : from_secret
-                   ? N_("Choose a Secret of the Silver Blades save, then a character to bring into the party.")
-                   : N_("Choose a Pool of Radiance save, then a character to bring into the party."))
-        : from_death_knights
-            ? N_("No Death Knights of Krynn game saved under the original rules was found.")
-        : from_gateway
-            ? N_("No Gateway to the Savage Frontier game saved under the original rules was found.")
-        : from_secret
-            ? N_("No Secret of the Silver Blades game saved under the original rules was found.")
-            : N_("No Pool of Radiance game saved under the original rules was found.");
-    required_node<Label>(*this, "Margin/Rows/Status").set_text(i18n::text(status));
+    required_node<Label>(*this, "Margin/Rows/Status")
+        .set_text(i18n::text(saves_.empty() ? texts.none : texts.choose));
     popup_centered();
 }
 
@@ -300,22 +339,35 @@ void EarlierGameDialog::list_members(std::int64_t index)
     brought_.clear();
     required_node<Button>(*this, "Margin/Rows/Buttons/Add").set_disabled(true);
     const auto earlier = earlier_game();
-    auto party = saved_party(saves_[static_cast<std::size_t>(index)], earlier);
+    const auto &file = saves_[static_cast<std::size_t>(index)];
+    auto party = saved_party(file, earlier);
     source_wealth_ = party.wealth;
-    for (auto &member : party.roster)
+    // A winning party offers its winners, its permanent NPCs after its
+    // player characters; another save its player characters.
+    std::vector<MemberId> offered;
+    if (file == winning_party_file(earlier))
     {
-        if (member.npc_source.empty())
+        offered = winners(party);
+    }
+    else
+    {
+        for (const auto &member : party.roster)
         {
-            members.add_item(member_row(member));
-            members_.push_back(std::move(member));
+            if (member.npc_source.empty())
+            {
+                offered.push_back(member.id);
+            }
         }
     }
-    brought_.assign(members_.size(), false);
-    money_share_.reset();
-    if (earlier != GoldBoxGame::pool_of_radiance)
+    player_characters_ = 0;
+    for (const auto id : offered)
     {
-        money_share_ = money_share(party, members_.size());
+        auto &member = *std::ranges::find(party.roster, id, &PartyMember::id);
+        player_characters_ += member.npc_source.empty() ? 1 : 0;
+        members.add_item(member_row(member));
+        members_.push_back(std::move(member));
     }
+    brought_.assign(members_.size(), false);
     required_node<Label>(*this, "Margin/Rows/Status")
         .set_text(i18n::text(members_.empty() ? N_("This save holds no player characters.")
                                               : N_("Choose a character to bring into the party.")));
@@ -333,30 +385,25 @@ void EarlierGameDialog::select_member(std::int64_t index)
 
 void EarlierGameDialog::show_member_state()
 {
+    // A player character takes one of the six PC positions, an NPC one of the
+    // two NPC positions.
     const auto &slots = campaign_().state().slots;
-    const bool full = std::none_of(slots.begin(), slots.begin() + 6,
+    const bool npc = chosen_is_npc();
+    const auto first = slots.begin() + (npc ? 6 : 0);
+    const bool full = std::none_of(first, first + (npc ? 2 : 6),
                                    [](auto id)
                                    {
                                        return !id;
                                    });
     const bool brought = brought_.at(member_index_);
     required_node<Button>(*this, "Margin/Rows/Buttons/Add").set_disabled(brought || full);
-    // Pools of Darkness's LoadChar keeps a Secret character's own platinum,
-    // gems and jewelry, and its spells.
-    const auto earlier = earlier_game();
     const auto arrival =
-        earlier == GoldBoxGame::champions_of_krynn || earlier == GoldBoxGame::death_knights_of_krynn
-            ? N_("Brings its earned levels, experience, wounds, spells, surviving items and share of all party money.")
-        : earlier == GoldBoxGame::pool_of_radiance
-            ? N_("Brings its levels, experience and items, and 300 platinum; its money stays behind.")
-        : earlier == GoldBoxGame::secret_of_the_silver_blades
-            ? N_("Brings its levels, experience, spells and items, and its share of the party's platinum, gems and jewelry.")
-        : settings::gateway_money_kept()
-            ? N_("Brings its levels, experience and the items Treasures knows, and its share of the party's platinum, gems and jewelry.")
-            : N_("Brings its levels, experience and the items Treasures knows, and 200 platinum; its money stays behind.");
+        npc ? N_("Joins in an NPC position with its levels, experience and items; it brings no money.")
+            : texts_of(earlier_game()).arrival;
     required_node<Label>(*this, "Margin/Rows/Status")
         .set_text(i18n::text(brought ? N_("Brought into the party.")
-                             : full  ? N_("All six PC positions are occupied.")
+                             : full  ? (npc ? N_("Both NPC positions are occupied.")
+                                            : N_("All six PC positions are occupied."))
                                      : arrival));
 }
 
@@ -366,44 +413,24 @@ void EarlierGameDialog::add()
     {
         return;
     }
-    const auto &member = members_[member_index_];
-    const auto earlier = earlier_game();
-    if (earlier == GoldBoxGame::champions_of_krynn)
-    {
-        const auto folder = game_folder_of(GoldBoxGame::death_knights_of_krynn);
-        (void)campaign_().bring_across(
-            member, champions_items_for_death_knights(folder),
-            champions_money_for_death_knights(source_wealth_, member_index_, members_.size()),
-            CampaignParty::ConvertedItems::readied_as_they_were);
-    }
-    else if (earlier == GoldBoxGame::death_knights_of_krynn)
-    {
-        const auto folder = game_folder_of(GoldBoxGame::dark_queen_of_krynn);
-        (void)campaign_().bring_across(
-            member, death_knights_items_for_dark_queen(folder),
-            champions_money_for_death_knights(source_wealth_, member_index_, members_.size()),
-            CampaignParty::ConvertedItems::readied_as_they_were);
-    }
-    else if (earlier == GoldBoxGame::secret_of_the_silver_blades)
-    {
-        const auto darkness = game_folder_of(GoldBoxGame::pools_of_darkness);
-        (void)campaign_().bring_across(member, secret_items_for_darkness(darkness), money_share_,
-                                       CampaignParty::ConvertedItems::readied_as_they_were);
-    }
-    else if (earlier == GoldBoxGame::gateway_to_the_savage_frontier)
-    {
-        const auto treasures = game_folder_of(GoldBoxGame::treasures_of_the_savage_frontier);
-        (void)campaign_().bring_across(member, gateway_items_for_treasures(treasures),
-                                       settings::gateway_money_kept() ? money_share_
-                                                                      : std::nullopt);
-    }
-    else
-    {
-        (void)campaign_().bring_across(member);
-    }
+    bring_in(members_[member_index_]);
     brought_[member_index_] = true;
     member_added_();
     show_member_state();
+}
+
+void EarlierGameDialog::bring_in(const PartyMember &member)
+{
+    const auto earlier = earlier_game();
+    (void)bring_into_sequel(
+        campaign_(), member,
+        {.earlier = earlier,
+         .earlier_folder = game_folder_of(earlier),
+         .sequel_folder = game_folder_of(original::game_of(campaign_().identity())),
+         .source_wealth = source_wealth_,
+         .player_character = member_index_,
+         .player_characters = player_characters_,
+         .gateway_money_kept = settings::gateway_money_kept()});
 }
 
 void EarlierGameDialog::close()

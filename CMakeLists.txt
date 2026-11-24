@@ -237,6 +237,9 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/treasures_import.cpp
     src/OpenGold.Core/src/darkness_import.cpp
     src/OpenGold.Core/src/death_knights_import.cpp
+    src/OpenGold.Core/src/secret_import.cpp
+    src/OpenGold.Core/src/matrix_import.cpp
+    src/OpenGold.Core/src/winner_bank.cpp
     src/OpenGold.Core/src/random_treasure.cpp
     src/OpenGold.Core/src/magic_item_catalog.cpp
     src/OpenGold.Core/src/encounter_budget.cpp
@@ -435,6 +438,12 @@ if(OPENGOLD_BUILD_TESTS)
         --earned-ending)
     add_test(NAME opengold_countdown_ending_protocol COMMAND opengold_countdown_earned_tests
         --ending-protocol)
+    # Countdown's earned ending banks its party at the win (winning-party.ogs
+    # under this prefix), which Matrix Cubed brings in
+    # (opengold_winner_bank_matrix_from_countdown).
+    set_tests_properties(opengold_countdown_earned_ending PROPERTIES
+        FIXTURES_SETUP countdown_earned_winners
+        ENVIRONMENT "OPENGOLD_COUNTDOWN_EARNED_SAVES=${CMAKE_CURRENT_BINARY_DIR}/countdown-earned-")
     set_tests_properties(opengold_countdown_earned_opening opengold_countdown_camp_service
         opengold_countdown_earned_chicagorg
         opengold_countdown_earned_upper_ship opengold_countdown_earned_surgery
@@ -489,6 +498,21 @@ if(OPENGOLD_BUILD_TESTS)
     add_executable(opengold_buck_rogers_solar_map_tests tests/buck_rogers_solar_map_tests.cpp)
     target_link_libraries(opengold_buck_rogers_solar_map_tests PRIVATE opengold_rules_original)
     add_test(NAME opengold_buck_rogers_solar_map_tests COMMAND opengold_buck_rogers_solar_map_tests)
+    # The winner bank: each game's party banked at its win, brought into the
+    # series' next game (docs/SAVES.md, The winning party).
+    add_executable(opengold_winner_bank_tests tests/winner_bank_tests.cpp)
+    target_link_libraries(opengold_winner_bank_tests PRIVATE opengold_core
+        opengold_rules_original)
+    target_include_directories(opengold_winner_bank_tests PRIVATE src/OpenGold.Rules.Original/src)
+    target_compile_definitions(opengold_winner_bank_tests PRIVATE
+        OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_winner_bank_tests COMMAND opengold_winner_bank_tests)
+    set_tests_properties(opengold_winner_bank_tests PROPERTIES TIMEOUT 600)
+    # The same with Countdown's real winners, banked by its earned ending.
+    add_test(NAME opengold_winner_bank_matrix_from_countdown COMMAND opengold_winner_bank_tests)
+    set_tests_properties(opengold_winner_bank_matrix_from_countdown PROPERTIES TIMEOUT 600
+        FIXTURES_REQUIRED countdown_earned_winners
+        ENVIRONMENT "OPENGOLD_COUNTDOWN_WINNERS=${CMAKE_CURRENT_BINARY_DIR}/countdown-earned-winning-party.ogs")
     add_executable(opengold_dark_queen_tests tests/dark_queen_tests.cpp)
     target_link_libraries(opengold_dark_queen_tests PRIVATE opengold_core opengold_rules_original)
     target_include_directories(opengold_dark_queen_tests PRIVATE src/OpenGold.Rules.Original/src)
@@ -510,13 +534,19 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_death_knights_walk COMMAND opengold_gold_box_games_tests --death-knights-walk)
     set_tests_properties(opengold_death_knights_walk PROPERTIES TIMEOUT 1800
         SKIP_REGULAR_EXPRESSION "files are not here")
+    # Death Knights' earned campaign begins with the party Champions' earned
+    # ending banked at its win (OPENGOLD_WINNERS_SAVE, docs/SAVES.md), and
+    # banks its own for Dark Queen.
     add_test(NAME opengold_death_knights_earned_opening COMMAND opengold_gold_box_games_tests --death-knights-earned-opening)
     set_tests_properties(opengold_death_knights_earned_opening PROPERTIES TIMEOUT 1800
-        SKIP_REGULAR_EXPRESSION "files are not here|Champions winners are not supplied")
+        SKIP_REGULAR_EXPRESSION "files are not here|Champions winners are not supplied"
+        FIXTURES_REQUIRED champions_earned_winners
+        ENVIRONMENT "OPENGOLD_CHAMPIONS_WINNERS=${CMAKE_CURRENT_BINARY_DIR}/champions-earned-winners.ogs")
     add_test(NAME opengold_death_knights_earned_ending COMMAND opengold_gold_box_games_tests --death-knights-earned-ending)
     set_tests_properties(opengold_death_knights_earned_ending PROPERTIES TIMEOUT 7200
         SKIP_REGULAR_EXPRESSION "files are not here|Champions winners are not supplied"
-        ENVIRONMENT "OPENGOLD_ROUTE_SAVE=${CMAKE_CURRENT_BINARY_DIR}/death-knights-earned-winners.sav")
+        FIXTURES_REQUIRED champions_earned_winners FIXTURES_SETUP death_knights_earned_winners
+        ENVIRONMENT "OPENGOLD_CHAMPIONS_WINNERS=${CMAKE_CURRENT_BINARY_DIR}/champions-earned-winners.ogs;OPENGOLD_WINNERS_SAVE=${CMAKE_CURRENT_BINARY_DIR}/death-knights-earned-winners.ogs")
     set_tests_properties(opengold_champions_walk PROPERTIES TIMEOUT 1800
         SKIP_REGULAR_EXPRESSION "files are not here")
     # Curse's story, beat by beat, with a party made for it (plan step 7).
@@ -581,19 +611,19 @@ if(OPENGOLD_BUILD_TESTS)
     set_tests_properties(opengold_gateway_earned_ending PROPERTIES TIMEOUT 3600
         SKIP_REGULAR_EXPRESSION "files are not here"
         FIXTURES_SETUP gateway_earned_winners
-        ENVIRONMENT "OPENGOLD_ROUTE_SAVE=${CMAKE_CURRENT_BINARY_DIR}/gateway-earned-winners.sav")
+        ENVIRONMENT "OPENGOLD_WINNERS_SAVE=${CMAKE_CURRENT_BINARY_DIR}/gateway-earned-winners.ogs")
     # Treasures of the Savage Frontier's story the same way.
     add_test(NAME opengold_treasure_route COMMAND opengold_gold_box_games_tests --treasure-route)
     add_test(NAME opengold_treasure_earned_ending COMMAND opengold_gold_box_games_tests --treasure-earned-ending)
     set_tests_properties(opengold_treasure_earned_ending PROPERTIES TIMEOUT 7200
         SKIP_REGULAR_EXPRESSION "files are not here" FIXTURES_REQUIRED gateway_earned_winners
-        ENVIRONMENT "OPENGOLD_GATEWAY_WINNERS=${CMAKE_CURRENT_BINARY_DIR}/gateway-earned-winners.sav")
+        ENVIRONMENT "OPENGOLD_GATEWAY_WINNERS=${CMAKE_CURRENT_BINARY_DIR}/gateway-earned-winners.ogs")
     # A legal fresh Champions party earns the native ending without grants.
     add_test(NAME opengold_champions_earned_ending COMMAND opengold_gold_box_games_tests --champions-earned-ending)
     set_tests_properties(opengold_champions_earned_ending PROPERTIES TIMEOUT 7200
         SKIP_REGULAR_EXPRESSION "files are not here"
         FIXTURES_SETUP champions_earned_winners
-        ENVIRONMENT "OPENGOLD_ROUTE_SAVE=${CMAKE_CURRENT_BINARY_DIR}/champions-earned-winners.sav")
+        ENVIRONMENT "OPENGOLD_WINNERS_SAVE=${CMAKE_CURRENT_BINARY_DIR}/champions-earned-winners.ogs")
     # It plays ten towns' fights, each with many dice: about 18 minutes alone.
     set_tests_properties(opengold_treasure_route PROPERTIES TIMEOUT 3600)
     # Each game's title pictures, as its original shows them when it starts.

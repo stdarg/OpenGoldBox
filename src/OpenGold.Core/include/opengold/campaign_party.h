@@ -307,6 +307,15 @@ class CampaignParty
     MemberId bring_across(const PartyMember &from, const ItemConversion &convert_item = {},
                           std::optional<BroughtMoney> own_money = std::nullopt,
                           ConvertedItems converted = ConvertedItems::unreadied);
+    // A permanent NPC of the game before's winning party (winner_bank.h),
+    // into one of the two NPC positions as an NPC, with its morale: its
+    // numbers and items as bring_across takes a player character's, and no
+    // money. Its source is `from_game`'s, so this game's own NPCs are never
+    // taken for it (docs/DEVIATIONS.md, Winning NPCs). Throws for a player
+    // character or when both NPC positions are taken.
+    MemberId bring_npc_across(const PartyMember &from, std::string_view from_game,
+                              const ItemConversion &convert_item = {},
+                              ConvertedItems converted = ConvertedItems::unreadied);
 
     // The original games' Modify Character: whether the member's rules still
     // let its scores and Hit Points be changed (a player character, before
@@ -736,6 +745,11 @@ class CampaignParty
     }
 
   private:
+    // Another game's member made again under this party's rules, with its
+    // converted items: bring_across's and bring_npc_across's work. `npc_source`
+    // empty takes it as a player character.
+    MemberId take_in(const PartyMember &from, const ItemConversion &convert_item,
+                     ConvertedItems converted, std::string npc_source);
     // A member of the party in a fight's result, on its side or charmed onto
     // the monsters'; never a creature charmed onto the party's side.
     [[nodiscard]] bool fights_for_party(const rules::CombatantView &actor) const;

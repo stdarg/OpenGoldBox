@@ -730,13 +730,17 @@ void CharacterCreationView::refresh_party()
         required_node<Button>(*this, gs(std::string("PartyPanel/ActionRow2/") + name))
             .set_disabled(state.roster.empty());
     }
-    // Curse adds characters from Pool of Radiance, Treasures from Gateway and
-    // Pools of Darkness from Secret; the party's rules take them in.
+    // Curse adds characters from Pool of Radiance, Secret from Curse,
+    // Treasures from Gateway, Pools of Darkness from Secret, the Krynn games
+    // from the one before and Matrix Cubed from Countdown; the party's rules
+    // take them in.
     auto &from_earlier_game = required_node<Button>(*this, "PartyPanel/FromPool");
     from_earlier_game.set_visible(bringing_across());
     const auto game = original::game_of(campaign_->identity());
     from_earlier_game.set_text(
         i18n::text(game == GoldBoxGame::treasures_of_the_savage_frontier ? N_("Add from Gateway")
+                   : game == GoldBoxGame::secret_of_the_silver_blades    ? N_("Add from Curse")
+                   : game == GoldBoxGame::matrix_cubed                   ? N_("Add from Countdown")
                    : game == GoldBoxGame::pools_of_darkness              ? N_("Add from Secret")
                    : game == GoldBoxGame::death_knights_of_krynn         ? N_("Add from Champions")
                    : game == GoldBoxGame::dark_queen_of_krynn ? N_("Add from Death Knights")
@@ -1326,6 +1330,9 @@ void CharacterCreationView::party_action(PartyAction action)
                 }
                 town->connect("save_requested",
                               presentation::guarded(this, &CharacterCreationView::open_saves));
+                town->connect("game_shown",
+                              presentation::guarded(this, &CharacterCreationView::bank_winners));
+                winner_capture_ = opengold::WinnerCapture();
                 town->connect(
                     "menu_requested",
                     presentation::guarded(this, &CharacterCreationView::open_game_menu));

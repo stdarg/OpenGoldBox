@@ -6,6 +6,7 @@
 #include "opengold/treasures_import.h"
 #include "opengold/death_knights_import.h"
 #include "opengold/dark_queen_import.h"
+#include "opengold/winner_bank.h"
 #include "opengold/campaign_session.h"
 #include "opengold/character_art.h"
 #include "opengold/creature_catalog.h"
@@ -13014,12 +13015,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         {
             const char *source = std::getenv("OPENGOLD_GATEWAY_WINNERS");
             check(source && *source, "The earned sequel needs its verified Gateway winners");
-            std::ifstream file(source, std::ios::binary);
-            check(static_cast<bool>(file), "The verified Gateway winning save exists");
-            std::size_t source_beats = 0;
-            file >> source_beats;
-            file.get();
-            const std::string bytes{std::istreambuf_iterator<char>(file), {}};
+            // The winning party Gateway's earned ending banked at its win
+            // (OPENGOLD_WINNERS_SAVE), an ordinary save of Gateway's files.
+            const auto bytes = opengold::read_campaign_file(source);
             const auto gateway_folder = folder.parent_path() / "GATEWAY";
             const auto gateway_content = opengold::load_original_content(
                 gateway_folder, GoldBoxGame::gateway_to_the_savage_frontier);
@@ -13028,9 +13026,10 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 opengold::original::default_aging, GoldBoxGame::gateway_to_the_savage_frontier);
             const auto gateway_world = opengold::load_campaign(
                 gateway_folder, GoldBoxGame::gateway_to_the_savage_frontier);
-            auto saved = opengold::decode_campaign(bytes, *gateway_creation, *gateway_module,
-                                                   "route-checkpoint", &gateway_world);
-            check(source_beats > 0 && saved.game == GoldBoxGame::gateway_to_the_savage_frontier,
+            auto saved = opengold::decode_campaign(
+                bytes, *gateway_creation, *gateway_module,
+                opengold::campaign_asset_identity(gateway_folder), &gateway_world);
+            check(saved.game == GoldBoxGame::gateway_to_the_savage_frontier,
                   "The sequel imports the actual Gateway campaign");
             const auto convert = opengold::gateway_items_for_treasures(folder);
             unsigned imported = 0;
@@ -17425,6 +17424,36 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
     };
     bool reload_camp_on_attack = false;
     bool reload_optional_encounter = false;
+    // OPENGOLD_WINNERS_SAVE=FILE banks the winning party there as the game
+    // does (opengold::WinnerCapture): an ordinary save of the game's own
+    // files, which the series' next game's earned route brings in.
+    opengold::WinnerCapture winner_capture;
+    const auto bank_winners = [&]
+    {
+        const char *file = std::getenv("OPENGOLD_WINNERS_SAVE");
+        if (!file || !*file)
+        {
+            return;
+        }
+        const auto assets = opengold::campaign_asset_identity(folder);
+        const auto bank = winner_capture.observe(
+            session.snapshot().game_won,
+            session.can_leave() && session.snapshot().tour_finished && !party->in_combat(),
+            party->state(),
+            {[&]
+             {
+                 return opengold::encode_campaign(*party, nullptr, assets, game);
+             },
+             [&]
+             {
+                 return opengold::encode_campaign(*party, &session, assets, game);
+             }});
+        if (bank)
+        {
+            opengold::write_campaign_file(file, *bank);
+            std::cout << "Banked the winning party in " << file << ".\n";
+        }
+    };
     const auto play = [&](const std::string &where)
     {
         const auto attribute = [&]
@@ -17442,6 +17471,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         std::string said;
         for (int step = 0; step < 400; ++step)
         {
+            bank_winners();
             const auto &s = session.snapshot();
             if (!s.diagnostic.empty() && !s.diagnostic.starts_with("Bought "))
             {
@@ -18417,6 +18447,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             default:
                 ++phases[std::to_string(static_cast<int>(s.phase))];
                 attribute();
+                bank_winners();
                 return;
             }
         }

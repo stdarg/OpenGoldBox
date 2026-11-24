@@ -17,6 +17,7 @@
 #include "game_folder_questions.h"
 #include "opengold/campaign_save.h"
 #include "opengold/campaign_session.h"
+#include "opengold/diagnostic_log.h"
 #include "opengold/ua_session.h"
 #include "game_rules.h"
 #include "godot_path.h"
@@ -242,6 +243,32 @@ void CharacterCreationView::save_campaign(const std::filesystem::path &path)
     refresh_party();
 }
 
+void CharacterCreationView::bank_winners(bool game_won)
+{
+    const auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown"));
+    // Banking the winners never stops the game: a failure is logged.
+    try
+    {
+        const auto bank = winner_capture_.observe(game_won, may_save(), campaign_->state(),
+                                                  {[&]
+                                                   {
+                                                       return encoded_campaign(*campaign_, nullptr);
+                                                   },
+                                                   [&]
+                                                   {
+                                                       return encoded_campaign(*campaign_, town);
+                                                   }});
+        if (bank)
+        {
+            write_campaign_file(winning_party_file(settings::chosen_game()), *bank);
+        }
+    }
+    catch (const std::exception &e)
+    {
+        log_diagnostic(LogPriority::warning, "save", e.what());
+    }
+}
+
 // The game in progress, saved in memory and loaded again: loading builds its
 // session from the new art in use now.
 void CharacterCreationView::reload_in_memory()
@@ -338,6 +365,9 @@ void CharacterCreationView::load_campaign_bytes(const std::string &bytes)
             opengold::ua::DesignFiles(directory, presentation::path_from_godot(design_folder)),
             saved.design->state));
     }
+    // A game saved already won is not won again by being shown.
+    const bool won_already =
+        (saved.town && saved.town->snapshot().game_won) || (design && design->snapshot().game_won);
     // The restart check compares what it loads with the file, dice and all.
     if (!save_read_check_)
     {
@@ -392,6 +422,8 @@ void CharacterCreationView::load_campaign_bytes(const std::string &bytes)
                       presentation::guarded(this, &CharacterCreationView::open_reincarnation));
         town->connect("save_requested",
                       presentation::guarded(this, &CharacterCreationView::open_saves));
+        town->connect("game_shown",
+                      presentation::guarded(this, &CharacterCreationView::bank_winners));
         town->connect("menu_requested",
                       presentation::guarded(this, &CharacterCreationView::open_game_menu));
         town->connect("options_requested",
@@ -410,6 +442,7 @@ void CharacterCreationView::load_campaign_bytes(const std::string &bytes)
                 std::chrono::high_resolution_clock::now().time_since_epoch().count()));
     }
     campaign_ = std::move(replacement);
+    winner_capture_ = opengold::WinnerCapture(won_already);
     choice.keep();
     campaign_defeated_ = false;
     required_node<Window>(*this, "Defeat").hide();

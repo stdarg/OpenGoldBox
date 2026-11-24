@@ -109,6 +109,13 @@ std::filesystem::path quick_save_file(opengold::GoldBoxGame game)
     return campaign_save_directory(game) / (encoded(quick_save_name) + ".ogs");
 }
 
+std::filesystem::path winning_party_file(opengold::GoldBoxGame game)
+{
+    // A player's save is named by its name's hexadecimal digits, which a
+    // "w" is not among.
+    return campaign_save_directory(game) / "winning-party.ogs";
+}
+
 void SaveSlots::_ready()
 {
     presentation::run_guarded(*this,
@@ -228,12 +235,20 @@ void SaveSlots::open(bool saving)
         std::sort(paths_.begin(), paths_.end());
         const auto quick_save =
             character_saves_ ? std::filesystem::path() : quick_save_file(settings::chosen_game());
+        // The winning party may be loaded, never saved over.
+        const auto winning_party = character_saves_ ? std::filesystem::path()
+                                                    : winning_party_file(settings::chosen_game());
+        if (!saving && !winning_party.empty() && std::filesystem::exists(winning_party))
+        {
+            paths_.insert(paths_.begin(), winning_party);
+        }
         for (auto &p : paths_)
         {
             bool backup = p.extension() == ".bak";
             auto base = backup ? p.stem() : p;
-            auto name = base == quick_save
-                            ? i18n::text(N_("Quick save"))
+            auto name = base == quick_save ? i18n::text(N_("Quick save"))
+                        : base == winning_party
+                            ? i18n::text(N_("Winning party"))
                             : String::utf8(decoded(opengold::path_text(base.stem())).c_str());
             list->add_item(name + (backup ? i18n::text(" (previous version)") : String()));
         }

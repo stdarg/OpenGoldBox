@@ -434,7 +434,17 @@ character stops at level 8 and can train on to 20.
 OpenGoldBox brings the party in from an OpenGoldBox save of *Countdown*'s end,
 as *Treasures* brings in *Gateway*'s winners. The original also deletes
 same-named files in its own save folder after an import; OpenGoldBox does
-not.
+not. Since 2026-11-24 *Matrix Cubed*'s party screen offers *Add from
+Countdown*: *Countdown*'s winning party, banked at its win
+([SAVES.md](SAVES.md#the-winning-party)), first, then its saves. Each
+character's record comes as it was (`bring_countdown_member_into_matrix`), its
+items' types read again from *Matrix Cubed*'s `ITEMS`, which the original
+looks them up in by number; a permanent NPC joins in an NPC position with its
+record and morale (`opengold_winner_bank_tests`,
+`opengold_godot_matrix_from_countdown`; *Countdown*'s earned ending's real
+winners in `opengold_winner_bank_matrix_from_countdown`). *Matrix Cubed*'s
+earned route still starts with its own fresh party: its moves are made for
+that party.
 
 ## How the work stays safe
 

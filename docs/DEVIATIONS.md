@@ -381,6 +381,26 @@ Departures from the original game's own rules, when OpenGoldBox plays by them
   player's saved games (the user, 2026-11-14).
   [DEFAULT-PARTIES.md](DEFAULT-PARTIES.md).
 
+- **Winning parties banked** (the user, 2026-11-24;
+  [SAVES.md](SAVES.md#the-winning-party)). The original carried characters
+  on only as the player saved or removed them. OpenGoldBox also saves each
+  game's party itself at its win, in the game's save folder as
+  `winning-party.ogs`, and the next game's party screen offers it first.
+- **Winning NPCs** (the user, 2026-11-24). The original games' imports read
+  the characters a player removed to the save folder, and their manuals say
+  nothing of an NPC coming along; an NPC is the computer's and leaves when
+  dismissed. OpenGoldBox brings a winning party's permanent NPCs across too.
+  A permanent NPC is one in either of the party's two NPC positions at the
+  win and alive: one who left the party before the win, or fell, stays
+  behind (`opengold::winners`). It is made again under the next game's rules
+  as a player character of that game is (its numbers, levels, experience
+  and items, *Matrix Cubed* its whole record), keeps its morale and stays
+  an NPC: it joins in an NPC position, the computer plays it in fights, and
+  it brings no money. Its NPC identity is marked as the earlier game's
+  (`from:<FOLDER>:`), so the next game's own NPC of the same creature
+  record is never taken for it. Only a winning party offers its NPCs; another
+  save offers its player characters, as the original does.
+
 ## Money
 
 - **Starting gold** (2026-10-11). Every class starts with the manual's

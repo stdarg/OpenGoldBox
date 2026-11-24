@@ -840,6 +840,28 @@ if(OPENGOLD_BUILD_TESTS)
     set_tests_properties(opengold_godot_darkness_from_secret PROPERTIES
         FIXTURES_REQUIRED godot_project TIMEOUT 320 LABELS godot
         SKIP_REGULAR_EXPRESSION "Skipped: ")
+    # The series' next game's party screen brings in the winning party the
+    # game before banked at its win, its permanent NPC too (docs/SAVES.md,
+    # The winning party): Secret's Add from Curse and Matrix Cubed's Add from
+    # Countdown. Skipped without both games' files.
+    function(opengold_winner_bank_check name earlier sequel button title)
+        add_test(NAME "opengold_godot_${name}" COMMAND "${CMAKE_COMMAND}"
+            "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
+            "-DFIXTURE_WRITER=$<TARGET_FILE:opengold_winner_bank_tests>"
+            "-DWORK=${CMAKE_BINARY_DIR}/settings-checks/${name}"
+            "-DEARLIER=${earlier}" "-DSEQUEL=${sequel}"
+            "-DBUTTON=${button}" "-DTITLE=${title}" ${ARGN}
+            "-DEXPECTED=Winner bank import passed: ${earlier}"
+            "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
+            -P "${PROJECT_SOURCE_DIR}/tests/winner_bank_import.cmake")
+        set_tests_properties("opengold_godot_${name}" PROPERTIES
+            FIXTURES_REQUIRED godot_project TIMEOUT 320 LABELS godot
+            SKIP_REGULAR_EXPRESSION "Skipped: ")
+    endfunction()
+    opengold_winner_bank_check(secret_from_curse CURSE SECRET "Add from Curse"
+        "Add character from Curse of the Azure Bonds" -DNPC=ON)
+    opengold_winner_bank_check(matrix_from_countdown buck-rogers-countdown-to-doomsday
+        buck-rogers-matrix-cubed "Add from Countdown" "Add character from Countdown to Doomsday")
     # Treasures' camp dialog offers Fix and Crown, as its camp menu does.
     # Skipped without Treasures' files.
     add_test(NAME opengold_godot_treasure_camp COMMAND "${CMAKE_COMMAND}"

@@ -1268,6 +1268,44 @@ MemberId CampaignParty::bring_across(const PartyMember &from, const ItemConversi
                                      std::optional<BroughtMoney> own_money,
                                      ConvertedItems converted)
 {
+    const auto id = take_in(from, convert_item, converted, {});
+    if (own_money)
+    {
+        add_coins(Coin::platinum, own_money->platinum);
+        add_coins(Coin::gems, own_money->gems);
+        add_coins(Coin::jewelry, own_money->jewelry);
+        add_coins(Coin::copper, own_money->copper);
+        add_coins(Coin::silver, own_money->silver);
+        add_coins(Coin::electrum, own_money->electrum);
+        add_coins(Coin::gold, own_money->gold);
+        return id;
+    }
+    add_coins(Coin::platinum,
+              static_cast<std::uint32_t>(member(id).character.sheet().original
+                                             ? member(id).character.sheet().original->platinum
+                                             : 0));
+    return id;
+}
+
+MemberId CampaignParty::bring_npc_across(const PartyMember &from, std::string_view from_game,
+                                         const ItemConversion &convert_item,
+                                         ConvertedItems converted)
+{
+    if (from.npc_source.empty())
+    {
+        throw std::invalid_argument("Only an NPC comes across into an NPC position");
+    }
+    auto source = "from:" + std::string(from_game) + ":" + from.npc_source;
+    if (std::ranges::find(state_.roster, source, &PartyMember::npc_source) != state_.roster.end())
+    {
+        throw std::runtime_error("This NPC is already with the party");
+    }
+    return take_in(from, convert_item, converted, std::move(source));
+}
+
+MemberId CampaignParty::take_in(const PartyMember &from, const ItemConversion &convert_item,
+                                ConvertedItems converted, std::string npc_source)
+{
     const auto draft = character_rules()->imported_draft(from.character.sheet(), from.experience);
     if (!draft)
     {
@@ -1280,7 +1318,15 @@ MemberId CampaignParty::bring_across(const PartyMember &from, const ItemConversi
     {
         rules_->validate_character_state(converted_character.sheet(), *converted_state);
     }
-    const auto id = add_pc(std::move(converted_character));
+    const auto experience =
+        converted_character.sheet().original
+            ? static_cast<unsigned>(converted_character.sheet().original->experience)
+            : 0U;
+    const auto id = npc_source.empty() ? add_pc(std::move(converted_character))
+                                       : recruit(std::move(npc_source),
+                                                 std::move(converted_character), from.morale);
+    // An NPC joins with its own experience, which recruiting leaves out.
+    edit(id).experience = experience;
     if (converted_state)
     {
         edit(id).vitals = *converted_state;
@@ -1305,24 +1351,18 @@ MemberId CampaignParty::bring_across(const PartyMember &from, const ItemConversi
         if (now.size() > before && stays_readied &&
             std::ranges::find(from.equipped, item.id) != from.equipped.end())
         {
-            (void)equip(id, now.back().id);
+            // An item this game's rules will not ready with the others (its
+            // hands full, its class refused) stays in the pack, as a new
+            // character's starting gear does (outfit_original_character).
+            try
+            {
+                (void)equip(id, now.back().id);
+            }
+            catch (const std::runtime_error &)
+            {
+            }
         }
     }
-    if (own_money)
-    {
-        add_coins(Coin::platinum, own_money->platinum);
-        add_coins(Coin::gems, own_money->gems);
-        add_coins(Coin::jewelry, own_money->jewelry);
-        add_coins(Coin::copper, own_money->copper);
-        add_coins(Coin::silver, own_money->silver);
-        add_coins(Coin::electrum, own_money->electrum);
-        add_coins(Coin::gold, own_money->gold);
-        return id;
-    }
-    add_coins(Coin::platinum,
-              static_cast<std::uint32_t>(member(id).character.sheet().original
-                                             ? member(id).character.sheet().original->platinum
-                                             : 0));
     return id;
 }
 

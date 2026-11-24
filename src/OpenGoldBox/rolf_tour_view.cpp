@@ -423,6 +423,9 @@ constexpr std::int64_t all_items_filter = 3;
 void RolfTourView::_bind_methods()
 {
     ADD_SIGNAL(MethodInfo("save_requested", PropertyInfo(Variant::BOOL, "saving")));
+    // Each refresh tells the host whether the game is won, for the winner
+    // bank (opengold::WinnerCapture).
+    ADD_SIGNAL(MethodInfo("game_shown", PropertyInfo(Variant::BOOL, "game_won")));
     // The Menu button: the host opens the in-game menu.
     ADD_SIGNAL(MethodInfo("menu_requested"));
     // The solar map's Change: the host opens the Options.
@@ -3018,6 +3021,10 @@ void RolfTourView::refresh()
         {
             play_ending_film();
         }
+    }
+    if (session_)
+    {
+        emit_signal("game_shown", session_->snapshot().game_won);
     }
     sync_monster_picture();
     if (auto *campaign = dax())

@@ -139,6 +139,44 @@ own Constitution bonus, a fighter or paladin past its Hit Dice gaining 2 a
 level. OpenGoldBox's party screen offers it so
 ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md#modify-character)).
 
+## Bringing a Curse party across
+
+*Secret* "will accept characters which were created and played in *Curse of
+the Azure Bonds*" (Manual, Transferring Characters; its From Where menu's
+CURSE "adds a character that last adventured in *Curse of the Azure
+Bonds*"; the Quick Reference Card has the player remove them from their
+*Curse* party and copy the save files over). No reconstructed source of
+*Secret* is on this computer, so what the import does is OpenGoldBox's,
+built from the other games' (2026-11-24):
+
+- **The character** comes as *Curse* brings in a *Pool of Radiance* one
+  (`CampaignParty::bring_across`, `imported_draft`): its scores within
+  *Secret*'s limits (*Curse*'s), its levels, Hit Points, age, experience and
+  drained levels, and its magic-user spells but Animate Dead, under
+  *Secret*'s own tables.
+- **Its items** come readied as they were. Both games keep an item in the same
+  63-byte record (`decode_items`), but *Secret* numbers its item types and
+  name words as *Pool of Radiance* does, not as *Curse* (its long sword is
+  type 18, *Curse*'s 36). The manual gives no table between them, and none
+  like the one *Treasures*' `GAME.EXE` keeps for *Gateway*'s types was found
+  in *Secret*'s `START.EXE` or `GAME.OVR`, so `curse_items_for_secret` renumbers an item by its name:
+  each word becomes *Secret*'s word of the same letters, and its type the
+  type of a *Secret* item of those words in *Secret*'s own item lists
+  (`ITEM1` to `ITEM3`, `MON1ITM`), or else, for arms and armor, which both
+  games name by the word of their type's number, *Secret*'s type of that word.
+  A *Curse* long sword +1, plate mail and wand of fireballs arrive as
+  *Secret*'s types 18, 36 and 52. An item left without a word or a type stays
+  behind.
+- **Its money**: each character brings its share of all the save's coins,
+  the party's purse divided evenly among its player characters, as the Krynn
+  games' imports do; a *Secret* character's record keeps all seven coins,
+  and a new one brings none (Manual, Viewing Characters).
+- A winning party's permanent NPC comes in an NPC position
+  ([SAVES.md](../SAVES.md#the-winning-party)).
+
+The party screen's *Add from Curse* offers them (`opengold_winner_bank_tests`,
+`opengold_godot_secret_from_curse`).
+
 ## The opening
 
 A new game runs script 17 of disk 2, which has no map: over picture 119 (the

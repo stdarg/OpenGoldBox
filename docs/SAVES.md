@@ -27,6 +27,57 @@ position, facing, visited map and script state. A save made before first enterin
 town resumes before Rolf's tour. Unfinished character-creator drafts are not part
 of a campaign save; add completed characters to the party first.
 
+## The winning party
+
+The user decided on 2026-11-24 that every winning player character and
+permanent NPC of a Gold Box game is to be available to the game that follows
+it in its series: *Pool of Radiance* → *Curse* → *Secret* → *Pools of
+Darkness*; *Gateway* → *Treasures*; *Champions* → *Death Knights* → *Dark
+Queen*; *Countdown* → *Matrix Cubed*. *Unlimited Adventures* and each series'
+last game bank their winners too, though no game brings them in yet.
+
+The game banks the winners itself (`opengold::WinnerCapture`,
+`winner_bank.h`), as the exploration screen shows each change of the game:
+
+- **At the win.** The first moment the session's `game_won` turns on, before
+  any Continue or epilogue can take a member away, the party alone is saved
+  (`encode_campaign` with no town; a design's save keeps its design's start).
+  A game is never saved mid-event, so this save has no world.
+- **When the game is idle again.** Once the game may be saved, the party is
+  saved again with its world, if its winners are still there as they won
+  (the same members in their positions, with the same experience, Hit
+  Points, life and number of items). If an epilogue took one away or changed
+  one, the save made at the win stays. *Matrix Cubed* wins while idle and is
+  saved with its world at once.
+
+The save is an ordinary campaign save in the game's own format (Native writes
+54, *Matrix Cubed* 55, *Unlimited Adventures* its own, the others 53), named
+by the game's own files' identity, in the game's save folder as
+`winning-party.ogs`. A player's save is named by its name's hexadecimal
+digits (`save_slots.cpp`), so the bank never replaces one; a later win
+replaces the last bank, its previous version kept as `winning-party.ogs.bak`
+by the safe writer below. Load game lists it as "Winning party"; Save game
+does not offer it, and Continue never loads it. A game loaded already won is
+not banked again until it is won anew.
+
+The next game's party screen (*Add from …*, `earlier_game_dialog.cpp`) lists
+"Winning party (banked at the win)" first, above the earlier game's own
+saves. A winning party offers its winners (`opengold::winners`): its player
+characters in the six PC positions and its permanent NPCs, the living NPCs in
+its two NPC positions, marked "(NPC)"; another save offers its player
+characters, as before. Each comes across as that game takes one in
+(`opengold::bring_into_sequel`, [GAMES.md](GAMES.md)); an NPC joins in one of
+the two NPC positions ([DEVIATIONS.md](DEVIATIONS.md#party-and-parley),
+Winning NPCs).
+
+`opengold_winner_bank_tests` checks the capture and every link of the
+chains, each bank reloading and saving again byte for byte. The earned-ending
+route tests bank their winners the same way (`OPENGOLD_WINNERS_SAVE=FILE`),
+and CTest's fixtures hand them on: *Gateway*'s to *Treasures*' earned ending,
+*Champions*' to *Death Knights*' earned opening and ending, whose own winners
+are banked for *Dark Queen*; *Countdown*'s earned ending banks its party at
+its win for `opengold_winner_bank_matrix_from_countdown`.
+
 ## Pre-1.0 format policy
 
 Until 1.0, every save kind has exactly one accepted format, and it always writes

@@ -189,6 +189,18 @@ the opening camp's incorrect script exit. That correction is being rebuilt;
 the opening battle, all-map runtime walk, imported earned campaign and final
 native/Godot/package checks remain outstanding.
 
+## Champions' winners through CTest (2026-11-24)
+
+Champions' earned ending now banks its party at the win as the game does
+(`OPENGOLD_WINNERS_SAVE`, [SAVES.md](../SAVES.md#the-winning-party)): an
+ordinary save of Champions' own files, with its world once the game is idle
+again (cell 4C3A set). CTest's `champions_earned_winners` fixture hands it to
+`opengold_death_knights_earned_opening` and `_ending` through
+`OPENGOLD_CHAMPIONS_WINNERS`, so they no longer skip for want of winners. The
+earned ending banks Death Knights' own winners in
+`death-knights-earned-winners.ogs` (`death_knights_earned_winners`) for Dark
+Queen.
+
 ## Every-map runtime checkpoint
 
 All **19 installed maps** pass the runtime walk in **36.59 seconds**
