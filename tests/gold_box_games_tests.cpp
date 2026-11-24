@@ -16279,16 +16279,16 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             {
                 held = opengold::choose_quick_command(battle, false, opengold::Searching::everyone);
             }
-            auto chosen =
-                held     ? *held
-                : member ? opengold::choose_quick_command(
-                               battle,
-                               (earned_dark_queen
-                                    ? actor->name.starts_with("magic_user")
-                                    : tactic != 1 || actor->name.starts_with("magic_user")),
-                               opengold::Searching::everyone)
-                         : opengold::choose_demo_command(battle, opengold::Searching::everyone,
-                                                         opengold::default_difficulty);
+            auto chosen = held ? *held
+                          : member
+                              ? opengold::choose_quick_command(
+                                    battle,
+                                    (earned_dark_queen
+                                         ? actor->name.starts_with("magic_user")
+                                         : tactic != 1 || actor->name.starts_with("magic_user")),
+                                    opengold::Searching::everyone)
+                              : opengold::choose_demo_command(battle, opengold::Searching::everyone,
+                                                              opengold::default_difficulty);
             // A Secret or Pools of Darkness player casts no spell on iron golems that
             // heals them or does nothing to them (wasted_on_golems), as the
             // Quick computer would, whatever its tactic: the member fights

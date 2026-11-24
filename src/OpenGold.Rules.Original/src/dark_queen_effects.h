@@ -40,17 +40,18 @@ inline constexpr int led_by_knight = offset + 300;
     // Registered empty handlers and passive markers. They must survive in
     // a profile without becoming an older game's active ability.
     static constexpr std::array no_op{5,   7,   19,  48,  59,  72,  87,  109, 133, 140, 146,
-                               150, 164, 183, 190, 191, 194, 210, 213, 216, 217, 218,
-                               219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229};
-    static constexpr std::array implemented{disruption,         dragon_slayer,      underwater_weapons,
-                                     green_fire,         green_fire_touch,   spore_burst,
-                                     spore_touch,        spore_infection,    ice_explosion,
-                                     meteor_explosion,   disarming_body,     baldric_breath,
-                                     constricting_touch, mummy_touch,        rot_recovery,
-                                     mask_16_save_bonus, disintegrating_ray, enchanted_paralysis,
-                                     steam_breath,       blinding_ray,       poison_bite,
-                                     anemone_acid,       cold_harms_more,    mundane_blows_fail,
-                                     resists_fire,       venom_touch,        venomed};
+                                      150, 164, 183, 190, 191, 194, 210, 213, 216, 217, 218,
+                                      219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229};
+    static constexpr std::array implemented{
+        disruption,         dragon_slayer,      underwater_weapons,
+        green_fire,         green_fire_touch,   spore_burst,
+        spore_touch,        spore_infection,    ice_explosion,
+        meteor_explosion,   disarming_body,     baldric_breath,
+        constricting_touch, mummy_touch,        rot_recovery,
+        mask_16_save_bonus, disintegrating_ray, enchanted_paralysis,
+        steam_breath,       blinding_ray,       poison_bite,
+        anemone_acid,       cold_harms_more,    mundane_blows_fail,
+        resists_fire,       venom_touch,        venomed};
     return std::ranges::find(no_op, canonical - offset) == no_op.end() &&
            std::ranges::find(implemented, canonical) == implemented.end();
 }

@@ -64,10 +64,10 @@ int import_effect_number(int number) noexcept
 
 int import_item_word(int number) noexcept
 {
-    static constexpr std::pair<int, int> moved[]{{12, 138},  {38, 139}, {40, 140}, {52, 141},  {59, 142},
-                                          {68, 143},  {74, 144}, {75, 145}, {76, 146},  {84, 147},
-                                          {85, 148},  {86, 149}, {96, 150}, {119, 151}, {120, 152},
-                                          {124, 153}, {67, 126}, {69, 127}, {77, 129},  {105, 135}};
+    static constexpr std::pair<int, int> moved[]{
+        {12, 138},  {38, 139},  {40, 140}, {52, 141}, {59, 142}, {68, 143}, {74, 144},
+        {75, 145},  {76, 146},  {84, 147}, {85, 148}, {86, 149}, {96, 150}, {119, 151},
+        {120, 152}, {124, 153}, {67, 126}, {69, 127}, {77, 129}, {105, 135}};
     const auto found = std::ranges::find(moved, number, &std::pair<int, int>::first);
     return found == std::end(moved) ? number : found->second;
 }

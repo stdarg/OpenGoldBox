@@ -118,8 +118,8 @@ bool matrix_venus_arrival(const por::EclProgram &program, unsigned script, unsig
     };
 
     static constexpr std::array arrivals{Arrival{19, 5, 2, 0x8E9B, 0x8EA1},
-                                  Arrival{49, 34, 12, 0x8058, 0x805E},
-                                  Arrival{50, 35, 9, 0x8099, 0x809F}};
+                                         Arrival{49, 34, 12, 0x8058, 0x805E},
+                                         Arrival{50, 35, 9, 0x8099, 0x809F}};
     const auto source_save = [&](std::uint16_t address, unsigned value, unsigned cell)
     {
         const auto instruction = program.instruction(address);

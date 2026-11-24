@@ -371,16 +371,16 @@ int canonical_item_power(int number, GoldBoxGame game) noexcept
         // charview.c, use_item: these item powers share stored numbers
         // with unrelated ordinary spells and are remapped only on use.
         static constexpr std::array<std::pair<int, int>, 11> moved{{{57, 127},
-                                                             {59, 128},
-                                                             {60, 129},
-                                                             {61, 130},
-                                                             {62, 131},
-                                                             {63, 132},
-                                                             {64, 133},
-                                                             {65, 134},
-                                                             {95, 135},
-                                                             {97, 136},
-                                                             {99, 137}}};
+                                                                    {59, 128},
+                                                                    {60, 129},
+                                                                    {61, 130},
+                                                                    {62, 131},
+                                                                    {63, 132},
+                                                                    {64, 133},
+                                                                    {65, 134},
+                                                                    {95, 135},
+                                                                    {97, 136},
+                                                                    {99, 137}}};
         const auto found = std::ranges::find(moved, number, &std::pair<int, int>::first);
         return canonical_spell(found == moved.end() ? number : found->second, game);
     }

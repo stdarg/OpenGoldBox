@@ -557,19 +557,19 @@ std::vector<int> dark_queen_starting_spells(int robe, const std::array<int, 9> &
         }
     }
     static constexpr std::array<std::array<int, 7>, 7> white{{{29, 33, 34},
-                                                       {46, 47, 49, 52, 54},
-                                                       {82, 88, 81, 85, 87},
-                                                       {91, 92},
-                                                       {112},
-                                                       {115, 117},
-                                                       {121}}};
+                                                              {46, 47, 49, 52, 54},
+                                                              {82, 88, 81, 85, 87},
+                                                              {91, 92},
+                                                              {112},
+                                                              {115, 117},
+                                                              {121}}};
     static constexpr std::array<std::array<int, 7>, 7> red{{{30, 31, 32, 34, 35},
-                                                     {45, 47, 48, 50, 51, 55},
-                                                     {84, 83, 85, 87},
-                                                     {92, 118, 119},
-                                                     {113, 114, 111},
-                                                     {117},
-                                                     {123}}};
+                                                            {45, 47, 48, 50, 51, 55},
+                                                            {84, 83, 85, 87},
+                                                            {92, 118, 119},
+                                                            {113, 114, 111},
+                                                            {117},
+                                                            {123}}};
     const auto &selections = robe == 1 ? white : red;
     for (std::size_t at = 0; at < selections.size(); ++at)
     {
