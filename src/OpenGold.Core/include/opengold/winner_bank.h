@@ -7,6 +7,7 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace opengold
@@ -68,26 +69,23 @@ class WinnerCapture
     };
 
     // The save to bank now, if any. `game_won` and `idle` are the game's
-    // state now; `party` its party. Calls the encoders only when banking.
+    // state now; `party` its party. Encodes at the win and when checking a
+    // pending world upgrade; every party byte must match before that upgrade.
     [[nodiscard]] std::optional<std::string> observe(bool game_won, bool idle,
                                                      const PartyState &party, const Saves &saves);
 
-  private:
-    // What a winner was at the win, to tell whether it is still the same.
-    struct Standing
-    {
-        MemberId id{};
-        unsigned experience{};
-        int hit_points{};
-        bool dead{};
-        std::size_t items{};
-        friend bool operator==(const Standing &, const Standing &) = default;
-    };
+    // Persist each capture through the ordinary durable save writer. A failed
+    // write retains the exact encoded payload for the next observation, before
+    // a later party can be encoded. Encoder failures leave observation retryable.
+    void bank(bool game_won, bool idle, const PartyState &party, const Saves &saves,
+              const std::function<void(std::string_view)> &write);
 
-    [[nodiscard]] static std::vector<Standing> standing_of(const PartyState &party);
+  private:
     bool won_{};
-    // The winners as they won, while their world is still to be banked.
-    std::optional<std::vector<Standing>> waiting_for_world_;
+    // Compare every saved party byte, including native records, equipment,
+    // spells and money, before replacing the at-win bank with its world.
+    std::optional<std::string> waiting_for_world_;
+    std::optional<std::string> pending_bank_;
 };
 
 } // namespace opengold

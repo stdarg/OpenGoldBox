@@ -249,19 +249,20 @@ void CharacterCreationView::bank_winners(bool game_won)
     // Banking the winners never stops the game: a failure is logged.
     try
     {
-        const auto bank = winner_capture_.observe(game_won, may_save(), campaign_->state(),
-                                                  {[&]
-                                                   {
-                                                       return encoded_campaign(*campaign_, nullptr);
-                                                   },
-                                                   [&]
-                                                   {
-                                                       return encoded_campaign(*campaign_, town);
-                                                   }});
-        if (bank)
-        {
-            write_campaign_file(winning_party_file(settings::chosen_game()), *bank);
-        }
+        winner_capture_.bank(game_won, may_save(), campaign_->state(),
+                             {[&]
+                              {
+                                  return encoded_campaign(*campaign_, nullptr);
+                              },
+                              [&]
+                              {
+                                  return encoded_campaign(*campaign_, town);
+                              }},
+                             [&](std::string_view bytes)
+                             {
+                                 write_campaign_file(winning_party_file(settings::chosen_game()),
+                                                     bytes);
+                             });
     }
     catch (const std::exception &e)
     {

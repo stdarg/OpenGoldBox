@@ -117,41 +117,58 @@ MemberId bring_into_sequel(CampaignParty &party, const PartyMember &member,
     }
 }
 
-std::vector<WinnerCapture::Standing> WinnerCapture::standing_of(const PartyState &party)
-{
-    std::vector<Standing> standing;
-    for (const auto id : winners(party))
-    {
-        const auto &member = *std::ranges::find(party.roster, id, &PartyMember::id);
-        standing.push_back({id, member.experience, member.vitals.hit_points, member.vitals.dead,
-                            member.character.inventory().items().size()});
-    }
-    return standing;
-}
-
-std::optional<std::string> WinnerCapture::observe(bool game_won, bool idle, const PartyState &party,
+std::optional<std::string> WinnerCapture::observe(bool game_won, bool idle, const PartyState &,
                                                   const Saves &saves)
 {
     const bool newly_won = game_won && !won_;
-    won_ = game_won;
     if (newly_won)
     {
-        waiting_for_world_ = standing_of(party);
         // A game won while idle (Matrix Cubed's) is saved with its world at once.
-        if (!idle)
+        if (idle)
         {
-            return saves.party_only();
+            auto bank = saves.with_world();
+            waiting_for_world_.reset();
+            won_ = game_won;
+            return bank;
         }
+        auto bank = saves.party_only();
+        waiting_for_world_ = bank;
+        won_ = game_won;
+        return bank;
     }
     if (!waiting_for_world_ || !idle)
     {
+        won_ = game_won;
         return std::nullopt;
     }
-    const bool unchanged = standing_of(party) == *waiting_for_world_;
+    // Complete encodings, rather than a subset of visible stats, protect
+    // same-count item changes and the rules' opaque per-character resources.
+    std::optional<std::string> bank;
+    if (saves.party_only() == *waiting_for_world_)
+    {
+        bank = saves.with_world();
+    }
     waiting_for_world_.reset();
+    won_ = game_won;
     // Winners changed after the win (an epilogue's departure) leave the
     // party alone, banked at the win, as the bank.
-    return unchanged ? std::optional(saves.with_world()) : std::nullopt;
+    return bank;
+}
+
+void WinnerCapture::bank(bool game_won, bool idle, const PartyState &party, const Saves &saves,
+                         const std::function<void(std::string_view)> &write)
+{
+    if (pending_bank_)
+    {
+        write(*pending_bank_);
+        pending_bank_.reset();
+    }
+    pending_bank_ = observe(game_won, idle, party, saves);
+    if (pending_bank_)
+    {
+        write(*pending_bank_);
+        pending_bank_.reset();
+    }
 }
 
 } // namespace opengold

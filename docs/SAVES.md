@@ -44,11 +44,18 @@ The game banks the winners itself (`opengold::WinnerCapture`,
   (`encode_campaign` with no town; a design's save keeps its design's start).
   A game is never saved mid-event, so this save has no world.
 - **When the game is idle again.** Once the game may be saved, the party is
-  saved again with its world, if its winners are still there as they won
-  (the same members in their positions, with the same experience, Hit
-  Points, life and number of items). If an epilogue took one away or changed
-  one, the save made at the win stays. *Matrix Cubed* wins while idle and is
-  saved with its world at once.
+  saved again with its world only if its complete party-only encoding is
+  byte-identical to the one captured at the win. This includes every native
+  character record, spells, equipment, positions and party money. Any change
+  leaves the exact save made at the win in place. *Matrix Cubed* wins while
+  idle and is saved with its world at once.
+
+A failed durable write keeps its exact encoded payload in memory and retries
+it on the next exploration refresh, before encoding a later party. Failed
+encoders leave the capture retryable too; if the first encoding failed, no
+serialized at-win payload exists, so changes made before a successful retry
+cannot be reconstructed. Errors are logged. Pending retries are in memory,
+so quitting or loading another campaign does not preserve them.
 
 The save is an ordinary campaign save in the game's own format (Native writes
 54, *Matrix Cubed* 55, *Unlimited Adventures* its own, the others 53), named

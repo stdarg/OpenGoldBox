@@ -20,9 +20,11 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -252,31 +254,33 @@ void the_capture_follows_the_win()
         return;
     }
     const auto party = winning_party(*curse, 3, 22);
+    const auto at_win = opengold::encode_campaign(*party, nullptr, curse->assets(), curse->game);
     unsigned alone = 0, with_world = 0;
-    const opengold::WinnerCapture::Saves saves{[&]
-                                               {
-                                                   ++alone;
-                                                   return std::string("party");
-                                               },
-                                               [&]
-                                               {
-                                                   ++with_world;
-                                                   return std::string("world");
-                                               }};
+    const opengold::WinnerCapture::Saves saves{
+        [&]
+        {
+            ++alone;
+            return opengold::encode_campaign(*party, nullptr, curse->assets(), curse->game);
+        },
+        [&]
+        {
+            ++with_world;
+            return std::string("world");
+        }};
     opengold::WinnerCapture capture;
     check(!capture.observe(false, true, party->state(), saves), "Nothing is banked before a win");
-    check(capture.observe(true, false, party->state(), saves) == "party",
+    check(capture.observe(true, false, party->state(), saves) == at_win,
           "The win banks the party alone, before Continue");
     check(!capture.observe(true, false, party->state(), saves) &&
               !capture.observe(false, false, party->state(), saves),
           "The win is banked once while its scene plays on");
     check(capture.observe(false, true, party->state(), saves) == "world",
           "The game idle again banks the party with its world");
-    check(!capture.observe(false, true, party->state(), saves) && alone == 1 && with_world == 1,
+    check(!capture.observe(false, true, party->state(), saves) && alone == 2 && with_world == 1,
           "Nothing more is banked until the next win");
 
     opengold::WinnerCapture departed;
-    check(departed.observe(true, false, party->state(), saves) == "party",
+    check(departed.observe(true, false, party->state(), saves) == at_win,
           "Another win banks its party alone");
     const auto npc = party->state().slots[6];
     party->remove(npc);
@@ -300,6 +304,168 @@ void the_capture_follows_the_win()
     check(opengold::winners(fallen).size() == fallen.roster.size() - 1,
           "An NPC fallen at the win is no winner");
     std::cout << "The capture follows the win.\n";
+}
+
+// Encoders can fail without marking an unencoded capture as already done.
+void failed_encoders_can_retry()
+{
+    const opengold::PartyState party;
+    bool fail_party = true, fail_world = true;
+    const opengold::WinnerCapture::Saves saves{
+        [&]
+        {
+            if (fail_party)
+            {
+                throw std::runtime_error("party encoder failed");
+            }
+            return std::string("exact party");
+        },
+        [&]
+        {
+            if (fail_world)
+            {
+                throw std::runtime_error("world encoder failed");
+            }
+            return std::string("exact world");
+        }};
+    opengold::WinnerCapture capture;
+    bool failed = false;
+    try
+    {
+        (void)capture.observe(true, false, party, saves);
+    }
+    catch (const std::runtime_error &)
+    {
+        failed = true;
+    }
+    check(failed, "The initial encoder failure reaches the host");
+    fail_party = false;
+    check(capture.observe(true, false, party, saves) == "exact party",
+          "A failed party encoder has not consumed the win");
+    failed = false;
+    try
+    {
+        (void)capture.observe(true, true, party, saves);
+    }
+    catch (const std::runtime_error &)
+    {
+        failed = true;
+    }
+    check(failed, "The world encoder failure reaches the host");
+    fail_world = false;
+    check(capture.observe(true, true, party, saves) == "exact world",
+          "A failed world encoder has not consumed the unchanged-party upgrade");
+
+    opengold::WinnerCapture idle;
+    fail_world = true;
+    failed = false;
+    try
+    {
+        (void)idle.observe(true, true, party, saves);
+    }
+    catch (const std::runtime_error &)
+    {
+        failed = true;
+    }
+    check(failed, "An idle-at-win encoder failure reaches the host");
+    fail_world = false;
+    check(idle.observe(true, true, party, saves) == "exact world",
+          "An idle-at-win encoder failure has not consumed the win");
+}
+
+// A durable-write failure keeps the already encoded payload, even when
+// the native character or epilogue changes before the next refresh.
+void failed_writes_retry_the_original_payload()
+{
+    const opengold::PartyState party;
+    for (const bool idle_at_win : {false, true})
+    {
+        opengold::WinnerCapture capture;
+        std::string party_bytes = "exact at-win party", world_bytes = "exact at-win world";
+        std::string durable;
+        unsigned attempts = 0;
+        bool fail_write = true;
+        const opengold::WinnerCapture::Saves saves{[&]
+                                                   {
+                                                       return party_bytes;
+                                                   },
+                                                   [&]
+                                                   {
+                                                       return world_bytes;
+                                                   }};
+        const auto write = [&](std::string_view bytes)
+        {
+            ++attempts;
+            if (fail_write)
+            {
+                throw std::runtime_error("durable writer failed");
+            }
+            durable = bytes;
+        };
+        bool failed = false;
+        try
+        {
+            capture.bank(true, idle_at_win, party, saves, write);
+        }
+        catch (const std::runtime_error &)
+        {
+            failed = true;
+        }
+        check(failed && durable.empty(), "A failed durable write reaches the host");
+        party_bytes = "changed epilogue party";
+        world_bytes = "changed epilogue world";
+        fail_write = false;
+        capture.bank(true, true, party, saves, write);
+        check(attempts == 2 &&
+                  durable == (idle_at_win ? "exact at-win world" : "exact at-win party"),
+              "The retry durably writes the original bytes, never the changed epilogue");
+        capture.bank(true, true, party, saves, write);
+        check(attempts == 2, "The successful retry is not written again");
+    }
+
+    opengold::WinnerCapture capture;
+    std::string party_bytes = "unchanged party", world_bytes = "unchanged-party world", durable;
+    bool fail_write = false;
+    const opengold::WinnerCapture::Saves saves{[&]
+                                               {
+                                                   return party_bytes;
+                                               },
+                                               [&]
+                                               {
+                                                   return world_bytes;
+                                               }};
+    const auto write = [&](std::string_view bytes)
+    {
+        if (fail_write)
+        {
+            throw std::runtime_error("world write failed");
+        }
+        durable = bytes;
+    };
+    capture.bank(true, false, party, saves, write);
+    check(durable == "unchanged party", "The party-only capture is durably written first");
+    fail_write = true;
+    bool failed = false;
+    try
+    {
+        capture.bank(true, true, party, saves, write);
+    }
+    catch (const std::runtime_error &)
+    {
+        failed = true;
+    }
+    check(failed && durable == "unchanged party", "A failed world write preserves the first bank");
+    party_bytes = "later party";
+    world_bytes = "later world";
+    fail_write = false;
+    capture.bank(true, true, party, saves, write);
+    check(durable == "unchanged-party world", "The world upgrade retries its exact encoded bytes");
+    opengold::WinnerCapture loaded(true);
+    loaded.bank(true, true, party, saves,
+                [&](std::string_view)
+                {
+                    check(false, "Loading a won game must not write another bank");
+                });
 }
 
 // One link of a series: the earlier game's party at its win, banked as the
@@ -463,6 +629,94 @@ std::shared_ptr<opengold::CampaignParty> countdown_team(const Game &countdown)
     return party;
 }
 
+// Later changes that leave the old five-field fingerprint unchanged must
+// never replace the exact party saved at the win with the epilogue's party.
+void the_capture_keeps_every_at_win_byte()
+{
+    const auto countdown = installed(GoldBoxGame::countdown_to_doomsday);
+    if (!countdown)
+    {
+        return;
+    }
+    using Change = std::function<void(opengold::CampaignParty &, MemberId)>;
+    const auto native_change = [](const std::function<void(og::GroundRecord &)> &change) -> Change
+    {
+        return [change](auto &party, MemberId id)
+        {
+            auto record = og::buck_rogers_record_of(party.game_record(id));
+            check(record.has_value(), "The winning character has its actual native record");
+            change(*record);
+            party.keep_game_record(id, og::encode_ground_record(*record));
+        };
+    };
+    const std::vector<std::pair<std::string, Change>> changes{
+        {"native credits", native_change(
+                               [](auto &record)
+                               {
+                                   --record.creature.credits;
+                               })},
+        {"native status", native_change(
+                              [](auto &record)
+                              {
+                                  record.creature.status =
+                                      static_cast<std::uint8_t>(og::BuckRogersStatus::dodging);
+                              })},
+        {"native skills", native_change(
+                              [](auto &record)
+                              {
+                                  ++record.creature.skills[0];
+                              })},
+        {"same-count item contents", native_change(
+                                         [](auto &record)
+                                         {
+                                             ++record.items.at(0).plus;
+                                         })},
+        {"alternate gear", native_change(
+                               [](auto &record)
+                               {
+                                   record.alternate_items.push_back(record.items.at(0));
+                               })},
+        {"party money",
+         [](auto &party, MemberId)
+         {
+             auto wealth = party.state().wealth;
+             ++wealth[static_cast<std::size_t>(opengold::Coin::gold)];
+             party.set_wealth(wealth);
+         }},
+    };
+    for (const auto &[description, change] : changes)
+    {
+        const auto party = countdown_team(*countdown);
+        const auto id = party->state().slots[0];
+        const auto before = party->member(id);
+        const auto encode = [&]
+        {
+            return opengold::encode_campaign(*party, nullptr, countdown->assets(), countdown->game);
+        };
+        const auto at_win = encode();
+        unsigned worlds = 0;
+        const opengold::WinnerCapture::Saves saves{encode, [&]
+                                                   {
+                                                       ++worlds;
+                                                       return std::string("later world");
+                                                   }};
+        opengold::WinnerCapture capture;
+        check(capture.observe(true, false, party->state(), saves) == at_win,
+              "The complete native party is captured before Continue");
+        change(*party, id);
+        const auto &after = party->member(id);
+        check(before.experience == after.experience &&
+                  before.vitals.hit_points == after.vitals.hit_points &&
+                  before.vitals.dead == after.vitals.dead &&
+                  before.character.inventory().items().size() ==
+                      after.character.inventory().items().size(),
+              description + " leaves the former fingerprint unchanged");
+        check(encode() != at_win, description + " changes the complete saved character or party");
+        check(!capture.observe(true, true, party->state(), saves) && worlds == 0,
+              description + " must leave the exact at-win bank untouched");
+    }
+}
+
 // A Countdown party made by its creation comes to Matrix Cubed with its
 // whole record.
 void countdown_characters_come_to_matrix()
@@ -579,6 +833,9 @@ int main()
             return 0;
         }
         the_capture_follows_the_win();
+        the_capture_keeps_every_at_win_byte();
+        failed_encoders_can_retry();
+        failed_writes_retry_the_original_payload();
         // Each link, with an NPC of the earlier game's own records: Pool of
         // Radiance's hero, Curse's Alias, Secret's Vala, Gateway's Erek,
         // Champions' Strangbourn and Death Knights' Durfey.
