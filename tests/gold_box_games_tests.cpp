@@ -10221,6 +10221,7 @@ std::vector<RouteBeat> curse_earned_route(CurseProgress progress)
             beats.back().cure_first = true;
             beats.back().cure_to_full = true;
             beats.back().reloads_until_won = 2400;
+            beats.back().sparing_spells_for = "TYRANTHRAXUS";
             if (index == 75)
             {
                 // Step onto the stairs from the hall; their original warp
@@ -15899,6 +15900,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                           name.find("Meteor") != std::string_view::npos;
         return fire || (!others && known->offensive);
     };
+    // The boss whose absence keeps the beat's casters from casting
+    // (RouteBeat::sparing_spells_for).
+    std::string sparing_spells_for;
     const auto fight_once = [&](std::uint64_t seed, unsigned tactic)
     {
         const bool native_font =
@@ -16256,6 +16260,21 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                         held = option;
                     }
                 }
+            }
+            // Before the boss the beat spares its spells for, a member
+            // fights with its weapons (RouteBeat::sparing_spells_for).
+            const bool sparing =
+                member && !sparing_spells_for.empty() &&
+                std::ranges::none_of(state.combatants,
+                                     [&](const opengold::rules::CombatantView &unit)
+                                     {
+                                         return unit.side == opengold::rules::Side::opposition &&
+                                                unit.conscious &&
+                                                unit.name.starts_with(sparing_spells_for);
+                                     });
+            if (sparing)
+            {
+                held = opengold::choose_quick_command(battle, false, opengold::Searching::everyone);
             }
             auto chosen =
                 held     ? *held
@@ -19567,6 +19586,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 }
                 test_winning = beat.test_wins && !playing_stand_ins;
                 reloads_until_won = beat.reloads_until_won;
+                sparing_spells_for = beat.sparing_spells_for;
                 beat_reloads = beat.reloads;
                 if (beat.rest_first ||
                     (beat.passing && !beat.camp_broken && (party_hurt() || spells_spent()) &&
@@ -19759,6 +19779,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     test_winning = beat.test_wins && !playing_stand_ins;
                     holding_foes = beat.holding_foes;
                     reloads_until_won = beat.reloads_until_won;
+                    sparing_spells_for = beat.sparing_spells_for;
                     beat_reloads = beat.reloads;
                     maze_exits.assign(beat.maze_exits.begin(), beat.maze_exits.end());
                     if (beat.rest_choice)

@@ -75,6 +75,11 @@ struct RouteBeat
     // headquarters a guard who gets away sounds the alarm (the cluebook's
     // Alarms), as a player keeps one from escaping.
     bool holding_foes = false;
+    // The beat's fights spend no spell or charge while the boss named here
+    // is not on the field, as a player who cannot camp again before a final
+    // battle fights the minions on the way with weapons alone (Curse's
+    // temple, whose bands refuse camp, before Tyranthraxus).
+    std::string sparing_spells_for;
     // A fight none of the 120 tries wins is played again with new dice, up
     // to this many more times, until one does, as a player reloads a fight
     // the enemy most often wins in its first round (Treasures' Way Inn

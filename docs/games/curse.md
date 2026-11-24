@@ -667,3 +667,23 @@ On macOS (2026-11-21) the five routes pass with the option on: the assisted
 route in 279s, the third bond in 242s (56 fights, one with casualties), the
 Moander recovery in 267s (61, one), the fourth bond in 363s (75, one) and the
 earned ending in 436s (91 fights, none lost, two with casualties).
+
+### Sparing spells for Tyranthraxus (2026-11-23)
+
+Under the party area-spell judgement ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md),
+Party area spells) the earned ending lost Tyranthraxus on every play and
+reload. The party reached him with its spells spent: the temple's bands
+refuse camp, and the minions on the way (the chapel's two fights after
+Nameless, the hell hounds and margoyles at `(6,1)`) took the magic-user's
+Fireballs, Ice Storms and Hold Monster and the clerics' Prayers and holds.
+At Tyranthraxus the magic-user had only Stinking Cloud and one cleric no
+spell at all.
+
+From the temple's grate to the final battle the earned route's player now
+fights the minions with weapons alone and keeps every spell for
+Tyranthraxus (`RouteBeat::sparing_spells_for`); once he is on the field the
+party casts as before. The default Party area spells limits are kept. From
+the stairs' save, 15 of 342 plays win (11 of 114 with the player's own
+tactic), against none of about 900 before. The fresh earned ending wins in
+357s: 85 fights, no defeat, one fight with casualties (cleric 5 dead after
+Tyranthraxus; the other five stand).
