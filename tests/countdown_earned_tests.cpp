@@ -12,6 +12,7 @@
 #include "opengold/formats.h"
 #include "opengold/original.h"
 #include "opengold/original_content.h"
+#include "buck_rogers_training_player.h"
 #include "installed_games.h"
 #include "tour_access.h"
 #include "test_support.h"
@@ -210,7 +211,8 @@ class EarnedPlayer
   public:
     explicit EarnedPlayer(std::filesystem::path folder)
         : folder_(std::move(folder)), campaign_(start_campaign(folder_)),
-          assets_(opengold::campaign_asset_identity(folder_))
+          assets_(opengold::campaign_asset_identity(folder_)),
+          templates_(br::decode_item_templates(record_of(folder_ / "ITEM0.DAX", 1)).value())
     {
     }
 
@@ -613,6 +615,9 @@ class EarnedPlayer
                 break;
             case TourPhase::ship_combat:
                 ship_fight();
+                break;
+            case TourPhase::training:
+                opengold::test::choose_buck_rogers_training(session, *campaign_.party, templates_);
                 break;
             case TourPhase::defeated:
                 throw std::runtime_error("The fresh earned team was defeated");
@@ -2801,6 +2806,7 @@ class EarnedPlayer
     std::filesystem::path folder_;
     Campaign campaign_;
     std::string assets_;
+    std::vector<br::Item> templates_;
     std::deque<std::string> answers_;
     std::optional<std::string> winning_party_;
     opengold::RandomState random_{20261120};

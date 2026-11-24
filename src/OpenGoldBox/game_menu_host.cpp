@@ -112,13 +112,14 @@ bool CharacterCreationView::may_save() const
 {
     const auto play = play_state();
     const bool party = campaign_ && campaign_->selected();
-    return party && !play.fighting && play.idle && !campaign_defeated_;
+    return party && !play.fighting && play.idle && !campaign_defeated_ && !training_open_;
 }
 
 bool CharacterCreationView::may_load() const
 {
     const auto play = play_state();
-    return !play.fighting && (play.idle || campaign_defeated_);
+    // A training's pages wait on the script, as the town's menu does.
+    return !play.fighting && (play.idle || campaign_defeated_) && !training_open_;
 }
 
 void CharacterCreationView::open_game_menu()

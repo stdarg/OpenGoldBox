@@ -369,6 +369,12 @@ if(OPENGOLD_BUILD_TESTS)
         "--solar-map-fixture=${CMAKE_CURRENT_BINARY_DIR}/countdown-solar-map.ogs")
     set_tests_properties(opengold_countdown_solar_map_fixture PROPERTIES
         FIXTURES_SETUP countdown_solar_map SKIP_REGULAR_EXPRESSION "files are not here")
+    # The save the training pages' screen check loads (src/OpenGoldBox,
+    # buck_rogers_training).
+    add_test(NAME opengold_countdown_training_fixture COMMAND opengold_countdown_campaign_tests
+        "--training-fixture=${CMAKE_CURRENT_BINARY_DIR}/countdown-training.ogs")
+    set_tests_properties(opengold_countdown_training_fixture PROPERTIES
+        FIXTURES_SETUP countdown_training SKIP_REGULAR_EXPRESSION "files are not here")
     set_tests_properties(opengold_countdown_walk PROPERTIES TIMEOUT 1800)
     # A separate earned player: no map placements or assumed combat results.
     add_executable(opengold_countdown_earned_tests tests/countdown_earned_tests.cpp)

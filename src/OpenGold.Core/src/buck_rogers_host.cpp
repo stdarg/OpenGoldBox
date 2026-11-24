@@ -1897,8 +1897,9 @@ bool RolfTourSession::choose_in_buck_rogers_menu(std::size_t choice)
     }
     case Action::train:
     {
-        // One level, free (chargen.pas TrainingMenu); the skill points it
-        // gives are spent on the skill screen.
+        // One level, free (chargen.pas TrainingMenu); a Warrior's
+        // specialization and the skill points it gives are chosen next, and
+        // the record keeps them all at once (finish_buck_rogers_training).
         auto member =
             std::ranges::find(team, static_cast<unsigned>(picked.index), &TeamPlace::slot);
         if (member == team.end())
@@ -1908,12 +1909,15 @@ bool RolfTourSession::choose_in_buck_rogers_menu(std::size_t choice)
         RandomState random{
             (static_cast<std::uint64_t>(machine_.host_random(menu.request, 65536)) << 16) |
             machine_.host_random(menu.request, 65536)};
-        original::train_buck_rogers_character(member->record.creature, game(), random);
-        campaign_->keep_game_record(member->id, original::encode_ground_record(member->record));
-        notice.push_back({"{name} trains to level {level}.",
-                          {{"name", member->record.creature.name},
-                           {"level", std::to_string(member->record.creature.level)}}});
-        break;
+        auto trained = member->record.creature;
+        original::train_buck_rogers_character(trained, game(), random);
+        buck_rogers_training_.emplace(BuckRogersTraining{
+            member->id, original::BuckRogersTrainingChoices(std::move(trained), game())});
+        snapshot_.choices.clear();
+        snapshot_.host_choices.clear();
+        snapshot_.phase = TourPhase::training;
+        ++snapshot_.revision;
+        return true;
     }
     case Action::rest_a_day:
         rest_buck_rogers_team(original::rest_days);
@@ -1928,6 +1932,68 @@ bool RolfTourSession::choose_in_buck_rogers_menu(std::size_t choice)
     buck_rogers_pool_ = pool.credits;
     show_buck_rogers_menu(next, std::move(notice));
     return true;
+}
+
+original::BuckRogersTrainingChoices &RolfTourSession::training_in_progress()
+{
+    if (!buck_rogers_training_)
+    {
+        throw std::logic_error("No training waits for its choices");
+    }
+    return buck_rogers_training_->choices;
+}
+
+original::SkillRefusal RolfTourSession::raise_training_skill(original::Skill skill)
+{
+    const auto refusal = training_in_progress().add_skill(skill);
+    ++snapshot_.revision;
+    return refusal;
+}
+
+bool RolfTourSession::lower_training_skill(original::Skill skill)
+{
+    const bool lowered = training_in_progress().subtract_skill(skill);
+    ++snapshot_.revision;
+    return lowered;
+}
+
+bool RolfTourSession::specialize_in_training(std::uint8_t item_type)
+{
+    auto &choices = training_in_progress();
+    const auto offered = original::specializable_weapon_types(town_->buck_rogers_templates);
+    const bool chosen =
+        std::ranges::find(offered, item_type) != offered.end() && choices.specialize(item_type);
+    ++snapshot_.revision;
+    return chosen;
+}
+
+bool RolfTourSession::unspecialize_in_training(std::uint8_t item_type)
+{
+    const bool taken_back = training_in_progress().unspecialize(item_type);
+    ++snapshot_.revision;
+    return taken_back;
+}
+
+void RolfTourSession::finish_buck_rogers_training()
+{
+    const auto &choices = training_in_progress();
+    if (!choices.complete())
+    {
+        throw std::logic_error("Choose the weapon specialization first");
+    }
+    const auto id = buck_rogers_training_->member;
+    auto record = original::buck_rogers_record_of(campaign_->game_record(id));
+    if (!record)
+    {
+        throw std::logic_error("The trainee has no record");
+    }
+    record->creature = choices.character();
+    campaign_->keep_game_record(id, original::encode_ground_record(*record));
+    buck_rogers_training_.reset();
+    show_buck_rogers_menu(
+        BuckRogersMenu::Kind::team,
+        {{"{name} trains to level {level}.",
+          {{"name", record->creature.name}, {"level", std::to_string(record->creature.level)}}}});
 }
 
 void RolfTourSession::rest_buck_rogers_team(int days)

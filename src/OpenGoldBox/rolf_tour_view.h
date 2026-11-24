@@ -72,6 +72,17 @@ class RolfTourView : public godot::Control
                    : nullptr;
     }
 
+    // The campaign while a Buck Rogers training waits for its choices
+    // (TourPhase::training), for the creation screen's skill and
+    // specialization pages to make them; null otherwise.
+    [[nodiscard]] opengold::por::RolfTourSession *waiting_buck_rogers_training() const noexcept
+    {
+        auto *campaign = dax();
+        return campaign && campaign->snapshot().phase == opengold::por::TourPhase::training
+                   ? campaign
+                   : nullptr;
+    }
+
     [[nodiscard]] const std::optional<opengold::CampaignEncounter> &pending_encounter() const
     {
         static const std::optional<opengold::CampaignEncounter> none;

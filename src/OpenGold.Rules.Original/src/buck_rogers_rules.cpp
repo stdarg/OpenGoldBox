@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <stdexcept>
+#include <utility>
 
 namespace opengold::original
 {
@@ -1258,6 +1259,52 @@ void train_buck_rogers_character(Creature &character, GoldBoxGame game, RandomSt
     {
         character.experience = *next - 1;
     }
+}
+
+BuckRogersTrainingChoices::BuckRogersTrainingChoices(Creature trained, GoldBoxGame game)
+    : character_(std::move(trained)), specializations_before_(character_.specializations),
+      spending_(SkillSpending::at_training(character_, game))
+{
+    const bool slot_free = std::ranges::find(character_.specializations, std::uint8_t{0}) !=
+                           character_.specializations.end();
+    specializations_owed_ = specializes_at(career_of(character_), character_.level) && slot_free;
+}
+
+SkillRefusal BuckRogersTrainingChoices::add_skill(Skill skill)
+{
+    const auto refusal = spending_.add(skill);
+    spending_.apply_to(character_);
+    return refusal;
+}
+
+bool BuckRogersTrainingChoices::subtract_skill(Skill skill)
+{
+    const bool subtracted = spending_.subtract(skill);
+    spending_.apply_to(character_);
+    return subtracted;
+}
+
+bool BuckRogersTrainingChoices::specialize(std::uint8_t item_type)
+{
+    if (specializations_chosen_ >= specializations_owed_ ||
+        !opengold::original::specialize(character_, item_type))
+    {
+        return false;
+    }
+    ++specializations_chosen_;
+    return true;
+}
+
+bool BuckRogersTrainingChoices::unspecialize(std::uint8_t item_type)
+{
+    const auto before = std::ranges::count(specializations_before_, item_type);
+    if (specialization_level(character_, item_type) <= before ||
+        !opengold::original::unspecialize(character_, item_type))
+    {
+        return false;
+    }
+    --specializations_chosen_;
+    return true;
 }
 
 bool buck_rogers_modifiable(const Creature &character, GoldBoxGame game)

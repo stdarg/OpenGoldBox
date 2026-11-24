@@ -13,6 +13,8 @@
 #include "opengold/buck_rogers_creation.h"
 #include "opengold/original.h"
 #include "opengold/original_content.h"
+#include "opengold/rolf_tour.h"
+#include "rolf_tour_view.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/grid_container.hpp>
 #include <godot_cpp/classes/item_list.hpp>
@@ -32,6 +34,7 @@
 
 using namespace godot;
 using opengold::CreationStep;
+using opengold::por::RolfTourSession;
 using presentation::gs;
 using presentation::required_node;
 
@@ -439,8 +442,15 @@ void CharacterCreationView::show_buck_rogers_roll()
 // weapons of item templates 1 to 15, at most three in one.
 void CharacterCreationView::show_buck_rogers_specializations()
 {
-    const auto record = record_of(creator_->draft());
-    const auto asked = creator_->rules().in_place_pages(creator_->draft());
+    const auto *training = buck_rogers_training();
+    const auto character =
+        training ? training->choices.character() : record_of(creator_->draft()).creature;
+    auto asked = creator_->rules().in_place_pages(creator_->draft());
+    if (training)
+    {
+        asked.specializations = training->choices.specializations_owed();
+        asked.chosen_specializations = training->choices.specializations_chosen();
+    }
     const auto files = game_rules_files();
     const auto &stock = buck_rogers_stock(files);
     required_node<Label>(*this, "Specializations/Count")
@@ -454,7 +464,7 @@ void CharacterCreationView::show_buck_rogers_specializations()
         const auto weapon =
             std::ranges::find(stock.templates, type, &opengold::buck_rogers::Item::type);
         const auto n = std::to_string(type);
-        const int level = og::specialization_level(record.creature, type);
+        const int level = og::specialization_level(character, type);
         auto *name = add_label(rows, gs("Weapon" + n),
                                gs(opengold::buck_rogers_item_name(*weapon, stock.item_words)));
         // The columns stay together at the left, as the original's screen has them.
@@ -525,16 +535,21 @@ template <class Change> void CharacterCreationView::change_record(Change &&chang
 void CharacterCreationView::show_buck_rogers_skills()
 {
     const auto game = og::game_of(creator_->rules().identity());
-    const bool matrix = game == opengold::GoldBoxGame::matrix_cubed;
-    const auto record = record_of(creator_->draft());
-    const auto career = og::buck_rogers_draft_choices(creator_->draft(), game).career;
-    const auto &spending = *spending_;
+    const auto *training = buck_rogers_training();
+    // Matrix Cubed's creation moves preset points; its training spends new
+    // ones, as Countdown's does.
+    const bool matrix = !training && game == opengold::GoldBoxGame::matrix_cubed;
+    const auto character =
+        training ? training->choices.character() : record_of(creator_->draft()).creature;
+    const auto career = training ? og::career_from_record(character.career).value()
+                                 : og::buck_rogers_draft_choices(creator_->draft(), game).career;
+    const auto &spending = training ? training->choices.spending() : *spending_;
     auto &points = required_node<Label>(*this, "Skills/Points");
     if (matrix)
     {
         points.set_text(i18n::format(
             N_("Level {level}   Career points to move {career}   General points to move {general}   Most above a skill's start {most}"),
-            {{"level", record.creature.level},
+            {{"level", character.level},
              {"career", spending.career_points()},
              {"general", spending.general_points()},
              {"most", spending.max_per_skill()}}));
@@ -544,9 +559,9 @@ void CharacterCreationView::show_buck_rogers_skills()
         points.set_text(i18n::format(
             N_("Career points left {career} of {career_given}   General points left {general} of {general_given}   Most in one skill {most}   General skills known {known} of {limit}"),
             {{"career", spending.career_points()},
-             {"career_given", career_points_given_},
+             {"career_given", training ? training_career_given_ : career_points_given_},
              {"general", spending.general_points()},
-             {"general_given", general_points_given_},
+             {"general_given", training ? training_general_given_ : general_points_given_},
              {"most", spending.max_per_skill()},
              {"known", spending.known_general_skills()},
              {"limit", spending.general_skills_allowed()}}));
@@ -581,7 +596,7 @@ void CharacterCreationView::show_buck_rogers_skills()
         add_label(rows, gs(std::string("Header") + header),
                   *header ? i18n::text(header) : String());
     }
-    auto shown = record.creature;
+    auto shown = character;
     spending.apply_to(shown);
     for (const auto skill : listed)
     {
@@ -678,7 +693,9 @@ void CharacterCreationView::show_buck_rogers_skills()
     required_node<Label>(*this, "Skills/Needs").set_text(needs);
     required_node<Label>(*this, "Instructions")
         .set_text(i18n::text(
-            matrix
+            training
+                ? N_("Spend the training's career points on career skills and its general points on general skills. Points can be taken back until you leave the skills.")
+            : matrix
                 ? N_("A new Matrix Cubed character starts with its career's skills set. You can move points from one skill to another of the same kind; there are no new points to spend.")
                 : N_("Spend career points on career skills and general points on general skills. Points can be taken back until the character is finished.")));
 }
@@ -727,12 +744,19 @@ void CharacterCreationView::skill_raised(int number)
         [&]
         {
             selected_skill_ = number;
-            const auto refusal = spending_->add(og::skill_numbered(static_cast<unsigned>(number)));
+            const auto skill = og::skill_numbered(static_cast<unsigned>(number));
+            auto *session = training_session();
+            const auto refusal =
+                session ? session->raise_training_skill(skill) : spending_->add(skill);
             if (refusal != og::SkillRefusal::none)
             {
                 throw std::runtime_error(refusal == og::SkillRefusal::no_points
                                              ? "No skill points left"
                                              : "Skill at maximum for this level");
+            }
+            if (session)
+            {
+                return;
             }
             change_record(
                 [](opengold::buck_rogers::Creature &)
@@ -747,7 +771,13 @@ void CharacterCreationView::skill_lowered(int number)
         [&]
         {
             selected_skill_ = number;
-            (void)spending_->subtract(og::skill_numbered(static_cast<unsigned>(number)));
+            const auto skill = og::skill_numbered(static_cast<unsigned>(number));
+            if (auto *session = training_session())
+            {
+                (void)session->lower_training_skill(skill);
+                return;
+            }
+            (void)spending_->subtract(skill);
             change_record(
                 [](opengold::buck_rogers::Creature &)
                 {
@@ -761,6 +791,18 @@ void CharacterCreationView::specialization_changed(int item_type, int direction)
         [&]
         {
             const auto type = static_cast<std::uint8_t>(item_type);
+            if (auto *session = training_session())
+            {
+                if (direction < 0)
+                {
+                    (void)session->unspecialize_in_training(type);
+                }
+                else if (!session->specialize_in_training(type))
+                {
+                    throw std::runtime_error("Specialized three times in that weapon");
+                }
+                return;
+            }
             change_record(
                 [&](opengold::buck_rogers::Creature &creature)
                 {
@@ -791,6 +833,11 @@ void CharacterCreationView::body_icon_chosen(int icon)
 
 bool CharacterCreationView::skill_points_unspent() const
 {
+    if (const auto *training = buck_rogers_training())
+    {
+        const auto &spending = training->choices.spending();
+        return training_on_skills_ && spending.career_points() + spending.general_points() > 0;
+    }
     return buck_rogers() && creator_->step() == CreationStep::skills && spending_ &&
            spending_->career_points() + spending_->general_points() > 0;
 }
@@ -800,6 +847,118 @@ void CharacterCreationView::leave_skills()
     perform(
         [&]
         {
+            if (training_open_)
+            {
+                finish_buck_rogers_training();
+                return;
+            }
             creator_->next();
         });
+}
+
+RolfTourSession *CharacterCreationView::training_session() const
+{
+    auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown"));
+    return training_open_ && town ? town->waiting_buck_rogers_training() : nullptr;
+}
+
+const opengold::por::BuckRogersTraining *CharacterCreationView::buck_rogers_training() const
+{
+    const auto *session = training_session();
+    return session ? session->buck_rogers_training() : nullptr;
+}
+
+// The town gives way to the pages, as Reincarnate's do; every other node of
+// the creation screen is hidden until they close.
+void CharacterCreationView::open_buck_rogers_training()
+{
+    auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown"));
+    training_open_ = true;
+    const auto *training = buck_rogers_training();
+    if (!town || !training)
+    {
+        training_open_ = false;
+        return;
+    }
+    training_on_skills_ = training->choices.specializations_owed() == 0;
+    training_career_given_ = training->choices.spending().career_points();
+    training_general_given_ = training->choices.spending().general_points();
+    skill_tab_ = 0;
+    selected_skill_ = 0;
+    error_ = "";
+    training_hidden_.clear();
+    for (int n = 0; n < get_child_count(); ++n)
+    {
+        auto *control = Object::cast_to<Control>(get_child(n));
+        if (control && control != town && control->is_visible())
+        {
+            training_hidden_.push_back(control->get_name());
+            control->hide();
+        }
+    }
+    town->hide();
+    town->set_process(false);
+    town->set_process_input(false);
+    refresh();
+}
+
+// Only the page, its title, instructions, status and Next (Back too on the
+// skill screen after a specialization) show.
+void CharacterCreationView::refresh_buck_rogers_training()
+{
+    const auto *training = buck_rogers_training();
+    const bool skills = training_on_skills_;
+    const bool owed = training->choices.specializations_owed() > 0;
+    for (int n = 0; n < get_child_count(); ++n)
+    {
+        auto *control = Object::cast_to<Control>(get_child(n));
+        if (!control || control->get_name() == StringName("CampaignTown"))
+        {
+            continue;
+        }
+        const String name = control->get_name();
+        control->set_visible(name == "PageTitle" || name == "Instructions" || name == "Status" ||
+                             name == "Next" || (name == "Back" && skills && owed) ||
+                             (name == "Skills" && skills) ||
+                             (name == "Specializations" && !skills));
+    }
+    required_node<Label>(*this, "PageTitle")
+        .set_text(i18n::format(N_("{name} trains to level {level}"),
+                               {{"name", gs(training->choices.character().name)},
+                                {"level", static_cast<int>(training->choices.character().level)}}));
+    required_node<Label>(*this, "Status").set_text(error_);
+    auto &next = required_node<Button>(*this, "Next");
+    next.set_text(i18n::text(skills ? N_("Done") : N_("Next")));
+    next.set_disabled(false);
+    if (skills)
+    {
+        show_buck_rogers_skills();
+    }
+    else
+    {
+        show_buck_rogers_specializations();
+    }
+}
+
+// Keeps the choices in the trainee's record; the town's team menu shows again.
+void CharacterCreationView::finish_buck_rogers_training()
+{
+    training_session()->finish_buck_rogers_training();
+    training_open_ = false;
+    for (const auto &name : training_hidden_)
+    {
+        required_node<Control>(*this, name).show();
+    }
+    training_hidden_.clear();
+    for (const auto *page : {"Specializations", "Skills"})
+    {
+        required_node<Control>(*this, page).hide();
+    }
+    if (auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown")))
+    {
+        town->show();
+        town->set_process(true);
+        town->set_process_input(true);
+        town->resume_party();
+    }
 }

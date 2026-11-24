@@ -15,6 +15,7 @@
 #include "opengold/formats.h"
 #include "opengold/original.h"
 #include "opengold/original_content.h"
+#include "buck_rogers_training_player.h"
 #include "installed_games.h"
 #include "test_support.h"
 #include "tour_access.h"
@@ -1984,12 +1985,26 @@ bool settle_route(Campaign &campaign, const std::filesystem::path &folder, unsig
             check(campaign.session.choose(s.continue_ticket, pick), "Choose Matrix's actual menu");
             if (trained)
             {
+                check(campaign.session.snapshot().phase == TourPhase::training,
+                      "Training opens its choices");
+                const auto archive = opengold::decode_dax_archive(bytes_of(folder / "ITEM0.DAX"));
+                const auto first = std::ranges::find(archive.records, 1U, &opengold::DaxRecord::id);
+                check(first != archive.records.end(), "Matrix has its item templates");
+                const auto templates = br::decode_item_templates(first->bytes);
+                check(templates.has_value(), "Matrix's item templates decode");
+                opengold::test::choose_buck_rogers_training(campaign.session, *campaign.party,
+                                                            *templates);
                 const auto [id, level, experience] = *trained;
                 const auto record = og::buck_rogers_record_of(campaign.party->game_record(id));
-                check(
-                    record && record->creature.level == level + 1 &&
-                        record->creature.experience == experience,
-                    "Only actual offered training advances a level, retaining the earned experience");
+                check(record.has_value(), "The trainee keeps its record");
+                // Training cuts experience past the next level to one short
+                // of it (chargen.pas TrainingMenu).
+                const auto next = og::career_experience_for_level(
+                    og::career_from_record(record->creature.career).value(), level + 2, matrix);
+                const auto kept = next ? std::min(experience, *next - 1) : experience;
+                check(record->creature.level == level + 1 && record->creature.experience == kept,
+                      "Only actual offered training advances a level, keeping the earned "
+                      "experience up to the next level's");
                 std::cout << "Actual TRAINING " << record->creature.name << " level "
                           << unsigned(record->creature.level) << ", earned XP " << experience
                           << ", maximum HP " << record->creature.hit_point_maximum << ".\n";

@@ -13,6 +13,7 @@
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_encounter.h"
 #include "opengold/buck_rogers_records.h"
+#include "opengold/buck_rogers_rules.h"
 #include "opengold/buck_rogers_solar_map.h"
 #include "opengold/difficulty.h"
 #include "opengold/teleport.h"
@@ -66,7 +67,21 @@ enum class TourPhase
     // A Buck Rogers SHIP COMBAT waits for the ship fight (TourSnapshot's
     // ship_combat): the ship-combat screen plays it (ship_fight) and gives
     // the session its end (finish_ship_combat).
-    ship_combat
+    ship_combat,
+    // A Buck Rogers training waits for the trainee's choices
+    // (buck_rogers_training): a Warrior's specialization and the skill
+    // points; finish_buck_rogers_training keeps them and the team menu
+    // returns.
+    training
+};
+
+// A Buck Rogers training begun in the team menu (chargen.pas TrainingMenu):
+// the trainee and what is left to choose; the team menu shows again once the
+// choices are kept.
+struct BuckRogersTraining
+{
+    opengold::MemberId member{};
+    original::BuckRogersTrainingChoices choices;
 };
 
 // A Buck Rogers script's SHIP COMBAT (1Fh; shipcbt.pas ShipCombat): the
@@ -641,6 +656,25 @@ class RolfTourSession
     // the repairs follow that fight. False when no fight waits or it is not
     // over.
     bool finish_ship_combat(std::uint64_t ticket);
+
+    // The training while snapshot().phase is training; null otherwise. The
+    // trainee's record is unchanged until its choices are kept.
+    [[nodiscard]] const BuckRogersTraining *buck_rogers_training() const noexcept
+    {
+        return buck_rogers_training_ ? &*buck_rogers_training_ : nullptr;
+    }
+
+    // The choices, made as the rules allow, a specialization only in a
+    // weapon the menu offers (item templates 1 to 15); each throws
+    // std::logic_error outside a training.
+    [[nodiscard]] original::SkillRefusal raise_training_skill(original::Skill skill);
+    bool lower_training_skill(original::Skill skill);
+    [[nodiscard]] bool specialize_in_training(std::uint8_t item_type);
+    bool unspecialize_in_training(std::uint8_t item_type);
+    // Keeps the trained member's record and shows the team menu again.
+    // Throws std::logic_error outside a training or while its specialization
+    // is unchosen.
+    void finish_buck_rogers_training();
     bool explore(ExplorationCommand command);
 
     // The original's Search mode: each step searches as Look does, and takes
@@ -1590,6 +1624,10 @@ class RolfTourSession
     void close_buck_rogers_menu();
     [[nodiscard]] std::string buck_rogers_item_name(const buck_rogers::Item &item) const;
     std::optional<BuckRogersMenu> buck_rogers_menu_;
+
+    // It is not saved: saving waits for the script, which waits for the menu.
+    std::optional<BuckRogersTraining> buck_rogers_training_;
+    [[nodiscard]] original::BuckRogersTrainingChoices &training_in_progress();
     // The fight's or the script's booty (gdvars.pas availableItems) and the
     // team's pool of credits (poolCredits), kept while a script runs.
     std::vector<buck_rogers::Item> buck_rogers_booty_;

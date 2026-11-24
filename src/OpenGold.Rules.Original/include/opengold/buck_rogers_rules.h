@@ -466,6 +466,60 @@ enum class TrainingRefusal
 void train_buck_rogers_character(buck_rogers::Creature &character, GoldBoxGame game,
                                  RandomState &random);
 
+// What a training leaves the player to choose (chargen.pas TrainingMenu): a
+// Warrior's specialization at an even level, then the skill screen's
+// SkillSpending::at_training. The specialization must be chosen while a
+// slot is free; skill points may be left unspent and are lost, as the skill
+// screen allows (docs/CHARACTER-CREATION.md). Only this training's choices
+// can be taken back.
+class BuckRogersTrainingChoices
+{
+  public:
+    // `trained` is the character train_buck_rogers_character made.
+    BuckRogersTrainingChoices(buck_rogers::Creature trained, GoldBoxGame game);
+
+    // The character with the choices made so far.
+    [[nodiscard]] const buck_rogers::Creature &character() const noexcept
+    {
+        return character_;
+    }
+
+    [[nodiscard]] const SkillSpending &spending() const noexcept
+    {
+        return spending_;
+    }
+
+    [[nodiscard]] int specializations_owed() const noexcept
+    {
+        return specializations_owed_;
+    }
+
+    [[nodiscard]] int specializations_chosen() const noexcept
+    {
+        return specializations_chosen_;
+    }
+
+    [[nodiscard]] SkillRefusal add_skill(Skill skill);
+    // False when the skill is back where this training found it.
+    bool subtract_skill(Skill skill);
+    // False when none is owed, the weapon has three or no slot is left.
+    [[nodiscard]] bool specialize(std::uint8_t item_type);
+    // False when this training chose none in the weapon.
+    bool unspecialize(std::uint8_t item_type);
+
+    // Whether the choices may be kept: the specialization owed is chosen.
+    [[nodiscard]] bool complete() const noexcept
+    {
+        return specializations_chosen_ == specializations_owed_;
+    }
+
+  private:
+    buck_rogers::Creature character_;
+    decltype(buck_rogers::Creature::specializations) specializations_before_{};
+    SkillSpending spending_;
+    int specializations_owed_{}, specializations_chosen_{};
+};
+
 // Modify Character (chargen.pas ModifyCharacterMenu): only a character with
 // its career's starting experience; each score between the race's
 // adjustment + 3 and + 18 and at least the career's minimum; the Hit Points

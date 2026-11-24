@@ -692,6 +692,13 @@ if(OPENGOLD_BUILD_TESTS)
         "-DARGS=--game=buck-rogers-matrix-cubed\;--rules=original\;--load-save=${PROJECT_BINARY_DIR}/matrix-led-allies.ogs")
     set_tests_properties(opengold_godot_buck_led_allies PROPERTIES
         FIXTURES_REQUIRED "godot_project;matrix_led_allies")
+    # A Countdown training's specialization page and skill screen after
+    # HQ's Train, from the save opengold_countdown_training_fixture writes.
+    opengold_settings_check(buck_rogers_training buck_rogers_training_tests
+        "Buck Rogers training passed"
+        "-DARGS=--game=buck-rogers-countdown-to-doomsday\;--rules=original\;--load-save=${CMAKE_BINARY_DIR}/countdown-training.ogs")
+    set_tests_properties(opengold_godot_buck_rogers_training PROPERTIES
+        FIXTURES_REQUIRED "godot_project;countdown_training")
     # The Buck Rogers games' ship-combat options on the Options screen.
     opengold_settings_check(startup_menu_buck_rogers startup_menu_tests
         "Startup menu passed: Buck Rogers" -DARGS=--buck-rogers)

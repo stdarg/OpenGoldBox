@@ -210,6 +210,23 @@ a Desert Runner Warrior with its specialization, a career skill at its cap
 and Jury Rig unlocked by its prerequisites in *Countdown*, and an Engineer
 moving a preset point in *Matrix Cubed*.
 
+**Training** in the team menu (`chargen.pas` `TrainingMenu`) uses the same
+pages. Train raises the level and the session waits in `TourPhase::training`
+with the trainee's choices (`RolfTourSession::buck_rogers_training`, the rules'
+`BuckRogersTrainingChoices`): at a Warrior's even level the specialization page
+first, one weapon and only this training's choice taken back, then the skill
+screen with 40 career and 20 general points, at most 15 in a skill and one new
+general skill. Points may be left, after the same question, and are lost.
+`finish_buck_rogers_training` keeps the level, specialization and skills in the
+record at once and the team menu shows again; until then the record is
+unchanged. The pages hide the town and nothing can be saved or loaded while
+they show; the script waits on its menu, so no save holds a training half
+made, and the save formats are unchanged. Verified by
+`opengold_countdown_tests` (the rules), `opengold_countdown_campaign_tests`
+(the session at Salvation's HQ) and the Godot check
+`opengold_godot_buck_rogers_training`; the earned endings train through the
+same commands.
+
 ## Native boundaries and rules
 
 - `OpenGold.Rules/character_rules.h` defines the optional `CharacterRules`

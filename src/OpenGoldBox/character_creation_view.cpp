@@ -491,6 +491,11 @@ void CharacterCreationView::refresh()
         return;
     }
     const presentation::ScopedFlag refreshing(refreshing_);
+    if (training_open_)
+    {
+        refresh_buck_rogers_training();
+        return;
+    }
     if (buck_rogers())
     {
         keep_spending_current();
@@ -1226,9 +1231,25 @@ void CharacterCreationView::next()
         auto &question = required_node<Window>(*this, "UnspentSkills");
         question.set(
             "dialog_text",
-            i18n::text(N_(
-                "Some skill points are unspent. They are lost once the character is finished. Leave the skills?")));
+            i18n::text(
+                training_open_
+                    ? N_("Some skill points are unspent. They are lost once you leave the skills. Leave the skills?")
+                    : N_("Some skill points are unspent. They are lost once the character is finished. Leave the skills?")));
         question.popup_centered();
+        return;
+    }
+    if (training_open_)
+    {
+        perform(
+            [&]
+            {
+                if (!training_on_skills_)
+                {
+                    training_on_skills_ = true;
+                    return;
+                }
+                finish_buck_rogers_training();
+            });
         return;
     }
     perform(
@@ -1248,6 +1269,11 @@ void CharacterCreationView::back()
     perform(
         [&]
         {
+            if (training_open_)
+            {
+                training_on_skills_ = false;
+                return;
+            }
             creator_->back();
             completed_.reset();
             selected_score_ = -1;

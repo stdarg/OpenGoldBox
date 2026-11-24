@@ -704,6 +704,116 @@ void write_solar_map_fixture(const std::filesystem::path &folder, std::string_vi
                                   opengold::campaign_asset_identity(folder), countdown));
 }
 
+// Readies the Warrior Runner to train to level 4, which owes a
+// specialization: trained to 3 through the rules, its points left unspent,
+// with level 4's experience (the test's, as if earned).
+opengold::MemberId ready_runner_for_level_four(opengold::CampaignParty &party)
+{
+    const auto runner = party.state().slots.at(1);
+    auto record = *og::buck_rogers_record_of(party.game_record(runner));
+    check(record.creature.name == "Runner" && record.creature.level == 2, "Runner is level 2");
+    opengold::RandomState random{4};
+    record.creature.experience = 500000;
+    og::train_buck_rogers_character(record.creature, countdown, random);
+    record.creature.experience =
+        *og::career_experience_for_level(Profession::warrior, 4, countdown);
+    party.keep_game_record(runner, og::encode_ground_record(record));
+    return runner;
+}
+
+// The team at Salvation's HQ, its team menu asking who will train.
+void open_salvation_training(opengold::por::RolfTourSession &session)
+{
+    opengold::test::TourAccess::enter_script(session, 34, 0,
+                                             {8, 8, opengold::por::MapDirection::north});
+    fly_on(session);
+    check(session.choose(session.snapshot().continue_ticket, 0), "Dock at Salvation");
+    answer(session, "HQ");
+    for (int page = 0;
+         page < 8 && choices_of(session.snapshot()).find("Train Runner") == std::string::npos;
+         ++page)
+    {
+        check(session.choose(session.snapshot().continue_ticket, 0), "Go on at HQ");
+        run_to_menu(session);
+    }
+    check(choices_of(session.snapshot()).find("Train Runner") != std::string::npos,
+          "HQ's team menu offers Runner's training: " + choices_of(session.snapshot()));
+}
+
+// Training at Salvation's HQ (chargen.pas TrainingMenu): Train waits for the
+// Warrior's specialization and the skill points with the record unchanged;
+// they are kept at once when finished, and the team menu shows again.
+void training_waits_for_its_choices(const std::filesystem::path &folder)
+{
+    auto campaign = opened_game(folder);
+    auto &session = campaign.session;
+    auto &party = *campaign.party;
+    const auto runner = ready_runner_for_level_four(party);
+    const auto before = *og::buck_rogers_record_of(party.game_record(runner));
+    open_salvation_training(session);
+    const auto &menu = session.snapshot();
+    const auto train = std::ranges::find(menu.choices, "Train Runner");
+    check(session.choose(menu.continue_ticket,
+                         static_cast<std::size_t>(train - menu.choices.begin())),
+          "Train Runner");
+    check(session.snapshot().phase == opengold::por::TourPhase::training &&
+              session.buck_rogers_training() && session.buck_rogers_training()->member == runner,
+          "Training waits for Runner's choices");
+    const auto &choices = session.buck_rogers_training()->choices;
+    check(choices.character().level == 4 && choices.specializations_owed() == 1 &&
+              choices.spending().career_points() == 40 &&
+              og::encode_ground_record(*og::buck_rogers_record_of(party.game_record(runner))) ==
+                  og::encode_ground_record(before),
+          "The level is the trainee's, its record unchanged until the choices are kept");
+    check(!session.choose(menu.continue_ticket, 0), "The team menu waits for the training");
+    check(opengold::test::throws<std::logic_error>(
+              [&]
+              {
+                  session.finish_buck_rogers_training();
+              }),
+          "The specialization owed must be chosen");
+    check(!session.specialize_in_training(200), "Only a weapon the menu offers");
+    const auto gun = og::readied_weapon(before.items, before.types);
+    check(gun.has_value(), "Runner has a readied gun");
+    const auto weapon = before.items[*gun].type;
+    check(session.specialize_in_training(weapon), "Runner specializes in its gun");
+    const auto skill = og::career_skills(Profession::warrior).front();
+    const int level = og::level_of(before.creature.skills, skill);
+    for (int point = 0; point < 15; ++point)
+    {
+        check(session.raise_training_skill(skill) == og::SkillRefusal::none, "A career point");
+    }
+    check(session.raise_training_skill(skill) == og::SkillRefusal::at_level_maximum,
+          "At most 15 in a skill");
+    session.finish_buck_rogers_training();
+    const auto kept = *og::buck_rogers_record_of(party.game_record(runner));
+    check(kept.creature.level == 4 && og::level_of(kept.creature.skills, skill) == level + 15 &&
+              og::specialization_level(kept.creature, weapon) ==
+                  og::specialization_level(before.creature, weapon) + 1 &&
+              kept.creature.hit_point_maximum > before.creature.hit_point_maximum,
+          "The record keeps the level, the specialization and the skill points");
+    const auto &after = session.snapshot();
+    check(!session.buck_rogers_training() &&
+              after.phase == opengold::por::TourPhase::awaiting_continue &&
+              after.dialogue.find("Runner trains to level 4.") != std::string::npos &&
+              choices_of(after).find("Train Runner") == std::string::npos,
+          "The team menu shows again: " + after.dialogue + " [" + choices_of(after) + "]");
+}
+
+// The save the training pages' screen check loads (buck_rogers_training_tests.gd):
+// a new team on the solar map in Earth's orbit, Runner ready to train to 4.
+void write_training_fixture(const std::filesystem::path &folder, std::string_view path)
+{
+    auto campaign = opened_game(folder);
+    (void)ready_runner_for_level_four(*campaign.party);
+    launch(campaign.session);
+    check(campaign.session.can_leave(), "The team is free to fly");
+    opengold::write_campaign_file(
+        std::filesystem::path(path),
+        opengold::encode_campaign(*campaign.party, &campaign.session,
+                                  opengold::campaign_asset_identity(folder), countdown));
+}
+
 // The hospital of an outpost of script 99 as its script runs it
 // (docs/games/countdown.md, "The outposts"): the wounded member is healed to
 // full Hit Points for 160 times the multiplier of 16, from the bank's
@@ -1580,12 +1690,20 @@ int main(int argc, char **argv)
             std::cout << "Countdown's solar map fixture written.\n";
             return 0;
         }
+        if (constexpr std::string_view flag = "--training-fixture=";
+            argc > 1 && std::string_view(argv[1]).starts_with(flag))
+        {
+            write_training_fixture(folder, std::string_view(argv[1]).substr(flag.size()));
+            std::cout << "Countdown's training fixture written.\n";
+            return 0;
+        }
         the_team_is_its_records(folder);
         the_campaign_opens(folder);
         arenas_use_the_tiles_the_files_hold(folder);
         the_solar_map_flies(folder);
         each_body_offers_its_places(folder);
         the_hospital_heals_for_its_fee(folder);
+        training_waits_for_its_choices(folder);
         the_title_music_plays(folder);
         ship_fights_play_through_the_session(folder);
         write_ship_fixture(folder);

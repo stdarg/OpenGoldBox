@@ -486,6 +486,68 @@ void training_raises_a_level()
           "A Warrior specializes once at creation and at every even level");
 }
 
+void training_leaves_specialization_and_skills_to_choose()
+{
+    // chargen.pas TrainingMenu: a Warrior specializes at an even level, then
+    // the skill screen gives 40 career and 20 general points, at most 15 a
+    // skill and one new general skill.
+    opengold::RandomState random{11};
+    auto character = og::new_buck_rogers_character(Race::terran, og::Gender::male,
+                                                   Profession::warrior, countdown, random);
+    constexpr std::uint8_t creation_type = 7;
+    check(og::specialize(character, creation_type), "The new Warrior specializes");
+    character.experience = 500000;
+    og::train_buck_rogers_character(character, countdown, random);
+    og::BuckRogersTrainingChoices odd(character, countdown);
+    check(odd.character().level == 3 && odd.specializations_owed() == 0 && odd.complete() &&
+              odd.spending().career_points() == 40 && odd.spending().general_points() == 20 &&
+              odd.spending().max_per_skill() == 15,
+          "An odd level owes no specialization and gives the training's points");
+    const auto career_skill = og::career_skills(Profession::warrior).front();
+    const int before = og::level_of(character.skills, career_skill);
+    for (int point = 0; point < 15; ++point)
+    {
+        check(odd.add_skill(career_skill) == SkillRefusal::none, "A career point is spent");
+    }
+    check(odd.add_skill(career_skill) == SkillRefusal::at_level_maximum &&
+              og::level_of(odd.character().skills, career_skill) == before + 15 &&
+              odd.spending().career_points() == 25,
+          "At most 15 in one skill, and the character shows them");
+    while (odd.subtract_skill(career_skill))
+    {
+    }
+    check(og::level_of(odd.character().skills, career_skill) == before &&
+              odd.spending().career_points() == 40,
+          "Points come back down to where the training found the skill");
+    std::vector<Skill> learnable;
+    for (const auto skill : og::general_skills(Profession::warrior))
+    {
+        if (og::level_of(character.skills, skill) == 0 &&
+            og::meets_skill_prerequisite(character.skills, Profession::warrior, skill))
+        {
+            learnable.push_back(skill);
+        }
+    }
+    check(learnable.size() >= 2 && odd.add_skill(learnable[0]) == SkillRefusal::none &&
+              odd.add_skill(learnable[1]) == SkillRefusal::no_new_skills,
+          "One new general skill a level");
+
+    character = odd.character();
+    character.experience = 500000;
+    og::train_buck_rogers_character(character, countdown, random);
+    og::BuckRogersTrainingChoices even(character, countdown);
+    check(even.character().level == 4 && even.specializations_owed() == 1 && !even.complete(),
+          "An even level owes a Warrior's specialization");
+    check(!even.unspecialize(creation_type), "An earlier specialization cannot be taken back");
+    check(even.specialize(creation_type) && even.complete() &&
+              og::specialization_level(even.character(), creation_type) == 2 &&
+              !even.specialize(creation_type),
+          "The one owed is chosen, and no more");
+    check(even.unspecialize(creation_type) && !even.complete() &&
+              og::specialization_level(even.character(), creation_type) == 1,
+          "This training's choice can be taken back");
+}
+
 void skills_have_groups_and_prerequisites()
 {
     // gdconsts.pas skillDefinitions, careerSkills; charhlp.pas MeetsSkillPrerequisite;
@@ -2342,6 +2404,7 @@ int main()
         saving_throws_follow_race_and_level();
         creation_makes_every_pair();
         training_raises_a_level();
+        training_leaves_specialization_and_skills_to_choose();
         skills_have_groups_and_prerequisites();
         a_skill_value_adds_its_ability();
         skill_checks_have_four_grades();

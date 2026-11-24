@@ -25,6 +25,12 @@
 // state. The parts with state of their own are separate classes (Effective
 // C++ Item 31): PortraitCatalog, LevelUpDialog, EquipmentChoiceDialog,
 // CharacterPoolDialog, TownSheetDialog and presentation::sheet_text.
+namespace opengold::por
+{
+class RolfTourSession;
+struct BuckRogersTraining;
+} // namespace opengold::por
+
 class CharacterCreationView : public godot::Control
 {
     GDCLASS(CharacterCreationView, godot::Control)
@@ -174,6 +180,18 @@ class CharacterCreationView : public godot::Control
     // original does (skills.pas EditSkills).
     [[nodiscard]] bool skill_points_unspent() const;
     void leave_skills();
+    // A Buck Rogers training's choices on the same pages (TourPhase::training):
+    // the town's session holds them; the specialization page comes first when
+    // one is owed, then the skill screen, then the town's team menu again.
+    // The nodes the pages hid are shown again when they close.
+    [[nodiscard]] opengold::por::RolfTourSession *training_session() const;
+    [[nodiscard]] const opengold::por::BuckRogersTraining *buck_rogers_training() const;
+    void open_buck_rogers_training();
+    void refresh_buck_rogers_training();
+    void finish_buck_rogers_training();
+    bool training_open_{}, training_on_skills_{};
+    int training_career_given_{}, training_general_given_{};
+    std::vector<godot::String> training_hidden_;
     std::optional<opengold::original::SkillSpending> spending_;
     // The roll the spending began from, and the points it began with.
     std::string spending_roll_;

@@ -1775,6 +1775,14 @@ void CharacterCreationView::update_party_navigation()
     // A Buck Rogers ship fight plays on its own screen; its script goes on
     // once the player closes it, and a boarding's fight follows.
     auto *ship_fight = Object::cast_to<ShipCombatView>(get_node_or_null("CampaignShipCombat"));
+    if (!training_open_ && town && town->is_visible() && town->waiting_buck_rogers_training())
+    {
+        open_buck_rogers_training();
+    }
+    if (training_open_)
+    {
+        return;
+    }
     if (!ship_fight && town && town->is_visible() && town->waiting_ship_fight())
     {
         auto owned =
