@@ -1276,6 +1276,141 @@ the relaunch clinic treats only the current occupied party slots. The ordinary
 Solar checkpoint reloads against fresh assets and saves byte for byte. This
 completes the pirate chapter, while the remaining campaign is still unproved.
 
+`--mars-entry` flies on to Mars using ordinary Solar directions, attacks the
+challenging scout cruiser, and plays the real ship combat through legal orders,
+rounds and dodge answers. The pilot closes range while the crew targets the
+hull; a genuine destruction result is committed through the campaign's ship
+transaction. The authored Mars descent follows. The crew declines the offered
+blastoff at the landing site. This fresh route has fourteen ground victories
+and one ship victory; its ordinary full Mars save reloads byte for byte. The
+remaining Mars, Venus and Mariposa objectives are still unproved.
+
+The pirate-chapter return now visits the actual Salvation CLINIC and HQ.
+Each eligible recruit takes its offered native Train option, gaining level
+three through the rules' own rolls and experience limits. Current native Hit
+Point maxima govern campaign validation after training; the original creation
+sheet remains intact for save replay.
+
+`--mars-village` recovers through permitted native camps at the landing site,
+then walks ordinary wilderness directions to the Runner village. The real
+Tuskon conversation uses AWAY, WARNING and the GLIDERS answer, and the crew
+agrees to protect the cubs. `--mars-defense` joins the offered main-gate
+warriors and patrols the streets during evacuation. Two real battles precede
+the authored howling signal that the cubs escaped. The latest continuous
+trained route has eighteen ground victories and one ship victory; every
+current crew member remains alive, and the ordinary full village save
+reloads against fresh assets and saves byte for byte. The campaign ending
+remains unproved.
+
+`--mars-camp` finds the actual storeroom root cellar after the howling signal
+and follows the sentry to the refugee camp. The EARTH answer and subsequent
+dialogue earn a green passcard and the blue-rock rendezvous. This wilderness
+return retains district 65 under controller 64, so its ordinary save uses the
+source-authenticated retained-map exception. The first Mars descent still
+uses its ordinary save path. Camp saves in representable formats 49–53 reload
+against fresh assets and save byte for byte. Format 48 cannot encode the
+current nondefault rules setting; its existing reader support is unchanged.
+
+`--mars-base` recovers the crew through real native rest, walks to the blue
+rock, takes the actual disguise scene and recruits Tuskon for the cave
+entrance. `--mars-blue-card` uses the earned green card and squad answers,
+the level-two elevator, the actual restricted-area report and gear cache,
+and the vault's blue passcard and equipment recovery. `--mars-departure`
+takes the blue-card shaft's rising hoist, reaches the prototype platform,
+and wins the real combat against its two security robots after the laser
+controls explode. The crew escapes through the ground-floor blue gate;
+the authored base destruction and Tuskon farewell complete the Mars chapter.
+This fresh route has nineteen ground victories and one ship victory. All six
+PCs remain alive, Tuskon departs through the source's DUMP, and full Mars
+return saves with retained district 66 roundtrip byte for byte in formats
+49–53. The retained-map receipt authenticates that exact base return too.
+`--mars-return` walks back to the actual ship, flies to Earth, reports at
+Salvation and uses its real clinic, eligible HQ training, ammunition purchases
+and ship services before launching again. `--venus-village` lands in the
+Venusian lowlands, wins the actual Lowlander/RAM ambush and accepts Leander's
+offer. The PCs take the ambush's offered armor and rocket guns through the
+booty menu and ready them with legal combat commands. The route goes around
+the acid lake, wins its wilderness encounters and enters the Lowlander
+village. This fresh checkpoint has twenty-three ground victories and one
+ship victory, all six PCs alive and Leander present; its ordinary full save
+reloads byte for byte. The remaining Venus rescue, Mariposa and final
+campaign ending remain unproved.
+
+`--venus-outskirts` uses ordinary village Camp for the wounded arrivals,
+descends the real basement ladder to rescue Zane, defeats the officer and
+his security robots, takes the actual keyring and leaves through the main
+gate. This fresh route has twenty-five ground victories and one ship
+victory. The returned wilderness retains village map 81 while script 80
+owns its A2 world view. Its save receipt authenticates the installed kind
+instruction at 8028h, bank 5, actual return identity and wilderness mode.
+Full saves reload byte for byte in representable formats 49–53; diagnostic
+copies with corrupt kind, mode, bank or previous-script identity are
+rejected. The ordinary first landing and Matrix wilderness receipts retain
+their existing behavior.
+
+`--venus-departure` enters the actual RAM base, meets the imprisoned scientists
+on level three, returns Zane to Landon on level four and finds the retinal
+lockpick under the laboratory floor panel on level one. The crew then finds
+the real secret door and carries Landon's messages until the scientists
+escape and Leander leaves through his farewell. The ordinary main exit
+returns the six PCs to the Venus wilderness, retaining base map 82. This
+fresh route has thirty-two ground victories and one ship victory; all six
+PCs remain alive. Full saves again reload byte for byte in formats 49–53,
+including the same corrupt-receipt rejection checks at this second authored
+return.
+
+`--mercury-core` returns to the real ship, revisits Salvation for the offered
+level-five training and paid bolt/rocket refills, then flies to Mariposa
+Three. Its entry accepts the actual asteroid code, blue passcard and retinal
+lockpick. The crew meets Wilma and the merchant contact, follows the bazaar
+passage, joins the parade and uses its offered Evade/Talk/Innocent responses
+until leaving at Holst Plaza. The real eastern entrance opens the core;
+all three coin fields are still zero. This thirty-two-ground-victory,
+one-ship-victory save independently reloads byte for byte. The remaining
+core encounters continue below; the final campaign ending remains unproved.
+
+`--sun-king` visits the maintenance robot on level one for the copper coin,
+searches the actual level-two closet for the silver coin and takes the gold
+coin from its guarded plaque on level three. Failed native skill attempts
+are resolved through their actual security-robot fights. The crew presents
+the three earned gifts at the level-four audience door and answers the
+Sun King's French menus. His real authorization disables the core lasers.
+This fresh route has thirty-four ground victories and one ship victory;
+the ordinary full save reloads byte for byte. The final climb, Doomsday
+controls, escape and campaign ending continue below.
+
+`--finale-power` also takes the actually offered grenade launchers from Venus
+loot, and the village hit team's chaff grenades and Martian laser rifles.
+One member per earlier battle readies a launcher through a real offered
+combat turn. The crew climbs the disarmed upper core, takes the emergency
+stairs and wins the finale's three-robot patrol using an actual launched
+chaff screen and laser/slug fire. The real electrical intervention cuts
+power and stops the firing count at 24; its failed skill attempt still
+applies the authored electric shock. This fresh route has thirty-five
+ground victories and one ship victory, all six PCs conscious and alive,
+and an ordinary full save that reloads byte for byte.
+
+`--earned-ending` completes the campaign from the same fresh creation.
+While firing is genuinely interrupted and self-destruct has not started,
+ordinary native Camp restores the wounded conscious crew, advances real
+days and preserves the paused mission state. The crew wins the weapons
+control and defense battles, activates the actual destruction sequence,
+uses the emergency stairs, obtains Scot's real pod clearance and escapes
+through an approved pod. The actual final speech at script 98's 9F2Dh
+prompt announces victory. This route has thirty-eight ground victories
+and one ship victory, with all six PCs alive.
+
+Before Continue, an ordinary party-only save preserves all winning slots
+and all ten roster records, including the four departed companions. It
+checks every member's identity, condition and complete native record,
+then independently decodes and resaves byte for byte. After the authored
+Salvation celebration and ordinary launch, a stable full-world save also
+reloads byte for byte. Set `OPENGOLD_COUNTDOWN_EARNED_SAVES` to a filename
+prefix to write the checkpoints, `winning-party.ogs` at the actual winning
+prompt and `earned-ending.ogs` after the epilogue. The installed ending
+protocol fixture remains a separate diagnostic; this complete route uses
+the original campaign and actual rule outcomes throughout.
+
 The route exposed three persistence/script prerequisites: script 33 shares
 map 32 after the lower deck's NEW ECL at 8E7Eh; Buck Rogers' YES NO opcode
 2Ch must replace the previous comparison; and its native character records

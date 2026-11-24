@@ -5,11 +5,62 @@ The second *Buck Rogers XXVc* Gold Box game (1992), the same program as
 its original rules is [BUCK-ROGERS.md](../BUCK-ROGERS.md). Step B0
 (groundwork) and step B1 (the reading census) are done (2026-11-19), and the
 characters' and ground combat's rules of step B2 (2026-11-20). The isolated
-Linux campaign checkpoint below loads and plays the opening; the complete
-campaign has no earned-win certificate yet, and its startup button remains
-disabled.
+Linux engine campaign now has the earned ending certificate below. Its
+startup button remains disabled in the tested snapshot pending integration
+and shared-frontend acceptance.
 
-## Linux campaign checkpoint (2026-11-20)
+## Earned campaign ending (2026-11-24 UTC)
+
+A fresh installed campaign selected Novice (native difficulty 0), created six
+legal characters through the shared Buck creation API, and reached the actual
+bank 1/script 114 `PROGRAM 2` at `9E08` after **144 ground victories**. Creation
+used ordinary native Reroll with fixed visible ability criteria and legal,
+fully spent skill budgets. One continuous encounter stream, seed `20261120`,
+provided one logged draw per actual battle. The route used public movement,
+menus, purchases, equipment, ground/ship and Solar transactions; it did not
+assign quest flags, HP, XP, positions or battle outcomes. Failed checks used
+the authored medical and living-ship fallbacks.
+
+All six PCs were alive. The exact **nine complete PC/NPC records** were
+captured before the terminal Continue, then compared after the real win.
+Independent fresh-assets loading retained the winning world and every
+character identity, and both the full world and captured party resaved
+byte-identically. Matrix alone writes 55; released Matrix 53 remains readable,
+Native still writes 54 and the other games still write 53.
+
+The tested isolated revision was `e495ba24` plus the reviewed integration
+snapshot and ten frozen Matrix/Buck prerequisite fixes; changes were
+uncommitted. The first full certificate is
+`/tmp/opengold-matrix-ending-earned-v261.log`. Its persistent artifacts are:
+
+- `/var/tmp/opengold-matrix-earned-proof/v261/matrix-won.ogs`
+  (SHA256 `0edd7bfa81207260c75276833d189efb33c44a09f0c9426d0441dd3d4db81f16`).
+- `/var/tmp/opengold-matrix-earned-proof/v261/matrix-at-win-party.ogs`
+  (SHA256 `967f8b67e0770f364612f7b9271d307b97adaf71e4705a68b8015213c79c90ab`).
+
+`opengold_matrix_cubed_earned_ending` replays that complete Novice route;
+`opengold_matrix_campaign_tests` keeps isolated ending, failure and save
+protocols separate from earned gameplay. Installed checks use
+`OPENGOLD_GOLDBOX_DIR=/home/edmond/GoldBox` and
+`OPENGOLD_GAME_DIR=/home/edmond/GoldBox/POOLRAD`.
+
+The final formatted-source run passed all six Matrix/Countdown/save checks in
+28.48 seconds, including the complete earned ending in 13.87 seconds:
+`/tmp/opengold-matrix-final-checks-v262.log`. Its winning artifacts under
+`/var/tmp/opengold-matrix-earned-proof/v262/` have the same hashes as the first
+certificate. The exact tested player is
+`/var/tmp/opengold-matrix-earned-driver-v262.cpp`; clang-tidy, clang-format and
+the localization checks passed.
+
+The route proved narrow missing engine prerequisites: actual retained-map
+controller associations, authenticated native wilderness saves and coordinates,
+current wall/event refresh before a Buck 3D command, and authored solo-loss
+continuation while other healthy PCs wait outside. None weakens ordinary save
+validation or changes the rules' outcomes. Final current-main integration,
+startup and shared frontend transactions remain separate acceptance; this is
+not an all-twelve-games or character-bank completion claim.
+
+## Linux campaign checkpoint (2026-11-20, historical)
 
 Tested in the integration checkout based on `ed0be5e8` with the reviewed Native,
 Countdown and Matrix changes. The engine now loads the
@@ -58,9 +109,10 @@ save, UA and Native checks passed 11/11 in
 `/tmp/opengold-matrix-phase2-legacy-checks-v15.log` on the uncommitted Matrix
 stage based on `ed0be5e8` and the reviewed integration snapshot.
 
-The whole campaign, later ground/ship fights, solar travel and required UI
-transactions still need verification. Full route modes return failure until
-the actual authored ending is earned; `--earned-ending-easy` explicitly
+At that checkpoint the whole campaign, later fights and solar travel still
+needed verification; the earned certificate above supersedes that limit.
+Required UI transactions remain separate acceptance. Full route modes return
+failure unless the authored ending is earned; `--earned-ending-easy` explicitly
 selects the existing Easy player option. Creation, solar and ship screens and
 contracts remain with the shared Buck owners; this route adds no alternative
 screens or backends.

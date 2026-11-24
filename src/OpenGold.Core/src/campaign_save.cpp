@@ -4,6 +4,7 @@
 #include "opengold/save_file.h"
 #include "opengold/ua_design.h"
 #include <algorithm>
+#include <array>
 #include <charconv>
 #include <iomanip>
 #include <limits>
@@ -62,15 +63,28 @@ constexpr unsigned rest_length_format = 52;
 constexpr unsigned rest_interruption_format = 53;
 constexpr std::string_view campaign_magic = "OPENGOLD-CAMPAIGN ";
 
-struct MatrixWilderness
+struct BuckWilderness
 {
-    std::uint16_t kind{}, kind_instruction{};
+    std::uint16_t kind{}, kind_instruction{}, bank{};
+    std::array<std::uint16_t, 3> return_scripts{};
 };
 
-// The installed ECL1 wilderness controllers retain the previous 3D map.
+// These installed Buck wilderness controllers retain the previous 3D map.
 // Their own initialization writes the area kind at these instruction sites.
-std::optional<MatrixWilderness> matrix_wilderness(GoldBoxGame game, unsigned script)
+std::optional<BuckWilderness> buck_wilderness(GoldBoxGame game, unsigned script)
 {
+    // Countdown ECL4:64 retains its previous map on LOAD FILES 127,
+    // including the genuine village 65 root-cellar return to the camp.
+    if (game == GoldBoxGame::countdown_to_doomsday && script == 64)
+    {
+        return BuckWilderness{0xA8, 0x8034, 4, {66}};
+    }
+    // ECL5:80 retains the village, base or ruins map. Its entry chooses
+    // the corresponding world square from previous scripts81,82,83.
+    if (game == GoldBoxGame::countdown_to_doomsday && script == 80)
+    {
+        return BuckWilderness{0xA2, 0x8028, 5, {81, 82, 83}};
+    }
     if (game != GoldBoxGame::matrix_cubed)
     {
         return std::nullopt;
@@ -78,12 +92,58 @@ std::optional<MatrixWilderness> matrix_wilderness(GoldBoxGame game, unsigned scr
     switch (script)
     {
     case 32:
-        return MatrixWilderness{0xA8, 0x8045};
+        return BuckWilderness{0xA8, 0x8045, 1};
     case 48:
-        return MatrixWilderness{0xA2, 0x802B};
+        return BuckWilderness{0xA2, 0x802B, 1};
     default:
         return std::nullopt;
     }
+}
+
+// Venus's initialization keeps the source controller until its pre-step
+// entry at 827D writes 48. Authenticate only the exact installed arrival
+// branches and their published squares; preserve the VM's original values.
+bool matrix_venus_arrival(const por::EclProgram &program, unsigned script, unsigned previous,
+                          unsigned x, unsigned y)
+{
+    if (script != 48)
+    {
+        return false;
+    }
+
+    struct Arrival
+    {
+        unsigned previous, x, y;
+        std::uint16_t x_instruction, y_instruction;
+    };
+
+    constexpr std::array arrivals{Arrival{19, 5, 2, 0x8E9B, 0x8EA1},
+                                  Arrival{49, 34, 12, 0x8058, 0x805E},
+                                  Arrival{50, 35, 9, 0x8099, 0x809F}};
+    const auto source_save = [&](std::uint16_t address, unsigned value, unsigned cell)
+    {
+        const auto instruction = program.instruction(address);
+        return instruction.opcode == 9 && instruction.operands.size() == 2 &&
+               instruction.operands[0].tag == 0 && instruction.operands[0].value == value &&
+               instruction.operands[1].tag == 1 && instruction.operands[1].value == cell;
+    };
+    for (const auto &arrival : arrivals)
+    {
+        if (previous != arrival.previous || x != arrival.x || y != arrival.y)
+        {
+            continue;
+        }
+        try
+        {
+            return source_save(arrival.x_instruction, arrival.x, 0x4BC3) &&
+                   source_save(arrival.y_instruction, arrival.y, 0x4BC4);
+        }
+        catch (const por::EclError &)
+        {
+            return false;
+        }
+    }
+    return false;
 }
 
 void require(bool ok, const char *message)
@@ -722,7 +782,28 @@ template <bool Reading> struct SaveCodec
                 "Unsupported saved travel mode");
         unsigned area = v.current_area_;
         field(area);
-        const auto wilderness = matrix_wilderness(v.game(), v.current_script_);
+        const auto wilderness = [&]()
+        {
+            const auto controller = buck_wilderness(v.game(), v.current_script_);
+            if (v.game() != GoldBoxGame::countdown_to_doomsday)
+            {
+                return controller;
+            }
+            // Countdown's first descent has no retained district and keeps
+            // previous script 34. Preserve that ordinary supported save; only
+            // its later retained-map mismatch needs this additional receipt.
+            if (!v.town_ || area == 0)
+            {
+                return std::optional<BuckWilderness>{};
+            }
+            const auto district = v.town_->districts.find(area);
+            if (district != v.town_->districts.end() &&
+                district->second->loaded_by(v.current_script_))
+            {
+                return std::optional<BuckWilderness>{};
+            }
+            return controller;
+        }();
         // Only the new game has larger maps. Keep every released game's
         // original 256-character encoding byte for byte in format 53.
         const std::size_t knowledge_size =
@@ -936,13 +1017,26 @@ template <bool Reading> struct SaveCodec
                 {
                     // A different installed program is not this controller.
                 }
-                require(controller_matches && bank != v.town_->script_banks.end() &&
-                            bank->second == 1 &&
-                            v.machine_.variable(v.game_cell(por::ecl_script_bank)) == 1 &&
-                            v.machine_.variable(por::EclAddress{0x4BF2}) == v.current_script_ &&
-                            v.machine_.variable(por::EclAddress{0x4BE6}) == wilderness->kind &&
-                            v.machine_.variable(por::EclAddress{0x4BA6}) == 4,
-                        "Invalid saved Matrix wilderness context");
+                require(
+                    controller_matches && bank != v.town_->script_banks.end() &&
+                        bank->second == wilderness->bank &&
+                        v.machine_.variable(v.game_cell(por::ecl_script_bank)) ==
+                            wilderness->bank &&
+                        (v.machine_.variable(por::EclAddress{0x4BF2}) == v.current_script_ ||
+                         (v.machine_.variable(por::EclAddress{0x4BF2}) != 0 &&
+                          std::ranges::find(wilderness->return_scripts,
+                                            v.machine_.variable(por::EclAddress{0x4BF2})) !=
+                              wilderness->return_scripts.end()) ||
+                         (v.game() == GoldBoxGame::matrix_cubed &&
+                          matrix_venus_arrival(*v.machine_.program_, v.current_script_,
+                                               v.machine_.variable(por::EclAddress{0x4BF2}),
+                                               v.machine_.variable(por::EclAddress{0x4BC3}),
+                                               v.machine_.variable(por::EclAddress{0x4BC4})))) &&
+                        v.machine_.variable(por::EclAddress{0x4BE6}) == wilderness->kind &&
+                        v.machine_.variable(por::EclAddress{0x4BA6}) == 4,
+                    v.game() == GoldBoxGame::matrix_cubed
+                        ? "Invalid saved Matrix wilderness context"
+                        : "Saved district and script disagree");
             }
         }
         bool matrix_won = false;

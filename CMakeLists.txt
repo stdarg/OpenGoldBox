@@ -396,6 +396,36 @@ if(OPENGOLD_BUILD_TESTS)
         --talon-clinic)
     add_test(NAME opengold_countdown_earned_talon_escape COMMAND opengold_countdown_earned_tests
         --talon-escape)
+    add_test(NAME opengold_countdown_earned_mars_entry COMMAND opengold_countdown_earned_tests
+        --mars-entry)
+    add_test(NAME opengold_countdown_earned_mars_village COMMAND opengold_countdown_earned_tests
+        --mars-village)
+    add_test(NAME opengold_countdown_earned_mars_defense COMMAND opengold_countdown_earned_tests
+        --mars-defense)
+    add_test(NAME opengold_countdown_earned_mars_camp COMMAND opengold_countdown_earned_tests
+        --mars-camp)
+    add_test(NAME opengold_countdown_earned_mars_base COMMAND opengold_countdown_earned_tests
+        --mars-base)
+    add_test(NAME opengold_countdown_earned_mars_blue_card COMMAND opengold_countdown_earned_tests
+        --mars-blue-card)
+    add_test(NAME opengold_countdown_earned_mars_departure COMMAND opengold_countdown_earned_tests
+        --mars-departure)
+    add_test(NAME opengold_countdown_earned_mars_return COMMAND opengold_countdown_earned_tests
+        --mars-return)
+    add_test(NAME opengold_countdown_earned_venus_village COMMAND opengold_countdown_earned_tests
+        --venus-village)
+    add_test(NAME opengold_countdown_earned_venus_outskirts COMMAND opengold_countdown_earned_tests
+        --venus-outskirts)
+    add_test(NAME opengold_countdown_earned_venus_departure COMMAND opengold_countdown_earned_tests
+        --venus-departure)
+    add_test(NAME opengold_countdown_earned_mercury_core COMMAND opengold_countdown_earned_tests
+        --mercury-core)
+    add_test(NAME opengold_countdown_earned_sun_king COMMAND opengold_countdown_earned_tests
+        --sun-king)
+    add_test(NAME opengold_countdown_earned_finale_power COMMAND opengold_countdown_earned_tests
+        --finale-power)
+    add_test(NAME opengold_countdown_earned_ending COMMAND opengold_countdown_earned_tests
+        --earned-ending)
     add_test(NAME opengold_countdown_ending_protocol COMMAND opengold_countdown_earned_tests
         --ending-protocol)
     set_tests_properties(opengold_countdown_earned_opening opengold_countdown_camp_service
@@ -405,6 +435,16 @@ if(OPENGOLD_BUILD_TESTS)
         opengold_countdown_earned_solar opengold_countdown_earned_asteroid_entry
         opengold_countdown_earned_asteroid_lower
         opengold_countdown_earned_talon_clinic opengold_countdown_earned_talon_escape
+        opengold_countdown_earned_mars_entry opengold_countdown_earned_mars_village
+        opengold_countdown_earned_mars_defense opengold_countdown_earned_mars_camp
+        opengold_countdown_earned_mars_base opengold_countdown_earned_mars_blue_card
+        opengold_countdown_earned_mars_departure opengold_countdown_earned_mars_return
+        opengold_countdown_earned_venus_village opengold_countdown_earned_venus_outskirts
+        opengold_countdown_earned_venus_departure
+        opengold_countdown_earned_mercury_core
+        opengold_countdown_earned_sun_king
+        opengold_countdown_earned_finale_power
+        opengold_countdown_earned_ending
         opengold_countdown_ending_protocol
         PROPERTIES SKIP_RETURN_CODE 77)
     # Creation in the Buck Rogers games through the shared creation pages.
@@ -423,6 +463,9 @@ if(OPENGOLD_BUILD_TESTS)
         COMMAND opengold_matrix_campaign_tests --earned-opening)
     add_test(NAME opengold_matrix_cubed_earned_caloris_preparation
         COMMAND opengold_matrix_campaign_tests --earned-caloris-preparation)
+    add_test(NAME opengold_matrix_cubed_earned_ending
+        COMMAND opengold_matrix_campaign_tests --earned-ending-novice)
+    set_tests_properties(opengold_matrix_cubed_earned_ending PROPERTIES TIMEOUT 300)
     add_executable(opengold_buck_rogers_ship_combat_tests tests/buck_rogers_ship_combat_tests.cpp)
     target_link_libraries(opengold_buck_rogers_ship_combat_tests PRIVATE opengold_rules_original
         opengold_core)

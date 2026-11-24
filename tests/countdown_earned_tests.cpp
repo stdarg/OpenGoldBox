@@ -3,6 +3,7 @@
 #include "opengold/buck_rogers_characters.h"
 #include "opengold/buck_rogers_records.h"
 #include "opengold/buck_rogers_rules.h"
+#include "opengold/buck_rogers_ship_fight.h"
 #include "opengold/buck_rogers_solar_map.h"
 #include "opengold/buck_rogers_upkeep.h"
 #include "opengold/campaign_save.h"
@@ -260,11 +261,97 @@ class EarnedPlayer
                 std::cout << "]\n";
                 if (snapshot.game_won && !winning_party_)
                 {
-                    winning_party_ =
+                    check(snapshot.script_id == 98 &&
+                              snapshot.dialogue.find("YOUR MISSION IS OVER.") != std::string::npos,
+                          "Victory is the actual authored final speech");
+                    const auto bytes =
                         opengold::encode_campaign(*campaign_.party, nullptr, assets_, countdown);
+                    auto loaded =
+                        opengold::decode_campaign(bytes, *campaign_.creation,
+                                                  campaign_.party->rule_module(), assets_, nullptr);
+                    check(
+                        loaded.party.slots == campaign_.party->state().slots &&
+                            loaded.party.roster.size() == campaign_.party->state().roster.size(),
+                        "The ordinary at-win party snapshot preserves every occupied slot and roster member");
+                    opengold::CampaignParty restored(
+                        og::rules_module(opengold::load_original_content(folder_, countdown)),
+                        campaign_.creation);
+                    restored.restore(std::move(loaded.party));
+                    for (const auto &member : campaign_.party->state().roster)
+                    {
+                        const auto &saved = restored.member(member.id);
+                        check(
+                            saved.character.sheet().name == member.character.sheet().name &&
+                                saved.npc_source == member.npc_source &&
+                                saved.vitals.hit_points == member.vitals.hit_points &&
+                                saved.vitals.dead == member.vitals.dead &&
+                                restored.game_record(member.id) ==
+                                    campaign_.party->game_record(member.id),
+                            "Every actual victory-time PC and companion keeps its identity, condition and complete native record");
+                    }
+                    for (const auto id : campaign_.party->state().slots)
+                    {
+                        if (!id)
+                        {
+                            continue;
+                        }
+                        const auto &member = campaign_.party->member(id);
+                        const auto record =
+                            og::buck_rogers_record_of(campaign_.party->game_record(id));
+                        check(
+                            record && !member.vitals.dead &&
+                                og::status_of(record->creature) != og::BuckRogersStatus::dead &&
+                                og::status_of(record->creature) != og::BuckRogersStatus::gone,
+                            "Every actual occupied victory-time member is alive before the epilogue");
+                    }
+                    check(opengold::encode_campaign(restored, nullptr, assets_, countdown) == bytes,
+                          "The full actual winning roster resaves byte for byte before Continue");
+                    winning_party_ = bytes;
+                    if (const auto *prefix = std::getenv("OPENGOLD_COUNTDOWN_EARNED_SAVES"))
+                    {
+                        std::ofstream out(std::string(prefix) + "winning-party.ogs",
+                                          std::ios::binary);
+                        out << *winning_party_;
+                        check(static_cast<bool>(out),
+                              "Write the ordinary actual victory-time party snapshot");
+                    }
+                    std::cout << "Actual authored Countdown victory: all winning slots and "
+                              << restored.state().roster.size()
+                              << " full roster records preserved.\n";
+                }
+                if (!answers_.empty() && answers_.front() == "train-ready" &&
+                    snapshot.script_id == 17)
+                {
+                    auto offered = std::ranges::find_if(snapshot.choices,
+                                                        [](const auto &choice)
+                                                        {
+                                                            return choice.starts_with("Train ");
+                                                        });
+                    if (offered == snapshot.choices.end())
+                    {
+                        // HQ may first report another authored mission.
+                        // Re-enter its actual menu after that announcement.
+                        offered = std::ranges::find(snapshot.choices, "HQ");
+                        if (offered == snapshot.choices.end())
+                        {
+                            offered = std::ranges::find(snapshot.choices, "Exit");
+                            if (offered != snapshot.choices.end())
+                            {
+                                answers_.pop_front();
+                            }
+                        }
+                    }
+                    if (offered != snapshot.choices.end())
+                    {
+                        check(session.choose(
+                                  snapshot.continue_ticket,
+                                  static_cast<std::size_t>(offered - snapshot.choices.begin())),
+                              "Use the actual HQ training offer until no current member can train");
+                        break;
+                    }
                 }
                 if (!answers_.empty() && answers_.front() == "optional-clinic" &&
-                    snapshot.choices.size() > 1)
+                    snapshot.script_id == 34 && snapshot.choices.size() > 1)
                 {
                     if (std::ranges::find(snapshot.choices, "NO") != snapshot.choices.end())
                     {
@@ -272,7 +359,9 @@ class EarnedPlayer
                         for (const auto id : campaign_.party->state().slots)
                         {
                             if (!id)
+                            {
                                 continue;
+                            }
                             const auto &member = campaign_.party->member(id);
                             const auto record = og::buck_rogers_record_of(member.vitals.resources);
                             const auto &name = member.character.sheet().name;
@@ -317,11 +406,17 @@ class EarnedPlayer
                     check(weapon.has_value(), "The buyer carries its actual readied gun");
                     const auto offer =
                         og::ammunition_offer(before->items[*weapon], before->types, true);
+                    const auto type = before->items[*weapon].type;
+                    check(type == 7 || type == 10 || type == 11,
+                          "The route refills its actually carried bolt or rocket gun");
+                    const std::string_view prefix = type == 11   ? "Rocket Rifle:"
+                                                    : type == 10 ? "Rocket Pistol:"
+                                                                 : "Bolt Gun:";
                     const auto found =
                         std::ranges::find_if(snapshot.choices.rbegin(), snapshot.choices.rend(),
-                                             [](const std::string &choice)
+                                             [&](const std::string &choice)
                                              {
-                                                 return choice.starts_with("Bolt Gun:");
+                                                 return choice.starts_with(prefix);
                                              });
                     check(found != snapshot.choices.rend(),
                           "The shop offers the actual gun refill");
@@ -340,7 +435,69 @@ class EarnedPlayer
                 }
                 if (snapshot.dialogue.starts_with("The booty:"))
                 {
-                    if (!answers_.empty() && answers_.front().starts_with("Take "))
+                    if (snapshot.script_id == 80 || snapshot.script_id == 81 ||
+                        snapshot.script_id == 98)
+                    {
+                        for (const auto &[type, label] :
+                             {std::pair{22U, "Take Heavy Body Armor"},
+                              std::pair{11U, "Take Rocket Rifle"},
+                              std::pair{10U, "Take Rocket Pistol"},
+                              std::pair{16U, "Take Grenade Lnchr."},
+                              std::pair{37U, "Take Chaff Grenade"},
+                              std::pair{13U, "Take Martian Laser Rifle +1"},
+                              std::pair{23U, "Take Battle armor"}})
+                        {
+                            if (snapshot.script_id == 80 &&
+                                (type == 37 || type == 13 || type == 23))
+                            {
+                                continue;
+                            }
+                            if (snapshot.script_id == 81 && type != 37 && type != 13)
+                            {
+                                continue;
+                            }
+                            if (snapshot.script_id == 98 && type != 37 && type != 13 && type != 23)
+                            {
+                                continue;
+                            }
+                            const auto loot = std::ranges::find(snapshot.choices, label);
+                            if (loot == snapshot.choices.end())
+                            {
+                                continue;
+                            }
+                            for (unsigned slot = 0; slot < campaign_.party->state().slots.size();
+                                 ++slot)
+                            {
+                                const auto id = campaign_.party->state().slots[slot];
+                                if (!id || !campaign_.party->member(id).npc_source.empty())
+                                {
+                                    continue;
+                                }
+                                const auto record =
+                                    og::buck_rogers_record_of(campaign_.party->game_record(id));
+                                check(record.has_value(),
+                                      "The actual recipient has its native inventory");
+                                if (std::ranges::none_of(record->items,
+                                                         [&](const auto &item)
+                                                         {
+                                                             return item.type == type;
+                                                         }))
+                                {
+                                    check(session.can_select_member(),
+                                          "The real booty permits choosing its recipient");
+                                    campaign_.party->select(opengold::PartySlot{slot});
+                                    chosen =
+                                        static_cast<std::size_t>(loot - snapshot.choices.begin());
+                                    break;
+                                }
+                            }
+                            if (chosen)
+                            {
+                                break;
+                            }
+                        }
+                    }
+                    if (!chosen && !answers_.empty() && answers_.front().starts_with("Take "))
                     {
                         const auto found = std::ranges::find(snapshot.choices, answers_.front());
                         check(found != snapshot.choices.end(),
@@ -348,7 +505,7 @@ class EarnedPlayer
                         chosen = static_cast<std::size_t>(found - snapshot.choices.begin());
                         answers_.pop_front();
                     }
-                    else
+                    else if (!chosen)
                     {
                         const auto label =
                             std::ranges::find(snapshot.choices, "Divvy") != snapshot.choices.end()
@@ -381,7 +538,7 @@ class EarnedPlayer
                 if (!chosen &&
                     ((snapshot.script_id == 49 &&
                       snapshot.dialogue.find("KILLER GENNIES APPROACH") != std::string::npos) ||
-                     snapshot.script_id == 50))
+                     snapshot.script_id == 50 || snapshot.script_id == 64))
                 {
                     const auto hide = std::ranges::find(snapshot.choices, "HIDE");
                     if (hide != snapshot.choices.end())
@@ -394,6 +551,25 @@ class EarnedPlayer
                     const auto no = std::ranges::find(snapshot.choices, "NO");
                     if (no != snapshot.choices.end())
                     {
+                        chosen = static_cast<std::size_t>(no - snapshot.choices.begin());
+                    }
+                }
+                if (!chosen && snapshot.script_id == 96)
+                {
+                    for (const std::string_view label : {"INNOCENT", "TALK", "EVADE"})
+                    {
+                        const auto found = std::ranges::find(snapshot.choices, label);
+                        if (found != snapshot.choices.end())
+                        {
+                            chosen = static_cast<std::size_t>(found - snapshot.choices.begin());
+                            break;
+                        }
+                    }
+                    if (snapshot.dialogue.find("THERE IS A CLOSED SHOP HERE") != std::string::npos)
+                    {
+                        const auto no = std::ranges::find(snapshot.choices, "NO");
+                        check(no != snapshot.choices.end(),
+                              "The actual parade permits passing the closed shop");
                         chosen = static_cast<std::size_t>(no - snapshot.choices.begin());
                     }
                 }
@@ -436,8 +612,8 @@ class EarnedPlayer
                 answers_.pop_front();
                 break;
             case TourPhase::ship_combat:
-                throw std::runtime_error(
-                    "Earned route requires the real ship-combat transaction; no assumed outcome");
+                ship_fight();
+                break;
             case TourPhase::defeated:
                 throw std::runtime_error("The fresh earned team was defeated");
             case TourPhase::faulted:
@@ -1032,7 +1208,8 @@ class EarnedPlayer
         walk(50, 8, 3);
         clinic_treated_.clear();
         passage(opengold::por::MapDirection::east,
-                {"PORT", "MED SUP", "LAUNCH", "optional-clinic", "EXIT"});
+                {"CLINIC", "HQ", "train-ready", "PORT", "MED SUP", "LAUNCH", "optional-clinic",
+                 "EXIT"});
         check(answers_.empty() && campaign_.session.snapshot().script_id == 34 &&
                   campaign_.session.snapshot().solar_map &&
                   campaign_.session.script_variable(opengold::por::EclAddress{0x4C81}) == 1,
@@ -1040,12 +1217,789 @@ class EarnedPlayer
         save_checkpoint("talon-escape");
     }
 
+    void ship_fight()
+    {
+        auto &session = campaign_.session;
+        auto &fight = opengold::por::ship_fight(session, {});
+        for (unsigned step = 0; step < 5000 && !fight.over(); ++step)
+        {
+            if (fight.awaits_dodge())
+            {
+                fight.answer_dodge(true);
+            }
+            else if (fight.awaits_round())
+            {
+                fight.play_round();
+            }
+            else
+            {
+                using Action = og::ShipAction;
+                const auto orders = fight.legal_orders();
+                std::optional<og::ShipOrder> chosen;
+                for (const og::ShipOrder candidate :
+                     {og::ShipOrder{.action = Action::command},
+                      og::ShipOrder{.action = Action::close},
+                      og::ShipOrder{.action = Action::target, .system = og::ShipSystem::hull},
+                      og::ShipOrder{.action = Action::fire}, og::ShipOrder{.action = Action::aid}})
+                {
+                    if (std::ranges::find(orders, candidate) != orders.end())
+                    {
+                        chosen = candidate;
+                        break;
+                    }
+                }
+                if (!chosen)
+                {
+                    const auto found = std::ranges::find_if(
+                        orders,
+                        [](const auto &order)
+                        {
+                            return order.action == Action::load || order.action == Action::jury_rig;
+                        });
+                    if (found != orders.end())
+                    {
+                        chosen = *found;
+                    }
+                }
+                if (!chosen)
+                {
+                    // QUIT ends this member's turn in the native ship menu.
+                    // The pilot at close range may have no shot or boarding
+                    // opportunity while the gunners still have to act.
+                    const auto done =
+                        std::ranges::find(orders, og::ShipOrder{.action = Action::quit});
+                    check(done != orders.end(), "The real ship menu offers its end-turn order");
+                    chosen = *done;
+                }
+                fight.submit(*chosen);
+            }
+        }
+        check(fight.over(), "The actual ship combat finishes within its ordinary command bound");
+        const auto end = fight.end();
+        std::cout << "Actual ship combat outcome " << end.outcome << "; boarded " << end.boarded
+                  << "; experience " << end.experience << '\n';
+        check(end.outcome == 0, "The crew wins the actual ship fight through its rules");
+        check(session.finish_ship_combat(session.snapshot().continue_ticket),
+              "Commit the finished real ship combat and resume its authored script");
+        ++ship_fights_;
+    }
+
+    void mars_entry()
+    {
+        fly_to(3); // Mars, in the installed script's body order.
+        stop_solar_menus_ = false;
+        // Decline the actual return-to-ship prompt at the landing site.
+        play({"MARS HIGH DESERT", "ATTACK", "NO"});
+        check(answers_.empty() && campaign_.session.snapshot().script_id == 64,
+              "The actual Mars descent and scout cruiser fight reach the high desert");
+        save_checkpoint("mars-entry");
+    }
+
+    void mars_village()
+    {
+        auto &session = campaign_.session;
+        const auto wounded = [&]
+        {
+            return std::ranges::any_of(
+                campaign_.party->state().slots,
+                [&](const auto id)
+                {
+                    if (!id)
+                    {
+                        return false;
+                    }
+                    const auto record =
+                        og::buck_rogers_record_of(campaign_.party->member(id).vitals.resources);
+                    check(record && og::status_of(record->creature) != og::BuckRogersStatus::dead,
+                          "Every actual current crew member survives the Mars arrival");
+                    return record->creature.hit_points < record->creature.hit_point_maximum;
+                });
+        };
+        // Recover from the ship battle through the ordinary permitted camp,
+        // before setting out and receiving the intercepted attack warning.
+        for (unsigned day = 0; day < 32 && wounded(); ++day)
+        {
+            const auto before = campaign_.party->state().time_minutes;
+            check(session.camp(opengold::RestKind::long_rest),
+                  "The authored Mars wilderness permits an ordinary recovery camp");
+            // The current landing-site search offers to board again after
+            // camp. Decline blastoff through that real prompt each time.
+            play({"NO"});
+            check(answers_.empty() && session.snapshot().script_id == 64,
+                  "The recovering crew stays at the actual Mars landing site");
+            check(campaign_.party->state().time_minutes == before + 24 * 60,
+                  "Each actual native recovery camp passes a whole campaign day");
+        }
+        check(!wounded(), "The crew recovers through actual native camp rules");
+        wilderness_walk(31, 11, {"AWAY", "WARNING", "GLIDERS", "YES"});
+        check(answers_.empty() && session.snapshot().script_id == 65 &&
+                  session.script_variable(opengold::por::EclAddress{0x4CA3}) == 1,
+              "The crew reaches the village and honestly agrees to protect its cubs");
+        save_checkpoint("mars-village");
+    }
+
+    void mars_defense()
+    {
+        auto &session = campaign_.session;
+        // Join the offered defenders at the real main gate, then patrol
+        // the adjacent village streets during the authored evacuation.
+        // The source changes that gate scene after the attack begins.
+        walk(65, 5, 7);
+        for (unsigned watch = 0;
+             watch < 128 && session.script_variable(opengold::por::EclAddress{0x4C0B}) != 1;
+             ++watch)
+        {
+            walk(65, 7, 7);
+            if (session.script_variable(opengold::por::EclAddress{0x4C0B}) != 1)
+            {
+                walk(65, 7, 8);
+            }
+        }
+        check(session.script_variable(opengold::por::EclAddress{0x4C0B}) == 1,
+              "The authored howling signal confirms that the cubs escaped safely");
+        save_checkpoint("mars-defense");
+    }
+
+    void wilderness_walk(unsigned target_x, unsigned target_y,
+                         std::vector<std::string> answers = {})
+    {
+        auto &session = campaign_.session;
+        check(answers_.empty(), "The previous ordinary route answers were consumed");
+        for (auto &answer : answers)
+        {
+            answers_.push_back(std::move(answer));
+        }
+        constexpr std::array commands{
+            opengold::por::ExplorationCommand::north, opengold::por::ExplorationCommand::northeast,
+            opengold::por::ExplorationCommand::east,  opengold::por::ExplorationCommand::southeast,
+            opengold::por::ExplorationCommand::south, opengold::por::ExplorationCommand::southwest,
+            opengold::por::ExplorationCommand::west,  opengold::por::ExplorationCommand::northwest};
+        const auto wilderness = session.snapshot().script_id;
+        check(wilderness == 64 || wilderness == 80,
+              "Walk only an actual Countdown wilderness controller");
+        for (unsigned step = 0; step < 128 && session.snapshot().script_id == wilderness; ++step)
+        {
+            const int x = session.script_variable(opengold::por::EclAddress{0x4BC3});
+            const int y = session.script_variable(opengold::por::EclAddress{0x4BC4});
+            if (x == static_cast<int>(target_x) && y == static_cast<int>(target_y))
+            {
+                break;
+            }
+            const auto dx = (static_cast<int>(target_x) > x) - (static_cast<int>(target_x) < x);
+            const auto dy = (static_cast<int>(target_y) > y) - (static_cast<int>(target_y) < y);
+            const unsigned direction = dy < 0   ? (dx < 0   ? 7
+                                                   : dx > 0 ? 1
+                                                            : 0)
+                                       : dy > 0 ? (dx < 0   ? 5
+                                                   : dx > 0 ? 3
+                                                            : 4)
+                                       : dx < 0 ? 6
+                                                : 2;
+            check(session.explore(commands[direction]),
+                  "Walk one ordinary wilderness direction toward the authored destination");
+            play();
+        }
+    }
+
+    void mars_camp()
+    {
+        // The source's storeroom trapdoor reaches the real refugee camp
+        // after the cubs-safe howl. EARTH answers its actual text prompt.
+        // ECL65's event20 is the storeroom; enter its actual doorway
+        // to find the root-cellar passage after the evacuation signal.
+        walk(65, 7, 11, {"EARTH"});
+        check(answers_.empty() && campaign_.session.snapshot().script_id == 64 &&
+                  campaign_.session.script_variable(opengold::por::EclAddress{0x4C8A}) == 1 &&
+                  campaign_.session.script_variable(opengold::por::EclAddress{0x4C94}) == 1,
+              "The real refugee camp gives a green card and the blue-rock rendezvous");
+        save_checkpoint("mars-camp");
+    }
+
+    void mars_base()
+    {
+        auto &session = campaign_.session;
+        const auto wounded = [&]
+        {
+            return std::ranges::any_of(
+                campaign_.party->state().slots,
+                [&](const auto id)
+                {
+                    if (!id)
+                    {
+                        return false;
+                    }
+                    const auto record =
+                        og::buck_rogers_record_of(campaign_.party->member(id).vitals.resources);
+                    check(record && og::status_of(record->creature) != og::BuckRogersStatus::dead,
+                          "The actual crew survives the village evacuation");
+                    return record->creature.hit_points < record->creature.hit_point_maximum;
+                });
+        };
+        for (unsigned day = 0; day < 64 && wounded(); ++day)
+        {
+            const auto before = campaign_.party->state().time_minutes;
+            check(session.camp(opengold::RestKind::long_rest),
+                  "The refugee-camp wilderness permits actual native recovery days");
+            play();
+            check(campaign_.party->state().time_minutes == before + 24 * 60,
+                  "The real recovery day advances the campaign clock");
+        }
+        check(!wounded(), "Native rest actually restores the wounded crew before the base trip");
+        save_checkpoint("mars-recovered");
+        std::string actor;
+        for (const auto id : campaign_.party->state().slots)
+        {
+            if (!id)
+            {
+                continue;
+            }
+            const auto &member = campaign_.party->member(id);
+            const auto record = og::buck_rogers_record_of(member.vitals.resources);
+            if (record && og::status_of(record->creature) == og::BuckRogersStatus::okay &&
+                record->creature.enabled && record->creature.hit_points > 0)
+            {
+                actor = member.character.sheet().name;
+                break;
+            }
+        }
+        check(!actor.empty(), "An actual conscious crew member can attempt the disguise");
+        wilderness_walk(26, 2, {actor});
+        check(
+            answers_.empty() && session.snapshot().script_id == 66 &&
+                session.script_variable(opengold::por::EclAddress{0x4C9F}) == 2 &&
+                session.script_variable(opengold::por::EclAddress{0x4C90}) == 1,
+            "The actual blue-rock rendezvous disguises the team and recruits Tuskon for the base");
+        save_checkpoint("mars-base");
+    }
+
+    void mars_blue_card()
+    {
+        auto &session = campaign_.session;
+        walk(66, 12, 3);
+        // The green squad's original challenge expects eight members.
+        // Answer its actual losses prompt using the current native count.
+        const auto present = session.script_variable(opengold::por::EclAddress{0x7F3E});
+        check(present < 8, "This actual squad has a loss count for the green-card cover story");
+        passage(opengold::por::MapDirection::east,
+                {"USE", "PASSCARD", "GREEN", "YES", std::to_string(8 - present), "YES"});
+        check(answers_.empty(), "The real checkpoint accepts the card and spoken squad answers");
+        // Follow the actual corridor's second green gate, avoiding the
+        // optional technicians before taking the level-zero elevator.
+        walk(66, 10, 8, {}, {22});
+        passage(opengold::por::MapDirection::east, {"USE", "PASSCARD", "GREEN"});
+        walk(66, 12, 13, {"2"}, {22});
+        check(session.script_variable(opengold::por::EclAddress{0x4C11}) == 2,
+              "The actual elevator reaches level two");
+        // The restricted passage first asks for the spies report, then
+        // accepts the crew's gear in its actual cachebox on the next step.
+        // The vault's own cachebox restores those same items afterward.
+        walk(66, 4, 2, {"YES", "0", "NO", "NO", "YES", "PASS", "USE", "PASSCARD", "GREEN"});
+        check(answers_.empty() && session.script_variable(opengold::por::EclAddress{0x4C5F}) == 1,
+              "The crew physically opens the vault and finds its real blue passcard");
+        check(session.script_variable(opengold::por::EclAddress{0x4C0B}) == 0,
+              "The actual vault cachebox restores the crew's deposited gear");
+        for (const auto id : campaign_.party->state().slots)
+        {
+            if (!id || !campaign_.party->member(id).npc_source.empty())
+            {
+                continue;
+            }
+            const auto record =
+                og::buck_rogers_record_of(campaign_.party->member(id).vitals.resources);
+            check(record && og::readied_weapon(record->items, record->types),
+                  "Each actual PC recovers the readied weapon from the real cachebox");
+        }
+        save_checkpoint("mars-blue-card");
+    }
+
+    void mars_prototype()
+    {
+        auto &session = campaign_.session;
+        // The blue card authorizes the hoist branch from level two.
+        // Descending through its actual shaft menu boards the rising hoist;
+        // the source itself carries the team to the prototype platform.
+        walk(66, 4, 3, {"USE", "PASSCARD", "BLUE", "DESCEND"}, {22});
+        check(answers_.empty() && session.script_variable(opengold::por::EclAddress{0x4C11}) == 0 &&
+                  session.script_variable(opengold::por::EclAddress{0x4C01}) == 4,
+              "The real hoist and prototype scene overload the laser and return to the ground");
+        save_checkpoint("mars-prototype");
+    }
+
+    void mars_departure()
+    {
+        auto &session = campaign_.session;
+        check(session.script_variable(opengold::por::EclAddress{0x4C11}) == 0,
+              "The authored falling hoist returns to the base's departure level");
+        // Leave through the ground-floor blue gate after the falling hoist.
+        walk(66, 14, 8);
+        passage(opengold::por::MapDirection::east, {"USE", "PASSCARD", "BLUE"});
+        // The installed exit accepts the earned blue passcard, marks the
+        // Mars chapter complete and narrates the base's destruction outside.
+        walk(66, 12, 5);
+        check(session.snapshot().script_id == 64 &&
+                  session.script_variable(opengold::por::EclAddress{0x4C5F}) == 1 &&
+                  session.script_variable(opengold::por::EclAddress{0x4C87}) == 2,
+              "The authored departure completes the Mars mission with its real passcard");
+        check(std::ranges::count_if(campaign_.party->state().slots,
+                                    [](const auto id)
+                                    {
+                                        return id != 0;
+                                    }) == 6,
+              "Tuskon's actual farewell leaves the six PCs in their current party slots");
+        save_checkpoint("mars-departure");
+    }
+
+    void mars_return()
+    {
+        auto &session = campaign_.session;
+        clinic_treated_.clear();
+        wilderness_walk(7, 13, {"optional-clinic", "EXIT"});
+        check(answers_.empty() && session.snapshot().script_id == 34 &&
+                  session.snapshot().solar_map,
+              "The crew walks back to its real ship and departs Mars");
+        salvation_refit();
+        save_checkpoint("mars-return");
+    }
+
+    void salvation_refit()
+    {
+        auto &session = campaign_.session;
+        fly_to(2);
+        stop_solar_menus_ = false;
+        clinic_treated_.clear();
+        play({"SALVATION",
+              "CLINIC",
+              "HQ",
+              "train-ready",
+              "DEPOT",
+              "select:0",
+              "Ammo",
+              "fill-ammo",
+              "Back",
+              "select:1",
+              "Ammo",
+              "fill-ammo",
+              "Back",
+              "select:2",
+              "Ammo",
+              "fill-ammo",
+              "Back",
+              "select:3",
+              "Ammo",
+              "fill-ammo",
+              "Back",
+              "select:4",
+              "Ammo",
+              "fill-ammo",
+              "Back",
+              "select:5",
+              "Ammo",
+              "fill-ammo",
+              "Back",
+              "Exit",
+              "PORT",
+              "REPAIR",
+              "FUEL",
+              "AMMO",
+              "MED SUP",
+              "LAUNCH",
+              "optional-clinic",
+              "EXIT"});
+        check(answers_.empty() && session.snapshot().script_id == 34 &&
+                  session.snapshot().solar_map,
+              "The actual Salvation services prepare the crew for its next mission");
+    }
+
+    void venus_entry()
+    {
+        fly_to(1);
+        stop_solar_menus_ = false;
+        play({"VENUS LOWLANDS", "NO"});
+        check(answers_.empty() && campaign_.session.snapshot().script_id == 80,
+              "The real flight lands at the authored Venusian lowlands");
+        save_checkpoint("venus-entry");
+    }
+
+    void venus_ambush()
+    {
+        wilderness_walk(28, 12);
+        check(answers_.empty() && campaign_.session.snapshot().script_id == 80 &&
+                  campaign_.session.script_variable(opengold::por::EclAddress{0x4CBF}) == 1,
+              "The real Lowlander ambush is resolved and Leander's offer is answered");
+        save_checkpoint("venus-ambush");
+    }
+
+    void venus_village()
+    {
+        // Go around the acid lake south of its shore before turning north.
+        wilderness_walk(20, 12);
+        wilderness_walk(5, 2);
+        check(answers_.empty() && campaign_.session.snapshot().script_id == 81,
+              "The crew walks through the actual Venusian wilderness to the Lowlander village");
+        save_checkpoint("venus-village");
+    }
+
+    void venus_child()
+    {
+        auto &session = campaign_.session;
+        const auto wounded = [&]
+        {
+            return std::ranges::any_of(
+                campaign_.party->state().slots,
+                [&](const auto id)
+                {
+                    if (!id)
+                    {
+                        return false;
+                    }
+                    const auto record = og::buck_rogers_record_of(campaign_.party->game_record(id));
+                    check(record.has_value(), "The real village campers retain their records");
+                    return record->creature.hit_points < record->creature.hit_point_maximum;
+                });
+        };
+        for (unsigned day = 0; day < 64 && wounded(); ++day)
+        {
+            const auto before = campaign_.party->state().time_minutes;
+            check(session.camp(opengold::RestKind::long_rest),
+                  "Use the ordinary Camp action in the Lowlander village");
+            play();
+            check(campaign_.party->state().time_minutes == before + 24 * 60,
+                  "A real native village recovery day passes");
+        }
+        check(!wounded(), "Ordinary native Camp restores the wounded village arrivals");
+        walk(81, 13, 3);
+        walk(81, 1, 14);
+        check(answers_.empty() && session.script_variable(opengold::por::EclAddress{0x4CB1}) == 1,
+              "The actual hidden Lowlander child joins the crew");
+        save_checkpoint("venus-child");
+    }
+
+    void venus_keyring()
+    {
+        walk(81, 0, 14);
+        walk(81, 10, 14, {"KILL THE OFFICER"});
+        check(answers_.empty() &&
+                  campaign_.session.script_variable(opengold::por::EclAddress{0x4CB7}) == 1,
+              "The real officer encounter yields its actual keyring");
+        save_checkpoint("venus-keyring");
+    }
+
+    void venus_outskirts()
+    {
+        walk(81, 8, 15);
+        passage(opengold::por::MapDirection::south, {"YES", "NO"});
+        check(answers_.empty() && campaign_.session.snapshot().script_id == 80,
+              "The actual village gate returns the crew to the Venusian wilderness");
+        save_checkpoint("venus-outskirts");
+    }
+
+    void venus_base()
+    {
+        wilderness_walk(9, 14, {"HIDE IN SHADOWS"});
+        check(answers_.empty() && campaign_.session.snapshot().script_id == 82 &&
+                  campaign_.session.script_variable(opengold::por::EclAddress{0x4CB8}) == 1,
+              "The real wilderness approach enters the Venusian base's top level");
+        save_checkpoint("venus-base");
+    }
+
+    void venus_landon()
+    {
+        walk(82, 7, 0, {"3"});
+        walk(82, 0, 9);
+        check(campaign_.session.script_variable(opengold::por::EclAddress{0x4CB9}) == 1,
+              "The actual imprisoned scientists ask the crew to find Landon");
+        walk(82, 7, 8, {"4"});
+        check(campaign_.session.script_variable(opengold::por::EclAddress{0x4CB8}) == 4,
+              "The actual elevator descends to the fourth level");
+        walk(82, 15, 12);
+        check(answers_.empty() &&
+                  campaign_.session.script_variable(opengold::por::EclAddress{0x4CB9}) == 2,
+              "Zane actually rejoins Landon, who reveals the retinal lockpick's hiding place");
+        save_checkpoint("venus-landon");
+    }
+
+    void venus_retinal()
+    {
+        walk(82, 15, 8, {"1"});
+        check(campaign_.session.script_variable(opengold::por::EclAddress{0x4CB8}) == 1,
+              "The actual elevator returns to the top level");
+        walk(82, 1, 2);
+        check(answers_.empty() &&
+                  campaign_.session.script_variable(opengold::por::EclAddress{0x4CBA}) == 1,
+              "The crew finds the real retinal lockpick under Landon's indicated floor panel");
+        save_checkpoint("venus-retinal");
+    }
+
+    void venus_scientists()
+    {
+        auto &session = campaign_.session;
+        walk(82, 7, 0, {"4"});
+        walk(82, 15, 12);
+        walk(82, 11, 8);
+        passage(opengold::por::MapDirection::west);
+        check(session.script_variable(opengold::por::EclAddress{0x4CBB}) == 1,
+              "The ordinary passage reveals Landon's secret escape door");
+        walk(82, 15, 12);
+        check(session.script_variable(opengold::por::EclAddress{0x4CB9}) == 3,
+              "Landon asks the crew to fetch the imprisoned scientists");
+        walk(82, 15, 8, {"3"});
+        walk(82, 0, 9);
+        check(session.script_variable(opengold::por::EclAddress{0x4CB9}) == 4,
+              "The actual scientists leave their prison to meet Landon");
+        walk(82, 7, 8, {"4"});
+        walk(82, 15, 12);
+        check(answers_.empty() && session.script_variable(opengold::por::EclAddress{0x4CB9}) == 5,
+              "The scientists escape through their actual tunnel and Leander says farewell");
+        check(std::ranges::count_if(campaign_.party->state().slots,
+                                    [](const auto id)
+                                    {
+                                        return id != 0;
+                                    }) == 6,
+              "Zane and Leander leave through their actual authored farewells");
+        save_checkpoint("venus-scientists");
+    }
+
+    void venus_departure()
+    {
+        walk(82, 15, 8, {"1"});
+        walk(82, 0, 4);
+        passage(opengold::por::MapDirection::west, {"YES", "NO"});
+        check(answers_.empty() && campaign_.session.snapshot().script_id == 80 &&
+                  campaign_.session.script_variable(opengold::por::EclAddress{0x4CBA}) == 1,
+              "The real main exit returns the crew with its earned retinal lockpick");
+        save_checkpoint("venus-departure");
+    }
+
+    void venus_return()
+    {
+        clinic_treated_.clear();
+        wilderness_walk(34, 12, {"optional-clinic", "EXIT"});
+        check(answers_.empty() && campaign_.session.snapshot().script_id == 34 &&
+                  campaign_.session.snapshot().solar_map,
+              "The crew returns to the actual Venus landing site and boards its ship");
+        salvation_refit();
+        save_checkpoint("venus-return");
+    }
+
+    void mercury_entry()
+    {
+        fly_to(0);
+        stop_solar_menus_ = false;
+        play({"MARIPOSA THREE"});
+        check(answers_.empty() && campaign_.session.snapshot().script_id == 96 &&
+                  campaign_.session.script_variable(opengold::por::EclAddress{0x4C80}) != 0 &&
+                  campaign_.session.script_variable(opengold::por::EclAddress{0x4C5F}) != 0 &&
+                  campaign_.session.script_variable(opengold::por::EclAddress{0x4CBA}) != 0,
+              "The three actually earned mission clearances admit the crew to Mariposa Three");
+        save_checkpoint("mercury-entry");
+    }
+
+    void mercury_parade()
+    {
+        walk(96, 2, 12);
+        walk(96, 1, 9, {"SPEAK", "TWO IF BY SEA"}, {3, 4});
+        walk(96, 0, 4, {}, {3, 4});
+        walk(96, 8, 3, {"IGNORE"}, {3, 4});
+        check(
+            answers_.empty() && campaign_.session.snapshot().script_id == 96,
+            "The crew follows the actual merchant contact and joins the parade beyond the bazaar");
+        save_checkpoint("mercury-parade");
+    }
+
+    void mercury_core()
+    {
+        walk(96, 15, 2);
+        passage(opengold::por::MapDirection::east, {"YES", "LEAVE CORE"});
+        check(answers_.empty() && campaign_.session.snapshot().script_id == 97,
+              "The ordinary core entrance admits the crew after the actual parade passage");
+        for (const unsigned address : {0x4C04U, 0x4C05U, 0x4C06U})
+        {
+            std::cout << "Initial actual core coin field " << std::hex << address << '='
+                      << campaign_.session.script_variable(
+                             opengold::por::EclAddress{static_cast<std::uint16_t>(address)})
+                      << std::dec << '\n';
+            check(campaign_.session.script_variable(
+                      opengold::por::EclAddress{static_cast<std::uint16_t>(address)}) == 0,
+                  "The newly entered core has no unearned coins");
+        }
+        save_checkpoint("mercury-core");
+    }
+
+    void mercury_copper()
+    {
+        walk(97, 0, 5, {"GRAB COIN", "Gears"});
+        check(answers_.empty() &&
+                  campaign_.session.script_variable(opengold::por::EclAddress{0x4C06}) == 1,
+              "The real maintenance-robot encounter yields the copper coin");
+        save_checkpoint("mercury-copper");
+    }
+
+    void mercury_coins()
+    {
+        walk(97, 3, 3, {"GO UP", "LEAVE CORE"});
+        walk(97, 5, 13);
+        check(campaign_.session.script_variable(opengold::por::EclAddress{0x4C05}) == 1,
+              "The actual closet search uncovers the silver coin");
+        walk(97, 3, 10, {"GO UP", "LEAVE CORE"});
+        walk(97, 11, 5, {"YES", "Shade"});
+        check(answers_.empty() &&
+                  campaign_.session.script_variable(opengold::por::EclAddress{0x4C04}) == 1,
+              "The actual plaque and security encounter yield the gold coin");
+        save_checkpoint("mercury-coins");
+    }
+
+    void sun_king()
+    {
+        walk(97, 10, 3, {"GO UP", "LEAVE CORE"});
+        walk(97, 14, 3);
+        passage(opengold::por::MapDirection::north, {"OUI", "OUI", "OUI"});
+        check(answers_.empty() &&
+                  campaign_.session.script_variable(opengold::por::EclAddress{0x4CD1}) == 3,
+              "The real three-coin audience earns the Sun King's laser deactivation");
+        save_checkpoint("sun-king");
+    }
+
+    void finale_entry()
+    {
+        walk(97, 10, 10, {"GO UP", "GO UP", "GO UP", "GO UP", "GO UP", "NO"});
+        check(answers_.empty() && campaign_.session.snapshot().script_id == 98,
+              "The crew climbs the actual disarmed core and declines descending from its top");
+        save_checkpoint("finale-entry");
+    }
+
+    void finale_power()
+    {
+        walk(98, 0, 9, {"YES", "CLIMB STAIRS", "NO"});
+        check(campaign_.session.script_variable(opengold::por::EclAddress{0x4C01}) == 3,
+              "The actual emergency stairs reach the weapons-control level");
+        walk(98, 0, 6, {"YES", "Gears"});
+        check(answers_.empty() &&
+                  campaign_.session.script_variable(opengold::por::EclAddress{0x4CCE}) == 1,
+              "The real electrical intervention interrupts power to the Doomsday weapon");
+        std::cout << "Actual firing count at power interruption: "
+                  << campaign_.session.script_variable(opengold::por::EclAddress{0x4CCC}) << '\n';
+        save_checkpoint("finale-power");
+    }
+
+    void finale_recovery()
+    {
+        auto &session = campaign_.session;
+        check(session.script_variable(opengold::por::EclAddress{0x4CCE}) == 1 &&
+                  session.script_variable(opengold::por::EclAddress{0x4CCD}) == 0,
+              "Firing is genuinely aborted and no destruction countdown has begun");
+        const auto firing_count = session.script_variable(opengold::por::EclAddress{0x4CCC});
+        const auto wounded = [&]
+        {
+            return std::ranges::any_of(
+                campaign_.party->state().slots,
+                [&](const auto id)
+                {
+                    if (!id)
+                    {
+                        return false;
+                    }
+                    const auto record = og::buck_rogers_record_of(campaign_.party->game_record(id));
+                    check(record.has_value(), "The actual power-room campers retain their records");
+                    return record->creature.hit_points < record->creature.hit_point_maximum;
+                });
+        };
+        for (unsigned day = 0; day < 64 && wounded(); ++day)
+        {
+            const auto before = campaign_.party->state().time_minutes;
+            check(session.camp(opengold::RestKind::long_rest),
+                  "Use the ordinary native Camp action while firing is interrupted");
+            play();
+            check(campaign_.party->state().time_minutes == before + 24 * 60,
+                  "The real recovery day advances the campaign clock");
+            check(session.script_variable(opengold::por::EclAddress{0x4CCE}) == 1 &&
+                      session.script_variable(opengold::por::EclAddress{0x4CCD}) == 0 &&
+                      session.script_variable(opengold::por::EclAddress{0x4CCC}) == firing_count,
+                  "Native recovery preserves the authored paused firing state");
+        }
+        check(!wounded(), "Ordinary native recovery restores the conscious crew before the boss");
+        save_checkpoint("finale-recovered");
+    }
+
+    void finale_destruct()
+    {
+        walk(98, 9, 14);
+        check(answers_.empty() &&
+                  campaign_.session.script_variable(opengold::por::EclAddress{0x4CCD}) == 1,
+              "The real weapons-control battle is won and its destruction mechanism is activated");
+        save_checkpoint("finale-destruct");
+    }
+
+    void finale_pods()
+    {
+        // The first attempted step after activation runs the real defense
+        // battle. Then use the emergency stairs; the lift has no power.
+        walk(98, 0, 2, {"YES", "LEAVE"}, {4, 14, 15});
+        check(campaign_.session.script_variable(opengold::por::EclAddress{0x4C01}) == 2,
+              "The ordinary emergency stairs descend to pod control");
+        walk(98, 13, 5, {}, {15});
+        check(answers_.empty() &&
+                  campaign_.session.script_variable(opengold::por::EclAddress{0x4C06}) == 1,
+              "Scot actually clears an escape pod through its control terminal");
+        save_checkpoint("finale-pods");
+    }
+
+    void finale_escape()
+    {
+        walk(98, 9, 4, {}, {15});
+        clinic_treated_.clear();
+        passage(opengold::por::MapDirection::south,
+                {"EXIT", "PORT", "LAUNCH", "optional-clinic", "EXIT"});
+        check(
+            answers_.empty() && winning_party_.has_value() &&
+                campaign_.session.snapshot().script_id == 34 &&
+                campaign_.session.snapshot().solar_map,
+            "The actual approved pod escapes, reaches the winning speech and returns to stable flight");
+        save_checkpoint("finale-escape");
+    }
+
+    void verify_earned_ending()
+    {
+        check(winning_party_.has_value() &&
+                  campaign_.session.script_variable(opengold::por::EclAddress{0x4CCD}) == 1 &&
+                  (campaign_.session.script_variable(opengold::por::EclAddress{0x4C66}) & 0x20) !=
+                      0,
+              "The real mission victory and Salvation celebration have both completed");
+        unsigned pcs = 0;
+        for (const auto id : campaign_.party->state().slots)
+        {
+            if (!id)
+            {
+                continue;
+            }
+            const auto &member = campaign_.party->member(id);
+            if (member.npc_source.empty())
+            {
+                ++pcs;
+            }
+            const auto record = og::buck_rogers_record_of(campaign_.party->game_record(id));
+            check(record && !member.vitals.dead &&
+                      og::status_of(record->creature) != og::BuckRogersStatus::dead &&
+                      og::status_of(record->creature) != og::BuckRogersStatus::gone,
+                  "Every actual winning party member remains alive");
+        }
+        check(pcs == 6, "All six fresh PCs complete the actual campaign");
+        save_checkpoint("earned-ending");
+        std::cout
+            << "Countdown earned ending passed: actual final victory, ordinary at-win roster and full-world saves.\n";
+    }
+
     void passage(opengold::por::MapDirection direction, std::vector<std::string> answers = {})
     {
         auto &session = campaign_.session;
         while (session.snapshot().pose.facing != direction)
         {
-            check(session.explore(opengold::por::ExplorationCommand::turn_right),
+            const auto turn_command =
+                session.snapshot().script_id == 98 &&
+                        (static_cast<unsigned>(session.snapshot().pose.facing) + 3) % 4 ==
+                            static_cast<unsigned>(direction)
+                    ? opengold::por::ExplorationCommand::turn_left
+                    : opengold::por::ExplorationCommand::turn_right;
+            check(session.explore(turn_command),
                   "Face the authored passage through ordinary turns");
             play();
         }
@@ -1144,7 +2098,13 @@ class EarnedPlayer
                  turn < 4;
                  ++turn)
             {
-                check(session.explore(opengold::por::ExplorationCommand::turn_right),
+                const auto turn_command =
+                    script == 98 &&
+                            (static_cast<unsigned>(session.snapshot().pose.facing) + 3) % 4 ==
+                                direction[next]
+                        ? opengold::por::ExplorationCommand::turn_left
+                        : opengold::por::ExplorationCommand::turn_right;
+                check(session.explore(turn_command),
                       "Turn through the ordinary exploration command");
                 play();
             }
@@ -1163,6 +2123,19 @@ class EarnedPlayer
     {
         auto &session = campaign_.session;
         check(session.can_leave(), "A checkpoint is an ordinary idle campaign save");
+        for (const auto id : campaign_.party->state().slots)
+        {
+            if (!id)
+            {
+                continue;
+            }
+            const auto &member = campaign_.party->member(id);
+            const auto record = og::buck_rogers_record_of(member.vitals.resources);
+            check(record && !member.vitals.dead &&
+                      og::status_of(record->creature) != og::BuckRogersStatus::dead &&
+                      og::status_of(record->creature) != og::BuckRogersStatus::gone,
+                  "Every actual current crew member remains alive at the earned checkpoint");
+        }
         if (session.snapshot().script_id == 50)
         {
             std::cout << "Talon source position "
@@ -1173,28 +2146,111 @@ class EarnedPlayer
                       << session.script_variable(opengold::por::EclAddress{0x4C12}) << '\n';
         }
 
+        if (session.snapshot().script_id == 64 || session.snapshot().script_id == 80)
+        {
+            std::cout << "Actual wilderness save context: area " << session.snapshot().area_id
+                      << "; bank "
+                      << session.resources()->script_banks.at(session.snapshot().script_id)
+                      << "; previous " << session.script_variable(opengold::por::EclAddress{0x4BF2})
+                      << "; kind " << session.script_variable(opengold::por::EclAddress{0x4BE6})
+                      << "; mode " << session.script_variable(opengold::por::EclAddress{0x4BA6})
+                      << "; live bank "
+                      << session.script_variable(
+                             opengold::por::game_address(opengold::por::ecl_script_bank, countdown))
+                      << '\n';
+        }
         const auto bytes =
             opengold::encode_campaign(*campaign_.party, &session, assets_, countdown);
-        // Reload into independently loaded assets, not a copy whose current
-        // snapshot could accidentally supply state missing from the save.
-        auto fresh_session = opengold::load_campaign(folder_, countdown);
-        auto loaded = opengold::decode_campaign(
-            bytes, *campaign_.creation, campaign_.party->rule_module(), assets_, &fresh_session);
-        auto party = std::make_shared<opengold::CampaignParty>(
-            og::rules_module(opengold::load_original_content(folder_, countdown)),
-            campaign_.creation);
-        party->restore(std::move(loaded.party));
-        check(loaded.town.has_value(), "The checkpoint includes the actual world");
-        loaded.town->attach_restored_party(party);
-        check(loaded.town->snapshot().solar_map == session.snapshot().solar_map,
-              "A restored checkpoint keeps its actual solar-map handoff");
-        if (session.snapshot().solar_map)
+        const auto verify_saved = [&](const std::string &bytes, std::optional<unsigned> format)
         {
-            check(loaded.town->solar_map_state() == session.solar_map_state(),
-                  "A restored earned flight retains its actual phase, days and rocket cell");
+            // Reload into independently loaded assets, not a copy whose current
+            // snapshot could accidentally supply state missing from the save.
+            auto fresh_session = opengold::load_campaign(folder_, countdown);
+            auto loaded =
+                opengold::decode_campaign(bytes, *campaign_.creation,
+                                          campaign_.party->rule_module(), assets_, &fresh_session);
+            auto party = std::make_shared<opengold::CampaignParty>(
+                og::rules_module(opengold::load_original_content(folder_, countdown)),
+                campaign_.creation);
+            party->restore(std::move(loaded.party));
+            check(loaded.town.has_value(), "The checkpoint includes the actual world");
+            loaded.town->attach_restored_party(party);
+            check(loaded.town->snapshot().solar_map == session.snapshot().solar_map,
+                  "A restored checkpoint keeps its actual solar-map handoff");
+            if (session.snapshot().solar_map)
+            {
+                check(loaded.town->solar_map_state() == session.solar_map_state(),
+                      "A restored earned flight retains its actual phase, days and rocket cell");
+            }
+            const auto again =
+                format ? opengold::encode_campaign_in_format(*party, &*loaded.town, assets_,
+                                                             *format, countdown)
+                       : opengold::encode_campaign(*party, &*loaded.town, assets_, countdown);
+            check(again == bytes, "The earned checkpoint reloads and saves byte for byte");
+            if (name == "mars-camp" || name == "mars-departure" || name == "venus-outskirts" ||
+                name == "venus-departure")
+            {
+                check(
+                    loaded.town->snapshot().script_id == session.snapshot().script_id &&
+                        loaded.town->snapshot().area_id == session.snapshot().area_id &&
+                        loaded.town->script_variable(opengold::por::EclAddress{0x4BC3}) ==
+                            session.script_variable(opengold::por::EclAddress{0x4BC3}) &&
+                        loaded.town->script_variable(opengold::por::EclAddress{0x4BC4}) ==
+                            session.script_variable(opengold::por::EclAddress{0x4BC4}),
+                    "A retained wilderness save preserves the actual script, district and world square");
+            }
+            if (name == "venus-outskirts" || name == "venus-departure")
+            {
+                // Diagnostic copies only: corrupt each authenticated field
+                // separately; the earned live campaign is never modified.
+                for (const auto &[address, value] :
+                     {std::pair{opengold::por::EclAddress{0x4BA6}, 0U},
+                      std::pair{opengold::por::EclAddress{0x4BE6}, 0xA8U},
+                      std::pair{opengold::por::EclAddress{0x4BF2}, 66U},
+                      std::pair{
+                          opengold::por::game_address(opengold::por::ecl_script_bank, countdown),
+                          4U}})
+                {
+                    auto changed = session.detached_copy();
+                    opengold::test::TourAccess::set_variable(changed, address, value);
+                    const auto bad =
+                        format ? opengold::encode_campaign_in_format(*campaign_.party, &changed,
+                                                                     assets_, *format, countdown)
+                               : opengold::encode_campaign(*campaign_.party, &changed, assets_,
+                                                           countdown);
+                    bool rejected = false;
+                    try
+                    {
+                        (void)opengold::decode_campaign(bad, *campaign_.creation,
+                                                        campaign_.party->rule_module(), assets_,
+                                                        &fresh_session);
+                    }
+                    catch (const std::runtime_error &error)
+                    {
+                        check(std::string_view(error.what()) ==
+                                  "Saved district and script disagree",
+                              "An invalid Venus receipt fails district authentication");
+                        rejected = true;
+                    }
+                    check(rejected,
+                          "Corrupted retained Venus contexts cannot bypass save validation");
+                }
+            }
+        };
+        verify_saved(bytes, std::nullopt);
+        if (name == "mars-camp" || name == "mars-departure" || name == "venus-outskirts" ||
+            name == "venus-departure")
+        {
+            // Formats49 through53 can represent this rules setting and
+            // retain the same native controller; current writes53 above.
+            // Format48 cannot write a nondefault rules setting.
+            for (unsigned format = 49; format < 53; ++format)
+            {
+                verify_saved(opengold::encode_campaign_in_format(*campaign_.party, &session,
+                                                                 assets_, format, countdown),
+                             format);
+            }
         }
-        check(opengold::encode_campaign(*party, &*loaded.town, assets_, countdown) == bytes,
-              "The earned checkpoint reloads and saves byte for byte");
         if (const auto *prefix = std::getenv("OPENGOLD_COUNTDOWN_EARNED_SAVES"))
         {
             std::ofstream out(std::string(prefix) + std::string(name) + ".ogs", std::ios::binary);
@@ -1202,7 +2258,8 @@ class EarnedPlayer
             check(static_cast<bool>(out), "Write the ordinary earned checkpoint");
         }
         std::cout << "Earned Countdown " << name << ": " << fights_ << " actual ground victories; "
-                  << "ordinary save reloads byte for byte.\n";
+                  << ship_fights_
+                  << " actual ship victories; ordinary save reloads byte for byte.\n";
     }
 
     void inspect(unsigned script)
@@ -1228,11 +2285,63 @@ class EarnedPlayer
             std::cout << '\n';
         }
         std::cout << std::dec;
-        if (script == 32 || script == 33 || script == 48 || script == 49 || script == 50)
+        if (script == 17)
+        {
+            const auto resources = campaign_.session.resources();
+            for (const auto &item : og::shop_stock(1, resources->buck_rogers_templates))
+            {
+                std::string name;
+                for (const auto part : item.name_parts)
+                {
+                    if (part && part < resources->buck_rogers_item_words.size())
+                    {
+                        name = resources->buck_rogers_item_words[part] + (name.empty() ? "" : " ") +
+                               name;
+                    }
+                }
+                std::cout << "SHOP1 type " << unsigned(item.type) << ' ' << name << " price16 "
+                          << og::shop_price(item, 16) << '\n';
+            }
+            for (const auto &[id, ground] : resources->buck_rogers_creatures)
+            {
+                const auto useful = [&](const auto &item)
+                {
+                    return item.type == 24 || og::projectile_kind(item) == 8 ||
+                           (item.type < resources->buck_rogers_item_types.size() &&
+                            resources->buck_rogers_item_types[item.type].slot == 7);
+                };
+                if (!std::ranges::any_of(ground.items, useful))
+                {
+                    continue;
+                }
+                std::cout << "COUNTERMEASURES creature " << id << ' ' << ground.creature.name;
+                for (const auto &item : ground.items)
+                {
+                    if (useful(item))
+                    {
+                        std::cout << " type=" << unsigned(item.type)
+                                  << " projectile=" << og::projectile_kind(item)
+                                  << " quantity=" << unsigned(item.quantity)
+                                  << " flags=" << unsigned(item.flags);
+                    }
+                }
+                std::cout << '\n';
+            }
+        }
+        if (script == 32 || script == 33 || script == 48 || script == 49 || script == 50 ||
+            script == 52 || script == 64 || script == 66 || script == 80)
         {
             const auto &raw = program->raw();
-            for (unsigned address = script == 50 ? 0xA38C : (script >= 48 ? 0xA18D : 0xA3CD);
-                 address < 0xA400 && address - 0x8000 + 2 < raw.size(); ++address)
+            const unsigned first = script == 80   ? 0x81E5
+                                   : script == 66 ? 0xA3F4
+                                   : script == 52 ? 0x8ADB
+                                   : script == 64 ? 0xA1BF
+                                   : script == 50 ? 0xA38C
+                                   : script >= 48 ? 0xA18D
+                                                  : 0xA3CD;
+            const unsigned last = script == 80 ? 0x841F : script == 52 ? 0x8B70 : 0xA400;
+            for (unsigned address = first; address < last && address - 0x8000 + 2 < raw.size();
+                 ++address)
             {
                 std::cout << "TABLE " << std::hex << address << ' '
                           << unsigned(raw[address - 0x8000 + 2]) << std::dec << '\n';
@@ -1341,11 +2450,18 @@ class EarnedPlayer
         combat.encounter(*session.pending_encounter(),
                          static_cast<std::uint64_t>(opengold::roll_die(random_, 2147483647)));
         const auto &initial = combat.combat().snapshot();
-        std::cout << "Ground fight " << fights_ + 1 << " in script " << session.snapshot().script_id
-                  << ':';
+        const bool actual_enemies = std::ranges::any_of(
+            initial.combatants,
+            [](const auto &unit)
+            {
+                return unit.side != opengold::rules::Side::party && unit.hit_points > 0;
+            });
+        std::cout << (actual_enemies ? "Ground fight " : "Scripted combat processing ")
+                  << fights_ + 1 << " in script " << session.snapshot().script_id << ':';
         for (const auto &actor : initial.combatants)
         {
-            std::cout << ' ' << actor.name << '=' << actor.hit_points;
+            std::cout << ' ' << actor.name << '=' << actor.hit_points << '@' << actor.cell.x << ','
+                      << actor.cell.y;
         }
         std::cout << '\n';
         for (const auto &member : campaign_.party->state().roster)
@@ -1366,6 +2482,24 @@ class EarnedPlayer
             }
             std::cout << '\n';
         }
+        const auto missile_foe = [](const auto &unit)
+        {
+            if (unit.side == opengold::rules::Side::party || unit.hit_points <= 0 || unit.fled)
+            {
+                return false;
+            }
+            const auto record = og::buck_rogers_record_of(unit.persistent.resources);
+            if (!record)
+            {
+                return false;
+            }
+            const auto weapon = og::readied_weapon(record->items, record->types);
+            return weapon && og::projectile_kind(record->items[*weapon]) >= 10;
+        };
+        const bool missile_encounter = session.snapshot().script_id == 98 &&
+                                       std::ranges::any_of(initial.combatants, missile_foe);
+        std::optional<unsigned> chaff_round;
+        bool launcher_prepared = false;
         for (unsigned command = 0; command < 12000; ++command)
         {
             const auto state = combat.combat().snapshot();
@@ -1399,14 +2533,26 @@ class EarnedPlayer
                       "The earned ground battle must actually be won; outcome " +
                           std::to_string(static_cast<int>(state.outcome)));
                 check(session.resolve_combat(state), "The campaign commits the real combat result");
-                ++fights_;
+                if (actual_enemies)
+                {
+                    ++fights_;
+                }
                 return;
             }
             const auto actor = std::ranges::find(state.combatants, state.actor,
                                                  &opengold::rules::CombatantView::id);
-            const bool pc = actor != state.combatants.end() &&
-                            actor->side == opengold::rules::Side::party &&
-                            !opengold::is_ally(state.actor);
+            const bool pc =
+                actor != state.combatants.end() && actor->side == opengold::rules::Side::party &&
+                !opengold::is_ally(state.actor) &&
+                std::ranges::any_of(campaign_.party->state().roster,
+                                    [&](const auto &member)
+                                    {
+                                        return member.npc_source.empty() &&
+                                               member.character.sheet().name == actor->name;
+                                    });
+            bool throwing_chaff = false;
+            bool preparing_launcher = false;
+            unsigned chaff_before = 0;
             auto order = opengold::choose_demo_command(
                 combat.combat(), opengold::Searching::everyone, opengold::default_difficulty);
             if (pc)
@@ -1463,8 +2609,191 @@ class EarnedPlayer
                         }
                     }
                 }
+                const auto record = og::buck_rogers_record_of(actor->persistent.resources);
+                check(record.has_value(), "The real actor retains its current equipment");
+                const auto owns = [&](unsigned type)
+                {
+                    return std::ranges::any_of(record->items,
+                                               [&](const auto &item)
+                                               {
+                                                   return item.type == type;
+                                               });
+                };
+                const bool chaff_available =
+                    std::ranges::any_of(record->items,
+                                        [](const auto &item)
+                                        {
+                                            return item.type == 37 && item.quantity > 0;
+                                        });
+                const bool want_chaff = missile_encounter && chaff_available &&
+                                        (!chaff_round || *chaff_round != state.round) &&
+                                        std::ranges::any_of(state.combatants, missile_foe);
+                const unsigned weapon =
+                    want_chaff          ? 37U
+                    : missile_encounter ? (owns(13) ? 13U : 7U)
+                    : owns(11)          ? 11U
+                    : og::career_from_record(record->creature.career) == Profession::warrior ? 7U
+                    : owns(10)                                                               ? 10U
+                                                                                             : 7U;
+                const unsigned armor = owns(23) ? 23U : 22U;
+                for (const auto type : {armor, weapon})
+                {
+                    const auto desired = std::ranges::find(record->items, type, &br::Item::type);
+                    if (desired == record->items.end() || (desired->flags & br::Item::readied))
+                    {
+                        continue;
+                    }
+                    const auto slot = record->types.at(desired->type).slot;
+                    unsigned index = static_cast<unsigned>(desired - record->items.begin());
+                    std::string verb = "ready";
+                    for (unsigned n = 0; n < record->items.size(); ++n)
+                    {
+                        const auto &held = record->items[n];
+                        if ((held.flags & br::Item::readied) &&
+                            record->types.at(held.type).slot == slot)
+                        {
+                            index = n;
+                            verb = "unready";
+                            break;
+                        }
+                    }
+                    const auto ready = std::ranges::find_if(offered,
+                                                            [&](const auto &candidate)
+                                                            {
+                                                                return candidate.verb == verb &&
+                                                                       candidate.item == index;
+                                                            });
+                    check(ready != offered.end(),
+                          "Ready the won gear through an actual offered combat command: " +
+                              actor->name + " " + verb + " item " + std::to_string(index) +
+                              " type " + std::to_string(type));
+                    order = *ready;
+                    break;
+                }
+                const auto script = session.snapshot().script_id;
+                if (!launcher_prepared && (script == 81 || script == 82 || script == 97) &&
+                    order.verb != "ready" && order.verb != "unready")
+                {
+                    const auto launcher = std::ranges::find(record->items, 16, &br::Item::type);
+                    if (launcher != record->items.end() && !(launcher->flags & br::Item::readied))
+                    {
+                        const auto index = static_cast<unsigned>(launcher - record->items.begin());
+                        const auto ready = std::ranges::find_if(
+                            offered,
+                            [&](const auto &candidate)
+                            {
+                                return candidate.verb == "ready" && candidate.item == index;
+                            });
+                        if (ready != offered.end())
+                        {
+                            order = *ready;
+                            preparing_launcher = true;
+                        }
+                    }
+                }
+                const auto armed = og::readied_weapon(record->items, record->types);
+                if (want_chaff && armed && record->items[*armed].type == 37)
+                {
+                    int best_cover = -1000000;
+                    std::optional<opengold::rules::Command> launch;
+                    for (const auto &candidate : offered)
+                    {
+                        if (candidate.verb != "launch")
+                        {
+                            continue;
+                        }
+                        const auto cloud = og::lay_ground_cloud(
+                            candidate.destination, og::CloudMatter::chaff, true,
+                            [&](auto cell)
+                            {
+                                return state.battlefield.contains(cell) &&
+                                       !opengold::rules::blocks_movement(
+                                           state.battlefield.at(cell));
+                            });
+                        int cover = 0;
+                        for (const auto &enemy : state.combatants)
+                        {
+                            if (!missile_foe(enemy))
+                            {
+                                continue;
+                            }
+                            if (cloud.covers_square(enemy.cell))
+                            {
+                                cover += 1000;
+                            }
+                            for (const auto &member : state.combatants)
+                            {
+                                if (member.side != opengold::rules::Side::party ||
+                                    member.hit_points <= 0)
+                                {
+                                    continue;
+                                }
+                                const int steps = distance(enemy.cell, member.cell);
+                                for (int at = 0; at <= steps && steps > 0; ++at)
+                                {
+                                    const opengold::rules::Cell cell{
+                                        (enemy.cell.x * (steps - at) + member.cell.x * at +
+                                         steps / 2) /
+                                            steps,
+                                        (enemy.cell.y * (steps - at) + member.cell.y * at +
+                                         steps / 2) /
+                                            steps};
+                                    if (cloud.covers_square(cell))
+                                    {
+                                        cover += distance(cell, member.cell) > 3 ? 100 : -1000;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        if (cover > best_cover)
+                        {
+                            best_cover = cover;
+                            launch = candidate;
+                        }
+                    }
+                    check(launch.has_value(), "The actual held chaff grenade has an offered throw");
+                    order = *launch;
+                    throwing_chaff = true;
+                    for (const auto &item : record->items)
+                    {
+                        if (item.type == 37)
+                        {
+                            chaff_before += item.quantity;
+                        }
+                    }
+                }
             }
             check(combat.submit(order), "The rules accept the actual combat action");
+            if (preparing_launcher)
+            {
+                launcher_prepared = true;
+                std::cout << "Actual launcher preparation by " << actor->name << " in script "
+                          << session.snapshot().script_id << '\n';
+            }
+            if (throwing_chaff)
+            {
+                const auto after = combat.combat().snapshot();
+                const auto unit = std::ranges::find(after.combatants, state.actor,
+                                                    &opengold::rules::CombatantView::id);
+                check(unit != after.combatants.end(), "The actual chaff thrower remains in combat");
+                const auto record = og::buck_rogers_record_of(unit->persistent.resources);
+                check(record.has_value(), "The actual chaff throw keeps its native inventory");
+                unsigned remaining = 0;
+                for (const auto &item : record->items)
+                {
+                    if (item.type == 37)
+                    {
+                        remaining += item.quantity;
+                    }
+                }
+                check(remaining + 1 == chaff_before,
+                      "The real throw consumes one won chaff grenade");
+                chaff_round = state.round;
+                std::cout << "Actual chaff throw by " << actor->name << " at "
+                          << order.destination.x << ',' << order.destination.y << " round "
+                          << state.round << '\n';
+            }
         }
         throw std::runtime_error("The actual ground fight exceeded its command bound");
     }
@@ -1476,6 +2805,7 @@ class EarnedPlayer
     std::optional<std::string> winning_party_;
     opengold::RandomState random_{20261120};
     unsigned fights_{};
+    unsigned ship_fights_{};
     unsigned solar_steps_{};
     bool stop_solar_menus_{};
     std::vector<std::string> clinic_treated_;
@@ -1507,10 +2837,43 @@ int main(int argc, char **argv)
                                     "--talon-galley",
                                     "--talon-engineering",
                                     "--talon-escape",
+                                    "--mars-entry",
+                                    "--mars-village",
+                                    "--mars-defense",
+                                    "--mars-camp",
+                                    "--mars-base",
+                                    "--mars-blue-card",
+                                    "--mars-prototype",
+                                    "--mars-departure",
+                                    "--mars-return",
+                                    "--venus-entry",
+                                    "--venus-ambush",
+                                    "--venus-village",
+                                    "--venus-child",
+                                    "--venus-keyring",
+                                    "--venus-outskirts",
+                                    "--venus-base",
+                                    "--venus-landon",
+                                    "--venus-retinal",
+                                    "--venus-scientists",
+                                    "--venus-departure",
+                                    "--venus-return",
+                                    "--mercury-entry",
+                                    "--mercury-parade",
+                                    "--mercury-core",
+                                    "--mercury-copper",
+                                    "--mercury-coins",
+                                    "--sun-king",
+                                    "--finale-entry",
+                                    "--finale-power",
+                                    "--finale-recovered",
+                                    "--finale-destruct",
+                                    "--finale-pods",
+                                    "--finale-escape",
                                     "--earned-ending"};
         const auto stage = std::ranges::find(stages, command);
         const auto folder = opengold::test::installed_game_folder(countdown);
-        if (folder.empty() && command != "--earned-ending" && argc <= 2 &&
+        if (folder.empty() && argc <= 2 &&
             (stage != stages.end() || command == "--ending-protocol" ||
              command == "--camp-service"))
         {
@@ -1539,50 +2902,221 @@ int main(int argc, char **argv)
         check(argc <= 2 && stage != stages.end(), "Unknown earned-route argument");
         const auto progress = stage - stages.begin();
         if (progress >= 9)
+        {
             player.novice();
+        }
         player.opening();
         if (progress >= 1)
+        {
             player.chicagorg();
+        }
         if (progress >= 2)
+        {
             player.derelict();
+        }
         if (progress >= 3)
+        {
             player.scot();
+        }
         if (progress >= 4)
+        {
             player.argon();
+        }
         if (progress >= 5)
+        {
             player.earn_ship();
+        }
         if (progress == 6)
+        {
             player.solar_arrival();
+        }
         if (progress >= 7)
+        {
             player.asteroid_entry();
+        }
         if (progress >= 8)
+        {
             player.asteroid_lower();
+        }
         if (progress >= 9)
+        {
             player.asteroid_card();
+        }
         if (progress >= 10)
+        {
             player.asteroid_clearance();
+        }
         if (progress >= 11)
+        {
             player.asteroid_return();
+        }
         if (progress >= 12)
+        {
             player.talon_boarded();
+        }
         if (progress >= 13)
+        {
             player.talon_captured();
+        }
         if (progress >= 14)
+        {
             player.buck_rescued();
+        }
         if (progress >= 15)
+        {
             player.talon_clinic();
+        }
         if (progress >= 16)
+        {
             player.talon_plans();
+        }
         if (progress >= 17)
+        {
             player.talon_galley();
+        }
         if (progress >= 18)
+        {
             player.talon_engineering();
+        }
         if (progress >= 19)
+        {
             player.talon_escape();
+        }
+        if (progress >= 20)
+        {
+            player.mars_entry();
+        }
+        if (progress >= 21)
+        {
+            player.mars_village();
+        }
+        if (progress >= 22)
+        {
+            player.mars_defense();
+        }
+        if (progress >= 23)
+        {
+            player.mars_camp();
+        }
+        if (progress >= 24)
+        {
+            player.mars_base();
+        }
+        if (progress >= 25)
+        {
+            player.mars_blue_card();
+        }
+        if (progress >= 26)
+        {
+            player.mars_prototype();
+        }
+        if (progress >= 27)
+        {
+            player.mars_departure();
+        }
+        if (progress >= 28)
+        {
+            player.mars_return();
+        }
+        if (progress >= 29)
+        {
+            player.venus_entry();
+        }
+        if (progress >= 30)
+        {
+            player.venus_ambush();
+        }
+        if (progress >= 31)
+        {
+            player.venus_village();
+        }
+        if (progress >= 32)
+        {
+            player.venus_child();
+        }
+        if (progress >= 33)
+        {
+            player.venus_keyring();
+        }
+        if (progress >= 34)
+        {
+            player.venus_outskirts();
+        }
+        if (progress >= 35)
+        {
+            player.venus_base();
+        }
+        if (progress >= 36)
+        {
+            player.venus_landon();
+        }
+        if (progress >= 37)
+        {
+            player.venus_retinal();
+        }
+        if (progress >= 38)
+        {
+            player.venus_scientists();
+        }
+        if (progress >= 39)
+        {
+            player.venus_departure();
+        }
+        if (progress >= 40)
+        {
+            player.venus_return();
+        }
+        if (progress >= 41)
+        {
+            player.mercury_entry();
+        }
+        if (progress >= 42)
+        {
+            player.mercury_parade();
+        }
+        if (progress >= 43)
+        {
+            player.mercury_core();
+        }
+        if (progress >= 44)
+        {
+            player.mercury_copper();
+        }
+        if (progress >= 45)
+        {
+            player.mercury_coins();
+        }
+        if (progress >= 46)
+        {
+            player.sun_king();
+        }
+        if (progress >= 47)
+        {
+            player.finale_entry();
+        }
+        if (progress >= 48)
+        {
+            player.finale_power();
+        }
+        if (progress >= 49)
+        {
+            player.finale_recovery();
+        }
+        if (progress >= 50)
+        {
+            player.finale_destruct();
+        }
+        if (progress >= 51)
+        {
+            player.finale_pods();
+        }
+        if (progress >= 52)
+        {
+            player.finale_escape();
+        }
         if (command == "--earned-ending")
         {
-            throw std::runtime_error(
-                "The route has not reached the authored campaign ending; partial progress is not a win");
+            player.verify_earned_ending();
         }
         return 0;
     }

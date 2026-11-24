@@ -979,7 +979,15 @@ void RolfTourSession::publish_pose()
     {
         update_solar_map();
         snapshot_.overland = false;
-        if (vga_area_map() && !snapshot_.solar_map)
+        if (game() == GoldBoxGame::matrix_cubed && machine_.variable(EclAddress{0x4BE6}) == 0x70)
+        {
+            // The orbit scene and its clinic/port portraits retain the
+            // wilderness's eight-way C04D. Their rocket and pictures publish
+            // separately from the previous3D district's pose.
+            ++snapshot_.revision;
+            return;
+        }
+        if (vga_area_map())
         {
             // These worlds use their native wilderness square, which may
             // lie beyond the retained 3D district. Publish before inspecting
@@ -987,7 +995,12 @@ void RolfTourSession::publish_pose()
             snapshot_.overland = true;
             snapshot_.overland_x = machine_.variable(game_cell(ecl_overland_x));
             snapshot_.overland_y = machine_.variable(game_cell(ecl_overland_y));
-            snapshot_.overland_direction = machine_.variable(game_cell(ecl_overland_direction)) % 8;
+            // Losangelorg checks its candidate terrain before moving,
+            // using C04D. The other worlds read their coordinates afterwards.
+            const auto heading = game() == GoldBoxGame::matrix_cubed && current_script_ == 32
+                                     ? ecl_party_facing
+                                     : ecl_overland_direction;
+            snapshot_.overland_direction = machine_.variable(game_cell(heading)) % 8;
             ++snapshot_.revision;
             return;
         }
@@ -1618,6 +1631,13 @@ bool RolfTourSession::explore(ExplorationCommand command)
                                        static_cast<unsigned>(ExplorationCommand::north);
                 machine_.bind_variable(game_cell(ecl_overland_direction),
                                        static_cast<std::uint16_t>(direction));
+                if (game() == GoldBoxGame::matrix_cubed && current_script_ == 32 && vga_area_map())
+                {
+                    // Losangelorg's pre-step reads C04D directly for
+                    // its eight-way terrain lookup, rather than the proxy.
+                    machine_.bind_variable(game_cell(ecl_party_facing),
+                                           static_cast<std::uint16_t>(direction));
+                }
                 snapshot_.overland_direction = direction;
             }
             pending_movement_ = command;

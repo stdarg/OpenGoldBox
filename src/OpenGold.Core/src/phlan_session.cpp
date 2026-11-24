@@ -1247,6 +1247,22 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
     // The Buck Rogers scripts read the difficulty level from zone 0.
     if (is_buck_rogers(game()))
     {
+        // A retained-map passage can SAVE new coordinates without redrawing
+        // the view (Matrix97:830Eh ->96). Refresh the actual 3D square before
+        // the next command reads its wall/event; idle and restored saves keep
+        // their original bytes until that command. Orbital scenes and native
+        // VGA wilderness coordinates use their separate publication paths.
+        const auto kind = machine_.variable(EclAddress{0x4BE6});
+        if (kind == 0x10 || kind == 0x50)
+        {
+            const auto x = machine_.variable(game_cell(ecl_party_x));
+            const auto y = machine_.variable(game_cell(ecl_party_y));
+            const auto facing = machine_.variable(game_cell(ecl_party_facing));
+            if (x < map_.width && y < map_.height && facing < 4)
+            {
+                bind_pose({x, y, static_cast<MapDirection>(facing)});
+            }
+        }
         // Zone2 starts at7A00h. The shared setup binds its upper half;
         // ordinary dock labels also SAVE/PRINT strings in its lower half.
         // Initialize missing cells at the first event, including after an
@@ -4096,7 +4112,11 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         // Encounter distance images use the already verified SPRIT3 format.
         std::array<Image, 3> decoded;
         const bool native = game() == GoldBoxGame::dark_queen_of_krynn;
-        if (arg(1) > 2 && !native)
+        // Matrix's Venus ambush requests three squares even though its
+        // distance sprites and the ground encounter use at most two. Keep
+        // the existing corridor limit below, as for the other Buck setups.
+        const bool buck_distance_three = is_buck_rogers(game()) && arg(1) == 3;
+        if (arg(1) > 2 && !native && !buck_distance_three)
         {
             throw EclError("Unsupported encounter distance");
         }
@@ -5755,10 +5775,12 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     {
         throw EclError("Town host reply rejected");
     }
-    // Native LOAD FILES may load a smaller map before its script writes
-    // the arrival square. CALL 1 (redraw), or event completion, publishes
-    // that settled pose; validating the previous square here breaks exits.
-    if (op == 33 && game() != GoldBoxGame::dark_queen_of_krynn)
+    // Native and Matrix LOAD FILES may load a map before the script writes
+    // its arrival square/facing. Matrix may still hold an eight-way world
+    // heading here. Redraw or event completion publishes the settled3D pose;
+    // validating the previous pose at this intermediate load breaks entry.
+    if (op == 33 && game() != GoldBoxGame::dark_queen_of_krynn &&
+        game() != GoldBoxGame::matrix_cubed)
     {
         publish_pose();
     }

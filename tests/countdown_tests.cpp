@@ -1445,6 +1445,49 @@ void the_campaign_clock_preserves_the_current_native_record()
     }
 }
 
+void trained_native_hit_points_survive_campaign_validation()
+{
+    // Separate adapter fixture: award the exact next-level threshold here
+    // to exercise both games' real training, never an earned-route party.
+    for (const auto game : {countdown, GoldBoxGame::matrix_cubed})
+    {
+        og::Content content;
+        content.game = game;
+        auto module = og::rules_module(std::move(content));
+        opengold::RandomState random{9};
+        const og::GroundRecord original{
+            og::new_buck_rogers_character(Race::terran, og::Gender::female, Profession::warrior,
+                                          game, random),
+            {ground_item(7, 37)},
+            ground_types()};
+        const auto sheet =
+            og::buck_rogers_sheet(og::buck_rogers_draft(original), original, module->identity());
+        auto current = original;
+        const auto next =
+            og::career_experience_for_level(Profession::warrior, current.creature.level + 1, game);
+        check(next.has_value(), "The actual native career offers the next training level");
+        current.creature.experience = *next;
+        og::train_buck_rogers_character(current.creature, game, random);
+        check(current.creature.hit_point_maximum > original.creature.hit_point_maximum,
+              "Actual training raises the native maximum beyond its creation sheet");
+        opengold::rules::VitalState state{current.creature.hit_points, false,
+                                          og::encode_ground_record(current)};
+        const auto before = state.resources;
+        check(module->hit_point_maximum(sheet, state) == current.creature.hit_point_maximum,
+              "Campaign views use the trained native maximum");
+        module->validate_character_state(sheet, state);
+        check(state.resources == before,
+              "Validation preserves the complete trained native record byte for byte");
+        ++state.hit_points;
+        check(opengold::test::throws(
+                  [&]
+                  {
+                      module->validate_character_state(sheet, state);
+                  }),
+              "Campaign validation still rejects Hit Points beyond the actual native maximum");
+    }
+}
+
 void campaign_rest_uses_the_native_record_and_status()
 {
     // Separate adapter regression; these changed records are not an
@@ -2236,6 +2279,7 @@ int main()
         the_new_commands_are_offered();
         every_difficulty_level();
         the_campaign_clock_preserves_the_current_native_record();
+        trained_native_hit_points_survive_campaign_validation();
         campaign_rest_uses_the_native_record_and_status();
         a_fight_runs_by_the_buck_rogers_rules();
         area_weapons_and_clouds_in_a_fight();

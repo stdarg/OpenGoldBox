@@ -917,6 +917,30 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
         {
             scripts.push_back(33);
         }
+        // The Losangelorg warren's staircase enters script 37 without
+        // LOAD FILES (ECL1:33 820Ah/8297h); it keeps map 33 and its walls.
+        if (game == GoldBoxGame::matrix_cubed && map_disk == 1 && map_id.record == 33)
+        {
+            scripts.push_back(37);
+        }
+        // The ruined museum's upper floor also keeps its previous
+        // map (ECL1:34 836Fh enters 36, whose initialization has no load).
+        if (game == GoldBoxGame::matrix_cubed && map_disk == 1 && map_id.record == 34)
+        {
+            scripts.push_back(36);
+        }
+        // PURGE's elevator enters its upper controller without LOAD FILES
+        // (ECL1:81 87ADh); ECL1:84 keeps the loaded headquarters map 81.
+        if (game == GoldBoxGame::matrix_cubed && map_disk == 1 && map_id.record == 81)
+        {
+            scripts.push_back(84);
+        }
+        // The living ship's north passage enters its bridge controller
+        // (ECL1:97 8302h); ECL1:98 has no LOAD FILES and retains map 97.
+        if (game == GoldBoxGame::matrix_cubed && map_disk == 1 && map_id.record == 97)
+        {
+            scripts.push_back(98);
+        }
         // Kernen's gate enters Myrtani's stronghold without LOAD FILES
         // (ECL3:97 81C0h); script 98 retains Kernen's map and wall banks.
         if (game == GoldBoxGame::champions_of_krynn && map_disk == 3 && map_id.record == 97)

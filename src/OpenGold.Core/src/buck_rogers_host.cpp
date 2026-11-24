@@ -1408,7 +1408,22 @@ bool RolfTourSession::resolve_buck_rogers_combat(const rules::Snapshot &result)
     const bool won = result.outcome == rules::Outcome::victory;
     const bool fled = result.outcome == rules::Outcome::fled;
     std::uint16_t combat_result = won ? result_won : fled ? result_team_fled : result_team_beaten;
-    if (!won && !fled)
+    // A solo defeat belongs to the champion. Other PCs stood outside the
+    // bout, and the script may handle the loss (Matrix ECL1:80 904Ah-90B3h
+    // drops its defeated climber back into the hole). Keep the real result
+    // and injury; ordinary native recovery and the authored script decide
+    // what happens next, rather than the team-destruction screen.
+    const bool other_pc_waiting =
+        solo && std::ranges::any_of(team,
+                                    [&](const auto &member)
+                                    {
+                                        const auto &creature = member.record.creature;
+                                        return member.id != encounter_->champion &&
+                                               (creature.npc & 0x80) == 0 &&
+                                               creature.enabled != 0 && creature.hit_points > 0 &&
+                                               original::can_act(original::status_of(creature));
+                                    });
+    if (!won && !fled && !other_pc_waiting)
     {
         // The team is destroyed (postcbt.pas PostCombat).
         snapshot_.dialogue = "YOUR TEAM HAS BEEN DESTROYED.";

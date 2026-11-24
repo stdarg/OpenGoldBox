@@ -1148,15 +1148,24 @@ void OriginalModule::set_hit_points(VitalState &state, const CharacterSheet &she
     state.hit_points = hit_points;
 }
 
-int OriginalModule::hit_point_maximum(const CharacterSheet &sheet, const VitalState &) const
+int OriginalModule::hit_point_maximum(const CharacterSheet &sheet, const VitalState &state) const
 {
+    // Native training changes the current GroundRecord; the creation sheet
+    // remains the character's original draft for ordinary save replay.
+    if (is_buck_rogers(game_of(sheet.identity)))
+    {
+        if (const auto record = buck_rogers_record_of(state.resources))
+        {
+            return std::max<int>(record->creature.hit_point_maximum, 1);
+        }
+    }
     return std::max(sheet.hit_points, 1);
 }
 
 void OriginalModule::validate_character_state(const CharacterSheet &sheet,
                                               const VitalState &state) const
 {
-    if (state.hit_points < 0 || state.hit_points > std::max(sheet.hit_points, 1))
+    if (state.hit_points < 0 || state.hit_points > hit_point_maximum(sheet, state))
     {
         throw std::runtime_error("Hit Points outside the character's range");
     }
