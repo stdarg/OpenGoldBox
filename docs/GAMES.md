@@ -1,8 +1,8 @@
 # The Gold Box games
 
-OpenGoldBox's goal is to play every SSI Gold Box game. *Pool of Radiance* came
-first. The next step is the rest of the *Forgotten Realms* series. The *Krynn*
-games and *Buck Rogers* games follow later with the same method.
+OpenGoldBox's goal is to play every SSI Gold Box game: the seven *Forgotten
+Realms* games, the three *Krynn* games and the two *Buck Rogers* games, each
+under its original rules, and each won by a party that earns its way.
 
 This page records the decisions, what works today and the plan. It grows as
 each game is built.
@@ -23,15 +23,28 @@ The user decided these on 2026-11-12:
 
 ## The games
 
-| Order | Game | Released | Folder | Status |
+| Order | Game | Released | Folder | Status (2026-11-24) |
 |---|---|---|---|---|
-| 1 | *Pool of Radiance* | 1988 | `POOLRAD` | Played to its win by the expedition route under the SRD rules; its route under the original rules is being built (2026-11-16) |
-| 2 | *Curse of the Azure Bonds* | 1989 | `CURSE` | Played to its end by the route test, with stand-ins ([curse.md](games/curse.md)) |
-| 3 | *Secret of the Silver Blades* | 1990 | `SECRET` | Played to its win by the route test, with stand-ins ([secret.md](games/secret.md)) |
-| 4 | *Gateway to the Savage Frontier* | 1991 | `GATEWAY` | Played to its win by the route test, with stand-ins of experience, gold, gear and waits; it wins every fight itself, the Star Mounts' giant snakes and shambling mounds with Luskan's Wand of Ice Storm since 2026-11-16 ([gateway.md](games/gateway.md)) |
-| 5 | *Pools of Darkness* | 1991 | `DARKNESS` | Played to its win by the route test, with stand-ins ([darkness.md](games/darkness.md)) |
-| 6 | *Treasures of the Savage Frontier* | 1992 | `TREASURE` | Played to its win by the route test; no fight is won by the test, only Llorkh's experience and money are given ([treasure.md](games/treasure.md)) |
-| 7 | *Forgotten Realms: Unlimited Adventures* | 1993 | `UA` | Designs made with the kit play to their win: walls, events and fights ([ua.md](games/ua.md)) |
+| 1 | *Pool of Radiance* | 1988 | `POOLRAD` | Won by an earned route under the original rules: a fresh party from zero experience to Tyranthraxus's defeat and the ending (`opengold_original_campaign_route`). The SRD expedition route also wins |
+| 2 | *Curse of the Azure Bonds* | 1989 | `CURSE` | Won by an earned route: 85 fights, no defeats, Tyranthraxus at Myth Drannor (`opengold_curse_earned_ending`; [curse.md](games/curse.md)) |
+| 3 | *Champions of Krynn* | 1990 | `COK` | Won by an earned route: 121 fights, no defeats (`opengold_champions_earned_ending`; [champions.md](games/champions.md)) |
+| 4 | *Secret of the Silver Blades* | 1990 | `SECRET` | Won by an earned route: 168 battles to the soul-gem ending, Vala with the party (`opengold_secret_earned_ending`; [secret.md](games/secret.md)) |
+| 5 | *Buck Rogers: Countdown to Doomsday* | 1990 | `buck-rogers-countdown-to-doomsday` | Won by an earned route: a party made on the creation screen, 38 ground fights and a ship fight, all six alive (`opengold_countdown_earned_ending`; [countdown.md](games/countdown.md)). Its startup button waits for its final checks |
+| 6 | *Death Knights of Krynn* | 1991 | `DKK` | Won by an earned route from the *Champions* winners (`opengold_death_knights_earned_ending`; [death-knights.md](games/death-knights.md)) |
+| 7 | *Gateway to the Savage Frontier* | 1991 | `GATEWAY` | Won by an earned route: 67 fights, no defeats, the Ascore ending (`opengold_gateway_earned_ending`; [gateway.md](games/gateway.md)) |
+| 8 | *Pools of Darkness* | 1991 | `DARKNESS` | Won by an earned route from a party as the original makes it, Gothmenes defeated (`opengold_darkness_route`; [darkness.md](games/darkness.md)) |
+| 9 | *Buck Rogers: Matrix Cubed* | 1992 | `buck-rogers-matrix-cubed` | Won by an earned route: 144 ground fights to PROGRAM 2, six PCs alive (`opengold_matrix_cubed_earned_ending`; [matrix-cubed.md](games/matrix-cubed.md)). Its startup button waits for its final checks |
+| 10 | *Treasures of the Savage Frontier* | 1992 | `TREASURE` | Won by an earned route from the *Gateway* winners: 146 fights, no defeats, Freezefire's ending (`opengold_treasure_earned_ending`; [treasure.md](games/treasure.md)) |
+| 11 | *The Dark Queen of Krynn* | 1992 | `DQK` | **Not yet won.** The native engine plays it; its earned route from the *Death Knights* winners passes the Gnome King's court and the Font, and stops at Raistlin's torturers in the Abyss. Listed on the startup menu but not yet offered ([dark-queen.md](games/dark-queen.md)) |
+| 12 | *Forgotten Realms: Unlimited Adventures* | 1993 | `UA` | A design made with the kit plays to its designer's ending and its winning save reloads ([ua.md](games/ua.md)). Other designs need their own checks |
+
+"Won by an earned route" means a legal starting or imported party reaches the
+game's actual ending through the player's commands under its original rules,
+earning its experience, money and equipment. The route may reload a save and
+fight again after a defeat, as a player may; it is never given a win, a
+reward, a quest flag or a move. Each route covers one way through: optional
+quests, other parties and other difficulties are not certified by it.
+[PLAYABILITY.md](PLAYABILITY.md) has the evidence for each.
 
 Every development machine keeps the games, their manuals and their original
 source in the same layout; see [Where the developer's copies
@@ -939,9 +952,7 @@ game, as *Pool of Radiance* has.
 ### Later: *Krynn* and *Buck Rogers*
 
 *Champions of Krynn*, *Death Knights of Krynn*, *The Dark Queen of Krynn*,
-*Buck Rogers: Countdown to Doomsday* and *Buck Rogers: Matrix Cubed*, with the
-same method. The *Krynn* games' plan is [KRYNN.md](KRYNN.md) (written
-2026-11-16, not started). The *Buck Rogers* games' plan is
-[BUCK-ROGERS.md](BUCK-ROGERS.md) (written 2026-11-19); its groundwork (B0) and
-both games' reading censuses (B1) are done, and each game has its page,
-[countdown.md](games/countdown.md) and [matrix-cubed.md](games/matrix-cubed.md).
+*Buck Rogers: Countdown to Doomsday* and *Buck Rogers: Matrix Cubed* came with
+the same method. The *Krynn* games' plan is [KRYNN.md](KRYNN.md) and the
+*Buck Rogers* games' is [BUCK-ROGERS.md](BUCK-ROGERS.md). Where each stands is
+in [The games](#the-games) above.

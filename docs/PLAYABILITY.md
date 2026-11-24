@@ -4,11 +4,10 @@
 
 The user authorized fixing all discovered Linux test and playability errors,
 including pre-existing errors. The completion objective covers all twelve Gold
-Box games installed in `/home/edmond/GoldBox`. The seven currently supported
-games are listed below; the three Krynn and two Buck Rogers games still need
-implementation. Arbitrary third-party Unlimited Adventures designs are not
-certified by one generated test design. Winning-character availability in the
-next game follows certification of every game, as requested by the user.
+Box games installed in `/home/edmond/GoldBox`; all twelve are listed below.
+Arbitrary third-party Unlimited Adventures designs are not certified by one
+generated test design. Since 2026-11-24 each game banks its winning party at
+its win and the series' next game offers it ([SAVES.md](SAVES.md)).
 
 An unassisted completion requires an actual winning event through player
 commands, earned experience/equipment or a verified import, physically valid
@@ -26,7 +25,12 @@ UI behavior and the current configured model are retained; no delegation.
 | Secret of the Silver Blades | Fresh Original Rules party earns its equipment, advancement and recovery, wins 168 battles and reaches the actual soul-gem ending; all six PCs and Vala are retained and the winning save round-trips byte-identically | Optional quests, other party compositions and difficulty settings are not certified by this route |
 | Gateway to the Savage Frontier | Fresh Original Rules party buys ordinary gear, takes earned magic items, pays for training/recovery, resolves 67 encounters and reaches the actual Ascore ending; the normal post-ending save round-trips byte-identically | Optional quests, other party compositions and difficulty settings are not certified by this route |
 | Pools of Darkness | Fresh Original Rules party, as the original's creation makes it (1,500,001 experience, 200 platinum and the starting gear), earns its experience and equipment, walks every step, travels by the area map and Elminster's Limbo, defeats Gothmenes and reaches the ending; no forced results, grants or relocations | Optional quests, other party compositions and difficulty settings are not certified by this route |
-| Treasures of the Savage Frontier | Fresh verified Gateway-winning PCs earn their way through 145 real battles to Freezefire's actual ending; all six PCs plus Siulajia and Gauhok finish healthy, with zero defeats and a byte-identical normal-save roundtrip | Optional quests, other party compositions and difficulty settings are not certified by this route |
+| Treasures of the Savage Frontier | Fresh verified Gateway-winning PCs earn their way through 146 real battles to Freezefire's actual ending; all six PCs plus Siulajia and Gauhok finish healthy, with zero defeats and a byte-identical normal-save roundtrip | Optional quests, other party compositions and difficulty settings are not certified by this route |
+| Champions of Krynn | Fresh Original Rules party wins 121 fights with no defeats and reaches the actual ending; its winning party is banked for *Death Knights* | Optional quests, other party compositions and difficulty settings are not certified by this route |
+| Death Knights of Krynn | The *Champions* winners, imported through the bank, earn their way to the actual ending ("You have won") | Optional quests, other party compositions and difficulty settings are not certified by this route |
+| The Dark Queen of Krynn | Native engine and rules; the earned route from the *Death Knights* winners wins every fight through the Gnome King's court and the Font | **Not won.** Raistlin's torturers in the Abyss (map 66) defeat the party; about fifteen ending beats after them have not been played |
+| Buck Rogers: Countdown to Doomsday | A party made on the shared creation screen, on Novice, wins 38 ground fights and a ship fight with all six alive and reaches the actual final speech; training spends its skill points through the skill screen; the at-win party save round-trips byte-identically | Startup button still waits for the final integrated checks; other party compositions and difficulties are not certified |
+| Buck Rogers: Matrix Cubed | A party made on the shared creation screen, on Novice, wins 144 ground fights and reaches PROGRAM 2 with six living PCs; the running game banks the winners at the win | Startup button still waits for the final integrated checks; the route starts with its own party, not the *Countdown* winners |
 | Unlimited Adventures | Generated design walks, wins all fights, saves at the stairs, reloads and reaches its actual winning event | Other designs require their own verification |
 
 The six exported commercial campaigns previously passed headless and rendered
