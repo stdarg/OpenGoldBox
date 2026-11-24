@@ -41,13 +41,32 @@ on Linux. Each Windows run is deterministic.
   roll), floating point (the rules use none), sorts with ties, the game files
   (byte-identical to Steam's), and other function-local `constexpr` objects
   (all scalars or addresses).
-- To narrow it: save just before the battle with `OPENGOLD_ROUTE_BEATS=186
-  OPENGOLD_ROUTE_SAVE=FILE`, then play only the battle with
-  `OPENGOLD_ROUTE_RESUME=FILE OPENGOLD_FIGHT_LOG=1 OPENGOLD_FIGHT_SCORES=1`,
-  on Windows and on macOS, and compare the logs. The same save can be played
-  under an MSVC AddressSanitizer build (`/fsanitize=address`) or a checked
-  build (`/MDd /O2`, debug iterators on). Either runs a whole campaign more
-  than ten times slower, too slow for the full route.
+- Played from a save at beat 186, Windows loses all of the battle's tries,
+  each within 4 to 8 rounds. Hundreds of them under an MSVC
+  AddressSanitizer build (`/fsanitize=address`) and a checked build (`/MDd
+  /O2`, debug iterators on) report no fault.
+- The Treasures ending is the same kind of failure. At beat 746 the route
+  walks through the Luskan captain's stronghold to Redleg's refuge. Its six
+  Hosttower sorceresses' Lightning Bolts and Fireballs win about 2,935 of
+  2,950 tries on Windows; on Linux the same plan gets through.
+- To find the difference, play one battle from the same save on Windows and
+  on macOS and compare its first try:
+
+  ```sh
+  # Windows: make the saves (each takes the route up to the battle).
+  OPENGOLD_ROUTE_BEATS=186 OPENGOLD_ROUTE_SAVE=curse-beat186.sav \
+    opengold_gold_box_games_tests --curse-earned-ending
+  OPENGOLD_ROUTE_BEATS=724 OPENGOLD_ROUTE_SAVE=treasure-beat724.sav \
+    OPENGOLD_GATEWAY_WINNERS=gateway-earned-winners.sav \
+    opengold_gold_box_games_tests --treasure-earned-ending
+  # Each platform, from the same save: every try's log.
+  OPENGOLD_ROUTE_RESUME=curse-beat186.sav OPENGOLD_FIGHT_LOG_ALL=1 \
+    OPENGOLD_FIGHT_SCORES=1 opengold_gold_box_games_tests --curse-earned-ending
+  ```
+
+  The two first tries of the Tyranthraxus battle (the lines after the first
+  `try 0` following a `fight:` line with TYRANTHRAXUS) should read the same;
+  the first line where they part is the bug.
 
 Run on a busy machine, the Secret route (820 s alone, limit 1,500 s), the
 Curse earned ending, the DOS probe experiments (about 1,450 s alone) and the

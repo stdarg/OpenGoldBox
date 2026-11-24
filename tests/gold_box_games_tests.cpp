@@ -15535,6 +15535,15 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                           << " outcome " << static_cast<int>(played.outcome) << " round "
                           << played.round << "\n";
             }
+            // OPENGOLD_FIGHT_LOG_ALL prints every try's log, so one try's play
+            // can be compared across platforms (a diagnostic aid).
+            if (std::getenv("OPENGOLD_FIGHT_LOG_ALL"))
+            {
+                for (const auto &entry : played.log_entries)
+                {
+                    std::cout << "    # " << entry.english << '\n';
+                }
+            }
         };
         unsigned last = 0, best_try = 0;
         auto result = planning ? opengold::rules::Snapshot{} : play_try(0);
