@@ -89,8 +89,10 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     };
     cave_fight(10, 22, {});
     cave_fight(8, 17, {});
-    cave_fight(5, 15, {"CAST DISPEL MAGIC", "magic_user 6"});
-    RouteBeat cave_exit{10, 24, 0, D::north, {"CAST DISPEL MAGIC", "magic_user 6", "YES"}};
+    // Crysia's fireball is dispelled by a cleric with Dispel Magic prepared
+    // (the recovery memorizes it first); the White mage has none.
+    cave_fight(5, 15, {"CAST DISPEL MAGIC", "cleric 4"});
+    RouteBeat cave_exit{10, 24, 0, D::north, {"CAST DISPEL MAGIC", "cleric 4", "YES"}};
     cave_exit.arrive_only = true;
     cave_exit.searching = false;
     cave_exit.cure_first = true;
