@@ -2080,10 +2080,14 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     lower_stair.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x19B, 2};
     beats.push_back(lower_stair);
     auto queen_mirror = ending_walk(62, 8, 6, D::south, {"DEFEND", "LEAVE"});
+    queen_mirror.ward_each_with = "globe_of_invulnerability";
+    queen_mirror.ward_members = {"magic_user 6"};
     beats.push_back(queen_mirror);
     RouteBeat flower_recovery = upper_court_recovery;
-    flower_recovery.x = 4;
-    flower_recovery.y = 8;
+    // The path to (4,8) crosses the Iron Flower's guard event at (4,4).
+    // Rest and prepare at the mirror's exit before entering that passage.
+    flower_recovery.x = 9;
+    flower_recovery.y = 6;
     beats.push_back(flower_recovery);
     beats.push_back(tower_fire);
     beats.push_back(rescue_mind);
