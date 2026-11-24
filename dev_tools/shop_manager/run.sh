@@ -24,7 +24,7 @@ if [[ ! -x "$godot_bin" ]]; then
     exit 1
 fi
 
-cmake -S "$repo_dir" -B "$build_dir" -G Ninja \
+cmake -S "$repo_dir" -B "$build_dir" -G Ninja -Werror=dev -Werror=deprecated \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo -DOPENGOLD_BUILD_GODOT=ON -DOPENGOLD_BUILD_TESTS=OFF
 cmake --build "$build_dir" --target opengold_tile_art_viewer -j6
 mkdir -p "$project_dir/bin"

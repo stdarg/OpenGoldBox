@@ -59,7 +59,8 @@ if [ -z "$PRESET" ]; then
     fi
 fi
 
-"$CMAKE" --preset "$PRESET"
+# Configuration warnings fail just like the project compiler warnings.
+"$CMAKE" --preset "$PRESET" -Werror=dev -Werror=deprecated
 "$CMAKE" --build --preset "$PRESET" --parallel "$JOBS"
 if [ "$PRESET" = macos-universal ]; then
     echo "Game exported: mac-package/OpenGoldBox.app"

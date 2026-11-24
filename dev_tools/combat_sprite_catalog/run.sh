@@ -17,7 +17,7 @@ if [[ ! -x "$godot_bin" ]]; then
     exit 1
 fi
 build_dir="$repo_dir/build/combat-sprite-catalog"
-cmake -S "$repo_dir" -B "$build_dir" -G Ninja \
+cmake -S "$repo_dir" -B "$build_dir" -G Ninja -Werror=dev -Werror=deprecated \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo -DOPENGOLD_BUILD_GODOT=ON -DOPENGOLD_BUILD_TESTS=OFF
 cmake --build "$build_dir" --target opengold_combat_sprite_catalog -j6
 if [[ ! -s "$tool_dir/godot/.godot/extension_list.cfg" ]]; then

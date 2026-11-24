@@ -46,37 +46,9 @@ option(OPENGOLD_BUILD_GAME "Build the OpenGoldBox Windows game" OFF)
 option(OPENGOLD_BUILD_FUZZERS "Build isolated Clang libFuzzer targets with ASan/UBSan" OFF)
 option(OPENGOLD_BUILD_DOS_PROBE "Build the research-only DOS probe (dev_tools/dos_probe)" OFF)
 
-# Effective C++ Item 53: the project's own targets build at a high warning
-# level and fail on any warning, while fetched code such as godot-cpp keeps its
-# own flags. Designated initializers that leave fields at their defaults are
-# idiomatic here, so that one warning stays off.
-if(MSVC)
-    # getenv and sscanf are standard C++; MSVC's advice to use its _s variants
-    # is not portable.
-    set(OPENGOLD_WARNING_FLAGS /W4 /permissive- /D_CRT_SECURE_NO_WARNINGS)
-else()
-    set(OPENGOLD_WARNING_FLAGS -Wall -Wextra -Wno-missing-field-initializers)
-    # Clang can also report the 64-to-32-bit narrowing MSVC's /W4 warns about.
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        list(APPEND OPENGOLD_WARNING_FLAGS -Wshorten-64-to-32)
-    endif()
-    # GCC 14, which builds the Linux package for players (tools/linux_release_build.sh),
-    # reports std::optional members read behind a has_value() check as maybe
-    # uninitialized. GCC 15 and later check the same code without these false alarms.
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 15)
-        list(APPEND OPENGOLD_WARNING_FLAGS -Wno-maybe-uninitialized)
-    endif()
-endif()
-function(opengold_enable_warnings directory)
-    get_property(targets DIRECTORY "${directory}" PROPERTY BUILDSYSTEM_TARGETS)
-    foreach(target IN LISTS targets)
-        get_target_property(type ${target} TYPE)
-        if(type MATCHES "^(EXECUTABLE|STATIC_LIBRARY|SHARED_LIBRARY|MODULE_LIBRARY|OBJECT_LIBRARY)$")
-            target_compile_options(${target} PRIVATE ${OPENGOLD_WARNING_FLAGS})
-            set_target_properties(${target} PROPERTIES COMPILE_WARNING_AS_ERROR ON)
-        endif()
-    endforeach()
-endfunction()
+# Project-owned targets fail on compiler warnings; fetched dependencies retain
+# their own flags. Standalone dev tools use the same helper.
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/project_warnings.cmake")
 
 if(OPENGOLD_BUILD_FUZZERS)
     if(OPENGOLD_BUILD_GAME OR OPENGOLD_BUILD_GODOT)

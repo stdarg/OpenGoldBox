@@ -12,10 +12,8 @@ if [[ "${1:-}" == "--new-pack" ]]; then
     rm -rf "$pack_dir"
     shift
 fi
-if [[ ! -f "$build_dir/CMakeCache.txt" ]]; then
-    cmake -S "$repo_dir" -B "$build_dir" -G Ninja -DCMAKE_BUILD_TYPE=Release \
-        -DOPENGOLD_BUILD_TESTS=ON
-fi
+cmake -S "$repo_dir" -B "$build_dir" -G Ninja -Werror=dev -Werror=deprecated \
+    -DCMAKE_BUILD_TYPE=Release -DOPENGOLD_BUILD_TESTS=ON
 cmake --build "$build_dir" --target opengold_expedition_tests opengold_ai_lab
 if [[ ! -d "$pack_dir" ]]; then
     # The expedition test finds Pool of Radiance's files as the game does.

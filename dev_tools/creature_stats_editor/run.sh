@@ -12,9 +12,8 @@ if [[ ! -x "$godot_bin" ]]; then
     exit 1
 fi
 
-if [[ ! -f "$build_dir/CMakeCache.txt" ]]; then
-    cmake -S "$tool_dir" -B "$build_dir" -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
-fi
+cmake -S "$tool_dir" -B "$build_dir" -G Ninja -Werror=dev -Werror=deprecated \
+    -DCMAKE_BUILD_TYPE=RelWithDebInfo
 cmake --build "$build_dir" --target opengold_creature_stats_editor -j6
 
 project_dir="$build_dir/project"

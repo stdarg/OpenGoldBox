@@ -26,3 +26,5 @@ target_compile_features(opengold_creature_stats_editor PRIVATE cxx_std_20)
 set_target_properties(opengold_creature_stats_editor PROPERTIES PREFIX ""
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/project/bin"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/project/bin")
+
+opengold_enable_warnings("${CMAKE_CURRENT_SOURCE_DIR}")

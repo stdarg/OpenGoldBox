@@ -19,6 +19,12 @@ Keep the game and demo trees separate. The demos' `build_profile.json` trims the
 generated Godot bindings and removes classes the game needs, so one tree cannot
 serve both.
 
+Project-owned C++ targets treat compiler warnings as errors, including the
+standalone creature editor, combat tester and party tester. Dependencies retain
+their own compiler flags. Build entry points also stop on CMake developer and
+deprecation warnings; a failed configuration or compilation never runs tests or
+launches an older executable.
+
 ## Before you build
 
 On Windows, the helper scripts expect Visual Studio Build Tools at

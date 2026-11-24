@@ -13,9 +13,9 @@ if not exist "%CMAKE_EXE%" (
 call "%VSDEV_CMD%" -arch=x64
 if not "%errorlevel%"=="0" exit /b %errorlevel%
 if exist "%~dp0build\_deps\godot-cpp-src\CMakeLists.txt" (
-    "%CMAKE_EXE%" -S "%~dp0." -B "%~dp0build/game" -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DOPENGOLD_BUILD_GAME=ON "-DFETCHCONTENT_SOURCE_DIR_GODOT_CPP=%~dp0build/_deps/godot-cpp-src" %*
+    "%CMAKE_EXE%" -S "%~dp0." -B "%~dp0build/game" -G Ninja -Werror=dev -Werror=deprecated -DCMAKE_BUILD_TYPE=RelWithDebInfo -DOPENGOLD_BUILD_GAME=ON "-DFETCHCONTENT_SOURCE_DIR_GODOT_CPP=%~dp0build/_deps/godot-cpp-src" %*
 ) else (
-    "%CMAKE_EXE%" -S "%~dp0." -B "%~dp0build/game" -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DOPENGOLD_BUILD_GAME=ON %*
+    "%CMAKE_EXE%" -S "%~dp0." -B "%~dp0build/game" -G Ninja -Werror=dev -Werror=deprecated -DCMAKE_BUILD_TYPE=RelWithDebInfo -DOPENGOLD_BUILD_GAME=ON %*
 )
 if not "%errorlevel%"=="0" exit /b %errorlevel%
 "%CMAKE_EXE%" --build "%~dp0build/game" --parallel 6

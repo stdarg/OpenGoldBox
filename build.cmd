@@ -17,7 +17,7 @@ if not exist "%CMAKE_EXE%" goto missing_cmake
 call "%VSDEV_CMD%" -arch=x64
 if errorlevel 1 exit /b %errorlevel%
 
-"%CMAKE_EXE%" --preset %PRESET%
+"%CMAKE_EXE%" --preset %PRESET% -Werror=dev -Werror=deprecated
 if errorlevel 1 exit /b %errorlevel%
 
 "%CMAKE_EXE%" --build --preset %PRESET%

@@ -41,3 +41,5 @@ target_compile_definitions(opengold_combat_tester PRIVATE ${game_definitions})
 set_target_properties(opengold_combat_tester PROPERTIES PREFIX ""
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/project/bin"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/project/bin")
+
+opengold_enable_warnings("${CMAKE_CURRENT_SOURCE_DIR}")
