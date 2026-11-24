@@ -21,12 +21,38 @@ it uses. An iterator from one copy then meets the other's `begin()` or `end()`:
 `static constexpr`. This broke the route players' spell choices; the fix lets
 Secret's and Curse's milestones pass.
 
-Still failing on Windows: `opengold_curse_earned_ending` (lost to
-Tyranthraxus, about 2,600 s), `opengold_treasure_earned_ending` (lost at
-Luskan, map 31, about 5,900 s) and `opengold_darkness_route`, which runs
-several times longer than on Linux. Each Windows run is deterministic. The
-routes still take different decisions on Windows than on Linux or macOS. A
-trace compared with a macOS or Linux run should show where they first part.
+Every function-local `constexpr` table is now `static constexpr`, except in
+constexpr functions and in lambdas run to initialize a constexpr value, where
+C++20 forbids it. `tools/static_tables.py` finds them; the
+`opengold_static_tables` check fails on a new one.
+
+Still failing on Windows: `opengold_curse_earned_ending`,
+`opengold_treasure_earned_ending` (loses at Luskan, map 31, first reached at
+beat 725) and `opengold_darkness_route`, which runs several times longer than
+on Linux. Each Windows run is deterministic.
+
+- The Curse ending now matches the recorded Linux run
+  ([PLAYABILITY.md](PLAYABILITY.md): 187 beats, 84 fights, warriors and
+  clerics level 8, the mage 9) through beat 186. Run alone, it loses only the
+  final battle with Tyranthraxus, at map 67 (6,1), in 1,890 s. That battle's
+  tries are seeded the same on every platform (7 + try), so the difference
+  lies inside one battle's play.
+- Ruled out: dice order across call arguments (no call has two arguments that
+  roll), floating point (the rules use none), sorts with ties, the game files
+  (byte-identical to Steam's), and other function-local `constexpr` objects
+  (all scalars or addresses).
+- To narrow it: save just before the battle with `OPENGOLD_ROUTE_BEATS=186
+  OPENGOLD_ROUTE_SAVE=FILE`, then play only the battle with
+  `OPENGOLD_ROUTE_RESUME=FILE OPENGOLD_FIGHT_LOG=1 OPENGOLD_FIGHT_SCORES=1`,
+  on Windows and on macOS, and compare the logs. The same save can be played
+  under an MSVC AddressSanitizer build (`/fsanitize=address`) or a checked
+  build (`/MDd /O2`, debug iterators on). Either runs a whole campaign more
+  than ten times slower, too slow for the full route.
+
+Run on a busy machine, the Secret route (820 s alone, limit 1,500 s), the
+Curse earned ending, the DOS probe experiments (about 1,450 s alone) and the
+combat demo scene's footstep check can fail. Run them alone before taking a
+failure as real. The DOS probe experiments now have a 3,600 s limit.
 
 ## Earned Original Rules campaign (2026-11-17)
 

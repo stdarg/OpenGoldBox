@@ -16,7 +16,9 @@ if(OPENGOLD_BUILD_TESTS)
             "-DWORK=${CMAKE_CURRENT_BINARY_DIR}/experiments"
             "-DGAME_FINDER=$<TARGET_FILE:opengold_census>"
             -P "${CMAKE_CURRENT_SOURCE_DIR}/experiments/run_experiments.cmake")
-        set_tests_properties(opengold_dos_probe_experiments PROPERTIES SKIP_RETURN_CODE 77)
+        # On Windows the experiments take about 1,450 s run alone, too close
+        # to ctest's default 1,500 s limit.
+        set_tests_properties(opengold_dos_probe_experiments PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 3600)
     endif()
 endif()
 opengold_enable_warnings("${CMAKE_CURRENT_SOURCE_DIR}")
