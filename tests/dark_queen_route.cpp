@@ -248,6 +248,9 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     approach_well.cure_to_full = true;
     approach_well.reloads_until_won = 120;
     approach_well.arrive_only = true;
+    // The anemones paralyse whoever strikes them: the party fights the
+    // way's ambushes on Quick rather than closing on them.
+    approach_well.fight_tactic = 0;
     beats.push_back(approach_well);
     // Climb after reaching the well. Remain in the air chamber, and use
     // the Crylokon there before attempting to breathe its air.
@@ -414,6 +417,10 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     RouteBeat lighthouse{2, 4, 1, D::north, {"YES"}};
     lighthouse.area_steps = {C::north, C::northeast, C::look};
     lighthouse.searching = false;
+    // The lighthouse's pit drops the party into a swarm: it arrives with
+    // its spells prayed for.
+    lighthouse.rest_first = true;
+    lighthouse.rest_for_spells = true;
     lighthouse.reloads_until_won = 120;
     beats.push_back(lighthouse);
     if (progress == DarkQueenProgress::luminari)
@@ -444,6 +451,8 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     lighthouse_wait.searching = false;
     lighthouse_wait.repeat_until_at_least = std::pair<std::uint16_t, std::uint16_t>{0x13E, 5};
     lighthouse_wait.reloads_until_won = 120;
+    // Hurt from the pit, the party meets the hydras and the swarms on Quick.
+    lighthouse_wait.fight_tactic = 0;
     beats.push_back(lighthouse_wait);
     RouteBeat lighthouse_rest{22, 6, 4, D::west, {}, true};
     lighthouse_rest.rest_for_spells = true;
@@ -642,6 +651,8 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     vampires.cure_to_full = true;
     vampires.reloads_until_won = 2400;
     vampires.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x105, 2};
+    // The vampires' court ambush is fought on Quick.
+    vampires.fight_tactic = 0;
     beats.push_back(vampires);
     RouteBeat leave_upper{42, 15, 10, D::south, {"YES", "NO"}};
     leave_upper.arrive_only = true;
@@ -1056,6 +1067,8 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     corruption.dialogue_answers = {{"WHAT DO YOU DO?", "ATTACK"}};
     beats.push_back(corruption);
     RouteBeat stop_ritual{34, 9, 21, D::east, {}};
+    // Its guard's Dark Wizard and Thenol priests are struck first.
+    stop_ritual.fight_tactic = 3;
     stop_ritual.arrive_only = true;
     stop_ritual.searching = false;
     stop_ritual.cure_first = true;
@@ -1270,6 +1283,8 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     sharkmen.repeat_until_bits = std::pair<std::uint16_t, std::uint16_t>{0x187, 1};
     sharkmen.repeat_in_place = true;
     sharkmen.take_items = {{"Ring", "magic_user 6"}, {"Bracers", "magic_user 6"}};
+    // Bai'or's dragon attack is fought on Quick.
+    sharkmen.fight_tactic = 0;
     beats.push_back(sharkmen);
     RouteBeat baior_inn{54, 17, 14, D::east, {}};
     baior_inn.arrive_only = true;
@@ -1381,6 +1396,8 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     tremor.dialogue_answers = tremor_gate.dialogue_answers;
     tremor.take_items = {{"Sword", "knight 2"}};
     tremor.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x73, 2};
+    // The tremor's fights are fought on Quick.
+    tremor.fight_tactic = 0;
     beats.push_back(tremor);
     RouteBeat clematra{50, 12, 16, D::south, {}};
     clematra.arrive_only = true;

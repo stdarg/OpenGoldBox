@@ -727,3 +727,36 @@ state with main's per-square movement costs. The other games retain format
 order, alongside earlier formats 27/28 and main's 30. The compatibility tests
 exercise an actual legacy continuation, nonuniform movement costs and refused
 malformed cost vectors; verification is pending the rebuilt integration.
+
+## Final Aurak forms and single-attempt route (2026-11-23)
+
+Four Native combat mismatches found by the source audit are corrected, each
+with a regression that failed before the fix. Neither final Aurak shape
+(raw 210/213, both carrying 165) strikes a creature leaving it
+(`cbaction.c`). The shape the frenzy's timer makes, without the slain form's
+zap, ends its AI turn at once and still explodes after three rounds
+(`aiturn.c`). The explosion's stun spares the madness, frenzy and explosion
+forms (1413, 1432, 1460), not the zap (1466). The frenzy's immolation burns
+only the other side, as fire (`fx_immolate`). Champions and Death Knights keep
+their own behavior. No checkpoint format changes.
+
+The early caves now answer Crysia's Dispel with cleric 4, who has it
+prepared; the White mage had none, so the fireball struck before fight 12.
+
+The accepted proof plays each fight once: `OPENGOLD_ROUTE_SINGLE_ATTEMPT=1`,
+Easy, the fixed fight dice, and no reload of a fight or event. Under those
+rules the old route lost at fight 12. A beat may now name the tactic the
+player picks for its fights (`RouteBeat::fight_tactic`); tactic 3 is
+tactic 2 with fighters striking enemy spellcasters first. The route also
+rests before the Luminari pit. With those choices a fresh run from the
+imported Death Knights winners wins 147 fights in a row, through Bai'or and
+the Gnome capital, in about two minutes.
+
+It then loses the disguised court beneath the Gnome King (map 58 at 1,9,
+beat 242). Eight members at full strength face two Dark Wizards and
+enchanted Auraks and Bozaks. Their first-round Fireball (68 damage), Delayed
+Blast Fireball, Disintegrate, Cone of Cold and Flesh to Stone kill everyone
+under tactics 0, 2 and 3. The old route allowed 240 reseeded reloads here,
+480 at the palace ritual and 2400 for the vampires. The Font of the Dark Queen
+is still ahead. **No earned Native ending exists yet.**
+`OPENGOLD_ROUTE_BEAT_TACTICS=N:T,...` sets a beat's tactic when planning.

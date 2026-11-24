@@ -45,6 +45,7 @@
 #include <fstream>
 #include <functional>
 #include <iostream>
+#include <limits>
 #include <iterator>
 #include <optional>
 #include <set>
@@ -15906,8 +15907,81 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
     // The boss whose absence keeps the beat's casters from casting
     // (RouteBeat::sparing_spells_for).
     std::string sparing_spells_for;
-    const auto fight_once = [&](std::uint64_t seed, unsigned tactic)
+    // A Dark Queen fighter's turn under tactic 3: it strikes the weakest
+    // enemy spellcaster next to it, or, standing clear of every enemy, steps
+    // next to the nearest one it can reach, among the orders the game offers.
+    const auto strike_casters =
+        [](const opengold::rules::CombatSession &battle) -> std::optional<opengold::rules::Command>
     {
+        const auto state = battle.snapshot();
+        const auto actor =
+            std::ranges::find(state.combatants, state.actor, &opengold::rules::CombatantView::id);
+        if (actor == state.combatants.end())
+        {
+            return std::nullopt;
+        }
+        const auto apart = [](opengold::rules::Cell a, opengold::rules::Cell b)
+        {
+            return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y));
+        };
+        std::vector<const opengold::rules::CombatantView *> casters;
+        bool engaged = false;
+        for (const auto &unit : state.combatants)
+        {
+            if (unit.side == actor->side || !unit.conscious)
+            {
+                continue;
+            }
+            engaged = engaged || apart(unit.cell, actor->cell) <= 1;
+            const auto numbers = opengold::original::Combatant::decode(unit.persistent.resources);
+            if (numbers && !numbers->spells.empty())
+            {
+                casters.push_back(&unit);
+            }
+        }
+        const auto commands = battle.legal_commands();
+        std::optional<opengold::rules::Command> strike;
+        int weakest = std::numeric_limits<int>::max();
+        for (const auto &command : commands)
+        {
+            const auto target =
+                std::ranges::find(casters, command.target, &opengold::rules::CombatantView::id);
+            if (command.verb == "melee" && target != casters.end() &&
+                (*target)->hit_points < weakest)
+            {
+                weakest = (*target)->hit_points;
+                strike = command;
+            }
+        }
+        if (strike || engaged)
+        {
+            return strike;
+        }
+        std::optional<opengold::rules::Command> step;
+        int nearest = std::numeric_limits<int>::max();
+        for (const auto &command : commands)
+        {
+            if (command.verb != "move")
+            {
+                continue;
+            }
+            for (const auto *caster : casters)
+            {
+                const int walked = apart(command.destination, actor->cell);
+                if (apart(command.destination, caster->cell) == 1 && walked < nearest)
+                {
+                    nearest = walked;
+                    step = command;
+                }
+            }
+        }
+        return step;
+    };
+    const auto fight_once = [&](std::uint64_t seed, unsigned chosen_tactic)
+    {
+        // Tactic 3 is tactic 2 with fighters hunting the enemy's spellcasters.
+        const bool hunts_casters = chosen_tactic == 3;
+        const unsigned tactic = hunts_casters ? 2 : chosen_tactic;
         const bool native_font =
             earned_dark_queen && session.script_variable(opengold::por::EclAddress{0x19E}) == 30;
         const auto &position = session.snapshot();
@@ -16203,6 +16277,11 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             if (!held && member && tactic == 2 && earned_dark_queen && !native_font)
             {
                 held = native_dispel_shields(battle);
+            }
+            if (!held && member && hunts_casters && earned_dark_queen &&
+                !actor->name.starts_with("cleric") && !actor->name.starts_with("magic_user"))
+            {
+                held = strike_casters(battle);
             }
             if (!held && member && tactic == 2 &&
                 (game == GoldBoxGame::treasures_of_the_savage_frontier ||
@@ -16571,6 +16650,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
     // The tries the beat being played reloads for while no try has won it
     // (RouteBeat::reloads_until_won).
     unsigned reloads_until_won = 0;
+    // The tactic the beat being played picks (RouteBeat::fight_tactic).
+    std::optional<unsigned> beat_tactic;
     // Diagnose one actual attempt without replaying the fight or its event.
     const bool single_attempt = std::getenv("OPENGOLD_ROUTE_SINGLE_ATTEMPT") != nullptr;
     // The reloads of the beat being played (RouteBeat::reloads): its fights'
@@ -16807,7 +16888,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         const bool darkness_player = route && game == GoldBoxGame::pools_of_darkness;
         const auto tactic_of = [&](unsigned t)
         {
-            return forced_tactic     ? static_cast<unsigned>(std::stoul(forced_tactic))
+            return beat_tactic       ? *beat_tactic
+                   : forced_tactic   ? static_cast<unsigned>(std::stoul(forced_tactic))
                    : darkness_player ? 2U
                                      : t % 3;
         };
@@ -19540,6 +19622,23 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     break;
                 }
                 ++beat_number;
+                // OPENGOLD_ROUTE_BEAT_TACTICS=N:T,... picks tactic T for beat N's
+                // fights instead of the beat's own (a planning aid).
+                auto planned_tactic = beat.fight_tactic;
+                if (const char *picks = std::getenv("OPENGOLD_ROUTE_BEAT_TACTICS"))
+                {
+                    std::stringstream list(picks);
+                    for (std::string pick; std::getline(list, pick, ',');)
+                    {
+                        const auto colon = pick.find(':');
+                        if (colon != std::string::npos &&
+                            std::stoul(pick.substr(0, colon)) == beat_number)
+                        {
+                            planned_tactic =
+                                static_cast<unsigned>(std::stoul(pick.substr(colon + 1)));
+                        }
+                    }
+                }
                 check((!earned && !darkness_route_party) ||
                           (beat.test_experience == 0 && beat.test_gold == 0 && !beat.test_heal &&
                            !beat.test_wins && beat.test_cells.empty() && !beat.wait_until_minute &&
@@ -19622,6 +19721,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 test_winning = beat.test_wins && !playing_stand_ins;
                 reloads_until_won = beat.reloads_until_won;
                 sparing_spells_for = beat.sparing_spells_for;
+                beat_tactic = planned_tactic;
                 beat_reloads = beat.reloads;
                 if (beat.rest_first ||
                     (beat.passing && !beat.camp_broken && (party_hurt() || spells_spent()) &&
@@ -19815,6 +19915,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     holding_foes = beat.holding_foes;
                     reloads_until_won = beat.reloads_until_won;
                     sparing_spells_for = beat.sparing_spells_for;
+                    beat_tactic = planned_tactic;
                     beat_reloads = beat.reloads;
                     maze_exits.assign(beat.maze_exits.begin(), beat.maze_exits.end());
                     if (beat.rest_choice)

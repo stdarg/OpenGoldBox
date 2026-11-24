@@ -85,6 +85,11 @@ struct RouteBeat
     // the enemy most often wins in its first round (Treasures' Way Inn
     // sorceresses and the lair's black-robed men).
     unsigned reloads_until_won = 0;
+    // The tactic the player picks for this beat's fights, as a player
+    // chooses how to fight what the beat meets: 0 everyone on Quick, 2 the
+    // player's own choices, 3 those with fighters striking enemy casters
+    // first. Unset, the route's own (OPENGOLD_FIGHT_TACTIC or a try's).
+    std::optional<unsigned> fight_tactic;
     // The rounds of repeat_until_at_least stay on the beat's square, as a
     // player tries a climb again.
     bool repeat_in_place = false;
