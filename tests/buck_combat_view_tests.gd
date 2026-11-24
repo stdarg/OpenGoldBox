@@ -68,18 +68,57 @@ func use(label: String) -> void:
     items.select(index); items.item_selected.emit(index); await settle()
     current_scene.get_node("UseItemAction").pressed.emit(); await settle()
 
+# Open and choose Items with real keys, then Tab to Use and activate it.
+# Combat shortcuts must leave these focused controls their keyboard input.
+func keyboard_use(label: String, open_key: Key, use_key: Key) -> void:
+    var items: OptionButton = current_scene.get_node("ItemAction")
+    var index := item_index(label)
+    require(index >= 0, "The keyboard can choose " + label)
+    var cell: Vector2i = current_scene.selected_character_cell()
+    var before := log_text()
+    items.grab_focus()
+    await key(open_key)
+    require(items.get_popup().visible, "The keyboard opens Items for " + label)
+    await key(KEY_HOME)
+    for step in range(index): await key(KEY_DOWN)
+    await key(KEY_ENTER)
+    require(items.selected == index and not items.get_popup().visible,
+        "The keyboard chooses " + label)
+    require(current_scene.selected_character_cell() == cell and log_text() == before,
+        "Choosing an item does not move the actor or use an action")
+    await key(KEY_TAB)
+    var action: Button = current_scene.get_node("UseItemAction")
+    require(action.has_focus() and not action.disabled, "Tab reaches Use for " + label)
+    await key(use_key)
+
 func check_launch(locale: String, by_mouse: bool, grenade: String) -> void:
     await load_fixture("chaff.save")
     var combat := current_scene
     var launch := tr("Launch or throw")
     require(item_index(launch) < 0, "A grenade not readied cannot be thrown: " + locale)
-    await use(tr("Ready {item}").format({"item": grenade}))
+    var ready := tr("Ready {item}").format({"item": grenade})
+    if by_mouse:
+        await use(ready)
+    else:
+        await keyboard_use(ready, KEY_ENTER, KEY_SPACE)
     require(item_index(tr("Put away {item}").format({"item": grenade})) >= 0,
         "The grenade is readied, and can be put away: " + locale)
     require(overlay_cells("obscured").is_empty(), "No chaff before the throw: " + locale)
-    await use(launch)
+    if by_mouse:
+        await use(launch)
+    else:
+        await keyboard_use(launch, KEY_SPACE, KEY_ENTER)
     require(combat.get_node("Prompt").text == tr("Selected: Launch or throw. Click a highlighted square, or Arrows: square | Space: launch | Escape: cancel"),
         "The prompt asks for a square: " + locale)
+    if not by_mouse:
+        var items: OptionButton = combat.get_node("ItemAction")
+        var before := log_text()
+        items.grab_focus()
+        await key(KEY_ENTER)
+        require(items.get_popup().visible and log_text() == before and overlay_cells("obscured").is_empty(),
+            "Enter opens focused Items instead of launching at the chosen square")
+        await key(KEY_ESCAPE)
+        items.release_focus()
     require(overlay_cells("target_focus") == [Vector2i(4, 4)],
         "The chosen square starts on the trooper: " + locale)
     require(overlay_cells("target").size() > 4 and not overlay_cells("target").has(Vector2i(1, 4)),
@@ -89,7 +128,10 @@ func check_launch(locale: String, by_mouse: bool, grenade: String) -> void:
     await key(KEY_ESCAPE)
     require(overlay_cells("target").is_empty() and item_index(launch) >= 0,
         "Escape cancels without throwing: " + locale)
-    await use(launch)
+    if by_mouse:
+        await use(launch)
+    else:
+        await keyboard_use(launch, KEY_ENTER, KEY_SPACE)
     var thrown := tr("{name} throws a grenade.").format({"name": "BUCK"})
     if by_mouse:
         await click_cell(Vector2(4, 4))

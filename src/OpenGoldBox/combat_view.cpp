@@ -2663,6 +2663,18 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
             return;
         }
     }
+    // Let Items choose an action and Use activate it with the keyboard.
+    // These guards precede square targeting so Enter cannot launch while
+    // either control is focused.
+    if (key.is_valid() &&
+        (required_node<OptionButton>(*this, "ItemAction").has_focus() ||
+         required_node<OptionButton>(*this, "ItemAction").get_popup()->is_visible() ||
+         (required_node<Button>(*this, "UseItemAction").has_focus() &&
+          (key->get_keycode() == Key::KEY_ENTER || key->get_keycode() == Key::KEY_KP_ENTER ||
+           key->get_keycode() == Key::KEY_SPACE))))
+    {
+        return;
+    }
     if (key.is_valid() &&
         (required_node<OptionButton>(*this, "ThrownWeapon").has_focus() ||
          required_node<OptionButton>(*this, "ThrownWeapon").get_popup()->is_visible()))
