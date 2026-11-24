@@ -33,12 +33,9 @@ The user decided these on 2026-11-12:
 | 6 | *Treasures of the Savage Frontier* | 1992 | `TREASURE` | Played to its win by the route test; no fight is won by the test, only Llorkh's experience and money are given ([treasure.md](games/treasure.md)) |
 | 7 | *Forgotten Realms: Unlimited Adventures* | 1993 | `UA` | Designs made with the kit play to their win: walls, events and fights ([ua.md](games/ua.md)) |
 
-The developer's copies live in `/Users/edmond/GoldBox/<folder>` on macOS
-and `/home/edmond/GoldBox/<folder>` on this Linux computer. The game and its
-installed-data tests find each game's folder by its files, whatever its name,
-up to two levels below the home folder or any folder between it and the
-checkout ([TECH.md](TECH.md#finding-the-games-folders));
-`OPENGOLD_GOLDBOX_DIR` and `OPENGOLD_GAME_DIR` only add folders to look in first.
+Every development machine keeps the games, their manuals and their original
+source in the same layout; see [Where the developer's copies
+live](#where-the-developers-copies-live).
 
 The original let a party travel on: *Curse* imports a *Pool of Radiance*
 party, *Secret* a *Curse* party and *Pools of Darkness* a *Secret* party.
@@ -52,6 +49,52 @@ made by the game's own creation rules; it never reads the player's `SAVE`
 folder, whose saved games may have been played on. *Gateway*, *Pools of
 Darkness* and *Treasures* have their original-rules parties only until their
 SRD rules come (phase 9).
+
+### Where the developer's copies live
+
+Each development machine has a `GoldBox` folder in its home folder, laid out
+the same way: `/Users/edmond/GoldBox` on macOS, `/home/edmond/GoldBox` on
+Linux and `C:\Users\imper\GoldBox` on Windows (2026-11-24).
+
+```text
+GoldBox/
+  game_files/<GAME>     each game's installed files
+  docs/<GAME>           its manual, cluebook, journal, reference card and code wheel
+  original_src/<game>   a git repository of its reconstructed original source
+```
+
+- `game_files` holds `POOLRAD`, `CURSE`, `SECRET`, `GATEWAY`, `DARKNESS`,
+  `TREASURE`, `UA`, `UA-GER` (the German *Unlimited Adventures*), *Krynn*'s
+  `COK`, `DKK` and `DQK`, and `buck-rogers-countdown-to-doomsday` and
+  `buck-rogers-matrix-cubed`.
+- `docs` has a folder of the same name for each game except `UA-GER`.
+- `original_src` names each game in full: `pool-of-radiance`,
+  `curse-of-the-azure-bonds`, `secret-of-the-silver-blades`,
+  `gateway-to-the-savage-frontier`, `pools-of-darkness`,
+  `treasures-of-the-savage-frontier`,
+  `forgotten-realms-unlimited-adventures`, `champions-of-krynn`,
+  `death-knights-of-krynn`, `dark-queen-of-krynn`, `GoldBox-Krynn`,
+  `buck-rogers-countdown-to-doomsday` and `buck-rogers-matrix-cubed`. The
+  sources carry no license: OpenGoldBox learns from them and writes its own
+  code and text.
+
+The game and its installed-data tests find each game's folder by its files,
+whatever its name, among the children and grandchildren of the home folder
+and of each folder between the checkout and home
+([TECH.md](TECH.md#finding-the-games-folders)).
+`GoldBox/game_files/<GAME>` is three levels below home, too deep for that
+search, so each machine names `GoldBox` in `OPENGOLD_GOLDBOX_DIR`, whose
+children and grandchildren are searched first:
+
+- macOS: `export OPENGOLD_GOLDBOX_DIR="$HOME/GoldBox"` in `~/.zshrc`.
+- Linux: the same line in `~/.bashrc`.
+- Windows: the user environment variable `OPENGOLD_GOLDBOX_DIR`, set to
+  `C:\Users\imper\GoldBox`. Programs started before it was set, such as an
+  open editor and its terminals, see it only once restarted.
+
+`OPENGOLD_GAME_DIR` names one game's folder to look in before those. The game
+opened from Finder or a desktop launcher, without these variables, asks for
+each game's folder once and remembers it.
 
 ## What the games share
 
@@ -127,7 +170,7 @@ Done for a game when its census decodes every file.
 Adventures* (2026-11-13): every game's census is complete. Run it with
 `opengold_census FOLDER...` (in `build/macos-universal` after `./build.sh`,
 or `build` in a native build), where a folder is one game's or one holding
-several (`/Users/edmond/GoldBox`). It prints a row for each kind of file: how
+several (`~/GoldBox/game_files`). It prints a row for each kind of file: how
 many pieces decoded and the first that did not. The test
 `opengold_game_census` requires every finished game to decode completely. It
 reads each game from the folder the game finds by its files

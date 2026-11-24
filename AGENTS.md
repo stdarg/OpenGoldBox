@@ -19,11 +19,14 @@
   the main checkout. If the main checkout has uncommitted changes or cannot
   fast-forward, leave it alone and tell the user.
 
-## Local game files on Edmond's Linux computer
+## Local game files
 
-- All original game installations are in `/home/edmond/GoldBox`.
-- For installed-data tests, set `OPENGOLD_GOLDBOX_DIR=/home/edmond/GoldBox`
-  and `OPENGOLD_GAME_DIR=/home/edmond/GoldBox/POOLRAD`.
+- Every development machine (macOS, Linux, Windows) keeps the games, their
+  manuals and their original source in `~/GoldBox`: `game_files/<GAME>`,
+  `docs/<GAME>` and `original_src/<game>`. See
+  [docs/GAMES.md](docs/GAMES.md#where-the-developers-copies-live).
+- For installed-data tests, set `OPENGOLD_GOLDBOX_DIR="$HOME/GoldBox"`; the
+  games are too deep for the finder's own search.
 - Check this location before reporting game data as unavailable.
 
 ## Coordinating with other sessions

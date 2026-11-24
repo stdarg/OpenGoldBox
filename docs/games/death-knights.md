@@ -7,8 +7,10 @@ ordinary save are preserved in `/tmp/opengold-deliveries/233b6282/`.
 
 ## Installed-data baseline and references
 
-Original files: `/home/edmond/GoldBox/DKK`. Reference manuals, journal and
-cluebook: `/home/edmond/GoldBox/docs/DKK`. The primary reconstruction is
+Original files: `~/GoldBox/game_files/DKK`. Reference manuals, journal and
+cluebook: `~/GoldBox/docs/DKK`; reconstructed source:
+`~/GoldBox/original_src/death-knights-of-krynn`
+([GAMES.md](../GAMES.md#where-the-developers-copies-live)). The primary reconstruction is
 [Death Knights of Krynn](https://github.com/talonius/death-knights-of-krynn),
 reference revision `0ae5c4a3c29ecc90c3dc7636b9609381260f98f7`, read locally at
 `/tmp/opengold-death-knights-source`. It supplies format/rule facts, not copied

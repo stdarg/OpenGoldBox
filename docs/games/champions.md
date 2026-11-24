@@ -7,9 +7,10 @@ package checks are complete. The frozen acceptance and checkpoints are in
 
 ## Original files and source facts
 
-The installed data is `/home/edmond/GoldBox/COK`; manuals/journal/cluebook are
-under `/home/edmond/GoldBox/docs/COK`. The documented local `src/unsafe` source
-checkout is absent on this machine. Primary reconstruction:
+The installed data is `~/GoldBox/game_files/COK`; manuals/journal/cluebook are
+under `~/GoldBox/docs/COK`, and the reconstructed source is
+`~/GoldBox/original_src/champions-of-krynn`
+([GAMES.md](../GAMES.md#where-the-developers-copies-live)). Primary reconstruction:
 [Champions of Krynn](https://github.com/talonius/champions-of-krynn). It has no
 license; facts inform OpenGoldBox's own implementation, with no copied code.
 

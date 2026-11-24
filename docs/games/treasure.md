@@ -737,8 +737,7 @@ winning save roundtrips byte-identically. Save formats/history are unchanged.
 Run with the installed files:
 
 ```sh
-OPENGOLD_GOLDBOX_DIR=/home/edmond/GoldBox \
-OPENGOLD_GAME_DIR=/home/edmond/GoldBox/POOLRAD \
+OPENGOLD_GOLDBOX_DIR="$HOME/GoldBox" \
 ctest --test-dir build -V -R '^opengold_treasure_earned_ending$'
 ```
 

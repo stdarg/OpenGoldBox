@@ -84,7 +84,7 @@ inline constexpr std::array<GoldBoxGame, 11> gold_box_games{
     return {};
 }
 
-// The folder the game installs into, as in /Users/edmond/GoldBox/<folder>.
+// The folder the game installs into, as in ~/GoldBox/game_files/<folder>.
 [[nodiscard]] constexpr std::string_view game_folder(GoldBoxGame game) noexcept
 {
     switch (game)

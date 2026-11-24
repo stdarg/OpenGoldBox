@@ -10,13 +10,13 @@ disabled until the new screens and the route are done.
 
 ## Files and references
 
-- Game files: `/Users/edmond/GoldBox/buck-rogers-countdown-to-doomsday` (the
+- Game files: `~/GoldBox/game_files/buck-rogers-countdown-to-doomsday` (the
   folder `game_folder` names; the game and its tests find it by its files,
   whatever it is called: TECH.md, "Finding the games' folders").
 - Rule Book, Log Book, Cluebook and the Amiga Data Card:
-  `/Users/edmond/GoldBox/docs/buck-rogers-countdown-to-doomsday`.
+  `~/GoldBox/docs/buck-rogers-countdown-to-doomsday`.
 - Reconstructed source (version 1.3, Turbo Pascal 5.5):
-  `~/src/unsafe/buck-rogers-countdown-to-doomsday`. It has no license;
+  `~/GoldBox/original_src/buck-rogers-countdown-to-doomsday`. It has no license;
   OpenGoldBox learns from it and writes its own code and text.
 
 ## The game's number and marker

@@ -9,13 +9,13 @@ does.
 
 ## Files and references
 
-- Game files: `/Users/edmond/GoldBox/buck-rogers-matrix-cubed` (the folder
+- Game files: `~/GoldBox/game_files/buck-rogers-matrix-cubed` (the folder
   `game_folder` names; the game and its tests find it by its files, whatever
   it is called: TECH.md, "Finding the games' folders").
 - Rule Book, Log Book, Cluebook and Data Card:
-  `/Users/edmond/GoldBox/docs/buck-rogers-matrix-cubed`.
+  `~/GoldBox/docs/buck-rogers-matrix-cubed`.
 - Reconstructed source (version 1.0, Turbo Pascal 6):
-  `~/src/unsafe/buck-rogers-matrix-cubed`. It has no license; OpenGoldBox
+  `~/GoldBox/original_src/buck-rogers-matrix-cubed`. It has no license; OpenGoldBox
   learns from it and writes its own code and text.
 
 ## The game's number and marker

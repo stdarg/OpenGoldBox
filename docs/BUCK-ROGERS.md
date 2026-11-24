@@ -20,8 +20,8 @@ Radiance*, until all twelve games win under their original rules.
 
 | Game | Folder | Game files | Manual, log book, cluebook | Reconstructed source |
 |---|---|---|---|---|
-| *Countdown to Doomsday* | `buck-rogers-countdown-to-doomsday` | `~/GoldBox/buck-rogers-countdown-to-doomsday` | `~/GoldBox/docs/buck-rogers-countdown-to-doomsday` | `~/src/unsafe/buck-rogers-countdown-to-doomsday` |
-| *Matrix Cubed* | `buck-rogers-matrix-cubed` | `~/GoldBox/buck-rogers-matrix-cubed` | `~/GoldBox/docs/buck-rogers-matrix-cubed` | `~/src/unsafe/buck-rogers-matrix-cubed` |
+| *Countdown to Doomsday* | `buck-rogers-countdown-to-doomsday` | `~/GoldBox/game_files/buck-rogers-countdown-to-doomsday` | `~/GoldBox/docs/buck-rogers-countdown-to-doomsday` | `~/GoldBox/original_src/buck-rogers-countdown-to-doomsday` |
+| *Matrix Cubed* | `buck-rogers-matrix-cubed` | `~/GoldBox/game_files/buck-rogers-matrix-cubed` | `~/GoldBox/docs/buck-rogers-matrix-cubed` | `~/GoldBox/original_src/buck-rogers-matrix-cubed` |
 
 Each docs folder holds the Rule Book (manual), the Log Book, the Cluebook and
 the Data Card (refcard). *Countdown*'s Data Card is the Amiga one. The rules

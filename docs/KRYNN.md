@@ -18,9 +18,9 @@ task does not authorize SRD work or delegation.
 
 | Game | Folder | Game files | Manual, cluebook, journal | Reconstructed source |
 |---|---|---|---|---|
-| *Champions of Krynn* | `COK` | `~/GoldBox/COK` | `~/GoldBox/docs/COK` | `~/src/unsafe/champions-of-krynn` |
-| *Death Knights of Krynn* | `DKK` | `~/GoldBox/DKK` | `~/GoldBox/docs/DKK` | `~/src/unsafe/death-knights-of-krynn` |
-| *The Dark Queen of Krynn* | `DQK` | `~/GoldBox/DQK` | `~/GoldBox/docs/DQK` | `~/src/unsafe/dark-queen-of-krynn` |
+| *Champions of Krynn* | `COK` | `~/GoldBox/game_files/COK` | `~/GoldBox/docs/COK` | `~/GoldBox/original_src/champions-of-krynn` |
+| *Death Knights of Krynn* | `DKK` | `~/GoldBox/game_files/DKK` | `~/GoldBox/docs/DKK` | `~/GoldBox/original_src/death-knights-of-krynn` |
+| *The Dark Queen of Krynn* | `DQK` | `~/GoldBox/game_files/DQK` | `~/GoldBox/docs/DQK` | `~/GoldBox/original_src/dark-queen-of-krynn` |
 
 Each docs folder holds the Manual, Cluebook, Journal, Codes and Controls. As
 with the other games, the sources carry no license. OpenGoldBox learns from
