@@ -1961,15 +1961,38 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     // Arriving at the Sanctum plays its two waves and the fall into the Abyss.
     beats.push_back(ending_walk(62, 5, 25, D::south, {"YES", "ATTACK"}));
     // Raistlin's cell is entered through its west wall from 13,2. The
-    // Sanctum's waves leave the party hurt: it rests and cures before
-    // stepping into the room that inhibits magic. After freeing him, no beat
+    // Sanctum's waves leave the party hurt: it rests, cures and casts its
+    // lasting wards before stepping into the room that inhibits magic. After freeing him, no beat
     // camps or cures: head straight for the portal while his warning still
     // leaves time.
+    // No spell can be cast in Raistlin's cell, so what the party prays for
+    // here also carries it through the portal to the five-headed dragon,
+    // which hatches before the party can rest again.
+    auto abyss_rest = ending_walk(66, 13, 2, D::east);
+    abyss_rest.rest_first = true;
+    abyss_rest.rest_for_spells = true;
+    abyss_rest.keep_preparation = true;
+    abyss_rest.memorize_first_of = palace_preparation.memorize_first_of;
+    abyss_rest.memorize_first_of.insert(
+        abyss_rest.memorize_first_of.begin(),
+        {"protection_from_evil_10_radius", "protection_from_evil_10_radius",
+         "protection_from_evil_10_radius", "protection_from_evil_10_radius"});
+    beats.push_back(abyss_rest);
+    // Spells already cast still hold in the room that bars new ones.
+    RouteBeat abyss_wards{66, 13, 2, D::east, {}};
+    abyss_wards.waiting = true;
+    abyss_wards.ward_each_with = "protection_from_evil_10_radius";
+    beats.push_back(abyss_wards);
+    RouteBeat abyss_enlarge = abyss_wards;
+    abyss_enlarge.ward_each_with = "enlarge";
+    abyss_enlarge.ward_members = {"knight 1", "knight 2", "knight 3", "Grunschka"};
+    abyss_enlarge.cast_after = {"prayer"};
+    beats.push_back(abyss_enlarge);
     auto raistlin_cell = ending_walk(66, 13, 2, D::east, {"FIGHT MONSTERS", "CUT CHAINS", "YES"});
     raistlin_cell.arrive_only = false;
     raistlin_cell.step = true;
-    raistlin_cell.rest_first = true;
-    raistlin_cell.rest_for_spells = true;
+    raistlin_cell.cure_first = false;
+    raistlin_cell.cure_to_full = false;
     beats.push_back(raistlin_cell);
     auto free_raistlin = ending_walk(66, 15, 2, D::north, {"FIGHT MONSTERS", "CUT CHAINS", "YES"});
     free_raistlin.cure_first = false;
@@ -1979,9 +2002,17 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
                                  {15, "magic_user 6"}};
     free_raistlin.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x9F, 1};
     // Raistlin's torturers include enchanted Bozaks whose Fire Shields return
-    // every blow twice over, and no spell works in the room.
-    free_raistlin.fight_tactic = 4;
+    // every blow twice over and enchanted Sivaks whose dying meteors strike
+    // all within 2 squares; no spell or item works in the room.
+    free_raistlin.fight_tactic = 5;
     beats.push_back(free_raistlin);
+    // Leave his cell the way the party came, through its west wall.
+    auto leave_cell = ending_walk(66, 14, 2, D::west);
+    leave_cell.arrive_only = false;
+    leave_cell.step = true;
+    leave_cell.cure_first = false;
+    leave_cell.cure_to_full = false;
+    beats.push_back(leave_cell);
     // All six imported PCs have Dexterity 18. The knight therefore ties for
     // their best throw. The first portal menu is still foggy: wait there,
     // then jump only after the bell clears it. Jumping early kills a member.
@@ -1991,7 +2022,30 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     abyss_portal.cure_first = false;
     abyss_portal.cure_to_full = false;
     abyss_portal.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x104, 1};
+    // The portal sets the party down hurt beside the Greystone's tripod,
+    // where a camp hatches the five-headed dragon. Leave the tripod alone,
+    // walk back to the upper court, and rest and ward there first.
+    abyss_portal.dialogue_answers = {{"INVESTIGATE THE TRIPOD", "NO"}};
     beats.push_back(abyss_portal);
+    auto leave_tripod = ending_walk(62, 4, 22, D::north);
+    leave_tripod.dialogue_answers = abyss_portal.dialogue_answers;
+    beats.push_back(leave_tripod);
+    auto egg_rest = palace_preparation;
+    egg_rest.map = 62;
+    egg_rest.x = 4;
+    egg_rest.y = 22;
+    egg_rest.facing = D::north;
+    egg_rest.arrive_only = false;
+    egg_rest.waiting = true;
+    egg_rest.dialogue_answers = abyss_portal.dialogue_answers;
+    egg_rest.memorize_first_of.insert(
+        egg_rest.memorize_first_of.begin(),
+        {"protection_from_evil_10_radius", "protection_from_evil_10_radius",
+         "protection_from_evil_10_radius", "protection_from_evil_10_radius"});
+    beats.push_back(egg_rest);
+    beats.push_back(rescue_wards);
+    beats.push_back(rescue_mind);
+    beats.push_back(audience_preparation);
     auto egg_approach = ending_walk(62, 5, 25, D::south);
     egg_approach.dialogue_answers = {{"INVESTIGATE THE TRIPOD", "YES"},
                                      {"CLIMB UP ONE OF ITS LEGS", "YES"},

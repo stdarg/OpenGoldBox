@@ -16010,13 +16010,188 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         }
         return step;
     };
+    // A Dark Queen member's turn under tactic 5, for Raistlin's torturers,
+    // where no spell or item works: an enchanted Sivak's dying meteors strike
+    // everyone within 2 squares, and a Bozak's Fire Shield returns each blow
+    // twice over. A member able to take the blast strikes a Sivak whose
+    // meteors would fall on two other enemies and no other member; otherwise
+    // it strikes the weakest other enemy next to it;
+    // next only to Sivaks or Bozaks while other enemies remain, it steps
+    // clear of them, 3 squares from every Sivak, towards another enemy, or
+    // waits. With only Sivaks and Bozaks left it shoots a Sivak 3 squares or
+    // more away if offered, then strikes Bozaks, and a Sivak last. It only
+    // picks among the orders the game offers.
+    const auto torturer_turn =
+        [](const opengold::rules::CombatSession &battle) -> std::optional<opengold::rules::Command>
+    {
+        constexpr int retaliating_shield = 343;
+        const auto state = battle.snapshot();
+        const auto actor =
+            std::ranges::find(state.combatants, state.actor, &opengold::rules::CombatantView::id);
+        if (actor == state.combatants.end())
+        {
+            return std::nullopt;
+        }
+        const auto apart = [](opengold::rules::Cell a, opengold::rules::Cell b)
+        {
+            return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y));
+        };
+        std::vector<const opengold::rules::CombatantView *> sivaks, shielded, others;
+        for (const auto &unit : state.combatants)
+        {
+            if (unit.side == actor->side || !unit.conscious)
+            {
+                continue;
+            }
+            const auto numbers = opengold::original::Combatant::decode(unit.persistent.resources);
+            if (unit.name.find("SIVAK") != std::string::npos)
+            {
+                sivaks.push_back(&unit);
+            }
+            else if (numbers && std::ranges::any_of(numbers->effects,
+                                                    [](const auto &effect)
+                                                    {
+                                                        return effect.code == retaliating_shield;
+                                                    }))
+            {
+                shielded.push_back(&unit);
+            }
+            else
+            {
+                others.push_back(&unit);
+            }
+        }
+        const auto commands = battle.legal_commands();
+        const auto weakest = [&](std::string_view verb,
+                                 const std::vector<const opengold::rules::CombatantView *> &among,
+                                 int least_apart) -> std::optional<opengold::rules::Command>
+        {
+            std::optional<opengold::rules::Command> best;
+            int least = std::numeric_limits<int>::max();
+            for (const auto &command : commands)
+            {
+                const auto target =
+                    std::ranges::find(among, command.target, &opengold::rules::CombatantView::id);
+                if (command.verb == verb && target != among.end() &&
+                    apart((*target)->cell, actor->cell) >= least_apart &&
+                    (*target)->hit_points < least)
+                {
+                    least = (*target)->hit_points;
+                    best = command;
+                }
+            }
+            return best;
+        };
+        // A Sivak whose meteors would strike two other enemies and no other
+        // member is worth killing, by a member who can take the blast.
+        std::vector<const opengold::rules::CombatantView *> worth_bursting;
+        for (const auto *sivak : sivaks)
+        {
+            const auto within_two = [&](const opengold::rules::CombatantView &unit)
+            {
+                return unit.id != sivak->id && unit.conscious && apart(unit.cell, sivak->cell) <= 2;
+            };
+            const auto enemies =
+                std::ranges::count_if(state.combatants,
+                                      [&](const auto &unit)
+                                      {
+                                          return unit.side == sivak->side && within_two(unit);
+                                      });
+            const auto members = std::ranges::count_if(state.combatants,
+                                                       [&](const auto &unit)
+                                                       {
+                                                           return unit.side == actor->side &&
+                                                                  unit.id != actor->id &&
+                                                                  within_two(unit);
+                                                       });
+            if (enemies >= 2 && members == 0)
+            {
+                worth_bursting.push_back(sivak);
+            }
+        }
+        if (actor->hit_points * 2 >= actor->max_hit_points)
+        {
+            if (const auto strike = weakest("melee", worth_bursting, 0))
+            {
+                return strike;
+            }
+        }
+        if (const auto strike = weakest("melee", others, 0))
+        {
+            return strike;
+        }
+        const auto near_danger = [&](opengold::rules::Cell cell)
+        {
+            return std::ranges::any_of(sivaks,
+                                       [&](const auto *sivak)
+                                       {
+                                           return apart(sivak->cell, cell) < 3;
+                                       }) ||
+                   std::ranges::any_of(shielded,
+                                       [&](const auto *bozak)
+                                       {
+                                           return apart(bozak->cell, cell) <= 1;
+                                       });
+        };
+        if (!others.empty())
+        {
+            std::optional<opengold::rules::Command> step;
+            int closest = std::numeric_limits<int>::max();
+            for (const auto &command : commands)
+            {
+                if (command.verb != "move" || near_danger(command.destination))
+                {
+                    continue;
+                }
+                for (const auto *other : others)
+                {
+                    const int to_other = apart(command.destination, other->cell);
+                    if (to_other < closest)
+                    {
+                        closest = to_other;
+                        step = command;
+                    }
+                }
+            }
+            int nearest_now = std::numeric_limits<int>::max();
+            for (const auto *other : others)
+            {
+                nearest_now = std::min(nearest_now, apart(actor->cell, other->cell));
+            }
+            if (step && (near_danger(actor->cell) || closest < nearest_now))
+            {
+                return step;
+            }
+            if (near_danger(actor->cell))
+            {
+                const auto end = std::ranges::find(commands, std::string_view("end"),
+                                                   &opengold::rules::Command::verb);
+                if (end != commands.end())
+                {
+                    return *end;
+                }
+            }
+            return std::nullopt;
+        }
+        if (const auto shot = weakest("ranged", sivaks, 3))
+        {
+            return shot;
+        }
+        if (const auto strike = weakest("melee", shielded, 0))
+        {
+            return strike;
+        }
+        return weakest("melee", sivaks, 0);
+    };
     const auto fight_once = [&](std::uint64_t seed, unsigned chosen_tactic)
     {
         // Tactics 3 and 4 are tactic 2 with fighters hunting the enemy's
         // spellcasters, 4 also sparing itself enemies' Fire Shields.
         const bool hunts_casters = chosen_tactic == 3 || chosen_tactic == 4;
         const bool avoids_shields = chosen_tactic == 4;
-        const unsigned tactic = hunts_casters ? 2 : chosen_tactic;
+        // Tactic 5 is tactic 2 with every member playing torturer_turn.
+        const bool against_torturers = chosen_tactic == 5;
+        const unsigned tactic = hunts_casters || against_torturers ? 2 : chosen_tactic;
         const bool native_font =
             earned_dark_queen && session.script_variable(opengold::por::EclAddress{0x19E}) == 30;
         const auto &position = session.snapshot();
@@ -16312,6 +16487,10 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             if (!held && member && tactic == 2 && earned_dark_queen && !native_font)
             {
                 held = native_dispel_shields(battle);
+            }
+            if (!held && member && against_torturers && earned_dark_queen)
+            {
+                held = torturer_turn(battle);
             }
             if (!held && member && hunts_casters && earned_dark_queen &&
                 !actor->name.starts_with("cleric") && !actor->name.starts_with("magic_user"))
@@ -16820,9 +16999,12 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 result.combatants,
                 [&](const opengold::rules::CombatantView &unit)
                 {
-                    const bool final_boss = (game == GoldBoxGame::pools_of_darkness &&
-                                             unit.name.starts_with("GOTHMENES")) ||
-                                            (earned_champions && unit.name.starts_with("MYRTANI"));
+                    const bool final_boss =
+                        (game == GoldBoxGame::pools_of_darkness &&
+                         unit.name.starts_with("GOTHMENES")) ||
+                        (earned_champions && unit.name.starts_with("MYRTANI")) ||
+                        (earned_dark_queen && (unit.name.starts_with("CHROMATIC DRAGN") ||
+                                               unit.name.find(" HEAD ") != std::string::npos));
                     return unit.side == opengold::rules::Side::opposition && final_boss &&
                            !unit.dead && unit.hit_points > 0;
                 });
@@ -16933,7 +17115,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         {
             // Darkness uses its verified manual plan by default, with the
             // same reload dice as the explicit tactic-2 diagnostic.
-            return fight_once(first_seed + (forced_tactic || darkness_player ? t : t / 3),
+            return fight_once(first_seed +
+                                  (beat_tactic || forced_tactic || darkness_player ? t : t / 3),
                               tactic_of(t));
         };
         // OPENGOLD_FIGHT_SCORES plays every try and prints each one's score
@@ -16944,9 +17127,15 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             if (scoring)
             {
                 const auto tactic = tactic_of(t);
+                const auto foes_left = std::ranges::count_if(
+                    played.combatants,
+                    [](const opengold::rules::CombatantView &unit)
+                    {
+                        return unit.side == opengold::rules::Side::opposition && unit.conscious;
+                    });
                 std::cout << "  try " << t << " (tactic " << tactic << "): score " << score(played)
                           << " outcome " << static_cast<int>(played.outcome) << " round "
-                          << played.round << "\n";
+                          << played.round << " foes left " << foes_left << "\n";
             }
             // OPENGOLD_FIGHT_LOG_ALL prints every try's log, so one try's play
             // can be compared across platforms (a diagnostic aid).
