@@ -15997,11 +15997,11 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         // asking (the overland's) runs off the field with the first tactic.
         const bool running = game == GoldBoxGame::treasures_of_the_savage_frontier &&
                              (fleeing || optional_treasure_patrol()) && tactic == 0;
-        const bool yulash_mounds = third_bond && battle.snapshot().script_id == 16;
+        const bool yulash_mounds = third_bond && session.snapshot().script_id == 16;
         // The council's large armies need more ordinary player commands
         // than the smaller encounters before its real combat outcome.
         const int command_limit =
-            earned_treasure && battle.snapshot().area_id == 30 ? 12'000 : 3'000;
+            earned_treasure && session.snapshot().area_id == 30 ? 12'000 : 3'000;
         for (int command = 0;
              !running && command < command_limit &&
              combat.combat().snapshot().outcome == opengold::rules::Outcome::ongoing;
