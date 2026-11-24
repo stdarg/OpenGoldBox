@@ -15512,7 +15512,12 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
     }
     for (std::size_t n = 0; n < costs; ++n)
     {
-        board.move_cost.push_back(static_cast<std::uint8_t>(in.as<unsigned>()));
+        const auto cost = in.as<std::uint64_t>();
+        if (cost == 0 || cost > std::numeric_limits<std::uint8_t>::max())
+        {
+            throw std::runtime_error("Invalid original-rules combat checkpoint");
+        }
+        board.move_cost.push_back(static_cast<std::uint8_t>(cost));
     }
     rules::validate_battlefield(board);
     session->random_.value = in.as<std::uint64_t>();

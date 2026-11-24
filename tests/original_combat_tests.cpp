@@ -516,6 +516,41 @@ void play_until(rules::CombatSession &session,
 
 void until_turn_of(rules::CombatSession &session, std::string_view name);
 
+// Read the stored cost as a number, rather than letting an out-of-range
+// number wrap to a different, valid cost. Exercise both cost-bearing layouts.
+void checkpoint_square_cost_values(const Fight &fight, std::size_t costs_at)
+{
+    const auto checkpoint = fight.session->save();
+    const auto first_cost = checkpoint.find(' ', costs_at) + 1;
+    const auto cost_end = checkpoint.find(' ', first_cost);
+    check(first_cost > costs_at && cost_end != std::string::npos,
+          "The checkpoint fixture contains a square cost");
+    const auto with_cost = [&](std::string_view cost)
+    {
+        auto changed = checkpoint;
+        changed.replace(first_cost, cost_end - first_cost, cost);
+        return changed;
+    };
+    for (unsigned cost = 1; cost <= 255; ++cost)
+    {
+        const auto changed = with_cost(std::to_string(cost));
+        const auto restored = fight.module->restore(changed);
+        check(restored->snapshot().battlefield.move_cost.front() == cost &&
+                  restored->save() == changed,
+              "A checkpoint preserves every valid square cost: " + std::to_string(cost));
+    }
+    for (const auto cost : {"0", "256", "257", "4294967297", "18446744073709551616"})
+    {
+        test::rejects(
+            [&]
+            {
+                (void)fight.module->restore(with_cost(cost));
+            },
+            "A checkpoint rejects an out-of-range square cost without narrowing it: " +
+                std::string(cost));
+    }
+}
+
 // The checkpoint keeps each square's cost (format 30); one written before
 // the costs (27) still reads, with none.
 void a_checkpoint_keeps_the_costs()
@@ -551,6 +586,7 @@ void a_checkpoint_keeps_the_costs()
     const auto read = plain.module->restore(older);
     check(read->snapshot().battlefield.move_cost.empty() && read->save() == now,
           "A format 27 checkpoint reads with no costs");
+    checkpoint_square_cost_values(costly, at);
 }
 
 // The same fight, restored to move as the original or not (the game's
@@ -8466,6 +8502,7 @@ void dark_queen_underwater_context_changes_combat()
     const auto costs_at = cost_offset(costly_checkpoint);
     check(costly_checkpoint.compare(costs_at, 3, "64 ") == 0,
           "The Native fixture records all 64 square costs");
+    checkpoint_square_cost_values(costly, costs_at);
     for (const auto count : {"63", "65"})
     {
         auto malformed = costly_checkpoint;
