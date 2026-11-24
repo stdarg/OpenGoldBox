@@ -41,6 +41,17 @@ func require(condition: bool, message: String) -> void:
 		quit(1)
 		assert(condition, message)
 
+# Games without an area-name table still name their own campaign everywhere.
+func check_game_title_fallback(town: Control, title: String) -> void:
+	require((town.get_node("%Location") as Label).text.begins_with(title + " / "),
+		"The viewpoint names the selected game: " + title)
+	require((town.get_node("%MapTitle") as Label).text == title + "    N ↑",
+		"The map title names the selected game: " + title)
+	require((town.get_node("%Title") as Label).text == "OPENGOLDBOX  /  " + title,
+		"The exploration header names the selected game: " + title)
+	require((town.get_node("%Speaker") as Label).text == title,
+		"The dialogue title names the selected game: " + title)
+
 func settle() -> void:
 	for frame in range(8): await process_frame
 
@@ -541,6 +552,7 @@ func check_darkness() -> void:
 			await settle()
 	require(rolf and escorted, "Rolf's offer and his escort must play on the exploration screen")
 	require(not town.get_node("%Continue").visible, "The opening ends exploring New Phlan")
+	check_game_title_fallback(town, "Pools of Darkness")
 	if not captures.is_empty():
 		RenderingServer.force_draw(false)
 		await process_frame
@@ -584,6 +596,7 @@ func check_treasure() -> void:
 			await settle()
 	require(valley, "Treasures' opening must play on the exploration screen")
 	require(not town.get_node("%Continue").visible, "The opening ends exploring the dwarves' fortress")
+	check_game_title_fallback(town, "Treasures of the Savage Frontier")
 	if not captures.is_empty():
 		RenderingServer.force_draw(false)
 		await process_frame

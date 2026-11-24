@@ -59,6 +59,13 @@ func run_checks() -> void:
 		if town() and town().visible: break
 	require(town() != null and town().visible, "The save loads onto the exploration screen")
 	await settle()
+	var title := "Buck Rogers: Matrix Cubed"
+	require((town().get_node("%Title") as Label).text == "OPENGOLDBOX  /  " + title,
+		"Matrix's ground-view header names Matrix Cubed")
+	require((town().get_node("%Location") as Label).text.begins_with(title + " / ")
+		and (town().get_node("%MapTitle") as Label).text == title + "    N ↑"
+		and (town().get_node("%Speaker") as Label).text == title,
+		"Matrix's ground-view labels name its own campaign before the actual encounter")
 	await press(town().get_node("%Forward"))
 	for attempt in range(40):
 		if fighting(): break

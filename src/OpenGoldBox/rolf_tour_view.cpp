@@ -368,9 +368,11 @@ constexpr EclAddress curse_town_cell{0x4C9B};
         return secret_area_name(s.area_id);
     case opengold::GoldBoxGame::gateway_to_the_savage_frontier:
         return gateway_area_name(s.area_id);
-    default:
+    case opengold::GoldBoxGame::curse_of_the_azure_bonds:
         return i18n::text(campaign ? curse_area_name(s, *campaign)
                                    : N_("Curse of the Azure Bonds"));
+    default:
+        return i18n::text(opengold::game_title(settings::chosen_game()).data());
     }
 }
 
