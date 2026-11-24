@@ -524,12 +524,53 @@ void write_screen_fixtures(const std::filesystem::path &directory)
     }
 }
 
+// The bank the running game wrote at Matrix Cubed's win
+// (winner_bank_capture_tests.gd): an ordinary save of the game won, with its
+// world, reloading byte for byte, holding every winner of its party alive.
+void the_running_game_banked_its_win(const std::filesystem::path &file)
+{
+    const auto matrix = installed(GoldBoxGame::matrix_cubed);
+    if (!matrix)
+    {
+        return;
+    }
+    check(std::filesystem::exists(file), "The running game's bank was copied out");
+    const auto bank = reloaded_bank(*matrix, opengold::read_campaign_file(file));
+    check(bank.game == GoldBoxGame::matrix_cubed && bank.town && bank.town->snapshot().game_won,
+          "The bank is Matrix Cubed's world at its win");
+    unsigned members = 0, npcs = 0;
+    for (const auto id : bank.party.slots)
+    {
+        if (!id)
+        {
+            continue;
+        }
+        const auto &member = member_of(bank.party, id);
+        check(!member.vitals.dead, "Every member at the win is alive");
+        ++members;
+        npcs += member.npc_source.empty() ? 0 : 1;
+        std::cout << "  winner " << member.character.sheet().name
+                  << (member.npc_source.empty() ? "" : " (NPC)") << "\n";
+    }
+    check(members == opengold::winners(bank.party).size() && members - npcs == 6,
+          "The bank holds the six player characters and the NPCs with them as winners");
+    std::cout << "The running game banked " << members << " winners, " << npcs
+              << " of them NPCs, with its world.\n";
+}
+
 } // namespace
 
 int main()
 {
     try
     {
+        // OPENGOLD_WINNER_BANK_CHECK=FILE checks a bank the running game wrote.
+        if (const char *bank = std::getenv("OPENGOLD_WINNER_BANK_CHECK"))
+        {
+            the_running_game_banked_its_win(bank);
+            std::cout << "Winner bank checks passed.\n";
+            return 0;
+        }
         // OPENGOLD_WINNER_BANK_FIXTURES=DIRECTORY writes the party screen's
         // check's saves there.
         if (const char *fixtures = std::getenv("OPENGOLD_WINNER_BANK_FIXTURES"))

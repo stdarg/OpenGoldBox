@@ -441,7 +441,7 @@ if(OPENGOLD_BUILD_TESTS)
     # Countdown's earned ending banks its party at the win (winning-party.ogs
     # under this prefix), which Matrix Cubed brings in
     # (opengold_winner_bank_matrix_from_countdown).
-    set_tests_properties(opengold_countdown_earned_ending PROPERTIES
+    set_tests_properties(opengold_countdown_earned_ending PROPERTIES TIMEOUT 600
         FIXTURES_SETUP countdown_earned_winners
         ENVIRONMENT "OPENGOLD_COUNTDOWN_EARNED_SAVES=${CMAKE_CURRENT_BINARY_DIR}/countdown-earned-")
     set_tests_properties(opengold_countdown_earned_opening opengold_countdown_camp_service
@@ -483,9 +483,11 @@ if(OPENGOLD_BUILD_TESTS)
         COMMAND opengold_matrix_campaign_tests --earned-ending-novice)
     # It also saves the team before a fight beside the allies Leadership leads,
     # for the combat screen's check (src/OpenGoldBox, buck_led_allies).
+    # And the team one step before the win, for the running game's winner
+    # bank check (src/OpenGoldBox, winner_bank_capture).
     set_tests_properties(opengold_matrix_cubed_earned_ending PROPERTIES TIMEOUT 300
-        ENVIRONMENT "OPENGOLD_MATRIX_LED_ALLIES_SAVE=${PROJECT_BINARY_DIR}/matrix-led-allies.ogs"
-        FIXTURES_SETUP matrix_led_allies)
+        ENVIRONMENT "OPENGOLD_MATRIX_LED_ALLIES_SAVE=${PROJECT_BINARY_DIR}/matrix-led-allies.ogs;OPENGOLD_MATRIX_LAST_STEP_SAVE=${PROJECT_BINARY_DIR}/matrix-last-step.ogs"
+        FIXTURES_SETUP "matrix_led_allies;matrix_last_step")
     add_executable(opengold_buck_rogers_ship_combat_tests tests/buck_rogers_ship_combat_tests.cpp)
     target_link_libraries(opengold_buck_rogers_ship_combat_tests PRIVATE opengold_rules_original
         opengold_core)

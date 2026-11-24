@@ -862,6 +862,18 @@ if(OPENGOLD_BUILD_TESTS)
         "Add character from Curse of the Azure Bonds" -DNPC=ON)
     opengold_winner_bank_check(matrix_from_countdown buck-rogers-countdown-to-doomsday
         buck-rogers-matrix-cubed "Add from Countdown" "Add character from Countdown to Doomsday")
+    # The running game banks its winning party at Matrix Cubed's actual win,
+    # from the earned route's save one step before it; Load game lists it,
+    # and the native check reloads it byte for byte.
+    opengold_settings_check(winner_bank_capture winner_bank_capture_tests
+        "Winner bank capture passed"
+        "-DARGS=--game=buck-rogers-matrix-cubed\;--rules=original\;--load-save=${PROJECT_BINARY_DIR}/matrix-last-step.ogs\;--bank-out=${PROJECT_BINARY_DIR}/matrix-running-game-winning-party.ogs")
+    set_tests_properties(opengold_godot_winner_bank_capture PROPERTIES
+        FIXTURES_REQUIRED "godot_project;matrix_last_step" FIXTURES_SETUP matrix_running_game_bank)
+    add_test(NAME opengold_winner_bank_matrix_capture_reload COMMAND opengold_winner_bank_tests)
+    set_tests_properties(opengold_winner_bank_matrix_capture_reload PROPERTIES
+        FIXTURES_REQUIRED matrix_running_game_bank TIMEOUT 300
+        ENVIRONMENT "OPENGOLD_WINNER_BANK_CHECK=${PROJECT_BINARY_DIR}/matrix-running-game-winning-party.ogs")
     # Treasures' camp dialog offers Fix and Crown, as its camp menu does.
     # Skipped without Treasures' files.
     add_test(NAME opengold_godot_treasure_camp COMMAND "${CMAKE_COMMAND}"

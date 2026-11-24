@@ -71,7 +71,16 @@ the two NPC positions ([DEVIATIONS.md](DEVIATIONS.md#party-and-parley),
 Winning NPCs).
 
 `opengold_winner_bank_tests` checks the capture and every link of the
-chains, each bank reloading and saving again byte for byte. The earned-ending
+chains, each bank reloading and saving again byte for byte. In the running
+game, `opengold_godot_winner_bank_capture` loads the save *Matrix Cubed*'s
+earned route makes one step before its win (`OPENGOLD_MATRIX_LAST_STEP_SAVE`),
+steps forward and reads the closing scene on to the win: the bank appears in
+the game's save folder only then, with its world, and Load game lists it
+first as "Winning party"; `opengold_winner_bank_matrix_capture_reload`
+reloads it byte for byte and finds every member at the win among its
+winners. The view's path is the same for every game; a game won at a prompt
+(the Realms and Krynn games, *Countdown*) banks its party alone first, which
+the Core check and the earned routes' banks cover. The earned-ending
 route tests bank their winners the same way (`OPENGOLD_WINNERS_SAVE=FILE`),
 and CTest's fixtures hand them on: *Gateway*'s to *Treasures*' earned ending,
 *Champions*' to *Death Knights*' earned opening and ending, whose own winners

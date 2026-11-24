@@ -2755,6 +2755,16 @@ bool walk_route(Campaign &campaign, const std::filesystem::path &folder, unsigne
                 16U * 1024U * 1024U);
             std::cout << "Actual led-allies fixture saved before the surveillance room.\n";
         }
+        // OPENGOLD_MATRIX_LAST_STEP_SAVE=PATH saves the team before the step
+        // that wins the game, facing it, for the running game's winner-bank
+        // check (tests/winner_bank_capture_tests.gd).
+        const auto *last_step_path = std::getenv("OPENGOLD_MATRIX_LAST_STEP_SAVE");
+        const auto before_step =
+            last_step_path && campaign.session.snapshot().area_id == 114 &&
+                    campaign.session.can_leave()
+                ? opengold::encode_campaign(*campaign.party, &campaign.session,
+                                            opengold::campaign_asset_identity(folder), matrix)
+                : std::string{};
         check(campaign.session.explore(Command::forward), "Walk through Matrix's actual map");
         if (!settle_route(campaign, folder, fights))
         {
@@ -2765,6 +2775,11 @@ bool walk_route(Campaign &campaign, const std::filesystem::path &folder, unsigne
                   << ".\n";
         if (s.game_won)
         {
+            if (!before_step.empty())
+            {
+                opengold::write_save_file(last_step_path, before_step, 16U * 1024U * 1024U);
+                std::cout << "Actual last step before the win saved.\n";
+            }
             return true;
         }
         if (s.area_id != area || s.overland ||
