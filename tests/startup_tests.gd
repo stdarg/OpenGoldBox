@@ -159,7 +159,7 @@ func run_checks() -> void:
 	var picker := window("GamePicker")
 	if not require(picker.visible and not main.visible, "Pick game opens the games"): return
 	# Under each world's heading, its games in release order.
-	if not require(labels(picker.get_node("Buttons")) == ["Forgotten Realms", "Pool of Radiance", "Curse of the Azure Bonds", "Secret of the Silver Blades", "Gateway to the Savage Frontier", "Pools of Darkness", "Treasures of the Savage Frontier", "Unlimited Adventures", "Krynn", "Champions of Krynn", "Death Knights of Krynn", "Buck Rogers", "Buck Rogers: Countdown to Doomsday", "Buck Rogers: Matrix Cubed", "Back"], "The games: " + str(labels(picker.get_node("Buttons")))): return
+	if not require(labels(picker.get_node("Buttons")) == ["Forgotten Realms", "Pool of Radiance", "Curse of the Azure Bonds", "Secret of the Silver Blades", "Gateway to the Savage Frontier", "Pools of Darkness", "Treasures of the Savage Frontier", "Unlimited Adventures", "Krynn", "Champions of Krynn", "Death Knights of Krynn", "The Dark Queen of Krynn", "Buck Rogers", "Buck Rogers: Countdown to Doomsday", "Buck Rogers: Matrix Cubed", "Back"], "The games: " + str(labels(picker.get_node("Buttons")))): return
 	# Every game and Back show inside the picker, even at the smallest window.
 	var picker_bottom: float = picker.get_node("Buttons/Back").get_global_rect().end.y
 	if not require(picker_bottom <= picker.size.y and picker.size.y + 40 <= 800, "The picker fits 1120 x 800 with its title bar"): return
@@ -167,7 +167,7 @@ func run_checks() -> void:
 	var waiting := []
 	for button in picker.get_node("Buttons/Games").get_children():
 		if button is Button and button.disabled: waiting.append(String(button.name))
-	if not require(waiting == ["buck-rogers-countdown-to-doomsday", "buck-rogers-matrix-cubed"], "The games not playable yet: " + str(waiting)): return
+	if not require(waiting == ["DQK", "buck-rogers-countdown-to-doomsday", "buck-rogers-matrix-cubed"], "The games not playable yet: " + str(waiting)): return
 	await capture("pick-game.png")
 	await escape_in(picker)
 	if not require(main.visible and not picker.visible, "Escape goes back from the games to the main menu"): return

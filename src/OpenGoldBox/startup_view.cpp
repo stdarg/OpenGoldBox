@@ -130,7 +130,8 @@ constexpr std::array<MenuGame, 12> playable_games{
       false},
      {opengold::GoldBoxGame::treasures_of_the_savage_frontier,
       N_("Treasures of the Savage Frontier"), World::forgotten_realms},
-     {opengold::GoldBoxGame::dark_queen_of_krynn, N_("The Dark Queen of Krynn"), World::krynn},
+     {opengold::GoldBoxGame::dark_queen_of_krynn, N_("The Dark Queen of Krynn"), World::krynn,
+      false},
      {opengold::GoldBoxGame::unlimited_adventures, N_("Unlimited Adventures"),
       World::forgotten_realms}}};
 
