@@ -1176,7 +1176,7 @@ constexpr std::size_t creature_limit = 63;
 std::uint16_t RolfTourSession::buck_rogers_difficulty_level() const noexcept
 {
     // The settings run Novice to Admiral, as the levels do.
-    return static_cast<std::uint16_t>(difficulty_setting(difficulty_));
+    return static_cast<std::uint16_t>(difficulty_setting_);
 }
 
 void RolfTourSession::configure_buck_rogers()
@@ -1353,7 +1353,7 @@ void RolfTourSession::buck_rogers_combat(const EclRequest &request, bool solo)
     encounter_->distance = encounter_distance_;
     encounter_->enemy_quarters = dealt_quarters(monster_sides_, encounter_->enemies.size());
     encounter_->morale = std::min<unsigned>(machine_.variable(morale_cell) & 0xFF, 100);
-    apply_original_difficulty(*encounter_, difficulty_, game());
+    apply_original_difficulty(*encounter_, difficulty_setting_, game());
     combat_request_ = request.id;
     showing_monster_picture_ =
         monster_picture_id_ && area_resources().animations.contains(*monster_picture_id_);
@@ -1762,6 +1762,9 @@ bool RolfTourSession::choose_in_buck_rogers_menu(std::size_t choice)
     {
         current->record.creature = member.character;
         current->record.items = member.items;
+        // Native saves cache only the types their items used. A purchase or
+        // loot pickup can add another type, whose row comes from this game.
+        current->record.types = town_->buck_rogers_item_types;
         campaign_->keep_game_record(current->id, original::encode_ground_record(current->record));
     };
     const auto multiplier = static_cast<std::uint8_t>(machine_.variable(EclAddress{0x7F6D}) & 0xFF);

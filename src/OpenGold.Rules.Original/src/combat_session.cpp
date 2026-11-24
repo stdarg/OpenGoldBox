@@ -1179,6 +1179,7 @@ class Session final : public rules::CombatSession
                               : (along_party_facing() + (f.side == Side::party ? 0 : 4)) % 8;
         }
         log({"Combat begins.", {}});
+        native_leadership();
         combat_start();
         update_hostile_hit_points();
         // A fight ends only as a round ends, unless a side has no one able to
@@ -1621,7 +1622,8 @@ class Session final : public rules::CombatSession
     // and the kit (resolve_spell).
     [[nodiscard]] int ice_storm_element() const
     {
-        return darkness() || kit() || game_of(identity_) == GoldBoxGame::dark_queen_of_krynn ? 8 : 10;
+        return darkness() || kit() || game_of(identity_) == GoldBoxGame::dark_queen_of_krynn ? 8
+                                                                                             : 10;
     }
 
     void remove_with_handler(Fighter &f, std::size_t node);
@@ -1833,6 +1835,7 @@ class Session final : public rules::CombatSession
     [[nodiscard]] GroundNumbers ground_numbers_of(const Fighter &f) const;
     void ground_refresh(Fighter &f);
     void ground_begin_round();
+    void native_leadership();
     [[nodiscard]] bool ground_turn_starts(Fighter &f);
     void ground_attack(Fighter &attacker, Fighter &defender);
     void ground_launch(Fighter &attacker, Cell aim);
@@ -11738,6 +11741,47 @@ void Session::expire(Fighter &f, const Effect &ended)
     }
 }
 
+// Native knights may take living NPC allies off Quick at combat start.
+void Session::native_leadership()
+{
+    if (game_of(identity_) != GoldBoxGame::dark_queen_of_krynn)
+    {
+        return;
+    }
+    // Native combat_leadership_apply resets Quick at each new fight, then
+    // lets each living PC knight try NPCs not already following a leader.
+    for (auto &f : fighters_)
+    {
+        f.remove(dq_effect::led_by_knight);
+    }
+    constexpr std::array odds{20, 40, 80};
+    for (const auto &leader : fighters_)
+    {
+        if (leader.side != Side::party || !leader.able() || !leader.record ||
+            leader.record->status != 0 || (leader.record->npc_flag & 0x80) != 0 ||
+            leader.numbers.class_levels[static_cast<std::size_t>(ClassSlot::monk)] <= 0 ||
+            leader.record->knight_order < 1 || leader.record->knight_order > 3)
+        {
+            continue;
+        }
+        const int threshold =
+            odds[leader.record->knight_order - 1] +
+            std::max(static_cast<int>(leader.record->current_abilities.charisma) - 13, 0) * 5;
+        for (auto &follower : fighters_)
+        {
+            if (follower.side != Side::party || !follower.able() || !follower.record ||
+                follower.record->status != 0 || (follower.record->npc_flag & 0x80) == 0 ||
+                follower.record->current_abilities.intelligence <= 3 ||
+                follower.has(dq_effect::led_by_knight) || threshold <= roll(100))
+            {
+                continue;
+            }
+            follower.numbers.effects.push_back({dq_effect::led_by_knight, 0, 255, false});
+            log({"{leader} leads {name}.", {{"leader", leader.name}, {"name", follower.name}}});
+        }
+    }
+}
+
 // At a fight's start (combatst.pas, COMBAT_START): one that fights on while
 // down may stand; a mummy's fear grips its enemies once; displacement is
 // ready; camouflage and a ring of invisibility hide; a dragon frightens.
@@ -11746,7 +11790,9 @@ void Session::combat_start()
     bool feared = false;
     for (auto &f : fighters_)
     {
-        if (champions())
+        // Native raw151 has a registered handler but no resident trigger;
+        // keep its inherent metadata instead of starting the older game's counter.
+        if (champions() && game_of(identity_) != GoldBoxGame::dark_queen_of_krynn)
         {
             if (auto *power = f.find_effect(effect::aurak_energy))
             {
@@ -12310,7 +12356,8 @@ void Session::champions_turn_start(Fighter &f)
             }
         }
     }
-    if (f.able() && f.initiative > 0 && f.has(effect::aurak_energy) && roll(100) <= 75)
+    if (game_of(identity_) != GoldBoxGame::dark_queen_of_krynn && f.able() && f.initiative > 0 &&
+        f.has(effect::aurak_energy) && roll(100) <= 75)
     {
         auto *power = f.find_effect(effect::aurak_energy);
         if (power->strength > 0 && roll(100) <= 25)
@@ -13404,7 +13451,12 @@ rules::Snapshot Session::snapshot() const
         // drained, effects still running), for the game to keep.
         const bool keeps = f->condition == Condition::okay || f->condition == Condition::fled;
         // A statue stays one until Stone to Flesh (status PETRIFIED).
-        view.computer_plays = frenzied(*f) || (f->ground && f->ground->computer_plays);
+        const bool native_npc = game_of(identity_) == GoldBoxGame::dark_queen_of_krynn &&
+                                f->side == Side::party && f->record &&
+                                (f->record->npc_flag & 0x80) != 0;
+        view.player_controls_ally = native_npc && f->has(dq_effect::led_by_knight);
+        view.computer_plays = frenzied(*f) || (f->ground && f->ground->computer_plays) ||
+                              (native_npc && !view.player_controls_ally);
         view.persistent = {keeps ? f->hit_points : 0, view.dead, f->numbers.encode(),
                            f->condition == Condition::stoned ? std::string(stoned_description)
                                                              : std::string()};
@@ -15200,8 +15252,8 @@ std::string Session::save() const
     const bool dark_queen = game_of(identity_) == GoldBoxGame::dark_queen_of_krynn;
     const bool native_calendar =
         dark_queen || game_of(identity_) == GoldBoxGame::death_knights_of_krynn;
-    out(std::string(dark_queen ? dark_queen_checkpoint_format : checkpoint_format),
-        board_.width, board_.height);
+    out(std::string(dark_queen ? dark_queen_checkpoint_format : checkpoint_format), board_.width,
+        board_.height);
     if (native_calendar)
     {
         out(starting_time_minutes_);
@@ -15376,16 +15428,16 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
     Reader in(checkpoint);
     const auto format = in.text();
     const bool has_costs = format == checkpoint_format || format == dark_queen_checkpoint_format;
-    const bool dark_queen = format == dark_queen_checkpoint_format ||
-                            format == costless_dark_queen_checkpoint_format;
+    const bool dark_queen =
+        format == dark_queen_checkpoint_format || format == costless_dark_queen_checkpoint_format;
     if (!has_costs && format != costless_checkpoint_format &&
         format != costless_death_knights_checkpoint_format && !dark_queen)
     {
         throw std::runtime_error(rules::older_save_message);
     }
-    const bool native_calendar = dark_queen || format == costless_death_knights_checkpoint_format ||
-                                 (format == checkpoint_format &&
-                                  game_of(identity) == GoldBoxGame::death_knights_of_krynn);
+    const bool native_calendar =
+        dark_queen || format == costless_death_knights_checkpoint_format ||
+        (format == checkpoint_format && game_of(identity) == GoldBoxGame::death_knights_of_krynn);
     std::unique_ptr<Session> session(new Session);
     session->identity_ = std::move(identity);
     session->item_types_ = content.item_types;

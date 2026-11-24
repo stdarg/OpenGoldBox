@@ -423,15 +423,15 @@ bool ShipCombatView::check_boarded() const
 
 double ShipCombatView::picture_share() const
 {
-    const auto &scene = required_node<Control>(*this, "Margin/Columns/Main/Scene");
-    const auto &frame = required_node<MarginContainer>(scene, "ShipFrame");
-    const double width = scene.get_size().x;
+    const auto *scene = &required_node<Control>(*this, "Margin/Columns/Main/Scene");
+    const auto *frame = &required_node<MarginContainer>(*scene, "ShipFrame");
+    const double width = scene->get_size().x;
     if (width <= 0)
     {
         return 0;
     }
     const double margins =
-        frame.get_theme_constant("margin_left") + frame.get_theme_constant("margin_right");
+        frame->get_theme_constant("margin_left") + frame->get_theme_constant("margin_right");
     return (width - margins) / width;
 }
 
@@ -570,15 +570,15 @@ void ShipCombatView::place_picture()
     {
         return;
     }
-    const auto &scene = required_node<Control>(*this, "Margin/Columns/Main/Scene");
-    auto &frame = required_node<MarginContainer>(scene, "ShipFrame");
+    const auto *scene = &required_node<Control>(*this, "Margin/Columns/Main/Scene");
+    auto &frame = required_node<MarginContainer>(*scene, "ShipFrame");
     double share = 1;
     if (picture_shrinks_)
     {
         const int range = std::clamp(fight_->combat->range(), 1, scanner_range);
         share = 1 - (1 - farthest_share) * (range - 1) / (scanner_range - 1);
     }
-    const auto size = scene.get_size();
+    const auto size = scene->get_size();
     const int across = static_cast<int>(size.x * (1 - share) / 2);
     const int down = static_cast<int>(size.y * (1 - share) / 2);
     frame.add_theme_constant_override("margin_left", across);

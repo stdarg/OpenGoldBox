@@ -689,9 +689,20 @@ class RolfTourSession
     // On Hard and above, monsters bring their potions, wands and scrolls into
     // a fight and use them (DIFF-1), and temples cast no Resurrection
     // (TEMPLE-1).
+    void difficulty(opengold::DifficultySetting setting) noexcept
+    {
+        difficulty_setting_ = setting;
+        difficulty_ = opengold::played_difficulty(setting);
+        if (opengold::is_buck_rogers(game()))
+        {
+            (void)machine_.refresh_bound_variable(EclAddress{0x4BB6},
+                                                  static_cast<std::uint16_t>(setting));
+        }
+    }
+
     void difficulty(opengold::Difficulty difficulty) noexcept
     {
-        difficulty_ = difficulty;
+        this->difficulty(opengold::difficulty_setting(difficulty));
     }
 
     // The original's NPCs who join the party (data/companions) and the
@@ -1201,6 +1212,9 @@ class RolfTourSession
     std::shared_ptr<ShipFightState> ship_fight_;
     unsigned encounter_challenge_{opengold::default_encounter_challenge};
     opengold::Difficulty difficulty_{opengold::default_difficulty};
+    // Runtime option, like difficulty_: saves retain their existing layout.
+    opengold::DifficultySetting difficulty_setting_{
+        opengold::difficulty_setting(opengold::default_difficulty)};
     // The original encounter before fitting: its experience and loot are awarded.
     std::vector<unsigned> encounter_records_;
     std::vector<PendingLoot> pending_loot_;

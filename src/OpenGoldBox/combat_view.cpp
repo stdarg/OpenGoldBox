@@ -409,6 +409,10 @@ bool CombatView::is_quick(EntityId id) const
         {
             return true;
         }
+        if (found != combatants.end() && found->player_controls_ally && opengold::is_ally(id))
+        {
+            return quick_.contains(id);
+        }
     }
     if (!campaign_)
     {
@@ -426,7 +430,7 @@ bool CombatView::is_quick(EntityId id) const
 
 bool CombatView::any_quick() const
 {
-    if (!campaign_)
+    if (!campaign_ || !quick_.empty())
     {
         return !quick_.empty();
     }
@@ -452,7 +456,7 @@ void CombatView::quick()
         return;
     }
     const auto actor = demo_.snapshot().actor;
-    if (campaign_)
+    if (campaign_ && !opengold::is_ally(actor))
     {
         campaign_->set_quick(actor);
     }
@@ -518,7 +522,7 @@ bool CombatView::quick_key(Key key)
                 {
                     campaign_->set_quick(a.id);
                 }
-                else if (!campaign_)
+                else if (!campaign_ || a.player_controls_ally)
                 {
                     quick_.insert(a.id);
                 }
@@ -2213,8 +2217,7 @@ Array CombatView::spell_effect_rows() const
 bool CombatView::attacks_own_side(const Command &command) const
 {
     if (!campaign_ || ally_attack_confirmed_ || command.intent != rules::Intent::hostile ||
-        !command.target || command.target == command.actor || opengold::is_ally(command.actor) ||
-        is_quick(command.actor))
+        !command.target || command.target == command.actor || is_quick(command.actor))
     {
         return false;
     }

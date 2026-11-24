@@ -149,9 +149,10 @@ Native combat advances one campaign minute per round. The encounter receives
 the campaign's starting time, and the Original Rules refresh mage moon effects
 as days change during battle. Core applies the rules-owned calendar outcomes
 to participating characters without processing their combat effects twice.
-Every game's checkpoints use `OGORIGINALCOMBAT 30` (since 2026-11-21, with
-each square's movement cost), Death Knights' with its starting time; the
-reader still takes 27 and Death Knights' 28. The original charges each
+Death Knights' checkpoints use `OGORIGINALCOMBAT 30` (since 2026-11-21,
+with each square's movement cost and its starting time); the reader still
+takes 27 and Death Knights' 28. Native uses its separate format 31 and
+retains its legacy 29 layout. The original charges each
 square's own movement cost (its fields out of doors hold terrain costing 2
 and 4); the fields carry the costs, charged while Original movement is on
 (docs/ORIGINAL-RULES.md).

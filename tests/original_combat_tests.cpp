@@ -3201,6 +3201,43 @@ void native_free_action_counters_its_shipped_spells()
           "The native ring suppresses an existing Slow effect's movement penalty");
 }
 
+void native_untriggered_aurak_generator_stays_passive()
+{
+    // Installed native raw151 is permanent255 with no removal callback.
+    // Its handler is registered but absent from all resident trigger groups.
+    for (const auto game : {GoldBoxGame::dark_queen_of_krynn, GoldBoxGame::death_knights_of_krynn})
+    {
+        auto aurak = victim(500);
+        aurak.movement = 0;
+        aurak.effects.push_back({1404, 0, 255, false});
+        auto fight = arrange({{"Hero", rules::Side::party, {1, 3}, victim(500)},
+                              {"Aurak", rules::Side::opposition, {5, 3}, aurak}},
+                             37, {}, 100, game);
+        const auto initial = original::Combatant::decode(
+            view_of(fight.session->snapshot(), "Aurak").persistent.resources);
+        const auto generator = std::ranges::find(initial->effects, 1404, &original::Effect::code);
+        check(
+            generator != initial->effects.end() &&
+                generator->strength == (game == GoldBoxGame::dark_queen_of_krynn ? 255 : 3),
+            "Native keeps the inherent generator metadata while the earlier Krynn game initializes its active counter");
+        play_until(
+            *fight.session,
+            [&](const std::string &)
+            {
+                return order(*fight.session, "end");
+            },
+            [&]
+            {
+                return fight.session->snapshot().round >= 4;
+            });
+        const bool active = logged(*fight.session, "{name} fires an energy bolt.") > 0 ||
+                            logged(*fight.session, "{name} breathes a blinding cloud.") > 0;
+        check(
+            active == (game == GoldBoxGame::death_knights_of_krynn),
+            "Native's untriggered handler stays passive without disabling earlier Krynn energy powers");
+    }
+}
+
 void native_enchanted_auraks_keep_their_native_damage()
 {
     const auto damage = [](bool enchanted, bool bolt)
@@ -3288,33 +3325,6 @@ void native_enchanted_auraks_keep_their_native_damage()
                                               return effect.code == 1404;
                                           }),
           "A native Aurak's final form loses its earlier energy-bolt power");
-
-    bool image_absorbed_bolt = false;
-    for (unsigned seed = 31; seed <= 38; ++seed)
-    {
-        auto hero = victim(500);
-        hero.effects.push_back({28, 100, (3 << 5) | 12, false});
-        auto bolt_aurak = victim(500);
-        bolt_aurak.movement = 0;
-        bolt_aurak.effects.push_back({1404, 0, 0, false});
-        auto bolts = arrange({{"Hero", rules::Side::party, {1, 3}, hero},
-                              {"Aurak", rules::Side::opposition, {5, 3}, bolt_aurak}},
-                             seed, {}, 100, GoldBoxGame::dark_queen_of_krynn);
-        play_until(
-            *bolts.session,
-            [&](const std::string &)
-            {
-                return order(*bolts.session, "end");
-            },
-            [&]
-            {
-                return logged(*bolts.session, "{name} fires an energy bolt.") > 0;
-            });
-        image_absorbed_bolt =
-            image_absorbed_bolt || logged(*bolts.session, "{name} loses an image.") > 0;
-    }
-    check(image_absorbed_bolt,
-          "Native energy bolts strike mirror images as individual targeted hits");
 
     // Native effects.c excludes all three later Aurak forms from the
     // explosion's stun, independently of whether its damage gets through.
@@ -6284,6 +6294,117 @@ void later_games_turn_undead_their_own_way(GoldBoxGame game)
           "A paladin on Quick turns undead in sight");
 }
 
+void native_knights_can_lead_allied_creatures()
+{
+    const auto make = [](int rank, int charisma, int npc, int intelligence, bool knight,
+                         int leader_hp, int follower_hp, std::uint64_t seed,
+                         GoldBoxGame game = GoldBoxGame::dark_queen_of_krynn,
+                         bool npc_leader = false, bool second_leader = false, int leader_status = 0,
+                         int follower_status = 0)
+    {
+        auto leader = creature(100, 10);
+        leader.hit_points = leader_hp;
+        leader.class_levels[static_cast<std::size_t>(original::ClassSlot::monk)] = knight ? 10 : 0;
+        auto follower = creature(100, 10);
+        follower.hit_points = follower_hp;
+        follower.morale = static_cast<unsigned>(npc);
+        follower.intelligence = intelligence;
+        original::Content content;
+        content.game = game;
+        content.bestiary = {{"Knight", leader}, {"Ally", follower}, {"Foe", creature(100)}};
+        auto record = kobold_record();
+        record.game = game;
+        record.knight_order = static_cast<std::uint8_t>(rank);
+        record.npc_flag = npc_leader ? 128 : 0;
+        record.status = static_cast<std::uint8_t>(leader_status);
+        record.current_abilities.charisma = static_cast<std::uint8_t>(charisma);
+        // The native MON-record path retains status; FIGHTRECORD2 intentionally
+        // omits it, so a serialized character fixture would lose this case.
+        content.gear["Knight"] = {record, {}};
+        auto ally_record = record;
+        ally_record.knight_order = 0;
+        ally_record.npc_flag = static_cast<std::uint8_t>(npc);
+        ally_record.status = static_cast<std::uint8_t>(follower_status);
+        ally_record.current_abilities.intelligence = static_cast<std::uint8_t>(intelligence);
+        content.gear["Ally"] = {ally_record, {}};
+        rules::Encounter encounter;
+        encounter.morale = 100;
+        encounter.battlefield = {8, 8, std::vector<rules::Terrain>(64, rules::Terrain::open)};
+        const auto add =
+            [&](rules::EntityId id, std::string name, rules::Side side, rules::Cell cell)
+        {
+            rules::Participant p;
+            p.id = id;
+            p.name = p.definition = std::move(name);
+            p.side = side;
+            p.cell = cell;
+            encounter.participants.push_back(std::move(p));
+        };
+        add(1, "Knight", rules::Side::party, {1, 2});
+        add(2, "Ally", rules::Side::party, {3, 2});
+        add(3, "Foe", rules::Side::opposition, {6, 5});
+        if (second_leader)
+        {
+            record.knight_order = 3;
+            record.current_abilities.charisma = 25;
+            content.gear["Second knight"] = {record, {}};
+            content.bestiary["Second knight"] = leader;
+            add(4, "Second knight", rules::Side::party, {1, 5});
+        }
+        Fight fight{original::rules_module(std::move(content)), nullptr};
+        fight.session = fight.module->create(std::move(encounter), seed);
+        return fight;
+    };
+    auto led = make(3, 25, 128, 10, true, 100, 100, 37);
+    check(view_of(led.session->snapshot(), "Ally").player_controls_ally,
+          "A Native knight's successful leadership gives the player its living NPC ally");
+    const auto checkpoint = led.session->save();
+    auto restored = led.module->restore(checkpoint);
+    check(restored->save() == checkpoint &&
+              view_of(restored->snapshot(), "Ally").player_controls_ally,
+          "A combat checkpoint retains leadership without rolling it again");
+    until_turn_of(*led.session, "Ally");
+    check(led.session->submit(order(*led.session, "end")),
+          "The controlled ally accepts the ordinary manual combat commands");
+    for (const auto &refused :
+         {make(0, 25, 128, 10, true, 100, 100, 37), make(3, 25, 128, 3, true, 100, 100, 37),
+          make(3, 25, 0, 10, true, 100, 100, 37), make(3, 25, 128, 10, false, 100, 100, 37),
+          make(3, 25, 128, 10, true, 0, 100, 37), make(3, 25, 128, 10, true, 100, 0, 37),
+          make(3, 25, 128, 10, true, 100, 100, 37, GoldBoxGame::dark_queen_of_krynn, true),
+          make(3, 25, 128, 10, true, 100, 100, 37, GoldBoxGame::pool_of_radiance),
+          make(3, 25, 128, 10, true, 100, 100, 37, GoldBoxGame::dark_queen_of_krynn, false, false,
+               1, 0),
+          make(3, 25, 128, 10, true, 100, 100, 37, GoldBoxGame::dark_queen_of_krynn, false, false,
+               0, 1)})
+    {
+        check(
+            !view_of(refused.session->snapshot(), "Ally").player_controls_ally,
+            "Leadership excludes invalid ranks, dull/non-NPC/downed allies, non-knights, downed leaders and other games");
+    }
+    // These seeds' first d100 rolls are exactly20,40,80. Equality fails,
+    // while one extra point of current Charisma adds the source's five.
+    for (const auto [rank, seed] : {std::pair{1, 119ULL}, std::pair{2, 50ULL}, std::pair{3, 17ULL}})
+    {
+        auto boundary = make(rank, 13, 128, 10, true, 100, 100, seed);
+        auto bonus = make(rank, 14, 128, 10, true, 100, 100, seed);
+        check(!view_of(boundary.session->snapshot(), "Ally").player_controls_ally &&
+                  view_of(bonus.session->snapshot(), "Ally").player_controls_ally,
+              "Each native rank uses a strict roll comparison and current Charisma's bonus");
+        const auto unled = boundary.session->save();
+        auto unled_restored = boundary.module->restore(unled);
+        check(unled.find("OGORIGINALCOMBAT 31") != std::string::npos &&
+                  unled_restored->save() == unled &&
+                  !view_of(unled_restored->snapshot(), "Ally").player_controls_ally &&
+                  view_of(unled_restored->snapshot(), "Ally").computer_plays,
+              "Unmarked combat checkpoints stay automatic without rerolling");
+    }
+    auto later =
+        make(1, 13, 128, 10, true, 100, 100, 119, GoldBoxGame::dark_queen_of_krynn, false, true);
+    check(view_of(later.session->snapshot(), "Ally").player_controls_ally &&
+              logged(*later.session, "{leader} leads {name}.") == 1,
+          "A later eligible knight can lead an ally after the first knight fails");
+}
+
 void dark_queen_turning_honors_the_native_deity()
 {
     constexpr auto game = GoldBoxGame::dark_queen_of_krynn;
@@ -8311,6 +8432,60 @@ void dark_queen_underwater_context_changes_combat()
     check(movement(false, false) == 60 && movement(true, false) == 20 && movement(true, true) == 60,
           "Native underwater movement is a third, with its authored unrestricted marker exempt");
 
+    // These 8x8 fixtures have no plants or heights. Native adds its starting
+    // time and underwater flag before the squares, so the costs follow the
+    // first 72 space-separated values (the format name contains one space).
+    const auto cost_offset = [](const std::string &checkpoint)
+    {
+        std::size_t at = 0;
+        for (int value = 0; value < 72; ++value)
+        {
+            const auto next = checkpoint.find(' ', at);
+            check(next != std::string::npos, "The Native fixture has its full board prefix");
+            at = next + 1;
+        }
+        return at;
+    };
+    auto costly = arrange({{"Swimmer", rules::Side::party, {0, 3}, swimmer},
+                           {"Guard", rules::Side::opposition, {7, 3}, victim(1000)}},
+                          263, {}, 100, game, false, false,
+                          [](rules::Encounter &encounter)
+                          {
+                              encounter.underwater = true;
+                              encounter.time_minutes = 34567;
+                              encounter.battlefield.move_cost.assign(64, 2);
+                              encounter.battlefield.move_cost[3] = 4;
+                          });
+    const auto costly_checkpoint = costly.session->save();
+    auto costly_restored = costly.module->restore(costly_checkpoint);
+    check(costly_checkpoint.find("OGORIGINALCOMBAT 31") != std::string::npos &&
+              costly_restored->snapshot().battlefield.move_cost ==
+                  costly.session->snapshot().battlefield.move_cost &&
+              costly_restored->save() == costly_checkpoint,
+          "Native format 31 preserves its nonuniform movement costs and underwater context");
+    const auto costs_at = cost_offset(costly_checkpoint);
+    check(costly_checkpoint.compare(costs_at, 3, "64 ") == 0,
+          "The Native fixture records all 64 square costs");
+    for (const auto count : {"63", "65"})
+    {
+        auto malformed = costly_checkpoint;
+        malformed.replace(costs_at, 2, count);
+        test::rejects(
+            [&]
+            {
+                (void)costly.module->restore(malformed);
+            },
+            "A Native checkpoint refuses a cost count different from its board size");
+    }
+    auto zero_cost = costly_checkpoint;
+    zero_cost.replace(costs_at + 3, 1, "0");
+    test::rejects(
+        [&]
+        {
+            (void)costly.module->restore(zero_cost);
+        },
+        "A Native checkpoint refuses an invalid zero square cost");
+
     auto fireproof = victim(1000);
     fireproof.effects.push_back(native(93));
     auto fight = arrange({{"Mage",
@@ -8334,15 +8509,43 @@ void dark_queen_underwater_context_changes_combat()
         "Native underwater casting keeps Lightning Bolt and Ice Storm while suppressing Fireball");
     const auto checkpoint = session.save();
     auto restored = fight.module->restore(checkpoint);
+    check(checkpoint.find("OGORIGINALCOMBAT 31") != std::string::npos &&
+              restored->save() == checkpoint && !cast_command(*restored, 47),
+          "Native format 31 roundtrips underwater combat and its starting calendar");
+    // Released Native format 29 has both context fields, but no cost count.
+    // It upgrades to 31 with an empty cost vector without losing the active turn.
+    const auto costs_at_empty = cost_offset(checkpoint);
+    check(checkpoint.compare(costs_at_empty, 2, "0 ") == 0,
+          "The legacy Native fixture has no square costs");
+    auto legacy = checkpoint;
+    legacy.erase(costs_at_empty, 2);
+    legacy.replace(legacy.find("OGORIGINALCOMBAT 31"), 19, "OGORIGINALCOMBAT 29");
+    auto legacy_restored = fight.module->restore(legacy);
     check(
-        checkpoint.find("OGORIGINALCOMBAT 29") != std::string::npos &&
-            restored->save() == checkpoint && !cast_command(*restored, 47),
-        "Native underwater combat and starting calendar roundtrip without changing released checkpoints");
+        legacy_restored->snapshot().battlefield.move_cost.empty() &&
+            legacy_restored->save() == checkpoint && !cast_command(*legacy_restored, 47) &&
+            cast_command(*legacy_restored, 51),
+        "A released Native 29 checkpoint upgrades with its calendar, underwater rules and turn intact");
+    auto unsupported = checkpoint;
+    unsupported.replace(unsupported.find("OGORIGINALCOMBAT 31"), 19, "OGORIGINALCOMBAT 32");
+    test::rejects(
+        [&]
+        {
+            (void)fight.module->restore(unsupported);
+        },
+        "An unsupported Native combat format remains rejected");
+    cast_now(*legacy_restored, "Mage", 51,
+             [&]
+             {
+                 return aim_at_cell(*legacy_restored, {4, 3});
+             });
     cast_now(session, "Mage", 51,
              [&]
              {
                  return aim_at_cell(session, {4, 3});
              });
+    check(legacy_restored->save() == session.save(),
+          "A released Native 29 fight continues the real spell with identical dice and effects");
     const auto lightning = session.snapshot();
     check(view_of(lightning, "Plain").hit_points < 1000 &&
               view_of(lightning, "Fireproof").hit_points == 1000 &&
@@ -8543,6 +8746,7 @@ int main()
         a_fight_without_attacks_ends_after_15_rounds();
         each_game_storms_by_its_own_element();
         native_blasts_respect_defenses();
+        native_untriggered_aurak_generator_stays_passive();
         native_enchanted_auraks_keep_their_native_damage();
         native_free_action_counters_its_shipped_spells();
         native_stinking_cloud_uses_its_actual_dispatch_context();
@@ -8656,6 +8860,7 @@ int main()
         later_games_turn_undead_their_own_way(darkness_game);
         later_games_turn_undead_their_own_way(GoldBoxGame::dark_queen_of_krynn);
         dark_queen_turning_honors_the_native_deity();
+        native_knights_can_lead_allied_creatures();
         darkness_ai_shuns_clouds();
         darkness_clouds_spare_the_poison_proof();
         darkness_beholder_fires_its_rays();

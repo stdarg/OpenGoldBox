@@ -62,6 +62,30 @@ constexpr unsigned rest_length_format = 52;
 constexpr unsigned rest_interruption_format = 53;
 constexpr std::string_view campaign_magic = "OPENGOLD-CAMPAIGN ";
 
+struct MatrixWilderness
+{
+    std::uint16_t kind{}, kind_instruction{};
+};
+
+// The installed ECL1 wilderness controllers retain the previous 3D map.
+// Their own initialization writes the area kind at these instruction sites.
+std::optional<MatrixWilderness> matrix_wilderness(GoldBoxGame game, unsigned script)
+{
+    if (game != GoldBoxGame::matrix_cubed)
+    {
+        return std::nullopt;
+    }
+    switch (script)
+    {
+    case 32:
+        return MatrixWilderness{0xA8, 0x8045};
+    case 48:
+        return MatrixWilderness{0xA2, 0x802B};
+    default:
+        return std::nullopt;
+    }
+}
+
 void require(bool ok, const char *message)
 {
     if (!ok)
@@ -698,6 +722,7 @@ template <bool Reading> struct SaveCodec
                 "Unsupported saved travel mode");
         unsigned area = v.current_area_;
         field(area);
+        const auto wilderness = matrix_wilderness(v.game(), v.current_script_);
         // Only the new game has larger maps. Keep every released game's
         // original 256-character encoding byte for byte in format 53.
         const std::size_t knowledge_size =
@@ -736,7 +761,7 @@ template <bool Reading> struct SaveCodec
                                              {
                                                  return d.second->loaded_by(v.current_script_);
                                              })
-                              : darkness || champions_overland ||
+                              : darkness || champions_overland || wilderness.has_value() ||
                                     v.town_->districts.at(area)->loaded_by(v.current_script_),
                     "Saved district and script disagree");
             v.current_area_ = 0;
@@ -889,6 +914,37 @@ template <bool Reading> struct SaveCodec
             v.configure_town();
         }
         machine(v.machine_);
+        if constexpr (reading)
+        {
+            if (wilderness)
+            {
+                // Only defer the map association until the restored VM can
+                // authenticate this installed controller and its presentation.
+                const auto bank = v.town_->script_banks.find(v.current_script_);
+                bool controller_matches = false;
+                try
+                {
+                    const auto instruction =
+                        v.machine_.program_->instruction(wilderness->kind_instruction);
+                    controller_matches =
+                        v.machine_.program_->game() == v.game() && instruction.opcode == 9 &&
+                        instruction.operands.size() == 2 && instruction.operands[0].tag == 0 &&
+                        instruction.operands[0].value == wilderness->kind &&
+                        instruction.operands[1].tag == 1 && instruction.operands[1].value == 0x4BE6;
+                }
+                catch (const por::EclError &)
+                {
+                    // A different installed program is not this controller.
+                }
+                require(controller_matches && bank != v.town_->script_banks.end() &&
+                            bank->second == 1 &&
+                            v.machine_.variable(v.game_cell(por::ecl_script_bank)) == 1 &&
+                            v.machine_.variable(por::EclAddress{0x4BF2}) == v.current_script_ &&
+                            v.machine_.variable(por::EclAddress{0x4BE6}) == wilderness->kind &&
+                            v.machine_.variable(por::EclAddress{0x4BA6}) == 4,
+                        "Invalid saved Matrix wilderness context");
+            }
+        }
         bool matrix_won = false;
         if (v.game() == GoldBoxGame::matrix_cubed)
         {

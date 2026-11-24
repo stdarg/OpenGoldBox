@@ -235,8 +235,7 @@ bool RolfTourView::solar_map_key(Key key)
 std::optional<og::OrbitCell> RolfTourView::solar_cell_at(Vector2 point) const
 {
     // The map is drawn square and centered in the view's frame (tour_visuals.gd).
-    const auto &bounds = required_node<Control>(*this, "%SceneBounds");
-    const auto frame = bounds.get_global_rect();
+    const auto frame = required_node<Control>(*this, "%SceneBounds").get_global_rect();
     const float side = std::min(frame.size.x, frame.size.y);
     if (side <= 0.0F)
     {

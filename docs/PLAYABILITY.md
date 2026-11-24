@@ -2237,34 +2237,28 @@ checks remain; this is not an accepted complete player outcome.
 
 ### Current parallel checkpoint (2026-11-20)
 
-The user explicitly authorized parallel agents and approximately 80 percent
-CPU utilization. Native combat/ending work, Countdown's earned route and
-Matrix's loader/ending support now have separate implementation owners;
-shared changes integrate in one checkout before final checks. This supersedes
-the earlier serial execution policy, without changing acceptance criteria.
+The user authorized parallel agents and approximately 80 percent CPU usage.
+Separate owners continue Native, Countdown and Matrix earned routes; one
+checkout integrates their shared engine fixes. This supersedes the earlier
+serial execution policy without changing completion acceptance.
 
 Eight commercial campaigns retain the earned-ending evidence above. UA's
-generated-design victory and ordinary winning-save preservation are delivered
-in `ed0be5e8`; no installed `.DSN` adventure was available. See
-[UA's verification](games/ua.md). Native's complete earned ending remains
-unverified. Countdown has eleven real ground victories and an earned ship,
-with all six crew surviving, but its full ending still requires the solar and
-ship transactions. See [Countdown's earned checks](games/countdown.md#earned-campaign-checks).
-The integrated Matrix loader verifies a corrected legal opening and the
-authored ending/save protocol; that diagnostic does not establish a complete
-earned campaign.
+generated-design victory and ordinary winning-save preservation are delivered;
+no installed `.DSN` adventure was available. See [UA](games/ua.md).
+Native's complete ending remains unverified; its actual Sword-promotion saves
+now reload without losing history. See [Dark Queen](games/dark-queen.md).
+Countdown has eleven genuine ground victories and an earned ship, actual solar
+flight to Ceres and a saved descent into the lower Asteroid Base. See
+[its earned checks](games/countdown.md#earned-campaign-checks).
+Matrix's legal Novice route has reached the Ceres base through actual Caloris
+combat and solar travel; its complete ending remains unverified. See
+[Matrix Cubed](games/matrix-cubed.md).
+
+The Mac session's published creation and ship-combat handoffs are integrated
+with main's solar map locally. Both native and Linux presets built successfully;
+updated route/script prerequisites and the complete game suite are being
+verified before delivery. These builds do not certify the three missing wins.
 
 The universal victory-time character library remains the next phase after all
 twelve games have verified wins. Capture must preserve every actual winning
 PC and permanent NPC before Continue or scripted departures.
-
-The combined checkpoint passes 20 focused native/rules/save checks plus the
-separate real Countdown Camp check, and seven Godot checks. Logs are
-`/tmp/opengold-integrated-camp-ground-career-focused-checks-v1.log`,
-`/tmp/opengold-integrated-countdown-camp-check-v1.log` and
-`/tmp/opengold-integrated-camp-ground-career-godot-checks-v1.log`.
-The preceding Native/Countdown baseline's 170-check broad run passed 168
-initially; its finder fixture passed with an isolated temporary directory
-(an existing `/tmp/.git` affected the test's outside-checkout assumption),
-and its stale localization references passed after catalog regeneration.
-These baseline results do not replace the final focused checks above.

@@ -32,6 +32,24 @@ headroom for the desktop; monitor memory and actual load before new launches.
 The universal library of every winning PC and permanent NPC follows
 all twelve wins, with snapshots captured at victory before Continue/departures.
 
+## Integrated control checkpoint (2026-11-20)
+
+Native knights now use the original combat-start leadership rule. Living,
+non-NPC knights attempt to control living NPC allies with current Intelligence
+above three, using their order and current Charisma with the source's strict
+roll comparison. Unled NPCs remain automatic; successful control uses the
+existing manual and Quick controls. A restored combat keeps that result
+without rerolling. The existing combat format 29 and profile 15 are unchanged.
+
+The integrated Native control, Matrix paid-shop prefix, native Camp and save
+checks pass **22/22**, with **12/12 application/fixture checks** and a Linux
+package smoke pass. Logs are
+`/tmp/opengold-integrated-led-caloris-focused-checks-v1.log`,
+`/tmp/opengold-integrated-led-caloris-godot-checks-v1.log` and
+`/tmp/opengold-integrated-led-caloris-package-smoke-v1.log`.
+These checks do not establish a complete earned Dark Queen ending; the Font
+and subsequent campaign ending remain unverified.
+
 ## Baseline and references
 
 Original files: `/home/edmond/GoldBox/DQK`; manuals, cluebook and journal:
@@ -617,6 +635,10 @@ extension builds and Godot checks pass 4/4 in 19.95 seconds. Logs are
 `/tmp/opengold-dqk-aurak-isolated-bolts-checks-v1.log` and
 `/tmp/opengold-dqk-aurak-transition-godot-checks-v2.log`.
 
+The active-power assumption in this earlier checkpoint is superseded by the
+installed-executable activation audit below. The Native mirror-bolt test was
+asserting an untriggered behavior; general Mirror Image coverage remains.
+
 An ordinary Normal replay with paid sling purchases cleared the Royal Mages,
 the king rescue and the tower through beat 332. All six PCs and Grunschka are
 alive at full HP in `/tmp/opengold-dqk-four-slings-current-332.sav`. The Font
@@ -660,3 +682,48 @@ The subsequent walk exposes a separate failure accepting an actually won
 sea-snake/anemone battle. That failure is under diagnosis; the new defensive
 preparation has not yet reached the Font. Neither the Font nor the complete
 campaign has been won.
+
+## Installed Aurak activation audit (2026-11-20)
+
+The installed executable's resident `fx_trigger_group` dispatch was checked
+case by case against the reconstruction: none of its 24 groups contains raw
+151. The AI group 14 omits it, and combat-start group 24 contains only raw100.
+The native handler is registered but has no direct activation call. Installed
+Auraks 77/91 carry it at strength255, duration0, no removal callback and no
+usable equipment that invokes it. The source `fx_add` stores the effect
+without activating it. Evidence is retained in
+`/tmp/opengold-native-fx-installed-group-facts.txt` and
+`/tmp/opengold-native-aurak-audit-facts.txt`.
+
+OpenGoldBox was starting the earlier Krynn counter and actively firing that
+power in Native. Two Native-only dispatch guards preserve the inherent
+metadata without activating its bolt/breath handler. A regression first
+reproduced the incorrect255-to3 initialization, then passed with Native passive
+and the earlier Krynn power still active. Damage, saving throws and Native
+spellcasting are unchanged. This is activation fidelity evidence, not an earned
+Font or complete campaign win.
+
+### Sword petition save replay
+
+An imported Crown knight can visit level 13, advance to 15, and accept the
+ordinary Sword petition back to 13. Later divine preparation belongs after
+that chronological petition. The reader now defers that nonempty preparation
+while the earlier visit cannot prepare spells, then applies the existing rules
+validation after the petition. No save fields, format changes, removed history
+or SRD rule changes are involved. Invalid and unconsumed choices still fail.
+
+The focused save regression reproduces the failure before the correction and
+passes afterward. Previously failing real route saves at beats 277 and 332
+also independently reload and resave byte for byte, preserving both actual
+Sword promotions, HP, XP and spell choices. Evidence is in
+`/tmp/opengold-dqk-sword-petition-audit-{277,332}-replay-green-v1.txt`.
+The prepared Font party has not yet won that battle or the campaign.
+
+### Movement checkpoint compatibility (2026-11-23)
+
+Native now writes Original combat format 31, combining its time/underwater
+state with main's per-square movement costs. The other games retain format
+30. Native's costless format 29 remains readable with its original field
+order, alongside earlier formats 27/28 and main's 30. The compatibility tests
+exercise an actual legacy continuation, nonuniform movement costs and refused
+malformed cost vectors; verification is pending the rebuilt integration.

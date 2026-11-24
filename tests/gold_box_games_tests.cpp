@@ -13286,7 +13286,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             }
             std::cout << "\n";
         }
-        const auto caster = [game](const opengold::rules::CombatantView &unit)
+        const auto caster = [game, &state](const opengold::rules::CombatantView &unit)
         {
             if (game == GoldBoxGame::dark_queen_of_krynn &&
                 (unit.name.find("WIZARD") != std::string::npos ||
@@ -13295,11 +13295,27 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             {
                 const auto numbers =
                     opengold::original::Combatant::decode(unit.persistent.resources);
-                return numbers && !numbers->spells.empty() &&
+                const bool silenced = std::ranges::any_of(
+                    state.combatants,
+                    [&](const auto &carrier)
+                    {
+                        const auto powers =
+                            opengold::original::Combatant::decode(carrier.persistent.resources);
+                        return carrier.conscious && powers &&
+                               std::max(std::abs(carrier.cell.x - unit.cell.x),
+                                        std::abs(carrier.cell.y - unit.cell.y)) <= 1 &&
+                               std::ranges::any_of(powers->effects,
+                                                   [](const auto &effect)
+                                                   {
+                                                       return effect.code == 21;
+                                                   });
+                    });
+                return numbers && !numbers->spells.empty() && !silenced &&
                        std::ranges::none_of(numbers->effects,
                                             [](const auto &effect)
                                             {
-                                                return effect.code == 30 || effect.code == 31;
+                                                return effect.code == 30 || effect.code == 31 ||
+                                                       effect.code == 1459 || effect.code == 1460;
                                             });
             }
             if (game == GoldBoxGame::secret_of_the_silver_blades)
@@ -13546,6 +13562,46 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         const auto rank = [&](const opengold::rules::Command &command)
         {
             const auto target = unit_of(command.target);
+            if (native_font && (command.verb == "ranged" || command.verb == "throw"))
+            {
+                const auto numbers =
+                    opengold::original::Combatant::decode(target->persistent.resources);
+                if (numbers && std::ranges::any_of(numbers->effects,
+                                                   [](const auto &effect)
+                                                   {
+                                                       return effect.code == 1459 ||
+                                                              effect.code == 1460;
+                                                   }))
+                {
+                    return 99;
+                }
+                const bool carries_silence = std::ranges::any_of(
+                    state.combatants,
+                    [](const auto &unit)
+                    {
+                        const auto numbers =
+                            opengold::original::Combatant::decode(unit.persistent.resources);
+                        return unit.side == opengold::rules::Side::party && unit.conscious &&
+                               numbers &&
+                               std::ranges::any_of(numbers->effects,
+                                                   [](const auto &effect)
+                                                   {
+                                                       return effect.code == 21;
+                                                   });
+                    });
+                if (carries_silence && state.round == 1 &&
+                    ((actor->name == "cleric 4" && target->name == "ENCHANTED BOZAK 16") ||
+                     (actor->name == "knight 2" && target->name == "ENCHANTED AURAK 18")))
+                {
+                    return -1;
+                }
+                const bool fresh = !interrupted.contains(target->id);
+                const bool aurak = target->name.find("AURAK") != std::string::npos;
+                return fresh && caster(*target)
+                           ? (aurak ? (casting(*target) ? 0 : 1) : (casting(*target) ? 2 : 3))
+                       : aurak ? 5
+                               : 6;
+            }
             if (native_font && command.verb == "melee")
             {
                 const auto numbers =
@@ -13553,10 +13609,12 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 if (numbers && std::ranges::any_of(numbers->effects,
                                                    [](const auto &effect)
                                                    {
-                                                       return effect.code == 343;
+                                                       return effect.code == 343 ||
+                                                              effect.code == 1459 ||
+                                                              effect.code == 1460;
                                                    }))
                 {
-                    return 3;
+                    return 99;
                 }
             }
             return casting(*target) ? 0
@@ -13568,10 +13626,30 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         for (const auto &command : commands)
         {
             if ((command.verb == "melee" || command.verb == "ranged" || command.verb == "throw") &&
-                unit_of(command.target) != state.combatants.end() && rank(command) < 2 &&
-                (!blow || rank(command) < rank(*blow)))
+                unit_of(command.target) != state.combatants.end() &&
+                rank(command) < (native_font ? 99 : 2) && (!blow || rank(command) < rank(*blow)))
             {
                 blow = &command;
+            }
+        }
+        if (!blow && native_font)
+        {
+            const bool shielded_melee =
+                std::ranges::any_of(commands,
+                                    [&](const auto &command)
+                                    {
+                                        return command.verb == "melee" &&
+                                               unit_of(command.target) != state.combatants.end() &&
+                                               rank(command) == 99;
+                                    });
+            if (shielded_melee)
+            {
+                const auto end = std::ranges::find(commands, std::string_view("end"),
+                                                   &opengold::rules::Command::verb);
+                if (end != commands.end())
+                {
+                    return *end;
+                }
             }
         }
         return blow ? std::optional{*blow} : std::nullopt;
@@ -13980,6 +14058,19 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         const int healing_threshold = native_font || enemies_left <= 2 ? 9 : 4;
         // The crystal leaves its bearer near death. Heal a badly wounded
         // neighbour before attacking or starting another support spell.
+        const auto priority_patient = [&](const auto &unit)
+        {
+            if (!native_font || !unit.name.starts_with("magic_user"))
+            {
+                return false;
+            }
+            const auto numbers = opengold::original::Combatant::decode(unit.persistent.resources);
+            return numbers && std::ranges::any_of(numbers->effects,
+                                                  [](const auto &effect)
+                                                  {
+                                                      return effect.code == 343;
+                                                  });
+        };
         const opengold::rules::CombatantView *patient = nullptr;
         for (const auto &unit : state.combatants)
         {
@@ -13987,45 +14078,56 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 unit.persistent.description != opengold::original::stoned_description &&
                 (!earned_dark_queen || !opengold::is_ally(unit.id)) &&
                 unit.hit_points * 12 < unit.max_hit_points * healing_threshold &&
-                (!patient || unit.hit_points < patient->hit_points))
+                (!patient || priority_patient(unit) > priority_patient(*patient) ||
+                 (priority_patient(unit) == priority_patient(*patient) &&
+                  unit.hit_points < patient->hit_points)))
             {
                 patient = &unit;
             }
         }
         if (patient)
         {
-            for (const auto &command : commands)
+            for (const unsigned spell : {236U, 171U, 158U})
             {
-                if (command.verb == "aim" && command.item == 236 && command.target == patient->id)
+                if (!native_font && spell != 236)
                 {
-                    return command;
+                    continue;
                 }
-            }
-            for (const auto &command : commands)
-            {
-                if (command.verb == "cast" && command.item == 236)
+                for (const auto &command : commands)
                 {
-                    const auto range = [&](opengold::rules::Cell cell)
-                    {
-                        return std::max(std::abs(patient->cell.x - cell.x),
-                                        std::abs(patient->cell.y - cell.y));
-                    };
-                    if (range(actor->cell) <= 1)
+                    if (command.verb == "aim" && command.item == spell &&
+                        command.target == patient->id)
                     {
                         return command;
                     }
-                    const opengold::rules::Command *nearer = nullptr;
-                    for (const auto &step : commands)
+                }
+                for (const auto &command : commands)
+                {
+                    if (command.verb == "cast" && command.item == spell)
                     {
-                        if (step.verb == "move" && range(step.destination) < range(actor->cell) &&
-                            (!nearer || range(step.destination) < range(nearer->destination)))
+                        const auto range = [&](opengold::rules::Cell cell)
                         {
-                            nearer = &step;
+                            return std::max(std::abs(patient->cell.x - cell.x),
+                                            std::abs(patient->cell.y - cell.y));
+                        };
+                        if (range(actor->cell) <= 1)
+                        {
+                            return command;
                         }
-                    }
-                    if (nearer)
-                    {
-                        return *nearer;
+                        const opengold::rules::Command *nearer = nullptr;
+                        for (const auto &step : commands)
+                        {
+                            if (step.verb == "move" &&
+                                range(step.destination) < range(actor->cell) &&
+                                (!nearer || range(step.destination) < range(nearer->destination)))
+                            {
+                                nearer = &step;
+                            }
+                        }
+                        if (nearer)
+                        {
+                            return *nearer;
+                        }
                     }
                 }
             }
@@ -14039,6 +14141,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
     const auto native_draconian_movement =
         [](const opengold::rules::CombatSession &combat,
            std::set<opengold::rules::EntityId> &spaced,
+           std::set<opengold::rules::EntityId> &silence_escaped,
            bool spread) -> std::optional<opengold::rules::Command>
     {
         const auto state = combat.snapshot();
@@ -14047,6 +14150,44 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         if (actor == state.combatants.end())
         {
             return std::nullopt;
+        }
+        if (spread && state.round > 1 && (actor->name == "knight 2" || actor->name == "knight 3"))
+        {
+            // Start with the actually purchased Sling to interrupt a caster,
+            // then use Ready to draw the knight's carried enchanted weapon.
+            const std::string_view weapon =
+                actor->name == "knight 2" ? "Short Sword" : "Footman's Dragonlance";
+            const auto commands = combat.legal_commands();
+            const bool wielding = std::ranges::any_of(commands,
+                                                      [&](const auto &command)
+                                                      {
+                                                          return command.verb == "unready" &&
+                                                                 command.label.starts_with(weapon);
+                                                      });
+            if (!wielding)
+            {
+                for (const auto &command : commands)
+                {
+                    if (command.verb == "unready" && command.label == "Sling")
+                    {
+                        return command;
+                    }
+                }
+                for (const auto &command : commands)
+                {
+                    if (command.verb == "ready" && command.label.starts_with(weapon))
+                    {
+                        return command;
+                    }
+                }
+                for (const auto &command : commands)
+                {
+                    if (command.verb == "unready" && command.label.starts_with("Shield"))
+                    {
+                        return command;
+                    }
+                }
+            }
         }
         std::vector<opengold::rules::Cell> blasts;
         bool enchanted = false, adjacent_enemy = false;
@@ -14102,6 +14243,138 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             return std::pair{nearest, total};
         };
         const auto own = opengold::original::Combatant::decode(actor->persistent.resources);
+        if (spread && (actor->name.starts_with("magic_user") || actor->name.starts_with("cleric")))
+        {
+            std::vector<std::pair<opengold::rules::EntityId, opengold::rules::Cell>> carriers;
+            for (const auto &unit : state.combatants)
+            {
+                const auto numbers =
+                    opengold::original::Combatant::decode(unit.persistent.resources);
+                if (unit.conscious && numbers &&
+                    std::ranges::any_of(numbers->effects,
+                                        [](const auto &effect)
+                                        {
+                                            return effect.code == 21;
+                                        }))
+                {
+                    carriers.emplace_back(unit.id, unit.cell);
+                }
+            }
+            const auto quiet = [&](auto cell)
+            {
+                return std::ranges::any_of(carriers,
+                                           [&](const auto &carrier)
+                                           {
+                                               return carrier.first == actor->id ||
+                                                      distance(cell, carrier.second) <= 1;
+                                           });
+            };
+            const auto commands = combat.legal_commands();
+            if (quiet(actor->cell))
+            {
+                const auto worth = [&](auto cell)
+                {
+                    const int threats = static_cast<int>(std::ranges::count_if(
+                        state.combatants,
+                        [&](const auto &unit)
+                        {
+                            return unit.side != actor->side && unit.conscious &&
+                                   distance(cell, unit.cell) <= 1;
+                        }));
+                    return std::pair{-threats, -distance(actor->cell, cell)};
+                };
+                const opengold::rules::Command *step = nullptr;
+                for (const auto &command : commands)
+                {
+                    if (command.verb == "move" && !quiet(command.destination) &&
+                        (!step || worth(command.destination) > worth(step->destination)))
+                    {
+                        step = &command;
+                    }
+                }
+                if (step)
+                {
+                    silence_escaped.insert(actor->id);
+                    return *step;
+                }
+            }
+            if (silence_escaped.contains(actor->id))
+            {
+                const auto end = std::ranges::find(commands, std::string_view("end"),
+                                                   &opengold::rules::Command::verb);
+                if (end != commands.end())
+                {
+                    return *end;
+                }
+            }
+        }
+        if (spread && own && blast_distance(actor->cell) >= 5 &&
+            std::ranges::any_of(own->effects,
+                                [](const auto &effect)
+                                {
+                                    return effect.code == 21;
+                                }))
+        {
+            const auto coverage = [&](auto cell)
+            {
+                int count = 0;
+                for (const auto &unit : state.combatants)
+                {
+                    if (unit.side == actor->side || !unit.conscious ||
+                        (unit.name.find("AURAK") == std::string::npos &&
+                         unit.name.find("BOZAK") == std::string::npos) ||
+                        distance(cell, unit.cell) > 1)
+                    {
+                        continue;
+                    }
+                    const bool covered = std::ranges::any_of(
+                        state.combatants,
+                        [&](const auto &other)
+                        {
+                            const auto numbers =
+                                opengold::original::Combatant::decode(other.persistent.resources);
+                            return other.id != actor->id && other.conscious &&
+                                   distance(other.cell, unit.cell) <= 1 && numbers &&
+                                   std::ranges::any_of(numbers->effects,
+                                                       [](const auto &effect)
+                                                       {
+                                                           return effect.code == 21;
+                                                       });
+                        });
+                    count += !covered;
+                }
+                return count;
+            };
+            const auto commands = combat.legal_commands();
+            const opengold::rules::Command *step = nullptr;
+            for (const auto &command : commands)
+            {
+                if (command.verb != "move" ||
+                    coverage(command.destination) <= coverage(actor->cell))
+                {
+                    continue;
+                }
+                const bool blocks_our_caster =
+                    std::ranges::any_of(state.combatants,
+                                        [&](const auto &unit)
+                                        {
+                                            return unit.id != actor->id &&
+                                                   unit.side == actor->side && unit.conscious &&
+                                                   (unit.name.starts_with("magic_user") ||
+                                                    unit.name.starts_with("cleric")) &&
+                                                   distance(command.destination, unit.cell) <= 1;
+                                        });
+                if (!blocks_our_caster &&
+                    (!step || std::pair{coverage(command.destination),
+                                        -distance(actor->cell, command.destination)} >
+                                  std::pair{coverage(step->destination),
+                                            -distance(actor->cell, step->destination)}))
+                {
+                    step = &command;
+                }
+            }
+            return step ? std::optional{*step} : std::nullopt;
+        }
         const bool font_mage = spread && actor->name.starts_with("magic_user");
         const bool has_major_burst =
             own && (std::ranges::find(own->spells, 324) != own->spells.end() ||
@@ -14170,27 +14443,39 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     target = &unit;
                 }
             }
+            if (actor->name == "knight 1" || actor->name == "Grunschka")
+            {
+                const auto mage = std::ranges::find_if(
+                    state.combatants,
+                    [](const auto &unit)
+                    {
+                        return unit.name.starts_with("magic_user") && unit.conscious;
+                    });
+                if (mage != state.combatants.end())
+                {
+                    for (const auto &unit : state.combatants)
+                    {
+                        if (unit.side != actor->side && unit.conscious &&
+                            (!target ||
+                             distance(mage->cell, unit.cell) < distance(mage->cell, target->cell)))
+                        {
+                            target = &unit;
+                        }
+                    }
+                }
+            }
             if (target && distance(actor->cell, target->cell) > 1)
             {
                 std::optional<opengold::rules::Command> nearer;
                 for (const auto &option : combat.legal_commands())
                 {
-                    if (option.verb != "move" || distance(option.destination, actor->cell) > 1 ||
-                        distance(option.destination, target->cell) >=
-                            distance(actor->cell, target->cell))
+                    if (option.verb != "move" || distance(option.destination, target->cell) >=
+                                                     distance(actor->cell, target->cell))
                     {
                         continue;
                     }
-                    const bool exposed =
-                        std::ranges::any_of(state.combatants,
-                                            [&](const auto &unit)
-                                            {
-                                                return unit.id != target->id &&
-                                                       unit.side != actor->side && unit.conscious &&
-                                                       distance(option.destination, unit.cell) <= 1;
-                                            });
-                    if (!exposed && (!nearer || distance(option.destination, target->cell) <
-                                                    distance(nearer->destination, target->cell)))
+                    if (!nearer || distance(option.destination, target->cell) <
+                                       distance(nearer->destination, target->cell))
                     {
                         nearer = option;
                     }
@@ -14250,8 +14535,8 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         }
         const bool escaping = blast_distance(actor->cell) < 5;
         const bool archer = own && own->missile && own->missile->loaded;
-        const bool spreading = spread && !font_mage && !archer && enchanted && !adjacent_enemy &&
-                               state.round == 1 && !spaced.contains(actor->id) &&
+        const bool spreading = spread && !font_mage && actor->name != "cleric 5" && enchanted &&
+                               !adjacent_enemy && state.round == 1 && !spaced.contains(actor->id) &&
                                spacing(actor->cell).first < 3;
         if (!escaping && !spreading)
         {
@@ -14263,9 +14548,20 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         const auto worth = [&](auto cell)
         {
             const auto apart = spacing(cell);
-            return std::tuple{escaping ? blast_distance(cell) : apart.first,
-                              escaping ? apart.first : apart.second,
-                              escaping ? apart.second : blast_distance(cell)};
+            if (escaping)
+            {
+                const int threatened = static_cast<int>(
+                    std::ranges::count_if(state.combatants,
+                                          [&](const auto &unit)
+                                          {
+                                              return unit.side != actor->side && unit.conscious &&
+                                                     distance(cell, unit.cell) <= 1;
+                                          }));
+                return std::tuple{std::min(blast_distance(cell), 5), -threatened,
+                                  -distance(actor->cell, cell)};
+            }
+            return std::tuple{std::min(apart.first, 3), -distance(actor->cell, cell),
+                              blast_distance(cell)};
         };
         for (const auto &command : commands)
         {
@@ -14278,7 +14574,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                                distance(command.destination, unit.cell) < 3;
                                     });
             if (command.verb == "move" && !exposed &&
-                (escaping || distance(command.destination, actor->cell) <= 1) &&
+                (escaping || archer || distance(command.destination, actor->cell) <= 1) &&
                 worth(command.destination) > worth(actor->cell) &&
                 (!step || worth(command.destination) > worth(step->destination)))
             {
@@ -14291,10 +14587,117 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         }
         return step ? std::optional{*step} : std::nullopt;
     };
-    // Remove the native mages' and enchanted bozaks' retaliating shields
-    // before melee. Aim off the party where possible to retain its wards.
-    const auto native_dispel_shields =
+    // Cast while this cleric can still act, at empty ground among allied
+    // fighters. Native case15 saves each occupant separately; every real
+    // recipient then carries its own moving Silence sphere.
+    const auto native_opening_silence =
         [](const opengold::rules::CombatSession &fight) -> std::optional<opengold::rules::Command>
+    {
+        const auto state = fight.snapshot();
+        const auto actor =
+            std::ranges::find(state.combatants, state.actor, &opengold::rules::CombatantView::id);
+        if (state.round != 1 || actor == state.combatants.end())
+        {
+            return std::nullopt;
+        }
+        const auto worth = [&](auto cell)
+        {
+            int value = 0;
+            for (const auto &unit : state.combatants)
+            {
+                if (!unit.conscious || unit.side != actor->side ||
+                    std::max(std::abs(cell.x - unit.cell.x), std::abs(cell.y - unit.cell.y)) > 1)
+                {
+                    continue;
+                }
+                value += unit.name.starts_with("magic_user") || unit.name.starts_with("cleric")
+                             ? -100
+                         : opengold::is_ally(unit.id) &&
+                                 (!unit.player_controls_ally || unit.computer_plays)
+                             ? 1
+                             : 10;
+            }
+            return value;
+        };
+        const auto commands = fight.legal_commands();
+        const opengold::rules::Command *best = nullptr;
+        for (const auto &command : commands)
+        {
+            if (command.verb == "aim" && command.item == 25 && command.target == 0 &&
+                worth(command.destination) >= 4 &&
+                (!best || worth(command.destination) > worth(best->destination)))
+            {
+                best = &command;
+            }
+        }
+        if (best)
+        {
+            return *best;
+        }
+        for (const auto &command : commands)
+        {
+            if (command.verb == "cast" && command.item == 25)
+            {
+                return command;
+            }
+        }
+        return std::nullopt;
+    };
+    // A friendly Dispel can remove the mage's protective spells together
+    // with a hold. Refresh them from actual remaining memorized copies.
+    const auto native_refresh_wards =
+        [](const opengold::rules::CombatSession &fight) -> std::optional<opengold::rules::Command>
+    {
+        const auto state = fight.snapshot();
+        const auto actor =
+            std::ranges::find(state.combatants, state.actor, &opengold::rules::CombatantView::id);
+        if (actor == state.combatants.end() || !actor->name.starts_with("magic_user"))
+        {
+            return std::nullopt;
+        }
+        const auto numbers = opengold::original::Combatant::decode(actor->persistent.resources);
+        if (!numbers)
+        {
+            return std::nullopt;
+        }
+        const auto commands = fight.legal_commands();
+        for (const auto &command : commands)
+        {
+            if (command.verb == "flames" && command.label == "Cold flames")
+            {
+                return command;
+            }
+        }
+        const auto has = [&](int code)
+        {
+            return std::ranges::any_of(numbers->effects,
+                                       [code](const auto &effect)
+                                       {
+                                           return effect.code == code;
+                                       });
+        };
+        for (const unsigned spell : {312U, 185U})
+        {
+            if (spell == 312 ? has(457) : has(254) && has(343))
+            {
+                continue;
+            }
+            for (const auto &command : commands)
+            {
+                if (command.verb == "cast" && command.item == spell)
+                {
+                    return command;
+                }
+            }
+        }
+        return std::nullopt;
+    };
+    // Dispel the draconians' retaliating shields and the Auraks' natural
+    // breath/energy handler, whose combat-start strength is actually three.
+    // Keep the party's protective spells outside the chosen area.
+    const auto native_dispel_shields = [](const opengold::rules::CombatSession &fight,
+                                          bool allow_item =
+                                              false) -> std::optional<opengold::rules::Command>
     {
         const auto state = fight.snapshot();
         const auto actor =
@@ -14303,21 +14706,28 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         {
             return std::nullopt;
         }
-        std::set<opengold::rules::EntityId> shielded;
+        std::map<opengold::rules::EntityId, int> dispellable;
         for (const auto &unit : state.combatants)
         {
             const auto numbers = opengold::original::Combatant::decode(unit.persistent.resources);
-            if (unit.side != actor->side && unit.conscious && numbers &&
-                std::ranges::any_of(numbers->effects,
-                                    [](const auto &effect)
-                                    {
-                                        return effect.code == 343;
-                                    }))
+            if (unit.side == actor->side || !unit.conscious || !numbers)
             {
-                shielded.insert(unit.id);
+                continue;
+            }
+            int value = 0;
+            for (const auto &effect : numbers->effects)
+            {
+                if (effect.strength < 255)
+                {
+                    value += effect.code == 1404 ? 30 : effect.code == 343 ? 10 : 0;
+                }
+            }
+            if (value)
+            {
+                dispellable.emplace(unit.id, value);
             }
         }
-        if (shielded.empty())
+        if (dispellable.empty())
         {
             return std::nullopt;
         }
@@ -14329,11 +14739,29 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 if (unit.conscious &&
                     std::max(std::abs(unit.cell.x - aim.x), std::abs(unit.cell.y - aim.y)) <= 1)
                 {
-                    score += shielded.contains(unit.id) ? 10
-                             : unit.side == actor->side && unit.name.starts_with("magic_user")
-                                 ? -100
-                             : unit.side == actor->side ? -3
-                                                        : 0;
+                    const auto target = dispellable.find(unit.id);
+                    if (target != dispellable.end())
+                    {
+                        score += target->second;
+                        if (allow_item && actor->name.starts_with("magic_user"))
+                        {
+                            const bool cleric_can_reach = std::ranges::any_of(
+                                state.combatants,
+                                [&](const auto &cleric)
+                                {
+                                    const int dx = std::abs(cleric.cell.x - unit.cell.x);
+                                    const int dy = std::abs(cleric.cell.y - unit.cell.y);
+                                    return cleric.side == actor->side && cleric.conscious &&
+                                           cleric.name.starts_with("cleric") &&
+                                           2 * std::max(dx, dy) + std::min(dx, dy) <= 12;
+                                });
+                            score += cleric_can_reach ? 0 : 20;
+                        }
+                    }
+                    else if (unit.side == actor->side)
+                    {
+                        score -= unit.name.starts_with("magic_user") ? 1000 : 3;
+                    }
                 }
             }
             return score;
@@ -14355,11 +14783,13 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         }
         for (const auto &command : commands)
         {
-            if (command.verb != "cast" || (command.item != 41 && command.item != 46))
+            const unsigned number = command.verb == "use" ? command.item % 256 : command.item;
+            if ((command.verb != "cast" && !(allow_item && command.verb == "use")) ||
+                (number != 41 && number != 46))
             {
                 continue;
             }
-            const int range = command.item == 41 ? 6 : 12;
+            const int range = number == 41 ? 6 : 12;
             for (int y = 0; y < state.battlefield.height; ++y)
             {
                 for (int x = 0; x < state.battlefield.width; ++x)
@@ -15474,6 +15904,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         const bool native_font =
             earned_dark_queen && session.script_variable(opengold::por::EclAddress{0x19E}) == 30;
         const auto &position = session.snapshot();
+        const bool dispel_opening = native_font && std::getenv("OPENGOLD_DQK_OPEN_DISPEL");
         const bool native_royal_mages = earned_dark_queen && position.area_id == 58 &&
                                         position.script_id == 59 && position.pose.x == 1 &&
                                         position.pose.y == 6;
@@ -15497,11 +15928,14 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     const auto numbers =
                         opengold::original::Combatant::decode(unit.persistent.resources);
                     check(numbers.has_value(), "A traced original combatant has its numbers");
-                    std::cout << " AC=" << numbers->armor_class << " THAC0=" << numbers->thac0
+                    std::cout << " id=" << unit.id << " led=" << unit.player_controls_ally
+                              << " automatic=" << unit.computer_plays
+                              << " AC=" << numbers->armor_class << " THAC0=" << numbers->thac0
                               << " effects[";
                     for (const auto &effect : numbers->effects)
                     {
-                        std::cout << effect.code << ":" << effect.minutes << ",";
+                        std::cout << effect.code << ":" << effect.minutes << ":" << effect.strength
+                                  << ",";
                     }
                     std::cout << "]";
                 }
@@ -15554,6 +15988,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         // magic-user's), everyone else at the default difficulty.
         std::vector<opengold::rules::EntityId> picked;
         std::set<opengold::rules::EntityId> spaced;
+        std::set<opengold::rules::EntityId> silence_escaped;
         std::set<opengold::rules::EntityId> used_speed;
         std::set<opengold::rules::EntityId> interrupted;
         std::map<opengold::rules::EntityId, int> previous_hit_points;
@@ -15579,6 +16014,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 if (state.round != tracked_round)
                 {
                     interrupted.clear();
+                    silence_escaped.clear();
                     tracked_round = state.round;
                 }
                 for (const auto &unit : state.combatants)
@@ -15595,14 +16031,69 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                                  &opengold::rules::CombatantView::id);
             const bool member = actor != state.combatants.end() &&
                                 actor->side == opengold::rules::Side::party &&
-                                !opengold::is_ally(state.actor);
+                                (!opengold::is_ally(state.actor) || actor->player_controls_ally) &&
+                                !actor->computer_plays;
+            const auto divine_commands = member && earned_dark_queen
+                                             ? battle.legal_commands()
+                                             : std::vector<opengold::rules::Command>{};
+            const auto offers_divine = [&](unsigned spell)
+            {
+                return std::ranges::any_of(divine_commands,
+                                           [spell](const auto &command)
+                                           {
+                                               return (command.verb == "cast" ||
+                                                       command.verb == "aim") &&
+                                                      command.item == spell;
+                                           });
+            };
             // Dispel Magic can free a held or charmed member in Secret too.
-            auto held = member && (game == GoldBoxGame::treasures_of_the_savage_frontier ||
-                                   game == GoldBoxGame::pools_of_darkness ||
-                                   game == GoldBoxGame::secret_of_the_silver_blades ||
-                                   earned_champions || earned_dark_queen)
-                            ? free_the_bound(battle)
-                            : std::nullopt;
+            auto held = member && native_font ? native_refresh_wards(battle) : std::nullopt;
+            if (!held && member && tactic == 2 && native_font && !dispel_opening &&
+                state.round == 1 && opengold::is_ally(actor->id) && actor->player_controls_ally)
+            {
+                const bool ready_carrier = std::ranges::any_of(
+                    state.combatants,
+                    [&](const auto &unit)
+                    {
+                        const auto numbers =
+                            opengold::original::Combatant::decode(unit.persistent.resources);
+                        return unit.side == actor->side && unit.conscious && numbers &&
+                               std::ranges::any_of(numbers->effects,
+                                                   [](const auto &effect)
+                                                   {
+                                                       return effect.code == 21;
+                                                   });
+                    });
+                if (!ready_carrier)
+                {
+                    // Keep the actual allied fighters together while the
+                    // clerics finish their opening ground-targeted Silence.
+                    const auto commands = battle.legal_commands();
+                    const auto end = std::ranges::find(commands, std::string_view("end"),
+                                                       &opengold::rules::Command::verb);
+                    if (end != commands.end())
+                    {
+                        held = *end;
+                    }
+                }
+            }
+            if (!held && member && tactic == 2 && native_font && !dispel_opening)
+            {
+                held = native_opening_silence(battle);
+            }
+            if (!held && member && tactic == 2 && dispel_opening && state.round == 1 &&
+                (offers_divine(41) || actor->name.starts_with("magic_user")))
+            {
+                held = native_dispel_shields(battle, true);
+            }
+            if (!held && member &&
+                (game == GoldBoxGame::treasures_of_the_savage_frontier ||
+                 game == GoldBoxGame::pools_of_darkness ||
+                 game == GoldBoxGame::secret_of_the_silver_blades || earned_champions ||
+                 earned_dark_queen))
+            {
+                held = free_the_bound(battle);
+            }
             if (!held && member && tactic == 2 && (native_font || native_royal_mages) &&
                 !used_speed.contains(state.actor))
             {
@@ -15649,7 +16140,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             }
             if (!held && member && tactic == 2 && earned_dark_queen)
             {
-                held = native_draconian_movement(battle, spaced, native_font);
+                held = native_draconian_movement(battle, spaced, silence_escaped, native_font);
             }
             if (!held && member && tactic == 2 && earned_dark_queen)
             {
@@ -15664,11 +16155,11 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     held = treasures_turn(battle, interrupted);
                 }
             }
-            if (!held && member && tactic == 2 && native_font && actor->name.starts_with("cleric"))
+            if (!held && member && tactic == 2 && native_font && offers_divine(41))
             {
                 held = native_dispel_shields(battle);
             }
-            if (!held && member && tactic == 2 && native_font && actor->name.starts_with("cleric"))
+            if (!held && member && tactic == 2 && native_font && offers_divine(25))
             {
                 held = native_silence(battle);
             }
@@ -15817,6 +16308,56 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 ++phases["fight stopped at " + chosen.verb];
                 break;
             }
+            if (native_font && std::getenv("OPENGOLD_FIGHT_GEAR"))
+            {
+                const auto after = combat.combat().snapshot();
+                for (std::size_t line = state.log_entries.size(); line < after.log_entries.size();
+                     ++line)
+                {
+                    const auto &entry = after.log_entries[line].english;
+                    if (!entry.ends_with(" is dispelled."))
+                    {
+                        continue;
+                    }
+                    for (const auto &before : state.combatants)
+                    {
+                        if (entry != before.name + " is dispelled.")
+                        {
+                            continue;
+                        }
+                        const auto now = std::ranges::find(after.combatants, before.id,
+                                                           &opengold::rules::CombatantView::id);
+                        if (now == after.combatants.end())
+                        {
+                            continue;
+                        }
+                        const auto print_effects = [](const auto &unit)
+                        {
+                            const auto numbers =
+                                opengold::original::Combatant::decode(unit.persistent.resources);
+                            if (numbers)
+                            {
+                                std::size_t printed = 0;
+                                for (const auto &effect : numbers->effects)
+                                {
+                                    if (printed++ == 16)
+                                    {
+                                        std::cout << "...";
+                                        break;
+                                    }
+                                    std::cout << effect.code << ":" << effect.minutes << ":"
+                                              << effect.strength << ",";
+                                }
+                            }
+                        };
+                        std::cout << "  dispel effects: " << before.name << " before[";
+                        print_effects(before);
+                        std::cout << "] after[";
+                        print_effects(*now);
+                        std::cout << "]\n";
+                    }
+                }
+            }
         }
         // A fight where every turn is a guard, an enemy left standing where
         // Quick finds no way to it (Treasures' sorceresses, who never step,
@@ -15847,9 +16388,11 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 const auto state = fighting.snapshot();
                 const auto actor = std::ranges::find(state.combatants, state.actor,
                                                      &opengold::rules::CombatantView::id);
-                const bool member = actor != state.combatants.end() &&
-                                    actor->side == opengold::rules::Side::party &&
-                                    !opengold::is_ally(state.actor);
+                const bool member =
+                    actor != state.combatants.end() &&
+                    actor->side == opengold::rules::Side::party &&
+                    (!opengold::is_ally(state.actor) || actor->player_controls_ally) &&
+                    !actor->computer_plays;
                 std::vector<opengold::rules::Cell> enemies;
                 for (const auto &unit : state.combatants)
                 {
@@ -15922,9 +16465,11 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 const auto state = fighting.snapshot();
                 const auto actor = std::ranges::find(state.combatants, state.actor,
                                                      &opengold::rules::CombatantView::id);
-                const bool member = actor != state.combatants.end() &&
-                                    actor->side == opengold::rules::Side::party &&
-                                    !opengold::is_ally(state.actor);
+                const bool member =
+                    actor != state.combatants.end() &&
+                    actor->side == opengold::rules::Side::party &&
+                    (!opengold::is_ally(state.actor) || actor->player_controls_ally) &&
+                    !actor->computer_plays;
                 std::optional<opengold::rules::Command> chosen;
                 if (member)
                 {
@@ -15957,7 +16502,36 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 }
             }
         }
-        return combat.combat().snapshot();
+        const auto result = combat.combat().snapshot();
+        if (native_font && result.outcome == opengold::rules::Outcome::victory)
+        {
+            if (const char *prefix = std::getenv("OPENGOLD_ROUTE_SAVES"))
+            {
+                // Preserve the actual victory before the campaign continues
+                // and its temporary allies can leave the roster.
+                const auto stem = std::string(prefix) + "font-battle-victory-" +
+                                  std::to_string(seed) + "-" + std::to_string(tactic);
+                std::ofstream checkpoint(stem + ".combat", std::ios::binary);
+                checkpoint << combat.combat().save();
+                check(static_cast<bool>(checkpoint), "Save the actual Font victory checkpoint");
+                std::ofstream roster(stem + ".roster.txt");
+                roster << "Font battle diagnostic; not a campaign-winning party or winner bank.\n";
+                for (const auto &unit : result.combatants)
+                {
+                    if (unit.side == opengold::rules::Side::party)
+                    {
+                        roster << unit.id << " " << unit.name << " " << unit.hit_points << "/"
+                               << unit.max_hit_points << " dead=" << unit.dead
+                               << " status=" << unit.status
+                               << " ally=" << opengold::is_ally(unit.id)
+                               << " controlled=" << unit.player_controls_ally << "\n";
+                    }
+                }
+                check(static_cast<bool>(roster), "Save the Font roster before Continue");
+                std::cout << "  Font battle diagnostic checkpoint: " << stem << ".combat\n";
+            }
+        }
+        return result;
     };
     // The pending fight. The route plays it with several dice from the party
     // as it stood, as a player reloads a save, each with three tactics, and
@@ -19023,9 +19597,35 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 {
                     ward_each_member(beat.ward_each_with, beat.ward_members);
                 }
+                if (earned_dark_queen && std::getenv("OPENGOLD_DQK_OPEN_DISPEL") &&
+                    beat.map == 62 && beat.x == 21 && beat.y == 9 && beat.step)
+                {
+                    for (const auto id : party->state().slots)
+                    {
+                        if (!id || party->member(id).character.sheet().name != "magic_user 6")
+                        {
+                            continue;
+                        }
+                        const auto actions = party->camp_actions(id);
+                        const auto reading =
+                            std::ranges::find_if(actions,
+                                                 [&](const auto &action)
+                                                 {
+                                                     return spell_named(action.id, "read_magic");
+                                                 });
+                        check(
+                            reading != actions.end(),
+                            "The Font player actually memorized Read Magic for its carried scrolls");
+                        std::cout << "  magic_user 6 casts " << reading->id << " before the Font\n";
+                        cast_in_camp(id, id, reading->id);
+                    }
+                }
                 for (const auto &[type, name] : beat.ready_types)
                 {
-                    ready_type(type, name);
+                    const bool sword_opening =
+                        earned_dark_queen && std::getenv("OPENGOLD_DQK_OPEN_DISPEL") &&
+                        beat.map == 62 && beat.x == 21 && beat.y == 9 && name == "knight 2";
+                    ready_type(sword_opening ? 19 : type, name);
                 }
                 const auto prepare_item =
                     [&](const std::string &name, const std::string &holder, bool drink)

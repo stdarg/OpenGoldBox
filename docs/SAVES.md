@@ -51,9 +51,11 @@ every field:
 - The internal training-combat checkpoint: `OGCOMBAT 77` (`checkpoint_format`
   in `srd5.cpp`); 76 keeps each class's resource counts apart, 77 records
   whether a member attacked its own side (Attack Ally).
-- The original rules' combat checkpoint: `OGORIGINALCOMBAT 30`
-  (`checkpoint_format` in `combat_session.cpp`) keeps each square's movement
-  cost; 27, and Death Knights' 28, still read with none.
+- The original rules' combat checkpoint: `OGORIGINALCOMBAT 30` for the
+  earlier games, and 31 for Native (`combat_session.cpp`). Both keep each
+  square's movement cost; Native also keeps its starting time and underwater
+  state. Formats 27, Death Knights' 28 and Native's 29 still read without
+  movement costs, preserving their original field layouts.
 - Records embedded by the SRD module: character profile recipe `PC44` (an
   explicit spell ID list and each level's class), vital state `SRD13`, effect
   state `FX9` and concentration `CN1`. A vital state keeps one count of a class

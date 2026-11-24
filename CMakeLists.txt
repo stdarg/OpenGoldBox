@@ -386,12 +386,25 @@ if(OPENGOLD_BUILD_TESTS)
         --argon)
     add_test(NAME opengold_countdown_earned_ship COMMAND opengold_countdown_earned_tests
         --ship-earned)
+    add_test(NAME opengold_countdown_earned_solar COMMAND opengold_countdown_earned_tests
+        --solar-arrival)
+    add_test(NAME opengold_countdown_earned_asteroid_entry COMMAND opengold_countdown_earned_tests
+        --asteroid-entry)
+    add_test(NAME opengold_countdown_earned_asteroid_lower COMMAND opengold_countdown_earned_tests
+        --asteroid-lower)
+    add_test(NAME opengold_countdown_earned_talon_clinic COMMAND opengold_countdown_earned_tests
+        --talon-clinic)
+    add_test(NAME opengold_countdown_earned_talon_escape COMMAND opengold_countdown_earned_tests
+        --talon-escape)
     add_test(NAME opengold_countdown_ending_protocol COMMAND opengold_countdown_earned_tests
         --ending-protocol)
     set_tests_properties(opengold_countdown_earned_opening opengold_countdown_camp_service
         opengold_countdown_earned_chicagorg
         opengold_countdown_earned_upper_ship opengold_countdown_earned_surgery
         opengold_countdown_earned_argon opengold_countdown_earned_ship
+        opengold_countdown_earned_solar opengold_countdown_earned_asteroid_entry
+        opengold_countdown_earned_asteroid_lower
+        opengold_countdown_earned_talon_clinic opengold_countdown_earned_talon_escape
         opengold_countdown_ending_protocol
         PROPERTIES SKIP_RETURN_CODE 77)
     # Creation in the Buck Rogers games through the shared creation pages.
@@ -408,6 +421,8 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_matrix_campaign_tests COMMAND opengold_matrix_campaign_tests)
     add_test(NAME opengold_matrix_cubed_earned_opening
         COMMAND opengold_matrix_campaign_tests --earned-opening)
+    add_test(NAME opengold_matrix_cubed_earned_caloris_preparation
+        COMMAND opengold_matrix_campaign_tests --earned-caloris-preparation)
     add_executable(opengold_buck_rogers_ship_combat_tests tests/buck_rogers_ship_combat_tests.cpp)
     target_link_libraries(opengold_buck_rogers_ship_combat_tests PRIVATE opengold_rules_original
         opengold_core)

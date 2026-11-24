@@ -975,6 +975,23 @@ void RolfTourSession::roll_back_event()
 
 void RolfTourSession::publish_pose()
 {
+    if (is_buck_rogers(game()))
+    {
+        update_solar_map();
+        snapshot_.overland = false;
+        if (vga_area_map() && !snapshot_.solar_map)
+        {
+            // These worlds use their native wilderness square, which may
+            // lie beyond the retained 3D district. Publish before inspecting
+            // that district's obsolete pose; the ordinary controls use this.
+            snapshot_.overland = true;
+            snapshot_.overland_x = machine_.variable(game_cell(ecl_overland_x));
+            snapshot_.overland_y = machine_.variable(game_cell(ecl_overland_y));
+            snapshot_.overland_direction = machine_.variable(game_cell(ecl_overland_direction)) % 8;
+            ++snapshot_.revision;
+            return;
+        }
+    }
     const auto facing = map_direction(machine_.variable(game_cell(ecl_party_facing)));
     const PartyPose next{machine_.variable(game_cell(ecl_party_x)),
                          machine_.variable(game_cell(ecl_party_y)),
@@ -997,10 +1014,6 @@ void RolfTourSession::publish_pose()
         machine_.bind_variable(EclAddress{0x3D}, native_cell_flags(next.x, next.y));
     }
     snapshot_.overland = overland();
-    if (is_buck_rogers(game()))
-    {
-        update_solar_map();
-    }
     if (darkness_area_map())
     {
         publish_darkness_area_square();

@@ -217,7 +217,8 @@ std::string buck_rogers_details(const original::GroundRecord &record)
     std::string text = "\n\n" + i18n::formatted("Armor Class {ac}   Movement {movement}",
                                                 {{"ac", c.base_armor_class},
                                                  {"movement", static_cast<int>(c.base_movement)}});
-    const auto &stock = buck_rogers_stock(game_rules_files());
+    const auto files = game_rules_files();
+    const auto &stock = buck_rogers_stock(files);
     std::string specializations;
     for (const auto type : original::specializable_weapon_types(stock.templates))
     {

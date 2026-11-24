@@ -78,6 +78,9 @@ const std::array<Vector2, 4> direction{Vector2(0, -1), Vector2(1, 0), Vector2(0,
 constexpr unsigned original_fireball_sound = 11;
 constexpr std::array<const char *, 4> direction_name{N_("North"), N_("East"), N_("South"),
                                                      N_("West")};
+constexpr std::array<const char *, 8> wilderness_direction_name{
+    N_("North"), N_("Northeast"), N_("East"), N_("Southeast"),
+    N_("South"), N_("Southwest"), N_("West"), N_("Northwest")};
 
 // Curse's wilderness scripts keep the town the party is at in this cell; the
 // dungeon and the ruins that several towns share read it to tell them apart.
@@ -728,7 +731,7 @@ void RolfTourView::restart()
             }
             auto &campaign = dax_session();
             campaign.encounter_challenge(settings::encounter_challenge());
-            campaign.difficulty(settings::difficulty());
+            campaign.difficulty(settings::difficulty_setting());
             campaign.set_auto_equip(auto_equip_setting());
             if (pool_of_radiance)
             {
@@ -960,7 +963,7 @@ void RolfTourView::apply_settings()
 {
     if (auto *campaign = dax())
     {
-        campaign->difficulty(settings::difficulty());
+        campaign->difficulty(settings::difficulty_setting());
         campaign->encounter_challenge(settings::encounter_challenge());
         campaign->set_auto_equip(auto_equip_setting());
     }
@@ -3135,6 +3138,14 @@ void RolfTourView::refresh()
                                     {{"x", s.pose.x},
                                      {"y", s.pose.y},
                                      {"direction", i18n::text(direction_name[index(s.pose.facing)])}});
+    if (opengold::is_buck_rogers(game) && s.overland && !s.solar_map)
+    {
+        coordinates = i18n::format(
+            "Party ({x}, {y})   {direction}",
+            {{"x", s.overland_x},
+             {"y", s.overland_y},
+             {"direction", i18n::text(wilderness_direction_name[s.overland_direction % 8])}});
+    }
     if (s.searching)
     {
         coordinates += String("   ") + i18n::text(N_("Searching"));

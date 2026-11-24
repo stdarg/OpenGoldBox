@@ -28,6 +28,8 @@ inline constexpr int mummy_touch = offset + 170, rot_recovery = offset + 215;
 inline constexpr int cold_harms_more = offset + 192, mundane_blows_fail = offset + 197,
                      resists_fire = offset + 205, venom_touch = offset + 206,
                      venomed = offset + 207;
+// Engine-owned combat control state, outside the original byte-sized effect bank.
+inline constexpr int led_by_knight = offset + 300;
 
 [[nodiscard]] inline bool unimplemented(int canonical) noexcept
 {

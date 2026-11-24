@@ -175,575 +175,522 @@ mouse_filter = 2
 [node name="Scroll" type="ScrollContainer" parent="Options/Gameplay"]
 anchor_right = 1
 anchor_bottom = 1
+offset_left = 20
+offset_right = -20
 offset_top = 70
-offset_bottom = -70
+offset_bottom = -90
 horizontal_scroll_mode = 0
 
-[node name="Page" type="Control" parent="Options/Gameplay/Scroll"]
-custom_minimum_size = Vector2(0, 1180)
+[node name="Page" type="VBoxContainer" parent="Options/Gameplay/Scroll"]
 layout_mode = 2
 size_flags_horizontal = 3
-mouse_filter = 1
+theme_override_constants/separation = 16
 
-[node name="DifficultyLabel" type="Label" parent="Options/Gameplay/Scroll/Page"]
-offset_left = 20
-offset_top = 14
-offset_right = 280
-offset_bottom = 50
+[node name="Choices" type="GridContainer" parent="Options/Gameplay/Scroll/Page"]
+layout_mode = 2
+columns = 3
+theme_override_constants/h_separation = 16
+theme_override_constants/v_separation = 12
+
+[node name="DifficultyLabel" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 0)
+size_flags_horizontal = 0
+autowrap_mode = 3
 text = "Difficulty"
 
-[node name="Difficulty" type="OptionButton" parent="Options/Gameplay/Scroll/Page"]
-offset_left = 290
-offset_top = 10
-offset_right = 510
-offset_bottom = 50
+[node name="Difficulty" type="OptionButton" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(180, 40)
+size_flags_horizontal = 0
 
-[node name="DifficultyNote" type="Label" parent="Options/Gameplay/Scroll/Page"]
-anchor_right = 1
-offset_left = 540
-offset_right = -20
-offset_top = 6
-offset_bottom = 62
+[node name="DifficultyNote" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+size_flags_horizontal = 3
 autowrap_mode = 3
 theme_type_variation = &"LabelMuted"
 text = "From Hard: monsters use their potions, wands and scrolls, and temples cast no Resurrection. Each monster ability below has its own lowest difficulty."
 
-[node name="ChallengeLabel" type="Label" parent="Options/Gameplay/Scroll/Page"]
-offset_left = 20
-offset_top = 78
-offset_right = 280
-offset_bottom = 114
+[node name="ChallengeLabel" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 0)
+size_flags_horizontal = 0
+autowrap_mode = 3
 text = "Encounter challenge"
 
-[node name="Challenge" type="SpinBox" parent="Options/Gameplay/Scroll/Page"]
-offset_left = 290
-offset_top = 74
-offset_right = 510
-offset_bottom = 114
+[node name="Challenge" type="SpinBox" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(180, 40)
+size_flags_horizontal = 0
 max_value = 200.0
 suffix = "%"
 
-[node name="ChallengeNote" type="Label" parent="Options/Gameplay/Scroll/Page"]
-anchor_right = 1
-offset_left = 540
-offset_right = -20
-offset_top = 70
-offset_bottom = 126
+[node name="ChallengeNote" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+size_flags_horizontal = 3
 autowrap_mode = 3
 theme_type_variation = &"LabelMuted"
 text = "How large an original encounter may be: a share of the SRD's Moderate XP budget for the party. Bigger groups shrink; experience and treasure stay the original's."
 
-[node name="AutoEquipLabel" type="Label" parent="Options/Gameplay/Scroll/Page"]
-offset_left = 20
-offset_top = 138
-offset_right = 280
-offset_bottom = 218
+[node name="AutoEquipLabel" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 0)
+size_flags_horizontal = 0
 autowrap_mode = 3
 text = "Automatically equip items better than currently equipped items"
 
-[node name="AutoEquip" type="OptionButton" parent="Options/Gameplay/Scroll/Page"]
-offset_left = 290
-offset_top = 142
-offset_right = 510
-offset_bottom = 182
+[node name="AutoEquip" type="OptionButton" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(180, 40)
+size_flags_horizontal = 0
 
-[node name="UnidentifiedMagicLabel" type="Label" parent="Options/Gameplay/Scroll/Page"]
-offset_left = 20
-offset_top = 230
-offset_right = 280
-offset_bottom = 286
+[node name="AutoEquipNote" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="UnidentifiedMagicLabel" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 0)
+size_flags_horizontal = 0
 autowrap_mode = 3
 text = "Do not equip unidentified magic items"
 
-[node name="UnidentifiedMagic" type="OptionButton" parent="Options/Gameplay/Scroll/Page"]
-offset_left = 290
-offset_top = 234
-offset_right = 510
-offset_bottom = 274
+[node name="UnidentifiedMagic" type="OptionButton" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(180, 40)
+size_flags_horizontal = 0
 
-[node name="KeepQuickLabel" type="Label" parent="Options/Gameplay/Scroll/Page"]
-offset_left = 20
-offset_top = 302
-offset_right = 280
-offset_bottom = 338
+[node name="UnidentifiedMagicNote" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="KeepQuickLabel" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 0)
+size_flags_horizontal = 0
+autowrap_mode = 3
 text = "Keep Quick after a fight"
 
-[node name="KeepQuick" type="OptionButton" parent="Options/Gameplay/Scroll/Page"]
-offset_left = 290
-offset_top = 298
-offset_right = 510
-offset_bottom = 338
+[node name="KeepQuick" type="OptionButton" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(180, 40)
+size_flags_horizontal = 0
 
-[node name="KeepQuickNote" type="Label" parent="Options/Gameplay/Scroll/Page"]
-anchor_right = 1
-offset_left = 540
-offset_right = -20
-offset_top = 294
-offset_bottom = 350
+[node name="KeepQuickNote" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+size_flags_horizontal = 3
 autowrap_mode = 3
 theme_type_variation = &"LabelMuted"
 text = "Off: when a fight ends, every character on Quick is back under your control."
 
-[node name="OriginalShopsLabel" type="Label" parent="Options/Gameplay/Scroll/Page"]
-offset_left = 20
-offset_top = 366
-offset_right = 280
-offset_bottom = 402
+[node name="OriginalShopsLabel" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 0)
+size_flags_horizontal = 0
+autowrap_mode = 3
 text = "Original shops"
 
-[node name="OriginalShops" type="OptionButton" parent="Options/Gameplay/Scroll/Page"]
-offset_left = 290
-offset_top = 362
-offset_right = 510
-offset_bottom = 402
+[node name="OriginalShops" type="OptionButton" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(180, 40)
+size_flags_horizontal = 0
 
-[node name="OriginalShopsNote" type="Label" parent="Options/Gameplay/Scroll/Page"]
-anchor_right = 1
-offset_left = 540
-offset_right = -20
-offset_top = 358
-offset_bottom = 414
+[node name="OriginalShopsNote" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+size_flags_horizontal = 3
 autowrap_mode = 3
 theme_type_variation = &"LabelMuted"
 text = "On: Pool of Radiance's shops sell what the original sold, at its prices. Off: New Phlan also has the Rogue's Shop and OpenGoldBox's gear. From the next game started or loaded."
 
-[node name="TreasuresMoneyLabel" type="Label" parent="Options/Gameplay/Scroll/Page"]
-offset_left = 20
-offset_top = 426
-offset_right = 280
-offset_bottom = 462
+[node name="TreasuresMoneyLabel" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 0)
+size_flags_horizontal = 0
+autowrap_mode = 3
 text = "Gateway's money"
 
-[node name="TreasuresMoney" type="OptionButton" parent="Options/Gameplay/Scroll/Page"]
-offset_left = 290
-offset_top = 422
-offset_right = 510
-offset_bottom = 462
+[node name="TreasuresMoney" type="OptionButton" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(180, 40)
+size_flags_horizontal = 0
 
-[node name="TreasuresMoneyNote" type="Label" parent="Options/Gameplay/Scroll/Page"]
-anchor_right = 1
-offset_left = 540
-offset_right = -20
-offset_top = 418
-offset_bottom = 474
+[node name="TreasuresMoneyNote" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+size_flags_horizontal = 3
 autowrap_mode = 3
 theme_type_variation = &"LabelMuted"
 text = "Treasures of the Savage Frontier. On: a character brought from Gateway keeps its own platinum, gems and jewelry. Off: it starts with Treasures' 200 platinum."
 
-[node name="DarknessGazesLabel" type="Label" parent="Options/Gameplay/Scroll/Page"]
-offset_left = 20
-offset_top = 490
-offset_right = 280
-offset_bottom = 526
+[node name="DarknessGazesLabel" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 0)
+size_flags_horizontal = 0
+autowrap_mode = 3
 text = "Darkness's gazes"
 
-[node name="DarknessGazes" type="OptionButton" parent="Options/Gameplay/Scroll/Page"]
-offset_left = 290
-offset_top = 486
-offset_right = 510
-offset_bottom = 526
+[node name="DarknessGazes" type="OptionButton" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(180, 40)
+size_flags_horizontal = 0
 
-[node name="DarknessGazesNote" type="Label" parent="Options/Gameplay/Scroll/Page"]
-anchor_right = 1
-offset_left = 540
-offset_right = -20
-offset_top = 482
-offset_bottom = 538
+[node name="DarknessGazesNote" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+size_flags_horizontal = 3
 autowrap_mode = 3
 theme_type_variation = &"LabelMuted"
 text = "Pools of Darkness. On: the gaze spider's paralyzing gaze and the vampires' charming gaze work. Off: they do nothing, as in the original."
 
-[node name="CommandEveryRoundLabel" type="Label" parent="Options/Gameplay/Scroll/Page"]
+[node name="CommandEveryRoundLabel" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 0)
+size_flags_horizontal = 0
+autowrap_mode = 3
 visible = false
-offset_left = 20
-offset_top = 366
-offset_right = 280
-offset_bottom = 402
 text = "COMMAND every round"
 
-[node name="CommandEveryRound" type="OptionButton" parent="Options/Gameplay/Scroll/Page"]
+[node name="CommandEveryRound" type="OptionButton" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(180, 40)
+size_flags_horizontal = 0
 visible = false
-offset_left = 290
-offset_top = 362
-offset_right = 510
-offset_bottom = 402
 
-[node name="CommandEveryRoundNote" type="Label" parent="Options/Gameplay/Scroll/Page"]
-visible = false
-anchor_right = 1
-offset_left = 540
-offset_right = -20
-offset_top = 358
-offset_bottom = 414
+[node name="CommandEveryRoundNote" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+size_flags_horizontal = 3
 autowrap_mode = 3
+visible = false
 theme_type_variation = &"LabelMuted"
 text = "Ship combat. On: any crew member may take COMMAND once a round, even with the pilot well, as in the original. Off: only while the pilot is dead or incapacitated, as the Rule Book says."
 
-[node name="EmptyHelmDodgesLabel" type="Label" parent="Options/Gameplay/Scroll/Page"]
+[node name="EmptyHelmDodgesLabel" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 0)
+size_flags_horizontal = 0
+autowrap_mode = 3
 visible = false
-offset_left = 20
-offset_top = 426
-offset_right = 280
-offset_bottom = 462
 text = "Empty helm dodges"
 
-[node name="EmptyHelmDodges" type="OptionButton" parent="Options/Gameplay/Scroll/Page"]
+[node name="EmptyHelmDodges" type="OptionButton" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(180, 40)
+size_flags_horizontal = 0
 visible = false
-offset_left = 290
-offset_top = 422
-offset_right = 510
-offset_bottom = 462
 
-[node name="EmptyHelmDodgesNote" type="Label" parent="Options/Gameplay/Scroll/Page"]
-visible = false
-anchor_right = 1
-offset_left = 540
-offset_right = -20
-offset_top = 418
-offset_bottom = 474
+[node name="EmptyHelmDodgesNote" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+size_flags_horizontal = 3
 autowrap_mode = 3
+visible = false
 theme_type_variation = &"LabelMuted"
 text = "Ship combat. On: with no one at the helm, the ship dodges a ram by its own pilot value (the Maelstrom Rider's is 100), as in the original. Off: it dodges with 0."
 
-[node name="BoardingFuelLabel" type="Label" parent="Options/Gameplay/Scroll/Page"]
+[node name="BoardingFuelLabel" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 0)
+size_flags_horizontal = 0
+autowrap_mode = 3
 visible = false
-offset_left = 20
-offset_top = 490
-offset_right = 280
-offset_bottom = 526
 text = "Fuel from a boarded ship"
 
-[node name="BoardingFuel" type="OptionButton" parent="Options/Gameplay/Scroll/Page"]
+[node name="BoardingFuel" type="OptionButton" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(180, 40)
+size_flags_horizontal = 0
 visible = false
-offset_left = 290
-offset_top = 486
-offset_right = 510
-offset_bottom = 526
 
-[node name="BoardingFuelNote" type="Label" parent="Options/Gameplay/Scroll/Page"]
-visible = false
-anchor_right = 1
-offset_left = 540
-offset_right = -20
-offset_top = 482
-offset_bottom = 538
+[node name="BoardingFuelNote" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+size_flags_horizontal = 3
 autowrap_mode = 3
+visible = false
 theme_type_variation = &"LabelMuted"
 text = "Ship combat. On: a boarded ship's fuel is transferred to yours, as the Rule Book says. Off: none, as in the original."
 
-[node name="DirectFlightLabel" type="Label" parent="Options/Gameplay/Scroll/Page"]
+[node name="DirectFlightLabel" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 0)
+size_flags_horizontal = 0
+autowrap_mode = 3
 visible = false
-offset_left = 20
-offset_top = 554
-offset_right = 280
-offset_bottom = 590
 text = "Fly at once"
 
-[node name="DirectFlight" type="OptionButton" parent="Options/Gameplay/Scroll/Page"]
+[node name="DirectFlight" type="OptionButton" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(180, 40)
+size_flags_horizontal = 0
 visible = false
-offset_left = 290
-offset_top = 550
-offset_right = 510
-offset_bottom = 590
 
-[node name="DirectFlightNote" type="Label" parent="Options/Gameplay/Scroll/Page"]
-visible = false
-anchor_right = 1
-offset_left = 540
-offset_right = -20
-offset_top = 546
-offset_bottom = 602
+[node name="DirectFlightNote" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+size_flags_horizontal = 3
 autowrap_mode = 3
+visible = false
 theme_type_variation = &"LabelMuted"
 text = "Solar map. On: the pad and the arrow keys fly the rocket at once. Off: Move first, then fly, and Done to stop, as in the original."
 
-[node name="CourseFlownLabel" type="Label" parent="Options/Gameplay/Scroll/Page"]
+[node name="CourseFlownLabel" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 0)
+size_flags_horizontal = 0
+autowrap_mode = 3
 visible = false
-offset_left = 20
-offset_top = 618
-offset_right = 280
-offset_bottom = 654
 text = "Course flown"
 
-[node name="CourseFlown" type="OptionButton" parent="Options/Gameplay/Scroll/Page"]
+[node name="CourseFlown" type="OptionButton" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(180, 40)
+size_flags_horizontal = 0
 visible = false
-offset_left = 290
-offset_top = 614
-offset_right = 510
-offset_bottom = 654
 
-[node name="CourseFlownNote" type="Label" parent="Options/Gameplay/Scroll/Page"]
-visible = false
-anchor_right = 1
-offset_left = 540
-offset_right = -20
-offset_top = 610
-offset_bottom = 666
+[node name="CourseFlownNote" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+size_flags_horizontal = 3
 autowrap_mode = 3
+visible = false
 theme_type_variation = &"LabelMuted"
 text = "Solar map. On: dots mark the cells the rocket has flown since it left port. Off: no dots, as in the original."
 
-[node name="ShipPictureShrinksLabel" type="Label" parent="Options/Gameplay/Scroll/Page"]
+[node name="ShipPictureShrinksLabel" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+size_flags_horizontal = 0
+custom_minimum_size = Vector2(220, 0)
+autowrap_mode = 3
 visible = false
-offset_left = 20
-offset_top = 752
-offset_right = 280
-offset_bottom = 788
 text = "Ship picture by range"
 
-[node name="ShipPictureShrinks" type="OptionButton" parent="Options/Gameplay/Scroll/Page"]
+[node name="ShipPictureShrinks" type="OptionButton" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+size_flags_horizontal = 0
+custom_minimum_size = Vector2(180, 40)
 visible = false
-offset_left = 290
-offset_top = 748
-offset_right = 510
-offset_bottom = 788
 
-[node name="ShipPictureShrinksNote" type="Label" parent="Options/Gameplay/Scroll/Page"]
-visible = false
-anchor_right = 1
-offset_left = 540
-offset_right = -20
-offset_top = 744
-offset_bottom = 800
+[node name="ShipPictureShrinksNote" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+size_flags_horizontal = 3
 autowrap_mode = 3
+visible = false
 theme_type_variation = &"LabelMuted"
 text = "Ship combat. On: the enemy ship's picture grows smaller the farther away it is. Off: one size at every range, as in the original."
 
 
-[node name="DesignDifficultyLabel" type="Label" parent="Options/Gameplay/Scroll/Page"]
-offset_left = 20
-offset_top = 554
-offset_right = 280
-offset_bottom = 590
+[node name="DesignDifficultyLabel" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 0)
+size_flags_horizontal = 0
+autowrap_mode = 3
 text = "Design difficulty"
 
-[node name="DesignDifficulty" type="OptionButton" parent="Options/Gameplay/Scroll/Page"]
-offset_left = 290
-offset_top = 550
-offset_right = 510
-offset_bottom = 590
+[node name="DesignDifficulty" type="OptionButton" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(180, 40)
+size_flags_horizontal = 0
 
-[node name="DesignDifficultyNote" type="Label" parent="Options/Gameplay/Scroll/Page"]
-anchor_right = 1
-offset_left = 540
-offset_right = -20
-offset_top = 546
-offset_bottom = 618
+[node name="DesignDifficultyNote" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+size_flags_horizontal = 3
 autowrap_mode = 3
 theme_type_variation = &"LabelMuted"
 text = "Unlimited Adventures. The design's: the kit's five levels change the party's to-hit and the monsters' Hit Points. OpenGoldBox's: the difficulty table changes the monsters' to-hit, Hit Points and Armor Class. Both: the kit's levels, with the table's to-hit and Armor Class for the monsters."
 
-[node name="OriginalMovementLabel" type="Label" parent="Options/Gameplay/Scroll/Page"]
+[node name="OriginalMovementLabel" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 0)
+size_flags_horizontal = 0
+autowrap_mode = 3
 visible = false
-offset_left = 20
-offset_top = 686
-offset_right = 280
-offset_bottom = 722
 text = "Original movement"
 
-[node name="OriginalMovement" type="OptionButton" parent="Options/Gameplay/Scroll/Page"]
+[node name="OriginalMovement" type="OptionButton" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+custom_minimum_size = Vector2(180, 40)
+size_flags_horizontal = 0
 visible = false
-offset_left = 290
-offset_top = 682
-offset_right = 510
-offset_bottom = 722
 
-[node name="OriginalMovementNote" type="Label" parent="Options/Gameplay/Scroll/Page"]
-visible = false
-anchor_right = 1
-offset_left = 540
-offset_right = -20
-offset_top = 678
-offset_bottom = 750
+[node name="OriginalMovementNote" type="Label" parent="Options/Gameplay/Scroll/Page/Choices"]
+layout_mode = 2
+size_flags_horizontal = 3
 autowrap_mode = 3
+visible = false
 theme_type_variation = &"LabelMuted"
 text = "Original rules. On, as in the original: rough ground costs its terrain's price, a diagonal step may pass a wall's corner, a creature the computer plays needs more movement than a step costs, a large creature pays for its top-left square, and a move ends with less than 2 half-moves left. Off: every walkable square costs one step."
 
 [node name="PartySpellsHeader" type="Label" parent="Options/Gameplay/Scroll/Page"]
+layout_mode = 2
+size_flags_horizontal = 3
+autowrap_mode = 3
 visible = false
-offset_left = 20
-offset_top = 772
-offset_right = 520
-offset_bottom = 812
 theme_type_variation = &"LabelText20"
 text = "Party area spells"
 
 [node name="PartySpellsNote" type="Label" parent="Options/Gameplay/Scroll/Page"]
-visible = false
-anchor_right = 1
-offset_left = 20
-offset_right = -20
-offset_top = 812
-offset_bottom = 868
+layout_mode = 2
+size_flags_horizontal = 3
 autowrap_mode = 3
+visible = false
 theme_type_variation = &"LabelMuted"
 text = "Original rules. How a party member on Quick, or a companion the computer plays, weighs a spell or item that strikes an area before using it; monsters cast as in the original. Point at a row for what it means."
 
-[node name="DeathLimitLabel" type="Label" parent="Options/Gameplay/Scroll/Page"]
+[node name="PartyLimits" type="GridContainer" parent="Options/Gameplay/Scroll/Page"]
 visible = false
-offset_left = 20
-offset_top = 880
-offset_right = 280
-offset_bottom = 928
-mouse_filter = 1
+layout_mode = 2
+columns = 2
+theme_override_constants/h_separation = 16
+theme_override_constants/v_separation = 12
+
+[node name="DeathLimitLabel" type="Label" parent="Options/Gameplay/Scroll/Page/PartyLimits"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 0)
+size_flags_horizontal = 3
 autowrap_mode = 3
+visible = false
+mouse_filter = 1
 tooltip_text = "Never cast while any party member could go down with this chance or more. Unless changed: 5%."
 text = "Death limit"
 
-[node name="DeathLimit" type="SpinBox" parent="Options/Gameplay/Scroll/Page"]
+[node name="DeathLimit" type="SpinBox" parent="Options/Gameplay/Scroll/Page/PartyLimits"]
+layout_mode = 2
+custom_minimum_size = Vector2(180, 40)
+size_flags_horizontal = 0
 visible = false
-offset_left = 290
-offset_top = 876
-offset_right = 510
-offset_bottom = 916
 min_value = 0.0
 max_value = 100.0
 step = 1
 suffix = "%"
 tooltip_text = "Never cast while any party member could go down with this chance or more. Unless changed: 5%."
 
-[node name="HurtShareLabel" type="Label" parent="Options/Gameplay/Scroll/Page"]
-visible = false
-offset_left = 20
-offset_top = 936
-offset_right = 280
-offset_bottom = 984
-mouse_filter = 1
+[node name="HurtShareLabel" type="Label" parent="Options/Gameplay/Scroll/Page/PartyLimits"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 0)
+size_flags_horizontal = 3
 autowrap_mode = 3
+visible = false
+mouse_filter = 1
 tooltip_text = "A party member is badly hurt when it may lose at least this share of its most Hit Points, or be put out of the fight (asleep, held, charmed). Unless changed: 50%."
 text = "Badly hurt"
 
-[node name="HurtShare" type="SpinBox" parent="Options/Gameplay/Scroll/Page"]
+[node name="HurtShare" type="SpinBox" parent="Options/Gameplay/Scroll/Page/PartyLimits"]
+layout_mode = 2
+custom_minimum_size = Vector2(180, 40)
+size_flags_horizontal = 0
 visible = false
-offset_left = 290
-offset_top = 932
-offset_right = 510
-offset_bottom = 972
 min_value = 0.0
 max_value = 100.0
 step = 1
 suffix = "%"
 tooltip_text = "A party member is badly hurt when it may lose at least this share of its most Hit Points, or be put out of the fight (asleep, held, charmed). Unless changed: 50%."
 
-[node name="HurtChanceLabel" type="Label" parent="Options/Gameplay/Scroll/Page"]
-visible = false
-offset_left = 20
-offset_top = 992
-offset_right = 280
-offset_bottom = 1040
-mouse_filter = 1
+[node name="HurtChanceLabel" type="Label" parent="Options/Gameplay/Scroll/Page/PartyLimits"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 0)
+size_flags_horizontal = 3
 autowrap_mode = 3
+visible = false
+mouse_filter = 1
 tooltip_text = "How likely that loss must be for a party member to count as badly hurt. Unless changed: 50%."
 text = "Badly hurt chance"
 
-[node name="HurtChance" type="SpinBox" parent="Options/Gameplay/Scroll/Page"]
+[node name="HurtChance" type="SpinBox" parent="Options/Gameplay/Scroll/Page/PartyLimits"]
+layout_mode = 2
+custom_minimum_size = Vector2(180, 40)
+size_flags_horizontal = 0
 visible = false
-offset_left = 290
-offset_top = 988
-offset_right = 510
-offset_bottom = 1028
 min_value = 0.0
 max_value = 100.0
 step = 1
 suffix = "%"
 tooltip_text = "How likely that loss must be for a party member to count as badly hurt. Unless changed: 50%."
 
-[node name="FightEndChanceLabel" type="Label" parent="Options/Gameplay/Scroll/Page"]
-visible = false
-offset_left = 20
-offset_top = 1048
-offset_right = 280
-offset_bottom = 1096
-mouse_filter = 1
+[node name="FightEndChanceLabel" type="Label" parent="Options/Gameplay/Scroll/Page/PartyLimits"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 0)
+size_flags_horizontal = 3
 autowrap_mode = 3
+visible = false
+mouse_filter = 1
 tooltip_text = "With a party member badly hurt, cast only if every enemy then likely goes down, with at least this chance. Unless changed: 75%."
 text = "Fight end chance"
 
-[node name="FightEndChance" type="SpinBox" parent="Options/Gameplay/Scroll/Page"]
+[node name="FightEndChance" type="SpinBox" parent="Options/Gameplay/Scroll/Page/PartyLimits"]
+layout_mode = 2
+custom_minimum_size = Vector2(180, 40)
+size_flags_horizontal = 0
 visible = false
-offset_left = 290
-offset_top = 1044
-offset_right = 510
-offset_bottom = 1084
 min_value = 0.0
 max_value = 100.0
 step = 1
 suffix = "%"
 tooltip_text = "With a party member badly hurt, cast only if every enemy then likely goes down, with at least this chance. Unless changed: 75%."
 
-[node name="PartyWeightLabel" type="Label" parent="Options/Gameplay/Scroll/Page"]
-visible = false
-offset_left = 20
-offset_top = 1104
-offset_right = 280
-offset_bottom = 1152
-mouse_filter = 1
+[node name="PartyWeightLabel" type="Label" parent="Options/Gameplay/Scroll/Page/PartyLimits"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 0)
+size_flags_horizontal = 3
 autowrap_mode = 3
+visible = false
+mouse_filter = 1
 tooltip_text = "For lighter harm: cast only if the enemies' likely loss outweighs the party's, the party's counting this many times as much. Unless changed: 2."
 text = "Party weight"
 
-[node name="PartyWeight" type="SpinBox" parent="Options/Gameplay/Scroll/Page"]
+[node name="PartyWeight" type="SpinBox" parent="Options/Gameplay/Scroll/Page/PartyLimits"]
+layout_mode = 2
+custom_minimum_size = Vector2(180, 40)
+size_flags_horizontal = 0
 visible = false
-offset_left = 290
-offset_top = 1100
-offset_right = 510
-offset_bottom = 1140
 min_value = 1.0
 max_value = 5.0
 step = 0.5
 tooltip_text = "For lighter harm: cast only if the enemies' likely loss outweighs the party's, the party's counting this many times as much. Unless changed: 2."
 
 [node name="AbilitiesHeader" type="Label" parent="Options/Gameplay/Scroll/Page"]
-offset_left = 20
-offset_top = 624
-offset_right = 780
-offset_bottom = 664
+layout_mode = 2
+size_flags_horizontal = 3
+autowrap_mode = 3
 theme_type_variation = &"LabelText20"
 text = "Monster abilities"
 
-[node name="AbilityColumn" type="Label" parent="Options/Gameplay/Scroll/Page"]
-offset_left = 20
-offset_top = 668
-offset_right = 440
-offset_bottom = 698
+[node name="AbilityColumns" type="HBoxContainer" parent="Options/Gameplay/Scroll/Page"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="AbilityColumn" type="Label" parent="Options/Gameplay/Scroll/Page/AbilityColumns"]
+layout_mode = 2
+custom_minimum_size = Vector2(300, 0)
+size_flags_horizontal = 0
+autowrap_mode = 3
 theme_type_variation = &"LabelMuted"
 text = "Ability"
 
-[node name="MonstersColumn" type="Label" parent="Options/Gameplay/Scroll/Page"]
-offset_left = 460
-offset_top = 668
-offset_right = 1060
-offset_bottom = 698
+[node name="MonstersColumn" type="Label" parent="Options/Gameplay/Scroll/Page/AbilityColumns"]
+layout_mode = 2
+size_flags_horizontal = 3
+autowrap_mode = 3
 theme_type_variation = &"LabelMuted"
 text = "Monsters that have it"
 
-[node name="FromColumn" type="Label" parent="Options/Gameplay/Scroll/Page"]
-anchor_left = 1
-anchor_right = 1
-offset_left = -312
-offset_right = -52
-offset_top = 668
-offset_bottom = 698
+[node name="FromColumn" type="Label" parent="Options/Gameplay/Scroll/Page/AbilityColumns"]
+layout_mode = 2
+custom_minimum_size = Vector2(180, 0)
+size_flags_horizontal = 0
+autowrap_mode = 3
 theme_type_variation = &"LabelMuted"
 text = "On from"
 
 [node name="Abilities" type="ScrollContainer" parent="Options/Gameplay/Scroll/Page"]
-anchor_right = 1
-offset_left = 20
-offset_right = -20
-offset_top = 702
-offset_bottom = 1122
+custom_minimum_size = Vector2(0, 420)
+layout_mode = 2
 horizontal_scroll_mode = 0
 
 [node name="Rows" type="VBoxContainer" parent="Options/Gameplay/Scroll/Page/Abilities"]
 size_flags_horizontal = 3
 
 [node name="Note" type="Label" parent="Options/Gameplay"]
+anchor_right = 1
+autowrap_mode = 3
 anchor_top = 1
 anchor_bottom = 1
 offset_left = 20
-offset_right = 920
-offset_top = -58
+offset_right = -440
+offset_top = -78
 offset_bottom = -22
 theme_type_variation = &"LabelMuted"
 text = "Saved at once; they take effect from the next fight."

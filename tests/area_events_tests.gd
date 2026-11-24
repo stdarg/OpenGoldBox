@@ -348,7 +348,7 @@ func check_quick_end(combat: Control) -> void:
 	quick_ends += 1
 	# The next fight the other way, set as a player sets it: the Options
 	# screen's Keep Quick after a fight (On, then Off).
-	var choice: OptionButton = node("GameMenu/Options/Gameplay/Scroll/Page/KeepQuick")
+	var choice: OptionButton = node("GameMenu/Options/Gameplay/Scroll/Page/Choices/KeepQuick")
 	var index := 1 if keep_quick else 0
 	choice.select(index)
 	choice.item_selected.emit(index)

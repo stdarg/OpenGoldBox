@@ -250,7 +250,10 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
     for (int n = 0; n < effect_count; ++n, next += 4)
     {
         // Canonical effects include the later games' distinct numeric banks.
-        if (next[0] < 1 || next[0] > 255 + dark_queen_effect::offset || next[1] < 0 || next[2] < 0)
+        if (next[0] < 1 ||
+            (next[0] > 255 + dark_queen_effect::offset &&
+             next[0] != dark_queen_effect::led_by_knight) ||
+            next[1] < 0 || next[2] < 0)
         {
             return std::nullopt;
         }

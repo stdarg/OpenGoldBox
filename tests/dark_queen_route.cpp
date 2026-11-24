@@ -1636,6 +1636,9 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     beats.push_back(council_rest);
     beats.push_back(workshop_lift);
     enhancement.dialogue_answers = {{"Choose a spell for magic_user 6", "Meteor Swarm"}};
+    enhancement.answers.insert(enhancement.answers.end() - 1,
+                               {"knight 2: Petition for the Order of the Sword",
+                                "knight 3: Petition for the Order of the Sword"});
     beats.push_back(enhancement);
     beats.push_back(quiet_workshop);
     workshop_rest.memorize_first_of.insert(workshop_rest.memorize_first_of.begin(), "meteor_swarm");
@@ -1841,10 +1844,11 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     RouteBeat loft_rest = tower_upper_rest;
     loft_rest.x = 11;
     loft_rest.y = 2;
-    loft_rest.memorize_first_of.insert(loft_rest.memorize_first_of.begin(),
-                                       {"silence_15_radius", "silence_15_radius",
-                                        "silence_15_radius", "silence_15_radius", "resist_cold",
-                                        "resist_cold", "resist_cold"});
+    loft_rest.memorize_first_of.insert(
+        loft_rest.memorize_first_of.begin(),
+        {"read_magic", "dispel_magic", "cure_critical_wounds", "cure_serious_wounds",
+         "silence_15_radius", "silence_15_radius", "silence_15_radius", "silence_15_radius",
+         "resist_cold", "resist_cold", "resist_cold"});
     beats.push_back(loft_rest);
     beats.push_back(tower_fire);
     beats.push_back(rescue_mind);
@@ -1886,7 +1890,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     temple_font.reloads_until_won = 240;
     temple_font.drink_names = royal_mages.drink_names;
     temple_font.ready_types = {
-        {69, "knight 1"}, {19, "knight 2"}, {69, "knight 3"}, {1, "Grunschka"}, {29, "cleric 4"}};
+        {69, "knight 1"}, {28, "knight 2"}, {69, "knight 3"}, {1, "Grunschka"}, {29, "cleric 4"}};
     temple_font.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0xA8, 31};
     beats.push_back(temple_font);
     // The remaining way follows the authored rescue, Abyss and return scenes.

@@ -278,6 +278,21 @@ void EclMachine::bind_variable(EclAddress address, std::uint16_t v)
     }
 }
 
+bool EclMachine::refresh_bound_variable(EclAddress address, std::uint16_t value) noexcept
+{
+    if (executing_)
+    {
+        return false;
+    }
+    auto *binding = bound_variable(variables_, named(address).location);
+    if (!binding)
+    {
+        return false;
+    }
+    binding->second = byte_address(*program_, named(address)) ? value & 255 : value;
+    return true;
+}
+
 void EclMachine::bind_string(EclAddress address, std::string_view v)
 {
     require_configurable();

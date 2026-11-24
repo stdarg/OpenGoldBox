@@ -196,10 +196,28 @@ void GameMenuView::exit_to_desktop()
 
 void GameMenuView::open_options()
 {
-    required_node<OptionButton>(*this, "Options/Gameplay/Scroll/Page/Difficulty")
-        .select(static_cast<int>(settings::difficulty()));
+    auto &difficulty =
+        required_node<OptionButton>(*this, "Options/Gameplay/Scroll/Page/Choices/Difficulty");
+    difficulty.clear();
+    if (opengold::offers_novice(settings::chosen_game()))
+    {
+        for (const auto *name :
+             {N_("Novice"), N_("Cadet"), N_("Trooper"), N_("Veteran"), N_("Ace"), N_("Admiral")})
+        {
+            difficulty.add_item(i18n::text(name));
+        }
+        difficulty.select(static_cast<int>(settings::difficulty_setting()));
+    }
+    else
+    {
+        for (std::size_t n = 0; n + 1 < i18n::ability_from_names.size(); ++n)
+        {
+            difficulty.add_item(i18n::text(i18n::ability_from_names[n]));
+        }
+        difficulty.select(static_cast<int>(settings::difficulty()));
+    }
     // SpinBoxes, which the game's Godot class list leaves out: called by name.
-    required_node<Control>(*this, "Options/Gameplay/Scroll/Page/Challenge")
+    required_node<Control>(*this, "Options/Gameplay/Scroll/Page/Choices/Challenge")
         .call("set_value_no_signal", settings::encounter_challenge());
     required_node<Control>(*this, "Options/Interface/Zoom")
         .call("set_value_no_signal", settings::combat_zoom_percent());
@@ -214,20 +232,20 @@ void GameMenuView::open_options()
     required_node<OptionButton>(*this, "Options/Interface/PortraitArt")
         .select(settings::original_portraits() ? 1 : 0);
     show_new_art_folder();
-    required_node<OptionButton>(*this, "Options/Gameplay/Scroll/Page/AutoEquip")
+    required_node<OptionButton>(*this, "Options/Gameplay/Scroll/Page/Choices/AutoEquip")
         .select(settings::auto_equip() ? 0 : 1);
-    required_node<OptionButton>(*this, "Options/Gameplay/Scroll/Page/UnidentifiedMagic")
+    required_node<OptionButton>(*this, "Options/Gameplay/Scroll/Page/Choices/UnidentifiedMagic")
         .select(settings::skip_unidentified_magic() ? 0 : 1);
     show_unidentified_magic(settings::auto_equip());
-    required_node<OptionButton>(*this, "Options/Gameplay/Scroll/Page/KeepQuick")
+    required_node<OptionButton>(*this, "Options/Gameplay/Scroll/Page/Choices/KeepQuick")
         .select(settings::keep_quick() ? 0 : 1);
-    required_node<OptionButton>(*this, "Options/Gameplay/Scroll/Page/OriginalShops")
+    required_node<OptionButton>(*this, "Options/Gameplay/Scroll/Page/Choices/OriginalShops")
         .select(settings::original_shops(opengold::GoldBoxGame::pool_of_radiance) ? 0 : 1);
-    required_node<OptionButton>(*this, "Options/Gameplay/Scroll/Page/TreasuresMoney")
+    required_node<OptionButton>(*this, "Options/Gameplay/Scroll/Page/Choices/TreasuresMoney")
         .select(settings::gateway_money_kept() ? 0 : 1);
-    required_node<OptionButton>(*this, "Options/Gameplay/Scroll/Page/DarknessGazes")
+    required_node<OptionButton>(*this, "Options/Gameplay/Scroll/Page/Choices/DarknessGazes")
         .select(settings::darkness_gazes() ? 0 : 1);
-    required_node<OptionButton>(*this, "Options/Gameplay/Scroll/Page/DesignDifficulty")
+    required_node<OptionButton>(*this, "Options/Gameplay/Scroll/Page/Choices/DesignDifficulty")
         .select(static_cast<int>(settings::design_difficulty()));
     show_party_spell_limits();
     show_game_options();
@@ -282,40 +300,38 @@ void GameMenuView::show_section(std::int64_t section)
 void GameMenuView::build_options()
 {
     auto &difficulty =
-        required_node<OptionButton>(*this, "Options/Gameplay/Scroll/Page/Difficulty");
-    for (std::size_t n = 0; n + 1 < i18n::ability_from_names.size(); ++n)
-    {
-        difficulty.add_item(i18n::text(i18n::ability_from_names[n]));
-    }
+        required_node<OptionButton>(*this, "Options/Gameplay/Scroll/Page/Choices/Difficulty");
     difficulty.connect("item_selected",
                        presentation::guarded(this, &GameMenuView::difficulty_selected));
-    required_node<Control>(*this, "Options/Gameplay/Scroll/Page/Challenge")
+    required_node<Control>(*this, "Options/Gameplay/Scroll/Page/Choices/Challenge")
         .connect("value_changed", presentation::guarded(this, &GameMenuView::challenge_changed));
     // Auto-equip (EQUIP-1), Keep Quick and Original Shops: each On, then Off.
     for (const auto &[path, selected] :
-         {std::pair{"Options/Gameplay/Scroll/Page/AutoEquip", &GameMenuView::auto_equip_selected},
-          std::pair{"Options/Gameplay/Scroll/Page/UnidentifiedMagic",
+         {std::pair{"Options/Gameplay/Scroll/Page/Choices/AutoEquip",
+                    &GameMenuView::auto_equip_selected},
+          std::pair{"Options/Gameplay/Scroll/Page/Choices/UnidentifiedMagic",
                     &GameMenuView::unidentified_magic_selected},
-          std::pair{"Options/Gameplay/Scroll/Page/KeepQuick", &GameMenuView::keep_quick_selected},
-          std::pair{"Options/Gameplay/Scroll/Page/OriginalShops",
+          std::pair{"Options/Gameplay/Scroll/Page/Choices/KeepQuick",
+                    &GameMenuView::keep_quick_selected},
+          std::pair{"Options/Gameplay/Scroll/Page/Choices/OriginalShops",
                     &GameMenuView::original_shops_selected},
-          std::pair{"Options/Gameplay/Scroll/Page/TreasuresMoney",
+          std::pair{"Options/Gameplay/Scroll/Page/Choices/TreasuresMoney",
                     &GameMenuView::treasures_money_selected},
-          std::pair{"Options/Gameplay/Scroll/Page/DarknessGazes",
+          std::pair{"Options/Gameplay/Scroll/Page/Choices/DarknessGazes",
                     &GameMenuView::darkness_gazes_selected},
-          std::pair{"Options/Gameplay/Scroll/Page/CommandEveryRound",
+          std::pair{"Options/Gameplay/Scroll/Page/Choices/CommandEveryRound",
                     &GameMenuView::command_every_round_selected},
-          std::pair{"Options/Gameplay/Scroll/Page/EmptyHelmDodges",
+          std::pair{"Options/Gameplay/Scroll/Page/Choices/EmptyHelmDodges",
                     &GameMenuView::empty_helm_dodges_selected},
-          std::pair{"Options/Gameplay/Scroll/Page/BoardingFuel",
+          std::pair{"Options/Gameplay/Scroll/Page/Choices/BoardingFuel",
                     &GameMenuView::boarding_fuel_selected},
-          std::pair{"Options/Gameplay/Scroll/Page/DirectFlight",
+          std::pair{"Options/Gameplay/Scroll/Page/Choices/DirectFlight",
                     &GameMenuView::direct_flight_selected},
-          std::pair{"Options/Gameplay/Scroll/Page/CourseFlown",
+          std::pair{"Options/Gameplay/Scroll/Page/Choices/CourseFlown",
                     &GameMenuView::course_flown_selected},
-          std::pair{"Options/Gameplay/Scroll/Page/OriginalMovement",
+          std::pair{"Options/Gameplay/Scroll/Page/Choices/OriginalMovement",
                     &GameMenuView::original_movement_selected},
-          std::pair{"Options/Gameplay/Scroll/Page/ShipPictureShrinks",
+          std::pair{"Options/Gameplay/Scroll/Page/Choices/ShipPictureShrinks",
                     &GameMenuView::ship_picture_shrinks_selected}})
     {
         auto &choice = required_node<OptionButton>(*this, path);
@@ -326,7 +342,7 @@ void GameMenuView::build_options()
     // How the difficulty plays in an Unlimited Adventures design, in
     // ua::DesignDifficulty's order.
     auto &design_difficulty =
-        required_node<OptionButton>(*this, "Options/Gameplay/Scroll/Page/DesignDifficulty");
+        required_node<OptionButton>(*this, "Options/Gameplay/Scroll/Page/Choices/DesignDifficulty");
     for (const char *choice : {N_("The design's"), N_("OpenGoldBox's"), N_("Both")})
     {
         design_difficulty.add_item(i18n::text(choice));
@@ -335,8 +351,8 @@ void GameMenuView::build_options()
         "item_selected", presentation::guarded(this, &GameMenuView::design_difficulty_selected));
     for (std::size_t row = 0; row < party_spell_rows.size(); ++row)
     {
-        required_node<Control>(
-            *this, NodePath(String("Options/Gameplay/Scroll/Page/") + party_spell_rows.at(row)))
+        required_node<Control>(*this, NodePath(String("Options/Gameplay/Scroll/Page/PartyLimits/") +
+                                               party_spell_rows.at(row)))
             .connect("value_changed",
                      presentation::guarded(this, &GameMenuView::party_spell_limit_changed)
                          .bind(static_cast<std::int64_t>(row)));
@@ -345,28 +361,30 @@ void GameMenuView::build_options()
     for (std::size_t row = 0; row < i18n::monster_ability_options.size(); ++row)
     {
         const auto &option = i18n::monster_ability_options[row];
-        auto *line = memnew(HBoxContainer);
+        auto line = presentation::make_node<HBoxContainer>();
         line->set_custom_minimum_size({0, 46});
-        auto *name = memnew(Label);
+        auto name = presentation::make_node<Label>();
         name->set_text(i18n::text(option.label));
-        name->set_custom_minimum_size({440, 0});
-        auto *monsters = memnew(Label);
+        name->set_custom_minimum_size({300, 0});
+        name->set("autowrap_mode", 3);
+        auto monsters = presentation::make_node<Label>();
         monsters->set_text(i18n::text(option.monsters));
+        monsters->set("autowrap_mode", 3);
         monsters->set_theme_type_variation("LabelMuted");
         monsters->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-        auto *from = memnew(OptionButton);
+        auto from = presentation::make_node<OptionButton>();
         from->set_name("From");
-        from->set_custom_minimum_size({240, 40});
+        from->set_custom_minimum_size({180, 40});
         for (const auto *choice : i18n::ability_from_names)
         {
             from->add_item(i18n::text(choice));
         }
         from->connect("item_selected", presentation::guarded(this, &GameMenuView::ability_selected)
                                            .bind(static_cast<std::int64_t>(row)));
-        line->add_child(name);
-        line->add_child(monsters);
-        line->add_child(from);
-        rows.add_child(line);
+        presentation::attach_child(*line, std::move(name));
+        presentation::attach_child(*line, std::move(monsters));
+        presentation::attach_child(*line, std::move(from));
+        presentation::attach_child(rows, std::move(line));
     }
     auto &language = required_node<OptionButton>(*this, "Options/Interface/Language");
     // Each language under its own name, as the first-run language choice shows them.
@@ -397,7 +415,14 @@ void GameMenuView::build_options()
 
 void GameMenuView::difficulty_selected(std::int64_t index)
 {
-    settings::save_difficulty(static_cast<opengold::Difficulty>(index));
+    if (opengold::offers_novice(settings::chosen_game()))
+    {
+        settings::save_difficulty_setting(static_cast<opengold::DifficultySetting>(index));
+    }
+    else
+    {
+        settings::save_difficulty(static_cast<opengold::Difficulty>(index));
+    }
 }
 
 void GameMenuView::challenge_changed(double value)
@@ -426,36 +451,39 @@ void GameMenuView::show_srd_balance()
     // movement where the SRD balance's rows would stand.
     const bool buck_rogers = opengold::is_buck_rogers(settings::chosen_game());
     const bool srd_balance = srd_rules_ && !buck_rogers;
-    for (const char *name : {"ChallengeLabel", "Challenge", "ChallengeNote", "AbilitiesHeader",
-                             "AbilityColumn", "MonstersColumn", "FromColumn", "Abilities"})
+    for (const char *name : {"Choices/ChallengeLabel", "Choices/Challenge", "Choices/ChallengeNote",
+                             "AbilitiesHeader", "AbilityColumns", "Abilities"})
     {
         required_node<Control>(gameplay, name).set_visible(srd_balance);
     }
     required_node<Control>(*this, "Options/Gameplay/Defaults").set_visible(srd_balance);
     for (const char *name : {"OriginalMovementLabel", "OriginalMovement", "OriginalMovementNote"})
     {
-        required_node<Control>(gameplay, name).set_visible(!srd_balance);
+        required_node<Control>(gameplay, NodePath(String("Choices/") + name))
+            .set_visible(!srd_balance);
     }
     // The party's area spells weigh their risks under the original rules,
     // whose spells a Buck Rogers game has none of.
-    const bool party_spells = !srd_rules_ && !buck_rogers;
+    const bool party_spells = !srd_balance && !buck_rogers;
+    required_node<Control>(gameplay, "PartyLimits").set_visible(party_spells);
     required_node<Control>(gameplay, "PartySpellsHeader").set_visible(party_spells);
     required_node<Control>(gameplay, "PartySpellsNote").set_visible(party_spells);
     for (const char *row : party_spell_rows)
     {
         for (const char *part : {"Label", ""})
         {
-            required_node<Control>(gameplay, NodePath(String(row) + part))
+            required_node<Control>(gameplay, NodePath(String("PartyLimits/") + row + part))
                 .set_visible(party_spells);
         }
     }
-    // The page scrolls as far as its lowest row shown.
-    gameplay.set_custom_minimum_size({0, buck_rogers ? 780.0f : 1180.0f});
-    required_node<Label>(gameplay, "DifficultyNote")
+    required_node<Label>(gameplay, "Choices/DifficultyNote")
         .set_text(
-            srd_rules_
+            srd_balance
                 ? i18n::text(N_(
                       "From Hard: monsters use their potions, wands and scrolls, and temples cast no Resurrection. Each monster ability below has its own lowest difficulty."))
+            : opengold::is_buck_rogers(settings::chosen_game())
+                ? i18n::text(N_(
+                      "Trooper plays as the original game did. The other levels change the party's to-hit and the monsters' Hit Points, to-hit and Armor Class."))
             : settings::chosen_game() == opengold::GoldBoxGame::unlimited_adventures
                 ? i18n::text(N_(
                       "In this design, the difficulty plays as Design difficulty below sets it."))
@@ -643,7 +671,7 @@ void GameMenuView::show_game_options()
 {
     const auto game = settings::chosen_game();
     const bool buck_rogers = opengold::is_buck_rogers(game);
-    auto &gameplay = required_node<Control>(*this, "Options/Gameplay/Scroll/Page");
+    auto &gameplay = required_node<Control>(*this, "Options/Gameplay/Scroll/Page/Choices");
     // Unlimited Adventures' Design difficulty steps aside too, for the solar
     // map's rows.
     for (const char *name :
@@ -692,8 +720,8 @@ void GameMenuView::show_party_spell_limits()
     for (std::size_t row = 0; row < party_spell_rows.size(); ++row)
     {
         // SpinBoxes, which the game's Godot class list leaves out: called by name.
-        required_node<Control>(
-            *this, NodePath(String("Options/Gameplay/Scroll/Page/") + party_spell_rows.at(row)))
+        required_node<Control>(*this, NodePath(String("Options/Gameplay/Scroll/Page/PartyLimits/") +
+                                               party_spell_rows.at(row)))
             .call("set_value_no_signal", shown.at(row));
     }
 }
@@ -725,8 +753,10 @@ void GameMenuView::party_spell_limit_changed(double value, std::int64_t row)
 
 void GameMenuView::show_unidentified_magic(bool shown)
 {
-    required_node<Control>(*this, "Options/Gameplay/Scroll/Page/UnidentifiedMagicLabel")
+    required_node<Control>(*this, "Options/Gameplay/Scroll/Page/Choices/UnidentifiedMagicNote")
         .set_visible(shown);
-    required_node<Control>(*this, "Options/Gameplay/Scroll/Page/UnidentifiedMagic")
+    required_node<Control>(*this, "Options/Gameplay/Scroll/Page/Choices/UnidentifiedMagicLabel")
+        .set_visible(shown);
+    required_node<Control>(*this, "Options/Gameplay/Scroll/Page/Choices/UnidentifiedMagic")
         .set_visible(shown);
 }

@@ -321,6 +321,14 @@ void suspension()
     check(result.state == EclState::waiting && result.request->choices.size() == 2,
           "Menu suspends");
     const auto id = result.request->id;
+    check(vm.refresh_bound_variable(EclAddress{0x9700}, 3) &&
+              vm.variable(EclAddress{0x9700}) == 3 &&
+              !vm.consume_script_write(EclAddress{0x9700}) && vm.run().request->id == id,
+          "An existing setting refreshes while a menu waits without replay or script writes");
+    check(!vm.refresh_bound_variable(EclAddress{0x1234}, 1) &&
+              !vm.refresh_bound_variable(EclAddress{0x9914}, 1),
+          "A live setting cannot insert an unbound cell or patch script code");
+    check(vm.refresh_bound_variable(EclAddress{0x9700}, 0), "Restore the initial menu value");
     const std::array updates{EclMemoryWrite{EclAddress{0x9700}, 7}};
     check(!vm.refresh_host_variables(id + 1, updates) && vm.variable(EclAddress{0x9700}) == 0,
           "Stale live-data updates do not change the paused machine");

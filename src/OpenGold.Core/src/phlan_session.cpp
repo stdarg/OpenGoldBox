@@ -1247,6 +1247,21 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
     // The Buck Rogers scripts read the difficulty level from zone 0.
     if (is_buck_rogers(game()))
     {
+        // Zone2 starts at7A00h. The shared setup binds its upper half;
+        // ordinary dock labels also SAVE/PRINT strings in its lower half.
+        // Initialize missing cells at the first event, including after an
+        // older save, while keeping existing scratch data and idle save bytes.
+        for (std::uint16_t address = 0x7A00; address < 0x7B00; ++address)
+        {
+            try
+            {
+                (void)machine_.variable(EclAddress{address});
+            }
+            catch (const EclError &)
+            {
+                machine_.bind_variable(EclAddress{address}, 0);
+            }
+        }
         machine_.bind_variable(EclAddress{0x4BB6}, buck_rogers_difficulty_level());
     }
     if (const auto won = game_won_cell(game()))

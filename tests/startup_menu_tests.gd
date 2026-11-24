@@ -43,6 +43,60 @@ func require(condition: bool, message: String) -> void:
 func settle() -> void:
 	for frame in range(8): await process_frame
 
+# Options keeps the wrapped row's natural height, collapses hidden settings,
+# and leaves its Close button reachable while only the page scrolls.
+func check_options_layout(options: Control) -> void:
+	var original_size := root.size
+	for dimensions in [Vector2i(1120, 800), Vector2i(1600, 1000)]:
+		root.size = dimensions
+		await settle()
+		var scroll: ScrollContainer = options.get_node("Options/Gameplay/Scroll")
+		var page: VBoxContainer = scroll.get_node("Page")
+		var choices: GridContainer = page.get_node("Choices")
+		require(choices.columns == 3 and (page.get_node("PartyLimits") as GridContainer).columns == 2,
+			"Options use containers for setting rows and all five party spell limits")
+		require(page.size.x <= scroll.size.x + 1.0,
+			"Options fit their scrolling width at " + str(dimensions))
+		var preceding_bottom := choices.get_global_rect().position.y
+		for row in range(0, choices.get_child_count(), 3):
+			var label: Label = choices.get_child(row)
+			var choice: Control = choices.get_child(row + 1)
+			var note: Label = choices.get_child(row + 2)
+			require(label.visible == choice.visible and note.visible == choice.visible,
+				"Hidden setting rows collapse together: " + str(choice.name))
+			if not choice.visible: continue
+			var row_bottom := preceding_bottom
+			var preceding_right := choices.get_global_rect().position.x
+			for cell: Control in [label, choice, note]:
+				var rect := cell.get_global_rect()
+				require(rect.position.y >= preceding_bottom - 1.0 and rect.position.x >= preceding_right - 1.0
+					and rect.end.x <= scroll.get_global_rect().end.x + 1.0,
+					"Setting cells do not overlap or escape their row: " + str(choice.name))
+				preceding_right = rect.end.x
+				row_bottom = maxf(row_bottom, rect.end.y)
+				if cell is Label and not (cell as Label).text.is_empty():
+					require((cell as Label).get_visible_line_count() >= (cell as Label).get_line_count(),
+						"Wrapped text has room for every line: " + str(cell.name))
+			preceding_bottom = row_bottom
+		var previous_section_bottom := page.get_global_rect().position.y
+		for section: Control in page.get_children():
+			if not section.visible: continue
+			require(section.get_global_rect().position.y >= previous_section_bottom - 1.0,
+				"Visible Options sections do not overlap: " + str(section.name))
+			previous_section_bottom = section.get_global_rect().end.y
+		var close: Button = options.get_node("Options/Close")
+		var panel: Control = options.get_node("Options")
+		require(close.is_visible_in_tree() and close.get_global_rect().position.y >= scroll.get_global_rect().end.y
+			and close.get_global_rect().end.y <= panel.get_global_rect().end.y,
+			"Close stays outside the scrolling page and inside the Options panel")
+		scroll.scroll_vertical = 100000
+		await settle()
+		require(scroll.get_v_scroll_bar().value + scroll.get_v_scroll_bar().page >= page.size.y - 1.0,
+			"The lowest visible settings can be reached by scrolling")
+		scroll.scroll_vertical = 0
+	root.size = original_size
+	await settle()
+
 # The new game's first question (docs/ORIGINAL-RULES.md): the rules it plays
 # by, the SRD's offered first for now; Begin starts the game with them.
 func answer_rules(original := false) -> void:
@@ -180,12 +234,12 @@ func run_checks() -> void:
 	# Pool of Radiance, the game until another is chosen, shows its own and
 	# the other games' options, not the Buck Rogers games' ship combat.
 	var gameplay: Control = options.get_node("Options/Gameplay/Scroll/Page")
-	require(gameplay.get_node("OriginalShops").visible and gameplay.get_node("DarknessGazes").visible
-		and not gameplay.get_node("CommandEveryRound").visible and not gameplay.get_node("EmptyHelmDodges").visible
-		and not gameplay.get_node("BoardingFuel").visible and not gameplay.get_node("ShipPictureShrinks").visible
-		and gameplay.get_node("DesignDifficulty").visible,
+	require(gameplay.get_node("Choices/OriginalShops").visible and gameplay.get_node("Choices/DarknessGazes").visible
+		and not gameplay.get_node("Choices/CommandEveryRound").visible and not gameplay.get_node("Choices/EmptyHelmDodges").visible
+		and not gameplay.get_node("Choices/BoardingFuel").visible,
 		"Another game's Options leave out the ship-combat options")
 	require(not menu.visible, "The menu steps aside for Options")
+	await check_options_layout(options)
 	options.get_node("Options/Close").pressed.emit()
 	await settle()
 	require(menu.visible and current_scene.get_node_or_null("Options") == null, "Closing Options returns to the menu")
@@ -568,12 +622,41 @@ func check_buck_rogers() -> void:
 		game_menu.get_node("Buttons/Options").pressed.emit()
 		await settle()
 		var gameplay: Control = current_scene.get_node("Options/Options/Gameplay/Scroll/Page")
-		require(not gameplay.get_node("OriginalShops").visible and not gameplay.get_node("DarknessGazes").visible
-			and not gameplay.get_node("DesignDifficulty").visible,
+		require(not gameplay.get_node("Choices/OriginalShops").visible and not gameplay.get_node("Choices/DarknessGazes").visible
+			and not gameplay.get_node("Choices/DesignDifficulty").visible,
 			"The other games' options step aside for the ship combat's and the solar map's")
+		require(not gameplay.get_node("Choices/Challenge").is_visible_in_tree()
+			and not gameplay.get_node("Abilities").is_visible_in_tree()
+			and not gameplay.get_node("PartyLimits").is_visible_in_tree()
+			and not (gameplay.get_node("Choices/DifficultyNote") as Label).text.contains("From Hard"),
+			"Buck Rogers pregame Options hide SRD balance and party spell rows and their SRD note")
+		await check_options_layout(current_scene.get_node("Options"))
+		var difficulty: OptionButton = gameplay.get_node("Choices/Difficulty")
+		var levels := ["Novice", "Cadet", "Trooper", "Veteran", "Ace", "Admiral"]
+		require(difficulty.item_count == levels.size() and difficulty.selected == 2,
+			"Buck Rogers offers six source difficulty levels with Trooper as its default")
+		for level in range(levels.size()):
+			require(difficulty.get_item_text(level) == levels[level], "The source difficulty is " + levels[level])
+		difficulty.select(0)
+		difficulty.item_selected.emit(0)
+		var difficulty_config := ConfigFile.new()
+		difficulty_config.load(OS.get_environment("OPENGOLD_SETTINGS_FILE"))
+		require(difficulty_config.get_value("game", "difficulty", "") == "novice",
+			"The actual Novice setting is saved without mapping it to Cadet")
+		await press("Options/Options/Close")
+		game_menu.get_node("Buttons/Options").pressed.emit()
+		await settle()
+		gameplay = current_scene.get_node("Options/Options/Gameplay/Scroll/Page")
+		difficulty = gameplay.get_node("Choices/Difficulty")
+		require(difficulty.selected == 0, "Reopened Options retain the actual Novice setting")
+		difficulty.select(2)
+		difficulty.item_selected.emit(2)
+		difficulty_config.load(OS.get_environment("OPENGOLD_SETTINGS_FILE"))
+		require(difficulty_config.get_value("game", "difficulty", "") == "normal",
+			"Trooper restores the original default difficulty")
 		for name in options:
-			var choice: OptionButton = gameplay.get_node(name)
-			require(choice.visible and gameplay.get_node(name + "Label").visible and choice.item_count == 2
+			var choice: OptionButton = gameplay.get_node("Choices/" + name)
+			require(choice.visible and gameplay.get_node("Choices/" + name + "Label").visible and choice.item_count == 2
 				and choice.get_item_text(0) == "On" and choice.selected == options[name][1],
 				name + " shows its default for " + folder)
 			var other: int = 1 - options[name][1]
@@ -590,7 +673,7 @@ func check_buck_rogers() -> void:
 		await settle()
 		gameplay = current_scene.get_node("Options/Options/Gameplay/Scroll/Page")
 		for name in options:
-			require((gameplay.get_node(name) as OptionButton).selected == 1 - options[name][1],
+			require((gameplay.get_node("Choices/" + name) as OptionButton).selected == 1 - options[name][1],
 				name + " shows the saved choice again for " + folder)
 		await press("Options/Options/Close")
 		game_menu.get_node("Buttons/MainMenu").pressed.emit()
@@ -607,9 +690,10 @@ func check_party_spell_limits(gameplay: Control) -> void:
 		"HurtChance": ["hurt_chance", 50.0, 60.0], "FightEndChance": ["fight_end_chance", 75.0, 90.0],
 		"PartyWeight": ["party_weight", 2.0, 3.5]}
 	require(gameplay.get_node("PartySpellsHeader").is_visible_in_tree(), "Options show the party's area spells")
+	await check_options_layout(current_scene.get_node("GameMenu"))
 	for row in limits:
-		var spin: SpinBox = gameplay.get_node(row)
-		require(spin.is_visible_in_tree() and gameplay.get_node(row + "Label").visible
+		var spin: SpinBox = gameplay.get_node("PartyLimits/" + row)
+		require(spin.is_visible_in_tree() and gameplay.get_node("PartyLimits/" + row + "Label").visible
 			and not (spin.tooltip_text as String).is_empty() and spin.value == limits[row][1],
 			row + " shows its default and explains itself")
 		spin.value = limits[row][2]
@@ -622,7 +706,7 @@ func check_party_spell_limits(gameplay: Control) -> void:
 	await press("GameMenu/Menu/Options")
 	var page: Control = current_scene.get_node("GameMenu/Options/Gameplay/Scroll/Page")
 	for row in limits:
-		var spin: SpinBox = page.get_node(row)
+		var spin: SpinBox = page.get_node("PartyLimits/" + row)
 		require(spin.value == limits[row][2], row + " shows the saved limit again")
 		spin.value = limits[row][1]
 	config.load(OS.get_environment("OPENGOLD_SETTINGS_FILE"))
@@ -715,11 +799,11 @@ func check_ua() -> void:
 	# says, Both by default, and a choice is kept for Unlimited Adventures.
 	await press("GameMenu/Menu/Options")
 	var gameplay: Control = current_scene.get_node("GameMenu/Options/Gameplay/Scroll/Page")
-	var design_difficulty: OptionButton = gameplay.get_node("DesignDifficulty")
+	var design_difficulty: OptionButton = gameplay.get_node("Choices/DesignDifficulty")
 	require(design_difficulty.is_visible_in_tree() and design_difficulty.item_count == 3
 		and design_difficulty.get_item_text(0) == "The design's" and design_difficulty.selected == 2,
 		"Options offer Design difficulty, Both chosen")
-	require((gameplay.get_node("DifficultyNote") as Label).text.contains("Design difficulty"),
+	require((gameplay.get_node("Choices/DifficultyNote") as Label).text.contains("Design difficulty"),
 		"The Difficulty's note sends a design's player to Design difficulty")
 	await capture_screen("ua-options")
 	design_difficulty.select(0)

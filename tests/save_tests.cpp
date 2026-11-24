@@ -750,11 +750,106 @@ void original_rules_saves_keep_their_aging()
           "An older format cannot record the rules' aging");
 }
 
+// A later Sword petition can return an imported Crown knight to its starting
+// level. Its first divine preparation belongs after that chronological grant.
+void original_knight_petition_preparation_roundtrips()
+{
+    constexpr auto game = GoldBoxGame::dark_queen_of_krynn;
+    original::Content content;
+    content.game = game;
+    const std::shared_ptr<const rules::CharacterRules> creation =
+        original::character_rules(original::default_aging, game);
+    rules::CharacterSheet source;
+    source.identity = original::identity(GoldBoxGame::death_knights_of_krynn);
+    source.name = "Imported Crown knight";
+    source.gender = "Male";
+    source.level = 13;
+    source.hit_points = 126;
+    source.level_classes.assign(13, "knight");
+    for (const auto ability : rules::all_abilities)
+    {
+        source.base[ability] = source.scores[ability] = 18;
+    }
+    source.original = rules::CharacterSheet::Original{};
+    source.original->race = static_cast<int>(original::Race::krynn_human);
+    source.original->profession = static_cast<int>(original::Profession::knight);
+    source.original->alignment = static_cast<int>(original::Alignment::lawful_good);
+    source.original->class_levels[7] = 13;
+    source.original->knight_order = 1;
+    source.original->rolled_hit_points = 86;
+    source.original->age = 30;
+    const auto imported = creation->imported_draft(source, 1'800'000);
+    check(imported.has_value(), "Import the previous game's earned Crown knight");
+    auto party = std::make_shared<CampaignParty>(original::rules_module(content), creation);
+    const auto hero = party->add_pc(Character(*creation, *imported, {}));
+    party->train_at_hall_level(hero, 255U, {});
+    party->award_experience(300'000, "fixture:earned-knight-reward");
+    party->train_at_hall_level(hero, 255U, {});
+    check(party->member(hero).character.sheet().level == 15,
+          "The imported Crown knight visits higher levels through ordinary hall training");
+    const auto before = party->member(hero);
+    const auto lesson = party->hall_lessons(hero, 255U);
+    check(lesson.options.size() == 1 &&
+              lesson.options.front().label == "Petition for the Order of the Sword",
+          "The hall offers the earned Sword petition");
+    party->train_hall_lesson(hero, 255U, lesson.options.front().id);
+    const auto promoted = party->member(hero);
+    check(promoted.character.sheet().level == 13 &&
+              promoted.character.sheet().original->knight_order == 2 &&
+              promoted.character.sheet().hit_points == before.character.sheet().hit_points - 4 &&
+              promoted.experience == before.experience,
+          "The actual petition loses the required levels and HP while retaining earned XP");
+    check(party->rest(RestKind::long_rest).has_value(), "Rest the newly promoted knight");
+    const auto offered = party->spell_choice_options(hero);
+    const auto cure = std::ranges::find(
+        offered.preparation, std::string("cleric:cure_light_wounds"), &rules::CreationChoice::id);
+    check(cure != offered.preparation.end(), "Sword opens a real offered divine preparation");
+    party->choose_spells(hero, {{}, std::vector<std::string>{cure->id}});
+    const auto bytes = encode_campaign(*party, nullptr, "native-petition", game);
+    const auto module = original::rules_module(content);
+    const auto loaded = decode_campaign(bytes, *creation, *module, "native-petition", nullptr);
+    auto restored = std::make_shared<CampaignParty>(original::rules_module(content), creation);
+    restored->restore(loaded.party);
+    check(restored->member(hero).character.sheet().original->knight_order == 2 &&
+              restored->member(hero).character.sheet().level == 13,
+          "The independent reader retains the actual Sword order and level");
+    check(restored->member(hero).experience == promoted.experience,
+          "The independent reader retains the knight's earned XP");
+    check(restored->memorized_spells(hero) == party->memorized_spells(hero),
+          "The independent reader retains the actual offered divine preparation");
+    check(encode_campaign(*restored, nullptr, "native-petition", game) == bytes,
+          "The promoted knight's actual preparation resaves byte for byte");
+
+    const auto &character = party->member(hero).character;
+    auto invalid = character.spell_edits();
+    invalid.back().choices.prepared =
+        std::vector<std::string>{"cleric:cure_light_wounds", "cleric:cure_light_wounds"};
+    Character corrupted(*creation, *imported, {});
+    rejects(
+        [&]
+        {
+            corrupted.replay(*module, character.advancements(), invalid, character.training_edits(),
+                             character.hall_training());
+        },
+        "Deferring a Crown preparation never accepts invalid divine choices");
+    auto unreached = character.spell_edits();
+    unreached.back().level = 12;
+    Character missing(*creation, *imported, {});
+    rejects(
+        [&]
+        {
+            missing.replay(*module, character.advancements(), unreached, character.training_edits(),
+                           character.hall_training());
+        },
+        "A petition history cannot silently drop a preparation at an unvisited level");
+}
+
 int main()
 {
     try
     {
         original_rules_saves_keep_their_aging();
+        original_knight_petition_preparation_roundtrips();
         TestDirectory directory;
         roundtrip(directory.path);
         level_four_roundtrip(directory.path);

@@ -472,7 +472,7 @@ void RolfTourView::restore_campaign(std::shared_ptr<CampaignParty> party,
     forget_monster_picture();
     auto &campaign = dax_session();
     campaign.encounter_challenge(settings::encounter_challenge());
-    campaign.difficulty(settings::difficulty());
+    campaign.difficulty(settings::difficulty_setting());
     campaign.set_auto_equip(auto_equip_setting());
     // OpenGoldBox's shops and companions are Pool of Radiance's, as a new
     // campaign's are.

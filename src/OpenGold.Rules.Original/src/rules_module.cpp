@@ -2489,11 +2489,6 @@ void synchronize_native_progression(const CharacterSheet &sheet, VitalState &sta
 // level given back since is not.
 void follow_class_levels(const CharacterSheet &sheet, VitalState &state)
 {
-    if (game_of(sheet.identity) == GoldBoxGame::dark_queen_of_krynn)
-    {
-        synchronize_native_progression(sheet, state);
-        return;
-    }
     auto carried = carried_state(state.resources, game_of(sheet.identity));
     if (!carried.last_fight)
     {
@@ -2508,7 +2503,12 @@ bool OriginalModule::advance_character(CharacterSheet &sheet, VitalState &state,
                                        const AdvancementChoice &choice) const
 {
     take_advancement(sheet, state, choice);
-    follow_class_levels(sheet, state);
+    // Native advancement owns its full continuation, including combat drain
+    // receipts that must retain the incoming snapshot without rewriting it.
+    if (game_of(sheet.identity) != GoldBoxGame::dark_queen_of_krynn)
+    {
+        follow_class_levels(sheet, state);
+    }
     return true;
 }
 
@@ -2644,7 +2644,7 @@ void OriginalModule::take_advancement(CharacterSheet &sheet, VitalState &state,
             // rewrite the authoritative snapshot used by resolve_combat.
             state = incoming;
         }
-        return true;
+        return;
     }
     if (const auto drain = decode_drain(choice.rules_data))
     {

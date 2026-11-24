@@ -441,7 +441,8 @@ void CharacterCreationView::show_buck_rogers_specializations()
 {
     const auto record = record_of(creator_->draft());
     const auto asked = creator_->rules().in_place_pages(creator_->draft());
-    const auto &stock = buck_rogers_stock(game_rules_files());
+    const auto files = game_rules_files();
+    const auto &stock = buck_rogers_stock(files);
     required_node<Label>(*this, "Specializations/Count")
         .set_text(i18n::format(
             N_("Chosen {chosen} of {count}. Each adds one to hit and to damage with its weapon, at most three in one."),

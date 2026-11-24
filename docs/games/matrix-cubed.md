@@ -43,9 +43,27 @@ The separate real Camp check also passes. The earlier fixture selected armor
 for specialization and omitted Matrix's skill presets; its fresh-party
 legality claims are superseded by this corrected run. This checkpoint
 also consumes the separately verified shared Buck time/Yes-No/map-loading and
-inventory-buyer fixes. A complete route, its real ground/ship fights and solar
-travel, and any required UI transactions still need verification. The explicit
-`--earned-ending` mode fails closed at the current opening boundary.
+inventory-buyer fixes.
+
+The continuous `--earned-caloris-preparation` route now uses the actual shop,
+member selection and debit transactions to buy six Smartsuits and four Laser
+Pistols, plays Romney's ambush through Original's legal equipment and combat
+commands, and uses the original autodoc script to restore all six living
+members. Their complete native records and world resave byte-identically.
+This Normal/Trooper prefix is separate from an earned ending. It exposed a
+fixed inventory commit bug: newly purchased or looted items must retain their
+actual type rows, because the native record caches only types already owned.
+The isolated prefix, ending/save protocol, Original creation/combat, released
+save, UA and Native checks passed 11/11 in
+`/tmp/opengold-matrix-phase2-legacy-checks-v15.log` on the uncommitted Matrix
+stage based on `ed0be5e8` and the reviewed integration snapshot.
+
+The whole campaign, later ground/ship fights, solar travel and required UI
+transactions still need verification. Full route modes return failure until
+the actual authored ending is earned; `--earned-ending-easy` explicitly
+selects the existing Easy player option. Creation, solar and ship screens and
+contracts remain with the shared Buck owners; this route adds no alternative
+screens or backends.
 
 Authored creatures can have no career: the opening's actual PURGE WARRIOR
 record has career zero. Its ordinary skill checks now use their governing
@@ -127,7 +145,7 @@ The command table, the memory window (8000h to A400h), the operand tags and
 the commands' meanings are *Countdown*'s. What the scripts ask of the engine
 (`opengold_census --scripts`):
 
-- **Scripts**: 16 starts a new game; 17 is the team's ship; 18 is
+- **Scripts**: 16 starts a new game; 17 is Caloris, Mercury's space port; 18 is
   Salvation; 19 is the solar map; 24 is the demonstration. Scripts 1 and 2
   are developer tools that nothing reaches from script 16: 1 jumps the party
   to any place and runs any skill check, ship combat or shop by number, and

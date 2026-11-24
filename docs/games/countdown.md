@@ -1230,12 +1230,51 @@ the survey's placements, written quest cells or assumed ship outcomes.
 The installed-data checks reach Chicagorg's rescue, the derelict's upper
 decks, the surgeon and protective salve, Scot's connected console, the argon
 system and engineering override, and the final ECG. The team earns its ship,
-returns to Salvation, stocks medical supplies, launches and treats the crew
-through the ship's clinic. All six survive. Ammunition is consumed and bought
+returns to Salvation, stocks medical supplies and launches. It answers the
+optional clinic from the actual prompts and treats eligible wounded crew. All six survive. Ammunition is consumed and bought
 through the actual Depot shop, with the selected member paying for its refill.
 Each checkpoint reloads against freshly loaded assets and saves byte for byte,
-including the solar-map state. `--ship-earned` stops there; this is partial
-campaign progress, not the authored ending.
+including the solar-map state. `--ship-earned` stops there. On main
+`fce677b5` plus the route prerequisites, a fresh run won eleven ground fights
+with all six PCs alive. `--solar-arrival` then flew twelve ordinary direction
+steps to Ceres, passing three native days per moved step and answering an
+actual RAM cruiser encounter with Flee. Its arrival offers Asteroid Base.
+The idle Ceres checkpoint retains its actual phase, days and rocket cell.
+
+`--asteroid-entry` docks through that real arrival menu. `--asteroid-lower`
+bluffs the administrator, follows the permitted corridor through the installed
+room tables using turns and Forward, accepts the offered rope, grenades and
+antidotes through Take, and descends the elevator before its authored
+demolition. These remain eleven actual ground victories: the guarded offices
+are optional and the permitted corridor avoids them. Each full-world
+checkpoint reloads against fresh assets and saves byte for byte. These checks
+prove partial campaign progress; they do not certify the authored ending.
+
+The 2026-11-23 replay on `e495ba24` plus the integrated engine fixes uses
+Original movement and preserves Normal difficulty for the earlier checks.
+All six recruits train Maneuver in Zero-G through their ordinary 80 career
+and 40 general creation points. This avoids leaving the Medic, Engineer
+and Rogue unable to pass their zero-gravity checks. The rolled attributes
+and Hit Points are unchanged.
+
+`--talon-clinic` continues one fresh Novice campaign through the actual
+keycard search, the computer's DNA passcode, the rope exit and Talon's
+boarding chapter. Thirteen ground victories precede its authored capture;
+the crew follows the guards and declines the optional duel. A conscious
+member attempts the cell lock through WHO. Buck's rescue adds the actual
+NPC and restores the stored equipment. The real ladder reaches deck seven,
+where the ship's clinic restores all seven crew. The full seven-member save
+reloads against fresh assets and saves byte for byte. This remains a partial
+campaign check, not an earned ending or a winning-party artifact.
+
+`--talon-escape` continues through Buck's actual cabin plans, wires a recovered
+Demo Charge in the galley, leaves safely before it explodes, and defeats the
+weakened engineering guard in a fourteenth real ground fight. The crew walks
+to and smashes all three power panels, then returns through the deck-eleven
+boarding tube. The Salvation debrief removes Buck through its authored DUMP;
+the relaunch clinic treats only the current occupied party slots. The ordinary
+Solar checkpoint reloads against fresh assets and saves byte for byte. This
+completes the pirate chapter, while the remaining campaign is still unproved.
 
 The route exposed three persistence/script prerequisites: script 33 shares
 map 32 after the lower deck's NEW ECL at 8E7Eh; Buck Rogers' YES NO opcode

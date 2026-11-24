@@ -143,6 +143,9 @@ class EclMachine
     explicit EclMachine(std::shared_ptr<const EclProgram> program);
     // Variables persist across invocations; binding is allowed only while idle/completed.
     void bind_variable(EclAddress address, std::uint16_t value);
+    // Refresh an existing logical binding between executions, including while
+    // waiting for input. Never inserts a binding, patches code or marks a script write.
+    [[nodiscard]] bool refresh_bound_variable(EclAddress address, std::uint16_t value) noexcept;
     void bind_string(EclAddress address, std::string_view value);
     void seed_random(std::uint32_t seed);
     void enable_host(std::uint8_t opcode);

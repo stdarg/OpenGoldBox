@@ -53,6 +53,13 @@ void Character::replay(const rules::RulesModule &rules,
     // level drain may bring a character back to a level it has left, so
     // the same level can hold entries made before and after the drain.
     std::size_t next_spells = 0, next_training = 0, next_hall = 0;
+    const auto is_petition = [](const auto &choice)
+    {
+        return choice.training.contains("hall_petition");
+    };
+    auto remaining_petitions =
+        rules.plays_original_records() ? std::ranges::count_if(history, is_petition) : 0;
+    const bool has_petition_history = remaining_petitions != 0;
     const auto at_level = [&]
     {
         const auto level = static_cast<unsigned>(sheet_.level);
@@ -78,6 +85,16 @@ void Character::replay(const rules::RulesModule &rules,
              ++next_spells)
         {
             const auto &edit = spell_edits[next_spells];
+            // A Crown knight can revisit its earlier level after a Sword
+            // petition. Its new divine preparation cannot belong to the
+            // earlier noncaster visit; leave it for the actual later grant.
+            if (remaining_petitions > 0 && edit.choices.prepared &&
+                !edit.choices.prepared->empty() &&
+                !rules.spell_choice_options(sheet_, rules::SpellChoiceContext::long_rest)
+                     .may_prepare)
+            {
+                break;
+            }
             choose_spells(rules, edit.choices, edit.rest_session,
                           rules::SpellChoiceContext::long_rest, rules::ChoiceCompleteness::partial);
         }
@@ -101,7 +118,15 @@ void Character::replay(const rules::RulesModule &rules,
         {
             throw std::runtime_error("Unsupported saved advancement choice");
         }
+        if (remaining_petitions > 0 && is_petition(choice))
+        {
+            --remaining_petitions;
+        }
         at_level();
+    }
+    if (has_petition_history && next_spells != spell_edits.size())
+    {
+        throw std::runtime_error("Saved spell choices do not match the petition history");
     }
 }
 

@@ -994,6 +994,9 @@ struct CombatantView
     // The computer plays it whatever the player chose: a Treasures lover in a
     // frenzy (Encounter::romance).
     bool computer_plays{};
+    // The rules have given the player control of this allied creature.
+    // Otherwise the host retains its normal automatic policy for allies.
+    bool player_controls_ally{};
 };
 
 struct TemporaryHpOffer
