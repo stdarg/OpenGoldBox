@@ -2100,10 +2100,31 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     beats.push_back(iron_flower);
     auto celebration_lift = workshop_lift;
     celebration_lift.answers = {"PALACE"};
+    // The return square permits the citadel's ordinary camp. Recover and
+    // prepare before taking the lift or entering the final celebration.
+    celebration_lift.rest_first = true;
+    celebration_lift.rest_for_spells = true;
+    celebration_lift.keep_preparation = true;
+    celebration_lift.memorize_first_of = palace_preparation.memorize_first_of;
+    celebration_lift.ward_memorized = "resist_fire";
+    celebration_lift.ward_each_with = "resist_fire";
+    celebration_lift.cast_after = {"mind_blank"};
+    celebration_lift.cast_after_by = "magic_user 6";
     beats.push_back(celebration_lift);
+    // Keep an ordinary save immediately before the public Forward that
+    // triggers PROGRAM 1, for the live UI's winner-capture check as well.
+    auto celebration_approach = ending_walk(58, 18, 11, D::south);
+    celebration_approach.cast_after = {"globe_of_invulnerability"};
+    celebration_approach.cast_after_by = "magic_user 6";
+    beats.push_back(celebration_approach);
+    auto celebration_shield = ending_walk(58, 18, 11, D::south);
+    celebration_shield.cast_after = {"fire_shield:cold"};
+    celebration_shield.cast_after_by = "magic_user 6";
+    beats.push_back(celebration_shield);
     auto celebration = ending_walk(58, 18, 11, D::south);
     celebration.arrive_only = false;
     celebration.step = true;
+    celebration.fight_tactic = 6;
     celebration.dialogue_answers = {{"", "STAY"}};
     // The test driver records PROGRAM 1 before Continue, then follows the
     // dragon epilogue through its authored THE END and exploration unlock.
