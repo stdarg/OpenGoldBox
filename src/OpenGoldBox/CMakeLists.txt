@@ -862,6 +862,16 @@ if(OPENGOLD_BUILD_TESTS)
         "Add character from Curse of the Azure Bonds" -DNPC=ON)
     opengold_winner_bank_check(matrix_from_countdown buck-rogers-countdown-to-doomsday
         buck-rogers-matrix-cubed "Add from Countdown" "Add character from Countdown to Doomsday")
+    # The actual earned Death Knights party on ordinary sheets: its Native
+    # import shows recorded orders/deities, while Death Knights is unchanged.
+    opengold_settings_check(native_sheet_import native_sheet_view_tests
+        "Native sheet view passed: imported"
+        "-DARGS=--game=DQK\;--rules=original\;--sheet-source=${PROJECT_BINARY_DIR}/death-knights-earned-winners.ogs")
+    opengold_settings_check(native_sheet_dkk native_sheet_view_tests
+        "Native sheet view passed: non-Native"
+        "-DARGS=--game=DKK\;--rules=original\;--load-save=${PROJECT_BINARY_DIR}/death-knights-earned-winners.ogs\;--sheet-loaded\;--sheet-non-native")
+    set_tests_properties(opengold_godot_native_sheet_import opengold_godot_native_sheet_dkk
+        PROPERTIES FIXTURES_REQUIRED "godot_project;death_knights_earned_winners")
     # The running game banks its winning party at Matrix Cubed's actual win,
     # from the earned route's save one step before it; Load game lists it,
     # and the native check reloads it byte for byte.

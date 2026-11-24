@@ -69,6 +69,41 @@ std::string original_identity_and_attributes(const Character &character, const P
          {"class", i18n::text(s.character_class)},
          {"alignment", i18n::text(s.alignment)},
          {"age", original.age}});
+    if (original::game_of(s.identity) == GoldBoxGame::dark_queen_of_krynn)
+    {
+        // Stored Native identities, including imported and replayed petitions.
+        // These are display names, never orders inferred from alignment.
+        static constexpr std::array knight_orders{"", N_("Crown"), N_("Sword"), N_("Rose")};
+        static constexpr std::array robe_orders{"", N_("White"), N_("Red"), N_("Black")};
+        // The same numbered deities offered by Original's creation choices.
+        static constexpr std::array deities{"",
+                                            N_("Paladine"),
+                                            N_("Majere"),
+                                            N_("Kiri-Jolith"),
+                                            N_("Mishakal"),
+                                            N_("Sirrion"),
+                                            N_("Reorx"),
+                                            N_("Shinare")};
+        bool shown = false;
+        const auto row = [&](const char *label, int value, const auto &names)
+        {
+            if (value > 0 && static_cast<std::size_t>(value) < names.size())
+            {
+                text += i18n::formatted(
+                    "{label}: {value}\n",
+                    {{"label", i18n::text(label)},
+                     {"value", i18n::text(names[static_cast<std::size_t>(value)])}});
+                shown = true;
+            }
+        };
+        row(N_("Knight order"), original.knight_order, knight_orders);
+        row(N_("Robe order"), original.robe_order, robe_orders);
+        row(N_("Deity"), original.deity, deities);
+        if (shown)
+        {
+            text += '\n';
+        }
+    }
     text += "[theme_emphasis]" +
             std::string(presentation::hp_text(member ? member->vitals.hit_points : s.hit_points,
                                               s.hit_points, member && member->vitals.dead, {},
