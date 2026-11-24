@@ -2072,7 +2072,9 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     descending_stair.arrive_only = false;
     descending_stair.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x19B, 3};
     beats.push_back(descending_stair);
-    auto lower_stair = ending_walk(62, 19, 1, D::south, {"YES"});
+    // Enter the fire platform from the west: its script needs the type-2
+    // wall cached before the step onto (23,6), not a later look.
+    auto lower_stair = ending_walk(62, 22, 6, D::east, {"YES"});
     lower_stair.step = true;
     lower_stair.arrive_only = false;
     lower_stair.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x19B, 2};
