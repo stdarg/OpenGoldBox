@@ -2733,6 +2733,13 @@ void Session::free_attacks(Fighter &mover, Cell next)
         auto &left = enemy.attacks_left[static_cast<std::size_t>(phase)];
         left = std::max(left, 1);
         enemy.attack_phase = phase;
+        // Native's final Aurak forms (its raw 210 and 213, both carrying 165)
+        // strike no one leaving, after their attack is readied (cbaction.c).
+        if (game_of(identity_) == GoldBoxGame::dark_queen_of_krynn &&
+            enemy.has(effect::aurak_invulnerable))
+        {
+            continue;
+        }
         log({"{attacker} strikes {name} leaving.",
              {{"attacker", enemy.name}, {"name", mover.name}}});
         make_attack(enemy, mover, true);
@@ -7586,6 +7593,14 @@ void Session::revive(Fighter &f)
 void Session::ai_turn(Fighter &f, bool magic)
 {
     f.fought = false;
+    // Native's final Aurak form its frenzy's timer made (raw 213: the blazing
+    // shape without the slain form's zap) ends its turn at once (aiturn.c).
+    if (game_of(identity_) == GoldBoxGame::dark_queen_of_krynn &&
+        f.has(effect::aurak_invulnerable) && !f.has(effect::aurak_zap))
+    {
+        end_actions(f);
+        return;
+    }
     // The pattern: kept 3 times in 4 while it is 1 to 4; rerolled 1 to 4,
     // or 5 to 6 one time in 8 (CombatAiControl).
     if (f.stance == 0 || f.stance > 4 || roll(4) == 1)
@@ -12163,8 +12178,8 @@ void Session::draconian_explosion(Fighter &f, int dice, bool stuns)
         nonweapon_damage(other, damage, 0, false, 0, 0, 0, false);
         if (stuns && other.able() && !saving_throw(other, 4, 0) &&
             !(game_of(identity_) == GoldBoxGame::dark_queen_of_krynn &&
-              (other.has(effect::aurak_madness) || other.has(effect::aurak_explosion) ||
-               other.has(effect::aurak_zap))))
+              (other.has(effect::aurak_madness) || other.has(effect::aurak_transformation) ||
+               other.has(effect::aurak_explosion))))
         {
             other.numbers.effects.push_back({effect::stunned, 0, 255, false});
             log({"{name} is stunned.", {{"name", other.name}}});
@@ -12335,11 +12350,15 @@ void Session::champions_turn_start(Fighter &f)
     }
     if (f.has(effect::aurak_immolation))
     {
+        // Native's frenzy burns only the other side, with fire (effects.c,
+        // fx_immolate).
+        const bool native = game_of(identity_) == GoldBoxGame::dark_queen_of_krynn;
         for (auto &other : fighters_)
         {
-            if (other.id != f.id && other.able() && distance(f, other) <= 1)
+            if (other.id != f.id && other.able() && distance(f, other) <= 1 &&
+                !(native && other.side == f.side))
             {
-                nonweapon_damage(other, roll(6), 0, false, 0, 0, 0, false);
+                nonweapon_damage(other, roll(6), 0, false, native ? 1 : 0, 0, 0, false);
             }
         }
     }

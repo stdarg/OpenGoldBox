@@ -3364,13 +3364,17 @@ void native_enchanted_auraks_keep_their_native_damage()
 
     // Native effects.c excludes all three later Aurak forms from the
     // explosion's stun, independently of whether its damage gets through.
-    // Native raw 152 maps to the shared madness marker 1413; raw 160 and
-    // 166 map to the shared explosion and zap markers 1460 and 1466.
-    for (const int phase : {1413, 1460, 1466})
+    // Native raw 152, 160 and 166 map to the shared madness, frenzy and
+    // explosion markers 1413, 1432 and 1460 (raw 167, the zap 1466, is not
+    // among them). An ordinary neighbour on a failed save is stunned.
+    for (const int phase : {1413, 1432, 1460, 0})
     {
         auto other = victim(500);
         other.saving_throws.fill(30);
-        other.effects.push_back({phase, 999, 255, false});
+        if (phase != 0)
+        {
+            other.effects.push_back({phase, 999, 255, false});
+        }
         auto exploding = victim(500);
         exploding.effects.push_back({1459, 0, 255, false});
         exploding.effects.push_back({1460, 1, 255, true});
@@ -3389,13 +3393,162 @@ void native_enchanted_auraks_keep_their_native_damage()
             });
         const auto survivor = original::Combatant::decode(
             view_of(blast.session->snapshot(), "Other Aurak").persistent.resources);
-        check(survivor && std::ranges::none_of(survivor->effects,
-                                               [](const auto &effect)
-                                               {
-                                                   return effect.code == 506;
-                                               }),
-              "A native Aurak form is not stunned by another Aurak's explosion: " +
+        const bool stunned = survivor && std::ranges::any_of(survivor->effects,
+                                                             [](const auto &effect)
+                                                             {
+                                                                 return effect.code == 506;
+                                                             });
+        check(survivor && view_of(blast.session->snapshot(), "Other Aurak").hit_points < 500 &&
+                  stunned == (phase == 0),
+              "Only an ordinary neighbour is stunned by a native Aurak's explosion: " +
                   std::to_string(phase));
+    }
+}
+
+// The index of the first log entry of this template naming this creature.
+std::size_t first_logged(const rules::CombatSession &session, std::string_view source,
+                         std::string_view name)
+{
+    const auto entries = session.snapshot().log_entries;
+    for (std::size_t at = 0; at < entries.size(); ++at)
+    {
+        if (entries[at].message.source == source &&
+            std::ranges::any_of(entries[at].message.arguments,
+                                [name](const rules::MessageArgument &a)
+                                {
+                                    return a.value == name;
+                                }))
+        {
+            return at;
+        }
+    }
+    return entries.size();
+}
+
+void native_final_aurak_forms_follow_their_shapes()
+{
+    // cbaction.c: neither final shape (raw 210 or 213, both carrying 165)
+    // strikes a creature leaving it; an ordinary Aurak does.
+    for (const bool final_form : {true, false})
+    {
+        auto aurak = victim(500);
+        aurak.thac0 = -20;
+        aurak.movement = 0;
+        if (final_form)
+        {
+            aurak.effects.push_back({1459, 0, 255, false});
+            aurak.effects.push_back({1460, 3, 255, true});
+        }
+        aurak.effects.push_back({1466, 0, 255, false});
+        auto fight = arrange({{"Hero", rules::Side::party, {3, 3}, victim(500)},
+                              {"Aurak", rules::Side::opposition, {4, 3}, aurak}},
+                             37, {}, 100, GoldBoxGame::dark_queen_of_krynn);
+        auto &session = *fight.session;
+        // The revived shape keeps its turn: its zap strikes the hero next to it.
+        play_until(
+            session,
+            [&](const std::string &actor)
+            {
+                return order(session, actor == "Aurak" ? "quick" : "end");
+            },
+            [&]
+            {
+                return logged(session, "{name} is struck by an energy bolt.") > 0;
+            });
+        check(logged(session, "{name} is struck by an energy bolt.") > 0,
+              "A native Aurak with the zap strikes the hero next to it");
+        until_turn_of(session, "Hero");
+        session.submit(order(session, "move", {}, rules::Cell{0, 3}));
+        check(logged(session, "{attacker} strikes {name} leaving.") == (final_form ? 0 : 1),
+              final_form ? "A native final Aurak strikes no one leaving it"
+                         : "An ordinary native Aurak strikes the hero leaving it");
+    }
+
+    // aiturn.c: the shape the frenzy's timer makes (213, without the zap)
+    // ends its turn at once, yet still explodes after 3 rounds.
+    auto aurak = victim(500);
+    aurak.thac0 = -20;
+    aurak.effects.push_back({1458, 1, 255, true});
+    auto fight = arrange({{"Hero", rules::Side::party, {3, 3}, victim(500)},
+                          {"Aurak", rules::Side::opposition, {4, 3}, aurak}},
+                         37, {}, 100, GoldBoxGame::dark_queen_of_krynn);
+    auto &session = *fight.session;
+    const auto quick_aurak = [&](const std::string &actor)
+    {
+        return order(session, actor == "Aurak" ? "quick" : "end");
+    };
+    play_until(session, quick_aurak,
+               [&]
+               {
+                   return logged(session, "{name} becomes a blazing shape.") > 0;
+               });
+    const auto shaped_round = session.snapshot().round;
+    const auto shaped_at = first_logged(session, "{name} becomes a blazing shape.", "Aurak");
+    play_until(session, quick_aurak,
+               [&]
+               {
+                   return logged(session, "{name} explodes.") > 0;
+               });
+    const auto exploded_at = first_logged(session, "{name} explodes.", "Aurak");
+    const auto entries = session.snapshot().log_entries;
+    // Shaped as round 1 ends, it lives through rounds 2 to 4 and explodes as
+    // the last of them ends, which ends the fight.
+    check(exploded_at < entries.size() && shaped_round == 2 && session.snapshot().round == 4,
+          "The timer's final Aurak still explodes after 3 rounds");
+    const bool attacked_before = std::any_of(
+        entries.begin() + static_cast<std::ptrdiff_t>(shaped_at),
+        entries.begin() + static_cast<std::ptrdiff_t>(std::min(exploded_at, entries.size())),
+        [](const rules::LogEntry &entry)
+        {
+            return std::ranges::any_of(entry.message.arguments,
+                                       [](const rules::MessageArgument &a)
+                                       {
+                                           return a.name == "attacker" && a.value == "Aurak";
+                                       });
+        });
+    check(
+        logged(session, "{attacker} hits {name} for {damage}.", "Aurak") > 0 && !attacked_before,
+        "The timer's final Aurak, which struck in its frenzy, makes no attack before it explodes");
+}
+
+void native_frenzy_burns_only_the_other_side_with_fire()
+{
+    // effects.c fx_immolate: only the enemy team, as fire. The earlier Krynn
+    // games keep their own untyped burn of every neighbour.
+    for (const auto game : {GoldBoxGame::dark_queen_of_krynn, GoldBoxGame::champions_of_krynn})
+    {
+        auto aurak = victim(500);
+        aurak.attacks = {};
+        aurak.movement = 0;
+        aurak.effects.push_back({1448, 0, 255, false});
+        auto fire_proof = victim(500);
+        fire_proof.effects.push_back({1776, 0, 255, false});
+        auto fight = arrange({{"Hero", rules::Side::party, {3, 3}, victim(500)},
+                              {"Fireproof", rules::Side::party, {4, 4}, fire_proof},
+                              {"Friend", rules::Side::opposition, {5, 3}, victim(500)},
+                              {"Aurak", rules::Side::opposition, {4, 3}, aurak}},
+                             37, {}, 100, game);
+        auto &session = *fight.session;
+        play_until(
+            session,
+            [&](const std::string &)
+            {
+                return order(session, "end");
+            },
+            [&]
+            {
+                return view_of(session.snapshot(), "Hero").hit_points < 500;
+            });
+        const auto state = session.snapshot();
+        const bool native = game == GoldBoxGame::dark_queen_of_krynn;
+        check(view_of(state, "Hero").hit_points < 500,
+              "A frenzied Aurak burns the enemy next to it");
+        check((view_of(state, "Friend").hit_points == 500) == native,
+              native ? "A native frenzied Aurak spares its own side"
+                     : "An earlier Krynn frenzied Aurak still burns its own side");
+        check((view_of(state, "Fireproof").hit_points == 500) == native,
+              native ? "A native frenzied Aurak's burn is fire"
+                     : "An earlier Krynn frenzied Aurak's burn stays untyped");
     }
 }
 
@@ -8785,6 +8938,8 @@ int main()
         native_blasts_respect_defenses();
         native_untriggered_aurak_generator_stays_passive();
         native_enchanted_auraks_keep_their_native_damage();
+        native_final_aurak_forms_follow_their_shapes();
+        native_frenzy_burns_only_the_other_side_with_fire();
         native_free_action_counters_its_shipped_spells();
         native_stinking_cloud_uses_its_actual_dispatch_context();
         treasures_effects_play_their_own();
