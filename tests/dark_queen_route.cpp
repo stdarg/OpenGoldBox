@@ -2039,7 +2039,8 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     egg_rest.y = 22;
     egg_rest.facing = D::north;
     egg_rest.arrive_only = false;
-    egg_rest.waiting = true;
+    // This dungeon uses the normal camp, rather than a wilderness menu.
+    egg_rest.waiting = false;
     egg_rest.dialogue_answers = abyss_portal.dialogue_answers;
     egg_rest.memorize_first_of.insert(
         egg_rest.memorize_first_of.begin(),
