@@ -119,7 +119,7 @@ ua::FightField dark_queen_dungeon_field(const DarkQueenResources &resources, con
     };
     const auto edges = [&](int column, int row, unsigned direction)
     {
-        constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
+        static constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
         const int x = static_cast<int>(pose.x) + column, y = static_cast<int>(pose.y) + row;
         return static_cast<FieldEdge>(
             static_cast<unsigned>(side(x, y, direction)) |
@@ -131,7 +131,7 @@ ua::FightField dark_queen_dungeon_field(const DarkQueenResources &resources, con
 ua::WildernessStyle dark_queen_wilderness_style(unsigned terrain, bool river)
 {
     // All 32 bytes match the installed executable's terrain-flag table.
-    constexpr std::array<unsigned, 32> terrain_flags{
+    static constexpr std::array<unsigned, 32> terrain_flags{
         0x00, 0x18, 0x11, 0x15, 0x01, 0x01, 0x60, 0x14, 0x08, 0x01, 0x00,
         0x21, 0x71, 0x09, 0x06, 0x04, 0x01, 0x09, 0x09, 0x08, 0x59, 0x00,
         0x11, 0x11, 0x00, 0x00, 0x01, 0x11, 0x00, 0x00, 0x20, 0x20};

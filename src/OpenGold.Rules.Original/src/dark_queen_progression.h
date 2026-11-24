@@ -75,7 +75,7 @@ roll_native_drain(const NativeProgression &progression, const ClassLevels &level
     }
     const int raw_loss = std::max(1, rolled / active);
     int hp_loss = raw_loss;
-    constexpr std::array<int, class_slot_count> dice_caps{10, 0, 10, 10, 11, 12, 11, 10};
+    static constexpr std::array<int, class_slot_count> dice_caps{10, 0, 10, 10, 11, 12, 11, 10};
     if (before > 1 && before - 1 < dice_caps[static_cast<std::size_t>(slot)])
     {
         const int dice =

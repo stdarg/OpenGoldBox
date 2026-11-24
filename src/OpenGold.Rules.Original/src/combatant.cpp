@@ -1000,7 +1000,7 @@ int canonical_effect(int code, GoldBoxGame game) noexcept
     {
         // Matched by native handler behavior and trigger group. Unmatched
         // native IDs occupy their own bank, never an unrelated old effect.
-        constexpr std::pair<int, int> shared[]{
+        static constexpr std::pair<int, int> shared[]{
             {1, 1},      {2, 2},      {3, 203},    {4, 1704},   {6, 335},    {8, 8},
             {9, 9},      {10, 10},    {11, 11},    {12, 12},    {13, 413},   {14, 14},
             {15, 15},    {16, 16},    {17, 17},    {18, 124},   {20, 20},    {21, 21},

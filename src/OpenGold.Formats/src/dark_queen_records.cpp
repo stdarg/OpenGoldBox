@@ -34,7 +34,7 @@ por::DamageDice damage(std::span<const std::uint8_t> bytes, std::size_t at, std:
 
 int import_spell_number(int number) noexcept
 {
-    constexpr std::pair<int, int> moved[]{
+    static constexpr std::pair<int, int> moved[]{
         {2, 90},    {4, 96},   {7, 105},   {17, 102},  {40, 56},   {53, 36},   {56, 110},
         {57, 127},  {59, 53},  {60, 111},  {61, 130},  {62, 131},  {63, 112},  {64, 133},
         {65, 134},  {66, 113}, {72, 114},  {90, 119},  {95, 135},  {96, 132},  {97, 136},
@@ -51,7 +51,7 @@ int import_spell_number(int number) noexcept
 
 int import_effect_number(int number) noexcept
 {
-    constexpr std::pair<int, int> moved[]{
+    static constexpr std::pair<int, int> moved[]{
         {2, 129},   {6, 130},   {7, 131},   {9, 74},    {13, 71},   {32, 69},  {34, 32},  {48, 13},
         {57, 118},  {58, 123},  {59, 57},   {60, 122},  {61, 68},   {65, 6},   {66, 60},  {67, 101},
         {68, 102},  {69, 132},  {70, 133},  {74, 121},  {75, 134},  {76, 135}, {77, 136}, {79, 137},
@@ -64,7 +64,7 @@ int import_effect_number(int number) noexcept
 
 int import_item_word(int number) noexcept
 {
-    constexpr std::pair<int, int> moved[]{{12, 138},  {38, 139}, {40, 140}, {52, 141},  {59, 142},
+    static constexpr std::pair<int, int> moved[]{{12, 138},  {38, 139}, {40, 140}, {52, 141},  {59, 142},
                                           {68, 143},  {74, 144}, {75, 145}, {76, 146},  {84, 147},
                                           {85, 148},  {86, 149}, {96, 150}, {119, 151}, {120, 152},
                                           {124, 153}, {67, 126}, {69, 127}, {77, 129},  {105, 135}};

@@ -39,10 +39,10 @@ inline constexpr int led_by_knight = offset + 300;
     }
     // Registered empty handlers and passive markers. They must survive in
     // a profile without becoming an older game's active ability.
-    constexpr std::array no_op{5,   7,   19,  48,  59,  72,  87,  109, 133, 140, 146,
+    static constexpr std::array no_op{5,   7,   19,  48,  59,  72,  87,  109, 133, 140, 146,
                                150, 164, 183, 190, 191, 194, 210, 213, 216, 217, 218,
                                219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229};
-    constexpr std::array implemented{disruption,         dragon_slayer,      underwater_weapons,
+    static constexpr std::array implemented{disruption,         dragon_slayer,      underwater_weapons,
                                      green_fire,         green_fire_touch,   spore_burst,
                                      spore_touch,        spore_infection,    ice_explosion,
                                      meteor_explosion,   disarming_body,     baldric_breath,

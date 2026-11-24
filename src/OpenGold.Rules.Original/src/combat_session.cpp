@@ -956,7 +956,7 @@ enum class Flames : unsigned
 // The spells built so far; the rest are not offered yet.
 bool underwater_spell(int number)
 {
-    constexpr std::array blocked{9, 47, 174, 315, 318, 324};
+    static constexpr std::array blocked{9, 47, 174, 315, 318, 324};
     return std::ranges::find(blocked, number) == blocked.end();
 }
 
@@ -11762,7 +11762,7 @@ void Session::native_leadership()
     {
         f.remove(dq_effect::led_by_knight);
     }
-    constexpr std::array odds{20, 40, 80};
+    static constexpr std::array odds{20, 40, 80};
     for (const auto &leader : fighters_)
     {
         if (leader.side != Side::party || !leader.able() || !leader.record ||

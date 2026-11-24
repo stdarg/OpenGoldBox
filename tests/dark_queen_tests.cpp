@@ -1120,7 +1120,7 @@ void packed_monsters_retain_native_fields_and_tails()
     raw[418] = 0x12;
     raw[419] = 7;
     raw[420] = 255;
-    constexpr std::array<std::uint8_t, 17> item{19,  4, 5,    6, 0x34, 0x12, 0x78, 0x56, 253,
+    static constexpr std::array<std::uint8_t, 17> item{19,  4, 5,    6, 0x34, 0x12, 0x78, 0x56, 253,
                                                 254, 1, 0x31, 1, 4,    7,    8,    9};
     std::copy(item.begin(), item.end(), raw.begin() + 421);
     const auto creature = opengold::dark_queen::decode_creature(packed(raw));

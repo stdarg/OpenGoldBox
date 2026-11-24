@@ -135,8 +135,8 @@ Campaign start_campaign(const std::filesystem::path &folder, bool ship_crew = fa
         {Race::tinker, Profession::engineer, "Gears"},
         {Race::venusian, Profession::medic, "Doc"},
         {Race::mercurian, Profession::warrior, "Merc"}};
-    constexpr std::array pilot_skills{Skill::pilot_rocket, Skill::sensor_operation};
-    constexpr std::array engine_skills{Skill::repair_mechanical, Skill::repair_nuclear_engine};
+    static constexpr std::array pilot_skills{Skill::pilot_rocket, Skill::sensor_operation};
+    static constexpr std::array engine_skills{Skill::repair_mechanical, Skill::repair_nuclear_engine};
     for (const auto &[race, career, name] : team)
     {
         std::span<const Skill> first;

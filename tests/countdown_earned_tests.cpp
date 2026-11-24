@@ -800,7 +800,7 @@ class EarnedPlayer
     {
         using opengold::por::ExplorationCommand;
         using opengold::por::TourPhase;
-        constexpr std::array<std::pair<ExplorationCommand, og::RocketHeading>, 8> flights{{
+        static constexpr std::array<std::pair<ExplorationCommand, og::RocketHeading>, 8> flights{{
             {ExplorationCommand::north, og::RocketHeading::north},
             {ExplorationCommand::northeast, og::RocketHeading::northeast},
             {ExplorationCommand::east, og::RocketHeading::east},
@@ -1374,7 +1374,7 @@ class EarnedPlayer
         {
             answers_.push_back(std::move(answer));
         }
-        constexpr std::array commands{
+        static constexpr std::array commands{
             opengold::por::ExplorationCommand::north, opengold::por::ExplorationCommand::northeast,
             opengold::por::ExplorationCommand::east,  opengold::por::ExplorationCommand::southeast,
             opengold::por::ExplorationCommand::south, opengold::por::ExplorationCommand::southwest,
@@ -2025,7 +2025,7 @@ class EarnedPlayer
         check(session.snapshot().area_id == area, "A route enters each area through its scripts");
         const unsigned script = session.snapshot().script_id;
         constexpr unsigned width = 16;
-        constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
+        static constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
         for (unsigned step = 0; step < 400; ++step)
         {
             const auto start = session.snapshot();
@@ -2823,7 +2823,7 @@ int main(int argc, char **argv)
     try
     {
         const std::string_view command = argc == 2 ? argv[1] : "";
-        constexpr std::array stages{"",
+        static constexpr std::array stages{"",
                                     "--chicagorg",
                                     "--derelict",
                                     "--scot",

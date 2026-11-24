@@ -262,7 +262,7 @@ KrynnSpellRows dark_queen_base_slots(const ClassLevels &levels, int wisdom, int 
     if (level_in(levels, C::cleric) > 0)
     {
         add(orders.deity > 4 ? 1 : 0, level_in(levels, C::cleric), 0, 0, 7);
-        constexpr std::array<std::size_t, 6> bonus_levels{0, 0, 1, 1, 2, 3};
+        static constexpr std::array<std::size_t, 6> bonus_levels{0, 0, 1, 1, 2, 3};
         for (std::size_t bonus = 0; bonus < bonus_levels.size(); ++bonus)
         {
             if (wisdom > static_cast<int>(12 + bonus) && slots[0][bonus_levels[bonus]] > 0)
@@ -297,7 +297,7 @@ KrynnSpellRows dark_queen_base_slots(const ClassLevels &levels, int wisdom, int 
         add(orders.robe == 1 ? 5 : 6, level_in(levels, C::magic_user), 0, 3, 9);
         // Native recalc_spells keeps an extra first-level mage spell.
         ++slots[3][0];
-        constexpr std::array<int, 4> minimum_intelligence{12, 14, 16, 18};
+        static constexpr std::array<int, 4> minimum_intelligence{12, 14, 16, 18};
         for (std::size_t high = 0; high < minimum_intelligence.size(); ++high)
         {
             if (intelligence < minimum_intelligence[high])
@@ -340,7 +340,7 @@ namespace
 {
 int hit_point_bound(const ModifiedCharacter &character, int constitution, bool maximum)
 {
-    constexpr std::array<int, 8> caps{10, 0, 10, 10, 11, 12, 11, 10};
+    static constexpr std::array<int, 8> caps{10, 0, 10, 10, 11, 12, 11, 10};
     int total = 0, bonus = 0, count = 0;
     for (std::size_t at = 0; at < character.levels.size(); ++at)
     {
@@ -502,7 +502,7 @@ void recalculate_dark_queen_numbers(rules::CharacterSheet::Original &numbers,
     numbers.deity_spell_slots = {};
     if (level_in(numbers.class_levels, C::cleric) > 0 && numbers.deity >= 1 && numbers.deity <= 7)
     {
-        constexpr std::array<std::array<int, 3>, 7> gifts{
+        static constexpr std::array<std::array<int, 3>, 7> gifts{
             {{501}, {502}, {503}, {504, 505, 506}, {507}, {}, {506}}};
         numbers.deity_spell_slots[0] = numbers.deity == 4 ? 3 : numbers.deity == 6 ? 0 : 1;
         for (const auto gift : gifts[numbers.deity - 1])
@@ -556,14 +556,14 @@ std::vector<int> dark_queen_starting_spells(int robe, const std::array<int, 9> &
             native.push_back(own);
         }
     }
-    constexpr std::array<std::array<int, 7>, 7> white{{{29, 33, 34},
+    static constexpr std::array<std::array<int, 7>, 7> white{{{29, 33, 34},
                                                        {46, 47, 49, 52, 54},
                                                        {82, 88, 81, 85, 87},
                                                        {91, 92},
                                                        {112},
                                                        {115, 117},
                                                        {121}}};
-    constexpr std::array<std::array<int, 7>, 7> red{{{30, 31, 32, 34, 35},
+    static constexpr std::array<std::array<int, 7>, 7> red{{{30, 31, 32, 34, 35},
                                                      {45, 47, 48, 50, 51, 55},
                                                      {84, 83, 85, 87},
                                                      {92, 118, 119},

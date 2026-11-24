@@ -370,7 +370,7 @@ int canonical_item_power(int number, GoldBoxGame game) noexcept
     {
         // charview.c, use_item: these item powers share stored numbers
         // with unrelated ordinary spells and are remapped only on use.
-        constexpr std::array<std::pair<int, int>, 11> moved{{{57, 127},
+        static constexpr std::array<std::pair<int, int>, 11> moved{{{57, 127},
                                                              {59, 128},
                                                              {60, 129},
                                                              {61, 130},

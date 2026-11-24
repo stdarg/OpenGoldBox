@@ -2898,7 +2898,7 @@ bool fly_route(Campaign &campaign, const std::filesystem::path &folder, unsigned
                std::size_t body)
 {
     using Command = opengold::por::ExplorationCommand;
-    constexpr std::array<std::pair<Command, og::RocketHeading>, 8> flights{{
+    static constexpr std::array<std::pair<Command, og::RocketHeading>, 8> flights{{
         {Command::north, og::RocketHeading::north},
         {Command::northeast, og::RocketHeading::northeast},
         {Command::east, og::RocketHeading::east},
@@ -3387,8 +3387,8 @@ bool walk_venus_world(Campaign &campaign, const std::filesystem::path &folder, u
 {
     using Command = opengold::por::ExplorationCommand;
     constexpr unsigned width = 38, height = 15;
-    constexpr std::array<int, 8> dx{0, 1, 1, 1, 0, -1, -1, -1}, dy{-1, -1, 0, 1, 1, 1, 0, -1};
-    constexpr std::array commands{Command::north,     Command::northeast, Command::east,
+    static constexpr std::array<int, 8> dx{0, 1, 1, 1, 0, -1, -1, -1}, dy{-1, -1, 0, 1, 1, 1, 0, -1};
+    static constexpr std::array commands{Command::north,     Command::northeast, Command::east,
                                   Command::southeast, Command::south,     Command::southwest,
                                   Command::west,      Command::northwest};
     const auto program = opengold::test::TourAccess::program(campaign.session, 48);

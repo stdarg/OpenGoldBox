@@ -431,7 +431,7 @@ std::optional<Restoration> restoration_of(const CharacterSheet &sheet)
     int levels_lost = 0, drained_classes = 0;
     int least_needed = std::numeric_limits<int>::max();
     std::optional<ClassSlot> chosen;
-    constexpr std::array canonical_order{
+    static constexpr std::array canonical_order{
         ClassSlot::cleric, ClassSlot::druid,      ClassSlot::fighter, ClassSlot::paladin,
         ClassSlot::ranger, ClassSlot::magic_user, ClassSlot::thief,   ClassSlot::monk};
     const auto order = game == GoldBoxGame::dark_queen_of_krynn
