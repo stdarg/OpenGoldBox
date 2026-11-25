@@ -640,19 +640,20 @@ class OriginalCharacterRules final : public rules::CharacterRules
     {
     }
 
-    rules::Identity identity() const override
+    [[nodiscard]] rules::Identity identity() const override
     {
         return original::identity(game_);
     }
 
-    std::string game_setting() const override
+    [[nodiscard]] std::string game_setting() const override
     {
         return std::string(aging_name(aging_));
     }
 
     // An NPC who joins: its record, whole, in the draft (record_data), so the
     // character is the record's scores, levels and Hit Points.
-    std::optional<CharacterDraft> record_draft(std::span<const std::uint8_t> bytes) const override
+    [[nodiscard]] std::optional<CharacterDraft>
+    record_draft(std::span<const std::uint8_t> bytes) const override
     {
         // A Buck Rogers creature joins as its record (buck_rogers_characters.h).
         if (is_buck_rogers(game_))
@@ -688,8 +689,8 @@ class OriginalCharacterRules final : public rules::CharacterRules
     // game's platinum (Curse's 300). Pools of Darkness's LoadChar takes a
     // Secret character's record nearly whole, its rolled Hit Points too, but
     // not the levels a drain took, which its record has no place for.
-    std::optional<CharacterDraft> imported_draft(const CharacterSheet &from,
-                                                 unsigned experience) const override
+    [[nodiscard]] std::optional<CharacterDraft> imported_draft(const CharacterSheet &from,
+                                                               unsigned experience) const override
     {
         if (!from.original)
         {
@@ -822,7 +823,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
     // Modify Character: a character its game's creation made, or one brought
     // from the game before, while its experience is what its game's creation
     // gives (modify_allowed); an NPC's record never.
-    bool modifiable(const CharacterDraft &draft, unsigned experience) const override
+    [[nodiscard]] bool modifiable(const CharacterDraft &draft, unsigned experience) const override
     {
         // A Buck Rogers character's Modify is its creation screen's
         // (buck_rogers_rules.h), not this one's.
@@ -838,8 +839,8 @@ class OriginalCharacterRules final : public rules::CharacterRules
                               design_start);
     }
 
-    CharacterDraft modified(const CharacterDraft &draft, rules::ModifyRow row,
-                            rules::ModifyStep step) const override
+    [[nodiscard]] CharacterDraft modified(const CharacterDraft &draft, rules::ModifyRow row,
+                                          rules::ModifyStep step) const override
     {
         if (draft.rules_data.starts_with(record_prefix))
         {
@@ -859,25 +860,26 @@ class OriginalCharacterRules final : public rules::CharacterRules
 
     // Pool of Radiance's Modify changes only the numbers; from Curse on it
     // changes the name too.
-    bool modify_renames() const override
+    [[nodiscard]] bool modify_renames() const override
     {
         return game_ != GoldBoxGame::pool_of_radiance;
     }
 
     // The kit's roll offers Modify beside Reroll (create.c); the Pascal
     // games' Modify is on their party menu only.
-    bool modify_while_made() const override
+    [[nodiscard]] bool modify_while_made() const override
     {
         return game_ == GoldBoxGame::unlimited_adventures;
     }
 
-    rules::InPlacePages in_place_pages(const CharacterDraft &draft) const override
+    [[nodiscard]] rules::InPlacePages in_place_pages(const CharacterDraft &draft) const override
     {
         return is_buck_rogers(game_) ? buck_rogers_creation_pages(draft, game_)
                                      : rules::InPlacePages{};
     }
 
-    CharacterDraft renamed(const CharacterDraft &draft, std::string name) const override
+    [[nodiscard]] CharacterDraft renamed(const CharacterDraft &draft,
+                                         std::string name) const override
     {
         if (is_buck_rogers(game_))
         {
@@ -886,7 +888,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
         return CharacterRules::renamed(draft, std::move(name));
     }
 
-    std::vector<CreationChoice> choices(CreationField field) const override
+    [[nodiscard]] std::vector<CreationChoice> choices(CreationField field) const override
     {
         if (is_buck_rogers(game_))
         {
@@ -946,7 +948,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
     }
 
     // The original has no backgrounds: one adjustment, which adds nothing.
-    std::vector<rules::ScoreAdjustment> adjustments(std::string_view) const override
+    [[nodiscard]] std::vector<rules::ScoreAdjustment> adjustments(std::string_view) const override
     {
         return {rules::ScoreAdjustment{}};
     }
@@ -956,13 +958,13 @@ class OriginalCharacterRules final : public rules::CharacterRules
         throw std::logic_error("The original rules roll each ability in place");
     }
 
-    rules::AbilityGeneration ability_generation() const override
+    [[nodiscard]] rules::AbilityGeneration ability_generation() const override
     {
         return rules::AbilityGeneration::rolled_in_place;
     }
 
-    bool choices_require_reroll(const CharacterDraft &before,
-                                const CharacterDraft &after) const override
+    [[nodiscard]] bool choices_require_reroll(const CharacterDraft &before,
+                                              const CharacterDraft &after) const override
     {
         // A Buck Rogers record holds its gender, which also chooses its icon.
         return CharacterRules::choices_require_reroll(before, after) ||
@@ -994,8 +996,8 @@ class OriginalCharacterRules final : public rules::CharacterRules
         draft.rules_data = encode(rolled);
     }
 
-    bool allows(const CharacterDraft &draft, CreationField field,
-                std::string_view id) const override
+    [[nodiscard]] bool allows(const CharacterDraft &draft, CreationField field,
+                              std::string_view id) const override
     {
         if (is_buck_rogers(game_))
         {
@@ -1094,7 +1096,8 @@ class OriginalCharacterRules final : public rules::CharacterRules
         return false;
     }
 
-    std::optional<int> ability_score(const CharacterDraft &draft, Ability ability) const override
+    [[nodiscard]] std::optional<int> ability_score(const CharacterDraft &draft,
+                                                   Ability ability) const override
     {
         if (const auto record = buck_rogers_record_of(draft.rules_data))
         {
@@ -1115,7 +1118,8 @@ class OriginalCharacterRules final : public rules::CharacterRules
         return scores(draft)[ability];
     }
 
-    std::array<Ability, 6> preset_ability_priority(std::string_view, unsigned) const override
+    [[nodiscard]] std::array<Ability, 6> preset_ability_priority(std::string_view,
+                                                                 unsigned) const override
     {
         return {Ability::strength,     Ability::dexterity, Ability::constitution,
                 Ability::intelligence, Ability::wisdom,    Ability::charisma};
@@ -1123,12 +1127,13 @@ class OriginalCharacterRules final : public rules::CharacterRules
 
     // Creation raises each score to the class's minimums, so no class waits on
     // the rolls.
-    rules::ClassRequirements class_requirements(std::string_view) const override
+    [[nodiscard]] rules::ClassRequirements class_requirements(std::string_view) const override
     {
         return {{}, false, 0, {}};
     }
 
-    CharacterSheet evaluate(const CharacterDraft &draft, rules::NameRequirement name) const override
+    [[nodiscard]] CharacterSheet evaluate(const CharacterDraft &draft,
+                                          rules::NameRequirement name) const override
     {
         if (name == rules::NameRequirement::required && draft.name.empty())
         {
@@ -1295,7 +1300,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
     // magic-user starts with the spells its game teaches. Treasures' magic-
     // user chooses its first- to third-level spells, a third more of each
     // level than its slots (its chargen.pas), and knows Read Magic besides.
-    std::vector<rules::TrainingChoiceGroup>
+    [[nodiscard]] std::vector<rules::TrainingChoiceGroup>
     training_options(const CharacterDraft &draft) const override
     {
         std::vector<rules::TrainingChoiceGroup> groups;
@@ -1344,18 +1349,19 @@ class OriginalCharacterRules final : public rules::CharacterRules
         return groups;
     }
 
-    rules::SpellChoiceOptions spell_choice_options(const CharacterDraft &) const override
+    [[nodiscard]] rules::SpellChoiceOptions
+    spell_choice_options(const CharacterDraft &) const override
     {
         return {};
     }
 
-    rules::TrainingChoiceGroup cantrip_options(const CharacterDraft &) const override
+    [[nodiscard]] rules::TrainingChoiceGroup cantrip_options(const CharacterDraft &) const override
     {
         return {};
     }
 
-    rules::AbilityCheckModifier ability_check(const CharacterSheet &, Ability,
-                                              std::string_view) const override
+    [[nodiscard]] rules::AbilityCheckModifier ability_check(const CharacterSheet &, Ability,
+                                                            std::string_view) const override
     {
         return {};
     }

@@ -212,10 +212,9 @@ int ship_speed(const Ship &ship, int boosts)
 
 ShipCombat::ShipCombat(ShipCombatStart start, ShipDice dice)
     : game_(start.game), enemy_ship_number_(start.enemy_ship_number), dice_(std::move(dice)),
-      options_(start.options), crew_(std::move(start.crew)), dying_rounds_(crew_.size(), 0)
+      options_(start.options), crew_(std::move(start.crew)), dying_rounds_(crew_.size(), 0),
+      experience_(ship_combat_experience(game_, enemy_ship_number_))
 {
-    require_buck_rogers(game_);
-    experience_ = ship_combat_experience(game_, enemy_ship_number_);
     if (start.enemy_pilot_skill < 0 || start.enemy_pilot_skill > 255 || start.enemy_to_hit < 0 ||
         start.enemy_to_hit > to_hit_base)
     {

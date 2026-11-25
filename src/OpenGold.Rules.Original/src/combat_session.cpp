@@ -316,6 +316,15 @@ constexpr std::array<int, 33> secondary_hit_effects{
     effect::grabs_2d8, effect::grabs_4d5, effect::grabs_6d4, effect::swallows_on_twenty,
     effect::kapak_paralysis, effect::paralyzing_strike, effect::slight_poison};
 
+// The first element of a range that `matches`, none when there is none: one
+// body for a lookup's const and non-const forms, deducing the constness of
+// the range instead of casting it away (ES.50).
+template <class Range, class Matches> auto *first_matching(Range &range, const Matches &matches)
+{
+    const auto found = std::find_if(range.begin(), range.end(), matches);
+    return found == range.end() ? nullptr : &*found;
+}
+
 // An item a creature carries, which it may ready or put away in a fight
 // (viewchar.pas, ToggleReadyItem): its record, readied or not, with what is
 // left of it, and its type; its inventory entry (0 for a monster's own) and
@@ -513,19 +522,22 @@ struct Fighter
         }
     }
 
+    [[nodiscard]] static auto has_code(int code)
+    {
+        return [code](const Effect &e)
+        {
+            return e.code == code;
+        };
+    }
+
     [[nodiscard]] const Effect *find_effect(int code) const
     {
-        return const_cast<Fighter *>(this)->find_effect(code);
+        return first_matching(numbers.effects, has_code(code));
     }
 
     [[nodiscard]] Effect *find_effect(int code)
     {
-        const auto found = std::find_if(numbers.effects.begin(), numbers.effects.end(),
-                                        [code](const Effect &e)
-                                        {
-                                            return e.code == code;
-                                        });
-        return found == numbers.effects.end() ? nullptr : &*found;
+        return first_matching(numbers.effects, has_code(code));
     }
 };
 
@@ -1472,6 +1484,14 @@ class Session final : public rules::CombatSession
 
     [[nodiscard]] Fighter *find(EntityId id);
     [[nodiscard]] const Fighter *find(EntityId id) const;
+
+    [[nodiscard]] static auto has_id(EntityId id)
+    {
+        return [id](const Fighter &f)
+        {
+            return f.id == id;
+        };
+    }
     [[nodiscard]] rules::MovementGrid grid_for(const Fighter &mover) const;
     void log(Message message);
     void begin_round();
@@ -1481,7 +1501,7 @@ class Session final : public rules::CombatSession
     [[nodiscard]] Combatant numbers_with(const Fighter &f, const std::vector<Held> &held,
                                          std::vector<int> &order) const;
     void rework_gear(Fighter &f, const std::vector<Held> &before_held,
-                     std::vector<Held> after_held);
+                     std::vector<Held> after_held) const;
     void toggle_readied(Fighter &f, std::size_t index);
     void conjure_hammer(Fighter &caster);
     void settle_hammers();
@@ -1566,7 +1586,7 @@ class Session final : public rules::CombatSession
     // Whether one of a creature's mirror images takes a harm: on 1d(images +
     // 1) above 1 (effhndlr.pas, EffMirrorImage).
     template <typename Dice>
-    [[nodiscard]] bool image_takes_it(const Effect &images, Dice &&dice) const
+    [[nodiscard]] bool image_takes_it(const Effect &images, Dice &dice) const
     {
         const int count = game_of(identity_) == GoldBoxGame::dark_queen_of_krynn
                               ? images.strength >> 5
@@ -1576,10 +1596,10 @@ class Session final : public rules::CombatSession
 
     [[nodiscard]] bool aura_protects(const Fighter &attacker, const Fighter &defender) const;
     bool add_with_message(Fighter &target, Effect added, bool negates, bool saved, int element,
-                          int caster_level, const Spell *spell);
+                          int caster_level, const Spell *known);
     template <typename Dice>
     [[nodiscard]] bool refuses_effect(const Fighter &target, int code, int element,
-                                      int caster_level, const Spell *known, Dice &&dice) const;
+                                      int caster_level, const Spell *known, Dice &dice) const;
     void nonweapon_damage(Fighter &target, int damage, int save_result, bool saved, int element,
                           int caster_level, int spell_number, bool single_target);
 
@@ -1600,7 +1620,7 @@ class Session final : public rules::CombatSession
     [[nodiscard]] Defended defended_harm(const Fighter &target, int damage, int save_result,
                                          bool saved, int element, int caster_level,
                                          int spell_number, bool single_target, int damage_dice,
-                                         Dice &&dice) const;
+                                         Dice &dice) const;
     void absorb_harm(Fighter &target, int damage, int element);
     void charm(Fighter &target, Side charmer);
     void cast_sleep(int level, Cell aim);
@@ -1660,10 +1680,10 @@ class Session final : public rules::CombatSession
                         int save = 4, int element = 12, int spell_number = 51);
     [[nodiscard]] bool turns_bolt(Cell cell) const;
     template <typename Strike>
-    void bolt_walk(Cell origin, Cell aim, int length, bool bounce, Strike &&strike) const;
+    void bolt_walk(Cell origin, Cell aim, int length, bool bounce, const Strike &strike) const;
     template <typename Strike>
     void treasures_bolt_walk(Cell origin, Cell aim, int length, bool near_bounce_doubles,
-                             Strike &&strike) const;
+                             const Strike &strike) const;
     void monster_specials(Fighter &f);
     void darkness_gazes(Fighter &f);
     void curse_specials(Fighter &f);
@@ -1693,7 +1713,8 @@ class Session final : public rules::CombatSession
     void cast_death_spell(const std::vector<EntityId> &targets);
     template <typename Most>
     [[nodiscard]] std::vector<EntityId> death_spell_takes(const std::vector<EntityId> &targets,
-                                                          int budget, Most &&most_hit_points) const;
+                                                          int budget,
+                                                          const Most &most_hit_points) const;
     void cast_darkness_spell(Fighter &caster, int number, int level,
                              const std::vector<EntityId> &targets, Cell aim);
     void cast_mass_charm(Fighter &caster, int level, const std::vector<EntityId> &targets);
@@ -1713,7 +1734,7 @@ class Session final : public rules::CombatSession
     void cast_power_word_blind(const std::vector<EntityId> &targets);
     template <typename Most>
     [[nodiscard]] std::vector<EntityId> blinded_by_word(const std::vector<EntityId> &targets,
-                                                        Most &&most_hit_points) const;
+                                                        const Most &most_hit_points) const;
     void cast_meteor_swarm(Fighter &caster, int level, Cell aim);
 
     struct MeteorFall
@@ -1726,7 +1747,7 @@ class Session final : public rules::CombatSession
     void cast_power_word_kill(const std::vector<EntityId> &targets);
     template <typename Most>
     [[nodiscard]] std::vector<EntityId> slain_by_word(const std::vector<EntityId> &targets,
-                                                      Most &&most_hit_points) const;
+                                                      const Most &most_hit_points) const;
     void cut_by_blades(Fighter &f, bool may_save);
     [[nodiscard]] bool turns_aside_slaying(Fighter &target);
     void secret_poison(Fighter &victim, int modifier);
@@ -1771,7 +1792,7 @@ class Session final : public rules::CombatSession
 
     // A saving throw's natural roll: a dancer's is always a 1 (fxengine.pas,
     // RollSavingThrow).
-    template <typename Dice> [[nodiscard]] static int save_die(const Fighter &f, Dice &&dice)
+    template <typename Dice> [[nodiscard]] static int save_die(const Fighter &f, Dice &dice)
     {
         return f.has(effect::dancing) ? 1 : dice(20);
     }
@@ -1811,7 +1832,7 @@ class Session final : public rules::CombatSession
     [[nodiscard]] int native_rank_target(const Fighter &caster, const Fighter &target,
                                          int number) const;
     [[nodiscard]] std::optional<Cell> native_area_aim(const Fighter &f, int number);
-    [[nodiscard]] Fighter *cure_search(const Fighter &f);
+    [[nodiscard]] const Fighter *cure_search(const Fighter &f) const;
     bool acquire_target(Fighter &f, int range, bool relaxed, bool force_new);
     [[nodiscard]] std::vector<EntityId> enemies_within(const Fighter &f, int range,
                                                        bool sight) const;
@@ -1882,17 +1903,12 @@ class Session final : public rules::CombatSession
 
 Fighter *Session::find(EntityId id)
 {
-    const auto found = std::find_if(fighters_.begin(), fighters_.end(),
-                                    [id](const Fighter &f)
-                                    {
-                                        return f.id == id;
-                                    });
-    return found == fighters_.end() ? nullptr : &*found;
+    return first_matching(fighters_, has_id(id));
 }
 
 const Fighter *Session::find(EntityId id) const
 {
-    return const_cast<Session *>(this)->find(id);
+    return first_matching(fighters_, has_id(id));
 }
 
 void Session::log(Message message)
@@ -5025,7 +5041,7 @@ Combatant Session::numbers_with(const Fighter &f, const std::vector<Held> &held,
 // Strength) stays. One that has not attacked yet this round gets the new
 // weapon's attacks; one that has keeps no more than that.
 void Session::rework_gear(Fighter &f, const std::vector<Held> &before_held,
-                          std::vector<Held> after_held)
+                          std::vector<Held> after_held) const
 {
     std::vector<int> before_order, after_order;
     const auto before = numbers_with(f, before_held, before_order);
@@ -6097,7 +6113,7 @@ void Session::cast_death_spell(const std::vector<EntityId> &targets)
 // (cast_death_spell).
 template <typename Most>
 std::vector<EntityId> Session::death_spell_takes(const std::vector<EntityId> &targets, int budget,
-                                                 Most &&most_hit_points) const
+                                                 const Most &most_hit_points) const
 {
     std::vector<EntityId> taken;
     for (const auto id : targets)
@@ -6319,7 +6335,7 @@ void Session::cast_power_word_blind(const std::vector<EntityId> &targets)
 // one's most Hit Points as `most_hit_points` gives them (cast_power_word_blind).
 template <typename Most>
 std::vector<EntityId> Session::blinded_by_word(const std::vector<EntityId> &targets,
-                                               Most &&most_hit_points) const
+                                               const Most &most_hit_points) const
 {
     std::vector<EntityId> blinded;
     int total = 0;
@@ -6429,7 +6445,7 @@ void Session::cast_power_word_kill(const std::vector<EntityId> &targets)
 // Points as `most_hit_points` gives them (cast_power_word_kill).
 template <typename Most>
 std::vector<EntityId> Session::slain_by_word(const std::vector<EntityId> &targets,
-                                             Most &&most_hit_points) const
+                                             const Most &most_hit_points) const
 {
     if (targets.empty())
     {
@@ -6473,8 +6489,8 @@ bool Session::add_with_message(Fighter &target, Effect added, bool negates, bool
                                int caster_level, const Spell *known)
 {
     const int code = added.code;
-    if (refuses_effect(target, code, element, caster_level, known, fight_dice()) ||
-        (negates && saved))
+    auto dice = fight_dice();
+    if (refuses_effect(target, code, element, caster_level, known, dice) || (negates && saved))
     {
         log({"{name} is unaffected.", {{"name", target.name}}});
         return false;
@@ -6499,7 +6515,7 @@ bool Session::add_with_message(Fighter &target, Effect added, bool negates, bool
 // nothing, so an outlook may weigh each way it can go (each_way).
 template <typename Dice>
 bool Session::refuses_effect(const Fighter &target, int code, int element, int caster_level,
-                             const Spell *known, Dice &&dice) const
+                             const Spell *known, Dice &dice) const
 {
     const auto is = [code](std::initializer_list<int> codes)
     {
@@ -6574,8 +6590,9 @@ void Session::nonweapon_damage(Fighter &target, int damage, int save_result, boo
         absorb_harm(target, damage, element);
         return;
     }
+    auto dice = fight_dice();
     const auto defended = defended_harm(target, damage, save_result, saved, element, caster_level,
-                                        spell_number, single_target, damage_dice_, fight_dice());
+                                        spell_number, single_target, damage_dice_, dice);
     if (defended.image_took_it)
     {
         lose_image(target);
@@ -6651,7 +6668,7 @@ template <typename Dice>
 Session::Defended Session::defended_harm(const Fighter &target, int damage, int save_result,
                                          bool saved, int element, int caster_level,
                                          int spell_number, bool single_target, int damage_dice,
-                                         Dice &&dice) const
+                                         Dice &dice) const
 {
     Defended defended;
     if (target.has(dkk_effect::cold_vulnerable) && (element & 2))
@@ -6964,7 +6981,8 @@ bool Session::aura_protects(const Fighter &attacker, const Fighter &defender) co
 bool Session::mirror_absorbs(Fighter &target)
 {
     const auto *images = target.find_effect(effect::mirror_image);
-    if (!images || !image_takes_it(*images, fight_dice()))
+    auto dice = fight_dice();
+    if (!images || !image_takes_it(*images, dice))
     {
         return false;
     }
@@ -7045,7 +7063,7 @@ void Session::lightning_path(Cell origin, Cell aim, int length, int damage, int 
 // its own way (treasures_bolt_walk). The squares it walks take whoever
 // stands on them as it goes.
 template <typename Strike>
-void Session::bolt_walk(Cell origin, Cell aim, int length, bool bounce, Strike &&strike) const
+void Session::bolt_walk(Cell origin, Cell aim, int length, bool bounce, const Strike &strike) const
 {
     if (origin == aim)
     {
@@ -7118,7 +7136,7 @@ void Session::bolt_walk(Cell origin, Cell aim, int length, bool bounce, Strike &
 // bugs, fixed: docs/ORIGINAL-RULES.md, Bugs).
 template <typename Strike>
 void Session::treasures_bolt_walk(Cell origin, Cell aim, int length, bool near_bounce_doubles,
-                                  Strike &&strike) const
+                                  const Strike &strike) const
 {
     Cell target = aim;
     EntityId last = standing_at(aim);
@@ -9917,7 +9935,7 @@ bool Session::ai_decides(const Fighter &f, int number, int least_priority,
     }
     if (number == 3)
     {
-        return const_cast<Session *>(this)->cure_search(f) != nullptr;
+        return cure_search(f) != nullptr;
     }
     if (!known.offensive)
     {
@@ -9958,10 +9976,10 @@ bool Session::ai_decides(const Fighter &f, int number, int least_priority,
 // Whom an AI heals (combatai.pas, the cure search): within a square, the
 // wounded of its side with the fewest Hit Points (itself below half), else,
 // unless that one has fewer than 8, one downed beside it.
-Fighter *Session::cure_search(const Fighter &f)
+const Fighter *Session::cure_search(const Fighter &f) const
 {
-    Fighter *best = nullptr;
-    for (auto &o : fighters_)
+    const Fighter *best = nullptr;
+    for (const auto &o : fighters_)
     {
         if (o.side != f.side || !o.able() || distance(f, o) > 1 ||
             o.hit_points >= o.numbers.max_hit_points ||
@@ -9978,7 +9996,7 @@ Fighter *Session::cure_search(const Fighter &f)
     {
         return best;
     }
-    for (auto &o : fighters_)
+    for (const auto &o : fighters_)
     {
         if (o.side == f.side && o.downed() && distance(f, o) <= 1)
         {
@@ -10008,7 +10026,7 @@ bool Session::ai_aim(Fighter &f)
     const int area = known.area & 0x0F;
     if (f.aiming == 3)
     {
-        auto *patient = cure_search(f);
+        const auto *patient = cure_search(f);
         if (!patient)
         {
             return false;
@@ -13222,7 +13240,8 @@ bool Session::eat_armor(const Fighter &pudding, Fighter &target)
 bool Session::saving_throw(const Fighter &f, int save, int modifier, const Fighter *caster,
                            int element)
 {
-    return saves_with(f, save_die(f, fight_dice()), save, modifier, caster, element);
+    auto dice = fight_dice();
+    return saves_with(f, save_die(f, dice), save, modifier, caster, element);
 }
 
 // The chance a saving throw saves, each way its natural roll falls weighed.

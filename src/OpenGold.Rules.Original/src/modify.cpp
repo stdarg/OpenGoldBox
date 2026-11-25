@@ -114,7 +114,7 @@ constexpr std::array<int, class_slot_count> hit_die_sides{8, 8, 10, 10, 8, 4, 6,
 }
 
 // Each class the character has levels in, with its level.
-template <class Visit> void each_class(const ClassLevels &levels, Visit &&visit)
+template <class Visit> void each_class(const ClassLevels &levels, const Visit &visit)
 {
     for (std::size_t n = 0; n < class_slot_count; ++n)
     {
