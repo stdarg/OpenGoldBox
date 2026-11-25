@@ -1,4 +1,5 @@
 #include "combat_session.h"
+#include "checkpoint_text.h"
 #include "champions_rules.h"
 #include "dark_queen_effects.h"
 #include "dark_queen_progression.h"
@@ -6,6 +7,8 @@
 #include "dark_queen_spell_table.h"
 #include "death_knights_effects.h"
 #include "death_knights_rules.h"
+#include "line_walk.h"
+#include "outlook_dice.h"
 
 #include "opengold/buck_rogers_combat.h"
 #include "opengold/buck_rogers_ship_combat.h"
@@ -585,84 +588,6 @@ int distance(const Fighter &a, const Fighter &b)
     return nearest;
 }
 
-// A straight line walked a square at a time, its doubled distance growing by
-// 2 a straight step and 3 a diagonal one (pathing.pas, PathFind and NextPathStep).
-struct LineWalk
-{
-    Cell start, end, at;
-    int across{}, down{}, step_x{}, step_y{}, error{}, diagonal_step{}, straight_step{}, distance{};
-
-    LineWalk(Cell from, Cell to) : start(from), end(to), at(from)
-    {
-        across = std::abs(to.x - from.x);
-        down = std::abs(to.y - from.y);
-        step_x = (to.x > from.x) - (to.x < from.x);
-        step_y = (to.y > from.y) - (to.y < from.y);
-        const int major = std::max(across, down), minor = std::min(across, down);
-        error = 2 * minor - major;
-        diagonal_step = 2 * (minor - major);
-        straight_step = 2 * minor;
-    }
-
-    // One step on; false at the line's end.
-    bool next()
-    {
-        const bool x_major = across > down;
-        if ((x_major && at.x == end.x) || (!x_major && at.y == end.y))
-        {
-            return false;
-        }
-        if (error >= 0)
-        {
-            (x_major ? at.y : at.x) += x_major ? step_y : step_x;
-            error += diagonal_step;
-            distance += 3;
-        }
-        else
-        {
-            error += straight_step;
-            distance += 2;
-        }
-        (x_major ? at.x : at.y) += x_major ? step_x : step_y;
-        return true;
-    }
-};
-
-// Whether the line from one square to another is clear (pathing.pas,
-// WalkLine): a square on it, both ends too, blocks it when the square's
-// blocking height is above the clearance of the square looked from. Without
-// heights an obstacle blocks and nothing else does.
-bool clear_line(const rules::Battlefield &board, Cell from, Cell to)
-{
-    const auto at = [&board](Cell cell)
-    {
-        return static_cast<std::size_t>(cell.y * board.width + cell.x);
-    };
-    const auto blocking = [&](Cell cell) -> int
-    {
-        if (!board.contains(cell))
-        {
-            return 255;
-        }
-        if (board.blocking.empty())
-        {
-            return board.at(cell) == rules::Terrain::obstacle ? 2 : 0;
-        }
-        return board.blocking[at(cell)];
-    };
-    const int eye =
-        board.clearance.empty() || !board.contains(from) ? 0 : board.clearance[at(from)];
-    LineWalk line(from, to);
-    do
-    {
-        if (blocking(line.at) > eye)
-        {
-            return false;
-        }
-    } while (line.next());
-    return true;
-}
-
 // Whether a line runs from a square of one creature to a square of the other
 // that the ground does not block; creatures do not (pathing.pas, BuildTargetList).
 bool sees(const rules::Battlefield &board, const Fighter &a, const Fighter &b)
@@ -680,55 +605,6 @@ bool sees(const rules::Battlefield &board, const Fighter &a, const Fighter &b)
     return false;
 }
 
-// The original's eight directions: 0 north and clockwise to 7 north-west.
-constexpr std::array<int, 8> step_x{0, 1, 1, 1, 0, -1, -1, -1};
-constexpr std::array<int, 8> step_y{-1, -1, 0, 1, 1, 1, 0, -1};
-
-// Whether a direction leads from one cell toward another: the other cell lies
-// in the 90-degree cone around the cell one step that way (pathing.pas, IsDirToward).
-bool leads_toward(Cell from, Cell to, int direction)
-{
-    const int nx = from.x + step_x[static_cast<std::size_t>(direction)];
-    const int ny = from.y + step_y[static_cast<std::size_t>(direction)];
-    const int tx = to.x, ty = to.y;
-    if (from == to || (nx == tx && ny == ty))
-    {
-        return true;
-    }
-    switch (direction)
-    {
-    case 0:
-        return (tx >= nx && ty <= nx - tx + ny) || (tx <= nx && ty <= tx - nx + ny);
-    case 1:
-        return (tx >= nx && ty <= nx - tx + ny) || (tx >= nx + ny - ty && ty <= ny);
-    case 2:
-        return (tx >= nx + ny - ty && ty <= ny) || (tx >= nx + ty - ny && ty >= ny);
-    case 3:
-        return (tx >= nx + ty - ny && ty >= ny) || (tx >= nx && ty >= tx - nx + ny);
-    case 4:
-        return (tx >= nx && ty >= tx - nx + ny) || (tx <= nx && ty >= nx - tx + ny);
-    case 5:
-        return (tx <= nx && ty >= nx - tx + ny) || (tx <= nx + ny - ty && ty >= ny);
-    case 6:
-        return (tx <= nx + ny - ty && ty >= ny) || (tx <= nx + ty - ny && ty <= ny);
-    default:
-        return (tx <= nx + ty - ny && ty <= ny) || (tx <= nx && ty <= tx - nx + ny);
-    }
-}
-
-// The first direction that leads from one cell toward another (cbtacts.pas, DirTowardTarget).
-int direction_toward(Cell from, Cell to)
-{
-    for (int direction = 0; direction < 8; ++direction)
-    {
-        if (leads_toward(from, to, direction))
-        {
-            return direction;
-        }
-    }
-    return 0;
-}
-
 // The English of a message: its template with each {name} replaced.
 std::string english(const Message &message)
 {
@@ -743,104 +619,6 @@ std::string english(const Message &message)
     }
     return text;
 }
-
-// A checkpoint's text: numbers and length-prefixed strings, space-separated.
-class Writer
-{
-  public:
-    template <class... T> Writer &operator()(const T &...values)
-    {
-        (put(values), ...);
-        return *this;
-    }
-
-    [[nodiscard]] std::string text() const
-    {
-        return out_.str();
-    }
-
-  private:
-    std::ostringstream out_;
-
-    void put(const std::string &text)
-    {
-        out_ << text.size() << ':' << text << ' ';
-    }
-
-    void put(bool value)
-    {
-        out_ << (value ? 1 : 0) << ' ';
-    }
-
-    template <class T>
-        requires std::is_integral_v<T>
-    void put(T value)
-    {
-        out_ << +value << ' ';
-    }
-};
-
-class Reader
-{
-  public:
-    explicit Reader(std::string_view text) : text_(text)
-    {
-    }
-
-    // Unsigned numbers read as unsigned: the random state uses all 64 bits.
-    template <class Number> Number number()
-    {
-        skip();
-        Number value{};
-        const auto [end, error] =
-            std::from_chars(text_.data() + at_, text_.data() + text_.size(), value);
-        if (error != std::errc{})
-        {
-            throw std::runtime_error("Invalid original-rules combat checkpoint");
-        }
-        at_ = static_cast<std::size_t>(end - text_.data());
-        return value;
-    }
-
-    template <class T> T as()
-    {
-        if constexpr (std::is_same_v<T, std::uint64_t>)
-        {
-            return number<std::uint64_t>();
-        }
-        return static_cast<T>(number<long long>());
-    }
-
-    std::string text()
-    {
-        const auto size = static_cast<std::size_t>(number<long long>());
-        if (at_ >= text_.size() || text_[at_] != ':' || size > text_.size() - at_ - 1)
-        {
-            throw std::runtime_error("Invalid original-rules combat checkpoint");
-        }
-        std::string value(text_.substr(at_ + 1, size));
-        at_ += size + 1;
-        return value;
-    }
-
-    [[nodiscard]] bool finished()
-    {
-        skip();
-        return at_ == text_.size();
-    }
-
-  private:
-    std::string_view text_;
-    std::size_t at_{};
-
-    void skip()
-    {
-        while (at_ < text_.size() && text_[at_] == ' ')
-        {
-            ++at_;
-        }
-    }
-};
 
 int attack_modifier(const Fighter &attacker, const Fighter &defender, GoldBoxGame game);
 
@@ -1040,106 +818,6 @@ struct Cloud
         return around;
     }
 };
-
-// The dice a run of a rule draws, served from a script of outcomes, so that
-// each_way can try every way the run can go. The first die the script does
-// not cover is noted, and any it does not cover falls as a 1 for a run whose
-// result is set aside.
-class ScriptedDice
-{
-  public:
-    explicit ScriptedDice(const std::vector<int> &script) : script_(script)
-    {
-    }
-
-    int operator()(int sides)
-    {
-        if (drawn_ < script_.size())
-        {
-            return script_[drawn_++];
-        }
-        if (unscripted_sides_ == 0)
-        {
-            unscripted_sides_ = sides;
-        }
-        ++drawn_;
-        return 1;
-    }
-
-    // The sides of the first die the script did not cover, 0 for none.
-    [[nodiscard]] int unscripted_sides() const noexcept
-    {
-        return unscripted_sides_;
-    }
-
-  private:
-    const std::vector<int> &script_;
-    std::size_t drawn_{};
-    int unscripted_sides_{};
-};
-
-// Every way a run of a rule that draws dice can go, each with its chance:
-// `run` (given the dice to draw from) is run again for each outcome of each
-// die it draws, and `take` given each way's chance and the run's result.
-// The run must change nothing but its dice, as the rule's const parts do.
-template <typename Result, typename Run, typename Take> void each_way(Run &&run, Take &&take)
-{
-    std::vector<std::pair<std::vector<int>, double>> pending{{{}, 1.0}};
-    while (!pending.empty())
-    {
-        auto [script, chance] = std::move(pending.back());
-        pending.pop_back();
-        ScriptedDice dice(script);
-        const Result result = run(dice);
-        const int sides = dice.unscripted_sides();
-        if (sides == 0)
-        {
-            take(chance, result);
-            continue;
-        }
-        for (int outcome = 1; outcome <= sides; ++outcome)
-        {
-            auto next = script;
-            next.push_back(outcome);
-            pending.emplace_back(std::move(next), chance / sides);
-        }
-    }
-}
-
-// The chance of each total of `count` dice of `sides`, plus `bonus`, by the total.
-std::vector<double> dice_chances(int count, int sides, int bonus)
-{
-    std::vector<double> chances{1.0};
-    for (int die = 0; die < count; ++die)
-    {
-        std::vector<double> next(chances.size() + static_cast<std::size_t>(sides), 0.0);
-        for (std::size_t total = 0; total < chances.size(); ++total)
-        {
-            for (int face = 1; face <= sides; ++face)
-            {
-                next[total + static_cast<std::size_t>(face)] += chances[total] / sides;
-            }
-        }
-        chances = std::move(next);
-    }
-    std::vector<double> shifted(static_cast<std::size_t>(std::max(bonus, 0)), 0.0);
-    shifted.insert(shifted.end(), chances.begin(), chances.end());
-    return shifted;
-}
-
-// The chance of each sum of two amounts that fall apart from each other.
-std::vector<double> sum_chances(const std::vector<double> &first, const std::vector<double> &second)
-{
-    std::vector<double> sum(first.size() + second.size() - 1, 0.0);
-    for (std::size_t a = 0; a < first.size(); ++a)
-    {
-        for (std::size_t b = 0; b < second.size(); ++b)
-        {
-            sum[a + b] += first[a] * second[b];
-        }
-    }
-    return sum;
-}
 
 // A spell's damage dice: so many dice of so many sides, plus a bonus.
 struct SpellDice
