@@ -1,6 +1,7 @@
 #include "game_folder_questions.h"
 #include "application_settings.h"
 #include "godot_nodes.h"
+#include "godot_keys.h"
 #include "guarded_handlers.h"
 #include "localization.h"
 #include "opengold/game_finder.h"
@@ -117,8 +118,7 @@ void GameFolderQuestions::connect_escape(Window &dialog)
 
 void GameFolderQuestions::dialog_input(const Ref<InputEvent> &event)
 {
-    const Ref<InputEventKey> key = event;
-    if (key.is_valid() && key->is_pressed() && !key->is_echo() && key->get_keycode() == KEY_ESCAPE)
+    if (presentation::escape_pressed(event))
     {
         get_viewport()->set_input_as_handled();
         presentation::guarded(this, &GameFolderQuestions::close).call_deferred();

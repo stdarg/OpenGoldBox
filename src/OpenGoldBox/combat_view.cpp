@@ -33,6 +33,7 @@
 #include "opengold/formats.h"
 #include "opengold/save_file.h"
 #include "godot_path.h"
+#include "godot_keys.h"
 #include "guarded_handlers.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/engine.hpp>
@@ -2440,9 +2441,7 @@ void CombatView::spare_ally()
 
 void CombatView::ally_attack_input(const Ref<InputEvent> &event)
 {
-    const Ref<InputEventKey> key = event;
-    if (key.is_valid() && key->is_pressed() && !key->is_echo() &&
-        key->get_keycode() == Key::KEY_ESCAPE)
+    if (presentation::escape_pressed(event))
     {
         required_node<Window>(*this, "AttackAlly").set_input_as_handled();
         spare_ally();
@@ -2571,9 +2570,7 @@ void CombatView::act(Command command)
 
 void CombatView::initiative_input(const Ref<InputEvent> &event)
 {
-    const Ref<InputEventKey> key = event;
-    if (key.is_valid() && key->is_pressed() && !key->is_echo() &&
-        key->get_keycode() == Key::KEY_ESCAPE)
+    if (presentation::escape_pressed(event))
     {
         required_node<Window>(*this, "InitiativeChoice").set_input_as_handled();
         immediate("initiative_keep");
@@ -2582,9 +2579,7 @@ void CombatView::initiative_input(const Ref<InputEvent> &event)
 
 void CombatView::optional_effect_input(const Ref<InputEvent> &event)
 {
-    const Ref<InputEventKey> key = event;
-    if (key.is_valid() && key->is_pressed() && !key->is_echo() &&
-        key->get_keycode() == Key::KEY_ESCAPE)
+    if (presentation::escape_pressed(event))
     {
         required_node<Window>(*this, "OptionalEffect").set_input_as_handled();
         immediate("effect_skip");

@@ -2,6 +2,7 @@
 #include <utility>
 #include "application_settings.h"
 #include "godot_nodes.h"
+#include "godot_keys.h"
 #include "guarded_handlers.h"
 #include "localization.h"
 #include "monster_ability_options.h"
@@ -102,9 +103,7 @@ void GameMenuView::_input(const Ref<InputEvent> &event)
 // Escape over Options goes back to the menu; over the menu it closes it.
 void GameMenuView::respond_to_input(const Ref<InputEvent> &event)
 {
-    const Ref<InputEventKey> key = event;
-    if (!is_visible() || key.is_null() || !key->is_pressed() || key->is_echo() ||
-        key->get_keycode() != Key::KEY_ESCAPE)
+    if (!is_visible() || !presentation::escape_pressed(event))
     {
         return;
     }

@@ -1,4 +1,5 @@
 #include "equipment_choice_dialog.h"
+#include "godot_keys.h"
 #include "guarded_handlers.h"
 #include "localization.h"
 #include <godot_cpp/classes/button.hpp>
@@ -151,9 +152,7 @@ void EquipmentChoiceDialog::close()
 
 void EquipmentChoiceDialog::window_input(const Ref<InputEvent> &event)
 {
-    const Ref<InputEventKey> key = event;
-    if (key.is_valid() && key->is_pressed() && !key->is_echo() &&
-        key->get_keycode() == Key::KEY_ESCAPE)
+    if (presentation::escape_pressed(event))
     {
         close();
         set_input_as_handled();
