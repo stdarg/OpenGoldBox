@@ -2455,14 +2455,6 @@ String payment_notice(const CoinPayment &payment,
                          {"change", coin_list(coins.change, game)}});
 }
 
-// Dark red, for items the chosen member cannot use fully; light enough to read
-// on the panel's dark ground.
-const Color unusable_item_color{0.78f, 0.22f, 0.22f};
-// Yellow, for what the party purse cannot pay for.
-const Color unaffordable_item_color{1.0f, 0.86f, 0.3f};
-// Gray, for armor or a shield that would not raise the member's Armor Class.
-const Color no_gain_item_color{0.55f, 0.55f, 0.55f};
-
 // The shop types the Shop & Temple Manager offers, for the catalog: a shop
 // names its type over the shopkeeper's portrait.
 [[maybe_unused]] constexpr std::array shop_types{N_("Arms & Armor"), N_("General Items"),
@@ -3148,21 +3140,24 @@ void RolfTourView::refresh()
         {
             const auto &item = listed[treasure ? static_cast<std::size_t>(row)
                                                : shop_rows_.at(static_cast<std::size_t>(row))];
+            // The theme's shop_item_* colors: dark red for an item the chosen
+            // member cannot use fully, yellow for one the purse cannot pay for,
+            // gray for armor or a shield that would not raise its Armor Class.
             Color color;
             if (!campaign_->can_use(chosen, item))
             {
                 any_unusable = true;
-                color = unusable_item_color;
+                color = get_theme_color("shop_item_unusable", "OpenGoldPalette");
             }
             else if (!treasure && item.stored.value > purse)
             {
                 any_unaffordable = true;
-                color = unaffordable_item_color;
+                color = get_theme_color("shop_item_unaffordable", "OpenGoldPalette");
             }
             else if (!treasure && campaign_->adds_no_armor_class(chosen, item))
             {
                 any_no_gain = true;
-                color = no_gain_item_color;
+                color = get_theme_color("shop_item_no_gain", "OpenGoldPalette");
             }
             choices->set_item_custom_fg_color(row, color);
             if (!treasure)
