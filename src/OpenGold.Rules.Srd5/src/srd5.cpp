@@ -9,6 +9,7 @@
 #include "weapon_mastery.h"
 #include "spell_access.h"
 #include "spell_table.h"
+#include "spell_traits.h"
 #include "beast_forms.h"
 #include "combat_grid.h"
 #include "status_effects.h"
@@ -49,6 +50,26 @@ namespace opengold::srd5
 {
 using namespace rules;
 using detail::CharacterClass;
+using detail::charms;
+using detail::command_label;
+using detail::concentration_effect;
+using detail::contingency_label;
+using detail::contingent;
+using detail::healed_by;
+using detail::is_smite;
+using detail::magical_command;
+using detail::Metamagic;
+using detail::metamagic_applies;
+using detail::metamagic_cost;
+using detail::metamagic_ids;
+using detail::metamagic_labels;
+using detail::rider_effect;
+using detail::selects_creatures;
+using detail::spell_level_of;
+using detail::splits_among_targets;
+using detail::struck_by;
+using detail::transmutable;
+using detail::transmuted_types;
 
 int ability_modifier(int score) noexcept
 {
@@ -296,267 +317,6 @@ bool trained(CharacterClass klass, std::span<const FeatureGrant> grants, std::st
     }
     throw std::runtime_error("Unsupported equipment conversion: " + std::string(key));
 }
-} // namespace
-
-// Metamagic options, in the order of metamagic_options().
-enum class Metamagic : int
-{
-    careful,
-    distant,
-    empowered,
-    extended,
-    heightened,
-    quickened,
-    seeking,
-    subtle,
-    transmuted,
-    twinned
-};
-
-constexpr std::array<std::string_view, 10> metamagic_ids{
-    "careful",   "distant", "empowered", "extended",   "heightened",
-    "quickened", "seeking", "subtle",    "transmuted", "twinned"};
-constexpr std::array<std::string_view, 10> metamagic_labels{
-    "Careful Spell",   "Distant Spell", "Empowered Spell", "Extended Spell",   "Heightened Spell",
-    "Quickened Spell", "Seeking Spell", "Subtle Spell",    "Transmuted Spell", "Twinned Spell"};
-// Transmuted Spell changes one of these damage types into another.
-constexpr std::array<std::string_view, 6> transmuted_types{"acid",      "cold",   "fire",
-                                                           "lightning", "poison", "thunder"};
-
-constexpr int metamagic_cost(Metamagic option)
-{
-    return option == Metamagic::heightened || option == Metamagic::quickened ? 2 : 1;
-}
-
-bool transmutable(detail::DamageType type)
-{
-    return std::any_of(transmuted_types.begin(), transmuted_types.end(),
-                       [&](auto id)
-                       {
-                           return detail::damage_type(id) == type;
-                       });
-}
-
-// Whether a readied Metamagic option can change this spell.
-bool metamagic_applies(Metamagic option, const detail::SpellDef &spell)
-{
-    const bool saves = spell.pattern == detail::SpellPattern::save_damage ||
-                       spell.pattern == detail::SpellPattern::save_condition;
-    const bool attacks = spell.pattern == detail::SpellPattern::spell_attack ||
-                         spell.pattern == detail::SpellPattern::repeat_attack;
-    switch (option)
-    {
-    case Metamagic::careful:
-        return saves && spell.target == detail::SpellTarget::area;
-    case Metamagic::distant:
-        return spell.target != detail::SpellTarget::self;
-    case Metamagic::empowered:
-        return spell.dice.count && (attacks || spell.pattern == detail::SpellPattern::save_damage);
-    case Metamagic::extended:
-        return spell.concentration;
-    case Metamagic::heightened:
-        return saves;
-    case Metamagic::quickened:
-        return !spell.bonus_action;
-    case Metamagic::seeking:
-        return attacks;
-    case Metamagic::subtle:
-        return false; // Retired with spell components (CLASS-11).
-    case Metamagic::transmuted:
-        return (attacks || spell.pattern == detail::SpellPattern::save_damage) &&
-               transmutable(spell.damage);
-    case Metamagic::twinned:
-        return spell.upcast.extra_instances > 0;
-    }
-    return false;
-}
-
-// The lasting benefit a buff spell's rider applies.
-constexpr detail::EffectKind rider_effect(detail::Rider rider)
-{
-    return rider == detail::Rider::shield_of_faith ? detail::EffectKind::shield_of_faith
-           : rider == detail::Rider::heroism       ? detail::EffectKind::heroism
-           : rider == detail::Rider::bless         ? detail::EffectKind::bless
-           : rider == detail::Rider::protection_from_evil_and_good
-               ? detail::EffectKind::protection_from_evil_and_good
-           : rider == detail::Rider::hunters_mark ? detail::EffectKind::hunters_mark
-           : rider == detail::Rider::longstrider  ? detail::EffectKind::longstrider
-           // A minute of casting ends before its Concentration.
-           : rider == detail::Rider::animate_dead || rider == detail::Rider::create_undead ||
-                   rider == detail::Rider::regenerate || rider == detail::Rider::antimagic_field
-               ? detail::EffectKind::hunters_mark
-           // Conjure Celestial and Conjure Minor Elementals last 10 minutes.
-           : rider == detail::Rider::conjure_celestial ||
-                   rider == detail::Rider::conjure_minor_elementals
-               ? detail::EffectKind::shield_of_faith
-               : detail::EffectKind::divine_favor;
-}
-
-// Effects that end with their caster's Concentration.
-constexpr bool concentration_effect(detail::EffectKind kind)
-{
-    return kind == detail::EffectKind::shield_of_faith || kind == detail::EffectKind::heroism ||
-           kind == detail::EffectKind::bless ||
-           kind == detail::EffectKind::protection_from_evil_and_good ||
-           kind == detail::EffectKind::hunters_mark ||
-           kind == detail::EffectKind::ensnaring_strike || kind == detail::EffectKind::entangle ||
-           kind == detail::EffectKind::bane || kind == detail::EffectKind::hold_person ||
-           kind == detail::EffectKind::resistance || kind == detail::EffectKind::guidance ||
-           kind == detail::EffectKind::expeditious_retreat || kind == detail::EffectKind::drowsy ||
-           kind == detail::EffectKind::asleep || kind == detail::EffectKind::laughing ||
-           kind == detail::EffectKind::webbed || kind == detail::EffectKind::enfeebled ||
-           kind == detail::EffectKind::blur || kind == detail::EffectKind::invisible ||
-           kind == detail::EffectKind::enlarged || kind == detail::EffectKind::reduced ||
-           kind == detail::EffectKind::dragons_breath || kind == detail::EffectKind::extended ||
-           kind == detail::EffectKind::hex || kind == detail::EffectKind::outlined ||
-           kind == detail::EffectKind::flame_blade || kind == detail::EffectKind::heated ||
-           kind == detail::EffectKind::shining || kind == detail::EffectKind::hopeful ||
-           kind == detail::EffectKind::aura_of_life || kind == detail::EffectKind::banished ||
-           kind == detail::EffectKind::circling || kind == detail::EffectKind::ensnaring ||
-           kind == detail::EffectKind::energy_ward || kind == detail::EffectKind::stoneskin ||
-           kind == detail::EffectKind::dominated || kind == detail::EffectKind::cursed ||
-           kind == detail::EffectKind::animating || kind == detail::EffectKind::dispel_evil ||
-           kind == detail::EffectKind::knitting || kind == detail::EffectKind::hasted ||
-           kind == detail::EffectKind::entranced || kind == detail::EffectKind::terrified ||
-           kind == detail::EffectKind::vampiric || kind == detail::EffectKind::tentacled ||
-           kind == detail::EffectKind::confused || kind == detail::EffectKind::greater_invisible ||
-           kind == detail::EffectKind::time_slowed || kind == detail::EffectKind::haunted ||
-           kind == detail::EffectKind::polymorphed || kind == detail::EffectKind::sphered ||
-           kind == detail::EffectKind::minor_elementals || kind == detail::EffectKind::summoned ||
-           kind == detail::EffectKind::spirit_breath ||
-           kind == detail::EffectKind::shared_resistance || kind == detail::EffectKind::illusory ||
-           kind == detail::EffectKind::engulfed || kind == detail::EffectKind::elemental_spirit ||
-           kind == detail::EffectKind::telekinetic || kind == detail::EffectKind::eye_panic ||
-           kind == detail::EffectKind::sickened || kind == detail::EffectKind::eye_resisted ||
-           kind == detail::EffectKind::eyebiting || kind == detail::EffectKind::stoning ||
-           kind == detail::EffectKind::petrified || kind == detail::EffectKind::dancing ||
-           kind == detail::EffectKind::aloft || kind == detail::EffectKind::mazed ||
-           kind == detail::EffectKind::compelled;
-}
-
-// The level of the spell an effect comes from (0 for a cantrip), or none for
-// a feature's, a weapon's or a marker's, which Dispel Magic leaves be.
-constexpr std::optional<unsigned> spell_level_of(detail::EffectKind kind)
-{
-    using Kind = detail::EffectKind;
-    switch (kind)
-    {
-    case Kind::ray_of_frost:
-    case Kind::shocking_grasp:
-    case Kind::chill_touch:
-    case Kind::resistance:
-    case Kind::lit:
-    case Kind::shillelagh:
-    case Kind::produce_flame:
-    case Kind::guidance:
-        return 0u;
-    case Kind::searing_smite:
-    case Kind::shield_of_faith:
-    case Kind::heroism:
-    case Kind::divine_favor:
-    case Kind::bless:
-    case Kind::protection_from_evil_and_good:
-    case Kind::command:
-    case Kind::hunters_mark:
-    case Kind::longstrider:
-    case Kind::ensnaring_strike:
-    case Kind::entangle:
-    case Kind::guiding_bolt:
-    case Kind::bane:
-    case Kind::sanctuary:
-    case Kind::expeditious_retreat:
-    case Kind::mage_armor:
-    case Kind::drowsy:
-    case Kind::asleep:
-    case Kind::laughing:
-    case Kind::shield:
-    case Kind::charmed:
-    case Kind::hex:
-    case Kind::outlined:
-        return 1u;
-    case Kind::blindness:
-    case Kind::aid:
-    case Kind::hold_person:
-    case Kind::warding_bond:
-    case Kind::protection_from_poison:
-    case Kind::webbed:
-    case Kind::acid_arrow:
-    case Kind::enfeebled:
-    case Kind::blur:
-    case Kind::mirror_image:
-    case Kind::magic_weapon:
-    case Kind::invisible:
-    case Kind::see_invisibility:
-    case Kind::enlarged:
-    case Kind::reduced:
-    case Kind::dragons_breath:
-    case Kind::barkskin:
-    case Kind::flame_blade:
-    case Kind::heated:
-    case Kind::scorched:
-    case Kind::shining:
-        return 2u;
-    case Kind::hopeful:
-    case Kind::energy_ward:
-    case Kind::cursed:
-    case Kind::hasted:
-    case Kind::time_slowed:
-    case Kind::entranced:
-    case Kind::terrified:
-    case Kind::retching:
-    case Kind::vampiric:
-    case Kind::blinking:
-        return 3u;
-    case Kind::death_ward:
-    case Kind::aura_of_life:
-    case Kind::compelled:
-    case Kind::free_moving:
-    case Kind::banished:
-    case Kind::stoneskin:
-    case Kind::dominated:
-    case Kind::tentacled:
-    case Kind::confused:
-    case Kind::fire_shield:
-    case Kind::greater_invisible:
-    case Kind::haunted:
-    case Kind::polymorphed:
-    case Kind::sphered:
-    case Kind::vitriol:
-    case Kind::minor_elementals:
-        return 4u;
-    case Kind::contagion:
-    case Kind::dispel_evil:
-    case Kind::shared_resistance:
-    case Kind::engulfed:
-    case Kind::lifted:
-        return 5u;
-    case Kind::true_seeing:
-    case Kind::contingency:
-    case Kind::eye_panic:
-    case Kind::sickened:
-    case Kind::stoning:
-    case Kind::petrified:
-    case Kind::dancing:
-        return 6u;
-    case Kind::regenerating:
-    case Kind::aloft:
-        return 7u;
-    case Kind::mind_blank:
-    case Kind::mazed:
-        return 8u;
-    default:
-        return std::nullopt;
-    }
-}
-
-// Command's option as players read it, such as "Approach".
-std::string command_label(detail::CommandOption option)
-{
-    const auto index = static_cast<std::size_t>(option) - 1;
-    auto label = std::string(detail::command_options.at(index));
-    label[0] = static_cast<char>(label[0] - 'a' + 'A');
-    return label;
-}
 
 // The grant a Fighting Style choice adds: a feat, or the Paladin's Blessed
 // Warrior or the Ranger's Druidic Warrior.
@@ -566,139 +326,7 @@ std::string fighting_style_grant(std::string_view style)
                ? "feature:" + std::string(style)
                : "feat:" + std::string(style);
 }
-
-// Spells whose creatures are chosen one click at a time (CLASS-2) when they may
-// affect more than one.
-// Magic Missile's darts and Scorching Ray's rays are each aimed at a creature,
-// several at one if the caster likes (SRD 5.2.1 pp. 146, 159).
-bool splits_among_targets(const detail::SpellDef &spell)
-{
-    return spell.id == "magic_missile" || spell.id == "scorching_ray" ||
-           spell.id == "eldritch_blast";
-}
-
-bool selects_creatures(const detail::SpellDef &spell)
-{
-    return splits_among_targets(spell) || spell.pattern == detail::SpellPattern::buff ||
-           spell.id == "chain_lightning" || spell.rider == detail::Rider::command ||
-           spell.rider == detail::Rider::abjure_foes ||
-           (spell.pattern == detail::SpellPattern::heal && spell.instances > 1) ||
-           (spell.pattern == detail::SpellPattern::save_condition &&
-            (spell.instances > 1 || spell.upcast.extra_instances));
-}
-
-// A smite follows the caster's own melee hit; divine_smite_free is Paladin's
-// Smite's slotless cast, and a "_N" verb a cast from a higher slot.
-// Contingency's spell (LEVELS-3): a spell of level 5 or lower cast with an
-// action that can take effect on its caster, without a choice of its own.
-bool contingent(const detail::SpellDef &spell)
-{
-    return spell.level >= 1 && spell.level <= 5 && !spell.bonus_action &&
-           (spell.pattern == detail::SpellPattern::buff ||
-            spell.pattern == detail::SpellPattern::heal) &&
-           (spell.target == detail::SpellTarget::self ||
-            spell.target == detail::SpellTarget::ally ||
-            spell.target == detail::SpellTarget::wounded_ally) &&
-           spell.instances == 1 && spell.rider != detail::Rider::fire_shield &&
-           spell.rider != detail::Rider::protection_from_energy &&
-           spell.rider != detail::Rider::conjure_minor_elementals &&
-           spell.rider != detail::Rider::enlarge_reduce &&
-           spell.rider != detail::Rider::regenerate &&
-           spell.rider != detail::Rider::animate_objects && spell.rider != detail::Rider::mislead;
-}
-
-// A feature's command that strikes the creature it targets (CLOSE-1).
-bool struck_by(std::string_view verb)
-{
-    static constexpr std::array<std::string_view, 12> verbs{"martial_arts",
-                                                            "flurry_",
-                                                            "evil_eye_",
-                                                            "vampiric_touch_again",
-                                                            "spiritual_weapon_strike",
-                                                            "arcane_sword_strike",
-                                                            "conjure_fey_strike",
-                                                            "light_",
-                                                            "nick_",
-                                                            "divine_spark_radiant",
-                                                            "superior_hunters_prey",
-                                                            "horde_breaker"};
-    return verb == "rampage" || std::any_of(verbs.begin(), verbs.end(),
-                                            [&](std::string_view prefix)
-                                            {
-                                                return verb.starts_with(prefix);
-                                            });
-}
-
-// And one that heals it.
-bool healed_by(std::string_view verb)
-{
-    return verb == "divine_spark" || verb.starts_with("lay_on_hands") || verb == "potent_vitality";
-}
-
-// A spell that charms its creature or controls its mind, which Mind Blank stops.
-bool charms(const detail::SpellDef &spell)
-{
-    return spell.rider == detail::Rider::charm_person ||
-           spell.rider == detail::Rider::dominate_beast ||
-           spell.rider == detail::Rider::dominate_person ||
-           spell.rider == detail::Rider::dominate_monster ||
-           spell.rider == detail::Rider::magic_jar ||
-           spell.rider == detail::Rider::irresistible_dance;
-}
-
-// A Contingency trigger as players read it, by its index in contingency_triggers.
-std::string_view contingency_label(std::size_t trigger)
-{
-    static constexpr std::array<std::string_view, 3> labels{
-        "at half Hit Points", "when a fight starts", "at 0 Hit Points"};
-    return labels.at(trigger);
-}
-
-// A command that is a Magic action or another magical effect (Antimagic
-// Field, LEVELS-4): Channel Divinity's uses, a spell's later actions, Lay On
-// Hands, Wild Shape and a Dragonborn's Breath Weapon. Spells are kept out of
-// the field where they are offered.
-bool magical_command(std::string_view verb)
-{
-    static constexpr std::array<std::string_view, 27> verbs{"dispel_break",
-                                                            "compulsion_heading",
-                                                            "dispel_dismissal",
-                                                            "move_moonbeam",
-                                                            "sunbeam_line",
-                                                            "vampiric_touch_again",
-                                                            "flame_blade_strike",
-                                                            "hurl_flame",
-                                                            "armor_of_shadows",
-                                                            "fiendish_vigor",
-                                                            "lands_aid",
-                                                            "divine_spark",
-                                                            "divine_spark_radiant",
-                                                            "turn_undead",
-                                                            "preserve_life",
-                                                            "abjure_foes",
-                                                            "tireless",
-                                                            "spiritual_weapon_strike",
-                                                            "move_spirit_pack",
-                                                            "move_pillar",
-                                                            "potent_vitality",
-                                                            "sacred_weapon",
-                                                            "sacred_weapon_radiant",
-                                                            "move_hound",
-                                                            "arcane_sword_strike",
-                                                            "call_lightning_again",
-                                                            "conjure_fey_strike"};
-    return std::find(verbs.begin(), verbs.end(), verb) != verbs.end() ||
-           verb.starts_with("lay_on_hands") || verb.starts_with("wild_shape") ||
-           verb.starts_with("dragons_breath_exhale") || verb.starts_with("breath_weapon") ||
-           verb.starts_with("divine_strike") || verb.starts_with("channel_");
-}
-
-bool is_smite(std::string_view verb)
-{
-    const auto spell = detail::without_cast_suffix(verb);
-    return spell == "divine_smite" || verb == "divine_smite_free" || spell == "searing_smite" ||
-           spell == "shining_smite" || spell == "ensnaring_strike";
-}
+} // namespace
 
 bool usable_outside_combat(std::string_view item) noexcept
 {
