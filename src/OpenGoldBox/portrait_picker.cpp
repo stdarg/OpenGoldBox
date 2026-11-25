@@ -42,8 +42,8 @@ void CharacterCreationView::fill_portrait_filters()
     portraits_ = PortraitCatalog::load();
     for (int field = 0; field < 3; ++field)
     {
-        constexpr std::array names{"PortraitGender", "PortraitClass", "PortraitRace"};
-        constexpr std::array labels{N_("All genders"), N_("All classes"), N_("All races")};
+        static constexpr std::array names{"PortraitGender", "PortraitClass", "PortraitRace"};
+        static constexpr std::array labels{N_("All genders"), N_("All classes"), N_("All races")};
         auto *control = &required_node<OptionButton>(*this, names[field]);
         control->clear();
         control->add_item(i18n::text(labels[field]));
