@@ -23,6 +23,8 @@ class CreatureData
     CreatureData(const std::filesystem::path &repository,
                  const std::filesystem::path &game_directory, por::PngDecoder decode);
     ~CreatureData();
+    CreatureData(const CreatureData &) = delete;
+    CreatureData &operator=(const CreatureData &) = delete;
     CreatureData(CreatureData &&) noexcept;
     CreatureData &operator=(CreatureData &&) noexcept;
 

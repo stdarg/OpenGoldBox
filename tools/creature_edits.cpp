@@ -5,6 +5,7 @@
 #include "opengold/rolf_tour.h"
 #include "opengold/srd5.h"
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <fstream>
@@ -428,9 +429,9 @@ Applied spell_profile(Files &files, const Edit &edit, const std::string &date)
     {
         refuse(edit.where, "no creature in combat.rules casts at " + profile_text(to));
     }
+    constexpr std::array<const char *, 3> names{"spell_slots", "casting_bonus", "level"};
     for (std::size_t n = 0; n < spell_profile_fields.size(); ++n)
     {
-        const char *names[] = {"spell_slots", "casting_bonus", "level"};
         fields[spell_profile_fields[n]] = number_text(*number_member(to, names[n]));
     }
     files.rules.set_creature_fields(key, fields);
@@ -811,6 +812,8 @@ struct Staging
 
     Staging(const Staging &) = delete;
     Staging &operator=(const Staging &) = delete;
+    Staging(Staging &&) = delete;
+    Staging &operator=(Staging &&) = delete;
 
     ~Staging()
     {

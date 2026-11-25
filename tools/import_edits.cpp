@@ -2,6 +2,7 @@
 // (dev_tools/docs/creature-stats-editor-interface.md).
 #include "creature_edits.h"
 #include "opengold/game_finder.h"
+#include <array>
 #include <chrono>
 #include <ctime>
 #include <iostream>
@@ -19,9 +20,9 @@ std::string today()
 #else
     localtime_r(&now, &local);
 #endif
-    char text[16];
-    std::strftime(text, sizeof text, "%Y-%m-%d", &local);
-    return text;
+    std::array<char, 16> text{};
+    std::strftime(text.data(), text.size(), "%Y-%m-%d", &local);
+    return text.data();
 }
 
 void usage()
