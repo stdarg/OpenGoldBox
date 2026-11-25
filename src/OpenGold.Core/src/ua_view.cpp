@@ -1,4 +1,5 @@
 #include "opengold/ua_view.h"
+#include "opengold/vga_levels.h"
 
 #include <algorithm>
 #include <stdexcept>
@@ -18,11 +19,6 @@ constexpr std::size_t header_sets = 4, header_backdrops = 8;
 // far front walls (the kit's position tables, shared with the earlier games).
 constexpr std::array<int, 10> piece_x{5, 4, 6, 4, 2, 7, 2, 0, 9, 5};
 constexpr std::array<int, 10> piece_y{4, 3, 3, 3, 1, 1, 1, 0, 0, 4};
-
-[[nodiscard]] std::uint8_t full_level(std::uint8_t level) noexcept
-{
-    return static_cast<std::uint8_t>(level << 2 | level >> 4);
-}
 
 void apply(std::array<VgaColor, 256> &palette, const VgaPaletteRange &range)
 {
@@ -87,7 +83,7 @@ Image glyph_image(const Glyph &glyph, const std::array<VgaColor, 256> &palette)
         const auto &color = palette[picture.pixels[at]];
         for (std::size_t channel = 0; channel < 3; ++channel)
         {
-            image.rgba[at * 4 + channel] = full_level(color[channel]);
+            image.rgba[at * 4 + channel] = format::widen_vga_level(color[channel]);
         }
         image.rgba[at * 4 + 3] = 255;
     }
@@ -286,9 +282,9 @@ class ViewPainter
             return;
         }
         auto *pixel = &image_.rgba[(static_cast<std::size_t>(y) * view_size + x) * 4];
-        pixel[0] = full_level(color[0]);
-        pixel[1] = full_level(color[1]);
-        pixel[2] = full_level(color[2]);
+        pixel[0] = format::widen_vga_level(color[0]);
+        pixel[1] = format::widen_vga_level(color[1]);
+        pixel[2] = format::widen_vga_level(color[2]);
         pixel[3] = 255;
     }
 

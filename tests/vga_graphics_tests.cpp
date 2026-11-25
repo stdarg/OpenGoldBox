@@ -3,6 +3,7 @@
 // unless both games' folders are found (installed_games.h).
 #include "opengold/formats.h"
 #include "opengold/treasures_texts.h"
+#include "opengold/vga_levels.h"
 #include "opengold/vga_picture.h"
 #include "opengold/wall_art.h"
 #include "installed_games.h"
@@ -158,12 +159,36 @@ void treasures_reads_its_own_files(const std::filesystem::path &treasure)
           "Treasures' font is a picture of 64 8x8 glyphs");
 }
 
+// Every 6-bit level widens over the whole 8-bit range and narrows back to
+// itself, as does the UA kit's own writing of it (level * 4 + 3, 0 for 0).
+void every_level_widens_and_narrows_back()
+{
+    using opengold::format::narrow_vga_level;
+    using opengold::format::widen_vga_level;
+    check(widen_vga_level(0) == 0 && widen_vga_level(63) == 255 && widen_vga_level(32) == 129,
+          "0 stays black, 63 is full white, 32 is just over half");
+    for (unsigned level = 0; level < 64; ++level)
+    {
+        const auto six_bit = static_cast<std::uint8_t>(level);
+        const auto widened = widen_vga_level(six_bit);
+        check(level == 0 || widened > widen_vga_level(static_cast<std::uint8_t>(level - 1)),
+              "Level " + std::to_string(level) + " widens above the level below");
+        check(narrow_vga_level(widened) == six_bit,
+              "Level " + std::to_string(level) + " narrows back from " + std::to_string(widened));
+        const auto kit_value = static_cast<std::uint8_t>(level == 0 ? 0 : level * 4 + 3);
+        check(narrow_vga_level(kit_value) == six_bit, "The kit's " + std::to_string(kit_value) +
+                                                          " narrows to level " +
+                                                          std::to_string(level));
+    }
+}
+
 } // namespace
 
 int main()
 {
     try
     {
+        every_level_widens_and_narrows_back();
         const auto darkness =
             opengold::test::installed_game_folder(opengold::GoldBoxGame::pools_of_darkness);
         const auto treasure = opengold::test::installed_game_folder(

@@ -1,4 +1,5 @@
 #include "opengold/gateway_formats.h"
+#include "opengold/vga_levels.h"
 #include "little_endian.h"
 
 #include <algorithm>
@@ -25,11 +26,6 @@ constexpr std::array<std::array<std::uint8_t, 3>, 2> fixed_vga_levels{
 constexpr std::array<unsigned, 13> sample_rates{0,    0,    4000, 0,    7075, 9000, 0,
                                                 8200, 8000, 8101, 8107, 7546, 7075};
 constexpr std::size_t sound_buffer_size = 9000;
-
-std::uint8_t level_to_rgb(unsigned six_bit_level)
-{
-    return static_cast<std::uint8_t>(six_bit_level * 255 / 63);
-}
 
 // Reads the color header at offset, advancing offset past it; nullopt when the
 // bytes run out.
@@ -193,14 +189,16 @@ std::array<std::uint8_t, 3> vga_rgb(const PictureColors &colors, std::uint8_t co
     if (color < 18)
     {
         const auto &levels = fixed_vga_levels[color - 16];
-        return {level_to_rgb(levels[0]), level_to_rgb(levels[1]), level_to_rgb(levels[2])};
+        return {format::widen_vga_level(levels[0]), format::widen_vga_level(levels[1]),
+                format::widen_vga_level(levels[2])};
     }
     // A 4-bit level is a 6-bit DAC level divided by four.
     const auto first = static_cast<std::size_t>(color < 24 ? color - 16 : color - 24) * 3;
     const auto level = [&](std::size_t channel)
     {
         const auto packed = colors.palette[first + channel];
-        return level_to_rgb((color < 24 ? packed & 0x0F : packed >> 4) * 4U);
+        return format::widen_vga_level(
+            static_cast<std::uint8_t>((color < 24 ? packed & 0x0F : packed >> 4) * 4U));
     };
     return {level(0), level(1), level(2)};
 }

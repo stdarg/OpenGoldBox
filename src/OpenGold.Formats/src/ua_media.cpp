@@ -1,4 +1,5 @@
 #include "opengold/ua_media.h"
+#include "opengold/vga_levels.h"
 #include "little_endian.h"
 #include "ua_detail.h"
 
@@ -21,7 +22,7 @@ using format::read_u16;
 
 constexpr std::size_t color_count = 256;
 
-// 8-bit colors as the VGA's DAC takes them, 0 to 63.
+// The kit's 8-bit colors as the VGA's DAC takes them, 0 to 63.
 VgaPaletteRange read_colors(Bytes rgb)
 {
     VgaPaletteRange palette;
@@ -30,8 +31,7 @@ VgaPaletteRange read_colors(Bytes rgb)
     {
         for (std::size_t channel = 0; channel < 3; ++channel)
         {
-            palette.colors[color][channel] =
-                static_cast<std::uint8_t>(rgb[color * 3 + channel] >> 2);
+            palette.colors[color][channel] = format::narrow_vga_level(rgb[color * 3 + channel]);
         }
     }
     return palette;

@@ -338,6 +338,20 @@ This layer renders decoded game assets such as:
 - wall textures
 - scene illustrations
 
+#### VGA colour levels
+
+The games store a colour as three 6-bit levels, 0 to 63, and the game widens
+each to 8 bits by exact scaling, `level * 255 / 63`: the full-scale analog
+output of the VGA's digital-to-analog converter, so 0 is black and 63 is full
+white. Every decoder (Gateway, the 256-color games, the UA kit's pictures and
+its exploration view) goes through `format::widen_vga_level`, so one level is
+one colour whichever game drew it. Decided 2026-11-25 (issue #418) over bit
+replication (`level << 2 | level >> 4`, at most 1 apart in 30 of the 64 levels)
+and DOSBox's `level << 2` (63 shows as 252). The UA kit's palette files hold
+8-bit values of its own making, `level * 4 + 3` (0 for 0); `narrow_vga_level`
+takes the top six bits, which gives back both those and every widened level,
+where rounding `value * 63 / 255` would misread the kit's level 1 (7) as 2.
+
 ### Exploration Map Knowledge
 
 Normal overhead maps show only cells the party has occupied or seen in the

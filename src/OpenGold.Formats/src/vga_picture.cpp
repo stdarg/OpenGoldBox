@@ -1,4 +1,5 @@
 #include "opengold/vga_picture.h"
+#include "opengold/vga_levels.h"
 #include "little_endian.h"
 
 #include <algorithm>
@@ -277,10 +278,7 @@ Image vga_rgba(const VgaImage &image, const VgaColorTable &colors,
         auto *rgba = result.rgba.data() + pixel * 4;
         for (std::size_t channel = 0; channel < 3; ++channel)
         {
-            // Six bits a channel, the high two repeated below as the VGA's
-            // digital-to-analog converter spreads them.
-            const auto level = colors[index][channel] & 63;
-            rgba[channel] = static_cast<std::uint8_t>(level << 2 | level >> 4);
+            rgba[channel] = format::widen_vga_level(colors[index][channel]);
         }
         rgba[3] = see_through && index == *see_through ? 0 : 255;
     }
