@@ -110,6 +110,41 @@ constexpr std::array<std::array<std::uint8_t, 3>, 16> ega_palette{{{0, 0, 0},
                                                                    {255, 255, 85},
                                                                    {255, 255, 255}}};
 
+// A picture's or combat icon's 17-byte header, then its frames: rows and
+// width in 8-pixel cells as words, the frame count at byte 8.
+struct EgaFrames
+{
+    static constexpr std::size_t header_size = 17;
+
+    std::uint16_t height{}, width_bytes{};
+    std::uint8_t count{};
+    std::size_t frame_size{};
+};
+
+std::optional<EgaFrames> ega_frames(std::span<const std::uint8_t> record)
+{
+    if (record.size() < EgaFrames::header_size)
+    {
+        return std::nullopt;
+    }
+    const auto height = read_u16(record, 0), width_bytes = read_u16(record, 2);
+    const auto count = record[8];
+    const std::size_t frame_size = static_cast<std::size_t>(height) * width_bytes * 4;
+    if (!height || height > 200 || !width_bytes || width_bytes > 40 || !count ||
+        record.size() != EgaFrames::header_size + frame_size * count)
+    {
+        return std::nullopt;
+    }
+    return EgaFrames{height, width_bytes, count, frame_size};
+}
+
+// The color of a frame's pixel: two to a byte, the first in the high nibble.
+std::uint8_t ega_index(std::span<const std::uint8_t> pixels, std::size_t pixel) noexcept
+{
+    const auto packed = pixels[pixel / 2];
+    return static_cast<std::uint8_t>(pixel % 2 ? packed & 15 : packed >> 4);
+}
+
 } // namespace
 
 std::array<std::uint8_t, 3> ega_rgb(std::uint8_t index)
@@ -200,9 +235,7 @@ ImageDecodeResult decode_ega_sprite(std::span<const std::uint8_t> dax, std::uint
         for (std::size_t pixel = 0; pixel < static_cast<std::size_t>(image.width) * image.height;
              ++pixel)
         {
-            const auto packed = record[pixel_start + pixel / 2];
-            const auto index =
-                static_cast<std::uint8_t>((pixel & 1) == 0 ? packed >> 4 : packed & 0x0f);
+            const auto index = ega_index(record.subspan(pixel_start), pixel);
             const std::size_t output = pixel * 4;
             std::copy(ega_palette[index].begin(), ega_palette[index].end(),
                       image.rgba.begin() + output);
@@ -233,31 +266,24 @@ ImageDecodeResult decode_ega_combat_icon(std::span<const std::uint8_t> dax, std:
         return {extracted.status, {}};
     }
     const std::span<const std::uint8_t> record{extracted.bytes};
-    if (record.size() < 17)
+    const auto frames = ega_frames(record);
+    if (!frames)
     {
         return {};
     }
-    const auto height = read_u16(record, 0), width_bytes = read_u16(record, 2);
-    const auto count = record[8];
-    const std::size_t frame_size = static_cast<std::size_t>(height) * width_bytes * 4;
-    if (!height || height > 200 || !width_bytes || width_bytes > 40 || !count ||
-        record.size() != 17 + frame_size * count)
-    {
-        return {};
-    }
-    if (frame_index >= count)
+    if (frame_index >= frames->count)
     {
         return {FormatResult::not_found, {}};
     }
     Image image;
-    image.width = width_bytes * 8;
-    image.height = height;
+    image.width = frames->width_bytes * 8;
+    image.height = frames->height;
     image.rgba.resize(image.width * image.height * 4);
-    const std::size_t start = 17 + frame_index * frame_size;
-    for (std::size_t pixel = 0; pixel < static_cast<std::size_t>(image.width) * height; ++pixel)
+    const auto pixels = record.subspan(EgaFrames::header_size + frame_index * frames->frame_size);
+    for (std::size_t pixel = 0; pixel < static_cast<std::size_t>(image.width) * image.height;
+         ++pixel)
     {
-        const auto packed = record[start + pixel / 2];
-        const unsigned index = pixel % 2 ? packed & 15 : packed >> 4;
+        const auto index = ega_index(pixels, pixel);
         std::copy(ega_palette[index].begin(), ega_palette[index].end(),
                   image.rgba.begin() + pixel * 4);
         if (index == 8)
@@ -277,25 +303,20 @@ ImageDecodeResult decode_ega_combat_icon(std::span<const std::uint8_t> dax, std:
 
 ImageDecodeResult decode_ega_picture(std::span<const std::uint8_t> record)
 {
-    if (record.size() < 17)
-    {
-        return {};
-    }
-    const auto height = read_u16(record, 0), width_bytes = read_u16(record, 2);
-    const unsigned count = record[8];
-    if (!height || height > 200 || !width_bytes || width_bytes > 40 || !count ||
-        record.size() != 17 + static_cast<std::size_t>(height) * width_bytes * 4 * count)
+    const auto frames = ega_frames(record);
+    if (!frames)
     {
         return {};
     }
     Image image;
-    image.width = width_bytes * 8;
-    image.height = height;
-    image.rgba.resize(static_cast<std::size_t>(image.width) * height * 4);
-    for (std::size_t pixel = 0; pixel < static_cast<std::size_t>(image.width) * height; ++pixel)
+    image.width = frames->width_bytes * 8;
+    image.height = frames->height;
+    image.rgba.resize(static_cast<std::size_t>(image.width) * image.height * 4);
+    const auto pixels = record.subspan(EgaFrames::header_size);
+    for (std::size_t pixel = 0; pixel < static_cast<std::size_t>(image.width) * image.height;
+         ++pixel)
     {
-        const auto packed = record[17 + pixel / 2];
-        const unsigned color = pixel % 2 ? packed & 15 : packed >> 4;
+        const auto color = ega_index(pixels, pixel);
         std::copy(ega_palette[color].begin(), ega_palette[color].end(),
                   image.rgba.begin() + pixel * 4);
         if (color == 13)
