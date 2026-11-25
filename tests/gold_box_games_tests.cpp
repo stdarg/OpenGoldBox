@@ -16866,8 +16866,11 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         unsigned tracked_round = 0;
         // Treasures' party on its way past a band it could not flee in the
         // asking (the overland's) runs off the field with the first tactic.
-        const bool running = game == GoldBoxGame::treasures_of_the_savage_frontier &&
-                             (fleeing || optional_treasure_patrol()) && tactic == 0;
+        const bool font_retreat =
+            native_font && fleeing && position.area_id == 62 && position.script_id == 64;
+        const bool running = (game == GoldBoxGame::treasures_of_the_savage_frontier &&
+                              (fleeing || optional_treasure_patrol()) && tactic == 0) ||
+                             font_retreat;
         const bool yulash_mounds = third_bond && session.snapshot().script_id == 16;
         // The council's large armies need more ordinary player commands
         // than the smaller encounters before its real combat outcome.
@@ -17363,7 +17366,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         // field's edge and flees. It is counted.
         if (combat.combat().snapshot().outcome == opengold::rules::Outcome::ongoing)
         {
-            ++phases["stalemates left by fleeing"];
+            ++phases[font_retreat ? "Font immediate retreat" : "stalemates left by fleeing"];
             const auto &field = session.pending_encounter()->field.geometry;
             const auto to_edge = edge_steps(field, std::nullopt);
             for (int command = 0; command < 3000 && combat.combat().snapshot().outcome ==
@@ -17380,7 +17383,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                     (!opengold::is_ally(state.actor) || actor->player_controls_ally) &&
                     !actor->computer_plays;
                 std::optional<opengold::rules::Command> chosen;
-                if (member)
+                if (member && (!font_retreat || !opengold::is_ally(state.actor)))
                 {
                     for (const auto &option : fighting.legal_commands())
                     {
@@ -17397,6 +17400,16 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                         }
                     }
                 }
+                if (font_retreat && member && !chosen)
+                {
+                    // A blocked member or led temporary gnome ends its turn;
+                    // never switch this withdrawal to Quick attacks or magic.
+                    const auto commands = fighting.legal_commands();
+                    const auto end = std::ranges::find(commands, std::string_view("end"),
+                                                       &opengold::rules::Command::verb);
+                    check(end != commands.end(), "A Font withdrawal has a legal End command");
+                    chosen = *end;
+                }
                 const auto next =
                     chosen ? *chosen
                     : member
@@ -17404,6 +17417,12 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                                          opengold::Searching::everyone)
                         : opengold::choose_demo_command(fighting, opengold::Searching::everyone,
                                                         opengold::default_difficulty);
+                if (font_retreat && std::getenv("OPENGOLD_FIGHT_CELLS"))
+                {
+                    std::cout << "  Font retreat round " << state.round << " actor " << state.actor
+                              << " " << next.verb << " to " << next.destination.x << ","
+                              << next.destination.y << "\n";
+                }
                 if (!combat.submit(next))
                 {
                     ++phases["fight stopped at " + next.verb];
@@ -17581,6 +17600,36 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             }
         }
         const auto before = party->state();
+        const bool font_retreat = earned_dark_queen && fleeing &&
+                                  session.snapshot().area_id == 62 &&
+                                  session.snapshot().script_id == 64 &&
+                                  session.script_variable(opengold::por::EclAddress{0x19E}) == 30;
+        const bool native_royal_chain = earned_dark_queen && session.snapshot().area_id == 58 &&
+                                        session.snapshot().script_id == 59 &&
+                                        session.snapshot().pose.x == 1 &&
+                                        session.snapshot().pose.y == 6;
+        const auto all_originals_fled = [&](const opengold::rules::Snapshot &result)
+        {
+            return result.outcome == opengold::rules::Outcome::fled &&
+                   std::ranges::count_if(before.slots,
+                                         [](auto id)
+                                         {
+                                             return id != 0;
+                                         }) == 7 &&
+                   std::ranges::all_of(
+                       before.slots,
+                       [&](auto id)
+                       {
+                           if (!id)
+                           {
+                               return true;
+                           }
+                           const auto unit = std::ranges::find(result.combatants, id,
+                                                               &opengold::rules::CombatantView::id);
+                           return unit != result.combatants.end() && unit->fled && !unit->dead &&
+                                  unit->hit_points > 0 && unit->status != "stoned";
+                       });
+        };
         wanted_exit.reset();
         if (session.pending_encounter()->escape_ends_fight && !maze_exits.empty())
         {
@@ -17608,17 +17657,26 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         {
             // A healthy retreat from an optional road band is preferable
             // to a victory that leaves the campaign party dead.
-            const bool escaped = earned_treasure && (fleeing || optional_treasure_patrol()) &&
-                                 result.outcome == opengold::rules::Outcome::fled;
+            const bool escaped = (earned_treasure && (fleeing || optional_treasure_patrol()) &&
+                                  result.outcome == opengold::rules::Outcome::fled) ||
+                                 (font_retreat && all_originals_fled(result));
             int lost = (result.outcome == opengold::rules::Outcome::victory &&
                         !boss_still_stands(result)) ||
                                escaped
                            ? 0
                            : 1'000'000;
+            if (font_retreat && !all_originals_fled(result))
+            {
+                lost += 1'000'000;
+            }
             for (const auto &unit : result.combatants)
             {
-                if (unit.side == opengold::rules::Side::party &&
-                    !(earned_treasure && opengold::is_ally(unit.id)))
+                const bool original_member =
+                    std::ranges::find(before.slots, unit.id) != before.slots.end();
+                if ((font_retreat || native_royal_chain)
+                        ? original_member
+                        : unit.side == opengold::rules::Side::party &&
+                              !(earned_treasure && opengold::is_ally(unit.id)))
                 {
                     // A member turned to stone is as lost as a dead one, and
                     // so is one left on the field the party fled.
@@ -17626,6 +17684,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                         result.outcome == opengold::rules::Outcome::fled && !unit.fled;
                     const bool healer_fallen =
                         earned_treasure && unit.hit_points <= 0 && unit.name.starts_with("cleric");
+                    // No recovery is offered between the Royal Mages' waves.
+                    const bool royal_fallen =
+                        native_royal_chain && original_member && unit.hit_points <= 0;
                     const auto original =
                         std::ranges::find_if(before.roster,
                                              [&](const opengold::PartyMember &member)
@@ -17637,7 +17698,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                         original != before.roster.end() &&
                         unit.max_hit_points < original->character.sheet().hit_points;
                     lost += (unit.dead || unit.status == "stoned" || left_behind || healer_fallen ||
-                                     drained
+                                     royal_fallen || drained
                                  ? 1000
                                  : 0) +
                             unit.max_hit_points - std::max(unit.hit_points, 0);
@@ -17875,7 +17936,43 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         {
             ++fights_lost;
         }
-        return session.resolve_combat(result);
+        const bool resolved = session.resolve_combat(result);
+        if (font_retreat)
+        {
+            if (std::getenv("OPENGOLD_FIGHT_CELLS"))
+            {
+                std::cout << "  Font actual result " << static_cast<int>(result.outcome) << ":";
+                for (const auto id : before.slots)
+                {
+                    const auto unit = std::ranges::find(result.combatants, id,
+                                                        &opengold::rules::CombatantView::id);
+                    if (id && unit != result.combatants.end())
+                    {
+                        std::cout << " " << id << "(fled=" << unit->fled << ",dead=" << unit->dead
+                                  << ",hp=" << unit->hit_points << ")";
+                    }
+                }
+                std::cout << "\n";
+            }
+            // Resolve the genuine result first, retaining any real losses.
+            // A quiet victory or even one left-behind original is not proof
+            // of this full-party withdrawal policy.
+            check(resolved && all_originals_fled(result) &&
+                      session.snapshot().phase != TourPhase::faulted &&
+                      session.snapshot().diagnostic.empty() && session.script_diagnostics().empty(),
+                  "The Font withdrawal flees all seven originals without a host failure");
+            for (const auto id : before.slots)
+            {
+                check(!id || (std::ranges::find(party->state().slots, id) !=
+                                  party->state().slots.end() &&
+                              !party->member(id).vitals.dead &&
+                              party->member(id).vitals.hit_points > 0 &&
+                              party->member(id).vitals.description !=
+                                  opengold::original::stoned_description),
+                      "Every original Font member remains alive in the actual campaign slots");
+            }
+        }
+        return resolved;
     };
     std::size_t diagnosed = 0;
     std::vector<std::string> answers;

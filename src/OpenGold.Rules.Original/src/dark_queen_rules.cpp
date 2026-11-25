@@ -481,8 +481,8 @@ int constitution_save_raise(Race race, int constitution)
 std::array<int, 5> dark_queen_saving_throws(const ClassLevels &levels, Race race, int constitution)
 {
     // Cleric, knight, fighter, paladin, ranger, mage, thief.
-    constexpr std::array native_order{C::cleric, C::monk,       C::fighter, C::paladin,
-                                      C::ranger, C::magic_user, C::thief};
+    static constexpr std::array native_order{C::cleric, C::monk,       C::fighter, C::paladin,
+                                             C::ranger, C::magic_user, C::thief};
     const int raise = constitution_save_raise(race, constitution);
     std::array<int, 5> saves{20, 20, 20, 20, 20};
     for (const auto slot : native_order)

@@ -78,14 +78,21 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
         {
             // The cleared caves' store contains the native White Mage
             // scroll (253), including Globe of Invulnerability. The next
-            // beat returns to the entrance and rests to scribe it.
+            // beat returns to the entrance before resting to scribe it.
             return_to_entrance.x = 5;
             return_to_entrance.y = 20;
             return_to_entrance.take_items = {{"White", "magic_user 6"}};
             return_to_entrance.scribe_after = {"globe_of_invulnerability"};
         }
         beats.push_back(return_to_entrance);
-        beats.push_back(recover);
+        auto cave_recovery = recover;
+        if (x == 5 && y == 15)
+        {
+            // Carry the pending scroll inscription out of the store before
+            // camping. The exit beat rests at the entrance before leaving.
+            cave_recovery.rest_first = false;
+        }
+        beats.push_back(std::move(cave_recovery));
     };
     cave_fight(10, 22, {});
     cave_fight(8, 17, {});
@@ -95,6 +102,9 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     RouteBeat cave_exit{10, 24, 0, D::north, {"CAST DISPEL MAGIC", "cleric 4", "YES"}};
     cave_exit.arrive_only = true;
     cave_exit.searching = false;
+    cave_exit.rest_first = true;
+    cave_exit.rest_for_spells = true;
+    cave_exit.memorize_first_of = recover.memorize_first_of;
     cave_exit.cure_first = true;
     cave_exit.cure_to_full = true;
     cave_exit.reloads_until_won = 120;
@@ -1336,13 +1346,21 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     beats.push_back(last_dragons);
     beats.push_back(baior_inn);
     beats.push_back(dragon_preparation);
-    RouteBeat speed_supplies{54, 14, 12, D::south, {"YES", "sell:FLAIL@knight 1"}};
+    RouteBeat speed_supplies{
+        54,
+        14,
+        12,
+        D::south,
+        {"YES", "sell:FLAIL@knight 1", "sell:SHIELD (UNIDENTIFIED MAGIC)@knight 1"}};
     for (unsigned vial = 0; vial < 2; ++vial)
     {
         speed_supplies.answers.push_back(
             "buy:POTION OF SPEED@knight 1,knight 2,knight 3,Grunschka");
         speed_supplies.answers.push_back("buy:POTION OF INVISIBILITY@magic_user 6");
     }
+    speed_supplies.answers.push_back("buy:POTION OF SPEED@cleric 4");
+    speed_supplies.answers.push_back("buy:POTION OF SPEED@cleric 5");
+    speed_supplies.answers.push_back("buy:POTION OF SPEED@magic_user 6");
     speed_supplies.arrive_only = true;
     speed_supplies.searching = false;
     speed_supplies.cure_first = true;
@@ -1534,6 +1552,11 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     RouteBeat magic_door = needle_door;
     magic_door.x = 2;
     magic_door.answers = {"CAST", "cleric 4", "BASH", "knight 1"};
+    // Use the eight actual prepared fire wards before opening this door;
+    // the room beyond is still quiet enough for the mage's Mind Blank.
+    magic_door.ward_each_with = "resist_fire";
+    magic_door.cast_after = {"mind_blank"};
+    magic_door.cast_after_by = "magic_user 6";
     beats.push_back(magic_door);
     RouteBeat disguised_court{58, 1, 9, D::north, {}};
     disguised_court.arrive_only = true;
@@ -1542,6 +1565,11 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     disguised_court.cure_to_full = true;
     disguised_court.reloads_until_won = 240;
     beats.push_back(disguised_court);
+    // Ward before the forced encounter, changing only this pushed copy;
+    // the later royal-mages visit still starts from the unaltered template.
+    beats.back().ward_each_with = "globe_of_invulnerability";
+    beats.back().ward_members = {"magic_user 6"};
+    beats.back().fight_tactic = 4;
     beats.push_back(quiet_bedroom);
     // The court's earned XP qualifies five members for another level.
     // Sell the remaining obsolete sword at the guest's real shop to pay the fees,
@@ -1606,6 +1634,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     royal_mages.y = 6;
     royal_mages.reload_event = true;
     royal_mages.reloads_until_won = 480;
+    royal_mages.fight_tactic = 4;
     royal_mages.drink_names = {{"Potion of Speed", "knight 1"},
                                {"Potion of Speed", "knight 2"},
                                {"Potion of Speed", "knight 3"},
@@ -1907,7 +1936,12 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     temple_font.cure_to_full = true;
     temple_font.reload_event = true;
     temple_font.reloads_until_won = 240;
+    temple_font.fleeing = true;
+    temple_font.fight_tactic = 0;
     temple_font.drink_names = royal_mages.drink_names;
+    temple_font.drink_names.push_back({"Potion of Speed", "cleric 4"});
+    temple_font.drink_names.push_back({"Potion of Speed", "cleric 5"});
+    temple_font.drink_names.push_back({"Potion of Speed", "magic_user 6"});
     temple_font.ready_types = {
         {69, "knight 1"}, {28, "knight 2"}, {69, "knight 3"}, {1, "Grunschka"}, {29, "cleric 4"}};
     temple_font.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0xA8, 31};

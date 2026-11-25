@@ -523,6 +523,16 @@ if(OPENGOLD_BUILD_TESTS)
         ENVIRONMENT "OPENGOLD_CHAMPIONS_WINNERS=${CMAKE_CURRENT_BINARY_DIR}/champions-earned-winners.ogs;OPENGOLD_WINNERS_SAVE=${CMAKE_CURRENT_BINARY_DIR}/death-knights-earned-winners.ogs")
     set_tests_properties(opengold_champions_walk PROPERTIES TIMEOUT 1800
         SKIP_REGULAR_EXPRESSION "files are not here")
+    # Dark Queen's earned campaign begins with the party Death Knights' earned
+    # ending banked at its win and earns the Native ending on Easy, each lost
+    # fight replayed with fresh dice as the other earned routes do. It banks
+    # its own winners, and writes the party as it stood when victory was
+    # shown, before Continue, which must resave byte for byte.
+    add_test(NAME opengold_dark_queen_earned_ending COMMAND opengold_gold_box_games_tests --dark-queen-earned-ending)
+    set_tests_properties(opengold_dark_queen_earned_ending PROPERTIES TIMEOUT 28800
+        SKIP_REGULAR_EXPRESSION "files are not here|Champions winners are not supplied"
+        FIXTURES_REQUIRED death_knights_earned_winners FIXTURES_SETUP dark_queen_earned_winners
+        ENVIRONMENT "OPENGOLD_DEATH_KNIGHTS_WINNERS=${CMAKE_CURRENT_BINARY_DIR}/death-knights-earned-winners.ogs;OPENGOLD_ROUTE_DIFFICULTY=easy;OPENGOLD_WINNERS_SAVE=${CMAKE_CURRENT_BINARY_DIR}/dark-queen-earned-winners.ogs;OPENGOLD_ROUTE_WINNING_PARTY=${CMAKE_CURRENT_BINARY_DIR}/dark-queen-winning-party.ogs")
     # Curse's story, beat by beat, with a party made for it (plan step 7).
     add_test(NAME opengold_curse_route COMMAND opengold_gold_box_games_tests --curse-route)
     # About 1,600 s on Windows, past CTest's default 1,500 s.
