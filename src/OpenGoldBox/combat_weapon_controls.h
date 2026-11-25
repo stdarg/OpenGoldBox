@@ -2,7 +2,10 @@
 #define OPENGOLDBOX_COMBAT_WEAPON_CONTROLS_H
 #include "godot_nodes.h"
 #include <algorithm>
+#include <array>
 #include <cctype>
+#include <string>
+#include <string_view>
 #include "opengold/rules.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/label.hpp>
@@ -52,6 +55,89 @@ bool refresh_weapons(godot::Node &root, const opengold::rules::CombatantView *ac
     return changed;
 }
 
+// A bonus action's label by its verb, for the verbs whose label is fixed; the
+// rest carry their option, cost, form or slot and are labelled where offered.
+struct BonusActionLabel
+{
+    std::string_view verb;
+    std::string_view label;
+};
+
+inline constexpr std::array bonus_action_labels{
+    BonusActionLabel{"metamagic_cancel", "Metamagic: cancel"},
+    BonusActionLabel{"leave_wild_shape", "Leave Wild Shape"},
+    BonusActionLabel{"cunning_dash", "Dash"},
+    BonusActionLabel{"cunning_disengage", "Disengage"},
+    BonusActionLabel{"cunning_hide", "Hide"},
+    BonusActionLabel{"lay_on_hands", "Lay On Hands"},
+    BonusActionLabel{"lay_on_hands_cure", "Lay On Hands: cure Poisoned (5)"},
+    BonusActionLabel{"lay_on_hands_restore", "Lay On Hands: Restoring Touch (5 per condition)"},
+    BonusActionLabel{"rage", "Rage"},
+    BonusActionLabel{"ignite_flame_tongue", "Flame Tongue: light"},
+    BonusActionLabel{"douse_flame_tongue", "Flame Tongue: douse"},
+    BonusActionLabel{"innate_sorcery", "Innate Sorcery"},
+    BonusActionLabel{"bardic_inspiration", "Bardic Inspiration"},
+    BonusActionLabel{"create_slot_1", "Font of Magic: create a level-1 slot (2 Sorcery Points)"},
+    BonusActionLabel{"create_slot_2", "Font of Magic: create a level-2 slot (3 Sorcery Points)"},
+    BonusActionLabel{"convert_slot_1", "Font of Magic: a level-1 slot into 1 Sorcery Point"},
+    BonusActionLabel{"convert_slot_2", "Font of Magic: a level-2 slot into 2 Sorcery Points"},
+    BonusActionLabel{"martial_arts", "Unarmed Strike"},
+    BonusActionLabel{"flurry_of_blows", "Flurry of Blows"},
+    BonusActionLabel{"flurry_addle", "Flurry of Blows: Addle"},
+    BonusActionLabel{"flurry_push", "Flurry of Blows: Push"},
+    BonusActionLabel{"flurry_topple", "Flurry of Blows: Topple"},
+    BonusActionLabel{"patient_defense", "Patient Defense: Disengage"},
+    BonusActionLabel{"patient_defense_focus", "Patient Defense: Disengage and Dodge (1 Focus)"},
+    BonusActionLabel{"step_of_the_wind", "Step of the Wind: Dash"},
+    BonusActionLabel{"step_of_the_wind_focus", "Step of the Wind: Disengage and Dash (1 Focus)"},
+    BonusActionLabel{"step_of_the_wind_carry",
+                     "Step of the Wind: Disengage and Dash, carrying an ally (1 Focus)"},
+    BonusActionLabel{"extend_rage", "Extend Rage"},
+    BonusActionLabel{"intimidating_presence", "Intimidating Presence"},
+    BonusActionLabel{"intimidating_presence_rage", "Intimidating Presence (1 Rage)"},
+    BonusActionLabel{"natures_veil", "Nature's Veil"},
+    BonusActionLabel{"woodland_disengage", "Disengage (Conjure Woodland Beings)"},
+    BonusActionLabel{"divine_smite_free", "Divine Smite (Paladin's Smite)"},
+    BonusActionLabel{"divine_smite", "Divine Smite"},
+    BonusActionLabel{"searing_smite", "Searing Smite"},
+    BonusActionLabel{"shining_smite", "Shining Smite"},
+    BonusActionLabel{"ensnaring_strike", "Ensnaring Strike"},
+    BonusActionLabel{"steady_aim", "Steady Aim"}};
+
+// `offered_label(verb, fallback)` is the label of the offered command with
+// that verb, or `fallback`; `wild_shape_label(verb)` names a Wild Shape form.
+template <class OfferedLabel, class WildShapeLabel>
+std::string bonus_action_label(const std::string &verb, const OfferedLabel &offered_label,
+                               const WildShapeLabel &wild_shape_label)
+{
+    for (const auto &fixed : bonus_action_labels)
+    {
+        if (verb == fixed.verb)
+        {
+            return std::string(fixed.label);
+        }
+    }
+    // Metamagic and Wild Shape labels carry their option, cost or form, so
+    // they come from the offered command.
+    if (verb.starts_with("metamagic_"))
+    {
+        return offered_label(verb, "Metamagic");
+    }
+    if (verb.starts_with("wild_shape_"))
+    {
+        return offered_label(verb, wild_shape_label(verb));
+    }
+    if (verb.starts_with("divine_smite_"))
+    {
+        return "Divine Smite (level " + verb.substr(13) + " slot)";
+    }
+    if (verb.starts_with("shining_smite_"))
+    {
+        return "Shining Smite (level " + verb.substr(14) + " slot)";
+    }
+    return offered_label(verb, verb);
+}
+
 template <class Text, class Render>
 bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantView *actor,
                            const std::vector<opengold::rules::Command> &offered, bool player,
@@ -79,8 +165,6 @@ bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantVi
             }
             return "Wild Shape: " + form;
         };
-        // Metamagic and Wild Shape labels carry their option, cost or form, so
-        // they come from the offered command.
         const auto offered_label = [&](const std::string &verb,
                                        const std::string &fallback) -> std::string
         {
@@ -95,59 +179,15 @@ bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantVi
         };
         for (const auto &verb : actor->bonus_actions)
         {
+            const bool offered_now = std::any_of(offered.begin(), offered.end(),
+                                                 [&](const auto &c)
+                                                 {
+                                                     return c.actor == actor->id && c.verb == verb;
+                                                 });
             options.push_back({0,
                                verb,
-        {
-            verb == "metamagic_cancel"     ? "Metamagic: cancel"
-            : verb.starts_with("metamagic_") ? offered_label(verb, "Metamagic")
-            : verb.starts_with("wild_shape_") ? offered_label(verb, wild_shape_label(verb))
-            : verb == "leave_wild_shape"  ? "Leave Wild Shape"
-            : verb == "cunning_dash"        ? "Dash"
-            : verb == "cunning_disengage" ? "Disengage"
-            : verb == "cunning_hide"      ? "Hide"
-            : verb == "lay_on_hands"      ? "Lay On Hands"
-            : verb == "lay_on_hands_cure" ? "Lay On Hands: cure Poisoned (5)"
-            : verb == "lay_on_hands_restore" ? "Lay On Hands: Restoring Touch (5 per condition)"
-            : verb == "rage"              ? "Rage"
-            : verb == "ignite_flame_tongue" ? "Flame Tongue: light"
-            : verb == "douse_flame_tongue" ? "Flame Tongue: douse"
-            : verb == "innate_sorcery"    ? "Innate Sorcery"
-            : verb == "bardic_inspiration" ? "Bardic Inspiration"
-            : verb == "create_slot_1"     ? "Font of Magic: create a level-1 slot (2 Sorcery Points)"
-            : verb == "create_slot_2"     ? "Font of Magic: create a level-2 slot (3 Sorcery Points)"
-            : verb == "convert_slot_1"    ? "Font of Magic: a level-1 slot into 1 Sorcery Point"
-            : verb == "convert_slot_2"    ? "Font of Magic: a level-2 slot into 2 Sorcery Points"
-            : verb == "martial_arts"      ? "Unarmed Strike"
-            : verb == "flurry_of_blows"   ? "Flurry of Blows"
-            : verb == "flurry_addle"      ? "Flurry of Blows: Addle"
-            : verb == "flurry_push"       ? "Flurry of Blows: Push"
-            : verb == "flurry_topple"     ? "Flurry of Blows: Topple"
-            : verb == "patient_defense"   ? "Patient Defense: Disengage"
-            : verb == "patient_defense_focus" ? "Patient Defense: Disengage and Dodge (1 Focus)"
-            : verb == "step_of_the_wind"  ? "Step of the Wind: Dash"
-            : verb == "step_of_the_wind_focus" ? "Step of the Wind: Disengage and Dash (1 Focus)"
-            : verb == "step_of_the_wind_carry" ? "Step of the Wind: Disengage and Dash, carrying an ally (1 Focus)"
-            : verb == "extend_rage"       ? "Extend Rage"
-            : verb == "intimidating_presence" ? "Intimidating Presence"
-            : verb == "intimidating_presence_rage" ? "Intimidating Presence (1 Rage)"
-            : verb == "natures_veil"      ? "Nature's Veil"
-            : verb == "woodland_disengage" ? "Disengage (Conjure Woodland Beings)"
-            : verb == "divine_smite_free" ? "Divine Smite (Paladin's Smite)"
-            : verb == "divine_smite"      ? "Divine Smite"
-            : verb == "searing_smite"     ? "Searing Smite"
-            : verb == "shining_smite"     ? "Shining Smite"
-            : verb.starts_with("divine_smite_") ? "Divine Smite (level " + verb.substr(13) + " slot)"
-            : verb.starts_with("shining_smite_") ? "Shining Smite (level " + verb.substr(14) + " slot)"
-            : verb == "ensnaring_strike"  ? "Ensnaring Strike"
-            : verb == "steady_aim"        ? "Steady Aim"
-            : offered_label(verb, verb),
-            {}
-        },
-        std::any_of(offered.begin(), offered.end(),
-                    [&](const auto & c)
-        {
-            return c.actor == actor->id && c.verb == verb;
-        })});
+                               {bonus_action_label(verb, offered_label, wild_shape_label), {}},
+                               offered_now});
         }
         options.insert(options.end(), actor->light_attacks.begin(), actor->light_attacks.end());
     }

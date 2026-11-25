@@ -11,6 +11,8 @@
 #include <godot_cpp/classes/scroll_container.hpp>
 #include <godot_cpp/classes/v_box_container.hpp>
 #include <algorithm>
+#include <array>
+#include <string_view>
 #include <vector>
 
 namespace presentation
@@ -20,111 +22,57 @@ inline godot::String training_string(std::string_view s)
     return godot::String::utf8(s.data(), s.size());
 }
 
+// The label of a training choice group's source (its class, class feature,
+// background or species feature), by the group's stable ID.
+struct TrainingSourceLabel
+{
+    std::string_view id;
+    const char *label;
+};
+
+inline constexpr std::array training_source_labels{
+    TrainingSourceLabel{"class:fighter:fighting_style", N_("Fighter Fighting Style")},
+    TrainingSourceLabel{"class:barbarian", N_("Barbarian class")},
+    TrainingSourceLabel{"class:bard", N_("Bard class")},
+    TrainingSourceLabel{"class:cleric", N_("Cleric class")},
+    TrainingSourceLabel{"class:cleric:divine_order", N_("Cleric Divine Order")},
+    TrainingSourceLabel{"class:druid", N_("Druid class")},
+    TrainingSourceLabel{"class:druid:primal_order", N_("Druid Primal Order")},
+    TrainingSourceLabel{"class:fighter", N_("Fighter class")},
+    TrainingSourceLabel{"class:monk", N_("Monk class")},
+    TrainingSourceLabel{"class:paladin", N_("Paladin class")},
+    TrainingSourceLabel{"class:ranger", N_("Ranger class")},
+    TrainingSourceLabel{"class:sorcerer", N_("Sorcerer class")},
+    TrainingSourceLabel{"class:warlock", N_("Warlock class")},
+    TrainingSourceLabel{"class:wizard", N_("Wizard class")},
+    TrainingSourceLabel{"class:rogue", N_("Rogue class")},
+    TrainingSourceLabel{"class:rogue:expertise", N_("Rogue Expertise")},
+    TrainingSourceLabel{"background:acolyte", N_("Acolyte background")},
+    TrainingSourceLabel{"background:soldier", N_("Soldier background")},
+    TrainingSourceLabel{"background:sage", N_("Sage background")},
+    TrainingSourceLabel{"class:wizard:scholar", N_("Wizard Scholar")},
+    TrainingSourceLabel{"background:criminal", N_("Criminal background")},
+    TrainingSourceLabel{"species:human:skillful", N_("Human Skillful")},
+    TrainingSourceLabel{"species:human:skilled", N_("Skilled feat")},
+    TrainingSourceLabel{"species:elf:keen_senses", N_("Elf Keen Senses")}};
+
 template <class Translate> godot::String training_source(std::string_view id, const Translate &tr)
 {
-    if (id == "class:fighter:fighting_style")
+    for (const auto &source : training_source_labels)
     {
-        return tr(N_("Fighter Fighting Style"));
+        if (source.id == id)
+        {
+            return tr(source.label);
+        }
     }
-    if (id == "class:barbarian")
+    // A weapon mastery group is its class's, at the fourth level or the first.
+    for (const std::string_view mastery : {":weapon_mastery:4", ":weapon_mastery"})
     {
-        return tr(N_("Barbarian class"));
-    }
-    if (id == "class:bard")
-    {
-        return tr(N_("Bard class"));
-    }
-    if (id == "class:cleric")
-    {
-        return tr(N_("Cleric class"));
-    }
-    if (id == "class:cleric:divine_order")
-    {
-        return tr(N_("Cleric Divine Order"));
-    }
-    if (id == "class:druid")
-    {
-        return tr(N_("Druid class"));
-    }
-    if (id == "class:druid:primal_order")
-    {
-        return tr(N_("Druid Primal Order"));
-    }
-    if (id.ends_with(":weapon_mastery:4"))
-    {
-        return training_source(id.substr(0, id.size() - 17), tr) + " / " + tr(N_("Weapon Mastery"));
-    }
-    if (id.ends_with(":weapon_mastery"))
-    {
-        return training_source(id.substr(0, id.size() - 15), tr) + " / " + tr(N_("Weapon Mastery"));
-    }
-    if (id == "class:fighter")
-    {
-        return tr(N_("Fighter class"));
-    }
-    if (id == "class:monk")
-    {
-        return tr(N_("Monk class"));
-    }
-    if (id == "class:paladin")
-    {
-        return tr(N_("Paladin class"));
-    }
-    if (id == "class:ranger")
-    {
-        return tr(N_("Ranger class"));
-    }
-    if (id == "class:sorcerer")
-    {
-        return tr(N_("Sorcerer class"));
-    }
-    if (id == "class:warlock")
-    {
-        return tr(N_("Warlock class"));
-    }
-    if (id == "class:wizard")
-    {
-        return tr(N_("Wizard class"));
-    }
-    if (id == "class:rogue")
-    {
-        return tr(N_("Rogue class"));
-    }
-    if (id == "class:rogue:expertise")
-    {
-        return tr(N_("Rogue Expertise"));
-    }
-    if (id == "background:acolyte")
-    {
-        return tr(N_("Acolyte background"));
-    }
-    if (id == "background:soldier")
-    {
-        return tr(N_("Soldier background"));
-    }
-    if (id == "background:sage")
-    {
-        return tr(N_("Sage background"));
-    }
-    if (id == "class:wizard:scholar")
-    {
-        return tr(N_("Wizard Scholar"));
-    }
-    if (id == "background:criminal")
-    {
-        return tr(N_("Criminal background"));
-    }
-    if (id == "species:human:skillful")
-    {
-        return tr(N_("Human Skillful"));
-    }
-    if (id == "species:human:skilled")
-    {
-        return tr(N_("Skilled feat"));
-    }
-    if (id == "species:elf:keen_senses")
-    {
-        return tr(N_("Elf Keen Senses"));
+        if (id.ends_with(mastery))
+        {
+            return training_source(id.substr(0, id.size() - mastery.size()), tr) + " / " +
+                   tr(N_("Weapon Mastery"));
+        }
     }
     if (id.starts_with("species:") && id.ends_with(":kept"))
     {
