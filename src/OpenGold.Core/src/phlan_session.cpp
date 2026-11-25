@@ -174,7 +174,7 @@ namespace
 // The other games keep the flags and leave the result in a cell.
 [[nodiscard]] std::optional<EclConditions> vga_combat_conditions(GoldBoxGame game, bool party_stood)
 {
-    if (!vga_engine(game) && game != GoldBoxGame::dark_queen_of_krynn)
+    if (!vga_engine(game))
     {
         return std::nullopt;
     }
@@ -558,7 +558,7 @@ void RolfTourSession::configure_town()
     bind_range(0x9800, 0x98FF);
     // The 256-color engine's own memory: its game cells and the current
     // character's record (docs/games/darkness.md, Script memory).
-    if (vga_engine(game()) || game() == GoldBoxGame::dark_queen_of_krynn)
+    if (vga_engine(game()))
     {
         constexpr std::uint16_t first_cell = 0x0001, last_cell = 0x0800;
         for (auto a = first_cell; a <= last_cell; ++a)
@@ -632,7 +632,7 @@ void RolfTourSession::configure_town()
     {
         machine_.enable_host(vga_play_sound_command);
     }
-    if (vga_engine(game()) || game() == GoldBoxGame::dark_queen_of_krynn)
+    if (vga_engine(game()))
     {
         // Address 0 lies outside the 256-color engine's script memory: it
         // reads 0 and keeps nothing (its GbvmZone), as Kalistes' Temple's OR
@@ -943,7 +943,7 @@ EclHostReply RolfTourSession::character_reply(PartySlot slot) const
                               &EclMemoryWrite::address)
                 ->value = 0x81;
         }
-        if (vga_engine(game()) || game() == GoldBoxGame::dark_queen_of_krynn)
+        if (vga_engine(game()))
         {
             add_vga_record(slot, reply);
         }
@@ -3173,7 +3173,7 @@ void RolfTourSession::try_locked_door(DoorMethod method)
 std::string RolfTourSession::treasure_identity(std::uint16_t address) const
 {
     // A TREASURE instruction is identified by its script and original address.
-    static constexpr char digits[] = "0123456789abcdef";
+    constexpr std::string_view digits = "0123456789abcdef";
     std::string hex;
     for (int shift = 12; shift >= 0; shift -= 4)
     {
@@ -3586,6 +3586,25 @@ void RolfTourSession::notice(std::string message)
     snapshot_.phase = TourPhase::awaiting_continue;
     snapshot_.choices = {"Continue"};
     snapshot_.continue_ticket = ++next_ticket_;
+    ++snapshot_.revision;
+}
+
+void RolfTourSession::await_continue(std::uint64_t request)
+{
+    damage_request_ = request;
+    snapshot_.phase = TourPhase::awaiting_continue;
+    snapshot_.choices = {"Continue"};
+    snapshot_.continue_ticket = ++next_ticket_;
+    ++snapshot_.revision;
+}
+
+void RolfTourSession::enter_shop(std::uint64_t request)
+{
+    shop_request_ = request;
+    snapshot_.phase = TourPhase::shopping;
+    snapshot_.continue_ticket = ++next_ticket_;
+    snapshot_.choices.clear();
+    snapshot_.diagnostic.clear();
     ++snapshot_.revision;
 }
 
@@ -4047,7 +4066,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         // Darkness's and Treasures' reconstructions): FIND NPC's high bit
         // left on selects the member, as Myth Drannor's way out does with
         // Nacacia (ECL1:66 0x8658).
-        if (arg(0) >= 128 && (vga_engine(game()) || game() == GoldBoxGame::dark_queen_of_krynn))
+        if (arg(0) >= 128 && vga_engine(game()))
         {
             read_character();
             selected_character_ = PartySlot{static_cast<unsigned>(arg(0) & 127)};
@@ -5048,12 +5067,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 treasure_ = staged_treasure_->items;
                 staged_treasure_.reset();
             }
-            shop_request_ = request.id;
-            snapshot_.phase = TourPhase::shopping;
-            snapshot_.continue_ticket = ++next_ticket_;
-            snapshot_.choices.clear();
-            snapshot_.diagnostic.clear();
-            ++snapshot_.revision;
+            enter_shop(request.id);
             return true;
         }
         if (staged_treasure_)
@@ -5365,12 +5379,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             read_character();
             only = campaign_->state().slots.at(selected_character_.index);
         }
-        const unsigned award_unit =
-            game() == GoldBoxGame::pools_of_darkness ||
-                    game() == GoldBoxGame::treasures_of_the_savage_frontier ||
-                    game() == GoldBoxGame::dark_queen_of_krynn
-                ? 100
-                : 1;
+        const unsigned award_unit = vga_engine(game()) ? 100 : 1;
         campaign_->grant_script_experience(arg(1) * award_unit, only);
         const auto line = whole_party || !only ? std::string("The party gains experience.")
                                                : campaign_->member(only).character.sheet().name +
@@ -5394,7 +5403,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     }
     case 55:
     {
-        if (vga_engine(game()) || game() == GoldBoxGame::dark_queen_of_krynn)
+        if (vga_engine(game()))
         {
             reply = vga_find_npc(request.arguments.at(0).text(), address_arg(1));
             break;
@@ -5457,15 +5466,11 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     }
     case 46:
     {
-        if (vga_engine(game()) || game() == GoldBoxGame::dark_queen_of_krynn)
+        if (vga_engine(game()))
         {
             read_character();
             vga_damage(request);
-            damage_request_ = request.id;
-            snapshot_.phase = TourPhase::awaiting_continue;
-            snapshot_.choices = {"Continue"};
-            snapshot_.continue_ticket = ++next_ticket_;
-            ++snapshot_.revision;
+            await_continue(request.id);
             return true;
         }
         // Arrow volleys: arg(0) arrows of arg(1)d arg(2) + arg(3). A high bit
@@ -5587,11 +5592,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             ++snapshot_.revision;
             return true;
         }
-        damage_request_ = request.id;
-        snapshot_.phase = TourPhase::awaiting_continue;
-        snapshot_.choices = {"Continue"};
-        snapshot_.continue_ticket = ++next_ticket_;
-        ++snapshot_.revision;
+        await_continue(request.id);
         return true;
     }
     case 40:
@@ -5697,11 +5698,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                                : "You have won.";
             victory_ = true;
             snapshot_.game_won = true;
-            damage_request_ = request.id;
-            snapshot_.phase = TourPhase::awaiting_continue;
-            snapshot_.choices = {"Continue"};
-            snapshot_.continue_ticket = ++next_ticket_;
-            ++snapshot_.revision;
+            await_continue(request.id);
             return true;
         }
         if (game() == GoldBoxGame::treasures_of_the_savage_frontier &&
@@ -5911,18 +5908,7 @@ void RolfTourSession::show_hall(std::vector<Message> notice)
         }
         add({"Leave", {}}, {HallChoice::Kind::leave});
     }
-    snapshot_.host_dialogue = dialogue;
-    snapshot_.dialogue = english(dialogue);
-    snapshot_.host_choices = choices;
-    snapshot_.choices.clear();
-    for (const auto &choice : choices)
-    {
-        snapshot_.choices.push_back(english(choice));
-    }
-    snapshot_.diagnostic.clear();
-    snapshot_.phase = TourPhase::awaiting_continue;
-    snapshot_.continue_ticket = ++next_ticket_;
-    ++snapshot_.revision;
+    show_hall_menu(std::move(dialogue), std::move(choices));
 }
 
 bool RolfTourSession::choose_at_hall(std::size_t choice)
@@ -6475,12 +6461,7 @@ void RolfTourSession::open_own_shop()
         }
         choose_shopper();
         treasure_ = shop_stocks_[n];
-        shop_request_ = 0;
-        snapshot_.phase = TourPhase::shopping;
-        snapshot_.continue_ticket = ++next_ticket_;
-        snapshot_.choices.clear();
-        snapshot_.diagnostic.clear();
-        ++snapshot_.revision;
+        enter_shop(0);
         return;
     }
 }
@@ -6503,11 +6484,7 @@ void RolfTourSession::choose_shopper()
 void RolfTourSession::open_temple(std::uint64_t request)
 {
     // The temple data/shops places on this square, else the original's list.
-    auto offerings = opengold::original_temple_offerings(
-        game() != GoldBoxGame::pool_of_radiance,
-        game() == GoldBoxGame::pools_of_darkness ||
-            game() == GoldBoxGame::treasures_of_the_savage_frontier ||
-            game() == GoldBoxGame::dark_queen_of_krynn);
+    auto offerings = opengold::original_temple_offerings(game());
     for (const auto &site : temples_)
     {
         if (standing_at(site.archive, site.record, site.markers))
@@ -6612,18 +6589,7 @@ void RolfTourSession::show_temple(std::vector<Message> notice)
         }
         add({"Leave", {}}, {TempleChoice::Kind::leave});
     }
-    snapshot_.host_dialogue = dialogue;
-    snapshot_.dialogue = english(dialogue);
-    snapshot_.host_choices = choices;
-    snapshot_.choices.clear();
-    for (const auto &choice : choices)
-    {
-        snapshot_.choices.push_back(english(choice));
-    }
-    snapshot_.diagnostic.clear();
-    snapshot_.phase = TourPhase::awaiting_continue;
-    snapshot_.continue_ticket = ++next_ticket_;
-    ++snapshot_.revision;
+    show_hall_menu(std::move(dialogue), std::move(choices));
 }
 
 bool RolfTourSession::choose_at_temple(std::size_t choice)

@@ -270,7 +270,7 @@ void catalog_checks()
               temple_service_named("heal") == TempleService::heal &&
               !temple_service_named("cure_everything"),
           "Services are named by the data's ids");
-    const auto curse = original_temple_offerings(true);
+    const auto curse = original_temple_offerings(GoldBoxGame::curse_of_the_azure_bonds);
     check(curse.size() == 11 && curse[5].service == TempleService::heal &&
               curse[5].price_gp == 5000,
           "Curse's temple offers Heal for 5,000 gp after Cure Critical Wounds");

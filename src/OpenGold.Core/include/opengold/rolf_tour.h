@@ -888,7 +888,7 @@ class RolfTourSession
     // The player pressed a key on the close-up; returns false when none is showing.
     bool start_encounter();
 
-    bool resolve_combat(const rules::Snapshot &outcome);
+    bool resolve_combat(const rules::Snapshot &result);
     // Reject a pending handoff before combat starts, using the event rollback path.
     bool reject_combat(std::string diagnostic);
 
@@ -1706,6 +1706,12 @@ class RolfTourSession
     void bind_pose(PartyPose pose);
     bool move_party(ExplorationCommand command);
     void notice(std::string message);
+    // Waits for Continue on what the snapshot shows, then answers the script's
+    // `request` (a DAMAGE or a program's report).
+    void await_continue(std::uint64_t request);
+    // Opens the shop screen on the stock in treasure_, answering the script's
+    // `request` when the party leaves, or 0 for a shop the party walked into.
+    void enter_shop(std::uint64_t request);
     // Each arrow attacks a random conscious active member; returns a report line for each.
     [[nodiscard]] std::string shoot_arrows(unsigned arrows, std::string_view missile,
                                            const rules::HazardAttack &arrow);

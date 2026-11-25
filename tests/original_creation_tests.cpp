@@ -2739,10 +2739,10 @@ void darkness_restoration_gives_levels_back()
     check(party.member(fighter).character.sheet().original->class_levels[2] == 14 &&
               !party.temple_service_helps(fighter, rules::TempleService::restoration),
           "The temple's Restoration gives the last drained level back");
-    const auto offered = original_temple_offerings(true, true);
+    const auto offered = original_temple_offerings(GoldBoxGame::pools_of_darkness);
     check(offered.back().service == rules::TempleService::restoration &&
               offered.back().price_gp == 0 &&
-              std::ranges::none_of(original_temple_offerings(true),
+              std::ranges::none_of(original_temple_offerings(GoldBoxGame::curse_of_the_azure_bonds),
                                    [](const TempleOffering &offering)
                                    {
                                        return offering.service == rules::TempleService::restoration;

@@ -1,5 +1,6 @@
 #ifndef OPENGOLD_TEMPLE_CATALOG_H
 #define OPENGOLD_TEMPLE_CATALOG_H
+#include "opengold/gold_box_game.h"
 #include "opengold/rules.h"
 #include <array>
 #include <cstdint>
@@ -79,12 +80,14 @@ temple_service_named(std::string_view id)
 }
 
 // A temple the data does not name offers every service of the game at the
-// original's price: Curse's adds Heal after Cure Critical Wounds (ovr005,
-// temple_heal in its reconstruction), and Pools of Darkness's and
-// Treasures' Restoration last (their HealMenu).
+// original's price: the games after Pool of Radiance add Heal after Cure
+// Critical Wounds (Curse's ovr005, temple_heal in its reconstruction), and
+// the 256-color engine's games Restoration last (their HealMenu).
 [[nodiscard]] inline std::vector<TempleOffering>
-original_temple_offerings(bool offers_heal = false, bool offers_restoration = false)
+original_temple_offerings(GoldBoxGame game = GoldBoxGame::pool_of_radiance)
 {
+    const bool offers_heal = game != GoldBoxGame::pool_of_radiance;
+    const bool offers_restoration = vga_engine(game);
     std::vector<TempleOffering> offerings;
     for (const auto &info : temple_services)
     {

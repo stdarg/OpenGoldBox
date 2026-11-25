@@ -179,12 +179,7 @@ void RolfTourSession::open_vga_store(const EclRequest &request)
     }
     choose_shopper();
     read_character();
-    shop_request_ = request.id;
-    snapshot_.phase = TourPhase::shopping;
-    snapshot_.continue_ticket = ++next_ticket_;
-    snapshot_.choices.clear();
-    snapshot_.diagnostic.clear();
-    ++snapshot_.revision;
+    enter_shop(request.id);
 }
 
 bool RolfTourSession::vga_area_map() const
@@ -757,11 +752,7 @@ void RolfTourSession::treasures_program(const EclRequest &request, unsigned numb
     {
         repair_party();
     }
-    damage_request_ = request.id;
-    snapshot_.phase = TourPhase::awaiting_continue;
-    snapshot_.choices = {"Continue"};
-    snapshot_.continue_ticket = ++next_ticket_;
-    ++snapshot_.revision;
+    await_continue(request.id);
 }
 
 std::string RolfTourSession::next_luck_reading()
