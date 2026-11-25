@@ -44,7 +44,7 @@ struct Weapon
         cost_cp{};          // Exact quarter-pounds and copper pieces; dash weight is zero.
     std::string_view label; // Human-readable source label, separate from the saved key.
 
-    bool heavy_disadvantage(const rules::AbilityArray<int> &scores) const
+    [[nodiscard]] bool heavy_disadvantage(const rules::AbilityArray<int> &scores) const
     {
         return heavy && scores[ranged ? rules::Ability::dexterity : rules::Ability::strength] < 13;
     } // SRD 5.2.1 p.89: weapon category determines the ability.

@@ -634,6 +634,8 @@ void apply_searing_smite(EffectState &effects, EffectSource source, std::string 
                               EffectKind::searing_smite, dc, 60000, 0});
 }
 
+namespace
+{
 // The largest value a benefit carries: a damage type for Resistance, a
 // hidden creature's Stealth total, Aid's raise from a level-9 slot, else a
 // bonus of at most 10.
@@ -679,6 +681,7 @@ int benefit_value_limit(EffectKind kind)
            : kind == EffectKind::heightened  ? static_cast<int>(spell_table.size()) - 1
                                              : 10;
 }
+} // namespace
 
 unsigned benefit_duration_ms(EffectKind kind)
 {

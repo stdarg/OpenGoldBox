@@ -24,7 +24,7 @@ struct Armor
     bool stealth_disadvantage{};
     unsigned weight_pounds{}, cost_cp{}, don_seconds{}, doff_seconds{};
 
-    int dexterity_contribution(int modifier) const
+    [[nodiscard]] int dexterity_contribution(int modifier) const
     {
         return category == ArmorCategory::light    ? modifier
                : category == ArmorCategory::medium ? std::min(2, modifier)

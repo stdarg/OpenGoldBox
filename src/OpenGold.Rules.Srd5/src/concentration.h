@@ -30,7 +30,7 @@ struct Concentration
 class ConcentrationState
 {
   public:
-    const std::optional<Concentration> &active() const
+    [[nodiscard]] const std::optional<Concentration> &active() const
     {
         return active_;
     }

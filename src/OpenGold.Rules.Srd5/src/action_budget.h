@@ -19,7 +19,7 @@ struct ActionBudget
     // Breath Weapon: one of the action's attacks became an exhalation.
     bool exhaled{};
 
-    bool available(bool magic = false) const noexcept
+    [[nodiscard]] bool available(bool magic = false) const noexcept
     {
         return normal || (!magic && surge);
     }

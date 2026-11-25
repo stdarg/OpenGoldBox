@@ -9,12 +9,12 @@ namespace opengold::srd5::detail
 {
 using namespace rules;
 
+namespace
+{
 // One class's spells at its class level (defined below).
 SpellAccess class_spell_access(std::span<const FeatureGrant> grants, CharacterClass klass,
                                unsigned level, std::span<const std::string> prepared);
 
-namespace
-{
 constexpr std::string_view source = "class:wizard:spellcasting";
 // A spell a Wizard copied into its spellbook from a scroll (MAGIC-6).
 constexpr std::string_view copied_source = "item:scroll";
@@ -1239,6 +1239,8 @@ starting_spell_grants(CharacterClass klass, const std::optional<std::vector<std:
     return result;
 }
 
+namespace
+{
 // A class's own spells, without Magic Initiate's.
 SpellAccess class_spell_access(std::span<const FeatureGrant> grants, CharacterClass klass,
                                unsigned level, std::span<const std::string> prepared);
@@ -1248,8 +1250,6 @@ SpellChoiceOptions class_spell_choice_options(const CharacterSheet &sheet, Chara
                                               std::span<const std::string> always,
                                               SpellChoiceContext context);
 
-namespace
-{
 // Whether a class casts spells: a Wizard, or a class preparing from its list.
 bool casts_spells(CharacterClass klass)
 {
@@ -1426,6 +1426,8 @@ FeatureGrant copied_spell_grant(std::string_view spell, unsigned level)
     return grant(spell, level, copied_source);
 }
 
+namespace
+{
 SpellAccess class_spell_access(std::span<const FeatureGrant> grants, CharacterClass klass,
                                unsigned level, std::span<const std::string> prepared)
 {
@@ -1521,8 +1523,6 @@ SpellAccess class_spell_access(std::span<const FeatureGrant> grants, CharacterCl
     return result;
 }
 
-namespace
-{
 // A multiclass character prepares a spell for one class only (MULTI-1), so a
 // class's preparation leaves out what its other classes have prepared.
 void leave_out_others_prepared(std::vector<CreationChoice> &preparation,
@@ -1613,6 +1613,8 @@ SpellChoiceOptions spell_choice_options(const CharacterSheet &sheet, SpellChoice
     return result;
 }
 
+namespace
+{
 // A class's options at its class `level`, for its own `prepared` spells;
 // `full` is all the character knows and `always` what it always has prepared.
 SpellChoiceOptions class_spell_choice_options(const CharacterSheet &sheet, CharacterClass klass,
@@ -1726,8 +1728,6 @@ SpellChoiceOptions class_spell_choice_options(const CharacterSheet &sheet, Chara
     return result;
 }
 
-namespace
-{
 // A multiclass character's spell choices (MULTI-1): a level-up's, for the
 // class it is taken in, whose prepared spells come without marks; a rest's,
 // for each spellcasting class, marked as recorded.

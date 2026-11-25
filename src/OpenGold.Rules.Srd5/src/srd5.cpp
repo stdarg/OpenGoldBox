@@ -21,6 +21,7 @@
 #include "magic_items.h"
 #include "worn_items.h"
 #include "effect_labels.h"
+#include "scope_guards.h"
 #include "opengold/item_key.h"
 #include "opengold/scroll_key.h"
 #include "opengold/srd5.h"
@@ -80,14 +81,16 @@ std::vector<HitDice> hit_dice(const CharacterSheet &sheet)
     return result;
 }
 
-int minimum_save_roll(int dc, int bonus) noexcept
+int minimum_save_roll(int difficulty_class, int bonus) noexcept
 {
-    return static_cast<int>(std::clamp(static_cast<long long>(dc) - bonus, 1LL, 21LL));
+    return static_cast<int>(
+        std::clamp(static_cast<long long>(difficulty_class) - bonus, 1LL, 21LL));
 }
 
-bool attack_hits(int natural, int bonus, int ac) noexcept
+bool attack_hits(int natural_roll, int bonus, int armor_class) noexcept
 {
-    return natural == 20 || (natural != 1 && static_cast<std::int64_t>(natural) + bonus >= ac);
+    return natural_roll == 20 ||
+           (natural_roll != 1 && static_cast<std::int64_t>(natural_roll) + bonus >= armor_class);
 }
 
 namespace
@@ -5564,10 +5567,10 @@ class Session final : public CombatSession
     Session(std::shared_ptr<const Content> content, Encounter encounter, std::uint64_t seed,
             bool restoring = false)
         : content_(std::move(content)), board_(std::move(encounter.battlefield)), rng_(seed),
-          scope_(encounter.scope), morale_(encounter.morale), daylight_(encounter.daylight),
+          scope_(encounter.scope), morale_(encounter.morale),
+          spares_the_party_(encounter.spares_the_party), daylight_(encounter.daylight),
           gold_(encounter.party_gold)
     {
-        spares_the_party_ = encounter.spares_the_party;
         if (!scope_)
         {
             throw std::runtime_error("Invalid encounter scope");
@@ -6072,7 +6075,7 @@ class Session final : public CombatSession
         attack,
         check
     };
-    int cutting_words(const Actor &roller, int margin, CutRoll roll = CutRoll::attack);
+    int cutting_words(const Actor &roller, int margin, CutRoll cut = CutRoll::attack);
     // Cutting Words' die taken from a damage roll of `amount` that would drop
     // `target`, on the Bard's side, to 0 Hit Points (CUT-1).
     int cut_damage(const Actor &roller, const Actor &target, int amount, detail::DamageType type);
@@ -6086,19 +6089,20 @@ class Session final : public CombatSession
     void dispatch(const Command &command);
     void answer_reaction(const Command &command);
 
-    bool effect_waiting() const
+    [[nodiscard]] bool effect_waiting() const
     {
         return mastery_.has_value() || !champion_offers_.empty();
     }
 
     // The statistics of the attack that earned the mastery, with the weapon it
     // was made with.
-    Definition mastery_definition(const PendingMastery &) const;
-    std::vector<EntityId> cleave_targets(const PendingMastery &,
-                                         std::optional<Cell> from = {}) const;
-    std::vector<Cell> push_cells(const PendingMastery &, std::optional<Cell> from = {}) const;
-    bool mastery_available(const PendingMastery &) const;
-    OptionalEffectChoice effect_choices() const;
+    [[nodiscard]] Definition mastery_definition(const PendingMastery &) const;
+    [[nodiscard]] std::vector<EntityId> cleave_targets(const PendingMastery &,
+                                                       std::optional<Cell> from = {}) const;
+    [[nodiscard]] std::vector<Cell> push_cells(const PendingMastery &,
+                                               std::optional<Cell> from = {}) const;
+    [[nodiscard]] bool mastery_available(const PendingMastery &) const;
+    [[nodiscard]] OptionalEffectChoice effect_choices() const;
     bool use_effect(const Command &);
     void finish_effects();
     // Clears the rest of the mover's route when a reaction left it illegal: a
@@ -6111,7 +6115,7 @@ class Session final : public CombatSession
                        bool critical);
     void validate_graze() const;
 
-    int graze_damage(const Actor &a, const Actor &target) const
+    [[nodiscard]] int graze_damage(const Actor &a, const Actor &target) const
     {
         const int cap = std::max(0, def(a).melee_ability);
         const std::array parts{detail::DamagePart{def(a).melee_type, cap}};
@@ -6132,37 +6136,38 @@ class Session final : public CombatSession
     void finish_check(const PendingCheck &check, int boost);
     void validate_check() const;
     bool frost_movement_{}, items_active_{}, physical_inventory_{}, light_active_{}, nick_active_{};
-    unsigned held_weapon(const Actor &) const;
+    [[nodiscard]] unsigned held_weapon(const Actor &) const;
     void activate_light();
-    bool light_eligible(const Actor &, unsigned item) const;
-    bool has_nick(const Actor &) const;
-    bool nick_weapon(const Actor &, unsigned item) const;
-    void qualify_light(Actor &, unsigned item);
-    Loadout item_loadout(const Actor &, unsigned item) const;
-    Loadout unarmed_loadout(const Actor &a) const;
+    [[nodiscard]] bool light_eligible(const Actor &, unsigned token) const;
+    [[nodiscard]] bool has_nick(const Actor &) const;
+    [[nodiscard]] bool nick_weapon(const Actor &, unsigned token) const;
+    void qualify_light(Actor &, unsigned token);
+    [[nodiscard]] Loadout item_loadout(const Actor &, unsigned token) const;
+    [[nodiscard]] Loadout unarmed_loadout(const Actor &a) const;
     void use_focus_movement(Actor &a, std::string_view verb, EntityId carried = 0);
     void use_font_of_magic(Actor &a, std::string_view verb);
     void ready_metamagic(Actor &a, std::string_view choice);
     void open_hand(const Actor &monk, Actor &target, std::string_view verb);
-    bool weapon_reaction(const Actor &, const Definition &) const;
+    [[nodiscard]] bool weapon_reaction(const Actor &, const Definition &) const;
     // Whether `a` could make an Opportunity Attack on a creature of `size`
     // leaving its reach from `from` to `to`.
-    bool has_weapon_reaction(const Actor &a, Cell from, Cell to, Footprint size) const;
+    [[nodiscard]] bool has_weapon_reaction(const Actor &a, Cell from, Cell to,
+                                           Footprint size) const;
     void validate_light() const;
-    Loadout thrown_loadout(const Actor &, std::string_view weapon) const;
-    void throw_weapon(Actor &, Actor &, unsigned item, bool light = false);
+    [[nodiscard]] Loadout thrown_loadout(const Actor &, std::string_view weapon) const;
+    void throw_weapon(Actor &, Actor &, unsigned token, bool light = false);
     // Whether a character carries an item it does not already wield.
-    bool carries(const Actor &, std::string_view key) const;
+    [[nodiscard]] bool carries(const Actor &, std::string_view key) const;
     void torch_attack(Actor &, Actor &);
     // A ranged weapon a character carries while wielding no ranged weapon, and
     // has the hands for; empty when there is none.
-    std::string_view carried_ranged_weapon(const Actor &) const;
+    [[nodiscard]] std::string_view carried_ranged_weapon(const Actor &) const;
     [[nodiscard]] std::string weapon_in_hand(const Actor &) const;
     void take_up_weapon(Actor &, const Command &) const;
-    rules::Missile ranged_missile(const Actor &) const;
+    [[nodiscard]] rules::Missile ranged_missile(const Actor &) const;
     // Whether taking off its shield would free a character to draw a carried
     // two-handed bow or crossbow.
-    bool shield_blocks_bow(const Actor &) const;
+    [[nodiscard]] bool shield_blocks_bow(const Actor &) const;
     // Fleeing the fight (the original's rule): a party member runs off the edge
     // of the field. Faster than every conscious enemy, it gets away; as fast as
     // the fastest, it has an even chance; slower than any, it cannot leave.
@@ -6208,8 +6213,9 @@ class Session final : public CombatSession
     void initialize_items();
     // The actor's statistics with what it holds, `selected` its weapon in
     // hand (its own selection when 0).
-    Definition equipped_definition(const Actor &a, const std::vector<HeldItemView> &items,
-                                   unsigned selected = 0) const;
+    [[nodiscard]] Definition equipped_definition(const Actor &a,
+                                                 const std::vector<HeldItemView> &items,
+                                                 unsigned selected = 0) const;
     std::vector<LogEntry> log_;
     std::vector<Cell> path_;
     std::size_t path_index_{};
@@ -6237,7 +6243,7 @@ class Session final : public CombatSession
         return flight_ ? actor(flight_->actor) : actors_[turn_];
     }
 
-    int mover_budget(const Actor &m) const
+    [[nodiscard]] int mover_budget(const Actor &m) const
     {
         return flight_ ? flight_->remaining : movement_left(m);
     }
@@ -6318,35 +6324,36 @@ class Session final : public CombatSession
     }
 
     // A Wall of Stone blocks sight; a Wall of Force or of Stone, every effect.
-    bool line_of_sight(Cell a, Cell b) const
+    [[nodiscard]] bool line_of_sight(Cell a, Cell b) const
     {
         return walled(false) ? detail::has_line_of_sight(walled_board(false), a, b)
                              : detail::has_line_of_sight(board_, a, b);
     }
 
-    bool line_of_effect(Cell a, Cell b) const
+    [[nodiscard]] bool line_of_effect(Cell a, Cell b) const
     {
         return walled(true) ? detail::has_line_of_sight(walled_board(true), a, b)
                             : line_of_sight(a, b);
     }
 
     // From any square of one creature to any of another's, or to a square.
-    bool line_of_sight(const Actor &a, const Actor &b) const
+    [[nodiscard]] bool line_of_sight(const Actor &a, const Actor &b) const
     {
         return lines_between(a, squares_of(b), false);
     }
 
-    bool line_of_sight(const Actor &a, Cell cell) const
+    [[nodiscard]] bool line_of_sight(const Actor &a, Cell cell) const
     {
         return lines_between(a, {cell}, false);
     }
 
-    bool line_of_effect(const Actor &a, const Actor &b) const
+    [[nodiscard]] bool line_of_effect(const Actor &a, const Actor &b) const
     {
         return lines_between(a, squares_of(b), true);
     }
 
-    bool lines_between(const Actor &a, const std::vector<Cell> &targets, bool effect) const
+    [[nodiscard]] bool lines_between(const Actor &a, const std::vector<Cell> &targets,
+                                     bool effect) const
     {
         for (const auto from : squares_of(a))
         {
@@ -6361,7 +6368,7 @@ class Session final : public CombatSession
         return false;
     }
 
-    bool walled(bool force) const
+    [[nodiscard]] bool walled(bool force) const
     {
         return std::any_of(zones_.begin(), zones_.end(),
                            [&](const auto &zone)
@@ -6401,7 +6408,7 @@ class Session final : public CombatSession
     }
 
     // Heavily Obscured squares block sight into and out of them.
-    bool clear_view(const Actor &a, const Actor &b) const
+    [[nodiscard]] bool clear_view(const Actor &a, const Actor &b) const
     {
         if (!conscious(a) || detail::blinded(a.effects))
         {
@@ -6420,7 +6427,7 @@ class Session final : public CombatSession
         return false;
     }
 
-    bool can_see(const Actor &a, const Actor &b) const
+    [[nodiscard]] bool can_see(const Actor &a, const Actor &b) const
     {
         return clear_view(a, b) && !unseen(a, b);
     }
@@ -6475,7 +6482,7 @@ class Session final : public CombatSession
     [[nodiscard]] unsigned rage_duration(const Actor &a) const;
     void extend_rage(Actor &a);
 
-    bool enemy_in_sight(const Actor &a) const
+    [[nodiscard]] bool enemy_in_sight(const Actor &a) const
     {
         return std::any_of(actors_.begin(), actors_.end(),
                            [&](const auto &other)
@@ -6488,7 +6495,7 @@ class Session final : public CombatSession
     // An actor's place in the turn order, found by id: a reference may be to a
     // copy (thrown weapons attack with one), so its address says nothing
     // (Effective C++ Item 27).
-    std::size_t index_of(EntityId id) const
+    [[nodiscard]] std::size_t index_of(EntityId id) const
     {
         const auto found = std::find_if(actors_.begin(), actors_.end(),
                                         [&](const auto &a)
@@ -6502,12 +6509,12 @@ class Session final : public CombatSession
         return static_cast<std::size_t>(found - actors_.begin());
     }
 
-    unsigned turn_end_ms(std::size_t index) const
+    [[nodiscard]] unsigned turn_end_ms(std::size_t index) const
     {
         return static_cast<unsigned>((index + 1) * detail::round_ms / actors_.size());
     }
 
-    bool shares_occupied_space(const Actor &who) const
+    [[nodiscard]] bool shares_occupied_space(const Actor &who) const
     {
         return std::any_of(actors_.begin(), actors_.end(),
                            [&](const auto &other)
@@ -6602,13 +6609,14 @@ class Session final : public CombatSession
     // part of it, up to 3d6 (PUSH-1).
     void slam(Actor &target, int short_feet);
     // Whether a wall, an obstacle or another creature stands in `cell` (on the board).
-    bool blocks_push(Cell cell, EntityId pushed) const;
+    [[nodiscard]] bool blocks_push(Cell cell, EntityId pushed) const;
     // Whether `other` may make an Opportunity Attack on `moving` stepping from
     // `from` to `to`.
-    bool provokes(const Actor &other, const Actor &moving, Cell from, Cell to) const;
+    [[nodiscard]] bool provokes(const Actor &other, const Actor &moving, Cell from, Cell to) const;
     // Dissonant Whispers' flight from `from` within `budget` feet: the
     // farthest square, by the route that provokes fewest Opportunity Attacks.
-    std::vector<Cell> flight_route(const Actor &from, const Actor &target, int budget) const;
+    [[nodiscard]] std::vector<Cell> flight_route(const Actor &from, const Actor &target,
+                                                 int budget) const;
     void ice_burst(Actor &caster, const Actor &target, unsigned steps);
     void condition_area(Actor &caster, const detail::SpellDef &spell,
                         const std::vector<Cell> &cells);
@@ -6891,8 +6899,8 @@ class Session final : public CombatSession
     // Sacred Weapon's attack bonus, 0 without it.
     [[nodiscard]] int sacred_weapon_bonus(const Actor &a) const;
     [[nodiscard]] detail::DamageType sacred_damage_type(const Actor &a) const;
-    unsigned next_save_ms(EntityId target) const;
-    unsigned next_turn_ms(const Actor &target) const;
+    [[nodiscard]] unsigned next_save_ms(EntityId target) const;
+    [[nodiscard]] unsigned next_turn_ms(const Actor &target) const;
     void advance_turn_time();
     // Halfling Luck, logged when it rerolled a 1 (automatic, as AUTO-1).
     void log_luck(const Actor &a, bool rerolled);
@@ -6918,17 +6926,18 @@ class Session final : public CombatSession
         return detail::heightened_against(target.effects, scope_, caster.source.id, spell);
     }
 
-    detail::MovementGrid movement_grid(const Actor &mover) const;
+    [[nodiscard]] detail::MovementGrid movement_grid(const Actor &mover) const;
     // The board with spell zones applied, as movement and the view see it.
     [[nodiscard]] Battlefield zoned_board() const;
-    std::vector<Cell> path_to(const Actor &a, Cell destination) const;
+    [[nodiscard]] std::vector<Cell> path_to(const Actor &a, Cell destination) const;
 
-    EntityId pending() const
+    [[nodiscard]] EntityId pending() const
     {
         return reactor_index_ < reactors_.size() ? reactors_[reactor_index_] : 0;
     }
 
-    bool critical_hit(const Actor &a, const Actor &target, int natural, bool spell = false) const
+    [[nodiscard]] bool critical_hit(const Actor &a, const Actor &target, int natural,
+                                    bool spell = false) const
     {
         return natural == 20 || (!spell && natural >= def(a).critical_from) ||
                (helpless(target) && distance(a, target) <= 5);
@@ -7038,9 +7047,10 @@ class Session final : public CombatSession
     int reliable(const Actor &a, std::string_view skill, int natural);
     // Evasion (Rogue 7): the damage a creature takes from a save-for-half
     // effect, given whether it saved.
-    int evaded(const Actor &target, detail::Ability save, bool halves, bool saved, int total) const;
+    [[nodiscard]] int evaded(const Actor &target, detail::Ability save, bool halves, bool saved,
+                             int total) const;
     // Mindless Rage (Berserker 6): raging, immune to Charmed and Frightened.
-    bool mindless(const Actor &a) const;
+    [[nodiscard]] bool mindless(const Actor &a) const;
     int frenzy_damage(Actor &berserker, bool critical);
     // Enlarge or Reduce changes a weapon hit's damage.
     int resized_damage(const Actor &a, int amount);
@@ -7176,21 +7186,24 @@ class Session final : public CombatSession
     }
 
     static const Definition &def(const Actor &a, Loadout &&loadout) = delete;
-    detail::Mastery weapon_mastery(const Actor &, AttackRange range) const;
-    detail::Mastery weapon_mastery(const Actor &, const Definition &, AttackRange range) const;
-    bool mastery_capacity(const Actor &, const Definition &, const Actor &,
-                          AttackRange range) const;
-    detail::RollModifiers attack_modifiers(const Actor &a, const Actor &target, AttackRange range,
-                                           AttackSource source) const;
-    Dice weapon_dice(const Actor &a, AttackRange range) const;
-    detail::DamageDieRule weapon_die_rule(const Actor &a, AttackRange range) const;
+    [[nodiscard]] detail::Mastery weapon_mastery(const Actor &, AttackRange range) const;
+    [[nodiscard]] detail::Mastery weapon_mastery(const Actor &, const Definition &,
+                                                 AttackRange range) const;
+    [[nodiscard]] bool mastery_capacity(const Actor &, const Definition &, const Actor &,
+                                        AttackRange range) const;
+    [[nodiscard]] detail::RollModifiers attack_modifiers(const Actor &a, const Actor &target,
+                                                         AttackRange range,
+                                                         AttackSource source) const;
+    [[nodiscard]] Dice weapon_dice(const Actor &a, AttackRange range) const;
+    [[nodiscard]] detail::DamageDieRule weapon_die_rule(const Actor &a, AttackRange range) const;
     void apply_hit(Actor &a, Actor &target, const ResolvedAttack &resolved);
     static void extend_run(Actor &a, Cell from, Cell to);
     [[nodiscard]] bool charges(const Actor &a, const Actor &target) const;
     [[nodiscard]] bool charge_run(const Actor &a, const Actor &target, int feet,
                                   int largest) const;
-    bool sneak_eligible(const Actor &a, const Actor &target, AttackRange range, int mode) const;
-    bool ally_beside(const Actor &a, const Actor &target) const;
+    [[nodiscard]] bool sneak_eligible(const Actor &a, const Actor &target, AttackRange range,
+                                      int mode) const;
+    [[nodiscard]] bool ally_beside(const Actor &a, const Actor &target) const;
     int roll_advantage_damage(const Actor &a, const Actor &target, int natural);
     // `forgo` dice are given up for a Cunning Strike.
     [[nodiscard]] int roll_sneak_attack(Actor &a, const Actor &target, int natural, int forgo = 0);
@@ -7224,13 +7237,13 @@ class Session final : public CombatSession
     void damage(Actor &target, int amount, bool critical = false);
     int heal(Actor &target, int amount); // Returns the Hit Points restored.
     void resolve_smite(Actor &a, std::string_view verb);
-    int armor_class(const Actor &target) const;
+    [[nodiscard]] int armor_class(const Actor &target) const;
     void begin_concentration(Actor &caster, const detail::SpellDef &spell);
     void end_concentration(Actor &caster);
     void drop_concentration_effects(const Actor &caster);
     // An Incapacitated creature loses Concentration and ends its Turn Undead.
     void end_incapacitated_effects(Actor &a);
-    unsigned selection_maximum(const PendingSelection &) const;
+    [[nodiscard]] unsigned selection_maximum(const PendingSelection &) const;
     void choose_target(const Command &command);
     void cast_on_selection();
     void cast_selected(Actor &a, const PendingSelection &selection);
@@ -7242,14 +7255,14 @@ class Session final : public CombatSession
     void bandage_after_victory();
 
     // A creature with Regeneration that has not died: down at 0 HP, it may rise.
-    bool may_rise(const Actor &a) const
+    [[nodiscard]] bool may_rise(const Actor &a) const
     {
         return def(a).regeneration && !a.life.dead;
     }
 
     // As in the original game, a downed troll's square can be stood on, and a
     // creature standing there keeps it from getting up.
-    bool downed_riser(const Actor &a) const
+    [[nodiscard]] bool downed_riser(const Actor &a) const
     {
         return may_rise(a) && a.life.hp == 0;
     }
@@ -7294,7 +7307,7 @@ class Session final : public CombatSession
 
     // Uncanny Metabolism is offered at Initiative only while it would restore
     // something: spent Focus or missing Hit Points.
-    bool metabolism_ready(const Actor &a) const
+    [[nodiscard]] bool metabolism_ready(const Actor &a) const
     {
         return def(a).metabolism && a.arcane[CharacterClass::monk] > 0 &&
                (a.surges[CharacterClass::monk] < def(a).focus || a.life.hp < max_hp(a));
@@ -10826,24 +10839,11 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
     // A wand's or a scroll's spell has the item's save DC (MAGIC-6).
     item_caster_ = from_item || from_scroll ? a.source.id : 0;
     item_dc_ = from_scroll ? scroll_dc(slot_level_of(verb, spell)) : 15;
-    const struct ItemCasterReset
-    {
-        EntityId &caster;
-        ~ItemCasterReset() { caster = 0; }
-    } item_caster_reset{item_caster_};
-    const struct AgainstMagic
-    {
-        bool &against_magic;
-        explicit AgainstMagic(bool &flag) : against_magic(flag) { against_magic = true; }
-        ~AgainstMagic() { against_magic = false; }
-    } against_magic{against_magic_};
+    const detail::ResetAtExit<EntityId> item_caster_reset{item_caster_, 0};
+    const detail::SetWhileAlive against_magic{against_magic_};
     // A spell without damage dice keeps the default damage type, Fire.
     against_fire_ = spell.dice.count && spell.damage == detail::DamageType::fire;
-    const struct AgainstFireReset
-    {
-        bool &against_fire;
-        ~AgainstFireReset() { against_fire = false; }
-    } against_fire_reset{against_fire_};
+    const detail::ResetAtExit<bool> against_fire_reset{against_fire_, false};
     take_metamagic(a, spell);
     take_overchannel(a, spell, verb);
     if (casting_with(Metamagic::heightened))
@@ -11271,11 +11271,7 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
         // Contagion's and Eyebite's sickness Poison those who fail.
         against_poisoned_ = spell.rider == detail::Rider::contagion ||
                             detail::without_cast_suffix(verb) == "eyebite_sickened";
-        const struct AgainstPoisonedReset
-        {
-            bool &against_poisoned;
-            ~AgainstPoisonedReset() { against_poisoned = false; }
-        } against_poisoned_reset{against_poisoned_};
+        const detail::ResetAtExit<bool> against_poisoned_reset{against_poisoned_, false};
         if (verb == "enlarge" || spell.rider == detail::Rider::maze ||
             spell.rider == detail::Rider::power_word_stun ||
             (!construct &&
@@ -15213,12 +15209,7 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
     const auto type = std::string(detail::damage_name(damage_type));
     const bool was_against_fire = std::exchange(against_fire_,
                                                 damage_type == detail::DamageType::fire);
-    const struct AgainstFireReset
-    {
-        bool &against_fire;
-        bool previous;
-        ~AgainstFireReset() { against_fire = previous; }
-    } against_fire_reset{against_fire_, was_against_fire};
+    const detail::ResetAtExit<bool> against_fire_reset{against_fire_, was_against_fire};
     // Careful Spell: the chosen allies succeed and so take no half damage.
     const auto careful = careful_allies(caster, cells);
     for (auto &other : actors_)
@@ -19443,17 +19434,8 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     // save DC (MAGIC-3, MAGIC-6).
     item_caster_ = from_item || from_scroll ? a.source.id : 0;
     item_dc_ = from_scroll ? scroll_dc(slot_level_of(aimed.verb, spell)) : 15;
-    const struct ItemCasterReset
-    {
-        EntityId &caster;
-        ~ItemCasterReset() { caster = 0; }
-    } item_caster_reset{item_caster_};
-    const struct AgainstMagic
-    {
-        bool &against_magic;
-        explicit AgainstMagic(bool &flag) : against_magic(flag) { against_magic = true; }
-        ~AgainstMagic() { against_magic = false; }
-    } against_magic{against_magic_};
+    const detail::ResetAtExit<EntityId> item_caster_reset{item_caster_, 0};
+    const detail::SetWhileAlive against_magic{against_magic_};
     if (spell.level && !again)
     {
         pay_for_spell(a, aimed.verb, spell);
@@ -23143,6 +23125,13 @@ bool Session::attack_as(Actor &a, Loadout loadout, Actor &target, AttackRange ra
         Actor &a;
         Loadout own;
 
+        Lent(Actor &actor, Loadout own_loadout) : a(actor), own(std::move(own_loadout))
+        {
+        }
+
+        Lent(const Lent &) = delete;
+        Lent &operator=(const Lent &) = delete;
+
         ~Lent()
         {
             a.definition = std::move(own.definition);
@@ -26420,12 +26409,7 @@ void Session::perform(const Command &command)
                                def(other).uncanny_dodge || def(other).superior_defense;
                     });
     damage_taken_.clear();
-    const struct Performing
-    {
-        bool &performing;
-        explicit Performing(bool &flag) : performing(flag) { performing = true; }
-        ~Performing() { performing = false; }
-    } performing{performing_};
+    const detail::SetWhileAlive performing{performing_};
     if (!askable)
     {
         dispatch_tracking_turn(command);
@@ -30050,9 +30034,9 @@ class Module final : public RulesModule
     unsigned experience_for_level(unsigned level) const override
     {
         // SRD 5.2.1 p. 23, through level 15.
-        static constexpr unsigned thresholds[]{0,      0,      300,    900,   2700,  6500,
-                                               14000,  23000,  34000,  48000, 64000, 85000,
-                                               100000, 120000, 140000, 165000};
+        static constexpr std::array<unsigned, 16> thresholds{
+            0,     0,     300,   900,   2700,   6500,   14000,  23000,
+            34000, 48000, 64000, 85000, 100000, 120000, 140000, 165000};
         if (level < 1 || level > 15)
         {
             throw std::runtime_error("Unsupported character level");

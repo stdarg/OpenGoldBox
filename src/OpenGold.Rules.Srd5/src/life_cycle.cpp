@@ -191,24 +191,24 @@ void damage_life(LifeState &state, int amount, int maximum_hp, DamageOptions opt
     apply_damage(state, amount, amount - absorbed, maximum_hp, options);
 }
 
-void set_life_hit_points(LifeState &state, int hp, int maximum_hp)
+void set_life_hit_points(LifeState &state, int hit_points, int maximum_hp)
 {
-    if (hp < 0 || hp > maximum_hp || maximum_hp < 1 || state.hp < 0 || state.hp > maximum_hp ||
-        (state.dead && hp))
+    if (hit_points < 0 || hit_points > maximum_hp || maximum_hp < 1 || state.hp < 0 ||
+        state.hp > maximum_hp || (state.dead && hit_points))
     {
         throw std::runtime_error("Invalid HP assignment");
     }
-    if (hp == state.hp)
+    if (hit_points == state.hp)
     {
         return;
     }
-    if (hp > state.hp)
+    if (hit_points > state.hp)
     {
-        (void)heal_life(state, hp - state.hp, maximum_hp);
+        (void)heal_life(state, hit_points - state.hp, maximum_hp);
     }
     else
     {
-        apply_damage(state, state.hp - hp, state.hp - hp, maximum_hp, {});
+        apply_damage(state, state.hp - hit_points, state.hp - hit_points, maximum_hp, {});
     }
 }
 
