@@ -2,6 +2,7 @@
 #include "death_knights_spell_table.h"
 #include "dark_queen_spell_table.h"
 #include <cctype>
+#include <map>
 
 #include <array>
 #include <algorithm>
@@ -528,6 +529,68 @@ std::string spell_id(int number)
     return id;
 }
 
+namespace
+{
+using SpellIndex = std::map<std::string, int, std::less<>>;
+
+void index_spell(SpellIndex &index, int number)
+{
+    auto id = spell_id(number);
+    if (!id.empty())
+    {
+        // Duplicate names keep the first match in the original search order.
+        index.try_emplace(std::move(id), number);
+    }
+}
+
+const SpellIndex &generic_spell_index()
+{
+    static const auto index = []
+    {
+        SpellIndex result;
+        for (int number = 1; number <= static_cast<int>(spells.size()); ++number)
+        {
+            index_spell(result, number);
+        }
+        for (const auto &entry : curse_spells)
+        {
+            index_spell(result, entry.number);
+        }
+        for (const auto &entry : secret_spells)
+        {
+            index_spell(result, entry.number);
+        }
+        for (const auto &entry : darkness_spells)
+        {
+            index_spell(result, entry.number);
+        }
+        for (int gift = 501; gift <= 507; ++gift)
+        {
+            index_spell(result, gift);
+        }
+        return result;
+    }();
+    return index;
+}
+
+const auto &game_spell_indexes()
+{
+    static const auto indexes = []
+    {
+        std::array<SpellIndex, gold_box_games.size()> result;
+        for (std::size_t at = 0; at < gold_box_games.size(); ++at)
+        {
+            for (const int number : castable_spells(gold_box_games[at]))
+            {
+                index_spell(result[at], number);
+            }
+        }
+        return result;
+    }();
+    return indexes;
+}
+} // namespace
+
 std::optional<int> spell_number(std::string_view id)
 {
     id = id.substr(0, id.find('#'));
@@ -535,52 +598,33 @@ std::optional<int> spell_number(std::string_view id)
     {
         return std::nullopt;
     }
-    for (int number = 1; number <= static_cast<int>(spells.size()); ++number)
-    {
-        if (spell_id(number) == id)
-        {
-            return number;
-        }
-    }
-    for (const auto &entry : curse_spells)
-    {
-        if (spell_id(entry.number) == id)
-        {
-            return entry.number;
-        }
-    }
-    for (const auto &entry : secret_spells)
-    {
-        if (spell_id(entry.number) == id)
-        {
-            return entry.number;
-        }
-    }
-    for (const auto &entry : darkness_spells)
-    {
-        if (spell_id(entry.number) == id)
-        {
-            return entry.number;
-        }
-    }
-    for (int gift = 501; gift <= 507; ++gift)
-    {
-        if (spell_id(gift) == id)
-        {
-            return gift;
-        }
-    }
-    return std::nullopt;
+    const auto &index = generic_spell_index();
+    const auto found = index.find(id);
+    return found == index.end() ? std::nullopt : std::optional<int>{found->second};
 }
 
 std::optional<int> spell_number(std::string_view id, GoldBoxGame game)
 {
     id = id.substr(0, id.find('#'));
-    for (const int number : castable_spells(game))
+    const auto found_game = std::ranges::find(gold_box_games, game);
+    if (found_game != gold_box_games.end())
     {
-        if (spell_id(number) == id)
+        const auto &index =
+            game_spell_indexes()[static_cast<std::size_t>(found_game - gold_box_games.begin())];
+        if (const auto found = index.find(id); found != index.end())
         {
-            return number;
+            return found->second;
+        }
+    }
+    else
+    {
+        // Preserve the existing fallback for enum values no installed game uses.
+        for (const int number : castable_spells(game))
+        {
+            if (spell_id(number) == id)
+            {
+                return number;
+            }
         }
     }
     return spell_number(id);

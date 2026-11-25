@@ -620,6 +620,109 @@ void darkness_high_level_spells()
           "A magic-user with ninth-level slots knows every spell at creation");
 }
 
+// Freeze the pre-index generic search order independently of the new indexes.
+// Secret's 310..317 precede Darkness's 301..309, so a numeric sort is not this order.
+std::optional<int> original_spell_lookup(std::string_view id,
+                                         std::optional<opengold::GoldBoxGame> game = {})
+{
+    id = id.substr(0, id.find('#'));
+    if (game)
+    {
+        for (const int number : castable_spells(*game))
+        {
+            if (spell_id(number) == id)
+            {
+                return number;
+            }
+        }
+    }
+    if (id.empty())
+    {
+        return std::nullopt;
+    }
+    static const auto order = []
+    {
+        std::vector<int> numbers;
+        for (int number = 1; number <= 67; ++number)
+        {
+            numbers.push_back(number);
+        }
+        numbers.push_back(158);
+        for (int number = 166; number <= 200; ++number)
+        {
+            numbers.push_back(number);
+        }
+        for (const int number :
+             {236, 256, 263, 290, 296, 298, 310, 311, 312, 313, 314, 315, 316, 317, 301, 302,
+              303, 304, 305, 306, 307, 308, 309, 318, 319, 320, 321, 322, 323, 324, 325, 326})
+        {
+            numbers.push_back(number);
+        }
+        for (int number = 501; number <= 507; ++number)
+        {
+            numbers.push_back(number);
+        }
+        return numbers;
+    }();
+    for (const int number : order)
+    {
+        if (spell_id(number) == id)
+        {
+            return number;
+        }
+    }
+    return std::nullopt;
+}
+
+void spell_lookup_preserves_original_order()
+{
+    std::vector<std::string> ids{"",
+                                 "#2",
+                                 "unknown",
+                                 "CLERIC:BLESS",
+                                 " cleric:bless",
+                                 "cleric:bless ",
+                                 "item:potion_of_speed",
+                                 "magic_user:potion_of_speed",
+                                 "cleric:nonexistent"};
+    // Cover every canonical number, holes and item powers (whose IDs stay empty),
+    // not just the spells a particular game lets a character memorize.
+    for (int number = -1; number <= 508; ++number)
+    {
+        ids.push_back(spell_id(number));
+    }
+    std::vector<opengold::GoldBoxGame> games(opengold::gold_box_games.begin(),
+                                             opengold::gold_box_games.end());
+    games.push_back(static_cast<opengold::GoldBoxGame>(12));
+    games.push_back(static_cast<opengold::GoldBoxGame>(255));
+    for (const auto &base : ids)
+    {
+        for (const std::string_view suffix : {"", "#2", "#copy", "#2#3"})
+        {
+            const auto id = base + std::string(suffix);
+            check(spell_number(id) == original_spell_lookup(id),
+                  "Generic spell lookup preserves its first match: " + id);
+            for (const auto game : games)
+            {
+                check(spell_number(id, game) == original_spell_lookup(id, game),
+                      "Spell lookup preserves game " + std::to_string(static_cast<int>(game)) +
+                          " first match: " + id);
+            }
+        }
+    }
+    check(
+        spell_number("cleric:restoration") == 56 &&
+            spell_number("cleric:restoration#2", pool) == 56 &&
+            spell_number("cleric:restoration", opengold::GoldBoxGame::pools_of_darkness) == 302 &&
+            spell_number("cleric:restoration", opengold::GoldBoxGame::dark_queen_of_krynn) == 302 &&
+            spell_number("cleric:dispel_magic") == 41 &&
+            spell_number("magic_user:dispel_magic") == 46 &&
+            spell_number("deity:burning_hands#2") == 507 &&
+            spell_number("deity:burning_hands", opengold::GoldBoxGame::champions_of_krynn) == 507 &&
+            spell_number("magic_user:meteor_swarm", pool) == 324,
+        "Game aliases, separate caster classes, deity gifts and noncastable fallback stay distinct");
+}
+
 void dexterity_bonuses()
 {
     struct Expected
@@ -675,7 +778,7 @@ void constitution_and_age()
         const int gateway = starting_age(Race::half_elf, Profession::ranger, random,
                                          opengold::GoldBoxGame::gateway_to_the_savage_frontier);
         const int curse_age = starting_age(Race::half_elf, Profession::ranger, random,
-                                       opengold::GoldBoxGame::curse_of_the_azure_bonds);
+                                           opengold::GoldBoxGame::curse_of_the_azure_bonds);
         check(gateway >= 29 && gateway <= 50 && curse_age >= 25 && curse_age <= 34,
               "A half-elf ranger starts at 26+3d8 in Gateway, as a half-elf fighter in Curse");
     }
@@ -978,6 +1081,7 @@ int main()
         spell_slots_and_wisdom();
         paladins_and_rangers_cast();
         darkness_high_level_spells();
+        spell_lookup_preserves_original_order();
         dexterity_bonuses();
         constitution_and_age();
         creation_behind_the_rules_interface();
