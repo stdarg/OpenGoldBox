@@ -1,5 +1,6 @@
 #include "opengold/buck_rogers_records.h"
 #include "little_endian.h"
+#include "record_fields.h"
 
 #include <algorithm>
 #include <stdexcept>
@@ -11,12 +12,8 @@ namespace
 
 using format::read_u16;
 using format::read_u32;
+using format::signed_byte;
 using Bytes = std::vector<std::uint8_t>;
-
-int signed_byte(std::uint8_t value)
-{
-    return value < 128 ? value : static_cast<int>(value) - 256;
-}
 
 int signed_word(std::span<const std::uint8_t> bytes, std::size_t offset)
 {

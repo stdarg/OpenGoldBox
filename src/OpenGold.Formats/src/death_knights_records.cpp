@@ -1,28 +1,12 @@
 #include "opengold/death_knights_records.h"
+#include "opengold/late_records.h"
 #include "little_endian.h"
+#include "record_fields.h"
 
 #include <algorithm>
 
 namespace opengold::death_knights
 {
-namespace
-{
-int signed_byte(std::uint8_t value)
-{
-    return value < 128 ? value : static_cast<int>(value) - 256;
-}
-
-por::ClassLevels levels(std::span<const std::uint8_t> bytes, std::size_t at)
-{
-    return {bytes[at],     bytes[at + 1], bytes[at + 2], bytes[at + 3],
-            bytes[at + 4], bytes[at + 5], bytes[at + 6], bytes[at + 7]};
-}
-
-por::DamageDice damage(std::span<const std::uint8_t> bytes, std::size_t at, std::size_t attack)
-{
-    return {bytes[at + attack], bytes[at + 2 + attack], signed_byte(bytes[at + 4 + attack])};
-}
-} // namespace
 
 std::optional<por::CharacterRecord> decode_creature(std::span<const std::uint8_t> bytes)
 {
@@ -34,10 +18,8 @@ std::optional<por::CharacterRecord> decode_creature(std::span<const std::uint8_t
     record.game = GoldBoxGame::death_knights_of_krynn;
     record.raw.assign(bytes.begin(), bytes.end());
     record.name.assign(bytes.begin() + 1, bytes.begin() + 1 + bytes[0]);
-    record.abilities = {bytes[16], bytes[18], bytes[20], bytes[22],
-                        bytes[24], bytes[26], bytes[29]};
-    record.current_abilities = {bytes[17], bytes[19], bytes[21], bytes[23],
-                                bytes[25], bytes[27], bytes[28]};
+    record.abilities = format::paired_abilities(bytes, 16, format::AbilityScore::permanent);
+    record.current_abilities = format::paired_abilities(bytes, 16, format::AbilityScore::current);
     record.spell_byte_44_raw = bytes[30];
     record.base_thac0 = 60 - bytes[31];
     record.race = bytes[32];
@@ -48,24 +30,21 @@ std::optional<por::CharacterRecord> decode_creature(std::span<const std::uint8_t
     record.age = format::read_u16(bytes, 38);
     record.max_hit_points = bytes[40];
     record.icon_size_raw = bytes[41];
-    record.saves = {bytes[42], bytes[43], bytes[44], bytes[45], bytes[46]};
+    record.saves = format::saving_throws(bytes, 42);
     record.base_movement = bytes[47];
     record.highest_level_raw = bytes[48];
     record.undead_level = bytes[49];
-    std::copy_n(bytes.begin() + 50, record.thief_skills.size(), record.thief_skills.begin());
+    format::copy_bytes(bytes, 50, record.thief_skills);
     record.npc_flag = bytes[62];
     for (std::size_t at = 0; at < 3; ++at)
     {
         record.wealth[4 + at] = format::read_u16(bytes, 63 + 2 * at);
     }
-    record.levels = levels(bytes, 69);
-    record.levels_before_class_change = levels(bytes, 77);
+    record.levels = format::class_levels(bytes, 69);
+    record.levels_before_class_change = format::class_levels(bytes, 77);
     record.gender = bytes[85];
     record.alignment = bytes[86];
-    for (std::size_t at = 0; at < record.base_attacks.size(); ++at)
-    {
-        record.base_attacks[at] = {bytes[87 + at], damage(bytes, 89, at)};
-    }
+    record.base_attacks = format::base_attacks(bytes, 87);
     record.base_armor_class = 60 - bytes[95];
     record.strength_bonus_flag_raw = bytes[96];
     record.experience = format::read_u32(bytes, 98);
@@ -78,23 +57,14 @@ std::optional<por::CharacterRecord> decode_creature(std::span<const std::uint8_t
     record.target_flags = bytes[123];
     record.item_count = bytes[124];
     record.hands_equipped = bytes[181];
-    record.save_bonus = signed_byte(bytes[182]);
+    record.save_bonus = format::signed_byte(bytes[182]);
     record.encumbrance = format::read_u16(bytes, 183);
     record.magic_resistance = bytes[193];
     record.status = bytes[199];
     record.enabled = bytes[200];
     record.hostile = bytes[201];
     record.quick_fight = bytes[202];
-    record.current.thac0 = 60 - bytes[203];
-    record.current.armor_class = 60 - bytes[204];
-    record.current.rear_armor_class = 60 - bytes[205];
-    record.current.attacks_raw = {bytes[206], bytes[207]};
-    for (std::size_t at = 0; at < record.current.damage.size(); ++at)
-    {
-        record.current.damage[at] = damage(bytes, 208, at);
-    }
-    record.current.hit_points_raw = bytes[214];
-    record.current.movement = bytes[215];
+    record.current = format::current_stats(bytes, 203);
     return record;
 }
 
@@ -133,16 +103,13 @@ bool attach_spells(por::CharacterRecord &record, std::span<const std::uint8_t> b
 
 std::optional<std::vector<por::ItemRecord>> decode_item_list(std::span<const std::uint8_t> bytes)
 {
-    if (bytes.empty() || bytes.size() % 17 != 0 || bytes.size() / 17 > 127)
+    // The 17-byte item tails are the ones Pools of Darkness keeps; the game
+    // holds at most 127 of them.
+    if (bytes.empty() || bytes.size() / 17 > 127)
     {
         return std::nullopt;
     }
-    std::vector<std::uint8_t> items(bytes.size() / 17 * 63);
-    for (std::size_t index = 0; index < bytes.size() / 17; ++index)
-    {
-        std::copy_n(bytes.begin() + 17 * index, 17, items.begin() + 63 * index + 46);
-    }
-    return por::decode_items(items);
+    return late::decode_items(bytes);
 }
 
 std::optional<std::vector<std::vector<std::uint8_t>>>

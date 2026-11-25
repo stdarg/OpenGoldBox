@@ -1,6 +1,7 @@
 #include "opengold/dark_queen_records.h"
 
 #include "little_endian.h"
+#include "record_fields.h"
 #include "ua_detail.h"
 
 #include <algorithm>
@@ -11,11 +12,6 @@ namespace opengold::dark_queen
 namespace
 {
 
-int signed_byte(std::uint8_t value)
-{
-    return value < 128 ? value : static_cast<int>(value) - 256;
-}
-
 por::ClassLevels levels(std::span<const std::uint8_t> bytes, std::size_t at)
 {
     // Dark Queen replaces the unused druid level with the knight's; the
@@ -25,9 +21,18 @@ por::ClassLevels levels(std::span<const std::uint8_t> bytes, std::size_t at)
         bytes[at + 1]};
 }
 
-por::DamageDice damage(std::span<const std::uint8_t> bytes, std::size_t at, std::size_t attack)
+// The native spell block of an expanded character: memorized spells, the
+// known-spell bits and four rows of slots.
+SpellBlock spell_block(std::span<const std::uint8_t> raw)
 {
-    return {bytes[at + attack], bytes[at + 2 + attack], signed_byte(bytes[at + 4 + attack])};
+    SpellBlock spells;
+    std::copy_n(raw.begin() + 0xCE, spells.memorized.size(), spells.memorized.begin());
+    std::copy_n(raw.begin() + 0x157, spells.known_bits.size(), spells.known_bits.begin());
+    for (std::size_t row = 0; row < spells.slots.size(); ++row)
+    {
+        std::copy_n(raw.begin() + 0x167 + row * 9, 9, spells.slots[row].begin());
+    }
+    return spells;
 }
 
 } // namespace
@@ -105,7 +110,6 @@ std::optional<por::CharacterRecord> decode_character(std::span<const std::uint8_
         return std::nullopt;
     }
     por::CharacterRecord record;
-    SpellBlock spells;
     record.game = GoldBoxGame::dark_queen_of_krynn;
     record.raw.assign(raw.begin(), raw.begin() + character_size);
     const auto name = raw.subspan(0x68, 16);
@@ -115,10 +119,8 @@ std::optional<por::CharacterRecord> decode_character(std::span<const std::uint8_
         return std::nullopt;
     }
     record.name.assign(name.begin(), end);
-    record.abilities = {raw[0x78], raw[0x7A], raw[0x7C], raw[0x7E],
-                        raw[0x80], raw[0x82], raw[0x85]};
-    record.current_abilities = {raw[0x79], raw[0x7B], raw[0x7D], raw[0x7F],
-                                raw[0x81], raw[0x83], raw[0x84]};
+    record.abilities = format::paired_abilities(raw, 0x78, format::AbilityScore::permanent);
+    record.current_abilities = format::paired_abilities(raw, 0x78, format::AbilityScore::current);
     record.experience = format::read_u32(raw, 0x44);
     record.base_xp_award = format::read_u16(raw, 0x54);
     record.encumbrance = format::read_u16(raw, 0x56);
@@ -134,18 +136,14 @@ std::optional<por::CharacterRecord> decode_character(std::span<const std::uint8_
     record.base_thac0 = 60 - raw[0x87];
     record.max_hit_points = raw[0x89];
     record.icon_size_raw = raw[0x8A];
-    record.saves = {raw[0x8B], raw[0x8C], raw[0x8D], raw[0x8E], raw[0x8F]};
+    record.saves = format::saving_throws(raw, 0x8B);
     record.base_movement = raw[0x90];
     record.highest_level_raw = raw[0x91];
-    std::copy_n(raw.begin() + 0x93, record.thief_skills.size(), record.thief_skills.begin());
+    format::copy_bytes(raw, 0x93, record.thief_skills);
     record.npc_flag = raw[0x9B];
     record.levels = levels(raw, 0xA5);
     record.levels_before_class_change = levels(raw, 0xAC);
-    for (std::size_t attack = 0; attack < 2; ++attack)
-    {
-        record.base_attacks[attack] = {raw[0xB3 + attack], damage(raw, 0xB5, attack)};
-        record.current.damage[attack] = damage(raw, 0x192, attack);
-    }
+    record.base_attacks = format::base_attacks(raw, 0xB3);
     record.base_armor_class = 60 - raw[0xBB];
     record.strength_bonus_flag_raw = raw[0xBC];
     record.rolled_hit_points = record.xp_per_hit_point = raw[0xC0];
@@ -153,16 +151,11 @@ std::optional<por::CharacterRecord> decode_character(std::span<const std::uint8_
     record.target_flags = raw[0xC8];
     record.item_count = raw[0xC9];
     record.hands_equipped = raw[0xCA];
-    record.save_bonus = signed_byte(raw[0xCB]);
+    record.save_bonus = format::signed_byte(raw[0xCB]);
     record.magic_resistance = raw[0xCC];
     record.enabled = raw[0x18B];
     record.quick_fight = raw[0x18C];
-    record.current.thac0 = 60 - raw[0x18D];
-    record.current.armor_class = 60 - raw[0x18E];
-    record.current.rear_armor_class = 60 - raw[0x18F];
-    record.current.attacks_raw = {raw[0x190], raw[0x191]};
-    record.current.hit_points_raw = raw[0x198];
-    record.current.movement = raw[0x199];
+    record.current = format::current_stats(raw, 0x18D);
     record.knight_order = raw[0x19A];
     record.deity = static_cast<std::uint8_t>(format::read_u16(raw, 0x19B));
     record.robe_order = raw[0x19D];
@@ -170,17 +163,15 @@ std::optional<por::CharacterRecord> decode_character(std::span<const std::uint8_
     {
         record.wealth[4 + coin] = format::read_u16(raw, 0x4C + 2 * coin);
     }
-    std::copy_n(raw.begin() + 0xCE, spells.memorized.size(), spells.memorized.begin());
-    std::copy_n(raw.begin() + 0x157, spells.known_bits.size(), spells.known_bits.begin());
+    const auto spells = spell_block(raw);
     record.memorized_spells.assign(spells.memorized.begin(), spells.memorized.end());
     for (std::size_t spell = 0; spell < 128; ++spell)
     {
         record.spell_book.push_back((spells.known_bits[spell / 8] >> (spell % 8)) & 1);
     }
     record.raw_spell_block.assign(raw.begin() + 0xCE, raw.begin() + 0x18B);
-    for (std::size_t row = 0; row < 4; ++row)
+    for (std::size_t row = 0; row < spells.slots.size(); ++row)
     {
-        std::copy_n(raw.begin() + 0x167 + row * 9, 9, spells.slots[row].begin());
         auto &common = row < 3 ? record.spell_slots[row] : record.deity_spell_slots;
         std::copy_n(spells.slots[row].begin(), common.size(), common.begin());
     }
@@ -222,14 +213,7 @@ std::optional<Creature> decode_creature(std::span<const std::uint8_t> bytes)
         return std::nullopt;
     }
     creature.character = std::move(*character);
-    std::copy_n(raw.begin() + 0xCE, creature.spells.memorized.size(),
-                creature.spells.memorized.begin());
-    std::copy_n(raw.begin() + 0x157, creature.spells.known_bits.size(),
-                creature.spells.known_bits.begin());
-    for (std::size_t row = 0; row < 4; ++row)
-    {
-        std::copy_n(raw.begin() + 0x167 + row * 9, 9, creature.spells.slots[row].begin());
-    }
+    creature.spells = spell_block(raw);
     for (std::size_t effect = 0; effect < effect_count; ++effect)
     {
         const auto at = character_size + 2 + 5 * effect;

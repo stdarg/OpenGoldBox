@@ -6,6 +6,7 @@
 #include "opengold/late_records.h"
 #include "opengold/secret_records.h"
 #include "little_endian.h"
+#include "record_fields.h"
 
 #include <algorithm>
 #include <string_view>
@@ -15,20 +16,13 @@ namespace opengold::por
 {
 namespace
 {
-constexpr int signed_byte(std::uint8_t value)
-{
-    return value < 128 ? value : static_cast<int>(value) - 256;
-}
+using format::copy_bytes;
+using format::signed_byte;
 
-template <std::size_t N>
-void copy(std::span<const std::uint8_t> b, std::size_t p, std::array<std::uint8_t, N> &out)
+// An item type's dice, in three consecutive bytes.
+DamageDice damage(std::span<const std::uint8_t> b, std::size_t p)
 {
-    std::copy_n(b.begin() + p, N, out.begin());
-}
-
-DamageDice damage(std::span<const std::uint8_t> b, std::size_t p, std::size_t stride = 1)
-{
-    return {b[p], b[p + stride], signed_byte(b[p + stride * 2])};
+    return {b[p], b[p + 1], signed_byte(b[p + 2])};
 }
 
 struct StringTable
@@ -112,12 +106,9 @@ std::optional<CharacterRecord> decode_character(std::span<const std::uint8_t> b)
     c.max_hit_points = b[50];
     c.rolled_hit_points = b[177];
     c.base_movement = b[114];
-    for (std::size_t i = 0; i < 2; ++i)
-    {
-        c.base_attacks[i] = {b[161 + i], damage(b, 163 + i, 2)};
-    }
-    c.saves = {b[109], b[110], b[111], b[112], b[113]};
-    c.levels = {b[150], b[151], b[152], b[153], b[154], b[155], b[156], b[157]};
+    c.base_attacks = format::base_attacks(b, 161);
+    c.saves = format::saving_throws(b, 109);
+    c.levels = format::class_levels(b, 150);
     c.race = b[46];
     c.character_class = b[47];
     c.age = format::read_u16(b, 48);
@@ -131,7 +122,7 @@ std::optional<CharacterRecord> decode_character(std::span<const std::uint8_t> b)
     c.drained_levels = b[116];
     c.drained_hit_points = b[117];
     c.undead_level = b[118];
-    copy(b, 119, c.thief_skills);
+    copy_bytes(b, 119, c.thief_skills);
     c.spell_book.assign(b.begin() + 51, b.begin() + 51 + 55);
     c.memorized_spells.assign(b.begin() + 23, b.begin() + 23 + 21);
     std::copy_n(b.begin() + 178, 3, c.spell_slots[0].begin());
@@ -154,16 +145,7 @@ std::optional<CharacterRecord> decode_character(std::span<const std::uint8_t> b)
     c.enabled = b[269];
     c.hostile = b[270];
     c.quick_fight = b[271];
-    c.current.thac0 = 60 - b[272];
-    c.current.armor_class = 60 - b[273];
-    c.current.rear_armor_class = 60 - b[274];
-    c.current.attacks_raw = {b[275], b[276]};
-    for (std::size_t i = 0; i < 2; ++i)
-    {
-        c.current.damage[i] = damage(b, 277 + i, 2);
-    }
-    c.current.hit_points_raw = b[283];
-    c.current.movement = b[284];
+    c.current = format::current_stats(b, 272);
     return c;
 }
 
@@ -215,7 +197,7 @@ std::optional<std::vector<ItemRecord>> decode_items(std::span<const std::uint8_t
             return std::nullopt;
         }
         ItemRecord item;
-        copy(b, 0, item.raw);
+        copy_bytes(b, 0, item.raw);
         item.stored_name.assign(b.begin() + 1, b.begin() + 1 + b[0]);
         item.type = b[46];
         item.name_components = {b[47], b[48], b[49]};
@@ -264,7 +246,7 @@ std::optional<std::vector<EffectRecord>> decode_effects(std::span<const std::uin
     {
         const auto b = bytes.subspan(p, 9);
         EffectRecord effect;
-        copy(b, 0, effect.raw);
+        copy_bytes(b, 0, effect.raw);
         effect.code = b[0];
         effect.duration_raw = format::read_u16(b, 1);
         effect.data = b[3];
@@ -303,7 +285,7 @@ std::optional<std::vector<ItemTemplate>> decode_item_templates(std::span<const s
     {
         const auto b = bytes.subspan(p, 16);
         ItemTemplate item;
-        copy(b, 0, item.raw);
+        copy_bytes(b, 0, item.raw);
         item.worn_location = b[0];
         item.hands = b[1];
         item.large_damage = damage(b, 2);
