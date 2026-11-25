@@ -29,7 +29,8 @@ struct Effect;
 [[nodiscard]] int dark_queen_hit_point_minimum(const ModifiedCharacter &character,
                                                int constitution);
 [[nodiscard]] int dark_queen_thac0(const ClassLevels &levels);
-[[nodiscard]] std::array<int, 5> dark_queen_saving_throws(const ClassLevels &levels);
+[[nodiscard]] std::array<int, 5> dark_queen_saving_throws(const ClassLevels &levels, Race race,
+                                                          int constitution);
 void recalculate_dark_queen_numbers(rules::CharacterSheet::Original &numbers,
                                     const rules::AbilityArray<int> &scores);
 [[nodiscard]] std::vector<int> dark_queen_learning_spells(int robe, int highest);

@@ -795,3 +795,34 @@ the reconstructed source. The full-strength party loses in rounds 4 to 6. All
 20 event reloads lost with the default tactics, and tactic 4, which avoids
 shielded targets, won none of 1518 scored tries. The authored ending is not
 reached yet.
+
+## Native saving throws (2026-11-24)
+
+These follow `fx_saving_throw` (fxcore.c):
+
+- A mage of a robe saves 1 worse in its moon's phase 0 and 1 better in
+  phase 2. Those are the phases that also lower or raise its caster level.
+- The save against paralysis, poison and death follows `recalc_saves`
+  (herostat.c). After each class's table, in the original's class order, a
+  dwarf's or kender's Constitution raises the number needed: 1 at 4, 2 at
+  7, 3 at 11, 4 at 14 and 5 at 18. Constitution above 18 raises anyone's:
+  1 at 19, 2 at 21, 3 at 23 and 4 at 25. The shipped code raises the
+  number needed, which the reconstruction proves byte for byte, so this is
+  a penalty rather than the tabletop bonus. For dwarves and kender it
+  cancels the Constitution bonus their effect 94 adds to the roll against
+  this save. The item special 6 that also applies it is not read.
+- The bonuses on the roll are those of trigger group 0Ch, checked one by
+  one against the shared ones:
+  - Protection from Evil and from Good (8, 9, 45, 46), the resistances to
+    cold and fire (10, 20), Shield (17), blindness (33) and the curse (36)
+    already matched.
+  - So did Prayer's aura (49), the fire shields (50, 54) and the fire ring
+    (61).
+  - So did the Constitution bonuses (94 on poison, wands and spells; 97 on
+    wands and spells), immunity to poison and holds (143), the mask's save
+    (126) and fire resistance (205).
+  - Barkskin (13) now gives +1 against what is not magic.
+  - The magic stone (78), which shares Secret's luckstone number, no longer
+    gives +1, since it is not in the group.
+  - Two small differences remain. The fire ring's +4 does not check that
+    damage is pending. The mask sets the bonus in place of the total.

@@ -1,5 +1,6 @@
 #include "dark_queen_progression.h"
 #include "dark_queen_rules.h"
+#include "installed_games.h"
 #include "opengold/campaign_save.h"
 #include "opengold/campaign_session.h"
 #include "opengold/character_creator.h"
@@ -54,6 +55,48 @@ Bytes packed(std::span<const std::uint8_t> raw)
         bytes.insert(bytes.end(), raw.begin() + at, raw.begin() + at + size);
     }
     return bytes;
+}
+
+// The save against paralysis, poison and death (herostat.c, recalc_saves):
+// after each class's table, a dwarf's or kender's Constitution raises the
+// number needed by its step (4 at 16, 5 at 18), and Constitution above 18
+// raises anyone's (1 at 19, 4 at 25). The shipped code raises it, so these
+// make the save worse; a dwarf's and kender's own Constitution bonus on the
+// roll (effect 94) cancels theirs against this save.
+void native_constitution_raises_the_death_save()
+{
+    using opengold::original::ClassSlot;
+    using opengold::original::dark_queen_saving_throws;
+    using opengold::original::Race;
+    const auto only = [](ClassSlot slot)
+    {
+        opengold::original::ClassLevels levels{};
+        levels[static_cast<std::size_t>(slot)] = 5;
+        return levels;
+    };
+    const auto fighter = only(ClassSlot::fighter);
+    const auto table = dark_queen_saving_throws(fighter, Race::krynn_human, 16);
+    const auto raised = [&](Race race, int constitution)
+    {
+        const auto saves = dark_queen_saving_throws(fighter, race, constitution);
+        check(std::equal(saves.begin() + 1, saves.end(), table.begin() + 1),
+              "Constitution moves only the save against paralysis, poison and death");
+        return saves[0] - table[0];
+    };
+    check(raised(Race::hill_dwarf, 16) == 4 && raised(Race::mountain_dwarf, 7) == 2 &&
+              raised(Race::kender, 18) == 5,
+          "A dwarf's or kender's Constitution raises the number it needs");
+    check(raised(Race::krynn_human, 18) == 0 && raised(Race::krynn_human, 19) == 1 &&
+              raised(Race::krynn_human, 25) == 4,
+          "Anyone's Constitution above 18 raises it");
+    // A cleric/fighter dwarf: the cleric's table plus 4, then the lower of
+    // that and the fighter's, plus 4 again.
+    auto both = fighter;
+    both[static_cast<std::size_t>(ClassSlot::cleric)] = 5;
+    const int cleric = dark_queen_saving_throws(only(ClassSlot::cleric), Race::krynn_human, 16)[0];
+    check(dark_queen_saving_throws(both, Race::hill_dwarf, 16)[0] ==
+              std::min(cleric + 4, table[0]) + 4,
+          "Each of a dwarf's classes adds it after that class's table");
 }
 
 void native_progression_and_spells_use_dark_queen_rules()
@@ -144,14 +187,10 @@ void every_native_creation_choice_produces_a_live_profile()
     Content content;
     content.game = game;
     std::shared_ptr<const por::PhlanResources> assets;
-    if (const auto *base = std::getenv("OPENGOLD_GOLDBOX_DIR"))
+    if (const auto folder = test::installed_game_folder(game); !folder.empty())
     {
-        const auto folder = std::filesystem::path{base} / "DQK";
-        if (std::filesystem::exists(folder))
-        {
-            content = load_original_content(folder, game);
-            assets = load_campaign(folder, game).resources();
-        }
+        content = load_original_content(folder, game);
+        assets = load_campaign(folder, game).resources();
     }
     const auto module = rules_module(content);
     check(game_of(creation->identity()) == game, "Persist a separate Dark Queen rules identity");
@@ -1310,15 +1349,14 @@ Bytes read(const std::filesystem::path &path)
 
 void released_death_knights_winners_keep_their_save_bytes()
 {
-    const char *base = std::getenv("OPENGOLD_GOLDBOX_DIR");
+    using namespace opengold;
+    constexpr auto previous = GoldBoxGame::death_knights_of_krynn;
+    const auto folder = test::installed_game_folder(previous);
     const char *source = std::getenv("OPENGOLD_DEATH_KNIGHTS_WINNERS");
-    if (!base || !source)
+    if (folder.empty() || !source)
     {
         return;
     }
-    using namespace opengold;
-    constexpr auto previous = GoldBoxGame::death_knights_of_krynn;
-    const auto folder = std::filesystem::path{base} / "DKK";
     const auto content = load_original_content(folder, previous);
     const std::shared_ptr<const rules::CharacterRules> creation =
         original::character_rules(original::default_aging, previous);
@@ -1339,13 +1377,12 @@ void released_death_knights_winners_keep_their_save_bytes()
 
 void installed_records_decode()
 {
-    const char *base = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    if (!base || !std::filesystem::exists(std::filesystem::path{base} / "DQK"))
+    const auto folder = opengold::test::installed_game_folder(game);
+    if (folder.empty())
     {
-        std::cout << "Dark Queen installed-data checks need OPENGOLD_GOLDBOX_DIR.\n";
+        std::cout << "Dark Queen installed-data checks need its game files.\n";
         return;
     }
-    const auto folder = std::filesystem::path{base} / "DQK";
     check(opengold::identify_game(folder) == game,
           "The installed Dark Queen identifies independently of the kit");
     const auto check_library =
@@ -2256,20 +2293,25 @@ void actual_death_knights_winners_keep_their_earned_state()
         std::cout << "Actual Death Knights import needs OPENGOLD_DEATH_KNIGHTS_WINNERS.\n";
         return;
     }
-    const auto *base = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    const auto folder = std::filesystem::path(base ? base : "/home/edmond/GoldBox");
     constexpr auto previous = GoldBoxGame::death_knights_of_krynn;
+    const auto source_folder = test::installed_game_folder(previous);
+    const auto folder = test::installed_game_folder(game);
+    if (source_folder.empty() || folder.empty())
+    {
+        std::cout << "Actual Death Knights import needs both games' files.\n";
+        return;
+    }
     const auto source_creation = character_rules(default_aging, previous);
-    const auto source_rules = rules_module(load_original_content(folder / "DKK", previous));
-    const auto source_world = load_campaign(folder / "DKK", previous);
+    const auto source_rules = rules_module(load_original_content(source_folder, previous));
+    const auto source_world = load_campaign(source_folder, previous);
     const auto saved = decode_campaign(read_campaign_file(source), *source_creation, *source_rules,
-                                       campaign_asset_identity(folder / "DKK"), &source_world);
+                                       campaign_asset_identity(source_folder), &source_world);
     check(saved.game == previous, "Read the actual earned Death Knights winning campaign");
     const std::shared_ptr<const rules::CharacterRules> creation =
         character_rules(default_aging, game);
-    const auto content = load_original_content(folder / "DQK", game);
+    const auto content = load_original_content(folder, game);
     auto party = std::make_shared<CampaignParty>(rules_module(content), creation);
-    const auto convert = death_knights_items_for_dark_queen(folder / "DQK");
+    const auto convert = death_knights_items_for_dark_queen(folder);
     std::vector<const PartyMember *> winners;
     for (const auto slot : saved.party.slots)
     {
@@ -2335,14 +2377,14 @@ void actual_death_knights_winners_keep_their_earned_state()
     }
     check(wounded > 0 && party->state().wealth == saved.party.wealth,
           "The actual wounded party receives its existing purse exactly once");
-    const auto assets = campaign_asset_identity(folder / "DQK");
+    const auto assets = campaign_asset_identity(folder);
     const auto bytes = encode_campaign(*party, nullptr, assets, game);
     auto reloaded = decode_campaign(bytes, *creation, *rules_module(content), assets, nullptr);
     auto restored = std::make_shared<CampaignParty>(rules_module(content), creation);
     restored->restore(std::move(reloaded.party));
     check(encode_campaign(*restored, nullptr, assets, game) == bytes,
           "The actual imported winners roundtrip byte for byte as an ordinary native party save");
-    auto opening = load_campaign(folder / "DQK", game);
+    auto opening = load_campaign(folder, game);
     opening.campaign_party(party);
     bool visited_palace = false, left_palanthas = false, reached_caergoth = false;
     for (unsigned screen = 0; screen < 300; ++screen)
@@ -2412,6 +2454,7 @@ int main()
                   static_cast<unsigned>(opengold::GoldBoxGame::death_knights_of_krynn) == 8,
               "Append Dark Queen without renumbering released game identities");
         native_progression_and_spells_use_dark_queen_rules();
+        native_constitution_raises_the_death_save();
         every_native_creation_choice_produces_a_live_profile();
         native_knight_petitions_apply_every_required_level_loss();
         native_training_does_not_become_a_later_level_drain();

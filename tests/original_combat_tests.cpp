@@ -4511,6 +4511,76 @@ rules::EntityId id_of(const rules::CombatSession &session, std::string_view name
     return view_of(session.snapshot(), name).id;
 }
 
+// How much a party mage's Fireball is expected to take from a Dark Queen
+// White Robe foe (save 10) whose moon is in a given phase.
+double native_robed_foe_loss(int phase)
+{
+    using original::ClassSlot;
+    constexpr int casting_moon = 1700 + 250, white_robe = 1;
+    auto robe = victim(100);
+    robe.level = 10;
+    robe.class_levels[static_cast<std::size_t>(ClassSlot::magic_user)] = 10;
+    robe.saving_throws = {10, 10, 10, 10, 10};
+    robe.effects.push_back({casting_moon, 0, 4 * white_robe + phase, false});
+    auto fight =
+        arrange({{"Mage", rules::Side::party, {0, 0}, caster(ClassSlot::magic_user, 5, {47})},
+                 {"Robe", rules::Side::opposition, {6, 5}, robe}},
+                103, {}, 100, GoldBoxGame::dark_queen_of_krynn);
+    const auto &session = *fight.session;
+    const auto outlook = session.area_outlook(id_of(session, "Mage"), 47, {6, 5});
+    check(outlook.has_value(), "The Fireball's outlook reaches the robe");
+    return expected_loss(outlook_for(*outlook, id_of(session, "Robe")));
+}
+
+// A Dark Queen mage of a robe saves 1 worse in its moon's phase 0 and 1
+// better in phase 2 (fxcore.c, fx_saving_throw), as its caster level
+// follows the same phases.
+void native_robed_mages_save_by_their_moon()
+{
+    const double phase_0 = native_robed_foe_loss(0), phase_1 = native_robed_foe_loss(1),
+                 phase_2 = native_robed_foe_loss(2), phase_3 = native_robed_foe_loss(3);
+    check(near(phase_1, phase_3), "Phases 1 and 3 leave the save alone");
+    check(phase_0 > phase_1, "Phase 0 makes the robe's save worse");
+    check(phase_2 < phase_1, "Phase 2 makes it better");
+}
+
+// The chance a party mage's Stinking Cloud sickens a Dark Queen foe (save
+// 10 against poison) that bears the given native effect, or none.
+double native_foe_sickened(int native_effect)
+{
+    using original::ClassSlot;
+    auto foe = victim(100);
+    foe.level = 10;
+    foe.saving_throws = {10, 10, 10, 10, 10};
+    if (native_effect != 0)
+    {
+        foe.effects.push_back(
+            {original::canonical_effect(native_effect, GoldBoxGame::dark_queen_of_krynn), 0, 255,
+             false});
+    }
+    auto fight =
+        arrange({{"Mage", rules::Side::party, {0, 0}, caster(ClassSlot::magic_user, 5, {34})},
+                 {"Foe", rules::Side::opposition, {3, 3}, foe}},
+                103, {}, 100, GoldBoxGame::dark_queen_of_krynn);
+    const auto &session = *fight.session;
+    const auto outlook = session.area_outlook(id_of(session, "Mage"), 34, {3, 3});
+    check(outlook.has_value(), "The cloud's outlook reaches the foe");
+    return outlook_for(*outlook, id_of(session, "Foe")).disabled;
+}
+
+// Dark Queen's saving throw takes its effects' bonuses from trigger group
+// 0Ch (fxcore.c, fx_trigger_group): Barkskin (13) saves 1 better against
+// what is not magic (effects.c, fx_barkskin). A magic stone (78) is not in
+// the group, so it does not help as Secret's luckstone does.
+void native_save_bonuses_follow_their_trigger_group()
+{
+    constexpr int barkskin = 13, magic_stone = 78;
+    const double plain = native_foe_sickened(0);
+    check(plain > 0, "The cloud may sicken the foe");
+    check(native_foe_sickened(barkskin) < plain, "Barkskin saves 1 better against the cloud");
+    check(near(native_foe_sickened(magic_stone), plain), "A magic stone does not help the save");
+}
+
 // A party member's outlook for its Fireball (docs/ORIGINAL-RULES.md, Party
 // area spells): each creature's 5d6, rolled once for all, weighed with its
 // save, the whole on a failed one and half on a made one; a friend's Hit
@@ -9007,6 +9077,8 @@ int main()
         a_monster_bolts_through_its_own();
         treasures_ai_casts_its_weightiest_spell(GoldBoxGame::treasures_of_the_savage_frontier);
         treasures_ai_casts_its_weightiest_spell(GoldBoxGame::pools_of_darkness);
+        native_robed_mages_save_by_their_moon();
+        native_save_bonuses_follow_their_trigger_group();
         quick_magic_lets_the_party_cast();
         the_ai_never_shares_a_square();
         the_ai_walks_around_walls();

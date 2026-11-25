@@ -1733,7 +1733,9 @@ std::array<int, 5> saving_throws(const ClassLevels &levels, GoldBoxGame game)
 {
     if (game == GoldBoxGame::dark_queen_of_krynn)
     {
-        return dark_queen_saving_throws(levels);
+        // The class tables alone; recalculate_dark_queen_numbers adds race
+        // and Constitution.
+        return dark_queen_saving_throws(levels, Race::krynn_human, 10);
     }
     if (game == GoldBoxGame::death_knights_of_krynn)
     {

@@ -13035,8 +13035,17 @@ bool Session::saves_with(const Fighter &f, int natural, int save, int modifier,
     {
         modifier += hardiness;
     }
-    // Secret's luckstone saves 1 better (EffSaveBonus).
-    modifier += f.has(effect::luck) ? 1 : 0;
+    // Secret's luckstone saves 1 better (EffSaveBonus). Dark Queen's bonuses
+    // are those of its trigger group 0Ch (fxcore.c, fx_trigger_group): its
+    // magic stone, which shares the luckstone's number, is not among them,
+    // and its Barkskin saves 1 better against what is not magic
+    // (effects.c, fx_barkskin).
+    const bool native = game_of(identity_) == GoldBoxGame::dark_queen_of_krynn;
+    modifier += f.has(effect::luck) && !native ? 1 : 0;
+    modifier +=
+        native && !(element & 8) && f.has(canonical_effect(13, GoldBoxGame::dark_queen_of_krynn))
+            ? 1
+            : 0;
     modifier += f.has(effect::shield) ? 1 : 0;
     modifier -= f.has(effect::blind) ? 4 : 0;
     modifier -= f.has(effect::bestow_curse) ? 4 : 0;
@@ -13070,6 +13079,17 @@ bool Session::saves_with(const Fighter &f, int natural, int save, int modifier,
     if (((element & 2) && f.has(250)) || ((element & 1) && f.has(254)))
     {
         modifier += 2;
+    }
+    // Dark Queen's mage of a robe saves 1 worse in its moon's phase 0 and 1
+    // better in phase 2 (fxcore.c, fx_saving_throw), the phases that also
+    // move its caster level.
+    if (native)
+    {
+        if (const auto *moon = f.find_effect(dkk_effect::casting_moon))
+        {
+            const int phase = moon->strength % 4;
+            modifier += phase == 0 ? -1 : phase == 2 ? 1 : 0;
+        }
     }
     const int total = natural + f.numbers.save_bonus + modifier;
     return total >= 0 && total >= f.numbers.saving_throws[static_cast<std::size_t>(save)];

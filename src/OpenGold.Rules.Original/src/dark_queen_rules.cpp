@@ -444,20 +444,60 @@ int dark_queen_thac0(const ClassLevels &levels)
     return 60 - best;
 }
 
-std::array<int, 5> dark_queen_saving_throws(const ClassLevels &levels)
+namespace
 {
-    std::array<int, 5> saves{20, 20, 20, 20, 20};
-    for (std::size_t at = 0; at < levels.size(); ++at)
+
+// The steps by which Constitution raises the number a character needs
+// against paralysis, poison and death (herostat.c, recalc_saves): a dwarf's
+// or kender's at 4, 7, 11, 14 and 18, and anyone's above 18.
+int constitution_save_raise(Race race, int constitution)
+{
+    const bool hardy_race =
+        race == Race::mountain_dwarf || race == Race::hill_dwarf || race == Race::kender;
+    int raise = 0;
+    if (hardy_race && constitution >= 4 && constitution <= 18)
     {
-        const auto slot = static_cast<C>(at);
-        if (levels[at] > 0 && slot != C::druid)
+        raise += constitution <= 6    ? 1
+                 : constitution <= 10 ? 2
+                 : constitution <= 13 ? 3
+                 : constitution <= 17 ? 4
+                                      : 5;
+    }
+    if (constitution >= 19 && constitution <= 25)
+    {
+        raise += (constitution - 17) / 2;
+    }
+    return raise;
+}
+
+} // namespace
+
+// Each class's table, the best of them kept, in the original's class order;
+// after each class the save against paralysis, poison and death is raised
+// by Constitution (constitution_save_raise). The shipped code raises the
+// number needed, so it is a penalty, not the bonus the tabletop rules give.
+// An equipped item of special 6 raises it as for a dwarf too; no Dark
+// Queen item OpenGoldBox reads has that special.
+std::array<int, 5> dark_queen_saving_throws(const ClassLevels &levels, Race race, int constitution)
+{
+    // Cleric, knight, fighter, paladin, ranger, mage, thief.
+    constexpr std::array native_order{C::cleric, C::monk,       C::fighter, C::paladin,
+                                      C::ranger, C::magic_user, C::thief};
+    const int raise = constitution_save_raise(race, constitution);
+    std::array<int, 5> saves{20, 20, 20, 20, 20};
+    for (const auto slot : native_order)
+    {
+        const int level = levels[static_cast<std::size_t>(slot)];
+        if (level <= 0)
         {
-            const auto base = (native_slot(slot) * 22 + std::min(levels[at], 21)) * 5;
-            for (std::size_t save = 0; save < saves.size(); ++save)
-            {
-                saves[save] = std::min(saves[save], data::saving_throws[base + save]);
-            }
+            continue;
         }
+        const auto base = (native_slot(slot) * 22 + std::min(level, 21)) * 5;
+        for (std::size_t save = 0; save < saves.size(); ++save)
+        {
+            saves[save] = std::min(saves[save], data::saving_throws[base + save]);
+        }
+        saves[0] += raise;
     }
     return saves;
 }
@@ -517,7 +557,8 @@ void recalculate_dark_queen_numbers(rules::CharacterSheet::Original &numbers,
     {
         --numbers.thac0;
     }
-    numbers.saving_throws = dark_queen_saving_throws(numbers.class_levels);
+    numbers.saving_throws =
+        dark_queen_saving_throws(numbers.class_levels, race, scores[rules::Ability::constitution]);
 }
 
 std::vector<int> dark_queen_learning_spells(int robe, int highest)
