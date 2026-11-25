@@ -110,6 +110,7 @@ add_library(opengold_rules_original STATIC
     src/OpenGold.Rules.Original/src/combatant.cpp
     src/OpenGold.Rules.Original/src/spells.cpp
     src/OpenGold.Rules.Original/src/combat_session.cpp
+    src/OpenGold.Rules.Original/src/history_entries.cpp
     src/OpenGold.Rules.Original/src/line_walk.cpp
     src/OpenGold.Rules.Original/src/outlook_dice.cpp
     src/OpenGold.Rules.Original/src/rules_module.cpp
