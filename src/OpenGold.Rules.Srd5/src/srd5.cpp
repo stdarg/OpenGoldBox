@@ -29410,7 +29410,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     }
     if (version < checkpoint_format || identity != content->identity)
     {
-        throw std::runtime_error(older_save_message);
+        throw std::runtime_error(std::string(older_save_message));
     }
     Encounter encounter;
     encounter.battlefield = read_checkpoint_board(input);

@@ -35,8 +35,12 @@ class DiceTally
         dice_tally = previous_;
     }
 
+    // A tally restores the previous pointer when it dies, so it can neither
+    // be copied nor moved: a second owner would restore it twice (C.21).
     DiceTally(const DiceTally &) = delete;
+    DiceTally(DiceTally &&) = delete;
     DiceTally &operator=(const DiceTally &) = delete;
+    DiceTally &operator=(DiceTally &&) = delete;
 
   private:
     std::vector<RolledDie> *previous_;

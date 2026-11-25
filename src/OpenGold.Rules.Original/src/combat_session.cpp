@@ -15739,7 +15739,7 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
     if (!has_costs && format != costless_checkpoint_format &&
         format != costless_death_knights_checkpoint_format && !dark_queen)
     {
-        throw std::runtime_error(rules::older_save_message);
+        throw std::runtime_error(std::string(rules::older_save_message));
     }
     const bool native_calendar =
         dark_queen || format == costless_death_knights_checkpoint_format ||

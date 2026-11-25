@@ -1292,7 +1292,7 @@ CheckedSave checked_save(std::string_view bytes)
         saved_format(bytes.substr(campaign_magic.size(), header_end - campaign_magic.size()));
     if (version < unchosen_portraits_format)
     {
-        throw std::runtime_error(rules::older_save_message);
+        throw std::runtime_error(std::string(rules::older_save_message));
     }
     require(version >= unchosen_portraits_format && version <= campaign_format,
             "Unsupported campaign save version");
@@ -1364,7 +1364,7 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
     in.fields(identity, asset);
     if (identity != module.identity())
     {
-        throw std::runtime_error(rules::older_save_message);
+        throw std::runtime_error(std::string(rules::older_save_message));
     }
     require(asset == assets, "Campaign original asset identity mismatch");
     SavedCampaign result;

@@ -855,7 +855,7 @@ struct Identity
 
 // Pre-1.0 saves are not migrated: every save kind accepts only its current
 // format and the current rules identity. Hosts localize this message.
-inline constexpr char older_save_message[] =
+inline constexpr std::string_view older_save_message =
     "This save was made by an older pre-release version of OpenGoldBox and can't be loaded.";
 enum class Outcome
 {
