@@ -9598,7 +9598,7 @@ int Session::native_rank_target(const Fighter &caster, const Fighter &target, in
         return -40;
     }
     // Its own effect numbers (canonical_effect).
-    const auto has = [game](const Fighter &one, int code)
+    const auto has = [](const Fighter &one, int code)
     {
         return one.has(canonical_effect(code, game));
     };
