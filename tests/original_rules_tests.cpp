@@ -1,6 +1,7 @@
 // The original rules' tables and creation (docs/ORIGINAL-RULES.md).
 #include "opengold/original.h"
 #include "opengold/original_spells.h"
+#include "game_rule_sets.h"
 #include "test_support.h"
 #include <algorithm>
 #include <initializer_list>
@@ -1063,6 +1064,23 @@ void combat_tables()
           "Damage below zero is none (the original wrapped it past 250)");
 }
 
+// Every game has a rule-set row, and every function of it is filled in.
+void every_game_has_a_rule_set()
+{
+    for (const auto game : opengold::gold_box_games)
+    {
+        const auto &rules = rule_set(game);
+        check(rules.professions_for && rules.ability_limits && rules.class_minimums &&
+                  rules.starting_items && rules.starting_age && rules.thac0 &&
+                  rules.saving_throws && rules.experience_for_level && rules.known_spells &&
+                  rules.racial_level_limit && rules.spell_slots && rules.caster_slots,
+              std::string(opengold::game_title(game)) + " has a whole rule set");
+    }
+    check(rule_set(pool).thac0 == rule_set(curse).thac0 &&
+              rule_set(curse).thac0 != rule_set(opengold::GoldBoxGame::champions_of_krynn).thac0,
+          "The Realms games share one row and the Krynn games have their own");
+}
+
 int main()
 {
     try
@@ -1087,6 +1105,7 @@ int main()
         creation_behind_the_rules_interface();
         curse_tables_and_creation();
         combat_tables();
+        every_game_has_a_rule_set();
         std::cout << "Original rules passed.\n";
     }
     catch (const std::exception &error)
