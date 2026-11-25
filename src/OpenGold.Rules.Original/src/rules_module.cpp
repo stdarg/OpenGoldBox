@@ -681,6 +681,9 @@ Combatant character_combatant(const CharacterSheet &sheet,
     if (game_of(sheet.identity) == GoldBoxGame::dark_queen_of_krynn)
     {
         c.native_progression = native_progression_of(sheet);
+        // Creation gives every hero immunity bit 2 (create.c, 1394), which a
+        // charm or hold may take; the sheet keeps no immunities of its own.
+        c.traits |= dark_queen_effect::mind_spell_trait;
     }
     // The Constitution saves against poison (90) and against spells and wands
     // (97), and the elf's and half-elf's resistance to sleep and charm (107,

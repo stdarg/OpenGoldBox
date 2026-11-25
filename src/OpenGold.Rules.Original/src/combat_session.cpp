@@ -3,6 +3,7 @@
 #include "dark_queen_effects.h"
 #include "dark_queen_progression.h"
 #include "dark_queen_rules.h"
+#include "dark_queen_spell_table.h"
 #include "death_knights_effects.h"
 #include "death_knights_rules.h"
 
@@ -1408,6 +1409,13 @@ class Session final : public rules::CombatSession
         return darkness() || treasures();
     }
 
+    // Dark Queen's computer (its aiturn.c and cbaction.c) weighs its spells
+    // the same way, by its own ratings, and never uses an item either.
+    [[nodiscard]] bool native_weighs_spells() const
+    {
+        return game_of(identity_) == GoldBoxGame::dark_queen_of_krynn;
+    }
+
     [[nodiscard]] bool gateway() const
     {
         return game_of(identity_) == GoldBoxGame::gateway_to_the_savage_frontier;
@@ -1799,6 +1807,10 @@ class Session final : public rules::CombatSession
     [[nodiscard]] Fighter *treasures_spell_target(Fighter &f, int number);
     [[nodiscard]] std::optional<Cell> treasures_area_aim(const Fighter &f, int number);
     bool treasures_ai_aim(Fighter &f);
+    // Dark Queen's ratings and area aim (its cbaction.c).
+    [[nodiscard]] int native_rank_target(const Fighter &caster, const Fighter &target,
+                                         int number) const;
+    [[nodiscard]] std::optional<Cell> native_area_aim(const Fighter &f, int number);
     [[nodiscard]] Fighter *cure_search(const Fighter &f);
     bool acquire_target(Fighter &f, int range, bool relaxed, bool force_new);
     [[nodiscard]] std::vector<EntityId> enemies_within(const Fighter &f, int range,
@@ -9185,8 +9197,9 @@ bool Session::take_ai_step(Fighter &f, int direction, int &last_direction)
 // scroll) whose spell it decides on is used.
 bool Session::ai_use_item(Fighter &f)
 {
-    // The 256-color engine's computer never uses an item (its SelectItemToUse).
-    if (weighs_spells())
+    // The 256-color engine's computer never uses an item (its SelectItemToUse),
+    // nor Dark Queen's (aiturn.c, the computer's turn).
+    if (weighs_spells() || native_weighs_spells())
     {
         return false;
     }
@@ -9241,7 +9254,7 @@ bool Session::ai_use_item(Fighter &f)
 // spells, the first it decides on cast as anyone casts it.
 bool Session::ai_cast(Fighter &f, bool magic)
 {
-    if (weighs_spells())
+    if (weighs_spells() || native_weighs_spells())
     {
         return treasures_ai_cast(f, magic);
     }
@@ -9289,7 +9302,8 @@ bool Session::ai_cast(Fighter &f, bool magic)
 // equals) that has a target worth it, and that one only if 1d100 is above
 // four times its fighter, paladin and ranger levels and 1d5 no more than the
 // spell's weight. The original's sort passes over the first memorized spell
-// (docs/ORIGINAL-RULES.md, Bugs); OpenGoldBox weighs them all.
+// (docs/ORIGINAL-RULES.md, Bugs); OpenGoldBox weighs them all. Dark Queen's
+// (aiturn.c, try_spell and spell_pick) counts its knight levels too.
 bool Session::treasures_ai_cast(Fighter &f, bool magic)
 {
     if (f.fleeing || !f.cast_allowed || silenced(f) || f.has(effect::no_magic) ||
@@ -9321,7 +9335,10 @@ bool Session::treasures_ai_cast(Fighter &f, bool magic)
         return false;
     }
     const auto &levels = f.numbers.class_levels;
-    const int fighting = 4 * (levels[static_cast<std::size_t>(ClassSlot::fighter)] +
+    // Dark Queen keeps a knight's levels in the monk's slot.
+    const int knight =
+        native_weighs_spells() ? levels[static_cast<std::size_t>(ClassSlot::monk)] : 0;
+    const int fighting = 4 * (knight + levels[static_cast<std::size_t>(ClassSlot::fighter)] +
                               levels[static_cast<std::size_t>(ClassSlot::paladin)] +
                               levels[static_cast<std::size_t>(ClassSlot::ranger)]);
     if (roll(100) <= fighting || game_spell(*chosen)->ai_priority < roll(5))
@@ -9343,6 +9360,10 @@ bool Session::treasures_ai_cast(Fighter &f, bool magic)
 // the spells it stops, and magic resistance above 50 every spell.
 int Session::treasures_spell_rating(const Fighter &caster, const Fighter &target, int number) const
 {
+    if (native_weighs_spells())
+    {
+        return native_rank_target(caster, target, number);
+    }
     // Pools of Darkness numbers these effects as Treasures does.
     const auto game = game_of(identity_);
     const auto &known = *game_spell(number);
@@ -9556,6 +9577,226 @@ std::optional<Cell> Session::treasures_area_aim(const Fighter &f, int number)
     return best_score > 0 ? best : std::nullopt;
 }
 
+// How Dark Queen's computer rates a creature as its spell's target (its
+// cbaction.c, rank_target): -40 one of the side the spell would spare, 4
+// one the spell may take, 0 one it would do nothing to. A globe keeps off
+// the spells it stops; then magic resistance above 40 rates it 3, above 70
+// 2, above 100 1 and above 130 0, a globed one's too, in the original's
+// order.
+int Session::native_rank_target(const Fighter &caster, const Fighter &target, int number) const
+{
+    constexpr auto game = GoldBoxGame::dark_queen_of_krynn;
+    const int native = native_spell(number, game);
+    if (native == 0)
+    {
+        return 0;
+    }
+    const auto &row = dark_queen_data::spells[static_cast<std::size_t>(native - 1)];
+    const Side enemies = caster.side == Side::party ? Side::opposition : Side::party;
+    if (target.side != (row.hostile != 0 ? enemies : caster.side))
+    {
+        return -40;
+    }
+    // Its own effect numbers (canonical_effect).
+    const auto has = [game](const Fighter &one, int code)
+    {
+        return one.has(canonical_effect(code, game));
+    };
+    const auto bears = [&](int code)
+    {
+        return has(target, code);
+    };
+    constexpr int bless = 1, immune_electricity = 6, shield = 17, blind = 33, bestow_curse = 36,
+                  prayer = 49, held = 52, asleep = 53, globe = 57, minor_globe = 63,
+                  immune_fear = 92, immune_fire = 93, confused = 138, sleepless = 141,
+                  free_of_holds = 142, poison_ward = 143, spore_infection = 185;
+    const bool character = target.numbers.race != 0;
+    // Older combat continuations lack the derived trait. Read the hero's
+    // existing identity or the monster's saved immunity bit without changing
+    // its serialized numbers; a load followed by a save keeps those bytes.
+    const bool saved_record = target.record && target.record->game == game;
+    const bool hero = target.numbers.native_progression.has_value() ||
+                      (saved_record && !target.weighs_unreadied && character);
+    const bool mind = (target.numbers.traits & dark_queen_effect::mind_spell_trait) != 0 || hero ||
+                      (saved_record && (target.record->target_flags & 0x02) != 0);
+    const bool wounded = target.hit_points < target.numbers.max_hit_points;
+    const auto fighting_beside = [&]
+    {
+        return std::any_of(fighters_.begin(), fighters_.end(),
+                           [&](const Fighter &o)
+                           {
+                               return o.side != target.side && o.able() && distance(o, target) <= 1;
+                           });
+    };
+    bool takes = false;
+    // The spells by the rules' numbers (canonical_spell), the original's own
+    // in brackets.
+    switch (number)
+    {
+    case 1: // Bless [1]
+        takes = !bears(bless) && !fighting_beside();
+        break;
+    case 42: // Prayer [2Ah], while the caster prays not already
+        takes = !has(caster, prayer);
+        break;
+    case 236: // Heal [24h]
+        takes = wounded || bears(spore_infection);
+        break;
+    case 3:   // Cure Light Wounds [3]
+    case 158: // Cure Serious Wounds [3Ah]
+    case 171: // Cure Critical Wounds [47h]
+        takes = wounded;
+        break;
+    case 296: // Charm Person or Mammal [60h]
+        takes = character || (target.numbers.traits & trait::mammal) != 0;
+        break;
+    case 10: // Charm Person [0Ah], on one square
+        takes = mind && !target.numbers.large;
+        break;
+    case 15: // Magic Missile [0Fh]
+    case 65: // the wand of magic missiles [86h]
+        takes = !bears(shield);
+        break;
+    case 21: // Sleep [15h]
+        takes = target.numbers.level < 5 && !bears(sleepless) && !bears(asleep);
+        break;
+    case 23: // Hold Person [17h]
+    case 49: // [31h]
+        takes = character && !bears(free_of_holds) && mind && !bears(held);
+        break;
+    case 37: // Cure Blindness [25h]
+        takes = bears(blind);
+        break;
+    case 43: // Remove Curse [2Bh]
+        takes = bears(bestow_curse);
+        break;
+    case 47:  // Fireball [2Fh]
+    case 174: // Flame Strike [4Ah]
+    case 315: // Delayed Blast Fireball [73h]
+    case 64:  // the necklace of missiles [85h]
+        takes = !bears(immune_fire);
+        break;
+    case 51: // Lightning Bolt [33h]
+        takes = !bears(immune_electricity);
+        break;
+    case 176: // Slay Living [4Ch]
+    case 310: // Death Spell [6Eh]
+        takes = (target.numbers.traits & trait::unliving) == 0;
+        break;
+    case 168: // [44h]
+        takes = (target.numbers.traits & trait::poison_proof) == 0 && !bears(poison_ward);
+        break;
+    case 194: // Hold Monster [5Eh]
+        takes = mind && !bears(free_of_holds);
+        break;
+    case 61: // the wand of paralyzation [82h]
+        takes = !bears(free_of_holds);
+        break;
+    case 181: // Charm Monsters [51h]
+    case 320: // Mass Charm [78h]
+        takes = mind;
+        break;
+    case 182: // Confusion [52h]
+        takes = !bears(confused);
+        break;
+    case 184: // Fear [54h]
+        takes = !bears(immune_fear);
+        break;
+    case 191: // Cloudkill [5Bh]
+        takes = target.numbers.level < 6;
+        break;
+    default:
+        takes = row.effect_id == 0 || !bears(row.effect_id);
+        break;
+    }
+    if (!takes)
+    {
+        return 0;
+    }
+    int rank = 4;
+    if ((row.level < 5 && bears(globe)) || (row.level < 4 && bears(minor_globe)))
+    {
+        rank = 0;
+    }
+    const int resistance = target.numbers.magic_resistance;
+    if (resistance > 40)
+    {
+        rank = resistance > 130 ? 0 : resistance > 100 ? 1 : resistance > 70 ? 2 : 3;
+    }
+    return rank;
+}
+
+// Where Dark Queen's computer aims a spell that bursts around a square (its
+// cbaction.c, area_aim): of the squares within its range of the caster, or
+// when range and burst together pass 18 squares within 18 less the burst of
+// the creature it fights, the one where the creatures whose squares the
+// burst would cover rate highest together (native_rank_target), walls
+// aside, as long as the caster's range and sight reach it; a tie takes the
+// later square one time in four, nowhere when none rates above 0. Stinking
+// Cloud [22h] and Blade Barrier [65h] spread right and down from their
+// square only.
+std::optional<Cell> Session::native_area_aim(const Fighter &f, int number)
+{
+    constexpr int stinking_cloud = 34, fireball = 47, ice_storm = 187, blade_barrier = 301,
+                  delayed_blast_fireball = 315;
+    const auto &known = *game_spell(number);
+    const int range = spell_range(known, caster_level(f, known, game_of(identity_)));
+    // The bursts as the spells go off: Ice Storm's 3 under water, and a
+    // fireball's 1 less out of doors (cbaction.c, 2075-2082).
+    int radius = number == ice_storm && underwater_ ? 3 : known.area & 7;
+    if ((number == fireball || number == delayed_blast_fireball) && outdoors_)
+    {
+        --radius;
+    }
+    const bool one_way = number == stinking_cloud || number == blade_barrier;
+    const auto *fought = range + radius > 18 ? find(f.lock) : nullptr;
+    const Cell base = fought ? fought->cell : f.cell;
+    const int reach = std::min(range + radius, 18) - radius;
+    // Each creature's rating, and whether a burst at a square covers it
+    // (area_widths: the doubled distance's burst).
+    std::vector<std::pair<Cell, int>> rated;
+    for (const auto &o : fighters_)
+    {
+        const bool counted = !one_way || (o.cell.x >= base.x - reach && o.cell.y >= base.y - reach);
+        if (o.able() && counted)
+        {
+            rated.emplace_back(o.cell, native_rank_target(f, o, number));
+        }
+    }
+    const auto covers = [&](Cell aim, Cell at)
+    {
+        if (!one_way)
+        {
+            return in_burst(doubled_distance(aim, at), radius);
+        }
+        const int down = aim.y - at.y, right = aim.x - at.x;
+        return down >= 0 && right >= 0 && in_burst(doubled_distance({0, 0}, {right, down}), radius);
+    };
+    std::optional<Cell> best;
+    int best_score = 0;
+    for (int x = base.x - reach; x <= base.x + reach; ++x)
+    {
+        for (int y = base.y - reach; y <= base.y + reach; ++y)
+        {
+            const Cell cell{x, y};
+            int score = 0;
+            for (const auto &[at, rating] : rated)
+            {
+                score += covers(cell, at) ? rating : 0;
+            }
+            const bool better =
+                score > best_score || (score == best_score && score > 0 && roll(100) <= 25);
+            if (better && board_.contains(cell) && doubled_distance(f.cell, cell) / 2 <= range &&
+                clear_line(board_, f.cell, cell))
+            {
+                best = cell;
+                best_score = score;
+            }
+        }
+    }
+    return best_score > 0 ? best : std::nullopt;
+}
+
 // Treasures' computer aims its spell (its cbtacts.pas, SelectCombatTargets):
 // a burst at the square AimAreaSpell finds; a bolt or a spell on one
 // creature at the one it singles out; a spell on several at as many picks
@@ -9582,7 +9823,8 @@ bool Session::treasures_ai_aim(Fighter &f)
     }
     if (area >= 9 && area <= 14)
     {
-        const auto aim = treasures_area_aim(f, number);
+        const auto aim =
+            native_weighs_spells() ? native_area_aim(f, number) : treasures_area_aim(f, number);
         if (!aim)
         {
             return abort();
@@ -9758,7 +10000,7 @@ bool Session::ai_aim(Fighter &f)
     {
         return aim_party_area_spell(f);
     }
-    if (weighs_spells())
+    if (weighs_spells() || native_weighs_spells())
     {
         return treasures_ai_aim(f);
     }

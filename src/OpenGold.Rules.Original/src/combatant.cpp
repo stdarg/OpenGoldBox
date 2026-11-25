@@ -657,6 +657,7 @@ int dark_queen_traits(const por::CharacterRecord &record)
     traits |= flags & 0x02 ? trait::person | trait::mammal : 0;
     traits |= flags & 0x10 ? trait::snake : 0;
     traits |= flags & 0x20 ? dark_queen_effect::disruption_double_trait : 0;
+    traits |= targets & 0x02 ? dark_queen_effect::mind_spell_trait : 0;
     traits |= targets & 0x08 ? trait::unliving : 0;
     traits |= targets & 0x10 ? trait::poison_proof : 0;
     traits |= targets & 0x80 ? champions_dragon_trait : 0;

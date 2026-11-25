@@ -244,6 +244,11 @@ void every_native_creation_choice_produces_a_live_profile()
             const auto profile = Combatant::decode(module->character_profile(sheet, {}).data);
             check(profile && profile->max_hit_points == sheet.hit_points && !profile->large,
                   "Each native creation has a live single-square combat profile");
+            // Creation gives every hero immunity bit 2 (create.c 1394), which
+            // the computer's charm and hold ratings read (cbaction.c,
+            // rank_target): 0x2000, dark_queen_effect::mind_spell_trait.
+            check((profile->traits & 0x2000) != 0,
+                  "Every native hero may be charmed or held: " + race.id + "/" + profession.id);
             if (assets)
             {
                 CampaignParty party(rules_module(content), creation);

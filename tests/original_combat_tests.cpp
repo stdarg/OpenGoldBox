@@ -6,6 +6,7 @@
 #include "opengold/original_rules.h"
 #include "opengold/original_spells.h"
 #include "installed_games.h"
+#include "original_creation_support.h"
 #include "test_support.h"
 
 #include <algorithm>
@@ -4475,6 +4476,325 @@ void treasures_ai_casts_its_weightiest_spell(GoldBoxGame game)
         10);
     check(first_spell().find("Lightning Bolt") != std::string::npos,
           "The sorceress casts Lightning Bolt first: " + first_spell());
+}
+
+// How many spells a Dark Queen sorceress (magic-user 5, Magic Missile only,
+// 5 squares from a lone hero) casts or uses in 10 rounds, the hero and her
+// own record adjusted first.
+int native_sorceress_casts(std::uint64_t seed,
+                           const std::function<void(original::Combatant &)> &adjust_hero,
+                           const std::function<void(original::Combatant &)> &adjust_sorceress)
+{
+    using original::ClassSlot;
+    auto hero = victim(500);
+    hero.attacks = {};
+    hero.movement = 0;
+    adjust_hero(hero);
+    auto sorceress = caster(ClassSlot::magic_user, 5, {15});
+    sorceress.morale = 0x80 + 50;
+    sorceress.movement = 0;
+    adjust_sorceress(sorceress);
+    auto fight = arrange({{"Hero", rules::Side::party, {0, 3}, hero},
+                          {"Sorceress", rules::Side::opposition, {5, 3}, sorceress}},
+                         seed, {}, 100, GoldBoxGame::dark_queen_of_krynn);
+    auto &session = *fight.session;
+    all_quick(
+        session,
+        []
+        {
+            return false;
+        },
+        10);
+    return logged(session, "{name} casts {spell}.") + logged(session, "{name} uses an item.");
+}
+
+// How many times a Dark Queen sorceress casts her one area spell in 5 rounds
+// down a corridor at a hero with her own friends 3 squares either side of
+// him, out of doors or under water.
+int native_corridor_casts(std::uint64_t seed, int spell, bool outdoors, bool underwater)
+{
+    using original::ClassSlot;
+    const auto still = [](original::Combatant c)
+    {
+        c.attacks = {};
+        c.movement = 0;
+        return c;
+    };
+    auto sorceress = caster(ClassSlot::magic_user, 9, {spell});
+    sorceress.morale = 0x80 + 50;
+    auto fight =
+        arrange({{"Sorceress", rules::Side::opposition, {0, 1}, still(sorceress)},
+                 {"Left", rules::Side::opposition, {3, 1}, still(victim(500))},
+                 {"Hero", rules::Side::party, {6, 1}, still(victim(500))},
+                 {"Right", rules::Side::opposition, {9, 1}, still(victim(500))}},
+                seed, {}, 100, GoldBoxGame::dark_queen_of_krynn, outdoors, false,
+                [underwater](rules::Encounter &encounter)
+                {
+                    encounter.underwater = underwater;
+                    std::vector<rules::Terrain> ground(12 * 3, rules::Terrain::obstacle);
+                    std::fill(ground.begin() + 12, ground.begin() + 24, rules::Terrain::open);
+                    encounter.battlefield = {12, 3, ground};
+                });
+    auto &session = *fight.session;
+    all_quick(
+        session,
+        []
+        {
+            return false;
+        },
+        5);
+    return logged(session, "{name} casts {spell}.");
+}
+
+// Dark Queen's area aim takes each burst as the spell then goes off
+// (cbaction.c, area_aim, 2075-2082): a Fireball's 1 square less out of doors,
+// an Ice Storm's 3 squares under water. Indoors every square a Fireball's
+// burst of 3 takes the hero from reaches one of her friends, out of doors
+// one does not; an Ice Storm's burst of 2 finds such a square, under water
+// it does not.
+void native_area_aim_takes_bursts_as_they_go_off()
+{
+    constexpr int fireball = 47, ice_storm = 187;
+    int indoors = 0, outside = 0, dry = 0, underwater = 0;
+    for (std::uint64_t seed = 1; seed <= 4; ++seed)
+    {
+        indoors += native_corridor_casts(seed, fireball, false, false);
+        outside += native_corridor_casts(seed, fireball, true, false);
+        dry += native_corridor_casts(seed, ice_storm, false, false);
+        underwater += native_corridor_casts(seed, ice_storm, false, true);
+    }
+    check(indoors == 0, "Indoors she keeps her Fireball off her friends");
+    check(outside > 0, "Out of doors she finds the square that takes the hero alone");
+    check(dry > 0, "Her Ice Storm finds the square that takes the hero alone");
+    check(underwater == 0, "Under water its wider burst would take her friends");
+}
+
+// Dark Queen's computer weighs its spells as the 256-color engine's does
+// (aiturn.c, try_spell and spell_pick; cbaction.c, rank_target): the
+// weightiest with a target first; never above four times its knight,
+// fighter, paladin and ranger levels on 1d100; no spell at a target a globe
+// keeps it off or of magic resistance above 130, and never an item.
+void native_ai_weighs_its_spells()
+{
+    const auto none = [](original::Combatant &)
+    {
+    };
+    int plain = 0, knight = 0, globed = 0, resisting = 0, resisting_less = 0, wand = 0;
+    for (std::uint64_t seed = 1; seed <= 6; ++seed)
+    {
+        plain += native_sorceress_casts(seed, none, none);
+        knight += native_sorceress_casts(
+            seed, none,
+            [](original::Combatant &c)
+            {
+                c.class_levels[static_cast<std::size_t>(original::ClassSlot::monk)] = 25;
+            });
+        globed += native_sorceress_casts(
+            seed,
+            [](original::Combatant &c)
+            {
+                c.effects.push_back(
+                    {original::canonical_effect(63, GoldBoxGame::dark_queen_of_krynn), 0, 255,
+                     false});
+            },
+            none);
+        resisting += native_sorceress_casts(
+            seed,
+            [](original::Combatant &c)
+            {
+                c.magic_resistance = 131;
+            },
+            none);
+        resisting_less += native_sorceress_casts(
+            seed,
+            [](original::Combatant &c)
+            {
+                c.magic_resistance = 60;
+            },
+            none);
+        wand +=
+            native_sorceress_casts(seed, none,
+                                   [](original::Combatant &c)
+                                   {
+                                       c.spells.clear();
+                                       c.items = {{0, true, false, 14, true, {47, 0, 0}, 30, 0}};
+                                   });
+    }
+    check(plain > 0, "A native sorceress casts Magic Missile at the hero");
+    check(knight == 0, "One with 25 knight levels never passes her 1d100 above 100");
+    check(globed == 0, "She casts no first-level spell at a hero under a Minor Globe");
+    check(resisting == 0, "Nor at one whose magic resistance is above 130");
+    check(resisting_less > 0, "Magic resistance of 60 only lowers her rating of him");
+    check(wand == 0, "She never uses an item");
+    const auto fireball = [](original::Combatant &c)
+    {
+        c.spells = {47};
+    };
+    int burst = 0, burst_globed = 0;
+    for (std::uint64_t seed = 1; seed <= 6; ++seed)
+    {
+        burst += native_sorceress_casts(seed, none, fireball);
+        burst_globed += native_sorceress_casts(
+            seed,
+            [](original::Combatant &c)
+            {
+                c.effects.push_back(
+                    {original::canonical_effect(57, GoldBoxGame::dark_queen_of_krynn), 0, 255,
+                     false});
+            },
+            fireball);
+    }
+    check(burst > 0, "She aims a Fireball at the hero");
+    check(burst_globed == 0, "But no Fireball where a Globe of Invulnerability is all it takes");
+}
+
+// A pre-trait Native checkpoint still carries its hero identity or monster
+// immunity record. Derive the AI's Charm/Hold eligibility without rewriting
+// it. Formats 29 and 30 retain their existing canonical upgrade to 31.
+void native_legacy_mind_targets_preserve_checkpoint_bytes()
+{
+    constexpr auto game = GoldBoxGame::dark_queen_of_krynn;
+    constexpr int mind = 0x2000;
+    const std::shared_ptr<const rules::CharacterRules> creation =
+        original::character_rules(original::default_aging, game);
+    CharacterCreator creator(creation, 45);
+    creator.select(rules::CreationField::race, "krynn_human");
+    creator.select(rules::CreationField::character_class, "fighter");
+    creator.name("Legacy hero");
+    test::walk_original_creation(creator);
+    const auto character = creator.create_character();
+    original::Content profile_content;
+    profile_content.game = game;
+    const auto profile_module = original::rules_module(profile_content);
+    const auto profile = profile_module->character_profile(character.sheet(), {});
+    const auto current = original::Combatant::decode(profile.data);
+    check(current && current->native_progression && (current->traits & mind),
+          "The fixture starts with an actual current Native hero profile");
+
+    // Both hero profile versions, then susceptible and immune humanoid
+    // monsters. Their nonzero race must not override a monster's immunity.
+    for (int kind = 0; kind < 4; ++kind)
+    {
+        for (const int spell : {181, 194}) // Charm Monsters, Hold Monster
+        {
+            original::Content content;
+            content.game = game;
+            auto old = *current;
+            old.traits &= ~mind;
+            if (kind == 1)
+            {
+                old.native_progression.reset(); // Released combatant14 hero.
+            }
+            if (kind >= 2)
+            {
+                auto record = kobold_record();
+                record.game = game;
+                record.race = 6; // Native human, including the immune control.
+                record.target_flags = kind == 2 ? 0x02 : 0;
+                old = original::combatant_from_record(record);
+                old.traits &= ~mind;
+                check(old.race != 0, "The monster control is a humanoid");
+                content.bestiary["Legacy target"] = old;
+                content.gear["Legacy target"] = {record, {}};
+            }
+            Fight fight{original::rules_module(std::move(content)), nullptr};
+            rules::Encounter encounter;
+            encounter.battlefield = {8, 8, std::vector<rules::Terrain>(64, rules::Terrain::open)};
+            rules::Participant target;
+            target.id = 1;
+            target.name = target.definition = "Legacy target";
+            target.side = rules::Side::party;
+            target.cell = {0, 3};
+            if (kind < 2)
+            {
+                target.character_profile = old.encode();
+                target.character_record = profile.record;
+            }
+            encounter.participants.push_back(std::move(target));
+            rules::Participant sorceress;
+            sorceress.id = 2;
+            sorceress.name = "Sorceress";
+            sorceress.side = rules::Side::opposition;
+            sorceress.cell = {5, 3};
+            auto spells_only = caster(original::ClassSlot::magic_user, 9, {spell});
+            // Quick permits NPC magic through its morale byte. A player-style
+            // morale of zero would reject casting before rating any target.
+            spells_only.morale = 0x80 + 50;
+            spells_only.movement = 0;
+            spells_only.attacks = {};
+            sorceress.character_profile = spells_only.encode();
+            encounter.participants.push_back(std::move(sorceress));
+            fight.session = fight.module->create(std::move(encounter), 103);
+            const auto canonical = fight.session->save();
+            check((left_by_fight(*fight.session, "Legacy target").traits & mind) == 0,
+                  "The synthetic legacy payload genuinely lacks the new trait");
+
+            for (const int format : {29, 30, 31})
+            {
+                auto legacy = canonical;
+                constexpr std::string_view header = "OGORIGINALCOMBAT 31";
+                const auto header_at = legacy.find(header);
+                check(header_at != std::string::npos, "The fixture uses Native checkpoint31");
+                if (format == 29)
+                {
+                    // The existing 8x8 Native layout: no plants or heights,
+                    // and the empty cost count follows 72 spaced values.
+                    std::size_t at = 0;
+                    for (int value = 0; value < 72; ++value)
+                    {
+                        at = legacy.find(' ', at) + 1;
+                    }
+                    check(legacy.compare(at, 2, "0 ") == 0, "The legacy fixture has no costs");
+                    legacy.erase(at, 2);
+                }
+                else if (format == 30)
+                {
+                    auto context = header_at + header.size() + 1;
+                    for (int dimension = 0; dimension < 2; ++dimension)
+                    {
+                        context = legacy.find(' ', context) + 1;
+                    }
+                    check(legacy.compare(context, 4, "0 0 ") == 0,
+                          "The old generic layout has neither Native context field");
+                    legacy.erase(context, 4);
+                }
+                legacy.replace(header_at, header.size(),
+                               "OGORIGINALCOMBAT " + std::to_string(format));
+                auto restored = fight.module->restore(legacy);
+                check(
+                    restored->save() == canonical,
+                    "Legacy Native mind eligibility leaves the established resave bytes unchanged: " +
+                        std::to_string(format));
+                std::string decisions;
+                play_until(
+                    *restored,
+                    [&](const std::string &actor)
+                    {
+                        auto command = order(*restored, actor == "Sorceress" ? "quick" : "end");
+                        decisions += "\nround " + std::to_string(restored->snapshot().round) + " " +
+                                     actor + ": " + command.verb;
+                        return command;
+                    },
+                    [&]
+                    {
+                        return logged(*restored, "{name} casts {spell}.") > 0 ||
+                               restored->snapshot().round > 5;
+                    });
+                const auto state = restored->snapshot();
+                std::string context = "\nround " + std::to_string(state.round) + " outcome " +
+                                      std::to_string(static_cast<int>(state.outcome)) + decisions;
+                for (const auto &entry : state.log_entries)
+                {
+                    context += "\n" + entry.english;
+                }
+                check(
+                    (logged(*restored, "{name} casts {spell}.") > 0) == (kind != 3),
+                    "Restored Charm/Hold targets eligible minds and preserves monster immunity: " +
+                        std::to_string(format) + "/" + std::to_string(kind) + "/" +
+                        std::to_string(spell) + context);
+            }
+        }
+    }
 }
 
 // A creature an outlook reaches.
@@ -9077,6 +9397,10 @@ int main()
         a_monster_bolts_through_its_own();
         treasures_ai_casts_its_weightiest_spell(GoldBoxGame::treasures_of_the_savage_frontier);
         treasures_ai_casts_its_weightiest_spell(GoldBoxGame::pools_of_darkness);
+        treasures_ai_casts_its_weightiest_spell(GoldBoxGame::dark_queen_of_krynn);
+        native_ai_weighs_its_spells();
+        native_area_aim_takes_bursts_as_they_go_off();
+        native_legacy_mind_targets_preserve_checkpoint_bytes();
         native_robed_mages_save_by_their_moon();
         native_save_bonuses_follow_their_trigger_group();
         quick_magic_lets_the_party_cast();

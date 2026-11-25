@@ -15,6 +15,9 @@ inline constexpr int mask_16_save_bonus = offset + 126, disintegrating_ray = off
                      anemone_acid = offset + 212;
 inline constexpr int disruption = offset + 147, dragon_slayer = offset + 214;
 inline constexpr int disruption_double_trait = 0x1000;
+// Native immunity bit 2, which creation gives every hero: a charm or hold
+// may take it, and the computer rates it so (cbaction.c, rank_target).
+inline constexpr int mind_spell_trait = 0x2000;
 inline constexpr int underwater_weapons = offset + 149;
 inline constexpr int free_action = offset + 150;
 inline constexpr int green_fire = offset + 196, green_fire_touch = offset + 201;

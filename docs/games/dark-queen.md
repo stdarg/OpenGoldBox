@@ -826,3 +826,40 @@ These follow `fx_saving_throw` (fxcore.c):
     gives +1, since it is not in the group.
   - Two small differences remain. The fire ring's +4 does not check that
     damage is pending. The mask sets the bonus in place of the total.
+
+## Native computer spellcasting (2026-11-24)
+
+Dark Queen's computer now chooses and aims spells as its own source does
+(`aiturn.c` try_spell and spell_pick; `cbaction.c` rank_target,
+spell_target_rating and area_aim). Before, it used Curse of the Azure Bonds'
+seven random passes and could use items.
+
+- It takes the memorized spell of highest AI weight that has a target. It
+  casts it only when 1d100 is above four times its knight, fighter, paladin
+  and ranger levels, and then only when 1d5 is no more than the spell's
+  weight. The 1d100 is rolled only once a spell is found.
+- A target it would help rates 4. One of the side the spell spares rates
+  -40. A spell of level 4 or less rates 0 against a Globe of
+  Invulnerability, and one of level 3 or less against a Minor Globe. Magic
+  resistance above 40 then sets the rating to 3, above 70 to 2, above 100
+  to 1 and above 130 to 0, a globed creature's too, in the source's order.
+- An area spell goes where the ratings of the creatures in its burst add
+  up highest. A tie takes the later square one time in four. Each creature
+  counts at its own square, regardless of walls. When range and burst
+  together pass 18 squares, it searches round the creature it fights. The
+  burst is the one the spell goes off with: an Ice Storm's 3 squares under
+  water, and a Fireball's or Delayed Blast Fireball's 1 square less out of
+  doors (cbaction.c 2075-2082).
+- Charm and hold spells read the native immunity bit 2, which creation
+  gives every hero (create.c 1394). A monster takes it from its record and
+  a hero from its profile. It is kept as a trait in the existing traits
+  field, so no format changes.
+- The computer never uses an item.
+
+Treasures' and Pools of Darkness's computer is unchanged. Dark Queen's
+shares its spell sort and target picking.
+
+Older mid-fight checkpoints infer this eligibility from their existing hero
+identity or monster record when the derived trait is absent. The query does
+not rewrite the saved traits. Native checkpoint 31 retains its exact bytes;
+formats 29 and 30 keep their established canonical upgrade to 31.

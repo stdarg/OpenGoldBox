@@ -13451,6 +13451,26 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         {
             return command.verb == "use" ? command.item % 256 : command.item;
         };
+        // A Dark Queen area spell is aimed by the game's own outlook for a
+        // party caster (aim_party_area_spell, within the player's limits on
+        // party area spells), which follows each meteor's path and every
+        // ally: the player's Quick for the aim.
+        if (game == GoldBoxGame::dark_queen_of_krynn)
+        {
+            const auto quick = std::ranges::find(commands, std::string_view("quick"),
+                                                 &opengold::rules::Command::verb);
+            const bool aiming_area = std::ranges::any_of(
+                commands,
+                [&](const opengold::rules::Command &command)
+                {
+                    return command.verb == "aim" &&
+                           session.area_outlook(command.actor, command.item, command.destination);
+                });
+            if (aiming_area && quick != commands.end())
+            {
+                return *quick;
+            }
+        }
         const opengold::rules::Command *aim = nullptr;
         for (const auto &command : commands)
         {
