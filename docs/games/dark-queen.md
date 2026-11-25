@@ -63,6 +63,46 @@ state and established upgrades. Matrix remains game ID 11 and alone writes
 campaign 55; the other released-game campaign writers remain 53. Existing
 supported readers are retained.
 
+## The macOS divergence (2026-11-25, issue #426)
+
+On an Apple-silicon Mac the same commit lost the Sanctum's second wave (map 62
+at 5,25, beat 342) in every one of some 2,600 tries, and its party reached the
+Sanctum with other maximum Hit Points than the Linux run's. Every "party after
+beat" line was identical across macOS runs, so the cause was platform-bound.
+
+The route was replayed on one Mac from one checkpoint with two builds: Apple
+clang with libc++, and GCC 13 with libstdc++ (the Linux toolchain) built with
+`-ffp-contract=off`. Their first difference is at beat 6 (map 10 at 10,22),
+try 14: the magic-user casts the same Ice Storm with the same dice, but aims it
+at another square. The party's area-spell forecast ranks aims by `double`
+scores (`Forecast::best_aim`, `judge_area_spell`, `better_area_aim`), and Clang
+on arm64 contracts `a*b + c` into one fused multiply-add by default, which
+rounds once where an x86-64 build rounds twice; a near tie between two aims
+then falls the other way. Clang built with `-ffp-contract=off` replays the
+beat byte for byte like GCC. No dice, sort or container order was involved: the
+project's dice are its own (SplitMix64 and `std::mt19937`, whose sequences the
+standard fixes), its sorts on tying keys are stable, and it has no unordered
+containers on the rules' paths. Every project target is now compiled with
+`-ffp-contract=off` (`cmake/project_warnings.cmake`), so the arithmetic is
+plain IEEE on every platform; x86-64 Linux and Windows builds never contracted,
+so their routes are unchanged.
+
+With that flag the Mac plays the Linux run: the Champions and Death Knights
+earned endings pass (789 s and 262 s) and the Death Knights winners they bank
+equal the GCC build's byte for byte once the engine's text is set aside;
+`opengold_dark_queen_earned_ending` passes in 3,460 s with 86 fights, no
+defeat, all 375 beats and the authored ending, the six PCs at 134, 123, 121,
+83, 86 and 62 maximum Hit Points and Grunschka at 131/134, as the Linux
+record above has them. Before the fix the same Mac imported winners with
+other Hit Points (124, 113, 116, 78, 81, 55) and lost the Sanctum in every
+one of some 2,600 tries.
+
+Found on the way: a campaign save writes its script RNG with
+`std::mt19937`'s text form, which libc++ (624 words) and libstdc++ (624 words
+and the position) write differently, so a save made on macOS does not load on
+Linux ("Invalid saved script RNG") nor a Linux one on macOS ("Trailing script
+RNG data"). That is a separate portability bug, not fixed here.
+
 ## Fixed delivery batch
 
 The installed campaign must load and play with its Original Rules, import the

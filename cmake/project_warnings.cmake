@@ -9,6 +9,13 @@ function(opengold_enable_warnings directory)
         set(OPENGOLD_WARNING_FLAGS /W4 /permissive- /D_CRT_SECURE_NO_WARNINGS)
     else()
         set(OPENGOLD_WARNING_FLAGS -Wall -Wextra -Wno-missing-field-initializers)
+        # The game must play the same on every platform. Clang on arm64 (and
+        # GCC on aarch64) fuses a*b+c into one rounding by default, while x86-64
+        # builds cannot: the party's area-spell forecast then ranked two aims
+        # differently on macOS and Linux, and the Dark Queen earned route lost
+        # the Sanctum on macOS (issue #426). Plain IEEE arithmetic everywhere.
+        # MSVC does not contract under its default /fp:precise.
+        list(APPEND OPENGOLD_WARNING_FLAGS -ffp-contract=off)
         # Clang can also report the 64-to-32-bit narrowing MSVC's /W4 warns about.
         if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
             list(APPEND OPENGOLD_WARNING_FLAGS -Wshorten-64-to-32)
