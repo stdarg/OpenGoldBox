@@ -15,7 +15,10 @@ ROOT = Path(__file__).resolve().parents[1]
 # The SRD module's files that carry player text: the rules, the class and
 # character data, and the files carved out of srd5.cpp.
 SRD_SOURCES = (
-    "character_rules.cpp", "character_class.cpp", "srd5.cpp", "mastery_resolution_impl.h",
+    "character_rules.cpp", "character_class.cpp", "srd5.cpp", "session.h", "session_items.cpp",
+    "session_movement.cpp", "session_spells.cpp", "session_commands.cpp", "session_attacks.cpp",
+    "session_zones.cpp", "session_turns.cpp", "session_monsters.cpp", "session_dispatch.cpp",
+    "session_checkpoint.cpp", "session_mastery.cpp", "module.cpp",
     "spell_traits.cpp", "class_spell_lists.cpp", "equipment_rules.cpp", "equipment_rules.h",
     "combat_model.cpp", "combat_model.h", "spell_costs.cpp", "actor_state.cpp",
     "character_definition.cpp",

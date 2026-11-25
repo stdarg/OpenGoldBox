@@ -79,6 +79,18 @@ add_library(opengold_rules STATIC src/OpenGold.Rules/src/rules.cpp src/OpenGold.
 target_include_directories(opengold_rules PUBLIC src/OpenGold.Rules/include)
 add_library(opengold_rules_srd5 STATIC
     src/OpenGold.Rules.Srd5/src/srd5.cpp
+    src/OpenGold.Rules.Srd5/src/module.cpp
+    src/OpenGold.Rules.Srd5/src/session_items.cpp
+    src/OpenGold.Rules.Srd5/src/session_movement.cpp
+    src/OpenGold.Rules.Srd5/src/session_spells.cpp
+    src/OpenGold.Rules.Srd5/src/session_commands.cpp
+    src/OpenGold.Rules.Srd5/src/session_attacks.cpp
+    src/OpenGold.Rules.Srd5/src/session_zones.cpp
+    src/OpenGold.Rules.Srd5/src/session_turns.cpp
+    src/OpenGold.Rules.Srd5/src/session_monsters.cpp
+    src/OpenGold.Rules.Srd5/src/session_dispatch.cpp
+    src/OpenGold.Rules.Srd5/src/session_checkpoint.cpp
+    src/OpenGold.Rules.Srd5/src/session_mastery.cpp
     src/OpenGold.Rules.Srd5/src/character_rules.cpp
     src/OpenGold.Rules.Srd5/src/character_class.cpp
     src/OpenGold.Rules.Srd5/src/weapon_mastery.cpp

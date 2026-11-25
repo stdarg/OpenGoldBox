@@ -155,6 +155,12 @@ by [CODING_STYLE.md](CODING_STYLE.md), and the architectural boundaries by
   includes it. (SF.7)
 - **Anonymous namespaces in a header.** Each including file gets its own
   copy. (SF.21)
+- **Member definitions in an included `.h` slice.** A header that holds a
+  class's out-of-class member bodies and is textually included into a `.cpp`
+  compiles alone nowhere and breaks the one-definition rule the moment a
+  second file includes it. Member definitions live in `.cpp` files; a large
+  class gets themed `.cpp` files that share its header (`session.h` and
+  `session_*.cpp` in the SRD module). (SF.10, SF.11)
 - **Including more than the header needs.** Extra includes slow builds and
   couple modules. Forward-declare where a declaration suffices, and keep
   implementation details in the `.cpp`. Every header has an include guard.

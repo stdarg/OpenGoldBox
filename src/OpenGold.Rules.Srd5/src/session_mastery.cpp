@@ -1,5 +1,13 @@
-// Included by the SRD session implementation. All trigger legality and outcomes
-// remain in the static rules library; presentation consumes the resulting views.
+#include "session.h"
+#include <stdexcept>
+
+// Session: weapon mastery resolution. All trigger legality and outcomes
+// remain in the static rules library; presentation consumes the resulting
+// views.
+namespace opengold::srd5::detail
+{
+using namespace rules;
+
 Definition Session::mastery_definition(const PendingMastery &m) const
 {
     const auto &attacker = actor(m.actor);
@@ -493,3 +501,4 @@ void Session::validate_mastery_state() const
         }
     }
 }
+} // namespace opengold::srd5::detail

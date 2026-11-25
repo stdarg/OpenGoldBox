@@ -1004,7 +1004,7 @@ link Core, original game formats, or Godot. `opengold_core` links the interface,
 not the SRD implementation. The application selects/loads SRD at composition time
 and injects a `RulesModule`; presentation calls Core or the rules interfaces.
 
-SRD rest rules live in `OpenGold.Rules.Srd5/src/srd5.cpp` behind the
+SRD rest rules live in `OpenGold.Rules.Srd5/src/module.cpp` behind the
 `RulesModule` rest policies and recovery calls. Core applies the returned
 benefits transactionally. Core retains member IDs, tickets, campaign clocks and
 save serialization. Save fields and existing SRD behavior remain unchanged. Character
