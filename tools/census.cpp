@@ -17,6 +17,7 @@
 #include "opengold/game_finder.h"
 #include "opengold/path_text.h"
 
+#include <exception>
 #include <filesystem>
 #include <iomanip>
 #include <iostream>
@@ -190,25 +191,33 @@ int main(int argc, char **argv)
                      "--find [START]\n";
         return 2;
     }
-    bool all_complete = true;
-    for (const auto &folder : folders)
+    try
     {
-        const auto games = games_in(folder);
-        if (games.empty())
+        bool all_complete = true;
+        for (const auto &folder : folders)
         {
-            std::cerr << opengold::path_text(folder) << ": no Gold Box game found\n";
-            return 2;
-        }
-        for (const auto &[path, game] : games)
-        {
-            const auto census = opengold::take_census(path, game);
-            print(census, path);
-            if (list_scripts && opengold::is_buck_rogers(game))
+            const auto games = games_in(folder);
+            if (games.empty())
             {
-                print_scripts(path, game);
+                std::cerr << opengold::path_text(folder) << ": no Gold Box game found\n";
+                return 2;
             }
-            all_complete = all_complete && census.complete();
+            for (const auto &[path, game] : games)
+            {
+                const auto census = opengold::take_census(path, game);
+                print(census, path);
+                if (list_scripts && opengold::is_buck_rogers(game))
+                {
+                    print_scripts(path, game);
+                }
+                all_complete = all_complete && census.complete();
+            }
         }
+        return require_complete && !all_complete ? 1 : 0;
     }
-    return require_complete && !all_complete ? 1 : 0;
+    catch (const std::exception &error)
+    {
+        std::cerr << error.what() << '\n';
+        return 1;
+    }
 }
