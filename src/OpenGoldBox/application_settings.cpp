@@ -126,6 +126,21 @@ bool save(const char *section, const char *key, const Variant &value)
         });
 }
 
+// A game's on/off setting: its section is the setting's name and its key the
+// game's folder, so each game keeps its own. Unset, it is `on_by_default`.
+bool game_switch(const char *setting, opengold::GoldBoxGame game, bool on_by_default)
+{
+    const std::string folder(opengold::game_folder(game));
+    const auto value = read(setting, folder.c_str()).to_lower();
+    return on_by_default ? value != "off" : value == "on";
+}
+
+bool save_game_switch(const char *setting, opengold::GoldBoxGame game, bool on)
+{
+    const std::string folder(opengold::game_folder(game));
+    return save(setting, folder.c_str(), on ? "on" : "off");
+}
+
 // The game's own folder, where the search for the games' folders starts: the
 // source checkout in a developer's or a check's run, else the folder holding
 // the program (on macOS, the folder holding OpenGoldBox.app).
@@ -137,7 +152,7 @@ std::filesystem::path own_folder()
         return opengold::checkout_folder(presentation::path_from_godot(
             ProjectSettings::get_singleton()->globalize_path("res://")));
     }
-    const auto folder = presentation::path_from_godot(os->get_executable_path()).parent_path();
+    auto folder = presentation::path_from_godot(os->get_executable_path()).parent_path();
     if (folder.filename() == "MacOS" && folder.parent_path().filename() == "Contents")
     {
         return folder.parent_path().parent_path().parent_path();
@@ -205,7 +220,7 @@ String path()
     auto *os = OS::get_singleton();
     // Each Godot check names its own file, so checks can run at the same time
     // without sharing the project's settings.
-    const auto override = os->get_environment("OPENGOLD_SETTINGS_FILE").strip_edges();
+    auto override = os->get_environment("OPENGOLD_SETTINGS_FILE").strip_edges();
     if (!override.is_empty())
     {
         return override;
@@ -387,100 +402,84 @@ bool save_original_portraits(bool original)
 
 bool original_shops(opengold::GoldBoxGame game)
 {
-    const std::string folder(opengold::game_folder(game));
-    return read("original_shops", folder.c_str()).to_lower() != "off";
+    return game_switch("original_shops", game, true);
 }
 
 bool save_original_shops(opengold::GoldBoxGame game, bool original)
 {
-    const std::string folder(opengold::game_folder(game));
-    return save("original_shops", folder.c_str(), original ? "on" : "off");
+    return save_game_switch("original_shops", game, original);
 }
 
 bool gateway_money_kept()
 {
-    const std::string folder(
-        opengold::game_folder(opengold::GoldBoxGame::treasures_of_the_savage_frontier));
-    return read("gateway_money", folder.c_str()).to_lower() == "on";
+    return game_switch("gateway_money", opengold::GoldBoxGame::treasures_of_the_savage_frontier,
+                       false);
 }
 
 bool save_gateway_money_kept(bool kept)
 {
-    const std::string folder(
-        opengold::game_folder(opengold::GoldBoxGame::treasures_of_the_savage_frontier));
-    return save("gateway_money", folder.c_str(), kept ? "on" : "off");
+    return save_game_switch("gateway_money",
+                            opengold::GoldBoxGame::treasures_of_the_savage_frontier, kept);
 }
 
 bool darkness_gazes()
 {
-    const std::string folder(opengold::game_folder(opengold::GoldBoxGame::pools_of_darkness));
-    return read("darkness_gazes", folder.c_str()).to_lower() == "on";
+    return game_switch("darkness_gazes", opengold::GoldBoxGame::pools_of_darkness, false);
 }
 
 bool save_darkness_gazes(bool played)
 {
-    const std::string folder(opengold::game_folder(opengold::GoldBoxGame::pools_of_darkness));
-    return save("darkness_gazes", folder.c_str(), played ? "on" : "off");
+    return save_game_switch("darkness_gazes", opengold::GoldBoxGame::pools_of_darkness, played);
 }
 
 bool command_every_round(opengold::GoldBoxGame game)
 {
-    const std::string folder(opengold::game_folder(game));
-    return read("command_every_round", folder.c_str()).to_lower() == "on";
+    return game_switch("command_every_round", game, false);
 }
 
 bool save_command_every_round(opengold::GoldBoxGame game, bool on)
 {
-    const std::string folder(opengold::game_folder(game));
-    return save("command_every_round", folder.c_str(), on ? "on" : "off");
+    return save_game_switch("command_every_round", game, on);
 }
 
 bool empty_helm_dodges(opengold::GoldBoxGame game)
 {
-    const std::string folder(opengold::game_folder(game));
-    return read("empty_helm_dodges", folder.c_str()).to_lower() == "on";
+    return game_switch("empty_helm_dodges", game, false);
 }
 
 bool save_empty_helm_dodges(opengold::GoldBoxGame game, bool on)
 {
-    const std::string folder(opengold::game_folder(game));
-    return save("empty_helm_dodges", folder.c_str(), on ? "on" : "off");
+    return save_game_switch("empty_helm_dodges", game, on);
 }
 
 bool boarding_fuel(opengold::GoldBoxGame game)
 {
-    const std::string folder(opengold::game_folder(game));
-    return read("boarding_fuel", folder.c_str()).to_lower() != "off";
+    return game_switch("boarding_fuel", game, true);
 }
 
 bool save_boarding_fuel(opengold::GoldBoxGame game, bool on)
 {
-    const std::string folder(opengold::game_folder(game));
-    return save("boarding_fuel", folder.c_str(), on ? "on" : "off");
+    return save_game_switch("boarding_fuel", game, on);
 }
 
 bool direct_flight(opengold::GoldBoxGame game)
 {
-    const std::string folder(opengold::game_folder(game));
-    return read("direct_flight", folder.c_str()).to_lower() != "off";
+    return game_switch("direct_flight", game, true);
 }
 
 bool save_direct_flight(opengold::GoldBoxGame game, bool on)
 {
-    const std::string folder(opengold::game_folder(game));
-    return save("direct_flight", folder.c_str(), on ? "on" : "off");
+    return save_game_switch("direct_flight", game, on);
 }
 
 bool original_movement(opengold::GoldBoxGame game)
 {
-    const std::string folder(opengold::game_folder(game));
-    return read("original_movement", folder.c_str()).to_lower() != "off";
+    return game_switch("original_movement", game, true);
 }
 
 bool save_original_movement(opengold::GoldBoxGame game, bool on)
 {
-    const std::string folder(opengold::game_folder(game));
-    return save("original_movement", folder.c_str(), on ? "on" : "off");
+    return save_game_switch("original_movement", game, on);
 }
 
 opengold::rules::AreaSpellLimits party_spell_limits()
@@ -538,26 +537,22 @@ bool save_party_spell_limits(const opengold::rules::AreaSpellLimits &limits)
 
 bool course_flown(opengold::GoldBoxGame game)
 {
-    const std::string folder(opengold::game_folder(game));
-    return read("course_flown", folder.c_str()).to_lower() == "on";
+    return game_switch("course_flown", game, false);
 }
 
 bool save_course_flown(opengold::GoldBoxGame game, bool on)
 {
-    const std::string folder(opengold::game_folder(game));
-    return save("course_flown", folder.c_str(), on ? "on" : "off");
+    return save_game_switch("course_flown", game, on);
 }
 
 bool ship_picture_shrinks(opengold::GoldBoxGame game)
 {
-    const std::string folder(opengold::game_folder(game));
-    return read("ship_picture_shrinks", folder.c_str()).to_lower() != "off";
+    return game_switch("ship_picture_shrinks", game, true);
 }
 
 bool save_ship_picture_shrinks(opengold::GoldBoxGame game, bool on)
 {
-    const std::string folder(opengold::game_folder(game));
-    return save("ship_picture_shrinks", folder.c_str(), on ? "on" : "off");
+    return save_game_switch("ship_picture_shrinks", game, on);
 }
 
 namespace
@@ -702,13 +697,12 @@ String language()
     {
         return *confirmed_language;
     }
-    const auto override =
-        OS::get_singleton()->get_environment("OPENGOLD_LANG").strip_edges().to_lower();
+    auto override = OS::get_singleton()->get_environment("OPENGOLD_LANG").strip_edges().to_lower();
     if (!flag("--reset-lang") && valid_language(override))
     {
         return override;
     }
-    const auto saved = saved_language();
+    auto saved = saved_language();
     if (valid_language(saved))
     {
         return saved;

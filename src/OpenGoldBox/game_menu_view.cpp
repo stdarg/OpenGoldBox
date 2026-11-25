@@ -296,6 +296,35 @@ void GameMenuView::show_section(std::int64_t section)
     required_node<Button>(*this, "Options/InterfaceTab").set_pressed_no_signal(section == 1);
 }
 
+namespace
+{
+// The game's own on/off options: each row's dropdown (On, then Off), the
+// setting it reads and saves for the game being played, and whether only a
+// Buck Rogers game shows it. The ship-combat and solar-map options are the
+// Buck Rogers games'; whether fights under the original rules move as the
+// original's is every game's.
+struct GameSwitch
+{
+    const char *node;
+    bool (*read)(opengold::GoldBoxGame);
+    bool (*save)(opengold::GoldBoxGame, bool);
+    bool buck_rogers_only;
+};
+
+constexpr std::array game_switches{
+    GameSwitch{"CommandEveryRound", settings::command_every_round,
+               settings::save_command_every_round, true},
+    GameSwitch{"EmptyHelmDodges", settings::empty_helm_dodges, settings::save_empty_helm_dodges,
+               true},
+    GameSwitch{"BoardingFuel", settings::boarding_fuel, settings::save_boarding_fuel, true},
+    GameSwitch{"DirectFlight", settings::direct_flight, settings::save_direct_flight, true},
+    GameSwitch{"CourseFlown", settings::course_flown, settings::save_course_flown, true},
+    GameSwitch{"ShipPictureShrinks", settings::ship_picture_shrinks,
+               settings::save_ship_picture_shrinks, true},
+    GameSwitch{"OriginalMovement", settings::original_movement, settings::save_original_movement,
+               false}};
+} // namespace
+
 void GameMenuView::build_options()
 {
     auto &difficulty =
@@ -317,26 +346,22 @@ void GameMenuView::build_options()
           std::pair{"Options/Gameplay/Scroll/Page/Choices/TreasuresMoney",
                     &GameMenuView::treasures_money_selected},
           std::pair{"Options/Gameplay/Scroll/Page/Choices/DarknessGazes",
-                    &GameMenuView::darkness_gazes_selected},
-          std::pair{"Options/Gameplay/Scroll/Page/Choices/CommandEveryRound",
-                    &GameMenuView::command_every_round_selected},
-          std::pair{"Options/Gameplay/Scroll/Page/Choices/EmptyHelmDodges",
-                    &GameMenuView::empty_helm_dodges_selected},
-          std::pair{"Options/Gameplay/Scroll/Page/Choices/BoardingFuel",
-                    &GameMenuView::boarding_fuel_selected},
-          std::pair{"Options/Gameplay/Scroll/Page/Choices/DirectFlight",
-                    &GameMenuView::direct_flight_selected},
-          std::pair{"Options/Gameplay/Scroll/Page/Choices/CourseFlown",
-                    &GameMenuView::course_flown_selected},
-          std::pair{"Options/Gameplay/Scroll/Page/Choices/OriginalMovement",
-                    &GameMenuView::original_movement_selected},
-          std::pair{"Options/Gameplay/Scroll/Page/Choices/ShipPictureShrinks",
-                    &GameMenuView::ship_picture_shrinks_selected}})
+                    &GameMenuView::darkness_gazes_selected}})
     {
         auto &choice = required_node<OptionButton>(*this, path);
         choice.add_item(i18n::text(N_("On")));
         choice.add_item(i18n::text(N_("Off")));
         choice.connect("item_selected", presentation::guarded(this, selected));
+    }
+    auto &gameplay = required_node<Control>(*this, "Options/Gameplay/Scroll/Page/Choices");
+    for (std::size_t option = 0; option < game_switches.size(); ++option)
+    {
+        auto &choice = required_node<OptionButton>(gameplay, game_switches[option].node);
+        choice.add_item(i18n::text(N_("On")));
+        choice.add_item(i18n::text(N_("Off")));
+        choice.connect("item_selected",
+                       presentation::guarded(this, &GameMenuView::game_switch_selected)
+                           .bind(static_cast<std::int64_t>(option)));
     }
     // How the difficulty plays in an Unlimited Adventures design, in
     // ua::DesignDifficulty's order.
@@ -631,39 +656,9 @@ void GameMenuView::design_difficulty_selected(std::int64_t index)
     settings::save_design_difficulty(static_cast<opengold::ua::DesignDifficulty>(index));
 }
 
-void GameMenuView::command_every_round_selected(std::int64_t index)
+void GameMenuView::game_switch_selected(std::int64_t index, std::int64_t option)
 {
-    settings::save_command_every_round(settings::chosen_game(), index == 0);
-}
-
-void GameMenuView::empty_helm_dodges_selected(std::int64_t index)
-{
-    settings::save_empty_helm_dodges(settings::chosen_game(), index == 0);
-}
-
-void GameMenuView::boarding_fuel_selected(std::int64_t index)
-{
-    settings::save_boarding_fuel(settings::chosen_game(), index == 0);
-}
-
-void GameMenuView::direct_flight_selected(std::int64_t index)
-{
-    settings::save_direct_flight(settings::chosen_game(), index == 0);
-}
-
-void GameMenuView::course_flown_selected(std::int64_t index)
-{
-    settings::save_course_flown(settings::chosen_game(), index == 0);
-}
-
-void GameMenuView::original_movement_selected(std::int64_t index)
-{
-    settings::save_original_movement(settings::chosen_game(), index == 0);
-}
-
-void GameMenuView::ship_picture_shrinks_selected(std::int64_t index)
-{
-    settings::save_ship_picture_shrinks(settings::chosen_game(), index == 0);
+    game_switches.at(static_cast<std::size_t>(option)).save(settings::chosen_game(), index == 0);
 }
 
 void GameMenuView::show_game_options()
@@ -680,33 +675,21 @@ void GameMenuView::show_game_options()
     {
         required_node<Control>(gameplay, name).set_visible(!buck_rogers);
     }
-    required_node<OptionButton>(gameplay, "OriginalMovement")
-        .select(settings::original_movement(game) ? 0 : 1);
-    for (const char *name :
-         {"CommandEveryRoundLabel", "CommandEveryRound", "CommandEveryRoundNote",
-          "EmptyHelmDodgesLabel", "EmptyHelmDodges", "EmptyHelmDodgesNote", "BoardingFuelLabel",
-          "BoardingFuel", "BoardingFuelNote", "DirectFlightLabel", "DirectFlight",
-          "DirectFlightNote", "CourseFlownLabel", "CourseFlown", "CourseFlownNote",
-          "ShipPictureShrinksLabel", "ShipPictureShrinks", "ShipPictureShrinksNote"})
+    for (const auto &row : game_switches)
     {
-        required_node<Control>(gameplay, name).set_visible(buck_rogers);
+        if (row.buck_rogers_only)
+        {
+            for (const char *suffix : {"Label", "", "Note"})
+            {
+                required_node<Control>(gameplay, String(row.node) + suffix)
+                    .set_visible(buck_rogers);
+            }
+        }
+        if (buck_rogers || !row.buck_rogers_only)
+        {
+            required_node<OptionButton>(gameplay, row.node).select(row.read(game) ? 0 : 1);
+        }
     }
-    if (!buck_rogers)
-    {
-        return;
-    }
-    required_node<OptionButton>(gameplay, "CommandEveryRound")
-        .select(settings::command_every_round(game) ? 0 : 1);
-    required_node<OptionButton>(gameplay, "EmptyHelmDodges")
-        .select(settings::empty_helm_dodges(game) ? 0 : 1);
-    required_node<OptionButton>(gameplay, "BoardingFuel")
-        .select(settings::boarding_fuel(game) ? 0 : 1);
-    required_node<OptionButton>(gameplay, "DirectFlight")
-        .select(settings::direct_flight(game) ? 0 : 1);
-    required_node<OptionButton>(gameplay, "CourseFlown")
-        .select(settings::course_flown(game) ? 0 : 1);
-    required_node<OptionButton>(gameplay, "ShipPictureShrinks")
-        .select(settings::ship_picture_shrinks(game) ? 0 : 1);
 }
 
 // Each limit as a percentage, the party's weight as it is.

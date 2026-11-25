@@ -80,15 +80,9 @@ class GameMenuView : public godot::Control
     void darkness_gazes_selected(std::int64_t index);
     // How the difficulty plays in an Unlimited Adventures design.
     void design_difficulty_selected(std::int64_t index);
-    // The Buck Rogers games' ship-combat options, for the game being played.
-    void command_every_round_selected(std::int64_t index);
-    void empty_helm_dodges_selected(std::int64_t index);
-    void boarding_fuel_selected(std::int64_t index);
-    // The Buck Rogers games' solar-map options, for the game being played.
-    void direct_flight_selected(std::int64_t index);
-    void course_flown_selected(std::int64_t index);
-    // Whether the game's fights under the original rules move as its original.
-    void original_movement_selected(std::int64_t index);
+    // The game's own on/off options (game_switches): row `option` chose On
+    // (0) or Off (1) for the game being played.
+    void game_switch_selected(std::int64_t index, std::int64_t option);
 
     // The player's limits on a computer-run party member's area spells, by
     // their Options rows (settings::party_spell_limits).
@@ -104,8 +98,6 @@ class GameMenuView : public godot::Control
     void show_party_spell_limits();
     void party_spell_limit_changed(double value, std::int64_t row);
 
-    // Whether the enemy ship's picture grows smaller with the range.
-    void ship_picture_shrinks_selected(std::int64_t index);
     // A Buck Rogers game shows its ship-combat options where the other games'
     // own options stand.
     void show_game_options();
