@@ -12,6 +12,14 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
+# The SRD module's files that carry player text: the rules, the class and
+# character data, and the files carved out of srd5.cpp.
+SRD_SOURCES = (
+    "character_rules.cpp", "character_class.cpp", "srd5.cpp", "mastery_resolution_impl.h",
+    "spell_traits.cpp", "class_spell_lists.cpp", "equipment_rules.cpp", "equipment_rules.h",
+    "combat_model.cpp", "combat_model.h", "spell_costs.cpp", "actor_state.cpp",
+    "character_definition.cpp",
+)
 LOCALE = ROOT / "src/OpenGoldBox/godot/locale"
 LITERAL = r'"(?:[^"\\]|\\.)*"'
 
@@ -34,7 +42,7 @@ def extract():
     paths = sorted((ROOT / "src/OpenGoldBox").glob("*.cpp"))
     paths += sorted((ROOT / "src/OpenGoldBox").glob("*.h"))
     paths += sorted((ROOT / "src/OpenGoldBox/godot/scenes").glob("*.tscn"))
-    paths += [ROOT / "src/OpenGold.Rules.Srd5/src/character_rules.cpp", ROOT / "src/OpenGold.Rules.Srd5/src/character_class.cpp", ROOT / "src/OpenGold.Rules.Srd5/src/srd5.cpp", ROOT / "src/OpenGold.Rules.Srd5/src/mastery_resolution_impl.h"]
+    paths += [ROOT / "src/OpenGold.Rules.Srd5/src" / name for name in SRD_SOURCES]
     for path in paths:
         content = path.read_text(encoding="utf-8-sig")
         patterns = [rf'\b(?:N_|i18n::(?:text|utf8|format|formatted))\(\s*({LITERAL})']
@@ -45,7 +53,7 @@ def extract():
                 add(ast.literal_eval(match[1]), path, content.count("\n", 0, match.start()) + 1)
         for match in re.finditer(rf'i18n::plural\(\s*({LITERAL})\s*,\s*({LITERAL})', content):
             add(ast.literal_eval(match[1]), path, content.count("\n", 0, match.start()) + 1, ast.literal_eval(match[2]))
-        if path.name in ("character_rules.cpp", "character_class.cpp", "srd5.cpp", "mastery_resolution_impl.h"):
+        if path.name in SRD_SOURCES:
             for match in re.finditer(LITERAL, content):
                 source=ast.literal_eval(match[0])
                 if re.search(r"\{\w+\}",source):
@@ -75,7 +83,7 @@ def extract():
         add("".join(ast.literal_eval(part) for part in re.findall(LITERAL, match[2])), original_choices, line)
     # The original rules' messages, spells and refusals: their sentences, and
     # every spell name in the spell table.
-    for name in ("combat_session.cpp", "rules_module.cpp", "spells.cpp"):
+    for name in ("combat_session.cpp", "rules_module.cpp", "history_entries.cpp", "spells.cpp"):
         source = ROOT / "src/OpenGold.Rules.Original/src" / name
         content = source.read_text(encoding="utf-8-sig")
         for match in re.finditer(LITERAL, content):
