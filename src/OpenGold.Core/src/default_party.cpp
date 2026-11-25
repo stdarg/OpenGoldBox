@@ -41,7 +41,8 @@ class PartyReader
         return *value;
     }
 
-    const std::string &text(const Json &object, std::string_view key, std::string_view where) const
+    [[nodiscard]] const std::string &text(const Json &object, std::string_view key,
+                                          std::string_view where) const
     {
         const auto &value = field<std::string>(object, key, where);
         if (value.empty())
@@ -51,7 +52,7 @@ class PartyReader
         return value;
     }
 
-    int whole(const Json &value, std::string_view where, int low, int high) const
+    [[nodiscard]] int whole(const Json &value, std::string_view where, int low, int high) const
     {
         const auto *number = std::get_if<double>(&value.value);
         if (!number || *number != static_cast<int>(*number) || *number < low || *number > high)
@@ -62,8 +63,8 @@ class PartyReader
         return static_cast<int>(*number);
     }
 
-    int whole_field(const Json &object, std::string_view key, std::string_view where, int low,
-                    int high) const
+    [[nodiscard]] int whole_field(const Json &object, std::string_view key, std::string_view where,
+                                  int low, int high) const
     {
         const auto *found = object.find(key);
         if (!found)
@@ -74,7 +75,8 @@ class PartyReader
     }
 
     // An object member, kept as the Json that holds it.
-    const Json &object(const Json &parent, std::string_view key, std::string_view where) const
+    [[nodiscard]] const Json &object(const Json &parent, std::string_view key,
+                                     std::string_view where) const
     {
         const auto *found = parent.find(key);
         if (!found || !std::holds_alternative<Json::Object>(found->value))
@@ -84,7 +86,8 @@ class PartyReader
         return *found;
     }
 
-    std::array<int, 6> six(const Json &values, std::string_view where, int low, int high) const
+    [[nodiscard]] std::array<int, 6> six(const Json &values, std::string_view where, int low,
+                                         int high) const
     {
         const auto *array = std::get_if<Json::Array>(&values.value);
         if (!array || array->size() != 6)
@@ -99,8 +102,8 @@ class PartyReader
         return result;
     }
 
-    std::array<int, 6> six_field(const Json &object, std::string_view key, std::string_view where,
-                                 int low, int high) const
+    [[nodiscard]] std::array<int, 6> six_field(const Json &object, std::string_view key,
+                                               std::string_view where, int low, int high) const
     {
         const auto *found = object.find(key);
         if (!found)
@@ -110,7 +113,8 @@ class PartyReader
         return six(*found, std::string(where) + ", " + std::string(key), low, high);
     }
 
-    rules::Ability ability(const Json &object, std::string_view key, std::string_view where) const
+    [[nodiscard]] rules::Ability ability(const Json &object, std::string_view key,
+                                         std::string_view where) const
     {
         static constexpr std::array<std::string_view, 6> names{
             "strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"};
@@ -123,7 +127,8 @@ class PartyReader
         return rules::all_abilities[static_cast<std::size_t>(found - names.begin())];
     }
 
-    std::vector<DefaultItem> items(const Json &object, std::string_view where, bool typed) const
+    [[nodiscard]] std::vector<DefaultItem> items(const Json &object, std::string_view where,
+                                                 bool typed) const
     {
         std::vector<DefaultItem> result;
         for (const auto &entry : field<Json::Array>(object, "items", where))
@@ -158,8 +163,8 @@ class PartyReader
         return result;
     }
 
-    std::vector<std::string> spells(const Json &entry, std::string_view key,
-                                    std::string_view where) const
+    [[nodiscard]] std::vector<std::string> spells(const Json &entry, std::string_view key,
+                                                  std::string_view where) const
     {
         std::vector<std::string> result;
         for (const auto &spell : field<Json::Array>(entry, key, where))
@@ -174,7 +179,8 @@ class PartyReader
         return result;
     }
 
-    por::CharacterAppearance appearance(const Json &member, std::string_view where) const
+    [[nodiscard]] por::CharacterAppearance appearance(const Json &member,
+                                                      std::string_view where) const
     {
         por::CharacterAppearance look;
         const auto &portrait = object(member, "portrait", where);
@@ -196,7 +202,8 @@ class PartyReader
         return look;
     }
 
-    DefaultPartyMember::Original original(const Json &entry, std::string_view where) const
+    [[nodiscard]] DefaultPartyMember::Original original(const Json &entry,
+                                                        std::string_view where) const
     {
         DefaultPartyMember::Original result;
         result.race = text(entry, "race", where);
@@ -213,8 +220,8 @@ class PartyReader
         return result;
     }
 
-    DefaultPartyMember::Srd srd(const Json &entry, const std::string &name,
-                                std::string_view where) const
+    [[nodiscard]] DefaultPartyMember::Srd srd(const Json &entry, const std::string &name,
+                                              std::string_view where) const
     {
         DefaultPartyMember::Srd result;
         auto &character = result.character;

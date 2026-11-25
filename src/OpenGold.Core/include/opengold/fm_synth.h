@@ -80,7 +80,7 @@ class FmSynth
     void write_operator(unsigned slot, std::uint8_t group, std::uint8_t value);
     void write_channel(unsigned channel_index, std::uint8_t group, std::uint8_t value);
     void key(Channel &channel, bool on);
-    void update_rates(Channel &channel);
+    void update_rates(Channel &channel) const;
     void advance_envelope(Operator &op) const;
     [[nodiscard]] double attenuation_db(const Channel &channel, const Operator &op) const;
     [[nodiscard]] double channel_output(Channel &channel, double vibrato_factor);

@@ -233,7 +233,7 @@ void FmSynth::key(Channel &channel, bool on)
 
 // The envelope's speeds depend on the rates and, through key scaling, on the
 // channel's pitch.
-void FmSynth::update_rates(Channel &channel)
+void FmSynth::update_rates(Channel &channel) const
 {
     const unsigned pitch_bit =
         note_select_ ? (channel.frequency_number >> 8) & 1 : (channel.frequency_number >> 9) & 1;

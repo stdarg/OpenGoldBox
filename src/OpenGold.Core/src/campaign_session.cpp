@@ -731,7 +731,7 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
         }
         add_wilderness_art(folder, *root, game);
         const bool death_knights = game == GoldBoxGame::death_knights_of_krynn;
-        const auto marker_file = death_knights ? "8X8D1.DAX" : "CURSOR.DAX";
+        const auto *const marker_file = death_knights ? "8X8D1.DAX" : "CURSOR.DAX";
         auto marker = decode_ega_picture(files.record(marker_file, death_knights ? 204 : 1));
         if (!marker)
         {

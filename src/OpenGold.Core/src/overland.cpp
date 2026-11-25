@@ -185,7 +185,7 @@ class FieldBuilder
         return tile < tiles_.size() && tiles_[tile].frame == floor_frame;
     }
 
-    int roll(int count, int sides) const
+    [[nodiscard]] int roll(int count, int sides) const
     {
         return roll_(count, sides);
     }
@@ -512,7 +512,7 @@ class FieldBuilder
         }
     }
 
-    DungeonBattlefield field() const
+    [[nodiscard]] DungeonBattlefield field() const
     {
         DungeonBattlefield result{
             {field_columns, field_rows, std::vector<rules::Terrain>(grid_.size()),
