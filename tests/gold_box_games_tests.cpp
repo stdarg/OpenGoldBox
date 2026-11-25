@@ -13095,7 +13095,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             const auto &klass = classes[n];
             opengold::CharacterCreator creator(creation, 90 + n);
             creator.select(opengold::rules::CreationField::race,
-                           opengold::original::krynn_game(game) ? "krynn_human" : "human");
+                           opengold::krynn_game(game) ? "krynn_human" : "human");
             creator.select(opengold::rules::CreationField::character_class, klass);
             if (earned_champions && klass == "cleric")
             {

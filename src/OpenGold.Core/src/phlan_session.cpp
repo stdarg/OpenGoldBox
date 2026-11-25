@@ -998,7 +998,7 @@ void RolfTourSession::read_character()
     }
     if (campaign_)
     {
-        if (original::krynn_game(game()))
+        if (krynn_game(game()))
         {
             // Champions' SPELL only locates a prepared copy. The script's
             // later write into its selected character's spell window spends
@@ -4162,7 +4162,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         }
         // Champions' DisplayMonster loads distance sprites only in the 3D
         // view. Wilderness scripts deliberately name sprites absent from SPRIT.
-        if (original::krynn_game(game()) && vga_area_map())
+        if (krynn_game(game()) && vga_area_map())
         {
             sprites_ = {};
             snapshot_.sprite_frame = -1;
@@ -4527,7 +4527,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         const bool dispel = (game() == GoldBoxGame::secret_of_the_silver_blades &&
                              (arg(0) == cleric_dispel || arg(0) == magic_user_dispel)) ||
                             (gateway && !asked.empty());
-        if (original::krynn_game(game()))
+        if (krynn_game(game()))
         {
             read_character();
             reply = character_reply(selected_character_);
@@ -4818,13 +4818,13 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             // BuildWildernessArena does.
             const bool gateway_outdoors =
                 town_->gateway_wilderness &&
-                (gateway_overland() || (original::krynn_game(game()) && vga_area_map()));
+                (gateway_overland() || (krynn_game(game()) && vga_area_map()));
             const auto gateway_ground_class = [&]() -> unsigned
             {
                 constexpr EclAddress gateway_ground{0x4CA1};
                 const auto &classes = town_->gateway_wilderness->terrain_classes;
                 // Champions' BuildWildernessArena explicitly selects terrain 15.
-                if (original::krynn_game(game()))
+                if (krynn_game(game()))
                 {
                     return classes.at(15);
                 }
@@ -5488,7 +5488,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         // zero means none (CMD_Damage). The tower's explosive runes use
         // 90h/84h: bit 10h still deals full damage when the save succeeds.
         const bool curse_chosen =
-            (game() == GoldBoxGame::curse_of_the_azure_bonds || original::krynn_game(game())) &&
+            (game() == GoldBoxGame::curse_of_the_azure_bonds || krynn_game(game())) &&
             (arg(0) & 0xC0) == 0x80 && (arg(4) & 0x80) &&
             (arg(4) & 7) <= original_save_abilities.size();
         const bool chosen_member =
@@ -6072,8 +6072,7 @@ void RolfTourSession::show_original_hall(std::vector<Message> notice)
     {
         // Pools of Darkness trains for nothing, and its hall names no price
         // (chargen.pas, TrainingMenu).
-        if (dialogue.empty() &&
-            (game() == GoldBoxGame::pools_of_darkness || original::krynn_game(game())))
+        if (dialogue.empty() && (game() == GoldBoxGame::pools_of_darkness || krynn_game(game())))
         {
             dialogue.push_back({"Who will train?", {}});
         }
@@ -6539,7 +6538,7 @@ void RolfTourSession::show_temple(std::vector<Message> notice)
     if (visit.member)
     {
         const auto &offering = *visit.chosen;
-        dialogue.push_back({original::krynn_game(game())
+        dialogue.push_back({krynn_game(game())
                                 ? "The clerics will cast {spell} on {name} for {fee} steel."
                                 : "The clerics will cast {spell} on {name} for {fee} gp.",
                             {spell(offering),
@@ -6583,7 +6582,7 @@ void RolfTourSession::show_temple(std::vector<Message> notice)
         }
         for (const auto &offering : visit.offerings)
         {
-            add({original::krynn_game(game()) ? "{spell} ({fee} steel)" : "{spell} ({fee} gp)",
+            add({krynn_game(game()) ? "{spell} ({fee} steel)" : "{spell} ({fee} gp)",
                  {spell(offering), {"fee", amount(offering.price_gp)}}},
                 {TempleChoice::Kind::service, 0, offering});
         }
@@ -6659,8 +6658,8 @@ bool RolfTourSession::choose_at_temple(std::size_t choice)
     case TempleChoice::Kind::member:
         if (campaign_->purse_gold() < picked.offering.price_gp)
         {
-            show_temple({{original::krynn_game(game()) ? "The party's steel cannot pay {fee} steel."
-                                                       : "The party's gold cannot pay {fee} gp.",
+            show_temple({{krynn_game(game()) ? "The party's steel cannot pay {fee} steel."
+                                             : "The party's gold cannot pay {fee} gp.",
                           {{"fee", amount(picked.offering.price_gp)}}}});
             return true;
         }

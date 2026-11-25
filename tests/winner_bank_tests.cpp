@@ -114,7 +114,7 @@ MemberId join_npc(opengold::CampaignParty &party, const Game &game, unsigned ban
 // Player characters made by the game's creation rules.
 void make_player_characters(opengold::CampaignParty &party, const Game &game, unsigned count = 2)
 {
-    const bool krynn = og::krynn_game(game.game);
+    const bool krynn = opengold::krynn_game(game.game);
     for (unsigned index = 0; index < count; ++index)
     {
         opengold::CharacterCreator creator(game.creation, 40 + party.state().roster.size());

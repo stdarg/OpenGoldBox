@@ -716,7 +716,7 @@ void CharacterCreationView::refresh_party()
                 ? i18n::text(
                       is_buck_rogers(original::game_of(campaign_->identity()))
                           ? N_("Each new character brings 1,000 credits and its two free items. Save game keeps this party to play on later.")
-                      : original::krynn_game(original::game_of(campaign_->identity()))
+                      : krynn_game(original::game_of(campaign_->identity()))
                           ? N_("Each new character brings starting steel and equipment for this campaign. Save game keeps this party to play on later.")
                           : N_("Each new character brings 3d6 × 10 gold pieces. Save game keeps this party to play on later."))
                 : error_);

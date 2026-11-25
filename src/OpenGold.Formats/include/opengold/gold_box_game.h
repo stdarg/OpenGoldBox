@@ -130,6 +130,14 @@ inline constexpr std::array<GoldBoxGame, 12> gold_box_games{
            game == GoldBoxGame::dark_queen_of_krynn;
 }
 
+// Whether the game is one of the three Krynn games, which share the Dragonlance
+// races, classes, steel coins and deities (docs/KRYNN.md).
+[[nodiscard]] constexpr bool krynn_game(GoldBoxGame game) noexcept
+{
+    return game == GoldBoxGame::champions_of_krynn || game == GoldBoxGame::death_knights_of_krynn ||
+           game == GoldBoxGame::dark_queen_of_krynn;
+}
+
 // Whether the game is one of the two Buck Rogers games, which run the same
 // program with different data (docs/BUCK-ROGERS.md).
 [[nodiscard]] constexpr bool is_buck_rogers(GoldBoxGame game) noexcept

@@ -1083,7 +1083,7 @@ void CharacterCreationView::show_rolled_character(const CharacterSheet *sheet)
     required_node<Label>(*this, "SwapHint")
         .set_text(!rolled ? String()
                   : sheet->original->platinum > 0
-                      ? i18n::format(original::krynn_game(original::game_of(sheet->identity))
+                      ? i18n::format(krynn_game(original::game_of(sheet->identity))
                                          ? N_("Hit Points {hp}   Age {age}   Steel {pp}")
                                          : N_("Hit Points {hp}   Age {age}   Platinum {pp}"),
                                      {{"hp", sheet->hit_points},

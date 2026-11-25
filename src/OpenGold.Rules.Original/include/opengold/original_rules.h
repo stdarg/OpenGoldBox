@@ -17,12 +17,6 @@
 // The tables are the originals'; the code is OpenGoldBox's own.
 namespace opengold::original
 {
-[[nodiscard]] constexpr bool krynn_game(GoldBoxGame game) noexcept
-{
-    return game == GoldBoxGame::champions_of_krynn || game == GoldBoxGame::death_knights_of_krynn ||
-           game == GoldBoxGame::dark_queen_of_krynn;
-}
-
 // In the original's order, which its scripts read as race codes 1 to 7.
 enum class Race : unsigned
 {

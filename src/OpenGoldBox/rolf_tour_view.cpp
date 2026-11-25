@@ -2423,7 +2423,7 @@ String coin_list(const opengold::Coins &coins,
     static constexpr std::array<const char *, 5> champions_amounts{
         N_("{count} silver"), N_("{count} copper"), N_("{count} bronze"), N_("{count} platinum"),
         N_("{count} steel")};
-    const auto &labels = opengold::original::krynn_game(game) ? champions_amounts : amounts;
+    const auto &labels = opengold::krynn_game(game) ? champions_amounts : amounts;
     String result;
     for (std::size_t coin = coins.size(); coin-- > 0;)
     {
@@ -2540,8 +2540,8 @@ String shop_item_hover(const opengold::ItemPreview &preview, const String &item,
                                      {"now", preview.armor_class_now}});
     }
     return text + "\n" +
-           i18n::format(opengold::original::krynn_game(game) ? N_("{price} steel, {weight} lb")
-                                                             : N_("{price} gp, {weight} lb"),
+           i18n::format(opengold::krynn_game(game) ? N_("{price} steel, {weight} lb")
+                                                   : N_("{price} gp, {weight} lb"),
                         {{"price", price}, {"weight", pounds(preview.weight_hundredths)}});
 }
 
@@ -2898,7 +2898,7 @@ void RolfTourView::refresh()
     }
     const bool loaded = session_ != nullptr;
     const auto game = dax() ? dax()->game() : opengold::GoldBoxGame::pool_of_radiance;
-    const bool champions = opengold::original::krynn_game(game);
+    const bool champions = opengold::krynn_game(game);
     static const TourSnapshot none;
     const TourSnapshot &s = loaded ? session_->snapshot() : none;
     refresh_rest();
