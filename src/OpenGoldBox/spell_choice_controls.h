@@ -48,8 +48,8 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
     }
     for (const auto &section : options.class_preparation)
     {
-        groups.push_back({"prepared" + section.tag, section.label, section.count,
-                          section.preparation});
+        groups.push_back(
+            {"prepared" + section.tag, section.label, section.count, section.preparation});
         sections.emplace_back(section.tag, &section.locked);
     }
     int position = 0;
@@ -57,14 +57,13 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
     {
         const bool preparing = group.id.starts_with("prepared");
         const auto tag = preparing ? group.id.substr(8) : std::string();
-        const auto *locked_spells = preparing
-                                        ? std::find_if(sections.begin(), sections.end(),
-                                                       [&](const auto &section)
-                                                       {
-                                                           return section.first == tag;
-                                                       })
-                                              ->second
-                                        : nullptr;
+        const auto *locked_spells = preparing ? std::find_if(sections.begin(), sections.end(),
+                                                             [&](const auto &section)
+                                                             {
+                                                                 return section.first == tag;
+                                                             })
+                                                    ->second
+                                              : nullptr;
         // Node names allow neither ':' nor '@'.
         const auto section_name = training_string(group.id).replace(":", "_").replace("@", "_");
         auto *section = Object::cast_to<VBoxContainer>(rows.get_node_or_null(section_name));
@@ -95,17 +94,15 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
                 }
             }
         }
-        const auto &picked = preparing                     ? marked
-                             : it == choices.learning.end() ? none
-                                                            : it->second;
-        label->set_text((preparing && group.id != "prepared"
-                             ? tr(N_("Prepared spells")) + " / " + tr(group.label)
-                             : tr(group.label)) +
-                        (preparing ? String()
-                                   : " / " + tr(N_("Level")) + " " +
-                                         String::num_uint64(group.acquired_level)) +
-                        " (" + String::num_uint64(picked.size()) + " / " +
-                        String::num_uint64(group.count) + ")");
+        const auto &picked = preparing ? marked : it == choices.learning.end() ? none : it->second;
+        label->set_text(
+            (preparing && group.id != "prepared"
+                 ? tr(N_("Prepared spells")) + " / " + tr(group.label)
+                 : tr(group.label)) +
+            (preparing ? String()
+                       : " / " + tr(N_("Level")) + " " + String::num_uint64(group.acquired_level)) +
+            " (" + String::num_uint64(picked.size()) + " / " + String::num_uint64(group.count) +
+            ")");
         auto *pending = &required_node<Label>(*section, "Pending");
         pending->set_text(tr(N_("Unsupported choices remain pending.")));
         pending->set_visible(group.options.size() < group.count);
@@ -198,9 +195,9 @@ inline void toggle_spell(opengold::rules::SpellChoices &choice, opengold::Choice
     const auto [group, picked, selected] = toggle;
     // A later class's prepared spell carries its mark ("@cleric", MULTI-1).
     const bool preparing = std::string_view(group).starts_with("prepared");
-    const auto value =
-        preparing ? std::string(picked) + std::string(std::string_view(group).substr(8))
-                  : std::string(picked);
+    const auto value = preparing
+                           ? std::string(picked) + std::string(std::string_view(group).substr(8))
+                           : std::string(picked);
     if (preparing && !choice.prepared)
     {
         choice.prepared.emplace();
@@ -225,15 +222,8 @@ godot::Window *setup_spell_dialog(godot::Node &parent, const godot::String &name
                                   const Translate &tr)
 {
     using namespace godot;
-    auto owned = make_node<Window>();
-    owned->set_name(name);
-    owned->set_title(tr(N_("Spellbook")));
-    attach_dialog_layout(*owned);
-    owned->set_flag(Window::FLAG_RESIZE_DISABLED, true);
-    owned->set_transient(true);
-    owned->set_exclusive(true);
-    owned->hide();
-    auto *w = attach_child(parent, std::move(owned));
+    auto *w = attach_modal_dialog(parent, name);
+    w->set_title(tr(N_("Spellbook")));
     w->connect("close_requested", cancel);
     dialog_control<Label>(*w, "Title");
     auto *known = dialog_control<RichTextLabel>(*w, "Known");

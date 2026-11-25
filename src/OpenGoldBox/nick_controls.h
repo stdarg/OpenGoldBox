@@ -20,15 +20,8 @@ void setup_nick(godot::Node &root, Text text, const godot::Callable &open,
     button->set_text(text(N_("Nick attack")));
     button->hide();
     button->connect("pressed", open);
-    auto owned = make_node<Window>();
-    owned->set_name("NickAttack");
-    owned->set_title(text(N_("Nick attack")));
-    attach_dialog_layout(*owned);
-    owned->set_flag(Window::FLAG_RESIZE_DISABLED, true);
-    owned->set_transient(true);
-    owned->set_exclusive(true);
-    owned->hide();
-    auto *dialog = attach_child(root, std::move(owned));
+    auto *dialog = attach_modal_dialog(root, "NickAttack");
+    dialog->set_title(text(N_("Nick attack")));
     dialog->connect("close_requested", cancel);
     dialog->connect("window_input", input);
     auto *explanation = dialog_control<Label>(*dialog, "Text");

@@ -16,14 +16,7 @@ void setup_ally_attack(godot::Node &root, Text text, const godot::Callable &atta
                        const godot::Callable &spare, const godot::Callable &input)
 {
     using namespace godot;
-    auto owned = make_node<Window>();
-    owned->set_name("AttackAlly");
-    attach_dialog_layout(*owned);
-    owned->set_flag(Window::FLAG_RESIZE_DISABLED, true);
-    owned->set_transient(true);
-    owned->set_exclusive(true);
-    owned->hide();
-    auto *w = attach_child(root, std::move(owned));
+    auto *w = attach_modal_dialog(root, "AttackAlly");
     w->set_title(text(N_("Attack Ally")));
     w->connect("close_requested", spare);
     w->connect("window_input", input);

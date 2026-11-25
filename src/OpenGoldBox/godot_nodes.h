@@ -147,6 +147,21 @@ template <class T> T *dialog_control(godot::Node &parent, const godot::String &n
     return &required_node<T>(parent, godot::NodePath(name));
 }
 
+// A hidden modal dialog of fixed size with its authored layout (the dialog
+// layout scene of its name), attached to `parent`. The returned pointer
+// borrows the parent's child; the caller sets its title and connects it.
+inline godot::Window *attach_modal_dialog(godot::Node &parent, const godot::String &name)
+{
+    auto owned = make_node<godot::Window>();
+    owned->set_name(name);
+    attach_dialog_layout(*owned);
+    owned->set_flag(godot::Window::FLAG_RESIZE_DISABLED, true);
+    owned->set_transient(true);
+    owned->set_exclusive(true);
+    owned->hide();
+    return attach_child(parent, std::move(owned));
+}
+
 // Blocks an object's signals while a control is refilled, and restores them
 // at unblock() or, if an exception skips that, when the scope ends, so a
 // failure cannot leave a dropdown silent (Effective C++ Item 13).
