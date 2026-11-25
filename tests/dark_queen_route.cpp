@@ -2068,9 +2068,8 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     abyss_portal.cure_first = false;
     abyss_portal.cure_to_full = false;
     abyss_portal.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x104, 1};
-    // The portal sets the party down hurt beside the Greystone's tripod,
-    // where a camp hatches the five-headed dragon. Leave the tripod alone,
-    // walk back to the upper court, and rest and ward there first.
+    // The portal sets the party down hurt beside the Greystone's tripod.
+    // The first move hatches the dragon before any return to the upper court.
     abyss_portal.dialogue_answers = {{"INVESTIGATE THE TRIPOD", "NO"}};
     beats.push_back(abyss_portal);
     auto leave_tripod = ending_walk(62, 4, 22, D::north);
@@ -2078,6 +2077,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     // The egg hatches as the party moves off: the five-headed dragon is
     // fought here, its heads slain while its body can neither be harmed nor
     // act.
+    leave_tripod.fight_tactic = 6;
     beats.push_back(leave_tripod);
     auto egg_rest = palace_preparation;
     egg_rest.map = 62;
