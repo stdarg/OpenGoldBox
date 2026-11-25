@@ -217,7 +217,9 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/encounter_budget.cpp
     src/OpenGold.Core/src/campaign_encounter.cpp
     src/OpenGold.Core/src/difficulty.cpp
+    src/OpenGold.Core/src/combat_geometry.cpp
     src/OpenGold.Core/src/combat_demo.cpp
+    src/OpenGold.Core/src/combat_player.cpp
     src/OpenGold.Core/src/dungeon_battlefield.cpp
     src/OpenGold.Core/src/encounter_formation.cpp
     src/OpenGold.Core/src/exploration_view.cpp
