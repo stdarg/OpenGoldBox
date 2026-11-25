@@ -48,8 +48,10 @@ class TemporaryFile
 
     TemporaryFile(const TemporaryFile &) = delete;
     TemporaryFile &operator=(const TemporaryFile &) = delete;
+    TemporaryFile(TemporaryFile &&) = delete;
+    TemporaryFile &operator=(TemporaryFile &&) = delete;
 
-    const std::filesystem::path &path() const noexcept
+    [[nodiscard]] const std::filesystem::path &path() const noexcept
     {
         return path_;
     }
@@ -95,8 +97,10 @@ class Descriptor
 
     Descriptor(const Descriptor &) = delete;
     Descriptor &operator=(const Descriptor &) = delete;
+    Descriptor(Descriptor &&) = delete;
+    Descriptor &operator=(Descriptor &&) = delete;
 
-    int get() const noexcept
+    [[nodiscard]] int get() const noexcept
     {
         return fd_;
     }

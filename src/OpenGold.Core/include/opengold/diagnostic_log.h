@@ -44,6 +44,8 @@ class RollPurpose
     ~RollPurpose();
     RollPurpose(const RollPurpose &) = delete;
     RollPurpose &operator=(const RollPurpose &) = delete;
+    RollPurpose(RollPurpose &&) = delete;
+    RollPurpose &operator=(RollPurpose &&) = delete;
 
   private:
     std::string previous_;

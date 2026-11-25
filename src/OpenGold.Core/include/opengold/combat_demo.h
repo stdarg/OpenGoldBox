@@ -23,6 +23,12 @@ class CombatDemo
   public:
     explicit CombatDemo(std::unique_ptr<rules::RulesModule> module);
     ~CombatDemo();
+    // A demo holds the campaign's edit lock while a fight runs, so it is
+    // neither copied nor moved: its owners keep it in a std::unique_ptr.
+    CombatDemo(const CombatDemo &) = delete;
+    CombatDemo &operator=(const CombatDemo &) = delete;
+    CombatDemo(CombatDemo &&) = delete;
+    CombatDemo &operator=(CombatDemo &&) = delete;
     void campaign_party(std::shared_ptr<CampaignParty> party);
 
     // When a campaign fight ends every member is back under the player's
