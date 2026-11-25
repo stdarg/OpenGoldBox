@@ -58,8 +58,6 @@ using por::TourPhase;
     return options;
 }
 
-} // namespace
-
 // The loop's place between steps.
 enum class LoopStep : std::uint8_t
 {
@@ -67,6 +65,7 @@ enum class LoopStep : std::uint8_t
     next_event,
     after_kind,
 };
+} // namespace
 
 void UaSession::run_events(unsigned n)
 {
