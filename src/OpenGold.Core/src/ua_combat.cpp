@@ -3,7 +3,6 @@
 #include "opengold/ua_view.h"
 
 #include <algorithm>
-#include <cstdio>
 #include <stdexcept>
 #include <string>
 
@@ -54,9 +53,7 @@ constexpr unsigned action_pose = 128;
                                     std::string_view letters, unsigned set)
 {
     const auto what = std::string(kit_file) + " set " + std::to_string(set);
-    char loose_name[16];
-    std::snprintf(loose_name, sizeof loose_name, "%.4s1%03u.TLB", letters.data(), set % 1000);
-    if (const auto loose = files.library(loose_name))
+    if (const auto loose = files.library(loose_library_name(letters, set)))
     {
         auto tiles = decode_tile_library(*loose);
         if (!tiles)
@@ -349,15 +346,14 @@ CombatIcons::CombatIcons(DesignFiles files) : files_(std::move(files))
 
 std::optional<CombatIcons::Poses> CombatIcons::poses(unsigned number) const
 {
-    char loose_name[16];
-    std::snprintf(loose_name, sizeof loose_name, "CPIC1%03u.TLB", number % 1000);
+    const auto loose_name = loose_library_name("CPIC", number);
     if (const auto loose = files_.library(loose_name))
     {
         // A design's own icon: its two poses in turn.
         const auto tiles = decode_tile_library(*loose);
         if (!tiles)
         {
-            throw std::runtime_error(std::string(loose_name) + ": its glyphs do not decode");
+            throw std::runtime_error(loose_name + ": its glyphs do not decode");
         }
         std::vector<Glyph> images;
         for (const auto &glyph : tiles->glyphs)

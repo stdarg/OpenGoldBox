@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <optional>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -57,6 +58,11 @@ class DesignFiles
 
     std::filesystem::path kit_, design_;
 };
+
+// The name of a design's loose library: its first four `letters` ("CPIC",
+// "BIGP", a kit's letters), bank 1 and `number` in three digits, so
+// "CPIC1003.TLB" for icon 3 (tiles.c's tile_open_file).
+[[nodiscard]] std::string loose_library_name(std::string_view letters, unsigned number);
 
 // The kit's folder holds CKIT.EXE and DISK1 to DISK3.
 [[nodiscard]] bool is_kit_folder(const std::filesystem::path &folder);

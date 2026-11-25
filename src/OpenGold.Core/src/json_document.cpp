@@ -1,6 +1,7 @@
 #include "json_document.h"
 #include "opengold/path_text.h"
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdio>
 #include <fstream>
@@ -281,9 +282,9 @@ void write_string(std::string &out, const std::string &text)
         }
         else if (c < 0x20)
         {
-            char escaped[8];
-            std::snprintf(escaped, sizeof escaped, "\\u%04x", c);
-            out += escaped;
+            std::array<char, 8> escaped{};
+            std::snprintf(escaped.data(), escaped.size(), "\\u%04x", c);
+            out += escaped.data();
         }
         else
         {
@@ -302,9 +303,9 @@ void write_scalar(std::string &out, const Json &value)
             out += std::to_string(static_cast<long long>(*number));
             return;
         }
-        char text[32];
-        std::snprintf(text, sizeof text, "%.17g", *number);
-        out += text;
+        std::array<char, 32> text{};
+        std::snprintf(text.data(), text.size(), "%.17g", *number);
+        out += text.data();
         return;
     }
     if (const auto *text = std::get_if<std::string>(&value.value))

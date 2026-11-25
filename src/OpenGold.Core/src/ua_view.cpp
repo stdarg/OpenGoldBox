@@ -1,7 +1,6 @@
 #include "opengold/ua_view.h"
 
 #include <algorithm>
-#include <cstdio>
 #include <stdexcept>
 #include <string>
 
@@ -520,10 +519,8 @@ OverlandArt load_overland_art(const DesignFiles &files, const Area &area, unsign
     const unsigned picture = area.header[header_backdrops] != 0 ? area.header[header_backdrops]
                                                                 : (number + 0x100 - 0x11) & 0xFF;
     const auto what = "Big picture " + std::to_string(picture);
-    char loose_name[16];
-    std::snprintf(loose_name, sizeof loose_name, "BIGP1%03u.TLB", picture);
     std::optional<TileLibrary> tiles;
-    if (const auto loose = files.library(loose_name))
+    if (const auto loose = files.library(loose_library_name("BIGP", picture)))
     {
         tiles = decode_tile_library(*loose);
         if (!tiles)
@@ -533,7 +530,7 @@ OverlandArt load_overland_art(const DesignFiles &files, const Area &area, unsign
     }
     else
     {
-        const auto file = picture < 0xF8 ? "BIGPIC.TLB" : "BIGPIX.TLB";
+        const auto *const file = picture < 0xF8 ? "BIGPIC.TLB" : "BIGPIX.TLB";
         const auto library = files.library(file);
         if (!library)
         {

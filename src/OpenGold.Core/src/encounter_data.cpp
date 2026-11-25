@@ -2,6 +2,7 @@
 #include "json_document.h"
 #include "opengold/ecl_address.h"
 #include <algorithm>
+#include <array>
 #include <charconv>
 #include <cmath>
 #include <cstdio>
@@ -309,10 +310,10 @@ std::vector<ChanceOverride> read_chances(const std::filesystem::path &folder)
 
 std::string site_name(const EncounterSite &site)
 {
-    char address[8];
-    std::snprintf(address, sizeof address, "%04X", static_cast<unsigned>(site.address));
+    std::array<char, 8> address{};
+    std::snprintf(address.data(), address.size(), "%04X", static_cast<unsigned>(site.address));
     return "ECL" + std::to_string(site.bank) + ".DAX:" + std::to_string(site.script) + ":0x" +
-           address;
+           address.data();
 }
 
 std::vector<EncounterGroup>

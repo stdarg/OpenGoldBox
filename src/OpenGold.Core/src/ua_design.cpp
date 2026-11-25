@@ -162,4 +162,15 @@ bool is_design_folder(const std::filesystem::path &folder)
            por::detail::upper_ascii(path_text(named.extension())) == ".DSN";
 }
 
+std::string loose_library_name(std::string_view letters, unsigned number)
+{
+    std::string name(letters.substr(0, 4));
+    name += '1';
+    const auto digits = std::to_string(number % 1000);
+    name.append(3 - digits.size(), '0');
+    name += digits;
+    name += ".TLB";
+    return name;
+}
+
 } // namespace opengold::ua
