@@ -196,7 +196,53 @@ std::vector<EclOpcode> buck_rogers_opcodes()
     return opcodes;
 }
 
-std::span<const EclOpcode> game_opcodes(GoldBoxGame game)
+// The original engine routines each game's CALL names (ecl.h EclEngineRoutines).
+constexpr EclEngineRoutines pool_of_radiance_routines{0x2C90, 0xC018, 0xC01E, 0x8001,
+                                                      0x8000, 0xBA03, 0};
+// Curse matches the address less 7FFFh against its routines' numbers
+// (AE11h, 4019h, 401Fh, 2, 1, 3201h, E804h); these are the addresses.
+constexpr EclEngineRoutines curse_routines{0x2E10, 0xC018, 0xC01E, 0x8001, 0x8000, 0xB200, 0x6803};
+// As Curse, matched less 7FFFh (ADCCh, 4019h, 401Fh, 3204h, E804h);
+// Secret has no duels.
+constexpr EclEngineRoutines secret_routines{0x2DCB, 0xC018, 0xC01E, 0, 0, 0xB203, 0x6803};
+// Its EclCall uses Curse's redraw and Secret's sound routine;
+// it has neither of Curse's duel calls.
+constexpr EclEngineRoutines champions_routines{0x2E10, 0xC018, 0xC01E, 0, 0, 0xB203, 0x6803};
+// As Curse, matched less 7FFFh (AE11h, 401Bh, 401Fh, 2, 1, 3201h,
+// E804h, 880Ah, 880Dh, 8810h); 401Bh rereads the party's cell. Its
+// new routines are in docs/games/gateway.md.
+constexpr EclEngineRoutines gateway_routines{0x2E10, 0xC01A, 0xC01E, 0x8001, 0x8000,
+                                             0xB200, 0x6803, 0x0809, 0x080C, 0x080F};
+// The 256-color engine's CALL names three routines by number: 1
+// redraws the view, 2 steps forward, 3 shows the portrait's next
+// frame (its EclCall).
+constexpr EclEngineRoutines vga_routines{1, 0, 2, 0, 0, 0, 3};
+
+// Where each game's scripts run (ecl.h EclMemory).
+constexpr EclMemory pool_of_radiance_memory{EclProgram::origin, EclProgram::limit};
+constexpr EclMemory curse_memory{0x8000, 0x9E00};
+constexpr EclMemory dark_queen_memory{0x8000, 0xAEE3, 0};
+constexpr EclMemory treasures_memory{0x8000, 0xB6B1};
+// Zone 3 runs from 8000h to A400h, that address included (types.pas TZone3).
+constexpr EclMemory buck_rogers_memory{0x8000, 0xA401};
+
+// A game's script engine: the commands its scripts use, the engine routines
+// their CALLs name and the memory its script bank occupies. Each row names
+// the game whose table it shares; a game keeps one engine fact and changes
+// another (Death Knights runs Secret's commands and routines in Curse's
+// memory), so the rows share by field.
+struct ScriptEngine
+{
+    std::span<const EclOpcode> opcodes; // Empty for a game whose scripts are not decoded yet.
+    EclEngineRoutines routines;
+    EclMemory memory;
+};
+
+static_assert(static_cast<std::size_t>(GoldBoxGame::matrix_cubed) + 1 == gold_box_games.size(),
+              "the script-engine table is indexed by GoldBoxGame");
+
+// Throws EclError for a game whose scripts are not decoded yet.
+const ScriptEngine &script_engine(GoldBoxGame game)
 {
     static const std::vector<EclOpcode> curse = curse_opcodes();
     static const std::vector<EclOpcode> secret = secret_opcodes();
@@ -205,30 +251,44 @@ std::span<const EclOpcode> game_opcodes(GoldBoxGame game)
     static const std::vector<EclOpcode> gateway = gateway_opcodes();
     static const std::vector<EclOpcode> death_knights = death_knights_opcodes();
     static const std::vector<EclOpcode> buck_rogers = buck_rogers_opcodes();
-    switch (game)
+    static const auto engines = []
     {
-    case GoldBoxGame::pool_of_radiance:
-        return pool_of_radiance_opcodes;
-    case GoldBoxGame::curse_of_the_azure_bonds:
-        return curse;
-    case GoldBoxGame::secret_of_the_silver_blades:
-    case GoldBoxGame::champions_of_krynn:
-        return secret;
-    case GoldBoxGame::death_knights_of_krynn:
-        return death_knights;
-    case GoldBoxGame::pools_of_darkness:
-    case GoldBoxGame::dark_queen_of_krynn:
-        return darkness;
-    case GoldBoxGame::treasures_of_the_savage_frontier:
-        return treasures;
-    case GoldBoxGame::gateway_to_the_savage_frontier:
-        return gateway;
-    case GoldBoxGame::countdown_to_doomsday:
-    case GoldBoxGame::matrix_cubed:
-        return buck_rogers;
-    default:
+        std::array<ScriptEngine, gold_box_games.size()> table{};
+        const auto row = [&table](GoldBoxGame of) -> ScriptEngine &
+        {
+            return table[static_cast<std::size_t>(of)];
+        };
+        row(GoldBoxGame::pool_of_radiance) = {pool_of_radiance_opcodes, pool_of_radiance_routines,
+                                              pool_of_radiance_memory};
+        row(GoldBoxGame::curse_of_the_azure_bonds) = {curse, curse_routines, curse_memory};
+        row(GoldBoxGame::secret_of_the_silver_blades) = {secret, secret_routines, curse_memory};
+        row(GoldBoxGame::gateway_to_the_savage_frontier) = {gateway, gateway_routines,
+                                                            curse_memory};
+        row(GoldBoxGame::pools_of_darkness) = {darkness, vga_routines, curse_memory};
+        row(GoldBoxGame::treasures_of_the_savage_frontier) = {treasures, vga_routines,
+                                                              treasures_memory};
+        // Unlimited Adventures' scripts are not decoded yet: its row stays empty.
+        row(GoldBoxGame::champions_of_krynn) = {secret, champions_routines, curse_memory};
+        row(GoldBoxGame::death_knights_of_krynn) = {death_knights, secret_routines, curse_memory};
+        row(GoldBoxGame::dark_queen_of_krynn) = {darkness, vga_routines, dark_queen_memory};
+        // Secret's numbers, matched less 7FFFh (EclCall); no duels. Matrix
+        // Cubed's engine is Countdown's.
+        row(GoldBoxGame::countdown_to_doomsday) = {buck_rogers, secret_routines,
+                                                   buck_rogers_memory};
+        row(GoldBoxGame::matrix_cubed) = {buck_rogers, secret_routines, buck_rogers_memory};
+        return table;
+    }();
+    const auto at = static_cast<std::size_t>(game);
+    if (at >= engines.size() || engines[at].opcodes.empty())
+    {
         throw EclError("The scripts of " + std::string(game_title(game)) + " are not decoded yet");
     }
+    return engines[at];
+}
+
+std::span<const EclOpcode> game_opcodes(GoldBoxGame game)
+{
+    return script_engine(game).opcodes;
 }
 
 // Whether a script goes on to the command after this one: EXIT, GOTO, RETURN
@@ -262,70 +322,12 @@ const EclOpcode &ecl_opcode(std::uint8_t op, GoldBoxGame game)
 
 EclEngineRoutines ecl_engine_routines(GoldBoxGame game)
 {
-    switch (game)
-    {
-    case GoldBoxGame::pool_of_radiance:
-        return {0x2C90, 0xC018, 0xC01E, 0x8001, 0x8000, 0xBA03, 0};
-    case GoldBoxGame::curse_of_the_azure_bonds:
-        // Curse matches the address less 7FFFh against its routines' numbers
-        // (AE11h, 4019h, 401Fh, 2, 1, 3201h, E804h); these are the addresses.
-        return {0x2E10, 0xC018, 0xC01E, 0x8001, 0x8000, 0xB200, 0x6803};
-    case GoldBoxGame::secret_of_the_silver_blades:
-        // As Curse, matched less 7FFFh (ADCCh, 4019h, 401Fh, 3204h, E804h);
-        // Secret has no duels.
-        return {0x2DCB, 0xC018, 0xC01E, 0, 0, 0xB203, 0x6803};
-    case GoldBoxGame::death_knights_of_krynn:
-        return {0x2DCB, 0xC018, 0xC01E, 0, 0, 0xB203, 0x6803};
-    case GoldBoxGame::champions_of_krynn:
-        // Its EclCall uses Curse's redraw and Secret's sound routine;
-        // it has neither of Curse's duel calls.
-        return {0x2E10, 0xC018, 0xC01E, 0, 0, 0xB203, 0x6803};
-    case GoldBoxGame::gateway_to_the_savage_frontier:
-        // As Curse, matched less 7FFFh (AE11h, 401Bh, 401Fh, 2, 1, 3201h,
-        // E804h, 880Ah, 880Dh, 8810h); 401Bh rereads the party's cell. Its
-        // new routines are in docs/games/gateway.md.
-        return {0x2E10, 0xC01A, 0xC01E, 0x8001, 0x8000, 0xB200, 0x6803, 0x0809, 0x080C, 0x080F};
-    case GoldBoxGame::dark_queen_of_krynn:
-    case GoldBoxGame::pools_of_darkness:
-    case GoldBoxGame::treasures_of_the_savage_frontier:
-        // The 256-color engine's CALL names three routines by number: 1
-        // redraws the view, 2 steps forward, 3 shows the portrait's next
-        // frame (its EclCall).
-        return {1, 0, 2, 0, 0, 0, 3};
-    case GoldBoxGame::countdown_to_doomsday:
-    case GoldBoxGame::matrix_cubed:
-        // Secret's numbers, matched less 7FFFh (EclCall); no duels.
-        return {0x2DCB, 0xC018, 0xC01E, 0, 0, 0xB203, 0x6803};
-    default:
-        throw EclError("The scripts of " + std::string(game_title(game)) + " are not decoded yet");
-    }
+    return script_engine(game).routines;
 }
 
 EclMemory ecl_memory(GoldBoxGame game)
 {
-    switch (game)
-    {
-    case GoldBoxGame::pool_of_radiance:
-        return {EclProgram::origin, EclProgram::limit};
-    case GoldBoxGame::curse_of_the_azure_bonds:
-    case GoldBoxGame::secret_of_the_silver_blades:
-    case GoldBoxGame::pools_of_darkness:
-    case GoldBoxGame::gateway_to_the_savage_frontier:
-    case GoldBoxGame::champions_of_krynn:
-        return {0x8000, 0x9E00};
-    case GoldBoxGame::death_knights_of_krynn:
-        return {0x8000, 0x9E00};
-    case GoldBoxGame::dark_queen_of_krynn:
-        return {0x8000, 0xAEE3, 0};
-    case GoldBoxGame::treasures_of_the_savage_frontier:
-        return {0x8000, 0xB6B1};
-    case GoldBoxGame::countdown_to_doomsday:
-    case GoldBoxGame::matrix_cubed:
-        // Zone 3 runs from 8000h to A400h, that address included (types.pas TZone3).
-        return {0x8000, 0xA401};
-    default:
-        throw EclError("The scripts of " + std::string(game_title(game)) + " are not decoded yet");
-    }
+    return script_engine(game).memory;
 }
 
 std::string unpack_ecl_text(std::span<const std::uint8_t> bytes)
