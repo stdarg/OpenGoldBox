@@ -2567,7 +2567,7 @@ void actual_death_knights_winners_keep_their_earned_state()
             if (snapshot.dialogue.find("THE CITY OF PALANTHAS.") != std::string::npos &&
                 snapshot.choices.size() > 2)
             {
-                const auto destination = visited_palace ? "LEAVE" : "PALACE";
+                const auto *destination = visited_palace ? "LEAVE" : "PALACE";
                 const auto found = std::ranges::find(snapshot.choices, destination);
                 std::string offered;
                 for (const auto &label : snapshot.choices)

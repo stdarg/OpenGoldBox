@@ -1,5 +1,4 @@
 #include "opengold/campaign_party.h"
-#include "opengold/campaign_party.h"
 #include "opengold/character.h"
 #include "opengold/srd5.h"
 #include <algorithm>

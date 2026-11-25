@@ -6072,7 +6072,7 @@ bool play_genuine_opening(const std::filesystem::path &folder, bool require_full
             std::size_t pick = 0;
             if (s.dialogue.find("The booty:") != std::string::npos)
             {
-                const auto wanted = divided_booty ? "Exit" : "Divvy";
+                const auto *wanted = divided_booty ? "Exit" : "Divvy";
                 const auto choice = std::ranges::find(s.choices, wanted);
                 check(choice != s.choices.end(), "The actual booty menu offers Divvy and Exit");
                 pick = static_cast<std::size_t>(choice - s.choices.begin());

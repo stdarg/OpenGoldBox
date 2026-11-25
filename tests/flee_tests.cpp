@@ -273,7 +273,7 @@ void stuck_monster_charges()
         {
             continue;
         }
-        const auto charged = "Enemy cannot get away and charges in panic!";
+        const auto *charged = "Enemy cannot get away and charges in panic!";
         for (unsigned n = 0;
              n < 80 && c->snapshot().outcome == Outcome::ongoing && !logged(*c, charged); ++n)
         {
@@ -310,7 +310,7 @@ void stuck_monster_charges()
                       command.verb == "lash_out" || command.verb == "end",
                   "Charging, it can only run and lash out");
         }
-        const auto lashes = "Enemy lashes out in panic.";
+        const auto *lashes = "Enemy lashes out in panic.";
         for (unsigned n = 0; n < 40 && !logged(*c, lashes); ++n)
         {
             const auto next =

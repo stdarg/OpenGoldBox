@@ -215,7 +215,7 @@ void selection()
 void attacks()
 {
     const auto content = read(root / "data/rules/srd-5.2.1/combat.rules");
-    const auto target = "\ncreature target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n";
+    const auto *target = "\ncreature target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n";
     auto rules = srd5::parse_content(content + target);
     const auto archer = leveled(), baseline = leveled("defense");
     for (const auto weapon : {"dart", "light_crossbow", "shortbow", "sling", "blowgun",

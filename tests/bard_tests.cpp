@@ -1,7 +1,6 @@
 #include "opengold/campaign_party.h"
 #include "opengold/character.h"
 #include "opengold/combat_demo.h"
-#include "opengold/combat_demo.h"
 #include "opengold/srd5.h"
 #include "status_effects.h"
 #include <algorithm>

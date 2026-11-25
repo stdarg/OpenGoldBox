@@ -384,7 +384,7 @@ void tactical_master_checks()
                slow = offered(*c, "melee_slow");
     check(push + sap + slow == 2,
           "Tactical Master offers the two masteries the weapon lacks: " + weapon);
-    const auto verb = push ? "melee_push" : "melee_slow";
+    const auto *verb = push ? "melee_push" : "melee_slow";
     check(submit(*c, verb, 98), "A Tactical Master attack");
     const auto saved = c->save();
     check(rules->restore(saved)->save() == saved, "A checkpoint keeps a pending replaced mastery");

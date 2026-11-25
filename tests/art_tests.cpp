@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
+#include <utility>
 
 using namespace opengold;
 using namespace opengold::por;
@@ -31,7 +32,7 @@ template <class F> void rejects(F &&operation, std::string_view diagnostic)
 {
     try
     {
-        operation();
+        std::forward<F>(operation)();
     }
     catch (const std::runtime_error &error)
     {

@@ -13,7 +13,6 @@
 #include <iterator>
 #include <fstream>
 #include <map>
-#include <set>
 #include <memory>
 #include <stdexcept>
 #include <string>
