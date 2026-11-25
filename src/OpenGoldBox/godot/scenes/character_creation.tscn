@@ -1556,6 +1556,7 @@ transient = true
 exclusive = true
 unresizable = true
 size = Vector2i(900, 640)
+min_size = Vector2i(900, 640)
 
 [node name="Background" type="Panel" parent="FromPoolModal"]
 anchors_preset = 15

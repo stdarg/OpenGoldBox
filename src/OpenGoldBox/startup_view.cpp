@@ -130,8 +130,7 @@ constexpr std::array<MenuGame, 12> playable_games{
       true},
      {opengold::GoldBoxGame::treasures_of_the_savage_frontier,
       N_("Treasures of the Savage Frontier"), World::forgotten_realms},
-     {opengold::GoldBoxGame::dark_queen_of_krynn, N_("The Dark Queen of Krynn"), World::krynn,
-      false},
+     {opengold::GoldBoxGame::dark_queen_of_krynn, N_("The Dark Queen of Krynn"), World::krynn},
      {opengold::GoldBoxGame::unlimited_adventures, N_("Unlimited Adventures"),
       World::forgotten_realms}}};
 
@@ -1020,11 +1019,12 @@ void StartupView::ask_rules()
             .connect("pressed", presentation::guarded(this, &StartupView::begin_game));
         connect_escape(*dialog, &StartupView::cancel_new_game);
     }
-    // Designs and Buck Rogers use their own rules: the SRD does not supply
-    // their native monsters and character records.
+    // Designs, Buck Rogers and Dark Queen use their own rules: the SRD
+    // does not supply their native monsters and character records.
     const auto game = settings::chosen_game();
-    const bool original_only =
-        game == opengold::GoldBoxGame::unlimited_adventures || opengold::is_buck_rogers(game);
+    const bool original_only = game == opengold::GoldBoxGame::unlimited_adventures ||
+                               opengold::is_buck_rogers(game) ||
+                               game == opengold::GoldBoxGame::dark_queen_of_krynn;
     rules.set_item_disabled(1, original_only);
     if (original_only)
     {

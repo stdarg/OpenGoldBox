@@ -163,11 +163,11 @@ func run_checks() -> void:
 	# Every game and Back show inside the picker, even at the smallest window.
 	var picker_bottom: float = picker.get_node("Buttons/Back").get_global_rect().end.y
 	if not require(picker_bottom <= picker.size.y and picker.size.y + 40 <= 800, "The picker fits 1120 x 800 with its title bar"): return
-	# The Buck Rogers games are listed but wait until they play.
+	# All twelve game entries can be selected from the startup picker.
 	var waiting := []
 	for button in picker.get_node("Buttons/Games").get_children():
 		if button is Button and button.disabled: waiting.append(String(button.name))
-	if not require(waiting == ["DQK", "buck-rogers-countdown-to-doomsday", "buck-rogers-matrix-cubed"], "The games not playable yet: " + str(waiting)): return
+	if not require(waiting.is_empty(), "Every game's startup entry is enabled: " + str(waiting)): return
 	await capture("pick-game.png")
 	await escape_in(picker)
 	if not require(main.visible and not picker.visible, "Escape goes back from the games to the main menu"): return

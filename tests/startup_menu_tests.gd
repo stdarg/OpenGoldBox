@@ -20,6 +20,7 @@ var darkness_case := false
 var treasure_case := false
 var ua_case := false
 var buck_rogers_case := false
+var dark_queen_case := false
 var ua_design := ""
 
 func _initialize() -> void:
@@ -32,6 +33,7 @@ func _initialize() -> void:
 		if arg == "--treasure": treasure_case = true
 		if arg == "--ua": ua_case = true
 		if arg == "--buck-rogers": buck_rogers_case = true
+		if arg == "--dark-queen": dark_queen_case = true
 		if arg.begins_with("--ua-design="): ua_design = arg.trim_prefix("--ua-design=")
 	call_deferred("run_checks")
 
@@ -218,7 +220,7 @@ func pick(folder: String) -> void:
 	current_scene.get_node("GamePicker/Buttons/Games/" + folder).pressed.emit()
 	await settle()
 
-# The Buck startup check uses ordinary input through the button's own window.
+# The enabled-game startup checks use ordinary input through the button's own window.
 # Emitting pressed directly would also activate a disabled game entry.
 func activate(button: Button, by_keyboard: bool) -> void:
 	require(button.is_visible_in_tree(), "A real startup button is visible: " + String(button.name))
@@ -246,12 +248,10 @@ func activate(button: Button, by_keyboard: bool) -> void:
 			root.push_input(event, true)
 	await settle()
 
-func pick_buck(folder: String, by_keyboard: bool) -> void:
+func pick_using_input(folder: String, by_keyboard: bool) -> void:
 	await activate(current_scene.get_node("MainMenu/Buttons/PickGame"), by_keyboard)
 	var picker: Window = current_scene.get_node("GamePicker")
 	require(picker.visible, "Real input opens the game picker")
-	require((picker.get_node("Buttons/Games/DQK") as Button).disabled,
-		"Dark Queen still waits for its actual ending proof")
 	await activate(picker.get_node("Buttons/Games/" + folder), by_keyboard)
 
 # The game's menu's Create new party, which asks the rules first.
@@ -308,6 +308,9 @@ func run_checks() -> void:
 		return
 	if buck_rogers_case:
 		await check_buck_rogers()
+		return
+	if dark_queen_case:
+		await check_dark_queen()
 		return
 	# Pool of Radiance's title is its new one, which a key passes; Options from
 	# its menu returns to its menu, and closing the question too.
@@ -645,6 +648,55 @@ func check_secret(menu: Window) -> void:
 	print("Startup menu passed: Secret's folder found, a party made under the original rules, its vision and New Verdigris.")
 	quit(0)
 
+# Dark Queen's enabled entry reaches its supported Original creation and the
+# existing Death Knights import dialog through both mouse and keyboard input.
+func check_dark_queen() -> void:
+	if StartupView.game_folder("DQK").is_empty():
+		print("Skipped: Dark Queen's files are not here.")
+		quit(0)
+		return
+	root.size = Vector2i(1120, 800)
+	await settle()
+	for by_keyboard in [false, true]:
+		await pick_using_input("DQK", by_keyboard)
+		var game_menu: Window = current_scene.get_node("GameMenu")
+		for wait in range(40):
+			if game_menu.visible: break
+			await press_key()
+		require(game_menu.visible, "Dark Queen's enabled entry reaches its game menu")
+		await activate(game_menu.get_node("Buttons/NewParty"), by_keyboard)
+		var rules_dialog: Window = current_scene.get_node("RulesDialog")
+		require(rules_dialog.visible, "Dark Queen's New Party reaches the rules question")
+		var rules: OptionButton = rules_dialog.get_node("Rows/Rules")
+		require(rules.selected == 0 and not rules.is_item_disabled(0) and rules.is_item_disabled(1),
+			"Dark Queen defaults to its supported Original rules and cannot choose SRD")
+		await activate(rules_dialog.get_node("Rows/Begin"), by_keyboard)
+		require(current_scene.name == "CharacterCreation", "Dark Queen opens character creation")
+		var races: ItemList = current_scene.get_node("Choices")
+		var kender := false
+		for choice in range(races.item_count):
+			kender = kender or races.get_item_text(choice) == "Kender"
+		require(kender, "Dark Queen opens its Original Krynn creation choices")
+		await activate(current_scene.get_node("Party"), by_keyboard)
+		var from_earlier: Button = current_scene.get_node("PartyPanel/FromPool")
+		require(from_earlier.text == "Add from Death Knights", "Dark Queen offers its earlier game's characters")
+		var dialog: Window = current_scene.get_node("FromPoolModal")
+		var intended_size := dialog.size
+		await activate(from_earlier, by_keyboard)
+		require(dialog.visible and (dialog.get_node("Margin/Rows/Title") as Label).text == "Add character from Death Knights of Krynn",
+			"Dark Queen reaches the existing Death Knights import dialog")
+		var close: Button = dialog.get_node("Margin/Rows/Buttons/Close")
+		require(intended_size == Vector2i(900, 640) and dialog.size == intended_size,
+			"The earlier-game dialog retains its existing scene size: %s -> %s" % [intended_size, dialog.size])
+		require(Rect2(Vector2.ZERO, Vector2(dialog.size)).encloses(close.get_global_rect()),
+			"The earlier-game dialog's Close button lies inside its input viewport")
+		await activate(close, by_keyboard)
+		require(not dialog.visible, "Real input closes the earlier-game dialog")
+		await open_main_menu()
+		await settle()
+	print("Startup menu passed: Dark Queen's real mouse and keyboard buttons, Original creation and Death Knights import entry.")
+	quit(0)
+
 # Unlimited Adventures from the menu: the kit's folder found, its design asked
 # (a folder that is not a design refused), no title, its default party offered, the
 # original rules only, then a fighter made under the kit's rules plays the
@@ -666,7 +718,7 @@ func check_buck_rogers() -> void:
 			quit(0)
 			return
 		var by_keyboard: bool = folder == "buck-rogers-matrix-cubed"
-		await pick_buck(folder, by_keyboard)
+		await pick_using_input(folder, by_keyboard)
 		var game_menu: Window = current_scene.get_node("GameMenu")
 		for wait in range(40):
 			if game_menu.visible: break
