@@ -1,4 +1,5 @@
 #include "opengold/music_bank.h"
+#include "little_endian.h"
 
 #include <algorithm>
 #include <array>
@@ -237,8 +238,7 @@ bool is_music_driver(Bytes bytes, GoldBoxGame game) noexcept
         }
         for (std::size_t entry = 0; entry < 18; entry += 3)
         {
-            const auto displacement = static_cast<std::int16_t>(
-                static_cast<unsigned>(bytes[entry + 1]) | (bytes[entry + 2] << 8));
+            const auto displacement = static_cast<std::int16_t>(format::read_u16(bytes, entry + 1));
             const auto target = static_cast<std::int64_t>(entry + 3) + displacement;
             if (bytes[entry] != 0xE9 || target < 18 ||
                 target >= static_cast<std::int64_t>(bytes.size()))

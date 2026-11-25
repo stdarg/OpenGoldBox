@@ -1,4 +1,5 @@
 #include "opengold/music_bank.h"
+#include "little_endian.h"
 
 #include <algorithm>
 #include <array>
@@ -9,11 +10,6 @@ namespace opengold
 namespace
 {
 using Bytes = std::span<const std::uint8_t>;
-
-std::uint16_t word(Bytes bytes, std::size_t offset)
-{
-    return static_cast<std::uint16_t>(bytes[offset] | (bytes[offset + 1] << 8));
-}
 
 struct ScoreVoice
 {
@@ -45,7 +41,7 @@ std::optional<MusicBank> decode_champions_music(Bytes bytes)
     // SOUND's header maps the nine AdLib voices to MIDI channels. Each event
     // uses running status and ends with one byte of delay, not a MIDI VLQ.
     constexpr std::size_t header_size = 125, channel_table = 34;
-    if (bytes.size() < header_size + 2 || word(bytes, 0) != header_size)
+    if (bytes.size() < header_size + 2 || format::read_u16(bytes, 0) != header_size)
     {
         return std::nullopt;
     }
@@ -169,7 +165,7 @@ std::optional<std::vector<std::vector<std::uint8_t>>> decode_champions_instrumen
     // table. Validate both before reading the ten-byte instrument definitions.
     constexpr std::size_t program_map = 0x150, pointers = 0x187, presets = 20;
     if (!is_music_driver(driver, GoldBoxGame::champions_of_krynn) ||
-        driver.size() < pointers + presets * 2 || word(driver, 1) + 3 != 0x35B)
+        driver.size() < pointers + presets * 2 || format::read_u16(driver, 1) + 3 != 0x35B)
     {
         return std::nullopt;
     }
@@ -181,7 +177,7 @@ std::optional<std::vector<std::vector<std::uint8_t>>> decode_champions_instrumen
         {
             return std::nullopt;
         }
-        const auto offset = word(driver, pointers + 2 * preset);
+        const auto offset = format::read_u16(driver, pointers + 2 * preset);
         if (offset > driver.size() || driver.size() - offset < 10)
         {
             return std::nullopt;
