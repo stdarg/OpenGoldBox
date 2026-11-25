@@ -48,6 +48,14 @@ func run_checks() -> void:
 		print("Skipped: Matrix Cubed's files are not here.")
 		quit(0)
 		return
+	# Public Easy preserves the genuine fixture's dice on load, just as the
+	# independent Core final-Forward reference does. No seed is injected.
+	var settings := ConfigFile.new()
+	var settings_path := OS.get_environment("OPENGOLD_SETTINGS_FILE")
+	require(not settings_path.is_empty() and settings.load(settings_path) == OK,
+		"The check has its own isolated settings")
+	settings.set_value("game", "difficulty", "easy")
+	require(settings.save(settings_path) == OK, "Select existing public Easy before loading")
 	var bank := ProjectSettings.globalize_path("user://saves").path_join(FOLDER).path_join("winning-party.ogs")
 	root.size = Vector2i(1920, 1080)
 	change_scene_to_file("res://scenes/startup.tscn")
@@ -62,6 +70,10 @@ func run_checks() -> void:
 	var start := Time.get_ticks_msec()
 	while Time.get_ticks_msec() - start < 120000:
 		if FileAccess.file_exists(bank): break
+		var combat: Control = node("CampaignCombat")
+		require(combat == null or not combat.is_visible_in_tree(), "The final reference step must not start a new fight")
+		var choices: ItemList = town().get_node("%Choices")
+		require(choices.item_count <= 1, "The final scene offers no new decision")
 		var go_on: Button = town().get_node("%Continue")
 		if go_on.is_visible_in_tree() and not go_on.disabled:
 			await press(go_on)

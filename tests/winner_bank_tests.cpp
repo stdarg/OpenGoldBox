@@ -111,15 +111,15 @@ MemberId join_npc(opengold::CampaignParty &party, const Game &game, unsigned ban
     return id;
 }
 
-// Two player characters made by the game's creation rules.
-void make_player_characters(opengold::CampaignParty &party, const Game &game)
+// Player characters made by the game's creation rules.
+void make_player_characters(opengold::CampaignParty &party, const Game &game, unsigned count = 2)
 {
     const bool krynn = og::krynn_game(game.game);
-    for (const std::string klass : {"fighter", "fighter"})
+    for (unsigned index = 0; index < count; ++index)
     {
         opengold::CharacterCreator creator(game.creation, 40 + party.state().roster.size());
         creator.select(opengold::rules::CreationField::race, krynn ? "krynn_human" : "human");
-        creator.select(opengold::rules::CreationField::character_class, klass);
+        creator.select(opengold::rules::CreationField::character_class, "fighter");
         creator.name("Winner " + std::to_string(party.state().roster.size() + 1));
         opengold::test::walk_original_creation(creator);
         (void)party.add_pc(creator.create_character());
@@ -149,6 +149,31 @@ std::shared_ptr<opengold::CampaignParty> winning_party(const Game &game, unsigne
     wealth[static_cast<std::size_t>(opengold::Coin::gems)] = 12;
     wealth[static_cast<std::size_t>(opengold::Coin::gold)] = 3000;
     party->set_wealth(wealth);
+    return party;
+}
+
+// Diagnostic availability fixtures use legal created PCs and actual NPC records;
+// they are not earned campaign wins. Curse's two companions fill both NPC slots.
+std::shared_ptr<opengold::CampaignParty> full_winning_party(const Game &game, unsigned bank,
+                                                            unsigned record)
+{
+    auto party = winning_party(game, bank, record);
+    const auto pcs =
+        static_cast<unsigned>(std::ranges::count_if(party->state().roster,
+                                                    [](const auto &member)
+                                                    {
+                                                        return member.npc_source.empty();
+                                                    }));
+    check(pcs <= 6, "The source fixture fits the six PC positions");
+    make_player_characters(*party, game, 6 - pcs);
+    if (game.game == GoldBoxGame::curse_of_the_azure_bonds)
+    {
+        const auto catalog = opengold::por::CreatureCatalog::load(game.folder, game.game);
+        const auto dragonbait = catalog.find_by_name("Dragonbait");
+        check(!dragonbait.empty(), "Curse has its actual Dragonbait record");
+        const auto id = dragonbait.front().get().id;
+        (void)join_npc(*party, game, id.bank, id.record);
+    }
     return party;
 }
 
@@ -241,6 +266,48 @@ std::shared_ptr<opengold::CampaignParty> bring_winners(const Game &earlier, cons
               << ": " << winners.size() << " winners came across, "
               << winners.size() - player_characters << " of them NPCs.\n";
     return party;
+}
+
+void every_occupied_winner_is_available()
+{
+    const auto curse = installed(GoldBoxGame::curse_of_the_azure_bonds);
+    const auto secret = installed(GoldBoxGame::secret_of_the_silver_blades);
+    if (!curse || !secret)
+    {
+        return;
+    }
+    const auto party = full_winning_party(*curse, 3, 22);
+    auto state = party->state();
+    const auto pc = state.slots[0], npc = state.slots[6];
+    auto &dead_pc = *std::ranges::find(state.roster, pc, &opengold::PartyMember::id);
+    dead_pc.vitals = {0, true, {}};
+    party->restore(state);
+    const auto bank = reloaded_bank(
+        *curse, opengold::encode_campaign(*party, nullptr, curse->assets(), curse->game));
+    check(
+        member_of(bank.party, pc).vitals.dead &&
+            opengold::winners(bank.party) ==
+                std::vector<MemberId>(state.slots.begin(), state.slots.end()),
+        "All six occupied PCs, including a dead PC, and both living NPCs are offered in slot order");
+    const auto sequel = bring_winners(*curse, *secret, bank.party);
+    check(sequel->state().slots[5] && sequel->state().slots[6] && sequel->state().slots[7],
+          "The complete six-PC/two-NPC winning roster fits the sequel's actual positions");
+
+    auto fallen = bank.party;
+    auto &dead_npc = *std::ranges::find(fallen.roster, npc, &opengold::PartyMember::id);
+    dead_npc.vitals = {0, true, {}};
+    const auto living = opengold::winners(fallen);
+    check(living.size() == 7 && std::ranges::find(living, npc) == living.end() &&
+              std::ranges::find(living, pc) != living.end(),
+          "A fallen NPC is excluded while the occupied dead PC is still available");
+
+    party->remove(npc);
+    const auto historical = reloaded_bank(
+        *curse, opengold::encode_campaign(*party, nullptr, curse->assets(), curse->game));
+    const auto offered = opengold::winners(historical.party);
+    check(historical.party.roster.size() == 8 && offered.size() == 7 &&
+              std::ranges::find(offered, npc) == offered.end(),
+          "A departed NPC remains in saved history but is not offered as a winner");
 }
 
 // The capture's moments: the party alone at the first moment the game is
@@ -608,16 +675,18 @@ void real_winners_come_across(const char *variable, GoldBoxGame earlier_game,
 
 // Two Countdown characters made by its creation, with their starting items
 // and credits.
-std::shared_ptr<opengold::CampaignParty> countdown_team(const Game &countdown)
+std::shared_ptr<opengold::CampaignParty> countdown_team(const Game &countdown, unsigned count = 2)
 {
     auto party = countdown.party();
     opengold::RandomState random{2026};
     const auto stock = opengold::load_buck_rogers_stock(countdown.folder, countdown.game);
-    for (const auto &[race, career, name] :
-         std::array<std::tuple<og::Race, og::Profession, std::string>, 2>{
-             {{og::Race::terran, og::Profession::rocket_jock, "Jock"},
-              {og::Race::martian, og::Profession::warrior, "Shade"}}})
+    for (unsigned index = 0; index < count; ++index)
     {
+        const auto race = index % 2 ? og::Race::martian : og::Race::terran;
+        const auto career = index % 2 ? og::Profession::warrior : og::Profession::rocket_jock;
+        const auto name = index == 0   ? "Jock"
+                          : index == 1 ? "Shade"
+                                       : "Winner " + std::to_string(index + 1);
         auto creature =
             og::new_buck_rogers_character(race, og::Gender::male, career, countdown.game, random);
         creature.name = name;
@@ -748,34 +817,79 @@ void countdown_characters_come_to_matrix()
     }
 }
 
-// The saves the party screen's check (winner_bank_import.cmake) brings
-// characters from, written to `directory`: Curse's winning party with Alias
-// and an ordinary Curse save, and Countdown's.
+// Source-derived availability fixtures for all seven sequel dialogs, with
+// six legal PCs and their actual NPC record(s), never earned-route proof.
 void write_screen_fixtures(const std::filesystem::path &directory)
 {
     std::filesystem::create_directories(directory);
-    if (const auto curse = installed(GoldBoxGame::curse_of_the_azure_bonds))
+    const auto write = [&](const Game &game, const opengold::CampaignParty &party)
     {
-        const auto winners = winning_party(*curse, 3, 22);
-        opengold::write_campaign_file(
-            directory / "CURSE-winning-party.ogs",
-            opengold::encode_campaign(*winners, nullptr, curse->assets(), curse->game));
-        auto veterans = curse->party();
-        make_player_characters(*veterans, *curse);
-        opengold::write_campaign_file(
-            directory / "CURSE-save.ogs",
-            opengold::encode_campaign(*veterans, nullptr, curse->assets(), curse->game));
+        const auto stem = directory / std::string(opengold::game_folder(game.game));
+        const auto bytes = opengold::encode_campaign(party, nullptr, game.assets(), game.game);
+        opengold::write_campaign_file(stem.string() + "-winning-party.ogs", bytes);
+        opengold::write_campaign_file(stem.string() + "-save.ogs", bytes);
+        std::string offered;
+        for (const auto id : opengold::winners(party.state()))
+        {
+            const auto &member = party.member(id);
+            offered += (member.npc_source.empty() ? "PC\t" : "NPC\t") +
+                       member.character.sheet().name + "\n";
+        }
+        opengold::write_campaign_file(stem.string() + "-winning-party.ogs.winners", offered);
+    };
+    for (const auto &[game, bank, record] :
+         std::array{std::tuple{GoldBoxGame::pool_of_radiance, 3U, 109U},
+                    std::tuple{GoldBoxGame::curse_of_the_azure_bonds, 3U, 22U},
+                    std::tuple{GoldBoxGame::secret_of_the_silver_blades, 1U, 77U},
+                    std::tuple{GoldBoxGame::gateway_to_the_savage_frontier, 2U, 62U},
+                    std::tuple{GoldBoxGame::champions_of_krynn, 1U, 34U},
+                    std::tuple{GoldBoxGame::death_knights_of_krynn, 1U, 74U}})
+    {
+        if (const auto installed_game = installed(game))
+        {
+            write(*installed_game, *full_winning_party(*installed_game, bank, record));
+        }
     }
     if (const auto countdown = installed(GoldBoxGame::countdown_to_doomsday))
     {
-        const auto team = countdown_team(*countdown);
-        const auto bytes =
-            opengold::encode_campaign(*team, nullptr, countdown->assets(), countdown->game);
-        opengold::write_campaign_file(
-            directory / "buck-rogers-countdown-to-doomsday-winning-party.ogs", bytes);
-        opengold::write_campaign_file(directory / "buck-rogers-countdown-to-doomsday-save.ogs",
-                                      bytes);
+        write(*countdown, *countdown_team(*countdown, 6));
     }
+}
+
+// Independently replay only the genuine earned fixture's final Forward and
+// closing Continues. No combat, new choice, placement or generated party.
+std::string matrix_reference_party(const Game &matrix, const std::filesystem::path &file)
+{
+    check(std::filesystem::exists(file), "The genuine Matrix pre-win reference must exist");
+    auto saved = reloaded_bank(matrix, opengold::read_campaign_file(file));
+    check(saved.town && !saved.town->snapshot().game_won && saved.town->can_leave(),
+          "The earned reference is an ordinary idle save before the real win");
+    auto party = matrix.party();
+    party->restore(saved.party);
+    auto &town = *saved.town;
+    town.attach_restored_party(party);
+    // Same public Easy as the isolated UI check: loading does not reseed.
+    town.difficulty(opengold::Difficulty::easy);
+    check(town.explore(opengold::por::ExplorationCommand::forward),
+          "The reference uses its actual offered final Forward");
+    for (unsigned step = 0; step < 256 && !town.snapshot().game_won; ++step)
+    {
+        const auto state = town.snapshot();
+        if (state.phase == opengold::por::TourPhase::running)
+        {
+            town.advance(1.0);
+        }
+        else
+        {
+            check(state.phase == opengold::por::TourPhase::awaiting_continue &&
+                      state.choices.size() == 1,
+                  "The reference ending offers only Continue, never combat or a new choice");
+            check(town.choose(state.continue_ticket, 0), "Continue the actual reference ending");
+        }
+    }
+    check(town.snapshot().game_won && town.can_leave(),
+          "The bounded public reference reaches Matrix's real idle PROGRAM 2 win");
+    return opengold::encode_campaign(*party, nullptr, matrix.assets(), matrix.game);
 }
 
 // The bank the running game wrote at Matrix Cubed's win
@@ -784,14 +898,19 @@ void write_screen_fixtures(const std::filesystem::path &directory)
 void the_running_game_banked_its_win(const std::filesystem::path &file)
 {
     const auto matrix = installed(GoldBoxGame::matrix_cubed);
-    if (!matrix)
-    {
-        return;
-    }
+    check(matrix.has_value(), "Checking the actual Matrix bank requires its installed files");
     check(std::filesystem::exists(file), "The running game's bank was copied out");
     const auto bank = reloaded_bank(*matrix, opengold::read_campaign_file(file));
     check(bank.game == GoldBoxGame::matrix_cubed && bank.town && bank.town->snapshot().game_won,
           "The bank is Matrix Cubed's world at its win");
+    const auto *reference = std::getenv("OPENGOLD_WINNER_BANK_REFERENCE");
+    check(reference && *reference, "The actual bank requires its independent genuine reference");
+    auto actual = matrix->party();
+    actual->restore(bank.party);
+    check(
+        opengold::encode_campaign(*actual, nullptr, matrix->assets(), matrix->game) ==
+            matrix_reference_party(*matrix, reference),
+        "The UI bank exactly matches every independently earned at-win party byte, including all NPCs");
     unsigned members = 0, npcs = 0;
     for (const auto id : bank.party.slots)
     {
@@ -836,6 +955,7 @@ int main()
         the_capture_keeps_every_at_win_byte();
         failed_encoders_can_retry();
         failed_writes_retry_the_original_payload();
+        every_occupied_winner_is_available();
         // Each link, with an NPC of the earlier game's own records: Pool of
         // Radiance's hero, Curse's Alias, Secret's Vala, Gateway's Erek,
         // Champions' Strangbourn and Death Knights' Durfey.

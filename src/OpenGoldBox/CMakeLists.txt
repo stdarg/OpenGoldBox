@@ -862,6 +862,16 @@ if(OPENGOLD_BUILD_TESTS)
     endfunction()
     opengold_winner_bank_check(secret_from_curse CURSE SECRET "Add from Curse"
         "Add character from Curse of the Azure Bonds" -DNPC=ON)
+    opengold_winner_bank_check(winner_curse_from_pool POOLRAD CURSE "Add from Pool of Radiance"
+        "Add character from Pool of Radiance" -DNPC=ON)
+    opengold_winner_bank_check(winner_darkness_from_secret SECRET DARKNESS "Add from Secret"
+        "Add character from Secret of the Silver Blades" -DNPC=ON)
+    opengold_winner_bank_check(winner_treasure_from_gateway GATEWAY TREASURE "Add from Gateway"
+        "Add character from Gateway to the Savage Frontier" -DNPC=ON)
+    opengold_winner_bank_check(winner_death_knights_from_champions COK DKK "Add from Champions"
+        "Add character from Champions of Krynn" -DNPC=ON)
+    opengold_winner_bank_check(winner_native_from_death_knights DKK DQK "Add from Death Knights"
+        "Add character from Death Knights of Krynn" -DNPC=ON)
     opengold_winner_bank_check(matrix_from_countdown buck-rogers-countdown-to-doomsday
         buck-rogers-matrix-cubed "Add from Countdown" "Add character from Countdown to Doomsday")
     # The actual earned Death Knights party on ordinary sheets: its Native
@@ -885,7 +895,7 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_winner_bank_matrix_capture_reload COMMAND opengold_winner_bank_tests)
     set_tests_properties(opengold_winner_bank_matrix_capture_reload PROPERTIES
         FIXTURES_REQUIRED matrix_running_game_bank TIMEOUT 300
-        ENVIRONMENT "OPENGOLD_WINNER_BANK_CHECK=${PROJECT_BINARY_DIR}/matrix-running-game-winning-party.ogs")
+        ENVIRONMENT "OPENGOLD_WINNER_BANK_CHECK=${PROJECT_BINARY_DIR}/matrix-running-game-winning-party.ogs;OPENGOLD_WINNER_BANK_REFERENCE=${PROJECT_BINARY_DIR}/matrix-last-step.ogs")
     # Treasures' camp dialog offers Fix and Crown, as its camp menu does.
     # Skipped without Treasures' files.
     add_test(NAME opengold_godot_treasure_camp COMMAND "${CMAKE_COMMAND}"

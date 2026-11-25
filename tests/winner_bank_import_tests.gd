@@ -56,7 +56,8 @@ func rows(list: ItemList) -> Array:
 
 # The winning party and a save a player left, in the earlier game's folder.
 func place_saves() -> void:
-	var saves := ProjectSettings.globalize_path("user://saves").path_join(earlier)
+	var saves := ProjectSettings.globalize_path("user://saves")
+	if earlier != "POOLRAD": saves = saves.path_join(earlier)
 	DirAccess.make_dir_recursive_absolute(saves)
 	require(DirAccess.copy_absolute(bank, saves.path_join("winning-party.ogs")) == OK, "Cannot place the winning party " + bank)
 	var file := saves.path_join(SAVE_NAME.to_utf8_buffer().hex_encode() + ".ogs")
@@ -104,21 +105,30 @@ func run_checks() -> void:
 
 	await pick(saves, 0)
 	var shown := rows(members)
-	require(shown.size() >= 2, "The winning party offers its winners: " + str(shown))
-	await pick(members, 0)
-	require(not add.disabled and status.text.begins_with("Brings"), "A winning player character can come: " + status.text)
-	await press(dialog, "Margin/Rows/Buttons/Add")
-	require(add.disabled and status.text == "Brought into the party.", "A winner is brought in once: " + status.text)
+	var expected := FileAccess.get_file_as_string(bank + ".winners").split("\n", false)
+	require(not expected.is_empty() and shown.size() == expected.size(),
+		"Every expected winner is offered, with no extras: " + str(shown))
 	var roster: ItemList = screen.get_node("PartyPanel/Roster")
-	require(roster.item_count == 1, "The winner joins the party")
-	if with_npc:
-		var npc := shown.size() - 1
-		require(shown[npc].ends_with("(NPC)"), "The permanent NPC is offered last, marked: " + str(shown))
-		await pick(members, npc)
-		require(status.text.begins_with("Joins in an NPC position"), "The NPC joins as an NPC: " + status.text)
+	var pcs := 0
+	var npcs := 0
+	for index in range(expected.size()):
+		var fields := expected[index].split("\t", false)
+		require(fields.size() == 2, "The source fixture names its winner and PC/NPC role")
+		var npc := fields[0] == "NPC"
+		pcs += 0 if npc else 1
+		npcs += 1 if npc else 0
+		require(shown[index].begins_with(fields[1] + " / ") and shown[index].ends_with("(NPC)") == npc,
+			"The offered identity and role match the independently written source roster: " + shown[index])
+		await pick(members, index)
+		require(not add.disabled, "Every winning PC and permanent NPC is available: " + shown[index])
+		require(status.text.begins_with("Joins in an NPC position") if npc else status.text.begins_with("Brings"),
+			"Each winner uses the correct PC/NPC position: " + status.text)
 		await press(dialog, "Margin/Rows/Buttons/Add")
-		require(status.text == "Brought into the party.", "The NPC is brought in: " + status.text)
-		require(roster.item_count == 2, "The NPC joins the party: " + str(roster.item_count))
+		require(add.disabled and status.text == "Brought into the party.", "Each winner is imported once")
+		require(roster.item_count == index + 1 and roster.get_item_text(index).trim_prefix("★ ") == fields[1],
+			"The actual destination roster contains each imported identity")
+	require(pcs == 6 and (not with_npc or npcs > 0), "All six PC positions and offered NPC positions are filled")
+	if earlier == "CURSE": require(npcs == 2, "Both actual Curse companions fill the two NPC positions")
 	await press(dialog, "Margin/Rows/Buttons/Close")
 	require(not dialog.visible, "Close puts the dialog away")
 	print("Winner bank import passed: " + earlier)
