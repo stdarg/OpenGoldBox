@@ -1972,6 +1972,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     abyss_rest.rest_first = true;
     abyss_rest.rest_for_spells = true;
     abyss_rest.keep_preparation = true;
+    abyss_rest.ward_memorized = "resist_fire";
     abyss_rest.memorize_first_of = palace_preparation.memorize_first_of;
     abyss_rest.memorize_first_of.insert(
         abyss_rest.memorize_first_of.begin(),
@@ -1988,6 +1989,17 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     abyss_enlarge.ward_members = {"knight 1", "knight 2", "knight 3", "Grunschka"};
     abyss_enlarge.cast_after = {"prayer"};
     beats.push_back(abyss_enlarge);
+    RouteBeat abyss_fire = abyss_wards;
+    abyss_fire.ward_each_with = "resist_fire";
+    beats.push_back(abyss_fire);
+    RouteBeat abyss_globe = abyss_wards;
+    abyss_globe.ward_each_with.clear();
+    abyss_globe.cast_after = {"globe_of_invulnerability"};
+    abyss_globe.cast_after_by = "magic_user 6";
+    beats.push_back(abyss_globe);
+    auto abyss_cold = abyss_globe;
+    abyss_cold.cast_after = {"fire_shield:cold"};
+    beats.push_back(abyss_cold);
     auto raistlin_cell = ending_walk(66, 13, 2, D::east, {"FIGHT MONSTERS", "CUT CHAINS", "YES"});
     raistlin_cell.arrive_only = false;
     raistlin_cell.step = true;

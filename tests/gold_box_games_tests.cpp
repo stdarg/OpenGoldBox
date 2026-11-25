@@ -16200,8 +16200,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
     // The Iron Flower's chained fights leave no camp between waves. Keep
     // every companion clear of the enchanted death bursts, and ask the
     // rules' exact outlook about a mage's spell instead of estimating rays.
-    const auto native_finale_turn =
-        [&](const opengold::rules::CombatSession &battle) -> std::optional<opengold::rules::Command>
+    const auto native_finale_turn = [&](const opengold::rules::CombatSession &battle,
+                                        bool arena_mode =
+                                            false) -> std::optional<opengold::rules::Command>
     {
         using opengold::rules::CombatantView;
         const auto state = battle.snapshot();
@@ -16350,6 +16351,10 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         {
             for (const std::string_view verb : {"abort", "end", "guard"})
             {
+                if (arena_mode && verb == "guard")
+                {
+                    continue;
+                }
                 const auto option =
                     std::ranges::find(commands, verb, &opengold::rules::Command::verb);
                 if (option != commands.end())
@@ -16379,7 +16384,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                         });
         };
         const opengold::rules::Command *step = nullptr;
-        if (near_hazard(actor->cell) < 3)
+        if (!arena_mode && near_hazard(actor->cell) < 3)
         {
             for (const auto &command : commands)
             {
@@ -16396,6 +16401,47 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             }
         }
         const bool mage = actor->name.starts_with("magic_user");
+        // The arena bars new spells. Holding avoids a staff chase and the
+        // free leaving attacks that a long retreat through its foes earns.
+        if (arena_mode && mage)
+        {
+            return fallback();
+        }
+        if (arena_mode && own && actor->name == "cleric 4" && own->weapon_type != 29)
+        {
+            bool carried = false;
+            for (const auto id : party->state().slots)
+            {
+                if (id && party->member(id).character.sheet().name == actor->name)
+                {
+                    carried = std::ranges::any_of(party->member(id).character.inventory().items(),
+                                                  [](const auto &item)
+                                                  {
+                                                      return item.original_type == 29;
+                                                  });
+                }
+            }
+            if (carried)
+            {
+                // Readiness costs no action. After each offered toggle,
+                // read the new command list before choosing another action.
+                for (const auto &command : commands)
+                {
+                    if (command.verb == "ready" && command.label.starts_with("Staff Sling"))
+                    {
+                        return command;
+                    }
+                }
+                for (const auto &command : commands)
+                {
+                    if (command.verb == "unready" && command.label.starts_with("Quarter Staff"))
+                    {
+                        return command;
+                    }
+                }
+                return fallback();
+            }
+        }
         if (mage)
         {
             const auto missile_target = [&](const CombatantView &unit)
@@ -16519,6 +16565,10 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         }
         const auto priority = [&](const CombatantView &unit)
         {
+            if (arena_mode)
+            {
+                return burst(unit) ? 2 : has(unit, 703) ? 0 : 1;
+            }
             const auto numbers = opengold::original::Combatant::decode(unit.persistent.resources);
             return burst(unit)                                     ? 3
                    : numbers && !numbers->spells.empty()           ? 0
@@ -16583,13 +16633,15 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             if (target == state.combatants.end() || target->side == actor->side ||
                 !target->conscious || has(*target, 1459) || has(*target, 1460) ||
                 (command.verb == "melee" && has(*target, 343)) ||
+                (arena_mode && has(*target, 703) &&
+                 (!own || !own->striker || own->striker->plus < 1)) ||
                 (burst(*target) &&
                  (distance(actor->cell, *target) < 3 || burst_catches_party(*target))))
             {
                 continue;
             }
-            const auto rank =
-                std::tuple{priority(*target), -command.expected_damage, target->hit_points};
+            const auto rank = std::tuple{
+                priority(*target), arena_mode ? 0 : -command.expected_damage, target->hit_points};
             if (rank < attack_rank)
             {
                 attack = &command;
@@ -16602,7 +16654,7 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         }
         // Draw a carried Sling only when the remaining threats are actual
         // death bursts, rather than merely distant ordinary melee targets.
-        if (!mage && own && !own->missile && !hazards.empty() && !ordinary_foe)
+        if (!arena_mode && !mage && own && !own->missile && !hazards.empty() && !ordinary_foe)
         {
             bool carries_sling = false;
             for (const auto id : party->state().slots)
@@ -16638,12 +16690,25 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 }
             }
         }
+        const bool engaged = std::ranges::any_of(state.combatants,
+                                                 [&](const auto &unit)
+                                                 {
+                                                     return unit.side != actor->side &&
+                                                            unit.conscious &&
+                                                            distance(actor->cell, unit) <= 1;
+                                                 });
+        if (arena_mode && engaged)
+        {
+            return fallback();
+        }
         if (!mage)
         {
             std::tuple<int, int, int> move_rank{99, 99, 99};
             for (const auto &command : commands)
             {
-                if (command.verb != "move" || !safe_cell(command.destination))
+                if (command.verb != "move" || !safe_cell(command.destination) ||
+                    (arena_mode && std::max(std::abs(command.destination.x - actor->cell.x),
+                                            std::abs(command.destination.y - actor->cell.y)) != 1))
                 {
                     continue;
                 }
@@ -16686,6 +16751,10 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
         const bool native_font =
             earned_dark_queen && session.script_variable(opengold::por::EclAddress{0x19E}) == 30;
         const auto &position = session.snapshot();
+        const bool native_anti_magic =
+            earned_dark_queen && against_torturers && position.area_id == 66 &&
+            position.script_id == 66 &&
+            session.script_variable(opengold::por::EclAddress{0x02}) != 0;
         const bool dispel_opening = native_font && std::getenv("OPENGOLD_DQK_OPEN_DISPEL");
         const bool native_royal_mages = earned_dark_queen && position.area_id == 58 &&
                                         position.script_id == 59 && position.pose.x == 1 &&
@@ -16986,7 +17055,12 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
             }
             if (!held && member && against_torturers && earned_dark_queen)
             {
-                held = torturer_turn(battle);
+                held = native_anti_magic ? native_finale_turn(battle, true) : torturer_turn(battle);
+                if (native_anti_magic)
+                {
+                    check(held.has_value(),
+                          "The anti-magic arena player has an offered safe action");
+                }
             }
             if (!held && member && hunts_casters && earned_dark_queen &&
                 !actor->name.starts_with("cleric") && !actor->name.starts_with("magic_user"))
@@ -17171,6 +17245,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                 }
             }
         }
+        check(!(native_finale || native_anti_magic) ||
+                  combat.combat().snapshot().outcome != opengold::rules::Outcome::ongoing,
+              "The safe Native player did not finish within its command budget");
         // A fight where every turn is a guard, an enemy left standing where
         // Quick finds no way to it (Treasures' sorceresses, who never step,
         // behind the council's walls), is played on as a player plays it:
@@ -19924,7 +20001,9 @@ bool walk_census(GoldBoxGame game, bool route, CurseProgress progress = CursePro
                                        (moander_recovery && session.snapshot().script_id == 17));
                     const bool cave = fourth_bond && session.snapshot().script_id == 34;
                     const bool native_preparation = earned_dark_queen && keeps_preparation;
-                    const bool retry_camp = pit || cave || native_preparation;
+                    // A single-attempt Native proof resolves an interrupted
+                    // camp once; it must not restore or reseed that encounter.
+                    const bool retry_camp = pit || cave || (native_preparation && !single_attempt);
                     const auto before_camp =
                         retry_camp ? std::optional(session.detached_copy()) : std::nullopt;
                     const auto party_before = party->state();
