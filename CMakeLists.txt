@@ -87,6 +87,11 @@ add_library(opengold_rules_srd5 STATIC
     src/OpenGold.Rules.Srd5/src/spell_access.cpp
     src/OpenGold.Rules.Srd5/src/spell_traits.cpp
     src/OpenGold.Rules.Srd5/src/class_spell_lists.cpp
+    src/OpenGold.Rules.Srd5/src/equipment_rules.cpp
+    src/OpenGold.Rules.Srd5/src/combat_model.cpp
+    src/OpenGold.Rules.Srd5/src/spell_costs.cpp
+    src/OpenGold.Rules.Srd5/src/actor_state.cpp
+    src/OpenGold.Rules.Srd5/src/character_definition.cpp
     src/OpenGold.Rules.Srd5/src/sheet_details.cpp
     src/OpenGold.Rules.Srd5/src/status_effects.cpp
     src/OpenGold.Rules.Srd5/src/life_cycle.cpp
