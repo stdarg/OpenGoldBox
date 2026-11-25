@@ -4,6 +4,7 @@
 #include "opengold/character_creator.h"
 #include "opengold/coin_purse.h"
 #include "opengold/equipment.h"
+#include "opengold/item_conversion.h"
 #include "opengold/shop_sale.h"
 #include "opengold/training_hall.h"
 #include <chrono>
@@ -852,22 +853,6 @@ class CampaignParty
     void take_revival_changes(PartyMember &raised, rules::Revival by) const;
 };
 
-[[nodiscard]] std::string equipment_conversion(const por::Equipment &item);
-// The item's definition under these rules: its conversion to the SRD's
-// catalog, or its original record for rules that keep the original's items.
-[[nodiscard]] std::string item_definition(const rules::RulesModule &rules,
-                                          const por::Equipment &item);
-// How many an original item counts for in an inventory: a stack's items, or a
-// charged item's charges or doses (MAGIC-3), otherwise one.
-[[nodiscard]] unsigned carried_quantity(const por::Equipment &item);
-// The same under these rules: under rules that play the original's records,
-// every charged item of the original's counts its charges.
-[[nodiscard]] unsigned carried_quantity(const rules::RulesModule &rules,
-                                        const por::Equipment &item);
-// The original item as a fight left it: `left` of its stacked items, charges
-// or doses, or for a scroll the spells whose bits are set in `left` (MAGIC-6).
-// Nothing when none is left.
-[[nodiscard]] std::optional<por::Equipment> item_after_uses(por::Equipment item, unsigned left);
 // The item's key as the rules see it: ":unidentified" is added while its magic
 // is not identified (#262).
 [[nodiscard]] std::string rules_definition(const PartyMember &member, const InventoryItem &item);
