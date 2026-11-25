@@ -93,6 +93,11 @@ opengold::CampaignParty &LevelUpDialog::campaign()
     return campaign_();
 }
 
+const opengold::CampaignParty &LevelUpDialog::campaign() const
+{
+    return campaign_();
+}
+
 void LevelUpDialog::bind_controls()
 {
     connect("close_requested", presentation::guarded(this, &LevelUpDialog::close));
@@ -601,7 +606,7 @@ void LevelUpDialog::refresh_advancement_skilled()
     }
 }
 
-void LevelUpDialog::advancement_skilled_toggled(bool selected, String option)
+void LevelUpDialog::advancement_skilled_toggled(bool selected, const String &option)
 {
     const std::string id = option.utf8().get_data();
     const auto *group = advancement_skilled_group();
@@ -631,7 +636,8 @@ void LevelUpDialog::advancement_back()
     show_step(advancement_previous_step());
 }
 
-void LevelUpDialog::advancement_learning_toggled(bool selected, String group, String option)
+void LevelUpDialog::advancement_learning_toggled(bool selected, const String &group,
+                                                 const String &option)
 {
     opengold::rules::SpellChoices choices{
         *advancement_choice_.spell_learning, advancement_choice_.spells, {}, {}};
@@ -660,17 +666,18 @@ void LevelUpDialog::open(opengold::MemberId id)
     klass->clear();
     for (const auto &option : classes_)
     {
-        const auto held = static_cast<int>(std::count(sheet.level_classes.begin(),
-                                                      sheet.level_classes.end(), option.id));
+        const auto held = static_cast<int>(
+            std::count(sheet.level_classes.begin(), sheet.level_classes.end(), option.id));
         auto label = i18n::format(N_("{class}: level {level}"),
                                   {{"class", i18n::class_label(option.id)}, {"level", held + 1}});
         if (!option.available)
         {
-            label = i18n::format(N_("{class} (needs {requirements})"),
-                                 {{"class", label},
-                                  {"requirements",
-                                   i18n::requirements(opengold::srd5::character_rules()
-                                                          ->class_requirements(option.id))}});
+            label = i18n::format(
+                N_("{class} (needs {requirements})"),
+                {{"class", label},
+                 {"requirements",
+                  i18n::requirements(
+                      opengold::srd5::character_rules()->class_requirements(option.id))}});
         }
         const int index = klass->get_item_count();
         klass->add_item(label);
@@ -694,13 +701,13 @@ void LevelUpDialog::class_selected(std::int64_t index)
 
 opengold::rules::AdvancementChoice LevelUpDialog::class_default(const std::string &class_id) const
 {
-    auto &party = const_cast<LevelUpDialog *>(this)->campaign();
+    const auto &party = campaign();
     const auto &rules = party.rule_module();
     const auto &sheet = party.member(advancing_).character.sheet();
     opengold::rules::AdvancementChoice choice;
     choice.character_class = class_id;
-    const auto spells = rules.spell_choice_options(rules.spell_choice_sheet(sheet, choice),
-                                                   opengold::rules::SpellChoiceContext::advancement);
+    const auto spells = rules.spell_choice_options(
+        rules.spell_choice_sheet(sheet, choice), opengold::rules::SpellChoiceContext::advancement);
     if (!spells.learning.empty() || spells.may_prepare)
     {
         choice.spell_learning.emplace();
@@ -711,7 +718,7 @@ opengold::rules::AdvancementChoice LevelUpDialog::class_default(const std::strin
 
 bool LevelUpDialog::taking_starting_class(const std::string &class_id) const
 {
-    auto &party = const_cast<LevelUpDialog *>(this)->campaign();
+    const auto &party = campaign();
     return class_id.empty() ||
            class_id == party.member(advancing_).character.creation_data().character_class;
 }
@@ -719,17 +726,17 @@ bool LevelUpDialog::taking_starting_class(const std::string &class_id) const
 opengold::rules::AdvancementChoice LevelUpDialog::level_default() const
 {
     const auto &class_id = advancement_choice_.character_class;
-    return taking_starting_class(class_id)
-               ? const_cast<LevelUpDialog *>(this)->campaign().default_advancement(advancing_)
-               : class_default(class_id);
+    return taking_starting_class(class_id) ? campaign().default_advancement(advancing_)
+                                           : class_default(class_id);
 }
 
 void LevelUpDialog::begin_class(const std::string &class_id)
 {
     advancement_page_ = AdvancementPage::choices;
     skilled_index_ = 0;
-    advancement_choice_ = taking_starting_class(class_id) ? campaign().default_advancement(advancing_)
-                                                          : class_default(class_id);
+    advancement_choice_ = taking_starting_class(class_id)
+                              ? campaign().default_advancement(advancing_)
+                              : class_default(class_id);
     const auto id = advancing_;
     advancement_options_ = campaign().advancement_options(id, advancement_choice_);
     swap_rows_ = {};
@@ -750,14 +757,15 @@ void LevelUpDialog::begin_class(const std::string &class_id)
         after.push_back(advancement_options_.character_class);
         const auto classes = i18n::class_summary(after, ", ");
         required_node<Label>(*this, "Title")
-            .set_text(after.size() > 1 && classes.contains(",")
-                          ? i18n::format(N_("{name} / Level {level}: {classes}"),
-                                         {{"name", gs(campaign().member(id).character.sheet().name)},
-                                          {"level", advancement_options_.level},
-                                          {"classes", classes}})
-                          : i18n::format("{name} / Level {level}",
-                                         {{"name", gs(campaign().member(id).character.sheet().name)},
-                                          {"level", advancement_options_.level}}));
+            .set_text(
+                after.size() > 1 && classes.contains(",")
+                    ? i18n::format(N_("{name} / Level {level}: {classes}"),
+                                   {{"name", gs(campaign().member(id).character.sheet().name)},
+                                    {"level", advancement_options_.level},
+                                    {"classes", classes}})
+                    : i18n::format("{name} / Level {level}",
+                                   {{"name", gs(campaign().member(id).character.sheet().name)},
+                                    {"level", advancement_options_.level}}));
         required_node<Label>(*this, "Note").set_text(i18n::text(advancement_options_.description));
         auto *feat = &required_node<OptionButton>(*this, "Feat");
         feat->clear();
@@ -905,7 +913,7 @@ void LevelUpDialog::keep_preparable(opengold::rules::AdvancementChoice &choice) 
     {
         return;
     }
-    auto &party = const_cast<LevelUpDialog *>(this)->campaign();
+    const auto &party = campaign();
     const auto &rules = party.rule_module();
     const auto context = opengold::rules::SpellChoiceContext::advancement;
     // A spell stays when the page offers it after the level's learning, as a
@@ -924,8 +932,8 @@ void LevelUpDialog::keep_preparable(opengold::rules::AdvancementChoice &choice) 
     {
     } // The preview reports what is wrong.
     const auto after = rules.spell_choice_options(next, context);
-    const auto offered = [](const opengold::rules::SpellChoiceOptions &options,
-                            const std::string &id)
+    const auto offered =
+        [](const opengold::rules::SpellChoiceOptions &options, const std::string &id)
     {
         return std::find(options.locked_prepared.begin(), options.locked_prepared.end(), id) !=
                    options.locked_prepared.end() ||
@@ -938,8 +946,7 @@ void LevelUpDialog::keep_preparable(opengold::rules::AdvancementChoice &choice) 
     std::erase_if(choice.spells,
                   [&](const std::string &id)
                   {
-                      return std::find(before.locked_prepared.begin(),
-                                       before.locked_prepared.end(),
+                      return std::find(before.locked_prepared.begin(), before.locked_prepared.end(),
                                        id) == before.locked_prepared.end() &&
                              !offered(after, id);
                   });

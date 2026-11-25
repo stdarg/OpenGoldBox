@@ -27,7 +27,7 @@ class LevelUpDialog : public godot::Window
     void connect_host(CampaignAccess campaign, std::function<void()> advanced,
                       FailureReport report);
     // Opens on the first page for a member the host has checked can advance.
-    void open(opengold::MemberId member);
+    void open(opengold::MemberId id);
 
     [[nodiscard]] const opengold::rules::AdvancementOptions &options() const
     {
@@ -84,6 +84,7 @@ class LevelUpDialog : public godot::Window
 
     void bind_controls();
     [[nodiscard]] opengold::CampaignParty &campaign();
+    [[nodiscard]] const opengold::CampaignParty &campaign() const;
     void advancement_pages();
     // A choice of several picks (Skilled, Metamagic, invocations) owns a page of
     // checkboxes, the Skilled page; the single training dropdown never shows one.
@@ -118,9 +119,10 @@ class LevelUpDialog : public godot::Window
     // replace but no replacement yet stays out of the choice until complete.
     std::array<opengold::rules::LevelSwap, 4> swap_rows_{};
     bool swap_incomplete_{};
-    void advancement_skilled_toggled(bool selected, godot::String option);
+    void advancement_skilled_toggled(bool selected, const godot::String &option);
     void advancement_back();
-    void advancement_learning_toggled(bool selected, godot::String group, godot::String option);
+    void advancement_learning_toggled(bool selected, const godot::String &group,
+                                      const godot::String &option);
     void advancement_changed(std::int64_t unused = 0);
     void drop_unoffered_learning();
     void advancement_spell_changed(bool checked, int index);
