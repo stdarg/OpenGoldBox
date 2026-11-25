@@ -14,7 +14,8 @@ commands, earned experience/equipment or a verified import, physically valid
 movement and working saves. A forced victory, injected reward, quest flag or
 arbitrary relocation is diagnostic assistance. Passing an assisted route is
 not an unassisted completion certificate. Existing architecture, save history,
-UI behavior and the current configured model are retained; no delegation.
+UI behavior and the current configured model are retained; parallel work was
+explicitly authorized by the user.
 
 ## Current evidence
 
@@ -28,10 +29,18 @@ UI behavior and the current configured model are retained; no delegation.
 | Treasures of the Savage Frontier | Fresh verified Gateway-winning PCs earn their way through 146 real battles to Freezefire's actual ending; all six PCs plus Siulajia and Gauhok finish healthy, with zero defeats and a byte-identical normal-save roundtrip | Optional quests, other party compositions and difficulty settings are not certified by this route |
 | Champions of Krynn | Fresh Original Rules party wins 121 fights with no defeats and reaches the actual ending; its winning party is banked for *Death Knights* | Optional quests, other party compositions and difficulty settings are not certified by this route |
 | Death Knights of Krynn | The *Champions* winners, imported through the bank, earn their way to the actual ending ("You have won") | Optional quests, other party compositions and difficulty settings are not certified by this route |
-| The Dark Queen of Krynn | Native engine and rules; the earned route from the *Death Knights* winners wins every fight through the Gnome King's court and the Font | **Not won.** Raistlin's torturers in the Abyss (map 66) defeat the party; about fifteen ending beats after them have not been played |
-| Buck Rogers: Countdown to Doomsday | A party made on the shared creation screen, on Novice, wins 38 ground fights and a ship fight with all six alive and reaches the actual final speech; training spends its skill points through the skill screen; the at-win party save round-trips byte-identically | Startup button still waits for the final integrated checks; other party compositions and difficulties are not certified |
-| Buck Rogers: Matrix Cubed | A party made on the shared creation screen, on Novice, wins 144 ground fights and reaches PROGRAM 2 with six living PCs; the running game banks the winners at the win | Startup button still waits for the final integrated checks; the route starts with its own party, not the *Countdown* winners |
+| The Dark Queen of Krynn | Fresh import of the genuine *Death Knights* winners completes all 375 route beats on Easy: 86 retained fight wins, no retained defeats, all seven members alive through `PROGRAM 1` and `THE END`; all seven legally withdraw from the Font | Optional quests, other party compositions and difficulties are not certified by this route; normal save reloads are allowed |
+| Buck Rogers: Countdown to Doomsday | A party made on the shared creation screen, on Novice, wins 38 ground fights and a ship fight with all six alive and reaches the actual final speech; training spends its skill points through the skill screen; the at-win party save round-trips byte-identically | Startup button is enabled; other party compositions and difficulties are not certified |
+| Buck Rogers: Matrix Cubed | A party made on the shared creation screen, on Novice, wins 144 ground fights and reaches PROGRAM 2 with six living PCs; the running game banks the winners at the win | Startup button is enabled; the complete route starts with its own party, not the *Countdown* winners (the import itself is verified) |
 | Unlimited Adventures | Generated design walks, wins all fights, saves at the stairs, reloads and reaches its actual winning event | Other designs require their own verification |
+
+The winning-character bank and all seven supported sequel import links are
+implemented and verified. Current-source rendered Native checks show all six
+PCs and Grunschka at the real winning Continue, with the complete bank exactly
+equal to the independently decoded victory-time party. Two real Continues
+trigger authored palace damage to all seven; every bank byte remains unchanged.
+The complete Matrix winning-party bank is also independently verified. See
+[SAVES.md](SAVES.md#the-winning-party) and [Dark Queen](games/dark-queen.md).
 
 The six exported commercial campaigns previously passed headless and rendered
 window launches under an isolated `cage` compositor at `e3b2ae9c`; the installed
@@ -2241,7 +2250,7 @@ The Dark Queen reading checkpoint passes: complete installed-data census and
 campaign geometry/runtime, actual imported earned ending and final application
 checks remain; this is not an accepted complete player outcome.
 
-### Current parallel checkpoint (2026-11-20)
+### Historical parallel checkpoint (2026-11-20)
 
 The user authorized parallel agents and approximately 80 percent CPU usage.
 Separate owners continue Native, Countdown and Matrix earned routes; one

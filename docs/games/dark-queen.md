@@ -1,8 +1,67 @@
 # The Dark Queen of Krynn
 
-Active implementation under the existing all-twelve-game request, following
-Death Knights delivery `baf0bc01`. No complete Dark Queen player outcome is
-accepted yet.
+The native campaign is playable with its Original Rules. Its fresh earned route
+imports the actual Death Knights winners and reaches the real victory and final
+epilogue with all six PCs and Grunschka alive.
+
+## Current integrated verification (2026-11-25 UTC)
+
+On `adc18f4b`, `opengold_dark_queen_earned_ending` completed all 375 beats from
+fresh imported winners on public Easy: **86 retained fight wins, zero retained
+defeats**, actual `PROGRAM 1`, and the final `THE END` with cell `106h` set.
+CTest passed in 2872.30 seconds (2872.49 seconds including its wrapper). The
+six PCs finish at 94/134, 120/123, 97/121, 80/83, 82/86 and 50/62 HP;
+Grunschka finishes at 131/134. All seven legally withdraw from the Font; its
+monsters are not claimed defeated. The five dragon heads are defeated through
+ordinary offered combat actions; their harmless invulnerable body is not claimed
+killed. Ordinary camps, spells, purchases, potion aging and recovery costs remain.
+
+The full run uses the exact registered CTest descriptor in an isolated driver,
+with the previously verified Death Knights prerequisite. Its input hash is
+`3f49414fdfbd07121dbf468f92c1b209c51e21fd5757caf3946c7f905df5e3cc`;
+the tested executable hash is
+`02496faaeeea10c44887a8a15b96365af1dcee14ba8c71b8820e45e9d0c5f6db`.
+The actual command, environment, log and all savable checkpoints are under
+`/var/tmp/opengold-native-full-current375-v2/`. It has no resume, beat cap,
+fixed-attempt override, test-granted win, quest write or arbitrary relocation.
+Normal save reloads after defeat are allowed by
+[GAMES.md](../GAMES.md#the-games). Retained-route counts do not count rejected
+retries; this is not a first-attempt or every-party certificate.
+
+The registered test captures the complete party at the first real victory before
+Continue, preserving every current character and historical roster record. The
+fresh bank is exactly equal to the victory-time party (1,640,534 bytes), SHA-256
+`05aab21b2b87751e23c3e6cdd800e9b5dd48ad4032be63ee066ff8b43780e2b5`.
+All eleven historical roster records are retained; the seven occupied eligible
+winners are the six PCs and Grunschka. Fresh independent party and world
+roundtrips are recorded separately in
+`/var/tmp/opengold-native-fresh375-independent/`.
+The earlier resumed continuation under
+`/var/tmp/opengold-native-after-heads353-ending375-v2/` remains supporting evidence,
+not the full-campaign certificate.
+
+The rendered check in `/var/tmp/opengold-native-prompt-acceptance-v7-current375/`
+uses the current production Game library and that resumed producer's own genuine
+pre-Forward/at-win pair. All four Native labels and all seven occupied members
+are visible; the bank exactly matches the independently decoded complete party
+while the actual winning Continue is pending. Two real Continues cause authored
+palace damage to all seven, while every bank byte stays unchanged. Both PNGs were
+visually reviewed. This UI-bank check and the fresh campaign are separate proofs.
+
+The 443-check regression run passed 442 checks; its only failure, the new Native
+saving-throw table's static storage, was corrected and the exact named
+`opengold_static_tables` test passed. There were no skipped tests. Seven focused
+checks passed after the Original spell-lookup index, whose results also matched
+the frozen old implementation across all supported games and legacy aliases.
+The additional fresh Native test completes coverage of all 444 registered checks.
+Final publication and main-checkout rebuild are recorded separately.
+
+Compatibility is unchanged: Native is game ID 9, writes campaign 54 and
+profile 15 (reading profile 14), and writes Original combat checkpoint 31.
+The Original combat reader retains formats 27–31 with their game-specific
+state and established upgrades. Matrix remains game ID 11 and alone writes
+campaign 55; the other released-game campaign writers remain 53. Existing
+supported readers are retained.
 
 ## Fixed delivery batch
 
@@ -24,13 +83,14 @@ are allowed in earned-campaign proof.
 
 Both Buck Rogers games and UA retain separate acceptance records within the
 all-twelve-game request. UA's winning-save correction is delivered in
-`ed0be5e8`; Countdown and Matrix workers continue while Native verification
-proceeds. The user explicitly requested parallel agents and approximately
-80 percent CPU utilization on 2026-11-20. Coordinate useful builds and tests
+`ed0be5e8`; Countdown, Matrix and Native now have full earned-ending records. The user explicitly requested parallel agents and
+approximately 80 percent CPU utilization on 2026-11-20. Coordinate useful builds and tests
 across the sixteen logical cores, with roughly twelve workers available and
 headroom for the desktop; monitor memory and actual load before new launches.
-The universal library of every winning PC and permanent NPC follows
-all twelve wins, with snapshots captured at victory before Continue/departures.
+The winning-character bank and all seven sequel import links are implemented,
+with snapshots captured at victory before Continue/departures. All eleven
+commercial campaigns have earned-ending evidence; UA has a generated-design
+ending certificate, with other designs requiring their own verification.
 
 ## Integrated control checkpoint (2026-11-20)
 
@@ -620,7 +680,7 @@ are active. The Font, Abyss, complete authored ending, final fresh replay,
 ordinary winning-save proof and final application/package checks remain pending.
 No complete Dark Queen win is claimed.
 
-## Current verification (2026-11-20, 12:18 UTC)
+## Historical verification (2026-11-20, 12:18 UTC)
 
 Dark Queen still has no accepted campaign win. The Font and the complete
 authored ending remain open. The existing Easy setting also failed with the
@@ -743,9 +803,11 @@ their own behavior. No checkpoint format changes.
 The early caves now answer Crysia's Dispel with cleric 4, who has it
 prepared; the White mage had none, so the fireball struck before fight 12.
 
-The accepted proof plays each fight once: `OPENGOLD_ROUTE_SINGLE_ATTEMPT=1`,
-Easy, the fixed fight dice, and no reload of a fight or event. Under those
-rules the old route lost at fight 12. A beat may now name the tactic the
+This historical diagnostic played each fight once:
+`OPENGOLD_ROUTE_SINGLE_ATTEMPT=1`, Easy, fixed fight dice and no reload of a
+fight or event. It is not the current earned-route acceptance requirement,
+which allows normal save reloads. Under those diagnostic rules the old route
+lost at fight 12. A beat may now name the tactic the
 player picks for its fights (`RouteBeat::fight_tactic`); tactic 3 is
 tactic 2 with fighters striking enemy spellcasters first. The route also
 rests before the Luminari pit. With those choices a fresh run from the
@@ -784,7 +846,7 @@ The beats after the Font had never been played and needed corrections:
 - Raistlin's cell is entered from 13,2. The party rests to full first, which
   the Abyss allows.
 
-**Current blocker: Raistlin's torturers (map 66 at 15,2, beat 344).** Spells
+**Blocker at this historical checkpoint: Raistlin's torturers (map 66 at 15,2, beat 344).** Spells
 fail in the room, and the fight cannot be avoided: approaching, waiting and
 fighting all lead to it. The enemies include five enchanted Bozaks, whose Fire
 Shields return each blow as twice the damage, as untyped magic (raw 112,

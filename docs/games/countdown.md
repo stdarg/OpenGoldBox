@@ -5,8 +5,9 @@ win under its original rules is [BUCK-ROGERS.md](../BUCK-ROGERS.md). Step B0
 (groundwork) and step B1 (the reading census) are done (2026-11-19), and the
 characters' and ground combat's rules of step B2 (2026-11-20). The first part
 of step B3.1 (2026-11-20) has the engine play its scripts, views, ground fights
-and outposts ("The game in the engine"); its button in the startup menu stays
-disabled until the new screens and the route are done.
+and outposts ("The game in the engine"). Its full earned route and shared
+screens are now integrated, and its startup button is enabled. The existing
+ending certificate covers one party and difficulty, not every possible route.
 
 ## Files and references
 

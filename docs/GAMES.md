@@ -23,19 +23,19 @@ The user decided these on 2026-11-12:
 
 ## The games
 
-| Order | Game | Released | Folder | Status (2026-11-24) |
+| Order | Game | Released | Folder | Status (2026-11-25) |
 |---|---|---|---|---|
 | 1 | *Pool of Radiance* | 1988 | `POOLRAD` | Won by an earned route under the original rules: a fresh party from zero experience to Tyranthraxus's defeat and the ending (`opengold_original_campaign_route`). The SRD expedition route also wins |
 | 2 | *Curse of the Azure Bonds* | 1989 | `CURSE` | Won by an earned route: 85 fights, no defeats, Tyranthraxus at Myth Drannor (`opengold_curse_earned_ending`; [curse.md](games/curse.md)) |
 | 3 | *Champions of Krynn* | 1990 | `COK` | Won by an earned route: 121 fights, no defeats (`opengold_champions_earned_ending`; [champions.md](games/champions.md)) |
 | 4 | *Secret of the Silver Blades* | 1990 | `SECRET` | Won by an earned route: 168 battles to the soul-gem ending, Vala with the party (`opengold_secret_earned_ending`; [secret.md](games/secret.md)) |
-| 5 | *Buck Rogers: Countdown to Doomsday* | 1990 | `buck-rogers-countdown-to-doomsday` | Won by an earned route: a party made on the creation screen, 38 ground fights and a ship fight, all six alive (`opengold_countdown_earned_ending`; [countdown.md](games/countdown.md)). Its startup button waits for its final checks |
+| 5 | *Buck Rogers: Countdown to Doomsday* | 1990 | `buck-rogers-countdown-to-doomsday` | Won by an earned route: a party made on the creation screen, 38 ground fights and a ship fight, all six alive (`opengold_countdown_earned_ending`; [countdown.md](games/countdown.md)). Its startup button is enabled |
 | 6 | *Death Knights of Krynn* | 1991 | `DKK` | Won by an earned route from the *Champions* winners (`opengold_death_knights_earned_ending`; [death-knights.md](games/death-knights.md)) |
 | 7 | *Gateway to the Savage Frontier* | 1991 | `GATEWAY` | Won by an earned route: 67 fights, no defeats, the Ascore ending (`opengold_gateway_earned_ending`; [gateway.md](games/gateway.md)) |
 | 8 | *Pools of Darkness* | 1991 | `DARKNESS` | Won by an earned route from a party as the original makes it, Gothmenes defeated (`opengold_darkness_route`; [darkness.md](games/darkness.md)) |
-| 9 | *Buck Rogers: Matrix Cubed* | 1992 | `buck-rogers-matrix-cubed` | Won by an earned route: 144 ground fights to PROGRAM 2, six PCs alive (`opengold_matrix_cubed_earned_ending`; [matrix-cubed.md](games/matrix-cubed.md)). Its startup button waits for its final checks |
+| 9 | *Buck Rogers: Matrix Cubed* | 1992 | `buck-rogers-matrix-cubed` | Won by an earned route: 144 ground fights to PROGRAM 2, six PCs alive (`opengold_matrix_cubed_earned_ending`; [matrix-cubed.md](games/matrix-cubed.md)). Its startup button is enabled |
 | 10 | *Treasures of the Savage Frontier* | 1992 | `TREASURE` | Won by an earned route from the *Gateway* winners: 146 fights, no defeats, Freezefire's ending (`opengold_treasure_earned_ending`; [treasure.md](games/treasure.md)) |
-| 11 | *The Dark Queen of Krynn* | 1992 | `DQK` | **Not yet won.** The native engine plays it; its earned route from the *Death Knights* winners passes the Gnome King's court and the Font, and stops at Raistlin's torturers in the Abyss. Listed on the startup menu but not yet offered ([dark-queen.md](games/dark-queen.md)) |
+| 11 | *The Dark Queen of Krynn* | 1992 | `DQK` | Won by a fresh 375-beat earned route from the *Death Knights* winners: 86 retained fight wins, no retained defeats, all six PCs and Grunschka alive through the actual victory and epilogue (`opengold_dark_queen_earned_ending`; [dark-queen.md](games/dark-queen.md)). Its startup button is enabled |
 | 12 | *Forgotten Realms: Unlimited Adventures* | 1993 | `UA` | A design made with the kit plays to its designer's ending and its winning save reloads ([ua.md](games/ua.md)). Other designs need their own checks |
 
 "Won by an earned route" means a legal starting or imported party reaches the

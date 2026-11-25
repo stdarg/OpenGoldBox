@@ -5,9 +5,11 @@ The second *Buck Rogers XXVc* Gold Box game (1992), the same program as
 its original rules is [BUCK-ROGERS.md](../BUCK-ROGERS.md). Step B0
 (groundwork) and step B1 (the reading census) are done (2026-11-19), and the
 characters' and ground combat's rules of step B2 (2026-11-20). The isolated
-Linux engine campaign now has the earned ending certificate below. Its
-startup button remains disabled in the tested snapshot pending integration
-and shared-frontend acceptance.
+Linux engine campaign has the earned ending certificate below. Its shared
+frontend is integrated and its startup button is enabled. The running-game
+winning bank also matches the independent complete at-win party; the full
+route certificate still uses its own created party rather than Countdown
+winners.
 
 ## Earned campaign ending (2026-11-24 UTC)
 
@@ -56,9 +58,10 @@ The route proved narrow missing engine prerequisites: actual retained-map
 controller associations, authenticated native wilderness saves and coordinates,
 current wall/event refresh before a Buck 3D command, and authored solo-loss
 continuation while other healthy PCs wait outside. None weakens ordinary save
-validation or changes the rules' outcomes. Final current-main integration,
-startup and shared frontend transactions remain separate acceptance; this is
-not an all-twelve-games or character-bank completion claim.
+validation or changes the rules' outcomes. That isolated certificate predates
+the later integration and shared-frontend checks. Startup is now enabled and
+winning-party banking and sequel import have passed their separate checks; this
+Matrix certificate alone is not an all-twelve-games completion claim.
 
 ## Linux campaign checkpoint (2026-11-20, historical)
 
