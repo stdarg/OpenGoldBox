@@ -6,6 +6,7 @@
 
 #include "area_loading.h"
 #include "opengold/creature_catalog.h"
+#include "opengold/game_traits.h"
 #include "opengold/ecl_machine.h"
 #include "opengold/map_catalog.h"
 #include "opengold/por_sound.h"
@@ -28,52 +29,6 @@ namespace
 using por::EclError;
 
 constexpr std::uint8_t load_files = 0x21, load_pieces = 0x37;
-
-// What sets the campaigns after Pool of Radiance apart (docs/games/curse.md,
-// docs/games/secret.md, docs/games/gateway.md).
-struct LaterCampaign
-{
-    // A new game runs this script, on this disk.
-    unsigned opening_script{}, opening_disk{};
-    // The disk whose scripts play at the root, out of any map.
-    unsigned root_disk{};
-    // Curse's root disk 1 has no map: its scripts (80 to 82) are the
-    // wilderness, fought on its own battlefield. Secret has none, and
-    // Gateway's overland (script 21) loads its maps by cells.
-    bool wilderness{};
-};
-
-LaterCampaign later_campaign(GoldBoxGame game)
-{
-    switch (game)
-    {
-    case GoldBoxGame::curse_of_the_azure_bonds:
-        return {1, 2, 1, true};
-    case GoldBoxGame::secret_of_the_silver_blades:
-        // The opening's vision of the valley has no map.
-        return {17, 2, 2, false};
-    case GoldBoxGame::gateway_to_the_savage_frontier:
-        // A new game runs script 1 of disk 2 (Yartar); the overland's script
-        // is on disk 6.
-        return {1, 2, 6, false};
-    case GoldBoxGame::death_knights_of_krynn:
-        return {16, 1, 1, false};
-    case GoldBoxGame::champions_of_krynn:
-        return {36, 1, 1, false};
-    case GoldBoxGame::countdown_to_doomsday:
-    case GoldBoxGame::matrix_cubed:
-        // A new game runs script 16 of disk 1 (eclvm.pas START_ECL_SCRIPT).
-        return {16, 1, 1, false};
-    case GoldBoxGame::pools_of_darkness:
-    case GoldBoxGame::treasures_of_the_savage_frontier:
-        // One disk: a new game runs script 16 (its GameLoop), New Phlan's
-        // docks in Pools of Darkness, the waking in Llorkh's fortress in
-        // Treasures.
-        return {16, 1, 1, false};
-    default:
-        throw std::invalid_argument(std::string(game_title(game)) + " cannot be played yet");
-    }
-}
 
 // What Curse's scripts load, read from the scripts themselves: a script's
 // number is the same on every disk, its disk is the ECLn.DAX that holds it,
@@ -598,7 +553,7 @@ void add_buck_rogers_tables(const por::detail::AreaFiles &files, por::PhlanResou
 
 por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, GoldBoxGame game)
 {
-    const auto campaign = later_campaign(game);
+    const auto &campaign = traits(game).later_campaign.value();
     const auto catalog = por::EclCatalog::load(folder, game);
     const auto disk = std::to_string(campaign.opening_disk);
     const auto opening =
@@ -826,10 +781,7 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
         // PIC2 contains another record with that number.
         picture_files.emplace_back("PIC5.DAX");
     }
-    // Countdown's pictures run to PIC9.
-    const unsigned last_picture_disk = game == GoldBoxGame::death_knights_of_krynn ? 7
-                                       : buck_rogers                               ? 9
-                                                                                   : 6;
+    const unsigned last_picture_disk = traits(game).picture_disks;
     for (unsigned picture_disk = 1; picture_disk <= last_picture_disk; ++picture_disk)
     {
         for (const auto *family : {"PIC", "BIGPIC"})
@@ -970,9 +922,9 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
 por::RolfTourSession load_campaign(const std::filesystem::path &folder, GoldBoxGame game,
                                    const CampaignData &data)
 {
-    switch (game)
+    switch (traits(game).loader)
     {
-    case GoldBoxGame::pool_of_radiance:
+    case CampaignLoader::pool_of_radiance:
         if (!data.encounters)
         {
             throw std::invalid_argument("Pool of Radiance's campaign needs its encounter data");
@@ -980,22 +932,14 @@ por::RolfTourSession load_campaign(const std::filesystem::path &folder, GoldBoxG
         return por::RolfTourSession::load(
             folder, *data.encounters,
             data.new_wall_art ? *data.new_wall_art : por::WallArtReplacements{}, data.monsters);
-    case GoldBoxGame::curse_of_the_azure_bonds:
-    case GoldBoxGame::secret_of_the_silver_blades:
-    case GoldBoxGame::gateway_to_the_savage_frontier:
-    case GoldBoxGame::pools_of_darkness:
-    case GoldBoxGame::treasures_of_the_savage_frontier:
+    case CampaignLoader::later:
         return load_later_campaign(folder, game);
-    case GoldBoxGame::champions_of_krynn:
-    case GoldBoxGame::death_knights_of_krynn:
-    case GoldBoxGame::countdown_to_doomsday:
-    case GoldBoxGame::matrix_cubed:
-        return load_later_campaign(folder, game);
-    case GoldBoxGame::dark_queen_of_krynn:
+    case CampaignLoader::dark_queen:
         return por::load_dark_queen_campaign(folder);
-    default:
-        throw std::invalid_argument(std::string(game_title(game)) + " cannot be played yet");
+    case CampaignLoader::none:
+        break;
     }
+    throw std::invalid_argument(std::string(game_title(game)) + " cannot be played yet");
 }
 
 } // namespace opengold

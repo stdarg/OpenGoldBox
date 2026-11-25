@@ -2,6 +2,7 @@
 
 #include "opengold/fm_synth.h"
 #include "opengold/formats.h"
+#include "opengold/game_traits.h"
 
 #include <algorithm>
 #include <array>
@@ -378,23 +379,7 @@ MusicBank load_music_bank(const std::filesystem::path &game_directory, GoldBoxGa
 
 std::optional<unsigned> title_music_piece(GoldBoxGame game) noexcept
 {
-    switch (game)
-    {
-    case GoldBoxGame::secret_of_the_silver_blades:
-        return 2;
-    case GoldBoxGame::gateway_to_the_savage_frontier:
-    case GoldBoxGame::pools_of_darkness:
-    case GoldBoxGame::treasures_of_the_savage_frontier:
-    case GoldBoxGame::champions_of_krynn:
-    case GoldBoxGame::death_knights_of_krynn:
-        return 1;
-    // Countdown plays its bank, MUSIC.DAX record 2, over its introduction
-    // alone: no script starts music (intro.pas FinishIntroduction).
-    case GoldBoxGame::countdown_to_doomsday:
-        return 2;
-    default:
-        return std::nullopt;
-    }
+    return traits(game).title_music_piece;
 }
 
 std::vector<std::int16_t> render_music(const MusicBank &bank, std::size_t song,

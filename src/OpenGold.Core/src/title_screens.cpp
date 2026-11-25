@@ -1,6 +1,7 @@
 #include "opengold/title_screens.h"
 
 #include "area_loading.h"
+#include "opengold/game_traits.h"
 #include "opengold/gateway_formats.h"
 #include "opengold/vace_film.h"
 #include "opengold/vga_picture.h"
@@ -17,97 +18,6 @@ namespace
 {
 
 constexpr int screen_width = 320, screen_height = 200, cell = 8;
-
-// A TITLE.DAX picture drawn at a character cell, as the original's ShowPic
-// draws it: whole, over what is on the screen.
-struct TitleDraw
-{
-    std::uint8_t record{};
-    int column{}, row{};
-};
-
-// What a key does while a step's screen shows.
-enum class TitleKey
-{
-    passes_screen,
-    ends_title,
-    skips_to_last // To the last screen, which stays its own time.
-};
-
-struct TitleStep
-{
-    std::vector<TitleDraw> draws;
-    unsigned seconds{};
-    std::optional<unsigned> sound;
-    TitleKey key{TitleKey::passes_screen};
-};
-
-struct TitleScript
-{
-    std::vector<TitleStep> steps;
-    // Each step's pictures are drawn on a cleared screen, not over the last.
-    bool clears_between{};
-    std::size_t music_screen{};
-    // The opening film (INTRO.ACF and INTRO.BMA) plays before the steps.
-    bool opens_with_film{};
-};
-
-// Each game's Intro.Introduction with its full-introduction flag on, without
-// the credits that follow the pictures.
-TitleScript title_script(GoldBoxGame game)
-{
-    constexpr auto ends_title = TitleKey::ends_title;
-    switch (game)
-    {
-    case GoldBoxGame::pool_of_radiance:
-        return {.steps{{{{1, 0, 0}}, 5, {}}, {{{2, 0, 0}}, 5, {}}}};
-    case GoldBoxGame::curse_of_the_azure_bonds:
-    {
-        // Picture 4 starts the sound effect sndIntro (13).
-        constexpr unsigned title_sound = 13;
-        return {.steps{{{{1, 0, 0}}, 5, {}},
-                       {{{2, 0, 0}, {3, 6, 11}}, 10, {}},
-                       {{{4, 0, 11}}, 10, title_sound}}};
-    }
-    case GoldBoxGame::death_knights_of_krynn:
-        return {.steps{{{{1, 0, 0}}, 5, {}, ends_title},
-                       {{{2, 0, 0}}, 5, {}, ends_title},
-                       {{{2, 0, 0}, {3, 0, 11}}, 5, {}, ends_title},
-                       {{{2, 0, 0}, {4, 0, 11}}, 20, {}, ends_title}},
-                .clears_between = true};
-    case GoldBoxGame::secret_of_the_silver_blades:
-        return {.steps{{{{1, 0, 0}}, 15, {}, ends_title},
-                       {{{2, 0, 0}}, 50, {}, ends_title},
-                       {{{3, 2, 5}}, 50, {}, ends_title},
-                       {{{2, 0, 0}, {4, 5, 5}}, 60, {}, ends_title}}};
-    case GoldBoxGame::gateway_to_the_savage_frontier:
-        // The last picture stays 20 seconds, or until the title music ends.
-        return {.steps{{{{1, 0, 0}}, 3, {}, ends_title},
-                       {{{2, 0, 0}}, 3, {}},
-                       {{{3, 0, 0}}, 10, {}},
-                       {{{4, 0, 0}}, 20, {}},
-                       {{{5, 0, 0}}, 20, {}}},
-                .clears_between = true,
-                .music_screen = 1};
-    case GoldBoxGame::pools_of_darkness:
-        // The third picture is the title menu's backdrop.
-        return {.steps{{{{1, 0, 0}}, 5, {}, TitleKey::skips_to_last},
-                       {{{2, 0, 0}}, 5, {}, TitleKey::skips_to_last},
-                       {{{3, 0, 0}}, 20, {}}},
-                .clears_between = true,
-                .opens_with_film = true};
-    case GoldBoxGame::treasures_of_the_savage_frontier:
-        // Picture 4 is the VGA's (5 the EGA's); picture 6 holds the credits.
-        return {.steps{{{{1, 0, 0}}, 25, {}},
-                       {{{2, 0, 0}}, 25, {}},
-                       {{{3, 0, 0}}, 25, {}},
-                       {{{4, 0, 0}}, 50, {}},
-                       {{{6, 0, 0}}, 50, {}}},
-                .clears_between = true};
-    default:
-        return {};
-    }
-}
 
 Image black_screen()
 {
@@ -231,7 +141,7 @@ std::size_t screen_after_key(TitleKey key, std::size_t screen, std::size_t last)
 
 TitleScreens load_title_screens(const std::filesystem::path &folder, GoldBoxGame game)
 {
-    const auto script = title_script(game);
+    const auto &script = traits(game).title;
     if (script.steps.empty())
     {
         return {};

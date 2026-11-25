@@ -12,6 +12,7 @@
 #include "opengold/scroll_key.h"
 #include "opengold/authored_items.h"
 #include "opengold/companions.h"
+#include "opengold/game_traits.h"
 #include <algorithm>
 #include <set>
 
@@ -302,32 +303,6 @@ constexpr unsigned city_hall_script = 8;
 // The Pyramid's poisoned rivers open once its sorcerer is beaten.
 constexpr EclAddress pyramid_valley_healed{0x4AA2};
 constexpr EclAddress cadorna_box{0x4AC8}, cadorna_payment{0x4AB8};
-// Secret of the Silver Blades' cell for Eldamar's soul: script 99 sets it to 1
-// as the gem holding the soul shatters; New Verdigris's mayor sets it to 255
-// once he has thanked the party (a cell of Secret's own, not translated).
-constexpr EclAddress secret_soul_freed{0x4CD9};
-// Treasures of the Savage Frontier's cell for Freezefire: script 38 sets it
-// to 1 as the dragon dies in its lair, before the party is carried to
-// Icewolf and honored in Waterdeep.
-constexpr EclAddress treasures_freezefire_slain{0x25C};
-
-// The cell whose change from 0 to 1 wins a game with no ending of its own
-// (docs/DEVIATIONS.md): the event that sets it wins the game as it ends.
-std::optional<EclAddress> game_won_cell(GoldBoxGame game)
-{
-    switch (game)
-    {
-    case GoldBoxGame::secret_of_the_silver_blades:
-        return secret_soul_freed;
-    case GoldBoxGame::treasures_of_the_savage_frontier:
-        return treasures_freezefire_slain;
-    case GoldBoxGame::champions_of_krynn:
-        // ECL3:98 8E25h, after Myrtani, the three messengers and the honors.
-        return EclAddress{0x4C3A};
-    default:
-        return std::nullopt;
-    }
-}
 
 // The minute of the day on the campaign clock, which starts at noon.
 std::uint64_t clock_minute_of_day(std::uint64_t minutes)
@@ -1280,7 +1255,7 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
         }
         machine_.bind_variable(EclAddress{0x4BB6}, buck_rogers_difficulty_level());
     }
-    if (const auto won = game_won_cell(game()))
+    if (const auto won = traits(game()).won_cell)
     {
         won_cell_at_event_start_ = machine_.variable(*won);
     }
@@ -1828,8 +1803,7 @@ unsigned RolfTourSession::treasure_experience(const PendingLoot &loot) const
     // for each plus of a magic item (postcbt.pas, DetermineLootExp).
     const auto &w = loot.wealth;
     unsigned experience = w[0] / 200 + w[1] / 20 + w[2] / 2 + w[3] +
-                          w[4] * (game() == GoldBoxGame::dark_queen_of_krynn ? 2 : 5) + w[5] * 250 +
-                          w[6] * 2200;
+                          w[4] * traits(game()).gem_experience + w[5] * 250 + w[6] * 2200;
     for (const auto &item : loot.items)
     {
         if (item.stored.magic_bonus > 0)
@@ -2892,7 +2866,7 @@ void RolfTourSession::finish_event()
     // the soul's freeing or of Freezefire's fall and the game goes on. The
     // event that does it wins the game as it ends (docs/DEVIATIONS.md), and the
     // win is shown until the player goes on.
-    if (const auto won = game_won_cell(game());
+    if (const auto won = traits(game()).won_cell;
         won && won_cell_at_event_start_ == 0 && machine_.variable(*won) == 1)
     {
         won_cell_at_event_start_ = 1;

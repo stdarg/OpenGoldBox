@@ -258,6 +258,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/fm_synth.cpp
     src/OpenGold.Core/src/music_render.cpp
     src/OpenGold.Core/src/title_screens.cpp
+    src/OpenGold.Core/src/game_traits.cpp
 )
 
 target_include_directories(opengold_core
@@ -1258,6 +1259,10 @@ if(OPENGOLD_BUILD_TESTS)
     add_executable(opengold_music_render_tests tests/music_render_tests.cpp)
     target_link_libraries(opengold_music_render_tests PRIVATE opengold_core)
     add_test(NAME opengold_music_render_tests COMMAND opengold_music_render_tests)
+    # Every game's row of Core's per-game facts.
+    add_executable(opengold_game_traits_tests tests/game_traits_tests.cpp)
+    target_link_libraries(opengold_game_traits_tests PRIVATE opengold_core)
+    add_test(NAME opengold_game_traits_tests COMMAND opengold_game_traits_tests)
 endif()
 
 add_executable(opengold_creatures tools/creatures.cpp)
