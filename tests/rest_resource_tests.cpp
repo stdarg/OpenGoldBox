@@ -95,7 +95,7 @@ void class_dice_and_recharge()
                   info.hit_dice_max == 1,
               "Each starting class has its correct unspent Hit Die and a pure resource query");
         RandomState rng{0};
-        const auto spent = rules->spend_hit_die(state, sheet, rng);
+        const auto spent = rules->rest_resources()->spend_hit_die(state, sheet, rng);
         check(spent.die == die && spent.roll == first_roll.at(die) && spent.modifier == 2 &&
                   spent.healing == first_healing.at(die) && spent.remaining == 0,
               "Golden first rolls heal by the class die plus Constitution, capped at maximum HP");
@@ -109,10 +109,10 @@ void class_dice_and_recharge()
         rejects(
             [&]
             {
-                rules->spend_hit_die(state, sheet, rng);
+                rules->rest_resources()->spend_hit_die(state, sheet, rng);
             });
         check(state == depleted && rng == used_rng, "Exhausted dice reject atomically");
-        rules->recover_short_rest(state, sheet);
+        rules->rest_resources()->recover_short_rest(state, sheet);
         check(rules->recovery_info(sheet, state).hit_dice == 0 &&
                   state.hit_points == depleted.hit_points,
               "Short Rest does not restore Hit Dice or heal automatically");
@@ -129,20 +129,20 @@ void class_dice_and_recharge()
     check(info.hit_dice == 4 && pool(info, "second_wind").capacity == 3 &&
               pool(info, "second_wind").short_rest_recovery == 1,
           "Level-four capacity is four dice and three Second Wind uses");
-    rules->recover_short_rest(state, sheet);
+    rules->rest_resources()->recover_short_rest(state, sheet);
     info = rules->recovery_info(sheet, state);
     check(state.hit_points == 1 && pool(info, "second_wind").remaining == 1,
           "A Short Rest returns exactly one spent Second Wind");
     for (unsigned n = 0; n < 4; ++n)
     {
-        rules->recover_short_rest(state, sheet);
+        rules->rest_resources()->recover_short_rest(state, sheet);
     }
     check(pool(rules->recovery_info(sheet, state), "second_wind").remaining == 3,
           "Repeated completed rests never exceed capacity");
     state = {1, false, "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 0 0 0 0 FX9 1 0 0"};
     RandomState rng{2};
-    rules->spend_hit_die(state, sheet, rng);
-    rules->spend_hit_die(state, sheet, rng);
+    rules->rest_resources()->spend_hit_die(state, sheet, rng);
+    rules->rest_resources()->spend_hit_die(state, sheet, rng);
     rules->recover(state, sheet);
     info = rules->recovery_info(sheet, state);
     check(info.hit_dice == 4 && pool(info, "second_wind").remaining == 3,
@@ -152,7 +152,7 @@ void class_dice_and_recharge()
         const auto caster = hero(klass, 4);
         VitalState slots{1, false,
                          "SRD13 0 1 1 0 0 0 0 0 0 0 0 0 0 4 0 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 0"};
-        rules->recover_short_rest(slots, caster.sheet());
+        rules->rest_resources()->recover_short_rest(slots, caster.sheet());
         info = rules->recovery_info(caster.sheet(), slots);
         check(pool(info, "spell_slot:1").remaining == 1 &&
                   pool(info, "spell_slot:2").remaining == 1,
@@ -181,14 +181,14 @@ void short_rest_class_pools()
     };
     const auto barbarian = hero("barbarian", 11);
     VitalState state{1, false, spent(11)};
-    rules->recover_short_rest(state, barbarian.sheet());
+    rules->rest_resources()->recover_short_rest(state, barbarian.sheet());
     auto info = rules->recovery_info(barbarian.sheet(), state);
     check(pool(info, "relentless_rage").remaining == pool(info, "relentless_rage").capacity,
           "A Short Rest resets Relentless Rage's DC");
     check(pool(info, "rage").remaining == 1, "A Short Rest returns one spent Rage");
     const auto monk = hero("monk", 5);
     state = {1, false, spent(5)};
-    rules->recover_short_rest(state, monk.sheet());
+    rules->rest_resources()->recover_short_rest(state, monk.sheet());
     info = rules->recovery_info(monk.sheet(), state);
     check(pool(info, "focus").remaining == 5, "A Short Rest returns every Focus Point");
     const auto warlock = hero("warlock", 5);
@@ -208,7 +208,7 @@ void minimum_caps_and_rejection()
     auto character = hero("fighter", 1, 3);
     VitalState state{1, false, {}};
     RandomState rng{2};
-    const auto result = rules->spend_hit_die(state, character.sheet(), rng);
+    const auto result = rules->rest_resources()->spend_hit_die(state, character.sheet(), rng);
     check(result.roll == 1 && result.modifier == -4 && result.healing == 1 && state.hit_points == 2,
           "A low roll with negative Constitution still restores one HP");
     auto dwarf = hero().creation_data();
@@ -216,17 +216,17 @@ void minimum_caps_and_rejection()
     const Character dwarven(*srd5::character_rules(), dwarf, {});
     state = {1, false, {}};
     rng.value = 42;
-    check(rules->spend_hit_die(state, dwarven.sheet(), rng).healing == 6,
+    check(rules->rest_resources()->spend_hit_die(state, dwarven.sheet(), rng).healing == 6,
           "Dwarven Toughness affects maximum HP without adding to a Hit Die healing roll");
     character = hero();
     state = {character.sheet().hit_points - 1, false, {}};
     rng.value = 0;
-    check(rules->spend_hit_die(state, character.sheet(), rng).healing == 1 &&
+    check(rules->rest_resources()->spend_hit_die(state, character.sheet(), rng).healing == 1 &&
               state.hit_points == character.sheet().hit_points,
           "Hit Die healing stops at maximum HP");
     state = {character.sheet().hit_points, false, {}};
     rng.value = 0;
-    check(rules->spend_hit_die(state, character.sheet(), rng).healing == 0 &&
+    check(rules->rest_resources()->spend_hit_die(state, character.sheet(), rng).healing == 0 &&
               rules->recovery_info(character.sheet(), state).hit_dice == 0,
           "A voluntarily spent die is consumed even if no HP is missing");
     for (const auto dead : {false, true})
@@ -241,12 +241,12 @@ void minimum_caps_and_rejection()
         rejects(
             [&]
             {
-                rules->spend_hit_die(state, character.sheet(), rng);
+                rules->rest_resources()->spend_hit_die(state, character.sheet(), rng);
             });
         rejects(
             [&]
             {
-                rules->recover_short_rest(state, character.sheet());
+                rules->rest_resources()->recover_short_rest(state, character.sheet());
             });
         rejects(
             [&]
@@ -274,12 +274,12 @@ void minimum_caps_and_rejection()
         rejects(
             [&]
             {
-                rules->spend_hit_die(state, character.sheet(), rng);
+                rules->rest_resources()->spend_hit_die(state, character.sheet(), rng);
             });
         rejects(
             [&]
             {
-                rules->recover_short_rest(state, character.sheet());
+                rules->rest_resources()->recover_short_rest(state, character.sheet());
             });
         rejects(
             [&]
@@ -302,8 +302,8 @@ void persistence_and_advancement()
                               "0 FX9 2 1 1 1 77 99 \"Source caster\" 13 43000 2000 0 0"};
     const auto effect =
         state.roster[0].vitals.resources.substr(state.roster[0].vitals.resources.find("FX9"));
-    rules->spend_hit_die(state.roster[0].vitals, state.roster[0].character.sheet(),
-                         state.random_state);
+    rules->rest_resources()->spend_hit_die(state.roster[0].vitals,
+                                           state.roster[0].character.sheet(), state.random_state);
     party.restore(state);
     check(party.member(id).vitals.resources.ends_with(effect),
           "Spending a die preserves active effects and recovery timers");
@@ -344,9 +344,10 @@ void persistence_and_advancement()
         decode_campaign(before_next_roll, *srd5::character_rules(), *rules, "rest", nullptr);
     auto first = party.member(id).vitals, second = next_load.party.roster[0].vitals;
     auto first_rng = party.state().random_state, second_rng = next_load.party.random_state;
-    const auto next_die =
-        rules->spend_hit_die(first, party.member(id).character.sheet(), first_rng);
-    rules->spend_hit_die(second, next_load.party.roster[0].character.sheet(), second_rng);
+    const auto next_die = rules->rest_resources()->spend_hit_die(
+        first, party.member(id).character.sheet(), first_rng);
+    rules->rest_resources()->spend_hit_die(second, next_load.party.roster[0].character.sheet(),
+                                           second_rng);
     check(
         next_die.roll == 2 && first == second && first_rng == second_rng &&
             first_rng.value == 4354685564936845396ULL,

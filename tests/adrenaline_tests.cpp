@@ -97,7 +97,8 @@ auto battle(const Character &c, TemporaryHitPoints temporary = {})
     VitalState state{c.sheet().hit_points - 1};
     if (temporary.amount)
     {
-        rules->grant_temporary_hit_points(state, c.sheet(), temporary, TemporaryHpChoice::use_new);
+        rules->rest_resources()->grant_temporary_hit_points(state, c.sheet(), temporary,
+                                                            TemporaryHpChoice::use_new);
     }
     Encounter e{{20, 20, std::vector<Terrain>(400)},
                 {{1,
@@ -171,7 +172,7 @@ void ordinary_classes()
         check(!has(*combat, "adrenaline_rush") && pool(c, unit(*combat).persistent).remaining == 0,
               "Exhausted uses stay spent next turn");
         auto state = unit(*combat).persistent;
-        rules->recover_short_rest(state, c.sheet());
+        rules->rest_resources()->recover_short_rest(state, c.sheet());
         check(pool(c, state).remaining == 2 &&
                   rules->recovery_info(c.sheet(), state).temporary_hp.amount == 2,
               "Short Rest fully recharges uses and retains Temporary HP");

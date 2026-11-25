@@ -497,11 +497,11 @@ void recovery()
           "Temple cast consumes rolls but cannot heal");
     rules->set_hit_points(state, h.sheet(), h.sheet().hit_points);
     check(state.hit_points == hp, "Positive script HP assignment is blocked");
-    const auto spent = rules->spend_hit_die(state, h.sheet(), random);
+    const auto spent = rules->rest_resources()->spend_hit_die(state, h.sheet(), random);
     check(spent.healing == 0 && spent.remaining == 1 && state.hit_points == hp,
           "Hit Die spent without healing");
-    rules->grant_temporary_hit_points(state, h.sheet(), {5, "test:temp"},
-                                      TemporaryHpChoice::use_new);
+    rules->rest_resources()->grant_temporary_hit_points(state, h.sheet(), {5, "test:temp"},
+                                                        TemporaryHpChoice::use_new);
     check(rules->recovery_info(h.sheet(), state).temporary_hp.amount == 5,
           "Temporary HP unaffected");
     rules->recover(state, h.sheet());

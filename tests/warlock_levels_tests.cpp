@@ -394,7 +394,7 @@ void resilience_checks()
                       }),
           "Fiendish Resilience changes after a Short Rest");
     const std::vector<std::string> fire{"fire"};
-    (void)rules->replace_rest_training(sheet, fire);
+    (void)rules->rest_resources()->replace_rest_training(sheet, fire);
     check(granted(sheet, "resilience:fire"), "Fiendish Resilience now resists Fire");
 }
 } // namespace

@@ -138,6 +138,8 @@ add_library(opengold_rules_original STATIC
     src/OpenGold.Rules.Original/src/line_walk.cpp
     src/OpenGold.Rules.Original/src/outlook_dice.cpp
     src/OpenGold.Rules.Original/src/rules_module.cpp
+    src/OpenGold.Rules.Original/src/camp_magic.cpp
+    src/OpenGold.Rules.Original/src/check_dice.cpp
 )
 target_include_directories(opengold_rules_original PUBLIC src/OpenGold.Rules.Original/include)
 # The original's monster records come decoded from the Formats library.

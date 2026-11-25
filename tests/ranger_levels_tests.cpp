@@ -544,7 +544,8 @@ void tactics_rest_checks()
     check(group != offered_rest.end() &&
               group->selected == std::vector<std::string>{"escape_the_horde"},
           "A Short Rest offers Defensive Tactics, Escape the Horde chosen");
-    rules->replace_rest_training(sheet, std::vector<std::string>{"multiattack_defense"});
+    rules->rest_resources()->replace_rest_training(sheet,
+                                                   std::vector<std::string>{"multiattack_defense"});
     check(std::any_of(sheet.grants.begin(), sheet.grants.end(),
                       [](const auto &g)
                       {

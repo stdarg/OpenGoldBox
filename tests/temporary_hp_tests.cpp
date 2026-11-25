@@ -131,17 +131,17 @@ void rule_operations()
     const auto c = hero();
     VitalState state{4, false,
                      "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 0 0 0 0 FX9 1 0 0"};
-    rules->grant_temporary_hit_points(state, c.sheet(), {8, "spell:false_life"},
-                                      TemporaryHpChoice::use_new);
+    rules->rest_resources()->grant_temporary_hit_points(state, c.sheet(), {8, "spell:false_life"},
+                                                        TemporaryHpChoice::use_new);
     check(
         state.resources ==
             "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 8 \"spell:false_life\" 0 1 0 0 0 0 0 FX9 1 0 0",
         "Vital state independently records dice, clocks and sourced buffer");
     RandomState rng{42};
-    const auto die = rules->spend_hit_die(state, c.sheet(), rng);
+    const auto die = rules->rest_resources()->spend_hit_die(state, c.sheet(), rng);
     check(die.roll == 4 && die.healing == 6 && state.hit_points == 10 && pool(c, state).amount == 8,
           "Hit Die healing preserves buffer and spends its own die/RNG");
-    rules->recover_short_rest(state, c.sheet());
+    rules->rest_resources()->recover_short_rest(state, c.sheet());
     check(pool(c, state).amount == 8, "Short Rest does not expire Temporary HP");
     rules->set_hit_points(state, c.sheet(), 1);
     check(state.hit_points == 1 && pool(c, state).amount == 8,
@@ -165,8 +165,8 @@ void rule_operations()
           "An eligible completed Long Rest clears the pool");
     VitalState stable{0, false,
                       "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 1 1 0 1000 0 \"\" 0 1 0 0 0 0 0 FX9 1 0 0"};
-    rules->grant_temporary_hit_points(stable, c.sheet(), {7, "feature:ward"},
-                                      TemporaryHpChoice::use_new);
+    rules->rest_resources()->grant_temporary_hit_points(stable, c.sheet(), {7, "feature:ward"},
+                                                        TemporaryHpChoice::use_new);
     participants[0].state = stable;
     const auto prior_rng = rng;
     rules->elapse(participants, std::chrono::milliseconds(999), rng);
@@ -180,8 +180,8 @@ void rule_operations()
     {
         const auto character = hero(klass.id, 1);
         VitalState vitals{character.sheet().hit_points};
-        rules->grant_temporary_hit_points(vitals, character.sheet(), {3, "feature:fixture"},
-                                          TemporaryHpChoice::use_new);
+        rules->rest_resources()->grant_temporary_hit_points(
+            vitals, character.sheet(), {3, "feature:fixture"}, TemporaryHpChoice::use_new);
         check(pool(character, vitals).amount == 3,
               "Shared Temporary HP works for every class without granting a class feature");
     }
@@ -196,24 +196,25 @@ void rule_operations()
         rejects(
             [&]
             {
-                rules->grant_temporary_hit_points(state, c.sheet(), bad,
-                                                  TemporaryHpChoice::use_new);
+                rules->rest_resources()->grant_temporary_hit_points(state, c.sheet(), bad,
+                                                                    TemporaryHpChoice::use_new);
             });
         check(state == unchanged, "Invalid grant is atomic");
     }
     rejects(
         [&]
         {
-            rules->grant_temporary_hit_points(state, c.sheet(), {1, "source"},
-                                              TemporaryHpChoice::keep_current);
+            rules->rest_resources()->grant_temporary_hit_points(state, c.sheet(), {1, "source"},
+                                                                TemporaryHpChoice::keep_current);
         });
-    rules->grant_temporary_hit_points(state, c.sheet(), {8, "source"}, TemporaryHpChoice::use_new);
+    rules->rest_resources()->grant_temporary_hit_points(state, c.sheet(), {8, "source"},
+                                                        TemporaryHpChoice::use_new);
     const auto original = state;
     rejects(
         [&]
         {
-            rules->grant_temporary_hit_points(state, c.sheet(), {1, "source"},
-                                              static_cast<TemporaryHpChoice>(99));
+            rules->rest_resources()->grant_temporary_hit_points(state, c.sheet(), {1, "source"},
+                                                                static_cast<TemporaryHpChoice>(99));
         });
     check(state == original, "Unknown replacement choice cannot mutate state");
     for (const auto &bad : std::vector<std::string>{"-1 \"source\"", "1 \"\"", "0 \"source\"",
@@ -261,8 +262,8 @@ void actual_combat()
         "creature toxin 10 500 0 30 30 1 4 3 30 1 4 3 80 320 0 4 30 3 5\ndamage_types toxin poison poison\n");
     const auto c = hero();
     VitalState state{c.sheet().hit_points};
-    rules->grant_temporary_hit_points(state, c.sheet(), {1, "spell:fixture"},
-                                      TemporaryHpChoice::use_new);
+    rules->rest_resources()->grant_temporary_hit_points(state, c.sheet(), {1, "spell:fixture"},
+                                                        TemporaryHpChoice::use_new);
     Encounter encounter{{8, 8, std::vector<Terrain>(64)},
                         {{1,
                           "campaign-character",
@@ -343,8 +344,9 @@ void campaign()
     for (auto &member : state.roster)
     {
         member.vitals.hit_points = 1;
-        rules->grant_temporary_hit_points(member.vitals, member.character.sheet(),
-                                          {8, "spell:fixture"}, TemporaryHpChoice::use_new);
+        rules->rest_resources()->grant_temporary_hit_points(member.vitals, member.character.sheet(),
+                                                            {8, "spell:fixture"},
+                                                            TemporaryHpChoice::use_new);
     }
     party.restore(std::move(state));
     const auto bytes = saved(party);

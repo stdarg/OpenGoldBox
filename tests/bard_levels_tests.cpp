@@ -304,7 +304,7 @@ void inspiration_checks()
           "Font of Inspiration");
     VitalState spent = c->snapshot().combatants.front().persistent;
     const auto sheet = bard(5).sheet();
-    module()->recover_short_rest(spent, sheet);
+    module()->rest_resources()->recover_short_rest(spent, sheet);
 }
 
 void countercharm_checks()

@@ -258,7 +258,7 @@ rules::CharacterSheet sheet_with_current_experience(const PartyMember &member)
 // What a spell or service changed on a member for good goes into its level
 // history (the original rules' Restoration: the drained level it gives back),
 // with the experience the change sets.
-void keep_lasting_changes(const rules::RulesModule &rules, PartyMember &patient)
+void keep_lasting_changes(const rules::AdvancementRules &rules, PartyMember &patient)
 {
     for (const auto &change :
          rules.lasting_changes(sheet_with_current_experience(patient), patient.vitals))
@@ -290,7 +290,7 @@ void keep_gained_item(PartyMember &member, const rules::GainedItem &gained)
 
 // The character's inventory without the items that go as time passes (the
 // original's Spiritual Hammer as its spell ends), when any goes.
-std::optional<Inventory> lasting_inventory(const rules::RulesModule &rules,
+std::optional<Inventory> lasting_inventory(const rules::RestRules &rules,
                                            const Character &character,
                                            const rules::VitalState &vitals)
 {
@@ -309,7 +309,7 @@ std::optional<Inventory> lasting_inventory(const rules::RulesModule &rules,
 
 // Remove Curse lets a member put down its cursed items, which are then lost:
 // the original's Remove Curse let a character drop a cursed object (MAGIC-1).
-void put_down_cursed_items(const rules::RulesModule &rules, PartyMember &member)
+void put_down_cursed_items(const rules::EquipmentRules &rules, PartyMember &member)
 {
     auto inventory = member.character.inventory();
     std::erase_if(member.equipped,
@@ -376,7 +376,7 @@ bool refuses_wielder(const PartyMember &member, std::uint64_t item)
 }
 
 // Whether the member holds a cursed item it cannot put down.
-bool holds_cursed_item(const rules::RulesModule &rules, const PartyMember &member)
+bool holds_cursed_item(const rules::EquipmentRules &rules, const PartyMember &member)
 {
     const auto &inventory = member.character.inventory();
     return std::any_of(member.equipped.begin(), member.equipped.end(),
@@ -455,7 +455,7 @@ namespace
 // each of a bundle of weapons counted (a charged item's quantity is its
 // charges); otherwise the original record's, which weighs in coins, ten to
 // the pound.
-unsigned entry_weight(const rules::RulesModule &rules, std::string_view definition,
+unsigned entry_weight(const rules::EquipmentRules &rules, std::string_view definition,
                       std::uint32_t quantity, const por::Equipment *source)
 {
     const auto info = rules.equipment_info(definition);
@@ -3371,7 +3371,7 @@ namespace
 // What a spell cast outside combat leaves to the campaign, for the spells
 // Detect Magic, Friends, Read Magic, Find Traps and Remove Curse (MAGIC-2,
 // MAGIC-6).
-void keep_camp_spell(const rules::RulesModule &rules, PartyState &state, PartyMember &caster,
+void keep_camp_spell(const rules::EquipmentRules &rules, PartyState &state, PartyMember &caster,
                      PartyMember &patient, std::string_view verb)
 {
     if (verb.starts_with("detect_magic"))
@@ -3434,6 +3434,11 @@ bool CampaignParty::read_scroll(MemberId user, std::uint64_t item, MemberId targ
     {
         throw std::runtime_error("That spell cannot be read from the scroll now");
     }
+    const auto *resources = rules_->rest_resources();
+    if (!resources)
+    {
+        throw std::runtime_error("These rules read no scrolls");
+    }
     auto next = state_;
     auto &reader = member_in(next, user);
     const auto key = rules_definition(reader, reader.character.inventory().find(item)->get());
@@ -3450,14 +3455,14 @@ bool CampaignParty::read_scroll(MemberId user, std::uint64_t item, MemberId targ
                 party.push_back({m.character.sheet(), m.vitals});
             }
         }
-        cast = rules_->use_party_scroll(reader.character.sheet(), reader.vitals, party, key, action,
-                                        next.random_state);
+        cast = resources->use_party_scroll(reader.character.sheet(), reader.vitals, party, key,
+                                           action, next.random_state);
     }
     else
     {
-        cast =
-            rules_->use_scroll(reader.character.sheet(), reader.vitals, patient.character.sheet(),
-                               patient.vitals, key, action, next.random_state);
+        cast = resources->use_scroll(reader.character.sheet(), reader.vitals,
+                                     patient.character.sheet(), patient.vitals, key, action,
+                                     next.random_state);
     }
     if (cast)
     {

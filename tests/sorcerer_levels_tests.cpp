@@ -302,7 +302,7 @@ void restoration_checks()
                           return choice.id == "sorcerous_restoration";
                       }),
           "Sorcerous Restoration is a Short Rest choice");
-    (void)rules->recover_rest_choice(state, sheet, "sorcerous_restoration");
+    (void)rules->rest_resources()->recover_rest_choice(state, sheet, "sorcerous_restoration");
     const auto after = rules->recovery_info(sheet, state);
     check(std::none_of(after.choices.begin(), after.choices.end(),
                        [](const auto &choice)

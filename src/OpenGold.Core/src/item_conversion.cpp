@@ -371,7 +371,7 @@ unsigned carried_quantity(const por::Equipment &item)
                                                      : item.stored.effect_codes[0];
 }
 
-unsigned carried_quantity(const rules::RulesModule &rules, const por::Equipment &item)
+unsigned carried_quantity(const rules::EquipmentRules &rules, const por::Equipment &item)
 {
     if (!rules.plays_original_records())
     {
@@ -425,7 +425,7 @@ std::optional<por::Equipment> item_after_uses(por::Equipment item, unsigned left
     return item;
 }
 
-std::string item_definition(const rules::RulesModule &rules, const por::Equipment &item)
+std::string item_definition(const rules::EquipmentRules &rules, const por::Equipment &item)
 {
     return rules.plays_original_records() ? por::original_item_key(item.stored)
                                           : equipment_conversion(item);

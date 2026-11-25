@@ -136,12 +136,12 @@ void Character::appearance(por::CharacterAppearance value)
     appearance_ = std::move(value);
 }
 
-bool Character::advance(const rules::RulesModule &rules, rules::VitalState &state)
+bool Character::advance(const rules::AdvancementRules &rules, rules::VitalState &state)
 {
     return advance(rules, state, rules.default_advancement(sheet_));
 }
 
-bool Character::advance(const rules::RulesModule &rules, rules::VitalState &state,
+bool Character::advance(const rules::AdvancementRules &rules, rules::VitalState &state,
                         const rules::AdvancementChoice &choice)
 {
     auto sheet = sheet_;
@@ -158,8 +158,9 @@ bool Character::advance(const rules::RulesModule &rules, rules::VitalState &stat
     return true;
 }
 
-void Character::choose_spells(const rules::RulesModule &rules, const rules::SpellChoices &choices,
-                              std::uint64_t rest_session, rules::SpellChoiceContext context,
+void Character::choose_spells(const rules::AdvancementRules &rules,
+                              const rules::SpellChoices &choices, std::uint64_t rest_session,
+                              rules::SpellChoiceContext context,
                               rules::ChoiceCompleteness completeness)
 {
     if (!rest_session)
@@ -206,9 +207,14 @@ void Character::replace_rest_training(const rules::RulesModule &rules,
     {
         throw std::runtime_error("Training choices already used for this rest");
     }
+    const auto *resources = rules.rest_resources();
+    if (!resources)
+    {
+        throw std::runtime_error("These rules have no training a rest replaces");
+    }
     auto candidate = sheet_;
     auto history = training_edits_;
-    (void)rules.replace_rest_training(candidate, selections);
+    (void)resources->replace_rest_training(candidate, selections);
     history.push_back(
         {static_cast<unsigned>(sheet_.level), session, {selections.begin(), selections.end()}});
     (void)rules.character_profile(candidate, {});
@@ -216,7 +222,7 @@ void Character::replace_rest_training(const rules::RulesModule &rules,
     training_edits_ = std::move(history);
 }
 
-void Character::train_at_hall(const rules::RulesModule &rules, std::string grant)
+void Character::train_at_hall(const rules::AdvancementRules &rules, std::string grant)
 {
     auto candidate = sheet_;
     auto history = hall_training_;

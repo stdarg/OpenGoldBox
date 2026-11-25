@@ -99,9 +99,14 @@ ExpectedAttack melee_attack(const Definition &d)
 // `off` rows and `switched` leave out ("ability" or "ability creature").
 Content read_content(std::string_view bytes, const std::set<std::string> &switched);
 
-class Module final : public RulesModule
+class Module final : public RulesModule, public RestResourceRules
 {
   public:
+    [[nodiscard]] const RestResourceRules *rest_resources() const override
+    {
+        return this;
+    }
+
     Module(Content content, std::string bytes)
         : content_(std::make_shared<const Content>(std::move(content))), bytes_(std::move(bytes))
     {

@@ -419,7 +419,7 @@ void recovery()
         }
         else
         {
-            rules->recover_short_rest(state, h.sheet());
+            rules->rest_resources()->recover_short_rest(state, h.sheet());
         }
         check(remaining(h, state) == 1, "Either completed rest fully recharges one use");
     }

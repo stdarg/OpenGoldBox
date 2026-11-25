@@ -330,7 +330,7 @@ void eligibility_and_effects()
     bool caught = false;
     try
     {
-        (void)rules->recover_rest_choice(state, sheet, "arcane_recovery:1:0");
+        (void)rules->rest_resources()->recover_rest_choice(state, sheet, "arcane_recovery:1:0");
     }
     catch (const std::exception &)
     {
@@ -338,7 +338,7 @@ void eligibility_and_effects()
     }
     check(caught && state.resources == unconscious, "Unconscious recovery rejects atomically");
     state = conscious_state;
-    (void)rules->recover_rest_choice(state, sheet, "arcane_recovery:1:0");
+    (void)rules->rest_resources()->recover_rest_choice(state, sheet, "arcane_recovery:1:0");
     check(state.resources.starts_with("SRD13 "), "Spent use has a versioned vital record");
     // A lasting effect must still expire when its host resource record is SRD13.
     srd5::detail::EffectState effects;

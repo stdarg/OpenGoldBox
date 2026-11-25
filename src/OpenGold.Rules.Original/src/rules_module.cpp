@@ -12,6 +12,9 @@
 #include "opengold/original.h"
 #include "opengold/original_combat.h"
 #include "opengold/original_spells.h"
+#include "camp_magic.h"
+#include "check_dice.h"
+#include "rules_module.h"
 
 #include <algorithm>
 #include <array>
@@ -41,10 +44,7 @@ using namespace history;
 // (readying_refusal).
 constexpr std::uint8_t weapon_place = 0, shield_place = 1, armor_place = 2;
 
-std::runtime_error unavailable(std::string_view what)
-{
-    return std::runtime_error(std::string(what) + " is not available under the original rules yet");
-}
+} // namespace
 
 // A sheet's original numbers, which only a character made under the original
 // rules has.
@@ -56,6 +56,9 @@ const CharacterSheet::Original &original_numbers(const CharacterSheet &sheet)
     }
     return *sheet.original;
 }
+
+namespace
+{
 
 KrynnOrders krynn_orders(const CharacterSheet &sheet)
 {
@@ -397,8 +400,9 @@ NativeProgression native_progression_of(const CharacterSheet &sheet)
     return p;
 }
 
-Combatant character_combatant(const CharacterSheet &sheet,
-                              std::span<const CarriedItem> carried = {})
+} // namespace
+
+Combatant character_combatant(const CharacterSheet &sheet, std::span<const CarriedItem> carried)
 {
     auto c = combatant_from_record(character_record(sheet), carried);
     if (game_of(sheet.identity) == GoldBoxGame::dark_queen_of_krynn)
@@ -508,6 +512,9 @@ Combatant character_combatant(const CharacterSheet &sheet,
     return c;
 }
 
+namespace
+{
+
 class OriginalModule final : public RulesModule
 {
   public:
@@ -569,8 +576,6 @@ class OriginalModule final : public RulesModule
                                                            const CharacterSheet &) const override;
     [[nodiscard]] std::vector<TrainingReplacementOptions>
     rest_training_options(const CharacterSheet &, RestKind) const override;
-    TrainingChoices replace_rest_training(CharacterSheet &,
-                                          std::span<const std::string>) const override;
     [[nodiscard]] std::vector<TrainingChoiceGroup>
     training_options(const CharacterSheet &) const override;
     [[nodiscard]] TrainingChoiceGroup
@@ -675,12 +680,6 @@ class OriginalModule final : public RulesModule
                                                                std::uint64_t to) const override;
     [[nodiscard]] RecoveryInfo recovery_info(const CharacterSheet &,
                                              const VitalState &) const override;
-    void grant_temporary_hit_points(VitalState &, const CharacterSheet &,
-                                    const TemporaryHitPoints &, TemporaryHpChoice) const override;
-    void recover_short_rest(VitalState &, const CharacterSheet &) const override;
-    [[nodiscard]] Message recover_rest_choice(VitalState &, const CharacterSheet &,
-                                              std::string_view) const override;
-    HitDieResult spend_hit_die(VitalState &, const CharacterSheet &, RandomState &) const override;
     void elapse(std::span<Participant>, std::chrono::milliseconds, RandomState &) const override;
     void validate_character_state(const CharacterSheet &, const VitalState &) const override;
     [[nodiscard]] RestPolicy long_rest_policy() const override;
@@ -730,14 +729,6 @@ class OriginalModule final : public RulesModule
                                RandomState &random_state) const override;
     [[nodiscard]] std::vector<CampAction> scroll_actions(const CharacterSheet &, const VitalState &,
                                                          std::string_view scroll) const override;
-    [[nodiscard]] bool use_scroll(const CharacterSheet &user, VitalState &user_state,
-                                  const CharacterSheet &target, VitalState &target_state,
-                                  std::string_view scroll, std::string_view action,
-                                  RandomState &random_state) const override;
-    [[nodiscard]] bool use_party_scroll(const CharacterSheet &user, VitalState &user_state,
-                                        std::span<CampTarget> party, std::string_view scroll,
-                                        std::string_view action,
-                                        RandomState &random_state) const override;
     [[nodiscard]] std::optional<unsigned>
     copyable_spell_level(const CharacterSheet &, std::string_view spell) const override;
     [[nodiscard]] std::vector<ScrollCopy> scroll_copies(const CharacterSheet &, const VitalState &,
@@ -1199,120 +1190,6 @@ AbilityCheckModifier OriginalModule::ability_check(const CharacterSheet &,
     return {};
 }
 
-namespace
-{
-// A thief's skill in percent, 0 for a character with no thief levels.
-unsigned thief_chance(const CharacterSheet &sheet, ThiefSkill skill)
-{
-    return static_cast<unsigned>(
-        std::max(skill_chance(original_numbers(sheet).thief_skills, skill), 0));
-}
-
-// The chance in percent to force a door open by Strength, on the original's
-// open-doors table (explore.pas, BashDoor). The original's table has no row
-// for Strength 19 and above, which never opened a door; it opens as 18/00
-// does (docs/ORIGINAL-RULES.md, Bugs).
-unsigned bash_chance(const CharacterSheet &sheet)
-{
-    const int strength = sheet.scores[Ability::strength];
-    const int exceptional = original_numbers(sheet).exceptional_strength;
-    const int sixths = strength <= 7        ? 1
-                       : strength <= 15     ? 2
-                       : strength <= 17     ? 3
-                       : strength > 18      ? 5
-                       : exceptional == 100 ? 5
-                       : exceptional > 50   ? 4
-                                            : 3;
-    return static_cast<unsigned>(sixths * 100 / 6);
-}
-
-// The chance a game's check stands for: picking a lock (Sleight of Hand) by
-// Open Locks, climbing (Athletics with Dexterity) by Climb Walls, forcing a
-// door (Athletics with Strength) by Strength; nothing else succeeds.
-unsigned original_chance(const CharacterSheet &sheet, Ability ability, std::string_view skill)
-{
-    if (skill == "sleight_of_hand")
-    {
-        return thief_chance(sheet, ThiefSkill::open_locks);
-    }
-    if (skill == "athletics")
-    {
-        return ability == Ability::strength ? bash_chance(sheet)
-                                            : thief_chance(sheet, ThiefSkill::climb_walls);
-    }
-    return 0;
-}
-
-// Krynn's BashDoor uses separate exact dice for ordinary and magical
-// barriers. Exceptional Strength 18/91 is the first that can force magic.
-std::pair<unsigned, unsigned> krynn_door_die(const CharacterSheet &sheet, bool magical)
-{
-    const int strength = sheet.scores[Ability::strength];
-    const int exceptional = original_numbers(sheet).exceptional_strength;
-    if (magical)
-    {
-        if (strength < 18 || (strength == 18 && exceptional < 91))
-        {
-            return {0, 6};
-        }
-        if (strength == 18)
-        {
-            return {exceptional == 100 ? 2U : 1U, 6};
-        }
-        if (strength <= 20)
-        {
-            return {3, 6};
-        }
-        if (strength <= 22)
-        {
-            return {4, 6};
-        }
-        if (strength == 23)
-        {
-            return {5, 6};
-        }
-        if (strength == 24)
-        {
-            return {7, 8};
-        }
-        return {1, 1};
-    }
-    if (strength <= 7)
-    {
-        return {1, 6};
-    }
-    if (strength <= 15)
-    {
-        return {2, 6};
-    }
-    if (strength <= 17)
-    {
-        return {3, 6};
-    }
-    if (strength == 18)
-    {
-        return {exceptional == 100 ? 5U : exceptional > 50 ? 4U : 3U, 6};
-    }
-    if (strength <= 20)
-    {
-        return {7, 8};
-    }
-    if (strength == 21)
-    {
-        return {9, 10};
-    }
-    if (strength <= 23)
-    {
-        return {11, 12};
-    }
-    if (strength == 24)
-    {
-        return {19, 20};
-    }
-    return {1, 1};
-}
-} // namespace
-
 unsigned OriginalModule::climbing_chance(const CharacterSheet &sheet, const VitalState &,
                                          std::span<const std::string>) const
 {
@@ -1367,12 +1244,6 @@ std::vector<TrainingReplacementOptions>
 OriginalModule::rest_training_options(const CharacterSheet &, RestKind) const
 {
     return {};
-}
-
-TrainingChoices OriginalModule::replace_rest_training(CharacterSheet &,
-                                                      std::span<const std::string>) const
-{
-    throw unavailable("replace_rest_training");
 }
 
 std::vector<TrainingChoiceGroup> OriginalModule::training_options(const CharacterSheet &) const
@@ -1711,125 +1582,6 @@ void OriginalModule::roll_advancement(const CharacterSheet &sheet, unsigned expe
 
 namespace
 {
-constexpr int cure_light_wounds = 3, cure_serious_wounds = 158, cure_critical_wounds = 171,
-              raise_dead = 175, heal = 236, barkskin = 290, druid_cure_light_wounds = 298,
-              cure_blindness = 37, cure_disease = 39, remove_curse = 43,
-              magic_user_remove_curse = 189, neutralize_poison = 167, enlarge = 12, reduce = 13,
-              strength_spell = 35, slow_poison = 26, resurrection = 305, druid_cure_disease = 306,
-              druid_neutralize_poison = 307, restoration = 302, stone_to_flesh = 313;
-// The spells a member may cast in camp: the cures, Curse's Raise Dead and
-// Neutralize Poison, Secret's Heal and Barkskin, which its table casts as
-// Heal, Slow Poison, the Strength spells, whose effects last into the next
-// fight, Pools of Darkness's Resurrection, Restoration and its ranger's
-// Cure Disease and Neutralize Poison, and Stone to Flesh, which the later
-// games' table lets be cast out of a fight.
-constexpr std::array<int, 22> camp_spells{cure_light_wounds,
-                                          cure_serious_wounds,
-                                          cure_critical_wounds,
-                                          raise_dead,
-                                          heal,
-                                          barkskin,
-                                          druid_cure_light_wounds,
-                                          cure_blindness,
-                                          cure_disease,
-                                          remove_curse,
-                                          504,
-                                          magic_user_remove_curse,
-                                          neutralize_poison,
-                                          enlarge,
-                                          reduce,
-                                          strength_spell,
-                                          slow_poison,
-                                          resurrection,
-                                          restoration,
-                                          druid_cure_disease,
-                                          druid_neutralize_poison,
-                                          stone_to_flesh};
-constexpr std::string_view cast_prefix = "cast:";
-// A paladin's laying on of hands, once between a day's rests; the member's
-// state keeps that it was used (as the paladinDailyHealCast effect).
-constexpr std::string_view lay_on_hands = "paladin:lay_on_hands";
-constexpr int laid_on_hands = 340;
-// A paladin's cure of disease, once a week and once more for each five
-// levels past the first (Curse's viewchar.pas, PaladinCureDisease); the
-// week's cures are counted in the strength of a week-long effect.
-constexpr std::string_view cure_disease_action = "paladin:cure_disease";
-constexpr int cured_this_week = 341, week_minutes = 7 * 24 * 60;
-
-// The conditions, by the fight's numbers (lasting_condition).
-constexpr int blind = 33, bestow_curse = 36, poisoned = 55, slow_poison_hit = 15,
-              slow_poison_end = 22, feebleminded = 268;
-constexpr std::array<int, 3> poison_codes{poisoned, slow_poison_hit, slow_poison_end};
-// A revival that costs nothing, from poison (Secret's and Gateway's temples,
-// Curse's Neutralize Poison) or by Pools of Darkness's Resurrection: the
-// state keeps it until the raising's cost is waived (raise_character). No
-// game's effect has its number.
-constexpr int revived_from_poison = 600;
-
-// Disease as its cures take it away (temple.pas, cureDiseaseEffects): the
-// helplessness it brings, disease and its losses of Strength and Hit Points,
-// and in Pool of Radiance rot and mummy rot.
-std::vector<int> disease_codes(GoldBoxGame game)
-{
-    // And the Strength it wasted, which comes back (Secret's
-    // RemoveDiseaseEffects, recounting Strength).
-    std::vector<int> codes{31, 34, 43, 44, strength_wasted};
-    if (game == GoldBoxGame::pool_of_radiance)
-    {
-        codes.insert(codes.end(), {50, 57});
-    }
-    // The kit's cures take its rot (spellfx.c, disease_cure; temple.c,
-    // cure_disease: its 215 and 172), not the Charisma it took.
-    if (game == GoldBoxGame::unlimited_adventures)
-    {
-        codes.insert(codes.end(), {50, kit_rotting});
-    }
-    if (game == GoldBoxGame::dark_queen_of_krynn)
-    {
-        codes.insert(codes.end(), {dark_queen_effect::rot_recovery, kit_rotting,
-                                   dark_queen_effect::spore_infection});
-    }
-    return codes;
-}
-
-// What a temple's Heal cures besides wounds: in Secret blindness, disease and
-// feeblemind, in Treasures blindness and feeblemind (their temple.pas,
-// CureWounds), elsewhere nothing.
-std::vector<int> heal_cures(GoldBoxGame game)
-{
-    if (game == GoldBoxGame::secret_of_the_silver_blades)
-    {
-        auto cured = disease_codes(game);
-        cured.insert(cured.end(), {blind, feebleminded});
-        return cured;
-    }
-    if (game == GoldBoxGame::treasures_of_the_savage_frontier ||
-        game == GoldBoxGame::death_knights_of_krynn)
-    {
-        return {blind, feebleminded};
-    }
-    return {};
-}
-
-// The spells a member has memorized and not cast: its last fight's, or after
-// a day's rest its sheet's.
-std::vector<int> spells_left(const CharacterSheet &sheet, const VitalState &state)
-{
-    if (const auto last = Combatant::decode(state.resources))
-    {
-        return last->spells;
-    }
-    std::vector<int> memorized;
-    for (const auto &id : sheet.prepared_spells)
-    {
-        if (const auto number = spell_number(id, game_of(sheet.identity)))
-        {
-            memorized.push_back(*number);
-        }
-    }
-    return memorized;
-}
-
 std::optional<VitalState> OriginalModule::imported_state(const CharacterSheet &from,
                                                          const VitalState &state,
                                                          const CharacterSheet &to) const
@@ -1867,332 +1619,6 @@ std::optional<VitalState> OriginalModule::imported_state(const CharacterSheet &f
                   });
     return VitalState{numbers.hit_points, state.dead, numbers.encode(),
                       state.description == stoned_description ? state.description : std::string{}};
-}
-
-// The conditions a member carries out of its fights (lasting_condition).
-std::vector<Effect> conditions_of(const CharacterSheet &sheet, const VitalState &state)
-{
-    return carried_state(state.resources, game_of(sheet.identity)).conditions;
-}
-
-const Effect *condition(const std::vector<Effect> &conditions, int code)
-{
-    const auto found = std::ranges::find(conditions, code, &Effect::code);
-    return found == conditions.end() ? nullptr : &*found;
-}
-
-bool has_any(const CharacterSheet &sheet, const VitalState &state, std::span<const int> codes)
-{
-    const auto conditions = conditions_of(sheet, state);
-    return std::ranges::any_of(codes,
-                               [&conditions](int code)
-                               {
-                                   return condition(conditions, code) != nullptr;
-                               });
-}
-
-// A disease that has taken hold, as hours and ten minutes pass
-// (effhndlr.pas, EffDiseaseStrength and EffDiseaseHitPoints): a point of
-// Strength an hour down to 3, and a Hit Point every ten minutes down to 1,
-// and then the member is helpless until it is cured.
-void waste_away(const CharacterSheet &sheet, VitalState &state, std::vector<Effect> &conditions,
-                int hours, int ten_minutes)
-{
-    constexpr int wasting_strength = 43, wasting_hit_points = 44, helpless = 31;
-    bool done_in = false;
-    if (condition(conditions, wasting_strength))
-    {
-        const int own = sheet.scores[Ability::strength];
-        auto wasted = std::ranges::find(conditions, strength_wasted, &Effect::code);
-        if (wasted == conditions.end())
-        {
-            conditions.push_back({strength_wasted, 0, 0, false});
-            wasted = std::prev(conditions.end());
-        }
-        wasted->strength = std::min(wasted->strength + hours, std::max(own - 3, 0));
-        done_in = own - wasted->strength <= 3;
-    }
-    if (condition(conditions, wasting_hit_points) && !state.dead)
-    {
-        state.hit_points = std::max(std::min(state.hit_points, 1), state.hit_points - ten_minutes);
-        done_in = done_in || state.hit_points <= 1;
-    }
-    const bool helpless_already =
-        std::ranges::any_of(conditions,
-                            [](const Effect &e)
-                            {
-                                return e.code == helpless && e.minutes == 0;
-                            });
-    if (done_in && !helpless_already)
-    {
-        conditions.push_back({helpless, 0, 255, false});
-    }
-}
-
-// The member's state with its conditions changed: its last fight's numbers
-// keep the change, or after a rest only its conditions do.
-void change_conditions(const CharacterSheet &sheet, VitalState &state,
-                       const std::function<void(std::vector<Effect> &)> &change)
-{
-    auto carried = carried_state(state.resources, game_of(sheet.identity));
-    if (carried.last_fight)
-    {
-        change(carried.last_fight->effects);
-        state.resources = carried.last_fight->encode();
-        return;
-    }
-    change(carried.conditions);
-    state.resources = rested_state(carried.conditions);
-}
-
-// Takes the conditions of these codes away; true when one was there.
-bool cure(const CharacterSheet &sheet, VitalState &state, std::span<const int> codes)
-{
-    bool cured = false;
-    const bool spore_removed =
-        game_of(sheet.identity) == GoldBoxGame::dark_queen_of_krynn &&
-        std::ranges::find(codes, dark_queen_effect::spore_infection) != codes.end() &&
-        condition(conditions_of(sheet, state), dark_queen_effect::spore_infection);
-    change_conditions(sheet, state,
-                      [&](std::vector<Effect> &effects)
-                      {
-                          cured = std::erase_if(effects,
-                                                [codes](const Effect &e)
-                                                {
-                                                    return std::ranges::find(codes, e.code) !=
-                                                           codes.end();
-                                                }) > 0;
-                      });
-    if (spore_removed)
-    {
-        state.dead = true;
-        state.hit_points = 0;
-    }
-    return cured;
-}
-
-// The poisoned dead stand again with at least 1 Hit Point, their raising
-// costing nothing (temple.pas, NeutralizePoison; Curse's SpellNeutralizePoison).
-void stand_unpoisoned(const CharacterSheet &sheet, VitalState &state)
-{
-    state.dead = false;
-    state.hit_points = std::max(state.hit_points, 1);
-    change_conditions(sheet, state,
-                      [](std::vector<Effect> &effects)
-                      {
-                          effects.push_back({revived_from_poison, 0, 0, false});
-                      });
-}
-
-// A camp caster's level for a spell (charhlp.pas, GetCasterLevel): its cleric
-// or magic-user level, or a paladin's or ranger's less 8.
-int camp_caster_level(const CharacterSheet &caster, const Spell &known)
-{
-    // An item's own power casts at level 12 (charhlp.pas, GetCasterLevel).
-    if (known.caster_class == SpellClass::item)
-    {
-        return 12;
-    }
-    if (game_of(caster.identity) == GoldBoxGame::death_knights_of_krynn ||
-        game_of(caster.identity) == GoldBoxGame::dark_queen_of_krynn)
-    {
-        const auto &n = *caster.original;
-        const int phase = n.robe_order >= 1 && n.robe_order <= 3
-                              ? n.krynn_moon_phases[static_cast<std::size_t>(n.robe_order - 1)]
-                              : 3;
-        return game_of(caster.identity) == GoldBoxGame::dark_queen_of_krynn
-                   ? dark_queen_caster_level(n.class_levels, known.caster_class, n.robe_order,
-                                             phase)
-                   : death_knights_caster_level(n.class_levels, known.caster_class, n.robe_order,
-                                                phase);
-    }
-    const auto &levels = original_numbers(caster).class_levels;
-    if (known.caster_class == SpellClass::druid)
-    {
-        return std::max(level_in(levels, ClassSlot::ranger) - 7, 0);
-    }
-    if (known.caster_class == SpellClass::cleric)
-    {
-        return std::max(level_in(levels, ClassSlot::cleric),
-                        level_in(levels, ClassSlot::paladin) - 8);
-    }
-    return std::max(level_in(levels, ClassSlot::magic_user),
-                    level_in(levels, ClassSlot::ranger) - 8);
-}
-
-// Slow Poison in camp (magic.pas, SpellSlowPoison): one poison killed stands
-// with 1 Hit Point for an hour a caster level, and dies again if the poison
-// outlasts it (recover).
-void hold_poison_back(const CharacterSheet &caster, const CharacterSheet &target, VitalState &state)
-{
-    constexpr int slow_poison_number = 26;
-    if (!has_any(target, state, std::array{poisoned}))
-    {
-        return;
-    }
-    const int hour_a_level = 60 * camp_caster_level(caster, *spell(slow_poison_number));
-    if (state.dead)
-    {
-        stand_unpoisoned(target, state);
-    }
-    change_conditions(target, state,
-                      [hour_a_level](std::vector<Effect> &effects)
-                      {
-                          std::erase_if(effects,
-                                        [](const Effect &e)
-                                        {
-                                            return e.code == slow_poison_end;
-                                        });
-                          effects.push_back({slow_poison_end, hour_a_level, 255, true});
-                      });
-}
-
-// Enlarge, Reduce and Strength cast in camp (magic.pas): their effects last
-// into the next fight, which works out the Strength they give.
-void strengthen_in_camp(const CharacterSheet &caster, const CharacterSheet &target,
-                        VitalState &state, int number, RandomState &random_state)
-{
-    constexpr int enlarge_number = 12, reduce_number = 13, enlarged = 12, strength_effect = 38;
-    const auto &known = *spell(number, game_of(caster.identity));
-    const auto game = game_of(target.identity);
-    const int level = camp_caster_level(caster, known);
-    const int minutes = known.minutes_fixed + known.minutes_per_level * level;
-    const auto &numbers = original_numbers(target);
-    if (number == reduce_number)
-    {
-        // A failed save against spells loses the Enlarge (SpellReduce).
-        const int save = numbers.saving_throws[4];
-        if (roll_die(random_state, 20) < save)
-        {
-            (void)cure(target, state, std::array{enlarged});
-        }
-        return;
-    }
-    const int own = target.scores[Ability::strength];
-    const int own_exceptional = numbers.exceptional_strength;
-    const auto [base, exceptional] =
-        number == enlarge_number
-            ? enlarged_strength(level, game)
-            : strengthened(own, own_exceptional, numbers.class_levels, game,
-                           roll_die(random_state, strength_spell_die(numbers.class_levels, game)));
-    const int code = number == enlarge_number ? enlarged : strength_effect;
-    change_conditions(target, state,
-                      [&](std::vector<Effect> &effects)
-                      {
-                          std::erase_if(effects,
-                                        [code](const Effect &e)
-                                        {
-                                            return e.code == code;
-                                        });
-                          effects.push_back(
-                              {code, minutes, strength_code(base, exceptional), false});
-                      });
-}
-
-// The spells cast in camp for their effects, which carry into the next fight
-// (lasting_condition); the party is camp target 4.
-constexpr int protection_from_fire = 309, mind_blank = 322;
-constexpr std::string_view hot_fire_shield = "cast:magic_user:fire_shield:hot",
-                           cold_fire_shield = "cast:magic_user:fire_shield:cold";
-constexpr std::array<int, 29> camp_effect_spells{1,   6,   7,   8,   16,  17,  18,  19,  24, 29,
-                                                 30,  32,  42,  45,  48,  50,  52,  53,  54, 169,
-                                                 188, 309, 312, 316, 318, 319, 322, 501, 505};
-constexpr int party_target = 4;
-
-// The spells a player casts outside combat to see what is hidden, spent with
-// no effect laid: a script may answer one (Treasures' Cortarra is seen
-// through when Detect Magic is cast before her twin).
-[[nodiscard]] bool sight_spell(int number)
-{
-    static constexpr std::array<std::string_view, 4> sight{
-        "cleric:detect_magic", "magic_user:detect_magic", "druid:detect_magic",
-        "deity:detect_magic"};
-    return std::ranges::any_of(sight,
-                               [number](std::string_view id)
-                               {
-                                   return spell_number(id) == number;
-                               });
-}
-
-// A camp spell's effect on its target (magic.pas, ResolveSpell): its minutes
-// by the caster's level, its strength the caster's level; Mirror Image's the
-// 1d4 images, Prayer's the party's side (bit 4 clear) and the level.
-void lay_camp_effect(const CharacterSheet &caster, const CharacterSheet &target, VitalState &state,
-                     int number, RandomState &random_state)
-{
-    constexpr int mirror_image = 32;
-    const auto &known = *spell(number, game_of(caster.identity));
-    const int level = camp_caster_level(caster, known);
-    int minutes = known.minutes_fixed + known.minutes_per_level * level;
-    int strength = known.caster_class == SpellClass::item ? 0
-                   : number == mirror_image               ? roll_die(random_state, 4)
-                                                          : level;
-    int code = known.effect;
-    if (number == mirror_image && game_of(caster.identity) == GoldBoxGame::dark_queen_of_krynn)
-    {
-        strength = (strength << 5) | level;
-    }
-    // Mind Blank lasts a day (magic.pas, CalcSpellDuration). Protection from
-    // Fire gives a ranger the druid's protection, which lasts until it has
-    // taken 12 points of fire a caster level, and anyone else Resist Fire,
-    // with no end (SpellProtectionFromFire).
-    if (number == mind_blank)
-    {
-        minutes = 1440;
-    }
-    if (number == protection_from_fire &&
-        level_in(original_numbers(target).class_levels, ClassSlot::ranger) == 0)
-    {
-        constexpr int resist_fire = 20;
-        code = resist_fire;
-        strength = 0;
-    }
-    change_conditions(target, state,
-                      [&](std::vector<Effect> &effects)
-                      {
-                          std::erase_if(effects,
-                                        [code](const Effect &e)
-                                        {
-                                            return e.code == code;
-                                        });
-                          effects.push_back({code, minutes, strength, false});
-                      });
-}
-
-// What a paladin may still do: lay on hands today, and cure disease this week.
-bool may_lay_on_hands(const CharacterSheet &sheet, const VitalState &state)
-{
-    return level_in(original_numbers(sheet).class_levels, ClassSlot::paladin) > 0 &&
-           !condition(conditions_of(sheet, state), laid_on_hands);
-}
-
-int cures_left(const CharacterSheet &sheet, const VitalState &state)
-{
-    const int paladin = level_in(original_numbers(sheet).class_levels, ClassSlot::paladin);
-    if (paladin == 0)
-    {
-        return 0;
-    }
-    const auto conditions = conditions_of(sheet, state);
-    const auto *spent = condition(conditions, cured_this_week);
-    return (paladin - 1) / 5 + 1 - (spent ? spent->strength : 0);
-}
-
-// What casting a camp spell, or a paladin's gift, spends from the member's
-// state: the spell's memorized copy, or the day's or week's use.
-void spend_spell(const CharacterSheet &user, VitalState &state, int number)
-{
-    auto left = spells_left(user, state);
-    left.erase(std::ranges::find(left, number));
-    auto carried = carried_state(state.resources, game_of(user.identity));
-    auto numbers = carried.last_fight.value_or(character_combatant(user));
-    if (!carried.last_fight)
-    {
-        numbers.effects.insert(numbers.effects.end(), carried.conditions.begin(),
-                               carried.conditions.end());
-    }
-    numbers.spells = std::move(left);
-    state.resources = numbers.encode();
 }
 
 // Native imports retain a live combat record even outside a fight. Keep
@@ -3315,29 +2741,6 @@ RecoveryInfo OriginalModule::recovery_info(const CharacterSheet &, const VitalSt
     return info;
 }
 
-void OriginalModule::grant_temporary_hit_points(VitalState &, const CharacterSheet &,
-                                                const TemporaryHitPoints &, TemporaryHpChoice) const
-{
-    throw unavailable("grant_temporary_hit_points");
-}
-
-// The original has no short rest: an hour's rest heals nothing.
-void OriginalModule::recover_short_rest(VitalState &, const CharacterSheet &) const
-{
-}
-
-Message OriginalModule::recover_rest_choice(VitalState &, const CharacterSheet &,
-                                            std::string_view) const
-{
-    throw unavailable("recover_rest_choice");
-}
-
-HitDieResult OriginalModule::spend_hit_die(VitalState &, const CharacterSheet &,
-                                           RandomState &) const
-{
-    throw unavailable("spend_hit_die");
-}
-
 // The camp's long rest is a day, the time the original heals 1 Hit Point in,
 // with no wait after it.
 RestPolicy OriginalModule::long_rest_policy() const
@@ -4054,19 +3457,6 @@ std::vector<CampAction> OriginalModule::scroll_actions(const CharacterSheet &, c
                                                        std::string_view) const
 {
     return {};
-}
-
-bool OriginalModule::use_scroll(const CharacterSheet &, VitalState &, const CharacterSheet &,
-                                VitalState &, std::string_view, std::string_view,
-                                RandomState &) const
-{
-    throw unavailable("use_scroll");
-}
-
-bool OriginalModule::use_party_scroll(const CharacterSheet &, VitalState &, std::span<CampTarget>,
-                                      std::string_view, std::string_view, RandomState &) const
-{
-    throw unavailable("use_party_scroll");
 }
 
 // A spell's level when it may go into the member's book: one not in it, of a

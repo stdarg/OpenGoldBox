@@ -10,7 +10,7 @@ namespace
 {
 constexpr std::uint64_t day_minutes = 24 * 60;
 
-rules::RestPolicy policy(const rules::RulesModule &rules, RestKind kind)
+rules::RestPolicy policy(const rules::RestRules &rules, RestKind kind)
 {
     switch (kind)
     {
@@ -362,7 +362,10 @@ void CampaignParty::short_rest_benefits(PartyState &state,
         {
             continue;
         }
-        rules_->recover_short_rest(member.vitals, member.character.sheet());
+        if (const auto *resources = rules_->rest_resources())
+        {
+            resources->recover_short_rest(member.vitals, member.character.sheet());
+        }
         eligible.push_back(id);
     }
     if (!eligible.empty())
@@ -463,10 +466,13 @@ std::vector<rules::HitDieResult> CampaignParty::heal_with_hit_dice(RestTicket ti
     // Spending until full or out of dice is the only sensible choice, so one
     // request spends them all; a die is never spent at full HP.
     std::vector<rules::HitDieResult> result;
-    while (m.vitals.hit_points < rules_->hit_point_maximum(m.character.sheet(), m.vitals) &&
+    const auto *resources = rules_->rest_resources();
+    while (resources &&
+           m.vitals.hit_points < rules_->hit_point_maximum(m.character.sheet(), m.vitals) &&
            rules_->recovery_info(m.character.sheet(), m.vitals).hit_dice > 0)
     {
-        result.push_back(rules_->spend_hit_die(m.vitals, m.character.sheet(), next.random_state));
+        result.push_back(
+            resources->spend_hit_die(m.vitals, m.character.sheet(), next.random_state));
         if (result.back().healing == 0)
         {
             break; // Healing is blocked; further dice would be wasted.
@@ -494,9 +500,14 @@ rules::Message CampaignParty::recover_rest_choice(RestTicket ticket, MemberId id
     {
         throw std::runtime_error("Rest revision exhausted");
     }
+    const auto *resources = rules_->rest_resources();
+    if (!resources)
+    {
+        throw std::runtime_error("These rules have no Short Rest choices");
+    }
     auto next = state_;
     auto &member = member_in(next, id);
-    auto result = rules_->recover_rest_choice(member.vitals, member.character.sheet(), choice);
+    auto result = resources->recover_rest_choice(member.vitals, member.character.sheet(), choice);
     ++next.short_rest->ticket.revision;
     state_ = std::move(next);
     return result;

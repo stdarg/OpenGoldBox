@@ -96,19 +96,19 @@ class Character
         inventory_ = std::move(inventory);
     }
 
-    bool advance(const rules::RulesModule &rules, rules::VitalState &state);
-    bool advance(const rules::RulesModule &rules, rules::VitalState &state,
+    bool advance(const rules::AdvancementRules &rules, rules::VitalState &state);
+    bool advance(const rules::AdvancementRules &rules, rules::VitalState &state,
                  const rules::AdvancementChoice &choice);
     // A Short Rest's choices (Memorize Spell) change less than a Long Rest's;
     // either replays as a Long Rest's, which allows more.
     void
-    choose_spells(const rules::RulesModule &, const rules::SpellChoices &,
+    choose_spells(const rules::AdvancementRules &, const rules::SpellChoices &,
                   std::uint64_t rest_session,
                   rules::SpellChoiceContext context = rules::SpellChoiceContext::long_rest,
                   rules::ChoiceCompleteness completeness = rules::ChoiceCompleteness::complete);
     void replace_rest_training(const rules::RulesModule &, std::span<const std::string>,
                                std::uint64_t rest_session);
-    void train_at_hall(const rules::RulesModule &, std::string grant);
+    void train_at_hall(const rules::AdvancementRules &, std::string grant);
 
     [[nodiscard]] const auto &hall_training() const noexcept
     {

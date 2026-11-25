@@ -76,6 +76,19 @@ Shared implementation boundaries:
 - The game's `godot_nodes.h` owns detached nodes until Godot accepts them as
   children. Returned node pointers borrow from the parent. `godot_images.h`
   centralizes conversion from engine RGBA images to Godot resources.
+- The rules interface (`opengold/rules.h`) is one abstract class per concern:
+  `CombatRules` (identity, fights and their options), `EquipmentRules` (items
+  and coins), `CheckRules` (ability checks outside a fight),
+  `AdvancementRules` (profile, spells, experience, levels and training),
+  `RestRules` (the vital state outside a fight: rests, time, Hit Points,
+  hazards) and `CampMagicRules` (camp actions, potions, scrolls, exploration
+  spells, the temple). `RulesModule` inherits them all; a Core function that
+  uses one concern takes that concern, not the module. The rest resources only
+  the SRD offers (Hit Dice, temporary Hit Points, Short Rest choices, training
+  a rest replaces, reading scrolls) are `RestResourceRules`, which a module
+  hands out through `RulesModule::rest_resources()`: the SRD module returns
+  itself, the original rules null, and Core tests the pointer instead of
+  catching an exception.
 - The SRD module shares one deterministic dice implementation across character
   creation, combat, and temple healing, preserving saved random sequences.
 - The SRD module's private `MovementGrid` centralizes movement-step legality and

@@ -200,7 +200,7 @@ void pact_magic_checks()
     auto rules_module = module_rules();
     auto spent = unit(*c, 1).persistent;
     check(slots(spent).first == 0, "Hex spent the slot");
-    rules_module->recover_short_rest(spent, warlock().sheet());
+    rules_module->rest_resources()->recover_short_rest(spent, warlock().sheet());
     check(slots(spent).first == 1, "A Short Rest restores Pact Magic slots");
 }
 
@@ -376,7 +376,7 @@ void magical_cunning_checks()
         refused = true;
     }
     check(refused, "A second Magical Cunning is refused");
-    rules_module->recover_short_rest(vitals, second.sheet());
+    rules_module->rest_resources()->recover_short_rest(vitals, second.sheet());
     vitals = spend_slot(vitals);
     check(!offered_at_camp(vitals), "A Short Rest does not restore Magical Cunning");
     rules_module->recover(vitals, second.sheet());

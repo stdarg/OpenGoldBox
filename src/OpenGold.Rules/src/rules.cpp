@@ -70,7 +70,7 @@ bool has_line_of_sight(const Battlefield &board, Cell from, Cell to)
     return true;
 }
 
-bool RulesModule::cursed_item(std::string_view item) const
+bool EquipmentRules::cursed_item(std::string_view item) const
 {
     return parse_item_key(item).power == ItemPower::cursed;
 }

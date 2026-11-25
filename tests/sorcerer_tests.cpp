@@ -297,7 +297,7 @@ void level_two_slot_checks()
     check(submit(*c, "convert_slot_2") && pool(*c, "sorcery_points") == 2 &&
               stored_slots(unit(*c, 1).persistent).second == 2,
           "A level-two slot becomes 2 Sorcery Points");
-    module->recover_short_rest(state, third.sheet());
+    module->rest_resources()->recover_short_rest(state, third.sheet());
     check(rest_pool(*module, third, state) == 0 && stored_slots(state).second == 3,
           "A Short Rest restores no Sorcery Points and keeps the made slot");
     module->recover(state, third.sheet());

@@ -1336,18 +1336,25 @@ class CombatSession
     CombatSession &operator=(CombatSession &&) = default;
 };
 
-// Every operation is pure: a module states each rule it applies, so a module
-// that omits one fails to compile instead of failing in play (Effective C++
-// Item 34).
-class RulesModule
+// The concerns of a rules module, one abstract interface each; RulesModule
+// gathers them. Every operation is pure unless a module without the
+// concern's feature has nothing to do: a module states each rule it applies,
+// so a module that omits one fails to compile instead of failing in play
+// (Effective C++ Item 34). A Core function takes the concern it uses.
+
+// A module's identity, its fights and the options they run under.
+class CombatRules
 {
   public:
-    virtual ~RulesModule() = default;
+    virtual ~CombatRules() = default;
     [[nodiscard]] virtual Identity identity() const = 0;
     [[nodiscard]] virtual std::unique_ptr<CombatSession> create(Encounter encounter,
                                                                 std::uint64_t seed) const = 0;
     [[nodiscard]] virtual std::unique_ptr<CombatSession>
     restore(std::string_view checkpoint) const = 0;
+    // A monster participant's statistics, computed as a fight that fields it
+    // computes them. Throws for a character or an unknown definition.
+    [[nodiscard]] virtual CreatureStats creature_stats(const Participant &creature) const = 0;
 
     // Leaves monster abilities out of later fights: "ability" for every
     // creature, "ability creature" for one (the game's options and its
@@ -1383,18 +1390,22 @@ class RulesModule
         (void)limits;
     }
 
-    [[nodiscard]] virtual CharacterProfile
-    character_profile(const CharacterSheet &, std::span<const std::string>) const = 0;
+  protected:
+    // Implementations may copy themselves (a session's rollback does), but an
+    // interface reference must not copy or assign only its empty base part
+    // (Effective C++ Items 5 and 6).
+    CombatRules() = default;
+    CombatRules(const CombatRules &) = default;
+    CombatRules(CombatRules &&) = default;
+    CombatRules &operator=(const CombatRules &) = default;
+    CombatRules &operator=(CombatRules &&) = default;
+};
 
-    // An original script's effect lookup against the module's current
-    // profile and lasting state. Empty when this rules module has no such
-    // effect bank; interpreting its IDs remains the module's responsibility.
-    [[nodiscard]] virtual std::optional<bool> script_has_effect(const CharacterProfile &,
-                                                                const VitalState &, unsigned) const
-    {
-        return std::nullopt;
-    }
-
+// Items: what they are, who can use them, and what coins buy them.
+class EquipmentRules
+{
+  public:
+    virtual ~EquipmentRules() = default;
     [[nodiscard]] virtual EquipmentInfo equipment_info(std::string_view) const = 0;
     // The most weight, in pounds, the character can carry.
     [[nodiscard]] virtual unsigned carrying_capacity_pounds(const CharacterSheet &) const = 0;
@@ -1420,13 +1431,67 @@ class RulesModule
     // Whether the character is trained with an armor or shield key and has
     // the Strength it asks; any other item suits everyone.
     [[nodiscard]] virtual bool suits(const CharacterSheet &, std::string_view key) const = 0;
-    [[nodiscard]] virtual SpellAccess spell_access(const CharacterSheet &) const = 0;
-    [[nodiscard]] virtual SpellChoiceOptions spell_choice_options(const CharacterSheet &,
-                                                                  SpellChoiceContext) const = 0;
-    // No default for the completeness: an override cannot redefine one
-    // (Effective C++ Item 37), and every caller says which it means.
-    virtual void apply_spell_choices(CharacterSheet &, const SpellChoices &, SpellChoiceContext,
-                                     ChoiceCompleteness) const = 0;
+
+    // A note on what an item does for the member, as the inventory shows it;
+    // empty when the rules have none.
+    [[nodiscard]] virtual std::string equipment_note(const CharacterSheet &sheet,
+                                                     std::string_view item) const
+    {
+        (void)sheet;
+        (void)item;
+        return {};
+    }
+
+    // Whether a member can use the item outside combat: a potion it drinks,
+    // the Manual it reads (MAGIC-3).
+    [[nodiscard]] virtual bool usable_outside_combat(std::string_view item) const
+    {
+        (void)item;
+        return false;
+    }
+
+    // Whether the item is cursed, so that once worn it stays on until Remove
+    // Curse lets its wearer put it down (MAGIC-1): by its key's power, or the
+    // original's record's flag.
+    [[nodiscard]] virtual bool cursed_item(std::string_view item) const;
+
+    // Whether the rules play the original's records as they are, as the
+    // original rules do: items keyed by their records (por::original_item_key)
+    // and monsters by theirs (CreatureId::key()), rather than converted to the
+    // rules' own catalog.
+    [[nodiscard]] virtual bool plays_original_records() const
+    {
+        return false;
+    }
+
+    // What each coin, copper to platinum, is worth in 200ths of a gold piece:
+    // the SRD's rates by default (10 sp, 2 ep or 1/10 pp to the gold piece).
+    [[nodiscard]] virtual std::size_t price_coin() const
+    {
+        return 3;
+    }
+
+    [[nodiscard]] virtual std::array<std::uint64_t, 5> coin_worth() const
+    {
+        return {2, 20, 100, 200, 2000};
+    }
+
+  protected:
+    // Implementations may copy themselves (a session's rollback does), but an
+    // interface reference must not copy or assign only its empty base part
+    // (Effective C++ Items 5 and 6).
+    EquipmentRules() = default;
+    EquipmentRules(const EquipmentRules &) = default;
+    EquipmentRules(EquipmentRules &&) = default;
+    EquipmentRules &operator=(const EquipmentRules &) = default;
+    EquipmentRules &operator=(EquipmentRules &&) = default;
+};
+
+// Ability checks outside a fight.
+class CheckRules
+{
+  public:
+    virtual ~CheckRules() = default;
     // An empty skill is a plain ability check. No default: an override cannot
     // redefine one (Effective C++ Item 37).
     [[nodiscard]] virtual AbilityCheckModifier ability_check(const CharacterSheet &,
@@ -1462,6 +1527,43 @@ class RulesModule
         return roll_ability_check(sheet, state, gear, ability, skill, random_state);
     }
 
+  protected:
+    // Implementations may copy themselves (a session's rollback does), but an
+    // interface reference must not copy or assign only its empty base part
+    // (Effective C++ Items 5 and 6).
+    CheckRules() = default;
+    CheckRules(const CheckRules &) = default;
+    CheckRules(CheckRules &&) = default;
+    CheckRules &operator=(const CheckRules &) = default;
+    CheckRules &operator=(CheckRules &&) = default;
+};
+
+// A character's profile, spells, experience, levels and training, and what
+// changes it for good.
+class AdvancementRules
+{
+  public:
+    virtual ~AdvancementRules() = default;
+    [[nodiscard]] virtual CharacterProfile
+    character_profile(const CharacterSheet &, std::span<const std::string>) const = 0;
+
+    // An original script's effect lookup against the module's current
+    // profile and lasting state. Empty when this rules module has no such
+    // effect bank; interpreting its IDs remains the module's responsibility.
+    [[nodiscard]] virtual std::optional<bool> script_has_effect(const CharacterProfile &,
+                                                                const VitalState &, unsigned) const
+    {
+        return std::nullopt;
+    }
+
+    [[nodiscard]] virtual SpellAccess spell_access(const CharacterSheet &) const = 0;
+    [[nodiscard]] virtual SpellChoiceOptions spell_choice_options(const CharacterSheet &,
+                                                                  SpellChoiceContext) const = 0;
+    // No default for the completeness: an override cannot redefine one
+    // (Effective C++ Item 37), and every caller says which it means.
+    virtual void apply_spell_choices(CharacterSheet &, const SpellChoices &, SpellChoiceContext,
+                                     ChoiceCompleteness) const = 0;
+
     // Whether characters gain levels only by training at a hall that teaches
     // their classes, for a fee, as the original's do; otherwise anywhere.
     [[nodiscard]] virtual bool trains_at_halls() const
@@ -1477,15 +1579,6 @@ class RulesModule
         (void)sheet;
         (void)experience;
         return {};
-    }
-
-    // Whether the rules play the original's records as they are, as the
-    // original rules do: items keyed by their records (por::original_item_key)
-    // and monsters by theirs (CreatureId::key()), rather than converted to the
-    // rules' own catalog.
-    [[nodiscard]] virtual bool plays_original_records() const
-    {
-        return false;
     }
 
     // Whether a character with this much experience may gain a level now: by
@@ -1515,18 +1608,6 @@ class RulesModule
     {
         (void)before;
         return experience;
-    }
-
-    // What each coin, copper to platinum, is worth in 200ths of a gold piece:
-    // the SRD's rates by default (10 sp, 2 ep or 1/10 pp to the gold piece).
-    [[nodiscard]] virtual std::size_t price_coin() const
-    {
-        return 3;
-    }
-
-    [[nodiscard]] virtual std::array<std::uint64_t, 5> coin_worth() const
-    {
-        return {2, 20, 100, 200, 2000};
     }
 
     // A sequel's conversion of a character's wounds and unspent resources.
@@ -1622,18 +1703,10 @@ class RulesModule
     }
 
     [[nodiscard]] virtual unsigned experience_for_level(unsigned level) const = 0;
-    // A monster participant's statistics, computed as a fight that fields it
-    // computes them. Throws for a character or an unknown definition.
-    [[nodiscard]] virtual CreatureStats creature_stats(const Participant &creature) const = 0;
     // The choices a finished rest lets the character change, each with its
     // current picks; empty when there are none.
     [[nodiscard]] virtual std::vector<TrainingReplacementOptions>
     rest_training_options(const CharacterSheet &, RestKind) const = 0;
-    // Applies a legal edit: the selections name every pick of each choice they
-    // change, and a choice they leave out keeps its picks. Returns the changed
-    // choices' selections by group.
-    virtual TrainingChoices replace_rest_training(CharacterSheet &,
-                                                  std::span<const std::string>) const = 0;
     [[nodiscard]] virtual std::vector<TrainingChoiceGroup>
     training_options(const CharacterSheet &) const = 0;
     // A training hall's skills for a member of the hall's classes (stable class
@@ -1661,6 +1734,24 @@ class RulesModule
     // advancement ceiling was reached.
     virtual bool advance_character(CharacterSheet &sheet, VitalState &state,
                                    const AdvancementChoice &) const = 0;
+
+  protected:
+    // Implementations may copy themselves (a session's rollback does), but an
+    // interface reference must not copy or assign only its empty base part
+    // (Effective C++ Items 5 and 6).
+    AdvancementRules() = default;
+    AdvancementRules(const AdvancementRules &) = default;
+    AdvancementRules(AdvancementRules &&) = default;
+    AdvancementRules &operator=(const AdvancementRules &) = default;
+    AdvancementRules &operator=(AdvancementRules &&) = default;
+};
+
+// A member's vital state outside a fight: rests and the time that passes,
+// its Hit Points, status effects and hazards.
+class RestRules
+{
+  public:
+    virtual ~RestRules() = default;
     virtual void recover(VitalState &state, const CharacterSheet &sheet) const = 0;
 
     // Whether a long rest lasts as long as the player chooses, heals by its
@@ -1726,18 +1817,6 @@ class RulesModule
 
     [[nodiscard]] virtual RecoveryInfo recovery_info(const CharacterSheet &,
                                                      const VitalState &) const = 0;
-    // A granting feature must establish entitlement and spend its costs before
-    // calling this operation. The choice is explicit; pools never stack.
-    virtual void grant_temporary_hit_points(VitalState &, const CharacterSheet &,
-                                            const TemporaryHitPoints &,
-                                            TemporaryHpChoice) const = 0;
-    // The campaign must establish completed-rest eligibility before invoking
-    // these resource operations. Each spend commits one die and its RNG draw.
-    virtual void recover_short_rest(VitalState &, const CharacterSheet &) const = 0;
-    [[nodiscard]] virtual Message recover_rest_choice(VitalState &, const CharacterSheet &,
-                                                      std::string_view) const = 0;
-    virtual HitDieResult spend_hit_die(VitalState &, const CharacterSheet &,
-                                       RandomState &) const = 0;
     // Advances module-owned lasting effects for a group in deterministic order.
     // A duration, not a bare count, so minutes or the dice state cannot be
     // passed where milliseconds belong (Effective C++ Item 18).
@@ -1771,25 +1850,6 @@ class RulesModule
     [[nodiscard]] virtual RestPolicy long_rest_policy() const = 0;
     [[nodiscard]] virtual RestPolicy short_rest_policy() const = 0;
     virtual void set_hit_points(VitalState &, const CharacterSheet &, int) const = 0;
-    // Whether the temple's service would help the member: a Cure a wounded
-    // living one, Raise Dead one dead up to ten days and not turned to dust,
-    // Remove Curse one under a curse (the campaign adds its cursed items).
-    [[nodiscard]] virtual bool temple_service_helps(const CharacterSheet &sheet,
-                                                    const VitalState &state,
-                                                    TempleService service) const = 0;
-
-    // Whether a temple under these rules offers the service at all; every one
-    // by default.
-    [[nodiscard]] virtual bool offers_temple_service(TempleService service) const
-    {
-        (void)service;
-        return true;
-    }
-
-    // Casts the service on the member, as a temple's cleric with Wisdom +3;
-    // throws when it would not help.
-    virtual void temple_service(VitalState &state, const CharacterSheet &sheet,
-                                TempleService service, RandomState &random_state) const = 0;
     // `gear` is what the member wears, so the attack meets its armor and shield.
     [[nodiscard]] virtual HazardAttackResult
     hazard_attack(VitalState &state, const CharacterSheet &sheet, std::span<const std::string> gear,
@@ -1802,6 +1862,24 @@ class RulesModule
     // Relentless Endurance.
     [[nodiscard]] virtual std::vector<StatusEffectView>
     status_effects(const CharacterSheet &, const VitalState &) const = 0;
+
+  protected:
+    // Implementations may copy themselves (a session's rollback does), but an
+    // interface reference must not copy or assign only its empty base part
+    // (Effective C++ Items 5 and 6).
+    RestRules() = default;
+    RestRules(const RestRules &) = default;
+    RestRules(RestRules &&) = default;
+    RestRules &operator=(const RestRules &) = default;
+    RestRules &operator=(RestRules &&) = default;
+};
+
+// Magic outside a fight: camp actions, potions, scrolls and spellbooks,
+// exploration spells and the temple's services.
+class CampMagicRules
+{
+  public:
+    virtual ~CampMagicRules() = default;
     [[nodiscard]] virtual std::vector<CampAction> camp_actions(const CharacterSheet &,
                                                                const VitalState &) const = 0;
     // Uses one of camp_actions() on the target. A character acting on itself
@@ -1809,29 +1887,6 @@ class RulesModule
     virtual void use_camp_action(const CharacterSheet &user, VitalState &user_state,
                                  const CharacterSheet &target, VitalState &target_state,
                                  std::string_view action, RandomState &random_state) const = 0;
-
-    // A note on what an item does for the member, as the inventory shows it;
-    // empty when the rules have none.
-    [[nodiscard]] virtual std::string equipment_note(const CharacterSheet &sheet,
-                                                     std::string_view item) const
-    {
-        (void)sheet;
-        (void)item;
-        return {};
-    }
-
-    // Whether a member can use the item outside combat: a potion it drinks,
-    // the Manual it reads (MAGIC-3).
-    [[nodiscard]] virtual bool usable_outside_combat(std::string_view item) const
-    {
-        (void)item;
-        return false;
-    }
-
-    // Whether the item is cursed, so that once worn it stays on until Remove
-    // Curse lets its wearer put it down (MAGIC-1): by its key's power, or the
-    // original's record's flag.
-    [[nodiscard]] virtual bool cursed_item(std::string_view item) const;
 
     // Drinks a potion the member carries, outside combat (MAGIC-3): a healing
     // potion restores its Hit Points and a Potion of Giant Strength starts its
@@ -1849,18 +1904,6 @@ class RulesModule
     // combat, none when the member cannot read the scroll.
     [[nodiscard]] virtual std::vector<CampAction>
     scroll_actions(const CharacterSheet &, const VitalState &, std::string_view scroll) const = 0;
-    // Reads one of scroll_actions() as use_camp_action() or
-    // use_party_camp_action() uses a camp action; the campaign erases the spell
-    // from the scroll. False when the reading failed and did nothing, as Use
-    // Magic Device's Arcana check can.
-    [[nodiscard]] virtual bool use_scroll(const CharacterSheet &user, VitalState &user_state,
-                                          const CharacterSheet &target, VitalState &target_state,
-                                          std::string_view scroll, std::string_view action,
-                                          RandomState &random_state) const = 0;
-    [[nodiscard]] virtual bool use_party_scroll(const CharacterSheet &user, VitalState &user_state,
-                                                std::span<CampTarget> party,
-                                                std::string_view scroll, std::string_view action,
-                                                RandomState &random_state) const = 0;
     // The spell's level when the member can copy it into a spellbook (MAGIC-6):
     // a Wizard spell of a level the Wizard can prepare, not yet in its book.
     [[nodiscard]] virtual std::optional<unsigned>
@@ -1978,6 +2021,104 @@ class RulesModule
                                                           std::string_view) const = 0;
     virtual void cast_exploration_spell(const CharacterSheet &caster, VitalState &state,
                                         std::string_view spell) const = 0;
+    // Whether the temple's service would help the member: a Cure a wounded
+    // living one, Raise Dead one dead up to ten days and not turned to dust,
+    // Remove Curse one under a curse (the campaign adds its cursed items).
+    [[nodiscard]] virtual bool temple_service_helps(const CharacterSheet &sheet,
+                                                    const VitalState &state,
+                                                    TempleService service) const = 0;
+
+    // Whether a temple under these rules offers the service at all; every one
+    // by default.
+    [[nodiscard]] virtual bool offers_temple_service(TempleService service) const
+    {
+        (void)service;
+        return true;
+    }
+
+    // Casts the service on the member, as a temple's cleric with Wisdom +3;
+    // throws when it would not help.
+    virtual void temple_service(VitalState &state, const CharacterSheet &sheet,
+                                TempleService service, RandomState &random_state) const = 0;
+
+  protected:
+    // Implementations may copy themselves (a session's rollback does), but an
+    // interface reference must not copy or assign only its empty base part
+    // (Effective C++ Items 5 and 6).
+    CampMagicRules() = default;
+    CampMagicRules(const CampMagicRules &) = default;
+    CampMagicRules(CampMagicRules &&) = default;
+    CampMagicRules &operator=(const CampMagicRules &) = default;
+    CampMagicRules &operator=(CampMagicRules &&) = default;
+};
+
+// The rest resources only some rules have (the SRD's): Hit Dice, temporary
+// Hit Points, a Short Rest's choices, the training a rest replaces and the
+// scrolls read outside a fight. A module offers them through
+// RulesModule::rest_resources(), or none.
+class RestResourceRules
+{
+  public:
+    virtual ~RestResourceRules() = default;
+    // A granting feature must establish entitlement and spend its costs before
+    // calling this operation. The choice is explicit; pools never stack.
+    virtual void grant_temporary_hit_points(VitalState &, const CharacterSheet &,
+                                            const TemporaryHitPoints &,
+                                            TemporaryHpChoice) const = 0;
+    // The campaign must establish completed-rest eligibility before invoking
+    // these resource operations. Each spend commits one die and its RNG draw.
+    virtual void recover_short_rest(VitalState &, const CharacterSheet &) const = 0;
+    [[nodiscard]] virtual Message recover_rest_choice(VitalState &, const CharacterSheet &,
+                                                      std::string_view) const = 0;
+    virtual HitDieResult spend_hit_die(VitalState &, const CharacterSheet &,
+                                       RandomState &) const = 0;
+    // Applies a legal edit: the selections name every pick of each choice they
+    // change, and a choice they leave out keeps its picks. Returns the changed
+    // choices' selections by group.
+    virtual TrainingChoices replace_rest_training(CharacterSheet &,
+                                                  std::span<const std::string>) const = 0;
+    // Reads one of scroll_actions() as use_camp_action() or
+    // use_party_camp_action() uses a camp action; the campaign erases the spell
+    // from the scroll. False when the reading failed and did nothing, as Use
+    // Magic Device's Arcana check can.
+    [[nodiscard]] virtual bool use_scroll(const CharacterSheet &user, VitalState &user_state,
+                                          const CharacterSheet &target, VitalState &target_state,
+                                          std::string_view scroll, std::string_view action,
+                                          RandomState &random_state) const = 0;
+    [[nodiscard]] virtual bool use_party_scroll(const CharacterSheet &user, VitalState &user_state,
+                                                std::span<CampTarget> party,
+                                                std::string_view scroll, std::string_view action,
+                                                RandomState &random_state) const = 0;
+
+  protected:
+    // Implementations may copy themselves (a session's rollback does), but an
+    // interface reference must not copy or assign only its empty base part
+    // (Effective C++ Items 5 and 6).
+    RestResourceRules() = default;
+    RestResourceRules(const RestResourceRules &) = default;
+    RestResourceRules(RestResourceRules &&) = default;
+    RestResourceRules &operator=(const RestResourceRules &) = default;
+    RestResourceRules &operator=(RestResourceRules &&) = default;
+};
+
+// The whole of a rules module: every concern, for the campaign that owns one.
+class RulesModule : public CombatRules,
+                    public EquipmentRules,
+                    public CheckRules,
+                    public AdvancementRules,
+                    public RestRules,
+                    public CampMagicRules
+{
+  public:
+    ~RulesModule() override = default;
+
+    // The rest resources the module offers, or null for rules without them
+    // (the original rules); the campaign tests the pointer instead of catching
+    // an exception.
+    [[nodiscard]] virtual const RestResourceRules *rest_resources() const
+    {
+        return nullptr;
+    }
 
   protected:
     // Implementations may copy themselves (a session's rollback does), but an

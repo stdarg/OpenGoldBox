@@ -512,7 +512,7 @@ void lineage_spell_checks()
     check(offers_cantrip(RestKind::long_rest) && !offers_cantrip(RestKind::short_rest),
           "A Long Rest offers the High Elf's cantrip");
     const std::vector<std::string> fire{"fire_bolt"};
-    rules->replace_rest_training(elf_sheet, fire);
+    rules->rest_resources()->replace_rest_training(elf_sheet, fire);
     const auto rested = rules->create(
         {{12, 6, std::vector<Terrain>(72)},
          {{1, "campaign-character", "Hero", Side::party, {1, 1},

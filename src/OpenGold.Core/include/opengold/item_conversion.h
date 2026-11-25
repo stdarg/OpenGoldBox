@@ -16,7 +16,7 @@ namespace opengold
 [[nodiscard]] std::string equipment_conversion(const por::Equipment &item);
 // The item's definition under these rules: its conversion to the SRD's
 // catalog, or its original record for rules that keep the original's items.
-[[nodiscard]] std::string item_definition(const rules::RulesModule &rules,
+[[nodiscard]] std::string item_definition(const rules::EquipmentRules &rules,
                                           const por::Equipment &item);
 // The key the rules see for an original item converted to `definition`: it
 // says so when the item's magic is not yet identified. A charged item's uses
@@ -27,7 +27,7 @@ namespace opengold
 [[nodiscard]] unsigned carried_quantity(const por::Equipment &item);
 // The same under these rules: under rules that play the original's records,
 // every charged item of the original's counts its charges.
-[[nodiscard]] unsigned carried_quantity(const rules::RulesModule &rules,
+[[nodiscard]] unsigned carried_quantity(const rules::EquipmentRules &rules,
                                         const por::Equipment &item);
 // The original item as a fight left it: `left` of its stacked items, charges
 // or doses, or for a scroll the spells whose bits are set in `left` (MAGIC-6).

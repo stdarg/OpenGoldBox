@@ -11,12 +11,18 @@ namespace opengold::test
 // those; every other operation goes to the wrapped module, the ones with a
 // default implementation in RulesModule too, so a double never falls back to
 // that default by omission (Effective C++ Item 34). A new virtual in
-// RulesModule gets its forwarding here.
-class ForwardingModule : public rules::RulesModule
+// RulesModule gets its forwarding here. The rest resources are forwarded too,
+// when the wrapped module has them.
+class ForwardingModule : public rules::RulesModule, public rules::RestResourceRules
 {
   public:
     explicit ForwardingModule(std::unique_ptr<rules::RulesModule> rules) : rules_(std::move(rules))
     {
+    }
+
+    const rules::RestResourceRules *rest_resources() const override
+    {
+        return rules_->rest_resources() ? this : nullptr;
     }
 
     rules::Identity identity() const override
@@ -163,7 +169,7 @@ class ForwardingModule : public rules::RulesModule
     replace_rest_training(rules::CharacterSheet &sheet,
                           std::span<const std::string> selected) const override
     {
-        return rules_->replace_rest_training(sheet, selected);
+        return rules_->rest_resources()->replace_rest_training(sheet, selected);
     }
 
     std::vector<rules::TrainingChoiceGroup>
@@ -234,25 +240,25 @@ class ForwardingModule : public rules::RulesModule
                                     const rules::TemporaryHitPoints &offered,
                                     rules::TemporaryHpChoice choice) const override
     {
-        rules_->grant_temporary_hit_points(state, sheet, offered, choice);
+        rules_->rest_resources()->grant_temporary_hit_points(state, sheet, offered, choice);
     }
 
     void recover_short_rest(rules::VitalState &state,
                             const rules::CharacterSheet &sheet) const override
     {
-        rules_->recover_short_rest(state, sheet);
+        rules_->rest_resources()->recover_short_rest(state, sheet);
     }
 
     rules::Message recover_rest_choice(rules::VitalState &state, const rules::CharacterSheet &sheet,
                                        std::string_view choice) const override
     {
-        return rules_->recover_rest_choice(state, sheet, choice);
+        return rules_->rest_resources()->recover_rest_choice(state, sheet, choice);
     }
 
     rules::HitDieResult spend_hit_die(rules::VitalState &state, const rules::CharacterSheet &sheet,
                                       RandomState &random_state) const override
     {
-        return rules_->spend_hit_die(state, sheet, random_state);
+        return rules_->rest_resources()->spend_hit_die(state, sheet, random_state);
     }
 
     void elapse(std::span<rules::Participant> participants, std::chrono::milliseconds elapsed,
@@ -341,15 +347,16 @@ class ForwardingModule : public rules::RulesModule
                     std::string_view scroll, std::string_view action,
                     RandomState &random_state) const override
     {
-        return rules_->use_scroll(user, user_state, target, target_state, scroll, action,
-                                  random_state);
+        return rules_->rest_resources()->use_scroll(user, user_state, target, target_state, scroll,
+                                                    action, random_state);
     }
 
     bool use_party_scroll(const rules::CharacterSheet &user, rules::VitalState &user_state,
                           std::span<rules::CampTarget> party, std::string_view scroll,
                           std::string_view action, RandomState &random_state) const override
     {
-        return rules_->use_party_scroll(user, user_state, party, scroll, action, random_state);
+        return rules_->rest_resources()->use_party_scroll(user, user_state, party, scroll, action,
+                                                          random_state);
     }
 
     std::optional<unsigned> copyable_spell_level(const rules::CharacterSheet &sheet,
