@@ -174,7 +174,7 @@ void CharacterCreationView::close_saving_throws()
     required_node<Window>(*this, "SavingThrowsModal").hide();
 }
 
-void CharacterCreationView::update_saving_throws(String value)
+void CharacterCreationView::update_saving_throws(const String &value)
 {
     const PartyMember *member = nullptr; // Borrowed for synchronous rendering.
     if (party_open_ && !campaign_->state().roster.empty())

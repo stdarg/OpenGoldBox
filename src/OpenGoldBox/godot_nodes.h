@@ -175,7 +175,9 @@ class SignalsBlocked
     }
 
     SignalsBlocked(const SignalsBlocked &) = delete;
+    SignalsBlocked(SignalsBlocked &&) = delete;
     SignalsBlocked &operator=(const SignalsBlocked &) = delete;
+    SignalsBlocked &operator=(SignalsBlocked &&) = delete;
 
     ~SignalsBlocked()
     {

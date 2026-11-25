@@ -389,7 +389,7 @@ void EarlierGameDialog::show_member_state()
     // two NPC positions.
     const auto &slots = campaign_().state().slots;
     const bool npc = chosen_is_npc();
-    const auto first = slots.begin() + (npc ? 6 : 0);
+    const auto *const first = slots.begin() + (npc ? 6 : 0);
     const bool full = std::none_of(first, first + (npc ? 2 : 6),
                                    [](auto id)
                                    {
@@ -397,7 +397,7 @@ void EarlierGameDialog::show_member_state()
                                    });
     const bool brought = brought_.at(member_index_);
     required_node<Button>(*this, "Margin/Rows/Buttons/Add").set_disabled(brought || full);
-    const auto arrival =
+    const auto *const arrival =
         npc ? N_("Joins in an NPC position with its levels, experience and items; it brings no money.")
             : texts_of(earlier_game()).arrival;
     required_node<Label>(*this, "Margin/Rows/Status")

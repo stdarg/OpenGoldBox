@@ -91,7 +91,9 @@ class SavedGameChoice
     }
 
     SavedGameChoice(const SavedGameChoice &) = delete;
+    SavedGameChoice(SavedGameChoice &&) = delete;
     SavedGameChoice &operator=(const SavedGameChoice &) = delete;
+    SavedGameChoice &operator=(SavedGameChoice &&) = delete;
 
     ~SavedGameChoice()
     {

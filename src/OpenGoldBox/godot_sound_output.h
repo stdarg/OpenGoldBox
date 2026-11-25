@@ -16,7 +16,9 @@ class GodotSoundOutput final : public opengold::por::SoundOutput
     explicit GodotSoundOutput(godot::AudioStreamPlayer &player);
     ~GodotSoundOutput() override;
     GodotSoundOutput(const GodotSoundOutput &) = delete;
+    GodotSoundOutput(GodotSoundOutput &&) = delete;
     GodotSoundOutput &operator=(const GodotSoundOutput &) = delete;
+    GodotSoundOutput &operator=(GodotSoundOutput &&) = delete;
 
     void prepare(const opengold::por::SoundBank &bank) override;
     void play(unsigned id) override;

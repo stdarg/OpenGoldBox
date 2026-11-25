@@ -24,7 +24,7 @@ namespace
 
 std::string encoded(std::string_view name)
 {
-    static constexpr char hex[] = "0123456789abcdef";
+    static constexpr std::string_view hex = "0123456789abcdef";
     std::string result;
     for (unsigned char c : name)
     {
@@ -208,7 +208,7 @@ void SaveSlots::open(bool saving)
     {
         if (std::filesystem::exists(directory_))
         {
-            for (auto &e : std::filesystem::directory_iterator(directory_))
+            for (const auto &e : std::filesystem::directory_iterator(directory_))
             {
                 if (!e.is_regular_file())
                 {
@@ -273,7 +273,7 @@ void SaveSlots::open(bool saving)
     }
 }
 
-void SaveSlots::changed(String)
+void SaveSlots::changed(const String &)
 {
     confirmed_ = false;
     pending_.clear();

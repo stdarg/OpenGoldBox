@@ -214,7 +214,7 @@ std::string formatted(std::string_view source, std::initializer_list<Argument> a
 String plural(std::string_view singular, std::string_view multiple, int count,
               std::initializer_list<Argument> arguments)
 {
-    const auto translated =
+    auto translated =
         TranslationServer::get_singleton()->translate_plural(gs(singular), gs(multiple), count);
     Dictionary values;
     for (const auto &[name, value] : arguments)

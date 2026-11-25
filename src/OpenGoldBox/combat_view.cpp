@@ -1566,7 +1566,7 @@ void CombatView::select_acting_character()
     }
 }
 
-void CombatView::select_mode(String verb)
+void CombatView::select_mode(const String &verb)
 {
     error_.clear();
     select_acting_character();
@@ -2013,7 +2013,7 @@ void CombatView::act_at_square(Cell cell)
     }
 }
 
-void CombatView::immediate(String verb)
+void CombatView::immediate(const String &verb)
 {
     if (!demo_ || !demo_->has_combat())
     {
@@ -2320,9 +2320,9 @@ void CombatView::launch_spell_effects(const Command &command, const Snapshot &be
         if (!missed)
         {
             double latest = 0.0;
-            for (int64_t index = 0; index < cast.arrivals.size(); ++index)
+            for (const auto &arrival : cast.arrivals)
             {
-                latest = std::max(latest, static_cast<double>(cast.arrivals[index].z));
+                latest = std::max(latest, static_cast<double>(arrival.z));
             }
             cast.seconds += latest + static_cast<double>(effect->seconds);
         }

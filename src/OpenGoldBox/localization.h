@@ -29,7 +29,7 @@ godot::String text(std::string_view source);
 std::string utf8(std::string_view source);
 godot::String format(std::string_view source, std::initializer_list<Argument> arguments);
 std::string formatted(std::string_view source, std::initializer_list<Argument> arguments);
-godot::String plural(std::string_view singular, std::string_view plural, int count,
+godot::String plural(std::string_view singular, std::string_view multiple, int count,
                      std::initializer_list<Argument> arguments = {});
 // Campaign resources use an explicit stable context; untranslated resources retain
 // the original, locally decoded text. Never translate resource IDs or saved names.

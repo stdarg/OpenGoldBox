@@ -66,7 +66,7 @@ class GuardedMethodPointer final : public godot::CallableCustomMethodPointerBase
         _setup(reinterpret_cast<std::uint32_t *>(&data_), sizeof(Data));
     }
 
-    godot::ObjectID get_object() const override
+    [[nodiscard]] godot::ObjectID get_object() const override
     {
         return godot::ObjectID(data_.instance->get_instance_id());
     }

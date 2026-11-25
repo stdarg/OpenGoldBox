@@ -112,7 +112,7 @@ class StartupView : public godot::Control
     void continue_newest();
     void show_game_picker();
     void add_game_buttons(godot::VBoxContainer &games);
-    void game_chosen(std::int64_t game);
+    void game_chosen(std::int64_t chosen);
     // The chosen game's menu after its title.
     void show_game_menu();
     void continue_game();

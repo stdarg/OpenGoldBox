@@ -661,7 +661,9 @@ void StartupView::preview_language(std::int64_t index)
         }
 
         RestoreLocale(const RestoreLocale &) = delete;
+        RestoreLocale(RestoreLocale &&) = delete;
         RestoreLocale &operator=(const RestoreLocale &) = delete;
+        RestoreLocale &operator=(RestoreLocale &&) = delete;
 
         ~RestoreLocale()
         {

@@ -19,7 +19,9 @@ class ScopedFlag
     }
 
     ScopedFlag(const ScopedFlag &) = delete;
+    ScopedFlag(ScopedFlag &&) = delete;
     ScopedFlag &operator=(const ScopedFlag &) = delete;
+    ScopedFlag &operator=(ScopedFlag &&) = delete;
 
   private:
     bool &flag_;

@@ -6,6 +6,7 @@
 #include <godot_cpp/classes/option_button.hpp>
 #include <godot_cpp/variant/callable_method_pointer.hpp>
 #include <algorithm>
+#include <array>
 #include <set>
 #include <utility>
 #include <stdexcept>
@@ -41,8 +42,8 @@ void CharacterCreationView::fill_portrait_filters()
     portraits_ = PortraitCatalog::load();
     for (int field = 0; field < 3; ++field)
     {
-        const char *names[]{"PortraitGender", "PortraitClass", "PortraitRace"};
-        const char *labels[]{N_("All genders"), N_("All classes"), N_("All races")};
+        constexpr std::array names{"PortraitGender", "PortraitClass", "PortraitRace"};
+        constexpr std::array labels{N_("All genders"), N_("All classes"), N_("All races")};
         auto *control = &required_node<OptionButton>(*this, names[field]);
         control->clear();
         control->add_item(i18n::text(labels[field]));
@@ -64,9 +65,10 @@ void CharacterCreationView::fill_portrait_filters()
 void CharacterCreationView::match_portrait_filters()
 {
     const auto &draft = creator_->draft();
-    const std::pair<const char *, const std::string *> filters[]{{"PortraitGender", &draft.gender},
-                                                                 {"PortraitClass", nullptr},
-                                                                 {"PortraitRace", &draft.race}};
+    const std::array<std::pair<const char *, const std::string *>, 3> filters{
+        {{"PortraitGender", &draft.gender},
+         {"PortraitClass", nullptr},
+         {"PortraitRace", &draft.race}}};
     for (const auto &[name, value] : filters)
     {
         auto *filter = &required_node<OptionButton>(*this, name);

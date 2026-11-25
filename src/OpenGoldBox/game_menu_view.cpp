@@ -249,11 +249,11 @@ void GameMenuView::open_options()
     show_party_spell_limits();
     show_game_options();
     const auto language = settings::language();
-    const auto found = std::find_if(language_codes.begin(), language_codes.end(),
-                                    [&](const char *code)
-                                    {
-                                        return language == code;
-                                    });
+    const auto *const found = std::find_if(language_codes.begin(), language_codes.end(),
+                                           [&](const char *code)
+                                           {
+                                               return language == code;
+                                           });
     required_node<OptionButton>(*this, "Options/Interface/Language")
         .select(found == language_codes.end() ? 0
                                               : static_cast<int>(found - language_codes.begin()));

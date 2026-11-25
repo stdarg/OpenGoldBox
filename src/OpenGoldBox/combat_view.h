@@ -257,14 +257,14 @@ class CombatView : public godot::Control
     void layout();
     void layout_log();
     [[nodiscard]] double controls_height(bool show_controls) const;
-    void layout_reaction_controls(bool reaction);
+    void layout_reaction_controls(bool show_controls);
     void refresh();
     void sync_art(bool preserve_effects = false);
     // By value: the command often comes from the cached legal commands, which
     // acting drops (Effective Modern C++ Item 41).
     void act(opengold::rules::Command command);
-    void select_mode(godot::String verb);
-    void immediate(godot::String verb);
+    void select_mode(const godot::String &verb);
+    void immediate(const godot::String &verb);
     // Area spells (CLASS-5): whether `verb` starts aiming one, and moving the preview.
     [[nodiscard]] bool aims_area(std::string_view verb) const;
     void aim_area_at(opengold::rules::Cell cell);

@@ -241,7 +241,7 @@ void CharacterCreationView::_ready()
                  presentation::guarded(this, &CharacterCreationView::close_modifiers));
     for (int direction : {-1, 1})
     {
-        const auto suffix = direction < 0 ? "Previous" : "Next";
+        const auto *const suffix = direction < 0 ? "Previous" : "Next";
         required_node<Button>(*this, gs(std::string("CombatHead") + suffix))
             .connect("pressed", presentation::guarded(this, &CharacterCreationView::combat_part)
                                     .bind(0, direction));
@@ -1048,7 +1048,7 @@ void CharacterCreationView::modify_on_roll()
                creator_->draft(),
                false,
                {},
-               [this](rules::CharacterDraft draft)
+               [this](const rules::CharacterDraft &draft)
                {
                    creator_->modify(draft);
                    refresh();

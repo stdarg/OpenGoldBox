@@ -143,7 +143,7 @@ class CharacterCreationView : public godot::Control
     void close_modifiers();
     void show_saving_throws();
     void close_saving_throws();
-    void update_saving_throws(godot::String value);
+    void update_saving_throws(const godot::String &value);
     void name_changed(godot::String value);
     void portrait_part(int direction);
     void portrait_selected(std::int64_t index);
@@ -254,7 +254,7 @@ class CharacterCreationView : public godot::Control
     };
 
     std::optional<CreationInProgress> waiting_creation_;
-    void open_reincarnation(std::int64_t caster, std::int64_t target, godot::String action);
+    void open_reincarnation(std::int64_t caster, std::int64_t target, const godot::String &action);
     void begin_reincarnation(Reincarnation spell, const std::string &species);
     void reincarnate_check();
     bool reincarnate_check_{};

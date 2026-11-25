@@ -7,9 +7,10 @@ namespace presentation
 {
 inline godot::String hp_color_name(int hp, int maximum)
 {
-    const auto name = hp <= 0 || static_cast<std::int64_t>(hp) * 5 <= maximum ? "score_negative"
-                      : hp < maximum                                          ? "score_positive"
-                                                                              : "hp_full";
+    const auto *const name = hp <= 0 || static_cast<std::int64_t>(hp) * 5 <= maximum
+                                 ? "score_negative"
+                             : hp < maximum ? "score_positive"
+                                            : "hp_full";
     return name;
 }
 

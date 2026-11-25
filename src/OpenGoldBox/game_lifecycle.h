@@ -33,7 +33,7 @@ class GameLifecycle : public godot::Node
     void log_pressed(godot::Node *control);
     void log_selected(int64_t index, godot::Node *control);
     void log_submitted(const godot::String &text, godot::Node *control);
-    void window_input(const godot::Ref<godot::InputEvent> &event, godot::Node *window);
+    void window_input(const godot::Ref<godot::InputEvent> &event, godot::Node *node);
     void shortcut(const godot::Ref<godot::InputEvent> &event, godot::Viewport &viewport);
     void request_quit();
 };

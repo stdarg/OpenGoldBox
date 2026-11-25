@@ -637,7 +637,7 @@ void CharacterCreationView::refresh_party()
     for (const auto index : rows)
     {
         const auto &m = state.roster[index];
-        auto slot = std::find(state.slots.begin(), state.slots.end(), m.id);
+        const auto *slot = std::find(state.slots.begin(), state.slots.end(), m.id);
         const bool leader = slot != state.slots.end() && m.id == campaign_->leader();
         const auto &sheet = m.character.sheet();
         // The roster has room for the six starting members' photos and identity.
@@ -956,7 +956,9 @@ void CharacterCreationView::equipment_art_check()
             }
 
             CheckSave(const CheckSave &) = delete;
+            CheckSave(CheckSave &&) = delete;
             CheckSave &operator=(const CheckSave &) = delete;
+            CheckSave &operator=(CheckSave &&) = delete;
 
             ~CheckSave()
             {
@@ -1115,7 +1117,7 @@ bool CharacterCreationView::open_equipment_choice(MemberId member, std::uint64_t
 }
 
 void CharacterCreationView::open_reincarnation(std::int64_t caster, std::int64_t target,
-                                               String action)
+                                               const String &action)
 {
     if (!campaign_)
     {
@@ -1333,9 +1335,8 @@ void CharacterCreationView::party_action(PartyAction action)
                 town->connect("game_shown",
                               presentation::guarded(this, &CharacterCreationView::bank_winners));
                 winner_capture_ = opengold::WinnerCapture();
-                town->connect(
-                    "menu_requested",
-                    presentation::guarded(this, &CharacterCreationView::open_game_menu));
+                town->connect("menu_requested",
+                              presentation::guarded(this, &CharacterCreationView::open_game_menu));
                 town->connect(
                     "options_requested",
                     presentation::guarded(this, &CharacterCreationView::open_game_options));

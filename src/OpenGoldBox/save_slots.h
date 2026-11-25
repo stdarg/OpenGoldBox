@@ -57,7 +57,7 @@ class SaveSlots : public godot::Window
     std::filesystem::path directory_, pending_;
     std::vector<std::filesystem::path> paths_;
     void select(std::int64_t index);
-    void changed(godot::String text);
+    void changed(const godot::String &text);
     void act();
     void close();
 };

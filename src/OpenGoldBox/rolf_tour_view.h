@@ -373,16 +373,15 @@ class RolfTourView : public godot::Control
     void rest_heal();
     void rest_recover();
     void rest_use();
-    std::optional<godot::String> use_outside_combat(opengold::MemberId user,
-                                                    opengold::MemberId patient,
-                                                    const godot::String &id,
-                                                    const godot::String &action_text,
-                                                    const godot::String &target_text);
+    std::optional<godot::String>
+    use_outside_combat(opengold::MemberId user, opengold::MemberId patient, const godot::String &id,
+                       const godot::String &action_text, const godot::String &target_text);
     void cast_menu();
     void refresh_cast();
     void cast_action_selected(std::int64_t index);
     void cast_use();
-    void read_or_copy_scroll(const std::string &id, opengold::MemberId patient, const godot::String &label);
+    void read_or_copy_scroll(const std::string &id, opengold::MemberId patient,
+                             const godot::String &label);
     bool refresh_rest_use(const std::vector<opengold::MemberRestInfo> &infos, bool spending);
     // Teleport's cheapest offer becomes one entry for each place the party has
     // been (TELEPORT-1), its id followed by "@" and the map; its other slots'
@@ -390,7 +389,7 @@ class RolfTourView : public godot::Control
     void expand_teleport(std::vector<opengold::rules::CampAction> &actions,
                          std::vector<godot::String> &labels) const;
     void refresh_rest_spells();
-    void rest_spell_toggled(bool selected, godot::String group, godot::String option);
+    void rest_spell_toggled(bool selected, const godot::String &group, const godot::String &option);
     void rest_spell_replaced(std::int64_t index);
     void rest_spell_apply();
     void rest_spell_keep();
@@ -400,7 +399,7 @@ class RolfTourView : public godot::Control
     void refresh_rest_training();
     [[nodiscard]] std::vector<opengold::rules::TrainingReplacementOptions>
     rest_training_choices(opengold::MemberId id) const;
-    void rest_training_toggled(bool selected, godot::String option);
+    void rest_training_toggled(bool selected, const godot::String &option);
     void rest_training_apply();
     void rest_training_keep();
     void rest_training_input(const godot::Ref<godot::InputEvent> &event);

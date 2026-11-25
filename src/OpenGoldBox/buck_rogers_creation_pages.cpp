@@ -337,11 +337,11 @@ void CharacterCreationView::refresh_buck_rogers(CreationStep step)
         required_node<RichTextLabel>(*this, "Description")
             .set_text(buck_rogers_description(step, id));
     }
-    const auto title = step == CreationStep::character_class  ? N_("Career")
-                       : step == CreationStep::skills         ? N_("Skills")
-                       : step == CreationStep::specialization ? N_("Weapon specialization")
-                       : step == CreationStep::combat_icon    ? N_("Combat icon")
-                                                              : nullptr;
+    const auto *const title = step == CreationStep::character_class  ? N_("Career")
+                              : step == CreationStep::skills         ? N_("Skills")
+                              : step == CreationStep::specialization ? N_("Weapon specialization")
+                              : step == CreationStep::combat_icon    ? N_("Combat icon")
+                                                                     : nullptr;
     if (title)
     {
         required_node<Label>(*this, "PageTitle").set_text(i18n::text(title));
@@ -892,7 +892,7 @@ void CharacterCreationView::open_buck_rogers_training()
         auto *control = Object::cast_to<Control>(get_child(n));
         if (control && control != town && control->is_visible())
         {
-            training_hidden_.push_back(control->get_name());
+            training_hidden_.emplace_back(control->get_name());
             control->hide();
         }
     }

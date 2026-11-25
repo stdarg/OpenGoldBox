@@ -1093,12 +1093,11 @@ void RolfTourView::refresh_inventory()
         // Detect Magic marks magic items, as the original's item lists did.
         const bool sensed =
             campaign_->detecting_magic() && campaign_->magical(campaign_->selected(), item.id);
-        auto line =
-            (sensed ? String("* ") : String()) +
-            (std::find(m.equipped.begin(), m.equipped.end(), item.id) != m.equipped.end()
-                 ? i18n::text("Equipped / ")
-                 : String()) +
-            inventory_label(m, item);
+        auto line = (sensed ? String("* ") : String()) +
+                    (std::find(m.equipped.begin(), m.equipped.end(), item.id) != m.equipped.end()
+                         ? i18n::text("Equipped / ")
+                         : String()) +
+                    inventory_label(m, item);
         if (shopping)
         {
             line = i18n::format(
@@ -1387,10 +1386,11 @@ void RolfTourView::check_identification_spells()
         sword.stored.hidden_name_words = 6;
         sword.stored.stack_size = 1;
         sword.bonuses.weapon_to_hit = 2;
-        identify_check_sword_ = inventory.add({.definition_id = opengold::equipment_conversion(sword),
-                                               .name = sword.label(),
-                                               .quantity = 1,
-                                               .original_type = 36});
+        identify_check_sword_ =
+            inventory.add({.definition_id = opengold::equipment_conversion(sword),
+                           .name = sword.label(),
+                           .quantity = 1,
+                           .original_type = 36});
         opengold::por::Equipment book;
         book.stored.type = 70;
         book.stored.magic_bonus = 12;
@@ -1405,20 +1405,22 @@ void RolfTourView::check_identification_spells()
         ring.stored.magic_bonus = 2;
         ring.stored.stack_size = 1;
         ring.decoded_name = "Ring Of Protection +2";
-        const auto protection = inventory.add({.definition_id = opengold::equipment_conversion(ring),
-                                               .name = ring.label(),
-                                               .quantity = 1,
-                                               .original_type = 93});
+        const auto protection =
+            inventory.add({.definition_id = opengold::equipment_conversion(ring),
+                           .name = ring.label(),
+                           .quantity = 1,
+                           .original_type = 93});
         opengold::por::Equipment parchment;
         parchment.stored.type = 61;
         parchment.stored.magic_bonus = 1;
         parchment.stored.effect_codes = {14, 47, 0};
         parchment.stored.stack_size = 1;
         parchment.decoded_name = "Magic User Scroll With 2 Spells";
-        const auto scroll = inventory.add({.definition_id = opengold::equipment_conversion(parchment),
-                                           .name = parchment.label(),
-                                           .quantity = 1,
-                                           .original_type = 61});
+        const auto scroll =
+            inventory.add({.definition_id = opengold::equipment_conversion(parchment),
+                           .name = parchment.label(),
+                           .quantity = 1,
+                           .original_type = 61});
         caster.character.replace_inventory(std::move(inventory));
         caster.item_sources.emplace(identify_check_sword_, sword);
         caster.item_sources.emplace(manual, book);
@@ -1498,8 +1500,9 @@ void RolfTourView::check_identification_spells()
                                    {
                                        return item.definition_id == "manual_of_bodily_health";
                                    });
-    const int constitution =
-        campaign_->member(campaign_->selected()).character.sheet().scores[opengold::rules::Ability::constitution];
+    const int constitution = campaign_->member(campaign_->selected())
+                                 .character.sheet()
+                                 .scores[opengold::rules::Ability::constitution];
     items.select(static_cast<int>(book - carried.begin()));
     inventory_selected(book - carried.begin());
     auto &use = required_node<Button>(*this, "InventoryPanel/%UseItem");
@@ -1558,7 +1561,8 @@ void RolfTourView::check_identification_spells()
         throw std::runtime_error("Use on a scroll must open the Cast menu with its spell");
     }
     required_node<Button>(*this, "CastPanel/%Use").emit_signal("pressed");
-    const auto read = campaign_->member(campaign_->selected()).character.inventory().find(parchment_id);
+    const auto read =
+        campaign_->member(campaign_->selected()).character.inventory().find(parchment_id);
     if (!read || read->get().definition_id != "scroll:arcane:fireball" ||
         !required_node<Label>(*this, "CastPanel/%Status").get_text().contains("reads"))
     {
@@ -2551,7 +2555,7 @@ std::int64_t carried_pounds(const opengold::CampaignParty &party, opengold::Memb
 // The campaign party's refusals a shop shows as its diagnostic, for the
 // catalog.
 [[maybe_unused]] constexpr std::array shop_refusals{N_("Not enough gold"),
-                                                     N_("Too heavy to carry")};
+                                                    N_("Too heavy to carry")};
 
 String loot_notice(const LootTaken &loot,
                    opengold::GoldBoxGame game = opengold::GoldBoxGame::pool_of_radiance)
@@ -2668,8 +2672,9 @@ String door_check_notice(const DoorCheck &check, opengold::GoldBoxGame game)
         return i18n::format(
             "{name} uses up a set of Magic Lock Picks for Advantage{tools}: Dexterity (Sleight of Hand) {total} (d20 {die}) against DC {dc}.",
             {{"name", name},
-             {"tools", check.thieves_tools ? i18n::text(N_(", with Thieves' Tools doubling the chance"))
-                                           : String()},
+             {"tools", check.thieves_tools
+                           ? i18n::text(N_(", with Thieves' Tools doubling the chance"))
+                           : String()},
              {"total", check.total},
              {"die", check.die},
              {"dc", check.difficulty}});
@@ -2936,10 +2941,11 @@ void RolfTourView::refresh()
         .set_text(s.tour_finished
                       ? i18n::format("OPENGOLDBOX  /  {district}", {{"district", district}})
                       : i18n::text("OPENGOLDBOX  /  Rolf's welcome"));
-    auto coordinates = i18n::format("Party ({x}, {y})   {direction}",
-                                    {{"x", s.pose.x},
-                                     {"y", s.pose.y},
-                                     {"direction", i18n::text(direction_name[index(s.pose.facing)])}});
+    auto coordinates =
+        i18n::format("Party ({x}, {y})   {direction}",
+                     {{"x", s.pose.x},
+                      {"y", s.pose.y},
+                      {"direction", i18n::text(direction_name[index(s.pose.facing)])}});
     if (opengold::is_buck_rogers(game) && s.overland && !s.solar_map)
     {
         coordinates = i18n::format(
@@ -3560,8 +3566,8 @@ void RolfTourView::capture_frame(const String &name)
                                     : state.visited.test(y * columns + x)         ? "map_visited"
                                                                                   : "map_seen",
                                     "OpenGoldPalette");
-                if (!image->get_pixel(static_cast<int32_t>(center.x),
-                                      static_cast<int32_t>(center.y))
+                if (!image
+                         ->get_pixel(static_cast<int32_t>(center.x), static_cast<int32_t>(center.y))
                          .is_equal_approx(expected))
                 {
                     throw std::runtime_error("Overhead fog pixel mismatch at " + std::to_string(x) +
@@ -3939,7 +3945,7 @@ void RolfTourView::check_walk_to(unsigned tx, unsigned ty)
         }
         check_pending_edge_.reset();
     }
-    static constexpr int dx[]{0, 1, 0, -1}, dy[]{-1, 0, 1, 0};
+    static constexpr std::array dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
     std::array<int, 256> previous;
     previous.fill(-1);
     std::queue<int> cells;

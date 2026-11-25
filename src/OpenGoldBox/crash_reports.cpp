@@ -17,7 +17,7 @@
 #include <windows.h>
 #else
 #include <cerrno>
-#include <signal.h>
+#include <csignal>
 #endif
 
 using namespace godot;
@@ -94,11 +94,10 @@ void log_backtrace()
         {
             GetModuleFileNameW(module, path, MAX_PATH);
         }
-        const auto offset = static_cast<const char *>(frames[frame]) -
-                            reinterpret_cast<const char *>(module);
+        const auto offset =
+            static_cast<const char *>(frames[frame]) - reinterpret_cast<const char *>(module);
         UtilityFunctions::printerr(String("[") + String::num_int64(frame) + "] " +
-                                   String(path).get_file() + "+" +
-                                   String::num_int64(offset, 16));
+                                   String(path).get_file() + "+" + String::num_int64(offset, 16));
     }
     UtilityFunctions::printerr("-- END OF C++ BACKTRACE --");
 }
