@@ -71,15 +71,6 @@ using C = ClassSlot;
 using P = Profession;
 namespace data = dark_queen_data;
 
-std::size_t race_index(Race race)
-{
-    if (!champions_race(race))
-    {
-        throw std::invalid_argument("Not a Krynn race");
-    }
-    return static_cast<std::size_t>(race) - static_cast<std::size_t>(Race::silvanesti_elf);
-}
-
 std::size_t native_profession(P profession)
 {
     return profession == P::knight ? 1 : static_cast<std::size_t>(profession);
@@ -88,30 +79,6 @@ std::size_t native_profession(P profession)
 std::size_t native_slot(C slot)
 {
     return slot == C::monk ? 1 : static_cast<std::size_t>(slot);
-}
-
-std::optional<std::size_t> progression(C slot, KrynnOrders orders)
-{
-    switch (slot)
-    {
-    case C::cleric:
-        return orders.deity > 4 ? 1 : 0;
-    case C::monk:
-        return static_cast<std::size_t>(2 + std::clamp(orders.knight, 1, 3));
-    case C::fighter:
-        return 2;
-    case C::paladin:
-        return 10;
-    case C::ranger:
-        return 6;
-    case C::magic_user:
-        return orders.robe == 1 ? 7 : 8;
-    case C::thief:
-        return 9;
-    case C::druid:
-        return std::nullopt;
-    }
-    return std::nullopt;
 }
 } // namespace
 
@@ -135,7 +102,7 @@ bool dark_queen_scroll_spell(int native, unsigned robe) noexcept
 
 AbilityLimits dark_queen_ability_limits(Race race, Gender gender)
 {
-    const auto base = race_index(race) * 16;
+    const auto base = krynn_race_index(race) * 16;
     const auto sex = gender == Gender::female ? 1U : 0U;
     const auto &r = data::race_limits;
     return {{r[base + sex], r[base + 10], r[base + 12], r[base + 6], r[base + 8], r[base + 14]},
@@ -145,7 +112,7 @@ AbilityLimits dark_queen_ability_limits(Race race, Gender gender)
 
 std::vector<StartingItem> dark_queen_starting_items(Race race, Profession profession)
 {
-    const auto first = (race_index(race) * 17 + native_profession(profession)) * 5;
+    const auto first = (krynn_race_index(race) * 17 + native_profession(profession)) * 5;
     std::vector<StartingItem> items;
     for (std::size_t slot = 0; slot < 5; ++slot)
     {
@@ -191,7 +158,7 @@ std::span<const P> dark_queen_professions(Race race)
         }
         return choices;
     }();
-    return lists[race_index(race)];
+    return lists[krynn_race_index(race)];
 }
 
 bool dark_queen_alignment_allowed(P profession, Alignment alignment)
@@ -213,12 +180,13 @@ int dark_queen_level_limit(Race race, C slot, KrynnOrders orders)
     {
         return orders.knight == 3 ? 40 : 18;
     }
-    return slot == C::druid ? 0 : data::max_level.at(race_index(race) * 7 + native_slot(slot));
+    return slot == C::druid ? 0
+                            : data::max_level.at(krynn_race_index(race) * 7 + native_slot(slot));
 }
 
 std::optional<int> dark_queen_experience_for_level(C slot, int level, KrynnOrders orders)
 {
-    const auto row = progression(slot, orders);
+    const auto row = krynn_progression(slot, orders);
     if (!row || level < 1 || level > 40)
     {
         return std::nullopt;
@@ -234,7 +202,7 @@ int dark_queen_starting_age(Race race, P profession, RandomState &random)
     const auto id = native_profession(profession);
     const bool single = id <= 6;
     const auto row = single ? id : id == 14 ? 2U : id == 13 || id == 15 || id == 16 ? 5U : 0U;
-    const auto at = (race_index(race) * 7 + row) * 3;
+    const auto at = (krynn_race_index(race) * 7 + row) * 3;
     int age = data::start_ages[at] + (single ? 10 : 0);
     for (int die = 0; die < data::start_ages[at + 1]; ++die)
     {
@@ -513,52 +481,24 @@ void recalculate_dark_queen_numbers(rules::CharacterSheet::Original &numbers,
     numbers.cleric_slots = slots[0];
     numbers.druid_slots = slots[1];
     numbers.magic_user_slots = slots[3];
-    const auto learn = [&](int number)
-    {
-        if (number && std::ranges::find(numbers.known_spells, number) == numbers.known_spells.end())
-        {
-            numbers.known_spells.push_back(number);
-        }
-    };
     for (int level = 0; level < 7; ++level)
     {
         if (numbers.cleric_slots[level] > 0)
         {
             for (int at = 0; at < 10; ++at)
             {
-                learn(canonical_spell(data::spells_by_level[level * 10 + at], game));
+                learn_known_spell(numbers,
+                                  canonical_spell(data::spells_by_level[level * 10 + at], game));
             }
         }
     }
-    for (const auto number : castable_spells(game))
-    {
-        const auto *known = spell(number, game);
-        if (known && known->caster_class == SpellClass::druid && known->level > 0 &&
-            numbers.druid_slots[known->level - 1] > 0)
-        {
-            learn(number);
-        }
-    }
-    numbers.deity_spell_slots = {};
-    if (level_in(numbers.class_levels, C::cleric) > 0 && numbers.deity >= 1 && numbers.deity <= 7)
-    {
-        static constexpr std::array<std::array<int, 3>, 7> gifts{
-            {{501}, {502}, {503}, {504, 505, 506}, {507}, {}, {506}}};
-        numbers.deity_spell_slots[0] = numbers.deity == 4 ? 3 : numbers.deity == 6 ? 0 : 1;
-        for (const auto gift : gifts[numbers.deity - 1])
-        {
-            learn(gift);
-        }
-    }
+    learn_druid_spells(numbers, game);
+    learn_deity_gifts(numbers);
     numbers.thac0 = dark_queen_thac0(numbers.class_levels);
-    const auto race = static_cast<Race>(numbers.race);
-    if (numbers.deity == 3 ||
-        (numbers.deity == 6 && (race == Race::mountain_dwarf || race == Race::hill_dwarf)))
-    {
-        --numbers.thac0;
-    }
+    favor_thac0_by_deity(numbers);
     numbers.saving_throws =
-        dark_queen_saving_throws(numbers.class_levels, race, scores[rules::Ability::constitution]);
+        dark_queen_saving_throws(numbers.class_levels, static_cast<Race>(numbers.race),
+                                 scores[rules::Ability::constitution]);
 }
 
 std::vector<int> dark_queen_learning_spells(int robe, int highest)

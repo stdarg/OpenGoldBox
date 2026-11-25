@@ -8,6 +8,14 @@ namespace opengold::original
 {
 using KrynnSpellRows = std::array<std::array<int, 9>, 4>;
 
+// A class's row among the progressions Death Knights and Dark Queen share:
+// a cleric's by its deity, a knight's by its order, a mage's by its robe;
+// none for a druid.
+[[nodiscard]] std::optional<std::size_t> krynn_progression(ClassSlot slot, KrynnOrders orders);
+// The druid spells the character's druid slots let it cast, each known from
+// now on.
+void learn_druid_spells(rules::CharacterSheet::Original &numbers, GoldBoxGame game);
+
 [[nodiscard]] AbilityLimits death_knights_ability_limits(Race race, Gender gender);
 [[nodiscard]] rules::AbilityArray<int> death_knights_class_minimums(Profession profession);
 [[nodiscard]] std::span<const Profession> death_knights_professions(Race race);

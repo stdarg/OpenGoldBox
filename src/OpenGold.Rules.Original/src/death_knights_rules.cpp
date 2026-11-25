@@ -14,21 +14,13 @@ using C = ClassSlot;
 using P = Profession;
 namespace data = death_knights_data;
 
-std::size_t race_index(Race race)
-{
-    if (!champions_race(race))
-    {
-        throw std::invalid_argument("Not a Krynn race");
-    }
-    return static_cast<std::size_t>(race) - static_cast<std::size_t>(Race::silvanesti_elf);
-}
-
 std::size_t native_profession(P profession)
 {
     return profession == P::knight ? 7 : static_cast<std::size_t>(profession);
 }
+} // namespace
 
-std::optional<std::size_t> progression(C slot, KrynnOrders orders)
+std::optional<std::size_t> krynn_progression(C slot, KrynnOrders orders)
 {
     switch (slot)
     {
@@ -51,7 +43,19 @@ std::optional<std::size_t> progression(C slot, KrynnOrders orders)
     }
     return std::nullopt;
 }
-} // namespace
+
+void learn_druid_spells(rules::CharacterSheet::Original &numbers, GoldBoxGame game)
+{
+    for (const auto number : castable_spells(game))
+    {
+        const auto *known = spell(number, game);
+        if (known && known->caster_class == SpellClass::druid && known->level > 0 &&
+            numbers.druid_slots[static_cast<std::size_t>(known->level - 1)] > 0)
+        {
+            learn_known_spell(numbers, number);
+        }
+    }
+}
 
 AbilityLimits death_knights_ability_limits(Race race, Gender gender)
 {
@@ -90,7 +94,7 @@ std::span<const P> death_knights_professions(Race race)
         }
         return result;
     }();
-    return choices[race_index(race)];
+    return choices[krynn_race_index(race)];
 }
 
 bool death_knights_alignment_allowed(P profession, Alignment alignment)
@@ -105,12 +109,12 @@ bool death_knights_alignment_allowed(P profession, Alignment alignment)
 
 int death_knights_level_limit(Race race, C slot)
 {
-    return data::racialLevelCaps.at(race_index(race)).at(static_cast<std::size_t>(slot));
+    return data::racialLevelCaps.at(krynn_race_index(race)).at(static_cast<std::size_t>(slot));
 }
 
 std::optional<int> death_knights_experience_for_level(C slot, int level, KrynnOrders orders)
 {
-    const auto table = progression(slot, orders);
+    const auto table = krynn_progression(slot, orders);
     if (!table || level < 1 || level > 18)
     {
         return std::nullopt;
@@ -268,51 +272,21 @@ void recalculate_death_knights_numbers(rules::CharacterSheet::Original &numbers,
     numbers.cleric_slots = slots[0];
     numbers.druid_slots = slots[1];
     numbers.magic_user_slots = slots[3];
-    const auto learn = [&](int number)
-    {
-        if (number && std::ranges::find(numbers.known_spells, number) == numbers.known_spells.end())
-        {
-            numbers.known_spells.push_back(number);
-        }
-    };
     for (std::size_t level = 0; level < 8; ++level)
     {
         if (numbers.cleric_slots[level] > 0)
         {
             for (const auto own : data::spellsByLevel[0][level])
             {
-                learn(canonical_spell(own, game));
+                learn_known_spell(numbers, canonical_spell(own, game));
             }
         }
     }
-    for (const auto number : castable_spells(game))
-    {
-        const auto *known = spell(number, game);
-        if (known && known->caster_class == SpellClass::druid && known->level > 0 &&
-            numbers.druid_slots[static_cast<std::size_t>(known->level - 1)] > 0)
-        {
-            learn(number);
-        }
-    }
+    learn_druid_spells(numbers, game);
     // Gifts have an independent allowance; their native table row is not a mage slot.
-    numbers.deity_spell_slots = {};
-    if (level_in(numbers.class_levels, C::cleric) > 0 && numbers.deity >= 1 && numbers.deity <= 7)
-    {
-        static constexpr std::array<std::array<int, 3>, 7> gifts{
-            {{501}, {502}, {503}, {504, 505, 506}, {507}, {}, {506}}};
-        numbers.deity_spell_slots[0] = numbers.deity == 4 ? 3 : numbers.deity == 6 ? 0 : 1;
-        for (const auto gift : gifts[numbers.deity - 1])
-        {
-            learn(gift);
-        }
-    }
+    learn_deity_gifts(numbers);
     numbers.thac0 = death_knights_thac0(numbers.class_levels);
-    const auto race = static_cast<Race>(numbers.race);
-    if (numbers.deity == 3 ||
-        (numbers.deity == 6 && (race == Race::mountain_dwarf || race == Race::hill_dwarf)))
-    {
-        --numbers.thac0;
-    }
+    favor_thac0_by_deity(numbers);
     numbers.saving_throws = death_knights_saving_throws(numbers.class_levels);
 }
 

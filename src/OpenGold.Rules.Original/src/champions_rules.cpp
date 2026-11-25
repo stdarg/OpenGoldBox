@@ -13,15 +13,6 @@ using P = Profession;
 using C = ClassSlot;
 using Row = std::array<int, 5>;
 
-std::size_t race_index(Race race)
-{
-    if (!champions_race(race))
-    {
-        throw std::invalid_argument("Not a Krynn race");
-    }
-    return static_cast<std::size_t>(race) - static_cast<std::size_t>(Race::silvanesti_elf);
-}
-
 std::size_t progression(C slot, KrynnOrders orders)
 {
     switch (slot)
@@ -86,6 +77,48 @@ constexpr std::array<std::array<Row, 7>, 4> slot_increments{{{{{1, 0, 0, 0, 0},
                                                                {0, 0, 1, 1, 0}}}}};
 } // namespace
 
+std::size_t krynn_race_index(Race race)
+{
+    if (!champions_race(race))
+    {
+        throw std::invalid_argument("Not a Krynn race");
+    }
+    return static_cast<std::size_t>(race) - static_cast<std::size_t>(Race::silvanesti_elf);
+}
+
+void learn_known_spell(rules::CharacterSheet::Original &numbers, int number)
+{
+    if (number && std::ranges::find(numbers.known_spells, number) == numbers.known_spells.end())
+    {
+        numbers.known_spells.push_back(number);
+    }
+}
+
+void learn_deity_gifts(rules::CharacterSheet::Original &numbers)
+{
+    numbers.deity_spell_slots = {};
+    if (level_in(numbers.class_levels, C::cleric) > 0 && numbers.deity >= 1 && numbers.deity <= 7)
+    {
+        static constexpr std::array<std::array<int, 3>, 7> gifts{
+            {{501}, {502}, {503}, {504, 505, 506}, {507}, {}, {506}}};
+        numbers.deity_spell_slots[0] = numbers.deity == 4 ? 3 : numbers.deity == 6 ? 0 : 1;
+        for (const auto gift : gifts[static_cast<std::size_t>(numbers.deity - 1)])
+        {
+            learn_known_spell(numbers, gift);
+        }
+    }
+}
+
+void favor_thac0_by_deity(rules::CharacterSheet::Original &numbers)
+{
+    const auto race = static_cast<Race>(numbers.race);
+    if (numbers.deity == 3 ||
+        (numbers.deity == 6 && (race == Race::mountain_dwarf || race == Race::hill_dwarf)))
+    {
+        --numbers.thac0;
+    }
+}
+
 unsigned record_race(Race race, GoldBoxGame game) noexcept
 {
     if (is_buck_rogers(game) && buck_rogers_race(race))
@@ -127,7 +160,7 @@ AbilityLimits champions_ability_limits(Race race, Gender gender)
          {9, 18, 17, 99, 0, 3, 18, 3, 18, 3, 17, 14, 19, 3, 12},
          {6, 16, 16, 0, 0, 6, 18, 3, 16, 8, 19, 10, 18, 6, 18},
          {3, 18, 18, 100, 50, 3, 18, 3, 18, 3, 18, 3, 18, 3, 18}}};
-    const auto &r = limits[race_index(race)];
+    const auto &r = limits[krynn_race_index(race)];
     const bool female = gender == Gender::female;
     return {{r[0], r[9], r[11], r[5], r[7], r[13]},
             {r[female ? 2 : 1], r[10], r[12], r[6], r[8], r[14]},
@@ -203,7 +236,7 @@ std::array<int, 4> champions_age_categories(Race race)
                                                              {50, 150, 250, 350},
                                                              {33, 68, 101, 144},
                                                              {20, 40, 60, 90}}};
-    return ages[race_index(race)];
+    return ages[krynn_race_index(race)];
 }
 
 int champions_starting_age(Race race, Profession profession, RandomState &random)
@@ -230,7 +263,7 @@ int champions_starting_age(Race race, Profession profession, RandomState &random
                             : has(C::ranger)     ? 2
                             : has(C::thief)      ? 4
                                                  : 5;
-    const auto &dice = ages[race_index(race)][row];
+    const auto &dice = ages[krynn_race_index(race)][row];
     int age = dice[0];
     for (int count = 0; count < dice[1]; ++count)
     {
@@ -248,7 +281,7 @@ std::array<int, 8> champions_thief_adjustments(Race race)
                                                                     {5, 5, 5, 10, 15, 5, -15, -5},
                                                                     {-5, 5, 5, 0, 0, 5, 5, -10},
                                                                     {}}};
-    return adjustments[race_index(race)];
+    return adjustments[krynn_race_index(race)];
 }
 
 int champions_thac0(const ClassLevels &levels)
@@ -418,27 +451,9 @@ void recalculate_champions_numbers(rules::CharacterSheet::Original &numbers,
             }
         }
     }
-    numbers.deity_spell_slots = {};
-    if (level_in(levels, C::cleric) > 0 && numbers.deity >= 1 && numbers.deity <= 7)
-    {
-        numbers.deity_spell_slots[0] = numbers.deity == 4 ? 3 : numbers.deity == 6 ? 0 : 1;
-        static constexpr std::array<std::array<int, 3>, 7> gifts{
-            {{501}, {502}, {503}, {504, 505, 506}, {507}, {}, {506}}};
-        for (const auto gift : gifts[static_cast<std::size_t>(numbers.deity - 1)])
-        {
-            if (gift)
-            {
-                numbers.known_spells.push_back(gift);
-            }
-        }
-    }
+    learn_deity_gifts(numbers);
     numbers.thac0 = champions_thac0(levels);
-    const auto race = static_cast<Race>(numbers.race);
-    if (numbers.deity == 3 ||
-        (numbers.deity == 6 && (race == Race::mountain_dwarf || race == Race::hill_dwarf)))
-    {
-        --numbers.thac0;
-    }
+    favor_thac0_by_deity(numbers);
     numbers.saving_throws = champions_saving_throws(levels);
 }
 
