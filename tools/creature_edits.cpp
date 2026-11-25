@@ -429,7 +429,7 @@ Applied spell_profile(Files &files, const Edit &edit, const std::string &date)
     {
         refuse(edit.where, "no creature in combat.rules casts at " + profile_text(to));
     }
-    constexpr std::array<const char *, 3> names{"spell_slots", "casting_bonus", "level"};
+    static constexpr std::array<const char *, 3> names{"spell_slots", "casting_bonus", "level"};
     for (std::size_t n = 0; n < spell_profile_fields.size(); ++n)
     {
         fields[spell_profile_fields[n]] = number_text(*number_member(to, names[n]));
