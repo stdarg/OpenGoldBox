@@ -28,7 +28,7 @@ legal opaque choice IDs, slot arithmetic, resource capacity/recharge and encoded
 continuation. Core validates the completed-rest ticket and member eligibility,
 then commits an owned candidate party state atomically. Core contains no Wizard
 or spell-slot arithmetic. Godot displays rules-provided options and submits the
-chosen ID; both applications use `rest_dialog_impl.h`.
+chosen ID; both applications use `rolf_tour_rest.cpp`.
 
 AR-1's row appears above Result, shortening the scrollable Info area only while
 shown. Non-Wizards have no row. No legal allocation or a spent use disables both

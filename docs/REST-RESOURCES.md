@@ -288,7 +288,7 @@ module identity are unchanged; this introduces no control or layout changes.
 
 *The resumption controls (Resume/End Rest) below are superseded by [SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation).*
 
-Approved Q29–31 are implemented once in `src/OpenGoldBox/rest_dialog_impl.h` and
+Approved Q29–31 are implemented once in `src/OpenGoldBox/rolf_tour_rest.cpp` and
 used by the game and demo. Camp opens a centered, keyboard-accessible Short/Long
 Rest picker. Each member has current HP and Hit Dice, with eligibility, cooldown
 and resource recovery details for the selected member. Start runs the existing

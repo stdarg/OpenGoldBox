@@ -1,9 +1,26 @@
-#ifndef OPENGOLDBOX_MASTERY_REST_VIEW_CHECKS_H
-#define OPENGOLDBOX_MASTERY_REST_VIEW_CHECKS_H
-
 // Native acceptance hooks follow the existing rest control checks. They drive
 // the live campaign and the same button signals used by the player.
+#include "rolf_tour_view.h"
+#include "game_resources.h"
+#include "game_rules.h"
 #include "godot_nodes.h"
+#include "localization.h"
+#include "training_control.h"
+#include "opengold/campaign_save.h"
+#include <godot_cpp/classes/button.hpp>
+#include <godot_cpp/classes/check_box.hpp>
+#include <godot_cpp/classes/input_event_key.hpp>
+#include <godot_cpp/classes/label.hpp>
+#include <godot_cpp/classes/option_button.hpp>
+#include <godot_cpp/classes/scene_tree.hpp>
+#include <godot_cpp/classes/viewport_texture.hpp>
+#include <godot_cpp/classes/window.hpp>
+#include <algorithm>
+#include <filesystem>
+#include <stdexcept>
+
+using namespace godot;
+using namespace opengold::por;
 
 void RolfTourView::check_mastery_rest_controls()
 {
@@ -22,7 +39,7 @@ void RolfTourView::check_mastery_rest_controls()
             auto draft = campaign_->member(campaign_->selected()).character.creation_data();
             // The SRD's classes and their training.
             campaign_ = new_campaign_party(
-                GameRules{}, {std::filesystem::path(rest_rules_path().utf8().get_data()), {}});
+                GameRules{}, {std::filesystem::path(game_rules_file().utf8().get_data()), {}});
             const auto &rules = campaign_->character_rules();
             unsigned index = 0;
             for (const std::string klass :
@@ -217,8 +234,7 @@ void RolfTourView::check_mastery_rest_controls()
                     if (String(arg).begins_with("--mastery-rest-captures="))
                     {
                         const auto dir = String(arg).trim_prefix("--mastery-rest-captures=");
-                        std::filesystem::create_directories(
-                            presentation::path_from_godot(dir));
+                        std::filesystem::create_directories(presentation::path_from_godot(dir));
                         const auto image = get_viewport()->get_texture()->get_image();
                         check(image.is_valid() &&
                                   image->save_png(dir.path_join(
@@ -281,4 +297,3 @@ void RolfTourView::check_mastery_rest_controls()
         get_tree()->quit(1);
     }
 }
-#endif

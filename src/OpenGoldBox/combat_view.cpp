@@ -1000,8 +1000,6 @@ void CombatView::layout_log()
     required_node<Node>(*this, "CombatLayout").call("layout_log");
 }
 
-#include "nick_dialog_impl.h"
-
 void CombatView::training()
 {
     try

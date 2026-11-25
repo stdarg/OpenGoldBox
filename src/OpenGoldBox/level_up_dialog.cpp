@@ -3,6 +3,7 @@
 #include "level_up_dialog.h"
 #include "class_text.h"
 #include "spell_choice_controls.h"
+#include "opengold/srd5.h"
 #include "guarded_handlers.h"
 #include "localization.h"
 #include "scoped_flag.h"

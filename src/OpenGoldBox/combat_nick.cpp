@@ -1,8 +1,14 @@
-#ifndef OPENGOLDBOX_NICK_DIALOG_IMPL_H
-#define OPENGOLDBOX_NICK_DIALOG_IMPL_H
-
-// Included in both native combat views; only presents rules-provided commands.
+// The Nick attack dialog: a Light weapon's extra attack with the Attack
+// action; it only presents rules-provided commands.
+#include "combat_view.h"
 #include "godot_nodes.h"
+#include <godot_cpp/classes/button.hpp>
+#include <godot_cpp/classes/input_event_key.hpp>
+#include <godot_cpp/classes/option_button.hpp>
+#include <godot_cpp/classes/viewport.hpp>
+#include <godot_cpp/classes/window.hpp>
+
+using namespace godot;
 
 void CombatView::begin_nick()
 {
@@ -51,4 +57,3 @@ void CombatView::confirm_nick()
     presentation::required_node<Button>(*this, "Nick").release_focus();
     select_mode(key.get_slice("#", 0));
 }
-#endif
