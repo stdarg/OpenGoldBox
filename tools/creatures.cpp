@@ -2,6 +2,7 @@
 #include "opengold/creature_catalog.h"
 #include "armor.h"
 
+#include <exception>
 #include <iostream>
 
 namespace
@@ -261,7 +262,7 @@ int main(int argc, char **argv)
             }
         }
     }
-    catch (const opengold::por::CatalogError &error)
+    catch (const std::exception &error)
     {
         std::cerr << error.what() << '\n';
         return 1;
