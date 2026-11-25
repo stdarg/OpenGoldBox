@@ -2133,19 +2133,30 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
             // lost for good, and only the monsters it killed are worth experience.
             // The treasure stays with the monsters.
             snapshot_.dialogue = "Your party flees the battle.";
-            for (const auto &unit : result.combatants)
+            // Original members left on the field are lost regardless of a
+            // charm changing their side (Native postcmbt.c, hero_drop). Lent
+            // allies and charmed encounter monsters are not original members.
+            for (const auto id : expected_party)
             {
-                if (unit.side == rules::Side::party && !unit.fled)
+                const auto unit =
+                    std::ranges::find(result.combatants, id, &rules::CombatantView::id);
+                if (unit == result.combatants.end() || !unit->fled)
                 {
-                    campaign_->lose(unit.id);
-                    snapshot_.dialogue += "\n" + unit.name + " is left behind and lost.";
+                    const auto name = campaign_->member(id).character.sheet().name;
+                    campaign_->lose(id);
+                    snapshot_.dialogue += "\n" + name + " is left behind and lost.";
                 }
+            }
+            // The script's chosen member is one still in the party.
+            if (!campaign_->state().slots.at(selected_character_.index))
+            {
+                selected_character_ = campaign_->state().selected_slot;
             }
             unsigned experience = 0;
             for (const auto &unit : result.combatants)
             {
-                if (unit.side == rules::Side::opposition && unit.hit_points <= 0 &&
-                    staged_records_.at(unit.id - 1000) != mirror_record)
+                if (unit.side == rules::Side::opposition && enemies.contains(unit.id) &&
+                    unit.hit_points <= 0 && staged_records_.at(unit.id - 1000) != mirror_record)
                 {
                     experience += record_experience(staged_records_.at(unit.id - 1000));
                 }

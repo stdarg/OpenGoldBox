@@ -1769,7 +1769,165 @@ void installed_records_decode()
                       party->member(hero).experience == before.roster.front().experience,
                   "Native nonlethal battles recover living unconscious members without XP or loot");
             party->restore(before);
+            // A party that gets away leaves its lent allies on the field
+            // (the Font's gnomes, ECL64 9FE8); they are not members to lose.
+            combat.campaign_party(party);
+            for (unsigned screen = 0; screen < 20 && !combat.pending_encounter(); ++screen)
+            {
+                combat.advance(1);
+                if (combat.snapshot().phase == opengold::por::TourPhase::awaiting_continue)
+                {
+                    check(combat.choose(combat.snapshot().continue_ticket, 0),
+                          "Dismiss the flight fixture's monster close-up");
+                }
+            }
+            check(combat.pending_encounter().has_value(), "Restage the native flight fixture");
+            outcome.outcome = opengold::rules::Outcome::fled;
+            outcome.combatants.front().fled = true;
+            outcome.combatants.front().hit_points = party->member(hero).vitals.hit_points;
+            outcome.combatants.front().persistent = party->member(hero).vitals;
+            opengold::rules::CombatantView gnome;
+            gnome.id = opengold::first_ally_id;
+            gnome.side = opengold::rules::Side::party;
+            gnome.hit_points = 10;
+            outcome.combatants.push_back(gnome);
+            check(combat.resolve_combat(outcome), "Resolve the native flight fixture");
+            combat.advance(1);
+            check(combat.snapshot().diagnostic.empty() && !party->member(hero).vitals.dead &&
+                      party->state().slots.front() == hero,
+                  "Getting away keeps every member and leaves the lent ally behind");
+            party->restore(before);
         }
+    }
+    // Synthetic combat-result transactions, not earned campaign outcomes:
+    // actual Native members/creatures exercise loss, host selection and saves.
+    {
+        using namespace opengold;
+        const auto before_flight = party->state();
+        CharacterCreator survivor_creator(creation, 2070);
+        survivor_creator.select(rules::CreationField::race, "krynn_human");
+        survivor_creator.select(rules::CreationField::character_class, "fighter");
+        survivor_creator.name("Escaped member");
+        test::walk_original_creation(survivor_creator);
+        const auto survivor = party->add_pc(survivor_creator.create_character());
+        const auto companion_record = creatures.find({1, 113});
+        check(companion_record.has_value(), "The flight fixture uses actual Grunschka");
+        const auto companion_draft = creation->record_draft(companion_record->get().stored.raw);
+        check(companion_draft.has_value(), "Decode the permanent native companion");
+        const auto companion =
+            party->recruit("por:MON1CHA:113", Character(*creation, *companion_draft, {}));
+        const auto baseline = party->state();
+        check(baseline.slots[0] == hero && baseline.slots[1] == survivor &&
+                  baseline.slots[6] == companion && baseline.selected_slot.index == 0,
+              "The selected original member differs from the member who escapes");
+        for (unsigned scenario = 0; scenario < 3; ++scenario)
+        {
+            party->restore(baseline);
+            if (scenario == 2)
+            {
+                rules::HazardAttack knockout{0, 0, 0, party->member(hero).vitals.hit_points, {}};
+                knockout.automatic = true;
+                (void)party->hazard_attack(hero, knockout);
+                check(party->member(hero).vitals.hit_points == 0,
+                      "The charmed original is down before its result is submitted");
+            }
+            Bytes fixture;
+            for (unsigned entry = 0; entry < 5; ++entry)
+            {
+                fixture.insert(fixture.end(), {1, 1, 0x14, 0x80});
+            }
+            fixture.insert(fixture.end(),
+                           {33, 0, 10, 0, 1, 11, 0,
+                            static_cast<std::uint8_t>(native_monster->operands[0].value), 0, 1, 0,
+                            static_cast<std::uint8_t>(native_monster->operands[2].value), 36,
+                            // Chosen-member DAMAGE: one automatic point, no save.
+                            46, 0, 0x80, 0, 0, 0, 0, 0, 1, 0, 0x80, 0});
+            auto resources = std::make_shared<por::PhlanResources>(*world.resources());
+            auto program = std::make_shared<const por::EclProgram>(
+                por::EclProgram::decode(fixture, "Native flight and chosen damage fixture", game));
+            resources->programs[4] = program;
+            por::RolfTourSession flight(por::GeoMap{}, program, {}, 0, {}, resources);
+            flight.campaign_party(party);
+            for (unsigned screen = 0; screen < 20 && !flight.pending_encounter(); ++screen)
+            {
+                flight.advance(1);
+                check(flight.snapshot().diagnostic.empty(),
+                      "Stage native flight: " + flight.snapshot().diagnostic);
+                if (flight.snapshot().phase == por::TourPhase::awaiting_continue)
+                {
+                    check(flight.choose(flight.snapshot().continue_ticket, 0),
+                          "Dismiss the flight fixture's monster picture");
+                }
+            }
+            check(flight.pending_encounter().has_value(), "Stage the native flight transaction");
+            rules::Snapshot outcome;
+            outcome.identity = party->identity();
+            outcome.outcome = rules::Outcome::fled;
+            for (const auto id : {hero, survivor, companion})
+            {
+                rules::CombatantView member;
+                member.id = id;
+                member.name = party->member(id).character.sheet().name;
+                member.side =
+                    id == hero && scenario != 0 ? rules::Side::opposition : rules::Side::party;
+                member.hit_points = party->member(id).vitals.hit_points;
+                member.persistent = party->member(id).vitals;
+                member.fled = id == survivor || (id == companion && scenario == 0);
+                outcome.combatants.push_back(std::move(member));
+            }
+            rules::CombatantView enemy;
+            enemy.id = flight.pending_encounter()->enemies.front().id;
+            enemy.side = rules::Side::opposition;
+            enemy.hit_points = 1;
+            outcome.combatants.push_back(enemy);
+            // Lent creatures are never PartyMembers, on either combat side.
+            rules::CombatantView gnome;
+            gnome.id = first_ally_id;
+            gnome.side = scenario == 2 ? rules::Side::opposition : rules::Side::party;
+            gnome.hit_points = scenario == 2 ? 0 : 10;
+            outcome.combatants.push_back(gnome);
+            const auto survivor_hp = party->member(survivor).vitals.hit_points;
+            const auto survivor_xp = party->member(survivor).experience;
+            check(flight.resolve_combat(outcome), "Resolve synthetic native flight");
+            check(flight.snapshot().diagnostic.empty() &&
+                      flight.snapshot().phase == por::TourPhase::awaiting_continue,
+                  "Flight resumes ordinary DAMAGE: " + flight.snapshot().diagnostic);
+            check(party->state().slots[0] == 0 && party->state().slots[1] == survivor &&
+                      party->state().selected_slot.index == 1 && party->member(hero).vitals.dead &&
+                      party->member(hero).vitals.hit_points == 0,
+                  "Every non-fled original is lost regardless of its combat side");
+            check(party->state().slots[6] == (scenario == 0 ? companion : 0) &&
+                      party->member(companion).vitals.dead == (scenario != 0),
+                  "A permanent companion stays only when it actually fled");
+            check(party->member(survivor).vitals.hit_points == survivor_hp - 1 &&
+                      party->member(survivor).experience == survivor_xp,
+                  "DAMAGE reaches the selected survivor; allies and charmed members pay no XP");
+            check(flight.choose(flight.snapshot().continue_ticket, 0),
+                  "Dismiss the ordinary damage message");
+            flight.advance(1);
+            check(flight.snapshot().diagnostic.empty() &&
+                      flight.snapshot().phase == por::TourPhase::completed &&
+                      party->member(hero).vitals.dead && party->member(hero).vitals.hit_points == 0,
+                  "The continuation never restores a left-behind original");
+            const auto after_flight = party->state();
+            for (unsigned format = 49; format <= 54; ++format)
+            {
+                const auto bytes = encode_campaign_in_format(*party, nullptr,
+                                                             "native-flight-fixture", format, game);
+                auto saved = decode_campaign(bytes, *creation, *audit_module,
+                                             "native-flight-fixture", nullptr);
+                party->restore(std::move(saved.party));
+                check(encode_campaign_in_format(*party, nullptr, "native-flight-fixture", format,
+                                                game) == bytes &&
+                          party->state().slots == after_flight.slots &&
+                          party->state().roster.size() == after_flight.roster.size() &&
+                          party->member(hero).vitals.dead &&
+                          party->member(survivor).vitals.hit_points == survivor_hp - 1,
+                      "Supported Native save history retains escaped slots and lost records: " +
+                          std::to_string(format));
+            }
+        }
+        party->restore(before_flight);
     }
     // The vault is a real host service. Only this isolated request is
     // synthetic; money/item mutations and save/load use campaign commands.
