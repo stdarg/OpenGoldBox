@@ -129,6 +129,11 @@ add_library(opengold_rules_original STATIC
     src/OpenGold.Rules.Original/src/combatant.cpp
     src/OpenGold.Rules.Original/src/spells.cpp
     src/OpenGold.Rules.Original/src/combat_session.cpp
+    src/OpenGold.Rules.Original/src/ground_combat.cpp
+    src/OpenGold.Rules.Original/src/area_forecast.cpp
+    src/OpenGold.Rules.Original/src/combat_checkpoint.cpp
+    src/OpenGold.Rules.Original/src/game_specials.cpp
+    src/OpenGold.Rules.Original/src/monster_ai.cpp
     src/OpenGold.Rules.Original/src/history_entries.cpp
     src/OpenGold.Rules.Original/src/line_walk.cpp
     src/OpenGold.Rules.Original/src/outlook_dice.cpp

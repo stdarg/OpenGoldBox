@@ -86,7 +86,9 @@ def extract():
         add("".join(ast.literal_eval(part) for part in re.findall(LITERAL, match[2])), original_choices, line)
     # The original rules' messages, spells and refusals: their sentences, and
     # every spell name in the spell table.
-    for name in ("combat_session.cpp", "rules_module.cpp", "history_entries.cpp", "spells.cpp"):
+    for name in ("combat_session.cpp", "combat_session_impl.h", "ground_combat.cpp",
+                 "area_forecast.cpp", "combat_checkpoint.cpp", "game_specials.cpp",
+                 "monster_ai.cpp", "rules_module.cpp", "history_entries.cpp", "spells.cpp"):
         source = ROOT / "src/OpenGold.Rules.Original/src" / name
         content = source.read_text(encoding="utf-8-sig")
         for match in re.finditer(LITERAL, content):
