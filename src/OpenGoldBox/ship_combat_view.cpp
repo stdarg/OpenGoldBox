@@ -162,9 +162,10 @@ constexpr int scanner_range = 8;
     return control.get_theme_color(name, "OpenGoldPalette");
 }
 
-[[nodiscard]] Label *new_label(const String &text, const char *variation)
+// A detached label, owned by the caller until it is attached.
+[[nodiscard]] presentation::NodeOwner<Label> new_label(const String &text, const char *variation)
 {
-    auto *label = memnew(Label);
+    auto label = presentation::make_node<Label>();
     label->set_text(text);
     label->set_theme_type_variation(variation);
     return label;
@@ -261,31 +262,31 @@ void ShipCombatView::prepare()
             *this, path(std::string("Margin/Columns/Main/Ships/") + ship + "/Margin/Rows/Systems"));
         for (std::size_t system = 0; system < system_count; ++system)
         {
-            auto *icon = memnew(TextureRect);
+            auto icon = presentation::make_node<TextureRect>();
             icon->set_expand_mode(TextureRect::EXPAND_IGNORE_SIZE);
             icon->set_stretch_mode(TextureRect::STRETCH_KEEP_ASPECT_CENTERED);
             icon->set_custom_minimum_size(Vector2(30, 20));
-            grid.add_child(icon);
-            auto *name = new_label(system_name(static_cast<ShipSystem>(system)), "LabelText14");
+            presentation::attach_child(grid, std::move(icon));
+            auto name = new_label(system_name(static_cast<ShipSystem>(system)), "LabelText14");
             name->set_custom_minimum_size(Vector2(92, 0));
-            grid.add_child(name);
-            auto *bar = memnew(HBoxContainer);
+            presentation::attach_child(grid, std::move(name));
+            auto bar = presentation::make_node<HBoxContainer>();
             bar->add_theme_constant_override("separation", 0);
             bar->set_h_size_flags(Control::SIZE_EXPAND_FILL);
             bar->set_v_size_flags(Control::SIZE_SHRINK_CENTER);
             for (const char *part : {"Filled", "Empty"})
             {
-                auto *rect = memnew(ColorRect);
+                auto rect = presentation::make_node<ColorRect>();
                 rect->set_name(part);
                 rect->set_custom_minimum_size(Vector2(0, 8));
                 rect->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-                bar->add_child(rect);
+                presentation::attach_child(*bar, std::move(rect));
             }
-            grid.add_child(bar);
-            auto *value = new_label("", "LabelText14");
+            presentation::attach_child(grid, std::move(bar));
+            auto value = new_label("", "LabelText14");
             value->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_RIGHT);
             value->set_custom_minimum_size(Vector2(78, 0));
-            grid.add_child(value);
+            presentation::attach_child(grid, std::move(value));
         }
     }
 }
@@ -612,7 +613,7 @@ void ShipCombatView::show_range_track()
     const int range = std::clamp(combat.range(), 0, scanner_range);
     for (int cell = 0; cell <= scanner_range; ++cell)
     {
-        auto *column = memnew(VBoxContainer);
+        auto column = presentation::make_node<VBoxContainer>();
         column->set_name(String("Cell") + String::num_int64(cell));
         column->set_h_size_flags(Control::SIZE_EXPAND_FILL);
         column->add_theme_constant_override("separation", 0);
@@ -621,20 +622,20 @@ void ShipCombatView::show_range_track()
         {
             names += (names.is_empty() ? "" : ", ") + weapon_name(kind);
         }
-        auto *weapons = new_label(names, "LabelText11");
+        auto weapons = new_label(names, "LabelText11");
         weapons->set_name("Reach");
         weapons->add_theme_color_override("font_color", palette(*this, "party"));
         // TextServer::AUTOWRAP_WORD_SMART, which the trimmed bindings lack.
         weapons->set("autowrap_mode", 3);
         weapons->set_vertical_alignment(VERTICAL_ALIGNMENT_BOTTOM);
         weapons->set_v_size_flags(Control::SIZE_EXPAND_FILL);
-        column->add_child(weapons);
-        auto *number = new_label(cell == range ? String::utf8("◆ ") + String::num_int64(cell)
-                                               : String::num_int64(cell),
-                                 cell == range ? "LabelGoldText16" : "LabelMutedText14");
+        presentation::attach_child(*column, std::move(weapons));
+        auto number = new_label(cell == range ? String::utf8("◆ ") + String::num_int64(cell)
+                                              : String::num_int64(cell),
+                                cell == range ? "LabelGoldText16" : "LabelMutedText14");
         number->set_name("Number");
-        column->add_child(number);
-        cells.add_child(column);
+        presentation::attach_child(*column, std::move(number));
+        presentation::attach_child(cells, std::move(column));
     }
 }
 
@@ -715,7 +716,7 @@ void ShipCombatView::show_ship(bool enemy_side)
     for (const char *heading :
          {N_("Weapons"), N_("By"), N_("Up"), N_("Rounds"), N_("Reloads"), N_("Range")})
     {
-        weapons.add_child(new_label(i18n::text(heading), "LabelMutedText14"));
+        presentation::attach_child(weapons, new_label(i18n::text(heading), "LabelMutedText14"));
     }
     const bool figures = !enemy_side || enemy_figures_shown();
     for (const auto &mount : ship.weapons)
@@ -742,18 +743,18 @@ void ShipCombatView::show_ship(bool enemy_side)
         const auto color = mount.status == 0              ? destroyed
                            : mount.status < mount.maximum ? damaged
                                                           : Color();
-        for (std::size_t column = 0; column < cells.size(); ++column)
+        for (const auto &text : cells)
         {
-            auto *cell = new_label(cells[column], "LabelText14");
+            auto cell = new_label(text, "LabelText14");
             if (mount.status < mount.maximum)
             {
                 cell->add_theme_color_override("font_color", color);
             }
-            else if (cells[column] == unknown)
+            else if (text == unknown)
             {
                 cell->add_theme_color_override("font_color", destroyed);
             }
-            weapons.add_child(cell);
+            presentation::attach_child(weapons, std::move(cell));
         }
     }
 }
@@ -768,7 +769,7 @@ void ShipCombatView::show_crew()
     {
         const auto &character = crew[member].character;
         const bool acting = combat.acting_member() == member;
-        auto *row = memnew(PanelContainer);
+        auto row = presentation::make_node<PanelContainer>();
         row->set_name(String("Member") + String::num_int64(static_cast<std::int64_t>(member)));
         Ref<StyleBoxFlat> style;
         style.instantiate();
@@ -780,9 +781,9 @@ void ShipCombatView::show_crew()
             style->set_border_color(palette(*this, "gold"));
         }
         row->add_theme_stylebox_override("panel", style);
-        auto *line = memnew(HBoxContainer);
+        auto line = presentation::make_node<HBoxContainer>();
         line->add_theme_constant_override("separation", 8);
-        auto *icon = memnew(TextureRect);
+        auto icon = presentation::make_node<TextureRect>();
         icon->set_name("Icon");
         icon->set_expand_mode(TextureRect::EXPAND_IGNORE_SIZE);
         icon->set_stretch_mode(TextureRect::STRETCH_KEEP_ASPECT_CENTERED);
@@ -791,8 +792,8 @@ void ShipCombatView::show_crew()
         {
             icon->set_texture(fight_->icons[member]);
         }
-        line->add_child(icon);
-        auto *text = memnew(VBoxContainer);
+        presentation::attach_child(*line, std::move(icon));
+        auto text = presentation::make_node<VBoxContainer>();
         text->add_theme_constant_override("separation", 0);
         text->set_h_size_flags(Control::SIZE_EXPAND_FILL);
         String name = String::utf8(character.name.c_str());
@@ -800,18 +801,18 @@ void ShipCombatView::show_crew()
         {
             name += String::utf8("  ★ ") + i18n::text(N_("Pilot"));
         }
-        auto *name_label = new_label(name, acting ? "LabelGoldText16" : "LabelText16");
+        auto name_label = new_label(name, acting ? "LabelGoldText16" : "LabelText16");
         name_label->set_name("Name");
         name_label->set_clip_text(true);
-        text->add_child(name_label);
-        auto *kind =
+        presentation::attach_child(*text, std::move(name_label));
+        auto kind =
             new_label(career_name(character) + String::utf8(" \u00B7 ") +
                           i18n::text(named(race_names, character.race)) + String::utf8(" \u00B7 ") +
                           i18n::text(named(gender_names, character.gender)),
                       "LabelText13");
         kind->add_theme_color_override("font_color", palette(*this, "score_neutral"));
         kind->set_clip_text(true);
-        text->add_child(kind);
+        presentation::attach_child(*text, std::move(kind));
         const auto status = original::status_of(character);
         String health = i18n::format(
             N_("HP {now} / {most}"),
@@ -821,16 +822,16 @@ void ShipCombatView::show_crew()
         {
             health += "   " + i18n::text(named(status_names, static_cast<std::size_t>(status)));
         }
-        auto *health_label = new_label(health, "LabelText14");
+        auto health_label = new_label(health, "LabelText14");
         health_label->set_name("Health");
         health_label->add_theme_color_override(
             "font_color",
             palette(*this,
                     status == original::BuckRogersStatus::okay ? "party" : "score_negative"));
-        text->add_child(health_label);
-        line->add_child(text);
-        row->add_child(line);
-        rows.add_child(row);
+        presentation::attach_child(*text, std::move(health_label));
+        presentation::attach_child(*line, std::move(text));
+        presentation::attach_child(*row, std::move(line));
+        presentation::attach_child(rows, std::move(row));
     }
 }
 
@@ -977,7 +978,7 @@ void ShipCombatView::show_choice()
     question.set_text(asked);
     for (std::size_t index = 0; index < labels.size(); ++index)
     {
-        auto *button = memnew(Button);
+        auto button = presentation::make_node<Button>();
         button->set_name(String("Answer") + String::num_int64(static_cast<std::int64_t>(index)));
         button->set_text(labels[index]);
         button->set_theme_type_variation("ButtonText14");
@@ -987,7 +988,7 @@ void ShipCombatView::show_choice()
                         presentation::guarded(this, &ShipCombatView::choice_pressed)
                             .bind(static_cast<std::int64_t>(index)),
                         Object::CONNECT_DEFERRED);
-        answers.add_child(button);
+        presentation::attach_child(answers, std::move(button));
     }
 }
 

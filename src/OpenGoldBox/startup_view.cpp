@@ -345,27 +345,27 @@ void StartupView::add_game_buttons(VBoxContainer &games)
 {
     for (const auto &[world, name] : worlds)
     {
-        auto *heading = memnew(Label); // owned by the picker once added
+        auto heading = presentation::make_node<Label>();
         heading->set_text(i18n::text(name));
         heading->set_theme_type_variation("PickerWorldHeading");
         heading->set_vertical_alignment(VERTICAL_ALIGNMENT_BOTTOM);
         // Space above every heading but the first.
         heading->set_custom_minimum_size({0, games.get_child_count() == 0 ? 0.0f : 40.0f});
-        games.add_child(heading);
+        presentation::attach_child(games, std::move(heading));
         for (const auto &entry : playable_games)
         {
             if (entry.world != world)
             {
                 continue;
             }
-            auto *button = memnew(Button); // owned by the picker once added
+            auto button = presentation::make_node<Button>();
             button->set_name(std::string(opengold::game_folder(entry.game)).c_str());
             button->set_text(i18n::text(entry.title));
             button->set_disabled(!entry.plays);
             button->set_custom_minimum_size({0, 36});
             button->connect("pressed", presentation::guarded(this, &StartupView::game_chosen)
                                            .bind(static_cast<std::int64_t>(entry.game)));
-            games.add_child(button);
+            presentation::attach_child(games, std::move(button));
         }
     }
 }
