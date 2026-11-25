@@ -2,7 +2,6 @@
 #define OPENGOLD_DIFFICULTY_H
 #include "opengold/gold_box_game.h"
 
-#include <algorithm>
 #include <array>
 #include <optional>
 #include <span>
@@ -241,41 +240,7 @@ inline constexpr std::array<std::pair<std::string_view, std::string_view>, 19> a
 // The monster abilities off at `difficulty`, given the options as (ability,
 // value) pairs. An option whose value is no difficulty and not "never" keeps
 // the default.
-[[nodiscard]] inline std::vector<std::string>
-abilities_off(Difficulty difficulty, std::span<const std::pair<std::string, std::string>> options)
-{
-    std::vector<std::pair<std::string, std::string>> merged(ability_defaults.begin(),
-                                                            ability_defaults.end());
-    for (const auto &[ability, value] : options)
-    {
-        if (value != "never" && !parse_difficulty(value))
-        {
-            continue;
-        }
-        const auto found = std::find_if(merged.begin(), merged.end(),
-                                        [&](const auto &option)
-                                        {
-                                            return option.first == ability;
-                                        });
-        if (found == merged.end())
-        {
-            merged.emplace_back(ability, value);
-        }
-        else
-        {
-            found->second = value;
-        }
-    }
-    std::vector<std::string> off;
-    for (const auto &[ability, value] : merged)
-    {
-        const auto from = parse_difficulty(value);
-        if (!from || difficulty < *from)
-        {
-            off.push_back(ability);
-        }
-    }
-    return off;
-}
+[[nodiscard]] std::vector<std::string>
+abilities_off(Difficulty difficulty, std::span<const std::pair<std::string, std::string>> options);
 } // namespace opengold
 #endif

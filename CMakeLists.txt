@@ -216,6 +216,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/magic_item_catalog.cpp
     src/OpenGold.Core/src/encounter_budget.cpp
     src/OpenGold.Core/src/campaign_encounter.cpp
+    src/OpenGold.Core/src/difficulty.cpp
     src/OpenGold.Core/src/combat_demo.cpp
     src/OpenGold.Core/src/dungeon_battlefield.cpp
     src/OpenGold.Core/src/encounter_formation.cpp
