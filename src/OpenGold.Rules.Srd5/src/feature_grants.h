@@ -22,12 +22,9 @@ std::vector<rules::FeatureGrant> starting_grants(CharacterClass klass, std::stri
 rules::FeatureGrant advancement_grant(CharacterClass klass, unsigned level,
                                       const rules::AdvancementChoice &choice);
 std::vector<rules::AdvancementOption> fighting_styles();
-// The class and subclass features gained on reaching `level`, from level 5 on
-// (SRD 5.2.1 class tables); choices such as feats are granted separately.
-std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, unsigned level);
 // The features a class gives on reaching `class_level`, gained at character
 // level `level` (MULTI-1): its level-one features, its level-two and -three
-// features and subclass, and higher_level_features. Choices are granted
+// features and subclass, and its features from level 5 on. Choices are granted
 // separately, and so is a Paladin's or Ranger's level-two Fighting Style.
 std::vector<rules::FeatureGrant> class_level_grants(CharacterClass klass, unsigned class_level,
                                                     unsigned level);

@@ -76,8 +76,6 @@ rules::TrainingChoiceGroup every_invocation(std::span<const rules::FeatureGrant>
 // The Skilled feat taken at feat level `level`: three skills.
 rules::TrainingChoiceGroup skilled_options(std::span<const rules::FeatureGrant> grants,
                                            unsigned level);
-// The level a feat level's Skilled was taken at, or 0 if none was.
-unsigned skilled_feat_level(std::span<const rules::FeatureGrant> grants);
 // Lessons of the First Ones' Skilled, taken at `level`: three skills.
 rules::TrainingChoiceGroup lessons_skilled_options(std::span<const rules::FeatureGrant> grants,
                                                    unsigned level);
@@ -112,9 +110,6 @@ multiclass_options(CharacterClass klass, std::span<const rules::FeatureGrant> gr
 // none for another group.
 std::optional<std::string_view> multiclass_grant_prefix(std::string_view group);
 std::vector<rules::FeatureGrant> without_training(std::span<const rules::FeatureGrant> grants);
-rules::TrainingChoices training_choices(std::span<const rules::FeatureGrant> grants,
-                                        const ClassHistory &history, std::string_view race,
-                                        std::string_view background);
 rules::TrainingProfile training_profile(std::span<const rules::FeatureGrant> grants,
                                         const ClassHistory &history, std::string_view race,
                                         std::string_view background,

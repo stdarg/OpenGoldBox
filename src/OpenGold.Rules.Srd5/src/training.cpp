@@ -1294,9 +1294,12 @@ TrainingChoiceGroup primal_knowledge_options(std::span<const FeatureGrant> grant
     return group;
 }
 
+namespace
+{
 // Skilled grants three skill proficiencies chosen from the whole catalog. Skills the
 // character already holds are omitted, which is what makes an already-known pick
 // fail the membership check rather than silently add a second identical grant.
+// The level a feat level's Skilled was taken at, or 0 if none was.
 unsigned skilled_feat_level(std::span<const FeatureGrant> grants)
 {
     const auto feat = std::find_if(grants.begin(), grants.end(),
@@ -1307,6 +1310,7 @@ unsigned skilled_feat_level(std::span<const FeatureGrant> grants)
                                    });
     return feat == grants.end() ? 0 : feat->level;
 }
+} // namespace
 
 TrainingChoiceGroup skilled_options(std::span<const FeatureGrant> grants, unsigned level)
 {
@@ -1404,6 +1408,8 @@ std::vector<FeatureGrant> training_grants(CharacterClass klass, std::string_view
     return result;
 }
 
+namespace
+{
 TrainingChoices training_choices(std::span<const FeatureGrant> grants,
                                  const ClassHistory &history, std::string_view race,
                                  std::string_view background)
@@ -1772,6 +1778,7 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants,
     require(actual == expected);
     return choices;
 }
+} // namespace
 
 TrainingProfile training_profile(std::span<const FeatureGrant> grants,
                                  const ClassHistory &history, std::string_view race,

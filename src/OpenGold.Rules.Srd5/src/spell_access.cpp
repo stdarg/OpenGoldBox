@@ -1329,11 +1329,15 @@ std::vector<std::string> class_prepared_spells(std::span<const std::string> prep
     return result;
 }
 
+namespace
+{
+// How a spell prepared for a class is recorded.
 std::string prepared_entry(std::string_view spell, CharacterClass klass, CharacterClass starting)
 {
     return klass == starting ? std::string(spell)
                              : std::string(spell) + prepared_tag + std::string(class_id(klass));
 }
+} // namespace
 
 std::vector<std::string> prepared_spell_ids(std::span<const std::string> prepared)
 {
@@ -2153,6 +2157,8 @@ bool warrior_cantrip(std::span<const FeatureGrant> grants, std::string_view spel
             (druidic_warrior(grants) && on_class_list(CharacterClass::druid, spell)));
 }
 
+namespace
+{
 std::vector<std::string> known_cantrip_ids(const SpellAccess &access)
 {
     std::vector<std::string> result;
@@ -2171,6 +2177,7 @@ std::vector<std::string> known_cantrip_ids(const SpellAccess &access)
     }
     return result;
 }
+} // namespace
 
 std::vector<std::string> casting_ids(const SpellAccess &access)
 {

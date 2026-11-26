@@ -68,6 +68,13 @@ std::string background_feat(std::string_view background)
                                      : std::string();
 }
 
+namespace
+{
+// The class and subclass features gained on reaching `level`, from level 5 on
+// (SRD 5.2.1 class tables); choices such as feats are granted separately.
+std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, unsigned level);
+} // namespace
+
 std::vector<rules::FeatureGrant> class_level_grants(CharacterClass klass, unsigned class_level,
                                                     unsigned level)
 {
@@ -281,6 +288,8 @@ rules::FeatureGrant advancement_grant(CharacterClass klass, unsigned level,
     return result;
 }
 
+namespace
+{
 std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, unsigned level)
 {
     std::vector<rules::FeatureGrant> result;
@@ -597,6 +606,7 @@ std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, uns
     }
     return result;
 }
+} // namespace
 
 std::vector<rules::AdvancementOption> fighting_styles()
 {

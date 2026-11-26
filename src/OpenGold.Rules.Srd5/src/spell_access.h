@@ -28,8 +28,6 @@ std::vector<CharacterClass> casting_classes(const ClassHistory &history);
 // The spells prepared for a class, without their mark.
 std::vector<std::string> class_prepared_spells(std::span<const std::string> prepared,
                                                CharacterClass klass, CharacterClass starting);
-// How a spell prepared for a class is recorded.
-std::string prepared_entry(std::string_view spell, CharacterClass klass, CharacterClass starting);
 // The prepared spells' ids, without their marks, each once.
 std::vector<std::string> prepared_spell_ids(std::span<const std::string> prepared);
 // Existing advancement selections learn any newly selected book spell and
@@ -38,9 +36,6 @@ rules::SpellChoiceOptions spell_choice_options(const rules::CharacterSheet &,
                                                rules::SpellChoiceContext);
 void apply_spell_choices(rules::CharacterSheet &, const rules::SpellChoices &,
                          rules::SpellChoiceContext, rules::ChoiceCompleteness);
-// Known and prepared spells as ids. Ids rather than a packed mask because an
-// int caps the catalog at 31 spells.
-std::vector<std::string> known_cantrip_ids(const rules::SpellAccess &);
 // Spells a class feature or Magic Initiate keeps prepared at this level,
 // outside the prepared count.
 // The Circle Spells of a land a Druid of the level has (Circle of the Land).
@@ -60,6 +55,8 @@ bool warrior_cantrip(std::span<const rules::FeatureGrant> grants, std::string_vi
 // The grant a Wizard of `level` gains by copying `spell` from a scroll into its
 // spellbook (MAGIC-6).
 rules::FeatureGrant copied_spell_grant(std::string_view spell, unsigned level);
+// Known and prepared spells as ids. Ids rather than a packed mask because an
+// int caps the catalog at 31 spells.
 std::vector<std::string> casting_ids(const rules::SpellAccess &);
 
 // One Magic Initiate feat's spells and the ability it casts them with.
