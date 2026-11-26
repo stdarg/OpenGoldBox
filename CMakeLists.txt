@@ -181,7 +181,9 @@ add_library(opengold_formats STATIC
     src/OpenGold.Formats/src/music_bank.cpp
     src/OpenGold.Formats/src/champions_music.cpp
     src/OpenGold.Formats/src/gold_box_game.cpp
-    src/OpenGold.Formats/src/ua_formats.cpp
+    src/OpenGold.Formats/src/ua_detail.cpp
+    src/OpenGold.Formats/src/ua_glyphs.cpp
+    src/OpenGold.Formats/src/ua_records.cpp
     src/OpenGold.Formats/src/ua_media.cpp
 )
 
