@@ -28,12 +28,6 @@ using namespace godot;
 
 namespace
 {
-std::optional<String> confirmed_path, confirmed_language;
-opengold::GoldBoxGame current_game = opengold::GoldBoxGame::pool_of_radiance;
-GameRules current_rules = new_game_rules;
-settings::GameStart current_start;
-std::map<opengold::GoldBoxGame, String> confirmed_folders;
-std::optional<String> confirmed_design;
 // The loudness the games' samples and music played at before the volume
 // settings, and still play at with a volume slider at its top.
 constexpr double full_sound_volume = 0.125;
@@ -159,31 +153,28 @@ std::filesystem::path own_folder()
     }
     return folder;
 }
+} // namespace
 
-// The folder the player chose for game, this run or in settings.cfg (Pool of
-// Radiance's under [game], another's under [games] by its game_folder name), or
-// empty.
-String chosen_game_folder(opengold::GoldBoxGame game)
+namespace settings
+{
+String Settings::chosen_game_folder(opengold::GoldBoxGame game) const
 {
     if (game == opengold::GoldBoxGame::pool_of_radiance)
     {
-        return confirmed_path ? *confirmed_path : settings::saved_game_path();
+        return confirmed_path_ ? *confirmed_path_ : settings::saved_game_path();
     }
-    if (const auto found = confirmed_folders.find(game); found != confirmed_folders.end())
+    if (const auto found = confirmed_folders_.find(game); found != confirmed_folders_.end())
     {
         return found->second;
     }
     return read("games", std::string(opengold::game_folder(game)).c_str());
 }
-} // namespace
 
-namespace settings
-{
 // The chosen folder while it holds the game's files, else the one the
 // environment's folders and the upward search find (opengold/game_finder.h).
 // A run looks once for each game, chosen folder and environment: the search
 // lists folders.
-std::optional<opengold::GameFolder> locate_game_folder(opengold::GoldBoxGame game)
+std::optional<opengold::GameFolder> Settings::locate_game_folder(opengold::GoldBoxGame game) const
 {
     // The start is looked up only when the search runs: finding the checkout
     // reads the disk.
@@ -200,13 +191,12 @@ std::optional<opengold::GameFolder> locate_game_folder(opengold::GoldBoxGame gam
     }
     key += "\t" + String::utf8(opengold::path_text(search.home).c_str());
 
-    static std::map<String, std::optional<opengold::GameFolder>> located_folders;
-    if (const auto known = located_folders.find(key); known != located_folders.end())
+    if (const auto known = located_folders_.find(key); known != located_folders_.end())
     {
         return known->second;
     }
     search.start = own_folder();
-    return located_folders[key] = opengold::locate_game_folder(game, search);
+    return located_folders_[key] = opengold::locate_game_folder(game, search);
 }
 
 bool flag(const char *name)
@@ -686,16 +676,16 @@ bool valid_language(const String &locale)
     return locale == "en" || locale == "es";
 }
 
-String game_path()
+String Settings::game_path() const
 {
-    return settings::game_folder(opengold::GoldBoxGame::pool_of_radiance);
+    return game_folder(opengold::GoldBoxGame::pool_of_radiance);
 }
 
-String language()
+String Settings::language() const
 {
-    if (confirmed_language)
+    if (confirmed_language_)
     {
-        return *confirmed_language;
+        return *confirmed_language_;
     }
     auto override = OS::get_singleton()->get_environment("OPENGOLD_LANG").strip_edges().to_lower();
     if (!flag("--reset-lang") && valid_language(override))
@@ -710,23 +700,23 @@ String language()
     return OS::get_singleton()->get_locale_language().to_lower() == "es" ? "es" : "en";
 }
 
-bool save_game_path(const String &directory)
+bool Settings::save_game_path(const String &directory)
 {
     if (!save("game", "path", directory))
     {
         return false;
     }
-    confirmed_path = directory;
+    confirmed_path_ = directory;
     return true;
 }
 
-bool save_language(const String &locale)
+bool Settings::save_language(const String &locale)
 {
     if (!valid_language(locale) || !save("interface", "language", locale))
     {
         return false;
     }
-    confirmed_language = locale;
+    confirmed_language_ = locale;
     return true;
 }
 
@@ -780,43 +770,43 @@ Validation validate_game_path(const String &directory)
     return result;
 }
 
-opengold::GoldBoxGame chosen_game()
+opengold::GoldBoxGame Settings::chosen_game() const
 {
-    return current_game;
+    return current_game_;
 }
 
-void choose_game(opengold::GoldBoxGame game)
+void Settings::choose_game(opengold::GoldBoxGame game)
 {
-    current_game = game;
+    current_game_ = game;
 }
 
-GameRules chosen_rules()
+GameRules Settings::chosen_rules() const
 {
-    return current_rules;
+    return current_rules_;
 }
 
-void choose_rules(GameRules rules)
+void Settings::choose_rules(GameRules rules)
 {
-    current_rules = rules;
+    current_rules_ = rules;
 }
 
-GameStart chosen_game_start()
+GameStart Settings::chosen_game_start() const
 {
-    return current_start;
+    return current_start_;
 }
 
-void choose_game_start(GameStart start)
+void Settings::choose_game_start(GameStart start)
 {
-    current_start = std::move(start);
+    current_start_ = std::move(start);
 }
 
-String game_folder(opengold::GoldBoxGame game)
+String Settings::game_folder(opengold::GoldBoxGame game) const
 {
     const auto located = locate_game_folder(game);
     return located ? String::utf8(opengold::path_text(located->folder).c_str()) : String();
 }
 
-bool save_game_folder(opengold::GoldBoxGame game, const String &directory)
+bool Settings::save_game_folder(opengold::GoldBoxGame game, const String &directory)
 {
     if (game == opengold::GoldBoxGame::pool_of_radiance)
     {
@@ -827,7 +817,7 @@ bool save_game_folder(opengold::GoldBoxGame game, const String &directory)
     {
         return false;
     }
-    confirmed_folders[game] = directory;
+    confirmed_folders_[game] = directory;
     return true;
 }
 
@@ -848,18 +838,18 @@ Validation validate_game_folder(const String &directory, opengold::GoldBoxGame g
     return result;
 }
 
-String design_folder()
+String Settings::design_folder() const
 {
-    return confirmed_design ? *confirmed_design : read("games", "UA_DESIGN");
+    return confirmed_design_ ? *confirmed_design_ : read("games", "UA_DESIGN");
 }
 
-bool save_design_folder(const String &directory)
+bool Settings::save_design_folder(const String &directory)
 {
     if (!save("games", "UA_DESIGN", directory))
     {
         return false;
     }
-    confirmed_design = directory;
+    confirmed_design_ = directory;
     return true;
 }
 

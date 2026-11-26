@@ -10,6 +10,11 @@
 
 #include "opengold/gold_box_game.h"
 
+namespace settings
+{
+class Settings;
+} // namespace settings
+
 // The questions that settle the folders a game plays from (docs/TECH.md,
 // "Finding the games' folders"): a folder the search found, shown for the
 // player to confirm, else the folder dialog, and an Unlimited Adventures
@@ -46,7 +51,8 @@ class GameFolderQuestions : public godot::Node
     [[nodiscard]] bool asking() const;
     // Whether the player chose game's folder and it still holds the game's
     // files: a folder the search found is asked about first.
-    [[nodiscard]] static bool folder_chosen(opengold::GoldBoxGame game);
+    [[nodiscard]] static bool folder_chosen(const settings::Settings &settings,
+                                            opengold::GoldBoxGame game);
 
   protected:
     static void _bind_methods()

@@ -222,7 +222,7 @@ class CharacterCreationView : public godot::Control
     // Offers a choice of hands when the item has one; false when it has none.
     bool open_equipment_choice(opengold::MemberId member, std::uint64_t item);
     void setup_party();
-    // How the startup menu began the game (settings::chosen_game_start), read
+    // How the startup menu began the game (settings::Settings::chosen_game_start), read
     // once so a later return here makes a new party; for the checks,
     // --default-party chooses the default party and --load-save=PATH a save.
     void begin_chosen_start();

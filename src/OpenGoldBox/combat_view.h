@@ -14,6 +14,11 @@
 #include <vector>
 #include "opengold/sound_player.h"
 
+namespace settings
+{
+class Settings;
+} // namespace settings
+
 namespace opengold::original
 {
 struct Content;
@@ -55,8 +60,10 @@ class CombatView : public godot::Control
         return action_seconds_.contains(static_cast<opengold::rules::EntityId>(id));
     }
 
-    // Prepare while detached so the caller can keep its current screen on failure.
-    void prepare_combat();
+    // Prepare while detached so the caller can keep its current screen on
+    // failure: the settings come from the caller, as a detached view cannot
+    // reach the lifecycle's.
+    void prepare_combat(const settings::Settings &settings);
     // The Combat art setting changed: the creatures follow it at once (#274).
     void refresh_art();
     // The Sound effects volume, to the fight's sounds, playing or not.
@@ -159,7 +166,7 @@ class CombatView : public godot::Control
         MissileArt missiles;
     };
 
-    [[nodiscard]] ArtSet build_art() const;
+    [[nodiscard]] ArtSet build_art(const settings::Settings &settings) const;
 
     std::map<opengold::rules::EntityId, SpriteArt> art_;
     // Wild Shape's Beast forms and summoned creatures, by form key: the catalog's
@@ -259,7 +266,7 @@ class CombatView : public godot::Control
     [[nodiscard]] double controls_height(bool show_controls) const;
     void layout_reaction_controls(bool show_controls);
     void refresh();
-    void sync_art(bool preserve_effects = false);
+    void sync_art(const settings::Settings &settings, bool preserve_effects = false);
     // By value: the command often comes from the cached legal commands, which
     // acting drops (Effective Modern C++ Item 41).
     void act(opengold::rules::Command command);

@@ -2,6 +2,11 @@
 #define OPENGOLDBOX_BUCK_ROGERS_ICONS_H
 #include <godot_cpp/classes/image_texture.hpp>
 
+namespace settings
+{
+class Settings;
+} // namespace settings
+
 // The Buck Rogers games' 36 body icons (CHARS.DAX), each in its ready and
 // action pose: their characters have no portraits, so the icon is the
 // character's picture wherever a portrait would show, as in the original
@@ -17,6 +22,6 @@ struct BodyIcon
 
 // The chosen game's icon, read from its folder's CHARS.DAX once; empty
 // textures when the file or the icon is missing.
-[[nodiscard]] BodyIcon buck_rogers_body_icon(unsigned number);
+[[nodiscard]] BodyIcon buck_rogers_body_icon(const settings::Settings &settings, unsigned number);
 } // namespace presentation
 #endif

@@ -39,9 +39,10 @@ std::string normalized(std::string s)
 }
 } // namespace
 
-PortraitCatalog PortraitCatalog::load()
+PortraitCatalog PortraitCatalog::load(const settings::Settings &settings)
 {
     PortraitCatalog result;
+    result.settings_ = &settings;
     result.folder_ = new_art_path("portraits");
     if (result.folder_.is_empty())
     {
@@ -188,7 +189,7 @@ Ref<ImageTexture> PortraitCatalog::texture(const opengold::por::CharacterAppeara
     // A Buck Rogers character has no portrait: it shows its body icon.
     if (const auto record = opengold::original::buck_rogers_record_of(draft.rules_data))
     {
-        return presentation::buck_rogers_body_icon(record->creature.icon).ready;
+        return presentation::buck_rogers_body_icon(*settings_, record->creature.icon).ready;
     }
     return shows_new(appearance, draft) ? new_texture(shown_file(appearance, draft))
                                         : original(appearance);
@@ -223,8 +224,8 @@ const opengold::por::CharacterArt &PortraitCatalog::original_art()
 {
     if (!original_art_)
     {
-        auto art =
-            opengold::por::CharacterArt::load(presentation::path_from_godot(settings::game_path()));
+        auto art = opengold::por::CharacterArt::load(
+            presentation::path_from_godot(settings_->game_path()));
         presentation::load_additional_portrait_heads(art);
         original_art_ = std::move(art);
     }

@@ -3,6 +3,7 @@
 #include "class_text.h"
 #include "godot_nodes.h"
 #include "application_settings.h"
+#include "game_lifecycle.h"
 #include "character_text.h"
 #include "localization.h"
 #include "game_resources.h"
@@ -350,7 +351,8 @@ constexpr EclAddress curse_town_cell{0x4C9B};
 // The name of the area the party is in, in the game being played, in the
 // player's language; with no session, the game's first area. A design names
 // its areas itself, as its designer wrote them.
-[[nodiscard]] String place_name(const opengold::ExplorationSession *session)
+[[nodiscard]] String place_name(opengold::GoldBoxGame game,
+                                const opengold::ExplorationSession *session)
 {
     if (session && !session->dax())
     {
@@ -360,7 +362,7 @@ constexpr EclAddress curse_town_cell{0x4C9B};
     static const TourSnapshot none;
     const auto *campaign = session ? session->dax() : nullptr;
     const TourSnapshot &s = campaign ? campaign->snapshot() : none;
-    switch (settings::chosen_game())
+    switch (game)
     {
     case opengold::GoldBoxGame::pool_of_radiance:
         return i18n::text(district_name(s.area_id));
@@ -372,7 +374,7 @@ constexpr EclAddress curse_town_cell{0x4C9B};
         return i18n::text(campaign ? curse_area_name(s, *campaign)
                                    : N_("Curse of the Azure Bonds"));
     default:
-        return i18n::text(opengold::game_title(settings::chosen_game()).data());
+        return i18n::text(opengold::game_title(game).data());
     }
 }
 
@@ -605,7 +607,7 @@ void RolfTourView::prepare_view()
     footstep_full_volume_ = footstep.get_volume_linear();
     // The storm's thunder is the original's own sample, from the player's
     // game; a game without the sound bank leaves it silent.
-    const auto game = presentation::path_from_godot(settings::game_path());
+    const auto game = presentation::path_from_godot(application_settings(*this).game_path());
     if (std::filesystem::is_directory(game))
     {
         try
@@ -623,11 +625,12 @@ void RolfTourView::prepare_view()
     // Pools of Darkness and Treasures step to their own footstep (explore.pas,
     // StepForward) and play their scripts' sound effects (eclvm.pas,
     // EclPlaySound), from the player's copy of the game.
-    const auto chosen = settings::chosen_game();
+    const auto chosen = application_settings(*this).chosen_game();
     if (chosen == opengold::GoldBoxGame::pools_of_darkness ||
         chosen == opengold::GoldBoxGame::treasures_of_the_savage_frontier)
     {
-        const auto folder = presentation::path_from_godot(settings::game_folder(chosen));
+        const auto folder =
+            presentation::path_from_godot(application_settings(*this).game_folder(chosen));
         try
         {
             if (std::filesystem::is_directory(folder))
@@ -679,11 +682,12 @@ void RolfTourView::restart()
     forget_monster_picture();
     try
     {
+        auto &settings = application_settings(*this);
         error_ = "";
         if (!campaign_ || !embedded_party_)
         {
             // The town on its own plays an SRD fighter.
-            campaign_ = new_campaign_party(GameRules{}, game_rules_files());
+            campaign_ = new_campaign_party(GameRules{}, game_rules_files(settings));
             opengold::rules::CharacterDraft d;
             d.race = "human";
             d.gender = "female";
@@ -704,14 +708,14 @@ void RolfTourView::restart()
             session_->restart();
             session_->campaign_party(campaign_);
         }
-        else if (settings::chosen_game() == opengold::GoldBoxGame::unlimited_adventures)
+        else if (settings.chosen_game() == opengold::GoldBoxGame::unlimited_adventures)
         {
             // A design made with the kit, from the kit's folder and the
             // design's (docs/games/ua.md, From the startup menu).
             session_ = std::make_unique<opengold::ua::UaSession>(
                 opengold::ua::UaSession::start(opengold::ua::DesignFiles(
-                    presentation::path_from_godot(settings::game_folder(settings::chosen_game())),
-                    presentation::path_from_godot(settings::design_folder()))));
+                    presentation::path_from_godot(settings.game_folder(settings.chosen_game())),
+                    presentation::path_from_godot(settings.design_folder()))));
             apply_design_difficulty();
             session_->campaign_party(campaign_);
         }
@@ -719,20 +723,20 @@ void RolfTourView::restart()
         {
             // The game chosen on the startup menu: Pool of Radiance's campaign
             // with OpenGoldBox's data for it, or another game's from its folder.
-            const auto game = settings::chosen_game();
+            const auto game = settings.chosen_game();
             const bool pool_of_radiance = game == opengold::GoldBoxGame::pool_of_radiance;
             if (pool_of_radiance)
             {
                 session_ =
                     std::make_unique<opengold::DaxExplorationSession>(opengold::load_campaign(
-                        presentation::path_from_godot(settings::game_path()), game,
+                        presentation::path_from_godot(settings.game_path()), game,
                         {&game_encounters(), &game_wall_art(), game_monsters()}));
             }
             else
             {
                 session_ =
                     std::make_unique<opengold::DaxExplorationSession>(opengold::load_campaign(
-                        presentation::path_from_godot(settings::game_folder(game)), game));
+                        presentation::path_from_godot(settings.game_folder(game)), game));
             }
             auto &campaign = dax_session();
             campaign.encounter_challenge(settings::encounter_challenge());
@@ -740,7 +744,7 @@ void RolfTourView::restart()
             campaign.set_auto_equip(auto_equip_setting());
             if (pool_of_radiance)
             {
-                use_shop_data(campaign);
+                use_shop_data(settings, campaign);
                 campaign.companion_rules(campaign_->character_rules(), game_companions());
             }
             if (campaign_)
@@ -2922,7 +2926,7 @@ void RolfTourView::refresh()
     const bool shopping = loaded && (s.phase == TourPhase::shopping || treasure);
     const bool answer = loaded && s.phase == TourPhase::awaiting_input;
     const bool multiple = waiting && s.choices.size() > 1;
-    const String district = place_name(session_.get());
+    const String district = place_name(application_settings(*this).chosen_game(), session_.get());
     // While a shopkeeper greets or serves the party, the shopkeeper's name
     // and the shop's type stand over the portrait.
     const auto *shop = dax() ? opengold::phlan_shop_serving(s, dax()->shops()) : nullptr;
@@ -3376,7 +3380,7 @@ void RolfTourView::show_party_rows()
         }
         if (!portraits_)
         {
-            portraits_ = PortraitCatalog::load();
+            portraits_ = PortraitCatalog::load(application_settings(*this));
         }
         const bool leader = id == campaign_->leader();
         button->call("set_highlight", slot == selected);
@@ -4016,7 +4020,7 @@ void RolfTourView::check_district_labels(const TourSnapshot &s)
     {
         return;
     }
-    const String district = place_name(session_.get());
+    const String district = place_name(application_settings(*this).chosen_game(), session_.get());
     const String location = required_node<Label>(*this, "%Location").get_text();
     const String map_title = required_node<Label>(*this, "%MapTitle").get_text();
     const String speaker = required_node<Label>(*this, "%Speaker").get_text();

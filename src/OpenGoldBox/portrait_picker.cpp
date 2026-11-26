@@ -1,4 +1,5 @@
 #include "godot_text.h"
+#include "game_lifecycle.h"
 #include "character_creation_view.h"
 #include "localization.h"
 #include "guarded_handlers.h"
@@ -39,7 +40,7 @@ void CharacterCreationView::reload_portraits()
 // them), with filters for the genders, classes and races they show.
 void CharacterCreationView::fill_portrait_filters()
 {
-    portraits_ = PortraitCatalog::load();
+    portraits_ = PortraitCatalog::load(application_settings(*this));
     for (int field = 0; field < 3; ++field)
     {
         static constexpr std::array names{"PortraitGender", "PortraitClass", "PortraitRace"};

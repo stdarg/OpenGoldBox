@@ -25,6 +25,11 @@ void GameLifecycle::_bind_methods()
 {
 }
 
+settings::Settings &application_settings(const Node &node)
+{
+    return required_node<GameLifecycle>(node, "/root/ApplicationLifecycle").settings();
+}
+
 void GameLifecycle::_ready()
 {
     presentation::run_guarded(*this,
@@ -40,7 +45,7 @@ void GameLifecycle::_exit_tree()
                               [&]
                               {
                                   crash_reports::end_session();
-                                  game_log::close();
+                                  log_.close();
                               });
 }
 
@@ -48,12 +53,12 @@ void GameLifecycle::start_lifecycle()
 {
     crash_reports::install_terminate_handler();
     crash_reports::begin_session();
-    game_log::open();
+    log_.open(settings_);
     if (settings::flag("--crash-check"))
     {
         crash_reports::crash_for_check();
     }
-    i18n::initialize();
+    i18n::initialize(settings_);
     set_process_mode(PROCESS_MODE_ALWAYS);
     auto *tree = get_tree(); // borrowed; SceneTree owns this autoload
     tree->set_auto_accept_quit(false);

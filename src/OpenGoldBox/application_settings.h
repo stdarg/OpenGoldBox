@@ -6,6 +6,7 @@
 #include <godot_cpp/variant/string.hpp>
 #include <godot_cpp/variant/packed_string_array.hpp>
 #include <filesystem>
+#include <map>
 #include <optional>
 
 #include "opengold/game_finder.h"
@@ -18,8 +19,6 @@ bool flag(const char *name);
 godot::String path();
 godot::String saved_game_path();
 godot::String saved_language();
-godot::String game_path();
-godot::String language();
 int combat_zoom_percent();
 // [combat] encounter_challenge: a percentage of the SRD's Moderate XP budget, 0-200.
 unsigned encounter_challenge();
@@ -148,8 +147,6 @@ bool save_volume_percent(SoundKind kind, int percent);
 // Every monster ability back to its default.
 bool restore_monster_abilities();
 bool valid_language(const godot::String &locale);
-bool save_game_path(const godot::String &directory);
-bool save_language(const godot::String &locale);
 
 struct Validation
 {
@@ -160,14 +157,6 @@ struct Validation
 };
 
 Validation validate_game_path(const godot::String &directory);
-
-// The game chosen on the startup menu: Pool of Radiance until another is chosen.
-[[nodiscard]] opengold::GoldBoxGame chosen_game();
-void choose_game(opengold::GoldBoxGame game);
-// The rules the new game's question chose (docs/ORIGINAL-RULES.md): what a new
-// game plays by until it is asked.
-[[nodiscard]] GameRules chosen_rules();
-void choose_rules(GameRules rules);
 
 // How the game screen begins: a new party made on the creation screens, the
 // game's default party (data/default_parties), or a save loaded.
@@ -183,26 +172,66 @@ struct GameStart
     std::filesystem::path save; // The save to load, for saved_game.
 };
 
-[[nodiscard]] GameStart chosen_game_start();
-void choose_game_start(GameStart start);
-// A game's folder and where it came from: the one the player chose (Pool of
-// Radiance's under [game]; another's under [games] by its game_folder name)
-// while it still holds the game's files, else the one OPENGOLD_GAME_DIR,
-// OPENGOLD_GOLDBOX_DIR or the search upward from the game's own folder finds
-// by its files (opengold/game_finder.h, docs/TECH.md); nothing when neither.
-// Startup asks the player to confirm a found folder before saving it.
-[[nodiscard]] std::optional<opengold::GameFolder> locate_game_folder(opengold::GoldBoxGame game);
-// locate_game_folder's folder, or empty; Pool of Radiance's is game_path().
-[[nodiscard]] godot::String game_folder(opengold::GoldBoxGame game);
-bool save_game_folder(opengold::GoldBoxGame game, const godot::String &directory);
 // Pool of Radiance's folder is checked file by file (validate_game_path);
 // another game's must hold that game's files.
 [[nodiscard]] Validation validate_game_folder(const godot::String &directory,
                                               opengold::GoldBoxGame game);
-// The design an Unlimited Adventures game plays: a folder the construction
-// kit made (NAME.DSN), kept under [games] as UA_DESIGN (docs/games/ua.md).
-[[nodiscard]] godot::String design_folder();
-bool save_design_folder(const godot::String &directory);
 [[nodiscard]] Validation validate_design_folder(const godot::String &directory);
+
+// The choices of this run that settings.cfg does not hold, or holds only from
+// the next run on: the game, rules and start the startup menu chose, and the
+// folders and language the player confirmed. The lifecycle owns the one the
+// game plays with (application_settings in game_lifecycle.h).
+class Settings
+{
+  public:
+    // Pool of Radiance's folder: game_folder's.
+    [[nodiscard]] godot::String game_path() const;
+    [[nodiscard]] godot::String language() const;
+    bool save_game_path(const godot::String &directory);
+    bool save_language(const godot::String &locale);
+
+    // The game chosen on the startup menu: Pool of Radiance until another is chosen.
+    [[nodiscard]] opengold::GoldBoxGame chosen_game() const;
+    void choose_game(opengold::GoldBoxGame game);
+    // The rules the new game's question chose (docs/ORIGINAL-RULES.md): what a new
+    // game plays by until it is asked.
+    [[nodiscard]] GameRules chosen_rules() const;
+    void choose_rules(GameRules rules);
+    [[nodiscard]] GameStart chosen_game_start() const;
+    void choose_game_start(GameStart start);
+
+    // A game's folder and where it came from: the one the player chose (Pool of
+    // Radiance's under [game]; another's under [games] by its game_folder name)
+    // while it still holds the game's files, else the one OPENGOLD_GAME_DIR,
+    // OPENGOLD_GOLDBOX_DIR or the search upward from the game's own folder finds
+    // by its files (opengold/game_finder.h, docs/TECH.md); nothing when neither.
+    // Startup asks the player to confirm a found folder before saving it.
+    [[nodiscard]] std::optional<opengold::GameFolder>
+    locate_game_folder(opengold::GoldBoxGame game) const;
+    // locate_game_folder's folder, or empty; Pool of Radiance's is game_path().
+    [[nodiscard]] godot::String game_folder(opengold::GoldBoxGame game) const;
+    bool save_game_folder(opengold::GoldBoxGame game, const godot::String &directory);
+    // The design an Unlimited Adventures game plays: a folder the construction
+    // kit made (NAME.DSN), kept under [games] as UA_DESIGN (docs/games/ua.md).
+    [[nodiscard]] godot::String design_folder() const;
+    bool save_design_folder(const godot::String &directory);
+
+  private:
+    // The folder the player chose for game, this run or in settings.cfg (Pool
+    // of Radiance's under [game], another's under [games] by its game_folder
+    // name), or empty.
+    [[nodiscard]] godot::String chosen_game_folder(opengold::GoldBoxGame game) const;
+
+    std::optional<godot::String> confirmed_path_, confirmed_language_;
+    opengold::GoldBoxGame current_game_{opengold::GoldBoxGame::pool_of_radiance};
+    GameRules current_rules_{new_game_rules};
+    GameStart current_start_;
+    std::map<opengold::GoldBoxGame, godot::String> confirmed_folders_;
+    std::optional<godot::String> confirmed_design_;
+    // locate_game_folder's answers by chosen folder and environment: a run
+    // looks once for each, as the search lists folders.
+    mutable std::map<godot::String, std::optional<opengold::GameFolder>> located_folders_;
+};
 } // namespace settings
 #endif

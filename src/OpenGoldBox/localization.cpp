@@ -298,18 +298,18 @@ String language()
     return supported(TranslationServer::get_singleton()->get_locale());
 }
 
-void initialize()
+void initialize(const settings::Settings &settings)
 {
-    TranslationServer::get_singleton()->set_locale(settings::language());
+    TranslationServer::get_singleton()->set_locale(settings.language());
 }
 
-bool select_language(const String &locale)
+bool select_language(settings::Settings &settings, const String &locale)
 {
-    if (!settings::save_language(locale))
+    if (!settings.save_language(locale))
     {
         return false;
     }
-    initialize();
+    initialize(settings);
     return true;
 }
 } // namespace i18n

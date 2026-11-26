@@ -9,7 +9,7 @@
 // The game finder (opengold/game_finder.h) for the demos' and dev tools' Godot
 // projects, which run from the source checkout without the game's extension:
 // they look where the game looks, the environment's folders and then upward
-// from the checkout. The game itself asks settings::game_folder.
+// from the checkout. The game itself asks settings::Settings::game_folder.
 namespace presentation
 {
 // The game's folder, or empty when no folder holds its files.

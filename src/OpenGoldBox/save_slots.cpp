@@ -2,6 +2,7 @@
 #include "opengold/diagnostic_log.h"
 #include "opengold/path_text.h"
 #include "application_settings.h"
+#include "game_lifecycle.h"
 #include "localization.h"
 #include "save_slots.h"
 #include "godot_path.h"
@@ -185,7 +186,7 @@ void SaveSlots::open(bool saving)
     confirmed_ = false;
     if (!character_saves_)
     {
-        directory_ = campaign_save_directory(settings::chosen_game());
+        directory_ = campaign_save_directory(application_settings(*this).chosen_game());
     }
     pending_.clear();
     paths_.clear();
@@ -233,11 +234,13 @@ void SaveSlots::open(bool saving)
             }
         }
         std::sort(paths_.begin(), paths_.end());
-        const auto quick_save =
-            character_saves_ ? std::filesystem::path() : quick_save_file(settings::chosen_game());
+        const auto quick_save = character_saves_
+                                    ? std::filesystem::path()
+                                    : quick_save_file(application_settings(*this).chosen_game());
         // The winning party may be loaded, never saved over.
-        const auto winning_party = character_saves_ ? std::filesystem::path()
-                                                    : winning_party_file(settings::chosen_game());
+        const auto winning_party =
+            character_saves_ ? std::filesystem::path()
+                             : winning_party_file(application_settings(*this).chosen_game());
         if (!saving && !winning_party.empty() && std::filesystem::exists(winning_party))
         {
             paths_.insert(paths_.begin(), winning_party);

@@ -11,6 +11,11 @@
 #include <string>
 #include <vector>
 
+namespace settings
+{
+class Settings;
+} // namespace settings
+
 // The new art's portraits (portraits/ in its folder, listed in portraits.json)
 // with the gender, class and race each shows, and the original game's head-and-body portraits that
 // show in their place when the Options screen's Portraits are Original or a new portrait cannot be
@@ -34,8 +39,10 @@ class PortraitCatalog
 
     // Reads the new art's portraits.json; none without the new art. A catalog
     // that cannot be read, or a portrait whose file is missing, is logged and
-    // left out: the original portraits show.
-    [[nodiscard]] static PortraitCatalog load();
+    // left out: the original portraits show. The settings name the game whose
+    // files the original portraits and the Buck Rogers icons come from, and
+    // must outlive the catalog: the lifecycle's do.
+    [[nodiscard]] static PortraitCatalog load(const settings::Settings &settings);
 
     // Sorted by file name; empty when no new portrait could be read.
     [[nodiscard]] const std::vector<Portrait> &entries() const
@@ -102,5 +109,6 @@ class PortraitCatalog
     std::list<std::string> recent_uses_;
     std::set<std::string> unloadable_;
     std::optional<opengold::por::CharacterArt> original_art_;
+    const settings::Settings *settings_{}; // borrowed, set by load
 };
 #endif

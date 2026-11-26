@@ -1,5 +1,6 @@
 #include "godot_nodes.h"
 #include "application_settings.h"
+#include "game_lifecycle.h"
 #include "localization.h"
 #include "game_resources.h"
 #include "shop_data_files.h"
@@ -43,29 +44,30 @@ using presentation::required_node;
 
 namespace
 {
-std::filesystem::path game_directory(GoldBoxGame game)
+std::filesystem::path game_directory(const settings::Settings &settings, GoldBoxGame game)
 {
-    return presentation::path_from_godot(settings::game_folder(game));
+    return presentation::path_from_godot(settings.game_folder(game));
 }
 
 // The campaign as a save of the game being played records it, with that
 // game's files.
-std::string encoded_campaign(const CampaignParty &party, const RolfTourView *town)
+std::string encoded_campaign(const settings::Settings &settings, const CampaignParty &party,
+                             const RolfTourView *town)
 {
-    const auto game = settings::chosen_game();
+    const auto game = settings.chosen_game();
     auto design = town ? town->saved_design() : std::nullopt;
     // A party made for a design and not yet exploring is saved at its start.
     if (!design && game == GoldBoxGame::unlimited_adventures)
     {
-        const auto folder = settings::design_folder();
+        const auto folder = settings.design_folder();
         design = DesignSave{folder.utf8().get_data(),
                             opengold::ua::UaSession::start(
-                                opengold::ua::DesignFiles(game_directory(game),
+                                opengold::ua::DesignFiles(game_directory(settings, game),
                                                           presentation::path_from_godot(folder)))
                                 .saved_state()};
     }
     return encode_campaign(party, town ? town->saved_session() : nullptr,
-                           campaign_asset_identity(game_directory(game)), game,
+                           campaign_asset_identity(game_directory(settings, game)), game,
                            design ? &*design : nullptr);
 }
 
@@ -74,19 +76,21 @@ std::string encoded_campaign(const CampaignParty &party, const RolfTourView *tow
 class SavedGameChoice
 {
   public:
-    explicit SavedGameChoice(GoldBoxGame game) : playing_(settings::chosen_game())
+    SavedGameChoice(settings::Settings &settings, GoldBoxGame game)
+        : settings_(settings), playing_(settings.chosen_game())
     {
-        settings::choose_game(game);
+        settings_.choose_game(game);
     }
 
     // A design's save plays its own design: its folder is chosen too, and
     // goes back with the game on a failed load.
-    SavedGameChoice(GoldBoxGame game, const String &design) : SavedGameChoice(game)
+    SavedGameChoice(settings::Settings &settings, GoldBoxGame game, const String &design)
+        : SavedGameChoice(settings, game)
     {
-        if (!design.is_empty() && design != settings::design_folder())
+        if (!design.is_empty() && design != settings_.design_folder())
         {
-            design_ = settings::design_folder();
-            settings::save_design_folder(design);
+            design_ = settings_.design_folder();
+            settings_.save_design_folder(design);
         }
     }
 
@@ -99,10 +103,10 @@ class SavedGameChoice
     {
         if (!kept_)
         {
-            settings::choose_game(playing_);
+            settings_.choose_game(playing_);
             if (design_)
             {
-                settings::save_design_folder(*design_);
+                settings_.save_design_folder(*design_);
             }
         }
     }
@@ -113,6 +117,7 @@ class SavedGameChoice
     }
 
   private:
+    settings::Settings &settings_;
     GoldBoxGame playing_;
     std::optional<String> design_;
     bool kept_{};
@@ -185,7 +190,7 @@ void CharacterCreationView::quick_save()
         show_note(i18n::text(N_("The game cannot be saved now.")));
         return;
     }
-    save_campaign(quick_save_file(settings::chosen_game()));
+    save_campaign(quick_save_file(application_settings(*this).chosen_game()));
     show_note(i18n::text(N_("Quick saved.")));
 }
 
@@ -196,7 +201,7 @@ void CharacterCreationView::quick_load()
         show_note(i18n::text(N_("The game cannot be loaded now.")));
         return;
     }
-    if (!std::filesystem::exists(quick_save_file(settings::chosen_game())))
+    if (!std::filesystem::exists(quick_save_file(application_settings(*this).chosen_game())))
     {
         show_note(i18n::text(N_("There is no quick save.")));
         return;
@@ -209,7 +214,7 @@ void CharacterCreationView::quick_load()
 void CharacterCreationView::confirm_quick_load()
 {
     required_node<Window>(*this, "QuickLoad").hide();
-    load_campaign(quick_save_file(settings::chosen_game()));
+    load_campaign(quick_save_file(application_settings(*this).chosen_game()));
 }
 
 void CharacterCreationView::cancel_quick_load()
@@ -240,7 +245,7 @@ void CharacterCreationView::save_campaign(const std::filesystem::path &path)
         throw std::runtime_error("Load a saved game after defeat");
     }
     const auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown"));
-    write_campaign_file(path, encoded_campaign(*campaign_, town));
+    write_campaign_file(path, encoded_campaign(application_settings(*this), *campaign_, town));
     error_ = i18n::text("Campaign saved.");
     refresh_party();
 }
@@ -251,20 +256,21 @@ void CharacterCreationView::bank_winners(bool game_won)
     // Banking the winners never stops the game: a failure is logged.
     try
     {
-        winner_capture_.bank(game_won, may_save(), campaign_->state(),
-                             {[&]
-                              {
-                                  return encoded_campaign(*campaign_, nullptr);
-                              },
-                              [&]
-                              {
-                                  return encoded_campaign(*campaign_, town);
-                              }},
-                             [&](std::string_view bytes)
-                             {
-                                 write_campaign_file(winning_party_file(settings::chosen_game()),
-                                                     bytes);
-                             });
+        winner_capture_.bank(
+            game_won, may_save(), campaign_->state(),
+            {[&]
+             {
+                 return encoded_campaign(application_settings(*this), *campaign_, nullptr);
+             },
+             [&]
+             {
+                 return encoded_campaign(application_settings(*this), *campaign_, town);
+             }},
+            [&](std::string_view bytes)
+            {
+                write_campaign_file(winning_party_file(application_settings(*this).chosen_game()),
+                                    bytes);
+            });
     }
     catch (const std::exception &e)
     {
@@ -277,7 +283,7 @@ void CharacterCreationView::bank_winners(bool game_won)
 void CharacterCreationView::reload_in_memory()
 {
     const auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown"));
-    load_campaign_bytes(encoded_campaign(*campaign_, town));
+    load_campaign_bytes(encoded_campaign(application_settings(*this), *campaign_, town));
 }
 
 void CharacterCreationView::load_campaign(const std::filesystem::path &path)
@@ -287,7 +293,8 @@ void CharacterCreationView::load_campaign(const std::filesystem::path &path)
     // or none, is asked about first, as at startup (the user's decision,
     // 2026-11-20).
     const auto game = saved_campaign_rules(bytes).game;
-    if (game != settings::chosen_game() && !GameFolderQuestions::folder_chosen(game))
+    if (game != application_settings(*this).chosen_game() &&
+        !GameFolderQuestions::folder_chosen(application_settings(*this), game))
     {
         save_awaiting_folders_ = path;
         // Once the load screen has closed: both windows are exclusive.
@@ -334,7 +341,7 @@ void CharacterCreationView::load_campaign_bytes(const std::string &bytes)
     // A save starts its own game, whichever game is being played.
     const auto rules = saved_campaign_rules(bytes);
     const auto game = rules.game;
-    const bool other_game = game != settings::chosen_game();
+    const bool other_game = game != application_settings(*this).chosen_game();
     // A design's save needs its design's folder, which may be gone.
     const auto design_folder = String::utf8(rules.design_folder.c_str());
     if (game == GoldBoxGame::unlimited_adventures &&
@@ -345,13 +352,13 @@ void CharacterCreationView::load_campaign_bytes(const std::string &bytes)
                                      .utf8()
                                      .get_data());
     }
-    const auto directory = game_directory(game);
-    SavedGameChoice choice(game, design_folder);
+    const auto directory = game_directory(application_settings(*this), game);
+    SavedGameChoice choice(application_settings(*this), game, design_folder);
     const auto &new_wall_art = game_wall_art();
     const auto monsters = game_monsters();
     // The save's own rules, which may not be the current game's.
     auto [replacement, saved] = load_campaign_under_its_rules(
-        bytes, game_rules_files(), campaign_asset_identity(directory),
+        bytes, game_rules_files(application_settings(*this)), campaign_asset_identity(directory),
         [&]
         {
             return opengold::load_campaign(
@@ -512,9 +519,9 @@ void RolfTourView::restore_campaign(std::shared_ptr<CampaignParty> party,
     campaign.set_auto_equip(auto_equip_setting());
     // OpenGoldBox's shops and companions are Pool of Radiance's, as a new
     // campaign's are.
-    if (settings::chosen_game() == GoldBoxGame::pool_of_radiance)
+    if (application_settings(*this).chosen_game() == GoldBoxGame::pool_of_radiance)
     {
-        use_shop_data(campaign);
+        use_shop_data(application_settings(*this), campaign);
         campaign.companion_rules(campaign_->character_rules(), game_companions());
     }
     shown_revision_ = 0;
@@ -610,7 +617,7 @@ void CharacterCreationView::load_checkpoint_check()
         auto path = directory / (std::string(name) + ".ogs");
         load_campaign(path);
         auto *town = &required_node<RolfTourView>(*this, "CampaignTown");
-        const auto before = encoded_campaign(*campaign_, town);
+        const auto before = encoded_campaign(application_settings(*this), *campaign_, town);
         if (before != read_campaign_file(path))
         {
             throw std::runtime_error(std::string("State changed across process restart: ") + name);
@@ -619,7 +626,7 @@ void CharacterCreationView::load_checkpoint_check()
         {
             campaign_->award_experience(300, "check:bandit:v1");
         }
-        if (encoded_campaign(*campaign_, town) != before)
+        if (encoded_campaign(application_settings(*this), *campaign_, town) != before)
         {
             throw std::runtime_error("Reward duplicated after restart");
         }
@@ -643,7 +650,7 @@ void CharacterCreationView::load_checkpoint_check()
         {
             rejected = true;
         }
-        if (!rejected || encoded_campaign(*campaign_, town) != before)
+        if (!rejected || encoded_campaign(application_settings(*this), *campaign_, town) != before)
         {
             throw std::runtime_error("Rejected load changed live campaign");
         }
@@ -665,7 +672,7 @@ void CharacterCreationView::load_checkpoint_check()
                 .emit_signal("pressed");
             required_node<Button>(*town, "%Camp").emit_signal("pressed");
             required_node<Button>(*rest, "Heal").emit_signal("pressed");
-            if (encoded_campaign(*campaign_, town) == before)
+            if (encoded_campaign(application_settings(*this), *campaign_, town) == before)
             {
                 throw std::runtime_error("Reloaded rest could not heal with its Hit Dice");
             }

@@ -770,7 +770,7 @@ Replacement Art Creator, Shop Manager, Creature Stats Editor) look the same
 way from their project's checkout, `presentation::tool_game_folder` in C++ and
 `GameFinder.game_folder("POOLRAD")` in GDScript
 (`src/OpenGoldBox/tool_game_finder.h`); the Party and Combat testers, which run
-the game's code, ask `settings::game_path`. Their launchers' optional folder
+the game's code, ask `settings::Settings::game_path`. Their launchers' optional folder
 argument is passed on as `OPENGOLD_GAME_DIR`.
 
 ### Screen structure

@@ -2,6 +2,7 @@
 // video, over the view; and the town's music while the tour plays.
 #include "rolf_tour_view.h"
 #include "application_settings.h"
+#include "game_lifecycle.h"
 #include "godot_images.h"
 #include "godot_nodes.h"
 #include "godot_path.h"
@@ -91,15 +92,16 @@ void RolfTourView::follow_music(const TourSnapshot &snapshot)
 // a piece that cannot be read leaves the town silent.
 void RolfTourView::play_music(unsigned piece)
 {
-    const auto game = settings::chosen_game();
+    const auto game = application_settings(*this).chosen_game();
     try
     {
         if (!music_ || music_piece_ != piece)
         {
             music_.reset();
             music_ = std::make_unique<SoundPlayer>(
-                SoundBank::load_music(presentation::path_from_godot(settings::game_folder(game)),
-                                      game, piece),
+                SoundBank::load_music(
+                    presentation::path_from_godot(application_settings(*this).game_folder(game)),
+                    game, piece),
                 std::make_unique<GodotSoundOutput>(
                     required_node<AudioStreamPlayer>(*this, "Music")));
             music_piece_ = piece;
@@ -120,7 +122,8 @@ void RolfTourView::play_music(unsigned piece)
 bool RolfTourView::play_closing_film()
 {
     const auto game = dax_session().game();
-    const auto folder = presentation::path_from_godot(settings::game_folder(game));
+    const auto folder =
+        presentation::path_from_godot(application_settings(*this).game_folder(game));
     try
     {
         auto film = opengold::load_closing_film(folder, game);

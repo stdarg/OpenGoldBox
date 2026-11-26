@@ -19,9 +19,6 @@ namespace
 constexpr auto logs_folder = "user://logs";
 constexpr int kept_logs = 5;
 
-// Held so close() can take it back from the engine.
-Ref<EngineErrors> engine_errors;
-
 std::string utf8(const String &text)
 {
     return text.utf8().get_data();
@@ -33,14 +30,14 @@ void log_session(const String &what)
 }
 
 // What this session runs on, so a report can be reproduced.
-void log_head()
+void log_head(const settings::Settings &settings)
 {
     auto *os = OS::get_singleton(); // borrowed engine singleton
     const Dictionary engine = Engine::get_singleton()->get_version_info();
     log_session(String("OpenGoldBox ") + OPENGOLDBOX_VERSION + ", commit " + OPENGOLDBOX_COMMIT);
     log_session("engine " + String(engine["string"]) + "; " + os->get_name() + " " +
                 os->get_version() + ", " + os->get_model_name() + ", " + os->get_processor_name());
-    log_session("game files " + settings::game_path() + "; language " + settings::language());
+    log_session("game files " + settings.game_path() + "; language " + settings.language());
     String abilities;
     for (const auto &ability : settings::monster_abilities_off())
     {
@@ -81,9 +78,7 @@ void remove_oldest_logs()
 }
 } // namespace
 
-namespace game_log
-{
-void open()
+void GameLog::open(const settings::Settings &settings)
 {
     // The log reads OPENGOLD_LOG itself, when it is first used.
     if (const char *chosen = std::getenv("OPENGOLD_LOG"); !chosen || !*chosen)
@@ -95,21 +90,20 @@ void open()
             presentation::path_from_godot(ProjectSettings::get_singleton()->globalize_path(file)));
         remove_oldest_logs();
     }
-    log_head();
-    engine_errors.instantiate();
-    OS::get_singleton()->add_logger(engine_errors);
+    log_head(settings);
+    engine_errors_.instantiate();
+    OS::get_singleton()->add_logger(engine_errors_);
 }
 
-void close()
+void GameLog::close()
 {
-    if (engine_errors.is_null())
+    if (engine_errors_.is_null())
     {
         return;
     }
-    OS::get_singleton()->remove_logger(engine_errors);
-    engine_errors.unref();
+    OS::get_singleton()->remove_logger(engine_errors_);
+    engine_errors_.unref();
 }
-} // namespace game_log
 
 void EngineErrors::_log_error(const String &function, const String &file, int32_t line,
                               const String &code, const String &rationale, bool,

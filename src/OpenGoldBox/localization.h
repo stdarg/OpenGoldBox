@@ -14,6 +14,11 @@ namespace godot
 class Node;
 }
 
+namespace settings
+{
+class Settings;
+} // namespace settings
+
 // Marks a static source message for the catalog extractor, which looks for
 // N_("..."), without translating it. A function rather than a macro, so it has
 // a scope and a type (Effective C++ Item 2).
@@ -37,8 +42,8 @@ godot::String campaign(std::string_view resource, std::string_view original);
 godot::String render(const opengold::rules::Message &message);
 godot::String render(const std::vector<opengold::rules::Message> &messages);
 godot::String language();
-void initialize();
-bool select_language(const godot::String &locale);
+void initialize(const settings::Settings &settings);
+bool select_language(settings::Settings &settings, const godot::String &locale);
 // Translate scene-authored labels once, then let native renderers own text.
 // Prevents a second translation of formatted messages and player-entered names.
 void prepare_ui(godot::Node &root);

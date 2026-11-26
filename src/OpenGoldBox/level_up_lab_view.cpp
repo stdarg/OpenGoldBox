@@ -1,4 +1,5 @@
 #include "level_up_lab_view.h"
+#include "game_lifecycle.h"
 #include "class_text.h"
 #include "character_sheet_text.h"
 #include "game_resources.h"
@@ -312,7 +313,8 @@ void LevelUpLabView::show_sheet()
         return;
     }
     required_node<RichTextLabel>(*this, "CharacterSheet/Text")
-        .call("render", presentation::sheet_text(*campaign_, campaign_->member(member_)));
+        .call("render", presentation::sheet_text(application_settings(*this), *campaign_,
+                                                 campaign_->member(member_)));
     auto &sheet = required_node<Window>(*this, "CharacterSheet");
     sheet.popup_centered();
     required_node<Button>(*this, "CharacterSheet/Close").grab_focus();

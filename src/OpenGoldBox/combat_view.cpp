@@ -15,6 +15,7 @@
 #include "hp_presentation.h"
 #include "status_effect_text.h"
 #include "application_settings.h"
+#include "game_lifecycle.h"
 #include "localization.h"
 #include "godot_nodes.h"
 #include <godot_cpp/classes/popup_menu.hpp>
@@ -614,18 +615,19 @@ namespace
 // the difficulty switch off (MONSTER-2), moving as the game's Original
 // movement option says and weighing the party's area spells by the player's
 // limits (Party area spells).
-std::unique_ptr<rules::RulesModule> fight_rules(const GameRules &rules)
+std::unique_ptr<rules::RulesModule> fight_rules(const settings::Settings &settings,
+                                                const GameRules &rules)
 {
-    auto module = make_rules_module(rules, game_rules_files());
+    auto module = make_rules_module(rules, game_rules_files(settings));
     module->switch_off_abilities(settings::monster_abilities_off());
     module->play_unplayed_gazes(settings::darkness_gazes());
-    module->move_as_the_original(settings::original_movement(settings::chosen_game()));
+    module->move_as_the_original(settings::original_movement(settings.chosen_game()));
     module->limit_party_area_spells(settings::party_spell_limits());
     return module;
 }
 } // namespace
 
-void CombatView::prepare_combat()
+void CombatView::prepare_combat(const settings::Settings &settings)
 {
     flee_mode_ = false;
     if (demo_)
@@ -633,11 +635,11 @@ void CombatView::prepare_combat()
         return;
     }
     auto next = std::make_unique<CombatDemo>(
-        fight_rules(campaign_ ? game_rules_of(*campaign_) : GameRules{}));
+        fight_rules(settings, campaign_ ? game_rules_of(*campaign_) : GameRules{}));
     const bool demo_mode = settings::flag("--combat-demo");
     if (demo_mode)
     {
-        const auto directory = presentation::path_from_godot(settings::game_path());
+        const auto directory = presentation::path_from_godot(settings.game_path());
         auto characters = srd5::character_rules();
         // Play-testing: --combat-demo-party=druid,warlock,... and --combat-demo-level=4.
         std::vector<std::string> classes, enemies, gear;
@@ -673,7 +675,7 @@ void CombatView::prepare_combat()
         }
         // The demo's parties are made under the SRD rules.
         auto showcase = make_combat_demo(
-            fight_rules(GameRules{}), *characters, directory,
+            fight_rules(settings, GameRules{}), *characters, directory,
             {.body_catalog_file = presentation::path_from_godot(game_combat_body_file()),
              .classes = std::move(classes),
              .level = level,
@@ -695,7 +697,7 @@ void CombatView::prepare_combat()
     }
     else if (OS::get_singleton()->get_cmdline_user_args().has("--slums"))
     {
-        next->slums(presentation::path_from_godot(settings::game_path()), 42, game_monsters(),
+        next->slums(presentation::path_from_godot(settings.game_path()), 42, game_monsters(),
                     settings::difficulty());
     }
     else
@@ -703,7 +705,7 @@ void CombatView::prepare_combat()
         next->training(settings::flag("--conditions") ? 3 : 42, settings::flag("--conditions"));
     }
     demo_ = std::move(next);
-    sync_art();
+    sync_art(settings);
 }
 
 void CombatView::_notification(int what)
@@ -869,13 +871,14 @@ void CombatView::_ready()
     defeat_check_ = campaign_ && args.has("--defeat-check");
     try
     {
-        prepare_combat();
+        prepare_combat(application_settings(*this));
         layout();
         refresh();
         // The fight's sounds are the chosen game's own; one whose sounds
         // are not decoded yet fights to Pool of Radiance's, as before.
-        const auto game = settings::chosen_game();
-        auto directory = presentation::path_from_godot(settings::game_folder(game));
+        const auto game = application_settings(*this).chosen_game();
+        auto directory =
+            presentation::path_from_godot(application_settings(*this).game_folder(game));
         auto sound_game = game;
         if (game != GoldBoxGame::pools_of_darkness &&
             game != GoldBoxGame::treasures_of_the_savage_frontier &&
@@ -883,7 +886,7 @@ void CombatView::_ready()
             game != GoldBoxGame::curse_of_the_azure_bonds &&
             game != GoldBoxGame::secret_of_the_silver_blades)
         {
-            directory = presentation::path_from_godot(settings::game_path());
+            directory = presentation::path_from_godot(application_settings(*this).game_path());
             sound_game = GoldBoxGame::pool_of_radiance;
         }
         if (std::filesystem::is_directory(directory))
@@ -1008,7 +1011,7 @@ void CombatView::training()
         error_.clear();
         demo_.change().training(settings::flag("--conditions") ? 3 : 42,
                                 settings::flag("--conditions"));
-        sync_art();
+        sync_art(application_settings(*this));
         mode_ = "move";
         refresh();
     }
@@ -1024,11 +1027,11 @@ void CombatView::slums()
     try
     {
         error_.clear();
-        const auto directory = settings::game_path();
+        const auto directory = application_settings(*this).game_path();
         demo_.change().slums(presentation::path_from_godot(directory), 42, game_monsters(),
                              settings::difficulty());
         mode_ = "move";
-        sync_art();
+        sync_art(application_settings(*this));
         refresh();
     }
     catch (const std::exception &e)
@@ -1057,7 +1060,7 @@ void CombatView::next()
         if (demo_)
         {
             demo_.change().continue_script();
-            sync_art();
+            sync_art(application_settings(*this));
             refresh();
         }
     }
@@ -1104,16 +1107,16 @@ void CombatView::show_note(const String &note)
 
 void CombatView::refresh_art()
 {
-    sync_art(true);
+    sync_art(application_settings(*this), true);
     refresh();
 }
 
-void CombatView::sync_art(bool preserve_effects)
+void CombatView::sync_art(const settings::Settings &settings, bool preserve_effects)
 {
     // The art is built off to the side and moved in at the end, so a missing
     // or corrupt art file leaves the previous art in place rather than an
     // empty or half-built battlefield (Effective C++ Item 29).
-    auto built = demo_ ? build_art() : ArtSet{};
+    auto built = demo_ ? build_art(settings) : ArtSet{};
     missing_art_ = std::move(built.missing);
     art_ = std::move(built.sprites);
     form_art_ = std::move(built.forms);
@@ -1166,7 +1169,7 @@ std::optional<std::array<Ref<ImageTexture>, 2>> new_boulder_art()
 }
 } // namespace
 
-CombatView::ArtSet CombatView::build_art() const
+CombatView::ArtSet CombatView::build_art(const settings::Settings &settings) const
 {
     ArtSet result;
     // A campaign builds its members' art below; otherwise the art stays.
@@ -1181,7 +1184,7 @@ CombatView::ArtSet CombatView::build_art() const
     auto &terrain_art = result.terrain;
     auto &skull_art = result.skull;
     auto &campaign_art = result.campaign;
-    const auto directory = presentation::path_from_godot(settings::game_path());
+    const auto directory = presentation::path_from_godot(settings.game_path());
     if (std::filesystem::is_directory(directory))
     {
         for (const auto &file : std::filesystem::directory_iterator(directory))
@@ -1461,7 +1464,7 @@ CombatView::ArtSet CombatView::build_art() const
     if (campaign_)
     {
         // As every screen shows them: new, or the original head and body.
-        auto catalog = PortraitCatalog::load();
+        auto catalog = PortraitCatalog::load(settings);
         for (const auto id : campaign_->state().slots)
         {
             if (id)
@@ -1505,7 +1508,7 @@ void CombatView::load_game()
             return;
         }
         demo_.change().restore_combat(bytes);
-        sync_art();
+        sync_art(application_settings(*this));
         error_.clear();
         refresh();
     }
@@ -1524,7 +1527,7 @@ void CombatView::restore_original(std::string_view checkpoint, opengold::origina
         std::make_unique<CombatDemo>(opengold::original::rules_module(std::move(content)));
     original->restore_combat(checkpoint);
     demo_ = std::move(original);
-    sync_art();
+    sync_art(application_settings(*this));
     error_.clear();
     refresh();
 }
@@ -1542,7 +1545,8 @@ bool CombatView::load_original_check(const String &save_path, std::int64_t game)
                                   const auto bytes = read_save_file(
                                       presentation::path_from_godot(save_path), 4 * 1024 * 1024);
                                   const auto played = static_cast<opengold::GoldBoxGame>(game);
-                                  const auto folder = settings::game_folder(played);
+                                  const auto folder =
+                                      application_settings(*this).game_folder(played);
                                   opengold::original::Content content;
                                   content.game = played;
                                   if (!folder.is_empty())

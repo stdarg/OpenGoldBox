@@ -10,10 +10,11 @@
 // Gives the session the shops and temples data/shops describes (TEMPLE-1),
 // which the Shop & Temple Manager edits, with the stock its game's Original
 // Shops setting chooses. Throws on a file the game cannot use.
-inline void use_shop_data(opengold::por::RolfTourSession &session)
+inline void use_shop_data(const settings::Settings &settings,
+                          opengold::por::RolfTourSession &session)
 {
     session.use_shop_data(presentation::path_from_godot(game_data_path("data/shops")),
-                          settings::original_shops(settings::chosen_game())
+                          settings::original_shops(settings.chosen_game())
                               ? opengold::ShopStock::original
                               : opengold::ShopStock::modified);
 }

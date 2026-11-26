@@ -1,6 +1,8 @@
 #ifndef OPENGOLDBOX_GAME_LIFECYCLE_H
 #define OPENGOLDBOX_GAME_LIFECYCLE_H
 
+#include "application_settings.h"
+#include "game_log.h"
 #include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/classes/input_event.hpp>
 #include <godot_cpp/classes/viewport.hpp>
@@ -14,6 +16,13 @@ class GameLifecycle : public godot::Node
     // line to show it; called by presentation::run_guarded.
     void report_failure(const std::exception &) noexcept
     {
+    }
+
+    // The application's settings, which the views read and change: the
+    // lifecycle outlives every scene.
+    [[nodiscard]] settings::Settings &settings()
+    {
+        return settings_;
     }
 
     void _ready() override;
@@ -36,6 +45,13 @@ class GameLifecycle : public godot::Node
     void window_input(const godot::Ref<godot::InputEvent> &event, godot::Node *node);
     void shortcut(const godot::Ref<godot::InputEvent> &event, godot::Viewport &viewport);
     void request_quit();
+
+    settings::Settings settings_;
+    GameLog log_;
 };
+
+// The lifecycle's settings (the ApplicationLifecycle autoload), for a node in
+// the scene tree.
+[[nodiscard]] settings::Settings &application_settings(const godot::Node &node);
 
 #endif

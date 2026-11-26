@@ -393,7 +393,7 @@ disruption and related weapon-quarry behavior. This correction is not yet
 accepted by the next rebuilt run.
 
 Player portraits and customizable icons already use the application's shared
-Pool of Radiance CharacterArt through settings::game_path, as other campaigns
+Pool of Radiance CharacterArt through settings::Settings::game_path, as other campaigns
 do. Native GEN.TLB supplies the original frame, not player portraits; no new
 portrait decoder is required for that frame. Native finale animation,
 campaign services, full-map runtime verification, the earned ending and

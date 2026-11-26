@@ -246,13 +246,14 @@ std::string buck_rogers_identity_and_attributes(const Character &character,
 
 // Below the body icon: Armor Class and movement, a Warrior's
 // specializations and the items it carries, named as the game names them.
-std::string buck_rogers_details(const original::GroundRecord &record)
+std::string buck_rogers_details(const settings::Settings &settings,
+                                const original::GroundRecord &record)
 {
     const auto &c = record.creature;
     std::string text = "\n\n" + i18n::formatted("Armor Class {ac}   Movement {movement}",
                                                 {{"ac", c.base_armor_class},
                                                  {"movement", static_cast<int>(c.base_movement)}});
-    const auto files = game_rules_files();
+    const auto files = game_rules_files(settings);
     const auto &stock = buck_rogers_stock(files);
     std::string specializations;
     for (const auto type : original::specializable_weapon_types(stock.templates))
@@ -432,13 +433,13 @@ std::string identity_and_attributes(const Character &character, const PartyMembe
 
 // AC, status effects, features, inventory and training: what the town's sheet
 // shows below the portrait.
-std::string details(const Character &character, const PartyMember *member,
-                    const CampaignParty *party)
+std::string details(const settings::Settings &settings, const Character &character,
+                    const PartyMember *member, const CampaignParty *party)
 {
     const auto &s = character.sheet();
     if (const auto record = buck_rogers_record(character, member, party))
     {
-        return buck_rogers_details(*record);
+        return buck_rogers_details(settings, *record);
     }
     std::string text;
     if (member)
@@ -527,21 +528,23 @@ std::string details(const Character &character, const PartyMember *member,
 
 namespace presentation
 {
-String sheet_text(const Character &character)
+String sheet_text(const settings::Settings &settings, const Character &character)
 {
     return gs(identity_and_attributes(character, nullptr, nullptr) +
-              details(character, nullptr, nullptr));
+              details(settings, character, nullptr, nullptr));
 }
 
-String sheet_text(const CampaignParty &party, const PartyMember &member)
+String sheet_text(const settings::Settings &settings, const CampaignParty &party,
+                  const PartyMember &member)
 {
-    const auto sections = sheet_sections(party, member);
+    const auto sections = sheet_sections(settings, party, member);
     return sections.beside_portrait + sections.below_portrait;
 }
 
-SheetSections sheet_sections(const CampaignParty &party, const PartyMember &member)
+SheetSections sheet_sections(const settings::Settings &settings, const CampaignParty &party,
+                             const PartyMember &member)
 {
     return {gs(identity_and_attributes(member.character, &member, &party)),
-            gs(details(member.character, &member, &party))};
+            gs(details(settings, member.character, &member, &party))};
 }
 } // namespace presentation

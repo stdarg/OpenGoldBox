@@ -1,5 +1,6 @@
 #include "party_test_bridge.h"
 #include "application_settings.h"
+#include "game_lifecycle.h"
 #include "campaign_combat.h"
 #include "character_sheet_text.h"
 #include "class_text.h"
@@ -42,9 +43,9 @@ String gs(const std::string &text)
 }
 
 // Pool of Radiance's folder, where the game itself finds it.
-std::filesystem::path game_dir()
+std::filesystem::path game_dir(const Node &host)
 {
-    const auto value = settings::game_path();
+    const auto value = application_settings(host).game_path();
     if (value.is_empty())
     {
         throw std::runtime_error(
@@ -132,7 +133,7 @@ void PartyTestBridge::_bind_methods()
 
 void PartyTestBridge::load_game_data()
 {
-    const auto dir = game_dir();
+    const auto dir = game_dir(*this);
     const auto creation = srd5::character_rules();
     pool_ = character_pool(*creation, por::CharacterArt::load(dir));
     const auto &encounters = game_encounters();
@@ -466,7 +467,7 @@ String PartyTestBridge::sheet(int index) const
     {
         return {};
     }
-    return presentation::sheet_text(party(),
+    return presentation::sheet_text(application_settings(*this), party(),
                                     party().member(active[static_cast<std::size_t>(index)]));
 }
 
@@ -564,13 +565,14 @@ String PartyTestBridge::start_fight(const Dictionary &configuration)
             }
         }
         apply_difficulty(encounter, *difficulty, average_party_level(levels));
-        const auto dir = game_dir();
+        const auto dir = game_dir(*this);
         const auto body =
             por::CombatBodyCatalog::load(presentation::path_from_godot(game_combat_body_file()),
                                          presentation::path_from_godot(game_combat_weapon_file()));
         presentation::attach_child(*get_parent(),
-                                   campaign_combat_scene(fighters, por::CharacterArt::load(dir),
-                                                         &body, std::move(encounter)));
+                                   campaign_combat_scene(application_settings(*this), fighters,
+                                                         por::CharacterArt::load(dir), &body,
+                                                         std::move(encounter)));
         return {};
     }
     catch (const std::exception &e)

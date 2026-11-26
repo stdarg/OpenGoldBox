@@ -4,6 +4,7 @@
 #include <godot_cpp/classes/option_button.hpp>
 #include <godot_cpp/classes/check_box.hpp>
 #include "application_settings.h"
+#include "game_lifecycle.h"
 #include "godot_images.h"
 #include "godot_nodes.h"
 #include "localization.h"
@@ -83,20 +84,21 @@ Character check_fighter()
 // The rules a new game plays by: the startup's question chose them; a check
 // that opens this scene by itself starts under the original rules with
 // --original-rules.
-GameRules starting_rules()
+GameRules starting_rules(const settings::Settings &settings)
 {
     if (settings::flag("--original-rules"))
     {
         return {GameRules::Set::original, original::default_aging};
     }
-    return settings::chosen_rules();
+    return settings.chosen_rules();
 }
 } // namespace
 
 void CharacterCreationView::setup_party()
 {
     body_catalog_ = game_combat_looks();
-    campaign_ = new_campaign_party(starting_rules(), game_rules_files());
+    campaign_ = new_campaign_party(starting_rules(application_settings(*this)),
+                                   game_rules_files(application_settings(*this)));
     auto panel = presentation::instantiate_scene("res://scenes/party_panel.tscn");
     i18n::prepare_ui(*panel);
     presentation::attach_child(*this, std::move(panel));
@@ -339,7 +341,7 @@ void CharacterCreationView::reincarnate_check()
         write_campaign_file(reincarnate_save(),
                             encode_campaign(*campaign_, nullptr,
                                             campaign_asset_identity(presentation::path_from_godot(
-                                                settings::game_path()))));
+                                                application_settings(*this).game_path()))));
         // A Human body whose Versatile feat is Magic Initiate, for its spell page.
         begin_reincarnation({slots[0], slots[1], "reincarnate"}, "human");
         creator_->training_choice({.group = "species:human:versatile",
@@ -663,7 +665,8 @@ void CharacterCreationView::refresh_party()
         list->select(static_cast<std::int32_t>(std::find(rows.begin(), rows.end(), roster_index_) -
                                                rows.begin()));
         const auto &m = state.roster[roster_index_];
-        sheet = presentation::sheet_text(*campaign_, m).utf8().get_data();
+        sheet =
+            presentation::sheet_text(application_settings(*this), *campaign_, m).utf8().get_data();
         const auto profile = campaign_->profile(m.id);
         for (const auto &item : m.character.inventory().items())
         {
@@ -683,7 +686,8 @@ void CharacterCreationView::refresh_party()
         // A Buck Rogers character fights as its body icon.
         if (const auto record = original::buck_rogers_record_of(campaign_->game_record(m.id)))
         {
-            const auto body = presentation::buck_rogers_body_icon(record->creature.icon);
+            const auto body = presentation::buck_rogers_body_icon(application_settings(*this),
+                                                                  record->creature.icon);
             required_node<TextureRect>(*this, "PartyPanel/ReadySprite").set_texture(body.ready);
             required_node<TextureRect>(*this, "PartyPanel/ActionSprite").set_texture(body.action);
         }
@@ -996,9 +1000,9 @@ void CharacterCreationView::equipment_art_check()
         enemy.width = enemy.height = 24;
         enemy.rgba.assign(24 * 24 * 4, 255);
         encounter.art.push_back({1000, enemy, enemy});
-        presentation::attach_child(*this, campaign_combat_scene(campaign_, *art_,
-                                                                looks_or_none(body_catalog_),
-                                                                std::move(encounter)));
+        presentation::attach_child(
+            *this, campaign_combat_scene(application_settings(*this), campaign_, *art_,
+                                         looks_or_none(body_catalog_), std::move(encounter)));
         verify_combat();
         for (bool action : {false, true})
         {
@@ -1248,7 +1252,7 @@ void CharacterCreationView::party_action(PartyAction action)
             const auto added = campaign_->add_pc(*completed_);
             campaign_->add_coins(Coin::gold, creator_->starting_gold());
             campaign_->add_coins(Coin::platinum, creator_->starting_platinum());
-            outfit_for_game(*campaign_, added, game_rules_files());
+            outfit_for_game(*campaign_, added, game_rules_files(application_settings(*this)));
             added_to_party_ = true;
             roster_index_ = campaign_->state().roster.size() - 1;
             refresh();
@@ -1420,9 +1424,9 @@ void CharacterCreationView::start_check_fight()
         encounter.positions.push_back(member.cell);
     }
     encounter.positions.push_back(bandit_cell);
-    presentation::attach_child(*this,
-                               campaign_combat_scene(campaign_, *art_, looks_or_none(body_catalog_),
-                                                     std::move(encounter)));
+    presentation::attach_child(*this, campaign_combat_scene(application_settings(*this), campaign_,
+                                                            *art_, looks_or_none(body_catalog_),
+                                                            std::move(encounter)));
     check_fight_ = true;
     leave_roster();
 }
@@ -1831,8 +1835,8 @@ void CharacterCreationView::update_party_navigation()
         presentation::NodeOwner<> owned;
         try
         {
-            owned = campaign_combat_scene(campaign_, *art_, looks_or_none(body_catalog_),
-                                          *town->pending_encounter());
+            owned = campaign_combat_scene(application_settings(*this), campaign_, *art_,
+                                          looks_or_none(body_catalog_), *town->pending_encounter());
         }
         catch (const std::exception &e)
         {
@@ -1901,8 +1905,8 @@ void CharacterCreationView::update_party_navigation()
 
 void CharacterCreationView::begin_chosen_start()
 {
-    auto start = settings::chosen_game_start();
-    settings::choose_game_start({});
+    auto start = application_settings(*this).chosen_game_start();
+    application_settings(*this).choose_game_start({});
     // The checks' flags: --default-party, or --load-save=PATH for Continue.
     for (const auto &argument : OS::get_singleton()->get_cmdline_user_args())
     {
@@ -1934,7 +1938,7 @@ void CharacterCreationView::begin_chosen_start()
 
 void CharacterCreationView::play_with_default_party()
 {
-    const auto game = settings::chosen_game();
+    const auto game = application_settings(*this).chosen_game();
     const auto file = presentation::path_from_godot(game_data_path("data/default_parties"))
                           .append(std::string(opengold::game_folder(game)) + ".json");
     try
@@ -1946,7 +1950,7 @@ void CharacterCreationView::play_with_default_party()
         {
             if (id)
             {
-                outfit_for_game(*campaign_, id, game_rules_files());
+                outfit_for_game(*campaign_, id, game_rules_files(application_settings(*this)));
             }
         }
     }

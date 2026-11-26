@@ -1,6 +1,7 @@
 #include "game_menu_view.h"
 #include <utility>
 #include "application_settings.h"
+#include "game_lifecycle.h"
 #include "godot_nodes.h"
 #include "godot_keys.h"
 #include "guarded_handlers.h"
@@ -198,7 +199,7 @@ void GameMenuView::open_options()
     auto &difficulty =
         required_node<OptionButton>(*this, "Options/Gameplay/Scroll/Page/Choices/Difficulty");
     difficulty.clear();
-    if (opengold::offers_novice(settings::chosen_game()))
+    if (opengold::offers_novice(application_settings(*this).chosen_game()))
     {
         for (const auto *name :
              {N_("Novice"), N_("Cadet"), N_("Trooper"), N_("Veteran"), N_("Ace"), N_("Admiral")})
@@ -248,7 +249,7 @@ void GameMenuView::open_options()
         .select(static_cast<int>(settings::design_difficulty()));
     show_party_spell_limits();
     show_game_options();
-    const auto language = settings::language();
+    const auto language = application_settings(*this).language();
     const auto *const found = std::find_if(language_codes.begin(), language_codes.end(),
                                            [&](const char *code)
                                            {
@@ -439,7 +440,7 @@ void GameMenuView::build_options()
 
 void GameMenuView::difficulty_selected(std::int64_t index)
 {
-    if (opengold::offers_novice(settings::chosen_game()))
+    if (opengold::offers_novice(application_settings(*this).chosen_game()))
     {
         settings::save_difficulty_setting(static_cast<opengold::DifficultySetting>(index));
     }
@@ -473,7 +474,7 @@ void GameMenuView::show_srd_balance()
     auto &gameplay = required_node<Control>(*this, "Options/Gameplay/Scroll/Page");
     // A Buck Rogers game has no rules but the original's, and shows Original
     // movement where the SRD balance's rows would stand.
-    const bool buck_rogers = opengold::is_buck_rogers(settings::chosen_game());
+    const bool buck_rogers = opengold::is_buck_rogers(application_settings(*this).chosen_game());
     const bool srd_balance = srd_rules_ && !buck_rogers;
     for (const char *name : {"Choices/ChallengeLabel", "Choices/Challenge", "Choices/ChallengeNote",
                              "AbilitiesHeader", "AbilityColumns", "Abilities"})
@@ -505,10 +506,11 @@ void GameMenuView::show_srd_balance()
             srd_balance
                 ? i18n::text(N_(
                       "From Hard: monsters use their potions, wands and scrolls, and temples cast no Resurrection. Each monster ability below has its own lowest difficulty."))
-            : opengold::is_buck_rogers(settings::chosen_game())
+            : opengold::is_buck_rogers(application_settings(*this).chosen_game())
                 ? i18n::text(N_(
                       "Trooper plays as the original game did. The other levels change the party's to-hit and the monsters' Hit Points, to-hit and Armor Class."))
-            : settings::chosen_game() == opengold::GoldBoxGame::unlimited_adventures
+            : application_settings(*this).chosen_game() ==
+                    opengold::GoldBoxGame::unlimited_adventures
                 ? i18n::text(N_(
                       "In this design, the difficulty plays as Design difficulty below sets it."))
                 : i18n::text(N_(
@@ -523,7 +525,7 @@ void GameMenuView::restore_ability_defaults()
 
 void GameMenuView::language_selected(std::int64_t index)
 {
-    settings::save_language(language_codes.at(static_cast<std::size_t>(index)));
+    application_settings(*this).save_language(language_codes.at(static_cast<std::size_t>(index)));
 }
 
 void GameMenuView::zoom_changed(double value)
@@ -658,12 +660,13 @@ void GameMenuView::design_difficulty_selected(std::int64_t index)
 
 void GameMenuView::game_switch_selected(std::int64_t index, std::int64_t option)
 {
-    game_switches.at(static_cast<std::size_t>(option)).save(settings::chosen_game(), index == 0);
+    game_switches.at(static_cast<std::size_t>(option))
+        .save(application_settings(*this).chosen_game(), index == 0);
 }
 
 void GameMenuView::show_game_options()
 {
-    const auto game = settings::chosen_game();
+    const auto game = application_settings(*this).chosen_game();
     const bool buck_rogers = opengold::is_buck_rogers(game);
     auto &gameplay = required_node<Control>(*this, "Options/Gameplay/Scroll/Page/Choices");
     // Unlimited Adventures' Design difficulty steps aside too, for the solar

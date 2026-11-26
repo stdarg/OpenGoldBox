@@ -1,5 +1,6 @@
 #include "game_folder_questions.h"
 #include "application_settings.h"
+#include "game_lifecycle.h"
 #include "godot_nodes.h"
 #include "godot_keys.h"
 #include "guarded_handlers.h"
@@ -33,11 +34,12 @@ String game_heading(opengold::GoldBoxGame game)
 }
 } // namespace
 
-bool GameFolderQuestions::folder_chosen(opengold::GoldBoxGame game)
+bool GameFolderQuestions::folder_chosen(const settings::Settings &settings,
+                                        opengold::GoldBoxGame game)
 {
-    const auto located = settings::locate_game_folder(game);
+    const auto located = settings.locate_game_folder(game);
     return located && located->source == opengold::GameFolderSource::chosen &&
-           settings::validate_game_folder(settings::game_folder(game), game).usable;
+           settings::validate_game_folder(settings.game_folder(game), game).usable;
 }
 
 void GameFolderQuestions::ask(Request request, Outcome ready, Outcome back)
@@ -49,7 +51,7 @@ void GameFolderQuestions::ask(Request request, Outcome ready, Outcome back)
     design_needed_ = request.design;
     saved_design_kept_ = request.saved_design_kept;
     if (request.game != opengold::GoldBoxGame::pool_of_radiance &&
-        !folder_chosen(opengold::GoldBoxGame::pool_of_radiance))
+        !folder_chosen(application_settings(*this), opengold::GoldBoxGame::pool_of_radiance))
     {
         folders_needed_.push_back(opengold::GoldBoxGame::pool_of_radiance);
     }
@@ -155,8 +157,9 @@ void GameFolderQuestions::next_folder()
     required_node<Label>(*found, "Title").set_text(heading);
     // A chosen folder that no longer holds the game's files is looked for
     // again, as when none was chosen (the user's decision, 2026-11-20).
-    const auto located = settings::locate_game_folder(game);
-    pending_path_ = settings::game_folder(game);
+    const auto &settings = application_settings(*this);
+    const auto located = settings.locate_game_folder(game);
+    pending_path_ = settings.game_folder(game);
     if (!located ||
         (game == opengold::GoldBoxGame::pool_of_radiance && settings::flag("--reset-game-path")))
     {
@@ -232,7 +235,7 @@ void GameFolderQuestions::ask_design()
     required_node<Label>(*dialog, "Instructions")
         .set_text(i18n::text(N_(
             "Choose the folder of the design to play, which the construction kit names NAME.DSN.")));
-    pending_path_ = settings::design_folder();
+    pending_path_ = application_settings(*this).design_folder();
     if (saved_design_kept_ && settings::validate_design_folder(pending_path_).usable)
     {
         check_path();
@@ -320,8 +323,9 @@ void GameFolderQuestions::continue_path()
     required_node<Window>(*this, "ChecksumWarning").hide();
     const bool design = asking_design();
     if (save_pending_path_ &&
-        !(design ? settings::save_design_folder(pending_path_)
-                 : settings::save_game_folder(folders_needed_.front(), pending_path_)))
+        !(design ? application_settings(*this).save_design_folder(pending_path_)
+                 : application_settings(*this).save_game_folder(folders_needed_.front(),
+                                                                pending_path_)))
     {
         show_path(i18n::text(
             "Cannot save settings. Check that settings.cfg in the game's user data folder can be written and is valid."));

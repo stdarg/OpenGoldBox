@@ -3,6 +3,7 @@
 // the pages where these games' rules differ. The character is its record
 // (opengold/buck_rogers_creation.h); every number shown comes from the rules.
 #include "buck_rogers_icons.h"
+#include "game_lifecycle.h"
 #include "character_creation_view.h"
 #include "character_text.h"
 #include "game_resources.h"
@@ -324,7 +325,8 @@ void CharacterCreationView::refresh_buck_rogers(CreationStep step)
     case CreationStep::sheet:
         required_node<Control>(*this, "PortraitPreview")
             .call("show_texture",
-                  presentation::buck_rogers_body_icon(record_of(creator_->draft()).creature.icon)
+                  presentation::buck_rogers_body_icon(application_settings(*this),
+                                                      record_of(creator_->draft()).creature.icon)
                       .ready);
         break;
     default:
@@ -451,7 +453,7 @@ void CharacterCreationView::show_buck_rogers_specializations()
         asked.specializations = training->choices.specializations_owed();
         asked.chosen_specializations = training->choices.specializations_chosen();
     }
-    const auto files = game_rules_files();
+    const auto files = game_rules_files(application_settings(*this));
     const auto &stock = buck_rogers_stock(files);
     required_node<Label>(*this, "Specializations/Count")
         .set_text(i18n::format(
@@ -709,10 +711,11 @@ void CharacterCreationView::show_buck_rogers_icons()
     for (unsigned n = 0; n < presentation::buck_rogers_body_icon_count; ++n)
     {
         auto &button = required_node<Button>(grid, gs("Icon" + std::to_string(n)));
-        button.set_button_icon(presentation::buck_rogers_body_icon(n).ready);
+        button.set_button_icon(
+            presentation::buck_rogers_body_icon(application_settings(*this), n).ready);
         button.set_pressed_no_signal(n == icon);
     }
-    const auto chosen = presentation::buck_rogers_body_icon(icon);
+    const auto chosen = presentation::buck_rogers_body_icon(application_settings(*this), icon);
     required_node<TextureRect>(*this, "BodyIcons/Preview/Ready").set_texture(chosen.ready);
     required_node<TextureRect>(*this, "BodyIcons/Preview/Action").set_texture(chosen.action);
     required_node<Label>(*this, "Instructions")

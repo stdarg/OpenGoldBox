@@ -35,10 +35,10 @@ std::vector<std::uint8_t> read_body_icons(const std::filesystem::path &folder)
 }
 } // namespace
 
-BodyIcon buck_rogers_body_icon(unsigned number)
+BodyIcon buck_rogers_body_icon(const settings::Settings &settings, unsigned number)
 {
-    const auto game = settings::chosen_game();
-    const auto folder = path_from_godot(settings::game_folder(game));
+    const auto game = settings.chosen_game();
+    const auto folder = path_from_godot(settings.game_folder(game));
     // The pictures are kept, not their textures: a Godot resource must not
     // outlive the engine, as a static one would.
     static std::map<std::filesystem::path, std::vector<std::uint8_t>> archives;

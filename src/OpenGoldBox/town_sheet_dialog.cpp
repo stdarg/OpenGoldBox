@@ -1,5 +1,6 @@
 #include "town_sheet_dialog.h"
 #include "application_settings.h"
+#include "game_lifecycle.h"
 #include "character_sheet_text.h"
 #include "godot_nodes.h"
 #include "guarded_handlers.h"
@@ -89,9 +90,9 @@ void TownSheetDialog::show_sheet()
     const auto &m = campaign.member(member_);
     if (!portraits_)
     {
-        portraits_ = PortraitCatalog::load();
+        portraits_ = PortraitCatalog::load(application_settings(*this));
     }
-    const auto sections = presentation::sheet_sections(campaign, m);
+    const auto sections = presentation::sheet_sections(application_settings(*this), campaign, m);
     required_node<RichTextLabel>(*this, "Text")
         .call("render_with_portrait",
               portraits_->texture(m.character.appearance(), m.character.creation_data()),

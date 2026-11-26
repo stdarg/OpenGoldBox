@@ -6,8 +6,9 @@
 #include <vector>
 
 presentation::NodeOwner<> campaign_combat_scene(
-    const std::shared_ptr<opengold::CampaignParty> &party, const opengold::por::CharacterArt &art,
-    const opengold::por::CombatBodyCatalog *looks, opengold::CampaignEncounter encounter)
+    const settings::Settings &settings, const std::shared_ptr<opengold::CampaignParty> &party,
+    const opengold::por::CharacterArt &art, const opengold::por::CombatBodyCatalog *looks,
+    opengold::CampaignEncounter encounter)
 {
     std::vector<opengold::CombatArt> images;
     for (const auto &participant : party->participants())
@@ -35,6 +36,6 @@ presentation::NodeOwner<> campaign_combat_scene(
     combat->set_name("CampaignCombat");
     combat->campaign_party(party, std::move(images));
     combat->campaign_encounter(std::move(encounter));
-    combat->prepare_combat();
+    combat->prepare_combat(settings);
     return owned;
 }

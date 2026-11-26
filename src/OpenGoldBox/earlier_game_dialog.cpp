@@ -1,5 +1,6 @@
 #include "earlier_game_dialog.h"
 #include "application_settings.h"
+#include "game_lifecycle.h"
 #include "game_encounters.h"
 #include "game_folder_questions.h"
 #include "game_monsters.h"
@@ -33,9 +34,9 @@ namespace
 {
 using presentation::gs;
 
-std::filesystem::path game_folder_of(GoldBoxGame game)
+std::filesystem::path game_folder_of(const settings::Settings &settings, GoldBoxGame game)
 {
-    return presentation::path_from_godot(settings::game_folder(game));
+    return presentation::path_from_godot(settings.game_folder(game));
 }
 
 // Whether a save is the earlier game's under the original rules, whose
@@ -58,9 +59,10 @@ bool save_under_original_rules(const std::filesystem::path &file, GoldBoxGame ea
 
 // An earlier game's save's party under the rules it was made with, its world
 // built from that game's folder, as loading it does.
-PartyState saved_party(const std::filesystem::path &file, GoldBoxGame earlier)
+PartyState saved_party(const settings::Settings &settings, const std::filesystem::path &file,
+                       GoldBoxGame earlier)
 {
-    const auto folder = game_folder_of(earlier);
+    const auto folder = game_folder_of(settings, earlier);
     const RulesFiles files{presentation::path_from_godot(game_rules_file()), folder, earlier};
     const auto &wall_art = game_wall_art();
     const auto monsters = game_monsters();
@@ -297,7 +299,7 @@ std::optional<GoldBoxGame> EarlierGameDialog::folder_to_ask() const
 {
     for (const auto game : {earlier_game(), original::game_of(campaign_().identity())})
     {
-        if (!GameFolderQuestions::folder_chosen(game))
+        if (!GameFolderQuestions::folder_chosen(application_settings(*this), game))
         {
             return game;
         }
@@ -340,7 +342,7 @@ void EarlierGameDialog::list_members(std::int64_t index)
     required_node<Button>(*this, "Margin/Rows/Buttons/Add").set_disabled(true);
     const auto earlier = earlier_game();
     const auto &file = saves_[static_cast<std::size_t>(index)];
-    auto party = saved_party(file, earlier);
+    auto party = saved_party(application_settings(*this), file, earlier);
     source_wealth_ = party.wealth;
     // A winning party offers its winners, its permanent NPCs after its
     // player characters; another save its player characters.
@@ -425,8 +427,9 @@ void EarlierGameDialog::bring_in(const PartyMember &member)
     (void)bring_into_sequel(
         campaign_(), member,
         {.earlier = earlier,
-         .earlier_folder = game_folder_of(earlier),
-         .sequel_folder = game_folder_of(original::game_of(campaign_().identity())),
+         .earlier_folder = game_folder_of(application_settings(*this), earlier),
+         .sequel_folder =
+             game_folder_of(application_settings(*this), original::game_of(campaign_().identity())),
          .source_wealth = source_wealth_,
          .player_character = member_index_,
          .player_characters = player_characters_,

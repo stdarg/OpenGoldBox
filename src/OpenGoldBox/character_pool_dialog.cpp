@@ -1,4 +1,5 @@
 #include "godot_text.h"
+#include "game_lifecycle.h"
 #include "class_text.h"
 #include "character_pool_dialog.h"
 #include "character_sheet_text.h"
@@ -124,7 +125,8 @@ void CharacterPoolDialog::select(std::int64_t index)
     }
     pool_index_ = static_cast<unsigned>(index);
     const auto &character = pool_[pool_index_];
-    required_node<RichTextLabel>(*this, "Text").call("render", presentation::sheet_text(character));
+    required_node<RichTextLabel>(*this, "Text")
+        .call("render", presentation::sheet_text(application_settings(*this), character));
     required_node<TextureRect>(*this, "Portrait")
         .set_texture(portraits_->texture(character.appearance(), character.creation_data()));
     for (unsigned i = 1; i < 3; ++i)

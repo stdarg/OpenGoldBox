@@ -4,22 +4,10 @@
 #include <godot_cpp/classes/logger.hpp>
 #include <godot_cpp/classes/script_backtrace.hpp>
 
-// The game's own log (opengold/diagnostic_log.h): what the session runs on, every
-// die rolled with what it was for, the player's actions, every line and move of
-// each fight, the key decisions and the errors met, the engine's and scripts'
-// included. Each session writes user://logs/opengold-<date>.log beside the
-// engine's logs, and the newest five are kept. OPENGOLD_LOG names another file
-// instead.
-namespace game_log
+namespace settings
 {
-// Opens the log and writes its head: the game's version and commit, the engine,
-// the system, the game files' folder and the settings.
-void open();
-
-// Stops copying the engine's errors. The engine keeps its loggers past the
-// game library's unloading, so one left behind crashes the engine's exit.
-void close();
-} // namespace game_log
+class Settings;
+} // namespace settings
 
 // Copies the engine's errors and warnings, GDScript's included, into the game's
 // log. The engine keeps writing them to its own log as well.
@@ -39,6 +27,28 @@ class EngineErrors : public godot::Logger
                     const godot::TypedArray<godot::Ref<godot::ScriptBacktrace>> &script_backtraces)
         override;
     void _log_message(const godot::String &message, bool error) override;
+};
+
+// The game's own log (opengold/diagnostic_log.h): what the session runs on, every
+// die rolled with what it was for, the player's actions, every line and move of
+// each fight, the key decisions and the errors met, the engine's and scripts'
+// included. Each session writes user://logs/opengold-<date>.log beside the
+// engine's logs, and the newest five are kept. OPENGOLD_LOG names another file
+// instead. The lifecycle opens and closes it.
+class GameLog
+{
+  public:
+    // Opens the log and writes its head: the game's version and commit, the engine,
+    // the system, the game files' folder and the settings.
+    void open(const settings::Settings &settings);
+
+    // Stops copying the engine's errors. The engine keeps its loggers past the
+    // game library's unloading, so one left behind crashes the engine's exit.
+    void close();
+
+  private:
+    // Held so close() can take it back from the engine.
+    godot::Ref<EngineErrors> engine_errors_;
 };
 
 #endif

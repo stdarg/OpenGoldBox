@@ -5,6 +5,7 @@
 #include "training_control.h"
 #include "godot_images.h"
 #include "application_settings.h"
+#include "game_lifecycle.h"
 #include <godot_cpp/classes/texture_rect.hpp>
 #include "character_creation_view.h"
 #include "character_sheet_text.h"
@@ -284,7 +285,7 @@ void CharacterCreationView::_ready()
     capture_ = args.has("--capture");
     try
     {
-        const auto directory = settings::game_path();
+        const auto directory = application_settings(*this).game_path();
         art_ = por::CharacterArt::load(presentation::path_from_godot(directory));
         body_groups_ = art_->combat_body_groups();
         presentation::load_additional_portrait_heads(*art_);
@@ -447,6 +448,7 @@ void CharacterCreationView::show_race_portrait(bool again)
         RandomState pick{static_cast<std::uint64_t>(UtilityFunctions::randi())};
         race_portrait_ =
             presentation::buck_rogers_body_icon(
+                application_settings(*this),
                 original::default_icon(chosen.race, chosen.gender, chosen.career, pick))
                 .ready;
         race_portrait_of_ = d.race;
@@ -966,7 +968,7 @@ void CharacterCreationView::refresh()
     {
         instructions = N_("Review your character before adding it to the party.");
         required_node<RichTextLabel>(*this, "Description")
-            .call("render", presentation::sheet_text(*completed_));
+            .call("render", presentation::sheet_text(application_settings(*this), *completed_));
     }
     required_node<Label>(*this, "Instructions").set_text(i18n::text(instructions));
     // The party waits while a new body is made.

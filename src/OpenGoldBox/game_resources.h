@@ -69,13 +69,13 @@ inline godot::String new_art_path(const char *relative)
 
 // What each set of rules plays with: the SRD's content pack and the chosen
 // game's folder, and an Unlimited Adventures game's design.
-inline RulesFiles game_rules_files()
+inline RulesFiles game_rules_files(const settings::Settings &settings)
 {
-    const auto game = settings::chosen_game();
+    const auto game = settings.chosen_game();
     const bool design = game == opengold::GoldBoxGame::unlimited_adventures;
     return {presentation::path_from_godot(game_rules_file()),
-            presentation::path_from_godot(settings::game_folder(game)), game,
-            design ? presentation::path_from_godot(settings::design_folder())
+            presentation::path_from_godot(settings.game_folder(game)), game,
+            design ? presentation::path_from_godot(settings.design_folder())
                    : std::filesystem::path{}};
 }
 

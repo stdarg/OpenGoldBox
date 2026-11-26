@@ -1,6 +1,7 @@
 #include "startup_view.h"
 #include "localization.h"
 #include "application_settings.h"
+#include "game_lifecycle.h"
 #include "godot_keys.h"
 #include "guarded_handlers.h"
 #include "godot_nodes.h"
@@ -13,6 +14,7 @@
 #include "opengold/music_render.h"
 #include "opengold/diagnostic_log.h"
 #include <godot_cpp/classes/audio_stream_player.hpp>
+#include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/input_event_mouse_button.hpp>
 #include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/classes/button.hpp>
@@ -49,11 +51,18 @@ void StartupView::_bind_methods()
 
 String StartupView::game_folder(const String &name)
 {
+    // A static method, called from GDScript with no view: the settings are
+    // the lifecycle's, at the tree's root.
+    auto *tree = Object::cast_to<SceneTree>(Engine::get_singleton()->get_main_loop());
+    if (!tree)
+    {
+        return {};
+    }
     for (const auto game : opengold::gold_box_games)
     {
         if (name == String(std::string(opengold::game_folder(game)).c_str()))
         {
-            return settings::game_folder(game);
+            return application_settings(*tree->get_root()).game_folder(game);
         }
     }
     return {};
@@ -70,7 +79,7 @@ void StartupView::_ready()
 
 void StartupView::open_startup()
 {
-    i18n::initialize();
+    i18n::initialize(application_settings(*this));
     show_backdrop();
     choose_language();
 }
@@ -224,7 +233,7 @@ void StartupView::language_chosen()
     if (const auto game = game_from_command_line())
     {
         game_from_flag_ = true;
-        settings::choose_game(*game);
+        application_settings(*this).choose_game(*game);
         choose_folders(*game, AfterFolders::new_party);
         return;
     }
@@ -308,7 +317,7 @@ void StartupView::continue_newest()
         return;
     }
     required_node<Window>(*this, "MainMenu").hide();
-    settings::choose_game(newest->first);
+    application_settings(*this).choose_game(newest->first);
     save_to_load_ = newest->second;
     choose_folders(newest->first, AfterFolders::saved_game);
 }
@@ -373,7 +382,7 @@ void StartupView::add_game_buttons(VBoxContainer &games)
 void StartupView::game_chosen(std::int64_t chosen)
 {
     const auto game = static_cast<opengold::GoldBoxGame>(chosen);
-    settings::choose_game(game);
+    application_settings(*this).choose_game(game);
     required_node<Window>(*this, "GamePicker").hide();
     choose_folders(game, AfterFolders::game_title);
 }
@@ -458,7 +467,7 @@ void StartupView::show_game_menu()
                 .connect("pressed", presentation::guarded(this, method));
         }
     }
-    const auto game = settings::chosen_game();
+    const auto game = application_settings(*this).chosen_game();
     menu->set_title(i18n::text(menu_title(game)));
     const bool saved = newest_campaign_save(game).has_value();
     required_node<Button>(*menu, "Buttons/Continue").set_disabled(!saved);
@@ -469,7 +478,7 @@ void StartupView::show_game_menu()
 
 void StartupView::continue_game()
 {
-    if (const auto save = newest_campaign_save(settings::chosen_game()))
+    if (const auto save = newest_campaign_save(application_settings(*this).chosen_game()))
     {
         start_game({settings::GameStart::Kind::saved_game, *save});
     }
@@ -622,7 +631,7 @@ void StartupView::accept_language()
         return;
     }
     const String locale = choices->get_item_metadata(selected[0]);
-    if (!i18n::select_language(locale))
+    if (!i18n::select_language(application_settings(*this), locale))
     {
         language_save_failed_ = true;
         preview_language(selected[0]);
@@ -801,7 +810,7 @@ void StartupView::_process(double delta)
 // other games show their own pictures as their originals do when they start.
 void StartupView::show_game_title()
 {
-    const auto game = settings::chosen_game();
+    const auto game = application_settings(*this).chosen_game();
     // The sounds of a game chosen before, whose menu was left.
     title_sound_.reset();
     if (game == opengold::GoldBoxGame::pool_of_radiance)
@@ -814,7 +823,7 @@ void StartupView::show_game_title()
     try
     {
         game_title_ = opengold::load_title_screens(
-            presentation::path_from_godot(settings::game_folder(game)), game);
+            presentation::path_from_godot(application_settings(*this).game_folder(game)), game);
     }
     catch (const std::exception &failure)
     {
@@ -844,7 +853,8 @@ void StartupView::play_title_music(opengold::GoldBoxGame game)
     {
         start_title_music(
             opengold::por::SoundBank::load_music(
-                presentation::path_from_godot(settings::game_folder(game)), game, *piece),
+                presentation::path_from_godot(application_settings(*this).game_folder(game)), game,
+                *piece),
             *piece);
     }
     catch (const std::runtime_error &failure)
@@ -860,9 +870,9 @@ void StartupView::play_film_song(const opengold::TitleSong &song)
     try
     {
         constexpr unsigned song_clip = 1;
-        start_title_music(
-            opengold::por::SoundBank::load_song(song.file, settings::chosen_game(), song.number),
-            song_clip);
+        start_title_music(opengold::por::SoundBank::load_song(
+                              song.file, application_settings(*this).chosen_game(), song.number),
+                          song_clip);
     }
     catch (const std::runtime_error &failure)
     {
@@ -893,7 +903,7 @@ void StartupView::show_title_screen()
     }
     if (title_screen_ == game_title_->music_screen)
     {
-        play_title_music(settings::chosen_game());
+        play_title_music(application_settings(*this).chosen_game());
     }
     if (screen.sound)
     {
@@ -906,12 +916,13 @@ void StartupView::play_title_sound(unsigned sound)
 {
     if (!title_sound_)
     {
-        const auto game = settings::chosen_game();
+        const auto game = application_settings(*this).chosen_game();
         try
         {
             title_sound_ = std::make_unique<opengold::por::SoundPlayer>(
                 opengold::por::SoundBank::load(
-                    presentation::path_from_godot(settings::game_folder(game)), game),
+                    presentation::path_from_godot(application_settings(*this).game_folder(game)),
+                    game),
                 std::make_unique<GodotSoundOutput>(
                     required_node<AudioStreamPlayer>(*this, "TitleSound")));
         }
@@ -989,7 +1000,7 @@ void StartupView::ask_rules()
     {
         if (settings::flag(flag))
         {
-            settings::choose_rules(rules);
+            application_settings(*this).choose_rules(rules);
             begin_game();
             return;
         }
@@ -1023,7 +1034,7 @@ void StartupView::ask_rules()
     }
     // Designs, Buck Rogers and Dark Queen use their own rules: the SRD
     // does not supply their native monsters and character records.
-    const auto game = settings::chosen_game();
+    const auto game = application_settings(*this).chosen_game();
     const bool original_only = game == opengold::GoldBoxGame::unlimited_adventures ||
                                opengold::is_buck_rogers(game) ||
                                game == opengold::GoldBoxGame::dark_queen_of_krynn;
@@ -1074,7 +1085,7 @@ void StartupView::begin_game()
     {
         const auto rules = required_node<OptionButton>(*dialog, "Rows/Rules").get_selected();
         const auto aging = required_node<OptionButton>(*dialog, "Rows/Aging").get_selected();
-        settings::choose_rules(
+        application_settings(*this).choose_rules(
             rules == 0 ? GameRules{GameRules::Set::original,
                                    aging_choices.at(static_cast<std::size_t>(aging)).first}
                        : GameRules{});
@@ -1086,7 +1097,7 @@ void StartupView::begin_game()
 void StartupView::start_game(settings::GameStart start)
 {
     starting_ = true;
-    settings::choose_game_start(std::move(start));
+    application_settings(*this).choose_game_start(std::move(start));
     // Scene changes must occur after ready/input dispatch has completed.
     call_deferred("open_character_creation");
 }

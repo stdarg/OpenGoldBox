@@ -1,5 +1,6 @@
 #include "combat_test_bridge.h"
 #include "application_settings.h"
+#include "game_lifecycle.h"
 #include "combat_view.h"
 #include "campaign_combat.h"
 #include "seeded_battlefield.h"
@@ -79,9 +80,9 @@ std::filesystem::path resource(const char *relative)
 }
 
 // Pool of Radiance's folder, where the game itself finds it.
-std::filesystem::path game_dir()
+std::filesystem::path game_dir(const Node &host)
 {
-    const auto value = settings::game_path();
+    const auto value = application_settings(host).game_path();
     if (value.is_empty())
     {
         throw std::runtime_error(
@@ -231,7 +232,7 @@ Dictionary CombatTestBridge::catalog() const
             classes.push_back(gs(c.id));
         for (const auto &c : creation->choices(CreationField::race))
             species.push_back(gs(c.id));
-        const auto art = CharacterArt::load(game_dir());
+        const auto art = CharacterArt::load(game_dir(*this));
         const auto pool = character_pool(*creation, art);
         auto rules = srd5::load(resource("data/rules/srd-5.2.1/combat.rules"));
         for (const auto &candidate : pool)
@@ -255,7 +256,7 @@ Dictionary CombatTestBridge::catalog() const
                     defaults["subclass"] = gs(grant.id.substr(9));
             class_defaults[key] = defaults;
         }
-        const auto map_catalog = MapCatalog::load(game_dir());
+        const auto map_catalog = MapCatalog::load(game_dir(*this));
         for (const auto &[id, _] : map_catalog.all())
             maps.push_back(gs(id.archive + ":" + std::to_string(id.record)));
         for (const auto &m : monster_choices)
@@ -320,7 +321,7 @@ Dictionary CombatTestBridge::spell_options(const Dictionary &member) const
     Dictionary result;
     try
     {
-        const auto dir = game_dir();
+        const auto dir = game_dir(*this);
         const auto rules_file = resource("data/rules/srd-5.2.1/combat.rules");
         auto rules = srd5::load(rules_file);
         auto setup =
@@ -386,7 +387,7 @@ String CombatTestBridge::start(const Dictionary &config)
         {
             throw std::runtime_error("Finish the current fight first");
         }
-        const auto dir = game_dir();
+        const auto dir = game_dir(*this);
         const Array members = config.get("members", Array());
         if (members.size() != 6)
         {
@@ -685,7 +686,8 @@ String CombatTestBridge::start(const Dictionary &config)
         const auto art = CharacterArt::load(dir);
         const auto body = CombatBodyCatalog::load(resource("data/art/combat-body-looks.tsv"),
                                                   resource("data/art/combat-weapon-options.tsv"));
-        auto owned = campaign_combat_scene(party, art, &body, std::move(encounter));
+        auto owned = campaign_combat_scene(application_settings(*this), party, art, &body,
+                                           std::move(encounter));
         owned->set_name("CombatTestFight");
         presentation::attach_child(*get_parent(), std::move(owned));
         return {};
