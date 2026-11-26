@@ -45,7 +45,7 @@ constexpr std::array<std::array<const char *, 5>, enemy_ship_types> ship_names{{
         throw std::runtime_error("SHIPS.DAX picture " + std::to_string(id) + " does not decode");
     }
     return vga_rgba(decoded->frames.front(), vga_color_table(decoded->palette),
-                    black_clear ? std::optional<std::uint8_t>{0} : std::nullopt);
+                    black_clear ? std::optional<std::uint8_t>{std::uint8_t{0}} : std::nullopt);
 }
 
 [[nodiscard]] bool alive(const original::TeamMember &member) noexcept

@@ -415,10 +415,10 @@ void RolfTourSession::add_vga_record(PartySlot slot, EclHostReply &reply) const
         {
             record[field::exceptional_strength] = record[field::exceptional_strength + 1] =
                 static_cast<std::uint16_t>(numbers->exceptional_strength);
-            record[field::race] =
-                game() == GoldBoxGame::dark_queen_of_krynn
-                    ? original::record_race(static_cast<original::Race>(numbers->race), game())
-                    : race_numbers.at(static_cast<std::size_t>(numbers->race));
+            record[field::race] = game() == GoldBoxGame::dark_queen_of_krynn
+                                      ? static_cast<std::uint16_t>(original::record_race(
+                                            static_cast<original::Race>(numbers->race), game()))
+                                      : race_numbers.at(static_cast<std::size_t>(numbers->race));
             // Its classes are numbered as the original rules' professions.
             record[field::character_class] = static_cast<std::uint16_t>(numbers->profession);
             record[field::age] = static_cast<std::uint16_t>(numbers->age);

@@ -886,17 +886,17 @@ original::ShipCombat &ShipService::open(TownServiceHost &host, const PhlanResour
     {
         return state->open->combat;
     }
-    const auto &call = *snapshot.ship_combat;
-    if (call.enemy_type < 1 || call.enemy_type > enemy_ship_types)
+    const auto &ship_call = *snapshot.ship_combat;
+    if (ship_call.enemy_type < 1 || ship_call.enemy_type > enemy_ship_types)
     {
         throw EclError("SHIP COMBAT names no enemy ship of type " +
-                       std::to_string(call.enemy_type));
+                       std::to_string(ship_call.enemy_type));
     }
     // A new enemy ship of its type takes the next of its names
     // (saveload.pas LoadShipData).
     auto &machine = host.script_machine();
     const auto request = ship_combat_request_;
-    const EclAddress count_cell{enemy_ship_count_cell(call.enemy_type)};
+    const EclAddress count_cell{enemy_ship_count_cell(ship_call.enemy_type)};
     const auto count = machine.variable(count_cell) & 0xFFu;
     const std::array named{
         EclMemoryWrite{count_cell, static_cast<std::uint16_t>((count + 1) & 0xFF)}};
@@ -915,8 +915,8 @@ original::ShipCombat &ShipService::open(TownServiceHost &host, const PhlanResour
                     machine.host_random(request, 65536)});
     auto start =
         ship_combat_start(host.game(), party_ship_in(machine, town->buck_rogers_party_ship.size()),
-                          *town->buck_rogers_ship_fight_files, call,
-                          enemy_ship_name(call.enemy_type, count), std::move(crew), options);
+                          *town->buck_rogers_ship_fight_files, ship_call,
+                          enemy_ship_name(ship_call.enemy_type, count), std::move(crew), options);
     state->open.emplace(ShipFightState::Open{options, dice,
                                              original::ShipCombat(std::move(start),
                                                                   [dice](int sides)
@@ -1539,12 +1539,12 @@ void RolfTourSession::repair_after_boarding(std::uint64_t request)
     auto *boarded = fight && fight->boarded ? &*fight->boarded : nullptr;
     const auto options = boarded ? boarded->options : original::ShipCombatOptions{};
     auto *captured = boarded ? &boarded->ship : nullptr;
-    const int experience = boarded ? boarded->experience : 0;
+    const int boarded_experience = boarded ? boarded->experience : 0;
     auto random =
         RandomState{(static_cast<std::uint64_t>(machine_.host_random(request, 65536)) << 16) |
                     machine_.host_random(request, 65536)};
     const auto report =
-        original::repair_ship(game(), ship, crew, experience, captured, true, options,
+        original::repair_ship(game(), ship, crew, boarded_experience, captured, true, options,
                               [&random](int sides)
                               {
                                   return roll_die(random, sides);

@@ -2069,9 +2069,9 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
         {
             // Native PostCombat clears its transient battle modifiers and
             // award/recovery flags, retaining anti-magic and underwater state.
-            for (const std::uint16_t cell : {0x01, 0x2F, 0x1C, 0x1D, 0x1F})
+            for (const int cell : {0x01, 0x2F, 0x1C, 0x1D, 0x1F})
             {
-                results.push_back({EclAddress{cell}, 0});
+                results.push_back({EclAddress{static_cast<std::uint16_t>(cell)}, 0});
             }
         }
         // The party leaves a maze fight facing the side it ran off, which

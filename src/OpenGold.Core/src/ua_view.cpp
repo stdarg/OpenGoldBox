@@ -137,8 +137,8 @@ por::WallArtSet wall_art(const ViewArt &art)
                     }
                 }
                 offset = {left, top};
-                image.width = static_cast<unsigned>(right - left);
-                image.height = static_cast<unsigned>(bottom - top);
+                image.width = static_cast<std::uint16_t>(right - left);
+                image.height = static_cast<std::uint16_t>(bottom - top);
                 image.rgba.resize(std::size_t{image.width} * image.height * 4);
                 if (!art.sets[slot])
                 {

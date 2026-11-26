@@ -3,6 +3,18 @@
 
 namespace opengold::test
 {
+namespace
+{
+// A script cell and the value a beat waits for or expects there. Taking
+// both as words keeps MSVC from warning on std::pair's int constructor.
+constexpr std::pair<std::uint16_t, std::uint16_t> script_cell(std::uint16_t address,
+                                                              std::uint16_t value)
+{
+    return {address, value};
+}
+
+} // namespace
+
 bool dark_queen_scripts_share_map(unsigned area, unsigned from, unsigned to)
 {
     return (area == 38 && from >= 38 && from <= 40 && to >= 38 && to <= 40) ||
@@ -115,7 +127,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     }
     RouteBeat acclimate{14, 11, 17, D::east, {"YES"}};
     acclimate.repeat_in_place = true;
-    acclimate.repeat_until_bits = std::pair<std::uint16_t, std::uint16_t>{0x9E, 2};
+    acclimate.repeat_until_bits = script_cell(0x9E, 2);
     acclimate.take_items = {{"Ring of Free Action", "knight 1"}};
     beats.push_back(acclimate);
     if (progress == DarkQueenProgress::naulidis)
@@ -212,8 +224,8 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
             // the audience; another Look on the same square cannot do so.
             aid.x = 3;
             aid.y = 9;
-            aid.repeat_until_at_least = std::pair<std::uint16_t, std::uint16_t>{0x123, 1};
-            aid.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x123, 1};
+            aid.repeat_until_at_least = script_cell(0x123, 1);
+            aid.expect_cell = script_cell(0x123, 1);
         }
         else if (visit % 4 == 1)
         {
@@ -235,10 +247,10 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     rescue.cure_first = true;
     rescue.cure_to_full = true;
     rescue.reloads_until_won = 120;
-    rescue.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x123, 2};
+    rescue.expect_cell = script_cell(0x123, 2);
     beats.push_back(rescue);
     hall.answers = {"YES"};
-    hall.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x123, 3};
+    hall.expect_cell = script_cell(0x123, 3);
     beats.push_back(hall);
     if (progress == DarkQueenProgress::captain)
     {
@@ -322,7 +334,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
             std::array{"knight 1", "knight 2", "knight 3", "cleric 4", "cleric 5", "magic_user 6"}
                 .at(dive % 6));
     }
-    eggs.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0xA5, 0};
+    eggs.expect_cell = script_cell(0xA5, 0);
     beats.push_back(eggs);
     if (progress == DarkQueenProgress::eggs)
     {
@@ -340,7 +352,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     beats.push_back(dive);
     RouteBeat breathe{14, 8, 29, D::north, {"YES"}};
     breathe.dialogue_answers = {{"CLIMB THE WALL", "NO"}, {"COMMAND THE CRYLOKON", "YES"}};
-    breathe.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x6F, 0};
+    breathe.expect_cell = script_cell(0x6F, 0);
     beats.push_back(breathe);
     RouteBeat dragons{14, 18, 36, D::north, {"GIVE", "BACK OFF", "YES"}};
     dragons.dialogue_answers = {{"CLIMB THE WALL", "NO"}, {"COMMAND THE CRYLOKON", "NO"}};
@@ -348,7 +360,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     dragons.cure_first = true;
     dragons.cure_to_full = true;
     dragons.reloads_until_won = 120;
-    dragons.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x126, 1};
+    dragons.expect_cell = script_cell(0x126, 1);
     beats.push_back(dragons);
     RouteBeat report{14, 9, 26, D::north, {"YES"}};
     report.cure_first = true;
@@ -364,7 +376,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     talhook.cure_to_full = true;
     talhook.reload_event = true;
     talhook.reloads_until_won = 120;
-    talhook.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x123, 255};
+    talhook.expect_cell = script_cell(0x123, 255);
     beats.push_back(talhook);
     auto royal_rest = air_rest;
     royal_rest.x = 5;
@@ -387,7 +399,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     ezra.cure_first = true;
     ezra.cure_to_full = true;
     ezra.reloads_until_won = 120;
-    ezra.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x12D, 1};
+    ezra.expect_cell = script_cell(0x12D, 1);
     beats.push_back(ezra);
     if (progress == DarkQueenProgress::ezra)
     {
@@ -459,7 +471,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     RouteBeat lighthouse_wait{22, 6, 4, D::west, {}};
     lighthouse_wait.repeat_in_place = true;
     lighthouse_wait.searching = false;
-    lighthouse_wait.repeat_until_at_least = std::pair<std::uint16_t, std::uint16_t>{0x13E, 5};
+    lighthouse_wait.repeat_until_at_least = script_cell(0x13E, 5);
     lighthouse_wait.reloads_until_won = 120;
     // Hurt from the pit, the party meets the hydras and the swarms on Quick.
     lighthouse_wait.fight_tactic = 0;
@@ -485,7 +497,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     wizard.searching = false;
     wizard.reload_event = true;
     wizard.reloads_until_won = 120;
-    wizard.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x70, 1};
+    wizard.expect_cell = script_cell(0x70, 1);
     beats.push_back(wizard);
     if (progress == DarkQueenProgress::fastillion)
     {
@@ -620,7 +632,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     RouteBeat king_search = king_tomb;
     king_search.arrive_only = false;
     king_search.searching = true;
-    king_search.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x105, 1};
+    king_search.expect_cell = script_cell(0x105, 1);
     beats.push_back(king_search);
     RouteBeat cleared_coffin{42, 14, 10, D::north, {"NO"}};
     cleared_coffin.searching = false;
@@ -660,7 +672,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     vampires.cure_first = true;
     vampires.cure_to_full = true;
     vampires.reloads_until_won = 2400;
-    vampires.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x105, 2};
+    vampires.expect_cell = script_cell(0x105, 2);
     // The vampires' court ambush is fought on Quick.
     vampires.fight_tactic = 0;
     beats.push_back(vampires);
@@ -706,7 +718,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     web.cure_to_full = true;
     web.reload_event = true;
     web.reloads_until_won = 120;
-    web.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x105, 3};
+    web.expect_cell = script_cell(0x105, 3);
     beats.push_back(web);
     RouteBeat circlet{42, 24, 1, D::north, {"YES", "knight 1"}};
     circlet.searching = true;
@@ -714,7 +726,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     circlet.cure_to_full = true;
     circlet.reload_event = true;
     circlet.reloads_until_won = 120;
-    circlet.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x7A, 1};
+    circlet.expect_cell = script_cell(0x7A, 1);
     beats.push_back(circlet);
     RouteBeat circus_exit{42, 26, 1, D::west, {"YES", "NO"}};
     circus_exit.step = true;
@@ -726,7 +738,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     beats.push_back(circus_exit);
     RouteBeat trapdoor{42, 8, 13, D::south, {"NO"}};
     trapdoor.searching = true;
-    trapdoor.repeat_until_bits = std::pair<std::uint16_t, std::uint16_t>{0x16F, 1};
+    trapdoor.repeat_until_bits = script_cell(0x16F, 1);
     trapdoor.repeat_in_place = true;
     trapdoor.cure_first = true;
     trapdoor.cure_to_full = true;
@@ -739,7 +751,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     ghost.searching = false;
     ghost.cure_first = true;
     ghost.cure_to_full = true;
-    ghost.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x105, 4};
+    ghost.expect_cell = script_cell(0x105, 4);
     beats.push_back(ghost);
     RouteBeat climb{42, 9, 23, D::north, {"YES", "NO"}};
     climb.arrive_only = true;
@@ -757,7 +769,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     heart_key.cure_first = true;
     heart_key.cure_to_full = true;
     heart_key.reloads_until_won = 120;
-    heart_key.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x7B, 1};
+    heart_key.expect_cell = script_cell(0x7B, 1);
     beats.push_back(heart_key);
     RouteBeat heart_return{42, 9, 17, D::north, {"YES", "NO"}};
     heart_return.arrive_only = true;
@@ -772,7 +784,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     guardian.searching = false;
     guardian.cure_first = true;
     guardian.cure_to_full = true;
-    guardian.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x105, 5};
+    guardian.expect_cell = script_cell(0x105, 5);
     beats.push_back(guardian);
     if (progress == DarkQueenProgress::oracle)
     {
@@ -815,7 +827,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     // ordinary Look commands lets its own countdown and encounter run.
     RouteBeat forest_hunger{26, 7, 5, D::south, {}};
     forest_hunger.repeat_in_place = true;
-    forest_hunger.repeat_until_at_least = std::pair<std::uint16_t, std::uint16_t>{0x9C, 0x10};
+    forest_hunger.repeat_until_at_least = script_cell(0x9C, 0x10);
     forest_hunger.area_steps = {C::turn_right, C::look};
     forest_hunger.dialogue_answers = {{"TRY TO BRING IT DOWN?", "NO"}};
     forest_hunger.searching = false;
@@ -832,7 +844,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     {
         auto hunger_again = forest_hunger;
         hunger_again.repeat_until_at_least =
-            std::pair<std::uint16_t, std::uint16_t>{0xB7, static_cast<std::uint16_t>(lesson + 1)};
+            script_cell(0xB7, static_cast<std::uint16_t>(lesson + 1));
         beats.push_back(hunger_again);
         beats.push_back(hulder_words);
     }
@@ -870,7 +882,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
         26, 7, 12, D::north, {"type:GEBENE", "YES", "type:1", "knight 1", "knight 1"}};
     last_report.arrive_only = true;
     last_report.searching = false;
-    last_report.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x73, 1};
+    last_report.expect_cell = script_cell(0x73, 1);
     beats.push_back(last_report);
     RouteBeat farewell_feast{26, 7, 14, D::south, {"YES"}};
     farewell_feast.arrive_only = true;
@@ -901,7 +913,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     beats.push_back(thenol_guards);
     RouteBeat quartermaster{30, 24, 23, D::north, {"YES", "YES", "Leave"}};
     quartermaster.searching = false;
-    quartermaster.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x14B, 1};
+    quartermaster.expect_cell = script_cell(0x14B, 1);
     beats.push_back(quartermaster);
     RouteBeat quiet_kender{30, 4, 16, D::north, {"TALK", "LEAVE"}};
     quiet_kender.searching = false;
@@ -931,7 +943,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     commander.cure_first = true;
     commander.cure_to_full = true;
     commander.reloads_until_won = 240;
-    commander.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x7C, 1};
+    commander.expect_cell = script_cell(0x7C, 1);
     beats.push_back(commander);
     RouteBeat palace{30, 20, 19, D::west, {"KNOCK", "ENTER", "YES"}};
     palace.step = true;
@@ -986,7 +998,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     queen.cure_to_full = true;
     queen.reloads_until_won = 480;
     queen.dialogue_answers = inner_palace.dialogue_answers;
-    queen.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x87, 1};
+    queen.expect_cell = script_cell(0x87, 1);
     beats.push_back(queen);
     RouteBeat palace_preparation{34, 26, 22, D::north, {}};
     palace_preparation.arrive_only = true;
@@ -1085,7 +1097,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     stop_ritual.cure_to_full = true;
     stop_ritual.reload_event = true;
     stop_ritual.reloads_until_won = 480;
-    stop_ritual.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x155, 3};
+    stop_ritual.expect_cell = script_cell(0x155, 3);
     beats.push_back(stop_ritual);
     RouteBeat back_to_passage = ceremony_door;
     back_to_passage.facing = D::west;
@@ -1137,7 +1149,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     RouteBeat keyhole_pass{47, 4, 15, D::south, {"YES", "YES", "type:KEYHOLE", "YES"}};
     keyhole_pass.step = true;
     keyhole_pass.searching = false;
-    keyhole_pass.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x7D, 1};
+    keyhole_pass.expect_cell = script_cell(0x7D, 1);
     beats.push_back(keyhole_pass);
     RouteBeat discreet_walk{47, 4, 15, D::east, {}};
     discreet_walk.searching = false;
@@ -1150,12 +1162,12 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     beats.push_back(discreet_walk);
     RouteBeat lantern_pass = keyhole_pass;
     lantern_pass.answers = {"YES", "type:LANTERN", "YES", "YES", "type:DAVIK"};
-    lantern_pass.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x85, 1};
+    lantern_pass.expect_cell = script_cell(0x85, 1);
     beats.push_back(lantern_pass);
     beats.push_back(discreet_walk);
     RouteBeat baton_pass = keyhole_pass;
     baton_pass.answers = {"YES", "type:BATON", "YES"};
-    baton_pass.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x82, 1};
+    baton_pass.expect_cell = script_cell(0x82, 1);
     beats.push_back(baton_pass);
     RouteBeat fortress_entry{47, 6, 14, D::north, {"YES"}};
     fortress_entry.step = true;
@@ -1171,7 +1183,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     release_davik.searching = false;
     release_davik.cure_first = true;
     release_davik.cure_to_full = true;
-    release_davik.repeat_until_bits = std::pair<std::uint16_t, std::uint16_t>{0xB5, 0x20};
+    release_davik.repeat_until_bits = script_cell(0xB5, 0x20);
     release_davik.repeat_in_place = true;
     beats.push_back(release_davik);
     RouteBeat first_level_return = dungeon_descent;
@@ -1205,7 +1217,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     invasion_plans.reload_event = true;
     invasion_plans.reloads_until_won = 240;
     invasion_plans.dialogue_answers = {{"DO YOU FOLLOW", "NO"}};
-    invasion_plans.repeat_until_bits = std::pair<std::uint16_t, std::uint16_t>{0xB7, 4};
+    invasion_plans.repeat_until_bits = script_cell(0xB7, 4);
     invasion_plans.repeat_in_place = true;
     beats.push_back(invasion_plans);
     RouteBeat return_third = dungeon_descent;
@@ -1231,7 +1243,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     book.cure_to_full = true;
     book.reload_event = true;
     book.reloads_until_won = 240;
-    book.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x74, 1};
+    book.expect_cell = script_cell(0x74, 1);
     book.dialogue_answers = {{"WHERE DO YOU WISH DAVIK", "X"}};
     beats.push_back(book);
     RouteBeat daviks_exit{46, 11, 8, D::east, {"YES", "X"}};
@@ -1278,7 +1290,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     anthela.cure_first = true;
     anthela.cure_to_full = true;
     anthela.reloads_until_won = 240;
-    anthela.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x101, 1};
+    anthela.expect_cell = script_cell(0x101, 1);
     anthela.cast_after = {"prayer"};
     beats.push_back(anthela);
     RouteBeat sharkmen{54, 10, 11, D::north, {}};
@@ -1290,7 +1302,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     sharkmen.reloads_until_won = 240;
     sharkmen.ward_each_with = "enlarge";
     sharkmen.ward_members = {"knight 1", "knight 2", "knight 3", "Grunschka"};
-    sharkmen.repeat_until_bits = std::pair<std::uint16_t, std::uint16_t>{0x187, 1};
+    sharkmen.repeat_until_bits = script_cell(0x187, 1);
     sharkmen.repeat_in_place = true;
     sharkmen.take_items = {{"Ring", "magic_user 6"}, {"Bracers", "magic_user 6"}};
     // Bai'or's dragon attack is fought on Quick.
@@ -1327,7 +1339,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     first_dragon.cure_to_full = true;
     first_dragon.reload_event = true;
     first_dragon.reloads_until_won = 240;
-    first_dragon.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x188, 1};
+    first_dragon.expect_cell = script_cell(0x188, 1);
     beats.push_back(first_dragon);
     baior_inn.answers = {"LET IT GO"};
     beats.push_back(baior_inn);
@@ -1342,7 +1354,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
                             "'WE WILL DEFEAT ERESTEM!'"};
     last_dragons.reloads_until_won = 480;
     last_dragons.dialogue_answers = {{"", "LET IT GO"}};
-    last_dragons.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0xEF, 1};
+    last_dragons.expect_cell = script_cell(0xEF, 1);
     beats.push_back(last_dragons);
     beats.push_back(baior_inn);
     beats.push_back(dragon_preparation);
@@ -1402,7 +1414,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
                                     {"APPROACH TREMOR", "YES"},
                                     {"WILL ANYONE APPROACH", "YES"},
                                     {"PLACE IT GENTLY", "GENTLY"}};
-    tremor_gate.repeat_until_bits = std::pair<std::uint16_t, std::uint16_t>{0x17F, 8};
+    tremor_gate.repeat_until_bits = script_cell(0x17F, 8);
     tremor_gate.repeat_in_place = true;
     beats.push_back(tremor_gate);
     RouteBeat tremor{50, 22, 2, D::north, {}};
@@ -1413,7 +1425,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     tremor.reloads_until_won = 240;
     tremor.dialogue_answers = tremor_gate.dialogue_answers;
     tremor.take_items = {{"Sword", "knight 2"}};
-    tremor.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x73, 2};
+    tremor.expect_cell = script_cell(0x73, 2);
     // The tremor's fights are fought on Quick.
     tremor.fight_tactic = 0;
     beats.push_back(tremor);
@@ -1426,7 +1438,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     clematra.take_items = {{"Shield", "knight 2"}};
     clematra.take_wand = true;
     clematra.dialogue_answers = {{"DO YOU TELL HIM", "YES"}, {"AGREE TO TAKE THE FLIGHT", "NO"}};
-    clematra.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x102, 1};
+    clematra.expect_cell = script_cell(0x102, 1);
     beats.push_back(clematra);
     RouteBeat clematras_refuge = palace_preparation;
     clematras_refuge.map = 50;
@@ -1715,7 +1727,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     falling_bridge.searching = false;
     falling_bridge.cure_first = true;
     falling_bridge.cure_to_full = true;
-    falling_bridge.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x19B, 0};
+    falling_bridge.expect_cell = script_cell(0x19B, 0);
     beats.push_back(falling_bridge);
     RouteBeat tower_recovery = tower_preparation;
     tower_recovery.map = 62;
@@ -1740,7 +1752,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     engine_lever.answers = {"YES"};
     beats.push_back(engine_lever);
     engine.answers = {"YES"};
-    engine.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0xA8, 1};
+    engine.expect_cell = script_cell(0xA8, 1);
     beats.push_back(engine);
     RouteBeat first_stair{62, 5, 19, D::north, {"YES"}};
     first_stair.step = true;
@@ -1749,7 +1761,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     first_stair.cure_to_full = true;
     first_stair.reload_event = true;
     first_stair.reloads_until_won = 240;
-    first_stair.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x19B, 1};
+    first_stair.expect_cell = script_cell(0x19B, 1);
     beats.push_back(first_stair);
     RouteBeat beholder_recovery = tower_recovery;
     beholder_recovery.x = 19;
@@ -1779,7 +1791,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     beholders.cure_to_full = true;
     beholders.reload_event = true;
     beholders.reloads_until_won = 480;
-    beholders.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0xA8, 3};
+    beholders.expect_cell = script_cell(0xA8, 3);
     beats.push_back(beholders);
     RouteBeat siege_port{62, 27, 27, D::south, {"YES"}};
     siege_port.arrive_only = true;
@@ -1788,7 +1800,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     siege_port.cure_to_full = true;
     siege_port.reload_event = true;
     siege_port.reloads_until_won = 480;
-    siege_port.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0xA8, 7};
+    siege_port.expect_cell = script_cell(0xA8, 7);
     beats.push_back(siege_port);
     RouteBeat upper_refuge{62, 27, 17, D::north, {}};
     upper_refuge.arrive_only = true;
@@ -1842,7 +1854,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     gnome_ladder.cure_to_full = true;
     gnome_ladder.reload_event = true;
     gnome_ladder.reloads_until_won = 240;
-    gnome_ladder.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x19B, 2};
+    gnome_ladder.expect_cell = script_cell(0x19B, 2);
     beats.push_back(gnome_ladder);
     RouteBeat coven_recovery = tower_upper_rest;
     coven_recovery.x = 10;
@@ -1866,7 +1878,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     coven.cure_to_full = true;
     coven.reload_event = true;
     coven.reloads_until_won = 480;
-    coven.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0xA8, 15};
+    coven.expect_cell = script_cell(0xA8, 15);
     beats.push_back(coven);
     RouteBeat coven_rest = tower_upper_rest;
     coven_rest.x = 4;
@@ -1907,7 +1919,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     lava_lift.cure_to_full = true;
     lava_lift.reload_event = true;
     lava_lift.reloads_until_won = 240;
-    lava_lift.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x19B, 3};
+    lava_lift.expect_cell = script_cell(0x19B, 3);
     beats.push_back(lava_lift);
     RouteBeat temple_approach{62, 21, 7, D::south, {"YES", "ATTACK"}};
     temple_approach.arrive_only = true;
@@ -1944,7 +1956,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     temple_font.drink_names.push_back({"Potion of Speed", "magic_user 6"});
     temple_font.ready_types = {
         {69, "knight 1"}, {28, "knight 2"}, {69, "knight 3"}, {1, "Grunschka"}, {29, "cleric 4"}};
-    temple_font.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0xA8, 31};
+    temple_font.expect_cell = script_cell(0xA8, 31);
     beats.push_back(temple_font);
     // The remaining way follows the authored rescue, Abyss and return scenes.
     // These appended beats preserve the Font's existing checkpoint number.
@@ -1968,7 +1980,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
         62, 17, 10, D::north, {"LEAP ABOARD", "USE SPELL", "DISPEL", "CRYSIA", "YES", "ATTACK"});
     upper_windship.arrive_only = false;
     upper_windship.step = true;
-    upper_windship.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x19B, 4};
+    upper_windship.expect_cell = script_cell(0x19B, 4);
     beats.push_back(upper_windship);
     // The captain leaves with his rescued sister through the ordinary script.
     // The windship sets the party down on a ledge whose way east crosses
@@ -2046,7 +2058,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     free_raistlin.ready_types = {{69, "knight 1"},    {19, "knight 2"}, {69, "knight 3"},
                                  {1, "Grunschka"},    {15, "cleric 4"}, {15, "cleric 5"},
                                  {15, "magic_user 6"}};
-    free_raistlin.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x9F, 1};
+    free_raistlin.expect_cell = script_cell(0x9F, 1);
     // Raistlin's torturers include enchanted Bozaks whose Fire Shields return
     // every blow twice over and enchanted Sivaks whose dying meteors strike
     // all within 2 squares; no spell or item works in the room.
@@ -2067,7 +2079,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
                                      "RUN TO THE PORTAL", "NO", "WAIT", "JUMP THROUGH THE PORTAL"});
     abyss_portal.cure_first = false;
     abyss_portal.cure_to_full = false;
-    abyss_portal.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x104, 1};
+    abyss_portal.expect_cell = script_cell(0x104, 1);
     // The portal sets the party down hurt beside the Greystone's tripod.
     // The first move hatches the dragon before any return to the upper court.
     abyss_portal.dialogue_answers = {{"INVESTIGATE THE TRIPOD", "NO"}};
@@ -2106,7 +2118,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     dragon_egg.arrive_only = false;
     dragon_egg.step = true;
     dragon_egg.dialogue_answers = egg_approach.dialogue_answers;
-    dragon_egg.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0xBB, 0};
+    dragon_egg.expect_cell = script_cell(0xBB, 0);
     beats.push_back(dragon_egg);
     RouteBeat egg_recovery = upper_court_recovery;
     beats.push_back(egg_recovery);
@@ -2116,14 +2128,14 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     auto descending_stair = ending_walk(62, 5, 19, D::north, {"YES"});
     descending_stair.step = true;
     descending_stair.arrive_only = false;
-    descending_stair.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x19B, 3};
+    descending_stair.expect_cell = script_cell(0x19B, 3);
     beats.push_back(descending_stair);
     // Enter the fire platform from the west: its script needs the type-2
     // wall cached before the step onto (23,6), not a later look.
     auto lower_stair = ending_walk(62, 22, 6, D::east, {"YES"});
     lower_stair.step = true;
     lower_stair.arrive_only = false;
-    lower_stair.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x19B, 2};
+    lower_stair.expect_cell = script_cell(0x19B, 2);
     beats.push_back(lower_stair);
     auto queen_mirror = ending_walk(62, 8, 6, D::south, {"DEFEND", "LEAVE"});
     queen_mirror.ward_each_with = "globe_of_invulnerability";
@@ -2142,7 +2154,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     // final waves. The last throw cuts Hrumbishnog's grapple before boarding.
     auto iron_flower = ending_walk(62, 4, 4, D::north, {"WAIT", "WAIT", "knight 1", "YES"});
     iron_flower.fight_tactic = 6;
-    iron_flower.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x104, 1};
+    iron_flower.expect_cell = script_cell(0x104, 1);
     beats.push_back(iron_flower);
     auto celebration_lift = workshop_lift;
     celebration_lift.answers = {"PALACE"};
@@ -2174,7 +2186,7 @@ std::vector<RouteBeat> dark_queen_earned_route(DarkQueenProgress progress)
     celebration.dialogue_answers = {{"", "STAY"}};
     // The test driver records PROGRAM 1 before Continue, then follows the
     // dragon epilogue through its authored THE END and exploration unlock.
-    celebration.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x106, 1};
+    celebration.expect_cell = script_cell(0x106, 1);
     beats.push_back(celebration);
     return beats;
 }
