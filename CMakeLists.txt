@@ -75,7 +75,7 @@ endif()
 
 add_library(opengold_rules STATIC src/OpenGold.Rules/src/rules.cpp src/OpenGold.Rules/src/character_rules.cpp
     src/OpenGold.Rules/src/area_spells.cpp
-    src/OpenGold.Rules/src/movement_grid.cpp)
+    src/OpenGold.Rules/src/movement_grid.cpp src/OpenGold.Rules/src/message.cpp)
 target_include_directories(opengold_rules PUBLIC src/OpenGold.Rules/include)
 add_library(opengold_rules_srd5 STATIC
     src/OpenGold.Rules.Srd5/src/srd5.cpp

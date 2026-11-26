@@ -22,5 +22,8 @@ struct Message
     // total, such as " (2d6: 3 + 5, + 4 = 12)".
     std::string detail;
 };
+
+// The English of a message: its template with each {name} replaced.
+[[nodiscard]] std::string english(const Message &message);
 } // namespace opengold::rules
 #endif

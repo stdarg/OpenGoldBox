@@ -15,8 +15,7 @@ namespace opengold::por::host_services
 {
 using opengold::rules::Message;
 
-// The English text of a host message, for logs and tests.
-[[nodiscard]] std::string english(const Message &message);
+// The English text of host messages, one per line, for logs and tests.
 [[nodiscard]] std::string english(const std::vector<Message> &messages);
 // Thousands separated as the halls' fees are written ("1,000").
 [[nodiscard]] std::string amount(std::uint32_t value);

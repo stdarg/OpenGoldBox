@@ -19,9 +19,6 @@ using rules::Message;
 // the base label and keep the bonus.
 [[nodiscard]] std::string weapon_label(std::string_view key);
 
-// A message in its English source, for the English-only summaries.
-[[nodiscard]] std::string english(const Message &message);
-
 // What an enchanted item's magic adds (MAGIC-1); nothing until it is
 // identified, though its numbers already count.
 [[nodiscard]] std::vector<Message> enchantment_messages(std::string_view key);

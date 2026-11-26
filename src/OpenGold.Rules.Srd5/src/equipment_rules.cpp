@@ -45,21 +45,6 @@ std::string weapon_label(std::string_view key)
     return label;
 }
 
-std::string english(const Message &message)
-{
-    auto text = message.source;
-    for (const auto &argument : message.arguments)
-    {
-        const auto field = "{" + argument.name + "}";
-        for (auto at = text.find(field); at != std::string::npos; at = text.find(field, at))
-        {
-            text.replace(at, field.size(), argument.value);
-            at += argument.value.size();
-        }
-    }
-    return text;
-}
-
 std::vector<Message> enchantment_messages(std::string_view key)
 {
     const auto enchantment = rules::parse_item_key(key);

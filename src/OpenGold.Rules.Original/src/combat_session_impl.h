@@ -555,7 +555,6 @@ bool adjacent(const Fighter &a, const Fighter &b);
 std::vector<Cell> squares_of(const Fighter &f);
 int distance(const Fighter &a, const Fighter &b);
 bool sees(const rules::Battlefield &board, const Fighter &a, const Fighter &b);
-std::string english(const Message &message);
 int attack_modifier(const Fighter &attacker, const Fighter &defender, GoldBoxGame game);
 bool dispel_evil_takes(const Fighter &f, GoldBoxGame game);
 bool giant_bane_strikes(const Fighter &attacker, const Fighter &defender, GoldBoxGame game);

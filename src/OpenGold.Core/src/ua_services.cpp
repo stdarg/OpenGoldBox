@@ -30,20 +30,6 @@ using rules::Message;
     return static_cast<std::uint32_t>(word_at(event, at)) | word_at(event, at + 2) << 16;
 }
 
-[[nodiscard]] std::string english(const Message &message)
-{
-    auto text = message.source;
-    for (const auto &argument : message.arguments)
-    {
-        const auto mark = "{" + argument.name + "}";
-        for (auto at = text.find(mark); at != std::string::npos; at = text.find(mark))
-        {
-            text.replace(at, mark.size(), argument.value);
-        }
-    }
-    return text;
-}
-
 [[nodiscard]] std::string upper(std::string_view text)
 {
     std::string result;

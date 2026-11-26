@@ -4,20 +4,6 @@ namespace opengold::por
 {
 namespace host_services
 {
-std::string english(const Message &message)
-{
-    auto text = message.source;
-    for (const auto &argument : message.arguments)
-    {
-        for (std::size_t at = text.find("{" + argument.name + "}"); at != std::string::npos;
-             at = text.find("{" + argument.name + "}"))
-        {
-            text.replace(at, argument.name.size() + 2, argument.value);
-        }
-    }
-    return text;
-}
-
 std::string english(const std::vector<Message> &messages)
 {
     std::string text;
