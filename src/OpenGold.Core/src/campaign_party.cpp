@@ -1,6 +1,6 @@
 #include "opengold/campaign_party.h"
 #include "opengold/buck_rogers_characters.h"
-#include "opengold/original.h"
+#include "opengold/original_game.h"
 #include "opengold/diagnostic_log.h"
 #include "opengold/campaign_encounter.h"
 #include "opengold/dice.h"

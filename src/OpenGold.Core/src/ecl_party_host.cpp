@@ -2,7 +2,7 @@
 #include "opengold/item_key.h"
 #include "opengold/coin_purse.h"
 #include "opengold/original_rules.h"
-#include "opengold/original.h"
+#include "opengold/original_game.h"
 #include <algorithm>
 #include <limits>
 #include <array>

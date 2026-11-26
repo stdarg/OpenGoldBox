@@ -6,7 +6,6 @@
 #include <array>
 #include <functional>
 #include <map>
-#include <memory>
 #include <optional>
 #include <span>
 #include <string>
@@ -485,9 +484,6 @@ struct Content
     // rules::RulesModule::limit_party_area_spells).
     rules::AreaSpellLimits party_spell_limits;
 };
-
-// The original rules as the module the game's fights and party run through.
-[[nodiscard]] std::unique_ptr<rules::RulesModule> rules_module(Content content = {});
 
 } // namespace opengold::original
 #endif

@@ -3,7 +3,7 @@
 #include "opengold/rolf_tour.h"
 #include "area_loading.h"
 #include "dark_queen_campaign.h"
-#include "opengold/original.h"
+#include "opengold/original_game.h"
 #include "opengold/original_spells.h"
 #include "opengold/original_rules.h"
 #include "opengold/vga_picture.h"

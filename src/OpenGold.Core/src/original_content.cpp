@@ -7,7 +7,7 @@
 #include "opengold/buck_rogers_rules.h"
 #include "opengold/creature_catalog.h"
 #include "opengold/formats.h"
-#include "opengold/original.h"
+#include "opengold/original_game.h"
 #include "opengold/por_sound.h"
 #include "opengold/ua_design.h"
 

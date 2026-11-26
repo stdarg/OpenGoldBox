@@ -34,7 +34,8 @@ target_include_directories(opengold_combat_tester PRIVATE "${repo_root}/src/Open
 get_target_property(game_includes opengoldbox_game INCLUDE_DIRECTORIES)
 target_include_directories(opengold_combat_tester PRIVATE ${game_includes})
 add_dependencies(opengold_combat_tester opengoldbox_commit)
-target_link_libraries(opengold_combat_tester PRIVATE opengold_core opengold_rules_srd5 godot-cpp)
+target_link_libraries(opengold_combat_tester PRIVATE opengold_core opengold_rules_srd5
+    opengold_rules_original godot-cpp)
 target_compile_features(opengold_combat_tester PRIVATE cxx_std_20)
 get_target_property(game_definitions opengoldbox_game COMPILE_DEFINITIONS)
 target_compile_definitions(opengold_combat_tester PRIVATE ${game_definitions})

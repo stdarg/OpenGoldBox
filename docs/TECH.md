@@ -199,6 +199,7 @@ src/
   OpenGold.Core/                  engine behavior; Pool of Radiance code in opengold::por
   OpenGold.Rules/
   OpenGold.Rules.Srd5/
+  OpenGold.Rules.Original/        the original games' systems and their rules module
   OpenGold.Formats/
   OpenGoldBox/                    the game: GDExtension and Godot project
 demos/src/OpenGold.Godot/         the reference demos' GDExtension
@@ -251,6 +252,28 @@ checkpoints. The SRD 5.2.1 implementation owns combat turns, movement/targeting,
 attacks, spell resources, HP, dice and serialization. It depends on the interface
 and standard library, not Godot, ECL or original creature file formats. The
 application injects a module into the campaign adapter. See [RULES.md](RULES.md).
+
+### `OpenGold.Rules.Original`
+
+Two libraries share this folder:
+
+- `opengold_original_systems`: the original games' systems, what their
+  records, tables and subsystems are. A game's identity under its original
+  rules (`original_game.h`), characters' numbers, races and classes
+  (`original_rules.h`), spells (`original_spells.h`), combatants made from
+  records (`original_combat.h`), the Krynn games' tables, and Buck Rogers'
+  skills, upkeep, ship combat and solar map. It depends on `OpenGold.Formats`
+  and the rules interface only.
+- `opengold_rules_original`: the original rules as a rules module, character
+  creation and advancement, rest and camp magic, and the combat session. Its
+  entry points are in `original.h` (`rules_module`, `character_rules`,
+  `design_character_rules`). It depends on the systems library.
+
+`OpenGold.Core` builds on the systems library and reaches either rules module
+only through the rules interface: it links neither module and includes neither
+module's header (`original.h`, `srd5.h`); `CMakeLists.txt` refuses a build
+that does. The game, the tools and the tests that make a module link it
+themselves.
 
 ### `OpenGold.Game.PoolOfRadiance`
 

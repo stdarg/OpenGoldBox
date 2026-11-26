@@ -112,7 +112,12 @@ add_library(opengold_rules_srd5 STATIC
 )
 target_include_directories(opengold_rules_srd5 PUBLIC src/OpenGold.Rules.Srd5/include)
 target_link_libraries(opengold_rules_srd5 PUBLIC opengold_rules)
-add_library(opengold_rules_original STATIC
+# The original games' systems: what their records, tables and subsystems are
+# (characters' numbers, spells, races, Buck Rogers' upkeep, skills, ship
+# combat and solar map, combatants from records). Core builds on them; they
+# never reach the rules module below (docs/TECH.md).
+add_library(opengold_original_systems STATIC
+    src/OpenGold.Rules.Original/src/original_game.cpp
     src/OpenGold.Rules.Original/src/original_rules.cpp
     src/OpenGold.Rules.Original/src/champions_rules.cpp
     src/OpenGold.Rules.Original/src/buck_rogers_characters.cpp
@@ -124,10 +129,19 @@ add_library(opengold_rules_original STATIC
     src/OpenGold.Rules.Original/src/death_knights_rules.cpp
     src/OpenGold.Rules.Original/src/buck_rogers_ship_combat.cpp
     src/OpenGold.Rules.Original/src/dark_queen_rules.cpp
-    src/OpenGold.Rules.Original/src/character_rules.cpp
-    src/OpenGold.Rules.Original/src/modify.cpp
     src/OpenGold.Rules.Original/src/combatant.cpp
     src/OpenGold.Rules.Original/src/spells.cpp
+)
+target_include_directories(opengold_original_systems PUBLIC src/OpenGold.Rules.Original/include)
+# The original's monster records come decoded from the Formats library.
+target_link_libraries(opengold_original_systems PUBLIC opengold_rules opengold_formats)
+
+# The original rules as a rules module: character creation, advancement, rest
+# and camp magic, and the combat session. The game and the tools plug it in;
+# Core does not link it.
+add_library(opengold_rules_original STATIC
+    src/OpenGold.Rules.Original/src/character_rules.cpp
+    src/OpenGold.Rules.Original/src/modify.cpp
     src/OpenGold.Rules.Original/src/combat_session.cpp
     src/OpenGold.Rules.Original/src/ground_combat.cpp
     src/OpenGold.Rules.Original/src/area_forecast.cpp
@@ -141,9 +155,7 @@ add_library(opengold_rules_original STATIC
     src/OpenGold.Rules.Original/src/camp_magic.cpp
     src/OpenGold.Rules.Original/src/check_dice.cpp
 )
-target_include_directories(opengold_rules_original PUBLIC src/OpenGold.Rules.Original/include)
-# The original's monster records come decoded from the Formats library.
-target_link_libraries(opengold_rules_original PUBLIC opengold_rules opengold_formats)
+target_link_libraries(opengold_rules_original PUBLIC opengold_original_systems)
 
 add_library(opengold_formats STATIC
     src/OpenGold.Formats/src/formats.cpp
@@ -277,9 +289,25 @@ target_link_libraries(opengold_core
     PUBLIC
         opengold_formats
         opengold_rules
-        opengold_rules_original
+        opengold_original_systems
         Threads::Threads
 )
+# Core plays by the rules interface: it never links a rules module, nor
+# includes the original module's header (docs/TECH.md, Chosen Stack).
+get_target_property(opengold_core_links opengold_core LINK_LIBRARIES)
+foreach(module opengold_rules_original opengold_rules_srd5)
+    if(module IN_LIST opengold_core_links)
+        message(FATAL_ERROR "opengold_core must not link the rules module ${module}")
+    endif()
+endforeach()
+file(GLOB_RECURSE opengold_core_sources CONFIGURE_DEPENDS
+    src/OpenGold.Core/*.cpp src/OpenGold.Core/*.h)
+foreach(source IN LISTS opengold_core_sources)
+    file(STRINGS "${source}" module_includes REGEX "#include \"opengold/(original|srd5)\\.h\"")
+    if(module_includes)
+        message(FATAL_ERROR "${source} includes a rules module's header: ${module_includes}")
+    endif()
+endforeach()
 
 if(OPENGOLD_BUILD_TESTS OR OPENGOLD_BUILD_FUZZERS)
     add_library(opengold_fuzz_support STATIC tests/fuzz/fuzz_cases.cpp)
@@ -361,7 +389,7 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_death_knights_tests COMMAND opengold_death_knights_tests)
     # The Buck Rogers games' records, scripts and music files (docs/BUCK-ROGERS.md, B1).
     add_executable(opengold_countdown_tests tests/countdown_tests.cpp)
-    target_link_libraries(opengold_countdown_tests PRIVATE opengold_core)
+    target_link_libraries(opengold_countdown_tests PRIVATE opengold_core opengold_rules_original)
     add_test(NAME opengold_countdown_tests COMMAND opengold_countdown_tests)
     # Countdown played by the engine (B3): its campaign, and the walk of every map.
     add_executable(opengold_countdown_campaign_tests tests/countdown_campaign_tests.cpp)
@@ -477,7 +505,7 @@ if(OPENGOLD_BUILD_TESTS)
         opengold_rules_original)
     add_test(NAME opengold_buck_rogers_creation_tests COMMAND opengold_buck_rogers_creation_tests)
     add_executable(opengold_matrix_cubed_tests tests/matrix_cubed_tests.cpp)
-    target_link_libraries(opengold_matrix_cubed_tests PRIVATE opengold_core)
+    target_link_libraries(opengold_matrix_cubed_tests PRIVATE opengold_core opengold_rules_original)
     add_test(NAME opengold_matrix_cubed_tests COMMAND opengold_matrix_cubed_tests)
     add_executable(opengold_matrix_campaign_tests tests/matrix_campaign_tests.cpp)
     target_link_libraries(opengold_matrix_campaign_tests PRIVATE opengold_core
@@ -688,7 +716,7 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_ua_census_tests COMMAND opengold_ua_census_tests)
     # Playing a design made with Unlimited Adventures' kit (docs/games/ua.md).
     add_executable(opengold_ua_session_tests tests/ua_session_tests.cpp)
-    target_link_libraries(opengold_ua_session_tests PRIVATE opengold_core)
+    target_link_libraries(opengold_ua_session_tests PRIVATE opengold_core opengold_rules_original)
     add_test(NAME opengold_ua_session_tests COMMAND opengold_ua_session_tests)
     # Every square of every area of the test design walked, each event and fight played.
     add_test(NAME opengold_ua_walk COMMAND opengold_ua_session_tests --ua-walk)

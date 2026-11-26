@@ -4,7 +4,7 @@
 #include "opengold/campaign_encounter.h"
 #include "opengold/campaign_party.h"
 #include "opengold/exploration_session.h"
-#include "opengold/original.h"
+#include "opengold/original_game.h"
 #include "opengold/original_combat.h"
 #include "opengold/rolf_tour.h"
 #include "opengold/ua_combat.h"

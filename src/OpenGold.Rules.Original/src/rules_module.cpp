@@ -3657,11 +3657,4 @@ std::unique_ptr<RulesModule> rules_module(Content content)
     return std::make_unique<OriginalModule>(std::move(content));
 }
 
-rules::AdvancementChoice romance_refused()
-{
-    rules::AdvancementChoice change;
-    change.rules_data = std::string(romance_refused_entry);
-    return change;
-}
-
 } // namespace opengold::original
