@@ -28,17 +28,28 @@ using namespace opengold;
 
 namespace
 {
-std::unique_ptr<rules::RulesModule> module()
+// What the fights read, built once in main: the rules text, and the game's
+// creature records and export, so the fights stage what the game's do.
+struct ToolContext
 {
-    // Read once; each fight's demo owns a module parsed from the text.
-    static const std::string content = []
+    std::string rules_content;
+    por::CreatureCatalog creatures;
+    por::MonsterBundle monsters;
+
+    // Each fight's demo owns a module parsed from the text.
+    [[nodiscard]] std::unique_ptr<rules::RulesModule> module() const
     {
-        std::ifstream in(std::filesystem::path(OPENGOLD_SOURCE_DIR) /
-                             "data/rules/srd-5.2.1/combat.rules",
-                         std::ios::binary);
-        return std::string{std::istreambuf_iterator<char>(in), {}};
-    }();
-    return srd5::parse_content(content);
+        return srd5::parse_content(rules_content);
+    }
+};
+
+ToolContext tool_context(const std::filesystem::path &game_directory)
+{
+    const std::filesystem::path source = OPENGOLD_SOURCE_DIR;
+    std::ifstream in(source / "data/rules/srd-5.2.1/combat.rules", std::ios::binary);
+    return {std::string{std::istreambuf_iterator<char>(in), {}},
+            por::CreatureCatalog::load(game_directory),
+            por::load_monster_bundle(source / "data/monsters", {}, test::png_size_only)};
 }
 
 struct PartyPlan
@@ -680,11 +691,11 @@ void outfit(CampaignParty &party, MemberId id, const PartyPlan &plan, std::uint8
     }
 }
 
-std::shared_ptr<CampaignParty> level_four_party(const PartyPlan &plan,
+std::shared_ptr<CampaignParty> level_four_party(const ToolContext &context, const PartyPlan &plan,
                                                 const std::vector<Character> &members,
                                                 const Loadout &loadout)
 {
-    auto party = std::make_shared<CampaignParty>(module());
+    auto party = std::make_shared<CampaignParty>(context.module());
     for (const auto &member : members)
     {
         outfit(*party, party->add_pc(member), plan, loadout.oil, loadout.fire);
@@ -700,41 +711,26 @@ std::shared_ptr<CampaignParty> level_four_party(const PartyPlan &plan,
     return party;
 }
 
-// The game's creature records and export, so the fights stage what the game's do.
-std::filesystem::path game_directory;
-
-const por::CreatureCatalog &game_creatures()
-{
-    static const auto catalog = por::CreatureCatalog::load(game_directory);
-    return catalog;
-}
-
-const por::MonsterBundle &game_monsters()
-{
-    static const auto monsters = por::load_monster_bundle(
-        std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/monsters", {}, test::png_size_only);
-    return monsters;
-}
-
 // A creature of the arc, staged as the game stages it: Kuto's Well's and Norris's
 // come from bank 8, the Slums' from bank 2.
-rules::Participant game_fighter(rules::EntityId id, std::string definition, unsigned record)
+rules::Participant game_fighter(const ToolContext &context, rules::EntityId id,
+                                std::string definition, unsigned record)
 {
     const unsigned bank = record == 32 || record == 57 || record == 59 || record == 73 ? 8 : 2;
-    const auto original =
-        game_creatures().find({static_cast<std::uint8_t>(bank), static_cast<std::uint8_t>(record)});
+    const auto original = context.creatures.find(
+        {static_cast<std::uint8_t>(bank), static_cast<std::uint8_t>(record)});
     if (!original)
     {
         throw std::runtime_error("Missing original creature " + std::to_string(record));
     }
     auto name = definition + " " + std::to_string(id);
     return por::staged_fighter(id, std::move(definition), std::move(name), rules::Side::opposition,
-                               original->get(), game_monsters().creature(bank, record),
+                               original->get(), context.monsters.creature(bank, record),
                                default_difficulty);
 }
 
 // Adds the fight's creatures, numbered from 1000 in group order, and its morale.
-void add_enemies(CampaignEncounter &encounter, const Fight &fight)
+void add_enemies(const ToolContext &context, CampaignEncounter &encounter, const Fight &fight)
 {
     rules::EntityId next = 1000;
     for (const auto &group : fight.groups)
@@ -742,7 +738,7 @@ void add_enemies(CampaignEncounter &encounter, const Fight &fight)
         for (unsigned c = 0; c < group.count; ++c, ++next)
         {
             encounter.enemies.push_back(
-                game_fighter(next, group.kind.definition, group.kind.record));
+                game_fighter(context, next, group.kind.definition, group.kind.record));
         }
     }
     encounter.morale = fight.morale;
@@ -766,7 +762,8 @@ unsigned enemy_record(const Fight &fight, rules::EntityId id)
 // An open area `width` squares wide between walls: the party at the west end,
 // the monsters 14 squares east (ogres in front of trolls in a one-square
 // corridor, side by side when there is room).
-CampaignEncounter arena_encounter(unsigned width, const Fight &fight, std::size_t members)
+CampaignEncounter arena_encounter(const ToolContext &context, unsigned width, const Fight &fight,
+                                  std::size_t members)
 {
     const int length = 30, height = static_cast<int>(width) + 2;
     CampaignEncounter arena;
@@ -788,7 +785,7 @@ CampaignEncounter arena_encounter(unsigned width, const Fight &fight, std::size_
     {
         arena.positions.push_back(place(n, 6, -1));
     }
-    add_enemies(arena, fight);
+    add_enemies(context, arena, fight);
     for (std::size_t n = 0; n < arena.enemies.size(); ++n)
     {
         arena.positions.push_back(place(n, 20, 1));
@@ -798,11 +795,11 @@ CampaignEncounter arena_encounter(unsigned width, const Fight &fight, std::size_
 
 // Plays one arena fight; true on victory. Width 0 is the trolls' own room in the
 // Slums (`slums`), with the campaign's usual placement.
-bool arena_fight(const PartyPlan &plan, const std::vector<Character> &members,
-                 const Loadout &loadout, unsigned width, const por::GeoMap &slums,
-                 std::uint64_t seed)
+bool arena_fight(const ToolContext &context, const PartyPlan &plan,
+                 const std::vector<Character> &members, const Loadout &loadout, unsigned width,
+                 const por::GeoMap &slums, std::uint64_t seed)
 {
-    auto party = level_four_party(plan, members, loadout);
+    auto party = level_four_party(context, plan, members, loadout);
     auto fight = troll_fight();
     std::vector<unsigned> levels;
     std::vector<EncounterGroup> sizes;
@@ -821,17 +818,17 @@ bool arena_fight(const PartyPlan &plan, const std::vector<Character> &members,
     {
         fight.groups[g].count = counts[g];
     }
-    CombatDemo combat(module());
+    CombatDemo combat(context.module());
     combat.campaign_party(party);
     if (width)
     {
-        combat.encounter(arena_encounter(width, fight, members.size()), seed);
+        combat.encounter(arena_encounter(context, width, fight, members.size()), seed);
     }
     else
     {
         CampaignEncounter room;
         room.field = battlefield({slums, slums, slums}, troll_room);
-        add_enemies(room, fight);
+        add_enemies(context, room, fight);
         combat.encounter(std::move(room), seed);
     }
     // One snapshot a command: the outcome and the AI's choice both read it.
@@ -852,9 +849,9 @@ bool arena_fight(const PartyPlan &plan, const std::vector<Character> &members,
 }
 
 // Runs every party, loadout and width; writes arena.csv and prints a table.
-void troll_arena(const std::vector<PartyPlan> &plans, const std::vector<Character> &pool,
-                 const por::GeoMap &slums, unsigned runs, const std::filesystem::path &out,
-                 const std::string &only)
+void troll_arena(const ToolContext &context, const std::vector<PartyPlan> &plans,
+                 const std::vector<Character> &pool, const por::GeoMap &slums, unsigned runs,
+                 const std::filesystem::path &out, const std::string &only)
 {
     std::ofstream csv(out / "arena.csv");
     csv << "party,loadout,width,runs,wins\n";
@@ -884,7 +881,7 @@ void troll_arena(const std::vector<PartyPlan> &plans, const std::vector<Characte
                 unsigned wins = 0;
                 for (unsigned run = 1; run <= runs; ++run)
                 {
-                    wins += arena_fight(plan, members, loadout, width, slums, run);
+                    wins += arena_fight(context, plan, members, loadout, width, slums, run);
                 }
                 csv << plan.name << ',' << loadout.name << ',' << width << ',' << runs << ','
                     << wins << '\n';
@@ -896,10 +893,11 @@ void troll_arena(const std::vector<PartyPlan> &plans, const std::vector<Characte
     }
 }
 
-RunResult play(const PartyPlan &plan, const std::vector<Character> &members, const ArcMaps &maps,
-               std::uint64_t seed, Usage &usage)
+RunResult play(const ToolContext &context, const PartyPlan &plan,
+               const std::vector<Character> &members, const ArcMaps &maps, std::uint64_t seed,
+               Usage &usage)
 {
-    auto party = std::make_shared<CampaignParty>(module());
+    auto party = std::make_shared<CampaignParty>(context.module());
     // The flasks as if bought at New Phlan's general store before setting out.
     for (const auto &member : members)
     {
@@ -950,10 +948,10 @@ RunResult play(const PartyPlan &plan, const std::vector<Character> &members, con
         }
         CampaignEncounter encounter;
         encounter.field = battlefield(maps, step.place);
-        add_enemies(encounter, fight);
+        add_enemies(context, encounter, fight);
         rules::Outcome outcome{};
         {
-            CombatDemo combat(module());
+            CombatDemo combat(context.module());
             combat.campaign_party(party);
             combat.encounter(encounter, seed * 100 + n);
             unsigned commands = 0;
@@ -1116,7 +1114,7 @@ int main(int argc, char **argv)
         const std::filesystem::path out = argc > 3 ? argv[3] : "user-data/campaign-sim";
         const std::string only = argc > 4 ? argv[4] : "";
         std::filesystem::create_directories(out);
-        game_directory = game;
+        const auto context = tool_context(game);
         const auto catalog = por::MapCatalog::load(game);
         const auto slums = catalog.find({"GEO2.DAX", 20});
         const auto plaza = catalog.find({"GEO8.DAX", 29});
@@ -1130,7 +1128,7 @@ int main(int argc, char **argv)
         const auto pool = character_pool(*characters, por::CharacterArt::load(game));
         if (arena)
         {
-            troll_arena(party_plans(*characters), pool, maps.slums, runs, out, only);
+            troll_arena(context, party_plans(*characters), pool, maps.slums, runs, out, only);
             return 0;
         }
         std::ofstream detail(out / "runs.csv"), summary(out / "summary.csv");
@@ -1155,7 +1153,7 @@ int main(int argc, char **argv)
             Usage usage;
             for (unsigned run = 1; run <= runs; ++run)
             {
-                const auto r = play(plan, members, maps, run, usage);
+                const auto r = play(context, plan, members, maps, run, usage);
                 cleared += r.cleared_slums;
                 complete += r.outcome == "complete";
                 flawless += r.outcome == "complete" && !r.deaths;
