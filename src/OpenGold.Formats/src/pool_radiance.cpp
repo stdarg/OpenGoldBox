@@ -25,6 +25,48 @@ DamageDice damage(std::span<const std::uint8_t> b, std::size_t p)
     return {b[p], b[p + 1], signed_byte(b[p + 2])};
 }
 
+// Where a game's item types start in their file, how many bytes each takes and how many
+// item words START.EXE names. Pools of Darkness, Treasures, Unlimited Adventures and Dark
+// Queen (ITEMS.DAT) read the types from the file's first byte; Gateway's ITEMS.1 follows
+// each type's 16 bytes with 8 the game never reads.
+struct ItemLayout
+{
+    std::size_t header{}, stride{}, word_count{};
+};
+
+constexpr ItemLayout pool_item_layout{.header = 2, .stride = 16, .word_count = 255};
+
+constexpr ItemLayout item_layout(GoldBoxGame game)
+{
+    switch (game)
+    {
+    case GoldBoxGame::pool_of_radiance:
+    case GoldBoxGame::curse_of_the_azure_bonds:
+        return pool_item_layout;
+    case GoldBoxGame::secret_of_the_silver_blades:
+        return {.header = 2, .stride = 16, .word_count = 123};
+    case GoldBoxGame::gateway_to_the_savage_frontier:
+        return {.header = 2, .stride = 24, .word_count = 255};
+    case GoldBoxGame::pools_of_darkness:
+        return {.header = 0, .stride = 16, .word_count = 125};
+    case GoldBoxGame::treasures_of_the_savage_frontier:
+        return {.header = 0, .stride = 16, .word_count = 181};
+    case GoldBoxGame::unlimited_adventures:
+        return {.header = 0, .stride = 16, .word_count = 255};
+    case GoldBoxGame::champions_of_krynn:
+        return {.header = 2, .stride = 16, .word_count = 123};
+    case GoldBoxGame::death_knights_of_krynn:
+        return {.header = 2, .stride = 16, .word_count = 125};
+    case GoldBoxGame::dark_queen_of_krynn:
+        return {.header = 0, .stride = 16, .word_count = 155};
+    case GoldBoxGame::countdown_to_doomsday:
+        return {.header = 2, .stride = 16, .word_count = 44};
+    case GoldBoxGame::matrix_cubed:
+        return {.header = 2, .stride = 16, .word_count = 45};
+    }
+    return pool_item_layout;
+}
+
 struct StringTable
 {
     std::size_t start{}, slot{};
@@ -265,16 +307,8 @@ std::optional<std::vector<ItemTemplate>> decode_item_templates(std::span<const s
 std::optional<std::vector<ItemTemplate>> decode_item_templates(std::span<const std::uint8_t> bytes,
                                                                GoldBoxGame game)
 {
-    // Pools of Darkness, Treasures and Unlimited Adventures (ITEMS.DAT) read the
-    // types from the file's first byte; Gateway's ITEMS.1 follows each type's 16
-    // bytes with 8 the game never reads.
-    const std::size_t header = game == GoldBoxGame::pools_of_darkness ||
-                                       game == GoldBoxGame::treasures_of_the_savage_frontier ||
-                                       game == GoldBoxGame::unlimited_adventures ||
-                                       game == GoldBoxGame::dark_queen_of_krynn
-                                   ? 0
-                                   : 2;
-    const std::size_t stride = game == GoldBoxGame::gateway_to_the_savage_frontier ? 24 : 16;
+    const std::size_t header = item_layout(game).header;
+    const std::size_t stride = item_layout(game).stride;
     if (bytes.size() < header + stride || (bytes.size() - header) % stride != 0 ||
         (bytes.size() - header) / stride > 256)
     {
@@ -310,20 +344,11 @@ std::optional<std::vector<std::string>> decode_item_words(std::span<const std::u
 std::optional<std::vector<std::string>> decode_item_words(std::span<const std::uint8_t> image,
                                                           GoldBoxGame game)
 {
+    const std::size_t count = item_layout(game).word_count;
     if (game == GoldBoxGame::dark_queen_of_krynn)
     {
-        return ua::decode_item_words(image, 155);
+        return ua::decode_item_words(image, count);
     }
-    const std::size_t count =
-        (game == GoldBoxGame::secret_of_the_silver_blades ||
-         game == GoldBoxGame::champions_of_krynn)
-            ? 123
-        : game == GoldBoxGame::pools_of_darkness || game == GoldBoxGame::death_knights_of_krynn
-            ? 125
-        : game == GoldBoxGame::treasures_of_the_savage_frontier ? 181
-        : game == GoldBoxGame::countdown_to_doomsday            ? 44
-        : game == GoldBoxGame::matrix_cubed                     ? 45
-                                                                : 255;
     // The Buck Rogers games' words are their weapons' and armor's (gdconsts.pas itemNameParts).
     const auto table = is_buck_rogers(game) ? find_string_table(image, "Knife", "Mono")
                                             : find_string_table(image, "Battle Axe", "Hand Axe");
