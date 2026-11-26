@@ -166,6 +166,7 @@ add_library(opengold_formats STATIC
     src/OpenGold.Formats/src/ecl.cpp
     src/OpenGold.Formats/src/wall_art.cpp
     src/OpenGold.Formats/src/por_sound.cpp
+    src/OpenGold.Formats/src/start_executable.cpp
     src/OpenGold.Formats/src/curse_records.cpp
     src/OpenGold.Formats/src/champions_records.cpp
     src/OpenGold.Formats/src/death_knights_records.cpp

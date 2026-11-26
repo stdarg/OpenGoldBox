@@ -6,6 +6,7 @@
 #include "opengold/original_rules.h"
 #include "opengold/music_render.h"
 #include "opengold/por_sound.h"
+#include "opengold/start_executable.h"
 #include "opengold/original.h"
 #include "opengold/character_creator.h"
 #include "opengold/coin_purse.h"
@@ -190,7 +191,8 @@ void actual_champions_records_decode()
 
     const auto effects = opengold::por::load_sound_effects(folder, game);
     check(effects.size() == 21, "All 21 original speaker table entries decode");
-    const auto image = opengold::por::unpack_sound_executable(read(folder / "START.EXE"));
+    const auto image = opengold::por::unpack_sound_executable(
+        read(opengold::format::find_start_executable(folder).value()));
     const auto words = opengold::por::decode_item_words(image, game);
     check(words && words->size() == 124 && (*words)[1] == "Battle Axe",
           "Champions has 123 item-name parts, plus the empty index zero");

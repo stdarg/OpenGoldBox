@@ -1,5 +1,6 @@
 #include "opengold/por_sound.h"
 #include "little_endian.h"
+#include "opengold/start_executable.h"
 
 #include <algorithm>
 #include <bit>
@@ -419,21 +420,15 @@ std::vector<SpeakerTick> decode_speaker_sequence(std::span<const std::uint8_t> d
     invalid("sound duration limit exceeded");
 }
 
-// The game's START.EXE, by its upper-case name or else its lower-case one.
-std::filesystem::path start_executable(const std::filesystem::path &directory)
-{
-    auto path = directory / "START.EXE";
-    if (!std::filesystem::exists(path))
-    {
-        path = directory / "start.exe";
-    }
-    return path;
-}
-
 std::vector<SoundEffect> load_sound_effects(const std::filesystem::path &directory)
 {
-    std::ifstream input(start_executable(directory), std::ios::binary | std::ios::ate);
-    if (!input)
+    const auto start = format::find_start_executable(directory);
+    std::ifstream input;
+    if (start)
+    {
+        input.open(*start, std::ios::binary | std::ios::ate);
+    }
+    if (!start || !input)
     {
         invalid("cannot open START.EXE; select your Pool of Radiance PC 1.3 folder");
     }
@@ -611,8 +606,13 @@ std::vector<SoundEffect> load_sound_effects(const std::filesystem::path &game_di
     case GoldBoxGame::countdown_to_doomsday:
     case GoldBoxGame::matrix_cubed:
     {
-        std::ifstream input(start_executable(game_directory), std::ios::binary);
-        if (!input)
+        const auto start = format::find_start_executable(game_directory);
+        std::ifstream input;
+        if (start)
+        {
+            input.open(*start, std::ios::binary);
+        }
+        if (!start || !input)
         {
             invalid("cannot open START.EXE");
         }

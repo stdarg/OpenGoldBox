@@ -3,7 +3,7 @@
 #include "opengold/encounter_formation.h"
 #include "opengold/overland.h"
 #include "opengold/por_sound.h"
-#include <cctype>
+#include "opengold/start_executable.h"
 #include <charconv>
 #include <filesystem>
 #include <fstream>
@@ -74,17 +74,9 @@ std::vector<std::uint8_t> read_file(const std::filesystem::path &path)
 // The game directory's START.EXE, whatever the case of its name.
 std::filesystem::path start_exe(const std::filesystem::path &directory)
 {
-    for (const auto &entry : std::filesystem::directory_iterator(directory))
+    if (auto start = opengold::format::find_start_executable(directory))
     {
-        auto name = entry.path().filename().string();
-        for (auto &c : name)
-        {
-            c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
-        }
-        if (name == "START.EXE")
-        {
-            return entry.path();
-        }
+        return *start;
     }
     throw std::runtime_error("START.EXE not found");
 }

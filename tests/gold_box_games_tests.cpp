@@ -18,6 +18,7 @@
 #include "opengold/coin_purse.h"
 #include "opengold/overland.h"
 #include "opengold/por_sound.h"
+#include "opengold/start_executable.h"
 #include "opengold/original_combat.h"
 #include "opengold/original.h"
 #include "opengold/original_spells.h"
@@ -559,7 +560,7 @@ void the_loaders_read_curse()
     check(sounds.at(10).audible, "Curse's footstep sounds");
     // Its fights out of doors: open ground from its own battlefield tiles,
     // trees where a place's terrain has them (ovr011, SetupWildernessFloor).
-    std::ifstream start(folder / "START.EXE", std::ios::binary);
+    std::ifstream start(opengold::format::find_start_executable(folder).value(), std::ios::binary);
     const std::vector<std::uint8_t> start_bytes{std::istreambuf_iterator<char>(start), {}};
     const auto image = opengold::por::unpack_sound_executable(start_bytes);
     const auto wilderness = opengold::por::curse_wilderness(image);

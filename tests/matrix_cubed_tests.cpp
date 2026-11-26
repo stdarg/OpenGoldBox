@@ -18,6 +18,7 @@
 #include "opengold/original_combat.h"
 #include "opengold/pool_radiance.h"
 #include "opengold/por_sound.h"
+#include "opengold/start_executable.h"
 #include "opengold/ua_media.h"
 #include "installed_games.h"
 #include "test_support.h"
@@ -408,7 +409,8 @@ void the_records_decode(const std::filesystem::path &folder)
     check(refuge && refuge->name == "SID REFUGE" && refuge->level == 12 &&
               refuge->hit_point_maximum == 84 && refuge->raw.size() == 259,
           "Creature 1 is a level 12 Sid refuge in a 259-byte record");
-    const auto image = opengold::por::unpack_sound_executable(file_bytes(folder / "START.EXE"));
+    const auto image = opengold::por::unpack_sound_executable(
+        file_bytes(opengold::format::find_start_executable(folder).value()));
     const auto words = opengold::por::decode_item_words(image, matrix);
     check(words && words->size() == 46 && words->at(1) == "Knife",
           "START.EXE names items with 45 words, one more than Countdown's");

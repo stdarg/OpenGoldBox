@@ -4,6 +4,7 @@
 #include "opengold/formats.h"
 #include "opengold/game_census.h"
 #include "opengold/por_sound.h"
+#include "opengold/start_executable.h"
 #include "opengold/original_spells.h"
 #include "opengold/original.h"
 #include "opengold/campaign_session.h"
@@ -206,8 +207,9 @@ void installed_records()
         return;
     }
     check(opengold::identify_game(folder) == game, "DKK.CFG takes precedence over SOUND.DAX");
-    const auto stores = opengold::death_knights::decode_stores(
-        opengold::por::unpack_sound_executable(read(folder / "START.EXE")));
+    const auto stores =
+        opengold::death_knights::decode_stores(opengold::por::unpack_sound_executable(
+            read(opengold::format::find_start_executable(folder).value())));
     check(
         stores && stores->size() == 8 && stores->back().size() == 30 && stores->back().back() == 75,
         "All native shop entries come from the installed program, including its complete final list");
@@ -270,7 +272,8 @@ void installed_records()
         check(opengold::death_knights::decode_spells(raw.bytes).has_value(),
               "Every physical WIZ payload decodes");
     }
-    const auto image = opengold::por::unpack_sound_executable(read(folder / "START.EXE"));
+    const auto image = opengold::por::unpack_sound_executable(
+        read(opengold::format::find_start_executable(folder).value()));
     const auto words = opengold::por::decode_item_words(image, game);
     const auto names = opengold::por::decode_spell_names(image, game);
     check(words && words->size() == 126 && names && names->size() == 115 &&

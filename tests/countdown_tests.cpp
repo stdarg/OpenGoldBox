@@ -21,6 +21,7 @@
 #include "opengold/original_combat.h"
 #include "opengold/pool_radiance.h"
 #include "opengold/por_sound.h"
+#include "opengold/start_executable.h"
 #include "installed_games.h"
 #include "test_support.h"
 
@@ -2182,7 +2183,8 @@ void the_records_decode(const std::filesystem::path &folder)
     const auto templates =
         opengold::buck_rogers::decode_item_templates(record_of(folder / "ITEM0.DAX", 1));
     check(templates && templates->size() == 91, "ITEM0 holds 91 item templates");
-    const auto image = opengold::por::unpack_sound_executable(file_bytes(folder / "START.EXE"));
+    const auto image = opengold::por::unpack_sound_executable(
+        file_bytes(opengold::format::find_start_executable(folder).value()));
     const auto words = opengold::por::decode_item_words(image, countdown);
     check(words && words->size() == 45 && words->at(1) == "Knife",
           "START.EXE names items with 44 words, Knife first");
@@ -2269,7 +2271,8 @@ void the_records_save_as_they_were(const std::filesystem::path &folder)
 void a_new_character_uses_the_games_items(const std::filesystem::path &folder)
 {
     const auto templates = br::decode_item_templates(record_of(folder / "ITEM0.DAX", 1));
-    const auto image = opengold::por::unpack_sound_executable(file_bytes(folder / "START.EXE"));
+    const auto image = opengold::por::unpack_sound_executable(
+        file_bytes(opengold::format::find_start_executable(folder).value()));
     const auto words = opengold::por::decode_item_words(image, countdown);
     const auto items = og::buck_rogers_starting_items(*templates);
     const auto named = [&](const br::Item &item)

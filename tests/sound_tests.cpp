@@ -1,10 +1,15 @@
 #include "opengold/speaker_audio.h"
+#include "opengold/start_executable.h"
 #include "installed_games.h"
 #include "test_support.h"
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
+#include <iterator>
 #include <stdexcept>
+#include <string>
 
 using namespace opengold::por;
 
@@ -215,6 +220,33 @@ void rendering()
             "Silence renders zero PCM");
 }
 
+// Each spelling is written with its own contents, from the weakest claim to
+// the strongest, so the newest file is always the one that must win. A folder
+// that ignores case keeps one file throughout, which still holds the newest.
+void start_executable_spellings()
+{
+    namespace fs = std::filesystem;
+    const auto folder = fs::temp_directory_path() / "opengold-start-executable-spellings";
+    fs::remove_all(folder);
+    require(!opengold::format::find_start_executable(folder), "A missing folder has no START.EXE");
+    fs::create_directories(folder);
+    require(!opengold::format::find_start_executable(folder), "An empty folder has no START.EXE");
+
+    const auto winner_holds = [&](const char *name, const std::string &contents)
+    {
+        std::ofstream(folder / name, std::ios::binary) << contents;
+        const auto start = opengold::format::find_start_executable(folder);
+        require(start.has_value(), "A START.EXE of any spelling is found");
+        std::ifstream input(*start, std::ios::binary);
+        return std::string(std::istreambuf_iterator<char>(input), {}) == contents;
+    };
+
+    require(winner_holds("Start.exe", "mixed"), "Start.exe is found when it is the only one");
+    require(winner_holds("start.exe", "lower"), "start.exe wins over Start.exe");
+    require(winner_holds("START.EXE", "upper"), "START.EXE wins over start.exe and Start.exe");
+    fs::remove_all(folder);
+}
+
 void installed()
 {
     const auto directory = opengold::test::installed_game_folder(
@@ -254,6 +286,7 @@ int main()
         sequences();
         notes_and_envelopes();
         rendering();
+        start_executable_spellings();
         installed();
         std::cout << "Sound tests passed\n";
         return 0;
