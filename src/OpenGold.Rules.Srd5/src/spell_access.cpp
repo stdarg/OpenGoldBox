@@ -1,6 +1,7 @@
 #include "spell_access.h"
 #include <algorithm>
 #include <array>
+#include <concepts>
 #include <optional>
 #include <set>
 #include <stdexcept>
@@ -1728,19 +1729,13 @@ SpellChoiceOptions class_spell_choice_options(const CharacterSheet &sheet, Chara
     return result;
 }
 
-// A multiclass character's spell choices (MULTI-1): a level-up's, for the
-// class it is taken in, whose prepared spells come without marks; a rest's,
-// for each spellcasting class, marked as recorded.
-void apply_multiclass_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
-                                    SpellChoiceContext context, bool complete,
-                                    const ClassHistory &history)
+// Checks each spell `choices` learns against its group in `options` and adds
+// it to `candidate`: an initiate's as its feat grants it, a class spell from
+// the source `source_of` returns.
+template <std::invocable SourceOf>
+void add_learned_spells(CharacterSheet &candidate, const SpellChoiceOptions &options,
+                        const SpellChoices &choices, SourceOf source_of)
 {
-    const auto starting = history.starting();
-    const auto advancing = context == SpellChoiceContext::advancement
-                               ? std::optional(history.taken_at(history.level()))
-                               : std::nullopt;
-    auto candidate = sheet;
-    const auto options = spell_choice_options(sheet, context);
     for (const auto &[id, values] : choices.learning)
     {
         const auto group = std::find_if(options.learning.begin(), options.learning.end(),
@@ -1762,12 +1757,32 @@ void apply_multiclass_spell_choices(CharacterSheet &sheet, const SpellChoices &c
             }
             else
             {
-                require(advancing.has_value());
-                candidate.grants.push_back(
-                    grant(value, group->acquired_level, class_source(*advancing)));
+                candidate.grants.push_back(grant(value, group->acquired_level, source_of()));
             }
         }
     }
+}
+
+// A multiclass character's spell choices (MULTI-1): a level-up's, for the
+// class it is taken in, whose prepared spells come without marks; a rest's,
+// for each spellcasting class, marked as recorded.
+void apply_multiclass_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
+                                    SpellChoiceContext context, bool complete,
+                                    const ClassHistory &history)
+{
+    const auto starting = history.starting();
+    const auto advancing = context == SpellChoiceContext::advancement
+                               ? std::optional(history.taken_at(history.level()))
+                               : std::nullopt;
+    auto candidate = sheet;
+    const auto options = spell_choice_options(sheet, context);
+    add_learned_spells(candidate, options, choices,
+                       [&]
+                       {
+                           // Only a level-up learns class spells.
+                           require(advancing.has_value());
+                           return class_source(*advancing);
+                       });
     require(choices.replace_cantrip.empty() == choices.replacement.empty());
     if (!choices.replace_cantrip.empty())
     {
@@ -1905,31 +1920,11 @@ void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
     const auto origin = class_source(klass);
     auto candidate = sheet;
     const auto options = spell_choice_options(sheet, context);
-    for (const auto &[id, values] : choices.learning)
-    {
-        const auto group = std::find_if(options.learning.begin(), options.learning.end(),
-                                        [&](const auto &g)
-                                        {
-                                            return g.id == id;
-                                        });
-        require(group != options.learning.end() && values.size() <= group->count);
-        for (const auto &value : values)
-        {
-            require(std::any_of(group->options.begin(), group->options.end(),
-                                [&](const auto &o)
-                                {
-                                    return o.id == value;
-                                }));
-            if (auto initiate = initiate_choice_grant(*group, value))
-            {
-                candidate.grants.push_back(std::move(*initiate));
-            }
-            else
-            {
-                candidate.grants.push_back(grant(value, group->acquired_level, origin));
-            }
-        }
-    }
+    add_learned_spells(candidate, options, choices,
+                       [&]
+                       {
+                           return origin;
+                       });
     require(choices.replace_cantrip.empty() == choices.replacement.empty());
     if (!choices.replace_cantrip.empty())
     {
