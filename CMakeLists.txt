@@ -243,6 +243,12 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/por_effects.cpp
     src/OpenGold.Core/src/rolf_tour.cpp
     src/OpenGold.Core/src/phlan_session.cpp
+    src/OpenGold.Core/src/host_services.cpp
+    src/OpenGold.Core/src/host_halls.cpp
+    src/OpenGold.Core/src/host_temples.cpp
+    src/OpenGold.Core/src/host_shops.cpp
+    src/OpenGold.Core/src/host_treasure.cpp
+    src/OpenGold.Core/src/host_camp.cpp
     src/OpenGold.Core/src/vga_host.cpp
     src/OpenGold.Core/src/buck_rogers_host.cpp
     src/OpenGold.Core/src/buck_rogers_solar_map.cpp

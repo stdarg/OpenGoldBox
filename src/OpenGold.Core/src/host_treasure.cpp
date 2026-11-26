@@ -1,0 +1,381 @@
+#include "opengold/rolf_tour.h"
+#include "opengold/authored_items.h"
+#include "opengold/creature_art.h"
+#include "opengold/random_treasure.h"
+
+#include <algorithm>
+#include <utility>
+
+namespace opengold::por
+{
+void RolfTourSession::claim_loot()
+{
+    if (!campaign_)
+    {
+        return;
+    }
+    for (auto it = pending_loot_.begin(); it != pending_loot_.end();)
+    {
+        const auto before = held_items();
+        if (campaign_->award_loot(it->wealth, it->items, it->reward_id))
+        {
+            equip_gained(before);
+            LootTaken taken{.wealth = it->wealth};
+            for (const auto &item : it->items)
+            {
+                taken.items.push_back(item.label());
+            }
+            snapshot_.loot_taken.push_back(std::move(taken));
+            it = pending_loot_.erase(it);
+            ++snapshot_.revision;
+        }
+        else
+        {
+            ++it;
+        }
+    }
+}
+
+void RolfTourSession::pile_loot()
+{
+    if (!campaign_)
+    {
+        return;
+    }
+    for (auto it = pending_loot_.begin(); it != pending_loot_.end();)
+    {
+        const auto &claimed = campaign_->state().claimed_rewards;
+        const bool repeat =
+            std::find(claimed.begin(), claimed.end(), it->reward_id) != claimed.end();
+        if (!campaign_->award_loot(it->wealth, {}, it->reward_id))
+        {
+            ++it;
+            continue;
+        }
+        if (!repeat)
+        {
+            snapshot_.loot_taken.push_back({.wealth = it->wealth});
+            for (auto &item : it->items)
+            {
+                treasure_pile_.push_back(std::move(item));
+            }
+        }
+        it = pending_loot_.erase(it);
+        ++snapshot_.revision;
+    }
+}
+
+void RolfTourSession::open_treasure(std::uint64_t request, std::vector<EclMemoryWrite> writes)
+{
+    log_player("finds a treasure of " + std::to_string(treasure_pile_.size()) + " items");
+    treasure_request_ = request;
+    treasure_writes_ = std::move(writes);
+    snapshot_.phase = TourPhase::treasure;
+    snapshot_.continue_ticket = ++next_ticket_;
+    snapshot_.choices.clear();
+    snapshot_.diagnostic.clear();
+    ++snapshot_.revision;
+}
+
+bool RolfTourSession::take_treasure(std::uint64_t ticket, std::size_t item)
+{
+    if (snapshot_.phase != TourPhase::treasure || !ticket || ticket != snapshot_.continue_ticket ||
+        item >= treasure_pile_.size() || !campaign_ || !campaign_->selected())
+    {
+        return false;
+    }
+    const auto taker = campaign_->selected();
+    log_player("takes " + treasure_pile_[item].label() + " (item " + std::to_string(item + 1) +
+               " of " + std::to_string(treasure_pile_.size()) + ")");
+    snapshot_.gear_changes.clear();
+    const auto before = held_items();
+    try
+    {
+        campaign_->take_item(taker, treasure_pile_[item]);
+    }
+    catch (const std::exception &e)
+    {
+        snapshot_.diagnostic = e.what();
+        ++snapshot_.revision;
+        return false;
+    }
+    equip_gained(before);
+    treasure_pile_.erase(treasure_pile_.begin() + static_cast<std::ptrdiff_t>(item));
+    snapshot_.diagnostic.clear();
+    // A new ticket: the list the view shows has changed.
+    snapshot_.continue_ticket = ++next_ticket_;
+    ++snapshot_.revision;
+    return true;
+}
+
+bool RolfTourSession::leave_treasure(std::uint64_t ticket)
+{
+    if (snapshot_.phase != TourPhase::treasure || !ticket || ticket != snapshot_.continue_ticket)
+    {
+        return false;
+    }
+    log_player(treasure_pile_.empty()
+                   ? "leaves the treasure"
+                   : "leaves " + std::to_string(treasure_pile_.size()) + " items behind");
+    // The script reads its character afresh: the member may have taken items.
+    auto reply = character_reply(selected_character_);
+    reply.writes.insert(reply.writes.end(), treasure_writes_.begin(), treasure_writes_.end());
+    reply.conditions = std::exchange(treasure_conditions_, std::nullopt);
+    if (!machine_.resume_host(treasure_request_, reply))
+    {
+        fail("The script did not take the treasure's end");
+        return true;
+    }
+    treasure_pile_.clear();
+    treasure_writes_.clear();
+    treasure_request_ = 0;
+    snapshot_.continue_ticket = 0;
+    snapshot_.diagnostic.clear();
+    snapshot_.phase = TourPhase::running;
+    ++snapshot_.revision;
+    advance(0);
+    return true;
+}
+
+namespace
+{
+// A creature's gear by MONnITM place. With an export, an original item the
+// Combat Sprite Catalog left out is not carried (#274).
+// Gear the catalog added to a creature (#274), each as a plain item of its
+// original type from New Phlan's shop lists. A type no list sells is left out.
+std::vector<Equipment> added_gear(const ExportedMonster *exported, const PhlanResources &town)
+{
+    std::vector<Equipment> gear;
+    for (const auto &added : exported ? exported->equipment : std::vector<MonsterItem>{})
+    {
+        if (added.source_index >= 0 || added.source_type < 0)
+        {
+            continue;
+        }
+        const auto plain = [&]() -> const Equipment *
+        {
+            for (const auto &[record, list] : town.treasure)
+            {
+                for (const auto &item : list)
+                {
+                    if (item.stored.type == added.source_type && !item.stored.magic_bonus &&
+                        !item.stored.cursed_raw)
+                    {
+                        return &item;
+                    }
+                }
+            }
+            return nullptr;
+        }();
+        if (plain)
+        {
+            gear.push_back(*plain);
+        }
+    }
+    return gear;
+}
+
+// The item key of the item a creature fights with: its original item, or a
+// plain item of the type the catalog added. Empty for none.
+} // namespace
+
+PendingLoot RolfTourSession::encounter_loot(unsigned area, std::vector<unsigned> records,
+                                            std::string reward, bool items,
+                                            std::vector<SpentGear> spent) const
+{
+    // Dark Queen shares one creature table across every map. The earlier
+    // games keep New Phlan's fights on the town and the rest on districts.
+    const auto district = town_->districts.find(area);
+    const PhlanResources *resources =
+        area == 0 || game() == GoldBoxGame::dark_queen_of_krynn
+            ? town_.get()
+            : (district == town_->districts.end() ? nullptr : district->second.get());
+    if (!resources || records.empty() || records.size() > 56 || reward.empty() ||
+        reward.size() > 160 ||
+        std::any_of(records.begin(), records.end(),
+                    [&](auto id)
+                    {
+                        return !resources->encounter_creatures.contains(id);
+                    }))
+    {
+        throw EclError("Invalid pending encounter loot");
+    }
+    PendingLoot loot;
+    loot.reward_id = std::move(reward);
+    loot.records = std::move(records);
+    loot.include_items = items;
+    loot.area = area;
+    for (auto id : loot.records)
+    {
+        const auto &creature = resources->encounter_creatures.at(id);
+        for (unsigned coin = 0; coin < 7; ++coin)
+        {
+            loot.wealth[coin] += creature.stored.wealth[coin];
+        }
+        if (!items)
+        {
+            continue;
+        }
+        auto gear = carried_gear(creature, exported_creature(*resources, id));
+        // One monster of this record used its gear in the fight (DIFF-1).
+        if (const auto used = std::find_if(spent.begin(), spent.end(),
+                                           [&](const auto &s)
+                                           {
+                                               return s.record == id;
+                                           });
+            used != spent.end())
+        {
+            for (const auto &[index, left] : used->uses_left)
+            {
+                if (index >= gear.size() || !gear[index])
+                {
+                    throw EclError("Invalid spent monster gear");
+                }
+                gear[index] = item_after_uses(std::move(*gear[index]), left);
+            }
+            spent.erase(used);
+        }
+        for (auto &item : gear)
+        {
+            // There is no ammunition: a monster's arrows are not left behind.
+            if (item && !opengold::original_item::is_ammunition(item->stored.type))
+            {
+                loot.items.push_back(std::move(*item));
+            }
+        }
+        for (auto &item : added_gear(exported_creature(*resources, id), *town_))
+        {
+            item.index = loot.items.size();
+            loot.items.push_back(std::move(item));
+        }
+    }
+    return loot;
+}
+
+std::string RolfTourSession::treasure_identity(std::uint16_t address) const
+{
+    // A TREASURE instruction is identified by its script and original address.
+    constexpr std::string_view digits = "0123456789abcdef";
+    std::string hex;
+    for (int shift = 12; shift >= 0; shift -= 4)
+    {
+        hex += digits[(address >> shift) & 15];
+    }
+    const std::string archive = "ECL" + std::to_string(current_area_ ? area_resources().bank : 3);
+    return "por:" + archive + ":" + std::to_string(current_script_) + ":treasure:" + hex + ":v1";
+}
+
+void RolfTourSession::stage_treasure(const EclRequest &request)
+{
+    // Operands: copper, silver, electrum, gold, platinum, gems, jewelry, then an
+    // item code: an ITEMn list below 128, 128 + n random items, or 255 for none.
+    const auto items = request.arguments.at(7).number();
+    if (!campaign_)
+    {
+        throw EclError("Treasure awards require a campaign party");
+    }
+    PendingLoot loot;
+    for (unsigned coin = 0; coin < 7; ++coin)
+    {
+        loot.wealth[coin] = request.arguments.at(coin).number();
+    }
+    loot.reward_id = treasure_identity(request.instruction->address);
+    // An instruction whose list comes from a script cell gives each list once:
+    // the Temple of Bane's three trapdoors share one (ECL1:24 0xAA34).
+    if (request.instruction->operands.at(7).tag != 0)
+    {
+        loot.reward_id += ":list:" + std::to_string(items);
+    }
+    loot.include_items = false;
+    if (items < 128)
+    {
+        // A fixed list from the area's item archive.
+        const auto &lists = area_resources().treasure;
+        const auto found = lists.find(items);
+        if (found == lists.end())
+        {
+            throw EclError("Unknown treasure list " + std::to_string(items));
+        }
+        for (auto item : found->second)
+        {
+            // There is no ammunition, so a list's arrows and quarrels are not found.
+            if (opengold::original_item::is_ammunition(item.stored.type))
+            {
+                continue;
+            }
+            item.index = loot.items.size();
+            loot.items.push_back(std::move(item));
+        }
+    }
+    else if (items != 255)
+    {
+        // Rolled on the script's own saved random stream, as the original did here.
+        const auto roll = [&](unsigned sides)
+        {
+            return machine_.host_random(request.id, sides) + 1;
+        };
+        for (auto &record : random_treasure_items(items - 128, roll))
+        {
+            Equipment item;
+            item.index = loot.items.size();
+            const auto &templates = town_->item_templates;
+            if (!templates.empty())
+            {
+                if (record.type >= templates.size())
+                {
+                    throw EclError("Missing item template for generated treasure");
+                }
+                item.base = templates[record.type];
+            }
+            item.bonuses = equipment_bonuses(record, item.base);
+            item.stored = std::move(record);
+            loot.items.push_back(std::move(item));
+        }
+    }
+    staged_treasure_ = std::move(loot);
+}
+
+void RolfTourSession::award_staged_treasure(bool with_experience)
+{
+    auto loot = std::move(*staged_treasure_);
+    staged_treasure_.reset();
+    const auto &claimed = campaign_->state().claimed_rewards;
+    const auto awarded = [&](const std::string &id)
+    {
+        return std::find(claimed.begin(), claimed.end(), id) != claimed.end() ||
+               std::any_of(pending_loot_.begin(), pending_loot_.end(),
+                           [&](const auto &pending)
+                           {
+                               return pending.reward_id == id;
+                           });
+    };
+    // The script decides whether a treasure repeats, as the original's flags
+    // did: City Hall pays every reward through one instruction. Each award
+    // from an instruction already used gets an identity of its own.
+    const auto first_award = loot.reward_id;
+    for (unsigned award = 2; awarded(loot.reward_id); ++award)
+    {
+        loot.reward_id = first_award + ":award:" + std::to_string(award);
+    }
+    // Pool's COMBAT runs its post-combat award even with no monsters. The
+    // script's treasure therefore earns experience too, whether it stands
+    // alone or accompanies a fight (EclCombat, DetermineLootExp). Keep its
+    // claim beside this particular script-authorized treasure award.
+    if (with_experience && game() == GoldBoxGame::pool_of_radiance && plays_original_records())
+    {
+        const auto experience = treasure_experience(loot);
+        if (experience)
+        {
+            campaign_->award_experience(experience_share(experience),
+                                        loot.reward_id + ":experience");
+        }
+    }
+    pending_loot_.push_back(std::move(loot));
+    pile_loot();
+    if (!pending_loot_.empty())
+    {
+        snapshot_.dialogue += "\nLoot is retained until your party has room in its purses.";
+    }
+}
+
+} // namespace opengold::por
