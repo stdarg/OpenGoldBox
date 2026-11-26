@@ -1,7 +1,13 @@
 #include "module.h"
 #include "session.h"
+#include "class_spell_lists.h"
+#include "feature_grants.h"
+#include "training.h"
+#include "worn_items.h"
+#include "opengold/item_key.h"
 #include <cctype>
 #include <chrono>
+#include <cmath>
 #include <iomanip>
 #include <iterator>
 #include <limits>

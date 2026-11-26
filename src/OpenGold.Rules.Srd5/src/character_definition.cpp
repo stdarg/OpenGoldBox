@@ -1,4 +1,16 @@
-#include "combat_model.h"
+#include "character_definition.h"
+#include "armor.h"
+#include "class_spell_lists.h"
+#include "equipment_rules.h"
+#include "feature_grants.h"
+#include "resource_pools.h"
+#include "spell_access.h"
+#include "spell_table.h"
+#include "status_effects.h"
+#include "training.h"
+#include "weapon_mastery.h"
+#include "worn_items.h"
+#include "opengold/srd5.h"
 #include <algorithm>
 #include <charconv>
 #include <cmath>

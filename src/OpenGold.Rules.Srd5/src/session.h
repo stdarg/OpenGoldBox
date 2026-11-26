@@ -1,6 +1,23 @@
 #ifndef OPENGOLD_SRD5_SESSION_H
 #define OPENGOLD_SRD5_SESSION_H
-#include "combat_model.h"
+#include "actor_model.h"
+#include "armor.h"
+#include "character_definition.h"
+#include "combat_geometry.h"
+#include "combat_grid.h"
+#include "conditions.h"
+#include "definition.h"
+#include "equipment_rules.h"
+#include "recovery_timeline.h"
+#include "resource_pools.h"
+#include "sneak_attack.h"
+#include "spell_access.h"
+#include "spell_costs.h"
+#include "spell_traits.h"
+#include "thrown_gear.h"
+#include "weapon_mastery.h"
+#include "opengold/scroll_key.h"
+#include "opengold/srd5.h"
 #include <istream>
 #include <iterator>
 #include <stdexcept>
@@ -15,11 +32,13 @@ using rules::CombatSession;
 using rules::Encounter;
 using rules::HeldItemView;
 using rules::LogEntry;
+using rules::MessageArgument;
 using rules::OptionalEffectChoice;
 using rules::Outcome;
 using rules::Side;
 using rules::Snapshot;
 using rules::TemporaryHitPoints;
+using rules::Terrain;
 
 class Session final : public CombatSession
 {

@@ -1,4 +1,7 @@
-#include "combat_model.h"
+#include "spell_costs.h"
+#include "equipment_rules.h"
+#include "resource_pools.h"
+#include "opengold/scroll_key.h"
 #include <algorithm>
 #include <charconv>
 #include <cmath>

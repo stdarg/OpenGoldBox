@@ -1,4 +1,10 @@
-#include "combat_model.h"
+#include "actor_model.h"
+#include "armor.h"
+#include "character_definition.h"
+#include "combat_geometry.h"
+#include "definition.h"
+#include "resource_pools.h"
+#include "spell_table.h"
 #include <algorithm>
 #include <charconv>
 #include <cmath>

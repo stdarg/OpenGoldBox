@@ -20,8 +20,9 @@ SRD_SOURCES = (
     "session_zones.cpp", "session_turns.cpp", "session_monsters.cpp", "session_dispatch.cpp",
     "session_checkpoint.cpp", "session_mastery.cpp", "module.cpp",
     "spell_traits.cpp", "class_spell_lists.cpp", "equipment_rules.cpp", "equipment_rules.h",
-    "combat_model.cpp", "combat_model.h", "spell_costs.cpp", "actor_state.cpp",
-    "character_definition.cpp",
+    "combat_model.cpp", "definition.h", "actor_model.h", "resource_pools.h", "spell_costs.h",
+    "conditions.h", "character_definition.h", "combat_geometry.h", "spell_costs.cpp",
+    "actor_state.cpp", "character_definition.cpp",
 )
 LOCALE = ROOT / "src/OpenGoldBox/godot/locale"
 LITERAL = r'"(?:[^"\\]|\\.)*"'

@@ -1,4 +1,6 @@
-#include "combat_model.h"
+#include "conditions.h"
+#include "resource_pools.h"
+#include "spell_table.h"
 #include <algorithm>
 #include <charconv>
 #include <cmath>
