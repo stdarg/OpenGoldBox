@@ -672,13 +672,13 @@ int benefit_value_limit(EffectKind kind)
            : kind == EffectKind::summoned                                  ? 30
            : kind == EffectKind::illusory || kind == EffectKind::petrified ? 1
            : kind == EffectKind::stoning                                   ? 32
-           : kind == EffectKind::contingency ? static_cast<int>(spell_table.size()) * 4
+           : kind == EffectKind::contingency ? static_cast<int>(spell_table().size()) * 4
            : kind == EffectKind::polymorphed || kind == EffectKind::animal_shaped
                ? static_cast<int>(beast_forms.size())
            : kind == EffectKind::metamagic                         ? 15
            : kind == EffectKind::hidden || kind == EffectKind::aid ? 40
            : kind == EffectKind::circle_ward ? static_cast<int>(ward_types.size()) - 1
-           : kind == EffectKind::heightened  ? static_cast<int>(spell_table.size()) - 1
+           : kind == EffectKind::heightened  ? static_cast<int>(spell_table().size()) - 1
                                              : 10;
 }
 } // namespace

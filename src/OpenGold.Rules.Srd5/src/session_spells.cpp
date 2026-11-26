@@ -1805,7 +1805,7 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
     const bool spells_blocked =
         rage_of(a) || detail::has_effect(a.effects, detail::EffectKind::befuddled);
     const auto &d = def(a);
-    for (const auto &spell : detail::spell_table)
+    for (const auto &spell : detail::spell_table())
     {
         // Smites follow the caster's own melee hit; the smite window offers them.
         if (spell.pattern == detail::SpellPattern::smite ||

@@ -198,7 +198,7 @@ void table()
     using namespace opengold::srd5::detail;
     std::set<std::string_view> ids;
     unsigned seen_masks = 0;
-    for (const auto &spell : spell_table)
+    for (const auto &spell : spell_table())
     {
         check(ids.insert(spell.id).second, "Spell ids are unique");
         check(!spell.id.empty() && !spell.label.empty(), "Every row has an id and a label");
@@ -240,7 +240,7 @@ void table()
     }
     // Deliberately not an exact row count: that would make adding a spell an
     // edit here too. The explicit id list below is the drift guard instead.
-    check(spell_table.size() >= 12, "The implemented catalog is present");
+    check(spell_table().size() >= 12, "The implemented catalog is present");
     check(find_spell("magic_missile") == find_spell("magic_missile_2"),
           "Upcast verbs resolve to one row");
     check(find_spell("melee") == nullptr && find_spell("dash") == nullptr,
@@ -294,7 +294,7 @@ CharacterSheet widest(const RulesModule &rules, const Probe &probe)
         cantrips.push_back(option.id);
     }
     auto sheet = hero(probe.klass, probe.level, cantrips).sheet();
-    for (const auto &row : spell_table)
+    for (const auto &row : spell_table())
     {
         if (!row.level)
         {
@@ -515,7 +515,7 @@ void behaviour()
     {
         sheets.push_back(widest(*rules, probe));
     }
-    for (const auto &row : spell_table)
+    for (const auto &row : spell_table())
     {
         // Smites are offered by the caster's own melee hit, not by range, a
         // spell on several creatures begins a choice, Command, Resistance,

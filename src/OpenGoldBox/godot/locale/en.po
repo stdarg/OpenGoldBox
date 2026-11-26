@@ -3464,7 +3464,7 @@ msgstr "Contingency"
 msgid "Contingency: {spell} ({trigger})"
 msgstr "Contingency: {spell} ({trigger})"
 
-#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2158
+#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2165
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Contingency: {spell} takes effect on {name}."
 msgstr "Contingency: {spell} takes effect on {name}."
@@ -13206,7 +13206,7 @@ msgstr "The background also gives two skills and an Origin feat."
 msgid "The battlefield's size when a fight opens."
 msgstr "The battlefield's size when a fight opens."
 
-#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2182
+#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2189
 msgid "The bead bursts."
 msgstr "The bead bursts."
 
@@ -13602,7 +13602,7 @@ msgstr "The temple cannot help with that"
 msgid "The tsunami subsides."
 msgstr "The tsunami subsides."
 
-#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:3067
+#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:3074
 msgid "The tsunami surges forward."
 msgstr "The tsunami surges forward."
 
@@ -16249,7 +16249,7 @@ msgstr "{name} / {class} / {race} / {gender}\nLevel {level} · HP {current}/{max
 msgid "{name} Athletics check: d20 {roll}{advantage} + {bonus} vs DC {dc} (escapes)."
 msgstr "{name} Athletics check: d20 {roll}{advantage} + {bonus} vs DC {dc} (escapes)."
 
-#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:3141
+#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:3148
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} Athletics check: d20 {roll}{advantage} + {bonus} vs DC {dc} (held by the wave)."
 msgstr "{name} Athletics check: d20 {roll}{advantage} + {bonus} vs DC {dc} (held by the wave)."
@@ -16259,7 +16259,7 @@ msgstr "{name} Athletics check: d20 {roll}{advantage} + {bonus} vs DC {dc} (held
 msgid "{name} Athletics check: d20 {roll}{advantage} + {bonus} vs DC {dc} (still Restrained)."
 msgstr "{name} Athletics check: d20 {roll}{advantage} + {bonus} vs DC {dc} (still Restrained)."
 
-#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:3140
+#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:3147
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} Athletics check: d20 {roll}{advantage} + {bonus} vs DC {dc} (swims)."
 msgstr "{name} Athletics check: d20 {roll}{advantage} + {bonus} vs DC {dc} (swims)."
@@ -16309,12 +16309,12 @@ msgstr "{name} Intelligence save: d20 {roll} + {bonus} (Aura of Protection +{aur
 msgid "{name} Intelligence save: d20 {roll} + {bonus} vs DC {dc} ({result})."
 msgstr "{name} Intelligence save: d20 {roll} + {bonus} vs DC {dc} ({result})."
 
-#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2290 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2297 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} Investigation check: d20 {roll} + {bonus} vs DC 20 (escapes)."
 msgstr "{name} Investigation check: d20 {roll} + {bonus} vs DC 20 (escapes)."
 
-#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2291 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2298 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} Investigation check: d20 {roll} + {bonus} vs DC 20 (still lost)."
 msgstr "{name} Investigation check: d20 {roll} + {bonus} vs DC 20 (still lost)."
@@ -16664,7 +16664,7 @@ msgstr "{name} casts {spell} at {target}."
 msgid "{name} casts {spell} for {damage} {type} damage."
 msgstr "{name} casts {spell} for {damage} {type} damage."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:2250 src/OpenGold.Rules.Srd5/src/session_attacks.cpp:1821 src/OpenGold.Rules.Srd5/src/session_attacks.cpp:2404 src/OpenGold.Rules.Srd5/src/session_dispatch.cpp:655 src/OpenGold.Rules.Srd5/src/session_spells.cpp:1576 src/OpenGold.Rules.Srd5/src/session_spells.cpp:2744 src/OpenGold.Rules.Srd5/src/session_spells.cpp:4043 src/OpenGold.Rules.Srd5/src/session_zones.cpp:2559
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:2250 src/OpenGold.Rules.Srd5/src/session_attacks.cpp:1821 src/OpenGold.Rules.Srd5/src/session_attacks.cpp:2404 src/OpenGold.Rules.Srd5/src/session_dispatch.cpp:655 src/OpenGold.Rules.Srd5/src/session_spells.cpp:1576 src/OpenGold.Rules.Srd5/src/session_spells.cpp:2744 src/OpenGold.Rules.Srd5/src/session_spells.cpp:4043 src/OpenGold.Rules.Srd5/src/session_zones.cpp:2566
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} casts {spell}."
 msgstr "{name} casts {spell}."
@@ -16939,7 +16939,7 @@ msgstr "{name} fights on with {hp} Hit Points (Relentless Rage)."
 msgid "{name} fights under computer control (Quick). Space or Take control: play the party yourself."
 msgstr "{name} fights under computer control (Quick). Space or Take control: play the party yourself."
 
-#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2308
+#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2315
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} finds its way out of the maze."
 msgstr "{name} finds its way out of the maze."
@@ -17064,7 +17064,7 @@ msgstr "{name} gazes."
 msgid "{name} gets back up."
 msgstr "{name} gets back up."
 
-#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2672
+#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2679
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} gives vitality to {target}."
 msgstr "{name} gives vitality to {target}."
@@ -17204,7 +17204,7 @@ msgstr "{name} is Blinded and Stunned."
 msgid "{name} is Blinded by the holy aura."
 msgstr "{name} is Blinded by the holy aura."
 
-#: src/OpenGold.Rules.Srd5/src/session_attacks.cpp:2799 src/OpenGold.Rules.Srd5/src/session_spells.cpp:1126 src/OpenGold.Rules.Srd5/src/session_zones.cpp:1624 src/OpenGold.Rules.Srd5/src/session_zones.cpp:2249 src/OpenGold.Rules.Srd5/src/session_zones.cpp:577 src/OpenGold.Rules.Srd5/src/session_zones.cpp:596 src/OpenGold.Rules.Srd5/src/session_zones.cpp:656
+#: src/OpenGold.Rules.Srd5/src/session_attacks.cpp:2799 src/OpenGold.Rules.Srd5/src/session_spells.cpp:1126 src/OpenGold.Rules.Srd5/src/session_zones.cpp:1624 src/OpenGold.Rules.Srd5/src/session_zones.cpp:2256 src/OpenGold.Rules.Srd5/src/session_zones.cpp:577 src/OpenGold.Rules.Srd5/src/session_zones.cpp:596 src/OpenGold.Rules.Srd5/src/session_zones.cpp:656
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is Blinded."
 msgstr "{name} is Blinded."
@@ -17219,7 +17219,7 @@ msgstr "{name} is Charmed by {caster}."
 msgid "{name} is Confused."
 msgstr "{name} is Confused."
 
-#: src/OpenGold.Rules.Srd5/src/session_monsters.cpp:18 src/OpenGold.Rules.Srd5/src/session_monsters.cpp:79 src/OpenGold.Rules.Srd5/src/session_spells.cpp:4137 src/OpenGold.Rules.Srd5/src/session_spells.cpp:4421 src/OpenGold.Rules.Srd5/src/session_zones.cpp:2394
+#: src/OpenGold.Rules.Srd5/src/session_monsters.cpp:18 src/OpenGold.Rules.Srd5/src/session_monsters.cpp:79 src/OpenGold.Rules.Srd5/src/session_spells.cpp:4137 src/OpenGold.Rules.Srd5/src/session_spells.cpp:4421 src/OpenGold.Rules.Srd5/src/session_zones.cpp:2401
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is Frightened."
 msgstr "{name} is Frightened."
@@ -17249,12 +17249,12 @@ msgstr "{name} is Restrained as its flesh stiffens."
 msgid "{name} is Restrained by the spirit."
 msgstr "{name} is Restrained by the spirit."
 
-#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2932
+#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2939
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is Restrained by the webs."
 msgstr "{name} is Restrained by the webs."
 
-#: src/OpenGold.Rules.Srd5/src/session_spells.cpp:3543 src/OpenGold.Rules.Srd5/src/session_spells.cpp:3772 src/OpenGold.Rules.Srd5/src/session_zones.cpp:1835 src/OpenGold.Rules.Srd5/src/session_zones.cpp:2242
+#: src/OpenGold.Rules.Srd5/src/session_spells.cpp:3543 src/OpenGold.Rules.Srd5/src/session_spells.cpp:3772 src/OpenGold.Rules.Srd5/src/session_zones.cpp:1835 src/OpenGold.Rules.Srd5/src/session_zones.cpp:2249
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is Restrained."
 msgstr "{name} is Restrained."
@@ -17494,7 +17494,7 @@ msgstr "{name} is enlarged."
 msgid "{name} is enraged."
 msgstr "{name} is enraged."
 
-#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2389
+#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2396
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is entranced by the pattern."
 msgstr "{name} is entranced by the pattern."
@@ -17729,7 +17729,7 @@ msgstr "{name} is poisoned."
 msgid "{name} is pushed aside by the wall."
 msgstr "{name} is pushed aside by the wall."
 
-#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:3008
+#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:3015
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is pushed {feet} feet."
 msgstr "{name} is pushed {feet} feet."
@@ -17794,7 +17794,7 @@ msgstr "{name} is slain."
 msgid "{name} is slowed by Ray of Frost."
 msgstr "{name} is slowed by Ray of Frost."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4642 src/OpenGold.Rules.Original/src/combat_session.cpp:4666 src/OpenGold.Rules.Srd5/src/session_zones.cpp:2440
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4642 src/OpenGold.Rules.Original/src/combat_session.cpp:4666 src/OpenGold.Rules.Srd5/src/session_zones.cpp:2447
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is slowed."
 msgstr "{name} is slowed."
@@ -17834,7 +17834,7 @@ msgstr "{name} is stronger."
 msgid "{name} is struck by an energy bolt."
 msgstr "{name} is struck by an energy bolt."
 
-#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2213
+#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2220
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is struck by the {color} ray."
 msgstr "{name} is struck by the {color} ray."
@@ -18084,7 +18084,7 @@ msgstr "{name} moves {target} {feet} feet."
 msgid "{name} must obey {caster}'s Command: {option}."
 msgstr "{name} must obey {caster}'s Command: {option}."
 
-#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2357
+#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2364
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} overchannels the spell."
 msgstr "{name} overchannels the spell."
@@ -18249,7 +18249,7 @@ msgstr "{name} resists dispel evil."
 msgid "{name} retaliates."
 msgstr "{name} retaliates."
 
-#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2504
+#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2511
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} retches in the cloud and can take no action this turn."
 msgstr "{name} retches in the cloud and can take no action this turn."
@@ -18379,7 +18379,7 @@ msgstr "{name} sets a delayed blast fireball."
 msgid "{name} shakes off the confusion this turn (d10 {roll})."
 msgstr "{name} shakes off the confusion this turn (d10 {roll})."
 
-#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2754
+#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2761
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} shakes off the contagion."
 msgstr "{name} shakes off the contagion."
@@ -18404,17 +18404,17 @@ msgstr "{name} shares {damage} damage through Warding Bond."
 msgid "{name} shines."
 msgstr "{name} shines."
 
-#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2640
+#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2647
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} siphons life."
 msgstr "{name} siphons life."
 
-#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:3189
+#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:3196
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} slams into an obstacle and takes {damage} Bludgeoning damage."
 msgstr "{name} slams into an obstacle and takes {damage} Bludgeoning damage."
 
-#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2477 src/OpenGold.Rules.Srd5/src/session_zones.cpp:2924
+#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2484 src/OpenGold.Rules.Srd5/src/session_zones.cpp:2931
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} slips and falls Prone."
 msgstr "{name} slips and falls Prone."
@@ -18594,7 +18594,7 @@ msgstr "{name} takes {damage} Acid damage from the splash."
 msgid "{name} takes {damage} Acid damage from the vitriol."
 msgstr "{name} takes {damage} Acid damage from the vitriol."
 
-#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2270
+#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2277
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} takes {damage} Bludgeoning damage from the fall."
 msgstr "{name} takes {damage} Bludgeoning damage from the fall."
@@ -18604,7 +18604,7 @@ msgstr "{name} takes {damage} Bludgeoning damage from the fall."
 msgid "{name} takes {damage} Bludgeoning damage from the tentacles."
 msgstr "{name} takes {damage} Bludgeoning damage from the tentacles."
 
-#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:3096
+#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:3103
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} takes {damage} Bludgeoning damage from the tsunami."
 msgstr "{name} takes {damage} Bludgeoning damage from the tsunami."
@@ -18689,7 +18689,7 @@ msgstr "{name} takes {damage} Necrotic damage from the curse."
 msgid "{name} takes {damage} Necrotic damage from the thorns."
 msgstr "{name} takes {damage} Necrotic damage from the thorns."
 
-#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2880
+#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2887
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} takes {damage} Piercing damage from the spikes."
 msgstr "{name} takes {damage} Piercing damage from the spikes."
@@ -18744,7 +18744,7 @@ msgstr "{name} takes {damage} Radiant damage from Sear Undead."
 msgid "{name} takes {damage} Radiant damage from the Guardian of Faith."
 msgstr "{name} takes {damage} Radiant damage from the Guardian of Faith."
 
-#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2870
+#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2877
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} takes {damage} Radiant damage from the Moonbeam."
 msgstr "{name} takes {damage} Radiant damage from the Moonbeam."
@@ -18809,7 +18809,7 @@ msgstr "{name} takes {damage} {type} damage from the spirit guardians."
 msgid "{name} takes {damage} {type} damage from {source}."
 msgstr "{name} takes {damage} {type} damage from {source}."
 
-#: src/OpenGold.Rules.Srd5/src/session_attacks.cpp:2103 src/OpenGold.Rules.Srd5/src/session_dispatch.cpp:422 src/OpenGold.Rules.Srd5/src/session_dispatch.cpp:475 src/OpenGold.Rules.Srd5/src/session_items.cpp:936 src/OpenGold.Rules.Srd5/src/session_monsters.cpp:110 src/OpenGold.Rules.Srd5/src/session_monsters.cpp:417 src/OpenGold.Rules.Srd5/src/session_monsters.cpp:495 src/OpenGold.Rules.Srd5/src/session_monsters.cpp:850 src/OpenGold.Rules.Srd5/src/session_spells.cpp:1594 src/OpenGold.Rules.Srd5/src/session_spells.cpp:1635 src/OpenGold.Rules.Srd5/src/session_spells.cpp:2438 src/OpenGold.Rules.Srd5/src/session_spells.cpp:3630 src/OpenGold.Rules.Srd5/src/session_spells.cpp:487 src/OpenGold.Rules.Srd5/src/session_zones.cpp:2223 src/OpenGold.Rules.Srd5/src/session_zones.cpp:2967 src/OpenGold.Rules.Srd5/src/session_zones.cpp:545 src/OpenGold.Rules.Srd5/src/session_zones.cpp:556
+#: src/OpenGold.Rules.Srd5/src/session_attacks.cpp:2103 src/OpenGold.Rules.Srd5/src/session_dispatch.cpp:422 src/OpenGold.Rules.Srd5/src/session_dispatch.cpp:475 src/OpenGold.Rules.Srd5/src/session_items.cpp:936 src/OpenGold.Rules.Srd5/src/session_monsters.cpp:110 src/OpenGold.Rules.Srd5/src/session_monsters.cpp:417 src/OpenGold.Rules.Srd5/src/session_monsters.cpp:495 src/OpenGold.Rules.Srd5/src/session_monsters.cpp:850 src/OpenGold.Rules.Srd5/src/session_spells.cpp:1594 src/OpenGold.Rules.Srd5/src/session_spells.cpp:1635 src/OpenGold.Rules.Srd5/src/session_spells.cpp:2438 src/OpenGold.Rules.Srd5/src/session_spells.cpp:3630 src/OpenGold.Rules.Srd5/src/session_spells.cpp:487 src/OpenGold.Rules.Srd5/src/session_zones.cpp:2230 src/OpenGold.Rules.Srd5/src/session_zones.cpp:2974 src/OpenGold.Rules.Srd5/src/session_zones.cpp:545 src/OpenGold.Rules.Srd5/src/session_zones.cpp:556
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} takes {damage} {type} damage."
 msgstr "{name} takes {damage} {type} damage."
@@ -19129,7 +19129,7 @@ msgstr "{name} uses Stone's Endurance: {damage} less damage."
 msgid "{name} uses Storm's Thunder: {target} takes {damage} Thunder damage."
 msgstr "{name} uses Storm's Thunder: {target} takes {damage} Thunder damage."
 
-#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2821
+#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2828
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} uses Superior Hunter's Defense: Resistance to {type} damage this turn."
 msgstr "{name} uses Superior Hunter's Defense: Resistance to {type} damage this turn."
@@ -19334,7 +19334,7 @@ msgstr "{name}'s aura shields its allies (Smite of Protection)."
 msgid "{name}'s blade bursts into flame."
 msgstr "{name}'s blade bursts into flame."
 
-#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2759
+#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2766
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name}'s contagion takes hold for seven days."
 msgstr "{name}'s contagion takes hold for seven days."
@@ -19379,12 +19379,12 @@ msgstr "{name}'s simulacrum"
 msgid "{name}'s soul returns to its body."
 msgstr "{name}'s soul returns to its body."
 
-#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2567
+#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2574
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name}'s spell dissipates."
 msgstr "{name}'s spell dissipates."
 
-#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2597
+#: src/OpenGold.Rules.Srd5/src/session_zones.cpp:2604
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name}'s spell fails under Slow."
 msgstr "{name}'s spell fails under Slow."

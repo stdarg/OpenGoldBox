@@ -28,7 +28,7 @@ bool cast_in_combat(const SpellDef &spell)
 
 void every_spell_cast_in_combat_has_its_own_look()
 {
-    for (const auto &spell : spell_table)
+    for (const auto &spell : spell_table())
     {
         const auto *effect = spell_effect_for_verb(spell.id);
         const bool has_row = effect && effect->spell == spell.id;

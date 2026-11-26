@@ -2899,7 +2899,7 @@ class Module final : public RulesModule, public RestResourceRules
                 }
             }
         }
-        for (const auto &spell : detail::spell_table)
+        for (const auto &spell : detail::spell_table())
         {
             // Aid's and Death Ward's eight hours outlast a fight, so they are
             // cast in camp too; so is Remove Curse, as in the original, to put
@@ -2926,7 +2926,7 @@ class Module final : public RulesModule, public RestResourceRules
                 // A slot for Contingency, and another for the stored spell.
                 auto after = actor;
                 --after.slots[lowest_slot(actor, 6)];
-                for (const auto &stored : detail::spell_table)
+                for (const auto &stored : detail::spell_table())
                 {
                     if (contingent(stored) && detail::knows_spell(d.spells, stored.id) &&
                         lowest_slot(after, stored.level))
@@ -3711,7 +3711,7 @@ class Module final : public RulesModule, public RestResourceRules
                 detail::apply_spell_benefit(
                     caster.effects, detail::EffectSource{.scope = 1, .actor = 1}, user_name,
                     detail::EffectKind::contingency,
-                    static_cast<int>(stored - detail::spell_table.data()) * 4 +
+                    static_cast<int>(stored - detail::spell_table().data()) * 4 +
                         static_cast<int>(trigger - detail::contingency_triggers.begin()));
             }
             user_state = vitals(caster);

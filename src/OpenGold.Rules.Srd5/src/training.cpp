@@ -1195,7 +1195,7 @@ TrainingChoiceGroup discovery_options(std::span<const FeatureGrant> grants,
                               {},
                               TrainingChoiceControl::checkboxes};
     group.acquired_level = 6;
-    for (const auto &spell : spell_table)
+    for (const auto &spell : spell_table())
     {
         if (spell.level <= 3 && !has_grant(grants, "spell:" + std::string(spell.id)) &&
             std::find(prepared.begin(), prepared.end(), spell.id) == prepared.end() &&
@@ -1219,7 +1219,7 @@ TrainingChoiceGroup arcanum_options(unsigned level)
                               {},
                               TrainingChoiceControl::single_selection};
     group.acquired_level = level;
-    for (const auto &spell : spell_table)
+    for (const auto &spell : spell_table())
     {
         if (spell.level == (level + 1) / 2 && on_class_list(CharacterClass::warlock, spell.id))
         {

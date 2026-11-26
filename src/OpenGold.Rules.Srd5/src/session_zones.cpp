@@ -2152,7 +2152,14 @@ void Session::fire_contingency(Actor &a)
     {
         return;
     }
-    const auto &spell = detail::spell_table.at(static_cast<std::size_t>(stored->dc / 4));
+    // std::span has no at() before C++26: check the stored place as at() did.
+    const auto spells = detail::spell_table();
+    const auto stored_place = static_cast<std::size_t>(stored->dc / 4);
+    if (stored_place >= spells.size())
+    {
+        throw std::out_of_range("contingency: no spell at the stored place");
+    }
+    const auto &spell = spells[stored_place];
     a.effects.active.erase(stored);
     log("Contingency: " + std::string(spell.label) + " takes effect on " + a.source.name + ".",
         {"Contingency: {spell} takes effect on {name}.",

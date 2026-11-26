@@ -73,7 +73,7 @@ Definition character_definition(std::string_view bytes,
     in >> magic >> level >> features >> listed;
     // Untrusted input: bound the list and require every id to be a supported
     // spell before anything else looks at it.
-    if (!in || magic != profile_magic || listed > detail::spell_table.size())
+    if (!in || magic != profile_magic || listed > detail::spell_table().size())
     {
         throw std::runtime_error("Invalid character profile");
     }
