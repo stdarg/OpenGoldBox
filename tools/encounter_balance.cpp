@@ -27,22 +27,29 @@ using por::MapCatalog;
 
 namespace
 {
-// The content pack to test; an alternative pack compares candidate conversions.
-std::filesystem::path content_pack =
-    std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/rules/srd-5.2.1/combat.rules";
-
-std::unique_ptr<rules::RulesModule> module()
+// What the fights read, built once in main: the content pack's text, and the
+// game's creature records and export, so the fights stage what the game's do.
+struct ToolContext
 {
-    // Read once per pack; each fight's demo owns a module parsed from the text.
-    static std::filesystem::path read_from;
-    static std::string content;
-    if (read_from != content_pack)
+    std::string rules_content;
+    por::CreatureCatalog creatures;
+    por::MonsterBundle monsters;
+
+    // Each fight's demo owns a module parsed from the text.
+    [[nodiscard]] std::unique_ptr<rules::RulesModule> module() const
     {
-        std::ifstream in(content_pack, std::ios::binary);
-        content.assign(std::istreambuf_iterator<char>(in), {});
-        read_from = content_pack;
+        return srd5::parse_content(rules_content);
     }
-    return srd5::parse_content(content);
+};
+
+ToolContext tool_context(const std::filesystem::path &game_directory,
+                         const std::filesystem::path &content_pack)
+{
+    std::ifstream in(content_pack, std::ios::binary);
+    return {std::string{std::istreambuf_iterator<char>(in), {}},
+            por::CreatureCatalog::load(game_directory),
+            por::load_monster_bundle(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/monsters",
+                                     {}, test::png_size_only)};
 }
 
 // Abilities from best roll to worst.
@@ -131,9 +138,9 @@ Character create(const Member &member, std::uint64_t seed)
 }
 
 // Six created characters with their gear equipped, at level 1 or 2.
-std::shared_ptr<CampaignParty> party_of(bool mixed, unsigned level)
+std::shared_ptr<CampaignParty> party_of(const ToolContext &context, bool mixed, unsigned level)
 {
-    auto party = std::make_shared<CampaignParty>(module());
+    auto party = std::make_shared<CampaignParty>(context.module());
     std::uint64_t seed = 1;
     for (const auto &member : composition(mixed))
     {
@@ -163,33 +170,18 @@ std::shared_ptr<CampaignParty> party_of(bool mixed, unsigned level)
     return party;
 }
 
-// The game's creature records and export, so the fights stage what the game's do.
-std::filesystem::path game_directory;
-
-const por::CreatureCatalog &game_creatures()
-{
-    static const auto catalog = por::CreatureCatalog::load(game_directory);
-    return catalog;
-}
-
-const por::MonsterBundle &game_monsters()
-{
-    static const auto monsters = por::load_monster_bundle(
-        std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/monsters", {}, test::png_size_only);
-    return monsters;
-}
-
 // A Slums (bank 2) creature, staged as the game stages it.
-rules::Participant game_fighter(rules::EntityId id, std::string definition, unsigned record)
+rules::Participant game_fighter(const ToolContext &context, rules::EntityId id,
+                                std::string definition, unsigned record)
 {
-    const auto original = game_creatures().find({2, static_cast<std::uint8_t>(record)});
+    const auto original = context.creatures.find({2, static_cast<std::uint8_t>(record)});
     if (!original)
     {
         throw std::runtime_error("Missing original creature " + std::to_string(record));
     }
     auto name = definition + " " + std::to_string(id);
     return por::staged_fighter(id, std::move(definition), std::move(name), rules::Side::opposition,
-                               original->get(), game_monsters().creature(2, record),
+                               original->get(), context.monsters.creature(2, record),
                                default_difficulty);
 }
 
@@ -271,13 +263,13 @@ struct Place
     unsigned x{}, y{};
 };
 
-Tally play(const PartyState &start, const std::vector<Group> &groups, const GeoMap &map, Place cell,
-           unsigned seeds)
+Tally play(const ToolContext &context, const PartyState &start, const std::vector<Group> &groups,
+           const GeoMap &map, Place cell, unsigned seeds)
 {
     Tally tally;
     for (unsigned seed = 1; seed <= seeds; ++seed)
     {
-        auto party = std::make_shared<CampaignParty>(module());
+        auto party = std::make_shared<CampaignParty>(context.module());
         party->restore(start);
         CampaignEncounter fight;
         fight.field = por::dungeon_battlefield(map, cell.x, cell.y);
@@ -286,10 +278,11 @@ Tally play(const PartyState &start, const std::vector<Group> &groups, const GeoM
         {
             for (unsigned n = 0; n < group.count; ++n, ++next)
             {
-                fight.enemies.push_back(game_fighter(next, group.definition, group.record));
+                fight.enemies.push_back(
+                    game_fighter(context, next, group.definition, group.record));
             }
         }
-        CombatDemo combat(module());
+        CombatDemo combat(context.module());
         combat.campaign_party(party);
         combat.encounter(fight, seed);
         // One snapshot a command: the outcome and the AI's choice both read it.
@@ -336,11 +329,11 @@ int main(int argc, char **argv)
             return 2;
         }
         const unsigned seeds = argc > 2 ? static_cast<unsigned>(std::stoul(argv[2])) : 40;
-        if (argc > 3)
-        {
-            content_pack = argv[3];
-        }
-        game_directory = argv[1];
+        // The content pack to test; an alternative pack compares candidate conversions.
+        const auto content_pack = argc > 3 ? std::filesystem::path(argv[3])
+                                           : std::filesystem::path(OPENGOLD_SOURCE_DIR) /
+                                                 "data/rules/srd-5.2.1/combat.rules";
+        const auto context = tool_context(argv[1], content_pack);
         const auto maps = MapCatalog::load(argv[1]);
         const auto slums = maps.find({"GEO2.DAX", 20});
         if (!slums)
@@ -354,7 +347,7 @@ int main(int argc, char **argv)
             for (const bool mixed : {false, true})
             {
                 const unsigned members = 6;
-                const auto party = party_of(mixed, level);
+                const auto party = party_of(context, mixed, level);
                 const auto start = party->checkpoint();
                 const unsigned strength = por::party_strength(*party);
                 for (const bool rope_guild : {false, true})
@@ -372,7 +365,7 @@ int main(int argc, char **argv)
                             }
                             // Where the route met each kind of fight.
                             const Place cell = rope_guild ? Place{6, 14} : Place{14, 7};
-                            const auto t = play(start, groups, slums->get(), cell, seeds);
+                            const auto t = play(context, start, groups, slums->get(), cell, seeds);
                             std::printf("%5u %-8s %-8s %-8s %9u %8u  %-36s %4.0f %7.2f %4.2f "
                                         "%8.0f\n",
                                         level, mixed ? "mixed" : "fighters",
