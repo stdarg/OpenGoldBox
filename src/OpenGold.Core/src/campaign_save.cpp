@@ -718,21 +718,15 @@ template <bool Reading> struct SaveCodec
         std::string rng;
         if constexpr (!reading)
         {
-            std::ostringstream out;
-            out.imbue(std::locale::classic());
-            out << v.random_;
-            rng = out.str();
+            rng = v.random_.state_text();
         }
         field(rng);
         if constexpr (reading)
         {
             require(v.image_.size() == v.program_->raw().size(), "Script image size mismatch");
-            std::istringstream in(rng);
-            in.imbue(std::locale::classic());
-            in >> v.random_;
-            require(static_cast<bool>(in), "Invalid saved script RNG");
-            in >> std::ws;
-            require(in.eof(), "Trailing script RNG data");
+            const auto dice = MersenneTwister::from_state_text(rng);
+            require(dice.has_value(), "Invalid saved script RNG");
+            v.random_ = *dice;
             v.state_ = por::EclState::completed;
             v.pending_.reset();
             v.destination_.reset();

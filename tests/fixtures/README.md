@@ -29,3 +29,9 @@ therefore have nothing left to verify and were removed. Tests build campaigns
 and combat checkpoints with the current writer and check that they round-trip,
 and check that an older format is rejected. Save files that Godot checks
 byte-compare are written by the native tests into the build directory.
+
+`mt19937-libcxx-5489-1000.txt` and `mt19937-libstdcxx-5489-1000.txt` are the
+text `std::mt19937` writes after seed 5489 and 1,000 draws, from libc++ (Apple
+clang) and from libstdc++ (GCC 13): 624 words, and 624 words with the
+position. Saves made before the project owned its script dice hold one of
+these forms; `opengold_mersenne_twister_tests` reads both.

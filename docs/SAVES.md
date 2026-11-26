@@ -99,7 +99,8 @@ its win for `opengold_winner_bank_matrix_from_countdown`.
 Until 1.0, every save kind has exactly one accepted format, and it always writes
 every field:
 
-- Campaign saves (`.ogs`): header `OPENGOLD-CAMPAIGN 50` (`campaign_format` in
+- Campaign saves (`.ogs`): header `OPENGOLD-CAMPAIGN 53`, *Dark Queen of
+  Krynn* 54 and *Matrix Cubed* 55 (`campaign_format` and its neighbours in
   `campaign_save.cpp`). Format 45 records the class each level was taken in
   (multiclassing, [MULTI-1](SRD-DECISIONS.md#multi-1-2026-11-05-multiclassing)).
   Format 47 adds each creation draft's rules data, where the original rules
@@ -115,6 +116,13 @@ every field:
   each level-up rolled (`AdvancementChoice::rules_data`: under the original
   rules the classes trained and the Hit Dice's total), so a saved level is
   made again the same; SRD levels roll nothing, so a format 49 save loads.
+  The script machine's dice are saved as their 624 state words and the
+  position of the next one (`MersenneTwister::state_text`), the same on every
+  platform. Saves made before the project owned these dice hold the standard
+  library's text for `std::mt19937`, which differs between platforms (libc++
+  and MSVC write 624 words, libstdc++ also the position); both forms load
+  everywhere, and a Linux save is written again byte for byte. The format
+  number did not change.
 - The internal training-combat checkpoint: `OGCOMBAT 77` (`checkpoint_format`
   in `srd5.cpp`); 76 keeps each class's resource counts apart, 77 records
   whether a member attacked its own side (Attack Ally).

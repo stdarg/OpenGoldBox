@@ -227,6 +227,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/dark_queen_import.cpp
     src/OpenGold.Core/src/original_content.cpp
     src/OpenGold.Core/src/ecl_machine.cpp
+    src/OpenGold.Core/src/mersenne_twister.cpp
     src/OpenGold.Core/src/por_effects.cpp
     src/OpenGold.Core/src/rolf_tour.cpp
     src/OpenGold.Core/src/phlan_session.cpp
@@ -1101,6 +1102,11 @@ if(OPENGOLD_BUILD_TESTS)
     add_executable(opengold_ecl_tests tests/ecl_tests.cpp)
     target_link_libraries(opengold_ecl_tests PRIVATE opengold_core)
     add_test(NAME opengold_ecl_tests COMMAND opengold_ecl_tests)
+    add_executable(opengold_mersenne_twister_tests tests/mersenne_twister_tests.cpp)
+    target_link_libraries(opengold_mersenne_twister_tests PRIVATE opengold_core)
+    target_compile_definitions(opengold_mersenne_twister_tests PRIVATE
+        OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_mersenne_twister_tests COMMAND opengold_mersenne_twister_tests)
     add_executable(opengold_wilderness_field_tests tests/wilderness_field_tests.cpp)
     target_link_libraries(opengold_wilderness_field_tests PRIVATE opengold_core)
     add_test(NAME opengold_wilderness_field_tests COMMAND opengold_wilderness_field_tests)

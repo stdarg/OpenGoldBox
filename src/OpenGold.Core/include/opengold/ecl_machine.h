@@ -2,12 +2,12 @@
 #define OPENGOLD_ECL_MACHINE_H
 #include "opengold/ecl.h"
 #include "opengold/ecl_address.h"
+#include "opengold/mersenne_twister.h"
 #include <filesystem>
 #include <compare>
 #include <map>
 #include <memory>
 #include <optional>
-#include <random>
 #include <set>
 #include <span>
 
@@ -197,12 +197,12 @@ class EclMachine
 
     // The dice's state, to roll ahead and take the rolls back (a rest's
     // interruption foreseen before its spells are chosen).
-    [[nodiscard]] std::mt19937 dice_state() const
+    [[nodiscard]] MersenneTwister dice_state() const
     {
         return random_;
     }
 
-    void restore_dice(const std::mt19937 &state)
+    void restore_dice(const MersenneTwister &state)
     {
         random_ = state;
     }
@@ -237,7 +237,7 @@ class EclMachine
     // rollback point does, takes one allocation for them.
     std::vector<std::pair<std::uint16_t, std::uint16_t>> variables_;
     std::vector<std::uint8_t> image_;
-    std::mt19937 random_{5489U}; // Reproducible OpenGoldBox RNG, not the DOS RNG sequence.
+    MersenneTwister random_{5489U}; // Reproducible OpenGoldBox RNG, not the DOS RNG sequence.
     std::set<std::uint8_t> host_opcodes_;
     std::vector<std::pair<std::uint16_t, std::uint16_t>> ignored_cells_;
     std::vector<std::pair<std::uint16_t, std::uint16_t>> aliases_;
