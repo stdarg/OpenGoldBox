@@ -1,4 +1,5 @@
 #include "opengold/buck_rogers_battlefield.h"
+#include "opengold/directions.h"
 
 #include <array>
 #include <cmath>
@@ -125,9 +126,8 @@ class PascalRandom
     std::uint32_t seed_;
 };
 
-// The eight directions from north, clockwise (gdconsts.pas dirStepX, dirStepY).
+// The eight directions from north, clockwise (opengold/directions.h).
 constexpr unsigned north = 0, east = 2, west = 6;
-constexpr std::array<int, 8> step_x{0, 1, 1, 1, 0, -1, -1, -1}, step_y{-1, -1, 0, 1, 1, 1, 0, -1};
 
 // The wall kind on a square's side (combatst.pas WallBetween's GetWallKind):
 // 0 open, 1 a wall no one passes, 3 a wall with a way through. Off the map
@@ -151,7 +151,8 @@ unsigned wall_between(const GeoMap &map, int x, int y, unsigned direction, unsig
 {
     const auto opposite = (direction + 4) % 8;
     return side_kind(map, x, y, direction, party_y) |
-           side_kind(map, x + step_x[direction], y + step_y[direction], opposite, party_y);
+           side_kind(map, x + directions::step_x[direction], y + directions::step_y[direction],
+                     opposite, party_y);
 }
 
 // The indoor arena (combatst.pas BuildDungeonArena): floor, the decoration

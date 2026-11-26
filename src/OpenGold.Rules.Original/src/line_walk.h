@@ -1,9 +1,9 @@
 #ifndef OPENGOLD_ORIGINAL_LINE_WALK_H
 #define OPENGOLD_ORIGINAL_LINE_WALK_H
+#include "opengold/directions.h"
 #include "opengold/rules.h"
 
 #include <algorithm>
-#include <array>
 #include <cstdlib>
 
 // The original's lines across the battlefield (pathing.pas): a line walked a
@@ -64,8 +64,8 @@ struct LineWalk
 [[nodiscard]] bool clear_line(const rules::Battlefield &board, rules::Cell from, rules::Cell to);
 
 // The original's eight directions: 0 north and clockwise to 7 north-west.
-inline constexpr std::array<int, 8> step_x{0, 1, 1, 1, 0, -1, -1, -1};
-inline constexpr std::array<int, 8> step_y{-1, -1, 0, 1, 1, 1, 0, -1};
+using opengold::por::directions::step_x;
+using opengold::por::directions::step_y;
 
 // Whether a direction leads from one cell toward another.
 [[nodiscard]] bool leads_toward(rules::Cell from, rules::Cell to, int direction);
