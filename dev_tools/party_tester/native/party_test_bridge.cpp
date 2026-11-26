@@ -394,13 +394,13 @@ String PartyTestBridge::set_level(int level)
                                          {
                                              return m.id == id;
                                          });
-            if (member.character.sheet().level > static_cast<unsigned>(level))
+            if (member.character.sheet().level > level)
             {
                 throw std::runtime_error("The party is above that level; build it again first");
             }
-            member.experience = std::max<std::uint64_t>(
-                member.experience,
-                party().rule_module().experience_for_level(static_cast<unsigned>(level)));
+            member.experience =
+                std::max(member.experience,
+                         party().rule_module().experience_for_level(static_cast<unsigned>(level)));
         }
         party().restore(std::move(state));
         return {};
