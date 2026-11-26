@@ -521,7 +521,7 @@ std::string details(const settings::Settings &settings, const Character &charact
             }
         }
     }
-    text += presentation::training_summary(s.training, i18n::text).utf8().get_data();
+    text += presentation::training_summary(s.training).utf8().get_data();
     return text;
 }
 } // namespace

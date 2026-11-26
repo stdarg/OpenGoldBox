@@ -1,0 +1,71 @@
+#include "cantrip_control.h"
+#include "godot_nodes.h"
+#include "localization.h"
+#include "training_control.h"
+#include <godot_cpp/classes/check_box.hpp>
+#include <godot_cpp/classes/label.hpp>
+#include <godot_cpp/classes/v_box_container.hpp>
+#include <algorithm>
+#include <string>
+#include <vector>
+
+namespace presentation
+{
+void refresh_cantrip_controls(godot::Node &parent, const opengold::CharacterCreator &creator,
+                              const godot::Callable &toggled)
+{
+    using namespace godot;
+    auto *rows = &required_node<VBoxContainer>(parent, "SpellChoices/Rows");
+    const auto group = creator.cantrip_options();
+    static const std::vector<std::string> none;
+    const auto &picked = creator.draft().cantrips ? *creator.draft().cantrips : none;
+    required_node<Label>(*rows, "Count")
+        .set_text(i18n::text(group.label) + " (" + String::num_uint64(picked.size()) + " / " +
+                  String::num_uint64(group.count) + ")");
+    required_node<Label>(*rows, "Pending")
+        .set_text(i18n::text(N_(
+            "Unfilled cantrip choices remain pending. More choices will become available as spell support expands.")));
+    // A Paladin prepares spells without learning cantrips.
+    required_node<Label>(*rows, "Count").set_visible(group.count > 0);
+    required_node<Label>(*rows, "Pending").set_visible(picked.size() < group.count);
+    for (int i = 0; i < rows->get_child_count(); ++i)
+    {
+        if (auto *check = Object::cast_to<CheckBox>(rows->get_child(i)))
+        {
+            const auto id = check->get_name();
+            if (std::none_of(group.options.begin(), group.options.end(),
+                             [&](const auto &option)
+                             {
+                                 return training_string(option.id) == id;
+                             }))
+            {
+                check->hide();
+            }
+        }
+    }
+    // The screen is reused from character to character, so a cantrip's row can
+    // be new after the spell lists an earlier class built; it moves up under
+    // its heading.
+    auto position = required_node<Label>(*rows, "Pending").get_index() + 1;
+    for (const auto &option : group.options)
+    {
+        const auto name = training_string(option.id);
+        auto *check = Object::cast_to<CheckBox>(rows->get_node_or_null(name));
+        if (!check)
+        {
+            auto owned =
+                instantiate_control<CheckBox>("res://scenes/control_templates/cantrip_choice.tscn");
+            owned->set_name(name);
+            check = attach_child(*rows, std::move(owned));
+            check->connect("toggled", toggled.bind(name));
+        }
+        rows->move_child(check, position++);
+        const bool selected = std::find(picked.begin(), picked.end(), option.id) != picked.end();
+        check->show();
+        check->set_text(i18n::text(option.label));
+        check->set_tooltip_text(i18n::text(option.description));
+        check->set_pressed_no_signal(selected);
+        check->set_disabled(!selected && picked.size() >= group.count);
+    }
+}
+} // namespace presentation

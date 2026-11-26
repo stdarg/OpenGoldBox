@@ -862,27 +862,25 @@ void CharacterCreationView::refresh()
     {
         presentation::refresh_training_controls(
             *this, *creator_, presentation::guarded(this, &CharacterCreationView::training_toggled),
-            i18n::text, {}, true);
+            {}, true);
     }
     if (step == CreationStep::training)
     {
         presentation::refresh_training_controls(
-            *this, *creator_, presentation::guarded(this, &CharacterCreationView::training_toggled),
-            i18n::text);
+            *this, *creator_,
+            presentation::guarded(this, &CharacterCreationView::training_toggled));
         instructions = N_("Choose the required training options. Back preserves your selections.");
     }
     static const opengold::rules::SpellChoices no_spells;
     if (step == CreationStep::spell_choices)
     {
         presentation::refresh_cantrip_controls(
-            *this, *creator_, presentation::guarded(this, &CharacterCreationView::cantrip_toggled),
-            i18n::text);
+            *this, *creator_, presentation::guarded(this, &CharacterCreationView::cantrip_toggled));
         auto *book = presentation::spell_rows(
             required_node<VBoxContainer>(*this, "SpellChoices/Rows"), "BookChoices");
         presentation::refresh_spell_groups(
             *book, creator_->spell_choice_options(), d.spells ? *d.spells : no_spells,
-            presentation::guarded(this, &CharacterCreationView::creation_spell_toggled),
-            i18n::text);
+            presentation::guarded(this, &CharacterCreationView::creation_spell_toggled));
         presentation::equalize_choice_widths(required_node<Control>(*this, "SpellChoices"));
         instructions =
             d.spells && (d.character_class == "paladin" || d.character_class == "ranger")

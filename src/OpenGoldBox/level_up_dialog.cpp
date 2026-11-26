@@ -523,8 +523,7 @@ void LevelUpDialog::advancement_pages()
     } // Invalid edits remain visible; final preview reports the error.
     presentation::refresh_spell_groups(
         required_node<VBoxContainer>(*this, "SpellChoicesPage/Rows"), options, choices,
-        presentation::guarded(this, &LevelUpDialog::advancement_learning_toggled), i18n::text,
-        true);
+        presentation::guarded(this, &LevelUpDialog::advancement_learning_toggled), true);
 }
 
 // One checkbox per offered proficiency, prefixed so the two catalogs stay

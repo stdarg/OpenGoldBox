@@ -740,28 +740,25 @@ void CombatView::_ready()
 {
     combat_zoom_ = settings::combat_zoom_percent() / 100.0;
     i18n::prepare_ui(*this);
-    presentation::setup_nick(*this, i18n::text,
-                             presentation::guarded(this, &CombatView::begin_nick),
+    presentation::setup_nick(*this, presentation::guarded(this, &CombatView::begin_nick),
                              presentation::guarded(this, &CombatView::nick_selected),
                              presentation::guarded(this, &CombatView::confirm_nick),
                              presentation::guarded(this, &CombatView::cancel_nick),
                              presentation::guarded(this, &CombatView::nick_input));
     presentation::setup_initiative(
-        *this, i18n::text,
-        presentation::guarded(this, &CombatView::immediate).bind("initiative_swap"),
+        *this, presentation::guarded(this, &CombatView::immediate).bind("initiative_swap"),
         presentation::guarded(this, &CombatView::immediate).bind("initiative_keep"),
         presentation::guarded(this, &CombatView::immediate).bind("uncanny_metabolism"),
         presentation::guarded(this, &CombatView::initiative_input),
         presentation::guarded(this, &CombatView::refresh).unbind(1));
     presentation::setup_optional_effect(
-        *this, i18n::text, presentation::guarded(this, &CombatView::immediate).bind("effect_use"),
+        *this, presentation::guarded(this, &CombatView::immediate).bind("effect_use"),
         presentation::guarded(this, &CombatView::immediate).bind("effect_skip"),
         presentation::guarded(this, &CombatView::optional_effect_input),
         presentation::guarded(this, &CombatView::refresh).unbind(1));
-    presentation::setup_weapon_controls(*this, i18n::text,
+    presentation::setup_weapon_controls(*this,
                                         presentation::guarded(this, &CombatView::weapon_selected));
-    presentation::setup_ally_attack(*this, i18n::text,
-                                    presentation::guarded(this, &CombatView::attack_ally),
+    presentation::setup_ally_attack(*this, presentation::guarded(this, &CombatView::attack_ally),
                                     presentation::guarded(this, &CombatView::spare_ally),
                                     presentation::guarded(this, &CombatView::ally_attack_input));
     ready_ = true;
@@ -3746,32 +3743,12 @@ void CombatView::refresh()
     const auto *choice_actor = cunning_actor != s.combatants.end() && s.outcome == Outcome::ongoing
                                    ? &*cunning_actor
                                    : nullptr;
-    const bool weapon_layout = presentation::refresh_weapons(*this, choice_actor, player,
-                                                             [](const Message &message)
-                                                             {
-                                                                 return i18n::render(message);
-                                                             });
+    const bool weapon_layout = presentation::refresh_weapons(*this, choice_actor, player);
     const bool bonus_layout =
-        presentation::refresh_bonus_attacks(*this, choice_actor, offered, player, i18n::text,
-                                            [](const Message &message)
-                                            {
-                                                return i18n::render(message);
-                                            });
-    presentation::refresh_nick(*this, choice_actor, player && !s.reaction_pending,
-                               [](const Message &message)
-                               {
-                                   return i18n::render(message);
-                               });
-    presentation::refresh_initiative(*this, s, offered, i18n::text,
-                                     [](const Message &m)
-                                     {
-                                         return i18n::render(m);
-                                     });
-    presentation::refresh_optional_effect(*this, s.optional_effect_choice, player,
-                                          [](const Message &m)
-                                          {
-                                              return i18n::render(m);
-                                          });
+        presentation::refresh_bonus_attacks(*this, choice_actor, offered, player);
+    presentation::refresh_nick(*this, choice_actor, player && !s.reaction_pending);
+    presentation::refresh_initiative(*this, s, offered);
+    presentation::refresh_optional_effect(*this, s.optional_effect_choice, player);
     if (s.reaction_pending)
     {
         required_node<Button>(*this, "Nick").hide();

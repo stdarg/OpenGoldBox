@@ -36,7 +36,7 @@ void RolfTourView::setup_rest()
 {
     auto *spells = presentation::setup_spell_dialog(
         *this, "RestSpells", presentation::guarded(this, &RolfTourView::rest_spell_keep),
-        presentation::guarded(this, &RolfTourView::rest_spell_apply), i18n::text);
+        presentation::guarded(this, &RolfTourView::rest_spell_apply));
     presentation::required_node<Button>(*spells, "Cancel").set_text(i18n::text(N_("Keep current")));
     presentation::required_node<OptionButton>(*spells, "Replace")
         .connect("item_selected", presentation::guarded(this, &RolfTourView::rest_spell_replaced));
@@ -45,7 +45,7 @@ void RolfTourView::setup_rest()
     spells->connect("window_input", presentation::guarded(this, &RolfTourView::rest_spell_input));
     auto *training = presentation::setup_training_replacement(
         *this, presentation::guarded(this, &RolfTourView::rest_training_keep),
-        presentation::guarded(this, &RolfTourView::rest_training_apply), i18n::text);
+        presentation::guarded(this, &RolfTourView::rest_training_apply));
     training->connect("window_input",
                       presentation::guarded(this, &RolfTourView::rest_training_input));
     auto *training_save = presentation::dialog_control<Button>(*training, "Save");
@@ -1363,8 +1363,7 @@ void RolfTourView::refresh_rest_spells()
         preparation.insert(preparation.end(), section.preparation.begin(),
                            section.preparation.end());
     }
-    presentation::spell_known(*w, campaign_->rule_module().spell_access(sheet), preparation,
-                              i18n::text);
+    presentation::spell_known(*w, campaign_->rule_module().spell_access(sheet), preparation);
     // Clerics replace cantrips on gaining a level, not at a Long Rest.
     for (const char *name : {"ReplaceLabel", "WithLabel", "Replace", "With"})
     {
@@ -1372,7 +1371,7 @@ void RolfTourView::refresh_rest_spells()
     }
     presentation::refresh_spell_groups(
         presentation::required_node<VBoxContainer>(*w, "Choices/Rows"), options, rest_spell_choice_,
-        presentation::guarded(this, &RolfTourView::rest_spell_toggled), i18n::text);
+        presentation::guarded(this, &RolfTourView::rest_spell_toggled));
     for (bool replacing : {true, false})
     {
         auto *dropdown =
@@ -1515,8 +1514,7 @@ void RolfTourView::refresh_rest_training()
         .set_text(presentation::training_string(sheet.name) + " / " + labels);
     presentation::refresh_training_replacement(
         *w, std::span<const opengold::rules::TrainingReplacementOptions>(options),
-        rest_training_choice_, presentation::guarded(this, &RolfTourView::rest_training_toggled),
-        i18n::text);
+        rest_training_choice_, presentation::guarded(this, &RolfTourView::rest_training_toggled));
     try
     {
         (void)campaign_->preview_rest_training(rest.ticket, id, rest_training_choice_);
