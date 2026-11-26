@@ -6,6 +6,7 @@
 #include "opengold/original_game.h"
 #include "opengold/original_spells.h"
 #include "opengold/original_rules.h"
+#include "opengold/directions.h"
 #include "opengold/vga_picture.h"
 
 #include <algorithm>
@@ -217,18 +218,16 @@ void RolfTourSession::vga_area_step()
     const auto previous_column = champions ? game_cell(EclAddress{0x49F0}) : EclAddress{0x0017};
     const auto previous_row = champions ? game_cell(EclAddress{0x49F1}) : EclAddress{0x0018};
     constexpr int columns = 38, rows = 15;
-    // North and on clockwise to north-west (its dirDeltaX and dirDeltaY).
-    static constexpr std::array<int, 8> step_columns{0, 1, 1, 1, 0, -1, -1, -1},
-        step_rows{-1, -1, 0, 1, 1, 1, 0, -1};
     const auto direction = static_cast<std::size_t>(*pending_movement_) -
                            static_cast<std::size_t>(ExplorationCommand::north);
     const auto from_column = machine_.variable(column), from_row = machine_.variable(row);
     machine_.bind_variable(previous_column, from_column);
     machine_.bind_variable(previous_row, from_row);
-    machine_.bind_variable(column, static_cast<std::uint16_t>(std::clamp(
-                                       from_column + step_columns.at(direction), 0, columns - 1)));
-    machine_.bind_variable(row, static_cast<std::uint16_t>(
-                                    std::clamp(from_row + step_rows.at(direction), 0, rows - 1)));
+    machine_.bind_variable(
+        column, static_cast<std::uint16_t>(
+                    std::clamp(from_column + directions::step_x.at(direction), 0, columns - 1)));
+    machine_.bind_variable(row, static_cast<std::uint16_t>(std::clamp(
+                                    from_row + directions::step_y.at(direction), 0, rows - 1)));
     // A step on the area map takes half a day.
     if (campaign_)
     {

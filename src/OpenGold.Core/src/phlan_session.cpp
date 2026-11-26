@@ -4,6 +4,7 @@
 #include "host_services.h"
 #include "opengold/original_spells.h"
 #include "opengold/original_rules.h"
+#include "opengold/directions.h"
 #include "opengold/diagnostic_log.h"
 #include "opengold/creature_art.h"
 #include "opengold/script_secrets.h"
@@ -2590,10 +2591,10 @@ bool RolfTourSession::overland_step()
     const auto &world = *town_->overland;
     const auto direction = machine_.variable(game_cell(ecl_overland_direction)) % 8;
     const auto x = static_cast<unsigned>(std::clamp<int>(
-                   machine_.variable(game_cell(ecl_overland_x)) + overland_dx[direction], 0,
+                   machine_.variable(game_cell(ecl_overland_x)) + directions::step_x[direction], 0,
                    OverlandWorld::window_columns - 1)),
                y = static_cast<unsigned>(std::clamp<int>(
-                   machine_.variable(game_cell(ecl_overland_y)) + overland_dy[direction], 0,
+                   machine_.variable(game_cell(ecl_overland_y)) + directions::step_y[direction], 0,
                    OverlandWorld::rows - 1));
     switch (overland_passage(world.at(world.window_start[travel_mode_ - 2] + x, y)))
     {

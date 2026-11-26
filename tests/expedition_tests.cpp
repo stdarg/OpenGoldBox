@@ -7,6 +7,7 @@
 #include "opengold/campaign_save.h"
 #include "opengold/character_creator.h"
 #include "opengold/coin_purse.h"
+#include "opengold/directions.h"
 #include "opengold/ecl_party_host.h"
 #include "opengold/combat_demo.h"
 #include "opengold/random_treasure.h"
@@ -4307,8 +4308,8 @@ std::optional<unsigned> overland_heading(const por::RolfTourSession &town, unsig
         squares.pop();
         for (unsigned direction = 0; direction < 8; ++direction)
         {
-            const int nx = int(cx) + por::overland_dx[direction],
-                      ny = int(cy) + por::overland_dy[direction];
+            const int nx = int(cx) + por::directions::step_x[direction],
+                      ny = int(cy) + por::directions::step_y[direction];
             if (nx < first_column || ny < 0 || nx >= int(columns) || ny >= int(rows) ||
                 distance[ny * columns + nx] >= 0 || !open(unsigned(nx), unsigned(ny)) ||
                 closed_sites.contains({(window + 25) * 100 + unsigned(nx), unsigned(ny)}))
@@ -4321,8 +4322,8 @@ std::optional<unsigned> overland_heading(const por::RolfTourSession &town, unsig
     }
     for (unsigned direction = 0; direction < 8; ++direction)
     {
-        const int nx = int(from_x) + por::overland_dx[direction],
-                  ny = int(from_y) + por::overland_dy[direction];
+        const int nx = int(from_x) + por::directions::step_x[direction],
+                  ny = int(from_y) + por::directions::step_y[direction];
         if (nx >= 0 && ny >= 0 && nx < int(columns) && ny < int(rows) &&
             distance[ny * columns + nx] >= 0 &&
             distance[ny * columns + nx] < distance[from_y * columns + from_x])
@@ -5174,8 +5175,8 @@ void eastern_wilderness(const std::filesystem::path &directory)
     std::optional<unsigned> open_step;
     for (unsigned direction = 0; direction < 8 && !open_step; ++direction)
     {
-        const int nx = int(town.snapshot().overland_x) + por::overland_dx[direction],
-                  ny = int(town.snapshot().overland_y) + por::overland_dy[direction];
+        const int nx = int(town.snapshot().overland_x) + por::directions::step_x[direction],
+                  ny = int(town.snapshot().overland_y) + por::directions::step_y[direction];
         if (nx >= 3 && nx < 16 && ny >= 0 && ny < 36 &&
             !closed_sites.contains({2700 + unsigned(nx), unsigned(ny)}) &&
             por::overland_passage(world.at(world.window_start[2] + nx, ny)) ==

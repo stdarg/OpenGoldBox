@@ -4,7 +4,8 @@
 
 // The original games' eight directions (gdconsts.pas dirStepX, dirStepY): 0
 // north and clockwise to 7 north-west, north towards smaller y. The original
-// rules' line walk and the Buck Rogers ground arena number by this one table.
+// rules' line walk, the Buck Rogers ground arena, Pool of Radiance's overland
+// map and the 256-color games' area map number by this one table.
 namespace opengold::por::directions
 {
 inline constexpr std::array<int, 8> step_x{0, 1, 1, 1, 0, -1, -1, -1};

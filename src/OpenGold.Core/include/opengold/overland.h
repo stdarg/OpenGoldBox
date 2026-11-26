@@ -81,11 +81,6 @@ enum class OverlandPassage
 
 [[nodiscard]] OverlandPassage overland_passage(std::uint8_t tile) noexcept;
 
-// The squares eight directions step by: north, northeast, east, and on
-// clockwise.
-inline constexpr std::array<int, 8> overland_dx{0, 1, 1, 1, 0, -1, -1, -1},
-    overland_dy{-1, -1, 0, 1, 1, 1, 0, -1};
-
 // The 5 x 5 squares around the party, 24 pixels each, from SQRPACI's tiles
 // (tile n is art n - 1), with the party's icon on its square. `landmark` says
 // which of the nine landmarks shows its own tile now.
