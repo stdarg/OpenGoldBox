@@ -144,20 +144,12 @@ std::span<const P> dark_queen_professions(Race race)
     {
         return {};
     }
-    static const auto lists = []
-    {
-        std::array<std::vector<P>, 7> choices;
-        for (std::size_t race = 0; race < choices.size(); ++race)
+    static const auto lists = professions_by_race(
+        [](std::size_t race)
         {
-            const auto base = race * 15;
-            for (int at = 1; at <= data::race_classes[base]; ++at)
-            {
-                const int id = data::race_classes[base + at];
-                choices[race].push_back(id == 1 ? P::knight : static_cast<P>(id));
-            }
-        }
-        return choices;
-    }();
+            return std::span(data::race_classes).subspan(race * 15, 15);
+        },
+        1);
     return lists[krynn_race_index(race)];
 }
 
@@ -398,18 +390,16 @@ int dark_queen_hit_point_minimum(const ModifiedCharacter &character, int constit
 
 int dark_queen_thac0(const ClassLevels &levels)
 {
-    int best = 40;
-    for (std::size_t at = 0; at < levels.size(); ++at)
-    {
-        const auto slot = static_cast<C>(at);
-        if (levels[at] > 0 && slot != C::druid)
+    // A druid has no row here: its 0 never beats the floor of 40.
+    return best_thac0(
+        levels,
+        [](C slot, int level)
         {
-            best = std::max(
-                best,
-                data::attack_scores_by_level[native_slot(slot) * 22 + std::min(levels[at], 21)]);
-        }
-    }
-    return 60 - best;
+            return slot == C::druid
+                       ? 0
+                       : data::attack_scores_by_level[native_slot(slot) * 22 + std::min(level, 21)];
+        },
+        40);
 }
 
 namespace
@@ -503,19 +493,13 @@ void recalculate_dark_queen_numbers(rules::CharacterSheet::Original &numbers,
 
 std::vector<int> dark_queen_learning_spells(int robe, int highest)
 {
-    std::vector<int> result;
     const auto base = static_cast<std::size_t>(robe == 1 ? 1 : 2) * 90;
-    for (int level = 0; level < std::clamp(highest, 0, 9); ++level)
-    {
-        for (int at = 0; at < 10; ++at)
+    return learning_spells_by_level(
+        [base](std::size_t level)
         {
-            if (const auto own = data::spells_by_level[base + level * 10 + at])
-            {
-                result.push_back(canonical_spell(own, GoldBoxGame::dark_queen_of_krynn));
-            }
-        }
-    }
-    return result;
+            return std::span(data::spells_by_level).subspan(base + level * 10, 10);
+        },
+        9, highest, GoldBoxGame::dark_queen_of_krynn);
 }
 
 std::vector<int> dark_queen_starting_spells(int robe, const std::array<int, 9> &mage_slots)

@@ -80,20 +80,12 @@ std::span<const P> death_knights_professions(Race race)
         return {};
     }
     // Static value containers own the lists; returned spans borrow from them.
-    static const auto choices = []
-    {
-        std::array<std::vector<P>, 7> result;
-        for (std::size_t row = 0; row < result.size(); ++row)
+    static const auto choices = professions_by_race(
+        [](std::size_t race)
         {
-            const auto &native = data::raceClasses[row];
-            for (int at = 1; at <= native[0]; ++at)
-            {
-                const int id = native[static_cast<std::size_t>(at)];
-                result[row].push_back(id == 7 ? P::knight : static_cast<P>(id));
-            }
-        }
-        return result;
-    }();
+            return std::span<const int>(data::raceClasses[race]);
+        },
+        7);
     return choices[krynn_race_index(race)];
 }
 
@@ -232,15 +224,13 @@ int death_knights_caster_level(const ClassLevels &levels, SpellClass caster, int
 
 int death_knights_thac0(const ClassLevels &levels)
 {
-    int best = 40;
-    for (std::size_t at = 0; at < levels.size(); ++at)
-    {
-        if (levels[at] > 0)
+    return best_thac0(
+        levels,
+        [](C slot, int level)
         {
-            best = std::max(best, data::thac0Table[at][std::clamp(levels[at], 1, 18)]);
-        }
-    }
-    return 60 - best;
+            return data::thac0Table[static_cast<std::size_t>(slot)][std::clamp(level, 1, 18)];
+        },
+        40);
 }
 
 std::array<int, 5> death_knights_saving_throws(const ClassLevels &levels)
@@ -292,18 +282,13 @@ void recalculate_death_knights_numbers(rules::CharacterSheet::Original &numbers,
 
 std::vector<int> death_knights_learning_spells(int robe, int highest)
 {
-    std::vector<int> result;
-    for (int level = 0; level < std::clamp(highest, 0, 8); ++level)
-    {
-        for (const auto own : data::spellsByLevel[robe == 1 ? 1 : 2][level])
+    const auto &table = data::spellsByLevel[robe == 1 ? 1 : 2];
+    return learning_spells_by_level(
+        [&table](std::size_t level)
         {
-            if (const auto number = canonical_spell(own, GoldBoxGame::death_knights_of_krynn))
-            {
-                result.push_back(number);
-            }
-        }
-    }
-    return result;
+            return std::span(table[level]);
+        },
+        8, highest, GoldBoxGame::death_knights_of_krynn);
 }
 
 std::vector<int> death_knights_starting_spells(int robe, int mage_level)

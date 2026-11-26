@@ -295,16 +295,15 @@ int champions_thac0(const ClassLevels &levels)
          {39, 39, 39, 39, 39, 39, 41, 41, 41, 41, 41, 43, 43},
          {40, 40, 40, 40, 40, 41, 41, 41, 41, 44, 44, 44, 44},
          {40, 40, 40, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51}}};
-    int best = 0;
-    for (std::size_t slot = 0; slot < levels.size(); ++slot)
-    {
-        if (levels[slot] > 0)
+    // Its magic-user row starts at 39, so the best starts at 0 here, not 40.
+    return best_thac0(
+        levels,
+        [](C slot, int level)
         {
-            best =
-                std::max(best, stored[slot][static_cast<std::size_t>(std::min(levels[slot], 12))]);
-        }
-    }
-    return best ? 60 - best : 20;
+            return stored[static_cast<std::size_t>(slot)]
+                         [static_cast<std::size_t>(std::min(level, 12))];
+        },
+        0);
 }
 
 std::array<int, 5> champions_saving_throws(const ClassLevels &levels)
@@ -468,17 +467,11 @@ std::vector<int> champions_learning_spells(int robe, int highest_spell_level)
                                                             {45, 47, 48, 50, 51, 55},
                                                             {85, 87, 83, 84}}};
     const auto &table = robe == 1 ? white : red;
-    std::vector<int> spells;
-    for (int level = 0; level < std::clamp(highest_spell_level, 0, 4); ++level)
-    {
-        for (const auto own : table[static_cast<std::size_t>(level)])
+    return learning_spells_by_level(
+        [&table](std::size_t level)
         {
-            if (own)
-            {
-                spells.push_back(canonical_spell(own, GoldBoxGame::champions_of_krynn));
-            }
-        }
-    }
-    return spells;
+            return std::span(table[level]);
+        },
+        4, highest_spell_level, GoldBoxGame::champions_of_krynn);
 }
 } // namespace opengold::original
