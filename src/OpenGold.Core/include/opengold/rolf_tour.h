@@ -987,7 +987,7 @@ class RolfTourSession
     // The hall as the original runs it (chargen.pas, TrainingMenu): its
     // members, what one will become, and a magic-user's new spell.
     void show_original_hall(std::vector<opengold::rules::Message> notice);
-    void show_hall_menu(std::vector<opengold::rules::Message> dialogue,
+    void show_host_menu(std::vector<opengold::rules::Message> dialogue,
                         std::vector<opengold::rules::Message> choices);
     [[nodiscard]] bool choose_at_original_hall(const HallChoice &picked);
     bool choose_at_hall(std::size_t choice);

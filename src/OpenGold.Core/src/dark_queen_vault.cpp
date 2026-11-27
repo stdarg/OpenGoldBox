@@ -96,7 +96,7 @@ void RolfTourSession::show_dark_queen_vault(VaultMenu menu, std::vector<rules::M
         }
         add({"Back", {}}, {VaultAction::back});
     }
-    show_hall_menu(std::move(notice), std::move(choices));
+    show_host_menu(std::move(notice), std::move(choices));
 }
 
 bool RolfTourSession::choose_dark_queen_vault(std::size_t choice)

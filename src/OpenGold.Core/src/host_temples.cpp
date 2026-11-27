@@ -137,7 +137,7 @@ void RolfTourSession::show_temple(std::vector<Message> notice)
         }
         add({"Leave", {}}, {TempleChoice::Kind::leave});
     }
-    show_hall_menu(std::move(dialogue), std::move(choices));
+    show_host_menu(std::move(dialogue), std::move(choices));
 }
 
 bool RolfTourSession::choose_at_temple(std::size_t choice)

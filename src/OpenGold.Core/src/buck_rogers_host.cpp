@@ -1742,7 +1742,7 @@ void RolfTourSession::show_buck_rogers_menu(BuckRogersMenu::Kind kind,
         add({"Exit", {}}, Action::leave);
         break;
     }
-    show_hall_menu(std::move(dialogue), std::move(choices));
+    show_host_menu(std::move(dialogue), std::move(choices));
 }
 
 bool RolfTourSession::choose_in_buck_rogers_menu(std::size_t choice)

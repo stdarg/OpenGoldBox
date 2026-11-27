@@ -163,7 +163,7 @@ void RolfTourSession::show_hall(std::vector<Message> notice)
         }
         add({"Leave", {}}, {HallChoice::Kind::leave});
     }
-    show_hall_menu(std::move(dialogue), std::move(choices));
+    show_host_menu(std::move(dialogue), std::move(choices));
 }
 
 bool RolfTourSession::choose_at_hall(std::size_t choice)
@@ -291,7 +291,7 @@ constexpr std::array<std::pair<std::string_view, std::string_view>, 8> original_
      {"monk", "Monk"}}};
 } // namespace
 
-void RolfTourSession::show_hall_menu(std::vector<Message> dialogue, std::vector<Message> choices)
+void RolfTourSession::show_host_menu(std::vector<Message> dialogue, std::vector<Message> choices)
 {
     snapshot_.host_dialogue = dialogue;
     snapshot_.dialogue = english(dialogue);
@@ -352,7 +352,7 @@ void RolfTourSession::show_original_hall(std::vector<Message> notice)
         }
         add({"Leave", {}}, {HallChoice::Kind::leave});
     }
-    show_hall_menu(std::move(dialogue), std::move(choices));
+    show_host_menu(std::move(dialogue), std::move(choices));
 }
 
 bool RolfTourSession::choose_at_original_hall(const HallChoice &picked)
@@ -405,7 +405,7 @@ bool RolfTourSession::choose_at_original_hall(const HallChoice &picked)
             choices.push_back({"{spell}", {{"spell", option.label, true}}});
             visit.choices.push_back({HallChoice::Kind::learn, picked.member, option.id});
         }
-        show_hall_menu({{"Choose a spell for {name} to learn.", {{"name", name}}}},
+        show_host_menu({{"Choose a spell for {name} to learn.", {{"name", name}}}},
                        std::move(choices));
         return true;
     }
