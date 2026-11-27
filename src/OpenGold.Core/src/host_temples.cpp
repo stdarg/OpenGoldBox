@@ -7,6 +7,30 @@ namespace opengold::por
 {
 using namespace host_services;
 
+namespace
+{
+// The temple's priced sentences, kept whole per coin because the translations
+// differ in more than the coin word: Krynn prices in steel, the Realms in gp.
+struct TemplePriceTexts
+{
+    const char *cast_offer;
+    const char *service_label;
+    const char *cannot_pay;
+};
+
+[[nodiscard]] const TemplePriceTexts &temple_price_texts(GoldBoxGame game) noexcept
+{
+    static constexpr TemplePriceTexts steel{
+        "The clerics will cast {spell} on {name} for {fee} steel.", "{spell} ({fee} steel)",
+        "The party's steel cannot pay {fee} steel."};
+    static constexpr TemplePriceTexts gold{"The clerics will cast {spell} on {name} for {fee} gp.",
+                                           "{spell} ({fee} gp)",
+                                           "The party's gold cannot pay {fee} gp."};
+    return krynn_game(game) ? steel : gold;
+}
+
+} // namespace
+
 void RolfTourSession::open_temple(std::uint64_t request)
 {
     // The temple data/shops places on this square, else the original's list.
@@ -65,9 +89,7 @@ void RolfTourSession::show_temple(std::vector<Message> notice)
     if (visit.member)
     {
         const auto &offering = *visit.chosen;
-        dialogue.push_back({krynn_game(game())
-                                ? "The clerics will cast {spell} on {name} for {fee} steel."
-                                : "The clerics will cast {spell} on {name} for {fee} gp.",
+        dialogue.push_back({temple_price_texts(game()).cast_offer,
                             {spell(offering),
                              {"name", campaign_->member(visit.member).character.sheet().name},
                              {"fee", amount(offering.price_gp)}}});
@@ -109,7 +131,7 @@ void RolfTourSession::show_temple(std::vector<Message> notice)
         }
         for (const auto &offering : visit.offerings)
         {
-            add({krynn_game(game()) ? "{spell} ({fee} steel)" : "{spell} ({fee} gp)",
+            add({temple_price_texts(game()).service_label,
                  {spell(offering), {"fee", amount(offering.price_gp)}}},
                 {TempleChoice::Kind::service, 0, offering});
         }
@@ -185,8 +207,7 @@ bool RolfTourSession::choose_at_temple(std::size_t choice)
     case TempleChoice::Kind::member:
         if (campaign_->purse_gold() < picked.offering.price_gp)
         {
-            show_temple({{krynn_game(game()) ? "The party's steel cannot pay {fee} steel."
-                                             : "The party's gold cannot pay {fee} gp.",
+            show_temple({{temple_price_texts(game()).cannot_pay,
                           {{"fee", amount(picked.offering.price_gp)}}}});
             return true;
         }
