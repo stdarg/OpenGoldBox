@@ -861,10 +861,10 @@ const ShipFightAftermath *ship_fight_aftermath(const RolfTourSession &session)
     return state && state->aftermath ? &*state->aftermath : nullptr;
 }
 
-void ShipService::begin(TownServiceHost &host, std::uint64_t request, ShipCombatCall call)
+void ShipService::begin(TownServiceHost &host, std::uint64_t request, ShipCombatCall ship_call)
 {
     auto &snapshot = host.screen();
-    snapshot.ship_combat = call;
+    snapshot.ship_combat = ship_call;
     ship_combat_request_ = request;
     ship_fight_ = std::make_shared<ShipFightState>();
     snapshot.continue_ticket = host.new_ticket();
