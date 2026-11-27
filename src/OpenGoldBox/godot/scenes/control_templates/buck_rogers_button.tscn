@@ -1,0 +1,4 @@
+[gd_scene format=3]
+
+[node name="BuckRogersButton" type="Button"]
+custom_minimum_size = Vector2(36, 28)

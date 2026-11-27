@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[node name="BuckRogersSkill" type="Button"]
+custom_minimum_size = Vector2(300, 28)
+flat = true
+alignment = 0

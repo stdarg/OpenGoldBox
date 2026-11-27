@@ -120,6 +120,14 @@ template <class T> T *add_row_node(Node &rows, const String &name)
     return node;
 }
 
+// A row's control laid out by its scene in scenes/control_templates.
+template <class T> T *add_row_template(Node &rows, const String &name, const char *scene)
+{
+    auto *node = presentation::attach_child(rows, presentation::instantiate_control<T>(scene));
+    node->set_name(name);
+    return node;
+}
+
 Label *add_label(Node &rows, const String &name, const String &text)
 {
     auto *label = add_row_node<Label>(rows, name);
@@ -128,12 +136,12 @@ Label *add_label(Node &rows, const String &name, const String &text)
     return label;
 }
 
-Button *add_button(Node &rows, const String &name, const String &text)
+Button *add_button(Node &rows, const String &name, const String &text,
+                   const char *scene = "res://scenes/control_templates/buck_rogers_button.tscn")
 {
-    auto *button = add_row_node<Button>(rows, name);
+    auto *button = add_row_template<Button>(rows, name, scene);
     button->set_auto_translate_mode(Node::AUTO_TRANSLATE_MODE_DISABLED);
     button->set_text(text);
-    button->set_custom_minimum_size(Vector2(36, 28));
     return button;
 }
 
@@ -243,11 +251,9 @@ void CharacterCreationView::setup_buck_rogers()
     auto &icons = required_node<GridContainer>(*this, "BodyIcons/Grid");
     for (unsigned icon = 0; icon < presentation::buck_rogers_body_icon_count; ++icon)
     {
-        auto *button = add_button(icons, gs("Icon" + std::to_string(icon)), {});
+        auto *button = add_button(icons, gs("Icon" + std::to_string(icon)), {},
+                                  "res://scenes/control_templates/buck_rogers_body_icon.tscn");
         button->set_toggle_mode(true);
-        button->set_custom_minimum_size(Vector2(56, 56));
-        button->set_expand_icon(true);
-        button->set_icon_alignment(HORIZONTAL_ALIGNMENT_CENTER);
         button->connect("pressed",
                         presentation::guarded(this, &CharacterCreationView::body_icon_chosen)
                             .bind(static_cast<int>(icon)));
@@ -467,10 +473,11 @@ void CharacterCreationView::show_buck_rogers_specializations()
             std::ranges::find(stock.templates, type, &opengold::buck_rogers::Item::type);
         const auto n = std::to_string(type);
         const int level = og::specialization_level(character, type);
-        auto *name = add_label(rows, gs("Weapon" + n),
-                               gs(opengold::buck_rogers_item_name(*weapon, stock.item_words)));
-        // The columns stay together at the left, as the original's screen has them.
-        name->set_custom_minimum_size(Vector2(260, 0));
+        // The columns stay together at the left, as the original's screen has
+        // them: the template sets the name's width.
+        add_row_template<Label>(rows, gs("Weapon" + n),
+                                "res://scenes/control_templates/buck_rogers_weapon.tscn")
+            ->set_text(gs(opengold::buck_rogers_item_name(*weapon, stock.item_words)));
         add_label(rows, gs("Level" + n), level ? gs("+" + std::to_string(level)) : String());
         auto *lower = add_button(rows, gs("Lower" + n), "-");
         lower->set_disabled(level == 0);
@@ -607,10 +614,8 @@ void CharacterCreationView::show_buck_rogers_skills()
         auto trial = spending;
         const auto refusal = trial.add(skill);
         auto lowered = spending;
-        auto *name = add_button(rows, gs("Skill" + n), skill_name(skill));
-        name->set_flat(true);
-        name->set_text_alignment(HORIZONTAL_ALIGNMENT_LEFT);
-        name->set_custom_minimum_size(Vector2(300, 28));
+        auto *name = add_button(rows, gs("Skill" + n), skill_name(skill),
+                                "res://scenes/control_templates/buck_rogers_skill.tscn");
         name->set_toggle_mode(true);
         name->set_pressed_no_signal(static_cast<int>(skill) == selected_skill_);
         name->connect("pressed", presentation::guarded(this, &CharacterCreationView::skill_selected)

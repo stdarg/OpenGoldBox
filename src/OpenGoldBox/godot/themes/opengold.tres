@@ -620,6 +620,7 @@ OpenGoldPalette/colors/combat_guardian_overlay = Color(1.0, 0.9803921568627451, 
 OpenGoldPalette/colors/combat_moonbeam_overlay = Color(0.8509803921568627, 0.9019607843137255, 1.0, 0.3)
 OpenGoldPalette/colors/combat_obscured_overlay = Color(0.7803921568627451, 0.8, 0.8196078431372549, 0.35)
 OpenGoldPalette/colors/combat_area_overlay = Color(0.5490196078431373, 0.8, 0.34901960784313724, 0.38)
+OpenGoldPalette/colors/drag_preview = Color(1, 1, 1, 0.8)
 BlackSurface/base_type = &"Panel"
 BlackSurface/styles/panel = SubResource("black_surface")
 ButtonText14/base_type = &"Button"

@@ -262,31 +262,19 @@ void ShipCombatView::prepare()
             *this, path(std::string("Margin/Columns/Main/Ships/") + ship + "/Margin/Rows/Systems"));
         for (std::size_t system = 0; system < system_count; ++system)
         {
-            auto icon = presentation::make_node<TextureRect>();
-            icon->set_expand_mode(TextureRect::EXPAND_IGNORE_SIZE);
-            icon->set_stretch_mode(TextureRect::STRETCH_KEEP_ASPECT_CENTERED);
-            icon->set_custom_minimum_size(Vector2(30, 20));
-            presentation::attach_child(grid, std::move(icon));
-            auto name = new_label(system_name(static_cast<ShipSystem>(system)), "LabelText14");
-            name->set_custom_minimum_size(Vector2(92, 0));
+            presentation::attach_child(grid,
+                                       presentation::instantiate_control<TextureRect>(
+                                           "res://scenes/control_templates/ship_system_icon.tscn"));
+            auto name = presentation::instantiate_control<Label>(
+                "res://scenes/control_templates/ship_system_name.tscn");
+            name->set_text(system_name(static_cast<ShipSystem>(system)));
             presentation::attach_child(grid, std::move(name));
-            auto bar = presentation::make_node<HBoxContainer>();
-            bar->add_theme_constant_override("separation", 0);
-            bar->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-            bar->set_v_size_flags(Control::SIZE_SHRINK_CENTER);
-            for (const char *part : {"Filled", "Empty"})
-            {
-                auto rect = presentation::make_node<ColorRect>();
-                rect->set_name(part);
-                rect->set_custom_minimum_size(Vector2(0, 8));
-                rect->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-                presentation::attach_child(*bar, std::move(rect));
-            }
-            presentation::attach_child(grid, std::move(bar));
-            auto value = new_label("", "LabelText14");
-            value->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_RIGHT);
-            value->set_custom_minimum_size(Vector2(78, 0));
-            presentation::attach_child(grid, std::move(value));
+            presentation::attach_child(grid,
+                                       presentation::instantiate_control<HBoxContainer>(
+                                           "res://scenes/control_templates/ship_system_bar.tscn"));
+            presentation::attach_child(
+                grid, presentation::instantiate_control<Label>(
+                          "res://scenes/control_templates/ship_system_value.tscn"));
         }
     }
 }
@@ -783,11 +771,8 @@ void ShipCombatView::show_crew()
         row->add_theme_stylebox_override("panel", style);
         auto line = presentation::make_node<HBoxContainer>();
         line->add_theme_constant_override("separation", 8);
-        auto icon = presentation::make_node<TextureRect>();
-        icon->set_name("Icon");
-        icon->set_expand_mode(TextureRect::EXPAND_IGNORE_SIZE);
-        icon->set_stretch_mode(TextureRect::STRETCH_KEEP_ASPECT_CENTERED);
-        icon->set_custom_minimum_size(Vector2(48, 48));
+        auto icon = presentation::instantiate_control<TextureRect>(
+            "res://scenes/control_templates/ship_crew_icon.tscn");
         if (member < fight_->icons.size())
         {
             icon->set_texture(fight_->icons[member]);
@@ -978,11 +963,10 @@ void ShipCombatView::show_choice()
     question.set_text(asked);
     for (std::size_t index = 0; index < labels.size(); ++index)
     {
-        auto button = presentation::make_node<Button>();
+        auto button = presentation::instantiate_control<Button>(
+            "res://scenes/control_templates/ship_answer.tscn");
         button->set_name(String("Answer") + String::num_int64(static_cast<std::int64_t>(index)));
         button->set_text(labels[index]);
-        button->set_theme_type_variation("ButtonText14");
-        button->set_custom_minimum_size(Vector2(64, 28));
         // Deferred: answering builds the answers again, this button with them.
         button->connect("pressed",
                         presentation::guarded(this, &ShipCombatView::choice_pressed)

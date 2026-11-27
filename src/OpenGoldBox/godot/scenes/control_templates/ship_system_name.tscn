@@ -1,0 +1,5 @@
+[gd_scene format=3]
+
+[node name="ShipSystemName" type="Label"]
+custom_minimum_size = Vector2(92, 0)
+theme_type_variation = &"LabelText14"

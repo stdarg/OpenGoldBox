@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[node name="ShipSystemIcon" type="TextureRect"]
+custom_minimum_size = Vector2(30, 20)
+expand_mode = 1
+stretch_mode = 5

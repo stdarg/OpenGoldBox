@@ -1,0 +1,14 @@
+[gd_scene format=3]
+
+[node name="ShipSystemBar" type="HBoxContainer"]
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_constants/separation = 0
+
+[node name="Filled" type="ColorRect" parent="."]
+custom_minimum_size = Vector2(0, 8)
+size_flags_horizontal = 3
+
+[node name="Empty" type="ColorRect" parent="."]
+custom_minimum_size = Vector2(0, 8)
+size_flags_horizontal = 3

@@ -386,29 +386,17 @@ void GameMenuView::build_options()
     for (std::size_t row = 0; row < i18n::monster_ability_options.size(); ++row)
     {
         const auto &option = i18n::monster_ability_options[row];
-        auto line = presentation::make_node<HBoxContainer>();
-        line->set_custom_minimum_size({0, 46});
-        auto name = presentation::make_node<Label>();
-        name->set_text(i18n::text(option.label));
-        name->set_custom_minimum_size({300, 0});
-        name->set("autowrap_mode", 3);
-        auto monsters = presentation::make_node<Label>();
-        monsters->set_text(i18n::text(option.monsters));
-        monsters->set("autowrap_mode", 3);
-        monsters->set_theme_type_variation("LabelMuted");
-        monsters->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-        auto from = presentation::make_node<OptionButton>();
-        from->set_name("From");
-        from->set_custom_minimum_size({180, 40});
+        auto line = presentation::instantiate_control<HBoxContainer>(
+            "res://scenes/control_templates/ability_row.tscn");
+        required_node<Label>(*line, "Name").set_text(i18n::text(option.label));
+        required_node<Label>(*line, "Monsters").set_text(i18n::text(option.monsters));
+        auto &from = required_node<OptionButton>(*line, "From");
         for (const auto *choice : i18n::ability_from_names)
         {
-            from->add_item(i18n::text(choice));
+            from.add_item(i18n::text(choice));
         }
-        from->connect("item_selected", presentation::guarded(this, &GameMenuView::ability_selected)
-                                           .bind(static_cast<std::int64_t>(row)));
-        presentation::attach_child(*line, std::move(name));
-        presentation::attach_child(*line, std::move(monsters));
-        presentation::attach_child(*line, std::move(from));
+        from.connect("item_selected", presentation::guarded(this, &GameMenuView::ability_selected)
+                                          .bind(static_cast<std::int64_t>(row)));
         presentation::attach_child(rows, std::move(line));
     }
     auto &language = required_node<OptionButton>(*this, "Options/Interface/Language");

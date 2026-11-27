@@ -71,7 +71,7 @@ msgstr ""
 msgid " and "
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:659 src/OpenGoldBox/character_text.h:36
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:664 src/OpenGoldBox/character_text.h:36
 msgid " or "
 msgstr ""
 
@@ -478,7 +478,7 @@ msgstr ""
 msgid "A miss still deals damage equal to the ability modifier used for the attack."
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:701
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:706
 msgid "A new Matrix Cubed character starts with its career's skills set. You can move points from one skill to another of the same kind; there are no new points to spend."
 msgstr ""
 
@@ -1041,7 +1041,7 @@ msgstr ""
 msgid "Already using another item there"
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:691
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:696
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Also preset, in the general groups: {skills}."
 msgstr ""
@@ -1430,7 +1430,7 @@ msgstr ""
 msgid "Automatically equip items better than currently equipped items"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:669 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:369 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:126 src/OpenGoldBox/godot/scenes/startup.tscn:204 src/OpenGoldBox/level_up_dialog.cpp:105 src/OpenGoldBox/ship_combat_view.cpp:975
+#: src/OpenGoldBox/character_creation_view.cpp:669 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:369 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:126 src/OpenGoldBox/godot/scenes/startup.tscn:204 src/OpenGoldBox/level_up_dialog.cpp:105 src/OpenGoldBox/ship_combat_view.cpp:960
 msgid "Back"
 msgstr ""
 
@@ -1855,7 +1855,7 @@ msgstr ""
 msgid "Bone bow"
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:596 src/OpenGoldBox/godot/scenes/character_creation.tscn:1015
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:603 src/OpenGoldBox/godot/scenes/character_creation.tscn:1015
 msgid "Bonus"
 msgstr ""
 
@@ -2132,7 +2132,7 @@ msgstr ""
 msgid "Buy [Enter]"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:717
+#: src/OpenGoldBox/ship_combat_view.cpp:705
 msgid "By"
 msgstr ""
 
@@ -2307,7 +2307,7 @@ msgstr ""
 msgid "Cannot save settings. Check that settings.cfg in the game's user data folder can be written and is valid."
 msgstr ""
 
-#: src/OpenGoldBox/game_menu_view.cpp:617
+#: src/OpenGoldBox/game_menu_view.cpp:605
 msgid "Cannot save the settings."
 msgstr ""
 
@@ -2331,11 +2331,11 @@ msgstr ""
 msgid "Captain's Charm"
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:342 src/OpenGoldBox/character_creation_view.cpp:661
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:348 src/OpenGoldBox/character_creation_view.cpp:661
 msgid "Career"
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:562
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:569
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Career points left {career} of {career_given}   General points left {general} of {general_given}   Most in one skill {most}   General skills known {known} of {limit}"
 msgstr ""
@@ -2555,7 +2555,7 @@ msgstr ""
 msgid "Chaotic Neutral"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/level_up_lab.tscn:246 src/OpenGoldBox/ship_combat_view.cpp:970
+#: src/OpenGoldBox/godot/scenes/level_up_lab.tscn:246 src/OpenGoldBox/ship_combat_view.cpp:955
 msgid "Character"
 msgstr ""
 
@@ -2749,7 +2749,7 @@ msgstr ""
 msgid "Choose a Secret of the Silver Blades save, then a character to bring into the party."
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:311
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:317
 msgid "Choose a career. Careers in gray are not open to your race."
 msgstr ""
 
@@ -2799,7 +2799,7 @@ msgstr ""
 msgid "Choose a swatch to recolor this part when it is equipped in combat."
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:489
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:496
 msgid "Choose a weapon to specialize in."
 msgid_plural "Choose {count} weapon specializations; one weapon may take several."
 msgstr[0] ""
@@ -2935,7 +2935,7 @@ msgstr ""
 msgid "Choose…"
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:460
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:466
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Chosen {chosen} of {count}. Each adds one to hit and to damage with its weapon, at most three in one."
 msgstr ""
@@ -3165,7 +3165,7 @@ msgstr ""
 msgid "Close inventory"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/ship_combat.tscn:67 src/OpenGoldBox/ship_combat_view.cpp:554
+#: src/OpenGoldBox/godot/scenes/ship_combat.tscn:67 src/OpenGoldBox/ship_combat_view.cpp:542
 msgid "Closing"
 msgstr ""
 
@@ -3246,7 +3246,7 @@ msgstr ""
 msgid "Combat calendar overflow"
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:345 src/OpenGoldBox/character_creation_view.cpp:659
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:351 src/OpenGoldBox/character_creation_view.cpp:659
 msgid "Combat icon"
 msgstr ""
 
@@ -3469,7 +3469,7 @@ msgstr ""
 msgid "Contingency: {spell} takes effect on {name}."
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/combat_demo.tscn:334 src/OpenGoldBox/godot/scenes/game_folder_questions.tscn:194 src/OpenGoldBox/godot/scenes/game_folder_questions.tscn:74 src/OpenGoldBox/godot/scenes/startup.tscn:147 src/OpenGoldBox/godot/scenes/startup.tscn:242 src/OpenGoldBox/godot/scenes/startup.tscn:89 src/OpenGoldBox/ship_combat_view.cpp:916 src/OpenGoldBox/startup_view.cpp:692
+#: src/OpenGoldBox/godot/scenes/combat_demo.tscn:334 src/OpenGoldBox/godot/scenes/game_folder_questions.tscn:194 src/OpenGoldBox/godot/scenes/game_folder_questions.tscn:74 src/OpenGoldBox/godot/scenes/startup.tscn:147 src/OpenGoldBox/godot/scenes/startup.tscn:242 src/OpenGoldBox/godot/scenes/startup.tscn:89 src/OpenGoldBox/ship_combat_view.cpp:901 src/OpenGoldBox/startup_view.cpp:692
 msgid "Continue"
 msgstr ""
 
@@ -3554,7 +3554,7 @@ msgstr ""
 msgid "Creatures of one kind cannot interrupt the party's rest."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:734
+#: src/OpenGoldBox/ship_combat_view.cpp:722
 msgid "Crew"
 msgstr ""
 
@@ -4189,7 +4189,7 @@ msgstr ""
 msgid "Donate"
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:934
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:939
 msgid "Done"
 msgstr ""
 
@@ -4431,7 +4431,7 @@ msgstr ""
 msgid "Dying"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1211
+#: src/OpenGoldBox/ship_combat_view.cpp:1195
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Each member gains {points} experience points."
 msgstr ""
@@ -4653,7 +4653,7 @@ msgstr ""
 msgid "Enemy turn"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:650
+#: src/OpenGoldBox/ship_combat_view.cpp:638
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Enemy: {ship}"
 msgstr ""
@@ -4968,11 +4968,11 @@ msgstr ""
 msgid "Eyebite: sickened"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:886
+#: src/OpenGoldBox/ship_combat_view.cpp:871
 msgid "F: fire | T: target | L: load | J: jury rig | Q: quit | V: view | C: command | A: aid | B: boost | S: sensors"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:884
+#: src/OpenGoldBox/ship_combat_view.cpp:869
 msgid "F: fire | T: target | Q: quit | V: view | C: close | W: withdraw | R: ram | B: board"
 msgstr ""
 
@@ -5235,7 +5235,7 @@ msgstr ""
 msgid "Finish the fight before returning to the party"
 msgstr ""
 
-#: src/OpenGoldBox/game_menu_view.cpp:584
+#: src/OpenGoldBox/game_menu_view.cpp:572
 msgid "Finish the fight or event to choose another folder."
 msgstr ""
 
@@ -5669,7 +5669,7 @@ msgstr ""
 msgid "Frightened of the mummy until the end of its next turn."
 msgstr ""
 
-#: src/OpenGoldBox/game_menu_view.cpp:507 src/OpenGoldBox/godot/scenes/game_menu.tscn:212
+#: src/OpenGoldBox/game_menu_view.cpp:495 src/OpenGoldBox/godot/scenes/game_menu.tscn:212
 msgid "From Hard: monsters use their potions, wands and scrolls, and temples cast no Resurrection. Each monster ability below has its own lowest difficulty."
 msgstr ""
 
@@ -5751,7 +5751,7 @@ msgstr ""
 msgid "Game art from the original, portraits from OpenGoldBox, rules from the original game"
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:301
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:307
 msgid "Game art from the original, rules from the original game"
 msgstr ""
 
@@ -6097,7 +6097,7 @@ msgstr ""
 msgid "HP {current} / {maximum}"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:818
+#: src/OpenGoldBox/ship_combat_view.cpp:803
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "HP {now} / {most}"
 msgstr ""
@@ -6429,7 +6429,7 @@ msgstr ""
 msgid "Hit Points {hp}   Age {age}   Gold {gold}"
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:431
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:437
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Hit Points {hp}   Age {age}   Level {level}   Experience {xp}   Credits {credits}"
 msgstr ""
@@ -6691,7 +6691,7 @@ msgstr ""
 msgid "In the form of a {value}."
 msgstr ""
 
-#: src/OpenGoldBox/game_menu_view.cpp:514
+#: src/OpenGoldBox/game_menu_view.cpp:502
 msgid "In this design, the difficulty plays as Design difficulty below sets it."
 msgstr ""
 
@@ -7049,7 +7049,7 @@ msgstr ""
 msgid "Jury rig"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:952
+#: src/OpenGoldBox/ship_combat_view.cpp:937
 msgid "Jury-rig what?"
 msgstr ""
 
@@ -7360,7 +7360,7 @@ msgstr ""
 msgid "Level up {name}"
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:553
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:560
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Level {level}   Career points to move {career}   General points to move {general}   Most above a skill's start {most}"
 msgstr ""
@@ -7636,7 +7636,7 @@ msgstr ""
 msgid "Load this save? Any unsaved campaign progress will be discarded."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:943
+#: src/OpenGoldBox/ship_combat_view.cpp:928
 msgid "Load which weapon?"
 msgstr ""
 
@@ -8569,7 +8569,7 @@ msgstr ""
 msgid "Name"
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:307
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:313
 msgid "Name your character (up to 15 letters), then choose a race and gender."
 msgstr ""
 
@@ -8695,7 +8695,7 @@ msgstr ""
 msgid "Neverwinter"
 msgstr ""
 
-#: src/OpenGoldBox/game_menu_view.cpp:435
+#: src/OpenGoldBox/game_menu_view.cpp:423
 msgid "New"
 msgstr ""
 
@@ -8715,11 +8715,11 @@ msgstr ""
 msgid "New game"
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:934 src/OpenGoldBox/character_creation_view.cpp:677 src/OpenGoldBox/godot/scenes/character_creation.tscn:381 src/OpenGoldBox/godot/scenes/portrait_dialog.tscn:60 src/OpenGoldBox/level_up_dialog.cpp:459
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:939 src/OpenGoldBox/character_creation_view.cpp:677 src/OpenGoldBox/godot/scenes/character_creation.tscn:381 src/OpenGoldBox/godot/scenes/portrait_dialog.tscn:60 src/OpenGoldBox/level_up_dialog.cpp:459
 msgid "Next"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:926
+#: src/OpenGoldBox/ship_combat_view.cpp:911
 msgid "Next round"
 msgstr ""
 
@@ -8770,7 +8770,7 @@ msgstr ""
 msgid "Ninth level"
 msgstr ""
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/ship_combat_view.cpp:922 src/OpenGoldBox/ship_combat_view.cpp:966
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/ship_combat_view.cpp:907 src/OpenGoldBox/ship_combat_view.cpp:951
 msgid "No"
 msgstr ""
 
@@ -8851,7 +8851,7 @@ msgstr ""
 msgid "No numeric racial modifiers."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:871
+#: src/OpenGoldBox/ship_combat_view.cpp:856
 msgid "No one aboard can act this round."
 msgstr ""
 
@@ -8916,7 +8916,7 @@ msgstr ""
 msgid "Nonbinary"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:242 src/OpenGoldBox/character_sheet_text.cpp:468 src/OpenGoldBox/game_menu_view.cpp:577
+#: src/OpenGoldBox/character_sheet_text.cpp:242 src/OpenGoldBox/character_sheet_text.cpp:468 src/OpenGoldBox/game_menu_view.cpp:565
 msgid "None"
 msgstr ""
 
@@ -9253,7 +9253,7 @@ msgstr ""
 msgid "Order"
 msgstr ""
 
-#: src/OpenGoldBox/game_menu_view.cpp:436
+#: src/OpenGoldBox/game_menu_view.cpp:424
 msgid "Original"
 msgstr ""
 
@@ -9635,7 +9635,7 @@ msgstr ""
 msgid "Pike"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:734 src/OpenGoldBox/ship_combat_view.cpp:802
+#: src/OpenGoldBox/ship_combat_view.cpp:722 src/OpenGoldBox/ship_combat_view.cpp:787
 msgid "Pilot"
 msgstr ""
 
@@ -9695,7 +9695,7 @@ msgstr ""
 msgid "Podol Plaza"
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:596
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:603
 msgid "Points"
 msgstr ""
 
@@ -10262,7 +10262,7 @@ msgstr ""
 msgid "Ram"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:964
+#: src/OpenGoldBox/ship_combat_view.cpp:949
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Ram the {ship}?"
 msgstr ""
@@ -10275,11 +10275,11 @@ msgstr ""
 msgid "Rampaging"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/ship_combat.tscn:92 src/OpenGoldBox/ship_combat_view.cpp:717
+#: src/OpenGoldBox/godot/scenes/ship_combat.tscn:92 src/OpenGoldBox/ship_combat_view.cpp:705
 msgid "Range"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1002
+#: src/OpenGoldBox/ship_combat_view.cpp:986
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Range {range} · Your speed {speed}, boosts {boosts} of 2 · Enemy speed {enemy}"
 msgstr ""
@@ -10288,7 +10288,7 @@ msgstr ""
 msgid "Range: 8"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:556
+#: src/OpenGoldBox/ship_combat_view.cpp:544
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Range: {range}"
 msgstr ""
@@ -10675,7 +10675,7 @@ msgstr ""
 msgid "Reload a Saved Game"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:717
+#: src/OpenGoldBox/ship_combat_view.cpp:705
 msgid "Reloads"
 msgstr ""
 
@@ -11111,7 +11111,7 @@ msgstr ""
 msgid "Retreat"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:554
+#: src/OpenGoldBox/ship_combat_view.cpp:542
 msgid "Retreating"
 msgstr ""
 
@@ -11240,7 +11240,7 @@ msgstr ""
 msgid "Rolf  /  Council guide"
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:425 src/OpenGoldBox/character_creation_view.cpp:758 src/OpenGoldBox/godot/scenes/character_creation.tscn:2419
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:431 src/OpenGoldBox/character_creation_view.cpp:758 src/OpenGoldBox/godot/scenes/character_creation.tscn:2419
 msgid "Roll"
 msgstr ""
 
@@ -11253,7 +11253,7 @@ msgstr ""
 msgid "Roll a d20 and add the saving throw bonus. Meet or exceed DC {dc} to save.\n\n"
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:425 src/OpenGoldBox/character_creation_view.cpp:758
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:431 src/OpenGoldBox/character_creation_view.cpp:758
 msgid "Roll again"
 msgstr ""
 
@@ -11261,7 +11261,7 @@ msgstr ""
 msgid "Roll all six"
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:440 src/OpenGoldBox/character_creation_view.cpp:760
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:446 src/OpenGoldBox/character_creation_view.cpp:760
 msgid "Roll the character. Roll again until you have one to keep, then continue."
 msgstr ""
 
@@ -11310,7 +11310,7 @@ msgstr ""
 msgid "Round {round}: {name} acts."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:717
+#: src/OpenGoldBox/ship_combat_view.cpp:705
 msgid "Rounds"
 msgstr ""
 
@@ -11627,7 +11627,7 @@ msgstr ""
 msgid "Sees Invisible creatures as if they were visible."
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:723
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:728
 msgid "Select a body icon. It is your character's picture in every screen."
 msgstr ""
 
@@ -11790,7 +11790,7 @@ msgstr ""
 msgid "Shining Smite"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:970
+#: src/OpenGoldBox/ship_combat_view.cpp:955
 msgid "Ship"
 msgstr ""
 
@@ -11956,7 +11956,7 @@ msgstr ""
 msgid "Size: Short"
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:596
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:603
 msgid "Skill"
 msgstr ""
 
@@ -11981,7 +11981,7 @@ msgstr ""
 msgid "Skillful"
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:343 src/OpenGoldBox/character_creation_view.cpp:68 src/OpenGoldBox/character_sheet_text.cpp:241 src/OpenGoldBox/godot/scenes/character_creation.tscn:2487
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:349 src/OpenGoldBox/character_creation_view.cpp:68 src/OpenGoldBox/character_sheet_text.cpp:241 src/OpenGoldBox/godot/scenes/character_creation.tscn:2487
 msgid "Skills"
 msgstr ""
 
@@ -12497,11 +12497,11 @@ msgstr ""
 msgid "Spells known"
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:702
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:707
 msgid "Spend career points on career skills and general points on general skills. Points can be taken back until the character is finished."
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:699
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:704
 msgid "Spend the training's career points on career skills and its general points on general skills. Points can be taken back until you leave the skills."
 msgstr ""
 
@@ -12926,7 +12926,7 @@ msgstr ""
 msgid "Target DC"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:935
+#: src/OpenGoldBox/ship_combat_view.cpp:920
 msgid "Target which system?"
 msgstr ""
 
@@ -13186,7 +13186,7 @@ msgstr ""
 msgid "The air clears a little."
 msgstr ""
 
-#: src/OpenGoldBox/game_menu_view.cpp:589
+#: src/OpenGoldBox/game_menu_view.cpp:577
 msgid "The art settings above choose the new art or the original game's."
 msgstr ""
 
@@ -13399,7 +13399,7 @@ msgstr ""
 msgid "The oil on {name} burns for 5 more damage."
 msgstr ""
 
-#: src/OpenGoldBox/game_menu_view.cpp:586
+#: src/OpenGoldBox/game_menu_view.cpp:574
 msgid "The original game's art shows until you choose the folder of the OpenGoldBox new art download."
 msgstr ""
 
@@ -13511,11 +13511,11 @@ msgstr ""
 msgid "The party's steel cannot pay {fee} steel."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1269
+#: src/OpenGoldBox/ship_combat_view.cpp:1253
 msgid "The pilots size each other up: the enemy moves first each round."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1270
+#: src/OpenGoldBox/ship_combat_view.cpp:1254
 msgid "The pilots size each other up: the team moves first each round."
 msgstr ""
 
@@ -13536,7 +13536,7 @@ msgstr ""
 msgid "The river's stench drives you back."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:862
+#: src/OpenGoldBox/ship_combat_view.cpp:847
 msgid "The ship fight is over."
 msgstr ""
 
@@ -13576,12 +13576,12 @@ msgstr ""
 msgid "The sword will not stay in {name}'s hand and burns for {damage} Force damage."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1238
+#: src/OpenGoldBox/ship_combat_view.cpp:1222
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "The tanks take {fuel} fuel from the {ship}."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1159
+#: src/OpenGoldBox/ship_combat_view.cpp:1143
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "The team boards the {ship}."
 msgstr ""
@@ -13679,17 +13679,17 @@ msgstr ""
 msgid "The wind deflects the shot."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1362
+#: src/OpenGoldBox/ship_combat_view.cpp:1346
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "The {ship} breaks off."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1359
+#: src/OpenGoldBox/ship_combat_view.cpp:1343
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "The {ship} is lost from the scanners."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:866
+#: src/OpenGoldBox/ship_combat_view.cpp:851
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "The {ship} tries to ram you!"
 msgstr ""
@@ -13944,7 +13944,7 @@ msgstr ""
 msgid "Torch attack"
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:596 src/OpenGoldBox/godot/scenes/character_creation.tscn:1024
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:603 src/OpenGoldBox/godot/scenes/character_creation.tscn:1024
 msgid "Total"
 msgstr ""
 
@@ -14088,7 +14088,7 @@ msgstr ""
 msgid "Trooper"
 msgstr ""
 
-#: src/OpenGoldBox/game_menu_view.cpp:510
+#: src/OpenGoldBox/game_menu_view.cpp:498
 msgid "Trooper plays as the original game did. The other levels change the party's to-hit and the monsters' Hit Points, to-hit and Armor Class."
 msgstr ""
 
@@ -14116,7 +14116,7 @@ msgstr ""
 msgid "Truesight to 30 feet: see Invisible creatures and through magical Darkness there."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:921
+#: src/OpenGoldBox/ship_combat_view.cpp:906
 msgid "Try to dodge the enemy ship?"
 msgstr ""
 
@@ -14305,7 +14305,7 @@ msgstr ""
 msgid "Undead Fortitude"
 msgstr ""
 
-#: src/OpenGoldBox/game_menu_view.cpp:516
+#: src/OpenGoldBox/game_menu_view.cpp:504
 msgid "Under the original rules, Normal plays as the original game did; the other levels change only the monsters' to-hit, Hit Points and Armor Class."
 msgstr ""
 
@@ -14421,7 +14421,7 @@ msgstr ""
 msgid "Unused power"
 msgstr ""
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/ship_combat_view.cpp:717
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/ship_combat_view.cpp:705
 msgid "Up"
 msgstr ""
 
@@ -14595,7 +14595,7 @@ msgstr ""
 msgid "View party"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:969
+#: src/OpenGoldBox/ship_combat_view.cpp:954
 msgid "View:"
 msgstr ""
 
@@ -14860,7 +14860,7 @@ msgstr ""
 msgid "Weapon hits deal an extra 1d4 Radiant damage."
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:344 src/OpenGoldBox/character_creation_view.cpp:69
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:350 src/OpenGoldBox/character_creation_view.cpp:69
 msgid "Weapon specialization"
 msgstr ""
 
@@ -14868,7 +14868,7 @@ msgstr ""
 msgid "Weapon specializations"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:424 src/OpenGoldBox/ship_combat_view.cpp:56 src/OpenGoldBox/ship_combat_view.cpp:717
+#: src/OpenGoldBox/rolf_tour_view.cpp:424 src/OpenGoldBox/ship_combat_view.cpp:56 src/OpenGoldBox/ship_combat_view.cpp:705
 msgid "Weapons"
 msgstr ""
 
@@ -15199,7 +15199,7 @@ msgstr ""
 msgid "Yellow: the party cannot afford it."
 msgstr ""
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/ship_combat_view.cpp:922 src/OpenGoldBox/ship_combat_view.cpp:966
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/ship_combat_view.cpp:907 src/OpenGoldBox/ship_combat_view.cpp:951
 msgid "Yes"
 msgstr ""
 
@@ -15244,7 +15244,7 @@ msgstr ""
 msgid "You cannot run off the battlefield now: an enemy is faster, you have no movement left, or you must stay."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1346
+#: src/OpenGoldBox/ship_combat_view.cpp:1330
 msgid "You close with the crippled ship and attempt to board her."
 msgstr ""
 
@@ -15325,12 +15325,12 @@ msgstr ""
 msgid "Your repose is suddenly interrupted!"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:651
+#: src/OpenGoldBox/ship_combat_view.cpp:639
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Your ship: {ship}"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1168
+#: src/OpenGoldBox/ship_combat_view.cpp:1152
 msgid "Your team has been destroyed."
 msgstr ""
 
@@ -15396,7 +15396,7 @@ msgstr ""
 msgid "at half Hit Points"
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:192
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:200
 msgid "at the most a general skill takes, 80"
 msgstr ""
 
@@ -15416,7 +15416,7 @@ msgstr ""
 msgid "buccaneers"
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:190
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:198
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "capped at {points}"
 msgstr ""
@@ -15535,7 +15535,7 @@ msgstr ""
 msgid "leather"
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:188
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:196
 msgid "locked"
 msgstr ""
 
@@ -15559,11 +15559,11 @@ msgstr ""
 msgid "mummies"
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:194
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:202
 msgid "no more new general skills"
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:179
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:187
 msgid "none"
 msgstr ""
 
@@ -15851,12 +15851,12 @@ msgstr ""
 msgid "{bonus} from {class} saving throw proficiency."
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:390
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:396
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{career}\n\nLowest scores: {minimums}. A lower roll is raised to them, never refused.\nCareer skills (career points only): {skills}.\nStarts at level {level} with {experience} experience."
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:410
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:416
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{career} needs"
 msgstr ""
@@ -16045,12 +16045,12 @@ msgstr ""
 msgid "{heading}: {names}"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1194
+#: src/OpenGoldBox/ship_combat_view.cpp:1178
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{helper} cures {patient}'s poison."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1185
+#: src/OpenGoldBox/ship_combat_view.cpp:1169
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{helper} heals {patient} for {points}."
 msgstr ""
@@ -16179,12 +16179,12 @@ msgstr ""
 msgid "{member} (NPC)"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1224
+#: src/OpenGoldBox/ship_combat_view.cpp:1208
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{member} repairs a {weapon}."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1229
+#: src/OpenGoldBox/ship_combat_view.cpp:1213
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{member} repairs the {system}: {points} points."
 msgstr ""
@@ -17909,7 +17909,7 @@ msgstr ""
 msgid "{name} is wreathed in a warm shield."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:875
+#: src/OpenGoldBox/ship_combat_view.cpp:860
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is your pilot: what does {name} do?"
 msgstr ""
@@ -18849,7 +18849,7 @@ msgstr ""
 msgid "{name} throws {item} at {target}."
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:929
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:934
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} trains to level {level}"
 msgstr ""
@@ -19409,7 +19409,7 @@ msgstr ""
 msgid "{name}: cast a spell or use a feature"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1092
+#: src/OpenGoldBox/ship_combat_view.cpp:1076
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name}: level {level} {career}, HP {now} of {most}; Pilot Rocket {pilot}, Sensor Operation {sensors}, Repair Nuclear Engine {engine}."
 msgstr ""
@@ -19449,7 +19449,7 @@ msgstr ""
 msgid "{name}: skill lesson (learned at this level)"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:877
+#: src/OpenGoldBox/ship_combat_view.cpp:862
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name}: what does {name} do?"
 msgstr ""
@@ -19469,12 +19469,12 @@ msgstr ""
 msgid "{part} / Color-{bank}: choose a color"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1199
+#: src/OpenGoldBox/ship_combat_view.cpp:1183
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{patient} falls into a coma."
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:661
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:666
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{points} in {skill} (it has {has})"
 msgstr ""
@@ -19489,7 +19489,7 @@ msgstr ""
 msgid "{price} steel, {weight} lb"
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:372
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:378
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{race}\n\nAbilities: {adjustments}.\nMovement {movement}.\n\nCareers open: {careers}."
 msgstr ""
@@ -19499,52 +19499,52 @@ msgstr ""
 msgid "{service} / {price} platinum"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1331
+#: src/OpenGoldBox/ship_combat_view.cpp:1315
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{ship} closes by {distance}."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1340
+#: src/OpenGoldBox/ship_combat_view.cpp:1324
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{ship} dodges the ram."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1298
+#: src/OpenGoldBox/ship_combat_view.cpp:1282
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{ship} loses a crew member."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1343
+#: src/OpenGoldBox/ship_combat_view.cpp:1327
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{ship} rams home!"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1338
+#: src/OpenGoldBox/ship_combat_view.cpp:1322
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{ship} tries to ram!"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1334
+#: src/OpenGoldBox/ship_combat_view.cpp:1318
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{ship} withdraws by {distance}."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1289
+#: src/OpenGoldBox/ship_combat_view.cpp:1273
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{ship}: {system} destroyed!"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1282
+#: src/OpenGoldBox/ship_combat_view.cpp:1266
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{ship}: {system} takes {damage}."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1078
+#: src/OpenGoldBox/ship_combat_view.cpp:1062
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{ship}: {tons} tons, Armor Class {armor}, crew {crew}, speed {speed}, reaction {reaction}."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1294
+#: src/OpenGoldBox/ship_combat_view.cpp:1278
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{ship}: {weapon} hit, one destroyed!"
 msgstr ""
@@ -19564,12 +19564,12 @@ msgstr ""
 msgid "{skill} Expertise ({fee} gp)"
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:668
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:673
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{skill} is a Medic's skill."
 msgstr ""
 
-#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:672
+#: src/OpenGoldBox/buck_rogers_creation_pages.cpp:677
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{skill} needs {needs}."
 msgstr ""
@@ -19664,7 +19664,7 @@ msgstr ""
 msgid "{text}"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:654
+#: src/OpenGoldBox/ship_combat_view.cpp:642
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{tons} tons · speed {speed}"
 msgstr ""
@@ -19689,87 +19689,87 @@ msgstr ""
 msgid "{victim} is digested instantly."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1313
+#: src/OpenGoldBox/ship_combat_view.cpp:1297
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{who} boosts the engines."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1307
+#: src/OpenGoldBox/ship_combat_view.cpp:1291
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{who} dies as the ship explodes!"
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1357
+#: src/OpenGoldBox/ship_combat_view.cpp:1341
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{who} fails at sensor operation."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1314
+#: src/OpenGoldBox/ship_combat_view.cpp:1298
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{who} fails to boost the engines."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1324
+#: src/OpenGoldBox/ship_combat_view.cpp:1308
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{who} fails to jury-rig the {what}."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1310
+#: src/OpenGoldBox/ship_combat_view.cpp:1294
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{who} falls into a coma."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1278
+#: src/OpenGoldBox/ship_combat_view.cpp:1262
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{who} fires the {weapon}: a hit for {damage}."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1274
+#: src/OpenGoldBox/ship_combat_view.cpp:1258
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{who} fires the {weapon}: a miss."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1350
+#: src/OpenGoldBox/ship_combat_view.cpp:1334
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{who} is bandaged."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1352
+#: src/OpenGoldBox/ship_combat_view.cpp:1336
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{who} is no longer stunned."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1353
+#: src/OpenGoldBox/ship_combat_view.cpp:1337
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{who} is still stunned."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1322
+#: src/OpenGoldBox/ship_combat_view.cpp:1306
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{who} jury-rigs the {what}."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1304
+#: src/OpenGoldBox/ship_combat_view.cpp:1288
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{who} leaps clear of an explosion."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1356
+#: src/OpenGoldBox/ship_combat_view.cpp:1340
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{who} reads the enemy on the sensors."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1328
+#: src/OpenGoldBox/ship_combat_view.cpp:1312
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{who} reloads the {weapon}."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1348
+#: src/OpenGoldBox/ship_combat_view.cpp:1332
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{who} takes the helm."
 msgstr ""
 
-#: src/OpenGoldBox/ship_combat_view.cpp:1301
+#: src/OpenGoldBox/ship_combat_view.cpp:1285
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{who} takes {damage} damage."
 msgstr ""

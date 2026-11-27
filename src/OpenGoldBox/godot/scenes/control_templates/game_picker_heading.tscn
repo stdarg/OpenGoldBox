@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[node name="GamePickerHeading" type="Label"]
+custom_minimum_size = Vector2(0, 40)
+theme_type_variation = &"PickerWorldHeading"
+vertical_alignment = 2
