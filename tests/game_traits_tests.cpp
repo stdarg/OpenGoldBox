@@ -52,9 +52,9 @@ void rows_hold_the_games_facts()
                   opengold::por::EclAddress{0x4C3A} &&
               !traits(GoldBoxGame::pool_of_radiance).won_cell,
           "The games with no ending of their own win on their cell");
-    check(traits(GoldBoxGame::secret_of_the_silver_blades).title_music_piece == 2 &&
-              traits(GoldBoxGame::death_knights_of_krynn).title_music_piece == 1 &&
-              traits(GoldBoxGame::countdown_to_doomsday).title_music_piece == 2 &&
+    check(traits(GoldBoxGame::secret_of_the_silver_blades).title_music_piece == 2U &&
+              traits(GoldBoxGame::death_knights_of_krynn).title_music_piece == 1U &&
+              traits(GoldBoxGame::countdown_to_doomsday).title_music_piece == 2U &&
               !traits(GoldBoxGame::matrix_cubed).title_music_piece,
           "Title music pieces");
     check(traits(GoldBoxGame::gateway_to_the_savage_frontier).combat_icons ==

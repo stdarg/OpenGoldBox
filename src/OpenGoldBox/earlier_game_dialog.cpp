@@ -391,7 +391,7 @@ void EarlierGameDialog::show_member_state()
     // two NPC positions.
     const auto &slots = campaign_().state().slots;
     const bool npc = chosen_is_npc();
-    const auto *const first = slots.begin() + (npc ? 6 : 0);
+    const auto first = slots.begin() + (npc ? 6 : 0);
     const bool full = std::none_of(first, first + (npc ? 2 : 6),
                                    [](auto id)
                                    {

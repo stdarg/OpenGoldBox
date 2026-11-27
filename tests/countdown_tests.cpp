@@ -128,7 +128,7 @@ void yes_and_no_replace_the_previous_comparison()
     const EclAddress result{0x4C60};
     for (const auto game : {countdown, GoldBoxGame::matrix_cubed})
     {
-        for (const std::uint8_t previous : {0U, 1U})
+        for (const std::uint8_t previous : std::to_array<std::uint8_t>({0, 1}))
         {
             // COMPARE 0 with previous; YES NO; IF =; SAVE 7 to4C60h; EXIT.
             // Both menu answers must replace either old comparison.

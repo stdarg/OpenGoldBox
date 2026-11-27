@@ -639,7 +639,7 @@ void CharacterCreationView::refresh_party()
     for (const auto index : rows)
     {
         const auto &m = state.roster[index];
-        const auto *slot = std::find(state.slots.begin(), state.slots.end(), m.id);
+        const auto slot = std::find(state.slots.begin(), state.slots.end(), m.id);
         const bool leader = slot != state.slots.end() && m.id == campaign_->leader();
         const auto &sheet = m.character.sheet();
         // The roster has room for the six starting members' photos and identity.

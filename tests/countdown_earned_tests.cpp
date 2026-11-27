@@ -2217,7 +2217,8 @@ class EarnedPlayer
                           4U}})
                 {
                     auto changed = session.detached_copy();
-                    opengold::test::TourAccess::set_variable(changed, address, value);
+                    opengold::test::TourAccess::set_variable(changed, address,
+                                                             static_cast<std::uint16_t>(value));
                     const auto bad =
                         format ? opengold::encode_campaign_in_format(*campaign_.party, &changed,
                                                                      assets_, *format, countdown)

@@ -670,10 +670,10 @@ void ShipCombatView::show_ship(bool enemy_side)
         auto *empty = Object::cast_to<ColorRect>(bar->get_node_or_null("Empty"));
         filled->set_color(color);
         filled->set_visible(value > 0);
-        filled->set_stretch_ratio(static_cast<double>(value));
+        filled->set_stretch_ratio(static_cast<float>(value));
         empty->set_color(track);
         empty->set_visible(value < most);
-        empty->set_stretch_ratio(static_cast<double>(std::max(most - value, 0)));
+        empty->set_stretch_ratio(static_cast<float>(std::max(most - value, 0)));
         auto *shown = Object::cast_to<Label>(grid.get_child(static_cast<int>(system * 4 + 3)));
         shown->set_text(String::num_int64(value) + " / " +
                         String::num_int64(ship.system_maximum[system]));

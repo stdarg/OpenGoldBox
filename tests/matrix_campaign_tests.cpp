@@ -1181,7 +1181,8 @@ bool settle_route(Campaign &campaign, const std::filesystem::path &folder, unsig
                     const auto item = std::ranges::find(stock, type, &br::Item::type);
                     check(item != stock.end(), "The actual Depot stocks the selected weapon");
                     purchase_cost = og::shop_price(
-                        *item, campaign.session.script_variable(opengold::por::EclAddress{0x7F6D}));
+                        *item, static_cast<std::uint8_t>(campaign.session.script_variable(
+                                   opengold::por::EclAddress{0x7F6D})));
                     if (s.script_id == 20 && campaign.hielo_supplies &&
                         record->creature.credits < purchase_cost)
                     {
@@ -2168,23 +2169,23 @@ bool settle_route(Campaign &campaign, const std::filesystem::path &folder, unsig
                          og::level_of(healer->creature.skills, og::Skill::treat_light_wounds) > 0);
                     if (can_bandage)
                     {
-                        for (const auto &patient : state.combatants)
+                        for (const auto &casualty : state.combatants)
                         {
-                            if (patient.side != actor->side || opengold::is_ally(patient.id) ||
-                                patient.fled || patient.dead)
+                            if (casualty.side != actor->side || opengold::is_ally(casualty.id) ||
+                                casualty.fled || casualty.dead)
                             {
                                 continue;
                             }
                             const auto injured =
-                                og::buck_rogers_record_of(patient.persistent.resources);
+                                og::buck_rogers_record_of(casualty.persistent.resources);
                             if (!injured || injured->creature.status != 4)
                             {
                                 continue;
                             }
                             const auto distance = [&](auto cell)
                             {
-                                return std::max(std::abs(cell.x - patient.cell.x),
-                                                std::abs(cell.y - patient.cell.y));
+                                return std::max(std::abs(cell.x - casualty.cell.x),
+                                                std::abs(cell.y - casualty.cell.y));
                             };
                             auto order = offered.end();
                             if (distance(actor->cell) <= 1)
@@ -2206,7 +2207,7 @@ bool settle_route(Campaign &campaign, const std::filesystem::path &folder, unsig
                             if (order != offered.end())
                             {
                                 std::cout << "Actual rescue order " << actor->name << ' '
-                                          << order->verb << " near bleeding " << patient.name
+                                          << order->verb << " near bleeding " << casualty.name
                                           << ".\n";
                                 check(
                                     combat.submit(*order),
@@ -2382,9 +2383,9 @@ bool settle_route(Campaign &campaign, const std::filesystem::path &folder, unsig
                     {
                         // Reuse Countdown's earned player's public orders:
                         // focus on a wounded foe, closing before long shots.
-                        const auto offered = combat.combat().legal_commands();
+                        const auto offered_attacks = combat.combat().legal_commands();
                         int least_hit_points = 1000000;
-                        for (const auto &attack : offered)
+                        for (const auto &attack : offered_attacks)
                         {
                             if (attack.verb != "ranged" && attack.verb != "melee")
                             {
@@ -2442,7 +2443,7 @@ bool settle_route(Campaign &campaign, const std::filesystem::path &folder, unsig
                         if (command.verb != "ranged" && command.verb != "melee" &&
                             nearest != state.combatants.end() && nearest_distance > 1)
                         {
-                            for (const auto &move : offered)
+                            for (const auto &move : offered_attacks)
                             {
                                 const auto away = distance(move.destination, nearest->cell);
                                 if (move.verb == "move" && away < nearest_distance)
@@ -3299,8 +3300,8 @@ bool return_for_salvation_autodoc(Campaign &campaign, const std::filesystem::pat
     }
     for (unsigned step = 0; campaign.session.snapshot().script_id == 32 && step < 64; ++step)
     {
-        const auto state = campaign.session.snapshot();
-        const auto move = state.overland_y > 0 ? Command::northeast : Command::east;
+        const auto position = campaign.session.snapshot();
+        const auto move = position.overland_y > 0 ? Command::northeast : Command::east;
         check(campaign.session.explore(move), "Walk back to the walled sprawl");
         if (!settle_route(campaign, folder, fights))
         {
@@ -3689,8 +3690,8 @@ bool play_earned_route(Campaign &campaign, const std::filesystem::path &folder,
               << arrived.area_id << ", pose " << arrived.pose.x << ',' << arrived.pose.y
               << ", Solar " << arrived.solar_map << ".\n";
     retained_wilderness_save_checks(campaign, folder);
-    const auto x = campaign.session.script_variable(opengold::por::EclAddress{0x4BC3});
-    const auto y = campaign.session.script_variable(opengold::por::EclAddress{0x4BC4});
+    const auto start_x = campaign.session.script_variable(opengold::por::EclAddress{0x4BC3});
+    const auto start_y = campaign.session.script_variable(opengold::por::EclAddress{0x4BC4});
     check(campaign.session.explore(opengold::por::ExplorationCommand::north),
           "Take one actual wilderness step after the earned Losangelorg arrival");
     if (!settle_route(campaign, folder, fights))
@@ -3698,8 +3699,8 @@ bool play_earned_route(Campaign &campaign, const std::filesystem::path &folder,
         return false;
     }
     check(campaign.session.snapshot().script_id == 32 &&
-              campaign.session.script_variable(opengold::por::EclAddress{0x4BC3}) == x &&
-              campaign.session.script_variable(opengold::por::EclAddress{0x4BC4}) + 1 == y,
+              campaign.session.script_variable(opengold::por::EclAddress{0x4BC3}) == start_x &&
+              campaign.session.script_variable(opengold::por::EclAddress{0x4BC4}) + 1 == start_y,
           "The ordinary wilderness step changes the actual world square");
     retained_wilderness_save_checks(campaign, folder, false);
     std::cout << "Earned Losangelorg entry and ordinary step retain format53/55 saves.\n";
@@ -4341,11 +4342,12 @@ bool play_earned_route(Campaign &campaign, const std::filesystem::path &folder,
         }
         campaign.malcoln_visit = true;
         const auto earth_approach = campaign.session.snapshot();
-        const auto earth = std::ranges::find(earth_approach.choices, "DUKE'S HILL");
-        check(earth != earth_approach.choices.end(), "The real Earth orbit offers Malcoln's city");
+        const auto dukes_hill = std::ranges::find(earth_approach.choices, "DUKE'S HILL");
+        check(dukes_hill != earth_approach.choices.end(),
+              "The real Earth orbit offers Malcoln's city");
         check(campaign.session.choose(
                   earth_approach.continue_ticket,
-                  static_cast<std::size_t>(earth - earth_approach.choices.begin())),
+                  static_cast<std::size_t>(dukes_hill - earth_approach.choices.begin())),
               "Land at the actual Earth port");
         if (!settle_route(campaign, folder, fights))
         {
@@ -4951,12 +4953,12 @@ bool play_earned_route(Campaign &campaign, const std::filesystem::path &folder,
             return false;
         }
         const auto fortuna = campaign.session.snapshot();
-        const auto base = std::ranges::find(fortuna.choices, "NEO BASE");
-        check(base != fortuna.choices.end(), "The actual Fortuna orbit offers its NEO base");
+        const auto neo_base = std::ranges::find(fortuna.choices, "NEO BASE");
+        check(neo_base != fortuna.choices.end(), "The actual Fortuna orbit offers its NEO base");
         campaign.fortuna_visit = true;
         campaign.malcoln_visit = false;
         check(campaign.session.choose(fortuna.continue_ticket,
-                                      static_cast<std::size_t>(base - fortuna.choices.begin())),
+                                      static_cast<std::size_t>(neo_base - fortuna.choices.begin())),
               "Enter the authored Fortuna base");
         if (!settle_route(campaign, folder, fights))
         {
@@ -5159,13 +5161,13 @@ bool play_earned_route(Campaign &campaign, const std::filesystem::path &folder,
         {
             return false;
         }
-        const auto salvation = campaign.session.snapshot();
-        const auto salvation_choice = std::ranges::find(salvation.choices, "SALVATION");
-        check(salvation_choice != salvation.choices.end(),
+        const auto salvation_orbit = campaign.session.snapshot();
+        const auto salvation_choice = std::ranges::find(salvation_orbit.choices, "SALVATION");
+        check(salvation_choice != salvation_orbit.choices.end(),
               "The actual Earth orbit offers Salvation debrief");
         check(campaign.session.choose(
-                  salvation.continue_ticket,
-                  static_cast<std::size_t>(salvation_choice - salvation.choices.begin())),
+                  salvation_orbit.continue_ticket,
+                  static_cast<std::size_t>(salvation_choice - salvation_orbit.choices.begin())),
               "Report the real Fortuna evacuation to Buck");
         if (!settle_route(campaign, folder, fights))
         {
@@ -6314,7 +6316,8 @@ void venus_arrival_save_protocol(const std::filesystem::path &folder)
         settle(campaign);
         const auto venus = opengold::test::TourAccess::program(campaign.session, 48);
         opengold::test::TourAccess::set_variable(campaign.session,
-                                                 opengold::por::EclAddress{0x4BF2}, previous);
+                                                 opengold::por::EclAddress{0x4BF2},
+                                                 static_cast<std::uint16_t>(previous));
         opengold::test::TourAccess::run_from(campaign.session, 48, venus->entries().at(4));
         settle(campaign);
         check(

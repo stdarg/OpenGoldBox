@@ -753,7 +753,7 @@ void native_scripts_spend_one_flagged_prepared_copy()
     // ECL59's sealed door reuses C0 for a flag check, then writes a spent
     // Dispel Magic byte at that offset rather than its earlier spell index.
     // The native byte write consumes the entry actually overwritten.
-    for (const std::uint8_t spent : {0x83, 0xA9})
+    for (const std::uint8_t spent : std::to_array<std::uint8_t>({0x83, 0xA9}))
     {
         const std::shared_ptr<const rules::CharacterRules> creation =
             character_rules(default_aging, game);
@@ -821,7 +821,7 @@ void native_scripted_transfer_records_the_settled_previous_square()
     test::walk_original_creation(creator);
     (void)party->add_pc(creator.create_character());
     Bytes bytes;
-    for (const std::uint8_t entry : {0x14, 0x27, 0x36, 0x36, 0x36})
+    for (const std::uint8_t entry : std::to_array<std::uint8_t>({0x14, 0x27, 0x36, 0x36, 0x36}))
     {
         bytes.insert(bytes.end(), {1, 1, entry, 0x80});
     }
@@ -869,7 +869,7 @@ void native_square_flags_follow_redraw_scripted_and_player_moves()
     test::walk_original_creation(creator);
     (void)party->add_pc(creator.create_character());
     Bytes bytes;
-    for (const std::uint8_t entry : {0x14, 0x15, 0x14, 0x14, 0x1D})
+    for (const std::uint8_t entry : std::to_array<std::uint8_t>({0x14, 0x15, 0x14, 0x14, 0x1D}))
     {
         bytes.insert(bytes.end(), {1, 1, entry, 0x80});
     }
@@ -942,7 +942,7 @@ void native_find_special_queries_the_selected_members_active_effects()
     {
         bytes.insert(bytes.end(), {1, 1, 0x14, 0x80});
     }
-    for (const std::uint8_t slot : {0, 1})
+    for (const std::uint8_t slot : std::to_array<std::uint8_t>({0, 1}))
     {
         const auto result = static_cast<std::uint8_t>(0xC9 + slot);
         bytes.insert(bytes.end(), {10, 0,      slot, 63, 0, 20, 22, 9, 0,      1,
@@ -1470,7 +1470,7 @@ void installed_records_decode()
     }
     check(composed > 0, "Exercise actual library wall sets");
     const auto closing = opengold::load_closing_film(folder, game);
-    check(closing.screens.size() == 70 && closing.screens.front().sound == 39 &&
+    check(closing.screens.size() == 70 && closing.screens.front().sound == 39U &&
               closing.screens.front().screen.rgba != closing.screens.back().screen.rgba &&
               std::ranges::all_of(closing.screens,
                                   [](const auto &frame)
@@ -1636,7 +1636,7 @@ void installed_records_decode()
         fixture.insert(fixture.end(), {9, 0, static_cast<std::uint8_t>(terrain == 32), 1, 2, 0});
         if (terrain == 32)
         {
-            for (const std::uint8_t cell : {0x1E, 0x1F, 0x1D})
+            for (const std::uint8_t cell : std::to_array<std::uint8_t>({0x1E, 0x1F, 0x1D}))
             {
                 fixture.insert(fixture.end(), {9, 0, 1, 1, cell, 0});
             }
@@ -1731,7 +1731,8 @@ void installed_records_decode()
                       party->member(hero).character.inventory().items().size() ==
                           before.roster.front().character.inventory().items().size(),
                   "Native no-XP and no-item flags suppress only their respective rewards");
-            for (const std::uint16_t cell : {0x01, 0x1C, 0x1D, 0x1E, 0x1F, 0x2F})
+            for (const std::uint16_t cell :
+                 std::to_array<std::uint16_t>({0x01, 0x1C, 0x1D, 0x1E, 0x1F, 0x2F}))
             {
                 check(combat.script_variable(opengold::por::EclAddress{cell}) == 0,
                       "Native post-combat cleanup clears transient battle flags");
