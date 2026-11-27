@@ -1,6 +1,7 @@
 #ifndef OPENGOLDBOX_PORTRAIT_DIALOG_H
 #define OPENGOLDBOX_PORTRAIT_DIALOG_H
 
+#include "dialog_host.h"
 #include "opengold/campaign_party.h"
 #include "portrait_catalog.h"
 #include <godot_cpp/classes/window.hpp>
@@ -15,8 +16,6 @@ class PortraitDialog : public godot::Window
 {
     GDCLASS(PortraitDialog, godot::Window)
   public:
-    using CampaignAccess = std::function<opengold::CampaignParty &()>;
-
     void _ready() override;
     // Shows `member`'s portrait. `portraits` must outlive the dialog's use;
     // `changed` follows every change.

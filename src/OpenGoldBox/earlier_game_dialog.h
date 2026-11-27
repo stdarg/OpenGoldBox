@@ -1,5 +1,6 @@
 #ifndef OPENGOLDBOX_EARLIER_GAME_DIALOG_H
 #define OPENGOLDBOX_EARLIER_GAME_DIALOG_H
+#include "dialog_host.h"
 #include "opengold/campaign_party.h"
 #include "opengold/gold_box_game.h"
 #include <godot_cpp/classes/window.hpp>
@@ -27,8 +28,6 @@ class EarlierGameDialog : public godot::Window
 {
     GDCLASS(EarlierGameDialog, godot::Window)
   public:
-    using CampaignAccess = std::function<opengold::CampaignParty &()>;
-
     void _ready() override;
     // The host's campaign, read at each use because loading a save replaces
     // it, what follows a member brought in, and the host's questions for a

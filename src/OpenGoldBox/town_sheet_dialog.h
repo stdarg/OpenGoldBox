@@ -1,5 +1,6 @@
 #ifndef OPENGOLDBOX_TOWN_SHEET_DIALOG_H
 #define OPENGOLDBOX_TOWN_SHEET_DIALOG_H
+#include "dialog_host.h"
 #include "opengold/campaign_party.h"
 #include "portrait_catalog.h"
 #include <godot_cpp/classes/window.hpp>
@@ -16,9 +17,6 @@ class TownSheetDialog : public godot::Window
 {
     GDCLASS(TownSheetDialog, godot::Window)
   public:
-    using CampaignAccess = std::function<opengold::CampaignParty &()>;
-    using FailureReport = std::function<void(const std::exception &)>;
-
     void _ready() override;
     // The host's campaign, read at each use because loading a save replaces
     // it; what follows a change of leader or portrait; and where a failed

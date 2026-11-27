@@ -1,5 +1,6 @@
 #ifndef OPENGOLDBOX_CHARACTER_POOL_DIALOG_H
 #define OPENGOLDBOX_CHARACTER_POOL_DIALOG_H
+#include "dialog_host.h"
 #include "portrait_catalog.h"
 #include "opengold/campaign_party.h"
 #include <godot_cpp/classes/window.hpp>
@@ -17,9 +18,6 @@ class CharacterPoolDialog : public godot::Window
 {
     GDCLASS(CharacterPoolDialog, godot::Window)
   public:
-    using CampaignAccess = std::function<opengold::CampaignParty &()>;
-    using FailureReport = std::function<void(const std::exception &)>;
-
     void _ready() override;
     // The art and portraits the pool is shown with, which outlive this window;
     // the host's campaign, read at each use because loading a save replaces it

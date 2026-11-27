@@ -1,5 +1,6 @@
 #ifndef OPENGOLDBOX_EQUIPMENT_CHOICE_DIALOG_H
 #define OPENGOLDBOX_EQUIPMENT_CHOICE_DIALOG_H
+#include "dialog_host.h"
 #include "godot_nodes.h"
 #include "opengold/campaign_party.h"
 #include <godot_cpp/classes/input_event.hpp>
@@ -18,9 +19,6 @@ class EquipmentChoiceDialog : public godot::Window
 {
     GDCLASS(EquipmentChoiceDialog, godot::Window)
   public:
-    using CampaignAccess = std::function<opengold::CampaignParty &()>;
-    using FailureReport = std::function<void(const std::exception &)>;
-
     // The hidden window, named EquipmentChoice, with all of its controls.
     [[nodiscard]] static presentation::NodeOwner<EquipmentChoiceDialog> create();
     // The host's campaign, read at each use because loading a save replaces

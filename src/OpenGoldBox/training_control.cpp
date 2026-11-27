@@ -124,7 +124,6 @@ godot::String training_benefit(const opengold::rules::TrainingChoiceGroup &group
         {
             return name + godot::String(" ") + chosen;
         }
-        // The demo shares this header without the game's formatter.
         return i18n::text(expertise ? N_("{skill} {bonus} with Expertise (now {current})")
                                     : N_("{skill} {bonus} if chosen (now {current})"))
             .replace("{skill}", name)

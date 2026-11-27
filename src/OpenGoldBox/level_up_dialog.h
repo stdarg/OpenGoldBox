@@ -1,5 +1,6 @@
 #ifndef OPENGOLDBOX_LEVEL_UP_DIALOG_H
 #define OPENGOLDBOX_LEVEL_UP_DIALOG_H
+#include "dialog_host.h"
 #include "godot_nodes.h"
 #include "opengold/campaign_party.h"
 #include <godot_cpp/classes/window.hpp>
@@ -16,9 +17,6 @@ class LevelUpDialog : public godot::Window
 {
     GDCLASS(LevelUpDialog, godot::Window)
   public:
-    using CampaignAccess = std::function<opengold::CampaignParty &()>;
-    using FailureReport = std::function<void(const std::exception &)>;
-
     // The hidden window, named LevelUp, with all of its controls.
     [[nodiscard]] static presentation::NodeOwner<> create();
     // The host's campaign, read at each use because loading a save replaces

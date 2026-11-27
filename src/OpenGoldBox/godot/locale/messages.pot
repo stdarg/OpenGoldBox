@@ -5299,7 +5299,7 @@ msgstr ""
 msgid "Fix"
 msgstr ""
 
-#: src/OpenGoldBox/training_control.cpp:158
+#: src/OpenGoldBox/training_control.cpp:157
 msgid "Fixed training"
 msgstr ""
 
@@ -19574,12 +19574,12 @@ msgstr ""
 msgid "{skill} needs {needs}."
 msgstr ""
 
-#: src/OpenGoldBox/training_control.cpp:129
+#: src/OpenGoldBox/training_control.cpp:128
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{skill} {bonus} if chosen (now {current})"
 msgstr ""
 
-#: src/OpenGoldBox/training_control.cpp:128
+#: src/OpenGoldBox/training_control.cpp:127
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{skill} {bonus} with Expertise (now {current})"
 msgstr ""

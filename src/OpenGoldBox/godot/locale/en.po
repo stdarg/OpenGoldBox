@@ -5299,7 +5299,7 @@ msgstr "First level"
 msgid "Fix"
 msgstr "Fix"
 
-#: src/OpenGoldBox/training_control.cpp:158
+#: src/OpenGoldBox/training_control.cpp:157
 msgid "Fixed training"
 msgstr "Fixed training"
 
@@ -19574,12 +19574,12 @@ msgstr "{skill} is a Medic's skill."
 msgid "{skill} needs {needs}."
 msgstr "{skill} needs {needs}."
 
-#: src/OpenGoldBox/training_control.cpp:129
+#: src/OpenGoldBox/training_control.cpp:128
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{skill} {bonus} if chosen (now {current})"
 msgstr "{skill} {bonus} if chosen (now {current})"
 
-#: src/OpenGoldBox/training_control.cpp:128
+#: src/OpenGoldBox/training_control.cpp:127
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{skill} {bonus} with Expertise (now {current})"
 msgstr "{skill} {bonus} with Expertise (now {current})"
